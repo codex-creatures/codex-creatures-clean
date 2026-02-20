@@ -1,97 +1,97 @@
-// src/lib/economy/sell.ts
-import { PRIMARY_STATS_BY_ITEMKEY } from "@/lib/items/itemPrimaries";
+// lib/items/economy/sell.ts
+//
+// SELL VALUE FORMULA
+// ─────────────────────────────────────────────
+// efficiency = 0.6 * primaryShare + 0.4 * bestPrimaryFill^1.3
+//
+// primaryShare   = (primary1 + primary2) / totalStats
+//   → Did the budget land in the right stats?
+//
+// bestPrimaryFill = max(primary1/cap1, primary2/cap2)
+//   → Did it spike high in a primary? (power curve rewards near-caps)
+//
+// sellGold = floor(rarityBase * efficiency)
+//
+// Result:
+//   Flat spreads → low value
+//   One-stat spike in primary → high value
+//   Near-cap primary → very high value
+//   Primaries ignored → near floor
 
-// If you already have these types, import them instead.
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-type ItemCategory = "weapon" | "armor" | "material" | "consumable";
+import type { Rarity } from "../budgets";
+import type { ItemKey, StatKey } from "../ceilings";
+import type { ArmorKey } from "../armor";
+import { PRIMARY_STATS_BY_ITEMKEY } from "../itemPrimaries";
+import { ARMOR_PRIMARY_STATS } from "../armor";
 
-// Shape assumption: you said items have rarity, itemCategory, stats, caps by rarity.
-// Adjust these fields to match your real Drop/Item type.
-export type StatMap = Record<string, number>;
-
-export type ItemDrop = {
-  id: string;
-  kind: "item"; // or whatever your discriminator is
-  itemKey: string;
-  name?: string;
-  rarity: Rarity;
-  itemCategory: ItemCategory;
-  stats: StatMap; // e.g. { attack: 20, speed: 5 }
-};
-
-const BASE_SELL_VALUE_BY_RARITY: Record<Rarity, number> = {
-  common: 100,
-  uncommon: 200,
-  rare: 500,
-  epic: 1500,
+// Base gold values per rarity — these are the MAX possible (perfect primary spike)
+// Actual values land well below max due to the efficiency curve
+const RARITY_BASE: Record<Rarity, number> = {
+  common:    100,
+  uncommon:  200,
+  rare:      500,
+  epic:      1500,
   legendary: 5000,
 };
 
-// util
-const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+type SellableDrop = {
+  dropType: "item";
+  rarity: Rarity;
+  itemCategory: "weapon" | "armor";
+  itemKey?: ItemKey;
+  armorKey?: ArmorKey;
+  stats?: Record<string, number>;
+};
 
-/**
- * Compute efficiency per your spec:
- * 1) primaryShare = sum(primaryStatValues) / sum(allStatValues)
- * 2) bestPrimaryFill = max(primaryStatValue / primaryStatCap)
- * efficiency = clamp01(0.60*primaryShare + 0.40*bestPrimaryFill)
- *
- * All-rounder neutral behavior:
- * - if no primaries defined for itemKey -> use bestFill over ALL stats (not punished)
- */
-export function computeSellEfficiency(args: {
-  drop: ItemDrop;
-  getStatCapForDrop: (drop: ItemDrop, statKey: string) => number; // you already have this helper
-}): number {
-  const { drop, getStatCapForDrop } = args;
+type ComputeSellGoldArgs = {
+  drop: SellableDrop;
+  getStatCapForDrop: (drop: SellableDrop, statKey: string) => number;
+};
 
-  const entries = Object.entries(drop.stats ?? {}).filter(
-    ([, v]) => typeof v === "number" && Number.isFinite(v) && v > 0
-  );
+export function computeSellGold({ drop, getStatCapForDrop }: ComputeSellGoldArgs): number {
+  if (!drop.stats) return 0;
 
-  if (entries.length === 0) return 0; // nothing rolled -> worthless
+  const stats = drop.stats;
+  const totalStats = Object.values(stats).reduce((a, b) => a + b, 0);
+  if (totalStats === 0) return 0;
 
-  const total = entries.reduce((acc, [, v]) => acc + v, 0);
-  if (total <= 0) return 0;
+  // Resolve primaries
+  let primary1Key: string;
+  let primary2Key: string;
 
-  const primaries = PRIMARY_STATS_BY_ITEMKEY[drop.itemKey];
-
-  // --- All-rounder path (neutral): no primaries defined
-  if (!primaries) {
-    // bestFill across all stats
-    let bestFill = 0;
-    for (const [statKey, value] of entries) {
-      const cap = getStatCapForDrop(drop, statKey);
-      if (cap > 0) bestFill = Math.max(bestFill, value / cap);
-    }
-    return clamp01(bestFill); // neutral: solely fill quality
+  if (drop.itemCategory === "weapon" && drop.itemKey) {
+    const primaries = PRIMARY_STATS_BY_ITEMKEY[drop.itemKey];
+    if (!primaries) return Math.floor(RARITY_BASE[drop.rarity] * 0.1); // unknown item — floor value
+    [primary1Key, primary2Key] = primaries;
+  } else if (drop.itemCategory === "armor" && drop.armorKey) {
+    const primaries = ARMOR_PRIMARY_STATS[drop.armorKey];
+    if (!primaries) return Math.floor(RARITY_BASE[drop.rarity] * 0.1);
+    [primary1Key, primary2Key] = primaries as [string, string];
+  } else {
+    return 0;
   }
 
-  const [p1, p2] = primaries;
+  const p1Val = stats[primary1Key] ?? 0;
+  const p2Val = stats[primary2Key] ?? 0;
+  const p1Cap = getStatCapForDrop(drop, primary1Key);
+  const p2Cap = getStatCapForDrop(drop, primary2Key);
 
-  const primarySum =
-    (drop.stats[p1] ?? 0) +
-    (drop.stats[p2] ?? 0);
+  // primaryShare: how much of the budget went into primaries
+  const primaryShare = (p1Val + p2Val) / totalStats;
 
-  const primaryShare = primarySum / total;
+  // bestPrimaryFill: how close the best primary is to its cap
+  const fill1 = p1Cap > 0 ? p1Val / p1Cap : 0;
+  const fill2 = p2Cap > 0 ? p2Val / p2Cap : 0;
+  const bestPrimaryFill = Math.max(fill1, fill2);
 
-  const p1Cap = getStatCapForDrop(drop, p1);
-  const p2Cap = getStatCapForDrop(drop, p2);
+  // Power curve — rewards near-cap rolls more heavily
+  const poweredFill = Math.pow(bestPrimaryFill, 1.3);
 
-  const p1Fill = p1Cap > 0 ? (drop.stats[p1] ?? 0) / p1Cap : 0;
-  const p2Fill = p2Cap > 0 ? (drop.stats[p2] ?? 0) / p2Cap : 0;
+  // Weighted combination
+  const efficiency = 0.6 * primaryShare + 0.4 * poweredFill;
 
-  const bestPrimaryFill = Math.max(p1Fill, p2Fill);
+  // Clamp to [0, 1] just in case
+  const clampedEfficiency = Math.max(0, Math.min(1, efficiency));
 
-  const efficiency = 0.60 * primaryShare + 0.40 * bestPrimaryFill;
-  return clamp01(efficiency);
-}
-
-export function computeSellGold(args: {
-  drop: ItemDrop;
-  getStatCapForDrop: (drop: ItemDrop, statKey: string) => number;
-}): number {
-  const base = BASE_SELL_VALUE_BY_RARITY[args.drop.rarity] ?? 0;
-  const eff = computeSellEfficiency(args);
-  return Math.round(base * eff);
+  return Math.max(1, Math.floor(RARITY_BASE[drop.rarity] * clampedEfficiency));
 }
