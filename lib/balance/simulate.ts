@@ -12,7 +12,7 @@ import { PRIMARY_STATS_BY_ITEMKEY } from "../items/itemPrimaries";
 import { rollItemStats } from "../items/rollItemStats";
 import { rollArmorStats } from "../items/rollArmorStats";
 import { CREATURE_TEMPLATES, type CreatureTemplate } from "../creatures/creatureData";
-import { runBattle, effectiveAgil, styleFromProficiency, type CombatStyle, type Fighter } from "../combat/engine";
+import { runBattle, effectiveAgil, styleFromProficiency, chooseSkill, calcDamage, type CombatStyle, type Fighter } from "../combat/engine";
 import { buildFighter } from "../combat/loadout";
 import { runTeamBattle } from "../combat/teamBattle";
 
@@ -276,7 +276,8 @@ export function runStatValue(
 // rarer creatures wins, and whether swapping (good play) beats not swapping.
 export type TeamSimOptions = {
   gearRarity: Rarity;
-  gearMode: "fitted" | "random";
+  gearMode: "fitted" | "random" | "optimized";
+  creatureBand?: CreatureBand;
   battles: number;
   teamSize?: number;
 };
@@ -305,7 +306,7 @@ function randomTeam(size: number, creatures: CreatureTemplate[]): CreatureTempla
 
 export function runTeamBattles(
   opts: TeamSimOptions,
-  creatures: CreatureTemplate[] = CREATURE_TEMPLATES,
+  creatures: CreatureTemplate[] = creaturesInBand(opts.creatureBand ?? "all"),
 ): TeamSimResult {
   const size = opts.teamSize ?? 3;
   let rounds = 0, draws = 0, swaps = 0, hits = 0, minHits = 0;
@@ -313,9 +314,12 @@ export function runTeamBattles(
   const gapAcc: Record<number, { w: number; n: number }> = {};
   const cAcc: Record<string, { w: number; n: number }> = {};
 
+  const refs = opts.gearMode === "optimized" ? referenceOpponents(creatures, opts.gearRarity) : [];
   const equip = (team: CreatureTemplate[]): Fighter[] =>
     team.map((c) => {
-      const g = rollGear(opts.gearRarity, opts.gearMode === "fitted" ? c : undefined);
+      const g = opts.gearMode === "optimized"
+        ? optimizedGear(c, opts.gearRarity, refs)
+        : rollGear(opts.gearRarity, opts.gearMode === "fitted" ? c : undefined);
       return buildFighter(c, g.weapon, g.armor);
     });
 
@@ -387,4 +391,117 @@ export function runTeamBattles(
       .map((c) => ({ id: c.id, name: c.name, rarity: c.rarity, battles: cAcc[c.id].n, winPct: pct(cAcc[c.id].w, cAcc[c.id].n) }))
       .sort((a, b) => b.winPct - a.winPct),
   };
+}
+
+// ── Creature rarity bands ─────────────────────────────────────────
+// Testing within a band avoids Common-vs-Legendary extremes drowning out
+// everything else.
+export type CreatureBand = "all" | "common-rare" | "rare-legendary";
+
+export const CREATURE_BANDS: Record<CreatureBand, { label: string; rarities: Rarity[] }> = {
+  "all":            { label: "All creatures",  rarities: RARITIES },
+  "common-rare":    { label: "Common – Rare",  rarities: ["common", "uncommon", "rare"] },
+  "rare-legendary": { label: "Rare – Legendary", rarities: ["rare", "epic", "legendary"] },
+};
+
+export function creaturesInBand(band: CreatureBand): CreatureTemplate[] {
+  return CREATURE_TEMPLATES.filter((c) => CREATURE_BANDS[band].rarities.includes(c.rarity));
+}
+
+// ── Optimised gear (what a player would equip) ────────────────────
+// The creature looks at several owned items per slot and equips whichever
+// makes it win its matchups best against typical opponents. No hand-picked
+// stat weights: a great roll in the stats this creature uses wins out.
+export const OPTIMIZE_POOL_SIZE = 6;  // items owned per slot to choose from
+const REFERENCE_OPPONENTS = 16;
+
+function rollWeapon(rarity: Rarity, keys: readonly ItemKey[] = ITEM_KEYS) {
+  const key = pick(keys);
+  return { key, stats: { ...rollItemStats(key, rarity).stats } as Record<string, number> };
+}
+
+function rollArmor(rarity: Rarity) {
+  const key = pick(ARMOR_KEYS);
+  return { key, stats: { ...rollArmorStats(key, rarity).stats } as Record<string, number> };
+}
+
+function expectedHit(atk: Fighter, def: Fighter): number {
+  const s = chooseSkill(atk, def);
+  return s ? calcDamage(s, atk, def, false).damage : 0;
+}
+
+// Continuous, speed-aware version of the matchup read: >1 means I win.
+function powerRatio(me: Fighter, them: Fighter): number {
+  const iNeed = them.maxHp / Math.max(1, expectedHit(me, them));
+  const theyNeed = me.maxHp / Math.max(1, expectedHit(them, me));
+  const meFirst = effectiveAgil(me) >= effectiveAgil(them);
+  return (theyNeed + (meFirst ? 0.5 : 0)) / (iNeed + (meFirst ? 0 : 0.5));
+}
+
+function loadoutScore(me: Fighter, refs: Fighter[]): number {
+  let total = 0;
+  for (const r of refs) total += Math.log(Math.max(0.05, Math.min(20, powerRatio(me, r))));
+  return total / refs.length;
+}
+
+// Typical opponents: random creatures from the pool with fitted gear.
+export function referenceOpponents(creatures: CreatureTemplate[], rarity: Rarity, n = REFERENCE_OPPONENTS): Fighter[] {
+  return Array.from({ length: n }, () => {
+    const c = pick(creatures);
+    const g = rollGear(rarity, c);
+    return buildFighter(c, g.weapon, g.armor);
+  });
+}
+
+export function optimizedGear(c: CreatureTemplate, rarity: Rarity, refs: Fighter[], poolSize = OPTIMIZE_POOL_SIZE): Gear {
+  const weapons = Array.from({ length: poolSize }, () => rollWeapon(rarity));
+  const armors = Array.from({ length: poolSize }, () => rollArmor(rarity));
+
+  let bestW = weapons[0], bestWScore = -Infinity;
+  for (const w of weapons) {
+    const s = loadoutScore(buildFighter(c, w.stats), refs);
+    if (s > bestWScore) { bestW = w; bestWScore = s; }
+  }
+  let bestA = armors[0], bestAScore = -Infinity;
+  for (const a of armors) {
+    const s = loadoutScore(buildFighter(c, bestW.stats, a.stats), refs);
+    if (s > bestAScore) { bestA = a; bestAScore = s; }
+  }
+  return { weaponKey: bestW.key, weapon: bestW.stats, armorKey: bestA.key, armor: bestA.stats };
+}
+
+// ── Test 4: optimised lower-rarity gear vs stronger gear ──────────
+// The SAME three creatures on both sides; only the gear differs:
+//   Team A: optimised gear (best of its pool) one rarity lower
+//   Team B: ordinary fitted gear (one suitable item) one rarity higher
+export type ShowdownOptions = { band: CreatureBand; battles: number };
+
+export type ShowdownRow = { optimized: Rarity; stronger: Rarity; winPct: number; sameRarityWinPct: number };
+
+export function runGearShowdown(opts: ShowdownOptions): ShowdownRow[] {
+  const creatures = creaturesInBand(opts.band);
+  const rows: ShowdownRow[] = [];
+
+  for (let i = 0; i < RARITIES.length - 1; i++) {
+    const low = RARITIES[i], high = RARITIES[i + 1];
+    const refsLow = referenceOpponents(creatures, low);
+    const refsHigh = referenceOpponents(creatures, high);
+    let w = 0, n = 0, ws = 0, ns = 0;
+
+    for (let b = 0; b < opts.battles; b++) {
+      const team = randomTeam(3, creatures);
+      const shuffled = [...team].sort(() => Math.random() - 0.5);
+      const optLow = team.map((c) => { const g = optimizedGear(c, low, refsLow); return buildFighter(c, g.weapon, g.armor); });
+      const fitHigh = shuffled.map((c) => { const g = rollGear(high, c); return buildFighter(c, g.weapon, g.armor); });
+      const r = runTeamBattle(optLow, fitHigh, { swapsA: true, swapsB: true });
+      if (r.winner !== "draw") { n++; if (r.winner === "A") w++; }
+
+      // Control: optimised vs ordinary at the SAME (higher) rarity.
+      const optHigh = team.map((c) => { const g = optimizedGear(c, high, refsHigh); return buildFighter(c, g.weapon, g.armor); });
+      const r2 = runTeamBattle(optHigh, fitHigh, { swapsA: true, swapsB: true });
+      if (r2.winner !== "draw") { ns++; if (r2.winner === "A") ws++; }
+    }
+    rows.push({ optimized: low, stronger: high, winPct: n ? (w / n) * 100 : 0, sameRarityWinPct: ns ? (ws / ns) * 100 : 0 });
+  }
+  return rows;
 }

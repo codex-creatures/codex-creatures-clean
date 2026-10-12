@@ -5,8 +5,8 @@ import { useState } from "react";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import {
-  RARITIES, MAX_TURNS, runTierList, runStatValue, runTeamBattles,
-  type GearMode, type TierListResult, type StatValueRow, type TeamSimResult,
+  RARITIES, MAX_TURNS, CREATURE_BANDS, runTierList, runStatValue, runTeamBattles, runGearShowdown,
+  type GearMode, type TierListResult, type StatValueRow, type TeamSimResult, type CreatureBand, type ShowdownRow,
 } from "@/lib/balance/simulate";
 
 const BG = "#0a0a12", PANEL = "#0f0f1e", BORDER = "rgba(255,255,255,0.08)";
@@ -64,7 +64,13 @@ export default function BalanceLab() {
 
   // Team battles
   const [tmRarity, setTmRarity] = useState<Rarity>("epic");
-  const [tmBattles, setTmBattles] = useState(3000);
+  const [tmBattles, setTmBattles] = useState(1000);
+  const [tmBand, setTmBand] = useState<CreatureBand>("rare-legendary");
+  const [tmGear, setTmGear] = useState<"fitted" | "optimized">("optimized");
+
+  // Gear showdown
+  const [sdBand, setSdBand] = useState<CreatureBand>("rare-legendary");
+  const [sd, setSd] = useState<ShowdownRow[] | null>(null);
   const [tm, setTm] = useState<TeamSimResult | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
@@ -220,20 +226,34 @@ export default function BalanceLab() {
         <section style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, marginTop: 24 }}>
           <h2 style={{ margin: "0 0 4px", fontSize: 17 }}>3 · Team battles (3v3 with swapping)</h2>
           <p style={{ margin: "0 0 14px", fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
-            Random teams of 3 with fitted gear. Swapping uses your turn (the opponent gets a free hit on the incoming creature) and restores 50% of the leaving creature&apos;s missing energy.
+            Random teams of 3. Swapping uses your turn (the opponent gets a free hit on the incoming creature) and restores 50% of the leaving creature&apos;s missing energy.
             The auto-battler swaps out of clearly losing matchups and sends in the best matchup after a faint.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
             <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Gear rarity</span>
             {RARITIES.map((r) => <Chip key={r} active={tmRarity === r} onClick={() => setTmRarity(r)}>{r}</Chip>)}
           </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Creatures</span>
+            {(Object.keys(CREATURE_BANDS) as CreatureBand[]).map((b) => <Chip key={b} active={tmBand === b} onClick={() => setTmBand(b)}>{CREATURE_BANDS[b].label}</Chip>)}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 4 }}>
+            <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Gear</span>
+            <Chip active={tmGear === "optimized"} onClick={() => setTmGear("optimized")}>Optimised</Chip>
+            <Chip active={tmGear === "fitted"} onClick={() => setTmGear("fitted")}>Fitted</Chip>
+          </div>
+          <div style={{ fontSize: 11, color: MUTED, margin: "0 0 10px 78px" }}>
+            {tmGear === "optimized"
+              ? "Each creature picks its best weapon and armour from 6 owned items per slot — the rolls that suit it best win out."
+              : "Each creature gets one random weapon that suits its type, and random armour."}
+          </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>
             <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Battles</span>
-            {[1000, 3000, 10000].map((n) => <Chip key={n} active={tmBattles === n} onClick={() => setTmBattles(n)}>{n.toLocaleString()}</Chip>)}
+            {[500, 1000, 3000].map((n) => <Chip key={n} active={tmBattles === n} onClick={() => setTmBattles(n)}>{n.toLocaleString()}</Chip>)}
           </div>
           <button
             disabled={!!busy}
-            onClick={() => run("tm", () => setTm(runTeamBattles({ gearRarity: tmRarity, gearMode: "fitted", battles: tmBattles })))}
+            onClick={() => run("tm", () => setTm(runTeamBattles({ gearRarity: tmRarity, gearMode: tmGear, creatureBand: tmBand, battles: tmBattles })))}
             style={{ padding: "10px 22px", borderRadius: 8, border: "none", background: "#f5c542", color: "#1a1a1a", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}
           >
             {busy === "tm" ? "Running…" : "Run team battles"}
@@ -272,6 +292,51 @@ export default function BalanceLab() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+        </section>
+
+        {/* ── Gear showdown ───────────────────────────────── */}
+        <section style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, marginTop: 24 }}>
+          <h2 style={{ margin: "0 0 4px", fontSize: 17 }}>4 · Good roll vs bigger stats</h2>
+          <p style={{ margin: "0 0 14px", fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+            The same three creatures on both sides — only gear differs. One team equips optimised gear (best of 6 per slot) one rarity lower; the other equips ordinary fitted gear one rarity higher.
+            The control column shows optimised vs ordinary at the same rarity: how much a good build is worth on its own.
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Creatures</span>
+            {(Object.keys(CREATURE_BANDS) as CreatureBand[]).map((b) => <Chip key={b} active={sdBand === b} onClick={() => setSdBand(b)}>{CREATURE_BANDS[b].label}</Chip>)}
+          </div>
+          <button
+            disabled={!!busy}
+            onClick={() => run("sd", () => setSd(runGearShowdown({ band: sdBand, battles: 800 })))}
+            style={{ padding: "10px 22px", borderRadius: 8, border: "none", background: "#f5c542", color: "#1a1a1a", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}
+          >
+            {busy === "sd" ? "Running… (a few seconds)" : "Run showdown"}
+          </button>
+
+          {sd && (
+            <div style={{ overflowX: "auto", marginTop: 16 }}>
+              <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...th, textAlign: "left" }}>Optimised gear</th>
+                    <th style={{ ...th, textAlign: "left" }}>vs ordinary gear</th>
+                    <th style={th}>Optimised wins</th>
+                    <th style={th}>Control (same rarity)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sd.map((r) => (
+                    <tr key={r.optimized} style={{ borderTop: `1px solid ${BORDER}` }}>
+                      <td style={{ ...td, textAlign: "left", color: rc(r.optimized), fontWeight: 600 }}>{r.optimized}</td>
+                      <td style={{ ...td, textAlign: "left", color: rc(r.stronger), fontWeight: 600 }}>{r.stronger}</td>
+                      <td style={{ ...td, background: heat(r.winPct), fontWeight: 700 }}>{fmt(r.winPct)}%</td>
+                      <td style={{ ...td, background: heat(r.sameRarityWinPct) }}>{fmt(r.sameRarityWinPct)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </section>
