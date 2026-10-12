@@ -167,6 +167,13 @@ export function styleFromProficiency({ atk, rng }: { atk: number; rng: number })
   return atk > rng ? "melee" : "ranged";
 }
 
+// Auto-battle behaviour, switchable for balance experiments:
+// - "style":     melee/ranged creatures stick to their own move type
+//                (default — what was agreed for normal play);
+// - "maxDamage": every creature uses whichever affordable move hurts most,
+//                e.g. a melee attacker sneaking in a ranged hit on a melee tank.
+export const AUTO_BATTLE: { policy: "style" | "maxDamage" } = { policy: "style" };
+
 // What a sensible player would pick:
 // - melee/ranged creatures use their biggest affordable move of their own
 //   type, falling back to the other type only if none is affordable;
@@ -177,7 +184,7 @@ export function chooseSkill(atk: Fighter, def: Fighter): Skill | undefined {
   if (affordable.length === 0) return undefined;
 
   const style = combatStyle(atk);
-  if (style === "hybrid") {
+  if (style === "hybrid" || AUTO_BATTLE.policy === "maxDamage") {
     const dmg = (s: Skill) => calcDamage(s, atk, def, false).damage;
     return affordable.reduce((best, s) => (dmg(s) > dmg(best) ? s : best));
   }

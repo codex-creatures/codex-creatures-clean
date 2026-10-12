@@ -5,7 +5,7 @@
 // Tests 1–2 are 1v1 duels; test 3 is 3v3 with swapping (combat/teamBattle.ts). All use
 // the engine's auto-battle (chooseSkill in engine.ts, neutral stance).
 
-import type { Rarity } from "../items/budgets";
+import { RARITY_WEIGHTS, type Rarity } from "../items/budgets";
 import { ITEM_KEYS, type ItemKey } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
 import { PRIMARY_STATS_BY_ITEMKEY } from "../items/itemPrimaries";
@@ -474,7 +474,7 @@ export function optimizedGear(c: CreatureTemplate, rarity: Rarity, refs: Fighter
 // The SAME three creatures on both sides; only the gear differs:
 //   Team A: optimised gear (best of its pool) one rarity lower
 //   Team B: ordinary fitted gear (one suitable item) one rarity higher
-export type ShowdownOptions = { band: CreatureBand; battles: number };
+export type ShowdownOptions = { band: CreatureBand; battles: number; teamSize?: number };
 
 export type ShowdownRow = { optimized: Rarity; stronger: Rarity; winPct: number; sameRarityWinPct: number };
 
@@ -489,7 +489,7 @@ export function runGearShowdown(opts: ShowdownOptions): ShowdownRow[] {
     let w = 0, n = 0, ws = 0, ns = 0;
 
     for (let b = 0; b < opts.battles; b++) {
-      const team = randomTeam(3, creatures);
+      const team = randomTeam(opts.teamSize ?? 3, creatures);
       const shuffled = [...team].sort(() => Math.random() - 0.5);
       const optLow = team.map((c) => { const g = optimizedGear(c, low, refsLow); return buildFighter(c, g.weapon, g.armor); });
       const fitHigh = shuffled.map((c) => { const g = rollGear(high, c); return buildFighter(c, g.weapon, g.armor); });
@@ -537,7 +537,7 @@ function fromWindow<T>(sorted: T[], from: number, to: number): T {
   return sorted[lo + Math.floor(Math.random() * (hi - lo + 1))];
 }
 
-export type QualityShowdownOptions = { band: CreatureBand; a: QualityWindow; b: QualityWindow; battles: number };
+export type QualityShowdownOptions = { band: CreatureBand; a: QualityWindow; b: QualityWindow; battles: number; teamSize?: number };
 
 export function runQualityShowdown(opts: QualityShowdownOptions): { winPctA: number; drawPct: number } {
   const creatures = creaturesInBand(opts.band);
@@ -555,11 +555,146 @@ export function runQualityShowdown(opts: QualityShowdownOptions): { winPctA: num
 
   let wins = 0, decided = 0, draws = 0;
   for (let i = 0; i < opts.battles; i++) {
-    const team = randomTeam(3, creatures);
+    const team = randomTeam(opts.teamSize ?? 3, creatures);
     const order = () => [...team].sort(() => Math.random() - 0.5);
     const r = runTeamBattle(equip(order(), "a"), equip(order(), "b"), { swapsA: true, swapsB: true });
     if (r.winner === "draw") draws++;
     else { decided++; if (r.winner === "A") wins++; }
   }
   return { winPctA: decided ? (wins / decided) * 100 : 0, drawPct: (draws / opts.battles) * 100 };
+}
+
+// Draw a rarity using the real drop odds (40/30/20/9/1).
+function dropRarity(): Rarity {
+  const total = RARITIES.reduce((s, r) => s + RARITY_WEIGHTS[r], 0);
+  let roll = Math.random() * total;
+  for (const r of RARITIES) { roll -= RARITY_WEIGHTS[r]; if (roll <= 0) return r; }
+  return "common";
+}
+
+// ── Test 6: rarer creatures + worse gear vs commoner creatures + better gear
+// "Rarer creatures should use worse items better." Both teams get
+// average-quality gear (40–60th percentile for that creature).
+export type CreatureVsGearOptions = {
+  battles: number;
+  teamSize?: number;
+  rarer: { creatures: Rarity[]; gear: Rarity };
+  commoner: { creatures: Rarity[]; gear: Rarity };
+};
+
+export function runCreatureVsGear(opts: CreatureVsGearOptions): { rarerWinPct: number } {
+  const pickFrom = (rs: Rarity[]) => CREATURE_TEMPLATES.filter((c) => rs.includes(c.rarity));
+  const rarerPool = pickFrom(opts.rarer.creatures), commonerPool = pickFrom(opts.commoner.creatures);
+  const refs = referenceOpponents(CREATURE_TEMPLATES, "rare");
+  const pools = new Map<string, GearPool>();
+  for (const c of rarerPool) pools.set("r:" + c.id, rankedPool(c, opts.rarer.gear, refs));
+  for (const c of commonerPool) pools.set("c:" + c.id, rankedPool(c, opts.commoner.gear, refs));
+
+  const equip = (team: CreatureTemplate[], tag: string) => team.map((c) => {
+    const p = pools.get(tag + c.id)!;
+    return buildFighter(c, fromWindow(p.weapons, 40, 60), fromWindow(p.armors, 40, 60));
+  });
+
+  let w = 0, n = 0;
+  const size = opts.teamSize ?? 3;
+  for (let i = 0; i < opts.battles; i++) {
+    const r = runTeamBattle(equip(randomTeam(size, rarerPool), "r:"), equip(randomTeam(size, commonerPool), "c:"), { swapsA: true, swapsB: true });
+    if (r.winner !== "draw") { n++; if (r.winner === "A") w++; }
+  }
+  return { rarerWinPct: n ? (w / n) * 100 : 0 };
+}
+
+// ── Test 7: league — realistic collections, blind team building ───
+// Each player owns random creatures and items at real drop odds, builds
+// their best team without knowing the opponent, then they fight.
+// Tells us what actually decides battles: creature rarity, item rarity,
+// or how well the team was built.
+export type LeagueOptions = { battles: number; teamSize?: number; creaturesOwned?: number; itemsOwned?: number };
+
+export type LeagueResult = {
+  battles: number;
+  higherCreatureRarityWinPct: number;
+  higherItemRarityWinPct: number;
+  higherTotalRarityWinPct: number;
+  betterBuildWinPct: number;
+  betterBuildLowerRarityWinPct: number; // built better despite less total rarity
+  betterBuildLowerRarityShare: number;  // how often that situation came up
+};
+
+type Built = { fighters: Fighter[]; creatureRarity: number; itemRarity: number; buildScore: number };
+
+function buildBestTeam(size: number, owned: number, items: number, refs: Fighter[]): Built {
+  const creatures = Array.from({ length: owned }, () => {
+    const r = dropRarity();
+    return pick(CREATURE_TEMPLATES.filter((c) => c.rarity === r));
+  });
+  const weapons = Array.from({ length: Math.ceil(items / 2) }, () => { const r = dropRarity(); return { r, ...rollWeapon(r) }; });
+  const armors  = Array.from({ length: Math.floor(items / 2) }, () => { const r = dropRarity(); return { r, ...rollArmor(r) }; });
+
+  // Score every creature × item pair once (armour alongside that creature's best weapon).
+  const wScore = creatures.map((c) => weapons.map((w) => loadoutScore(buildFighter(c, w.stats), refs)));
+  const bestW = wScore.map((row) => weapons[row.indexOf(Math.max(...row))]);
+  const aScore = creatures.map((c, i) => armors.map((a) => loadoutScore(buildFighter(c, bestW[i].stats, a.stats), refs)));
+
+  const usedC = new Set<number>(), usedW = new Set<number>(), usedA = new Set<number>();
+  const team: { c: CreatureTemplate; w: (typeof weapons)[number]; a: (typeof armors)[number]; s: number }[] = [];
+  while (team.length < size && usedC.size < creatures.length) {
+    let best: (typeof team)[number] & { ci: number; wi: number; ai: number } | null = null;
+    creatures.forEach((c, ci) => {
+      if (usedC.has(ci)) return;
+      const wi = wScore[ci].reduce((b, s, i) => (!usedW.has(i) && (b < 0 || s > wScore[ci][b]) ? i : b), -1);
+      const ai = aScore[ci].reduce((b, s, i) => (!usedA.has(i) && (b < 0 || s > aScore[ci][b]) ? i : b), -1);
+      const s = loadoutScore(buildFighter(c, weapons[wi]?.stats, armors[ai]?.stats), refs);
+      if (!best || s > best.s) best = { c, w: weapons[wi], a: armors[ai], s, ci, wi, ai };
+    });
+    if (!best) break;
+    const b = best as (typeof team)[number] & { ci: number; wi: number; ai: number };
+    usedC.add(b.ci); usedW.add(b.wi); usedA.add(b.ai);
+    team.push(b);
+  }
+  return {
+    fighters: team.map((t) => buildFighter(t.c, t.w?.stats, t.a?.stats)),
+    creatureRarity: team.reduce((s, t) => s + RARITY_SCORE[t.c.rarity], 0),
+    itemRarity: team.reduce((s, t) => s + RARITY_SCORE[t.w.r] + RARITY_SCORE[t.a.r], 0),
+    buildScore: team.reduce((s, t) => s + t.s, 0),
+  };
+}
+
+export function runLeague(opts: LeagueOptions): LeagueResult {
+  const size = opts.teamSize ?? 4;
+  const refs = referenceOpponents(CREATURE_TEMPLATES, "rare", 10);
+  const acc = { cr: [0, 0], ir: [0, 0], tr: [0, 0], bs: [0, 0], up: [0, 0] };
+  const tally = (key: keyof typeof acc, a: number, b: number, winner: "A" | "B") => {
+    if (a === b) return;
+    acc[key][1]++;
+    if ((a > b) === (winner === "A")) acc[key][0]++;
+  };
+
+  for (let i = 0; i < opts.battles; i++) {
+    const A = buildBestTeam(size, opts.creaturesOwned ?? 8, opts.itemsOwned ?? 50, refs);
+    const B = buildBestTeam(size, opts.creaturesOwned ?? 8, opts.itemsOwned ?? 50, refs);
+    const r = runTeamBattle(A.fighters, B.fighters, { swapsA: true, swapsB: true });
+    if (r.winner === "draw") continue;
+    tally("cr", A.creatureRarity, B.creatureRarity, r.winner);
+    tally("ir", A.itemRarity, B.itemRarity, r.winner);
+    tally("tr", A.creatureRarity + A.itemRarity, B.creatureRarity + B.itemRarity, r.winner);
+    tally("bs", A.buildScore, B.buildScore, r.winner);
+    // Better build but less total rarity: does the better-built team still win?
+    const aBetterBuildLessRare = A.buildScore > B.buildScore && A.creatureRarity + A.itemRarity < B.creatureRarity + B.itemRarity;
+    const bBetterBuildLessRare = B.buildScore > A.buildScore && B.creatureRarity + B.itemRarity < A.creatureRarity + A.itemRarity;
+    if (aBetterBuildLessRare || bBetterBuildLessRare) {
+      acc.up[1]++;
+      if ((aBetterBuildLessRare && r.winner === "A") || (bBetterBuildLessRare && r.winner === "B")) acc.up[0]++;
+    }
+  }
+  const pct = ([w, n]: number[]) => (n ? (w / n) * 100 : 0);
+  return {
+    battles: opts.battles,
+    higherCreatureRarityWinPct: pct(acc.cr),
+    higherItemRarityWinPct: pct(acc.ir),
+    higherTotalRarityWinPct: pct(acc.tr),
+    betterBuildWinPct: pct(acc.bs),
+    betterBuildLowerRarityWinPct: pct(acc.up),
+    betterBuildLowerRarityShare: (acc.up[1] / opts.battles) * 100,
+  };
 }
