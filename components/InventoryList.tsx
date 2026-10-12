@@ -2,7 +2,7 @@
 // components/InventoryList.tsx
 
 import { useState } from "react";
-import type { Drop, TabKey } from "@/lib/types";
+import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { isRewardDrop, isItemDrop, isSellableItem } from "@/lib/types";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
@@ -26,35 +26,31 @@ type Props = {
   onOpenSellConfirm: () => void;
   onToggleSellMode: () => void;
   onResetAll: () => void;
+  onGlobalReset: () => void;
 };
 
 const TABS: GameTabKey[] = ["all", "creatures", "weapons", "armor", "materials", "consumables"];
 
 export default function InventoryList({
-  filteredInventory,
-  tabCounts,
-  activeTab,
-  onTabChange,
-  favoriteIds,
-  onToggleFavorite,
-  sellMode,
-  selectedForSale,
-  onToggleSelectItem,
-  onSelectAll,
-  onDeselectAll,
-  sellTotal,
-  onOpenSellConfirm,
-  onToggleSellMode,
-  onResetAll,
+  filteredInventory, tabCounts, activeTab, onTabChange,
+  favoriteIds, onToggleFavorite, sellMode, selectedForSale,
+  onToggleSelectItem, onSelectAll, onDeselectAll,
+  sellTotal, onOpenSellConfirm, onToggleSellMode, onResetAll, onGlobalReset,
 }: Props) {
-  const [detailItem, setDetailItem] = useState<CreatureOrItemDrop | null>(null);
+  const [detailIndex, setDetailIndex] = useState<number | null>(null);
+
+  // Only item drops are navigable in the modal
+  const navigableItems = filteredInventory.filter(isItemDrop) as CreatureOrItemDrop[];
 
   function handleRowClick(d: Drop) {
     if (sellMode) {
       if (isSellableItem(d) && !favoriteIds.has(d.id)) onToggleSelectItem(d.id);
       return;
     }
-    if (isItemDrop(d)) setDetailItem(d);
+    if (isItemDrop(d)) {
+      const idx = navigableItems.findIndex((i) => i.id === d.id);
+      if (idx !== -1) setDetailIndex(idx);
+    }
   }
 
   return (
@@ -66,8 +62,11 @@ export default function InventoryList({
           <button onClick={onToggleSellMode} style={{ padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer", border: sellMode ? "none" : "1px solid rgba(255,80,80,0.5)", background: sellMode ? "#ff5050" : "transparent", color: sellMode ? "white" : "#ff5050", transition: "all 0.15s" }}>
             {sellMode ? "✕ Cancel Sell" : "💰 Sell Mode"}
           </button>
-          <button onClick={onResetAll} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            Reset All
+          <button onClick={onResetAll} title="Wipe your progress but keep registered barcodes — test scanning as a new player" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            Reset Player
+          </button>
+          <button onClick={onGlobalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            Global Reset
           </button>
         </div>
       </div>
@@ -82,7 +81,7 @@ export default function InventoryList({
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             {selectedForSale.size > 0 && <span style={{ color: "#f5c542", fontWeight: 700, fontSize: 15 }}>+{sellTotal.toLocaleString()}g</span>}
-            <button onClick={onOpenSellConfirm} disabled={selectedForSale.size === 0} style={{ padding: "8px 18px", borderRadius: 8, fontWeight: 700, border: "none", background: selectedForSale.size > 0 ? "#f5c542" : "rgba(255,255,255,0.1)", color: selectedForSale.size > 0 ? "#1a1a1a" : "rgba(255,255,255,0.3)", cursor: selectedForSale.size > 0 ? "pointer" : "not-allowed", fontSize: 14, transition: "all 0.15s" }}>
+            <button onClick={onOpenSellConfirm} disabled={selectedForSale.size === 0} style={{ padding: "8px 18px", borderRadius: 8, fontWeight: 700, border: "none", background: selectedForSale.size > 0 ? "#f5c542" : "rgba(255,255,255,0.1)", color: selectedForSale.size > 0 ? "#1a1a1a" : "rgba(255,255,255,0.3)", cursor: selectedForSale.size > 0 ? "pointer" : "not-allowed", fontSize: 14 }}>
               Sell Selected
             </button>
           </div>
@@ -98,8 +97,8 @@ export default function InventoryList({
         ))}
       </div>
 
-      {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favorited items are protected. Materials and consumables are not sellable.</p>}
-      {!sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap any weapon or armour to view full details.</p>}
+      {!sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap any weapon or armour to view full details. Use ← → to navigate.</p>}
+      {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favorited items are protected and cannot be sold.</p>}
 
       {/* Item rows */}
       <div style={{ marginTop: 8 }}>
@@ -118,12 +117,9 @@ export default function InventoryList({
                 onClick={() => handleRowClick(d)}
                 style={{ padding: "8px 10px", borderRadius: 8, border: sellMode && sellable ? (isSelected ? "1px solid rgba(245,197,66,0.7)" : "1px solid rgba(255,255,255,0.1)") : "1px solid transparent", background: sellMode && isSelected ? "rgba(245,197,66,0.08)" : "transparent", cursor: (sellMode && sellable) || (!sellMode && isItem) ? "pointer" : "default", transition: "all 0.1s", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: sellMode && !sellable && !isRewardDrop(d) ? 0.35 : 0.95 }}
               >
-                {/* LEFT — name + star right next to it */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {sellMode && sellable && (
-                    <span style={{ fontSize: 15, color: isSelected ? "#f5c542" : "rgba(255,255,255,0.25)" }}>
-                      {isSelected ? "☑" : "☐"}
-                    </span>
+                    <span style={{ fontSize: 15, color: isSelected ? "#f5c542" : "rgba(255,255,255,0.25)" }}>{isSelected ? "☑" : "☐"}</span>
                   )}
                   {isRewardDrop(d) ? (
                     <span style={{ opacity: 0.7 }}>🪙 +{d.amount} Gold</span>
@@ -132,7 +128,6 @@ export default function InventoryList({
                       {isItem ? (d as CreatureOrItemDrop).name ?? (d as any).itemKey ?? "Unknown" : (d as CreatureOrItemDrop).name}
                     </span>
                   )}
-                  {/* Star immediately after name */}
                   {!sellMode && isItem && !isRewardDrop(d) && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onToggleFavorite(d.id); }}
@@ -143,8 +138,6 @@ export default function InventoryList({
                     </button>
                   )}
                 </div>
-
-                {/* RIGHT — sell value */}
                 {sellMode && sellable && (
                   <span style={{ fontSize: 13, color: "#f5c542", opacity: 0.8 }}>+{sellVal.toLocaleString()}g</span>
                 )}
@@ -155,12 +148,15 @@ export default function InventoryList({
       </div>
 
       {/* Item Detail Modal */}
-      {detailItem && (
+      {detailIndex !== null && navigableItems[detailIndex] && (
         <ItemDetailModal
-          item={detailItem}
-          isFavorite={favoriteIds.has(detailItem.id)}
-          onToggleFavorite={(id) => { onToggleFavorite(id); }}
-          onClose={() => setDetailItem(null)}
+          item={navigableItems[detailIndex]}
+          isFavorite={favoriteIds.has(navigableItems[detailIndex].id)}
+          onToggleFavorite={(id) => onToggleFavorite(id)}
+          onClose={() => setDetailIndex(null)}
+          items={navigableItems}
+          currentIndex={detailIndex}
+          onNavigate={(idx) => setDetailIndex(idx)}
         />
       )}
     </div>

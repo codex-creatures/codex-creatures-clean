@@ -1,25 +1,8 @@
 import type { Rarity } from "./budgets";
 import { RARITY_BUDGETS } from "./budgets";
 import { ITEM_CEILINGS, STAT_KEYS, type ItemKey, type StatBlock } from "./ceilings";
-
-/**
- * LOCKED V1 roll rules
- */
-const chunkMinPct = 0.05;
-const chunkMaxPct = 0.2;
-const chaosPct = 0.2; // 20% uniform random
-const weightExponent = 0.6; // room^0.6 soft weighting
-
-// Temporary V1 primary stats mapping (until we move to definitions.ts)
-// Exactly 2 primaries per item.
-const PRIMARY_STATS_BY_ITEM: Record<ItemKey, readonly (keyof StatBlock)[]> = (() => {
-  const out: Partial<Record<ItemKey, readonly (keyof StatBlock)[]>> = {};
-  // Default: melee + agility (safe baseline). Override per-item later.
-  (Object.keys(ITEM_CEILINGS) as ItemKey[]).forEach((k) => {
-    out[k] = ["melee", "agility"];
-  });
-  return out as Record<ItemKey, readonly (keyof StatBlock)[]>;
-})();
+import { PRIMARY_STATS_BY_ITEMKEY } from "./itemPrimaries";
+import { CHUNK_MIN_PCT, CHUNK_MAX_PCT, CHAOS_PCT, WEIGHT_EXPONENT } from "./rollConfig";
 
 function sumStats(s: StatBlock): number {
   return STAT_KEYS.reduce((acc, k) => acc + s[k], 0);
@@ -64,9 +47,12 @@ export function rollItemStats(item: ItemKey, rarity: Rarity, rng: () => number =
 
   if (!ceilings) throw new Error(`Missing ceilings for item=${item} rarity=${rarity}`);
 
-  // If ceilings can’t hold the full budget, clamp it (keeps old behaviour safe)
+  // Ceilings that can't hold the full budget are a config error — fail loudly.
   const maxCapacity = STAT_KEYS.reduce((sum, k) => sum + ceilings[k], 0);
-  const effectiveBudget = Math.min(budget, maxCapacity);
+  if (maxCapacity < budget) {
+    throw new Error(`Ceilings for item=${item} rarity=${rarity} sum to ${maxCapacity}, below budget ${budget}`);
+  }
+  const effectiveBudget = budget;
 
   const stats: StatBlock = { melee: 0, ranged: 0, agility: 0, hp: 0 };
   let remaining = effectiveBudget;
@@ -84,10 +70,10 @@ export function rollItemStats(item: ItemKey, rarity: Rarity, rng: () => number =
       );
     }
 
-    if (rng() < chaosPct) return pickUniform(rng, candidates);
+    if (rng() < CHAOS_PCT) return pickUniform(rng, candidates);
 
     // 80% weighted by room^0.6
-    return pickWeightedStat(rng, candidates, (k) => Math.pow(room(k), weightExponent));
+    return pickWeightedStat(rng, candidates, (k) => Math.pow(room(k), WEIGHT_EXPONENT));
   };
 
   const addToStat = (k: keyof StatBlock, amt: number) => {
@@ -99,17 +85,18 @@ export function rollItemStats(item: ItemKey, rarity: Rarity, rng: () => number =
   };
 
   // Primary “first hits” (+1 each if ceiling allows)
-  const primaries = PRIMARY_STATS_BY_ITEM[item] ?? ["melee", "agility"];
+  const primaries = PRIMARY_STATS_BY_ITEMKEY[item] ?? ["melee", "agility"];
   for (const k of primaries.slice(0, 2)) {
     if (remaining <= 0) break;
     if (room(k) > 0) addToStat(k, 1);
   }
 
-  // Chunk allocation loop
+  // Chunk allocation loop — chunk range is fixed from the TOTAL budget
+  // (Legendary 150 → 8–30), then clamped to what's left near the end.
+  const minChunk = Math.ceil(budget * CHUNK_MIN_PCT);
+  const maxChunk = Math.ceil(budget * CHUNK_MAX_PCT);
   while (remaining > 0) {
-    const minChunk = Math.ceil(remaining * chunkMinPct);
-    const maxChunk = Math.ceil(remaining * chunkMaxPct);
-    const chunk = randIntInclusive(rng, minChunk, maxChunk);
+    const chunk = Math.min(randIntInclusive(rng, minChunk, maxChunk), remaining);
 
     const target = pickTarget();
     const added = addToStat(target, Math.max(1, chunk)); // ensure progress

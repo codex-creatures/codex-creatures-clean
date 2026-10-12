@@ -19,7 +19,7 @@
 //   Primaries ignored → near floor
 
 import type { Rarity } from "../budgets";
-import type { ItemKey, StatKey } from "../ceilings";
+import type { ItemKey } from "../ceilings";
 import type { ArmorKey } from "../armor";
 import { PRIMARY_STATS_BY_ITEMKEY } from "../itemPrimaries";
 import { ARMOR_PRIMARY_STATS } from "../armor";

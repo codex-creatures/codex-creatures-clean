@@ -4,6 +4,8 @@ import type { Drop } from "@/lib/types";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isSellableItem } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
+import { clearRegistry } from "@/lib/barcodeRegistry";
+import { CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 
 const STORAGE_KEY = "codex_creatures_save_v2";
 
@@ -53,19 +55,26 @@ export function useGameState() {
   const [showSellConfirm, setShowSellConfirm]   = useState(false);
 
   // ── Persistence ──────────────────────────────────────
+  // Don't save until the load has been applied. Otherwise the first save
+  // writes the empty initial state, and under StrictMode (dev) the second
+  // mount-load then reads that empty save back — wiping progress on refresh.
+  const [hydrated, setHydrated] = useState(false);
+
   useEffect(() => {
     const saved = safeLoad();
-    if (!saved) return;
-    setGold(saved.gold);
-    setInventory(saved.inventory);
-    setScanCounts(saved.scanCounts);
-    setFavoriteIds(new Set(saved.favoriteIds ?? []));
+    if (saved) {
+      setGold(saved.gold);
+      setInventory(saved.inventory);
+      setScanCounts(saved.scanCounts);
+      setFavoriteIds(new Set(saved.favoriteIds ?? []));
+    }
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!hydrated) return;
     safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds) });
-  }, [gold, inventory, scanCounts, favoriteIds]);
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds]);
 
   // ── Inventory filters ─────────────────────────────────
   const creaturesOnly   = useMemo(() => inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature"), [inventory]);
@@ -96,11 +105,17 @@ export function useGameState() {
 
   // ── Discovery progress ────────────────────────────────
   const discoveredCreatures = useMemo(
-    () => new Set(inventory.filter(isCreatureDrop).map((d) => d.name)).size,
+    // Count roster creatures only; older saves stored names instead of ids.
+    () => new Set(
+      inventory.filter(isCreatureDrop)
+        .map((d) => d.creatureId ?? CREATURE_TEMPLATES.find((c) => c.name === d.name)?.id)
+        .filter(Boolean)
+    ).size,
     [inventory]
   );
   const discoveredItems = useMemo(
-    () => new Set(inventory.filter(isItemDrop).map((d) => d.itemKey ?? d.name)).size,
+    // Only weapons/armour count — TOTAL_ITEMS doesn't include materials/consumables.
+    () => new Set(inventory.filter(isSellableItem).map((d) => d.itemKey ?? d.armorKey ?? d.name)).size,
     [inventory]
   );
 
@@ -133,10 +148,6 @@ export function useGameState() {
     setLastDrop(drop);
     setInventory((prev) => [drop, ...prev]);
     if (isRewardDrop(drop)) setGold((g) => g + drop.amount);
-  }
-
-  function addGold(amount: number) {
-    setGold((g) => g + amount);
   }
 
   function updateScanCount(code: string, count: number) {
@@ -184,13 +195,23 @@ export function useGameState() {
     setSellMode(false);
   }
 
+  // "New player": wipes this player's progress but keeps the barcode
+  // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
     setInventory([]);
     setGold(0);
     setScanCounts({});
+    setFavoriteIds(new Set());
     setLastDrop(null);
     setSellMode(false);
     setSelectedForSale(new Set());
+  }
+
+  // "Global reset": every barcode rolls fresh again, and previously scanned
+  // barcodes count as new. Players keep what they already own.
+  function globalReset() {
+    clearRegistry();
+    setScanCounts({});
   }
 
   return {
@@ -203,8 +224,8 @@ export function useGameState() {
     discoveredCreatures, discoveredItems,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
-    addDrop, addGold, updateScanCount,
+    addDrop, updateScanCount,
     toggleFavorite, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };
 }

@@ -7,14 +7,8 @@ import {
   type ArmorKey,
   type ArmorStatBlock,
 } from "./armor";
-
-/**
- * LOCKED V1 roll rules (same as weapons)
- */
-const chunkMinPct = 0.05;
-const chunkMaxPct = 0.2;
-const chaosPct = 0.2;
-const weightExponent = 0.6;
+// LOCKED V1 roll rules (same as weapons)
+import { CHUNK_MIN_PCT, CHUNK_MAX_PCT, CHAOS_PCT, WEIGHT_EXPONENT } from "./rollConfig";
 
 function sumStats(s: ArmorStatBlock): number {
   return ARMOR_STAT_KEYS.reduce((acc, k) => acc + s[k], 0);
@@ -58,7 +52,10 @@ export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => nu
   if (!ceilings) throw new Error(`Missing armor ceilings for key=${armorKey} rarity=${rarity}`);
 
   const maxCapacity = ARMOR_STAT_KEYS.reduce((sum, k) => sum + ceilings[k], 0);
-  const effectiveBudget = Math.min(budget, maxCapacity);
+  if (maxCapacity < budget) {
+    throw new Error(`Armor ceilings for key=${armorKey} rarity=${rarity} sum to ${maxCapacity}, below budget ${budget}`);
+  }
+  const effectiveBudget = budget;
 
   const stats: ArmorStatBlock = { mDef: 0, rDef: 0, agility: 0, hp: 0 };
   let remaining = effectiveBudget;
@@ -69,8 +66,8 @@ export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => nu
   const pickTarget = (): keyof ArmorStatBlock => {
     const candidates = availableStats();
     if (candidates.length === 0) throw new Error("No room left to allocate.");
-    if (rng() < chaosPct) return pickUniform(rng, candidates);
-    return pickWeightedStat(rng, candidates, (k) => Math.pow(room(k), weightExponent));
+    if (rng() < CHAOS_PCT) return pickUniform(rng, candidates);
+    return pickWeightedStat(rng, candidates, (k) => Math.pow(room(k), WEIGHT_EXPONENT));
   };
 
   const addToStat = (k: keyof ArmorStatBlock, amt: number) => {
@@ -88,11 +85,11 @@ export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => nu
     if (room(k) > 0) addToStat(k, 1);
   }
 
-  // Chunk allocation
+  // Chunk allocation — fixed range from the TOTAL budget, clamped at the end
+  const minChunk = Math.ceil(budget * CHUNK_MIN_PCT);
+  const maxChunk = Math.ceil(budget * CHUNK_MAX_PCT);
   while (remaining > 0) {
-    const minChunk = Math.ceil(remaining * chunkMinPct);
-    const maxChunk = Math.ceil(remaining * chunkMaxPct);
-    const chunk = randIntInclusive(rng, minChunk, maxChunk);
+    const chunk = Math.min(randIntInclusive(rng, minChunk, maxChunk), remaining);
 
     const target = pickTarget();
     const added = addToStat(target, Math.max(1, chunk));

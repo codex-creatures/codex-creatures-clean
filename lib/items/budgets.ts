@@ -4,9 +4,9 @@ export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 export const RARITY_BUDGETS = {
   common: 60,
   uncommon: 80,
-  rare: 110,
-  epic: 140,
-  legendary: 170,
+  rare: 100,
+  epic: 120,
+  legendary: 150,
 } as const;
 // used for rolling rarity
 export const RARITY_WEIGHTS = {

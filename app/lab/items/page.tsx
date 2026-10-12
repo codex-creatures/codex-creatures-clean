@@ -19,25 +19,6 @@ function emptyStats(): StatBlock {
 }
 
 function sumStats(s: StatBlock): number {
-  function getHighestStat(s: StatBlock) {
-    let bestKey = STAT_KEYS[0];
-    let bestVal = s[bestKey];
-
-    for (const k of STAT_KEYS) {
-      if (s[k] > bestVal) {
-        bestVal = s[k];
-        bestKey = k;
-      }
-    }
-
-    // handle ties (optional): show all tied
-    const tied = STAT_KEYS.filter((k) => s[k] === bestVal);
-    return { bestVal, tied };
-  }
-
-  function getZeroStats(s: StatBlock) {
-    return STAT_KEYS.filter((k) => s[k] === 0);
-  }
   return STAT_KEYS.reduce((acc, k) => acc + s[k], 0);
 }
 function getHighestStat(s: StatBlock) {
@@ -148,6 +129,7 @@ export default function Page() {
         <label>
           Rarity:&nbsp;
           <select value={rarity} onChange={(e) => setRarity(e.target.value as Rarity)}>
+            <option value="common">common</option>
             <option value="uncommon">uncommon</option>
             <option value="rare">rare</option>
             <option value="epic">epic</option>
