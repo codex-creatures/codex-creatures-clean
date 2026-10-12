@@ -75,7 +75,7 @@ export default function BalanceLab() {
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>⚖️ Balance Lab</h1>
         <p style={{ margin: "4px 0 20px", fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
           Thousands of automatic 1v1 duels using the real item rolls, creatures and combat engine.
-          The auto-battler always uses its biggest affordable skill in neutral stance — real battles are 3v3 with swaps, so treat these as signals, not verdicts.
+          The auto-battler plays in neutral stance: melee and ranged creatures use their biggest affordable move of their own type; hybrids use whichever move does the most damage against the opponent. Real battles are 3v3 with swaps, so treat these as signals, not verdicts.
         </p>
 
         {/* ── Tier list ───────────────────────────────────── */}

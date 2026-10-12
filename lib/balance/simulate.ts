@@ -3,7 +3,7 @@
 // Uses the real item rollers, creature data and combat engine — no copies.
 //
 // NOTE: real battles are 3v3 with swapping; these are single 1v1 duels using
-// the engine's simple auto-battle (biggest affordable hit, neutral stance).
+// the engine's auto-battle (chooseSkill in engine.ts, neutral stance).
 
 import type { Rarity } from "../items/budgets";
 import { ITEM_KEYS } from "../items/ceilings";
