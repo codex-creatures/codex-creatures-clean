@@ -144,6 +144,11 @@ export function calcDamage(
   return { damage: finalDmg, braceBlocked, braceFailed };
 }
 
+// ── Energy & precise hits ───────────────────────────────
+export const MAX_ENERGY = 100;
+export const ENERGY_REGEN = 30;     // after each attack
+export const PRECISE_CHANCE = 0.05; // precise hits ignore 25% of defence
+
 // ── Auto-battle move choice ─────────────────────────────
 export type CombatStyle = "melee" | "ranged" | "hybrid";
 
@@ -152,7 +157,10 @@ export type CombatStyle = "melee" | "ranged" | "hybrid";
 export const HYBRID_RATIO = 0.6;
 
 export function combatStyle(f: Fighter): CombatStyle {
-  const { atk, rng } = f.proficiency;
+  return styleFromProficiency(f.proficiency);
+}
+
+export function styleFromProficiency({ atk, rng }: { atk: number; rng: number }): CombatStyle {
   const hi = Math.max(atk, rng);
   const lo = Math.min(atk, rng);
   if (hi === 0 || lo / hi >= HYBRID_RATIO) return "hybrid";
@@ -199,7 +207,7 @@ export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): 
       const skill = chooseSkill(atk, def);
       if (!skill) continue;
 
-      const precise      = Math.random() < 0.05;
+      const precise      = Math.random() < PRECISE_CHANCE;
       const energyBefore = atk.energy;
       const { damage: dmg, braceBlocked, braceFailed } = calcDamage(skill, atk, def, precise);
       atk.energy -= skill.energyCost;
@@ -208,7 +216,7 @@ export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): 
       def.hp = Math.max(0, def.hp - dmg);
 
       // Energy regen end of turn
-      atk.energy = Math.min(100, atk.energy + 30);
+      atk.energy = Math.min(MAX_ENERGY, atk.energy + ENERGY_REGEN);
 
       logs.push({ turn: round, attacker: atk.name, defender: def.name, skill, stance: atk.stance, defenderStance: def.stance, rawDamage: skill.damage, finalDamage: dmg, precise, braceBlocked, braceFailed, attackerEnergyBefore: energyBefore, attackerEnergyAfter: atk.energy, defenderHpBefore: hpBefore, defenderHpAfter: def.hp, stanceChosen: atk.stance });
     }

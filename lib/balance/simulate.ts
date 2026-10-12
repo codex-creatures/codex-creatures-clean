@@ -2,17 +2,19 @@
 // Automated 1v1 battle simulations for balancing.
 // Uses the real item rollers, creature data and combat engine — no copies.
 //
-// NOTE: real battles are 3v3 with swapping; these are single 1v1 duels using
+// Tests 1–2 are 1v1 duels; test 3 is 3v3 with swapping (combat/teamBattle.ts). All use
 // the engine's auto-battle (chooseSkill in engine.ts, neutral stance).
 
 import type { Rarity } from "../items/budgets";
-import { ITEM_KEYS } from "../items/ceilings";
+import { ITEM_KEYS, type ItemKey } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
+import { PRIMARY_STATS_BY_ITEMKEY } from "../items/itemPrimaries";
 import { rollItemStats } from "../items/rollItemStats";
 import { rollArmorStats } from "../items/rollArmorStats";
 import { CREATURE_TEMPLATES, type CreatureTemplate } from "../creatures/creatureData";
-import { runBattle, effectiveAgil, type Fighter } from "../combat/engine";
+import { runBattle, effectiveAgil, styleFromProficiency, type CombatStyle, type Fighter } from "../combat/engine";
 import { buildFighter } from "../combat/loadout";
+import { runTeamBattle } from "../combat/teamBattle";
 
 export const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 export const MAX_TURNS = 60;
@@ -28,9 +30,18 @@ function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Weapons a player would give each creature type: ones whose primary stats
+// include that damage type. Hybrids can use anything.
+const FITTED_WEAPONS: Record<CombatStyle, ItemKey[]> = {
+  melee:  ITEM_KEYS.filter((k) => PRIMARY_STATS_BY_ITEMKEY[k].includes("melee")),
+  ranged: ITEM_KEYS.filter((k) => PRIMARY_STATS_BY_ITEMKEY[k].includes("ranged")),
+  hybrid: ITEM_KEYS,
+};
+
 // Random weapon + armour of the given rarity, rolled with the real rollers.
-export function rollGear(rarity: Rarity): Gear {
-  const weaponKey = pick(ITEM_KEYS);
+// Pass a creature to give it a weapon that suits its type ("fitted").
+export function rollGear(rarity: Rarity, fitTo?: CreatureTemplate): Gear {
+  const weaponKey = pick(fitTo ? FITTED_WEAPONS[styleFromProficiency(fitTo.proficiency)] : ITEM_KEYS);
   const armorKey = pick(ARMOR_KEYS);
   return {
     weaponKey,
@@ -80,7 +91,9 @@ export function duel(
 // "mirror": both creatures get the SAME gear each fight → measures the
 //           creature itself (base HP, skills, proficiency %).
 // "random": each side rolls its own gear → realistic roll/fit variance.
-export type GearMode = "mirror" | "random" | "none";
+// "fitted": each side rolls its own gear, with a weapon that suits its type
+//           (what a player would equip).
+export type GearMode = "fitted" | "mirror" | "random" | "none";
 
 export type TierListOptions = {
   gearRarity: Rarity;
@@ -145,6 +158,7 @@ export function runTierList(
         let gA: Gear | null = null, gB: Gear | null = null;
         if (opts.gearMode === "mirror") { gA = rollGear(opts.gearRarity); gB = gA; }
         if (opts.gearMode === "random") { gA = rollGear(opts.gearRarity); gB = rollGear(opts.gearRarity); }
+        if (opts.gearMode === "fitted") { gA = rollGear(opts.gearRarity, A); gB = rollGear(opts.gearRarity, B); }
 
         const r = duel(A, gA, B, gB);
         totalFights++;
@@ -255,4 +269,122 @@ export function runStatValue(
   }).sort((a, b) => b.gain - a.gain);
 
   return { baselineWinPct: baseline.winPct, rows };
+}
+
+// ── Test 3: 3v3 team battles ──────────────────────────────────────
+// Random teams of 3, gear per creature. Measures how often the team with
+// rarer creatures wins, and whether swapping (good play) beats not swapping.
+export type TeamSimOptions = {
+  gearRarity: Rarity;
+  gearMode: "fitted" | "random";
+  battles: number;
+  teamSize?: number;
+};
+
+export type TeamSimResult = {
+  battles: number;
+  avgRounds: number;
+  drawPct: number;
+  swapsPerBattle: number;
+  minDamageHitPct: number;
+  swapperWinPct: number;      // same teams: swapping side vs side that never swaps
+  smartWinPct: number;        // same teams: full play vs no swaps + next-in-order replacements
+  strongerTeamWinPct: number; // team with higher total creature rarity (ties excluded)
+  byRarityGap: { gap: number; winPct: number; battles: number }[];
+  creatures: { id: string; name: string; rarity: Rarity; battles: number; winPct: number }[];
+};
+
+const RARITY_SCORE: Record<Rarity, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4 };
+
+function randomTeam(size: number, creatures: CreatureTemplate[]): CreatureTemplate[] {
+  const pool = [...creatures];
+  const team: CreatureTemplate[] = [];
+  while (team.length < size && pool.length) team.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  return team;
+}
+
+export function runTeamBattles(
+  opts: TeamSimOptions,
+  creatures: CreatureTemplate[] = CREATURE_TEMPLATES,
+): TeamSimResult {
+  const size = opts.teamSize ?? 3;
+  let rounds = 0, draws = 0, swaps = 0, hits = 0, minHits = 0;
+  let swapperWins = 0, swapperGames = 0, smartWins = 0, smartGames = 0, strongerWins = 0, strongerGames = 0;
+  const gapAcc: Record<number, { w: number; n: number }> = {};
+  const cAcc: Record<string, { w: number; n: number }> = {};
+
+  const equip = (team: CreatureTemplate[]): Fighter[] =>
+    team.map((c) => {
+      const g = rollGear(opts.gearRarity, opts.gearMode === "fitted" ? c : undefined);
+      return buildFighter(c, g.weapon, g.armor);
+    });
+
+  for (let i = 0; i < opts.battles; i++) {
+    const tA = randomTeam(size, creatures), tB = randomTeam(size, creatures);
+    const fA = equip(tA), fB = equip(tB);
+
+    // Main battle: both sides play properly.
+    const r = runTeamBattle(fA, fB, { swapsA: true, swapsB: true });
+    rounds += r.rounds;
+    swaps += r.swapsA + r.swapsB;
+    hits += r.hits;
+    minHits += r.minDamageHits;
+    if (r.winner === "draw") draws++;
+
+    const scoreA = tA.reduce((s, c) => s + RARITY_SCORE[c.rarity], 0);
+    const scoreB = tB.reduce((s, c) => s + RARITY_SCORE[c.rarity], 0);
+    const gap = Math.max(-6, Math.min(6, scoreA - scoreB));
+    gapAcc[gap] ??= { w: 0, n: 0 };
+    gapAcc[gap].n++;
+    if (r.winner === "A") gapAcc[gap].w++;
+    if (scoreA !== scoreB) {
+      strongerGames++;
+      if ((scoreA > scoreB && r.winner === "A") || (scoreB > scoreA && r.winner === "B")) strongerWins++;
+    }
+    for (const [team, won] of [[tA, r.winner === "A"], [tB, r.winner === "B"]] as const) {
+      for (const c of team) {
+        cAcc[c.id] ??= { w: 0, n: 0 };
+        cAcc[c.id].n++;
+        if (won) cAcc[c.id].w++;
+      }
+    }
+
+    // Skill check: same teams and gear, only one side allowed to swap.
+    const s1 = runTeamBattle(fA, fB, { swapsA: true, swapsB: false });
+    const s2 = runTeamBattle(fA, fB, { swapsA: false, swapsB: true });
+    for (const [res, swapper] of [[s1, "A"], [s2, "B"]] as const) {
+      if (res.winner === "draw") continue;
+      swapperGames++;
+      if (res.winner === swapper) swapperWins++;
+    }
+
+    // Full play vs no swaps AND next-in-order replacements — the total value
+    // of in-battle decisions.
+    const p1 = runTeamBattle(fA, fB, { swapsA: true, swapsB: false, smartReplaceB: false });
+    const p2 = runTeamBattle(fA, fB, { swapsA: false, swapsB: true, smartReplaceA: false });
+    for (const [res, smart] of [[p1, "A"], [p2, "B"]] as const) {
+      if (res.winner === "draw") continue;
+      smartGames++;
+      if (res.winner === smart) smartWins++;
+    }
+  }
+
+  const pct = (n: number, d: number) => (d ? (n / d) * 100 : 0);
+  return {
+    battles: opts.battles,
+    avgRounds: rounds / opts.battles,
+    drawPct: pct(draws, opts.battles),
+    swapsPerBattle: swaps / opts.battles,
+    minDamageHitPct: pct(minHits, hits),
+    swapperWinPct: pct(swapperWins, swapperGames),
+    smartWinPct: pct(smartWins, smartGames),
+    strongerTeamWinPct: pct(strongerWins, strongerGames),
+    byRarityGap: Object.entries(gapAcc)
+      .map(([g, v]) => ({ gap: Number(g), winPct: pct(v.w, v.n), battles: v.n }))
+      .sort((a, b) => a.gap - b.gap),
+    creatures: creatures
+      .filter((c) => cAcc[c.id])
+      .map((c) => ({ id: c.id, name: c.name, rarity: c.rarity, battles: cAcc[c.id].n, winPct: pct(cAcc[c.id].w, cAcc[c.id].n) }))
+      .sort((a, b) => b.winPct - a.winPct),
+  };
 }

@@ -5,16 +5,17 @@ import { useState } from "react";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import {
-  RARITIES, MAX_TURNS, runTierList, runStatValue,
-  type GearMode, type TierListResult, type StatValueRow,
+  RARITIES, MAX_TURNS, runTierList, runStatValue, runTeamBattles,
+  type GearMode, type TierListResult, type StatValueRow, type TeamSimResult,
 } from "@/lib/balance/simulate";
 
 const BG = "#0a0a12", PANEL = "#0f0f1e", BORDER = "rgba(255,255,255,0.08)";
 const TEXT = "rgba(255,255,255,0.88)", MUTED = "rgba(255,255,255,0.45)";
 
 const GEAR_MODES: { key: GearMode; label: string; help: string }[] = [
+  { key: "fitted", label: "Fitted gear", help: "Each creature gets its own gear, with a weapon that suits its type — what a player would equip." },
   { key: "mirror", label: "Same gear",   help: "Both creatures get identical gear each fight — measures the creature itself." },
-  { key: "random", label: "Random gear", help: "Each side rolls its own gear — realistic roll and fit luck." },
+  { key: "random", label: "Random gear", help: "Each side rolls any weapon, even ones that don't suit the creature." },
   { key: "none",   label: "No gear",     help: "Creatures fight bare — base HP, skills and nothing else." },
 ];
 
@@ -50,7 +51,7 @@ const td: React.CSSProperties = { textAlign: "right", padding: "5px 8px", fontVa
 
 export default function BalanceLab() {
   // Tier list
-  const [gearMode, setGearMode]     = useState<GearMode>("random");
+  const [gearMode, setGearMode]     = useState<GearMode>("fitted");
   const [gearRarity, setGearRarity] = useState<Rarity>("epic");
   const [fights, setFights]         = useState(200);
   const [tier, setTier]             = useState<TierListResult | null>(null);
@@ -60,6 +61,11 @@ export default function BalanceLab() {
   const [svRarity, setSvRarity] = useState<Rarity>("epic");
   const [bonus, setBonus]       = useState(10);
   const [sv, setSv]             = useState<{ baselineWinPct: number; rows: StatValueRow[] } | null>(null);
+
+  // Team battles
+  const [tmRarity, setTmRarity] = useState<Rarity>("epic");
+  const [tmBattles, setTmBattles] = useState(3000);
+  const [tm, setTm] = useState<TeamSimResult | null>(null);
 
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -206,6 +212,66 @@ export default function BalanceLab() {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </section>
+
+        {/* ── Team battles ────────────────────────────────── */}
+        <section style={{ background: PANEL, border: `1px solid ${BORDER}`, borderRadius: 12, padding: 16, marginTop: 24 }}>
+          <h2 style={{ margin: "0 0 4px", fontSize: 17 }}>3 · Team battles (3v3 with swapping)</h2>
+          <p style={{ margin: "0 0 14px", fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
+            Random teams of 3 with fitted gear. Swapping uses your turn (the opponent gets a free hit on the incoming creature) and restores 50% of the leaving creature&apos;s missing energy.
+            The auto-battler swaps out of clearly losing matchups and sends in the best matchup after a faint.
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Gear rarity</span>
+            {RARITIES.map((r) => <Chip key={r} active={tmRarity === r} onClick={() => setTmRarity(r)}>{r}</Chip>)}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 12, color: MUTED, width: 70 }}>Battles</span>
+            {[1000, 3000, 10000].map((n) => <Chip key={n} active={tmBattles === n} onClick={() => setTmBattles(n)}>{n.toLocaleString()}</Chip>)}
+          </div>
+          <button
+            disabled={!!busy}
+            onClick={() => run("tm", () => setTm(runTeamBattles({ gearRarity: tmRarity, gearMode: "fitted", battles: tmBattles })))}
+            style={{ padding: "10px 22px", borderRadius: 8, border: "none", background: "#f5c542", color: "#1a1a1a", fontWeight: 700, cursor: busy ? "wait" : "pointer" }}
+          >
+            {busy === "tm" ? "Running…" : "Run team battles"}
+          </button>
+
+          {tm && (
+            <div style={{ marginTop: 18 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+                <Stat label="Battle length" value={`${fmt(tm.avgRounds)} rounds`} hint="Rounds until one team is wiped" />
+                <Stat label="Swaps" value={`${tm.swapsPerBattle.toFixed(2)} / battle`} hint="Voluntary swaps by both teams" />
+                <Stat label="1-damage hits" value={`${fmt(tm.minDamageHitPct)}%`} hint="Hits fully absorbed by defence (counters at work)" />
+                <Stat label="Good play wins" value={`${fmt(tm.smartWinPct)}%`} hint="Same teams: swaps + best send-ins vs no swaps + send in next in line. 50% = decisions don't matter" />
+                <Stat label="Swapping wins" value={`${fmt(tm.swapperWinPct)}%`} hint="Same teams: swapping side vs side that never swaps" />
+                <Stat label="Rarer team wins" value={`${fmt(tm.strongerTeamWinPct)}%`} hint="Team with higher total creature rarity (ties excluded)" />
+              </div>
+
+              <h3 style={{ fontSize: 13, margin: "0 0 6px" }}>Win % by team rarity gap <span style={{ color: MUTED, fontWeight: 400 }}>(rarity points: common 0 … legendary 4, summed over the team)</span></h3>
+              <div style={{ overflowX: "auto", marginBottom: 18 }}>
+                <table style={{ borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead><tr><th style={{ ...th, textAlign: "left" }}>Gap</th>{tm.byRarityGap.map((g) => <th key={g.gap} style={th}>{g.gap > 0 ? `+${g.gap}` : g.gap}</th>)}</tr></thead>
+                  <tbody>
+                    <tr>
+                      <td style={{ ...td, textAlign: "left", color: MUTED }}>Win %</td>
+                      {tm.byRarityGap.map((g) => <td key={g.gap} style={{ ...td, background: heat(g.winPct) }}>{fmt(g.winPct)}%</td>)}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 style={{ fontSize: 13, margin: "0 0 6px" }}>Win % of teams containing each creature</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 4 }}>
+                {tm.creatures.map((c) => (
+                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", borderRadius: 6, background: heat(c.winPct), fontSize: 13 }}>
+                    <span style={{ color: rc(c.rarity), fontWeight: 600 }}>{c.name}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>{fmt(c.winPct)}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
