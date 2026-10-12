@@ -505,3 +505,61 @@ export function runGearShowdown(opts: ShowdownOptions): ShowdownRow[] {
   }
   return rows;
 }
+
+// ── Test 5: roll quality percentile showdown ──────────────────────
+// "Quality" = how well an item suits THAT creature (its loadout score vs
+// typical opponents). For each creature we roll many suitable items of a
+// rarity, rank them by quality, and draw from a percentile window.
+export type QualityWindow = { rarity: Rarity; from: number; to: number }; // percentiles 0–100
+
+type GearPool = { weapons: Record<string, number>[]; armors: Record<string, number>[] };
+
+const QUALITY_SAMPLE = 300; // items rolled per creature, rarity and slot
+
+export function rankedPool(c: CreatureTemplate, rarity: Rarity, refs: Fighter[]): GearPool {
+  const fitted = FITTED_WEAPONS[styleFromProficiency(c.proficiency)];
+  const weapons = Array.from({ length: QUALITY_SAMPLE }, () => rollWeapon(rarity, fitted).stats)
+    .map((w) => ({ w, s: loadoutScore(buildFighter(c, w), refs) }))
+    .sort((a, b) => a.s - b.s)
+    .map((x) => x.w);
+  // Score armour alongside a median-quality weapon of the same rarity.
+  const medianWeapon = weapons[Math.floor(weapons.length / 2)];
+  const armors = Array.from({ length: QUALITY_SAMPLE }, () => rollArmor(rarity).stats)
+    .map((a) => ({ a, s: loadoutScore(buildFighter(c, medianWeapon, a), refs) }))
+    .sort((x, y) => x.s - y.s)
+    .map((x) => x.a);
+  return { weapons, armors };
+}
+
+function fromWindow<T>(sorted: T[], from: number, to: number): T {
+  const lo = Math.floor((from / 100) * (sorted.length - 1));
+  const hi = Math.ceil((to / 100) * (sorted.length - 1));
+  return sorted[lo + Math.floor(Math.random() * (hi - lo + 1))];
+}
+
+export type QualityShowdownOptions = { band: CreatureBand; a: QualityWindow; b: QualityWindow; battles: number };
+
+export function runQualityShowdown(opts: QualityShowdownOptions): { winPctA: number; drawPct: number } {
+  const creatures = creaturesInBand(opts.band);
+  const refs = referenceOpponents(creatures, "epic");
+  const pools = new Map<string, { a: GearPool; b: GearPool }>();
+  for (const c of creatures) {
+    pools.set(c.id, { a: rankedPool(c, opts.a.rarity, refs), b: rankedPool(c, opts.b.rarity, refs) });
+  }
+
+  const equip = (team: CreatureTemplate[], side: "a" | "b") => team.map((c) => {
+    const pool = pools.get(c.id)![side];
+    const win = opts[side];
+    return buildFighter(c, fromWindow(pool.weapons, win.from, win.to), fromWindow(pool.armors, win.from, win.to));
+  });
+
+  let wins = 0, decided = 0, draws = 0;
+  for (let i = 0; i < opts.battles; i++) {
+    const team = randomTeam(3, creatures);
+    const order = () => [...team].sort(() => Math.random() - 0.5);
+    const r = runTeamBattle(equip(order(), "a"), equip(order(), "b"), { swapsA: true, swapsB: true });
+    if (r.winner === "draw") draws++;
+    else { decided++; if (r.winner === "A") wins++; }
+  }
+  return { winPctA: decided ? (wins / decided) * 100 : 0, drawPct: (draws / opts.battles) * 100 };
+}
