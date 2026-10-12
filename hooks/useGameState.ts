@@ -5,15 +5,20 @@ import { isRewardDrop, isItemDrop, isCreatureDrop, isSellableItem } from "@/lib/
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
-import { CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 
 const STORAGE_KEY = "codex_creatures_save_v2";
+
+// What a creature has equipped — inventory drop ids.
+export type Loadout = { weaponId?: string; armorId?: string };
+export type EquipSlot = "weapon" | "armor";
 
 type SaveState = {
   gold: number;
   inventory: Drop[];
   scanCounts: Record<string, number>;
   favoriteIds?: string[];
+  equipment?: Record<string, Loadout>; // creature drop id → loadout
 };
 
 function safeLoad(): SaveState | null {
@@ -27,6 +32,7 @@ function safeLoad(): SaveState | null {
       inventory:  Array.isArray(parsed.inventory) ? parsed.inventory : [],
       scanCounts: parsed.scanCounts && typeof parsed.scanCounts === "object" ? parsed.scanCounts : {},
       favoriteIds: Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : [],
+      equipment:  parsed.equipment && typeof parsed.equipment === "object" ? parsed.equipment : {},
     };
   } catch {
     return null;
@@ -39,14 +45,15 @@ function safeSave(state: SaveState) {
   } catch {}
 }
 
-export type TabKey = "all" | "creatures" | "weapons" | "armor" | "materials" | "consumables";
+export type TabKey = "all" | "roster" | "creatures" | "weapons" | "armor" | "materials" | "consumables";
 
 export function useGameState() {
   const [gold, setGold]               = useState(0);
   const [inventory, setInventory]     = useState<Drop[]>([]);
   const [scanCounts, setScanCounts]   = useState<Record<string, number>>({});
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [lastDrop, setLastDrop]       = useState<Drop | null>(null);
+  const [equipment, setEquipment]     = useState<Record<string, Loadout>>({});
+  const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>("all");
 
   // Sell mode
@@ -67,14 +74,32 @@ export function useGameState() {
       setInventory(saved.inventory);
       setScanCounts(saved.scanCounts);
       setFavoriteIds(new Set(saved.favoriteIds ?? []));
+      setEquipment(saved.equipment ?? {});
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds) });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment]);
+
+  // ── Equipment ─────────────────────────────────────────
+  // item drop id → creature drop id it's equipped on
+  const equippedOn = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const [creatureId, l] of Object.entries(equipment)) {
+      if (l.weaponId) map.set(l.weaponId, creatureId);
+      if (l.armorId)  map.set(l.armorId, creatureId);
+    }
+    return map;
+  }, [equipment]);
+
+  // Items that can't be sold: favourited or currently equipped.
+  const lockedIds = useMemo(
+    () => new Set([...favoriteIds, ...equippedOn.keys()]),
+    [favoriteIds, equippedOn]
+  );
 
   // ── Inventory filters ─────────────────────────────────
   const creaturesOnly   = useMemo(() => inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature"), [inventory]);
@@ -82,18 +107,22 @@ export function useGameState() {
   const armorOnly       = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "armor"), [inventory]);
   const materialsOnly   = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "material"), [inventory]);
   const consumablesOnly = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "consumable"), [inventory]);
+  // Roster = favourited creatures.
+  const rosterOnly      = useMemo(() => creaturesOnly.filter((d) => favoriteIds.has(d.id)), [creaturesOnly, favoriteIds]);
 
   const tabCounts = useMemo(() => ({
     all:         inventory.length,
+    roster:      rosterOnly.length,
     creatures:   creaturesOnly.length,
     weapons:     weaponsOnly.length,
     armor:       armorOnly.length,
     materials:   materialsOnly.length,
     consumables: consumablesOnly.length,
-  }), [inventory, creaturesOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
+  }), [inventory, rosterOnly, creaturesOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
 
   const filteredInventory = useMemo(() => {
     switch (activeTab) {
+      case "roster":      return rosterOnly;
       case "creatures":   return creaturesOnly;
       case "weapons":     return weaponsOnly;
       case "armor":       return armorOnly;
@@ -101,14 +130,14 @@ export function useGameState() {
       case "consumables": return consumablesOnly;
       default:            return inventory;
     }
-  }, [activeTab, inventory, creaturesOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
+  }, [activeTab, inventory, rosterOnly, creaturesOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
 
   // ── Discovery progress ────────────────────────────────
   const discoveredCreatures = useMemo(
     // Count roster creatures only; older saves stored names instead of ids.
     () => new Set(
       inventory.filter(isCreatureDrop)
-        .map((d) => d.creatureId ?? CREATURE_TEMPLATES.find((c) => c.name === d.name)?.id)
+        .map((d) => findCreatureTemplate(d.creatureId, d.name)?.id)
         .filter(Boolean)
     ).size,
     [inventory]
@@ -121,8 +150,8 @@ export function useGameState() {
 
   // ── Sell helpers ──────────────────────────────────────
   const sellableInView = useMemo(
-    () => filteredInventory.filter((d) => isSellableItem(d) && !favoriteIds.has(d.id)),
-    [filteredInventory, favoriteIds]
+    () => filteredInventory.filter((d) => isSellableItem(d) && !lockedIds.has(d.id)),
+    [filteredInventory, lockedIds]
   );
 
   const sellTotal = useMemo(() => {
@@ -158,6 +187,20 @@ export function useGameState() {
     setFavoriteIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  // Put an item on a creature (itemId = null to unequip). An item can only be
+  // on one creature, so equipping it here removes it from anyone else.
+  function equipItem(creatureId: string, slot: EquipSlot, itemId: string | null) {
+    const key = slot === "weapon" ? "weaponId" : "armorId";
+    setEquipment((prev) => {
+      const next: Record<string, Loadout> = {};
+      for (const [cid, l] of Object.entries(prev)) {
+        next[cid] = itemId && l[key] === itemId ? { ...l, [key]: undefined } : l;
+      }
+      next[creatureId] = { ...next[creatureId], [key]: itemId ?? undefined };
       return next;
     });
   }
@@ -202,6 +245,7 @@ export function useGameState() {
     setGold(0);
     setScanCounts({});
     setFavoriteIds(new Set());
+    setEquipment({});
     setLastDrop(null);
     setSellMode(false);
     setSelectedForSale(new Set());
@@ -216,16 +260,17 @@ export function useGameState() {
 
   return {
     // State
-    gold, inventory, scanCounts, favoriteIds, lastDrop,
+    gold, inventory, scanCounts, favoriteIds, equipment, lastDrop,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
-    filteredInventory, tabCounts,
+    filteredInventory, tabCounts, equippedOn, lockedIds,
+    weaponsOnly, armorOnly,
     discoveredCreatures, discoveredItems,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
     addDrop, updateScanCount,
-    toggleFavorite, toggleSellMode, toggleSelectItem,
+    toggleFavorite, equipItem, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };
 }

@@ -12,6 +12,7 @@ import { rollItemStats } from "@/lib/items/rollItemStats";
 import { rollArmorStats } from "@/lib/items/rollArmorStats";
 import { ITEM_META } from "@/lib/items/metadata";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { buildFighter } from "@/lib/combat/loadout";
 
 type SimWeapon = { id: string; name: string; rarity: Rarity; itemKey: string; stats: Record<string, number> };
 type SimArmor  = { id: string; name: string; rarity: Rarity; armorKey: string; stats: Record<string, number> };
@@ -46,17 +47,6 @@ function rollArmors(n: number): SimArmor[] {
     const meta     = ARMOR_META[armorKey];
     return { id: `a${i}`, name: meta?.name ?? armorKey, rarity, armorKey, stats: rolled.stats };
   });
-}
-
-function itemToStats(stats: Record<string, number>) {
-  return { atk: stats.melee ?? 0, rng: stats.ranged ?? 0, agil: stats.agility ?? 0, mdef: stats.mDef ?? 0, rdef: stats.rDef ?? 0, hp: stats.hp ?? 0 };
-}
-
-function buildFighter(creature: CreatureTemplate, weapon: SimWeapon, armor: SimArmor): Fighter {
-  const w = itemToStats(weapon.stats);
-  const a = itemToStats(armor.stats);
-  const totalHp = creature.baseHp + w.hp + a.hp;
-  return { name: creature.name, hp: totalHp, maxHp: totalHp, energy: 100, proficiency: creature.proficiency, skills: creature.skills, weapon: w, armor: a, stance: "neutral", elemental: null };
 }
 
 function toLive(f: Fighter): LiveFighter {
@@ -173,8 +163,8 @@ export default function SimulatorPage() {
 
   function startBattle() {
     if (!canSetup) return;
-    const f1 = buildFighter(p1Creature!, p1Weapon!, p1Armor!);
-    const f2 = buildFighter(p2Creature!, p2Weapon!, p2Armor!);
+    const f1 = buildFighter(p1Creature!, p1Weapon!.stats, p1Armor!.stats);
+    const f2 = buildFighter(p2Creature!, p2Weapon!.stats, p2Armor!.stats);
     setP1Live(toLive(f1));
     setP2Live(toLive(f2));
     setLog([]); setRound(0); setWinner(null);

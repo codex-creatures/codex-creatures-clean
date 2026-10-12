@@ -81,6 +81,11 @@ export const CREATURE_BY_ID: Record<string, CreatureTemplate> = Object.fromEntri
   CREATURE_TEMPLATES.map(c => [c.id, c])
 );
 
+// Template for a creature drop. Older saves stored only the name.
+export function findCreatureTemplate(creatureId?: string, name?: string): CreatureTemplate | undefined {
+  return (creatureId && CREATURE_BY_ID[creatureId]) || CREATURE_TEMPLATES.find(c => c.name === name);
+}
+
 export const CREATURES_BY_RARITY: Record<string, CreatureTemplate[]> = {
   common:    CREATURE_TEMPLATES.filter(c => c.rarity === "common"),
   uncommon:  CREATURE_TEMPLATES.filter(c => c.rarity === "uncommon"),
