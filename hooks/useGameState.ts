@@ -36,23 +36,29 @@ type SaveState = {
   equipment?: Record<string, Loadout>; // creature drop id → loadout
 };
 
-// Also used read-only by the battle screen.
+// Also used read-only by the battle and labyrinth screens. Everyone has
+// Klutz: he's added here (to new games and older saves), so every reader
+// sees him even before the game has saved him.
 export function loadSave(): SaveState | null {
   if (typeof window === "undefined") return null;
+  let parsed: Record<string, unknown> = {};
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return {
-      gold:       typeof parsed.gold === "number" ? parsed.gold : 0,
-      inventory:  Array.isArray(parsed.inventory) ? parsed.inventory : [],
-      scanCounts: parsed.scanCounts && typeof parsed.scanCounts === "object" ? parsed.scanCounts : {},
-      favoriteIds: Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : [],
-      equipment:  parsed.equipment && typeof parsed.equipment === "object" ? parsed.equipment : {},
-    };
-  } catch {
-    return null;
+    parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}") ?? {};
+  } catch {}
+  const inventory: Drop[] = Array.isArray(parsed.inventory) ? parsed.inventory : [];
+  const favoriteIds: string[] = Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : [];
+  if (!hasKlutz(inventory)) {
+    inventory.unshift(klutzDrop());
+    if (!favoriteIds.includes(KLUTZ_DROP_ID)) favoriteIds.push(KLUTZ_DROP_ID);
   }
+  const obj = (v: unknown) => (v && typeof v === "object" ? v : {});
+  return {
+    gold:       typeof parsed.gold === "number" ? parsed.gold : 0,
+    inventory,
+    scanCounts: obj(parsed.scanCounts) as Record<string, number>,
+    favoriteIds,
+    equipment:  obj(parsed.equipment) as Record<string, Loadout>,
+  };
 }
 
 function safeSave(state: SaveState) {
@@ -84,13 +90,9 @@ export function useGameState(initialTab: TabKey = "all") {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const saved = loadSave();
-    // Everyone has Klutz (added to older saves and new games).
-    const inv = saved?.inventory ?? [];
-    const favs = new Set(saved?.favoriteIds ?? []);
-    if (!hasKlutz(inv)) { inv.unshift(klutzDrop()); favs.add(KLUTZ_DROP_ID); }
-    setInventory(inv);
-    setFavoriteIds(favs);
+    const saved = loadSave(); // includes Klutz
+    setInventory(saved?.inventory ?? []);
+    setFavoriteIds(new Set(saved?.favoriteIds ?? []));
     if (saved) {
       setGold(saved.gold);
       setScanCounts(saved.scanCounts);

@@ -3,8 +3,8 @@
 //
 // - Entering costs ENTRY_FEE gold; your very first run is free, and its first
 //   room is a treasure with FIRST_TREASURE_GOLD in it.
-// - You take a party of PARTY_SIZE creatures: TEAM_SIZE fight, the rest wait
-//   in reserve. Team and reserves can only be changed between rooms.
+// - You take a party of up to PARTY_SIZE creatures (at least 1): the first
+//   TEAM_SIZE fight, the rest wait in reserve. Team and reserves can only be changed between rooms.
 // - HP carries over from room to room (energy is full at each fight).
 // - There are LAB_ROOMS rooms; the last is the boss. Every room has 2 doors,
 //   hidden from the player. Any room can come up again, but you never go
@@ -178,7 +178,7 @@ export type LabRun = {
   id: string;
   runNumber: number;           // 1 = your first ever run
   startedAt: string;
-  party: string[];             // creature drop ids (PARTY_SIZE)
+  party: string[];             // creature drop ids (1 to PARTY_SIZE)
   team: string[];              // the ones that fight (up to TEAM_SIZE)
   hp: Record<string, number>;  // share of max HP left, 0–1 (0 = knocked out)
   room: number;                // the room you're in, or about to choose (1-based)

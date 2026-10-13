@@ -257,7 +257,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
         <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
         <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
           {LAB_ROOMS} rooms, a boss in the last. Each room has two doors, and you can&apos;t see what&apos;s behind them.
-          Take {PARTY_SIZE} creatures: {TEAM_SIZE} fight, {PARTY_SIZE - TEAM_SIZE} wait in reserve (swap them between rooms).
+          Take up to {PARTY_SIZE} creatures: {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).
           Wounds carry from room to room. If your team falls you wake up back here — <b>you keep everything you found</b>.
         </p>
         <div style={{ fontSize: 12, color: MUTED, marginTop: 8 }}>
@@ -277,16 +277,17 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
         </div>
       )}
 
-      <SectionTitle>Your party — pick {PARTY_SIZE} ({party.length}/{PARTY_SIZE})</SectionTitle>
+      <SectionTitle>Your party — pick up to {PARTY_SIZE} ({party.length}/{PARTY_SIZE})</SectionTitle>
       <p style={{ fontSize: 12, color: MUTED, margin: "0 0 10px" }}>
         The first {TEAM_SIZE} you pick fight; the rest are reserves. ★ = roster.
       </p>
-      {owned.length < PARTY_SIZE ? (
-        <p style={{ color: MUTED, lineHeight: 1.5 }}>
-          You need {PARTY_SIZE} creatures for the labyrinth — you have {owned.length}.{" "}
-          <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>Scan</Link> or summon a few more first.
+      {owned.length < PARTY_SIZE && (
+        <p style={{ color: MUTED, lineHeight: 1.5, fontSize: 13 }}>
+          You have {owned.length} creature{owned.length === 1 ? "" : "s"}. You can go in with fewer than {PARTY_SIZE}, but it&apos;s much harder —{" "}
+          <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>scan</Link> or summon more to grow your party.
         </p>
-      ) : (
+      )}
+      {owned.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {owned.map((c) => {
             const slot = party.indexOf(c.id);
@@ -309,7 +310,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
         </div>
       )}
 
-      <button onClick={() => onBegin(party)} disabled={party.length !== PARTY_SIZE || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
+      <button onClick={() => onBegin(party)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
         🌀 Enter the labyrinth {free ? "(first time free)" : `(${ENTRY_FEE} gold)`}
       </button>
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
