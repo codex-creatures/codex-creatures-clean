@@ -21,7 +21,8 @@ type SaveState = {
   equipment?: Record<string, Loadout>; // creature drop id → loadout
 };
 
-function safeLoad(): SaveState | null {
+// Also used read-only by the battle screen.
+export function loadSave(): SaveState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -47,14 +48,14 @@ function safeSave(state: SaveState) {
 
 export type TabKey = "all" | "roster" | "creatures" | "weapons" | "armor" | "materials" | "consumables";
 
-export function useGameState() {
+export function useGameState(initialTab: TabKey = "all") {
   const [gold, setGold]               = useState(0);
   const [inventory, setInventory]     = useState<Drop[]>([]);
   const [scanCounts, setScanCounts]   = useState<Record<string, number>>({});
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [equipment, setEquipment]     = useState<Record<string, Loadout>>({});
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
-  const [activeTab, setActiveTab]     = useState<TabKey>("all");
+  const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
   // Sell mode
   const [sellMode, setSellMode]                 = useState(false);
@@ -68,7 +69,7 @@ export function useGameState() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const saved = safeLoad();
+    const saved = loadSave();
     if (saved) {
       setGold(saved.gold);
       setInventory(saved.inventory);
