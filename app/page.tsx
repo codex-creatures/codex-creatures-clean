@@ -8,6 +8,7 @@ import { TOTAL_CREATURES, TOTAL_ITEMS, RARITY_COLORS } from "@/lib/items/gameHel
 import { isRewardDrop, isItemDrop } from "@/lib/types";
 import SellConfirmModal from "@/components/SellConfirmModal";
 import InventoryList from "@/components/InventoryList";
+import Link from "next/link";
 
 export default function Home() {
   const game = useGameState();
@@ -92,8 +93,11 @@ export default function Home() {
         <ProgressBar label="Items discovered" current={game.discoveredItems} total={TOTAL_ITEMS} pct={itemPct} color="rgba(255,204,77,0.9)" />
       </div>
 
-      <div style={{ marginBottom: 16, fontWeight: 700, fontSize: 20 }}>
-        💰 {game.gold.toLocaleString()}g
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ fontWeight: 700, fontSize: 20 }}>💰 {game.gold.toLocaleString()}g</span>
+        <Link href="/battle" style={{ padding: "8px 16px", borderRadius: 8, background: "white", color: "black", fontWeight: 700, textDecoration: "none" }}>
+          ⚔️ Battle
+        </Link>
       </div>
 
       <input

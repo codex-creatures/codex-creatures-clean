@@ -7,6 +7,7 @@ import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { buildFighter, combatSummary } from "@/lib/combat/loadout";
+import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import type { EquipSlot, Loadout } from "@/hooks/useGameState";
 
 type Props = {
@@ -145,9 +146,10 @@ export default function CreatureDetailModal({
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
         <div style={{ marginBottom: 18, paddingRight: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
             <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: c.text, border: `1px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <span style={{ fontSize: 12, opacity: 0.45 }}>Creature</span>
+            {template && <TypeTags roles={creatureRoles(template.proficiency)} />}
           </div>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: c.text, lineHeight: 1.2 }}>{creature.name}</h2>
           {template?.flavour && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
@@ -195,6 +197,16 @@ export default function CreatureDetailModal({
         </button>
       </div>
     </div>
+  );
+}
+
+export function TypeTags({ roles }: { roles: string[] }) {
+  return (
+    <>
+      {roles.map((r) => (
+        <span key={r} title={ROLE_HINT[r]} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.75)" }}>{r}</span>
+      ))}
+    </>
   );
 }
 

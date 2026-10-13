@@ -21,7 +21,8 @@ type SaveState = {
   equipment?: Record<string, Loadout>; // creature drop id → loadout
 };
 
-function safeLoad(): SaveState | null {
+// Also used read-only by the battle screen.
+export function loadSave(): SaveState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -68,7 +69,7 @@ export function useGameState() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const saved = safeLoad();
+    const saved = loadSave();
     if (saved) {
       setGold(saved.gold);
       setInventory(saved.inventory);

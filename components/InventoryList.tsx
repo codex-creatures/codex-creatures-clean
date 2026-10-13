@@ -7,6 +7,8 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isSellableItem } from "@/lib/types";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { computeSellGold } from "@/lib/items/economy/sell";
+import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import ItemDetailModal from "./ItemDetailModal";
 import CreatureDetailModal from "./CreatureDetailModal";
 import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
@@ -161,6 +163,10 @@ export default function InventoryList({
                       {isFav ? "★" : "☆"}
                     </button>
                   )}
+                  {isCreature && (() => {
+                    const t = findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name);
+                    return t ? <span style={{ fontSize: 11, opacity: 0.45 }}>{creatureTypeLabel(t.proficiency)}</span> : null;
+                  })()}
                   {isCreature && (loadout?.weaponId || loadout?.armorId) && (
                     <span style={{ fontSize: 12, opacity: 0.6 }} title="Has gear equipped">
                       {loadout?.weaponId ? "⚔️" : ""}{loadout?.armorId ? "🛡️" : ""}
