@@ -185,9 +185,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     const leaving = activeOf(s);
     const restored = Math.round((MAX_ENERGY - leaving.energy) * SWAP_ENERGY_RESTORE);
     leaving.energy = Math.min(MAX_ENERGY, leaving.energy + restored);
-    leaving.streak = undefined;
-    s.active = a.to;
-    activeOf(s).streak = undefined;
+    changeActive(state, k, a.to);
     s.swaps++;
     s.lastSwapRound = state.round;
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
@@ -266,12 +264,22 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   return state;
 }
 
+// A new creature steps in (swap or replacement). Armour-gap runs end on
+// both sides: the creature leaving loses its run, and the opponent's run
+// was against the creature that just left.
+export function changeActive(state: BattleState, key: SideKey, index: number) {
+  const s = state.sides[key];
+  activeOf(s).streak = undefined;
+  s.active = index;
+  activeOf(s).streak = undefined;
+  activeOf(state.sides[other(key)]).streak = undefined;
+}
+
 export function sendInReplacement(state: BattleState, key: SideKey, index: number): BattleState {
   const s = state.sides[key];
   if (!state.needsReplacement.includes(key)) return state;
   if (index === s.active || !s.team[index] || s.team[index].hp <= 0) throw new Error(`Invalid replacement ${index} for side ${key}`);
-  s.active = index;
-  activeOf(s).streak = undefined;
+  changeActive(state, key, index);
   state.needsReplacement = state.needsReplacement.filter((k) => k !== key);
   state.log.push({ type: "sendIn", side: key, name: activeOf(s).name, index });
   return state;

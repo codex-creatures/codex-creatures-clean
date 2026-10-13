@@ -177,3 +177,18 @@ describe("resting", () => {
     expect(activeOf(s.sides.A).energy).toBe(60);
   });
 });
+
+describe("armour gap ends when its target leaves", () => {
+  it("knocking the target out ends the attacker's run (no cracked armour on the replacement)", () => {
+    const killer = buildFighter(CREATURE_BY_ID.ironhide, { melee: 40, hp: 600 }, undefined, ["Slash"]);
+    const s = createBattle([killer], [buildFighter(CREATURE_BY_ID.rust_beetle, undefined, { mDef: 90, hp: 300 }), buildFighter(CREATURE_BY_ID.crystalback)]);
+    const rand = vi.spyOn(Math, "random").mockReturnValue(0);
+    while (s.needsReplacement.length === 0 && !s.winner) {
+      resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });
+    }
+    rand.mockRestore();
+    expect(activeOf(s.sides.A).streak!.cracks).toBeGreaterThan(0); // the run had cracked the first creature
+    sendInReplacement(s, "B", 1);
+    expect(activeOf(s.sides.A).streak).toBeUndefined();
+  });
+});

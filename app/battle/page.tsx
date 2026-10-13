@@ -19,7 +19,7 @@ import { buildFighter, combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, type Fighter } from "@/lib/combat/engine";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
-  activeOf, affordableSkills, swapTargets, currentAgility, other,
+  activeOf, affordableSkills, swapTargets, currentAgility, other, changeActive,
   CRIPPLE_ROUNDS, STREAK_START, streakEffects,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
@@ -100,9 +100,7 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       const s = view.sides[e.side];
       const leaving = activeOf(s);
       leaving.energy = Math.min(100, leaving.energy + e.energyRestored);
-      leaving.streak = undefined;
-      s.active = e.toIndex;
-      activeOf(s).streak = undefined;
+      changeActive(view, e.side, e.toIndex);
       break;
     }
     case "attack": {
@@ -115,8 +113,7 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       break;
     }
     case "sendIn":
-      view.sides[e.side].active = e.index;
-      activeOf(view.sides[e.side]).streak = undefined;
+      changeActive(view, e.side, e.index);
       break;
   }
 }
