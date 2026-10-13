@@ -20,10 +20,10 @@ import { calcDamage, type Fighter } from "@/lib/combat/engine";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, other,
-  CRIPPLE_ROUNDS,
+  CRIPPLE_ROUNDS, STREAK_START, streakEffects,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
-import { aiChooseAction, aiChooseReplacement } from "@/lib/combat/teamBattle";
+import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { rollGear, RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { YOU, FOE } from "@/components/BattleLog";
@@ -47,11 +47,12 @@ type Match = {
   state: BattleState;                 // the real battle
   info: Record<SideKey, MemberInfo[]>;
   teams: Record<SideKey, Fighter[]>;  // for rematches and the history
+  level: AiLevel;                     // how well the opponent plays
 };
 
 // The animation currently playing.
 type Fx =
-  | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean }
+  | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean; gap: boolean }
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey };
 
 function rarityColor(r?: Rarity) {
@@ -99,19 +100,23 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       const s = view.sides[e.side];
       const leaving = activeOf(s);
       leaving.energy = Math.min(100, leaving.energy + e.energyRestored);
+      leaving.streak = undefined;
       s.active = e.toIndex;
+      activeOf(s).streak = undefined;
       break;
     }
     case "attack": {
       const attacker = activeOf(view.sides[e.side]);
       const target = activeOf(view.sides[other(e.side)]);
       attacker.energy = e.attackerEnergyAfter;
+      attacker.streak = { ...e.streak };
       target.hp = e.targetHpAfter;
       if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS }];
       break;
     }
     case "sendIn":
       view.sides[e.side].active = e.index;
+      activeOf(view.sides[e.side]).streak = undefined;
       break;
   }
 }
@@ -133,6 +138,7 @@ export default function BattlePage() {
   const [picked, setPicked] = useState<string[]>([]);
   const [oppCreatures, setOppCreatures] = useState<OppCreatures>("same");
   const [oppGear, setOppGear] = useState<OppGear>("match");
+  const [level, setLevel] = useState<AiLevel>("normal");
   const [match, setMatch] = useState<Match | null>(null);
   const [view, setView] = useState<BattleState | null>(null); // on-screen copy while a round plays
   const [fx, setFx] = useState<Fx | null>(null);
@@ -176,7 +182,7 @@ export default function BattlePage() {
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < TEAM_SIZE ? [...p, id] : p));
   }
 
-  function startMatch(teams?: Match["teams"], info?: Match["info"]) {
+  function startMatch(teams?: Match["teams"], info?: Match["info"], lvl: AiLevel = level) {
     if (!teams || !info) {
       const mine = picked.map((id) => owned!.find((c) => c.id === id)!);
       const opp = buildOpponents(mine, oppCreatures, oppGear);
@@ -185,7 +191,7 @@ export default function BattlePage() {
     }
     setView(null);
     setFx(null);
-    setMatch({ state: createBattle(teams.A, teams.B), info, teams });
+    setMatch({ state: createBattle(teams.A, teams.B), info, teams, level: lvl });
   }
 
   // ── Turn handling ───────────────────────────────────────────────
@@ -193,8 +199,8 @@ export default function BattlePage() {
     if (!match || view) return;
     const before = match.state;
     const after = cloneBattle(before);
-    resolveRound(after, { A: action, B: aiChooseAction(after, "B", { canSwap: true }) });
-    if (after.needsReplacement.includes("B")) sendInReplacement(after, "B", aiChooseReplacement(after, "B"));
+    resolveRound(after, { A: action, B: chooseAiAction(after, "B", match.level) });
+    if (after.needsReplacement.includes("B")) sendInReplacement(after, "B", chooseAiReplacement(after, "B", match.level));
     const done: Match = { ...match, state: after };
     if (after.winner) {
       saveBattle({
@@ -213,7 +219,7 @@ export default function BattlePage() {
       applyEvent(shown, e);
       setView(shown);
       setFx(e.type === "attack"
-        ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled }
+        ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled, gap: e.defenceIgnored > 0.25 }
         : { id: ++n, kind: e.type, side: e.side });
       await sleep(e.type === "attack" ? STEP_MS.attack : STEP_MS.other);
       if (!alive.current) return;
@@ -240,6 +246,7 @@ export default function BattlePage() {
           owned={owned} picked={picked} onToggle={togglePick}
           oppCreatures={oppCreatures} setOppCreatures={setOppCreatures}
           oppGear={oppGear} setOppGear={setOppGear}
+          level={level} setLevel={setLevel}
           onStart={() => startMatch()}
         />
       ) : (
@@ -250,7 +257,7 @@ export default function BattlePage() {
           fx={fx}
           onAct={act}
           onReplace={replace}
-          onRematch={() => startMatch(match.teams, match.info)}
+          onRematch={() => startMatch(match.teams, match.info, match.level)}
           onNew={() => setMatch(null)}
         />
       )}
@@ -260,11 +267,12 @@ export default function BattlePage() {
 
 // ── Setup screen ──────────────────────────────────────────────────
 function Setup({
-  owned, picked, onToggle, oppCreatures, setOppCreatures, oppGear, setOppGear, onStart,
+  owned, picked, onToggle, oppCreatures, setOppCreatures, oppGear, setOppGear, level, setLevel, onStart,
 }: {
   owned: OwnedCreature[]; picked: string[]; onToggle: (id: string) => void;
   oppCreatures: OppCreatures; setOppCreatures: (v: OppCreatures) => void;
   oppGear: OppGear; setOppGear: (v: OppGear) => void;
+  level: AiLevel; setLevel: (v: AiLevel) => void;
   onStart: () => void;
 }) {
   if (owned.length < TEAM_SIZE) {
@@ -311,6 +319,12 @@ function Setup({
         })}
       </div>
 
+      <SectionTitle>Opponent skill</SectionTitle>
+      <Chips value={level} onChange={setLevel} options={(Object.keys(AI_LEVEL_LABELS) as AiLevel[]).map((l) => [l, AI_LEVEL_LABELS[l]] as [AiLevel, string])} />
+      <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>
+        Easy goes for big hits. Normal and Hard think a few rounds ahead before every move (Hard further), so they swap, cripple and dash when it pays off.
+      </p>
+
       <SectionTitle>Opponent creatures</SectionTitle>
       <Chips
         value={oppCreatures} onChange={setOppCreatures}
@@ -354,8 +368,8 @@ function BattleView({ match, view, playing, fx, onAct, onReplace, onRematch, onN
       {/* The arena */}
       <div className="arena">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-          <FighterCard side="A" f={me} info={info.A[you.active]} fx={fx} slot={you.active} />
-          <FighterCard side="B" f={them} info={info.B[foe.active]} fx={fx} slot={foe.active} />
+          <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} />
+          <FighterCard side="B" f={them} foe={me} info={info.B[foe.active]} fx={fx} slot={foe.active} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10, alignItems: "start" }}>
           <Bench team={you.team} active={you.active} color={YOU} />
@@ -369,7 +383,7 @@ function BattleView({ match, view, playing, fx, onAct, onReplace, onRematch, onN
             {match.state.winner === "A" ? "Victory!" : match.state.winner === "B" ? "Defeat" : "Draw"}
           </div>
           <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>
-            {match.state.round} rounds · you swapped {match.state.sides.A.swaps}×, the AI swapped {match.state.sides.B.swaps}× · saved to your battle history
+            {AI_LEVEL_LABELS[match.level]} AI · {match.state.round} rounds · you swapped {match.state.sides.A.swaps}×, the AI swapped {match.state.sides.B.swaps}× · saved to your battle history
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14, flexWrap: "wrap" }}>
             <button onClick={onRematch} className="pixel-btn">Rematch</button>
@@ -404,7 +418,7 @@ function BattleView({ match, view, playing, fx, onAct, onReplace, onRematch, onN
             ))}
           </div>
           {affordableSkills(me).length === 0 && (
-            <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — pass</button>
+            <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — rest (+30⚡)</button>
           )}
           {swapTargets(you).length > 0 && (
             <>
@@ -447,6 +461,9 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   const fx = sk.effect;
   const dmg = moveDamage(sk, me, them);
   const tags: string[] = [];
+  const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
+  if (run > STREAK_START) tags.push(`run ×${run}: ${Math.round(streakEffects({ ...me.streak!, hits: run }).preciseChance * 100)}% precise`);
+  else if (run > 2) tags.push(`run ×${run} (armour gap from ×${STREAK_START + 1})`);
   if (fx?.kind === "precise") tags.push(`${Math.round(fx.hitChance * 100)}% to hit · always precise`);
   if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple`);
   if (fx?.kind === "dash") {
@@ -462,7 +479,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   );
 }
 
-function FighterCard({ side, f, info, fx, slot }: { side: SideKey; f: Combatant; info: MemberInfo; fx: Fx | null; slot: number }) {
+function FighterCard({ side, f, foe, info, fx, slot }: { side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number }) {
   const color = side === "A" ? YOU : FOE;
   const hpPct = (f.hp / f.maxHp) * 100;
   const cripple = f.statuses.find((s) => s.id === "cripple");
@@ -475,7 +492,7 @@ function FighterCard({ side, f, info, fx, slot }: { side: SideKey; f: Combatant;
     if (fx.kind === "attack" && fx.side !== side) {
       anim = fx.missed ? "anim-dodge" : "anim-hit";
       float = fx.missed ? { text: "MISS", color: "#bbb" }
-        : { text: `-${fx.damage}${fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b" };
+        : { text: `-${fx.damage}${fx.gap ? " ARMOUR GAP!" : fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.gap ? "#ff9f43" : fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b" };
     }
     if ((fx.kind === "swap" || fx.kind === "sendIn") && fx.side === side) anim = "anim-swapin";
     if (fx.kind === "faint" && fx.side === side) anim = "anim-faint";
@@ -495,6 +512,7 @@ function FighterCard({ side, f, info, fx, slot }: { side: SideKey; f: Combatant;
         <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
         <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
+        <StreakBadges f={f} foe={foe} />
         <div style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
           ⚔️ {info.weaponName ?? "no weapon"}<br />🛡️ {info.armorName ?? "no armour"}
         </div>
@@ -502,6 +520,30 @@ function FighterCard({ side, f, info, fx, slot }: { side: SideKey; f: Combatant;
       </div>
       {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color }}>{float.text}</div>}
     </div>
+  );
+}
+
+// The armour-gap run: shown on the attacker ("Focus") and on the creature
+// whose armour is being worn down.
+function StreakBadges({ f, foe }: { f: Combatant; foe: Combatant }) {
+  const mine = f.streak && f.streak.hits >= 2 ? f.streak : null;
+  const theirs = foe.streak && foe.streak.cracks > 0 ? foe.streak : null;
+  return (
+    <>
+      {mine && (
+        <div style={{ fontSize: 11, color: "#ffb86b", marginTop: 6 }}>
+          🎯 {mine.move} ×{mine.hits}
+          {mine.hits >= STREAK_START
+            ? ` · next: ${Math.round(streakEffects({ ...mine, hits: mine.hits + 1 }).preciseChance * 100)}% precise`
+            : ` · gap opens after ×${STREAK_START}`}
+        </div>
+      )}
+      {theirs && (
+        <div style={{ fontSize: 11, color: "#ff9f43", marginTop: 4 }}>
+          🛡️ Armour cracked: next precise hit ignores {Math.round(streakEffects(theirs).ignore * 100)}% of defence
+        </div>
+      )}
+    </>
   );
 }
 

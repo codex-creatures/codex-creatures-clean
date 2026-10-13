@@ -6,7 +6,7 @@
 // The AI swaps when its matchup is clearly losing and a teammate would
 // clearly win it, even after taking the free hit.
 
-import { AUTO_BATTLE, calcDamage, chooseSkill, combatStyle, effectiveAgil, type Fighter } from "./engine";
+import { AUTO_BATTLE, ENERGY_REGEN, calcDamage, chooseSkill, combatStyle, effectiveAgil, type Fighter } from "./engine";
 import {
   activeOf, affordableSkills, createBattle, currentAgility, isCrippled, other, resolveRound, sendInReplacement,
   CRIPPLE_AGILITY_LOSS,
@@ -133,11 +133,24 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
     }
     return v;
   };
+
+  // Walled (nothing gets through)? Then hammer the same spot: keep the
+  // current run going with a move that pays for itself, so the armour gap opens.
+  if (Math.max(...pool.map(value)) <= WALLED_DAMAGE) {
+    const sustainable = pool.filter((s) => s.energyCost <= ENERGY_REGEN);
+    const run = sustainable.find((s) => s.name === me.streak?.move);
+    if (run) return run;
+    if (sustainable.length > 0) return sustainable.reduce((best, s) => (s.damage > best.damage ? s : best));
+  }
+
   return pool.reduce((best, s) => {
     const d = value(s) - value(best);
     return d > 0 || (d === 0 && s.damage > best.damage) ? s : best;
   });
 }
+
+// A hit this small means the defender has walled the attacker.
+export const WALLED_DAMAGE = 3;
 
 export function aiChooseReplacement(state: BattleState, key: SideKey, smart = true): number {
   const s = state.sides[key];
@@ -149,6 +162,13 @@ export function aiChooseReplacement(state: BattleState, key: SideKey, smart = tr
 }
 
 // ── Whole battle, both sides AI (Balance Lab) ──────────────────────
+// Balance experiments can plug in another AI (e.g. the thinking AI from
+// thinkingAi.ts) for both sides; the per-side swap options then don't apply.
+export const TEAM_AI: {
+  choose?: (state: BattleState, key: SideKey) => BattleAction;
+  replace?: (state: BattleState, key: SideKey) => number;
+} = {};
+
 export function runTeamBattle(teamA: Fighter[], teamB: Fighter[], opts: TeamBattleOptions): TeamBattleResult {
   const state = createBattle(teamA, teamB);
   const ai: Record<SideKey, AiOptions> = {
@@ -157,9 +177,10 @@ export function runTeamBattle(teamA: Fighter[], teamB: Fighter[], opts: TeamBatt
   };
 
   while (!state.winner) {
-    resolveRound(state, { A: aiChooseAction(state, "A", ai.A), B: aiChooseAction(state, "B", ai.B) });
+    const choose = (k: SideKey) => (TEAM_AI.choose ? TEAM_AI.choose(state, k) : aiChooseAction(state, k, ai[k]));
+    resolveRound(state, { A: choose("A"), B: choose("B") });
     for (const k of [...state.needsReplacement]) {
-      sendInReplacement(state, k, aiChooseReplacement(state, k, ai[k].smartReplace ?? true));
+      sendInReplacement(state, k, TEAM_AI.replace ? TEAM_AI.replace(state, k) : aiChooseReplacement(state, k, ai[k].smartReplace ?? true));
     }
   }
 

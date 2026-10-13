@@ -105,6 +105,7 @@ export function calcDamage(
   attacker: Fighter,
   defender: Fighter,
   precise: boolean,
+  preciseIgnore = PRECISE_IGNORE, // share of defence a precise hit ignores
 ): { damage: number; braceBlocked: boolean; braceFailed: boolean } {
   if (isBraceSkill(skill)) {
     return { damage: 0, braceBlocked: false, braceFailed: false };
@@ -136,7 +137,7 @@ export function calcDamage(
   const armorStat      = moveType === "melee" ? defender.armor.mdef  : defender.armor.rdef;
   const defProf        = moveType === "melee" ? defender.proficiency.mdef : defender.proficiency.rdef;
   const effectiveDef   = withProf(armorStat, defProf);
-  const defenseApplied = precise ? effectiveDef * 0.75 : effectiveDef;
+  const defenseApplied = precise ? effectiveDef * (1 - preciseIgnore) : effectiveDef;
 
   let finalDmg = Math.max(1, Math.round(raw * atkStance * defStance * elemental - defenseApplied));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));
@@ -147,7 +148,8 @@ export function calcDamage(
 // ── Energy & precise hits ───────────────────────────────
 export const MAX_ENERGY = 100;
 export const ENERGY_REGEN = 30;     // after each attack
-export const PRECISE_CHANCE = 0.05; // precise hits ignore 25% of defence
+export const PRECISE_CHANCE = 0.05; // chance of a precise hit…
+export const PRECISE_IGNORE = 0.25; // …which ignores 25% of defence
 
 // ── Auto-battle move choice ─────────────────────────────
 export type CombatStyle = "melee" | "ranged" | "hybrid";

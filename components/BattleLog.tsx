@@ -46,13 +46,13 @@ function LogLine({ e }: { e: BattleEvent }) {
         <div>
           <Who side={e.side} name={e.attacker} /> uses {e.skill.name}{" "}
           {e.missed ? <span style={{ color: MUTED }}>→ misses!</span> : <>→ <b>{e.damage}</b> dmg</>}
-          {e.precise && <span style={{ color: "#f5c542" }}> · precise hit!</span>}
+          {e.precise && <span style={{ color: e.defenceIgnored > 0.25 ? "#ff9f43" : "#f5c542" }}> · precise hit{e.defenceIgnored > 0.25 ? ` (armour gap: ignores ${Math.round(e.defenceIgnored * 100)}% defence)` : ""}!</span>}
           {e.crippled && <span style={{ color: "#c792ea" }}> · crippled!</span>}
           <span style={{ color: MUTED }}> ({e.side === "A" ? "their" : "your"} {e.target}: {e.targetHpAfter} HP left)</span>
         </div>
       );
     case "pass":
-      return <div><Who side={e.side} name={e.name} /> is out of energy and passes.</div>;
+      return <div><Who side={e.side} name={e.name} /> is out of energy and rests (+30⚡).</div>;
     case "faint":
       return <div>💀 <Who side={e.side} name={e.name} /> fainted!</div>;
     case "sendIn":
