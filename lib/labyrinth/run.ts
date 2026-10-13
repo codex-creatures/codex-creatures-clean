@@ -7,9 +7,11 @@
 //   TEAM_SIZE fight, the rest wait in reserve. Team and reserves can only be changed between rooms.
 // - HP carries over from room to room (energy is full at each fight).
 // - There are LAB_ROOMS rooms; the last is the boss. Every room has 2 doors,
-//   hidden from the player. Any room can come up again, but you never go
-//   more than MAX_QUIET_ROOMS rooms in a row without a fight. So a room's
-//   doors are rolled when you reach it, then stay fixed.
+//   hidden from the player. Rooms can come up again, but between fights:
+//   - a quiet room (no fight) is never the same kind as the one before it;
+//   - at most MAX_QUIET_ROOMS quiet rooms in a row, except that a wandering
+//     librarian or merchant can still turn up as one more;
+//   so a room's doors are rolled when you reach it, then stay fixed.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
@@ -58,7 +60,8 @@ export const BOSS_GOLD: [number, number] = [80, 120];
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
 export const CHEST_DROPS = 3;
-export const MAX_QUIET_ROOMS = 2;     // rooms in a row without a fight before both doors must be fights
+export const MAX_QUIET_ROOMS = 2;     // quiet rooms in a row before only fights (or a wanderer) can follow
+export const WANDERERS: RoomKind[] = ["librarian", "merchant"];
 
 type Rng = () => number;
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
@@ -133,14 +136,18 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = []): 
 }
 
 // The 2 doors into a room (room is 1-based). The last room's both lead to
-// the boss. After MAX_QUIET_ROOMS rooms without a fight, both doors are
-// fights. The two doors never hide the same special room.
+// the boss. The rules between fights are at the top of this file; the two
+// doors never hide the same special room.
 export function rollDoorPair(room: number, visited: RoomKind[], rng: Rng = Math.random): RoomKind[] {
   if (room === LAB_ROOMS) return ["boss", "boss"];
   let quiet = 0;
   for (let i = visited.length - 1; i >= 0 && !isFight(visited[i]); i--) quiet++;
   const specials = ROOM_MIX.map(([k]) => k).filter(isSpecial);
-  const exclude = quiet >= MAX_QUIET_ROOMS ? specials : [];
+  const last = visited[visited.length - 1];
+  const exclude = quiet > MAX_QUIET_ROOMS ? specials                                   // only fights now
+    : quiet === MAX_QUIET_ROOMS ? specials.filter((k) => !WANDERERS.includes(k) || k === last) // fights or a wanderer
+    : last && isSpecial(last) ? [last]                                                // not the same as last time
+    : [];
   const first = rollRoomKind(rng, exclude);
   return [first, rollRoomKind(rng, isSpecial(first) ? [...exclude, first] : exclude)];
 }

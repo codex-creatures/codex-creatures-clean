@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  LAB_ROOMS, ROOM_MIX, rollRoomKind, isFight, isSpecial, MAX_QUIET_ROOMS, makeRoom, startRun, enterDoor, leaveRoom, setTeam,
+  LAB_ROOMS, ROOM_MIX, rollRoomKind, isFight, isSpecial, MAX_QUIET_ROOMS, WANDERERS, makeRoom, startRun, enterDoor, leaveRoom, setTeam,
   fightingTeam, endRun, enemyFighter, type LabSave,
 } from "../lib/labyrinth/run";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -17,7 +17,7 @@ describe("labyrinth rooms", () => {
     for (const [kind, pct] of ROOM_MIX) expect(Math.abs((counts[kind] ?? 0) / N * 100 - pct)).toBeLessThan(1.5);
   });
 
-  it("never more than 2 rooms in a row without a fight", () => {
+  it("quiet rooms: never the same twice in a row, and a 3rd in a row only for a wanderer", () => {
     for (let i = 0; i < 3000; i++) {
       let run = startRun(party, party.slice(0, 3), {}, 1 + (i % 3)); // first runs (treasure) and later ones
       const walked: string[] = run.current ? [run.current.kind] : [];
@@ -35,10 +35,12 @@ describe("labyrinth rooms", () => {
       expect(walked[LAB_ROOMS - 1]).toBe("boss");
       expect(walked.slice(0, -1)).not.toContain("boss");
       let quiet = 0;
-      for (const k of walked) {
+      walked.forEach((k, j) => {
         quiet = isFight(k as never) ? 0 : quiet + 1;
-        expect(quiet).toBeLessThanOrEqual(MAX_QUIET_ROOMS);
-      }
+        expect(quiet).toBeLessThanOrEqual(MAX_QUIET_ROOMS + 1);
+        if (quiet > MAX_QUIET_ROOMS) expect(WANDERERS).toContain(k);
+        if (j > 0 && isSpecial(k as never)) expect(walked[j - 1]).not.toBe(k);
+      });
     }
   });
 
