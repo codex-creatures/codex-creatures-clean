@@ -14,7 +14,7 @@
 // - hard:   deeper lookahead, no noise
 
 import {
-  activeOf, affordableSkills, cloneBattle, createBattle, other, resolveRound, sendInReplacement, swapTargets,
+  activeOf, affordableSkills, attackTargets, cloneBattle, createBattle, other, resolveRound, sendInReplacement, swapTargets,
   type BattleAction, type BattleState, type SideKey,
 } from "./battle";
 import { aiChooseAction, aiChooseReplacement } from "./teamBattle";
@@ -32,6 +32,7 @@ export const AI_LEVEL_LABELS: Record<AiLevel, string> = { easy: "Easy", normal: 
 
 // ── Entry points ──────────────────────────────────────────────────
 export function chooseAiAction(state: BattleState, key: SideKey, level: AiLevel): BattleAction {
+  if (state.sides[key].boss) return { kind: "pass" }; // bosses are played by their script
   return level === "easy" ? aiChooseAction(state, key, { canSwap: true }) : think(state, key, THINKING[level]);
 }
 
@@ -43,7 +44,11 @@ export function chooseAiReplacement(state: BattleState, key: SideKey, level: AiL
 function candidates(state: BattleState, key: SideKey): BattleAction[] {
   const side = state.sides[key];
   const moves = affordableSkills(activeOf(side));
-  const acts: BattleAction[] = moves.map((s) => ({ kind: "attack", skillName: s.name }));
+  // Two enemies on the field: every move against each of them.
+  const targets = attackTargets(state, key);
+  const acts: BattleAction[] = targets.length > 1
+    ? moves.flatMap((s) => targets.map((target): BattleAction => ({ kind: "attack", skillName: s.name, target })))
+    : moves.map((s) => ({ kind: "attack", skillName: s.name }));
   for (const i of swapTargets(side)) acts.push({ kind: "swap", to: i });
   if (moves.length === 0) acts.push({ kind: "pass" });
   return acts;

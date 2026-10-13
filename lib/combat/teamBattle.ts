@@ -8,7 +8,7 @@
 
 import { AUTO_BATTLE, ENERGY_REGEN, calcDamage, chooseSkill, combatStyle, effectiveAgil, type Fighter } from "./engine";
 import {
-  activeOf, affordableSkills, createBattle, currentAgility, isCrippled, other, resolveRound, sendInReplacement,
+  activeOf, affordableSkills, attackTargets, createBattle, currentAgility, isCrippled, other, resolveRound, sendInReplacement,
   CRIPPLE_AGILITY_LOSS,
   type BattleAction, type BattleSide, type BattleState, type Combatant, type SideKey,
 } from "./battle";
@@ -92,8 +92,15 @@ function bestReplacement(s: BattleSide, them: Fighter, takesFreeHit: boolean): {
 // ── AI decisions ───────────────────────────────────────────────────
 export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions): BattleAction {
   const s = state.sides[key];
+  if (s.boss) return { kind: "pass" }; // bosses are played by their script
   const me = activeOf(s);
-  const them = activeOf(state.sides[other(key)]);
+  const foe = state.sides[other(key)];
+  // Two enemies on the field? Focus the one closest to going down.
+  const targets = attackTargets(state, key);
+  const targetIdx = targets.length > 1
+    ? targets.reduce((a, b) => (foe.team[b].hp / foe.team[b].maxHp < foe.team[a].hp / foe.team[a].maxHp ? b : a))
+    : undefined;
+  const them = targetIdx !== undefined ? foe.team[targetIdx] : activeOf(foe);
 
   // A creature that just came in stays at least one round (stops ping-ponging).
   const justSwapped = s.lastSwapRound === state.round;
@@ -103,7 +110,7 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
   }
 
   const skill = aiChooseSkill(me, them);
-  return skill ? { kind: "attack", skillName: skill.name } : { kind: "pass" };
+  return skill ? { kind: "attack", skillName: skill.name, target: targetIdx } : { kind: "pass" };
 }
 
 // Move choice with the special moves in mind. Plain moves are valued by the

@@ -57,6 +57,8 @@ function LogLine({ e }: { e: BattleEvent }) {
       return <div>💀 <Who side={e.side} name={e.name} /> fainted!</div>;
     case "sendIn":
       return <div>→ <Who side={e.side} name={e.name} /> is sent in.</div>;
+    case "lineup":
+      return e.text ? <div style={{ color: "#ffd66e", fontWeight: 600 }}>⚠️ {e.text}</div> : null;
     case "end":
       return <div style={{ fontWeight: 700 }}>{e.winner === "A" ? "You win!" : e.winner === "B" ? "The opponent wins." : "Draw (round limit)."}</div>;
     default:

@@ -24,6 +24,7 @@ import { buildFighter } from "../combat/loadout";
 import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
+import type { BossKind } from "../combat/bossAi";
 
 export const LAB_ROOMS = 8;
 export const PARTY_SIZE = 5;
@@ -113,6 +114,7 @@ export type Room = {
   level?: AiLevel;  // how well the enemies play
   gold?: number;    // gold for winning (fights) or finding (treasure)
   fighters?: string[]; // your creatures in the fight, in battle order
+  boss?: BossKind;     // the boss in this room (instead of enemies)
   done: boolean;
 };
 
@@ -161,12 +163,9 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
       if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
       return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
     }
-    case "boss": {
-      // PLACEHOLDER until the Cyclops is built: three Rares with Rare gear.
-      const enemies: Enemy[] = [];
-      for (let i = 0; i < 3; i++) enemies.push(makeEnemy("rare", "rare", enemies.map((e) => e.creatureId), rng));
-      return { kind, enemies, level: "hard", gold: randInt(...BOSS_GOLD, rng), done: false };
-    }
+    case "boss":
+      // Labyrinth 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
+      return { kind, boss: "cyclops", gold: randInt(...BOSS_GOLD, rng), done: false };
     default:
       return { kind, done: false };
   }

@@ -5,7 +5,9 @@
 // live in one place.
 //
 // Rules (confirmed by design):
-// - One active creature per side. Each round both sides pick ONE action.
+// - One active creature per side, and each round both sides pick ONE action.
+//   (Bosses can have a second creature on the field, its "partner"; then you
+//   choose which of the two to attack. A boss side is played by bossAi.ts.)
 // - Swaps resolve first, then attacks in Agility order (ties random). A side
 //   that swaps gives the opponent a free hit on the creature coming in.
 // - The creature swapped out restores 50% of its missing energy.
@@ -24,13 +26,15 @@ import {
   type Fighter,
 } from "./engine";
 import type { Skill } from "../creatures/creatureData";
+import { bossActions, bossEndOfRound, bossHiddenAtStart, bossMinHp, type BossKind, type BossState } from "./bossAi";
 
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
 
 // Cripple (from Cripple / Crippling Shot): the target loses agility for the
 // next few rounds. Re-crippling refreshes the duration; it doesn't stack.
-// It keeps counting down while the creature is on the bench.
+// It keeps counting down while the creature is on the bench. Some moves
+// (the Cyclops's Stomp) cripple harder.
 export const CRIPPLE_AGILITY_LOSS = 0.35;
 export const CRIPPLE_ROUNDS = 3;
 
@@ -61,23 +65,29 @@ export function streakEffects(s?: Streak) {
 export type SideKey = "A" | "B";
 
 // Future: { kind: "item"; bagIndex: number } for the battle bag.
+// target: which enemy to hit when they have two on the field (team index);
+// missing = their main creature.
 export type BattleAction =
-  | { kind: "attack"; skillName: string }
+  | { kind: "attack"; skillName: string; target?: number }
   | { kind: "swap"; to: number }
   | { kind: "pass" }; // rest: only when no move is affordable; recovers energy
 
-// Placeholder for status effects (cripple, fear, blind, vampirism…).
+// Status effects (cripple; later fear, blind, vampirism…).
 // `rounds` counts down at the end of each round; at 0 the status ends.
-export type StatusEffect = { id: string; rounds: number };
+// loss: a cripple's agility loss (missing = CRIPPLE_AGILITY_LOSS).
+export type StatusEffect = { id: string; rounds: number; loss?: number };
 
-export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak };
+// hidden: a boss creature that hasn't appeared yet (not shown on screen).
+export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean };
 
 export type BattleSide = {
   key: SideKey;
   team: Combatant[];
   active: number;
+  partner?: number | null; // a second creature on the field (bosses only)
   swaps: number;
   lastSwapRound: number;
+  boss?: BossState;        // set when this side is a scripted boss
 };
 
 export type BattleEvent =
@@ -85,7 +95,10 @@ export type BattleEvent =
   | { type: "swap"; side: SideKey; from: string; to: string; toIndex: number; energyRestored: number }
   | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
-      streak: Streak; defenceIgnored: number } // defenceIgnored: share ignored by this hit (0 if not precise)
+      streak: Streak; defenceIgnored: number; // defenceIgnored: share ignored by this hit (0 if not precise)
+      attackerIndex?: number; targetIndex?: number; crippleLoss?: number }
+  // A boss changes who's on the field (new phase), or a partner takes over.
+  | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
   | { type: "faint"; side: SideKey; name: string }
   | { type: "sendIn"; side: SideKey; name: string; index: number }
@@ -106,18 +119,27 @@ export type BattleState = {
 
 export const other = (k: SideKey): SideKey => (k === "A" ? "B" : "A");
 export const activeOf = (s: BattleSide) => s.team[s.active];
+// Team indexes of the creatures on the field (one, or two for some bosses).
+export const fieldOf = (s: BattleSide): number[] => (s.partner != null ? [s.active, s.partner] : [s.active]);
 export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).length;
 
 // startHp: creatures that start hurt (e.g. HP carried between labyrinth
 // rooms); missing = full health. Everyone starts with full energy.
-export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}): BattleState {
+// bossB: side B is that boss, played by its script.
+export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}, bossB?: BossKind): BattleState {
   const fresh = (t: Fighter[], hp?: number[]): Combatant[] =>
     t.map((f, i) => ({ ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] }));
   const side = (key: SideKey, team: Fighter[]): BattleSide =>
     ({ key, team: fresh(team, startHp[key]), active: 0, swaps: 0, lastSwapRound: -99 });
+  const B = side("B", teamB);
+  if (bossB) {
+    B.boss = { kind: bossB, phase: 1 };
+    B.partner = null;
+    for (const i of bossHiddenAtStart(bossB)) B.team[i].hidden = true;
+  }
   return {
     round: 0,
-    sides: { A: side("A", teamA), B: side("B", teamB) },
+    sides: { A: side("A", teamA), B },
     needsReplacement: [],
     winner: null,
     log: [],
@@ -131,7 +153,8 @@ export const isCrippled = (f: Combatant) => f.statuses.some((s) => s.id === "cri
 
 // Agility right now (cripple included).
 export function currentAgility(f: Combatant): number {
-  return effectiveAgil(f) * (isCrippled(f) ? 1 - CRIPPLE_AGILITY_LOSS : 1);
+  const cripple = f.statuses.find((s) => s.id === "cripple");
+  return effectiveAgil(f) * (cripple ? 1 - (cripple.loss ?? CRIPPLE_AGILITY_LOSS) : 1);
 }
 
 // Agility used for this round's turn order (adds a dash move's bonus).
@@ -148,14 +171,22 @@ export function affordableSkills(f: Combatant): Skill[] {
 
 // Bench creatures this side could swap to. (Future: fear blocks this.)
 export function swapTargets(s: BattleSide): number[] {
+  if (s.boss) return [];
   return s.team.map((f, i) => i).filter((i) => i !== s.active && s.team[i].hp > 0);
+}
+
+// Enemy creatures this side can attack right now (team indexes).
+export function attackTargets(state: BattleState, key: SideKey): number[] {
+  const foe = state.sides[other(key)];
+  return fieldOf(foe).filter((i) => foe.team[i].hp > 0);
 }
 
 export function isValidAction(state: BattleState, key: SideKey, a: BattleAction): boolean {
   const s = state.sides[key];
   const me = activeOf(s);
   switch (a.kind) {
-    case "attack": return affordableSkills(me).some((sk) => sk.name === a.skillName);
+    case "attack": return affordableSkills(me).some((sk) => sk.name === a.skillName)
+      && (a.target === undefined || attackTargets(state, key).includes(a.target));
     case "swap":   return swapTargets(s).includes(a.to);
     case "pass":   return affordableSkills(me).length === 0;
   }
@@ -173,6 +204,7 @@ export function previewDamage(state: BattleState, key: SideKey, skill: Skill): n
 export function resolveRound(state: BattleState, actions: Record<SideKey, BattleAction>): BattleState {
   if (state.winner || state.needsReplacement.length > 0) return state;
   for (const k of ["A", "B"] as SideKey[]) {
+    if (state.sides[k].boss) continue; // its script picks its actions
     if (!isValidAction(state, k, actions[k])) throw new Error(`Invalid action for side ${k}: ${JSON.stringify(actions[k])}`);
   }
 
@@ -182,7 +214,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   // 1. Swaps resolve first.
   for (const k of ["A", "B"] as SideKey[]) {
     const a = actions[k];
-    if (a.kind !== "swap") continue;
+    if (a.kind !== "swap" || state.sides[k].boss) continue;
     const s = state.sides[k];
     const leaving = activeOf(s);
     const restored = Math.round((MAX_ENERGY - leaving.energy) * SWAP_ENERGY_RESTORE);
@@ -194,16 +226,22 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   }
 
   // 2. Attacks in Agility order (ties random). Dash moves add agility for
-  //    this round; a crippled creature is slower.
-  const attackers = (["A", "B"] as SideKey[])
-    .filter((k) => actions[k].kind !== "swap")
-    .map((k) => {
-      const actor = activeOf(state.sides[k]);
-      return { key: k, actor, action: actions[k], agil: turnAgility(actor, actions[k]) };
+  //    this round; a crippled creature is slower. A boss acts with every
+  //    creature it has on the field.
+  const turns: { key: SideKey; index: number; action: BattleAction }[] = [];
+  for (const k of ["A", "B"] as SideKey[]) {
+    const s = state.sides[k];
+    if (s.boss) turns.push(...bossActions(state, k).map((t) => ({ key: k, ...t })));
+    else if (actions[k].kind !== "swap") turns.push({ key: k, index: s.active, action: actions[k] });
+  }
+  const attackers = turns
+    .map((t) => {
+      const actor = state.sides[t.key].team[t.index];
+      return { ...t, actor, agil: turnAgility(actor, t.action) };
     })
     .sort((x, y) => (y.agil - x.agil) || (Math.random() - 0.5));
 
-  for (const { key, actor, action } of attackers) {
+  for (const { key, index: actorIdx, actor, action } of attackers) {
     if (actor.hp <= 0) continue; // fainted before acting
     if (action.kind === "pass") {
       // Resting recovers the usual energy, so a creature whose cheapest move
@@ -214,12 +252,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     if (action.kind !== "attack") continue;
-    const target = activeOf(state.sides[other(key)]);
-    if (target.hp <= 0) continue;
+    // The chosen target, or whoever is still standing if it's gone.
+    const foe = state.sides[other(key)];
+    const standing = fieldOf(foe).filter((i) => foe.team[i].hp > 0);
+    const targetIdx = action.target !== undefined && standing.includes(action.target) ? action.target : standing[0];
+    if (targetIdx === undefined) continue;
+    const target = foe.team[targetIdx];
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
 
     // Same move on the same creature again? Then the run continues.
-    const targetIdx = state.sides[other(key)].active;
     const prev = actor.streak;
     const streak: Streak = prev && prev.move === skill.name && prev.targetIdx === targetIdx
       ? { ...prev, hits: prev.hits + 1 }
@@ -239,15 +280,16 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       if (damage <= 1) state.minDamageHits++;
     }
     actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
-    target.hp = Math.max(0, target.hp - damage);
+    target.hp = Math.max(bossMinHp(state, other(key), targetIdx), target.hp - damage);
 
     // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
     const crippled = fx?.kind === "cripple" && target.hp > 0 && Math.random() < fx.chance;
+    const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
     if (crippled) {
-      target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1 }];
+      target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1, loss: crippleLoss }];
     }
     state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
-      streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0 });
+      streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss });
     if (target.hp <= 0) state.log.push({ type: "faint", side: other(key), name: target.name });
   }
 
@@ -258,10 +300,22 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     }
   }
 
-  // 4. Win check, then who must send in a replacement.
+  // 4. Bosses change phase; a fallen partner leaves the field (or, if the
+  //    main creature fell, the partner takes its place).
+  for (const k of ["A", "B"] as SideKey[]) {
+    const s = state.sides[k];
+    if (s.boss) state.log.push(...bossEndOfRound(state, k));
+    if (s.partner == null) continue;
+    if (s.team[s.partner].hp <= 0) s.partner = null;
+    else if (activeOf(s).hp <= 0) { s.active = s.partner; s.partner = null; }
+    else continue;
+    state.log.push({ type: "lineup", side: k, active: s.active, partner: s.partner ?? null });
+  }
+
+  // 5. Win check, then who must send in a replacement.
   checkWinner(state);
   if (!state.winner) {
-    state.needsReplacement = (["A", "B"] as SideKey[]).filter((k) => activeOf(state.sides[k]).hp <= 0);
+    state.needsReplacement = (["A", "B"] as SideKey[]).filter((k) => !state.sides[k].boss && activeOf(state.sides[k]).hp <= 0);
   }
   return state;
 }
@@ -274,7 +328,8 @@ export function changeActive(state: BattleState, key: SideKey, index: number) {
   activeOf(s).streak = undefined;
   s.active = index;
   activeOf(s).streak = undefined;
-  activeOf(state.sides[other(key)]).streak = undefined;
+  const foe = state.sides[other(key)];
+  for (const i of fieldOf(foe)) foe.team[i].streak = undefined;
 }
 
 export function sendInReplacement(state: BattleState, key: SideKey, index: number): BattleState {
@@ -299,6 +354,7 @@ export function cloneBattle(state: BattleState): BattleState {
   const side = (s: BattleSide): BattleSide => ({
     ...s,
     team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })), streak: f.streak && { ...f.streak } })),
+    boss: s.boss && { ...s.boss },
   });
   return {
     ...state,

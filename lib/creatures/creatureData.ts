@@ -12,7 +12,7 @@ export type CreatureProficiency = {
 
 // Extra behaviour on top of damage (tuning numbers live in lib/combat/battle.ts).
 export type MoveEffect =
-  | { kind: "cripple"; chance: number }       // chance to cripple (slow) the target
+  | { kind: "cripple"; chance: number; agilityLoss?: number } // chance to cripple (slow) the target; loss defaults to CRIPPLE_AGILITY_LOSS
   | { kind: "dash"; agilityBonus: number }    // extra agility this round only
   | { kind: "precise"; hitChance: number };   // can miss, but every hit is precise
 
@@ -34,6 +34,7 @@ export type CreatureTemplate = {
   skills: Skill[];
   flavour: string;
   companion?: boolean; // story companion: not found by scanning, not in the collection count
+  boss?: boolean;      // part of a labyrinth boss: never found, never owned
 };
 
 export const ALL_SKILLS: Skill[] = [
@@ -61,8 +62,20 @@ export const LEARNABLE_MOVES: Skill[] = [
   { name: "Precise Shot",   damage: 15, energyCost: 30, type: "ranged", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
 ];
 
+// Boss-only moves (see lib/creatures/bosses.ts). Never learnable.
+export const BOSS_MOVES: Skill[] = [
+  { name: "Club Smash",    damage: 20, energyCost: 40, type: "melee" },
+  { name: "Backhand",      damage: 10, energyCost: 20, type: "melee" },
+  { name: "Stomp",         damage: 12, energyCost: 40, type: "melee",  effect: { kind: "cripple", chance: 0.5, agilityLoss: 0.5 }, desc: "50% chance to cripple: −50% agility for a few rounds." },
+  { name: "Eye Laser",     damage: 30, energyCost: 70, type: "ranged" },
+  { name: "Claw Rake",     damage: 15, energyCost: 30, type: "melee" },
+  { name: "Crushing Grip", damage: 25, energyCost: 50, type: "melee" },
+  { name: "Laser",         damage: 15, energyCost: 30, type: "ranged" },
+  { name: "Searing Beam",  damage: 25, energyCost: 50, type: "ranged" },
+];
+
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
-export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries(ALL_MOVES.map((m) => [m.name, m]));
+export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...BOSS_MOVES].map((m) => [m.name, m]));
 
 function s(...names: string[]): Skill[] {
   return names.map(n => ALL_SKILLS.find(sk => sk.name === n)!).filter(Boolean);
@@ -112,9 +125,25 @@ export const KLUTZ: CreatureTemplate = {
 
 export const COMPANIONS: CreatureTemplate[] = [KLUTZ];
 
+// The parts of labyrinth bosses. Their stats come from their natural "gear"
+// in lib/creatures/bosses.ts (proficiencies are 0 so those numbers are exact).
+const bossMoves = (...names: string[]) => names.map((n) => BOSS_MOVES.find((m) => m.name === n)!);
+const NO_PROF: CreatureProficiency = { atk: 0, rng: 0, agil: 0, mdef: 0, rdef: 0 };
+export const BOSS_PARTS: CreatureTemplate[] = [
+  { id: "cyclops", name: "Cyclops", rarity: "legendary", baseHp: 240, boss: true, proficiency: NO_PROF,
+    skills: bossMoves("Club Smash", "Stomp", "Backhand", "Eye Laser"),
+    flavour: "A mountain of muscle with one huge, rolling eye. The labyrinth's first warden." },
+  { id: "cyclops_hand", name: "Crawling Hand", rarity: "epic", baseHp: 70, boss: true, proficiency: NO_PROF,
+    skills: bossMoves("Claw Rake", "Crushing Grip"),
+    flavour: "It scuttles on its fingertips, much too fast." },
+  { id: "cyclops_eye", name: "The Eye", rarity: "legendary", baseHp: 150, boss: true, proficiency: NO_PROF,
+    skills: bossMoves("Laser", "Searing Beam"),
+    flavour: "Free of the skull at last, it floats — and it is furious." },
+];
+
 // Every creature that can exist (scannable ones + companions), by id.
 export const CREATURE_BY_ID: Record<string, CreatureTemplate> = Object.fromEntries(
-  [...CREATURE_TEMPLATES, ...COMPANIONS].map(c => [c.id, c])
+  [...CREATURE_TEMPLATES, ...COMPANIONS, ...BOSS_PARTS].map(c => [c.id, c])
 );
 
 // Template for a creature drop. Older saves stored only the name.

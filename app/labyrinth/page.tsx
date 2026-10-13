@@ -29,8 +29,14 @@ import {
   type Match, type MemberInfo, type OwnedCreature,
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
+import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
 
 const GOLD = "#f5c542";
+
+function combatLine(f: Parameters<typeof combatSummary>[0]): string {
+  const s = combatSummary(f);
+  return `${s.hp} HP · Atk ${Math.round(s.atk)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)}`;
+}
 
 function dropLabel(d: Drop): string {
   if (d.dropType === "reward") return `${d.amount} gold`;
@@ -130,18 +136,24 @@ export default function LabyrinthPage() {
     const room = r.current!;
     const ids = fightingTeam(r).filter((id) => byId(id));
     const mine = ids.map((id) => byId(id)!);
-    const info: MemberInfo[] = room.enemies!.map((e) => ({
-      rarity: CREATURE_BY_ID[e.creatureId].rarity,
-      label: creatureTypeLabel(e.proficiency),
-      weaponName: gearName(e.gear[0]),
-      armorName: gearName(e.gear[1]),
-    }));
+    const info: MemberInfo[] = room.boss
+      ? CYCLOPS_PARTS.map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName }))
+      : room.enemies!.map((e) => ({
+          rarity: CREATURE_BY_ID[e.creatureId].rarity,
+          label: creatureTypeLabel(e.proficiency),
+          weaponName: gearName(e.gear[0]),
+          armorName: gearName(e.gear[1]),
+        }));
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     battle.start(
-      { A: mine.map((c) => c.fighter), B: room.enemies!.map(enemyFighter) },
+      { A: mine.map((c) => c.fighter), B: room.boss ? cyclopsTeam() : room.enemies!.map(enemyFighter) },
       { A: mine, B: info },
-      room.level ?? "normal",
-      { startHp: mine.map((c, i) => Math.round((r.hp[ids[i]] ?? 1) * c.fighter.maxHp)), title: `Labyrinth · room ${r.room}` },
+      room.level ?? "hard",
+      {
+        startHp: mine.map((c, i) => Math.round((r.hp[ids[i]] ?? 1) * c.fighter.maxHp)),
+        title: room.boss ? "Labyrinth · the Cyclops" : `Labyrinth · room ${r.room}`,
+        boss: room.boss,
+      },
     );
   }
 
@@ -427,11 +439,17 @@ function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFig
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 10px" }}>
             {room.kind === "easy" && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
-            {room.kind === "boss" && "The boss of the labyrinth. (A stand-in for now — the Cyclops is coming next.)"}
-            {" "}They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.
+            {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close, and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
+            {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {room.enemies!.map((e, i) => {
+            {room.boss && (
+              <div style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
+                <b style={{ color: rarityColor("legendary") }}>Cyclops</b>
+                <span style={{ color: MUTED }}> · {CYCLOPS_PARTS[0].label} · {combatLine(cyclopsTeam()[0])}</span>
+              </div>
+            )}
+            {(room.enemies ?? []).map((e, i) => {
               const t = CREATURE_BY_ID[e.creatureId];
               return (
                 <div key={i} style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
@@ -442,7 +460,7 @@ function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFig
             })}
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>
-            Win: {room.gold} gold{room.enemies!.some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}.
+            Win: {room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}.
             Your team: {fightingTeam(run).map((id) => byId(id)?.name).join(", ")}.
           </p>
           <button className="pixel-btn" onClick={onFight}>⚔️ Fight</button>
@@ -486,7 +504,7 @@ function Party({ run, byId, onTeam }: { run: LabRun; byId: (id: string) => Owned
 function RunOver({ run, lab, onHome }: { run: LabRun; lab: LabSave; onHome: () => void }) {
   const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
   const text = run.status === "cleared"
-    ? `You beat the boss on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}. (Boss rewards — the codex, the Tavern and the trophy — are coming with the Cyclops.)`
+    ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
       ? `…and you wake up in your dungeon, Klutz standing over you looking pleased with himself. He dragged you out of room ${run.room}. Your creatures are hurt — rest them at the healing pool.`
       : `You leave the way you came, from room ${run.room}.`;
