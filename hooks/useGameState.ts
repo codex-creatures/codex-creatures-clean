@@ -168,6 +168,9 @@ export function useGameState(initialTab: TabKey = "all") {
     return recentScanIds.map((id) => byId.get(id)).filter((d): d is Drop => !!d);
   }, [inventory, recentScanIds]);
 
+  // Every barcode scan you've made (repeats of the same barcode included).
+  const totalScans = useMemo(() => Object.values(scanCounts).reduce((n, c) => n + c, 0), [scanCounts]);
+
   // ── Discovery progress ────────────────────────────────
   const discoveredCreatures = useMemo(
     // Creatures and cards both count as discovered; companions (Klutz) don't.
@@ -331,7 +334,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, favoriteIds, equipment, lastDrop, recentScans,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

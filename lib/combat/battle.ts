@@ -33,10 +33,14 @@ export const MAX_ROUNDS = 100;
 
 // Cripple (from Cripple / Crippling Shot): the target loses agility for the
 // next few rounds. Re-crippling refreshes the duration; it doesn't stack.
-// It keeps counting down while the creature is on the bench. Some moves
-// (the Cyclops's Stomp) cripple harder.
-export const CRIPPLE_AGILITY_LOSS = 0.35;
+// It keeps counting down while the creature is on the bench.
+export const CRIPPLE_AGILITY_LOSS = 0.5;
 export const CRIPPLE_ROUNDS = 3;
+
+// Haste (from Dash Lash / Quick Bolt): the user gains agility this round
+// (so it can strike first) and for the next HASTE_ROUNDS rounds.
+// Re-dashing refreshes it; it doesn't stack.
+export const HASTE_ROUNDS = 2;
 
 // Armour gap: hammering the same creature with the same move finds the gaps
 // in its armour, so stalled fights (tank vs tank) eventually end.
@@ -75,7 +79,8 @@ export type BattleAction =
 // Status effects (cripple; later fear, blind, vampirism…).
 // `rounds` counts down at the end of each round; at 0 the status ends.
 // loss: a cripple's agility loss (missing = CRIPPLE_AGILITY_LOSS).
-export type StatusEffect = { id: string; rounds: number; loss?: number };
+// gain: a haste's agility gain.
+export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number };
 
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
 export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean };
@@ -96,7 +101,7 @@ export type BattleEvent =
   | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
       streak: Streak; defenceIgnored: number; // defenceIgnored: share ignored by this hit (0 if not precise)
-      attackerIndex?: number; targetIndex?: number; crippleLoss?: number }
+      attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -151,17 +156,19 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partia
 // ── Status effects ─────────────────────────────────────────────────
 export const isCrippled = (f: Combatant) => f.statuses.some((s) => s.id === "cripple");
 
-// Agility right now (cripple included).
+// Agility right now (cripple and haste included).
 export function currentAgility(f: Combatant): number {
   const cripple = f.statuses.find((s) => s.id === "cripple");
-  return effectiveAgil(f) * (cripple ? 1 - (cripple.loss ?? CRIPPLE_AGILITY_LOSS) : 1);
+  const haste = f.statuses.find((s) => s.id === "haste");
+  return effectiveAgil(f) * (cripple ? 1 - (cripple.loss ?? CRIPPLE_AGILITY_LOSS) : 1) * (1 + (haste?.gain ?? 0));
 }
 
-// Agility used for this round's turn order (adds a dash move's bonus).
+// Agility used for this round's turn order: a dash move hastes you before
+// anyone moves (replacing any haste you already had).
 export function turnAgility(f: Combatant, action: BattleAction): number {
   const skill = action.kind === "attack" ? f.skills.find((s) => s.name === action.skillName) : undefined;
-  const dash = skill?.effect?.kind === "dash" ? skill.effect.agilityBonus : 0;
-  return currentAgility(f) * (1 + dash);
+  if (skill?.effect?.kind !== "dash") return currentAgility(f);
+  return currentAgility({ ...f, statuses: [...f.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: 1, gain: skill.effect.agilityBonus }] });
 }
 
 // ── What a side is allowed to do right now ─────────────────────────
@@ -283,13 +290,16 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     target.hp = Math.max(bossMinHp(state, other(key), targetIdx), target.hp - damage);
 
     // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
+    // Haste lasts this round and the next HASTE_ROUNDS (+1: it ticks at the end of this one).
+    const hasted = fx?.kind === "dash" ? fx.agilityBonus : undefined;
+    if (hasted) actor.statuses = [...actor.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: HASTE_ROUNDS + 1, gain: hasted }];
     const crippled = fx?.kind === "cripple" && target.hp > 0 && Math.random() < fx.chance;
     const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
     if (crippled) {
       target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1, loss: crippleLoss }];
     }
     state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
-      streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss });
+      streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted });
     if (target.hp <= 0) state.log.push({ type: "faint", side: other(key), name: target.name });
   }
 

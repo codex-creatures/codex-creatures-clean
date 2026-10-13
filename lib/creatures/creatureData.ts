@@ -13,7 +13,7 @@ export type CreatureProficiency = {
 // Extra behaviour on top of damage (tuning numbers live in lib/combat/battle.ts).
 export type MoveEffect =
   | { kind: "cripple"; chance: number; agilityLoss?: number } // chance to cripple (slow) the target; loss defaults to CRIPPLE_AGILITY_LOSS
-  | { kind: "dash"; agilityBonus: number }    // extra agility this round only
+  | { kind: "dash"; agilityBonus: number }    // extra agility this round and the next HASTE_ROUNDS
   | { kind: "precise"; hitChance: number };   // can miss, but every hit is precise
 
 export type Skill = {
@@ -54,10 +54,10 @@ export const ALL_SKILLS: Skill[] = [
 // Moves any creature can learn into one of its move slots. For now they're
 // all available to test; later they'll come from encounters, drops and quests.
 export const LEARNABLE_MOVES: Skill[] = [
-  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses agility for a few rounds." },
-  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses agility for a few rounds." },
-  { name: "Dash Lash",      damage: 10, energyCost: 50, type: "melee",  effect: { kind: "dash", agilityBonus: 0.2 }, desc: "+20% agility this round, so it can strike first." },
-  { name: "Quick Bolt",     damage: 10, energyCost: 50, type: "ranged", effect: { kind: "dash", agilityBonus: 0.2 }, desc: "+20% agility this round, so it can strike first." },
+  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses 50% agility for 3 rounds." },
+  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses 50% agility for 3 rounds." },
+  { name: "Dash Lash",      damage: 10, energyCost: 50, type: "melee",  effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
+  { name: "Quick Bolt",     damage: 10, energyCost: 50, type: "ranged", effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
   { name: "Precise Slice",  damage: 15, energyCost: 30, type: "melee",  effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
   { name: "Precise Shot",   damage: 15, energyCost: 30, type: "ranged", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
 ];

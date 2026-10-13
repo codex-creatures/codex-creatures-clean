@@ -118,7 +118,7 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
 // picks); special moves add what a sensible player would see in them:
 // - Precise: expected damage = hit chance × precise-hit damage (good vs tanks).
 // - Cripple: worth an extra hit when it would make me faster than them.
-// - Dash: worth their next hit when going first lets me knock them out.
+// - Dash: worth part of their next hit when it makes me faster (all of it if I then knock them out).
 export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined {
   const affordable = affordableSkills(me);
   if (affordable.length === 0) return undefined;
@@ -135,8 +135,9 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
     if (fx?.kind === "cripple" && !isCrippled(them) && theirAgil >= myAgil && theirAgil * (1 - CRIPPLE_AGILITY_LOSS) < myAgil) {
       v += fx.chance * expectedDamage(me, them);
     }
-    if (fx?.kind === "dash" && theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil && hit >= them.hp) {
-      v += theirHit;
+    // Haste lasts a few rounds, so going first pays off even without a knockout.
+    if (fx?.kind === "dash" && !me.statuses.some((st) => st.id === "haste") && theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil) {
+      v += hit >= them.hp ? theirHit : theirHit / 2;
     }
     return v;
   };

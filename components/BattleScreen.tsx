@@ -17,7 +17,7 @@ import { calcDamage, type Fighter } from "@/lib/combat/engine";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf,
-  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, STREAK_START, streakEffects,
+  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, HASTE_ROUNDS, STREAK_START, streakEffects,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
@@ -105,6 +105,7 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       attacker.energy = e.attackerEnergyAfter;
       attacker.streak = { ...e.streak };
       target.hp = e.targetHpAfter;
+      if (e.hasted) attacker.statuses = [...attacker.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: HASTE_ROUNDS, gain: e.hasted }];
       if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS, loss: e.crippleLoss }];
       break;
     }
@@ -364,7 +365,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple`);
   if (fx?.kind === "dash") {
     const flips = theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil;
-    tags.push(`+${Math.round(fx.agilityBonus * 100)}% agility${flips ? " → strike first!" : ""}`);
+    tags.push(`haste +${Math.round(fx.agilityBonus * 100)}% agility for ${HASTE_ROUNDS + 1} rounds${flips ? " → strike first!" : ""}`);
   }
   return (
     <button disabled={disabled} onClick={onClick} className="card-btn" style={{ display: "block", opacity: sk.energyCost > me.energy ? 0.35 : 1 }}>
@@ -382,6 +383,7 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
   const color = side === "A" ? YOU : FOE;
   const hpPct = (f.hp / f.maxHp) * 100;
   const cripple = f.statuses.find((s) => s.id === "cripple");
+  const haste = f.statuses.find((s) => s.id === "haste");
   const isMe = (i?: number) => i === undefined || i === slot;
 
   // Which animation this card plays for the current step.
@@ -412,6 +414,7 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
         <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
         <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
+        {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
         <StreakBadges f={f} foe={foe} slot={slot} />
         {!compact && (

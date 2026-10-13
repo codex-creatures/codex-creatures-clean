@@ -230,9 +230,11 @@ export function leaveRoom(run: LabRun, rng: Rng = Math.random): LabRun {
   return { ...run, current: null, battle: undefined, room, doors };
 }
 
-// Only between rooms; only creatures still standing can fight.
+// Any time you're not mid-fight (between rooms, or after seeing who's in a
+// room but before you start the fight). Only creatures still standing can
+// fight. Order matters: the first one leads.
 export function setTeam(run: LabRun, team: string[]): LabRun {
-  if (run.current) return run;
+  if (run.battle || run.status !== "exploring") return run;
   const valid = team.filter((id) => run.party.includes(id) && isAlive(run, id)).slice(0, TEAM_SIZE);
   return { ...run, team: valid };
 }

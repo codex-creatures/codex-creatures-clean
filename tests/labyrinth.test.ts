@@ -91,7 +91,8 @@ describe("a labyrinth run", () => {
     run = setTeam(run, ["b", "d", "e", "a"]);
     expect(run.team).toEqual(["d", "e", "a"]);
     const inRoom = enterDoor(run, 0);
-    expect(setTeam(inRoom, ["a"]).team).toEqual(["d", "e", "a"]);
+    expect(setTeam(inRoom, ["a", "d"]).team).toEqual(["a", "d"]); // fine before the fight starts
+    expect(setTeam({ ...inRoom, battle: {} }, ["e"]).team).toEqual(["d", "e", "a"]); // not mid-fight
   });
 
   it("ending a run brings the wounds home and records the first clear", () => {

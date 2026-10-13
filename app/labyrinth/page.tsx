@@ -224,7 +224,7 @@ export default function LabyrinthPage() {
           />
         : <Doors run={run} onDoor={(d) => updateRun((r) => enterDoor(r, d))} />}
 
-      <Party run={run} byId={byId} onTeam={run.current ? undefined : (team) => updateRun((r) => setTeam(r, team))} />
+      <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />
 
       <div style={{ marginTop: 24, textAlign: "center" }}>
         <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
@@ -350,7 +350,7 @@ function Doors({ run, onDoor }: { run: LabRun; onDoor: (d: 0 | 1) => void }) {
       </div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
         {boss ? "Something huge breathes behind it. Make sure the right creatures are on your team."
-          : "You can't tell what's behind either one. Set your team below before you go in."}
+          : "You can't tell what's behind either one. You can change your team below at any time before a fight starts."}
       </p>
       {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}
       <div style={{ display: "grid", gridTemplateColumns: boss ? "1fr" : "1fr 1fr", gap: 10 }}>
@@ -471,33 +471,57 @@ function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFig
   );
 }
 
-// Your 5: HP, and (between rooms) who fights.
-function Party({ run, byId, onTeam }: { run: LabRun; byId: (id: string) => OwnedCreature | undefined; onTeam?: (team: string[]) => void }) {
-  function toggle(id: string) {
-    if (!onTeam) return;
-    onTeam(run.team.includes(id) ? run.team.filter((x) => x !== id) : [...run.team, id]);
-  }
+// Your party: who fights (in order — the first one leads) and who waits.
+function Party({ run, byId, onTeam }: { run: LabRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void }) {
+  const team = fightingTeam(run);
+  const reserves = run.party.filter((id) => !team.includes(id));
+  const move = (i: number, by: number) => {
+    const next = [...team];
+    [next[i], next[i + by]] = [next[i + by], next[i]];
+    onTeam(next);
+  };
+  const card = (id: string, extra: React.ReactNode, fights: boolean) => {
+    const c = byId(id);
+    if (!c) return null;
+    const hp = run.hp[id] ?? 1;
+    return (
+      <div key={id} className="card-btn" style={{ cursor: "default", borderColor: fights ? YOU : undefined, opacity: hp <= 0 ? 0.45 : 1 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontWeight: 600, color: rarityColor(c.rarity) }}>{c.name}</span>
+          {hp <= 0 && <span style={{ fontSize: 11, color: MUTED }}> · knocked out</span>}
+          <Bar label="HP" value={`${Math.round(hp * c.fighter.maxHp)}/${c.fighter.maxHp}`} pct={hp * 100}
+            color={hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444"} />
+        </div>
+        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>{extra}</div>
+      </div>
+    );
+  };
+  const btn = (label: string, title: string, onClick: () => void, disabled = false) => (
+    <button className="chip" title={title} aria-label={title} onClick={onClick} disabled={disabled}
+      style={{ padding: "4px 9px", opacity: disabled ? 0.3 : 1, cursor: disabled ? "default" : "pointer" }}>{label}</button>
+  );
   return (
     <>
-      <SectionTitle>Your party {onTeam ? `— tap to choose who fights (${fightingTeam(run).length}/${TEAM_SIZE})` : ""}</SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 6 }}>
-        {run.party.map((id) => {
-          const c = byId(id);
-          if (!c) return null;
-          const hp = run.hp[id] ?? 1;
-          const fights = run.team.includes(id) && isAlive(run, id);
-          const full = !run.team.includes(id) && fightingTeam(run).length >= TEAM_SIZE;
-          return (
-            <button key={id} className="card-btn" onClick={() => toggle(id)} disabled={!onTeam || hp <= 0 || full}
-              style={{ display: "block", borderColor: fights ? YOU : undefined, opacity: hp <= 0 ? 0.45 : 1, cursor: onTeam ? "pointer" : "default" }}>
-              <span style={{ fontWeight: 600, color: rarityColor(c.rarity) }}>{c.name}</span>
-              <span style={{ fontSize: 11, color: fights ? YOU : MUTED }}> · {hp <= 0 ? "knocked out" : fights ? "fights" : "reserve"}</span>
-              <Bar label="HP" value={`${Math.round(hp * c.fighter.maxHp)}/${c.fighter.maxHp}`} pct={hp * 100}
-                color={hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444"} />
-            </button>
-          );
-        })}
+      <SectionTitle>Fighting — in order ({team.length}/{TEAM_SIZE})</SectionTitle>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {team.map((id, i) => card(id, <>
+          <span className="pixel-font" style={{ fontSize: 13, color: i === 0 ? "#ffd66e" : MUTED, alignSelf: "center", marginRight: 4 }}>{i === 0 ? "leads" : `#${i + 1}`}</span>
+          {btn("▲", "Move up", () => move(i, -1), i === 0)}
+          {btn("▼", "Move down", () => move(i, 1), i === team.length - 1)}
+          {btn("✕", "Send to reserve", () => onTeam(team.filter((x) => x !== id)))}
+        </>, true))}
+        {team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: 0 }}>Nobody is set to fight — add someone from your reserves.</p>}
       </div>
+      {reserves.length > 0 && (
+        <>
+          <SectionTitle>Reserves</SectionTitle>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {reserves.map((id) => card(id,
+              btn("＋ Fight", team.length >= TEAM_SIZE ? "Your team is full — send someone to reserve first" : "Add to the fighting team",
+                () => onTeam([...team, id]), team.length >= TEAM_SIZE || !isAlive(run, id)), false))}
+          </div>
+        </>
+      )}
     </>
   );
 }

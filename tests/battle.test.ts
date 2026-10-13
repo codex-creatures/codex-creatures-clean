@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { CREATURE_BY_ID, defaultMoveNames } from "../lib/creatures/creatureData";
 import { effectiveAgil } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
-import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, streakEffects } from "../lib/combat/battle";
+import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, HASTE_ROUNDS, streakEffects } from "../lib/combat/battle";
 import { runTeamBattle } from "../lib/combat/teamBattle";
 import { creatureTypeLabel } from "../lib/creatures/creatureType";
 
@@ -114,7 +114,7 @@ describe("move slots and learnable moves", () => {
     }
   });
 
-  it("a dash move's +20% agility can win the turn order for that round", () => {
+  it("a dash move hastes you: faster this round and the next ones", () => {
     // Thornmaw has +6% agility: A = 106, B = 116.6 — B is faster unless A dashes.
     const a = buildFighter(CREATURE_BY_ID.thornmaw, { agility: 100 }, undefined, ["Dash Lash", "Jab"]); // 106 agility
     const b = buildFighter(CREATURE_BY_ID.thornmaw, { agility: 110 }, undefined, ["Jab"]);              // 116.6 agility
@@ -124,7 +124,16 @@ describe("move slots and learnable moves", () => {
       return s.log.find((x) => x.type === "attack")!;
     };
     expect(first("Jab")).toMatchObject({ side: "B" });
-    expect(first("Dash Lash")).toMatchObject({ side: "A" }); // 106 × 1.2 = 127 > 116.6
+    expect(first("Dash Lash")).toMatchObject({ side: "A" }); // 106 × 1.5 = 159 > 116.6
+
+    // The haste carries on: A strikes first with a plain move for HASTE_ROUNDS more rounds, then it wears off.
+    const s = createBattle([a], [b]);
+    resolveRound(s, { A: { kind: "attack", skillName: "Dash Lash" }, B: { kind: "attack", skillName: "Jab" } });
+    for (let r = 0; r <= HASTE_ROUNDS; r++) {
+      const from = s.log.length;
+      resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Jab" } });
+      expect(s.log.slice(from).find((x) => x.type === "attack")).toMatchObject({ side: r < HASTE_ROUNDS ? "A" : "B" });
+    }
   });
 });
 
