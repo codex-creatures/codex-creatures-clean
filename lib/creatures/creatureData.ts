@@ -10,11 +10,19 @@ export type CreatureProficiency = {
   rdef: number;
 };
 
+// Extra behaviour on top of damage (tuning numbers live in lib/combat/battle.ts).
+export type MoveEffect =
+  | { kind: "cripple"; chance: number }       // chance to cripple (slow) the target
+  | { kind: "dash"; agilityBonus: number }    // extra agility this round only
+  | { kind: "precise"; hitChance: number };   // can miss, but every hit is precise
+
 export type Skill = {
   name: string;
   damage: number;
   energyCost: number;
   type: "melee" | "ranged";
+  effect?: MoveEffect;
+  desc?: string;
 };
 
 export type CreatureTemplate = {
@@ -40,6 +48,20 @@ export const ALL_SKILLS: Skill[] = [
   { name: "Piercing Shot", damage: 20, energyCost: 40, type: "ranged" },
   { name: "Annihilator",   damage: 45, energyCost: 90, type: "ranged" },
 ];
+
+// Moves any creature can learn into one of its move slots. For now they're
+// all available to test; later they'll come from encounters, drops and quests.
+export const LEARNABLE_MOVES: Skill[] = [
+  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses agility for a few rounds." },
+  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses agility for a few rounds." },
+  { name: "Dash Lash",      damage: 10, energyCost: 50, type: "melee",  effect: { kind: "dash", agilityBonus: 0.2 }, desc: "+20% agility this round, so it can strike first." },
+  { name: "Quick Bolt",     damage: 10, energyCost: 50, type: "ranged", effect: { kind: "dash", agilityBonus: 0.2 }, desc: "+20% agility this round, so it can strike first." },
+  { name: "Precise Slice",  damage: 15, energyCost: 30, type: "melee",  effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
+  { name: "Precise Shot",   damage: 15, energyCost: 30, type: "ranged", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
+];
+
+export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
+export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries(ALL_MOVES.map((m) => [m.name, m]));
 
 function s(...names: string[]): Skill[] {
   return names.map(n => ALL_SKILLS.find(sk => sk.name === n)!).filter(Boolean);
@@ -93,3 +115,24 @@ export const CREATURES_BY_RARITY: Record<string, CreatureTemplate[]> = {
   epic:      CREATURE_TEMPLATES.filter(c => c.rarity === "epic"),
   legendary: CREATURE_TEMPLATES.filter(c => c.rarity === "legendary"),
 };
+
+// ── Move slots ──────────────────────────────────────────────────────
+// A creature takes 4 moves into battle, chosen from its own moves plus any
+// learnable ones. Until changed, it uses the first 4 of its own.
+export const MOVE_SLOTS = 4;
+
+export function defaultMoveNames(c: CreatureTemplate): string[] {
+  return c.skills.slice(0, MOVE_SLOTS).map((m) => m.name);
+}
+
+export function movesAvailableTo(c: CreatureTemplate): Skill[] {
+  return [...c.skills, ...LEARNABLE_MOVES];
+}
+
+// The 4 moves a creature fights with. Unknown or duplicate names are
+// dropped; an empty selection falls back to the defaults.
+export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
+  const allowed = new Set(movesAvailableTo(c).map((m) => m.name));
+  const picked = [...new Set(names ?? [])].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
+  return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => MOVE_BY_NAME[n]);
+}

@@ -28,6 +28,12 @@ import type { Skill } from "../creatures/creatureData";
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
 
+// Cripple (from Cripple / Crippling Shot): the target loses agility for the
+// next few rounds. Re-crippling refreshes the duration; it doesn't stack.
+// It keeps counting down while the creature is on the bench.
+export const CRIPPLE_AGILITY_LOSS = 0.25;
+export const CRIPPLE_ROUNDS = 3;
+
 export type SideKey = "A" | "B";
 
 // Future: { kind: "item"; bagIndex: number } for the battle bag.
@@ -53,7 +59,8 @@ export type BattleSide = {
 export type BattleEvent =
   | { type: "round"; round: number }
   | { type: "swap"; side: SideKey; from: string; to: string; energyRestored: number }
-  | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; targetHpAfter: number }
+  | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
+      crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number }
   | { type: "pass"; side: SideKey; name: string }
   | { type: "faint"; side: SideKey; name: string }
   | { type: "sendIn"; side: SideKey; name: string }
@@ -90,6 +97,21 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[]): BattleState {
     hits: 0,
     minDamageHits: 0,
   };
+}
+
+// ── Status effects ─────────────────────────────────────────────────
+export const isCrippled = (f: Combatant) => f.statuses.some((s) => s.id === "cripple");
+
+// Agility right now (cripple included).
+export function currentAgility(f: Combatant): number {
+  return effectiveAgil(f) * (isCrippled(f) ? 1 - CRIPPLE_AGILITY_LOSS : 1);
+}
+
+// Agility used for this round's turn order (adds a dash move's bonus).
+export function turnAgility(f: Combatant, action: BattleAction): number {
+  const skill = action.kind === "attack" ? f.skills.find((s) => s.name === action.skillName) : undefined;
+  const dash = skill?.effect?.kind === "dash" ? skill.effect.agilityBonus : 0;
+  return currentAgility(f) * (1 + dash);
 }
 
 // ── What a side is allowed to do right now ─────────────────────────
@@ -144,11 +166,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, energyRestored: restored });
   }
 
-  // 2. Attacks in Agility order (ties random).
+  // 2. Attacks in Agility order (ties random). Dash moves add agility for
+  //    this round; a crippled creature is slower.
   const attackers = (["A", "B"] as SideKey[])
     .filter((k) => actions[k].kind !== "swap")
-    .map((k) => ({ key: k, actor: activeOf(state.sides[k]), action: actions[k] }))
-    .sort((x, y) => (effectiveAgil(y.actor) - effectiveAgil(x.actor)) || (Math.random() - 0.5));
+    .map((k) => {
+      const actor = activeOf(state.sides[k]);
+      return { key: k, actor, action: actions[k], agil: turnAgility(actor, actions[k]) };
+    })
+    .sort((x, y) => (y.agil - x.agil) || (Math.random() - 0.5));
 
   for (const { key, actor, action } of attackers) {
     if (actor.hp <= 0) continue; // fainted before acting
@@ -161,13 +187,25 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (target.hp <= 0) continue;
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
 
-    const precise = Math.random() < PRECISE_CHANCE;
-    const { damage } = calcDamage(skill, actor, target, precise);
-    state.hits++;
-    if (damage <= 1) state.minDamageHits++;
+    // Precise moves can miss, but every hit is precise; other moves have
+    // the normal small chance of a precise hit.
+    const fx = skill.effect;
+    const missed = fx?.kind === "precise" && Math.random() >= fx.hitChance;
+    const precise = !missed && (fx?.kind === "precise" || Math.random() < PRECISE_CHANCE);
+    const damage = missed ? 0 : calcDamage(skill, actor, target, precise).damage;
+    if (!missed) {
+      state.hits++;
+      if (damage <= 1) state.minDamageHits++;
+    }
     actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
     target.hp = Math.max(0, target.hp - damage);
-    state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, targetHpAfter: target.hp });
+
+    // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
+    const crippled = fx?.kind === "cripple" && target.hp > 0 && Math.random() < fx.chance;
+    if (crippled) {
+      target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1 }];
+    }
+    state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy });
     if (target.hp <= 0) state.log.push({ type: "faint", side: other(key), name: target.name });
   }
 

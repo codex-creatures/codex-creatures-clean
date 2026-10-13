@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID, defaultMoveNames } from "../lib/creatures/creatureData";
+import { effectiveAgil } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
-import { createBattle, resolveRound, sendInReplacement, activeOf } from "../lib/combat/battle";
+import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS } from "../lib/combat/battle";
 import { runTeamBattle } from "../lib/combat/teamBattle";
 import { creatureTypeLabel } from "../lib/creatures/creatureType";
 
@@ -64,5 +65,65 @@ describe("creature type labels", () => {
     expect(creatureTypeLabel(CREATURE_BY_ID.crystalback.proficiency)).toBe("Tank");
     expect(creatureTypeLabel(CREATURE_BY_ID.forest_slime.proficiency)).toBe("Balanced");
     expect(creatureTypeLabel(CREATURE_BY_ID.void_serpent.proficiency)).toBe("Hybrid · Skirmisher");
+  });
+});
+
+describe("move slots and learnable moves", () => {
+  const mv = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], undefined, undefined, moves);
+
+  it("a creature fights with 4 moves: its first 4 by default, learnable moves allowed", () => {
+    expect(buildFighter(CREATURE_BY_ID.void_serpent).skills.map((s) => s.name))
+      .toEqual(["Devastator", "Annihilator", "Crush", "Piercing Shot"]);
+    expect(mv("dire_wolf", ["Crush", "Cripple", "Dash Lash", "Precise Slice", "Slash"]).skills.map((s) => s.name))
+      .toEqual(["Crush", "Cripple", "Dash Lash", "Precise Slice"]);
+    expect(mv("dire_wolf", ["Annihilator"]).skills.map((s) => s.name)).toEqual(defaultMoveNames(CREATURE_BY_ID.dire_wolf));
+  });
+
+  it("precise moves hit 70% of the time, and every hit is precise", () => {
+    let hits = 0;
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      const s = createBattle([mv("dire_wolf", ["Precise Slice"])], [mv("crystal_golem", ["Jab"])]);
+      resolveRound(s, { A: { kind: "attack", skillName: "Precise Slice" }, B: { kind: "attack", skillName: "Jab" } });
+      const e = s.log.find((x) => x.type === "attack" && x.side === "A");
+      if (e?.type === "attack" && !e.missed) { hits++; expect(e.precise).toBe(true); }
+    }
+    expect(hits / N).toBeGreaterThan(0.66);
+    expect(hits / N).toBeLessThan(0.74);
+  });
+
+  it("cripple lands 70% of the time, slows by 25%, and lasts the next 3 rounds", () => {
+    let crippled = 0;
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      const s = createBattle([mv("crystal_golem", ["Cripple", "Jab"])], [mv("ironhide", ["Slash"])]);
+      resolveRound(s, { A: { kind: "attack", skillName: "Cripple" }, B: { kind: "attack", skillName: "Slash" } });
+      if (isCrippled(activeOf(s.sides.B))) crippled++;
+    }
+    expect(crippled / N).toBeGreaterThan(0.66);
+    expect(crippled / N).toBeLessThan(0.74);
+
+    const fast = { agility: 100 };
+    const s = createBattle([buildFighter(CREATURE_BY_ID.crystal_golem, undefined, undefined, ["Cripple", "Jab"])], [buildFighter(CREATURE_BY_ID.ironhide, fast, undefined, ["Slash"])]);
+    const target = activeOf(s.sides.B);
+    target.statuses = [{ id: "cripple", rounds: CRIPPLE_ROUNDS }]; // as at the start of the round after it landed
+    expect(currentAgility(target)).toBeCloseTo(effectiveAgil(target) * 0.75);
+    for (let r = 0; r < CRIPPLE_ROUNDS; r++) {
+      resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Slash" } });
+      expect(isCrippled(target)).toBe(r < CRIPPLE_ROUNDS - 1);
+    }
+  });
+
+  it("a dash move's +20% agility can win the turn order for that round", () => {
+    // Thornmaw has +6% agility: A = 106, B = 116.6 — B is faster unless A dashes.
+    const a = buildFighter(CREATURE_BY_ID.thornmaw, { agility: 100 }, undefined, ["Dash Lash", "Jab"]); // 106 agility
+    const b = buildFighter(CREATURE_BY_ID.thornmaw, { agility: 110 }, undefined, ["Jab"]);              // 116.6 agility
+    const first = (skill: string) => {
+      const s = createBattle([a], [b]);
+      resolveRound(s, { A: { kind: "attack", skillName: skill }, B: { kind: "attack", skillName: "Jab" } });
+      return s.log.find((x) => x.type === "attack")!;
+    };
+    expect(first("Jab")).toMatchObject({ side: "B" });
+    expect(first("Dash Lash")).toMatchObject({ side: "A" }); // 106 × 1.2 = 127 > 116.6
   });
 });
