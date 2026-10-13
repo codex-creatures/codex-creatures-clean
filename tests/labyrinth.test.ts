@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  LAB_ROOMS, ROOM_MIX, rollRoomKind, rollDoors, makeRoom, startRun, enterDoor, leaveRoom, setTeam,
+  LAB_ROOMS, ROOM_MIX, rollRoomKind, isFight, isSpecial, makeRoom, startRun, enterDoor, leaveRoom, setTeam,
   fightingTeam, endRun, enemyFighter, type LabSave,
 } from "../lib/labyrinth/run";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -17,12 +17,27 @@ describe("labyrinth rooms", () => {
     for (const [kind, pct] of ROOM_MIX) expect(Math.abs((counts[kind] ?? 0) / N * 100 - pct)).toBeLessThan(1.5);
   });
 
-  it("has 8 rooms of 2 doors, and the last leads to the boss", () => {
-    const doors = rollDoors();
-    expect(doors).toHaveLength(LAB_ROOMS);
-    doors.forEach((d) => expect(d).toHaveLength(2));
-    expect(doors[LAB_ROOMS - 1]).toEqual(["boss", "boss"]);
-    expect(doors.slice(0, -1).flat()).not.toContain("boss");
+  it("special rooms come up at most once a run, so every run has a fight before the boss", () => {
+    for (let i = 0; i < 3000; i++) {
+      let run = startRun(party, party.slice(0, 3), {}, 1 + (i % 3)); // first runs (treasure) and later ones
+      const walked: string[] = run.current ? [run.current.kind] : [];
+      while (run.status === "exploring") {
+        if (!run.current) {
+          const pair = run.doors[run.room - 1];
+          expect(pair).toHaveLength(2);
+          if (isSpecial(pair[0])) expect(pair[1]).not.toBe(pair[0]); // two doors never hide the same special
+          run = enterDoor(run, Math.random() < 0.5 ? 0 : 1);
+          walked.push(run.current!.kind);
+        }
+        run = leaveRoom({ ...run, current: { ...run.current!, done: true } });
+      }
+      expect(walked).toHaveLength(LAB_ROOMS);
+      expect(walked[LAB_ROOMS - 1]).toBe("boss");
+      expect(walked.slice(0, -1)).not.toContain("boss");
+      const specials = walked.filter((k) => isSpecial(k as never));
+      expect(new Set(specials).size).toBe(specials.length);
+      expect(walked.slice(0, -1).some((k) => isFight(k as never))).toBe(true);
+    }
   });
 
   it("easy fights: 2 Commons + an Uncommon with Common gear (bar the rare upgrade)", () => {

@@ -6,8 +6,11 @@
 // - You take a party of PARTY_SIZE creatures: TEAM_SIZE fight, the rest wait
 //   in reserve. Team and reserves can only be changed between rooms.
 // - HP carries over from room to room (energy is full at each fight).
-// - There are LAB_ROOMS rooms; the last is the boss. Every room has 2 doors
-//   to the next room, rolled when the run starts and hidden from the player.
+// - There are LAB_ROOMS rooms; the last is the boss. Every room has 2 doors,
+//   hidden from the player. Special rooms (pool, chest, stash, librarian,
+//   merchant) appear at most once per run; fights can repeat. So a room's
+//   doors are rolled when you reach it (leaving out specials you've had),
+//   then stay fixed.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
@@ -113,20 +116,28 @@ export type Room = {
   done: boolean;
 };
 
-export function rollRoomKind(rng: Rng = Math.random): RoomKind {
-  let r = rng() * 100;
-  for (const [kind, pct] of ROOM_MIX) {
+export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "boss";
+export const isSpecial = (k: RoomKind) => !isFight(k) && k !== "treasure";
+
+// A room from the mix, leaving out the given kinds (their share goes to the rest).
+export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = []): RoomKind {
+  const mix = ROOM_MIX.filter(([k]) => !exclude.includes(k));
+  let r = rng() * mix.reduce((sum, [, pct]) => sum + pct, 0);
+  for (const [kind, pct] of mix) {
     if (r < pct) return kind;
     r -= pct;
   }
-  return ROOM_MIX[0][0];
+  return mix[0][0];
 }
 
-// The 2 doors into each room, decided when the run starts.
-// doors[0] are the doors into room 1, … the last pair both lead to the boss.
-export function rollDoors(rng: Rng = Math.random): RoomKind[][] {
-  return Array.from({ length: LAB_ROOMS }, (_, i) =>
-    i === LAB_ROOMS - 1 ? ["boss", "boss"] : [rollRoomKind(rng), rollRoomKind(rng)]);
+// The 2 doors into a room (room is 1-based). The last room's both lead to
+// the boss. Specials already visited are left out, and the two doors never
+// hide the same special.
+export function rollDoorPair(room: number, visited: RoomKind[], rng: Rng = Math.random): RoomKind[] {
+  if (room === LAB_ROOMS) return ["boss", "boss"];
+  const used = visited.filter(isSpecial);
+  const first = rollRoomKind(rng, used);
+  return [first, rollRoomKind(rng, isSpecial(first) ? [...used, first] : used)];
 }
 
 // What's inside a room, rolled as you walk in.
@@ -158,8 +169,6 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
   }
 }
 
-export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "boss";
-
 // ── A run ────────────────────────────────────────────────────────────
 export type RunStatus = "exploring" | "dead" | "cleared" | "retreated";
 
@@ -171,7 +180,8 @@ export type LabRun = {
   team: string[];              // the ones that fight (up to TEAM_SIZE)
   hp: Record<string, number>;  // share of max HP left, 0–1 (0 = knocked out)
   room: number;                // the room you're in, or about to choose (1-based)
-  doors: RoomKind[][];
+  doors: RoomKind[][];         // doors[room - 1]: the doors into each room reached so far
+  visited?: RoomKind[];        // every room walked into this run
   current: Room | null;        // null = standing in front of the doors
   battle?: unknown;            // the fight in progress (saved by the screen)
   loot: string[];              // what you've found, for the summary
@@ -179,13 +189,15 @@ export type LabRun = {
 };
 
 export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random): LabRun {
-  const doors = rollDoors(rng);
+  // The very first run opens in a treasure room; otherwise at room 1's doors.
+  const first = runNumber === 1;
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
-    room: 1, doors,
-    // The very first run opens in a treasure room.
-    current: runNumber === 1 ? makeRoom("treasure", rng) : null,
+    room: 1,
+    doors: first ? [["treasure", "treasure"]] : [rollDoorPair(1, [], rng)],
+    visited: first ? ["treasure"] : [],
+    current: first ? makeRoom("treasure", rng) : null,
     loot: [], status: "exploring",
   };
 }
@@ -195,14 +207,18 @@ export const isAlive = (run: LabRun, id: string) => (run.hp[id] ?? 0) > 0;
 // Walk through one of the two doors into the current room.
 export function enterDoor(run: LabRun, door: 0 | 1, rng: Rng = Math.random): LabRun {
   if (run.status !== "exploring" || run.current) return run;
-  return { ...run, current: makeRoom(run.doors[run.room - 1][door], rng) };
+  const kind = run.doors[run.room - 1][door];
+  return { ...run, visited: [...(run.visited ?? []), kind], current: makeRoom(kind, rng) };
 }
 
 // The current room is finished: on to the doors of the next one (or the end).
-export function leaveRoom(run: LabRun): LabRun {
+export function leaveRoom(run: LabRun, rng: Rng = Math.random): LabRun {
   if (!run.current) return run;
   if (run.current.kind === "boss") return { ...run, current: { ...run.current, done: true }, status: "cleared", battle: undefined };
-  return { ...run, current: null, battle: undefined, room: run.room + 1 };
+  const room = run.room + 1;
+  const doors = [...run.doors];
+  doors[room - 1] ??= rollDoorPair(room, run.visited ?? [], rng);
+  return { ...run, current: null, battle: undefined, room, doors };
 }
 
 // Only between rooms; only creatures still standing can fight.
