@@ -6,6 +6,7 @@ import { ITEM_META } from "@/lib/items/metadata";
 import { ARMOR_META } from "@/lib/items/armor";
 import { resolveBarcode, rollBarcodeOutcome } from "@/lib/barcodeRegistry";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
+import { creatureOrCard } from "@/lib/creatures/summon";
 
 // "deterministic" (Repeatable): outcomes come from the barcode registry,
 //   rolled once on first-ever scan; your own rescans give gold.
@@ -71,19 +72,11 @@ export function useDropGeneration({
     }
 
     // ── CREATURE ─────────────────────────────────────────
+    // The barcode fixes WHICH creature; you usually get a card of it (10%:
+    // the creature itself), with this player's own % and move roll.
     if (result.outcome === "creature") {
       const creature = CREATURE_BY_ID[result.creatureId];
-      onDrop({
-        id: crypto.randomUUID(),
-        barcode: code,
-        dropType: "creature",
-        creatureId: result.creatureId,
-        rarity: result.rarity,
-        roll: 0,
-        name: creature?.name ?? result.creatureId,
-        desc: creature?.flavour,
-        createdAt: new Date().toISOString(),
-      });
+      if (creature) onDrop(creatureOrCard(creature, code));
       return;
     }
 

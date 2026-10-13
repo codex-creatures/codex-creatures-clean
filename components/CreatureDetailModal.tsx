@@ -6,7 +6,8 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
-import { buildFighter, combatSummary } from "@/lib/combat/loadout";
+import { combatSummary } from "@/lib/combat/loadout";
+import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import type { EquipSlot, Loadout } from "@/hooks/useGameState";
 import MoveSlots from "./MoveSlots";
@@ -127,18 +128,20 @@ export default function CreatureDetailModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
-  const fighter = template ? buildFighter(template, weapon?.stats, armor?.stats) : null;
+  const fighter = template ? fighterFor(creature, template, weapon?.stats, armor?.stats, loadout?.moves) : null;
   const final   = fighter ? combatSummary(fighter) : null;
-  const prof    = template?.proficiency;
+  const prof    = template ? proficiencyOf(creature, template) : undefined;
+  const base    = template?.proficiency;
 
   // [label, gear total, proficiency %, final]
-  const rows: [string, number, number | null, number][] = template && fighter && final && prof ? [
-    ["Health",     template.baseHp + fighter.weapon.hp + fighter.armor.hp, null, final.hp],
-    ["Melee",      fighter.weapon.atk,                       prof.atk,  final.atk],
-    ["Ranged",     fighter.weapon.rng,                       prof.rng,  final.rng],
-    ["Agility",    fighter.weapon.agil + fighter.armor.agil, prof.agil, final.agil],
-    ["Melee Def",  fighter.armor.mdef,                       prof.mdef, final.mdef],
-    ["Ranged Def", fighter.armor.rdef,                       prof.rdef, final.rdef],
+  // [label, gear total, proficiency %, final, roll vs species]
+  const rows: [string, number, number | null, number, number][] = template && fighter && final && prof && base ? [
+    ["Health",     template.baseHp + fighter.weapon.hp + fighter.armor.hp, null, final.hp, 0],
+    ["Melee",      fighter.weapon.atk,                       prof.atk,  final.atk,  prof.atk - base.atk],
+    ["Ranged",     fighter.weapon.rng,                       prof.rng,  final.rng,  prof.rng - base.rng],
+    ["Agility",    fighter.weapon.agil + fighter.armor.agil, prof.agil, final.agil, prof.agil - base.agil],
+    ["Melee Def",  fighter.armor.mdef,                       prof.mdef, final.mdef, prof.mdef - base.mdef],
+    ["Ranged Def", fighter.armor.rdef,                       prof.rdef, final.rdef, prof.rdef - base.rdef],
   ] : [];
 
   return (
@@ -151,7 +154,7 @@ export default function CreatureDetailModal({
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
             <span style={{ display: "inline-block", padding: "2px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: c.text, border: `1px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <span style={{ fontSize: 12, opacity: 0.45 }}>Creature</span>
-            {template && <TypeTags roles={creatureRoles(template.proficiency)} />}
+            {template && prof && <TypeTags roles={creatureRoles(prof)} />}
           </div>
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 24, fontWeight: 600, color: c.text, lineHeight: 1.2 }}>{creature.name}</h2>
           {template?.flavour && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
@@ -174,19 +177,20 @@ export default function CreatureDetailModal({
               <span style={{ color: MUTED, fontSize: 11, textAlign: "right" }}>Gear</span>
               <span style={{ color: MUTED, fontSize: 11, textAlign: "right" }}>Creature</span>
               <span style={{ color: MUTED, fontSize: 11, textAlign: "right" }}>Total</span>
-              {rows.map(([label, gear, pct, total]) => (
-                <Row key={label} label={label} gear={gear} pct={pct} total={total} baseHp={label === "Health" ? template.baseHp : undefined} />
+              {rows.map(([label, gear, pct, total, diff]) => (
+                <Row key={label} label={label} gear={gear} pct={pct} total={total} diff={diff} baseHp={label === "Health" ? template.baseHp : undefined} />
               ))}
             </div>
             <p style={{ fontSize: 11, color: MUTED, margin: "8px 0 0", lineHeight: 1.4 }}>
               Creature % boosts the matching gear stats. Health is the creature&apos;s base HP plus gear HP.
+              {creature.proficiency && " Small numbers show how this one's roll differs from a standard " + creature.name + "."}
             </p>
 
             {/* Moves */}
             <div style={{ fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", margin: "18px 0 8px" }}>
               Moves {onSetMoves && <span style={{ textTransform: "none", letterSpacing: 0 }}>· tap a slot to change it</span>}
             </div>
-            <MoveSlots template={template} moves={loadout?.moves} onChange={onSetMoves} />
+            <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} onChange={onSetMoves} />
           </>
         )}
 
@@ -208,12 +212,15 @@ export function TypeTags({ roles }: { roles: string[] }) {
   );
 }
 
-function Row({ label, gear, pct, total, baseHp }: { label: string; gear: number; pct: number | null; total: number; baseHp?: number }) {
+function Row({ label, gear, pct, total, diff, baseHp }: { label: string; gear: number; pct: number | null; total: number; diff: number; baseHp?: number }) {
   return (
     <>
       <span>{label}</span>
       <span style={{ textAlign: "right", color: MUTED }}>{baseHp !== undefined ? `${baseHp} + ${gear - baseHp}` : gear}</span>
-      <span style={{ textAlign: "right", color: pct ? "#22c55e" : MUTED }}>{pct === null ? "—" : `+${pct}%`}</span>
+      <span style={{ textAlign: "right", color: pct ? "#22c55e" : MUTED }}>
+        {pct === null ? "—" : `+${pct}%`}
+        {diff !== 0 && <sup style={{ marginLeft: 2, fontSize: 10, color: diff > 0 ? "#7CFC9A" : "#ff8a80" }}>{diff > 0 ? `+${diff}` : diff}</sup>}
+      </span>
       <span style={{ textAlign: "right", fontWeight: 700 }}>{Math.round(total)}</span>
     </>
   );

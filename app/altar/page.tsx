@@ -125,7 +125,7 @@ export default function AltarPage() {
           ) : (
             <>
               <span style={{ fontSize: 16, fontWeight: 600, color: isItemDrop(lastDrop) ? RARITY_COLORS[lastDrop.rarity]?.text ?? "white" : "white" }}>
-                {lastDrop.name}
+                {lastDrop.dropType === "card" ? "🃏 " : ""}{lastDrop.name}{lastDrop.dropType === "card" ? " card" : ""}
               </span>
               <button
                 onClick={() => game.toggleFavorite(lastDrop.id)}

@@ -3,7 +3,7 @@
 // Shared by the main game (creature screen) and the simulator, so what the
 // player sees is exactly what battles use.
 
-import { resolveMoves, type CreatureTemplate } from "../creatures/creatureData";
+import { resolveMoves, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
 import { effectiveStats, type CombatItem, type Fighter } from "./engine";
 
 const EMPTY: CombatItem = { atk: 0, rng: 0, agil: 0, mdef: 0, rdef: 0, hp: 0 };
@@ -27,6 +27,7 @@ export function buildFighter(
   weaponStats?: Record<string, number>,
   armorStats?: Record<string, number>,
   moveNames?: string[], // the creature's 4 move slots (defaults if omitted)
+  proficiency?: CreatureProficiency, // this individual's rolled %s (species values if omitted)
 ): Fighter {
   const weapon = itemToCombatStats(weaponStats);
   const armor  = itemToCombatStats(armorStats);
@@ -36,7 +37,7 @@ export function buildFighter(
     hp: totalHp,
     maxHp: totalHp,
     energy: 100,
-    proficiency: creature.proficiency,
+    proficiency: proficiency ?? creature.proficiency,
     skills: resolveMoves(creature, moveNames),
     weapon,
     armor,

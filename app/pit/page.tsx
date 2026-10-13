@@ -22,11 +22,13 @@ export default function PitPage() {
 
       <InventoryList
         title="Creatures"
-        tabs={["roster", "creatures"]}
+        tabs={["roster", "creatures", "cards"]}
         showSell={false}
         emptyText={game.activeTab === "roster"
           ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
-          : "No creatures yet — visit the Scanning Altar."}
+          : game.activeTab === "cards"
+            ? "No creature cards yet. Creature barcodes usually give a card — collect 3 of one creature to summon it."
+            : "No creatures yet — visit the Scanning Altar."}
         inventory={game.inventory}
         filteredInventory={game.filteredInventory}
         equipment={game.equipment}
@@ -34,6 +36,7 @@ export default function PitPage() {
         lockedIds={game.lockedIds}
         onEquip={game.equipItem}
         onSetMoves={game.setMoves}
+        onSummon={game.summon}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}
         onTabChange={game.setActiveTab}

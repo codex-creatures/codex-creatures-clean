@@ -10,7 +10,7 @@ export type RewardKind = "resource";
 export type CreatureOrItemDrop = {
   id: string;
   barcode: string;
-  dropType: "creature" | "item";
+  dropType: "creature" | "item" | "card"; // card: a creature card (3 of a kind summon a creature)
   rarity: import("./items/budgets").Rarity;
   roll: number;
   name: string;
@@ -18,6 +18,10 @@ export type CreatureOrItemDrop = {
   itemKey?: import("./items/ceilings").ItemKey;
   armorKey?: import("./items/armor").ArmorKey;
   creatureId?: string; // stable id from lib/creatures/creatureData.ts
+  // Creatures and cards: this individual's rolled %s and starting moves.
+  // Missing on older creatures → the species' standard values.
+  proficiency?: import("./creatures/creatureData").CreatureProficiency;
+  moves?: string[];
   stats?: {
     melee?: number;
     ranged?: number;
@@ -47,7 +51,11 @@ export function isRewardDrop(d: Drop): d is RewardDrop {
 }
 
 export function isCreatureOrItemDrop(d: Drop): d is CreatureOrItemDrop {
-  return d.dropType === "creature" || d.dropType === "item";
+  return d.dropType === "creature" || d.dropType === "item" || d.dropType === "card";
+}
+
+export function isCardDrop(d: Drop): d is CreatureOrItemDrop & { dropType: "card" } {
+  return d.dropType === "card";
 }
 
 export function isCreatureDrop(d: Drop): d is CreatureOrItemDrop & { dropType: "creature" } {

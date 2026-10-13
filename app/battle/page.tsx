@@ -15,6 +15,7 @@ import { ARMOR_META, type ArmorKey } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import { CREATURES_BY_RARITY, CREATURE_TEMPLATES, findCreatureTemplate, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
+import { fighterFor } from "@/lib/creatures/instance";
 import { buildFighter, combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, type Fighter } from "@/lib/combat/engine";
 import {
@@ -158,10 +159,10 @@ export default function BattlePage() {
       const a = items.get(equipment[d.id]?.armorId ?? "");
       list.push({
         id: d.id, name: t.name, template: t, roster: favs.has(d.id),
-        rarity: t.rarity, label: creatureTypeLabel(t.proficiency),
+        rarity: t.rarity, label: creatureTypeLabel(d.proficiency ?? t.proficiency),
         weaponName: w?.name, armorName: a?.name,
         weaponRarity: w?.rarity, armorRarity: a?.rarity,
-        fighter: buildFighter(t, w?.stats, a?.stats, equipment[d.id]?.moves),
+        fighter: fighterFor(d, t, w?.stats, a?.stats, equipment[d.id]?.moves),
       });
     }
     list.sort((x, y) =>

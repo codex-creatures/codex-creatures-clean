@@ -4,13 +4,14 @@
 import { useMemo, useState } from "react";
 import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
-import { isRewardDrop, isItemDrop, isCreatureDrop, isSellableItem } from "@/lib/types";
+import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import ItemDetailModal from "./ItemDetailModal";
 import CreatureDetailModal from "./CreatureDetailModal";
+import CardModal from "./CardModal";
 import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
 
 type Props = {
@@ -21,6 +22,7 @@ type Props = {
   lockedIds: Set<string>; // favourited or equipped — can't be sold
   onEquip: (creatureId: string, slot: EquipSlot, itemId: string | null) => void;
   onSetMoves?: (creatureId: string, moves: string[]) => void;
+  onSummon?: (cardIds: string[], keepId: string | null) => CreatureOrItemDrop;
   tabCounts: Record<GameTabKey, number>;
   activeTab: GameTabKey;
   onTabChange: (tab: GameTabKey) => void;
@@ -47,7 +49,7 @@ const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "m
 const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Roster" };
 
 export default function InventoryList({
-  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves,
+  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves, onSummon,
   tabCounts, activeTab, onTabChange,
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
@@ -56,6 +58,9 @@ export default function InventoryList({
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
+  // Keep the card itself (not just its id): after summoning it's gone from
+  // the inventory, but the window stays open to show what was summoned.
+  const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
 
   // Only item drops are navigable in the modal
   const navigableItems = filteredInventory.filter(isItemDrop) as CreatureOrItemDrop[];
@@ -71,6 +76,10 @@ export default function InventoryList({
   function handleRowClick(d: Drop) {
     if (sellMode) {
       if (isSellableItem(d) && !lockedIds.has(d.id)) onToggleSelectItem(d.id);
+      return;
+    }
+    if (isCardDrop(d)) {
+      setOpenCard(d);
       return;
     }
     if (isCreatureDrop(d)) {
@@ -138,6 +147,7 @@ export default function InventoryList({
         {filteredInventory.map((d) => {
           const isItem     = d.dropType === "item";
           const isCreature = d.dropType === "creature";
+          const isCard     = d.dropType === "card";
           const isFav      = favoriteIds.has(d.id);
           const sellable   = isSellableItem(d) && !lockedIds.has(d.id);
           const ownerId    = equippedOn.get(d.id);
@@ -162,7 +172,7 @@ export default function InventoryList({
                     <span style={{ opacity: 0.7 }}>🪙 +{d.amount} Gold</span>
                   ) : (
                     <span style={{ color: RARITY_COLORS[(d as CreatureOrItemDrop).rarity]?.text ?? "white" }}>
-                      {isItem ? (d as CreatureOrItemDrop).name ?? (d as any).itemKey ?? "Unknown" : (d as CreatureOrItemDrop).name}
+                      {isCard ? "🃏 " : ""}{isItem ? (d as CreatureOrItemDrop).name ?? (d as any).itemKey ?? "Unknown" : (d as CreatureOrItemDrop).name}{isCard ? " card" : ""}
                     </span>
                   )}
                   {!sellMode && (isItem || isCreature) && (
@@ -174,9 +184,10 @@ export default function InventoryList({
                       {isFav ? "★" : "☆"}
                     </button>
                   )}
-                  {isCreature && (() => {
-                    const t = findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name);
-                    return t ? <span style={{ fontSize: 11, opacity: 0.45 }}>{creatureTypeLabel(t.proficiency)}</span> : null;
+                  {(isCreature || isCard) && (() => {
+                    const c = d as CreatureOrItemDrop;
+                    const t = findCreatureTemplate(c.creatureId, c.name);
+                    return t ? <span style={{ fontSize: 11, opacity: 0.45 }}>{creatureTypeLabel(c.proficiency ?? t.proficiency)}</span> : null;
                   })()}
                   {isCreature && (loadout?.weaponId || loadout?.armorId) && (
                     <span style={{ fontSize: 12, opacity: 0.6 }} title="Has gear equipped">
@@ -210,6 +221,17 @@ export default function InventoryList({
           onEquip={(slot, itemId) => onEquip(openCreature.id, slot, itemId)}
           onSetMoves={onSetMoves ? (moves) => onSetMoves(openCreature.id, moves) : undefined}
           onClose={() => setOpenCreatureId(null)}
+        />
+      )}
+
+      {/* Card Modal */}
+      {openCard && onSummon && (
+        <CardModal
+          key={openCard.id}
+          card={openCard}
+          sameKind={inventory.filter((d) => isCardDrop(d) && d.creatureId === openCard.creatureId) as CreatureOrItemDrop[]}
+          onSummon={onSummon}
+          onClose={() => setOpenCard(null)}
         />
       )}
 

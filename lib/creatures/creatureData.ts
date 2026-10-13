@@ -33,6 +33,7 @@ export type CreatureTemplate = {
   proficiency: CreatureProficiency;
   skills: Skill[];
   flavour: string;
+  companion?: boolean; // story companion: not found by scanning, not in the collection count
 };
 
 export const ALL_SKILLS: Skill[] = [
@@ -99,13 +100,26 @@ export const CREATURE_TEMPLATES: CreatureTemplate[] = [
   { id: "storm_phoenix",  name: "Storm Phoenix",   rarity: "legendary", baseHp: 133, proficiency: { atk: 20, rng: 48, agil: 44, mdef: 14, rdef: 24 }, skills: s("Annihilator","Piercing Shot","Bolt","Devastator","Flick","Stone Throw"), flavour: "Dies in lightning. Returns in thunder. Has done this many times." },
 ];
 
+// Klutz: the dopey goblin who drags you out of the labyrinth and decides to
+// stay. Every player starts with him. A bruiser-style hybrid, so he suits
+// almost any gear.
+export const KLUTZ: CreatureTemplate = {
+  id: "klutz", name: "Klutz", rarity: "rare", baseHp: 98, companion: true,
+  proficiency: { atk: 26, rng: 18, agil: 8, mdef: 12, rdef: 10 },
+  skills: s("Slash", "Bolt", "Heavy Blow", "Stone Throw"),
+  flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. He found you down there, so now you're his.",
+};
+
+export const COMPANIONS: CreatureTemplate[] = [KLUTZ];
+
+// Every creature that can exist (scannable ones + companions), by id.
 export const CREATURE_BY_ID: Record<string, CreatureTemplate> = Object.fromEntries(
-  CREATURE_TEMPLATES.map(c => [c.id, c])
+  [...CREATURE_TEMPLATES, ...COMPANIONS].map(c => [c.id, c])
 );
 
 // Template for a creature drop. Older saves stored only the name.
 export function findCreatureTemplate(creatureId?: string, name?: string): CreatureTemplate | undefined {
-  return (creatureId && CREATURE_BY_ID[creatureId]) || CREATURE_TEMPLATES.find(c => c.name === name);
+  return (creatureId && CREATURE_BY_ID[creatureId]) || Object.values(CREATURE_BY_ID).find(c => c.name === name);
 }
 
 export const CREATURES_BY_RARITY: Record<string, CreatureTemplate[]> = {

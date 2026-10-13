@@ -1,11 +1,24 @@
 // hooks/useGameState.ts
 import { useEffect, useMemo, useState } from "react";
 import type { Drop } from "@/lib/types";
-import { isRewardDrop, isItemDrop, isCreatureDrop, isSellableItem } from "@/lib/types";
+import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
+import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
-import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, KLUTZ } from "@/lib/creatures/creatureData";
+import { summonFromCards } from "@/lib/creatures/summon";
+
+// Klutz is every player's first creature (and always in the roster).
+export const KLUTZ_DROP_ID = "klutz-companion";
+function klutzDrop(): Drop {
+  return {
+    id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
+    rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour,
+    createdAt: new Date().toISOString(),
+  };
+}
+const hasKlutz = (inv: Drop[]) => inv.some((d) => isCreatureDrop(d) && d.creatureId === KLUTZ.id);
 
 const STORAGE_KEY = "codex_creatures_save_v2";
 
@@ -47,7 +60,7 @@ function safeSave(state: SaveState) {
   } catch {}
 }
 
-export type TabKey = "all" | "roster" | "creatures" | "weapons" | "armor" | "materials" | "consumables";
+export type TabKey = "all" | "roster" | "creatures" | "cards" | "weapons" | "armor" | "materials" | "consumables";
 
 export function useGameState(initialTab: TabKey = "all") {
   const [gold, setGold]               = useState(0);
@@ -71,11 +84,15 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     const saved = loadSave();
+    // Everyone has Klutz (added to older saves and new games).
+    const inv = saved?.inventory ?? [];
+    const favs = new Set(saved?.favoriteIds ?? []);
+    if (!hasKlutz(inv)) { inv.unshift(klutzDrop()); favs.add(KLUTZ_DROP_ID); }
+    setInventory(inv);
+    setFavoriteIds(favs);
     if (saved) {
       setGold(saved.gold);
-      setInventory(saved.inventory);
       setScanCounts(saved.scanCounts);
-      setFavoriteIds(new Set(saved.favoriteIds ?? []));
       setEquipment(saved.equipment ?? {});
     }
     setHydrated(true);
@@ -109,6 +126,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const armorOnly       = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "armor"), [inventory]);
   const materialsOnly   = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "material"), [inventory]);
   const consumablesOnly = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "consumable"), [inventory]);
+  const cardsOnly       = useMemo(() => inventory.filter(isCardDrop), [inventory]);
   // Roster = favourited creatures.
   const rosterOnly      = useMemo(() => creaturesOnly.filter((d) => favoriteIds.has(d.id)), [creaturesOnly, favoriteIds]);
 
@@ -116,31 +134,35 @@ export function useGameState(initialTab: TabKey = "all") {
     all:         inventory.length,
     roster:      rosterOnly.length,
     creatures:   creaturesOnly.length,
+    cards:       cardsOnly.length,
     weapons:     weaponsOnly.length,
     armor:       armorOnly.length,
     materials:   materialsOnly.length,
     consumables: consumablesOnly.length,
-  }), [inventory, rosterOnly, creaturesOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
+  }), [inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
 
   const filteredInventory = useMemo(() => {
     switch (activeTab) {
       case "roster":      return rosterOnly;
       case "creatures":   return creaturesOnly;
+      case "cards":       return cardsOnly;
       case "weapons":     return weaponsOnly;
       case "armor":       return armorOnly;
       case "materials":   return materialsOnly;
       case "consumables": return consumablesOnly;
       default:            return inventory;
     }
-  }, [activeTab, inventory, rosterOnly, creaturesOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
+  }, [activeTab, inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
 
   // ── Discovery progress ────────────────────────────────
   const discoveredCreatures = useMemo(
-    // Count roster creatures only; older saves stored names instead of ids.
+    // Creatures and cards both count as discovered; companions (Klutz) don't.
+    // Older saves stored names instead of ids.
     () => new Set(
-      inventory.filter(isCreatureDrop)
-        .map((d) => findCreatureTemplate(d.creatureId, d.name)?.id)
-        .filter(Boolean)
+      inventory.filter((d) => isCreatureDrop(d) || isCardDrop(d))
+        .map((d) => findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name))
+        .filter((t) => t && !t.companion)
+        .map((t) => t!.id)
     ).size,
     [inventory]
   );
@@ -211,6 +233,16 @@ export function useGameState(initialTab: TabKey = "all") {
     setEquipment((prev) => ({ ...prev, [creatureId]: { ...prev[creatureId], moves } }));
   }
 
+  // Three cards of one creature → that creature. keepId = the card to keep
+  // ("choose"), or null for a fresh random roll. Returns the new creature.
+  function summon(cardIds: string[], keepId: string | null): CreatureOrItemDrop {
+    const cards = inventory.filter((d) => cardIds.includes(d.id)) as CreatureOrItemDrop[];
+    const creature = summonFromCards(cards, keepId);
+    setInventory((prev) => [creature, ...prev.filter((d) => !cardIds.includes(d.id))]);
+    setLastDrop(creature);
+    return creature;
+  }
+
   function toggleSellMode() {
     setSellMode((v) => !v);
     setSelectedForSale(new Set());
@@ -247,10 +279,10 @@ export function useGameState(initialTab: TabKey = "all") {
   // "New player": wipes this player's progress but keeps the barcode
   // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
-    setInventory([]);
+    setInventory([klutzDrop()]);
     setGold(0);
     setScanCounts({});
-    setFavoriteIds(new Set());
+    setFavoriteIds(new Set([KLUTZ_DROP_ID]));
     setEquipment({});
     setLastDrop(null);
     setSellMode(false);
@@ -276,7 +308,7 @@ export function useGameState(initialTab: TabKey = "all") {
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
     addDrop, updateScanCount,
-    toggleFavorite, equipItem, setMoves, toggleSellMode, toggleSelectItem,
+    toggleFavorite, equipItem, setMoves, summon, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };
 }
