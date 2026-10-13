@@ -8,6 +8,8 @@ import { TOTAL_CREATURES, TOTAL_ITEMS, RARITY_COLORS } from "@/lib/items/gameHel
 import { isRewardDrop, isItemDrop } from "@/lib/types";
 import Link from "next/link";
 import DungeonFrame from "@/components/DungeonFrame";
+import InventoryList from "@/components/InventoryList";
+import { RECENT_SCANS } from "@/hooks/useGameState";
 
 // The scanning altar: scan or type a barcode to get a drop.
 export default function AltarPage() {
@@ -25,7 +27,7 @@ export default function AltarPage() {
   const { generateDrop } = useDropGeneration({
     rollMode,
     scanCounts: game.scanCounts,
-    onDrop:            game.addDrop,
+    onDrop:            game.addScan,
     onScanCountUpdate: game.updateScanCount,
   });
 
@@ -141,6 +143,36 @@ export default function AltarPage() {
           )}
         </div>
       )}
+
+      {/* Your last scans — tap one to see it in full again. */}
+      <InventoryList
+        title="Recent scans"
+        tabs={[]}
+        showSell={false}
+        emptyText="Nothing scanned yet."
+        inventory={game.inventory}
+        filteredInventory={game.recentScans}
+        equipment={game.equipment}
+        equippedOn={game.equippedOn}
+        lockedIds={game.lockedIds}
+        onEquip={game.equipItem}
+        onSetMoves={game.setMoves}
+        onSummon={game.summon}
+        tabCounts={game.tabCounts}
+        activeTab={game.activeTab}
+        onTabChange={game.setActiveTab}
+        favoriteIds={game.favoriteIds}
+        onToggleFavorite={game.toggleFavorite}
+        sellMode={false}
+        selectedForSale={game.selectedForSale}
+        onToggleSelectItem={game.toggleSelectItem}
+        onSelectAll={game.selectAllInView}
+        onDeselectAll={game.deselectAll}
+        sellTotal={0}
+        onOpenSellConfirm={() => {}}
+        onToggleSellMode={() => {}}
+      />
+      <p style={{ fontSize: 11, opacity: 0.35, margin: "6px 0 0" }}>Your last {RECENT_SCANS} scans, newest first. Sold items and summoned cards drop off the list.</p>
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>

@@ -22,6 +22,7 @@ function klutzDrop(): Drop {
 const hasKlutz = (inv: Drop[]) => inv.some((d) => isCreatureDrop(d) && d.creatureId === KLUTZ.id);
 
 const STORAGE_KEY = "codex_creatures_save_v2";
+export const RECENT_SCANS = 10; // how many recent scans the altar remembers
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
 // (move names; missing = the creature's default moves).
@@ -34,6 +35,7 @@ type SaveState = {
   scanCounts: Record<string, number>;
   favoriteIds?: string[];
   equipment?: Record<string, Loadout>; // creature drop id → loadout
+  recentScans?: string[];              // drop ids of your last scans, newest first
 };
 
 // Also used read-only by the battle and labyrinth screens. Everyone has
@@ -58,6 +60,7 @@ export function loadSave(): SaveState | null {
     scanCounts: obj(parsed.scanCounts) as Record<string, number>,
     favoriteIds,
     equipment:  obj(parsed.equipment) as Record<string, Loadout>,
+    recentScans: Array.isArray(parsed.recentScans) ? parsed.recentScans : [],
   };
 }
 
@@ -75,6 +78,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [scanCounts, setScanCounts]   = useState<Record<string, number>>({});
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [equipment, setEquipment]     = useState<Record<string, Loadout>>({});
+  const [recentScanIds, setRecentScanIds] = useState<string[]>([]);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -97,14 +101,15 @@ export function useGameState(initialTab: TabKey = "all") {
       setGold(saved.gold);
       setScanCounts(saved.scanCounts);
       setEquipment(saved.equipment ?? {});
+      setRecentScanIds(saved.recentScans ?? []);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds]);
 
   // ── Equipment ─────────────────────────────────────────
   // item drop id → creature drop id it's equipped on
@@ -157,6 +162,12 @@ export function useGameState(initialTab: TabKey = "all") {
     }
   }, [activeTab, inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
 
+  // Your last scans that you still have (sold or summoned ones drop out).
+  const recentScans = useMemo(() => {
+    const byId = new Map(inventory.map((d) => [d.id, d]));
+    return recentScanIds.map((id) => byId.get(id)).filter((d): d is Drop => !!d);
+  }, [inventory, recentScanIds]);
+
   // ── Discovery progress ────────────────────────────────
   const discoveredCreatures = useMemo(
     // Creatures and cards both count as discovered; companions (Klutz) don't.
@@ -204,6 +215,12 @@ export function useGameState(initialTab: TabKey = "all") {
     setLastDrop(drop);
     setInventory((prev) => [drop, ...prev]);
     if (isRewardDrop(drop)) setGold((g) => g + drop.amount);
+  }
+
+  // A drop from scanning a barcode: added, and remembered in your recent scans.
+  function addScan(drop: Drop) {
+    addDrop(drop);
+    setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
   }
 
   // Gold that isn't a drop (labyrinth rewards, entry fees). spendGold
@@ -299,6 +316,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setScanCounts({});
     setFavoriteIds(new Set([KLUTZ_DROP_ID]));
     setEquipment({});
+    setRecentScanIds([]);
     setLastDrop(null);
     setSellMode(false);
     setSelectedForSale(new Set());
@@ -313,7 +331,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, favoriteIds, equipment, lastDrop,
+    gold, inventory, scanCounts, favoriteIds, equipment, lastDrop, recentScans,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
@@ -322,7 +340,7 @@ export function useGameState(initialTab: TabKey = "all") {
     discoveredCreatures, discoveredItems,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
-    addDrop, addGold, spendGold, updateScanCount, hydrated,
+    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, summon, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };
