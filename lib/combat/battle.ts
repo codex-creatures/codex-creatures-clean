@@ -108,11 +108,13 @@ export const other = (k: SideKey): SideKey => (k === "A" ? "B" : "A");
 export const activeOf = (s: BattleSide) => s.team[s.active];
 export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).length;
 
-export function createBattle(teamA: Fighter[], teamB: Fighter[]): BattleState {
-  const fresh = (t: Fighter[]): Combatant[] =>
-    t.map((f) => ({ ...f, hp: f.maxHp, energy: MAX_ENERGY, statuses: [] }));
+// startHp: creatures that start hurt (e.g. HP carried between labyrinth
+// rooms); missing = full health. Everyone starts with full energy.
+export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}): BattleState {
+  const fresh = (t: Fighter[], hp?: number[]): Combatant[] =>
+    t.map((f, i) => ({ ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] }));
   const side = (key: SideKey, team: Fighter[]): BattleSide =>
-    ({ key, team: fresh(team), active: 0, swaps: 0, lastSwapRound: -99 });
+    ({ key, team: fresh(team, startHp[key]), active: 0, swaps: 0, lastSwapRound: -99 });
   return {
     round: 0,
     sides: { A: side("A", teamA), B: side("B", teamB) },

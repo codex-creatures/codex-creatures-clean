@@ -203,6 +203,17 @@ export function useGameState(initialTab: TabKey = "all") {
     if (isRewardDrop(drop)) setGold((g) => g + drop.amount);
   }
 
+  // Gold that isn't a drop (labyrinth rewards, entry fees). spendGold
+  // returns false (and spends nothing) if you can't afford it.
+  function addGold(amount: number) {
+    setGold((g) => g + amount);
+  }
+  function spendGold(amount: number): boolean {
+    if (gold < amount) return false;
+    setGold((g) => g - amount);
+    return true;
+  }
+
   function updateScanCount(code: string, count: number) {
     setScanCounts((prev) => ({ ...prev, [code]: count }));
   }
@@ -307,7 +318,7 @@ export function useGameState(initialTab: TabKey = "all") {
     discoveredCreatures, discoveredItems,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
-    addDrop, updateScanCount,
+    addDrop, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, summon, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };

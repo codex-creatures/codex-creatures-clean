@@ -15,7 +15,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from the Chest for now." },
   [OBJ.quests]:   { label: "Quest Board", soon: "Daily quests (and the utility moves they reward) are coming." },
   [OBJ.bag]:      { label: "Battle Bag", soon: "Pack up to 10 items — spare weapons and utility items — to use in battle." },
-  [OBJ.arch]:     { label: "The Deep", soon: "Something stirs beyond the archway… Encounters are coming." },
+  [OBJ.arch]:     { label: "The Labyrinth", href: "/labyrinth" },
 };
 
 const FPS = 12;
