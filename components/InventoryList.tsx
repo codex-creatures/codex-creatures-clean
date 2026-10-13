@@ -20,6 +20,7 @@ type Props = {
   equippedOn: Map<string, string>;
   lockedIds: Set<string>; // favourited or equipped — can't be sold
   onEquip: (creatureId: string, slot: EquipSlot, itemId: string | null) => void;
+  onSetMoves?: (creatureId: string, moves: string[]) => void;
   tabCounts: Record<GameTabKey, number>;
   activeTab: GameTabKey;
   onTabChange: (tab: GameTabKey) => void;
@@ -46,7 +47,7 @@ const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "m
 const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Roster" };
 
 export default function InventoryList({
-  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip,
+  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves,
   tabCounts, activeTab, onTabChange,
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
@@ -120,7 +121,7 @@ export default function InventoryList({
       {/* Tabs */}
       <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {tabs.map((tab) => (
-          <button key={tab} onClick={() => onTabChange(tab)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 13, border: "1px solid rgba(255,255,255,0.2)", background: activeTab === tab ? "white" : "transparent", color: activeTab === tab ? "black" : "white", cursor: "pointer", fontWeight: activeTab === tab ? 700 : 400 }}>
+          <button key={tab} onClick={() => onTabChange(tab)} className="chip" data-active={activeTab === tab}>
             {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)} ({tabCounts[tab] ?? 0})
           </button>
         ))}
@@ -150,7 +151,8 @@ export default function InventoryList({
             <div key={d.id} style={{ marginTop: 4 }}>
               <div
                 onClick={() => handleRowClick(d)}
-                style={{ padding: "8px 10px", borderRadius: 8, border: sellMode && sellable ? (isSelected ? "1px solid rgba(245,197,66,0.7)" : "1px solid rgba(255,255,255,0.1)") : "1px solid transparent", background: sellMode && isSelected ? "rgba(245,197,66,0.08)" : "transparent", cursor: (sellMode && sellable) || (!sellMode && (isItem || isCreature)) ? "pointer" : "default", transition: "all 0.1s", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: sellMode && !sellable && !isRewardDrop(d) ? 0.35 : 0.95 }}
+                className="inv-row"
+                style={{ padding: "8px 10px", borderLeftColor: isRewardDrop(d) ? "#5a4a1a" : RARITY_COLORS[(d as CreatureOrItemDrop).rarity]?.border, outline: sellMode && sellable ? (isSelected ? "2px solid rgba(245,197,66,0.8)" : "1px dashed rgba(255,255,255,0.15)") : "none", background: sellMode && isSelected ? "rgba(245,197,66,0.1)" : undefined, cursor: (sellMode && sellable) || (!sellMode && (isItem || isCreature)) ? "pointer" : "default", transition: "all 0.1s", display: "flex", alignItems: "center", justifyContent: "space-between", opacity: sellMode && !sellable && !isRewardDrop(d) ? 0.35 : 0.95 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {sellMode && sellable && (
@@ -206,6 +208,7 @@ export default function InventoryList({
           equippedOn={equippedOn}
           creatureNameById={creatureNameById}
           onEquip={(slot, itemId) => onEquip(openCreature.id, slot, itemId)}
+          onSetMoves={onSetMoves ? (moves) => onSetMoves(openCreature.id, moves) : undefined}
           onClose={() => setOpenCreatureId(null)}
         />
       )}

@@ -90,7 +90,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f0f1a", border: `1px solid ${RARITY_COLORS[item.rarity].border}`, boxShadow: `0 0 40px ${RARITY_COLORS[item.rarity].glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+      <div onClick={(e) => e.stopPropagation()} className="modal-panel" style={{ background: "#0f0f1a", border: `1px solid ${RARITY_COLORS[item.rarity].border}`, boxShadow: `0 0 40px ${RARITY_COLORS[item.rarity].glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
@@ -99,7 +99,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
             <RarityBadge rarity={item.rarity} />
             <span style={{ fontSize: 12, opacity: 0.45, textTransform: "capitalize" }}>{item.itemCategory}</span>
           </div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: rarityColor, lineHeight: 1.2 }}>{item.name}</h2>
+          <h2 className="pixel-font" style={{ margin: 0, fontSize: 24, fontWeight: 600, color: rarityColor, lineHeight: 1.2 }}>{item.name}</h2>
           {item.desc && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{item.desc}</p>}
         </div>
 

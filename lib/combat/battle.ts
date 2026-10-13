@@ -58,12 +58,12 @@ export type BattleSide = {
 
 export type BattleEvent =
   | { type: "round"; round: number }
-  | { type: "swap"; side: SideKey; from: string; to: string; energyRestored: number }
+  | { type: "swap"; side: SideKey; from: string; to: string; toIndex: number; energyRestored: number }
   | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number }
   | { type: "pass"; side: SideKey; name: string }
   | { type: "faint"; side: SideKey; name: string }
-  | { type: "sendIn"; side: SideKey; name: string }
+  | { type: "sendIn"; side: SideKey; name: string; index: number }
   | { type: "end"; winner: SideKey | "draw" };
 
 export type BattleState = {
@@ -163,7 +163,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     s.active = a.to;
     s.swaps++;
     s.lastSwapRound = state.round;
-    state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, energyRestored: restored });
+    state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
   }
 
   // 2. Attacks in Agility order (ties random). Dash moves add agility for
@@ -230,7 +230,7 @@ export function sendInReplacement(state: BattleState, key: SideKey, index: numbe
   if (index === s.active || !s.team[index] || s.team[index].hp <= 0) throw new Error(`Invalid replacement ${index} for side ${key}`);
   s.active = index;
   state.needsReplacement = state.needsReplacement.filter((k) => k !== key);
-  state.log.push({ type: "sendIn", side: key, name: activeOf(s).name });
+  state.log.push({ type: "sendIn", side: key, name: activeOf(s).name, index });
   return state;
 }
 

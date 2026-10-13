@@ -87,7 +87,7 @@ export default function AltarPage() {
         onChange={(e) => setBarcode(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && isValidBarcode && generateDrop(barcode.trim())}
         placeholder="Enter barcode"
-        style={{ padding: 10, width: "100%", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)", color: "white", fontSize: 15, boxSizing: "border-box" }}
+        className="pixel-input"
       />
 
       <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>
@@ -106,9 +106,9 @@ export default function AltarPage() {
         <button
           onClick={() => generateDrop(barcode.trim())}
           disabled={!isValidBarcode}
-          style={{ padding: "10px 20px", borderRadius: 8, fontWeight: 700, fontSize: 15, border: "none", background: isValidBarcode ? "white" : "rgba(255,255,255,0.1)", color: isValidBarcode ? "black" : "rgba(255,255,255,0.3)", cursor: isValidBarcode ? "pointer" : "not-allowed" }}
+          className="pixel-btn"
         >
-          Generate Drop
+          🔮 Generate Drop
         </button>
         {(["random", "deterministic"] as const).map((mode) => (
           <button key={mode} onClick={() => setRollMode(mode)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: rollMode === mode ? "rgba(255,255,255,0.15)" : "transparent", color: "white", cursor: "pointer", fontWeight: rollMode === mode ? 700 : 400, fontSize: 13 }}>

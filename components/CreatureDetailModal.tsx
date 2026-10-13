@@ -9,6 +9,7 @@ import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { buildFighter, combatSummary } from "@/lib/combat/loadout";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import type { EquipSlot, Loadout } from "@/hooks/useGameState";
+import MoveSlots from "./MoveSlots";
 
 type Props = {
   creature: CreatureOrItemDrop;
@@ -20,6 +21,7 @@ type Props = {
   equippedOn: Map<string, string>;      // item id → creature drop id
   creatureNameById: Map<string, string>; // creature drop id → name
   onEquip: (slot: EquipSlot, itemId: string | null) => void;
+  onSetMoves?: (moves: string[]) => void;
   onClose: () => void;
 };
 
@@ -112,7 +114,7 @@ const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onClose,
+  equippedOn, creatureNameById, onEquip, onSetMoves, onClose,
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
@@ -141,7 +143,7 @@ export default function CreatureDetailModal({
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: "#0f0f1a", border: `1px solid ${c.border}`, boxShadow: `0 0 40px ${c.glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+      <div onClick={(e) => e.stopPropagation()} className="modal-panel" style={{ background: "#0f0f1a", border: `1px solid ${c.border}`, boxShadow: `0 0 40px ${c.glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 460, maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
@@ -151,7 +153,7 @@ export default function CreatureDetailModal({
             <span style={{ fontSize: 12, opacity: 0.45 }}>Creature</span>
             {template && <TypeTags roles={creatureRoles(template.proficiency)} />}
           </div>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: c.text, lineHeight: 1.2 }}>{creature.name}</h2>
+          <h2 className="pixel-font" style={{ margin: 0, fontSize: 24, fontWeight: 600, color: c.text, lineHeight: 1.2 }}>{creature.name}</h2>
           {template?.flavour && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
         </div>
 
@@ -180,15 +182,11 @@ export default function CreatureDetailModal({
               Creature % boosts the matching gear stats. Health is the creature&apos;s base HP plus gear HP.
             </p>
 
-            {/* Skills */}
-            <div style={{ fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", margin: "18px 0 8px" }}>Skills</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {template.skills.map((s) => (
-                <span key={s.name} style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, background: "rgba(255,255,255,0.05)" }}>
-                  {s.name} <span style={{ color: MUTED }}>· {s.type} · {s.damage} dmg · {s.energyCost}⚡</span>
-                </span>
-              ))}
+            {/* Moves */}
+            <div style={{ fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase", margin: "18px 0 8px" }}>
+              Moves {onSetMoves && <span style={{ textTransform: "none", letterSpacing: 0 }}>· tap a slot to change it</span>}
             </div>
+            <MoveSlots template={template} moves={loadout?.moves} onChange={onSetMoves} />
           </>
         )}
 
