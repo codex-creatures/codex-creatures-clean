@@ -8,6 +8,7 @@ import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { findCreatureTemplate, KLUTZ } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
+import { clearLab } from "@/lib/labyrinth/run";
 
 // Klutz is every player's first creature (and always in the roster).
 export const KLUTZ_DROP_ID = "klutz-companion";
@@ -290,6 +291,7 @@ export function useGameState(initialTab: TabKey = "all") {
   // "New player": wipes this player's progress but keeps the barcode
   // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
+    clearLab();
     setInventory([klutzDrop()]);
     setGold(0);
     setScanCounts({});

@@ -282,3 +282,10 @@ export function endRun(save: LabSave): LabSave {
     run: null,
   };
 }
+
+// "Reset Player": labyrinth progress goes too (runs, clears, injuries, any run in progress).
+export function clearLab() {
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {}
+}
