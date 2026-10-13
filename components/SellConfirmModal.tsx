@@ -17,7 +17,7 @@ export default function SellConfirmModal({ items, totalGold, onConfirm, onCancel
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }}>
       <div style={{ background: "#1a1a2e", border: "1px solid rgba(255,80,80,0.4)", borderRadius: 12, padding: 24, maxWidth: 420, width: "100%" }}>
-        <h3 style={{ margin: "0 0 12px", color: "#ff5050" }}>Confirm Sale</h3>
+        <h3 className="pixel-font" style={{ margin: "0 0 12px", color: "#ff5050", fontWeight: 600, fontSize: 20 }}>Confirm Sale</h3>
         <p style={{ margin: "0 0 16px", opacity: 0.85, fontSize: 14 }}>
           Selling <strong>{items.length}</strong> {items.length === 1 ? "item" : "items"} for{" "}
           <strong style={{ color: "#f5c542" }}>+{totalGold.toLocaleString()}g</strong>.

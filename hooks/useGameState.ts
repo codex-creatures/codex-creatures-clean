@@ -9,8 +9,9 @@ import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 
 const STORAGE_KEY = "codex_creatures_save_v2";
 
-// What a creature has equipped — inventory drop ids.
-export type Loadout = { weaponId?: string; armorId?: string };
+// What a creature has equipped — inventory drop ids — plus its 4 move slots
+// (move names; missing = the creature's default moves).
+export type Loadout = { weaponId?: string; armorId?: string; moves?: string[] };
 export type EquipSlot = "weapon" | "armor";
 
 type SaveState = {
@@ -206,6 +207,10 @@ export function useGameState(initialTab: TabKey = "all") {
     });
   }
 
+  function setMoves(creatureId: string, moves: string[]) {
+    setEquipment((prev) => ({ ...prev, [creatureId]: { ...prev[creatureId], moves } }));
+  }
+
   function toggleSellMode() {
     setSellMode((v) => !v);
     setSelectedForSale(new Set());
@@ -271,7 +276,7 @@ export function useGameState(initialTab: TabKey = "all") {
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
     addDrop, updateScanCount,
-    toggleFavorite, equipItem, toggleSellMode, toggleSelectItem,
+    toggleFavorite, equipItem, setMoves, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };
 }

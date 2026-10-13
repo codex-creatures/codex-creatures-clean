@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
 import DungeonFrame from "@/components/DungeonFrame";
 import InventoryList from "@/components/InventoryList";
+import RecentBattles from "@/components/RecentBattles";
 
 export default function PitPage() {
   const game = useGameState("roster");
@@ -32,6 +33,7 @@ export default function PitPage() {
         equippedOn={game.equippedOn}
         lockedIds={game.lockedIds}
         onEquip={game.equipItem}
+        onSetMoves={game.setMoves}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}
         onTabChange={game.setActiveTab}
@@ -46,6 +48,8 @@ export default function PitPage() {
         onOpenSellConfirm={() => {}}
         onToggleSellMode={() => {}}
       />
+
+      <RecentBattles />
     </DungeonFrame>
   );
 }

@@ -20,7 +20,7 @@
 
 import {
   calcDamage, effectiveAgil,
-  MAX_ENERGY, ENERGY_REGEN, PRECISE_CHANCE,
+  MAX_ENERGY, ENERGY_REGEN, PRECISE_CHANCE, PRECISE_IGNORE,
   type Fighter,
 } from "./engine";
 import type { Skill } from "../creatures/creatureData";
@@ -28,19 +28,49 @@ import type { Skill } from "../creatures/creatureData";
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
 
+// Cripple (from Cripple / Crippling Shot): the target loses agility for the
+// next few rounds. Re-crippling refreshes the duration; it doesn't stack.
+// It keeps counting down while the creature is on the bench.
+export const CRIPPLE_AGILITY_LOSS = 0.35;
+export const CRIPPLE_ROUNDS = 3;
+
+// Armour gap: hammering the same creature with the same move finds the gaps
+// in its armour, so stalled fights (tank vs tank) eventually end.
+// - From the 6th use in a row, each use adds +10% precise-hit chance
+//   (15%, 25%, 35%…).
+// - Each precise hit in that run opens the armour further: precise hits
+//   ignore 25% → 50% → 75% → 100% of defence.
+// - The run resets when the attacker uses a different move or passes, or
+//   when either creature swaps out (that's the defender's counterplay).
+export const STREAK_START = 5;
+export const STREAK_PRECISE_STEP = 0.1;
+export const ARMOUR_GAP = { enabled: true }; // switch for balance experiments
+
+export type Streak = { move: string; targetIdx: number; hits: number; cracks: number };
+
+// Precise chance and defence ignored for the attacker's current run.
+export function streakEffects(s?: Streak) {
+  const gap = ARMOUR_GAP.enabled && !!s && s.hits > STREAK_START;
+  return {
+    preciseChance: PRECISE_CHANCE + (gap ? STREAK_PRECISE_STEP * (s!.hits - STREAK_START) : 0),
+    ignore: gap ? Math.min(1, PRECISE_IGNORE * (1 + s!.cracks)) : PRECISE_IGNORE,
+    gap,
+  };
+}
+
 export type SideKey = "A" | "B";
 
 // Future: { kind: "item"; bagIndex: number } for the battle bag.
 export type BattleAction =
   | { kind: "attack"; skillName: string }
   | { kind: "swap"; to: number }
-  | { kind: "pass" }; // nothing affordable / no action
+  | { kind: "pass" }; // rest: only when no move is affordable; recovers energy
 
 // Placeholder for status effects (cripple, fear, blind, vampirism…).
 // `rounds` counts down at the end of each round; at 0 the status ends.
 export type StatusEffect = { id: string; rounds: number };
 
-export type Combatant = Fighter & { statuses: StatusEffect[] };
+export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak };
 
 export type BattleSide = {
   key: SideKey;
@@ -52,11 +82,13 @@ export type BattleSide = {
 
 export type BattleEvent =
   | { type: "round"; round: number }
-  | { type: "swap"; side: SideKey; from: string; to: string; energyRestored: number }
-  | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; targetHpAfter: number }
+  | { type: "swap"; side: SideKey; from: string; to: string; toIndex: number; energyRestored: number }
+  | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
+      crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
+      streak: Streak; defenceIgnored: number } // defenceIgnored: share ignored by this hit (0 if not precise)
   | { type: "pass"; side: SideKey; name: string }
   | { type: "faint"; side: SideKey; name: string }
-  | { type: "sendIn"; side: SideKey; name: string }
+  | { type: "sendIn"; side: SideKey; name: string; index: number }
   | { type: "end"; winner: SideKey | "draw" };
 
 export type BattleState = {
@@ -90,6 +122,21 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[]): BattleState {
     hits: 0,
     minDamageHits: 0,
   };
+}
+
+// ── Status effects ─────────────────────────────────────────────────
+export const isCrippled = (f: Combatant) => f.statuses.some((s) => s.id === "cripple");
+
+// Agility right now (cripple included).
+export function currentAgility(f: Combatant): number {
+  return effectiveAgil(f) * (isCrippled(f) ? 1 - CRIPPLE_AGILITY_LOSS : 1);
+}
+
+// Agility used for this round's turn order (adds a dash move's bonus).
+export function turnAgility(f: Combatant, action: BattleAction): number {
+  const skill = action.kind === "attack" ? f.skills.find((s) => s.name === action.skillName) : undefined;
+  const dash = skill?.effect?.kind === "dash" ? skill.effect.agilityBonus : 0;
+  return currentAgility(f) * (1 + dash);
 }
 
 // ── What a side is allowed to do right now ─────────────────────────
@@ -138,21 +185,29 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     const leaving = activeOf(s);
     const restored = Math.round((MAX_ENERGY - leaving.energy) * SWAP_ENERGY_RESTORE);
     leaving.energy = Math.min(MAX_ENERGY, leaving.energy + restored);
-    s.active = a.to;
+    changeActive(state, k, a.to);
     s.swaps++;
     s.lastSwapRound = state.round;
-    state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, energyRestored: restored });
+    state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
   }
 
-  // 2. Attacks in Agility order (ties random).
+  // 2. Attacks in Agility order (ties random). Dash moves add agility for
+  //    this round; a crippled creature is slower.
   const attackers = (["A", "B"] as SideKey[])
     .filter((k) => actions[k].kind !== "swap")
-    .map((k) => ({ key: k, actor: activeOf(state.sides[k]), action: actions[k] }))
-    .sort((x, y) => (effectiveAgil(y.actor) - effectiveAgil(x.actor)) || (Math.random() - 0.5));
+    .map((k) => {
+      const actor = activeOf(state.sides[k]);
+      return { key: k, actor, action: actions[k], agil: turnAgility(actor, actions[k]) };
+    })
+    .sort((x, y) => (y.agil - x.agil) || (Math.random() - 0.5));
 
   for (const { key, actor, action } of attackers) {
     if (actor.hp <= 0) continue; // fainted before acting
     if (action.kind === "pass") {
+      // Resting recovers the usual energy, so a creature whose cheapest move
+      // costs more than it has can't get stuck.
+      actor.energy = Math.min(MAX_ENERGY, actor.energy + ENERGY_REGEN);
+      actor.streak = undefined;
       state.log.push({ type: "pass", side: key, name: actor.name });
       continue;
     }
@@ -161,13 +216,36 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (target.hp <= 0) continue;
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
 
-    const precise = Math.random() < PRECISE_CHANCE;
-    const { damage } = calcDamage(skill, actor, target, precise);
-    state.hits++;
-    if (damage <= 1) state.minDamageHits++;
+    // Same move on the same creature again? Then the run continues.
+    const targetIdx = state.sides[other(key)].active;
+    const prev = actor.streak;
+    const streak: Streak = prev && prev.move === skill.name && prev.targetIdx === targetIdx
+      ? { ...prev, hits: prev.hits + 1 }
+      : { move: skill.name, targetIdx, hits: 1, cracks: 0 };
+    actor.streak = streak;
+    const gapFx = streakEffects(streak);
+
+    // Precise moves can miss, but every hit is precise; other moves have
+    // the normal (or armour-gap boosted) chance of a precise hit.
+    const fx = skill.effect;
+    const missed = fx?.kind === "precise" && Math.random() >= fx.hitChance;
+    const precise = !missed && (fx?.kind === "precise" || Math.random() < gapFx.preciseChance);
+    const damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore).damage;
+    if (precise && gapFx.gap) streak.cracks++;
+    if (!missed) {
+      state.hits++;
+      if (damage <= 1) state.minDamageHits++;
+    }
     actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
     target.hp = Math.max(0, target.hp - damage);
-    state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, targetHpAfter: target.hp });
+
+    // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
+    const crippled = fx?.kind === "cripple" && target.hp > 0 && Math.random() < fx.chance;
+    if (crippled) {
+      target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1 }];
+    }
+    state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
+      streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0 });
     if (target.hp <= 0) state.log.push({ type: "faint", side: other(key), name: target.name });
   }
 
@@ -186,13 +264,24 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   return state;
 }
 
+// A new creature steps in (swap or replacement). Armour-gap runs end on
+// both sides: the creature leaving loses its run, and the opponent's run
+// was against the creature that just left.
+export function changeActive(state: BattleState, key: SideKey, index: number) {
+  const s = state.sides[key];
+  activeOf(s).streak = undefined;
+  s.active = index;
+  activeOf(s).streak = undefined;
+  activeOf(state.sides[other(key)]).streak = undefined;
+}
+
 export function sendInReplacement(state: BattleState, key: SideKey, index: number): BattleState {
   const s = state.sides[key];
   if (!state.needsReplacement.includes(key)) return state;
   if (index === s.active || !s.team[index] || s.team[index].hp <= 0) throw new Error(`Invalid replacement ${index} for side ${key}`);
-  s.active = index;
+  changeActive(state, key, index);
   state.needsReplacement = state.needsReplacement.filter((k) => k !== key);
-  state.log.push({ type: "sendIn", side: key, name: activeOf(s).name });
+  state.log.push({ type: "sendIn", side: key, name: activeOf(s).name, index });
   return state;
 }
 
@@ -207,7 +296,7 @@ function checkWinner(state: BattleState) {
 export function cloneBattle(state: BattleState): BattleState {
   const side = (s: BattleSide): BattleSide => ({
     ...s,
-    team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })) })),
+    team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })), streak: f.streak && { ...f.streak } })),
   });
   return {
     ...state,

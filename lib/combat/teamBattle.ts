@@ -6,11 +6,13 @@
 // The AI swaps when its matchup is clearly losing and a teammate would
 // clearly win it, even after taking the free hit.
 
-import { calcDamage, chooseSkill, effectiveAgil, type Fighter } from "./engine";
+import { AUTO_BATTLE, ENERGY_REGEN, calcDamage, chooseSkill, combatStyle, effectiveAgil, type Fighter } from "./engine";
 import {
-  activeOf, createBattle, other, resolveRound, sendInReplacement,
-  type BattleAction, type BattleSide, type BattleState, type SideKey,
+  activeOf, affordableSkills, createBattle, currentAgility, isCrippled, other, resolveRound, sendInReplacement,
+  CRIPPLE_AGILITY_LOSS,
+  type BattleAction, type BattleSide, type BattleState, type Combatant, type SideKey,
 } from "./battle";
+import type { Skill } from "../creatures/creatureData";
 
 export { SWAP_ENERGY_RESTORE, MAX_ROUNDS } from "./battle";
 
@@ -100,9 +102,55 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
     if (best && best.adv >= (opts.swapToAtLeast ?? SWAP_TO_ADVANTAGE_AT_LEAST)) return { kind: "swap", to: best.index };
   }
 
-  const skill = chooseSkill(me, them);
+  const skill = aiChooseSkill(me, them);
   return skill ? { kind: "attack", skillName: skill.name } : { kind: "pass" };
 }
+
+// Move choice with the special moves in mind. Plain moves are valued by the
+// damage they'd do (so without special moves this picks what chooseSkill
+// picks); special moves add what a sensible player would see in them:
+// - Precise: expected damage = hit chance × precise-hit damage (good vs tanks).
+// - Cripple: worth an extra hit when it would make me faster than them.
+// - Dash: worth their next hit when going first lets me knock them out.
+export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined {
+  const affordable = affordableSkills(me);
+  if (affordable.length === 0) return undefined;
+  const style = combatStyle(me);
+  const own = style === "hybrid" || AUTO_BATTLE.policy === "maxDamage" ? affordable : affordable.filter((s) => s.type === style);
+  const pool = own.length > 0 ? own : affordable;
+
+  const myAgil = currentAgility(me), theirAgil = currentAgility(them);
+  const theirHit = expectedDamage(them, me);
+  const value = (s: Skill) => {
+    const fx = s.effect;
+    const hit = calcDamage(s, me, them, fx?.kind === "precise").damage;
+    let v = fx?.kind === "precise" ? hit * fx.hitChance : hit;
+    if (fx?.kind === "cripple" && !isCrippled(them) && theirAgil >= myAgil && theirAgil * (1 - CRIPPLE_AGILITY_LOSS) < myAgil) {
+      v += fx.chance * expectedDamage(me, them);
+    }
+    if (fx?.kind === "dash" && theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil && hit >= them.hp) {
+      v += theirHit;
+    }
+    return v;
+  };
+
+  // Walled (nothing gets through)? Then hammer the same spot: keep the
+  // current run going with a move that pays for itself, so the armour gap opens.
+  if (Math.max(...pool.map(value)) <= WALLED_DAMAGE) {
+    const sustainable = pool.filter((s) => s.energyCost <= ENERGY_REGEN);
+    const run = sustainable.find((s) => s.name === me.streak?.move);
+    if (run) return run;
+    if (sustainable.length > 0) return sustainable.reduce((best, s) => (s.damage > best.damage ? s : best));
+  }
+
+  return pool.reduce((best, s) => {
+    const d = value(s) - value(best);
+    return d > 0 || (d === 0 && s.damage > best.damage) ? s : best;
+  });
+}
+
+// A hit this small means the defender has walled the attacker.
+export const WALLED_DAMAGE = 3;
 
 export function aiChooseReplacement(state: BattleState, key: SideKey, smart = true): number {
   const s = state.sides[key];
@@ -114,6 +162,13 @@ export function aiChooseReplacement(state: BattleState, key: SideKey, smart = tr
 }
 
 // ── Whole battle, both sides AI (Balance Lab) ──────────────────────
+// Balance experiments can plug in another AI (e.g. the thinking AI from
+// thinkingAi.ts) for both sides; the per-side swap options then don't apply.
+export const TEAM_AI: {
+  choose?: (state: BattleState, key: SideKey) => BattleAction;
+  replace?: (state: BattleState, key: SideKey) => number;
+} = {};
+
 export function runTeamBattle(teamA: Fighter[], teamB: Fighter[], opts: TeamBattleOptions): TeamBattleResult {
   const state = createBattle(teamA, teamB);
   const ai: Record<SideKey, AiOptions> = {
@@ -122,9 +177,10 @@ export function runTeamBattle(teamA: Fighter[], teamB: Fighter[], opts: TeamBatt
   };
 
   while (!state.winner) {
-    resolveRound(state, { A: aiChooseAction(state, "A", ai.A), B: aiChooseAction(state, "B", ai.B) });
+    const choose = (k: SideKey) => (TEAM_AI.choose ? TEAM_AI.choose(state, k) : aiChooseAction(state, k, ai[k]));
+    resolveRound(state, { A: choose("A"), B: choose("B") });
     for (const k of [...state.needsReplacement]) {
-      sendInReplacement(state, k, aiChooseReplacement(state, k, ai[k].smartReplace ?? true));
+      sendInReplacement(state, k, TEAM_AI.replace ? TEAM_AI.replace(state, k) : aiChooseReplacement(state, k, ai[k].smartReplace ?? true));
     }
   }
 
