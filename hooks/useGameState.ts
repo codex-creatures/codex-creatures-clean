@@ -48,14 +48,14 @@ function safeSave(state: SaveState) {
 
 export type TabKey = "all" | "roster" | "creatures" | "weapons" | "armor" | "materials" | "consumables";
 
-export function useGameState() {
+export function useGameState(initialTab: TabKey = "all") {
   const [gold, setGold]               = useState(0);
   const [inventory, setInventory]     = useState<Drop[]>([]);
   const [scanCounts, setScanCounts]   = useState<Record<string, number>>({});
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [equipment, setEquipment]     = useState<Record<string, Loadout>>({});
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
-  const [activeTab, setActiveTab]     = useState<TabKey>("all");
+  const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
   // Sell mode
   const [sellMode, setSellMode]                 = useState(false);

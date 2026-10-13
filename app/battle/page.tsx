@@ -183,7 +183,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <main style={{ padding: "24px 16px", color: "white", maxWidth: 760, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, gap: 12, flexWrap: "wrap" }}>
         <h1 style={{ margin: 0 }}>⚔️ Battle</h1>
-        <Link href="/" style={{ color: MUTED, fontSize: 14 }}>← Back to collection</Link>
+        <Link href="/pit" style={{ color: MUTED, fontSize: 14 }}>← Back to the Fight Pit</Link>
       </div>
       {children}
     </main>
@@ -203,7 +203,7 @@ function Setup({
     return (
       <p style={{ color: MUTED, lineHeight: 1.5 }}>
         You need at least {TEAM_SIZE} creatures to battle — you have {owned.length}. Scan a few more on the{" "}
-        <Link href="/" style={{ color: "white" }}>collection page</Link> first.
+        <Link href="/altar" style={{ color: "white" }}>Scanning Altar</Link> first.
       </p>
     );
   }

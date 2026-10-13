@@ -33,8 +33,13 @@ type Props = {
   sellTotal: number;
   onOpenSellConfirm: () => void;
   onToggleSellMode: () => void;
-  onResetAll: () => void;
-  onGlobalReset: () => void;
+  onResetAll?: () => void;
+  onGlobalReset?: () => void;
+  // Which tabs this screen shows (the chest shows items, the pit creatures).
+  tabs?: GameTabKey[];
+  title?: string;
+  showSell?: boolean;
+  emptyText?: string;
 };
 
 const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables"];
@@ -46,6 +51,7 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onResetAll, onGlobalReset,
+  tabs = TABS, title = "Inventory", showSell = true, emptyText,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
@@ -80,17 +86,17 @@ export default function InventoryList({
     <div>
       {/* Header */}
       <div style={{ marginTop: 30, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-        <h2 style={{ margin: 0 }}>Inventory</h2>
+        <h2 className="pixel-font" style={{ margin: 0, fontWeight: 600, color: "#f1d9a0" }}>{title}</h2>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={onToggleSellMode} style={{ padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer", border: sellMode ? "none" : "1px solid rgba(255,80,80,0.5)", background: sellMode ? "#ff5050" : "transparent", color: sellMode ? "white" : "#ff5050", transition: "all 0.15s" }}>
+          {showSell && <button onClick={onToggleSellMode} style={{ padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer", border: sellMode ? "none" : "1px solid rgba(255,80,80,0.5)", background: sellMode ? "#ff5050" : "transparent", color: sellMode ? "white" : "#ff5050", transition: "all 0.15s" }}>
             {sellMode ? "✕ Cancel Sell" : "💰 Sell Mode"}
-          </button>
-          <button onClick={onResetAll} title="Wipe your progress but keep registered barcodes — test scanning as a new player" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+          </button>}
+          {onResetAll && <button onClick={onResetAll} title="Wipe your progress but keep registered barcodes — test scanning as a new player" style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             Reset Player
-          </button>
-          <button onClick={onGlobalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+          </button>}
+          {onGlobalReset && <button onClick={onGlobalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,80,80,0.3)", background: "transparent", color: "#ff5050", cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             Global Reset
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -113,7 +119,7 @@ export default function InventoryList({
 
       {/* Tabs */}
       <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button key={tab} onClick={() => onTabChange(tab)} style={{ padding: "6px 12px", borderRadius: 8, fontSize: 13, border: "1px solid rgba(255,255,255,0.2)", background: activeTab === tab ? "white" : "transparent", color: activeTab === tab ? "black" : "white", cursor: "pointer", fontWeight: activeTab === tab ? 700 : 400 }}>
             {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)} ({tabCounts[tab] ?? 0})
           </button>
@@ -125,6 +131,9 @@ export default function InventoryList({
 
       {/* Item rows */}
       <div style={{ marginTop: 8 }}>
+        {filteredInventory.length === 0 && (
+          <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>{emptyText ?? "Nothing here yet."}</p>
+        )}
         {filteredInventory.map((d) => {
           const isItem     = d.dropType === "item";
           const isCreature = d.dropType === "creature";
