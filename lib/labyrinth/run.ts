@@ -7,10 +7,9 @@
 //   in reserve. Team and reserves can only be changed between rooms.
 // - HP carries over from room to room (energy is full at each fight).
 // - There are LAB_ROOMS rooms; the last is the boss. Every room has 2 doors,
-//   hidden from the player. Special rooms (pool, chest, stash, librarian,
-//   merchant) appear at most once per run; fights can repeat. So a room's
-//   doors are rolled when you reach it (leaving out specials you've had),
-//   then stay fixed.
+//   hidden from the player. Any room can come up again, but you never go
+//   more than MAX_QUIET_ROOMS rooms in a row without a fight. So a room's
+//   doors are rolled when you reach it, then stay fixed.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
@@ -58,6 +57,7 @@ export const BOSS_GOLD: [number, number] = [80, 120];
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
 export const CHEST_DROPS = 3;
+export const MAX_QUIET_ROOMS = 2;     // rooms in a row without a fight before both doors must be fights
 
 type Rng = () => number;
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
@@ -131,13 +131,16 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = []): 
 }
 
 // The 2 doors into a room (room is 1-based). The last room's both lead to
-// the boss. Specials already visited are left out, and the two doors never
-// hide the same special.
+// the boss. After MAX_QUIET_ROOMS rooms without a fight, both doors are
+// fights. The two doors never hide the same special room.
 export function rollDoorPair(room: number, visited: RoomKind[], rng: Rng = Math.random): RoomKind[] {
   if (room === LAB_ROOMS) return ["boss", "boss"];
-  const used = visited.filter(isSpecial);
-  const first = rollRoomKind(rng, used);
-  return [first, rollRoomKind(rng, isSpecial(first) ? [...used, first] : used)];
+  let quiet = 0;
+  for (let i = visited.length - 1; i >= 0 && !isFight(visited[i]); i--) quiet++;
+  const specials = ROOM_MIX.map(([k]) => k).filter(isSpecial);
+  const exclude = quiet >= MAX_QUIET_ROOMS ? specials : [];
+  const first = rollRoomKind(rng, exclude);
+  return [first, rollRoomKind(rng, isSpecial(first) ? [...exclude, first] : exclude)];
 }
 
 // What's inside a room, rolled as you walk in.
