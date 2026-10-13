@@ -144,6 +144,56 @@ export function calcDamage(
   return { damage: finalDmg, braceBlocked, braceFailed };
 }
 
+// ── Energy & precise hits ───────────────────────────────
+export const MAX_ENERGY = 100;
+export const ENERGY_REGEN = 30;     // after each attack
+export const PRECISE_CHANCE = 0.05; // precise hits ignore 25% of defence
+
+// ── Auto-battle move choice ─────────────────────────────
+export type CombatStyle = "melee" | "ranged" | "hybrid";
+
+// A creature is a hybrid when its weaker attack proficiency is at least
+// this share of its stronger one (e.g. Veilstalker 18/18, Amber Wasp 8/10).
+export const HYBRID_RATIO = 0.6;
+
+export function combatStyle(f: Fighter): CombatStyle {
+  return styleFromProficiency(f.proficiency);
+}
+
+export function styleFromProficiency({ atk, rng }: { atk: number; rng: number }): CombatStyle {
+  const hi = Math.max(atk, rng);
+  const lo = Math.min(atk, rng);
+  if (hi === 0 || lo / hi >= HYBRID_RATIO) return "hybrid";
+  return atk > rng ? "melee" : "ranged";
+}
+
+// Auto-battle behaviour, switchable for balance experiments:
+// - "style":     melee/ranged creatures stick to their own move type
+//                (default — what was agreed for normal play);
+// - "maxDamage": every creature uses whichever affordable move hurts most,
+//                e.g. a melee attacker sneaking in a ranged hit on a melee tank.
+export const AUTO_BATTLE: { policy: "style" | "maxDamage" } = { policy: "style" };
+
+// What a sensible player would pick:
+// - melee/ranged creatures use their biggest affordable move of their own
+//   type, falling back to the other type only if none is affordable;
+// - hybrids use whichever affordable move does the most damage against
+//   this opponent's actual defences.
+export function chooseSkill(atk: Fighter, def: Fighter): Skill | undefined {
+  const affordable = atk.skills.filter(s => !isBraceSkill(s) && s.energyCost <= atk.energy);
+  if (affordable.length === 0) return undefined;
+
+  const style = combatStyle(atk);
+  if (style === "hybrid" || AUTO_BATTLE.policy === "maxDamage") {
+    const dmg = (s: Skill) => calcDamage(s, atk, def, false).damage;
+    return affordable.reduce((best, s) => (dmg(s) > dmg(best) ? s : best));
+  }
+
+  const own = affordable.filter(s => s.type === style);
+  const pool = own.length > 0 ? own : affordable;
+  return pool.reduce((best, s) => (s.damage > best.damage ? s : best));
+}
+
 export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): BattleResult {
   const a: Fighter = { ...fighterA, hp: fighterA.maxHp, energy: 100, braceActive: false, braceConsecutiveCount: 0 };
   const b: Fighter = { ...fighterB, hp: fighterB.maxHp, energy: 100, braceActive: false, braceConsecutiveCount: 0 };
@@ -161,10 +211,10 @@ export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): 
     const [first, second] = aAgil >= bAgil ? [a, b] : [b, a];
     for (const [atk, def] of [[first, second], [second, first]] as [Fighter, Fighter][]) {
       if (atk.hp <= 0) continue;
-      const skill = [...atk.skills].filter(s => !isBraceSkill(s) && s.energyCost <= atk.energy).sort((x, y) => y.damage - x.damage)[0];
+      const skill = chooseSkill(atk, def);
       if (!skill) continue;
 
-      const precise      = Math.random() < 0.05;
+      const precise      = Math.random() < PRECISE_CHANCE;
       const energyBefore = atk.energy;
       const { damage: dmg, braceBlocked, braceFailed } = calcDamage(skill, atk, def, precise);
       atk.energy -= skill.energyCost;
@@ -173,7 +223,7 @@ export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): 
       def.hp = Math.max(0, def.hp - dmg);
 
       // Energy regen end of turn
-      atk.energy = Math.min(100, atk.energy + 30);
+      atk.energy = Math.min(MAX_ENERGY, atk.energy + ENERGY_REGEN);
 
       logs.push({ turn: round, attacker: atk.name, defender: def.name, skill, stance: atk.stance, defenderStance: def.stance, rawDamage: skill.damage, finalDamage: dmg, precise, braceBlocked, braceFailed, attackerEnergyBefore: energyBefore, attackerEnergyAfter: atk.energy, defenderHpBefore: hpBefore, defenderHpAfter: def.hp, stanceChosen: atk.stance });
     }

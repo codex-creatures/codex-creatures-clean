@@ -157,7 +157,12 @@ export default function Home() {
       )}
 
       <InventoryList
+        inventory={game.inventory}
         filteredInventory={game.filteredInventory}
+        equipment={game.equipment}
+        equippedOn={game.equippedOn}
+        lockedIds={game.lockedIds}
+        onEquip={game.equipItem}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}
         onTabChange={game.setActiveTab}
