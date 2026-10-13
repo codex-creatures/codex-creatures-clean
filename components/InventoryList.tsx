@@ -11,6 +11,7 @@ import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import ItemDetailModal from "./ItemDetailModal";
 import CreatureDetailModal from "./CreatureDetailModal";
+import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
 import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
 
@@ -168,6 +169,12 @@ export default function InventoryList({
                   {sellMode && sellable && (
                     <span style={{ fontSize: 15, color: isSelected ? "#f5c542" : "rgba(255,255,255,0.25)" }}>{isSelected ? "☑" : "☐"}</span>
                   )}
+                  {(() => {
+                    if (isRewardDrop(d)) return null;
+                    const c = d as CreatureOrItemDrop;
+                    const sp = isCreature || isCard ? creatureSprite(c.creatureId) : itemSprite(c);
+                    return sp ? <PixelSprite sprite={sp} scale={isCreature || isCard ? 1.25 : 1.75} style={{ opacity: isCard ? 0.75 : 1 }} /> : null;
+                  })()}
                   {isRewardDrop(d) ? (
                     <span style={{ opacity: 0.7 }}>🪙 +{d.amount} Gold</span>
                   ) : (
