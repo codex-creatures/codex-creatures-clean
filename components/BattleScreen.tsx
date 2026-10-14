@@ -27,12 +27,16 @@ import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { YOU, FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
+import PixelSprite from "@/components/PixelSprite";
+import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
+import { spriteWidth } from "@/lib/sprites/pixels";
 
 export const MUTED = "rgba(255,255,255,0.5)";
 const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
 
 // What the screen shows about each team member (gear names etc.).
-export type MemberInfo = { rarity: Rarity; label: string; weaponName?: string; armorName?: string };
+// creatureId: for its sprite (fights saved before sprites show initials).
+export type MemberInfo = { rarity: Rarity; label: string; weaponName?: string; armorName?: string; creatureId?: string };
 export type OwnedCreature = MemberInfo & {
   id: string; name: string; template: CreatureTemplate; roster: boolean;
   weaponRarity?: Rarity; armorRarity?: Rarity; fighter: Fighter;
@@ -82,7 +86,7 @@ export function loadOwnedCreatures(): OwnedCreature[] {
     const a = pieces[1] ?? worn[0];
     list.push({
       id: d.id, name: t.name, template: t, roster: favs.has(d.id),
-      rarity: t.rarity, label: creatureTypeLabel(d.proficiency ?? t.proficiency),
+      rarity: t.rarity, label: creatureTypeLabel(d.proficiency ?? t.proficiency), creatureId: t.id,
       weaponName: w?.name,
       armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
@@ -332,7 +336,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
               : myAgil > theirAgil ? `Your ${me.name} is faster (${Math.round(myAgil)} vs ${Math.round(theirAgil)} agility) and strikes first.`
               : `Their ${them.name} is faster (${Math.round(theirAgil)} vs ${Math.round(myAgil)} agility) and strikes first.`}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 6 }}>
+          <div className="move-grid">
             {me.skills.map((sk) => (
               <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
                 disabled={playing || !affordableSkills(me).includes(sk)} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
@@ -363,9 +367,9 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {swapTargets(you).map((i) => (
-                  <button key={i} onClick={() => onAct({ kind: "swap", to: i })} disabled={playing} className="card-btn" style={{ width: "auto" }}>
-                    ⇄ {you.team[i].name}
-                    <span style={{ fontSize: 12, color: MUTED }}> · {you.team[i].hp}/{you.team[i].maxHp} HP · {matchupHint(you.team[i], them)}</span>
+                  <button key={i} onClick={() => onAct({ kind: "swap", to: i })} disabled={playing} className="card-btn" style={{ display: "block" }}>
+                    <b>⇄ {you.team[i].name}</b>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{you.team[i].hp}/{you.team[i].maxHp} HP · {matchupHint(you.team[i], them)}</span>
                   </button>
                 ))}
               </div>
@@ -455,10 +459,10 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
     <div style={{ position: "relative" }}>
       <div key={`${fx?.id ?? 0}-${slot}`} className={`fighter-card ${anim}`} style={{ borderColor: `${color}88`, opacity: f.hp <= 0 ? 0.4 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Token name={f.name} rarity={info.rarity} />
+          <Token name={f.name} rarity={info.rarity} creatureId={info.creatureId} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
-            <div className="pixel-font" style={{ fontSize: 17, color: rarityColor(info.rarity), lineHeight: 1.1 }}>{f.name}</div>
+            <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", color: rarityColor(info.rarity), lineHeight: 1.1, overflowWrap: "anywhere" }}>{f.name}</div>
             <div style={{ fontSize: 11, color: MUTED }}>{info.label}</div>
           </div>
         </div>
@@ -519,15 +523,19 @@ function StreakBadges({ f, foe, slot }: { f: Combatant; foe: Combatant; slot: nu
   );
 }
 
-// Stand-in portrait until creatures have art: initials in a rarity frame.
-export function Token({ name, rarity }: { name: string; rarity: Rarity }) {
+// A creature's portrait in a rarity frame: its sprite, or its initials if
+// it hasn't been drawn yet.
+export function Token({ name, rarity, creatureId }: { name: string; rarity: Rarity; creatureId?: string }) {
   const c = RARITY_COLORS[rarity];
+  const sprite = creatureId ? CREATURE_SPRITES[creatureId] : undefined;
   const initials = name.replace(/[^A-Za-z ]/g, "").split(" ").filter(Boolean).map((w) => w[0]).join("").slice(0, 2);
   return (
     <span className="pixel-font" style={{
-      width: 44, height: 44, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
-      fontSize: 18, color: c.text, background: "#15161c", border: `3px solid ${c.border}`, boxShadow: `0 0 12px ${c.glow}, inset 0 0 8px ${c.glow}`,
-    }}>{initials}</span>
+      width: "var(--token, 52px)", height: "var(--token, 52px)", flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center",
+      fontSize: 18, color: c.text, background: `radial-gradient(circle, ${c.glow}, #15161c 75%)`, border: `3px solid ${c.border}`, boxShadow: `0 0 12px ${c.glow}`,
+    }}>
+      {sprite ? <PixelSprite sprite={sprite} scale={Math.max(1.5, 40 / spriteWidth(sprite))} title={name} /> : initials}
+    </span>
   );
 }
 

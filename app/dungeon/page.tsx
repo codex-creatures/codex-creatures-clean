@@ -216,10 +216,10 @@ export default function DungeonPage() {
     const ids = fightingTeam(r).filter((id) => byId(id));
     const mine = ids.map((id) => byId(id)!);
     const info: MemberInfo[] = room.boss
-      ? CYCLOPS_PARTS.map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName }))
+      ? CYCLOPS_PARTS.map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName, creatureId: p.id }))
       : room.enemies!.map((e) => ({
           rarity: CREATURE_BY_ID[e.creatureId].rarity,
-          label: creatureTypeLabel(e.proficiency),
+          label: creatureTypeLabel(e.proficiency), creatureId: e.creatureId,
           weaponName: gearName(e.gear[0]),
           armorName: gearName(e.gear[1]),
         }));

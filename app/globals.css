@@ -120,12 +120,14 @@ button, a, [role="button"] { touch-action: manipulation; }
     repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.05) 0 3px, transparent 3px 7px),
     #8a7048;
 }
+/* Moves: two to a row on a phone, more on wider screens. */
+.move-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
 .fighter-card {
   padding: 10px; background: rgba(16, 17, 23, 0.9); border: 3px solid;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
 }
 @media (max-width: 480px) {
-  .fighter-card { padding: 8px; }
+  .fighter-card { padding: 8px; --token: 40px; }
 }
 
 .anim-lunge-right { animation: lunge-right 0.45s ease-out; }

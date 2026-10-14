@@ -52,7 +52,7 @@ function buildOpponents(mine: OwnedCreature[], creatures: OppCreatures, gear: Op
     fighters.push(buildFighter(t, w?.weapon, a?.armor));
     info.push({
       rarity: t.rarity,
-      label: creatureTypeLabel(t.proficiency),
+      label: creatureTypeLabel(t.proficiency), creatureId: t.id,
       weaponName: w ? `${ITEM_META[w.weaponKey as ItemKey].name} (${weaponRarity})` : undefined,
       armorName:  a ? `${ARMOR_META[a.armorKey as ArmorKey].name} (${armorRarity})` : undefined,
     });
