@@ -4,7 +4,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDen, project, ANCHORS, OBJ, W, H, type DenScene, type ObjId } from "@/lib/den/scene";
+import { createDen, project, ANCHORS, OBJ, W, H, RES, type DenScene, type ObjId } from "@/lib/den/scene";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -63,8 +63,8 @@ export default function DenRoom() {
     <div style={{ position: "relative", width: "100%", maxWidth: 640, margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
       <canvas
         ref={canvasRef}
-        width={W}
-        height={H}
+        width={W * RES}
+        height={H * RES}
         onPointerMove={(e) => setHovered(objectAt(e))}
         onPointerLeave={() => setHovered(OBJ.none)}
         onClick={(e) => activate(objectAt(e))}

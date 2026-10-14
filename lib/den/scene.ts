@@ -9,9 +9,13 @@
 //   the animated bits (flames, embers, floating crystal) and the hover outline.
 // - Every pixel remembers which object it belongs to, so clicks are
 //   pixel-accurate.
+// - It's drawn on the fine grid: laid out in W×H units (labels, taps), and
+//   rendered at RES× that, each fine pixel sampling its own spot.
 
-export const W = 256;
+export const W = 256;  // layout units
 export const H = 288;
+export const RES = 2;  // fine pixels per unit: the canvas is W*RES × H*RES
+const FW = W * RES, FH = H * RES;
 
 // Isometric layout: 1 floor unit = 32px wide / 16px tall diamond.
 const N = 7;          // room is N × N floor units
@@ -88,12 +92,12 @@ function stone(a: number, z: number, seed: number, stones = WALL_STONES): RGB {
   const off = (row & 1) * 11;
   const col = Math.floor((a + off) / 22);
   const ia = a + off - col * 22, iz = z - row * 8;
-  if (ia < 1 || iz < 1) return MORTAR;
+  if (ia < 0.6 || iz < 0.6) return MORTAR; // a thin line on the fine grid
   let c = stones[Math.floor(hash(col * 7 + seed, row) * stones.length)];
   let k = 1;
   if (iz >= 7) k = 1.14; else if (iz < 2) k = 0.86;
   if (ia < 2) k *= 1.07;
-  k *= 0.93 + hash(Math.floor(a), Math.floor(z) + seed * 31) * 0.14;
+  k *= 0.93 + hash(Math.floor(a * RES), Math.floor(z * RES) + seed * 31) * 0.14;
   c = mul(c, k);
   return c;
 }
@@ -125,7 +129,7 @@ function floorTex(u: number, v: number): RGB {
   const off = (row & 1) * 8;
   const col = Math.floor((fu + off) / 16);
   const iu = fu + off - col * 16, iv = fv - row * 16;
-  if (iu < 1 || iv < 1) {
+  if (iu < 0.6 || iv < 0.6) {
     return vnoise(fu / 12, fv / 12) > 0.62 ? MOSS[Math.floor(hash(Math.floor(fu), Math.floor(fv)) * 4)] : FLOOR_MORT;
   }
   let k = 1;
@@ -136,7 +140,7 @@ function floorTex(u: number, v: number): RGB {
 
 function planks(a: number, z: number, seed: number): RGB {
   const row = Math.floor(z / 4);
-  if (z - row * 4 < 1) return WOOD_DARK;
+  if (z - row * 4 < 0.6) return WOOD_DARK;
   const grain = 0.9 + hash(Math.floor(a / 3) + row * 17, seed) * 0.2;
   return mul(WOOD[(row + seed) % WOOD.length], grain);
 }
@@ -157,34 +161,37 @@ export type DenScene = {
 };
 
 export function createDen(): DenScene {
-  const n = W * H;
+  const n = FW * FH;
   const albedo = new Float32Array(n * 3);
   const pos = new Float32Array(n * 3).fill(NaN);
   const ids = new Uint8Array(n);
   const emissive = new Uint8Array(n); // 1 = glows (not lit), 2 = glows + pulses
 
-  function put(x: number, y: number, c: RGB, u: number, v: number, z: number, id: number = 0, glow = 0) {
-    if (x < 0 || y < 0 || x >= W || y >= H) return;
-    const i = y * W + x;
+  // (fx, fy): a fine pixel.
+  function put(fx: number, fy: number, c: RGB, u: number, v: number, z: number, id: number = 0, glow = 0) {
+    if (fx < 0 || fy < 0 || fx >= FW || fy >= FH) return;
+    const i = fy * FW + fx;
     albedo[i * 3] = c[0]; albedo[i * 3 + 1] = c[1]; albedo[i * 3 + 2] = c[2];
     pos[i * 3] = u; pos[i * 3 + 1] = v; pos[i * 3 + 2] = z;
     ids[i] = id;
     emissive[i] = glow;
   }
 
-  // Inverse projections: which point on a plane does pixel (x, y) show?
+  // Inverse projections: which point on a plane does the spot (x, y) show?
+  // (x, y in layout units: a fine pixel's centre.)
   const onZ = (x: number, y: number, z0: number) => {
-    const dx = (x + 0.5 - CX) / TW, dy = (y + 0.5 + z0 - Y0) / TH;
+    const dx = (x - CX) / TW, dy = (y + z0 - Y0) / TH;
     return { u: (dy + dx) / 2, v: (dy - dx) / 2 };
   };
   const onU = (x: number, y: number, u0: number) => {
-    const v = u0 - (x + 0.5 - CX) / TW;
-    return { v, z: Y0 + (u0 + v) * TH - (y + 0.5) };
+    const v = u0 - (x - CX) / TW;
+    return { v, z: Y0 + (u0 + v) * TH - y };
   };
   const onV = (x: number, y: number, v0: number) => {
-    const u = v0 + (x + 0.5 - CX) / TW;
-    return { u, z: Y0 + (u + v0) * TH - (y + 0.5) };
+    const u = v0 + (x - CX) / TW;
+    return { u, z: Y0 + (u + v0) * TH - y };
   };
+  const spot = (f: number) => (f + 0.5) / RES; // a fine pixel's centre, in layout units
 
   // Fight pit, sunk into the middle of the floor.
   const P0 = 2.3, P1 = 4.7, PD = 16;
@@ -216,8 +223,8 @@ export function createDen(): DenScene {
       const notes = [[4, 15, 7, 9], [13, 17, 7, 8], [7, 4, 9, 8]];
       for (const [nx, nz, nw, nh] of notes) {
         if (qa >= nx && qa < nx + nw && qz >= nz && qz < nz + nh) {
-          if (qa === nx + Math.floor(nw / 2) && qz === nz + nh - 1) return { c: hex("#c0392b"), id: OBJ.quests };
-          const line = (qz - nz) % 2 === 0 && qa > nx && qa < nx + nw - 1 && qz < nz + nh - 2;
+          if (Math.floor(qa) === nx + Math.floor(nw / 2) && Math.floor(qz) === nz + nh - 1) return { c: hex("#c0392b"), id: OBJ.quests };
+          const line = Math.floor(qz - nz) % 2 === 0 && qa > nx + 0.5 && qa < nx + nw - 1 && qz < nz + nh - 2 && (qz - nz) % 1 < 0.6;
           return { c: line ? hex("#9c8f74") : hex("#e8dcc0"), id: OBJ.quests };
         }
       }
@@ -240,8 +247,9 @@ export function createDen(): DenScene {
   }
 
   // ── Static pass: room surfaces ──
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
+  for (let fy = 0; fy < FH; fy++) {
+    for (let fx = 0; fx < FW; fx++) {
+      const x = spot(fx), y = spot(fy);
       // Floor (and the pit)
       const f = onZ(x, y, 0);
       if (f.u >= 0 && f.v >= 0 && f.u < N && f.v < N) {
@@ -249,21 +257,21 @@ export function createDen(): DenScene {
           const s = onZ(x, y, -PD);
           if (inPit(s.u, s.v)) {
             const h = hash(Math.floor(s.u * 32), Math.floor(s.v * 32));
-            put(x, y, mul(SAND[Math.floor(h * 4)], 0.9 + h * 0.15), s.u, s.v, -PD, OBJ.pit);
+            put(fx, fy, mul(SAND[Math.floor(h * 4)], 0.9 + h * 0.15), s.u, s.v, -PD, OBJ.pit);
           } else {
             const wu = onU(x, y, P0), wv = onV(x, y, P0);
-            if (wu.v >= P0 && wu.v < P1 && wu.z <= 0 && wu.z > -PD) put(x, y, mul(stone(wu.v * 16, wu.z + PD, 3), 0.62), P0, wu.v, wu.z, OBJ.pit);
-            else put(x, y, mul(stone(wv.u * 16, wv.z + PD, 4), 0.5), wv.u, P0, wv.z, OBJ.pit);
+            if (wu.v >= P0 && wu.v < P1 && wu.z <= 0 && wu.z > -PD) put(fx, fy, mul(stone(wu.v * 16, wu.z + PD, 3), 0.62), P0, wu.v, wu.z, OBJ.pit);
+            else put(fx, fy, mul(stone(wv.u * 16, wv.z + PD, 4), 0.5), wv.u, P0, wv.z, OBJ.pit);
           }
           continue;
         }
         const nearPit = f.u >= P0 - 0.2 && f.u < P1 + 0.2 && f.v >= P0 - 0.2 && f.v < P1 + 0.2;
         if (nearPit) {
           const k = 0.95 + hash(Math.floor(f.u * 10), Math.floor(f.v * 10)) * 0.15;
-          put(x, y, mul(CAP_STONES[Math.floor(hash(Math.floor(f.u * 4), Math.floor(f.v * 4)) * 3)], k), f.u, f.v, 0, OBJ.pit);
+          put(fx, fy, mul(CAP_STONES[Math.floor(hash(Math.floor(f.u * 4), Math.floor(f.v * 4)) * 3)], k), f.u, f.v, 0, OBJ.pit);
           continue;
         }
-        put(x, y, floorTex(f.u, f.v), f.u, f.v, 0);
+        put(fx, fy, floorTex(f.u, f.v), f.u, f.v, 0);
         continue;
       }
 
@@ -271,7 +279,7 @@ export function createDen(): DenScene {
       const cap = onZ(x, y, WALL_H);
       if (cap.u >= -WALL_T && cap.v >= -WALL_T && cap.u < N && cap.v < N && (cap.u < 0 || cap.v < 0)) {
         const c = stone(cap.u * 16 + 40, cap.v * 16 + 40, 9, CAP_STONES);
-        put(x, y, mul(c, 1.08), cap.u, cap.v, WALL_H);
+        put(fx, fy, mul(c, 1.08), cap.u, cap.v, WALL_H);
         continue;
       }
 
@@ -279,37 +287,37 @@ export function createDen(): DenScene {
       const rw = onV(x, y, 0);
       if (rw.u >= 0 && rw.u < N && rw.z >= 0 && rw.z < WALL_H && x >= CX) {
         const feat = rightWallFeature(rw.u * 16, rw.z);
-        if (feat) put(x, y, feat.c, rw.u, 0.02, rw.z, feat.id);
-        else put(x, y, mul(mossy(stone(rw.u * 16, rw.z, 1), rw.u * 16, rw.z, 1, WALL_H), 0.82), rw.u, 0, rw.z);
+        if (feat) put(fx, fy, feat.c, rw.u, 0.02, rw.z, feat.id);
+        else put(fx, fy, mul(mossy(stone(rw.u * 16, rw.z, 1), rw.u * 16, rw.z, 1, WALL_H), 0.82), rw.u, 0, rw.z);
         continue;
       }
       const lw = onU(x, y, 0);
       if (lw.v >= 0 && lw.v < N && lw.z >= 0 && lw.z < WALL_H && x < CX) {
         const feat = leftWallFeature(lw.v * 16, lw.z);
-        if (feat) put(x, y, feat.c, 0.02, lw.v, lw.z, feat.id);
-        else put(x, y, mossy(stone(lw.v * 16, lw.z, 2), lw.v * 16, lw.z, 2, WALL_H), 0, lw.v, lw.z);
+        if (feat) put(fx, fy, feat.c, 0.02, lw.v, lw.z, feat.id);
+        else put(fx, fy, mossy(stone(lw.v * 16, lw.z, 2), lw.v * 16, lw.z, 2, WALL_H), 0, lw.v, lw.z);
         continue;
       }
 
       // Wall ends and floor block sides (outside of the cube)
       const endR = onU(x, y, N);
       if (endR.v >= -WALL_T && endR.v < 0 && endR.z >= -SLAB && endR.z < WALL_H) {
-        put(x, y, mul(stone(endR.v * 16 + 20, endR.z + SLAB, 5, CAP_STONES), 0.7), N, endR.v, endR.z);
+        put(fx, fy, mul(stone(endR.v * 16 + 20, endR.z + SLAB, 5, CAP_STONES), 0.7), N, endR.v, endR.z);
         continue;
       }
       const endL = onV(x, y, N);
       if (endL.u >= -WALL_T && endL.u < 0 && endL.z >= -SLAB && endL.z < WALL_H) {
-        put(x, y, mul(stone(endL.u * 16 + 20, endL.z + SLAB, 6, CAP_STONES), 0.6), endL.u, N, endL.z);
+        put(fx, fy, mul(stone(endL.u * 16 + 20, endL.z + SLAB, 6, CAP_STONES), 0.6), endL.u, N, endL.z);
         continue;
       }
       const slabR = onU(x, y, N);
       if (slabR.v >= 0 && slabR.v < N && slabR.z >= -SLAB && slabR.z < 0) {
-        put(x, y, mul(stone(slabR.v * 16, slabR.z + SLAB, 7), slabR.z > -2 ? 0.8 : 0.55), N, slabR.v, slabR.z);
+        put(fx, fy, mul(stone(slabR.v * 16, slabR.z + SLAB, 7), slabR.z > -2 ? 0.8 : 0.55), N, slabR.v, slabR.z);
         continue;
       }
       const slabL = onV(x, y, N);
       if (slabL.u >= 0 && slabL.u < N && slabL.z >= -SLAB && slabL.z < 0) {
-        put(x, y, mul(stone(slabL.u * 16, slabL.z + SLAB, 8), slabL.z > -2 ? 0.7 : 0.45), slabL.u, N, slabL.z);
+        put(fx, fy, mul(stone(slabL.u * 16, slabL.z + SLAB, 8), slabL.z > -2 ? 0.7 : 0.45), slabL.u, N, slabL.z);
         continue;
       }
     }
@@ -322,22 +330,23 @@ export function createDen(): DenScene {
     const corners = [project(u0, v0, z1), project(u1, v0, z0), project(u0, v1, z0), project(u1, v1, z0), project(u1, v1, z1)];
     const xs = corners.map((c) => c[0]), ys = corners.map((c) => c[1]);
     const unpack = (r: ReturnType<Face>) => (Array.isArray(r) ? { c: r, glow: 0 } : { c: r.c, glow: r.glow ?? 0 });
-    for (let y = Math.floor(Math.min(...ys)) - 1; y <= Math.ceil(Math.max(...ys)) + 1; y++) {
-      for (let x = Math.floor(Math.min(...xs)) - 1; x <= Math.ceil(Math.max(...xs)) + 1; x++) {
+    for (let fy = Math.floor(Math.min(...ys) * RES) - 2; fy <= Math.ceil(Math.max(...ys) * RES) + 2; fy++) {
+      for (let fx = Math.floor(Math.min(...xs) * RES) - 2; fx <= Math.ceil(Math.max(...xs) * RES) + 2; fx++) {
+        const x = spot(fx), y = spot(fy);
         const t = onZ(x, y, z1);
         if (t.u >= u0 && t.u < u1 && t.v >= v0 && t.v < v1) {
           const r = unpack(faces.top((t.u - u0) * 16, (t.v - v0) * 16));
-          put(x, y, r.c, t.u, t.v, z1, id, r.glow); continue;
+          put(fx, fy, r.c, t.u, t.v, z1, id, r.glow); continue;
         }
         const fu = onU(x, y, u1);
         if (fu.v >= v0 && fu.v < v1 && fu.z >= z0 && fu.z < z1) {
           const r = unpack(faces.right((fu.v - v0) * 16, fu.z - z0));
-          put(x, y, r.glow ? r.c : mul(r.c, 0.78), u1, fu.v, fu.z, id, r.glow); continue;
+          put(fx, fy, r.glow ? r.c : mul(r.c, 0.78), u1, fu.v, fu.z, id, r.glow); continue;
         }
         const fv = onV(x, y, v1);
         if (fv.u >= u0 && fv.u < u1 && fv.z >= z0 && fv.z < z1) {
           const r = unpack(faces.left((fv.u - u0) * 16, fv.z - z0));
-          put(x, y, r.glow ? r.c : mul(r.c, 0.92), fv.u, v1, fv.z, id, r.glow);
+          put(fx, fy, r.glow ? r.c : mul(r.c, 0.92), fv.u, v1, fv.z, id, r.glow);
         }
       }
     }
@@ -400,7 +409,7 @@ export function createDen(): DenScene {
   let embers: Ember[] = [];
   let lastT = 0;
 
-  const out = new ImageData(W, H);
+  const out = new ImageData(FW, FH);
   const frameIds = new Uint8Array(n);
 
   function render(t: number, hover: ObjId): ImageData {
@@ -412,14 +421,15 @@ export function createDen(): DenScene {
     );
     const altarPulse = 0.8 + 0.2 * Math.sin(t * 2.2);
 
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const i = y * W + x, o = i * 4;
+    for (let fy = 0; fy < FH; fy++) {
+      for (let fx = 0; fx < FW; fx++) {
+        const i = fy * FW + fx, o = i * 4;
+        const x = spot(fx), y = spot(fy);
         const u = pos[i * 3];
         if (Number.isNaN(u)) {
           // Background: dark void with a faint glow under the room.
           const g = Math.max(0, 1 - Math.hypot((x - CX) / 150, (y - 200) / 110));
-          const b = BAYER[(y & 3) * 4 + (x & 3)];
+          const b = BAYER[(fy & 3) * 4 + (fx & 3)];
           const k = Math.floor((g * 0.5) * 4 + b) / 4;
           d[o] = (VOID[0] + k * 0.05) * 255; d[o + 1] = (VOID[1] + k * 0.05) * 255; d[o + 2] = (VOID[2] + k * 0.09) * 255; d[o + 3] = 255;
           continue;
@@ -439,7 +449,7 @@ export function createDen(): DenScene {
           lr += l.color[0] * fall; lg += l.color[1] * fall; lb += l.color[2] * fall;
         }
         // Ordered dithering on the light gives the stepped pixel-art glow.
-        const bay = BAYER[(y & 3) * 4 + (x & 3)];
+        const bay = BAYER[(fy & 3) * 4 + (fx & 3)];
         const q = (L: number) => Math.floor(L * 6 + bay) / 6;
         d[o] = Math.min(255, r * q(lr) * 255);
         d[o + 1] = Math.min(255, g * q(lg) * 255);
@@ -449,13 +459,17 @@ export function createDen(): DenScene {
     }
 
     frameIds.set(ids);
+    // Paint a layout unit (RES×RES fine pixels).
     const px = (x: number, y: number, c: string | RGB, id = 0) => {
-      x = Math.round(x); y = Math.round(y);
-      if (x < 0 || y < 0 || x >= W || y >= H) return;
       const col = typeof c === "string" ? hex(c) : c;
-      const o = (y * W + x) * 4;
-      d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
-      if (id) frameIds[y * W + x] = id;
+      const x0 = Math.round(x) * RES, y0 = Math.round(y) * RES;
+      for (let dy = 0; dy < RES; dy++) for (let dx = 0; dx < RES; dx++) {
+        const X = x0 + dx, Y = y0 + dy;
+        if (X < 0 || Y < 0 || X >= FW || Y >= FH) continue;
+        const o = (Y * FW + X) * 4;
+        d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
+        if (id) frameIds[Y * FW + X] = id;
+      }
     };
 
     // Torches: iron bracket + animated flame.
@@ -495,12 +509,12 @@ export function createDen(): DenScene {
     // Hover: brighten the object and outline it in gold.
     if (hover) {
       const glow = 0.75 + 0.25 * Math.sin(t * 6);
-      for (let y = 1; y < H - 1; y++) {
-        for (let x = 1; x < W - 1; x++) {
-          const i = y * W + x, o = i * 4;
+      for (let y = 1; y < FH - 1; y++) {
+        for (let x = 1; x < FW - 1; x++) {
+          const i = y * FW + x, o = i * 4;
           if (frameIds[i] === hover) {
             d[o] = Math.min(255, d[o] * 1.25 + 12); d[o + 1] = Math.min(255, d[o + 1] * 1.25 + 10); d[o + 2] = Math.min(255, d[o + 2] * 1.2 + 6);
-          } else if (frameIds[i - 1] === hover || frameIds[i + 1] === hover || frameIds[i - W] === hover || frameIds[i + W] === hover) {
+          } else if (frameIds[i - 1] === hover || frameIds[i + 1] === hover || frameIds[i - FW] === hover || frameIds[i + FW] === hover) {
             d[o] = 255 * glow; d[o + 1] = 214 * glow; d[o + 2] = 110 * glow;
           }
         }
@@ -511,10 +525,10 @@ export function createDen(): DenScene {
 
   return {
     render,
-    idAt: (x, y) => {
-      x = Math.floor(x); y = Math.floor(y);
-      if (x < 0 || y < 0 || x >= W || y >= H) return OBJ.none;
-      return frameIds[y * W + x] as ObjId;
+    idAt: (x, y) => { // layout units
+      const fx = Math.floor(x * RES), fy = Math.floor(y * RES);
+      if (fx < 0 || fy < 0 || fx >= FW || fy >= FH) return OBJ.none;
+      return frameIds[fy * FW + fx] as ObjId;
     },
   };
 }
