@@ -185,6 +185,26 @@ export default function CreatureDetailModal({
               </div>
             )}
 
+            {/* The creature's own %s: what each point of gear is multiplied by. */}
+            <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
+              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· how much this creature adds to its gear</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 5 }}>
+              {STATS.filter((st) => st.key !== "hp").map((st) => {
+                const k = st.key as Exclude<StatKey, "hp">;
+                const d = base ? prof![k] - base[k] : 0;
+                return (
+                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by +${prof![k]}%`}
+                    style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
+                    <div style={{ fontSize: 13 }}>{st.icon}</div>
+                    <div style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
+                    <div className="pixel-font" style={{ fontSize: 17, color: st.color }}>+{prof![k]}%</div>
+                    <div style={{ fontSize: 10, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
+                  </div>
+                );
+              })}
+            </div>
+
             {/* Stats */}
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
               Stats {previewing && <span style={{ fontSize: 12, color: "#ffd66e" }}>· previewing</span>}
@@ -201,8 +221,7 @@ export default function CreatureDetailModal({
               })}
             </div>
             <p style={{ fontSize: 11, color: MUTED, margin: "8px 0 0", lineHeight: 1.4 }}>
-              A creature&apos;s % boosts the matching gear stats.
-              {creature.proficiency && " Small green/red numbers show how this one's roll differs from a standard " + creature.name + "."}
+              Stats come from gear: each one is the gear&apos;s value boosted by the creature&apos;s % above. With no gear on, only Health has a value.
             </p>
 
             {/* Moves */}
