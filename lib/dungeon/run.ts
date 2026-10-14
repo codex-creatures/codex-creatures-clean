@@ -52,9 +52,9 @@ export const MYSTERY_MIX: [RoomKind, number][] = [
 export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   entrance:  { name: "Entrance",           icon: "🚪" },
   treasure:  { name: "Treasure",           icon: "💰" },
-  easy:      { name: "Creature den",       icon: "🐾" },
+  easy:      { name: "Creature den",       icon: "⚔️" },
   pool:      { name: "Healing pool",       icon: "⛲" },
-  hard:      { name: "Lurking brute",      icon: "💀" },
+  hard:      { name: "Lurking brute",      icon: "⚔️" },
   chest:     { name: "Chest",              icon: "🧰" },
   stash:     { name: "Stash",              icon: "🎒" },
   librarian: { name: "Wandering librarian", icon: "📚" },

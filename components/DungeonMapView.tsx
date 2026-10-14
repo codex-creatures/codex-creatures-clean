@@ -1,14 +1,18 @@
 "use client";
 // components/DungeonMapView.tsx
-// The labyrinth as a map scroll: every room and corridor is inked on old
-// parchment, but what's in a room is a "?" until you know it. A few rooms
-// are marked from the start; rooms near where you've stood fill in as you
-// go (mysteries stay "?" until you walk in). Your route is traced in red.
-// Rooms you can walk to pulse; tap one, or use the buttons underneath.
+// The labyrinth as a map scroll: every room is inked on old parchment, but
+// what's in a room is a "?" until you know it. A few rooms are marked from
+// the start; rooms near where you've stood fill in as you go (mysteries stay
+// "?" until you walk in). Fog of war covers everything outside your
+// torchlight, and the corridors only show up close to the flame. Your route
+// is traced in red. Rooms you can walk to pulse; tap one, or use the
+// buttons underneath. Fights are marked with crossed swords: ink for a
+// creature den, red for a lurking brute.
 
 import { useId } from "react";
 import { ROOM_INFO, runPosition, nextRooms, type DungeonRun } from "@/lib/dungeon/run";
-import { MAP_W, MAP_H, SIGHT_RADIUS, heading, knownRooms, type MapNode } from "@/lib/dungeon/map";
+import { MAP_W, MAP_H, SIGHT_RADIUS, distance, heading, knownRooms, type MapNode } from "@/lib/dungeon/map";
+import type { RoomKind } from "@/lib/dungeon/run";
 import { MUTED } from "@/components/BattleScreen";
 
 const R = 5.6;              // room radius (map units)
@@ -16,6 +20,31 @@ const INK = "#4a2f17";
 const RED_INK = "#9b2a1d";
 const PAPER = "#e9d6a6";
 const SERIF = "Georgia, 'Times New Roman', serif";
+
+// Crossed swords, the battle sign: drawn in a 24×24 box.
+function Swords({ color }: { color: string }) {
+  const sword = (
+    <g stroke={color} strokeLinecap="round" fill="none">
+      <line x1={7} y1={17} x2={20.5} y2={3.5} strokeWidth={2.2} />
+      <line x1={5} y1={13.5} x2={10.5} y2={19} strokeWidth={1.7} />
+      <line x1={7.6} y1={16.4} x2={4} y2={20} strokeWidth={1.9} />
+      <circle cx={3.3} cy={20.7} r={1.2} fill={color} stroke="none" />
+    </g>
+  );
+  return <>{sword}<g transform="translate(24 0) scale(-1 1)">{sword}</g></>;
+}
+
+const SWORDS: Partial<Record<RoomKind, { ink: string; light: string }>> = {
+  easy: { ink: "#4a2f17", light: "#e9d6a6" },
+  hard: { ink: "#9b2a1d", light: "#ff8a80" },
+};
+
+// A room's icon at a size (px), for the buttons under the map.
+function RoomIcon({ kind, size }: { kind: RoomKind; size: number }) {
+  const sw = SWORDS[kind];
+  if (!sw) return <>{ROOM_INFO[kind].icon}</>;
+  return <svg width={size} height={size} viewBox="0 0 24 24" style={{ verticalAlign: "middle" }}><Swords color={sw.light} /></svg>;
+}
 
 // What a room looks like on your scroll: "?" until you know what's there.
 export function roomLook(n: MapNode, known: Set<string>) {
@@ -27,6 +56,10 @@ export function corridorLabel(run: DungeonRun, n: MapNode): string {
   if (knownRooms(run.map, run.path).has(n.id)) return ROOM_INFO[n.kind].name;
   return `Unknown room (${heading(run.map.nodes[runPosition(run)], n)})`;
 }
+
+const flicker = (base: number) => (
+  <animate attributeName="r" values={`${base};${base + 1.4};${base - 0.8};${base + 0.9};${base}`} dur="1.4s" repeatCount="indefinite" />
+);
 
 export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEnter?: (nodeId: string) => void }) {
   const uid = useId().replace(/:/g, "");
@@ -83,25 +116,62 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
           <clipPath id={`${uid}-sheet`}>
             <rect x={-PAD_X} y={TOP} width={MAP_W + 2 * PAD_X} height={BOTTOM - TOP} />
           </clipPath>
+          {/* Torchlight: clear in the middle, fading out at the edge. */}
+          <radialGradient id={`${uid}-light`}>
+            <stop offset="70%" stopColor="white" />
+            <stop offset="100%" stopColor="black" />
+          </radialGradient>
+          <radialGradient id={`${uid}-glow`}>
+            <stop offset="0%" stopColor="#ffb257" stopOpacity="0.35" />
+            <stop offset="65%" stopColor="#ff9a3c" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#ff9a3c" stopOpacity="0" />
+          </radialGradient>
+          {/* Fog of war: everything but the light. */}
+          <mask id={`${uid}-fogmask`} maskUnits="userSpaceOnUse" x={view.x} y={view.y} width={view.w} height={view.h}>
+            <rect x={view.x} y={view.y} width={view.w} height={view.h} fill="white" />
+            <circle cx={here.x} cy={here.y} r={SIGHT_RADIUS + 3} fill={`url(#${uid}-hole)`}>{flicker(SIGHT_RADIUS + 3)}</circle>
+          </mask>
+          <radialGradient id={`${uid}-hole`}>
+            <stop offset="65%" stopColor="black" />
+            <stop offset="100%" stopColor="white" />
+          </radialGradient>
+          {/* Corridors only show near the flame. */}
+          <mask id={`${uid}-lit`} maskUnits="userSpaceOnUse" x={view.x} y={view.y} width={view.w} height={view.h}>
+            <circle cx={here.x} cy={here.y} r={SIGHT_RADIUS + 3} fill={`url(#${uid}-light)`}>{flicker(SIGHT_RADIUS + 3)}</circle>
+          </mask>
+          <filter id={`${uid}-fog`} x="0" y="0" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="11" result="cloud" />
+            <feColorMatrix in="cloud" type="matrix" values="0 0 0 0 0.16  0 0 0 0 0.11  0 0 0 0 0.06  0 0 0 0.5 0.55" />
+          </filter>
         </defs>
 
         {/* Parchment. */}
         <rect x={-PAD_X} y={TOP} width={MAP_W + 2 * PAD_X} height={BOTTOM - TOP} fill={PAPER} filter={`url(#${uid}-paper)`} />
         <rect x={-PAD_X} y={TOP} width={MAP_W + 2 * PAD_X} height={BOTTOM - TOP} fill={`url(#${uid}-age)`} />
 
-        {/* What you can see from here. */}
-        <circle clipPath={`url(#${uid}-sheet)`} cx={here.x} cy={here.y} r={SIGHT_RADIUS} fill="#fff3c8" fillOpacity={0.35} stroke={INK} strokeOpacity={0.35} strokeWidth={0.4} strokeDasharray="1.2 1.6" />
+        {/* Your torch's glow. */}
+        <circle clipPath={`url(#${uid}-sheet)`} cx={here.x} cy={here.y} r={SIGHT_RADIUS + 3} fill={`url(#${uid}-glow)`}>{flicker(SIGHT_RADIUS + 3)}</circle>
 
-        <g filter={`url(#${uid}-ink)`}>
-          {/* Corridors: dashed ink; your route in red; the ways on darker. */}
-          {corridors.map(([a, b]) => {
-            const mine = isWalked(a, b), on = isWayOn(a, b);
+        {/* Corridors near the flame: dashed ink, the ways on darker. */}
+        <g filter={`url(#${uid}-ink)`} mask={`url(#${uid}-lit)`}>
+          {corridors.filter(([a, b]) => !isWalked(a, b)).map(([a, b]) => {
+            const on = isWayOn(a, b);
             return (
               <line key={`c-${a.id}-${b.id}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                stroke={mine ? RED_INK : INK} strokeWidth={mine ? 1.3 : on ? 1.1 : 0.7}
-                strokeDasharray={mine ? undefined : "2.2 1.6"} strokeOpacity={mine || on ? 0.95 : 0.6} strokeLinecap="round" />
+                stroke={INK} strokeWidth={on ? 1.1 : 0.7} strokeDasharray="2.2 1.6" strokeOpacity={on ? 0.95 : 0.6} strokeLinecap="round" />
             );
           })}
+        </g>
+
+        {/* Fog of war over everything outside the light. */}
+        <rect clipPath={`url(#${uid}-sheet)`} x={-PAD_X} y={TOP} width={MAP_W + 2 * PAD_X} height={BOTTOM - TOP}
+          filter={`url(#${uid}-fog)`} mask={`url(#${uid}-fogmask)`} />
+
+        <g filter={`url(#${uid}-ink)`}>
+          {/* Your route, in red. */}
+          {corridors.filter(([a, b]) => isWalked(a, b)).map(([a, b]) => (
+            <line key={`w-${a.id}-${b.id}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={RED_INK} strokeWidth={1.3} strokeLinecap="round" />
+          ))}
 
           {/* Rooms. */}
           {all.map((n) => {
@@ -110,11 +180,15 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
             const been = visited.has(n.id) && n.id !== pos;
             const boss = n.kind === "boss";
             const r = boss ? R + 2 : R;
+            const sw = SWORDS[n.kind];
+            const lit = distance(n, here) <= SIGHT_RADIUS;
             return (
-              <g key={`r-${n.id}`}>
+              <g key={`r-${n.id}`} opacity={lit || boss ? 1 : 0.8}>
                 <circle cx={n.x} cy={n.y} r={r} fill={been ? "#d6bd86" : "#f2e3bb"} stroke={boss ? RED_INK : INK} strokeWidth={boss ? 1.1 : 0.8} />
                 {boss && <circle cx={n.x} cy={n.y} r={r + 1.6} fill="none" stroke={RED_INK} strokeWidth={0.4} />}
-                {isKnown ? (
+                {isKnown && sw ? (
+                  <g transform={`translate(${n.x - 5} ${n.y - 5}) scale(0.42)`} opacity={been ? 0.45 : 1}><Swords color={sw.ink} /></g>
+                ) : isKnown ? (
                   <text x={n.x} y={n.y + 0.4} textAnchor="middle" dominantBaseline="middle" fontSize={boss ? 7 : 5.4} opacity={been ? 0.45 : 1}>{look.icon}</text>
                 ) : (
                   <text x={n.x} y={n.y + 0.5} textAnchor="middle" dominantBaseline="middle" fontSize={7} fontFamily={SERIF} fontWeight={700} fill={INK} opacity={0.8}>?</text>
@@ -152,7 +226,6 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
 
         {/* You. */}
         <circle cx={here.x} cy={here.y} r={R + 1.6} fill="none" stroke={RED_INK} strokeWidth={1.3} />
-        <text x={here.x + R + 1} y={here.y - R} textAnchor="middle" dominantBaseline="middle" fontSize={4.6}>🔥</text>
 
         {roller(TOP)}
         {roller(BOTTOM)}
@@ -165,7 +238,7 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
             return (
               <button key={n.id} className="card-btn" onClick={() => onEnter(n.id)}
                 style={{ display: "block", textAlign: "center", padding: "10px 4px", borderColor: RED_INK }}>
-                <div style={{ fontSize: 22, fontFamily: SERIF, fontWeight: 700, color: "#e9d6a6" }}>{isKnown ? ROOM_INFO[n.kind].icon : "?"}</div>
+                <div style={{ fontSize: 22, fontFamily: SERIF, fontWeight: 700, color: "#e9d6a6" }}>{isKnown ? <RoomIcon kind={n.kind} size={24} /> : "?"}</div>
                 <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0" }}>{corridorLabel(run, n)}</div>
               </button>
             );
