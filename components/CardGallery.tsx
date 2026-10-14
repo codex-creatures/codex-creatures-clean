@@ -11,6 +11,7 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate, RACE_INFO, type CreatureTemplate, type Race } from "@/lib/creatures/creatureData";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { ABILITIES } from "@/lib/creatures/abilities";
+import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
 const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
@@ -72,7 +73,7 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
   const race = t.race ? RACE_INFO[t.race] : undefined;
   const sprite = creatureSprite(cards[0].creatureId);
   const ready = cards.length >= CARDS_TO_SUMMON;
-  const spriteW = sprite[0]?.length ?? 16;
+  const spriteW = spriteWidth(sprite);
 
   return (
     <button onClick={onOpen} aria-label={`${t.name} card, ${cards.length} held`}

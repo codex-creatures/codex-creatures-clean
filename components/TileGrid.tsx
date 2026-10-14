@@ -7,6 +7,7 @@
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 
 export const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
@@ -56,7 +57,7 @@ function Tile({ d, fav, badge, sell, onClick }: {
 }) {
   const col = RARITY_COLORS[d.rarity];
   const sprite = d.dropType === "item" ? itemSprite(d) : creatureSprite(d.creatureId);
-  const w = sprite?.[0]?.length ?? 16;
+  const w = sprite ? spriteWidth(sprite) : 16;
   const dim = sell && !sell.can;
   return (
     <button onClick={onClick} title={d.name} disabled={dim}

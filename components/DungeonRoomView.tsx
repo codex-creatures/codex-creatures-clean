@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, runPosition, isFight, type DungeonRun } from "@/lib/dungeon/run";
 import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type TunnelLook } from "@/lib/dungeon/chamber";
+import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
 const FPS = 12;
@@ -110,7 +111,7 @@ function RoomContents({ run }: { run: DungeonRun }) {
       <div style={at}>
         {(room.enemies ?? []).map((e, i) => {
           const sprite = creatureSprite(e.creatureId);
-          const w = sprite[0]?.length ?? 16;
+          const w = spriteWidth(sprite);
           return (
             <div key={i} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.7)) brightness(0.85)" }}>
               <PixelSprite sprite={sprite} scale={Math.max(3, Math.floor(56 / w))} />

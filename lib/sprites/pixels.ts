@@ -13,6 +13,7 @@ export const PALETTE: Record<string, string> = {
   c: "#3fb6e8", C: "#b8f0ff", u: "#1f6f99",            // aether cyan
   r: "#b83a2e", R: "#ff7a62", x: "#6e1f18",            // red
   e: "#4c9a3e", E: "#8fd16e", f: "#2d5e26",            // green
+  N: "#c2ec9c", O: "#1e3b19",                          // green highlight / deep shadow
   b: "#5b6276", B: "#8a92a6", n: "#3a3f4c",            // stone
   l: "#8b5a2b", L: "#b98150", m: "#5c3a1a",            // leather
   a: "#e88a1a", A: "#ffc04d",                          // amber
@@ -93,4 +94,26 @@ export function scale2x(sprite: Sprite): Sprite {
   return out;
 }
 
-export const fineGrid = (sprite: Sprite): Sprite => (FINE.has(sprite) ? sprite : scale2x(sprite));
+// Each colour's lighter and darker tone (same family in PALETTE).
+const LIGHTER: Record<string, string> = { e: "E", E: "N", s: "S", w: "W", l: "L", b: "B", i: "I", v: "V", p: "P", c: "C", r: "R", a: "A", g: "G", t: "s", n: "b", m: "l", d: "w", f: "e", D: "v", j: "i", u: "c", q: "p", x: "r" };
+const DARKER: Record<string, string> = { N: "E", E: "e", e: "f", S: "s", s: "t", W: "w", w: "d", L: "l", l: "m", B: "b", b: "n", I: "i", i: "j", V: "v", v: "D", P: "p", p: "q", C: "c", c: "u", R: "r", r: "x", A: "a", G: "g" };
+
+// A light rim along the top of every shape and a dark one along the bottom
+// (one fine pixel each), so upscaled sprites get some depth.
+export function shade(sprite: Sprite): Sprite {
+  const at = (x: number, y: number) => sprite[y]?.[x] ?? ".";
+  return sprite.map((row, y) => [...row].map((c, x) => {
+    if (c === "." || c === "k" || c === "h") return c;
+    if (at(x, y - 1) === ".") return LIGHTER[c] ?? c;
+    if (at(x, y + 1) === ".") return DARKER[c] ?? c;
+    return c;
+  }).join(""));
+}
+
+export const fineGrid = (sprite: Sprite): Sprite => (FINE.has(sprite) ? sprite : shade(scale2x(sprite)));
+
+// A sprite's width in drawn (coarse) pixels — for picking a display scale.
+export const spriteWidth = (sprite: Sprite): number => {
+  const w = Math.max(...sprite.map((r) => r.length));
+  return FINE.has(sprite) ? w / 2 : w;
+};
