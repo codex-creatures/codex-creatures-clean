@@ -14,6 +14,8 @@ export const PALETTE: Record<string, string> = {
   r: "#b83a2e", R: "#ff7a62", x: "#6e1f18",            // red
   e: "#4c9a3e", E: "#8fd16e", f: "#2d5e26",            // green
   N: "#c2ec9c", O: "#1e3b19",                          // green highlight / deep shadow
+  Q: "#7dffb0", H: "#ece4ff", J: "#170d2b",            // undead glow / etherial shine / the void
+  F: "#ff5a3c", K: "#2b2d36",                          // ember / near-black
   b: "#5b6276", B: "#8a92a6", n: "#3a3f4c",            // stone
   l: "#8b5a2b", L: "#b98150", m: "#5c3a1a",            // leather
   a: "#e88a1a", A: "#ffc04d",                          // amber
