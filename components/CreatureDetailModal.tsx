@@ -81,7 +81,11 @@ export default function CreatureDetailModal({
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose, onPrev, onNext]);
 
-  const openSlot = (slot: EquipSlot) => { setPicking((p) => (p === slot ? null : slot)); setPreview(undefined); };
+  // Opening a slot starts on what's worn now, so you can flick between it and the others.
+  const openSlot = (slot: EquipSlot) => {
+    setPicking((p) => (p === slot ? null : slot));
+    setPreview(slot === "weapon" ? weapon : armor);
+  };
   const closePicker = () => { setPicking(null); setPreview(undefined); };
 
   const summary = (w?: CreatureOrItemDrop, a?: CreatureOrItemDrop) => {
@@ -90,7 +94,9 @@ export default function CreatureDetailModal({
     return { f, s: combatSummary(f) };
   };
   const now = summary(weapon, armor);
-  const previewing = picking && preview !== undefined;
+  const current = picking === "weapon" ? weapon : armor;
+  const isCurrent = !!preview && preview.id === current?.id;
+  const previewing = picking && preview !== undefined && !isCurrent;
   const next = previewing
     ? summary(picking === "weapon" ? preview ?? undefined : weapon, picking === "armor" ? preview ?? undefined : armor)
     : null;
@@ -98,13 +104,12 @@ export default function CreatureDetailModal({
   const base = template?.proficiency;
 
   const options = picking === "weapon" ? weapons : armors;
-  const current = picking === "weapon" ? weapon : armor;
   const sorted = [...options].sort((a, b) =>
     RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) || a.name.localeCompare(b.name));
   const previewOwner = preview && equippedOn.get(preview.id) !== creature.id ? creatureNameById.get(equippedOn.get(preview.id) ?? "") : undefined;
 
   function confirm() {
-    if (!picking || preview === undefined) return;
+    if (!picking || preview === undefined || isCurrent) return;
     onEquip(picking, preview ? preview.id : null);
     closePicker();
   }
@@ -151,7 +156,7 @@ export default function CreatureDetailModal({
             {picking && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
-                  Choose {picking === "weapon" ? "a weapon" : "armour"} — tap one to preview it
+                  Choose {picking === "weapon" ? "a weapon" : "armour"} — tap any to compare
                 </div>
                 {options.length === 0 ? (
                   <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own any {picking === "weapon" ? "weapons" : "armour"} yet. Scan barcodes or explore the dungeon to find some.</p>
@@ -168,8 +173,8 @@ export default function CreatureDetailModal({
                       const here = owner === creature.id;
                       const sp = itemSprite(opt);
                       return (
-                        <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} dim={here} title={opt.name}
-                          onClick={() => !here && setPreview(opt)}>
+                        <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} title={here ? `${opt.name} (worn now)` : opt.name}
+                          onClick={() => setPreview(opt)}>
                           {sp ? <PixelSprite sprite={sp} scale={2.5} /> : <span style={{ fontSize: 22 }}>?</span>}
                           {here && <Badge color={GOLD}>ON</Badge>}
                           {owner && !here && <Badge color="#f5c542">⚑</Badge>}
@@ -179,13 +184,17 @@ export default function CreatureDetailModal({
                   </div>
                 )}
 
-                {/* The picked item, and the confirm bar */}
-                {preview !== undefined && (
-                  <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                {/* The picked item, and the confirm bar (always there, so nothing jumps) */}
+                {options.length > 0 && (
+                  <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", minHeight: 72 }}>
                     <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-                      {preview ? (
+                      {preview === undefined ? (
+                        <div style={{ color: MUTED, fontSize: 13 }}>Nothing in this slot yet — tap one to see what it would do.</div>
+                      ) : preview ? (
                         <>
-                          <div style={{ fontWeight: 700, color: rarityColor(preview.rarity) }}>{preview.name}</div>
+                          <div style={{ fontWeight: 700, color: rarityColor(preview.rarity) }}>
+                            {preview.name}{isCurrent && <span style={{ fontSize: 11, color: GOLD, fontWeight: 400 }}> · worn now</span>}
+                          </div>
                           <StatLine stats={preview.stats} labels={picking === "weapon" ? WEAPON_STAT_LABELS : ARMOR_STAT_LABELS} />
                           {previewOwner && <div style={{ fontSize: 11, color: "#f5c542" }}>Worn by {previewOwner} — equipping takes it from them.</div>}
                         </>
@@ -194,7 +203,8 @@ export default function CreatureDetailModal({
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 12px" }} onClick={confirm}>{preview ? "Equip" : "Unequip"}</button>
+                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 12px", opacity: preview === undefined || isCurrent ? 0.4 : 1 }}
+                        disabled={preview === undefined || isCurrent} onClick={confirm}>{preview === null ? "Unequip" : "Equip"}</button>
                       <button className="chip" onClick={closePicker}>Cancel</button>
                     </div>
                   </div>
@@ -307,8 +317,8 @@ function Slot({ label, item, active, onClick }: { label: string; item?: Creature
   );
 }
 
-function Tile({ children, rarity, selected, dim, title, onClick }: {
-  children: React.ReactNode; rarity?: Rarity; selected?: boolean; dim?: boolean; title?: string; onClick: () => void;
+function Tile({ children, rarity, selected, title, onClick }: {
+  children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void;
 }) {
   const col = rarity ? RARITY_COLORS[rarity] : undefined;
   return (
@@ -318,7 +328,7 @@ function Tile({ children, rarity, selected, dim, title, onClick }: {
         background: col ? `radial-gradient(circle, ${col.glow}, #101117 75%)` : "#101117",
         border: `2px solid ${selected ? "#ffd66e" : col ? col.border : "#2f3340"}`,
         boxShadow: selected ? "0 0 10px rgba(255,214,110,0.55)" : "0 2px 0 rgba(0,0,0,0.5)",
-        opacity: dim ? 0.45 : 1, cursor: dim ? "default" : "pointer", padding: 2,
+        cursor: "pointer", padding: 2,
       }}>
       {children}
     </button>
@@ -352,9 +362,10 @@ function StatRow({ icon, label, color, max, total, after, detail, diff }: {
         {/* pixel segments */}
         <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px)" }} />
       </div>
-      <span className="pixel-font" style={{ minWidth: 64, textAlign: "right", fontSize: 16, fontVariantNumeric: "tabular-nums" }}>
+      {/* Fixed width, change on the same line: flicking between items never moves anything. */}
+      <span className="pixel-font" style={{ minWidth: 104, textAlign: "right", fontSize: 16, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+        {change !== 0 && <span style={{ fontSize: 11, marginRight: 6, color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{change > 0 ? `▲+${change}` : `▼${change}`}</span>}
         {change !== 0 ? <span style={{ color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{after}</span> : total}
-        {change !== 0 && <span style={{ display: "block", fontSize: 11, color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{change > 0 ? `▲ +${change}` : `▼ ${change}`}</span>}
       </span>
     </div>
   );
