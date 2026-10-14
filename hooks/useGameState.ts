@@ -22,7 +22,7 @@ function klutzDrop(): Drop {
 const hasKlutz = (inv: Drop[]) => inv.some((d) => isCreatureDrop(d) && d.creatureId === KLUTZ.id);
 
 const STORAGE_KEY = "codex_creatures_save_v2";
-export const RECENT_SCANS = 10; // how many recent scans the altar remembers
+export const RECENT_SCANS = 30; // how many recent scan drops the altar remembers (3 a scan)
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
 // (move names; missing = the creature's default moves).

@@ -3,15 +3,15 @@
 import { useRef, useState, useMemo, useEffect } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useGameState } from "@/hooks/useGameState";
-import { useDropGeneration } from "@/hooks/useDropGeneration";
+import { useDropGeneration, SCAN_DROPS } from "@/hooks/useDropGeneration";
 import { TOTAL_CREATURES, TOTAL_ITEMS, RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { isRewardDrop, isItemDrop } from "@/lib/types";
+import { isRewardDrop, isItemDrop, type Drop } from "@/lib/types";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import { RECENT_SCANS } from "@/hooks/useGameState";
 
-// The scanning altar: scan or type a barcode to get a drop.
+// The scanning altar: scan or type a barcode to get drops.
 export default function AltarPage() {
   const game = useGameState();
 
@@ -19,6 +19,7 @@ export default function AltarPage() {
   const [rollMode, setRollMode]     = useState<"random" | "deterministic">("random");
   const [scannerOn, setScannerOn]   = useState(false);
   const [scanStatus, setScanStatus] = useState("");
+  const [lastScan, setLastScan]     = useState<Drop[]>([]); // what the latest scan gave
 
   const videoRef        = useRef<HTMLVideoElement | null>(null);
   const scanControlsRef = useRef<{ stop: () => void } | null>(null);
@@ -28,6 +29,7 @@ export default function AltarPage() {
     rollMode,
     scanCounts: game.scanCounts,
     onDrop:            game.addScan,
+    onScan:            setLastScan,
     onScanCountUpdate: game.updateScanCount,
   });
 
@@ -74,7 +76,6 @@ export default function AltarPage() {
     };
   }, [scannerOn]);
 
-  const lastDrop = game.lastDrop;
 
   return (
     <DenFrame title="Scanning Altar" icon="🔮" gold={game.gold}>
@@ -130,28 +131,34 @@ export default function AltarPage() {
         ))}
       </div>
 
-      {lastDrop && (
-        <div style={{ marginTop: 18, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 11, opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.08em", whiteSpace: "nowrap" }}>Last Drop:</span>
-          {isRewardDrop(lastDrop) ? (
-            <span style={{ fontSize: 16, color: "#f5c542", fontWeight: 600 }}>🪙 +{lastDrop.amount}g</span>
-          ) : (
-            <>
-              <span style={{ fontSize: 16, fontWeight: 600, color: isItemDrop(lastDrop) ? RARITY_COLORS[lastDrop.rarity]?.text ?? "white" : "white" }}>
-                {lastDrop.dropType === "card" ? "🃏 " : ""}{lastDrop.name}{lastDrop.dropType === "card" ? " card" : ""}
-              </span>
-              <button
-                onClick={() => game.toggleFavorite(lastDrop.id)}
-                style={{ background: "transparent", border: "none", fontSize: 18, cursor: "pointer", lineHeight: 1, color: game.favoriteIds.has(lastDrop.id) ? "#f5c542" : "rgba(255,255,255,0.25)" }}
-                title={game.favoriteIds.has(lastDrop.id) ? "Unfavorite" : "Favourite"}
-              >
-                {game.favoriteIds.has(lastDrop.id) ? "★" : "☆"}
-              </button>
-              <Link href={isItemDrop(lastDrop) ? "/chest" : "/pit"} className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", marginLeft: "auto", whiteSpace: "nowrap" }}>
-                {isItemDrop(lastDrop) ? "→ Chest" : "→ Fight Pit"}
-              </Link>
-            </>
-          )}
+      {lastScan.length > 0 && (
+        <div style={{ marginTop: 18, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10 }}>
+          <div style={{ fontSize: 11, opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+            That scan gave{lastScan.length > 1 ? ` ${lastScan.length} things` : ""}:
+          </div>
+          {lastScan.map((d) => (
+            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "3px 0" }}>
+              {isRewardDrop(d) ? (
+                <span style={{ fontSize: 16, color: "#f5c542", fontWeight: 600 }}>🪙 +{d.amount}g</span>
+              ) : (
+                <>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: RARITY_COLORS[d.rarity]?.text ?? "white" }}>
+                    {d.dropType === "card" ? "🃏 " : d.dropType === "creature" ? "🐾 " : ""}{d.name}{d.dropType === "card" ? " card" : ""}
+                  </span>
+                  <button
+                    onClick={() => game.toggleFavorite(d.id)}
+                    style={{ background: "transparent", border: "none", fontSize: 18, cursor: "pointer", lineHeight: 1, color: game.favoriteIds.has(d.id) ? "#f5c542" : "rgba(255,255,255,0.25)" }}
+                    title={game.favoriteIds.has(d.id) ? "Unfavorite" : "Favourite"}
+                  >
+                    {game.favoriteIds.has(d.id) ? "★" : "☆"}
+                  </button>
+                  <Link href={isItemDrop(d) ? "/chest" : "/pit"} className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", marginLeft: "auto", whiteSpace: "nowrap" }}>
+                    {isItemDrop(d) ? "→ Chest" : "→ Fight Pit"}
+                  </Link>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -183,7 +190,7 @@ export default function AltarPage() {
         onOpenSellConfirm={() => {}}
         onToggleSellMode={() => {}}
       />
-      <p style={{ fontSize: 11, opacity: 0.35, margin: "6px 0 0" }}>Your last {RECENT_SCANS} scans, newest first. Sold items and summoned cards drop off the list.</p>
+      <p style={{ fontSize: 11, opacity: 0.35, margin: "6px 0 0" }}>Your last {RECENT_SCANS} finds ({RECENT_SCANS / SCAN_DROPS} scans), newest first. Sold items and summoned cards drop off the list.</p>
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>

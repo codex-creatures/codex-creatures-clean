@@ -8,12 +8,18 @@ import { dropFromOutcome, goldDrop } from "@/lib/drops";
 // "random": dev testing — every scan rolls a fresh outcome, nothing registered.
 type RollMode = "random" | "deterministic";
 
+// A barcode you've never scanned gives this many drops. Each is its own
+// registry entry ("code", "code:2", "code:3"), so everyone who scans the
+// barcode finds the same things.
+export const SCAN_DROPS = 3;
+
 type UseDropGenerationArgs = {
   rollMode: RollMode;
   scanCounts: Record<string, number>;
   // Reward drops carry their gold amount; the receiver credits it.
   onDrop: (drop: Drop) => void;
   onScanCountUpdate: (code: string, newCount: number) => void;
+  onScan?: (drops: Drop[]) => void; // everything one scan gave
 };
 
 export function useDropGeneration({
@@ -21,6 +27,7 @@ export function useDropGeneration({
   scanCounts,
   onDrop,
   onScanCountUpdate,
+  onScan,
 }: UseDropGenerationArgs) {
   function generateDrop(code: string) {
     if (!/^[0-9]{6,20}$/.test(code)) return;
@@ -36,18 +43,26 @@ export function useDropGeneration({
         low: { min: 1,  max: 25 },
       } as const;
       const { min, max } = REWARD_RULES[tier];
-      onDrop(goldDrop(min + Math.floor(Math.random() * (max - min + 1)), code));
+      const drop = goldDrop(min + Math.floor(Math.random() * (max - min + 1)), code);
+      onDrop(drop);
+      onScan?.([drop]);
       return;
     }
 
-    // ── FIRST SCAN (for this player) → BARCODE OUTCOME ────
-    // Registry: same barcode gives everyone the same outcome. Creature: the
+    // ── FIRST SCAN (for this player) → BARCODE OUTCOMES ───
+    // Registry: same barcode gives everyone the same outcomes. Creature: the
     // barcode fixes WHICH creature, you usually get a card of it (10%: the
     // creature itself). Items: identity + rarity from the barcode, stats
     // roll fresh per player.
-    const result = rollMode === "deterministic" ? resolveBarcode(code) : rollBarcodeOutcome();
-    const drop = dropFromOutcome(result, code);
-    if (drop) onDrop(drop);
+    const drops: Drop[] = [];
+    for (let i = 0; i < SCAN_DROPS; i++) {
+      const key = i === 0 ? code : `${code}:${i + 1}`;
+      const result = rollMode === "deterministic" ? resolveBarcode(key) : rollBarcodeOutcome();
+      const drop = dropFromOutcome(result, code);
+      if (drop) drops.push(drop);
+    }
+    drops.forEach(onDrop);
+    onScan?.(drops);
   }
 
   return { generateDrop };
