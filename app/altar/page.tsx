@@ -3,7 +3,7 @@
 import { useRef, useState, useMemo, useEffect } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useGameState } from "@/hooks/useGameState";
-import { useDropGeneration, SCAN_DROPS } from "@/hooks/useDropGeneration";
+import { useDropGeneration } from "@/hooks/useDropGeneration";
 import { TOTAL_CREATURES, TOTAL_ITEMS, RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isRewardDrop, isItemDrop, type Drop } from "@/lib/types";
 import Link from "next/link";
@@ -190,7 +190,7 @@ export default function AltarPage() {
         onOpenSellConfirm={() => {}}
         onToggleSellMode={() => {}}
       />
-      <p style={{ fontSize: 11, opacity: 0.35, margin: "6px 0 0" }}>Your last {RECENT_SCANS} finds ({RECENT_SCANS / SCAN_DROPS} scans), newest first. Sold items and summoned cards drop off the list.</p>
+      <p style={{ fontSize: 11, opacity: 0.35, margin: "6px 0 0" }}>Your last {RECENT_SCANS} finds, newest first. Sold items and summoned cards drop off the list.</p>
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>

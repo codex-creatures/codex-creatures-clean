@@ -8,10 +8,11 @@ import { dropFromOutcome, goldDrop } from "@/lib/drops";
 // "random": dev testing — every scan rolls a fresh outcome, nothing registered.
 type RollMode = "random" | "deterministic";
 
-// A barcode you've never scanned gives this many drops. Each is its own
+// A barcode you've never scanned gives this many drops (1: items stay
+// scarce — scanning a few things is rewarding enough). Each is its own
 // registry entry ("code", "code:2", "code:3"), so everyone who scans the
 // barcode finds the same things.
-export const SCAN_DROPS = 3;
+export const SCAN_DROPS = 1;
 
 type UseDropGenerationArgs = {
   rollMode: RollMode;
