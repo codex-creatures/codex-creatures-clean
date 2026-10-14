@@ -21,7 +21,7 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  DUNGEON_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO,
+  DUNGEON_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
   startRun, enterRoom, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
@@ -29,7 +29,7 @@ import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
 import {
   BattleView, Bar, SectionTitle, StatsLine, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
-  type Match, type MemberInfo, type OwnedCreature,
+  type Match, type MemberInfo, type OwnedCreature, type BagItem,
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
 import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
@@ -64,6 +64,14 @@ export default function DungeonPage() {
     const cur = loadDungeon();
     if (cur.run) update({ ...cur, run: fn(cur.run) });
   }
+  function updateBag(fn: (bag: PotionKey[]) => PotionKey[]) {
+    const cur = loadDungeon();
+    update({ ...cur, meta: { ...cur.meta, bag: fn(cur.meta.bag ?? []) } });
+  }
+  const takeOne = (key: PotionKey) => updateBag((bag) => {
+    const i = bag.indexOf(key);
+    return i < 0 ? bag : [...bag.slice(0, i), ...bag.slice(i + 1)];
+  });
 
   const battle = usePlayableBattle((m) => updateRun((r) => ({ ...r, battle: m })));
 
@@ -150,6 +158,28 @@ export default function DungeonPage() {
     });
   }
 
+  // ── The battle bag ──────────────────────────────────────────────
+  function buyPotion(key: PotionKey) {
+    if ((loadDungeon().meta.bag ?? []).length >= BAG_SIZE || !game.spendGold(POTIONS[key].price)) return;
+    updateBag((bag) => addToBag(bag, [key]));
+    updateRun((r) => ({ ...r, loot: [...r.loot, POTIONS[key].name] }));
+  }
+
+  function takeStash() {
+    const items = loadDungeon().run?.current?.stash ?? [];
+    updateBag((bag) => addToBag(bag, items));
+    updateRun((r) => markDone({ ...r, loot: [...r.loot, ...items.map((k) => POTIONS[k].name)] }));
+  }
+
+  // Between rooms: drink a potion on anyone still standing.
+  function drink(key: PotionKey, id: string) {
+    const c = byId(id);
+    const hp = run?.hp[id] ?? 1;
+    if (!c || hp <= 0 || hp >= 1 || !(lab?.meta.bag ?? []).includes(key)) return;
+    takeOne(key);
+    updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) } }));
+  }
+
   // A deck of cards: DECK_CARDS creature cards, each rolled like a scan.
   function openDeck() {
     const drops = Array.from({ length: DECK_CARDS }, () =>
@@ -232,6 +262,8 @@ export default function DungeonPage() {
         <RoomHeader run={run} />
         <BattleView
           battle={battle}
+          bag={bagItems(lab.meta.bag ?? [])}
+          onUseItem={(key) => takeOne(key as PotionKey)}
           finishedActions={over && (
             <button className="pixel-btn" onClick={() => finishFight(run, m)}>
               {m.state.winner === "A" ? "Collect your reward" : "Everything goes dark…"}
@@ -252,7 +284,7 @@ export default function DungeonPage() {
       {run.current
         ? <RoomScreen
             run={run} room={run.current} found={found} byId={byId}
-            gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+            gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
           />
         : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))} />}
       {run.current && (
@@ -263,6 +295,7 @@ export default function DungeonPage() {
       )}
 
       <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />
+      <Bag run={run} bag={lab.meta.bag ?? []} byId={byId} onDrink={drink} />
 
       <div style={{ marginTop: 24, textAlign: "center" }}>
         <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
@@ -396,9 +429,9 @@ function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: strin
   );
 }
 
-function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onDeck, onHeal, onBless, onBuy, onFight, onNext }: {
+function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
   run: DungeonRun; room: Room; found: Drop[] | null; byId: (id: string) => OwnedCreature | undefined; gold: number;
-  onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
+  onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = ROOM_INFO[room.kind];
   const nextLabel = room.kind === "boss" ? "Finish" : run.room === DUNGEON_ROOMS - 1 ? "On to the lair" : "On to the next room";
@@ -461,12 +494,38 @@ function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onDeck,
         </>
       ))}
 
-      {(room.kind === "stash" || room.kind === "merchant") && (
+      {room.kind === "stash" && (room.done ? next : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
-            {room.kind === "stash" && "A forgotten pack, its potions long gone. (Stashes fill your battle bag once it exists.)"}
-            {room.kind === "merchant" && "A cart, a lantern, and a sign: BACK SOON. (Wandering merchants are coming.)"}
+            A forgotten pack, half rotted through. Inside: {(room.stash ?? []).map((k) => `${POTIONS[k].icon} ${POTIONS[k].name}`).join(", ")}.
           </p>
+          <p style={{ fontSize: 12, color: MUTED }}>Your battle bag: {bag.length}/{BAG_SIZE}{bag.length + (room.stash?.length ?? 0) > BAG_SIZE ? " — not everything will fit" : ""}.</p>
+          <button className="pixel-btn" onClick={onStash} disabled={bag.length >= BAG_SIZE}>Pack them in your bag</button>
+          <button className="card-btn" style={{ marginTop: 6, width: "auto" }} onClick={onNext}>Leave them</button>
+        </>
+      ))}
+
+      {room.kind === "merchant" && (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
+            A cart piled with clinking bottles, and a merchant who smiles too much. &ldquo;Potions! For the bag. One per slot, mind — they don&apos;t stack.&rdquo;
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {(Object.keys(POTIONS) as PotionKey[]).map((k) => {
+              const p = POTIONS[k];
+              const can = gold >= p.price && bag.length < BAG_SIZE;
+              return (
+                <button key={k} className="card-btn" disabled={!can} onClick={() => onBuyPotion(k)} style={{ opacity: can ? 1 : 0.5 }}>
+                  <span style={{ flex: 1 }}>
+                    <b>{p.icon} {p.name}</b>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>Restores {p.heal} HP to one creature. In a fight it uses your turn.</span>
+                  </span>
+                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>🪙 {p.price}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 12, color: MUTED }}>Your battle bag: {bag.length}/{BAG_SIZE} · {gold} gold.</p>
           {next}
         </>
       )}
@@ -626,5 +685,43 @@ function RunOver({ run, lab, onHome }: { run: DungeonRun; lab: DungeonSave; onHo
       <div style={{ fontSize: 14, marginBottom: 14 }}>{run.loot.length > 0 ? run.loot.join(" · ") : "nothing this time"}</div>
       <button className="pixel-btn" onClick={onHome}>Continue</button>
     </div>
+  );
+}
+
+// The bag, one entry per kind of potion (for the battle screen).
+function bagItems(bag: PotionKey[]): BagItem[] {
+  return (Object.keys(POTIONS) as PotionKey[])
+    .map((k) => ({ key: k, ...POTIONS[k], count: bag.filter((b) => b === k).length }))
+    .filter((it) => it.count > 0);
+}
+
+// Between rooms: your battle bag, and who could use a potion.
+function Bag({ run, bag, byId, onDrink }: {
+  run: DungeonRun; bag: PotionKey[]; byId: (id: string) => OwnedCreature | undefined; onDrink: (k: PotionKey, id: string) => void;
+}) {
+  const hurt = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0 && (run.hp[id] ?? 1) < 1);
+  return (
+    <>
+      <SectionTitle>Battle bag ({bag.length}/{BAG_SIZE})</SectionTitle>
+      {bag.length === 0 ? (
+        <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>Empty. Merchants sell potions, and stashes sometimes hold a few.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {bagItems(bag).map((it) => (
+            <div key={it.key} className="card-btn" style={{ cursor: "default", flexWrap: "wrap" }}>
+              <span style={{ flex: 1, minWidth: 140 }}><b>{it.icon} {it.name} ×{it.count}</b> <span style={{ fontSize: 12, color: MUTED }}>+{it.heal} HP</span></span>
+              <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                {hurt.map((id) => (
+                  <button key={id} className="chip" style={{ padding: "4px 9px" }} onClick={() => onDrink(it.key as PotionKey, id)}>
+                    Give {byId(id)!.name}
+                  </button>
+                ))}
+                {hurt.length === 0 && <span style={{ fontSize: 11, color: MUTED }}>nobody is hurt</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

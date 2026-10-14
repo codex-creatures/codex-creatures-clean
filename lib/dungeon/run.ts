@@ -72,6 +72,25 @@ export const BOSS_GOLD: [number, number] = [80, 120];
 export const MINIBOSS_GOLD: [number, number] = [50, 80];
 export const MINIBOSS_REVIVE_HP = 0.7; // beating a mini boss: heal one creature to full, or revive one to 70%
 export const DECK_CARDS = 5;           // a deck of cards: 5 creature-card rolls
+
+// ── The battle bag ───────────────────────────────────────────────────
+// Up to BAG_SIZE items, one per slot (they don't stack). It stays with you
+// between runs. Merchants sell potions; stashes hold a few.
+// A potion heals one creature: in a fight it costs your turn and heals the
+// creature on the field; between rooms, tap it on anyone still standing.
+export const BAG_SIZE = 10;
+export type PotionKey = "potion" | "lesser";
+export const POTIONS: Record<PotionKey, { name: string; heal: number; price: number; icon: string }> = {
+  potion: { name: "Healing Potion", heal: 100, price: 100, icon: "🧪" },
+  lesser: { name: "Lesser Potion",  heal: 50,  price: 50,  icon: "🧴" },
+};
+export const STASH_ITEMS = 3;
+export const STASH_POTION_CHANCE = 0.3; // each stash item: a Healing Potion (else a Lesser one)
+
+// Room for more in the bag? Adds what fits; returns the new bag.
+export function addToBag(bag: PotionKey[], items: PotionKey[]): PotionKey[] {
+  return [...bag, ...items].slice(0, BAG_SIZE);
+}
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
 export const CHEST_DROPS = 3;
@@ -139,6 +158,7 @@ export type Room = {
   offers?: string[];   // a librarian: the codexes (race moves) for sale
   bought?: string[];   // …and the ones you bought
   blessed?: boolean;   // a mini boss's heal/revive has been used
+  stash?: PotionKey[]; // a stash: the potions inside
   done: boolean;
 };
 
@@ -174,6 +194,8 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
       if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
       return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
     }
+    case "stash":
+      return { kind, stash: Array.from({ length: STASH_ITEMS }, (): PotionKey => (rng() < STASH_POTION_CHANCE ? "potion" : "lesser")), done: false };
     case "miniboss": {
       // One tough creature: an Epic with Rare gear, played by the Hard AI.
       // Beat it and you can heal or revive one of your party.
@@ -271,13 +293,14 @@ export type DungeonMeta = {
   clears: number;
   firstClearRun?: number;            // the run you first beat the boss on (for the trophy)
   injuries: Record<string, number>;  // creature id → share of HP left after a run (missing = full)
+  bag: PotionKey[];                  // the battle bag (kept between runs)
 };
 
 export type DungeonSave = { meta: DungeonMeta; run: DungeonRun | null };
 
 // Kept from when dungeons were called labyrinths, so old progress still loads.
 const STORAGE_KEY = "codex_creatures_labyrinth_v1";
-const EMPTY: DungeonSave = { meta: { runs: 0, clears: 0, injuries: {} }, run: null };
+const EMPTY: DungeonSave = { meta: { runs: 0, clears: 0, injuries: {}, bag: [] }, run: null };
 
 export function loadDungeon(): DungeonSave {
   if (typeof window === "undefined") return EMPTY;

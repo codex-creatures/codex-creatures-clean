@@ -205,8 +205,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
             attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
-            text: e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : "#c7b8ff" }
+            text: e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
       if (!alive.current) return;
@@ -230,8 +230,13 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
 // ── Battle screen ─────────────────────────────────────────────────
 // ── Battle screen ─────────────────────────────────────────────────
 // finishedActions: the buttons shown when the battle is over.
-export function BattleView({ battle, finishedActions }: {
+// bag: battle-bag items you can use, one entry per kind (count = how many);
+// onUseItem(key) takes one out of the bag when you use it.
+export type BagItem = { key: string; name: string; icon: string; heal: number; count: number };
+
+export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
   battle: ReturnType<typeof usePlayableBattle>; finishedActions: React.ReactNode;
+  bag?: BagItem[]; onUseItem?: (key: string) => void;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
   const match = battle.match!;
@@ -327,6 +332,21 @@ export function BattleView({ battle, finishedActions }: {
           </div>
           {affordableSkills(me).length === 0 && (
             <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — rest (+30⚡)</button>
+          )}
+          {bag.length > 0 && onUseItem && (
+            <>
+              <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
+                Battle bag — uses your turn (before anyone attacks) on your {me.name}{me.hp >= me.maxHp ? ", who is already at full HP" : ""}:
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {bag.map((it) => (
+                  <button key={it.key} className="card-btn" style={{ width: "auto" }} disabled={playing || me.hp >= me.maxHp}
+                    onClick={() => { onUseItem(it.key); onAct({ kind: "item", item: it.name, heal: it.heal }); }}>
+                    {it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>+{Math.min(it.heal, me.maxHp - me.hp)} HP{it.heal > me.maxHp - me.hp && me.hp < me.maxHp ? ` (of ${it.heal})` : ""}</span>
+                  </button>
+                ))}
+              </div>
+            </>
           )}
           {swapTargets(you).length > 0 && (
             <>

@@ -57,8 +57,8 @@ function LogLine({ e }: { e: BattleEvent }) {
     case "pass":
       return <div><Who side={e.side} name={e.name} /> is out of energy and rests (+30⚡).</div>;
     case "effect":
-      return <div style={{ color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : "#c7b8ff" }}>
-        {e.kind === "venom" ? "🧪 " : e.kind === "revive" ? "⚰️ " : "✨ "}<Who side={e.side} name={e.name} /> {e.text} <span style={{ color: MUTED }}>({e.hp} HP)</span>
+      return <div style={{ color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : "#c7b8ff" }}>
+        {e.kind === "venom" ? "☠️ " : e.kind === "revive" ? "⚰️ " : e.kind === "item" ? "🧪 " : "✨ "}<Who side={e.side} name={e.name} /> {e.text} <span style={{ color: MUTED }}>({e.hp} HP)</span>
       </div>;
     case "faint":
       return <div>💀 <Who side={e.side} name={e.name} /> fainted!</div>;

@@ -77,12 +77,14 @@ export function streakEffects(s?: Streak) {
 
 export type SideKey = "A" | "B";
 
-// Future: { kind: "item"; bagIndex: number } for the battle bag.
 // target: which enemy to hit when they have two on the field (team index);
 // missing = their main creature.
+// item: something from the battle bag used on your creature on the field
+// (the screen takes it out of the bag); heal = HP it restores.
 export type BattleAction =
   | { kind: "attack"; skillName: string; target?: number }
   | { kind: "swap"; to: number }
+  | { kind: "item"; item: string; heal: number }
   | { kind: "pass" }; // rest: only when no move is affordable; recovers energy
 
 // Status effects (cripple; later fear, blind, vampirism…).
@@ -118,7 +120,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "revive"; damage?: number }
+      kind: "self" | "venom" | "revive" | "item"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -212,6 +214,7 @@ export function isValidAction(state: BattleState, key: SideKey, a: BattleAction)
     case "attack": return affordableSkills(me).some((sk) => sk.name === a.skillName)
       && (a.target === undefined || attackTargets(state, key).includes(a.target));
     case "swap":   return swapTargets(s).includes(a.to);
+    case "item":   return !s.boss && me.hp > 0 && me.hp < me.maxHp && a.heal > 0;
     case "pass":   return affordableSkills(me).length === 0;
   }
 }
@@ -249,6 +252,19 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
   }
 
+  // 1b. Items (from the battle bag) are used before anyone attacks.
+  for (const k of ["A", "B"] as SideKey[]) {
+    const a = actions[k];
+    if (a.kind !== "item" || state.sides[k].boss) continue;
+    const s = state.sides[k];
+    const me = activeOf(s);
+    const healed = Math.min(a.heal, me.maxHp - me.hp);
+    me.hp += healed;
+    me.streak = undefined;
+    state.log.push({ type: "effect", side: k, index: s.active, name: me.name, text: `drinks a ${a.item} (+${healed} HP)`, hp: me.hp,
+      statuses: me.statuses.map((x) => ({ ...x })), kind: "item", damage: healed });
+  }
+
   // 2. Attacks in Agility order (ties random). Dash moves add agility for
   //    this round; a crippled creature is slower. A boss acts with every
   //    creature it has on the field.
@@ -256,7 +272,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   for (const k of ["A", "B"] as SideKey[]) {
     const s = state.sides[k];
     if (s.boss) turns.push(...bossActions(state, k).map((t) => ({ key: k, ...t })));
-    else if (actions[k].kind !== "swap") turns.push({ key: k, index: s.active, action: actions[k] });
+    else if (actions[k].kind !== "swap" && actions[k].kind !== "item") turns.push({ key: k, index: s.active, action: actions[k] });
   }
   // Pounce goes before everyone; otherwise fastest first.
   const pounces = (f: Combatant, a: BattleAction) =>

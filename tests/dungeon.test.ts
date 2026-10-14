@@ -246,7 +246,7 @@ describe("a dungeon run", () => {
 
   it("ending a run brings the wounds home and records the first clear", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "cleared" as const };
-    const save: DungeonSave = { meta: { runs: 4, clears: 0, injuries: { c: 0.2 } }, run };
+    const save: DungeonSave = { meta: { runs: 4, clears: 0, injuries: { c: 0.2 }, bag: [] }, run };
     const after = endRun(save);
     expect(after.run).toBeNull();
     expect(after.meta.injuries).toEqual({ a: 0.5, b: 0 });
