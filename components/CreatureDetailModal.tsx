@@ -32,6 +32,10 @@ type Props = {
   codexes?: CreatureOrItemDrop[];          // every codex you own
   onLearnCodex?: (codexId: string) => void;
   onClose: () => void;
+  // Flicking through your creatures: where this one sits in the list.
+  position?: { index: number; count: number };
+  onPrev?: () => void;
+  onNext?: () => void;
 };
 
 const MUTED = "rgba(255,255,255,0.45)";
@@ -56,7 +60,7 @@ const rarityColor = (r: Rarity) => RARITY_COLORS[r]?.text ?? "white";
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, onClose,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, onClose, position, onPrev, onNext,
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
@@ -68,10 +72,14 @@ export default function CreatureDetailModal({
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
 
   useEffect(() => {
-    function handleKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") onPrev?.();
+      if (e.key === "ArrowRight") onNext?.();
+    }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
+  }, [onClose, onPrev, onNext]);
 
   const openSlot = (slot: EquipSlot) => { setPicking((p) => (p === slot ? null : slot)); setPreview(undefined); };
   const closePicker = () => { setPicking(null); setPreview(undefined); };
@@ -107,6 +115,15 @@ export default function CreatureDetailModal({
         style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
+
+        {/* Previous / next creature */}
+        {position && position.count > 1 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, paddingRight: 28 }}>
+            <button className="chip" onClick={onPrev} aria-label="Previous creature">◀ Prev</button>
+            <span className="pixel-font" style={{ fontSize: 13, color: MUTED }}>{position.index + 1} / {position.count}</span>
+            <button className="chip" onClick={onNext} aria-label="Next creature">Next ▶</button>
+          </div>
+        )}
 
         {/* Name plate */}
         <div style={{ paddingRight: 28, marginBottom: 12 }}>

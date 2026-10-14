@@ -75,6 +75,13 @@ export default function InventoryList({
     [inventory]
   );
   const openCreature = openCreatureId ? inventory.find((d) => d.id === openCreatureId) : undefined;
+  // The creatures in the current list, to flick through (wrapping round).
+  const creatureList = filteredInventory.filter(isCreatureDrop);
+  const creatureIndex = creatureList.findIndex((d) => d.id === openCreatureId);
+  const stepCreature = (by: number) => {
+    if (creatureIndex < 0 || creatureList.length < 2) return;
+    setOpenCreatureId(creatureList[(creatureIndex + by + creatureList.length) % creatureList.length].id);
+  };
 
   function handleRowClick(d: Drop) {
     if (sellMode) {
@@ -224,7 +231,11 @@ export default function InventoryList({
       {/* Creature Detail Modal */}
       {openCreature && isCreatureDrop(openCreature) && (
         <CreatureDetailModal
+          key={openCreature.id}
           creature={openCreature}
+          position={creatureIndex >= 0 ? { index: creatureIndex, count: creatureList.length } : undefined}
+          onPrev={() => stepCreature(-1)}
+          onNext={() => stepCreature(1)}
           isFavorite={favoriteIds.has(openCreature.id)}
           onToggleFavorite={onToggleFavorite}
           loadout={equipment[openCreature.id]}
