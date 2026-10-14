@@ -1,12 +1,16 @@
 // lib/dungeon/map.ts
 // The dungeon as a labyrinth: rooms scattered across the map, joined by
-// corridors that wind, cross, loop back and dead-end. You start at the
-// bottom; the boss's lair is at the top.
+// corridors that branch and rejoin. You start at the bottom; the boss's
+// lair is at the top.
 //
-// - About ROOM_COUNT rooms. The rooms are joined into one network (a
-//   spanning tree, so there are dead ends), then a few extra corridors
-//   make loops, and a few long corridors cut across the map. A long one can
-//   look like a shortcut and turn out to be the long way round.
+// - About ROOM_COUNT rooms, kept MIN_SPACING apart. Corridors always lead
+//   onward — further north — so you can't go back, but there's never a dead
+//   end: every room has at least one way on, and every way on reaches the
+//   lair eventually. The choice is which branch: some are short and
+//   straight, some wander past more rooms (more loot, more danger).
+// - Each room has a corridor on to one of the nearest rooms ahead, and
+//   BRANCH_CHANCE of a second; the entrance has two or three. Every room can
+//   be reached from below. A few long corridors skip ahead.
 // - The lair has one or two ways in. The shortest route from the entrance
 //   to it is MIN_ROUTE–MAX_ROUTE rooms.
 // - Fog is regional: you see SIGHT_RADIUS around where you stand. Rooms
@@ -18,13 +22,12 @@
 import { MYSTERY_MIX, ROOM_MIX, rollRoomKind, type RoomKind } from "./run";
 
 export const MAP_W = 100;
-export const MAP_H = 140;
-export const ROOM_COUNT = 20;        // not counting the entrance and the lair
-export const MIN_SPACING = 15;       // how close two rooms can be
-export const SIGHT_RADIUS = 34;      // how far you can see from where you stand
-export const LOOP_CHANCE = 0.35;     // a room gets an extra corridor to a near neighbour
-export const LONG_CORRIDORS = 2;     // corridors that cut across the map
-export const MAX_LINKS = 4;          // corridors out of one room (extras respect this)
+export const MAP_H = 170;
+export const ROOM_COUNT = 18;        // not counting the entrance and the lair
+export const MIN_SPACING = 18;       // how close two rooms can be
+export const SIGHT_RADIUS = 30;      // how far you can see from where you stand
+export const BRANCH_CHANCE = 0.45;   // a room gets a second way on
+export const LONG_CORRIDORS = 2;     // corridors that skip a long way ahead
 export const MIN_ROUTE = 5;          // shortest route to the lair, in rooms walked into
 export const MAX_ROUTE = 9;
 export const MYSTERY_CHANCE = 0.3;   // a room whose kind you can't see until you walk in
@@ -55,13 +58,14 @@ function link(nodes: Record<string, MapNode>, a: string, b: string) {
   nodes[b].links.push(a);
 }
 
-// Rooms walked into on the shortest route from the entrance to `to`.
+// Rooms walked into on the shortest route from the entrance to `to`
+// (walking onward only).
 export function routeLength(map: DungeonMap, to = map.boss): number {
   const seen = new Map<string, number>([[map.start, 0]]);
   const queue = [map.start];
   while (queue.length > 0) {
     const id = queue.shift()!;
-    for (const n of map.nodes[id].links) {
+    for (const n of map.nodes[id].links.filter((l) => isAhead(map.nodes[id], map.nodes[l]))) {
       if (seen.has(n)) continue;
       seen.set(n, seen.get(id)! + 1);
       queue.push(n);
@@ -69,6 +73,9 @@ export function routeLength(map: DungeonMap, to = map.boss): number {
   }
   return seen.get(to) ?? Infinity;
 }
+
+// Is `b` further on than `a`? (Further north; the lair is furthest.)
+export const isAhead = (a: Pt, b: Pt) => b.y < a.y;
 
 // One attempt at a layout (may fail the route-length check).
 function layout(rng: Rng): DungeonMap {
@@ -79,49 +86,47 @@ function layout(rng: Rng): DungeonMap {
 
   // Scatter the rooms, keeping them apart.
   const rooms: string[] = [];
-  for (let tries = 0; rooms.length < ROOM_COUNT && tries < 4000; tries++) {
-    const p = { x: 8 + rng() * (MAP_W - 16), y: 24 + rng() * (MAP_H - 46) };
+  for (let tries = 0; rooms.length < ROOM_COUNT && tries < 6000; tries++) {
+    const p = { x: 8 + rng() * (MAP_W - 16), y: 26 + rng() * (MAP_H - 50) };
     if (Object.values(nodes).some((n) => distance(n, p) < MIN_SPACING)) continue;
     const id = `r${rooms.length}`;
     add(id, p.x, p.y);
     rooms.push(id);
   }
 
-  // Join the entrance and the rooms into one network (shortest corridors first).
-  const inTree = new Set(["start"]);
-  const rest = new Set(rooms);
-  while (rest.size > 0) {
-    let best: [string, string] | null = null, bestD = Infinity;
-    for (const a of inTree) for (const b of rest) {
-      const d = distance(nodes[a], nodes[b]);
-      if (d < bestD) { bestD = d; best = [a, b]; }
-    }
-    link(nodes, best![0], best![1]);
-    inTree.add(best![1]);
-    rest.delete(best![1]);
-  }
+  // The rooms nearest the lair are the only ways in.
+  const top = [...rooms].sort((p, q) => nodes[p].y - nodes[q].y);
+  const lairDoors = new Set(rng() < 0.5 ? top.slice(0, 2) : top.slice(0, 1));
+  const nearest = (from: string, among: string[]) =>
+    among.filter((id) => !nodes[from].links.includes(id)).sort((p, q) => distance(nodes[from], nodes[p]) - distance(nodes[from], nodes[q]));
+  const aheadOf = (id: string) => rooms.filter((r) => isAhead(nodes[id], nodes[r]));
+  const behind = (id: string) => ["start", ...rooms].filter((r) => isAhead(nodes[r], nodes[id]));
+  const waysOnCount = (id: string) => nodes[id].links.filter((l) => isAhead(nodes[id], nodes[l])).length;
 
-  const free = (id: string) => nodes[id].links.length < MAX_LINKS;
-  // Loops: an extra corridor to a near neighbour.
-  for (const a of rooms) {
-    if (rng() >= LOOP_CHANCE || !free(a)) continue;
-    const near = rooms
-      .filter((b) => b !== a && free(b) && !nodes[a].links.includes(b) && distance(nodes[a], nodes[b]) < 34)
-      .sort((p, q) => distance(nodes[a], nodes[p]) - distance(nodes[a], nodes[q]));
-    if (near[0]) link(nodes, a, near[0]);
+  // Ways on: every room leads to one of the nearest rooms ahead (sometimes two).
+  for (const id of ["start", ...rooms]) {
+    if (lairDoors.has(id)) { link(nodes, id, "boss"); continue; }
+    const want = id === "start" ? 2 + (rng() < 0.5 ? 1 : 0) : rng() < BRANCH_CHANCE ? 2 : 1;
+    const options = nearest(id, aheadOf(id)).slice(0, want + 1);
+    // Mostly the nearest, now and then the next one along.
+    while (options.length > 0 && waysOnCount(id) < want) {
+      const pick = options.length > 1 && rng() < 0.3 ? 1 : 0;
+      link(nodes, id, options.splice(pick, 1)[0]);
+    }
+    if (waysOnCount(id) === 0) link(nodes, id, "boss"); // nothing ahead: straight to the lair
   }
-  // A few long corridors across the map.
+  // Ways in: every room can be reached from somewhere behind it.
+  for (const id of rooms) {
+    if (!nodes[id].links.some((l) => isAhead(nodes[l], nodes[id]))) link(nodes, id, nearest(id, behind(id))[0]);
+  }
+  // A few long corridors that skip ahead.
   for (let i = 0, tries = 0; i < LONG_CORRIDORS && tries < 200; tries++) {
     const a = rooms[Math.floor(rng() * rooms.length)], b = rooms[Math.floor(rng() * rooms.length)];
     const d = distance(nodes[a], nodes[b]);
-    if (a === b || d < 38 || d > 70 || !free(a) || !free(b) || nodes[a].links.includes(b)) continue;
+    if (a === b || d < 40 || d > 70 || nodes[a].links.includes(b) || lairDoors.has(a) || lairDoors.has(b)) continue;
     link(nodes, a, b);
     i++;
   }
-  // The lair: one or two ways in, from the rooms nearest the top.
-  const top = [...rooms].sort((p, q) => distance(nodes.boss, nodes[p]) - distance(nodes.boss, nodes[q]));
-  link(nodes, "boss", top[0]);
-  if (rng() < 0.5 && top[1]) link(nodes, "boss", top[1]);
 
   return { start: "start", boss: "boss", nodes };
 }
@@ -146,6 +151,9 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
 }
 
 export const neighbours = (map: DungeonMap, id: string): MapNode[] => map.nodes[id].links.map((l) => map.nodes[l]);
+
+// The corridors on from a room (the ones leading further in).
+export const waysOn = (map: DungeonMap, id: string): MapNode[] => neighbours(map, id).filter((n) => isAhead(map.nodes[id], n));
 
 // Rooms in sight from a spot.
 export function inSight(map: DungeonMap, at: string): Set<string> {

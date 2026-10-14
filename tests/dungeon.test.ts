@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
-  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, atDeadEnd, type DungeonSave, type DungeonRun,
+  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun,
 } from "../lib/dungeon/run";
 import {
-  rollMap, routeLength, inSight, seenRooms, distance, MIN_ROUTE, MAX_ROUTE, SIGHT_RADIUS, MYSTERY_CHANCE, ROOM_COUNT,
+  rollMap, routeLength, waysOn, isAhead, inSight, seenRooms, distance, MIN_ROUTE, MAX_ROUTE, SIGHT_RADIUS, MYSTERY_CHANCE, ROOM_COUNT,
 } from "../lib/dungeon/map";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { createBattle } from "../lib/combat/battle";
@@ -99,17 +99,21 @@ describe("the labyrinth map", () => {
     }
   });
 
-  it("it's a labyrinth: dead ends and loops turn up", () => {
-    let deadEnds = 0, loops = 0;
-    for (let i = 0; i < 100; i++) {
+  it("never a dead end: every room has a way on, and corridors only lead onward", () => {
+    let choices = 0, rooms = 0;
+    for (let i = 0; i < 300; i++) {
       const map = rollMap(false);
-      const nodes = Object.values(map.nodes);
-      deadEnds += nodes.filter((n) => n.links.length === 1 && n.kind !== "boss").length;
-      const corridors = nodes.reduce((t, n) => t + n.links.length, 0) / 2;
-      if (corridors > nodes.length - 1) loops++;
+      for (const n of Object.values(map.nodes)) {
+        if (n.id === map.boss) continue;
+        const on = waysOn(map, n.id);
+        expect(on.length).toBeGreaterThanOrEqual(1);
+        for (const m of on) expect(isAhead(n, m)).toBe(true);
+        rooms++;
+        if (on.length > 1) choices++;
+      }
+      expect(waysOn(map, map.start).length).toBeGreaterThanOrEqual(2); // a choice from the off
     }
-    expect(deadEnds).toBeGreaterThan(100);
-    expect(loops).toBeGreaterThan(80);
+    expect(choices / rooms).toBeGreaterThan(0.3); // plenty of branches
   });
 
   it(`about ${MYSTERY_CHANCE * 100}% of rooms are mysteries — never the entrance or the lair`, () => {
@@ -183,21 +187,22 @@ describe("a labyrinth run", () => {
     expect(nextRooms(inside)).toEqual([]);
   });
 
-  it("there's no going back into a room you've been in — a dead end means heading out", () => {
-    for (let i = 0; i < 200; i++) {
+  it("no going back, and no dead ends: any wander ends at the lair", () => {
+    const lengths = new Set<number>();
+    for (let i = 0; i < 300; i++) {
       let run = startRun(party, party.slice(0, 3), {}, 2);
-      // Wander at random until you're stuck or reach the lair.
       for (let steps = 0; steps < 100 && run.status === "exploring"; steps++) {
         if (run.current) { run = leaveRoom({ ...run, current: { ...run.current, done: true } }); continue; }
         const options = nextRooms(run);
-        for (const n of options) expect(run.path).not.toContain(n.id);
+        expect(options.length).toBeGreaterThan(0);
         for (const id of run.path) expect(enterRoom(run, id)).toBe(run);
-        if (options.length === 0) { expect(atDeadEnd(run)).toBe(true); break; }
-        expect(atDeadEnd(run)).toBe(false);
         run = enterRoom(run, options[Math.floor(Math.random() * options.length)].id);
       }
+      expect(run.status).toBe("cleared");
       expect(new Set(run.path).size).toBe(run.path.length); // never the same room twice
+      lengths.add(run.path.length);
     }
+    expect(lengths.size).toBeGreaterThan(3); // short and long ways through
   });
 
   it("knocked-out creatures can't be put in the team, and the team can't change mid-fight", () => {

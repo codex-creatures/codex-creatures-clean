@@ -22,7 +22,7 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
-  startRun, enterRoom, runPosition, atDeadEnd, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
+  startRun, enterRoom, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
@@ -289,8 +289,7 @@ export default function DungeonPage() {
             run={run} room={run.current} found={found} byId={byId}
             gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
           />
-        : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))}
-            onRetreat={() => updateRun((r) => ({ ...r, status: "retreated", battle: undefined }))} />}
+        : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))} />}
       {run.current && (
         <>
           <SectionTitle>The way ahead</SectionTitle>
@@ -404,29 +403,16 @@ function RoomHeader({ run }: { run: DungeonRun }) {
   );
 }
 
-function ChooseRoom({ run, onEnter, onRetreat }: { run: DungeonRun; onEnter: (nodeId: string) => void; onRetreat: () => void }) {
+function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: string) => void }) {
   const canFight = fightingTeam(run).length > 0;
   const nextToLair = run.map.nodes[run.map.boss].links.includes(runPosition(run));
-  if (atDeadEnd(run)) {
-    return (
-      <div className="stone-panel">
-        <div className="pixel-font" style={{ fontSize: 18, color: "#ff8a80" }}>Dead end</div>
-        <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 12px" }}>
-          The torch gutters against bare stone. Every way on leads back where you&apos;ve already been, and the labyrinth doesn&apos;t let you
-          retrace your steps. Time to find your way out — <b>you keep everything you found</b>.
-        </p>
-        <DungeonMapView run={run} />
-        <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onRetreat}>🏃 Head back out</button>
-      </div>
-    );
-  }
   return (
     <div className="stone-panel">
       <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Which way?</div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
         {nextToLair ? "Something huge breathes at the end of one of these corridors. Make sure the right creatures are on your team. "
-          : "Your torch only lights so far. Tunnels vanish into the dark — some lead closer to the lair, some only look like they do. "}
-        There&apos;s no going back the way you came — choose carefully. You can change your team below any time before a fight.
+          : "Your torch only lights so far. Tunnels vanish into the dark — every one leads on toward the lair, but some take the long way round. "}
+        Corridors only lead onward — there&apos;s no going back, so choose your branch carefully. You can change your team below any time before a fight.
       </p>
       {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}
       <DungeonMapView run={run} onEnter={canFight ? onEnter : undefined} />

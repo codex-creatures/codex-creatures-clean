@@ -9,9 +9,8 @@
 // - HP carries over from room to room (energy is full at each fight).
 // - The dungeon is a labyrinth (lib/dungeon/map.ts): rooms joined by
 //   corridors, the entrance at the bottom and the boss's lair at the top.
-//   You walk along any corridor from where you stand, but never back into a
-//   room you've already been in — so a dead end means retreating with what
-//   you've found. Torchlight shows only the area around you.
+//   Corridors only lead onward (never back), and there are no dead ends:
+//   every way on reaches the lair. Torchlight shows only the area around you.
 // - Finish a room (win its fight, take its loot, or leave it) before moving on.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
@@ -28,7 +27,7 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
-import { rollMap, neighbours, type DungeonMap } from "./map";
+import { rollMap, waysOn, type DungeonMap } from "./map";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -256,14 +255,9 @@ export const isAlive = (run: DungeonRun, id: string) => (run.hp[id] ?? 0) > 0;
 // Where you stand on the map.
 export const runPosition = (run: DungeonRun): string => run.path[run.path.length - 1];
 
-// The rooms you can walk to (none until you've finished the room you're in).
 // The rooms you can walk to: none until you've finished the room you're in,
-// and never back into one you've been in.
-export const nextRooms = (run: DungeonRun) =>
-  (run.current ? [] : neighbours(run.map, runPosition(run)).filter((n) => !run.path.includes(n.id)));
-
-// A dead end: nowhere new to go (and not standing in a room still to finish).
-export const atDeadEnd = (run: DungeonRun) => run.status === "exploring" && !run.current && nextRooms(run).length === 0;
+// then any corridor leading on (never back).
+export const nextRooms = (run: DungeonRun) => (run.current ? [] : waysOn(run.map, runPosition(run)));
 
 // Walk down a corridor into a new room; its contents are rolled as you walk in.
 export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.random): DungeonRun {
