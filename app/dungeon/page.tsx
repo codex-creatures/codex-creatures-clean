@@ -12,6 +12,8 @@ import { useGameState } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
+import { makeCreatureDrop } from "@/lib/creatures/summon";
+import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { rollBarcodeOutcome } from "@/lib/barcodeRegistry";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove } from "@/lib/drops";
@@ -19,7 +21,7 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  DUNGEON_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, ROOM_INFO,
+  DUNGEON_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO,
   startRun, enterRoom, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
@@ -137,6 +139,24 @@ export default function DungeonPage() {
     updateRun((r) => markDone({ ...r, hp: { ...r.hp, [id]: 1 } }));
   }
 
+  // Beating a mini boss: heal one creature to full, or revive one that was knocked out.
+  function bless(id: string) {
+    updateRun((r) => {
+      if (!r.current) return r;
+      const team = fightingTeam(r);
+      // A revived creature steps back into the team if there's room.
+      const back = (r.hp[id] ?? 1) <= 0 && team.length < TEAM_SIZE ? [...team, id] : team;
+      return { ...r, team: back, hp: { ...r.hp, [id]: (r.hp[id] ?? 1) <= 0 ? MINIBOSS_REVIVE_HP : 1 }, current: { ...r.current, blessed: true } };
+    });
+  }
+
+  // A deck of cards: DECK_CARDS creature cards, each rolled like a scan.
+  function openDeck() {
+    const drops = Array.from({ length: DECK_CARDS }, () =>
+      makeCreatureDrop(CREATURE_BY_ID[pickCreatureId(pickRarity("", "random"))], "card", ""));
+    give(drops, markDone);
+  }
+
   function nextRoom() {
     setFound(null);
     battle.clear();
@@ -232,7 +252,7 @@ export default function DungeonPage() {
       {run.current
         ? <RoomScreen
             run={run} room={run.current} found={found} byId={byId}
-            gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onHeal={healOne} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+            gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
           />
         : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))} />}
       {run.current && (
@@ -376,9 +396,9 @@ function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: strin
   );
 }
 
-function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onHeal, onBuy, onFight, onNext }: {
+function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onDeck, onHeal, onBless, onBuy, onFight, onNext }: {
   run: DungeonRun; room: Room; found: Drop[] | null; byId: (id: string) => OwnedCreature | undefined; gold: number;
-  onTreasure: (r: Room) => void; onChest: () => void; onHeal: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
+  onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = ROOM_INFO[room.kind];
   const nextLabel = room.kind === "boss" ? "Finish" : run.room === DUNGEON_ROOMS - 1 ? "On to the lair" : "On to the next room";
@@ -410,6 +430,13 @@ function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onHeal,
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>An old chest, humming faintly — like the barcodes do. {CHEST_DROPS} things rattle inside.</p>
           <button className="pixel-btn" onClick={onChest}>Open it</button>
+        </>
+      ))}
+
+      {room.kind === "cards" && (room.done ? next : (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>A deck of cards lies face down on a stone table, each one faintly warm. {DECK_CARDS} creature cards — whatever they turn out to be.</p>
+          <button className="pixel-btn" onClick={onDeck}>Turn them over</button>
         </>
       ))}
 
@@ -471,11 +498,33 @@ function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onHeal,
         </>
       )}
 
-      {isFight(room.kind) && (room.done ? next : (
+      {isFight(room.kind) && (room.done ? (room.kind === "miniboss" && !room.blessed ? (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
+            As it falls, something warm washes over your party. Choose one creature: heal it to full, or bring a knocked-out one back with {Math.round(MINIBOSS_REVIVE_HP * 100)}% HP.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {run.party.map((id) => {
+              const c = byId(id);
+              const hp = run.hp[id] ?? 1;
+              return c && (
+                <button key={id} className="card-btn" disabled={hp >= 1} onClick={() => onBless(id)} style={{ opacity: hp >= 1 ? 0.45 : 1 }}>
+                  <b style={{ color: rarityColor(c.rarity) }}>{c.name}</b>
+                  <span style={{ fontSize: 12, color: MUTED }}>
+                    {hp <= 0 ? `knocked out → revive to ${Math.round(MINIBOSS_REVIVE_HP * 100)}%` : hp < 1 ? `${Math.round(hp * 100)}% HP → heal to full` : "already full"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button className="card-btn" style={{ marginTop: 6, width: "auto" }} onClick={onNext}>Nobody needs it — move on</button>
+        </>
+      ) : next) : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 10px" }}>
             {room.kind === "easy" && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
+            {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Beat it and you can heal or revive one of your party."}
             {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close, and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
             {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
           </p>

@@ -10,9 +10,12 @@
 // - Room kinds follow the quiet-room rules (lib/dungeon/run.ts) along every
 //   path, and two passageways out of one room never lead to the same kind of
 //   quiet room.
+// - MYSTERY_CHANCE of rooms are mysteries: their kind is hidden until you
+//   walk in, and rolled from MYSTERY_MIX (mostly mini bosses; librarians
+//   only ever turn up here).
 
 import {
-  DUNGEON_ROOMS, MAX_QUIET_ROOMS, ROOM_MIX, WANDERERS, isFight, isSpecial, rollRoomKind, type RoomKind,
+  DUNGEON_ROOMS, MAX_QUIET_ROOMS, ROOM_MIX, MYSTERY_MIX, WANDERERS, isFight, isSpecial, rollRoomKind, type RoomKind,
 } from "./run";
 
 export const MAP_COLS = 5;
@@ -85,17 +88,19 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
       const id = nodeId(row, col);
       const from = (parents[id] ?? []).map((p) => nodes[p]);
       let kind: RoomKind;
+      // Mystery rooms roll from their own mix (and are the only place a librarian turns up).
+      const mystery = row !== DUNGEON_ROOMS && !(firstRun && row === 1) && rng() < MYSTERY_CHANCE;
       if (row === DUNGEON_ROOMS) kind = "boss";
       else if (firstRun && row === 1) kind = "treasure";
       else {
         const streak = Math.max(0, ...from.map((p) => quiet[p.id]));
         const before = from.map((p) => p.kind).filter(isSpecial);
-        const specials = ROOM_MIX.map(([k]) => k).filter(isSpecial);
+        const specials = [...new Set([...ROOM_MIX, ...MYSTERY_MIX].map(([k]) => k))].filter(isSpecial);
         const exclude: RoomKind[] = streak > MAX_QUIET_ROOMS ? specials                               // only fights now
           : streak === MAX_QUIET_ROOMS ? specials.filter((k) => !WANDERERS.includes(k) || before.includes(k)) // fights or a wanderer
           : before;                                                                                // not the same as last time
         const siblings = from.length > 0 ? from.flatMap((p) => siblingsTaken[p.id] ?? []) : (siblingsTaken.entrance ?? []);
-        kind = rollRoomKind(rng, [...exclude, ...siblings]);
+        kind = rollRoomKind(rng, [...exclude, ...siblings], mystery ? MYSTERY_MIX : ROOM_MIX);
       }
       for (const p of from.length > 0 ? from.map((f) => f.id) : ["entrance"]) {
         if (isSpecial(kind)) (siblingsTaken[p] ??= []).push(kind);
@@ -103,7 +108,6 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
       quiet[id] = isFight(kind) ? 0 : Math.max(0, ...from.map((p) => quiet[p.id])) + 1;
       const next = (links[id] ?? []).map((c) => nodeId(row + 1, c));
       for (const n of next) (parents[n] ??= []).push(id);
-      const mystery = kind !== "boss" && !(firstRun && row === 1) && rng() < MYSTERY_CHANCE;
       nodes[id] = { id, row, col, kind, next, ...(mystery ? { mystery } : {}) };
     }
   }

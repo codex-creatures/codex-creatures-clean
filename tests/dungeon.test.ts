@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  DUNGEON_ROOMS, ROOM_MIX, rollRoomKind, isFight, isSpecial, MAX_QUIET_ROOMS, WANDERERS, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
+  DUNGEON_ROOMS, ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, isSpecial, MAX_QUIET_ROOMS, WANDERERS, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
   fightingTeam, endRun, enemyFighter, nextRooms, type DungeonSave, type DungeonRun,
 } from "../lib/dungeon/run";
 import { rollMap, passagesFrom, visibleFrom, MAP_COLS, MAX_PASSAGES, SIGHT, MYSTERY_CHANCE, type DungeonMap, type MapNode } from "../lib/dungeon/map";
@@ -55,6 +55,24 @@ describe("dungeon rooms", () => {
       expect(room.gold).toBeGreaterThan(0);
       room.enemies!.forEach((e) => expect(enemyFighter(e).maxHp).toBeGreaterThan(0));
     }
+  });
+
+  it("the mystery mix adds up to 100%: half mini bosses, 15% good finds", () => {
+    expect(MYSTERY_MIX.reduce((s, [, p]) => s + p, 0)).toBe(100);
+    const pct = Object.fromEntries(MYSTERY_MIX);
+    expect(pct.miniboss).toBe(50);
+    expect(pct.librarian + pct.cards + pct.merchant).toBe(15);
+    expect(ROOM_MIX.map(([k]) => k)).not.toContain("librarian"); // librarians only in mysteries
+    expect(ROOM_MIX.map(([k]) => k)).toContain("merchant");      // merchants anywhere
+  });
+
+  it("mini bosses: one Epic with Rare gear, played by the Hard AI", () => {
+    const room = makeRoom("miniboss");
+    expect(room.enemies).toHaveLength(1);
+    expect(CREATURE_BY_ID[room.enemies![0].creatureId].rarity).toBe("epic");
+    expect(room.enemies![0].gear.every((p) => p.rarity === "rare")).toBe(true);
+    expect(room.level).toBe("hard");
+    expect(isFight("miniboss")).toBe(true);
   });
 
   it("librarians sell 3 different codexes", () => {
@@ -138,6 +156,19 @@ describe("the dungeon map", () => {
       }
     }
     expect(Math.abs(mysteries / rooms - MYSTERY_CHANCE)).toBeLessThan(0.03);
+  });
+
+  it("librarians, mini bosses and decks of cards only ever hide behind a '?'", () => {
+    let minibosses = 0, mysteries = 0;
+    for (let i = 0; i < 1000; i++) {
+      for (const n of Object.values(rollMap(false).nodes)) {
+        if (["librarian", "miniboss", "cards"].includes(n.kind)) expect(n.mystery).toBe(true);
+        if (n.mystery) { mysteries++; if (n.kind === "miniboss") minibosses++; }
+      }
+    }
+    // The quiet-room rules nudge it up a little from 50%.
+    expect(minibosses / mysteries).toBeGreaterThan(0.45);
+    expect(minibosses / mysteries).toBeLessThan(0.65);
   });
 
   it("two passageways out of one room never lead to the same kind of quiet room", () => {

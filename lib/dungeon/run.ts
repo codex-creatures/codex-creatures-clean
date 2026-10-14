@@ -36,11 +36,19 @@ export const TEAM_SIZE = 3;
 export const ENTRY_FEE = 50;
 export const FIRST_TREASURE_GOLD = 50;
 
-export type RoomKind = "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "boss";
+export type RoomKind = "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "boss";
 
 // How often each kind of room appears on the map (every row but the boss's), in %.
 export const ROOM_MIX: [RoomKind, number][] = [
-  ["easy", 40], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["librarian", 5], ["merchant", 5],
+  ["easy", 45], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["merchant", 5],
+];
+
+// Mystery rooms ("?" on the map) have their own mix: a gamble. Half are a
+// mini boss; 15% are something good (a librarian — only ever found here —
+// a deck of cards, or a merchant); the rest are ordinary rooms.
+export const MYSTERY_MIX: [RoomKind, number][] = [
+  ["miniboss", 50], ["librarian", 5], ["cards", 5], ["merchant", 5],
+  ["easy", 7], ["pool", 7], ["hard", 7], ["chest", 7], ["stash", 7],
 ];
 
 export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
@@ -52,6 +60,8 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   stash:     { name: "Stash",              icon: "🎒" },
   librarian: { name: "Wandering librarian", icon: "📚" },
   merchant:  { name: "Wandering merchant", icon: "🪙" },
+  cards:     { name: "Deck of cards",      icon: "🃏" },
+  miniboss:  { name: "Mini boss",          icon: "👹" },
   boss:      { name: "The boss",           icon: "👁️" },
 };
 
@@ -59,6 +69,9 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
 export const EASY_GOLD: [number, number] = [10, 20];
 export const HARD_GOLD: [number, number] = [30, 50];
 export const BOSS_GOLD: [number, number] = [80, 120];
+export const MINIBOSS_GOLD: [number, number] = [50, 80];
+export const MINIBOSS_REVIVE_HP = 0.7; // beating a mini boss: heal one creature to full, or revive one to 70%
+export const DECK_CARDS = 5;           // a deck of cards: 5 creature-card rolls
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
 export const CHEST_DROPS = 3;
@@ -125,15 +138,16 @@ export type Room = {
   boss?: BossKind;     // the boss in this room (instead of enemies)
   offers?: string[];   // a librarian: the codexes (race moves) for sale
   bought?: string[];   // …and the ones you bought
+  blessed?: boolean;   // a mini boss's heal/revive has been used
   done: boolean;
 };
 
-export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "boss";
+export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "miniboss" || k === "boss";
 export const isSpecial = (k: RoomKind) => !isFight(k) && k !== "treasure";
 
-// A room from the mix, leaving out the given kinds (their share goes to the rest).
-export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = []): RoomKind {
-  const mix = ROOM_MIX.filter(([k]) => !exclude.includes(k));
+// A room from a mix, leaving out the given kinds (their share goes to the rest).
+export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], from: [RoomKind, number][] = ROOM_MIX): RoomKind {
+  const mix = from.filter(([k]) => !exclude.includes(k));
   let r = rng() * mix.reduce((sum, [, pct]) => sum + pct, 0);
   for (const [kind, pct] of mix) {
     if (r < pct) return kind;
@@ -159,6 +173,12 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
       const enemies = [makeEnemy("rare", "rare", [], rng)];
       if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
       return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
+    }
+    case "miniboss": {
+      // One tough creature: an Epic with Rare gear, played by the Hard AI.
+      // Beat it and you can heal or revive one of your party.
+      const enemies = [makeEnemy("epic", "rare", [], rng)];
+      return { kind, enemies, level: "hard", gold: randInt(...MINIBOSS_GOLD, rng), done: false };
     }
     case "boss":
       // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
