@@ -21,8 +21,8 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  DUNGEON_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
-  startRun, enterRoom, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
+  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
+  startRun, enterRoom, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
@@ -33,7 +33,6 @@ import {
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
 import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
-import { SIGHT } from "@/lib/dungeon/map";
 import DungeonMapView from "@/components/DungeonMapView";
 
 const GOLD = "#f5c542";
@@ -327,7 +326,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       <div className="stone-panel">
         <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
         <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
-          {DUNGEON_ROOMS} rooms to the boss, along whichever passageways you choose. Each room leads on to 1–3 others; you can see {SIGHT} rooms ahead, and the rest is fog.
+          A labyrinth of rooms and winding corridors, with the boss&apos;s lair somewhere at the top. You only see what&apos;s close to you — the rest is fog — and some rooms are a mystery until you step inside.
           Take up to {PARTY_SIZE} creatures: {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).
           Wounds carry from room to room. If your team falls you wake up back here — <b>you keep everything you found</b>.
         </p>
@@ -391,37 +390,25 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 
 // ── In the dungeon ────────────────────────────────────────────────
 function RoomHeader({ run }: { run: DungeonRun }) {
+  const where = run.map.nodes[runPosition(run)];
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 14 }} aria-label={`Room ${run.room} of ${DUNGEON_ROOMS}`}>
-      {Array.from({ length: DUNGEON_ROOMS }, (_, i) => {
-        const n = i + 1;
-        const state = n < run.room || (n === run.room && run.current?.done) ? "done" : n === run.room ? "here" : "ahead";
-        return (
-          <div key={n} className="pixel-font" style={{
-            flex: 1, textAlign: "center", fontSize: 12, padding: "4px 0",
-            background: state === "done" ? "#2d4a2f" : state === "here" ? "#5a3b1c" : "#15161c",
-            border: `2px solid ${state === "here" ? "#ffd66e" : "#000"}`,
-            color: state === "ahead" ? "#666" : "#f1d9a0",
-          }}>
-            {n === DUNGEON_ROOMS ? "👁️" : n}
-          </div>
-        );
-      })}
+    <div className="pixel-font" style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 14, fontSize: 13, color: "#c9b48a" }}>
+      <span>🗺️ Rooms explored: {run.room}</span>
+      {where.kind === "boss" && <span>👁️ The lair</span>}
     </div>
   );
 }
 
 function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: string) => void }) {
   const canFight = fightingTeam(run).length > 0;
-  const boss = run.room === DUNGEON_ROOMS;
+  const nextToLair = run.map.nodes[run.map.boss].links.includes(runPosition(run));
   return (
     <div className="stone-panel">
-      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>
-        {boss ? "The lair" : `Room ${run.room} — choose a passageway`}
-      </div>
+      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Which way?</div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
-        {boss ? "Something huge breathes up ahead. Make sure the right creatures are on your team."
-          : `You can see ${SIGHT} rooms ahead and where their passageways lead; beyond that is fog. Plan your route — you can change your team below at any time before a fight starts.`}
+        {nextToLair ? "Something huge breathes at the end of one of these corridors. Make sure the right creatures are on your team. "
+          : "You can only see so far in the dark. Corridors fade into the fog — some lead closer to the lair, some only look like they do. "}
+        You can walk back through rooms you&apos;ve cleared, and change your team below any time before a fight.
       </p>
       {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}
       <DungeonMapView run={run} onEnter={canFight ? onEnter : undefined} />
@@ -434,7 +421,7 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
   onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = ROOM_INFO[room.kind];
-  const nextLabel = room.kind === "boss" ? "Finish" : run.room === DUNGEON_ROOMS - 1 ? "On to the lair" : "On to the next room";
+  const nextLabel = room.kind === "boss" ? "Finish" : "Back to the map";
   const next = <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>{nextLabel} →</button>;
 
   return (
@@ -675,8 +662,8 @@ function RunOver({ run, lab, onHome }: { run: DungeonRun; lab: DungeonSave; onHo
   const text = run.status === "cleared"
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
-      ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out of room ${run.room}. Your creatures are hurt — rest them at the healing pool.`
-      : `You leave the way you came, from room ${run.room}.`;
+      ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. Your creatures are hurt — rest them at the healing pool.`
+      : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;
   return (
     <div className="stone-panel" style={{ textAlign: "center" }}>
       <div className="pixel-font" style={{ fontSize: 26, color: run.status === "cleared" ? "#5ee08a" : run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>

@@ -1,35 +1,24 @@
 import { describe, it, expect } from "vitest";
 import {
-  DUNGEON_ROOMS, ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, isSpecial, MAX_QUIET_ROOMS, WANDERERS, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
-  fightingTeam, endRun, enemyFighter, nextRooms, type DungeonSave, type DungeonRun,
+  ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
+  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun,
 } from "../lib/dungeon/run";
-import { rollMap, passagesFrom, visibleFrom, MAP_COLS, MAX_PASSAGES, SIGHT, MYSTERY_CHANCE, type DungeonMap, type MapNode } from "../lib/dungeon/map";
+import {
+  rollMap, routeLength, inSight, seenRooms, distance, MIN_ROUTE, MAX_ROUTE, SIGHT_RADIUS, MYSTERY_CHANCE, ROOM_COUNT,
+} from "../lib/dungeon/map";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { createBattle } from "../lib/combat/battle";
 
 const party = ["a", "b", "c", "d", "e"];
 
-// Every path from the archway to the boss, as lists of room kinds.
-function allPaths(map: DungeonMap): string[][] {
-  const out: string[][] = [];
-  const walk = (id: string, so: string[]) => {
-    const n = map.nodes[id];
-    const path = [...so, n.kind];
-    if (n.next.length === 0) out.push(path);
-    else n.next.forEach((m) => walk(m, path));
-  };
-  map.entrance.forEach((id) => walk(id, []));
-  return out;
-}
-
-// Walks a run to the end, picking passageways at random.
-function walkRun(run: DungeonRun): DungeonRun {
-  while (run.status === "exploring") {
-    if (!run.current) {
-      const options = nextRooms(run);
-      run = enterRoom(run, options[Math.floor(Math.random() * options.length)].id);
-    }
-    run = leaveRoom({ ...run, current: { ...run.current!, done: true } });
+// Walks a run along the shortest route to the lair, finishing every room.
+function walkToLair(run: DungeonRun): DungeonRun {
+  for (let steps = 0; run.status === "exploring" && steps < 200; steps++) {
+    if (run.current) { run = leaveRoom({ ...run, current: { ...run.current, done: true } }); continue; }
+    const options = nextRooms(run);
+    // Step to the neighbour closest (in rooms) to the lair.
+    const dist = (id: string) => routeLength({ ...run.map, start: id });
+    run = enterRoom(run, options.reduce((a, b) => (dist(b.id) < dist(a.id) ? b : a)).id);
   }
   return run;
 }
@@ -92,65 +81,43 @@ describe("dungeon rooms", () => {
   });
 });
 
-describe("the dungeon map", () => {
-  it("every room has 1–3 passageways up to a neighbouring column, and they never cross", () => {
-    for (let i = 0; i < 2000; i++) {
+describe("the labyrinth map", () => {
+  it("about ${ROOM_COUNT} rooms, all joined up, with the lair ${MIN_ROUTE}–${MAX_ROUTE} rooms away", () => {
+    for (let i = 0; i < 300; i++) {
       const map = rollMap(i % 4 === 0);
-      expect(map.entrance.length).toBeGreaterThanOrEqual(1);
-      expect(map.entrance.length).toBeLessThanOrEqual(MAX_PASSAGES);
-      const rows: Record<number, MapNode[]> = {};
-      for (const n of Object.values(map.nodes)) (rows[n.row] ??= []).push(n);
-      for (const [row, nodes] of Object.entries(rows)) {
-        const r = Number(row);
-        nodes.sort((a, b) => a.col - b.col);
-        let maxSoFar = -1;
-        for (const n of nodes) {
-          expect(n.col).toBeGreaterThanOrEqual(0);
-          expect(n.col).toBeLessThan(MAP_COLS);
-          if (r === DUNGEON_ROOMS) { expect(n.next).toEqual([]); continue; }
-          expect(n.next.length).toBeGreaterThanOrEqual(1);
-          expect(n.next.length).toBeLessThanOrEqual(MAX_PASSAGES);
-          const targets = n.next.map((id) => map.nodes[id]);
-          for (const m of targets) {
-            expect(m.row).toBe(r + 1);
-            if (m.kind !== "boss") expect(Math.abs(m.col - n.col)).toBeLessThanOrEqual(1);
-          }
-          // Left to right, a room's passageways start where the last one's ended (no crossing).
-          expect(Math.min(...targets.map((m) => m.col))).toBeGreaterThanOrEqual(maxSoFar);
-          maxSoFar = Math.max(...targets.map((m) => m.col));
-        }
-      }
-      expect(rows[DUNGEON_ROOMS]).toHaveLength(1);
-      expect(rows[DUNGEON_ROOMS][0].kind).toBe("boss");
+      const ids = Object.keys(map.nodes);
+      expect(ids.length).toBeGreaterThanOrEqual(ROOM_COUNT - 2);
+      for (const id of ids) expect(routeLength(map, id)).toBeLessThan(Infinity); // every room reachable
+      const r = routeLength(map);
+      expect(r).toBeGreaterThanOrEqual(MIN_ROUTE);
+      expect(r).toBeLessThanOrEqual(MAX_ROUTE);
+      // Corridors go both ways; the lair has one or two ways in.
+      for (const n of Object.values(map.nodes)) for (const l of n.links) expect(map.nodes[l].links).toContain(n.id);
+      expect(map.nodes[map.boss].links.length).toBeGreaterThanOrEqual(1);
+      expect(map.nodes[map.boss].links.length).toBeLessThanOrEqual(2);
+      expect(map.nodes[map.boss].kind).toBe("boss");
     }
   });
 
-  it("every path is 9 rooms ending at the boss, and follows the quiet-room rules", () => {
-    for (let i = 0; i < 150; i++) {
-      const first = i % 3 === 0;
-      const map = rollMap(first);
-      for (const path of allPaths(map)) {
-        expect(path).toHaveLength(DUNGEON_ROOMS);
-        expect(path[DUNGEON_ROOMS - 1]).toBe("boss");
-        expect(path.slice(0, -1)).not.toContain("boss");
-        if (first) expect(path[0]).toBe("treasure");
-        let quiet = 0;
-        path.forEach((k, j) => {
-          quiet = isFight(k as never) ? 0 : quiet + 1;
-          expect(quiet).toBeLessThanOrEqual(MAX_QUIET_ROOMS + 1);
-          if (quiet > MAX_QUIET_ROOMS) expect(WANDERERS).toContain(k);
-          if (j > 0 && isSpecial(k as never)) expect(path[j - 1]).not.toBe(k);
-        });
-      }
+  it("it's a labyrinth: dead ends and loops turn up", () => {
+    let deadEnds = 0, loops = 0;
+    for (let i = 0; i < 100; i++) {
+      const map = rollMap(false);
+      const nodes = Object.values(map.nodes);
+      deadEnds += nodes.filter((n) => n.links.length === 1 && n.kind !== "boss").length;
+      const corridors = nodes.reduce((t, n) => t + n.links.length, 0) / 2;
+      if (corridors > nodes.length - 1) loops++;
     }
+    expect(deadEnds).toBeGreaterThan(100);
+    expect(loops).toBeGreaterThan(80);
   });
 
-  it(`about ${MYSTERY_CHANCE * 100}% of rooms are mysteries — never the boss or your first treasure`, () => {
+  it(`about ${MYSTERY_CHANCE * 100}% of rooms are mysteries — never the entrance or the lair`, () => {
     let rooms = 0, mysteries = 0;
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 300; i++) {
       const map = rollMap(i % 5 === 0);
       for (const n of Object.values(map.nodes)) {
-        if (n.kind === "boss" || (i % 5 === 0 && n.row === 1)) { expect(n.mystery).toBeFalsy(); continue; }
+        if (n.id === map.boss || n.id === map.start) { expect(n.mystery).toBeFalsy(); continue; }
         rooms++;
         if (n.mystery) mysteries++;
       }
@@ -159,79 +126,74 @@ describe("the dungeon map", () => {
   });
 
   it("librarians, mini bosses and decks of cards only ever hide behind a '?'", () => {
-    let minibosses = 0, mysteries = 0;
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 500; i++) {
       for (const n of Object.values(rollMap(false).nodes)) {
         if (["librarian", "miniboss", "cards"].includes(n.kind)) expect(n.mystery).toBe(true);
-        if (n.mystery) { mysteries++; if (n.kind === "miniboss") minibosses++; }
-      }
-    }
-    // The quiet-room rules nudge it up a little from 50%.
-    expect(minibosses / mysteries).toBeGreaterThan(0.45);
-    expect(minibosses / mysteries).toBeLessThan(0.65);
-  });
-
-  it("two passageways out of one room never lead to the same kind of quiet room", () => {
-    for (let i = 0; i < 1000; i++) {
-      const map = rollMap(false);
-      const outs = [map.entrance, ...Object.values(map.nodes).map((n) => n.next)];
-      for (const ids of outs) {
-        const specials = ids.map((id) => map.nodes[id].kind).filter(isSpecial);
-        expect(new Set(specials).size).toBe(specials.length);
       }
     }
   });
 
-  it(`you see ${SIGHT} rooms ahead along the passageways (and the boss); the rest is fog`, () => {
-    for (let i = 0; i < 300; i++) {
+  it("fog: you see a circle around you; what you've seen stays, and the lair is always marked", () => {
+    for (let i = 0; i < 100; i++) {
       const map = rollMap(false);
-      const seen = visibleFrom(map, null);
-      for (const n of Object.values(map.nodes)) {
-        if (n.kind === "boss") expect(seen.has(n.id)).toBe(true);
-        else if (n.row > SIGHT) expect(seen.has(n.id)).toBe(false);
-      }
-      for (const id of map.entrance) expect(seen.has(id)).toBe(true);
-      // From a room in row 1, rows 2–4 open up, but only what it can reach.
-      const at = map.entrance[0];
-      const fromThere = visibleFrom(map, at);
-      for (const n of passagesFrom(map, at)) expect(fromThere.has(n.id)).toBe(true);
-      for (const id of fromThere) {
-        const n = map.nodes[id];
-        if (n.kind !== "boss") expect(n.row).toBeLessThanOrEqual(1 + SIGHT);
-      }
+      const sight = inSight(map, map.start);
+      for (const n of Object.values(map.nodes)) expect(sight.has(n.id)).toBe(distance(n, map.nodes[map.start]) <= SIGHT_RADIUS);
+      const far = Object.values(map.nodes).find((n) => !sight.has(n.id) && n.id !== map.boss);
+      const seen = seenRooms(map, [map.start]);
+      expect(seen.has(map.boss)).toBe(true);
+      if (far) expect(seen.has(far.id)).toBe(false);
+      // Walking somewhere adds what you saw there, and keeps what you saw before.
+      const next = map.nodes[map.start].links[0];
+      const later = seenRooms(map, [map.start, next]);
+      for (const id of seen) expect(later.has(id)).toBe(true);
+      for (const id of inSight(map, next)) expect(later.has(id)).toBe(true);
     }
   });
 });
 
-describe("a dungeon run", () => {
-  it("your first ever run opens in the 50-gold treasure room; later runs at the archway", () => {
+describe("a labyrinth run", () => {
+  it("your first ever run opens in the 50-gold treasure room; later runs at an empty entrance", () => {
     const first = startRun(party, party.slice(0, 3), {}, 1);
     expect(first.current?.kind).toBe("treasure");
     expect(first.current?.gold).toBe(50);
-    expect(first.path).toHaveLength(1);
+    expect(runPosition(first)).toBe(first.map.start);
     const later = startRun(party, party.slice(0, 3), {}, 2);
     expect(later.current).toBeNull();
-    expect(later.path).toEqual([]);
+    expect(later.cleared).toEqual([later.map.start]);
   });
 
-  it("walks room to room along the passageways, and beating the boss clears it", () => {
-    for (let i = 0; i < 200; i++) {
-      const run = walkRun(startRun(party, party.slice(0, 3), {}, 1 + (i % 2)));
+  it("walks corridor by corridor to the lair, and beating the boss clears it", () => {
+    for (let i = 0; i < 100; i++) {
+      const run = walkToLair(startRun(party, party.slice(0, 3), {}, 1 + (i % 2)));
       expect(run.status).toBe("cleared");
-      expect(run.path).toHaveLength(DUNGEON_ROOMS);
-      expect(run.room).toBe(DUNGEON_ROOMS);
-      run.path.slice(1).forEach((id, j) => expect(run.map.nodes[run.path[j]].next).toContain(id));
+      expect(runPosition(run)).toBe(run.map.boss);
+      run.path.slice(1).forEach((id, j) => expect(run.map.nodes[run.path[j]].links).toContain(id));
     }
   });
 
-  it("you can only walk into a room the passageways lead to, and not while in a room", () => {
+  it("you can only walk down a corridor from where you stand, and only once the room is finished", () => {
     const run = startRun(party, party.slice(0, 3), {}, 2);
-    const far = Object.values(run.map.nodes).find((n) => n.row === 3)!;
+    const far = Object.values(run.map.nodes).find((n) => !run.map.nodes[run.map.start].links.includes(n.id) && n.id !== run.map.start)!;
     expect(enterRoom(run, far.id)).toBe(run);
-    const inside = enterRoom(run, run.map.entrance[0]);
-    expect(inside.path).toEqual([run.map.entrance[0]]);
+    const next = run.map.nodes[run.map.start].links[0];
+    const inside = enterRoom(run, next);
+    expect(runPosition(inside)).toBe(next);
+    expect(inside.current).not.toBeNull();
+    expect(inside.room).toBe(1);
     expect(nextRooms(inside)).toEqual([]);
-    expect(enterRoom(inside, inside.map.nodes[inside.path[0]].next[0])).toBe(inside);
+  });
+
+  it("cleared rooms are empty when you walk back through them", () => {
+    const run = startRun(party, party.slice(0, 3), {}, 2);
+    const next = run.map.nodes[run.map.start].links[0];
+    let r = enterRoom(run, next);
+    r = leaveRoom({ ...r, current: { ...r.current!, done: true } });
+    expect(r.cleared).toContain(next);
+    r = enterRoom(r, r.map.start);           // back to the entrance
+    expect(r.current).toBeNull();
+    r = enterRoom(r, next);                  // and back again
+    expect(r.current).toBeNull();
+    expect(r.room).toBe(1);                  // still only one room explored
   });
 
   it("knocked-out creatures can't be put in the team, and the team can't change mid-fight", () => {
@@ -239,7 +201,7 @@ describe("a dungeon run", () => {
     expect(fightingTeam(run)).toEqual(["a", "c"]);
     run = setTeam(run, ["b", "d", "e", "a"]);
     expect(run.team).toEqual(["d", "e", "a"]);
-    const inRoom = enterRoom(run, run.map.entrance[0]);
+    const inRoom = enterRoom(run, run.map.nodes[run.map.start].links[0]);
     expect(setTeam(inRoom, ["a", "d"]).team).toEqual(["a", "d"]); // fine before the fight starts
     expect(setTeam({ ...inRoom, battle: {} }, ["e"]).team).toEqual(["d", "e", "a"]); // not mid-fight
   });

@@ -7,12 +7,12 @@
 //   TEAM_SIZE fight, the rest wait in reserve. You can change them any time
 //   you're not mid-fight.
 // - HP carries over from room to room (energy is full at each fight).
-// - Every path is DUNGEON_ROOMS rooms long; the last is the boss. You pick
-//   your route on a map (lib/dungeon/map.ts) that shows a few rooms ahead.
-//   Rooms can come up again, but on every path, between fights:
-//   - a quiet room (no fight) is never the same kind as the one before it;
-//   - at most MAX_QUIET_ROOMS quiet rooms in a row, except that a wandering
-//     librarian or merchant can still turn up as one more.
+// - The dungeon is a labyrinth (lib/dungeon/map.ts): rooms joined by
+//   corridors, the entrance at the bottom and the boss's lair at the top.
+//   You walk along any corridor from where you stand, back through rooms
+//   you've cleared too (they're empty now). Fog hides all but the area
+//   around you.
+// - Finish a room (win its fight, take its loot, or leave it) before moving on.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
@@ -28,15 +28,14 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
-import { rollMap, passagesFrom, type DungeonMap } from "./map";
+import { rollMap, neighbours, type DungeonMap } from "./map";
 
-export const DUNGEON_ROOMS = 9;
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
 export const ENTRY_FEE = 50;
 export const FIRST_TREASURE_GOLD = 50;
 
-export type RoomKind = "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "boss";
+export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "boss";
 
 // How often each kind of room appears on the map (every row but the boss's), in %.
 export const ROOM_MIX: [RoomKind, number][] = [
@@ -52,6 +51,7 @@ export const MYSTERY_MIX: [RoomKind, number][] = [
 ];
 
 export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
+  entrance:  { name: "Entrance",           icon: "🚪" },
   treasure:  { name: "Treasure",           icon: "💰" },
   easy:      { name: "Creature den",       icon: "🐾" },
   pool:      { name: "Healing pool",       icon: "⛲" },
@@ -97,8 +97,6 @@ export const CHEST_DROPS = 3;
 export const CHEST_CODEX_CHANCE = 0.1; // a chest holds a codex (instead of one of its drops)
 export const CODEX_PRICE = 500;       // wandering librarians sell codexes
 export const LIBRARIAN_OFFERS = 3;
-export const MAX_QUIET_ROOMS = 2;     // quiet rooms in a row before only fights (or a wanderer) can follow
-export const WANDERERS: RoomKind[] = ["librarian", "merchant"];
 
 type Rng = () => number;
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
@@ -163,7 +161,6 @@ export type Room = {
 };
 
 export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "miniboss" || k === "boss";
-export const isSpecial = (k: RoomKind) => !isFight(k) && k !== "treasure";
 
 // A room from a mix, leaving out the given kinds (their share goes to the rest).
 export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], from: [RoomKind, number][] = ROOM_MIX): RoomKind {
@@ -229,24 +226,26 @@ export type DungeonRun = {
   party: string[];             // creature drop ids (1 to PARTY_SIZE)
   team: string[];              // the ones that fight (up to TEAM_SIZE)
   hp: Record<string, number>;  // share of max HP left, 0–1 (0 = knocked out)
-  room: number;                // the room you're in, or about to choose (1-based)
+  room: number;                // rooms explored so far (each new room you walk into)
   map: DungeonMap;
-  path: string[];              // the map rooms walked into, in order
-  current: Room | null;        // null = choosing a passageway
+  path: string[];              // every room you've stood in, in order (starts at the entrance)
+  cleared: string[];           // rooms finished: walking back through them is free
+  current: Room | null;        // the room you're in, still to finish; null = choosing a corridor
   battle?: unknown;            // the fight in progress (saved by the screen)
   loot: string[];              // what you've found, for the summary
   status: RunStatus;
 };
 
 export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random): DungeonRun {
-  // The very first run opens in a treasure room; otherwise at the archway.
+  // The very first run opens in a treasure room; otherwise at an empty entrance.
   const first = runNumber === 1;
   const map = rollMap(first, rng);
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
-    room: 1, map,
-    path: first ? [map.entrance[0]] : [],
+    room: first ? 1 : 0, map,
+    path: [map.start],
+    cleared: first ? [] : [map.start],
     current: first ? makeRoom("treasure", rng) : null,
     loot: [], status: "exploring",
   };
@@ -254,25 +253,27 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
 
 export const isAlive = (run: DungeonRun, id: string) => (run.hp[id] ?? 0) > 0;
 
-// Where you stand on the map: the last room walked into (null = the archway).
-export const runPosition = (run: DungeonRun): string | null => run.path[run.path.length - 1] ?? null;
+// Where you stand on the map.
+export const runPosition = (run: DungeonRun): string => run.path[run.path.length - 1];
 
-// The rooms you can walk into next (none while you're still in a room).
-export const nextRooms = (run: DungeonRun) => (run.current ? [] : passagesFrom(run.map, runPosition(run)));
+// The rooms you can walk to (none until you've finished the room you're in).
+export const nextRooms = (run: DungeonRun) => (run.current ? [] : neighbours(run.map, runPosition(run)));
 
-// Walk down a passageway into one of the next rooms.
+// Walk down a corridor. A new room's contents are rolled as you walk in;
+// a cleared one is empty.
 export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.random): DungeonRun {
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng) };
+  if (run.cleared.includes(node.id)) return { ...run, path: [...run.path, node.id] };
+  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng), room: run.room + 1 };
 }
 
-// The current room is finished: on to choosing the next one (or the end).
+// The current room is finished: it's cleared, and you choose where to go.
 export function leaveRoom(run: DungeonRun): DungeonRun {
   if (!run.current) return run;
   if (run.current.kind === "boss") return { ...run, current: { ...run.current, done: true }, status: "cleared", battle: undefined };
-  return { ...run, current: null, battle: undefined, room: run.room + 1 };
+  return { ...run, current: null, battle: undefined, cleared: [...new Set([...run.cleared, runPosition(run)])] };
 }
 
 // Any time you're not mid-fight (between rooms, or after seeing who's in a
@@ -309,7 +310,7 @@ export function loadDungeon(): DungeonSave {
     if (!parsed || typeof parsed !== "object") return EMPTY;
     const save: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
-    if (save.run && !save.run.map) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
+    if (save.run && !save.run.map?.start) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
     return save;
   } catch {
     return EMPTY;
