@@ -1,13 +1,14 @@
 "use client";
 // components/DungeonRoomView.tsx
 // The room you're standing in, as pixel art (drawn by lib/dungeon/chamber.ts):
-// a damp stone chamber with a tunnel for every way on, west to east. Once
-// the room is dealt with, tap a tunnel to walk down it. What's in the room
-// (enemies, a chest, a merchant…) stands on the floor in the middle.
+// a damp stone chamber with a tunnel for every way on, west to east. You
+// can't tell what's down a tunnel (that's what the map at the entrance was
+// for). Once the room is dealt with, tap a tunnel to walk down it. What's in
+// the room (enemies, a chest, a merchant…) stands on the floor in the middle.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, runPosition, isFight, type DungeonRun } from "@/lib/dungeon/run";
-import { knownRooms, waysOn } from "@/lib/dungeon/map";
+import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type TunnelLook } from "@/lib/dungeon/chamber";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
@@ -26,9 +27,8 @@ export default function DungeonRoomView({ run, open, onGo }: { run: DungeonRun; 
 
   const pos = runPosition(run);
   const node = run.map.nodes[pos];
-  const known = knownRooms(run.map, run.path);
   const ways = [...waysOn(run.map, pos)].sort((a, b) => a.x - b.x); // west to east
-  const looks: TunnelLook[] = ways.map((n) => (n.kind === "boss" ? "boss" : known.has(n.id) ? "known" : "unknown"));
+  const looks: TunnelLook[] = ways.map(() => "unknown"); // every tunnel looks the same from here
   const room = run.current;
   const pool = node.kind === "pool" ? (room && !room.done ? "glow" : "still") : undefined;
   const key = `${pos}|${looks.join(",")}|${pool ?? ""}`;
@@ -85,36 +85,6 @@ export default function DungeonRoomView({ run, open, onGo }: { run: DungeonRun; 
       }}>
         {title}
       </div>
-
-      {/* A sign over each tunnel: what's down it, if you know. */}
-      {ways.map((n, i) => {
-        const t = chamber.tunnels[i];
-        const look = looks[i];
-        const active = open && hover === i + 1;
-        const label = look === "boss" ? "👁️ The lair" : look === "known" ? `${ROOM_INFO[n.kind].icon} ${ROOM_INFO[n.kind].name}` : "?";
-        return (
-          <button
-            key={n.id}
-            onClick={() => go(i + 1)}
-            onPointerEnter={() => setHovered(i + 1)}
-            onPointerLeave={() => setHovered(0)}
-            disabled={!open}
-            className="pixel-font"
-            title={open ? `Take this tunnel: ${look === "unknown" ? "unknown room" : ROOM_INFO[n.kind].name}` : "Deal with this room first"}
-            style={{
-              position: "absolute", left: `${(t.x / CW) * 100}%`, top: `${(t.top / CH) * 100}%`,
-              transform: "translate(-50%, -115%)", whiteSpace: "nowrap", maxWidth: `${(100 / ways.length) - 1}%`, overflow: "hidden", textOverflow: "ellipsis",
-              padding: "1px 5px", fontSize: "clamp(9px, 2.2vw, 12px)", lineHeight: 1.3,
-              background: active ? "rgba(40, 28, 12, 0.95)" : "rgba(10, 12, 14, 0.8)",
-              border: `2px solid ${active ? "#ffd66e" : look === "boss" ? "#9b2a1d" : open ? "#6a7478" : "#33393c"}`,
-              color: look === "boss" ? "#ff8a80" : open ? "#e2e8ea" : "#7d8589",
-              cursor: open ? "pointer" : "default", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
-            }}
-          >
-            {label}
-          </button>
-        );
-      })}
 
       {/* What's in the room. */}
       <RoomContents run={run} />

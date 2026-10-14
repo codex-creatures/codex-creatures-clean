@@ -225,7 +225,7 @@ export default function DungeonPage() {
       room.level ?? "hard",
       {
         startHp: mine.map((c, i) => Math.round((r.hp[ids[i]] ?? 1) * c.fighter.maxHp)),
-        title: room.boss ? "Dungeon · the Cyclops" : `Dungeon · room ${r.room}`,
+        title: room.boss ? "Dungeon · the Cyclops" : `Dungeon · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
       },
     );
@@ -271,7 +271,6 @@ export default function DungeonPage() {
     const over = !battle.view && m.state.winner;
     return frame(
       <>
-        <RoomHeader run={run} />
         <BattleView
           battle={battle}
           bag={bagItems(lab.meta.bag ?? [])}
@@ -292,7 +291,6 @@ export default function DungeonPage() {
 
   return frame(
     <>
-      <RoomHeader run={run} />
       {!run.inside ? (
         <MapFirst run={run} onStep={() => updateRun(stepInside)} />
       ) : (
@@ -408,16 +406,6 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 }
 
 // ── In the dungeon ────────────────────────────────────────────────
-function RoomHeader({ run }: { run: DungeonRun }) {
-  const where = run.map.nodes[runPosition(run)];
-  return (
-    <div className="pixel-font" style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 14, fontSize: 13, color: "#c9b48a" }}>
-      <span>🗺️ Rooms explored: {run.room}</span>
-      {where.kind === "boss" && <span>👁️ The lair</span>}
-    </div>
-  );
-}
-
 // At the entrance: one good look at the map before you go in.
 function MapFirst({ run, onStep }: { run: DungeonRun; onStep: () => void }) {
   return (
