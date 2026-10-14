@@ -4,6 +4,7 @@
 
 import type { CreatureOrItemDrop } from "../types";
 import { buildFighter } from "../combat/loadout";
+import { wornArmor } from "../items/armor";
 import { resolveMoves, type CreatureProficiency, type CreatureTemplate, type Skill } from "./creatureData";
 
 type Stats = Record<string, number> | undefined;
@@ -17,6 +18,8 @@ export function movesOf(drop: CreatureOrItemDrop, t: CreatureTemplate, chosen?: 
   return resolveMoves(t, chosen ?? drop.moves);
 }
 
-export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor?: Stats, chosenMoves?: string[]) {
-  return buildFighter(t, weapon, armor, chosenMoves ?? drop.moves, drop.proficiency);
+// armor: the creature's armour pieces (helmet, chest, legs; missing = empty).
+export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor: (CreatureOrItemDrop | undefined)[] = [], chosenMoves?: string[]) {
+  const worn = wornArmor(armor);
+  return buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set);
 }

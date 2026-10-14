@@ -30,6 +30,7 @@ export type Fighter = {
   elemental: "inferno" | "aqua" | "naturist" | null;
   braceActive?: boolean;
   braceConsecutiveCount?: number;
+  armorSet?: import("../items/armor").ArmorKey; // wearing a full set: its mechanic applies
 };
 
 export type TurnLog = {

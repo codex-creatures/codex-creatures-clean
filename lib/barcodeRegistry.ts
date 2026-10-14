@@ -12,7 +12,7 @@
 
 import type { Rarity, ItemCategory } from "./types";
 import type { ItemKey } from "./items/ceilings";
-import type { ArmorKey } from "./items/armor";
+import { ARMOR_SLOTS, type ArmorKey, type ArmorSlot } from "./items/armor";
 import {
   pickRarity,
   pickItemCategory,
@@ -30,6 +30,7 @@ export type BarcodeOutcome =
       rarity: Rarity;
       itemKey?: ItemKey;
       armorKey?: ArmorKey;
+      armorSlot?: ArmorSlot;
     };
 
 export type BarcodeEntry = BarcodeOutcome & { registeredAt: string };
@@ -72,7 +73,7 @@ export function rollBarcodeOutcome(): BarcodeOutcome {
     return { outcome: "item", itemCategory, rarity, itemKey: pickWeaponKey("", "random") };
   }
   if (itemCategory === "armor") {
-    return { outcome: "item", itemCategory, rarity, armorKey: pickArmorKey("", "random") };
+    return { outcome: "item", itemCategory, rarity, armorKey: pickArmorKey("", "random"), armorSlot: ARMOR_SLOTS[Math.floor(Math.random() * ARMOR_SLOTS.length)] };
   }
   return { outcome: "item", itemCategory, rarity };
 }

@@ -5,6 +5,7 @@
 
 import { resolveMoves, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
 import { effectiveStats, type CombatItem, type Fighter } from "./engine";
+import type { ArmorKey } from "../items/armor";
 
 const EMPTY: CombatItem = { atk: 0, rng: 0, agil: 0, mdef: 0, rdef: 0, hp: 0 };
 
@@ -28,6 +29,7 @@ export function buildFighter(
   armorStats?: Record<string, number>,
   moveNames?: string[], // the creature's 4 move slots (defaults if omitted)
   proficiency?: CreatureProficiency, // this individual's rolled %s (species values if omitted)
+  armorSet?: ArmorKey,               // a full armour set (its mechanic applies)
 ): Fighter {
   const weapon = itemToCombatStats(weaponStats);
   const armor  = itemToCombatStats(armorStats);
@@ -43,6 +45,7 @@ export function buildFighter(
     armor,
     stance: "neutral",
     elemental: null,
+    ...(armorSet ? { armorSet } : {}),
   };
 }
 

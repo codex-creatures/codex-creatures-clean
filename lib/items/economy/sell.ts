@@ -22,7 +22,7 @@ import type { Rarity } from "../budgets";
 import type { ItemKey } from "../ceilings";
 import type { ArmorKey } from "../armor";
 import { PRIMARY_STATS_BY_ITEMKEY } from "../itemPrimaries";
-import { ARMOR_PRIMARY_STATS } from "../armor";
+import { ARMOR_PRIMARY_STATS, PIECE_VALUE, type ArmorSlot } from "../armor";
 
 // Base gold values per rarity — these are the MAX possible (perfect primary spike)
 // Actual values land well below max due to the efficiency curve
@@ -40,6 +40,7 @@ type SellableDrop = {
   itemCategory: "weapon" | "armor";
   itemKey?: ItemKey;
   armorKey?: ArmorKey;
+  armorSlot?: ArmorSlot;
   stats?: Record<string, number>;
 };
 
@@ -93,5 +94,7 @@ export function computeSellGold({ drop, getStatCapForDrop }: ComputeSellGoldArgs
   // Clamp to [0, 1] just in case
   const clampedEfficiency = Math.max(0, Math.min(1, efficiency));
 
-  return Math.max(1, Math.floor(RARITY_BASE[drop.rarity] * clampedEfficiency));
+  // An armour piece is worth its share of a whole set.
+  const share = drop.itemCategory === "armor" && drop.armorSlot ? PIECE_VALUE[drop.armorSlot] : 1;
+  return Math.max(1, Math.floor(RARITY_BASE[drop.rarity] * clampedEfficiency * share));
 }

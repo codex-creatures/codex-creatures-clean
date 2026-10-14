@@ -1,6 +1,7 @@
 // hooks/useGameState.ts
 import { useEffect, useMemo, useState } from "react";
 import type { Drop } from "@/lib/types";
+import { ARMOR_SLOTS, type ArmorSlot } from "@/lib/items/armor";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
@@ -26,8 +27,19 @@ export const RECENT_SCANS = 10; // how many recent scan drops the altar remember
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
 // (move names; missing = the creature's default moves).
-export type Loadout = { weaponId?: string; armorId?: string; moves?: string[] };
-export type EquipSlot = "weapon" | "armor";
+export type Loadout = { weaponId?: string; helmetId?: string; chestId?: string; legsId?: string; moves?: string[] };
+export type EquipSlot = "weapon" | ArmorSlot;
+
+// Where each slot's item id lives in a loadout.
+export const SLOT_FIELD: Record<EquipSlot, "weaponId" | "helmetId" | "chestId" | "legsId"> = {
+  weapon: "weaponId", helmet: "helmetId", chest: "chestId", legs: "legsId",
+};
+export const EQUIP_SLOTS: EquipSlot[] = ["weapon", ...ARMOR_SLOTS];
+
+// The armour pieces in a loadout (helmet, chest, legs), looked up by id.
+export function armorPieces<T>(l: Loadout | undefined, find: (id: string) => T | undefined): (T | undefined)[] {
+  return ARMOR_SLOTS.map((s) => { const id = l?.[SLOT_FIELD[s]]; return id ? find(id) : undefined; });
+}
 
 type SaveState = {
   gold: number;
@@ -123,8 +135,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const equippedOn = useMemo(() => {
     const map = new Map<string, string>();
     for (const [creatureId, l] of Object.entries(equipment)) {
-      if (l.weaponId) map.set(l.weaponId, creatureId);
-      if (l.armorId)  map.set(l.armorId, creatureId);
+      for (const s of EQUIP_SLOTS) { const id = l[SLOT_FIELD[s]]; if (id) map.set(id, creatureId); }
     }
     return map;
   }, [equipment]);
@@ -260,7 +271,7 @@ export function useGameState(initialTab: TabKey = "all") {
   // Put an item on a creature (itemId = null to unequip). An item can only be
   // on one creature, so equipping it here removes it from anyone else.
   function equipItem(creatureId: string, slot: EquipSlot, itemId: string | null) {
-    const key = slot === "weapon" ? "weaponId" : "armorId";
+    const key = SLOT_FIELD[slot];
     setEquipment((prev) => {
       const next: Record<string, Loadout> = {};
       for (const [cid, l] of Object.entries(prev)) {

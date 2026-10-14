@@ -1,7 +1,8 @@
 "use client";
 // components/CreatureDetailModal.tsx
 // A creature's equipment screen: the creature on its pedestal with its
-// weapon and armour slots either side, its stats as bars, and its moves.
+// weapon on one side and its armour (helmet, chest, legs) on the other, its
+// set bonus if it wears a full set, its stats as bars, and its moves.
 // Tap a slot to browse your gear: picking an item previews the change on
 // every stat before you equip it.
 
@@ -13,7 +14,8 @@ import { findCreatureTemplate, raceMovesFor, type CreatureTemplate } from "@/lib
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
-import type { EquipSlot, Loadout } from "@/hooks/useGameState";
+import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState";
+import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
 import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
@@ -64,7 +66,8 @@ export default function CreatureDetailModal({
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
-  const armor  = armors.find((a) => a.id === loadout?.armorId);
+  const worn   = armorPieces(loadout, (id) => armors.find((a) => a.id === id)); // helmet, chest, legs
+  const inSlot = (slot: EquipSlot) => (slot === "weapon" ? weapon : worn[ARMOR_SLOTS.indexOf(slot)]);
   const c = RARITY_COLORS[creature.rarity];
 
   // The slot being browsed, and the item picked to preview (null = take it off).
@@ -84,26 +87,33 @@ export default function CreatureDetailModal({
   // Opening a slot starts on what's worn now, so you can flick between it and the others.
   const openSlot = (slot: EquipSlot) => {
     setPicking((p) => (p === slot ? null : slot));
-    setPreview(slot === "weapon" ? weapon : armor);
+    setPreview(inSlot(slot));
   };
   const closePicker = () => { setPicking(null); setPreview(undefined); };
 
-  const summary = (w?: CreatureOrItemDrop, a?: CreatureOrItemDrop) => {
+  const summary = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[]) => {
     if (!template) return null;
-    const f = fighterFor(creature, template, w?.stats, a?.stats, loadout?.moves);
+    const f = fighterFor(creature, template, w?.stats, pieces, loadout?.moves);
     return { f, s: combatSummary(f) };
   };
-  const now = summary(weapon, armor);
-  const current = picking === "weapon" ? weapon : armor;
+  const now = summary(weapon, worn);
+  const current = picking ? inSlot(picking) : undefined;
   const isCurrent = !!preview && preview.id === current?.id;
   const previewing = picking && preview !== undefined && !isCurrent;
+  // The armour pieces with the previewed one swapped in.
+  const nextPieces = previewing && picking !== "weapon"
+    ? worn.map((p, i) => (ARMOR_SLOTS[i] === picking ? preview ?? undefined : p))
+    : worn;
   const next = previewing
-    ? summary(picking === "weapon" ? preview ?? undefined : weapon, picking === "armor" ? preview ?? undefined : armor)
+    ? summary(picking === "weapon" ? preview ?? undefined : weapon, nextPieces)
     : null;
+  const setNow = wornArmor(worn).set;
+  const setNext = wornArmor(nextPieces).set;
   const prof = template ? proficiencyOf(creature, template) : undefined;
   const base = template?.proficiency;
 
-  const options = picking === "weapon" ? weapons : armors;
+  const options = picking === "weapon" ? weapons : armors.filter((a) => (a.armorSlot ?? "chest") === picking);
+  const slotName = picking === "weapon" ? "weapon" : picking ? ARMOR_SLOT_INFO[picking].name.toLowerCase() : "";
   const sorted = [...options].sort((a, b) =>
     RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) || a.name.localeCompare(b.name));
   const previewOwner = preview && equippedOn.get(preview.id) !== creature.id ? creatureNameById.get(equippedOn.get(preview.id) ?? "") : undefined;
@@ -149,17 +159,23 @@ export default function CreatureDetailModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
               <Slot label="Weapon" item={weapon} active={picking === "weapon"} onClick={() => openSlot("weapon")} />
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
-              <Slot label="Armour" item={armor} active={picking === "armor"} onClick={() => openSlot("armor")} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                {ARMOR_SLOTS.map((slot, i) => (
+                  <Slot key={slot} label={ARMOR_SLOT_INFO[slot].name} item={worn[i]} active={picking === slot} onClick={() => openSlot(slot)} small />
+                ))}
+              </div>
             </div>
+
+            <SetLine worn={worn} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow} />
 
             {/* Gear picker */}
             {picking && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
-                  Choose {picking === "weapon" ? "a weapon" : "armour"} — tap any to compare
+                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`} — tap any to compare
                 </div>
                 {options.length === 0 ? (
-                  <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own any {picking === "weapon" ? "weapons" : "armour"} yet. Scan barcodes or explore the dungeon to find some.</p>
+                  <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the dungeon to find some.</p>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(62px, 1fr))", gap: 6 }}>
                     {current && (
@@ -196,10 +212,11 @@ export default function CreatureDetailModal({
                             {preview.name}{isCurrent && <span style={{ fontSize: 11, color: GOLD, fontWeight: 400 }}> · worn now</span>}
                           </div>
                           <StatLine stats={preview.stats} labels={picking === "weapon" ? WEAPON_STAT_LABELS : ARMOR_STAT_LABELS} />
+                          {preview.armorKey && <div style={{ fontSize: 11, color: MUTED }}>Set: {ARMOR_META[preview.armorKey].name} — {SET_BONUS[preview.armorKey].name}</div>}
                           {previewOwner && <div style={{ fontSize: 11, color: "#f5c542" }}>Worn by {previewOwner} — equipping takes it from them.</div>}
                         </>
                       ) : (
-                        <div style={{ color: MUTED, fontSize: 13 }}>Leave the {picking === "weapon" ? "weapon" : "armour"} slot empty.</div>
+                        <div style={{ color: MUTED, fontSize: 13 }}>Leave the {slotName} slot empty.</div>
                       )}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
@@ -295,26 +312,52 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 }
 
 // An equipment slot: a framed square with the item's sprite.
-function Slot({ label, item, active, onClick }: { label: string; item?: CreatureOrItemDrop; active: boolean; onClick: () => void }) {
+function Slot({ label, item, active, onClick, small }: { label: string; item?: CreatureOrItemDrop; active: boolean; onClick: () => void; small?: boolean }) {
   const col = item ? RARITY_COLORS[item.rarity] : undefined;
   const sp = item && itemSprite(item);
+  const size = small ? 46 : 72;
   return (
     <button onClick={onClick} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "white", minWidth: 0 }}>
-      <span className="pixel-font" style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+      <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
       <span style={{
-        width: 72, height: 72, display: "flex", alignItems: "center", justifyContent: "center",
+        width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center",
         background: item ? `radial-gradient(circle, ${col!.glow}, #101117 75%)` : "#101117",
         border: `3px solid ${active ? "#ffd66e" : col ? col.border : "#2f3340"}`,
         boxShadow: `inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)${active ? ", 0 0 12px rgba(255,214,110,0.5)" : ""}`,
       }}>
-        {sp ? <PixelSprite sprite={sp} scale={3.5} /> : <span style={{ fontSize: 26, color: "#3a3e4b" }}>＋</span>}
+        {sp ? <PixelSprite sprite={sp} scale={small ? 2.2 : 3.5} /> : <span style={{ fontSize: small ? 18 : 26, color: "#3a3e4b" }}>＋</span>}
       </span>
-      <span style={{ fontSize: 11, lineHeight: 1.2, textAlign: "center", color: item ? rarityColor(item.rarity) : MUTED, maxWidth: 110 }}>
-        {item ? item.name : "Empty"}
-      </span>
+      {!small && (
+        <span style={{ fontSize: 11, lineHeight: 1.2, textAlign: "center", color: item ? rarityColor(item.rarity) : MUTED, maxWidth: 110 }}>
+          {item ? item.name : "Empty"}
+        </span>
+      )}
     </button>
   );
+}
+
+// The armour set: its mechanic if all three pieces match, or how close you are.
+// next: the set with the previewed piece in (same as now when not previewing).
+function SetLine({ worn, now, next }: { worn: (CreatureOrItemDrop | undefined)[]; now?: ArmorKey; next?: ArmorKey }) {
+  const box = (children: React.ReactNode, lit: boolean) => (
+    <div style={{ marginTop: 8, padding: "7px 10px", fontSize: 12, lineHeight: 1.4, background: lit ? "rgba(255,214,110,0.08)" : "#12131a",
+      border: `2px solid ${lit ? "#8a6a3a" : "#2a2d38"}`, color: lit ? "#f1d9a0" : MUTED, minHeight: 40 }}>{children}</div>
+  );
+  if (next) {
+    const b = SET_BONUS[next];
+    return box(<>
+      <b>✨ {ARMOR_META[next].name} — {b.name}</b>{next !== now && <span style={{ color: "#7CFC9A" }}> · completes the set</span>}
+      <div>{b.text}</div>
+    </>, true);
+  }
+  if (now) return box(<><b style={{ color: "#ff8a80" }}>Breaks your {ARMOR_META[now].name} set</b><div>You&apos;d lose {SET_BONUS[now].name}.</div></>, false);
+  // Closest set: the armour you have the most pieces of.
+  const counts = new Map<ArmorKey, number>();
+  for (const p of worn) if (p?.armorKey) counts.set(p.armorKey, (counts.get(p.armorKey) ?? 0) + 1);
+  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  if (!best) return box(<>Wear a helmet, chest and legs from the same armour to unlock its set bonus.</>, false);
+  return box(<><b>{ARMOR_META[best[0]].name} {best[1]}/3</b> — the full set gives {SET_BONUS[best[0]].name}: {SET_BONUS[best[0]].text}</>, false);
 }
 
 function Tile({ children, rarity, selected, title, onClick }: {

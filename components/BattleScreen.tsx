@@ -5,7 +5,8 @@
 // Fight Pit (app/battle) and the dungeon (app/dungeon).
 
 import { useEffect, useRef, useState } from "react";
-import { loadSave } from "@/hooks/useGameState";
+import { loadSave, armorPieces } from "@/hooks/useGameState";
+import { ARMOR_META, wornArmor } from "@/lib/items/armor";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -73,13 +74,18 @@ export function loadOwnedCreatures(): OwnedCreature[] {
     const t = findCreatureTemplate(d.creatureId, d.name);
     if (!t) continue;
     const w = items.get(equipment[d.id]?.weaponId ?? "");
-    const a = items.get(equipment[d.id]?.armorId ?? "");
+    const pieces = armorPieces(equipment[d.id], (id) => items.get(id));
+    const worn = pieces.filter((p): p is CreatureOrItemDrop => !!p);
+    const set = wornArmor(pieces).set;
+    // The chest says most about the armour (it carries the most defence).
+    const a = pieces[1] ?? worn[0];
     list.push({
       id: d.id, name: t.name, template: t, roster: favs.has(d.id),
       rarity: t.rarity, label: creatureTypeLabel(d.proficiency ?? t.proficiency),
-      weaponName: w?.name, armorName: a?.name,
+      weaponName: w?.name,
+      armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
-      fighter: fighterFor(d, t, w?.stats, a?.stats, equipment[d.id]?.moves),
+      fighter: fighterFor(d, t, w?.stats, pieces, equipment[d.id]?.moves),
     });
   }
   return list.sort((x, y) =>

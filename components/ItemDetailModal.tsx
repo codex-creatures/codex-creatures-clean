@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
+import { ARMOR_META, ARMOR_SLOT_INFO, SET_BONUS } from "@/lib/items/armor";
 import { computeSellGold } from "@/lib/items/economy/sell";
 
 type Props = {
@@ -97,10 +98,16 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
         <div style={{ marginBottom: 20, paddingRight: 24 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
             <RarityBadge rarity={item.rarity} />
-            <span style={{ fontSize: 12, opacity: 0.45, textTransform: "capitalize" }}>{item.itemCategory}</span>
+            <span style={{ fontSize: 12, opacity: 0.45, textTransform: "capitalize" }}>{item.itemCategory === "armor" && item.armorSlot ? `armour · ${ARMOR_SLOT_INFO[item.armorSlot].name}` : item.itemCategory}</span>
           </div>
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 24, fontWeight: 600, color: rarityColor, lineHeight: 1.2 }}>{item.name}</h2>
           {item.desc && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{item.desc}</p>}
+          {item.armorKey && (
+            <div style={{ marginTop: 10, padding: "8px 10px", fontSize: 12, lineHeight: 1.4, background: "rgba(255,214,110,0.06)", border: "1px solid rgba(241,217,160,0.25)", borderRadius: 8, color: "#f1d9a0" }}>
+              <b>Set bonus — {SET_BONUS[item.armorKey].name}</b> <span style={{ opacity: 0.6 }}>(wear the {ARMOR_META[item.armorKey].name} helmet, chest and legs)</span>
+              <div style={{ opacity: 0.85 }}>{SET_BONUS[item.armorKey].text}</div>
+            </div>
+          )}
         </div>
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />

@@ -5,11 +5,11 @@
 
 import type { Drop, Rarity, ItemCategory } from "./types";
 import type { ItemKey } from "./items/ceilings";
-import type { ArmorKey } from "./items/armor";
+import type { ArmorKey, ArmorSlot } from "./items/armor";
 import { rollItemStats } from "./items/rollItemStats";
-import { rollArmorStats } from "./items/rollArmorStats";
+import { rollArmorPiece } from "./items/rollArmorStats";
 import { ITEM_META } from "./items/metadata";
-import { ARMOR_META } from "./items/armor";
+import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, pieceName } from "./items/armor";
 import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
@@ -31,12 +31,16 @@ export function weaponDrop(itemKey: ItemKey, rarity: Rarity, barcode = "", stats
   };
 }
 
-export function armorDrop(armorKey: ArmorKey, rarity: Rarity, barcode = "", stats?: Record<string, number>): Drop {
+// A piece of armour (helmet, chest or legs — a random one if not given).
+export const randomArmorSlot = (): ArmorSlot => ARMOR_SLOTS[Math.floor(Math.random() * ARMOR_SLOTS.length)];
+
+export function armorDrop(armorKey: ArmorKey, rarity: Rarity, barcode = "", stats?: Record<string, number>, slot: ArmorSlot = randomArmorSlot()): Drop {
   const meta = ARMOR_META[armorKey];
   return {
-    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "armor", armorKey, rarity,
-    roll: Math.floor(Math.random() * 100), name: meta?.name ?? armorKey, desc: meta?.desc ?? "",
-    stats: stats ?? rollArmorStats(armorKey, rarity, Math.random).stats, createdAt: now(),
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "armor", armorKey, armorSlot: slot, rarity,
+    roll: Math.floor(Math.random() * 100), name: meta ? pieceName(armorKey, slot) : armorKey,
+    desc: meta ? `${ARMOR_SLOT_INFO[slot].name} piece. ${meta.desc}` : "",
+    stats: stats ?? rollArmorPiece(armorKey, rarity, slot, Math.random), createdAt: now(),
   };
 }
 
@@ -65,8 +69,8 @@ export function dropFromOutcome(result: BarcodeOutcome, barcode = ""): Drop | nu
     const creature = CREATURE_BY_ID[result.creatureId];
     return creature ? creatureOrCard(creature, barcode) : null;
   }
-  const { itemCategory, rarity, itemKey, armorKey } = result;
+  const { itemCategory, rarity, itemKey, armorKey, armorSlot } = result;
   if (itemCategory === "weapon") return itemKey ? weaponDrop(itemKey, rarity, barcode) : null;
-  if (itemCategory === "armor") return armorKey ? armorDrop(armorKey, rarity, barcode) : null;
+  if (itemCategory === "armor") return armorKey ? armorDrop(armorKey, rarity, barcode, undefined, armorSlot) : null;
   return plainItemDrop(itemCategory, rarity, barcode);
 }

@@ -17,6 +17,7 @@ export type CreatureOrItemDrop = {
   itemCategory?: ItemCategory;
   itemKey?: import("./items/ceilings").ItemKey;
   armorKey?: import("./items/armor").ArmorKey;
+  armorSlot?: import("./items/armor").ArmorSlot; // armour: helmet, chest or legs
   creatureId?: string; // stable id from lib/creatures/creatureData.ts
   // Creatures and cards: this individual's rolled %s and starting moves.
   // Missing on older creatures → the species' standard values.

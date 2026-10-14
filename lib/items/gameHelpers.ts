@@ -7,7 +7,7 @@ import { RARITY_WEIGHTS } from "./budgets";
 import type { ItemKey } from "./ceilings";
 import { ITEM_CEILINGS } from "./ceilings";
 import type { ArmorKey } from "./armor";
-import { ARMOR_CEILINGS, ARMOR_KEYS } from "./armor";
+import { ARMOR_CEILINGS, ARMOR_KEYS, pieceStats } from "./armor";
 import type { ItemCategory, Drop } from "../types";
 import { isItemDrop } from "../types";
 import { ITEM_KEYS } from "./ceilings";
@@ -54,7 +54,8 @@ export function pickItemCategory(
   code: string,
   rollMode: "random" | "deterministic"
 ): ItemCategory {
-  const categories: ItemCategory[] = ["weapon", "armor", "material", "consumable"];
+  // Armour counts twice: it comes in three pieces, so you need more of it.
+  const categories: ItemCategory[] = ["weapon", "armor", "armor", "material", "consumable"];
   if (rollMode === "deterministic") {
     return categories[deterministicRoll(`${code}:itemCategory`) % categories.length];
   }
@@ -95,7 +96,10 @@ export function getStatCapForDrop(d: Drop, stat: string): number | null {
     const ceilings = ARMOR_CEILINGS[d.armorKey as ArmorKey];
     if (!ceilings) return null;
     const rc = ceilings[d.rarity as Rarity];
-    return rc ? (rc as any)[stat] ?? null : null;
+    if (!rc) return null;
+    // A piece's caps are its share of the whole set's.
+    const caps = d.armorSlot ? pieceStats(rc, d.armorSlot) : (rc as Record<string, number>);
+    return caps[stat] ?? null;
   }
   return null;
 }

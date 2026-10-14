@@ -20,6 +20,8 @@ import TileGrid, { sortByRarity } from "./TileGrid";
 const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor"]);
 import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
 
+const hasArmor = (l?: Loadout) => !!(l?.helmetId || l?.chestId || l?.legsId);
+
 type Props = {
   inventory: Drop[];
   filteredInventory: Drop[];
@@ -167,7 +169,7 @@ export default function InventoryList({
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}
           badge={(d) => {
-            if (isCreatureDrop(d)) { const l = equipment[d.id]; return `${l?.weaponId ? "⚔️" : ""}${l?.armorId ? "🛡️" : ""}` || undefined; }
+            if (isCreatureDrop(d)) { const l = equipment[d.id]; return `${l?.weaponId ? "⚔️" : ""}${hasArmor(l) ? "🛡️" : ""}` || undefined; }
             const owner = equippedOn.get(d.id);
             return owner ? `on ${creatureNameById.get(owner) ?? "creature"}` : undefined;
           }}
@@ -234,9 +236,9 @@ export default function InventoryList({
                     const t = findCreatureTemplate(c.creatureId, c.name);
                     return t ? <span style={{ fontSize: 11, opacity: 0.45 }}>{creatureTypeLabel(c.proficiency ?? t.proficiency)}</span> : null;
                   })()}
-                  {isCreature && (loadout?.weaponId || loadout?.armorId) && (
+                  {isCreature && (loadout?.weaponId || hasArmor(loadout)) && (
                     <span style={{ fontSize: 12, opacity: 0.6 }} title="Has gear equipped">
-                      {loadout?.weaponId ? "⚔️" : ""}{loadout?.armorId ? "🛡️" : ""}
+                      {loadout?.weaponId ? "⚔️" : ""}{hasArmor(loadout) ? "🛡️" : ""}
                     </span>
                   )}
                   {ownerId && (

@@ -16,7 +16,8 @@ import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { rollBarcodeOutcome } from "@/lib/barcodeRegistry";
-import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove } from "@/lib/drops";
+import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
+import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
@@ -54,6 +55,7 @@ export default function DungeonPage() {
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [found, setFound] = useState<Drop[] | null>(null); // what the current room just gave you
+  const [notes, setNotes] = useState<string[]>([]);          // anything else that just happened (e.g. Second Wind)
 
   // Every change to the run is saved straight away.
   function update(next: DungeonSave) {
@@ -101,6 +103,7 @@ export default function DungeonPage() {
     update(endRun(loadDungeon()));
     battle.clear();
     setFound(null);
+    setNotes([]);
   }
 
   function healAll() {
@@ -194,6 +197,7 @@ export default function DungeonPage() {
   // The boss is beaten: the run is over.
   function nextRoom() {
     setFound(null);
+    setNotes([]);
     battle.clear();
     updateRun(leaveRoom);
   }
@@ -201,6 +205,7 @@ export default function DungeonPage() {
   // Down a tunnel into the next room.
   function goTo(nodeId: string) {
     setFound(null);
+    setNotes([]);
     battle.clear();
     updateRun((r) => moveOn(r, nodeId));
   }
@@ -236,6 +241,16 @@ export default function DungeonPage() {
     const ids = r.current?.fighters ?? [];
     const hp = { ...r.hp };
     m.state.sides.A.team.forEach((f, i) => { if (ids[i]) hp[ids[i]] = f.hp / f.maxHp; });
+    // Second Wind (a full Frontier's Mail set): a won fight heals a little.
+    const winds: string[] = [];
+    if (m.state.winner === "A") {
+      for (const id of ids) {
+        const c = byId(id);
+        if (c?.fighter.armorSet !== "frontiers_mail" || hp[id] <= 0 || hp[id] >= 1) continue;
+        hp[id] = Math.min(1, hp[id] + SECOND_WIND_HEAL);
+        winds.push(`🛡️ ${SET_BONUS.frontiers_mail.name}: ${c.name} recovers ${Math.round(SECOND_WIND_HEAL * 100)}% HP`);
+      }
+    }
     if (m.state.winner !== "A") {
       updateRun((x) => ({ ...x, hp, status: "dead", battle: undefined }));
       battle.clear();
@@ -246,10 +261,13 @@ export default function DungeonPage() {
     for (const e of room.enemies ?? []) {
       for (const p of e.gear) {
         if (!p.drops) continue;
-        drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", p.stats));
+        // Enemies wear a whole set; one piece of it drops.
+        const slot = randomArmorSlot();
+        drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", pieceStats(p.stats, slot), slot));
       }
     }
     give(drops, (x) => markDone({ ...x, hp, battle: undefined }));
+    setNotes(winds);
   }
 
   // ── Screens ───────────────────────────────────────────────────────
@@ -302,7 +320,7 @@ export default function DungeonPage() {
           <div style={{ marginTop: 12 }}>
             {run.current
               ? <RoomScreen
-                  run={run} room={run.current} found={found} byId={byId}
+                  run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
                 />
               : <AtEntrance run={run} />}
@@ -435,8 +453,8 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
-  run: DungeonRun; room: Room; found: Drop[] | null; byId: (id: string) => OwnedCreature | undefined; gold: number;
+function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
+  run: DungeonRun; room: Room; found: Drop[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = ROOM_INFO[room.kind];
@@ -457,6 +475,7 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
           ))}
         </div>
       )}
+      {notes.map((n) => <div key={n} style={{ fontSize: 13, color: "#f1d9a0", marginTop: 4 }}>{n}</div>)}
 
       {room.kind === "treasure" && (room.done ? next : (
         <>

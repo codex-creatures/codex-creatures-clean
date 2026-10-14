@@ -27,6 +27,7 @@ import {
 } from "./engine";
 import type { Skill } from "../creatures/creatureData";
 import { bossActions, bossEndOfRound, bossHiddenAtStart, bossMinHp, type BossKind, type BossState } from "./bossAi";
+import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
 
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
@@ -50,6 +51,17 @@ export const HASTE_ROUNDS = 2;
 //   A new bite refreshes it; it doesn't stack.
 // - Pounce: acts before everyone else this round.
 export const CORPSIFY_ROUNDS = 2;
+
+// Armour set mechanics (a full helmet + chest + legs of one armour; see
+// SET_BONUS in lib/items/armor.ts). The once-a-fight ones mark setUsed.
+// - Hard Shell: the first hit it takes is halved.
+// - Quickscale: its first attack goes before everyone (like a pounce).
+// - Nullify: reflects some of the ranged damage it takes.
+// - Deflect: a chance for ranged attacks against it to miss.
+// - Steadfast: can't be crippled.
+// - Unstoppable: once, a knockout blow leaves it on 1 HP.
+// (Second Wind heals between dungeon fights, so it lives in the dungeon.)
+const hasSet = (f: Fighter, key: ArmorKey) => f.armorSet === key;
 
 // Armour gap: hammering the same creature with the same move finds the gaps
 // in its armour, so stalled fights (tank vs tank) eventually end.
@@ -97,7 +109,8 @@ export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: n
 
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
 // cooldowns: move name → rounds until it can be used again.
-export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean; cooldowns?: Record<string, number> };
+// setUsed: its armour set's once-a-fight mechanic has been used.
+export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean; cooldowns?: Record<string, number>; setUsed?: boolean };
 
 export type BattleSide = {
   key: SideKey;
@@ -116,11 +129,12 @@ export type BattleEvent =
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
       streak: Streak; defenceIgnored: number; // defenceIgnored: share ignored by this hit (0 if not precise)
       attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number;
-      evaded?: boolean; venom?: StatusEffect; pounced?: boolean }
+      evaded?: boolean; venom?: StatusEffect; pounced?: boolean;
+      armorFx?: string } // an armour set mechanic that kicked in on this hit
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "revive" | "item"; damage?: number }
+      kind: "self" | "venom" | "revive" | "item" | "set"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -274,9 +288,10 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (s.boss) turns.push(...bossActions(state, k).map((t) => ({ key: k, ...t })));
     else if (actions[k].kind !== "swap" && actions[k].kind !== "item") turns.push({ key: k, index: s.active, action: actions[k] });
   }
-  // Pounce goes before everyone; otherwise fastest first.
+  // Pounce (and a Quickscale set's first attack) goes before everyone; otherwise fastest first.
+  const quick = (f: Combatant, a: BattleAction) => a.kind === "attack" && hasSet(f, "dragonscale_tunic") && !f.setUsed;
   const pounces = (f: Combatant, a: BattleAction) =>
-    a.kind === "attack" && f.skills.find((s) => s.name === a.skillName)?.effect?.kind === "pounce" ? 1 : 0;
+    a.kind === "attack" && (f.skills.find((s) => s.name === a.skillName)?.effect?.kind === "pounce" || quick(f, a)) ? 1 : 0;
   const attackers = turns
     .map((t) => {
       const actor = state.sides[t.key].team[t.index];
@@ -295,6 +310,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     if (action.kind !== "attack") continue;
+    const quickscale = quick(actor, action);
+    if (quickscale) actor.setUsed = true;
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
     const fx = skill.effect;
     actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
@@ -344,11 +361,25 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       // mirage can make any attack miss.
       const mirage = target.statuses.find((s) => s.id === "mirage");
       const evaded = !!mirage && Math.random() < (mirage.chance ?? 0);
-      const missed = evaded || (fx?.kind === "precise" && Math.random() >= fx.hitChance);
+      const deflected = !evaded && skill.type === "ranged" && hasSet(target, "arrowward_mantle") && Math.random() < DEFLECT_CHANCE;
+      const missed = evaded || deflected || (fx?.kind === "precise" && Math.random() >= fx.hitChance);
+      const armorFx: string[] = [];
+      if (quickscale) armorFx.push(`${SET_BONUS.dragonscale_tunic.name}: strikes first`);
+      if (deflected) armorFx.push(`${SET_BONUS.arrowward_mantle.name}: their armour turns it aside`);
       const precise = !missed && (fx?.kind === "precise" || Math.random() < gapFx.preciseChance);
       const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
       let damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore).damage;
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
+      if (!missed && damage > 0 && hasSet(target, "colossal_shellarmor") && !target.setUsed) {
+        target.setUsed = true;
+        damage = Math.ceil(damage / 2);
+        armorFx.push(`${SET_BONUS.colossal_shellarmor.name} halves it`);
+      }
+      if (damage >= target.hp && target.hp > 1 && hasSet(target, "juggernaut_platemail") && !target.setUsed) {
+        target.setUsed = true;
+        damage = target.hp - 1;
+        armorFx.push(`${SET_BONUS.juggernaut_platemail.name}: hangs on with 1 HP`);
+      }
       if (precise && gapFx.gap && targetIdx === chosen) streak.cracks++;
       if (!missed) {
         state.hits++;
@@ -357,7 +388,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       target.hp = Math.max(bossMinHp(state, foeKey, targetIdx), target.hp - damage);
 
       // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
-      const crippled = fx?.kind === "cripple" && !missed && target.hp > 0 && Math.random() < fx.chance;
+      const steadfast = fx?.kind === "cripple" && !missed && hasSet(target, "polished_chainbolster");
+      if (steadfast) armorFx.push(`${SET_BONUS.polished_chainbolster.name}: can't be crippled`);
+      const crippled = fx?.kind === "cripple" && !missed && !steadfast && target.hp > 0 && Math.random() < fx.chance;
       const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
       if (crippled) {
         target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1, loss: crippleLoss }];
@@ -371,8 +404,19 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
       state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
         streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted,
-        evaded: evaded || undefined, venom, pounced: pounced || undefined });
+        evaded: evaded || undefined, venom, pounced: pounced || undefined, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
       if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
+
+      // Nullify: some of a ranged hit bounces back at the attacker.
+      if (!missed && damage > 0 && skill.type === "ranged" && hasSet(target, "arcane_nullifier") && actor.hp > 0) {
+        const back = Math.min(actor.hp - bossMinHp(state, key, actorIdx), Math.max(1, Math.round(damage * NULLIFY_REFLECT)));
+        if (back > 0) {
+          actor.hp -= back;
+          state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `takes ${back} damage reflected by ${SET_BONUS.arcane_nullifier.name}`,
+            hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "set", damage: back });
+          if (actor.hp <= 0) { knockedOut(state, key, actorIdx); break; }
+        }
+      }
     }
   }
 

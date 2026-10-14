@@ -4,7 +4,9 @@ import {
   ARMOR_CEILINGS,
   ARMOR_PRIMARY_STATS,
   ARMOR_STAT_KEYS,
+  pieceStats,
   type ArmorKey,
+  type ArmorSlot,
   type ArmorStatBlock,
 } from "./armor";
 // LOCKED V1 roll rules (same as weapons)
@@ -108,4 +110,9 @@ export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => nu
     throw new Error(`Armor roll invariant failed: total ${total} != budget ${effectiveBudget}`);
   }
   return { armorKey, rarity, budget: effectiveBudget, ceilings, stats };
+}
+
+// One piece of armour: a whole set's roll, cut down to that piece's share.
+export function rollArmorPiece(armorKey: ArmorKey, rarity: Rarity, slot: ArmorSlot, rng: () => number = Math.random) {
+  return pieceStats(rollArmorStats(armorKey, rarity, rng).stats, slot);
 }

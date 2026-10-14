@@ -121,3 +121,63 @@ export const ARMOR_PRIMARY_STATS: Record<ArmorKey, readonly (keyof ArmorStatBloc
   polished_chainbolster: ["mDef", "rDef"],
   juggernaut_platemail: ["mDef", "rDef"],
 };
+
+// ── Armour pieces ─────────────────────────────────────────────────
+// Armour comes in three pieces: helmet, chest and legs. The ceilings above
+// are for a whole set; each piece gets a share of every stat, so a full set
+// of one rarity is worth about one old single armour. The chest carries most
+// of the defence, the helmet leans to health and the legs to agility.
+export type ArmorSlot = "helmet" | "chest" | "legs";
+export const ARMOR_SLOTS: ArmorSlot[] = ["helmet", "chest", "legs"];
+
+export const ARMOR_SLOT_INFO: Record<ArmorSlot, { name: string; piece: string }> = {
+  helmet: { name: "Helmet", piece: "Helm" },
+  chest:  { name: "Chest",  piece: "Chestpiece" },
+  legs:   { name: "Legs",   piece: "Greaves" },
+};
+
+export const PIECE_SHARE: Record<ArmorSlot, ArmorStatBlock> = {
+  helmet: { mDef: 0.2, rDef: 0.2, agility: 0.2, hp: 0.4 },
+  chest:  { mDef: 0.6, rDef: 0.6, agility: 0.3, hp: 0.4 },
+  legs:   { mDef: 0.2, rDef: 0.2, agility: 0.5, hp: 0.2 },
+};
+
+// How much of a set's worth a piece is (for selling).
+export const PIECE_VALUE: Record<ArmorSlot, number> = { helmet: 0.25, chest: 0.5, legs: 0.25 };
+
+// A piece's share of a whole set's stats (or ceilings).
+export function pieceStats(set: Record<string, number>, slot: ArmorSlot): Record<string, number> {
+  const share = PIECE_SHARE[slot] as Record<string, number>;
+  return Object.fromEntries(Object.entries(set).map(([k, v]) => [k, Math.round(v * (share[k] ?? 1 / 3))]));
+}
+
+export const pieceName = (key: ArmorKey, slot: ArmorSlot) => `${ARMOR_META[key].name} ${ARMOR_SLOT_INFO[slot].piece}`;
+
+// ── Set bonuses ───────────────────────────────────────────────────
+// Wear all three pieces of one armour (any rarities) and you get its set
+// mechanic. (Applied in lib/combat/battle.ts; Second Wind in the dungeon.)
+export const SET_BONUS: Record<ArmorKey, { name: string; text: string }> = {
+  colossal_shellarmor:   { name: "Hard Shell",  text: "The first hit it takes each fight does half damage." },
+  dragonscale_tunic:     { name: "Quickscale",  text: "Its first attack each fight goes before everyone else's." },
+  arcane_nullifier:      { name: "Nullify",     text: "Reflects 25% of ranged damage it takes back at the attacker." },
+  arrowward_mantle:      { name: "Deflect",     text: "25% of ranged attacks against it miss." },
+  polished_chainbolster: { name: "Steadfast",   text: "It can't be crippled." },
+  juggernaut_platemail:  { name: "Unstoppable", text: "Once per fight, a blow that would knock it out leaves it on 1 HP." },
+  frontiers_mail:        { name: "Second Wind", text: "Heals 15% of its max HP after every fight it wins in the dungeon." },
+};
+export const NULLIFY_REFLECT = 0.25;
+export const DEFLECT_CHANCE = 0.25;
+export const SECOND_WIND_HEAL = 0.15;
+
+type Piece = { armorKey?: ArmorKey; armorSlot?: ArmorSlot; stats?: Record<string, number> } | undefined;
+
+// What a creature's armour adds up to: the pieces' stats summed, and the set
+// whose mechanic it gets (only with all three pieces of the same armour).
+export function wornArmor(pieces: Piece[]): { stats: Record<string, number>; set?: ArmorKey } {
+  const stats: Record<string, number> = {};
+  for (const p of pieces) for (const [k, v] of Object.entries(p?.stats ?? {})) stats[k] = (stats[k] ?? 0) + v;
+  const keys = pieces.map((p) => p?.armorKey);
+  const slots = new Set(pieces.map((p) => p?.armorSlot));
+  const full = pieces.length === 3 && keys[0] && keys.every((k) => k === keys[0]) && ARMOR_SLOTS.every((s) => slots.has(s));
+  return { stats, set: full ? keys[0] : undefined };
+}
