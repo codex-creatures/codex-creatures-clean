@@ -63,3 +63,34 @@ export function runs(grid: string[][]): [number, number, number, string][] {
   });
   return out;
 }
+
+// ── The fine grid ─────────────────────────────────────────────────
+// Sprites are shown on a grid twice as fine as they're drawn: every pixel
+// becomes 2×2 ("1 pixel into 4"), smoothed with Scale2x so stair-step
+// diagonals and curves come out cleaner, and the outline is one fine pixel.
+// A sprite drawn natively on the fine grid (fine()) is used as it is.
+const FINE = new WeakSet<Sprite>();
+export function fine(sprite: Sprite): Sprite {
+  FINE.add(sprite);
+  return sprite;
+}
+
+// Scale2x (AdvMAME2x): each pixel becomes four; a corner takes its
+// neighbours' colour where two of them agree and the other two don't.
+export function scale2x(sprite: Sprite): Sprite {
+  const h = sprite.length, w = Math.max(...sprite.map((r) => r.length));
+  const at = (x: number, y: number) => (x < 0 || y < 0 || y >= h ? "." : sprite[y][x] ?? ".");
+  const out: string[] = [];
+  for (let y = 0; y < h; y++) {
+    let top = "", bottom = "";
+    for (let x = 0; x < w; x++) {
+      const p = at(x, y), a = at(x, y - 1), b = at(x + 1, y), c = at(x - 1, y), d = at(x, y + 1);
+      top    += (c === a && c !== d && a !== b ? a : p) + (a === b && a !== c && b !== d ? b : p);
+      bottom += (d === c && d !== b && c !== a ? c : p) + (b === d && b !== a && d !== c ? d : p);
+    }
+    out.push(top, bottom);
+  }
+  return out;
+}
+
+export const fineGrid = (sprite: Sprite): Sprite => (FINE.has(sprite) ? sprite : scale2x(sprite));

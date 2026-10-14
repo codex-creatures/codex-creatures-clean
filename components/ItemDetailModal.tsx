@@ -129,7 +129,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
             { label: "70–89", color: "#a855f7" },
             { label: "90+",   color: "#f5c542" },
           ].map(({ label, color }) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, opacity: 0.6 }}>
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, opacity: 0.6 }}>
               <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
               {label}
             </div>

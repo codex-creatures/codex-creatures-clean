@@ -183,7 +183,7 @@ export default function CreatureDetailModal({
                     {current && (
                       <Tile selected={preview === null} onClick={() => setPreview(null)} title="Take it off">
                         <span style={{ fontSize: 22, color: MUTED }}>⊘</span>
-                        <span style={{ fontSize: 9, color: MUTED }}>Unequip</span>
+                        <span style={{ fontSize: 11, color: MUTED }}>Unequip</span>
                       </Tile>
                     )}
                     {sorted.map((opt) => {
@@ -243,9 +243,9 @@ export default function CreatureDetailModal({
                   <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by +${prof![k]}%`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
                     <div style={{ fontSize: 13 }}>{st.icon}</div>
-                    <div style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
+                    <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
                     <div className="pixel-font" style={{ fontSize: 17, color: st.color }}>+{prof![k]}%</div>
-                    <div style={{ fontSize: 10, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
+                    <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
                   </div>
                 );
               })}
@@ -381,7 +381,7 @@ function Tile({ children, rarity, selected, title, onClick }: {
 }
 
 function Badge({ children, color }: { children: React.ReactNode; color: string }) {
-  return <span className="pixel-font" style={{ position: "absolute", top: 1, right: 3, fontSize: 9, color }}>{children}</span>;
+  return <span className="pixel-font" style={{ position: "absolute", top: 1, right: 3, fontSize: 11, color }}>{children}</span>;
 }
 
 // One stat: icon, name, a chunky bar (with the previewed change), the total.
@@ -396,8 +396,8 @@ function StatRow({ icon, label, color, max, total, after, detail, diff }: {
       <span style={{ fontSize: 15, textAlign: "center" }}>{icon}</span>
       <span style={{ fontSize: 13, lineHeight: 1.1 }}>
         {label}
-        {diff !== 0 && <sup style={{ marginLeft: 2, fontSize: 10, color: diff > 0 ? "#7CFC9A" : "#ff8a80" }}>{diff > 0 ? `+${diff}` : diff}</sup>}
-        <span style={{ display: "block", fontSize: 10, color: MUTED }}>{detail}</span>
+        {diff !== 0 && <sup style={{ marginLeft: 2, fontSize: 11, color: diff > 0 ? "#7CFC9A" : "#ff8a80" }}>{diff > 0 ? `+${diff}` : diff}</sup>}
+        <span style={{ display: "block", fontSize: 11, color: MUTED }}>{detail}</span>
       </span>
       <div style={{ position: "relative", height: 12, background: "#0e0f14", border: "2px solid #2a2d38" }}>
         <div style={{ position: "absolute", inset: 0, width: `${pct(lo)}%`, background: color, transition: "width 0.25s" }} />

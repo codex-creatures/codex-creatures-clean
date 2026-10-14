@@ -70,7 +70,7 @@ function Tile({ d, fav, badge, sell, onClick }: {
         {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} /> : <span style={{ fontSize: 26 }}>{d.codexMove ? "📖" : "📦"}</span>}
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
-        {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 10, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
+        {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
       </span>
       <span style={{ display: "block", marginTop: 4, fontSize: 11, color: col.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>
         {d.name}

@@ -102,7 +102,7 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
         </div>
 
         {/* Race (and class, one day). */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, fontSize: 9.5, whiteSpace: "nowrap" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, fontSize: 11, whiteSpace: "nowrap" }}>
           {race && (
             <span style={{ flexShrink: 0, padding: "1px 5px", borderRadius: 8, background: race.color, color: "#1a140c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
               {race.name}
@@ -115,13 +115,13 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
 
         {/* Flavour. */}
         <div style={{
-          fontSize: 10, fontStyle: "italic", lineHeight: 1.25, padding: "3px 5px", border: "1px solid #b49a64", background: "rgba(255,255,255,0.35)",
+          fontSize: 11, fontStyle: "italic", lineHeight: 1.25, padding: "3px 5px", border: "1px solid #b49a64", background: "rgba(255,255,255,0.35)",
           display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
         }}>
           {t.flavour}
         </div>
 
-        <div style={{ fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.06em", color: ready ? "#7a4b00" : "#6b5a3e", fontWeight: ready ? 700 : 400 }}>
+        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: ready ? "#7a4b00" : "#6b5a3e", fontWeight: ready ? 700 : 400 }}>
           {ready ? "✨ Ready to summon" : `${cards.length}/${CARDS_TO_SUMMON} to summon`}
         </div>
       </div>

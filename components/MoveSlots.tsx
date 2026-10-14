@@ -64,7 +64,7 @@ export default function MoveSlots({ template, moves, learned, onChange }: {
           {options.map((m) => (
             <button key={m.name} onClick={() => choose(m.name)} style={{ display: "block", width: "100%", textAlign: "left", padding: "6px 8px", marginBottom: 4, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "white", cursor: "pointer" }}>
               <MoveInfo m={m} />
-              {!own.has(m.name) && <span style={{ fontSize: 10, color: m.race ? "#c7b8ff" : "#8fc1ff", marginLeft: 6 }}>{m.race ? "codex" : "learnable"}</span>}
+              {!own.has(m.name) && <span style={{ fontSize: 11, color: m.race ? "#c7b8ff" : "#8fc1ff", marginLeft: 6 }}>{m.race ? "codex" : "learnable"}</span>}
             </button>
           ))}
         </div>

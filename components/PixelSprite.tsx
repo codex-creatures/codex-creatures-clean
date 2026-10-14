@@ -1,8 +1,10 @@
 // components/PixelSprite.tsx
-// Draws a text-grid sprite (lib/sprites) as crisp SVG pixels, outline included.
+// Draws a text-grid sprite (lib/sprites) as crisp SVG pixels, outline included,
+// on the fine grid (each drawn pixel is 2×2, smoothed; see lib/sprites/pixels.ts).
+// scale: screen pixels per drawn pixel, as before (so sizes don’t change).
 
 import { useMemo } from "react";
-import { outlined, runs, type Sprite } from "@/lib/sprites/pixels";
+import { fineGrid, outlined, runs, type Sprite } from "@/lib/sprites/pixels";
 import { WEAPON_SPRITES, ARMOR_SPRITES } from "@/lib/sprites/items";
 import { CREATURE_SPRITES, EGG } from "@/lib/sprites/creatures";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -11,11 +13,11 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
   sprite: Sprite; scale?: number; title?: string; style?: React.CSSProperties;
 }) {
   const { w, h, rects } = useMemo(() => {
-    const g = outlined(sprite);
+    const g = outlined(fineGrid(sprite));
     return { w: g[0].length, h: g.length, rects: runs(g) };
   }, [sprite]);
   return (
-    <svg width={w * scale} height={h * scale} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges"
+    <svg width={(w * scale) / 2} height={(h * scale) / 2} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges"
       role="img" aria-label={title} style={{ display: "block", flexShrink: 0, ...style }}>
       {title && <title>{title}</title>}
       {rects.map(([x, y, n, c], i) => <rect key={i} x={x} y={y} width={n} height={1} fill={c} />)}

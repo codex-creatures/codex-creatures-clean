@@ -334,7 +334,7 @@ export default function SimulatorPage() {
                         {STANCES.map(s => (
                           <div key={s} style={{ flex: 1, minWidth: 80 }}>
                             <button onClick={() => setStance(s)} style={{ ...btn(stance === s, col), width: "100%", textAlign: "center", padding: "6px 8px", fontSize: 12 }}>{s}</button>
-                            <div style={{ fontSize: 10, color: MUTED, marginTop: 3, lineHeight: 1.3 }}>{stanceDesc[s]}</div>
+                            <div style={{ fontSize: 11, color: MUTED, marginTop: 3, lineHeight: 1.3 }}>{stanceDesc[s]}</div>
                           </div>
                         ))}
                       </div>

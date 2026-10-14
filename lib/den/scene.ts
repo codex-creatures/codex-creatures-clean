@@ -37,7 +37,7 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   2: { u: 0.7, v: 5.8, z: 22 },    // chest
   3: { u: 1.2, v: 1.2, z: 46 },    // altar
   4: { u: 5.95, v: 0.55, z: 34 },  // merchant
-  5: { u: 0, v: 5.9, z: 84 },      // quest board
+  5: { u: 0, v: 5.9, z: 104 },     // quest board (above the archway label)
   6: { u: 2.9, v: 0, z: 74 },      // bag shelf
   7: { u: 0, v: 3.0, z: 66 },      // archway
 };

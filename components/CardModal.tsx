@@ -134,7 +134,7 @@ function RollTable({ p, base }: { p: CreatureProficiency; base: CreatureProficie
         const d = p[k] - base[k];
         return (
           <div key={k} style={{ background: "#12131a", padding: "6px 2px" }}>
-            <div style={{ fontSize: 10, color: MUTED }}>{label}</div>
+            <div style={{ fontSize: 11, color: MUTED }}>{label}</div>
             <div style={{ fontWeight: 700 }}>+{p[k]}%</div>
             <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d}` : d < 0 ? d : "—"}</div>
           </div>
@@ -158,7 +158,7 @@ function Moves({ names, own }: { names: string[]; own: string[] }) {
       {names.map((n) => MOVE_BY_NAME[n] && (
         <div key={n} style={{ fontSize: 13, padding: "5px 8px", background: "#12131a", borderLeft: own.includes(n) ? "3px solid #3a3e4b" : "3px solid #ffd66e" }}>
           <MoveInfo m={MOVE_BY_NAME[n]} />
-          {!own.includes(n) && <span style={{ fontSize: 10, color: "#ffd66e", marginLeft: 6 }}>RARE</span>}
+          {!own.includes(n) && <span style={{ fontSize: 11, color: "#ffd66e", marginLeft: 6 }}>RARE</span>}
         </div>
       ))}
     </div>

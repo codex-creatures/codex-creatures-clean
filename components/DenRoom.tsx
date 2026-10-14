@@ -89,8 +89,9 @@ export default function DenRoom() {
             className="pixel-font"
             style={{
               position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`,
-              transform: a.below ? "translate(-50%, 15%)" : "translate(-50%, -100%)", whiteSpace: "nowrap",
-              padding: "2px 6px", fontSize: "clamp(9px, 2.3vw, 13px)", lineHeight: 1.3,
+              // Near the edges the label leans inwards, so it never runs off a phone screen.
+              transform: `translate(${x / W < 0.2 ? -15 : x / W > 0.8 ? -85 : -50}%, ${a.below ? "15%" : "-100%"})`, whiteSpace: "nowrap",
+              padding: "2px 6px", fontSize: "clamp(11px, 2.6vw, 14px)", lineHeight: 1.3,
               background: active ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.78)",
               border: `2px solid ${active ? "#ffd66e" : spot.href ? "#8a6a3a" : "#4a4a55"}`,
               color: spot.href ? (active ? "#ffe9a8" : "#f1d9a0") : "#a9a9b8",
