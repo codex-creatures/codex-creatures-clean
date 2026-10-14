@@ -14,6 +14,10 @@ import CreatureDetailModal from "./CreatureDetailModal";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
 import CardGallery from "./CardGallery";
+import TileGrid, { sortByRarity } from "./TileGrid";
+
+// Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
+const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor"]);
 import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
 
 type Props = {
@@ -65,8 +69,11 @@ export default function InventoryList({
   // the inventory, but the window stays open to show what was summoned.
   const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
 
+  const asGrid = GRID_TABS.has(activeTab);
+  // In the grid, everything is sorted rarest first; browsing follows that order.
+  const shown: Drop[] = asGrid ? sortByRarity(filteredInventory.filter((d) => !isRewardDrop(d)) as CreatureOrItemDrop[]) : filteredInventory;
   // Only item drops are navigable in the modal
-  const navigableItems = filteredInventory.filter(isItemDrop) as CreatureOrItemDrop[];
+  const navigableItems = shown.filter(isItemDrop) as CreatureOrItemDrop[];
 
   const allWeapons = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "weapon") as CreatureOrItemDrop[], [inventory]);
   const allArmors  = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "armor") as CreatureOrItemDrop[], [inventory]);
@@ -76,7 +83,7 @@ export default function InventoryList({
   );
   const openCreature = openCreatureId ? inventory.find((d) => d.id === openCreatureId) : undefined;
   // The creatures in the current list, to flick through (wrapping round).
-  const creatureList = filteredInventory.filter(isCreatureDrop);
+  const creatureList = shown.filter(isCreatureDrop);
   const creatureIndex = creatureList.findIndex((d) => d.id === openCreatureId);
   const stepCreature = (by: number) => {
     if (creatureIndex < 0 || creatureList.length < 2) return;
@@ -146,7 +153,7 @@ export default function InventoryList({
         ))}
       </div>
 
-      {!sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap a creature to equip it. Tap any weapon or armour to view full details. ★ a creature to add it to your roster.</p>}
+      {!sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap a creature to open it, equip it and add it to your roster (★). Tap any weapon or armour for its full details.</p>}
       {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favourited and equipped items are protected and cannot be sold.</p>}
 
       {/* Creature cards: a binder of trading cards. */}
@@ -154,8 +161,25 @@ export default function InventoryList({
         <CardGallery cards={filteredInventory.filter(isCardDrop) as CreatureOrItemDrop[]} onOpen={(c) => !sellMode && setOpenCard(c)} />
       )}
 
+      {/* Creatures and gear: sprite squares. */}
+      {asGrid && shown.length > 0 && (
+        <TileGrid
+          items={shown as CreatureOrItemDrop[]}
+          favoriteIds={favoriteIds}
+          badge={(d) => {
+            if (isCreatureDrop(d)) { const l = equipment[d.id]; return `${l?.weaponId ? "⚔️" : ""}${l?.armorId ? "🛡️" : ""}` || undefined; }
+            const owner = equippedOn.get(d.id);
+            return owner ? `on ${creatureNameById.get(owner) ?? "creature"}` : undefined;
+          }}
+          sellMode={sellMode}
+          sellable={(d) => isSellableItem(d) && !lockedIds.has(d.id)}
+          selected={selectedForSale}
+          onOpen={handleRowClick}
+        />
+      )}
+
       {/* Item rows */}
-      {activeTab !== "cards" || filteredInventory.length === 0 ? <div style={{ marginTop: 8 }}>
+      {(activeTab !== "cards" && !asGrid) || filteredInventory.length === 0 ? <div style={{ marginTop: 8 }}>
         {filteredInventory.length === 0 && (
           <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>{emptyText ?? "Nothing here yet."}</p>
         )}
