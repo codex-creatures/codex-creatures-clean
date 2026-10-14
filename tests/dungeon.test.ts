@@ -4,7 +4,7 @@ import {
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun,
 } from "../lib/dungeon/run";
 import {
-  rollMap, routeLength, waysOn, isAhead, inSight, knownRooms, KNOWN_AT_START, MIN_ROUTE, MAX_ROUTE, MYSTERY_CHANCE, ROOM_COUNT,
+  rollMap, routeLength, LAIR_DOORS, waysOn, isAhead, inSight, knownRooms, KNOWN_AT_START, MIN_ROUTE, MAX_ROUTE, MYSTERY_CHANCE, ROOM_COUNT,
 } from "../lib/dungeon/map";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { createBattle } from "../lib/combat/battle";
@@ -91,10 +91,11 @@ describe("the labyrinth map", () => {
       const r = routeLength(map);
       expect(r).toBeGreaterThanOrEqual(MIN_ROUTE);
       expect(r).toBeLessThanOrEqual(MAX_ROUTE);
-      // Corridors go both ways; the lair has one or two ways in.
+      // Corridors are drawn both ways round.
       for (const n of Object.values(map.nodes)) for (const l of n.links) expect(map.nodes[l].links).toContain(n.id);
-      expect(map.nodes[map.boss].links.length).toBeGreaterThanOrEqual(1);
-      expect(map.nodes[map.boss].links.length).toBeLessThanOrEqual(2);
+      expect(map.nodes[map.boss].links.length).toBe(LAIR_DOORS);       // always two ways into the lair
+      expect(waysOn(map, map.start).length).toBeGreaterThanOrEqual(2); // and 2–3 ways out of the entrance
+      expect(waysOn(map, map.start).length).toBeLessThanOrEqual(3);
       expect(map.nodes[map.boss].kind).toBe("boss");
     }
   });

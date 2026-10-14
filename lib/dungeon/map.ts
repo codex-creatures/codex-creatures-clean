@@ -11,7 +11,8 @@
 // - Each room has a corridor on to one of the nearest rooms ahead, and
 //   BRANCH_CHANCE of a second; the entrance has two or three. Every room can
 //   be reached from below. A few long corridors skip ahead.
-// - The lair has one or two ways in. The shortest route from the entrance
+// - The lair always has LAIR_DOORS ways in (and the entrance 2–3 ways out),
+//   so there is always a choice at both ends. The shortest route from the entrance
 //   to it is MIN_ROUTE–MAX_ROUTE rooms.
 // - You carry a map scroll: every room and corridor is on it, but what's in
 //   a room is "?" until you know. KNOWN_AT_START rooms are marked from the
@@ -30,6 +31,8 @@ export const MIN_SPACING = 18;       // how close two rooms can be
 export const SIGHT_RADIUS = 30;      // how far you can see from where you stand
 export const BRANCH_CHANCE = 0.45;   // a room gets a second way on
 export const LONG_CORRIDORS = 2;     // corridors that skip a long way ahead
+export const MAX_STARTS = 3;         // ways out of the entrance (at least 2)
+export const LAIR_DOORS = 2;         // always two ways into the lair
 export const MIN_ROUTE = 5;          // shortest route to the lair, in rooms walked into
 export const MAX_ROUTE = 9;
 export const MYSTERY_CHANCE = 0.3;   // a room whose kind you can't see until you walk in
@@ -98,9 +101,9 @@ function layout(rng: Rng): DungeonMap {
     rooms.push(id);
   }
 
-  // The rooms nearest the lair are the only ways in.
+  // The two rooms nearest the lair are the only ways in.
   const top = [...rooms].sort((p, q) => nodes[p].y - nodes[q].y);
-  const lairDoors = new Set(rng() < 0.5 ? top.slice(0, 2) : top.slice(0, 1));
+  const lairDoors = new Set(top.slice(0, LAIR_DOORS));
   const nearest = (from: string, among: string[]) =>
     among.filter((id) => !nodes[from].links.includes(id)).sort((p, q) => distance(nodes[from], nodes[p]) - distance(nodes[from], nodes[q]));
   const aheadOf = (id: string) => rooms.filter((r) => isAhead(nodes[id], nodes[r]));
@@ -121,7 +124,9 @@ function layout(rng: Rng): DungeonMap {
   }
   // Ways in: every room can be reached from somewhere behind it.
   for (const id of rooms) {
-    if (!nodes[id].links.some((l) => isAhead(nodes[l], nodes[id]))) link(nodes, id, nearest(id, behind(id))[0]);
+    if (nodes[id].links.some((l) => isAhead(nodes[l], nodes[id]))) continue;
+    const from = behind(id).filter((r) => r !== "start" || waysOnCount("start") < MAX_STARTS); // keep the entrance to 2–3 ways out
+    link(nodes, id, nearest(id, from.length > 0 ? from : ["start"])[0]);
   }
   // A few long corridors that skip ahead.
   for (let i = 0, tries = 0; i < LONG_CORRIDORS && tries < 200; tries++) {
@@ -139,7 +144,7 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
   let map = layout(rng);
   for (let i = 0; i < 300; i++) {
     const r = routeLength(map);
-    if (r >= MIN_ROUTE && r <= MAX_ROUTE) break;
+    if (r >= MIN_ROUTE && r <= MAX_ROUTE && waysOn(map, map.start).length <= MAX_STARTS) break;
     map = layout(rng);
   }
   for (const n of Object.values(map.nodes)) {

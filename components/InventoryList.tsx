@@ -13,6 +13,7 @@ import ItemDetailModal from "./ItemDetailModal";
 import CreatureDetailModal from "./CreatureDetailModal";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
+import CardGallery from "./CardGallery";
 import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
 
 type Props = {
@@ -141,8 +142,13 @@ export default function InventoryList({
       {!sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap a creature to equip it. Tap any weapon or armour to view full details. ★ a creature to add it to your roster.</p>}
       {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favourited and equipped items are protected and cannot be sold.</p>}
 
+      {/* Creature cards: a binder of trading cards. */}
+      {activeTab === "cards" && filteredInventory.length > 0 && (
+        <CardGallery cards={filteredInventory.filter(isCardDrop) as CreatureOrItemDrop[]} onOpen={(c) => !sellMode && setOpenCard(c)} />
+      )}
+
       {/* Item rows */}
-      <div style={{ marginTop: 8 }}>
+      {activeTab !== "cards" || filteredInventory.length === 0 ? <div style={{ marginTop: 8 }}>
         {filteredInventory.length === 0 && (
           <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>{emptyText ?? "Nothing here yet."}</p>
         )}
@@ -213,7 +219,7 @@ export default function InventoryList({
             </div>
           );
         })}
-      </div>
+      </div> : null}
 
       {/* Creature Detail Modal */}
       {openCreature && isCreatureDrop(openCreature) && (
