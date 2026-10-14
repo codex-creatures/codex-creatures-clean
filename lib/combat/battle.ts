@@ -21,13 +21,14 @@
 // (cripple, fear, blind, …) live in Combatant.statuses with a duration.
 
 import {
-  calcDamage, effectiveAgil,
+  calcDamage, effectiveAgil, rollDamage,
   MAX_ENERGY, ENERGY_REGEN, PRECISE_CHANCE, PRECISE_IGNORE,
   type Fighter,
 } from "./engine";
 import type { Skill } from "../creatures/creatureData";
 import { bossActions, bossEndOfRound, bossHiddenAtStart, bossMinHp, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
+import { ABILITIES, DIVINE_HEALING, KEEN_EYE_BONUS } from "../creatures/abilities";
 
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
@@ -134,7 +135,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "revive" | "item" | "set"; damage?: number }
+      kind: "self" | "venom" | "revive" | "item" | "set" | "ability"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -258,12 +259,20 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (a.kind !== "swap" || state.sides[k].boss) continue;
     const s = state.sides[k];
     const leaving = activeOf(s);
+    const leavingIdx = s.active;
     const restored = Math.round((MAX_ENERGY - leaving.energy) * SWAP_ENERGY_RESTORE);
     leaving.energy = Math.min(MAX_ENERGY, leaving.energy + restored);
     changeActive(state, k, a.to);
     s.swaps++;
     s.lastSwapRound = state.round;
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
+    // Divine Healing: swapping out restores some HP.
+    if (leaving.ability === "divine_healing" && leaving.hp > 0 && leaving.hp < leaving.maxHp) {
+      const healed = Math.min(leaving.maxHp - leaving.hp, Math.round(leaving.maxHp * DIVINE_HEALING));
+      leaving.hp += healed;
+      state.log.push({ type: "effect", side: k, index: leavingIdx, name: leaving.name, text: `is restored by ${ABILITIES.divine_healing.name} (+${healed} HP)`,
+        hp: leaving.hp, statuses: leaving.statuses.map((x) => ({ ...x })), kind: "ability", damage: healed });
+    }
   }
 
   // 1b. Items (from the battle bag) are used before anyone attacks.
@@ -363,13 +372,16 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       const evaded = !!mirage && Math.random() < (mirage.chance ?? 0);
       const deflected = !evaded && skill.type === "ranged" && hasSet(target, "arrowward_mantle") && Math.random() < DEFLECT_CHANCE;
       const missed = evaded || deflected || (fx?.kind === "precise" && Math.random() >= fx.hitChance);
-      const armorFx: string[] = [];
+      const armorFx: string[] = []; // armour sets (and abilities) that kicked in
       if (quickscale) armorFx.push(`${SET_BONUS.dragonscale_tunic.name}: strikes first`);
       if (deflected) armorFx.push(`${SET_BONUS.arrowward_mantle.name}: their armour turns it aside`);
       const precise = !missed && (fx?.kind === "precise" || Math.random() < gapFx.preciseChance);
       const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
-      let damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore).damage;
+      let damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore, rollDamage()).damage;
+      const keenEye = precise && !missed && actor.ability === "keen_eye";
+      if (keenEye) damage = Math.round(damage * (1 + KEEN_EYE_BONUS));
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
+      if (keenEye) armorFx.push(`${ABILITIES.keen_eye.name}: +${Math.round(KEEN_EYE_BONUS * 100)}%`);
       if (!missed && damage > 0 && hasSet(target, "colossal_shellarmor") && !target.setUsed) {
         target.setUsed = true;
         damage = Math.ceil(damage / 2);

@@ -24,6 +24,7 @@ export type CreatureOrItemDrop = {
   proficiency?: import("./creatures/creatureData").CreatureProficiency;
   moves?: string[];
   learned?: string[];   // creatures: race moves learned from codexes
+  ability?: import("./creatures/abilities").AbilityKey; // creatures/cards: a rare passive (Epic+)
   codexMove?: string;   // a codex (consumable item): the race move it teaches
   stats?: {
     melee?: number;

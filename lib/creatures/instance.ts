@@ -21,5 +21,6 @@ export function movesOf(drop: CreatureOrItemDrop, t: CreatureTemplate, chosen?: 
 // armor: the creature's armour pieces (helmet, chest, legs; missing = empty).
 export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor: (CreatureOrItemDrop | undefined)[] = [], chosenMoves?: string[]) {
   const worn = wornArmor(armor);
-  return buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set);
+  const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set);
+  return drop.ability ? { ...f, ability: drop.ability } : f;
 }

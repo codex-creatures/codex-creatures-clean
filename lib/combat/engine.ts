@@ -31,6 +31,7 @@ export type Fighter = {
   braceActive?: boolean;
   braceConsecutiveCount?: number;
   armorSet?: import("../items/armor").ArmorKey; // wearing a full set: its mechanic applies
+  ability?: import("../creatures/abilities").AbilityKey; // a rare passive it was born with
 };
 
 export type TurnLog = {
@@ -101,12 +102,15 @@ export function effectiveStats(f: Fighter) {
   };
 }
 
+// roll: the hit's damage roll before armour (rollDamage()); 1 = the
+// average, used for previews and the AI.
 export function calcDamage(
   skill: Skill,
   attacker: Fighter,
   defender: Fighter,
   precise: boolean,
   preciseIgnore = PRECISE_IGNORE, // share of defence a precise hit ignores
+  roll = 1,
 ): { damage: number; braceBlocked: boolean; braceFailed: boolean } {
   if (isBraceSkill(skill)) {
     return { damage: 0, braceBlocked: false, braceFailed: false };
@@ -129,7 +133,7 @@ export function calcDamage(
   const weaponStat   = moveType === "melee" ? attacker.weapon.atk  : attacker.weapon.rng;
   const atkProf      = moveType === "melee" ? attacker.proficiency.atk : attacker.proficiency.rng;
   const effectiveAtk = withProf(weaponStat, atkProf);
-  const raw          = skill.damage + effectiveAtk;
+  const raw          = (skill.damage + effectiveAtk) * roll;
 
   const atkStance    = stanceDamageDealt(attacker.stance, moveType);
   const defStance    = stanceDamageTaken(defender.stance, moveType);
@@ -151,6 +155,11 @@ export const MAX_ENERGY = 100;
 export const ENERGY_REGEN = 30;     // after each attack
 export const PRECISE_CHANCE = 0.05; // chance of a precise hit…
 export const PRECISE_IGNORE = 0.25; // …which ignores 25% of defence
+
+// Every hit rolls its damage (before armour) within ±DAMAGE_VARIANCE of the
+// average, so fights don't settle into the same numbers every round.
+export const DAMAGE_VARIANCE = 0.05;
+export const rollDamage = (rng: () => number = Math.random) => 1 - DAMAGE_VARIANCE + rng() * 2 * DAMAGE_VARIANCE;
 
 // ── Auto-battle move choice ─────────────────────────────
 export type CombatStyle = "melee" | "ranged" | "hybrid";
@@ -219,7 +228,7 @@ export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): 
 
       const precise      = Math.random() < PRECISE_CHANCE;
       const energyBefore = atk.energy;
-      const { damage: dmg, braceBlocked, braceFailed } = calcDamage(skill, atk, def, precise);
+      const { damage: dmg, braceBlocked, braceFailed } = calcDamage(skill, atk, def, precise, PRECISE_IGNORE, rollDamage());
       atk.energy -= skill.energyCost;
 
       const hpBefore = def.hp;

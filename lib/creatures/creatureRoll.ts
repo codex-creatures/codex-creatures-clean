@@ -11,6 +11,7 @@
 
 import { LEARNABLE_MOVES, MOVE_SLOTS, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
 import { styleFromProficiency } from "../combat/engine";
+import { rollAbility, type AbilityKey } from "./abilities";
 
 export const ROLL_SPREAD = 2;          // max ± per stat
 export const ROLL_TRANSFERS = [1, 4];  // how many 1-point moves (min, max)
@@ -53,10 +54,14 @@ export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[]
   return moves.filter(Boolean).sort((a, b) => Number(!own.includes(a)) - Number(!own.includes(b)));
 }
 
-export type CreatureRoll = { proficiency: CreatureProficiency; moves: string[] };
+// ability: a rare passive some Epic+ creatures are born with (lib/creatures/abilities.ts).
+export type CreatureRoll = { proficiency: CreatureProficiency; moves: string[]; ability?: AbilityKey };
 
 export function rollCreature(c: CreatureTemplate, rng: Rng = Math.random): CreatureRoll {
-  return { proficiency: rollProficiency(c.proficiency, rng), moves: rollMoves(c, rng) };
+  const proficiency = rollProficiency(c.proficiency, rng);
+  const moves = rollMoves(c, rng);
+  const ability = rollAbility(c, rng);
+  return ability ? { proficiency, moves, ability } : { proficiency, moves };
 }
 
 // How a roll differs from the species: { rng: +2, rdef: -2 } etc. (0s left out).

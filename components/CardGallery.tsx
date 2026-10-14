@@ -10,6 +10,7 @@ import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate, RACE_INFO, type CreatureTemplate, type Race } from "@/lib/creatures/creatureData";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
+import { ABILITIES } from "@/lib/creatures/abilities";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
 const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
@@ -107,7 +108,9 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
               {race.name}
             </span>
           )}
-          <span style={{ opacity: 0.45, fontStyle: "italic", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>Class —</span>
+          {cards.some((c) => c.ability)
+            ? <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", color: "#7a4b00", fontWeight: 700 }}>✦ {ABILITIES[cards.find((c) => c.ability)!.ability!].name}</span>
+            : <span style={{ opacity: 0.45, fontStyle: "italic", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>Class —</span>}
         </div>
 
         {/* Flavour. */}

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID, RACE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves } from "../lib/creatures/creatureData";
@@ -24,7 +24,8 @@ describe("race moves", () => {
     const attacks = s.log.filter((e) => e.type === "attack");
     expect(attacks[0].type === "attack" && attacks[0].attacker).toBe("Ironhide");
 
-    // Same hit on a healthy and a wounded target (skipping precise hits).
+    // Same hit on a healthy and a wounded target (no precise hits; the same damage roll).
+    const fixed = vi.spyOn(Math, "random").mockReturnValue(0.5);
     const dmg = (st: ReturnType<typeof createBattle>) => {
       resolveRound(st, { A: hit("Pounce"), B: hit("Slash") });
       const e = st.log.find((x) => x.type === "attack" && x.side === "A");
@@ -35,6 +36,7 @@ describe("race moves", () => {
       a ??= dmg(createBattle([slow], [fast]));
       b ??= dmg(createBattle([slow], [fast], { B: [Math.floor(fast.maxHp / 3)] }));
     }
+    fixed.mockRestore();
     expect(b!).toBe(Math.round(a! * 1.5));
   });
 

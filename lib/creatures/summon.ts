@@ -5,7 +5,7 @@
 // %s and moves shown on the card); REAL_CREATURE_CHANCE of the time you get
 // the creature itself. Three cards of the same creature can be summoned:
 // - "choose": pick one of the three; the creature has exactly that card's
-//   %s and moves (no new roll);
+//   %s, moves and ability (no new roll);
 // - "random": a brand-new roll, for when you like none of them.
 // The three cards are used up either way.
 
@@ -33,6 +33,7 @@ export function makeCreatureDrop(
     desc: t.flavour,
     proficiency: roll.proficiency,
     moves: roll.moves,
+    ...(roll.ability ? { ability: roll.ability } : {}),
     createdAt: new Date().toISOString(),
   };
 }
@@ -57,5 +58,6 @@ export function summonFromCards(cards: CreatureOrItemDrop[], keepId: string | nu
   return makeCreatureDrop(t, "creature", keep.barcode, {
     proficiency: keep.proficiency ?? t.proficiency,
     moves: keep.moves ?? t.skills.map((s) => s.name),
+    ability: keep.ability,
   });
 }

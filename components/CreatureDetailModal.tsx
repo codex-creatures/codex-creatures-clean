@@ -18,6 +18,7 @@ import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState"
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
 import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
+import AbilityTag from "./AbilityTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 
 type Props = {
@@ -149,6 +150,7 @@ export default function CreatureDetailModal({
           </div>
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1 }}>{creature.name}</h2>
           {template?.flavour && <p style={{ margin: "6px 0 0", fontSize: 13, color: "#a9a59a", fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
+          <AbilityTag ability={creature.ability} />
         </div>
 
         {!template || !now ? (

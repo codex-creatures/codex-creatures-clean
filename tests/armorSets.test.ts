@@ -8,7 +8,7 @@ import { armorDrop } from "../lib/drops";
 import { computeSellGold } from "../lib/items/economy/sell";
 import { getStatCapForDrop } from "../lib/items/gameHelpers";
 import { buildFighter } from "../lib/combat/loadout";
-import { calcDamage, type Fighter } from "../lib/combat/engine";
+import { calcDamage, rollDamage, PRECISE_IGNORE, type Fighter } from "../lib/combat/engine";
 import { createBattle, resolveRound, type BattleEvent } from "../lib/combat/battle";
 import { CREATURE_BY_ID, MOVE_BY_NAME } from "../lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "../lib/types";
@@ -80,7 +80,7 @@ describe("set bonuses", () => {
   it("Hard Shell halves the first hit only", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.99); // no precise hits
     const { A, B, state, round } = duel("colossal_shellarmor", "Slash");
-    const full = calcDamage(MOVE_BY_NAME.Slash, A, B, false).damage;
+    const full = calcDamage(MOVE_BY_NAME.Slash, A, B, false, PRECISE_IGNORE, rollDamage(() => 0.99)).damage;
     round(); round();
     const hits = attacksOn(state.log, "A");
     expect(hits[0].damage).toBe(Math.ceil(full / 2));
