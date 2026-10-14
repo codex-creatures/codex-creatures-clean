@@ -42,6 +42,15 @@ export const CRIPPLE_ROUNDS = 3;
 // Re-dashing refreshes it; it doesn't stack.
 export const HASTE_ROUNDS = 2;
 
+// Race moves (numbers on the moves themselves, in creatureData.ts):
+// - Mirage: a chance to dodge each attack for a few rounds.
+// - Corpsify: lasts the rest of this round and the next; a knockout in that
+//   time brings the creature back with part of its HP instead.
+// - Venom: ticks at the end of every round, on the field or the bench.
+//   A new bite refreshes it; it doesn't stack.
+// - Pounce: acts before everyone else this round.
+export const CORPSIFY_ROUNDS = 2;
+
 // Armour gap: hammering the same creature with the same move finds the gaps
 // in its armour, so stalled fights (tank vs tank) eventually end.
 // - From the 6th use in a row, each use adds +10% precise-hit chance
@@ -80,10 +89,13 @@ export type BattleAction =
 // `rounds` counts down at the end of each round; at 0 the status ends.
 // loss: a cripple's agility loss (missing = CRIPPLE_AGILITY_LOSS).
 // gain: a haste's agility gain.
-export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number };
+// chance: a mirage's dodge chance. dmg: a venom's damage per round.
+// hp: corpsify's share of HP to come back with.
+export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number };
 
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
-export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean };
+// cooldowns: move name → rounds until it can be used again.
+export type Combatant = Fighter & { statuses: StatusEffect[]; streak?: Streak; hidden?: boolean; cooldowns?: Record<string, number> };
 
 export type BattleSide = {
   key: SideKey;
@@ -101,7 +113,12 @@ export type BattleEvent =
   | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
       streak: Streak; defenceIgnored: number; // defenceIgnored: share ignored by this hit (0 if not precise)
-      attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number }
+      attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number;
+      evaded?: boolean; venom?: StatusEffect; pounced?: boolean }
+  // Anything else that changes a creature: a self move, a venom tick, a
+  // corpse rising. hp and statuses are the creature's values afterwards.
+  | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
+      kind: "self" | "venom" | "revive"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -128,7 +145,7 @@ export const activeOf = (s: BattleSide) => s.team[s.active];
 export const fieldOf = (s: BattleSide): number[] => (s.partner != null ? [s.active, s.partner] : [s.active]);
 export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).length;
 
-// startHp: creatures that start hurt (e.g. HP carried between labyrinth
+// startHp: creatures that start hurt (e.g. HP carried between dungeon
 // rooms); missing = full health. Everyone starts with full energy.
 // bossB: side B is that boss, played by its script.
 export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}, bossB?: BossKind): BattleState {
@@ -173,7 +190,7 @@ export function turnAgility(f: Combatant, action: BattleAction): number {
 
 // ── What a side is allowed to do right now ─────────────────────────
 export function affordableSkills(f: Combatant): Skill[] {
-  return f.skills.filter((s) => s.energyCost <= f.energy);
+  return f.skills.filter((s) => s.energyCost <= f.energy && (f.cooldowns?.[s.name] ?? 0) <= 0);
 }
 
 // Bench creatures this side could swap to. (Future: fear blocks this.)
@@ -241,12 +258,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (s.boss) turns.push(...bossActions(state, k).map((t) => ({ key: k, ...t })));
     else if (actions[k].kind !== "swap") turns.push({ key: k, index: s.active, action: actions[k] });
   }
+  // Pounce goes before everyone; otherwise fastest first.
+  const pounces = (f: Combatant, a: BattleAction) =>
+    a.kind === "attack" && f.skills.find((s) => s.name === a.skillName)?.effect?.kind === "pounce" ? 1 : 0;
   const attackers = turns
     .map((t) => {
       const actor = state.sides[t.key].team[t.index];
-      return { ...t, actor, agil: turnAgility(actor, t.action) };
+      return { ...t, actor, agil: turnAgility(actor, t.action), first: pounces(actor, t.action) };
     })
-    .sort((x, y) => (y.agil - x.agil) || (Math.random() - 0.5));
+    .sort((x, y) => (y.first - x.first) || (y.agil - x.agil) || (Math.random() - 0.5));
 
   for (const { key, index: actorIdx, actor, action } of attackers) {
     if (actor.hp <= 0) continue; // fainted before acting
@@ -259,54 +279,104 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     if (action.kind !== "attack") continue;
-    // The chosen target, or whoever is still standing if it's gone.
-    const foe = state.sides[other(key)];
-    const standing = fieldOf(foe).filter((i) => foe.team[i].hp > 0);
-    const targetIdx = action.target !== undefined && standing.includes(action.target) ? action.target : standing[0];
-    if (targetIdx === undefined) continue;
-    const target = foe.team[targetIdx];
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
+    const fx = skill.effect;
+    actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
+    if (skill.cooldown) actor.cooldowns = { ...actor.cooldowns, [skill.name]: skill.cooldown + 1 }; // +1: ticks at the end of this round
+
+    // Utility moves used on yourself.
+    if (skill.self) {
+      actor.streak = undefined;
+      let text = `uses ${skill.name}`;
+      if (fx?.kind === "mirage") {
+        actor.statuses = [...actor.statuses.filter((s) => s.id !== "mirage"), { id: "mirage", rounds: fx.rounds + 1, chance: fx.evade }];
+        text += ` — ${Math.round(fx.evade * 100)}% to dodge each attack for ${fx.rounds} rounds`;
+      }
+      if (fx?.kind === "corpsify") {
+        actor.statuses = [...actor.statuses.filter((s) => s.id !== "corpsify"), { id: "corpsify", rounds: CORPSIFY_ROUNDS, hp: fx.reviveHp }];
+        text += ` — if it falls before the end of next round, it rises again`;
+      }
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
+      continue;
+    }
+
+    // The chosen target, or whoever is still standing if it's gone. A
+    // barrage hits everyone on the field.
+    const foeKey = other(key);
+    const foe = state.sides[foeKey];
+    const standing = fieldOf(foe).filter((i) => foe.team[i].hp > 0);
+    const chosen = action.target !== undefined && standing.includes(action.target) ? action.target : standing[0];
+    if (chosen === undefined) continue;
+    const targets = fx?.kind === "barrage" ? standing : [chosen];
 
     // Same move on the same creature again? Then the run continues.
     const prev = actor.streak;
-    const streak: Streak = prev && prev.move === skill.name && prev.targetIdx === targetIdx
+    const streak: Streak = prev && prev.move === skill.name && prev.targetIdx === chosen
       ? { ...prev, hits: prev.hits + 1 }
-      : { move: skill.name, targetIdx, hits: 1, cracks: 0 };
+      : { move: skill.name, targetIdx: chosen, hits: 1, cracks: 0 };
     actor.streak = streak;
     const gapFx = streakEffects(streak);
 
-    // Precise moves can miss, but every hit is precise; other moves have
-    // the normal (or armour-gap boosted) chance of a precise hit.
-    const fx = skill.effect;
-    const missed = fx?.kind === "precise" && Math.random() >= fx.hitChance;
-    const precise = !missed && (fx?.kind === "precise" || Math.random() < gapFx.preciseChance);
-    const damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore).damage;
-    if (precise && gapFx.gap) streak.cracks++;
-    if (!missed) {
-      state.hits++;
-      if (damage <= 1) state.minDamageHits++;
-    }
-    actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
-    target.hp = Math.max(bossMinHp(state, other(key), targetIdx), target.hp - damage);
-
-    // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
     // Haste lasts this round and the next HASTE_ROUNDS (+1: it ticks at the end of this one).
     const hasted = fx?.kind === "dash" ? fx.agilityBonus : undefined;
     if (hasted) actor.statuses = [...actor.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: HASTE_ROUNDS + 1, gain: hasted }];
-    const crippled = fx?.kind === "cripple" && target.hp > 0 && Math.random() < fx.chance;
-    const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
-    if (crippled) {
-      target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1, loss: crippleLoss }];
+
+    for (const targetIdx of targets) {
+      const target = foe.team[targetIdx];
+      // Precise moves can miss, but every hit is precise; other moves have
+      // the normal (or armour-gap boosted) chance of a precise hit. A
+      // mirage can make any attack miss.
+      const mirage = target.statuses.find((s) => s.id === "mirage");
+      const evaded = !!mirage && Math.random() < (mirage.chance ?? 0);
+      const missed = evaded || (fx?.kind === "precise" && Math.random() >= fx.hitChance);
+      const precise = !missed && (fx?.kind === "precise" || Math.random() < gapFx.preciseChance);
+      const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
+      let damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore).damage;
+      if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
+      if (precise && gapFx.gap && targetIdx === chosen) streak.cracks++;
+      if (!missed) {
+        state.hits++;
+        if (damage <= 1) state.minDamageHits++;
+      }
+      target.hp = Math.max(bossMinHp(state, foeKey, targetIdx), target.hp - damage);
+
+      // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
+      const crippled = fx?.kind === "cripple" && !missed && target.hp > 0 && Math.random() < fx.chance;
+      const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
+      if (crippled) {
+        target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1, loss: crippleLoss }];
+      }
+      // Venom ticks at the end of this round and the next few (3–5 ticks in all).
+      let venom: StatusEffect | undefined;
+      if (fx?.kind === "venom" && !missed && target.hp > 0) {
+        const rounds = fx.minRounds + Math.floor(Math.random() * (fx.maxRounds - fx.minRounds + 1));
+        venom = { id: "venom", rounds, dmg: Math.max(1, Math.round(target.maxHp * fx.tick)) };
+        target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), venom];
+      }
+      state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
+        streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted,
+        evaded: evaded || undefined, venom, pounced: pounced || undefined });
+      if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
     }
-    state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
-      streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted });
-    if (target.hp <= 0) state.log.push({ type: "faint", side: other(key), name: target.name });
   }
 
-  // 3. End of round: status effects tick down.
+  // 3. End of round: venom bites (field and bench), then status effects
+  //    and cooldowns tick down.
+  for (const k of ["A", "B"] as SideKey[]) {
+    state.sides[k].team.forEach((f, i) => {
+      const venom = f.statuses.find((s) => s.id === "venom");
+      if (!venom || f.hp <= 0 || f.hidden) return;
+      const damage = Math.min(f.hp - bossMinHp(state, k, i), venom.dmg ?? 0);
+      if (damage <= 0) return;
+      f.hp -= damage;
+      state.log.push({ type: "effect", side: k, index: i, name: f.name, text: `takes ${damage} venom damage`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "venom", damage });
+      if (f.hp <= 0) knockedOut(state, k, i);
+    });
+  }
   for (const k of ["A", "B"] as SideKey[]) {
     for (const f of state.sides[k].team) {
       f.statuses = f.statuses.map((st) => ({ ...st, rounds: st.rounds - 1 })).filter((st) => st.rounds > 0);
+      if (f.cooldowns) f.cooldowns = Object.fromEntries(Object.entries(f.cooldowns).map(([m, r]) => [m, r - 1]).filter(([, r]) => (r as number) > 0));
     }
   }
 
@@ -328,6 +398,19 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     state.needsReplacement = (["A", "B"] as SideKey[]).filter((k) => !state.sides[k].boss && activeOf(state.sides[k]).hp <= 0);
   }
   return state;
+}
+
+// A creature has just hit 0 HP: it faints, unless Corpsify brings it back.
+function knockedOut(state: BattleState, key: SideKey, index: number) {
+  const f = state.sides[key].team[index];
+  const corpse = f.statuses.find((s) => s.id === "corpsify");
+  if (!corpse) {
+    state.log.push({ type: "faint", side: key, name: f.name });
+    return;
+  }
+  f.hp = Math.max(1, Math.round(f.maxHp * (corpse.hp ?? 0.5)));
+  f.statuses = f.statuses.filter((s) => s !== corpse);
+  state.log.push({ type: "effect", side: key, index, name: f.name, text: `rises again with ${f.hp} HP!`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "revive" });
 }
 
 // A new creature steps in (swap or replacement). Armour-gap runs end on
@@ -363,7 +446,7 @@ function checkWinner(state: BattleState) {
 export function cloneBattle(state: BattleState): BattleState {
   const side = (s: BattleSide): BattleSide => ({
     ...s,
-    team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })), streak: f.streak && { ...f.streak } })),
+    team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })), streak: f.streak && { ...f.streak }, cooldowns: f.cooldowns && { ...f.cooldowns } })),
     boss: s.boss && { ...s.boss },
   });
   return {

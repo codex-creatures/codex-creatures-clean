@@ -1,17 +1,18 @@
-// lib/labyrinth/run.ts
-// Labyrinth runs (labyrinth 1). The rules, kept separate from the screen:
+// lib/dungeon/run.ts
+// Dungeon runs (dungeon 1). The rules, kept separate from the screen:
 //
 // - Entering costs ENTRY_FEE gold; your very first run is free, and its first
 //   room is a treasure with FIRST_TREASURE_GOLD in it.
 // - You take a party of up to PARTY_SIZE creatures (at least 1): the first
-//   TEAM_SIZE fight, the rest wait in reserve. Team and reserves can only be changed between rooms.
+//   TEAM_SIZE fight, the rest wait in reserve. You can change them any time
+//   you're not mid-fight.
 // - HP carries over from room to room (energy is full at each fight).
-// - There are LAB_ROOMS rooms; the last is the boss. Every room has 2 doors,
-//   hidden from the player. Rooms can come up again, but between fights:
+// - Every path is DUNGEON_ROOMS rooms long; the last is the boss. You pick
+//   your route on a map (lib/dungeon/map.ts) that shows a few rooms ahead.
+//   Rooms can come up again, but on every path, between fights:
 //   - a quiet room (no fight) is never the same kind as the one before it;
 //   - at most MAX_QUIET_ROOMS quiet rooms in a row, except that a wandering
-//     librarian or merchant can still turn up as one more;
-//   so a room's doors are rolled when you reach it, then stay fixed.
+//     librarian or merchant can still turn up as one more.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
@@ -20,15 +21,16 @@ import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META } from "../items/armor";
-import { CREATURES_BY_RARITY, CREATURE_BY_ID, type CreatureProficiency } from "../creatures/creatureData";
+import { CREATURES_BY_RARITY, CREATURE_BY_ID, RACE_MOVES, type CreatureProficiency } from "../creatures/creatureData";
 import { rollCreature } from "../creatures/creatureRoll";
 import { buildFighter } from "../combat/loadout";
 import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
+import { rollMap, passagesFrom, type DungeonMap } from "./map";
 
-export const LAB_ROOMS = 8;
+export const DUNGEON_ROOMS = 9;
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
 export const ENTRY_FEE = 50;
@@ -36,7 +38,7 @@ export const FIRST_TREASURE_GOLD = 50;
 
 export type RoomKind = "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "boss";
 
-// How often each room appears behind a door (rooms 1–7), in %.
+// How often each kind of room appears on the map (every row but the boss's), in %.
 export const ROOM_MIX: [RoomKind, number][] = [
   ["easy", 40], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["librarian", 5], ["merchant", 5],
 ];
@@ -60,6 +62,9 @@ export const BOSS_GOLD: [number, number] = [80, 120];
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
 export const CHEST_DROPS = 3;
+export const CHEST_CODEX_CHANCE = 0.1; // a chest holds a codex (instead of one of its drops)
+export const CODEX_PRICE = 500;       // wandering librarians sell codexes
+export const LIBRARIAN_OFFERS = 3;
 export const MAX_QUIET_ROOMS = 2;     // quiet rooms in a row before only fights (or a wanderer) can follow
 export const WANDERERS: RoomKind[] = ["librarian", "merchant"];
 
@@ -118,6 +123,8 @@ export type Room = {
   gold?: number;    // gold for winning (fights) or finding (treasure)
   fighters?: string[]; // your creatures in the fight, in battle order
   boss?: BossKind;     // the boss in this room (instead of enemies)
+  offers?: string[];   // a librarian: the codexes (race moves) for sale
+  bought?: string[];   // …and the ones you bought
   done: boolean;
 };
 
@@ -133,23 +140,6 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = []): 
     r -= pct;
   }
   return mix[0][0];
-}
-
-// The 2 doors into a room (room is 1-based). The last room's both lead to
-// the boss. The rules between fights are at the top of this file; the two
-// doors never hide the same special room.
-export function rollDoorPair(room: number, visited: RoomKind[], rng: Rng = Math.random): RoomKind[] {
-  if (room === LAB_ROOMS) return ["boss", "boss"];
-  let quiet = 0;
-  for (let i = visited.length - 1; i >= 0 && !isFight(visited[i]); i--) quiet++;
-  const specials = ROOM_MIX.map(([k]) => k).filter(isSpecial);
-  const last = visited[visited.length - 1];
-  const exclude = quiet > MAX_QUIET_ROOMS ? specials                                   // only fights now
-    : quiet === MAX_QUIET_ROOMS ? specials.filter((k) => !WANDERERS.includes(k) || k === last) // fights or a wanderer
-    : last && isSpecial(last) ? [last]                                                // not the same as last time
-    : [];
-  const first = rollRoomKind(rng, exclude);
-  return [first, rollRoomKind(rng, isSpecial(first) ? [...exclude, first] : exclude)];
 }
 
 // What's inside a room, rolled as you walk in.
@@ -171,8 +161,17 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
       return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
     }
     case "boss":
-      // Labyrinth 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
+      // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       return { kind, boss: "cyclops", gold: randInt(...BOSS_GOLD, rng), done: false };
+    case "librarian": {
+      // A few different codexes, each for a different race.
+      const offers: string[] = [];
+      while (offers.length < Math.min(LIBRARIAN_OFFERS, RACE_MOVES.length)) {
+        const m = pick(RACE_MOVES, rng).name;
+        if (!offers.includes(m)) offers.push(m);
+      }
+      return { kind, offers, bought: [], done: false };
+    }
     default:
       return { kind, done: false };
   }
@@ -181,7 +180,7 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
 // ── A run ────────────────────────────────────────────────────────────
 export type RunStatus = "exploring" | "dead" | "cleared" | "retreated";
 
-export type LabRun = {
+export type DungeonRun = {
   id: string;
   runNumber: number;           // 1 = your first ever run
   startedAt: string;
@@ -189,91 +188,99 @@ export type LabRun = {
   team: string[];              // the ones that fight (up to TEAM_SIZE)
   hp: Record<string, number>;  // share of max HP left, 0–1 (0 = knocked out)
   room: number;                // the room you're in, or about to choose (1-based)
-  doors: RoomKind[][];         // doors[room - 1]: the doors into each room reached so far
-  visited?: RoomKind[];        // every room walked into this run
-  current: Room | null;        // null = standing in front of the doors
+  map: DungeonMap;
+  path: string[];              // the map rooms walked into, in order
+  current: Room | null;        // null = choosing a passageway
   battle?: unknown;            // the fight in progress (saved by the screen)
   loot: string[];              // what you've found, for the summary
   status: RunStatus;
 };
 
-export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random): LabRun {
-  // The very first run opens in a treasure room; otherwise at room 1's doors.
+export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random): DungeonRun {
+  // The very first run opens in a treasure room; otherwise at the archway.
   const first = runNumber === 1;
+  const map = rollMap(first, rng);
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
-    room: 1,
-    doors: first ? [["treasure", "treasure"]] : [rollDoorPair(1, [], rng)],
-    visited: first ? ["treasure"] : [],
+    room: 1, map,
+    path: first ? [map.entrance[0]] : [],
     current: first ? makeRoom("treasure", rng) : null,
     loot: [], status: "exploring",
   };
 }
 
-export const isAlive = (run: LabRun, id: string) => (run.hp[id] ?? 0) > 0;
+export const isAlive = (run: DungeonRun, id: string) => (run.hp[id] ?? 0) > 0;
 
-// Walk through one of the two doors into the current room.
-export function enterDoor(run: LabRun, door: 0 | 1, rng: Rng = Math.random): LabRun {
-  if (run.status !== "exploring" || run.current) return run;
-  const kind = run.doors[run.room - 1][door];
-  return { ...run, visited: [...(run.visited ?? []), kind], current: makeRoom(kind, rng) };
+// Where you stand on the map: the last room walked into (null = the archway).
+export const runPosition = (run: DungeonRun): string | null => run.path[run.path.length - 1] ?? null;
+
+// The rooms you can walk into next (none while you're still in a room).
+export const nextRooms = (run: DungeonRun) => (run.current ? [] : passagesFrom(run.map, runPosition(run)));
+
+// Walk down a passageway into one of the next rooms.
+export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.random): DungeonRun {
+  if (run.status !== "exploring") return run;
+  const node = nextRooms(run).find((n) => n.id === nodeId);
+  if (!node) return run;
+  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng) };
 }
 
-// The current room is finished: on to the doors of the next one (or the end).
-export function leaveRoom(run: LabRun, rng: Rng = Math.random): LabRun {
+// The current room is finished: on to choosing the next one (or the end).
+export function leaveRoom(run: DungeonRun): DungeonRun {
   if (!run.current) return run;
   if (run.current.kind === "boss") return { ...run, current: { ...run.current, done: true }, status: "cleared", battle: undefined };
-  const room = run.room + 1;
-  const doors = [...run.doors];
-  doors[room - 1] ??= rollDoorPair(room, run.visited ?? [], rng);
-  return { ...run, current: null, battle: undefined, room, doors };
+  return { ...run, current: null, battle: undefined, room: run.room + 1 };
 }
 
 // Any time you're not mid-fight (between rooms, or after seeing who's in a
 // room but before you start the fight). Only creatures still standing can
 // fight. Order matters: the first one leads.
-export function setTeam(run: LabRun, team: string[]): LabRun {
+export function setTeam(run: DungeonRun, team: string[]): DungeonRun {
   if (run.battle || run.status !== "exploring") return run;
   const valid = team.filter((id) => run.party.includes(id) && isAlive(run, id)).slice(0, TEAM_SIZE);
   return { ...run, team: valid };
 }
 
 // The fighting team, minus anyone knocked out.
-export const fightingTeam = (run: LabRun) => run.team.filter((id) => isAlive(run, id));
+export const fightingTeam = (run: DungeonRun) => run.team.filter((id) => isAlive(run, id));
 
 // ── Saved progress (separate from the main save) ─────────────────────
-export type LabMeta = {
+export type DungeonMeta = {
   runs: number;                      // runs started
   clears: number;
   firstClearRun?: number;            // the run you first beat the boss on (for the trophy)
   injuries: Record<string, number>;  // creature id → share of HP left after a run (missing = full)
 };
 
-export type LabSave = { meta: LabMeta; run: LabRun | null };
+export type DungeonSave = { meta: DungeonMeta; run: DungeonRun | null };
 
+// Kept from when dungeons were called labyrinths, so old progress still loads.
 const STORAGE_KEY = "codex_creatures_labyrinth_v1";
-const EMPTY: LabSave = { meta: { runs: 0, clears: 0, injuries: {} }, run: null };
+const EMPTY: DungeonSave = { meta: { runs: 0, clears: 0, injuries: {} }, run: null };
 
-export function loadLab(): LabSave {
+export function loadDungeon(): DungeonSave {
   if (typeof window === "undefined") return EMPTY;
   try {
     const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
     if (!parsed || typeof parsed !== "object") return EMPTY;
-    return { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
+    const save: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
+    // A run from before the map (hidden doors) can't carry on: the party comes home.
+    if (save.run && !save.run.map) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
+    return save;
   } catch {
     return EMPTY;
   }
 }
 
-export function saveLab(save: LabSave) {
+export function saveDungeon(save: DungeonSave) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
   } catch {}
 }
 
 // The run is over (any way): bring the hurt creatures home.
-export function endRun(save: LabSave): LabSave {
+export function endRun(save: DungeonSave): DungeonSave {
   const run = save.run;
   if (!run) return save;
   const injuries = { ...save.meta.injuries };
@@ -292,8 +299,8 @@ export function endRun(save: LabSave): LabSave {
   };
 }
 
-// "Reset Player": labyrinth progress goes too (runs, clears, injuries, any run in progress).
-export function clearLab() {
+// "Reset Player": dungeon progress goes too (runs, clears, injuries, any run in progress).
+export function clearDungeon() {
   try {
     window.localStorage.removeItem(STORAGE_KEY);
   } catch {}

@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
-import DungeonFrame from "@/components/DungeonFrame";
+import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import RecentBattles from "@/components/RecentBattles";
 
@@ -11,7 +11,7 @@ export default function PitPage() {
   const game = useGameState("roster");
 
   return (
-    <DungeonFrame title="Fight Pit" icon="⚔️" gold={game.gold}>
+    <DenFrame title="Fight Pit" icon="⚔️" gold={game.gold}>
       <div className="stone-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Ready to fight?</div>
@@ -36,6 +36,7 @@ export default function PitPage() {
         lockedIds={game.lockedIds}
         onEquip={game.equipItem}
         onSetMoves={game.setMoves}
+        onLearnCodex={game.learnCodex}
         onSummon={game.summon}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}
@@ -53,6 +54,6 @@ export default function PitPage() {
       />
 
       <RecentBattles />
-    </DungeonFrame>
+    </DenFrame>
   );
 }

@@ -1,10 +1,10 @@
 // lib/combat/bossAi.ts
-// Labyrinth bosses: how they fight and how they change between phases.
+// Dungeon bosses: how they fight and how they change between phases.
 // A boss side is played by this script, never by the normal AI, and it
 // never swaps. The battle engine (battle.ts) asks it for the boss's actions
 // each round and lets it change the line-up at the end of each round.
 //
-// The Cyclops (labyrinth 1) — team order: body, hand, hand, eye.
+// The Cyclops (dungeon 1) — team order: body, hand, hand, eye.
 // 1. The body: a big melee tank. Stomp can cripple you hard (swap out!).
 // 2. At half health the body falls apart into two Crawling Hands: very fast,
 //    strong melee, both on the field at once (a melee tank's moment).

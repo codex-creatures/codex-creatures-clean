@@ -24,7 +24,7 @@ export type BattleRecord = {
   date: string;          // ISO
   winner: SideKey | "draw";
   rounds: number;
-  title?: string;        // where it was fought, e.g. "Labyrinth · room 3"
+  title?: string;        // where it was fought, e.g. "Dungeon · room 3"
   teams: Record<SideKey, BattleMember[]>; // A = you, B = the AI
   log: BattleEvent[];
 };

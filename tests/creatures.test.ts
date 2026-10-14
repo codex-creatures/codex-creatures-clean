@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS } from "../lib/creatures/creatureData";
+import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, RETIRED_CREATURES } from "../lib/creatures/creatureData";
 import { rollProficiency, rollMoves, ROLL_SPREAD } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
@@ -80,5 +80,26 @@ describe("Klutz", () => {
     expect(CREATURE_TEMPLATES).not.toContain(KLUTZ);
     expect(CREATURES_BY_RARITY.rare).not.toContain(KLUTZ);
     for (let i = 0; i < 2000; i++) expect(pickCreatureId("rare")).not.toBe("klutz");
+  });
+});
+
+describe("races", () => {
+  it("every race has exactly one creature of each rarity", () => {
+    expect(CREATURE_TEMPLATES).toHaveLength(RACES.length * 5);
+    for (const race of RACES) {
+      const mine = CREATURE_TEMPLATES.filter((c) => c.race === race).map((c) => c.rarity).sort();
+      expect(mine).toEqual(["common", "epic", "legendary", "rare", "uncommon"]);
+    }
+  });
+
+  it("retired creatures still load from old saves but never come from scans", () => {
+    for (const c of RETIRED_CREATURES) {
+      expect(CREATURE_BY_ID[c.id]).toBe(c);
+      expect(CREATURE_TEMPLATES).not.toContain(c);
+    }
+    const scannable = new Set(CREATURE_TEMPLATES.map((c) => c.id));
+    for (const r of ["common", "uncommon", "rare", "epic", "legendary"] as const) {
+      for (let i = 0; i < 500; i++) expect(scannable.has(pickCreatureId(r))).toBe(true);
+    }
   });
 });

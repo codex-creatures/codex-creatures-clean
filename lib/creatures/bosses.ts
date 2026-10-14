@@ -1,5 +1,5 @@
 // lib/creatures/bosses.ts
-// Labyrinth bosses as teams of fighters. Their numbers live here as the
+// Dungeon bosses as teams of fighters. Their numbers live here as the
 // boss's natural "gear" (their proficiencies are 0, so these are exact).
 // How they behave and change phase: lib/combat/bossAi.ts.
 

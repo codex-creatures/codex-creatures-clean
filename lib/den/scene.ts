@@ -1,5 +1,5 @@
-// lib/dungeon/scene.ts
-// The dungeon home screen, drawn as pixel art in code: an isometric "cube"
+// lib/den/scene.ts
+// The Den (home screen), drawn as pixel art in code: an isometric "cube"
 // room (two stone walls + flagstone floor on a floating block) with
 // clickable objects. Everything is rendered at a low resolution into a pixel
 // buffer and scaled up sharp by the browser.
@@ -151,12 +151,12 @@ const TORCHES: { u: number; v: number; z: number }[] = [
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => b / 16);
 
-export type DungeonScene = {
+export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
   idAt: (x: number, y: number) => ObjId;
 };
 
-export function createDungeon(): DungeonScene {
+export function createDen(): DenScene {
   const n = W * H;
   const albedo = new Float32Array(n * 3);
   const pos = new Float32Array(n * 3).fill(NaN);

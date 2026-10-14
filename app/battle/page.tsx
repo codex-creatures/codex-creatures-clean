@@ -17,7 +17,7 @@ import type { Fighter } from "@/lib/combat/engine";
 import { AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { rollGear, RARITIES } from "@/lib/balance/simulate";
 import { YOU } from "@/components/BattleLog";
-import DungeonFrame from "@/components/DungeonFrame";
+import DenFrame from "@/components/DenFrame";
 import {
   BattleView, Chips, SectionTitle, StatsLine, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
   type MemberInfo, type OwnedCreature, type Match,
@@ -92,7 +92,7 @@ export default function BattlePage() {
   }
 
   return (
-    <DungeonFrame title="Fight Pit" icon="⚔️" back="/pit" backLabel="Pit">
+    <DenFrame title="Fight Pit" icon="⚔️" back="/pit" backLabel="Pit">
       {owned === null ? (
         <p style={{ color: MUTED }}>Loading…</p>
       ) : !battle.match ? (
@@ -112,7 +112,7 @@ export default function BattlePage() {
           </>}
         />
       )}
-    </DungeonFrame>
+    </DenFrame>
   );
 }
 

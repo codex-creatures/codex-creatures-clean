@@ -2,7 +2,7 @@
 // app/chest/page.tsx — your items: weapons, armour, materials, consumables.
 
 import { useGameState } from "@/hooks/useGameState";
-import DungeonFrame from "@/components/DungeonFrame";
+import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import SellConfirmModal from "@/components/SellConfirmModal";
 
@@ -10,7 +10,7 @@ export default function ChestPage() {
   const game = useGameState("weapons");
 
   return (
-    <DungeonFrame title="Chest" icon="🧰" gold={game.gold}>
+    <DenFrame title="Chest" icon="🧰" gold={game.gold}>
       {game.showSellConfirm && (
         <SellConfirmModal
           items={game.selectedItemsForModal}
@@ -43,6 +43,6 @@ export default function ChestPage() {
         onOpenSellConfirm={() => game.setShowSellConfirm(true)}
         onToggleSellMode={game.toggleSellMode}
       />
-    </DungeonFrame>
+    </DenFrame>
   );
 }

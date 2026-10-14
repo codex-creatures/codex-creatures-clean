@@ -1,11 +1,11 @@
 "use client";
-// app/page.tsx — home: the dungeon you live in. Click objects to open each
+// app/page.tsx — home: the Den, where you live. Click objects to open each
 // part of the game.
 
 import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
 import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
-import DungeonRoom, { SPOTS } from "@/components/DungeonRoom";
+import DenRoom, { SPOTS } from "@/components/DenRoom";
 
 export default function Home() {
   const game = useGameState();
@@ -21,7 +21,7 @@ export default function Home() {
         </div>
       </div>
 
-      <DungeonRoom />
+      <DenRoom />
 
       {/* Plain links too — quicker on small screens and for keyboard users. */}
       <nav style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>

@@ -7,7 +7,7 @@ import { useDropGeneration } from "@/hooks/useDropGeneration";
 import { TOTAL_CREATURES, TOTAL_ITEMS, RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isRewardDrop, isItemDrop } from "@/lib/types";
 import Link from "next/link";
-import DungeonFrame from "@/components/DungeonFrame";
+import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import { RECENT_SCANS } from "@/hooks/useGameState";
 
@@ -77,12 +77,22 @@ export default function AltarPage() {
   const lastDrop = game.lastDrop;
 
   return (
-    <DungeonFrame title="Scanning Altar" icon="🔮" gold={game.gold}>
+    <DenFrame title="Scanning Altar" icon="🔮" gold={game.gold}>
 
       <div style={{ marginBottom: 20, maxWidth: 520 }}>
         <ProgressBar label="Creatures discovered" current={game.discoveredCreatures} total={TOTAL_CREATURES} pct={creaturePct} color="rgba(78,161,255,0.9)" />
         <ProgressBar label="Items discovered" current={game.discoveredItems} total={TOTAL_ITEMS} pct={itemPct} color="rgba(255,204,77,0.9)" />
         <div className="pixel-font" style={{ fontSize: 14, color: "#c9b48a", marginTop: 4 }}>📊 Total scans: <b style={{ color: "#f1d9a0" }}>{game.totalScans.toLocaleString()}</b></div>
+      </div>
+
+      {/* Straight to what you've found, without going back through the Den. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20, maxWidth: 520 }}>
+        <Link href="/pit" className="card-btn" style={{ justifyContent: "center" }}>
+          <span className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>🐾 Creatures</span>
+        </Link>
+        <Link href="/chest" className="card-btn" style={{ justifyContent: "center" }}>
+          <span className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>🧰 Items</span>
+        </Link>
       </div>
 
       <input
@@ -177,11 +187,11 @@ export default function AltarPage() {
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>
-        <button onClick={game.resetAll} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>Reset Player</button>
+        <button onClick={game.resetAll} title="Wipe your progress (inventory, gold, dungeon) but keep registered barcodes — test as a new player" style={dangerBtn}>Reset Player</button>
         <button onClick={game.globalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>Global Reset</button>
       </div>
 
-    </DungeonFrame>
+    </DenFrame>
   );
 }
 

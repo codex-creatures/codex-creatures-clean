@@ -120,8 +120,11 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
 // - Cripple: worth an extra hit when it would make me faster than them.
 // - Dash: worth part of their next hit when it makes me faster (all of it if I then knock them out).
 export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined {
-  const affordable = affordableSkills(me);
-  if (affordable.length === 0) return undefined;
+  // Utility moves (Mirage, Corpsify) are left to the thinking AI's lookahead.
+  const usable = affordableSkills(me);
+  if (usable.length === 0) return undefined;
+  const attacks = usable.filter((s) => !s.self);
+  const affordable = attacks.length > 0 ? attacks : usable;
   const style = combatStyle(me);
   const own = style === "hybrid" || AUTO_BATTLE.policy === "maxDamage" ? affordable : affordable.filter((s) => s.type === style);
   const pool = own.length > 0 ? own : affordable;

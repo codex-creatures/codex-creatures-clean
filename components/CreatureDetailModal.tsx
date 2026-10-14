@@ -9,12 +9,13 @@ import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, raceMovesFor, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import type { EquipSlot, Loadout } from "@/hooks/useGameState";
 import MoveSlots from "./MoveSlots";
+import RaceTag from "./RaceTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 
 type Props = {
@@ -28,6 +29,8 @@ type Props = {
   creatureNameById: Map<string, string>; // creature drop id → name
   onEquip: (slot: EquipSlot, itemId: string | null) => void;
   onSetMoves?: (moves: string[]) => void;
+  codexes?: CreatureOrItemDrop[];          // every codex you own
+  onLearnCodex?: (codexId: string) => void;
   onClose: () => void;
 };
 
@@ -53,7 +56,7 @@ const rarityColor = (r: Rarity) => RARITY_COLORS[r]?.text ?? "white";
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, onClose,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, onClose,
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
@@ -109,6 +112,7 @@ export default function CreatureDetailModal({
         <div style={{ paddingRight: 28, marginBottom: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
+            <RaceTag race={template?.race} />
             {template && prof && <TypeTags roles={creatureRoles(prof)} />}
           </div>
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1 }}>{creature.name}</h2>
@@ -133,7 +137,7 @@ export default function CreatureDetailModal({
                   Choose {picking === "weapon" ? "a weapon" : "armour"} — tap one to preview it
                 </div>
                 {options.length === 0 ? (
-                  <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own any {picking === "weapon" ? "weapons" : "armour"} yet. Scan barcodes or explore the labyrinth to find some.</p>
+                  <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own any {picking === "weapon" ? "weapons" : "armour"} yet. Scan barcodes or explore the dungeon to find some.</p>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(62px, 1fr))", gap: 6 }}>
                     {current && (
@@ -205,7 +209,8 @@ export default function CreatureDetailModal({
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
               Moves {onSetMoves && <span style={{ fontSize: 12, color: MUTED }}>· tap a slot to change it</span>}
             </div>
-            <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} onChange={onSetMoves} />
+            <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} learned={creature.learned} onChange={onSetMoves} />
+            <CodexShelf template={template} learned={creature.learned ?? []} codexes={codexes} onLearn={onLearnCodex} />
           </>
         )}
 
@@ -334,5 +339,36 @@ export function TypeTags({ roles }: { roles: string[] }) {
         <span key={r} title={ROLE_HINT[r]} style={{ fontSize: 11, padding: "1px 7px", border: "2px solid #2f3340", background: "#1b1d25", color: "rgba(255,255,255,0.75)" }}>{r}</span>
       ))}
     </>
+  );
+}
+
+// Codexes this creature could read: its race's move, if you own a codex
+// for it and it hasn't learned it yet. Reading uses the codex up.
+function CodexShelf({ template, learned, codexes, onLearn }: {
+  template: CreatureTemplate; learned: string[]; codexes: CreatureOrItemDrop[]; onLearn?: (codexId: string) => void;
+}) {
+  const raceMoves = raceMovesFor(template);
+  if (raceMoves.length === 0) return null;
+  const readable = codexes.filter((c) => raceMoves.some((m) => m.name === c.codexMove) && !learned.includes(c.codexMove!));
+  const known = raceMoves.filter((m) => learned.includes(m.name));
+  return (
+    <div style={{ marginTop: 10 }}>
+      {known.length > 0 && (
+        <div style={{ fontSize: 12, color: "#9fd3a8" }}>📖 Learned from a codex: {known.map((m) => m.name).join(", ")} — pick it in a move slot above.</div>
+      )}
+      {readable.slice(0, 1).map((c) => (
+        <button key={c.id} className="card-btn" disabled={!onLearn} onClick={() => onLearn?.(c.id)} style={{ marginTop: 6, borderColor: "#a99cff" }}>
+          <span>
+            <b style={{ color: "#c7b8ff" }}>📖 Read {c.name}</b>
+            <span style={{ display: "block", fontSize: 12, color: MUTED }}>Learns {c.codexMove} for good. The codex crumbles to dust.</span>
+          </span>
+        </button>
+      ))}
+      {known.length === 0 && readable.length === 0 && (
+        <div style={{ fontSize: 12, color: MUTED }}>
+          📖 {raceMoves.map((m) => m.name).join(", ")}: this creature&apos;s race move — learned from a codex (wandering librarians sell them; dungeon chests sometimes hold one).
+        </div>
+      )}
+    </div>
   );
 }

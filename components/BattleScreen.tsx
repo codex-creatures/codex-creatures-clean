@@ -2,7 +2,7 @@
 // components/BattleScreen.tsx
 // Playing a battle by hand against the AI: the arena, move buttons, swaps,
 // the step-by-step replay of each round, and the battle log. Used by the
-// Fight Pit (app/battle) and the labyrinth (app/labyrinth).
+// Fight Pit (app/battle) and the dungeon (app/dungeon).
 
 import { useEffect, useRef, useState } from "react";
 import { loadSave } from "@/hooks/useGameState";
@@ -41,15 +41,16 @@ export type Match = {
   info: Record<SideKey, MemberInfo[]>;
   teams: Record<SideKey, Fighter[]>;  // for rematches and the history
   level: AiLevel;                     // how well the opponent plays
-  title?: string;                     // e.g. "Labyrinth room 3", shown in the history
+  title?: string;                     // e.g. "Dungeon room 3", shown in the history
 };
 
 // The animation currently playing. Indexes say which creature (team index)
 // when a side has two on the field.
 type Fx =
   | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean; gap: boolean;
-      attackerIndex?: number; targetIndex?: number }
+      attackerIndex?: number; targetIndex?: number; evaded?: boolean }
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey }
+  | { id: number; kind: "effect"; side: SideKey; index: number; text: string; color: string }
   | { id: number; kind: "lineup"; side: SideKey; text?: string };
 
 export function rarityColor(r?: Rarity) {
@@ -107,6 +108,13 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       target.hp = e.targetHpAfter;
       if (e.hasted) attacker.statuses = [...attacker.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: HASTE_ROUNDS, gain: e.hasted }];
       if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS, loss: e.crippleLoss }];
+      if (e.venom) target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), { ...e.venom }];
+      break;
+    }
+    case "effect": {
+      const f = view.sides[e.side].team[e.index];
+      f.hp = e.hp;
+      f.statuses = e.statuses.map((s) => ({ ...s }));
       break;
     }
     case "lineup": {
@@ -154,7 +162,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
   }
 
   // startHp: your creatures' HP if they start hurt.
-  // boss: the opponent is that labyrinth boss (played by its script).
+  // boss: the opponent is that dungeon boss (played by its script).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel, opts: { startHp?: number[]; title?: string; boss?: BossKind } = {}) {
     setView(null);
     setFx(null);
@@ -194,8 +202,11 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       setView(shown);
       setFx(e.type === "attack"
         ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled, gap: e.defenceIgnored > 0.25,
-            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex }
+            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
+        : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
+            text: e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
       if (!alive.current) return;
@@ -311,7 +322,7 @@ export function BattleView({ battle, finishedActions }: {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 6 }}>
             {me.skills.map((sk) => (
               <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
-                disabled={playing || sk.energyCost > me.energy} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
+                disabled={playing || !affordableSkills(me).includes(sk)} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
             ))}
           </div>
           {affordableSkills(me).length === 0 && (
@@ -367,10 +378,17 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
     const flips = theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil;
     tags.push(`haste +${Math.round(fx.agilityBonus * 100)}% agility for ${HASTE_ROUNDS + 1} rounds${flips ? " → strike first!" : ""}`);
   }
+  if (fx?.kind === "pounce") tags.push(`strikes first${them.hp < them.maxHp / 2 ? ` · +${Math.round(fx.lowHpBonus * 100)}% vs wounded!` : ""}`);
+  if (fx?.kind === "venom") tags.push(`venom: −${Math.round(fx.tick * 100)}% HP a round for ${fx.minRounds}–${fx.maxRounds} rounds`);
+  if (fx?.kind === "mirage") tags.push(`${Math.round(fx.evade * 100)}% dodge for ${fx.rounds} rounds`);
+  if (fx?.kind === "corpsify") tags.push(`rise again with ${Math.round(fx.reviveHp * 100)}% HP if knocked out`);
+  if (fx?.kind === "barrage") tags.push("hits every enemy on the field");
+  const cooling = me.cooldowns?.[sk.name] ?? 0;
+  if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   return (
-    <button disabled={disabled} onClick={onClick} className="card-btn" style={{ display: "block", opacity: sk.energyCost > me.energy ? 0.35 : 1 }}>
-      <b style={{ color: fx ? "#ffd98a" : "white" }}>{sk.name}</b> <span style={{ fontSize: 11, color: MUTED }}>{sk.type}</span>
-      <span style={{ display: "block", fontSize: 12, color: MUTED }}>~{dmg} dmg · {sk.energyCost}⚡</span>
+    <button disabled={disabled} onClick={onClick} className="card-btn" style={{ display: "block", opacity: sk.energyCost > me.energy || cooling > 0 ? 0.35 : 1 }}>
+      <b style={{ color: fx ? "#ffd98a" : "white" }}>{sk.name}</b> <span style={{ fontSize: 11, color: MUTED }}>{sk.self ? "utility" : sk.type}</span>
+      <span style={{ display: "block", fontSize: 12, color: MUTED }}>{sk.self ? "no damage" : `~${dmg} dmg`} · {sk.energyCost}⚡</span>
       {tags.map((t) => <span key={t} style={{ display: "block", fontSize: 11, color: "#c9b48a" }}>{t}</span>)}
     </button>
   );
@@ -398,6 +416,11 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
     }
     if ((fx.kind === "swap" || fx.kind === "sendIn" || fx.kind === "lineup") && fx.side === side) anim = "anim-swapin";
     if (fx.kind === "faint" && fx.side === side) anim = "anim-faint";
+    if (fx.kind === "effect" && fx.side === side && isMe(fx.index)) {
+      anim = fx.text === "RISES AGAIN!" ? "anim-swapin" : fx.text.includes("VENOM") ? "anim-hit" : "";
+      float = { text: fx.text, color: fx.color };
+    }
+    if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex) && fx.missed && fx.evaded) float = { text: "MIRAGE!", color: "#c7b8ff" };
   }
 
   return (
@@ -415,6 +438,13 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
         <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
         {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
+        {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "corpsify").map((s) => (
+          <div key={s.id} style={{ fontSize: 11, marginTop: 6, color: s.id === "venom" ? "#9be15d" : s.id === "mirage" ? "#c7b8ff" : "#9fd3a8" }}>
+            {s.id === "venom" && <>🧪 Envenomed (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "mirage" && <>✨ Mirage ({Math.round((s.chance ?? 0) * 100)}% to dodge) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "corpsify" && <>⚰️ Corpsified — rises again if knocked out</>}
+          </div>
+        ))}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
         <StreakBadges f={f} foe={foe} slot={slot} />
         {!compact && (

@@ -6,9 +6,9 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
-import { findCreatureTemplate, KLUTZ } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
-import { clearLab } from "@/lib/labyrinth/run";
+import { clearDungeon } from "@/lib/dungeon/run";
 
 // Klutz is every player's first creature (and always in the roster).
 export const KLUTZ_DROP_ID = "klutz-companion";
@@ -38,7 +38,7 @@ type SaveState = {
   recentScans?: string[];              // drop ids of your last scans, newest first
 };
 
-// Also used read-only by the battle and labyrinth screens. Everyone has
+// Also used read-only by the battle and dungeon screens. Everyone has
 // Klutz: he's added here (to new games and older saves), so every reader
 // sees him even before the game has saved him.
 export function loadSave(): SaveState | null {
@@ -52,6 +52,13 @@ export function loadSave(): SaveState | null {
   if (!hasKlutz(inventory)) {
     inventory.unshift(klutzDrop());
     if (!favoriteIds.includes(KLUTZ_DROP_ID)) favoriteIds.push(KLUTZ_DROP_ID);
+  }
+  // Creatures and cards show their species' current rarity (some species
+  // changed tier when races arrived).
+  for (const d of inventory) {
+    if (!isCreatureDrop(d) && !isCardDrop(d)) continue;
+    const t = findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name);
+    if (t) (d as CreatureOrItemDrop).rarity = t.rarity;
   }
   const obj = (v: unknown) => (v && typeof v === "object" ? v : {});
   return {
@@ -173,12 +180,13 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // ── Discovery progress ────────────────────────────────
   const discoveredCreatures = useMemo(
-    // Creatures and cards both count as discovered; companions (Klutz) don't.
+    // Creatures and cards both count as discovered; companions (Klutz) and
+    // retired species don't.
     // Older saves stored names instead of ids.
     () => new Set(
       inventory.filter((d) => isCreatureDrop(d) || isCardDrop(d))
         .map((d) => findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name))
-        .filter((t) => t && !t.companion)
+        .filter((t) => t && CREATURE_TEMPLATES.includes(t))
         .map((t) => t!.id)
     ).size,
     [inventory]
@@ -226,7 +234,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
   }
 
-  // Gold that isn't a drop (labyrinth rewards, entry fees). spendGold
+  // Gold that isn't a drop (dungeon rewards, entry fees). spendGold
   // returns false (and spends nothing) if you can't afford it.
   function addGold(amount: number) {
     setGold((g) => g + amount);
@@ -265,6 +273,15 @@ export function useGameState(initialTab: TabKey = "all") {
 
   function setMoves(creatureId: string, moves: string[]) {
     setEquipment((prev) => ({ ...prev, [creatureId]: { ...prev[creatureId], moves } }));
+  }
+
+  // Read a codex: the creature learns its race move for good, and the codex is used up.
+  function learnCodex(creatureId: string, codexId: string) {
+    const codex = inventory.find((d) => d.id === codexId) as CreatureOrItemDrop | undefined;
+    const move = codex?.codexMove;
+    if (!move) return;
+    setInventory((prev) => prev.filter((d) => d.id !== codexId).map((d) =>
+      d.id === creatureId ? { ...d, learned: [...new Set([...((d as CreatureOrItemDrop).learned ?? []), move])] } : d));
   }
 
   // Three cards of one creature → that creature. keepId = the card to keep
@@ -313,7 +330,7 @@ export function useGameState(initialTab: TabKey = "all") {
   // "New player": wipes this player's progress but keeps the barcode
   // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
-    clearLab();
+    clearDungeon();
     setInventory([klutzDrop()]);
     setGold(0);
     setScanCounts({});
@@ -344,7 +361,7 @@ export function useGameState(initialTab: TabKey = "all") {
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
-    toggleFavorite, equipItem, setMoves, summon, toggleSellMode, toggleSelectItem,
+    toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
   };
 }

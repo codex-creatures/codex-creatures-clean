@@ -1,10 +1,10 @@
 "use client";
-// components/DungeonRoom.tsx
-// The clickable pixel-art dungeon room (drawn by lib/dungeon/scene.ts).
+// components/DenRoom.tsx
+// The clickable pixel-art Den (drawn by lib/den/scene.ts).
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDungeon, project, ANCHORS, OBJ, W, H, type DungeonScene, type ObjId } from "@/lib/dungeon/scene";
+import { createDen, project, ANCHORS, OBJ, W, H, type DenScene, type ObjId } from "@/lib/den/scene";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -15,14 +15,14 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from the Chest for now." },
   [OBJ.quests]:   { label: "Quest Board", soon: "Daily quests (and the utility moves they reward) are coming." },
   [OBJ.bag]:      { label: "Battle Bag", soon: "Pack up to 10 items — spare weapons and utility items — to use in battle." },
-  [OBJ.arch]:     { label: "The Labyrinth", href: "/labyrinth" },
+  [OBJ.arch]:     { label: "The Dungeon", href: "/dungeon" },
 };
 
 const FPS = 12;
 
-export default function DungeonRoom() {
+export default function DenRoom() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const sceneRef = useRef<DungeonScene | null>(null);
+  const sceneRef = useRef<DenScene | null>(null);
   const hoverRef = useRef<ObjId>(OBJ.none);
   const [hover, setHover] = useState<ObjId>(OBJ.none);
   const [notice, setNotice] = useState<Spot | null>(null);
@@ -31,7 +31,7 @@ export default function DungeonRoom() {
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    const scene = createDungeon();
+    const scene = createDen();
     sceneRef.current = scene;
     const start = performance.now();
     const draw = () => ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
@@ -69,7 +69,7 @@ export default function DungeonRoom() {
         onPointerLeave={() => setHovered(OBJ.none)}
         onClick={(e) => activate(objectAt(e))}
         style={{ width: "100%", height: "100%", imageRendering: "pixelated", cursor: hover ? "pointer" : "default", display: "block" }}
-        aria-label="Your dungeon"
+        aria-label="The Den"
         role="img"
       />
 

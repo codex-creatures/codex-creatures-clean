@@ -1,6 +1,6 @@
 // lib/sprites/pixels.ts
 // Pixel-art sprites drawn as text grids, in the same chunky style as the
-// dungeon. Each character is one pixel (see PALETTE; "." is empty). The
+// Den. Each character is one pixel (see PALETTE; "." is empty). The
 // renderer adds a dark outline around every sprite, so grids only draw the
 // shapes themselves.
 

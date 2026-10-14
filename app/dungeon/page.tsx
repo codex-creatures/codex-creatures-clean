@@ -1,8 +1,9 @@
 "use client";
-// app/labyrinth/page.tsx
-// A run through labyrinth 1: pick a party of 5, walk through 8 rooms by
-// choosing between hidden doors, fight, heal and loot, and face the boss.
-// The rules live in lib/labyrinth/run.ts; the run is saved after every step,
+// app/dungeon/page.tsx
+// A run through dungeon 1: pick a party of up to 5, plan a route across the
+// map (9 rooms on any path, seen a few rooms ahead), fight, heal and loot,
+// and face the boss.
+// The rules live in lib/dungeon/run.ts; the run is saved after every step,
 // so leaving the page (or refreshing) never loses it.
 
 import { useEffect, useState } from "react";
@@ -10,19 +11,19 @@ import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
+import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { rollBarcodeOutcome } from "@/lib/barcodeRegistry";
-import { dropFromOutcome, weaponDrop, armorDrop } from "@/lib/drops";
+import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove } from "@/lib/drops";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  LAB_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, ROOM_INFO,
-  startRun, enterDoor, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
-  loadLab, saveLab, type LabSave, type LabRun, type Room,
-} from "@/lib/labyrinth/run";
-import DungeonFrame from "@/components/DungeonFrame";
+  DUNGEON_ROOMS, PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, ROOM_INFO,
+  startRun, enterRoom, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
+  loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
+} from "@/lib/dungeon/run";
+import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
 import {
   BattleView, Bar, SectionTitle, StatsLine, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
@@ -30,6 +31,8 @@ import {
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
 import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
+import { SIGHT } from "@/lib/dungeon/map";
+import DungeonMapView from "@/components/DungeonMapView";
 
 const GOLD = "#f5c542";
 
@@ -44,26 +47,26 @@ function dropLabel(d: Drop): string {
   return d.dropType === "item" ? `${d.name} (${d.rarity})` : d.name;
 }
 
-export default function LabyrinthPage() {
+export default function DungeonPage() {
   const game = useGameState();
-  const [lab, setLab] = useState<LabSave | null>(null);
+  const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [found, setFound] = useState<Drop[] | null>(null); // what the current room just gave you
 
   // Every change to the run is saved straight away.
-  function update(next: LabSave) {
-    saveLab(next);
+  function update(next: DungeonSave) {
+    saveDungeon(next);
     setLab(next);
   }
-  function updateRun(fn: (r: LabRun) => LabRun) {
-    const cur = loadLab();
+  function updateRun(fn: (r: DungeonRun) => DungeonRun) {
+    const cur = loadDungeon();
     if (cur.run) update({ ...cur, run: fn(cur.run) });
   }
 
   const battle = usePlayableBattle((m) => updateRun((r) => ({ ...r, battle: m })));
 
   useEffect(() => {
-    const saved = loadLab();
+    const saved = loadDungeon();
     setLab(saved);
     setOwned(loadOwnedCreatures());
     // Back in the middle of a fight? Carry on where you left off.
@@ -85,7 +88,7 @@ export default function LabyrinthPage() {
   }
 
   function goHome() {
-    update(endRun(loadLab()));
+    update(endRun(loadDungeon()));
     battle.clear();
     setFound(null);
   }
@@ -95,7 +98,7 @@ export default function LabyrinthPage() {
   }
 
   // ── Room rewards ──────────────────────────────────────────────────
-  function give(drops: Drop[], also: (r: LabRun) => LabRun = (r) => r) {
+  function give(drops: Drop[], also: (r: DungeonRun) => DungeonRun = (r) => r) {
     for (const d of drops) {
       if (d.dropType === "reward") game.addGold(d.amount);
       else game.addDrop(d);
@@ -105,7 +108,7 @@ export default function LabyrinthPage() {
   }
 
   const goldOnly = (amount: number): Drop => ({ id: crypto.randomUUID(), barcode: "", dropType: "reward", rewardKind: "resource", amount, createdAt: new Date().toISOString() });
-  const markDone = (r: LabRun): LabRun => (r.current ? { ...r, current: { ...r.current, done: true } } : r);
+  const markDone = (r: DungeonRun): DungeonRun => (r.current ? { ...r, current: { ...r.current, done: true } } : r);
 
   function takeTreasure(room: Room) {
     give([goldOnly(room.gold ?? 0)], markDone);
@@ -118,7 +121,16 @@ export default function LabyrinthPage() {
       const d = dropFromOutcome(rollBarcodeOutcome());
       if (d) drops.push(d);
     }
+    if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
     give(drops, markDone);
+  }
+
+  function buyCodex(move: string) {
+    const room = lab?.run?.current;
+    if (!room?.offers?.includes(move) || room.bought?.includes(move) || !game.spendGold(CODEX_PRICE)) return;
+    const d = codexDrop(move);
+    game.addDrop(d);
+    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, `Codex: ${move}`], current: { ...r.current, bought: [...(r.current.bought ?? []), move] } } : r));
   }
 
   function healOne(id: string) {
@@ -132,7 +144,7 @@ export default function LabyrinthPage() {
   }
 
   // ── Fights ────────────────────────────────────────────────────────
-  function startFight(r: LabRun) {
+  function startFight(r: DungeonRun) {
     const room = r.current!;
     const ids = fightingTeam(r).filter((id) => byId(id));
     const mine = ids.map((id) => byId(id)!);
@@ -151,14 +163,14 @@ export default function LabyrinthPage() {
       room.level ?? "hard",
       {
         startHp: mine.map((c, i) => Math.round((r.hp[ids[i]] ?? 1) * c.fighter.maxHp)),
-        title: room.boss ? "Labyrinth · the Cyclops" : `Labyrinth · room ${r.room}`,
+        title: room.boss ? "Dungeon · the Cyclops" : `Dungeon · room ${r.room}`,
         boss: room.boss,
       },
     );
   }
 
   // The fight is over: HP comes back to the party, and the winner's rewards.
-  function finishFight(r: LabRun, m: Match) {
+  function finishFight(r: DungeonRun, m: Match) {
     const ids = r.current?.fighters ?? [];
     const hp = { ...r.hp };
     m.state.sides.A.team.forEach((f, i) => { if (ids[i]) hp[ids[i]] = f.hp / f.maxHp; });
@@ -180,11 +192,11 @@ export default function LabyrinthPage() {
 
   // ── Screens ───────────────────────────────────────────────────────
   if (!lab || !game.hydrated) {
-    return <DungeonFrame title="The Labyrinth" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DungeonFrame>;
+    return <DenFrame title="The Dungeon" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   }
 
   const frame = (children: React.ReactNode) => (
-    <DungeonFrame title="The Labyrinth" icon="🌀" gold={game.gold}>{children}</DungeonFrame>
+    <DenFrame title="The Dungeon" icon="🌀" gold={game.gold}>{children}</DenFrame>
   );
 
   if (!run) {
@@ -220,9 +232,15 @@ export default function LabyrinthPage() {
       {run.current
         ? <RoomScreen
             run={run} room={run.current} found={found} byId={byId}
-            onTreasure={takeTreasure} onChest={openChest} onHeal={healOne} onFight={() => startFight(run)} onNext={nextRoom}
+            gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onHeal={healOne} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
           />
-        : <Doors run={run} onDoor={(d) => updateRun((r) => enterDoor(r, d))} />}
+        : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))} />}
+      {run.current && (
+        <>
+          <SectionTitle>The way ahead</SectionTitle>
+          <DungeonMapView run={run} />
+        </>
+      )}
 
       <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />
 
@@ -230,7 +248,7 @@ export default function LabyrinthPage() {
         <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
           onClick={() => updateRun((r) => ({ ...r, status: "retreated", battle: undefined }))}
           disabled={battle.match !== null && !battle.match.state.winner}>
-          🏃 Retreat — leave the labyrinth and keep your loot
+          🏃 Retreat — leave the dungeon and keep your loot
         </button>
       </div>
     </>
@@ -239,7 +257,7 @@ export default function LabyrinthPage() {
 
 // ── The entrance: choose your party ─────────────────────────────────
 function Entrance({ lab, owned, gold, onBegin, onHeal }: {
-  lab: LabSave; owned: OwnedCreature[]; gold: number; onBegin: (party: string[]) => void; onHeal: () => void;
+  lab: DungeonSave; owned: OwnedCreature[]; gold: number; onBegin: (party: string[]) => void; onHeal: () => void;
 }) {
   const [party, setParty] = useState<string[]>(() =>
     owned.filter((c) => c.roster && (lab.meta.injuries[c.id] ?? 1) > 0).slice(0, PARTY_SIZE).map((c) => c.id));
@@ -256,7 +274,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       <div className="stone-panel">
         <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
         <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
-          {LAB_ROOMS} rooms, a boss in the last. Each room has two doors, and you can&apos;t see what&apos;s behind them.
+          {DUNGEON_ROOMS} rooms to the boss, along whichever passageways you choose. Each room leads on to 1–3 others; you can see {SIGHT} rooms ahead, and the rest is fog.
           Take up to {PARTY_SIZE} creatures: {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).
           Wounds carry from room to room. If your team falls you wake up back here — <b>you keep everything you found</b>.
         </p>
@@ -311,18 +329,18 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       )}
 
       <button onClick={() => onBegin(party)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        🌀 Enter the labyrinth {free ? "(first time free)" : `(${ENTRY_FEE} gold)`}
+        🌀 Enter the dungeon {free ? "(first time free)" : `(${ENTRY_FEE} gold)`}
       </button>
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
     </>
   );
 }
 
-// ── In the labyrinth ────────────────────────────────────────────────
-function RoomHeader({ run }: { run: LabRun }) {
+// ── In the dungeon ────────────────────────────────────────────────
+function RoomHeader({ run }: { run: DungeonRun }) {
   return (
-    <div style={{ display: "flex", gap: 4, marginBottom: 14 }} aria-label={`Room ${run.room} of ${LAB_ROOMS}`}>
-      {Array.from({ length: LAB_ROOMS }, (_, i) => {
+    <div style={{ display: "flex", gap: 4, marginBottom: 14 }} aria-label={`Room ${run.room} of ${DUNGEON_ROOMS}`}>
+      {Array.from({ length: DUNGEON_ROOMS }, (_, i) => {
         const n = i + 1;
         const state = n < run.room || (n === run.room && run.current?.done) ? "done" : n === run.room ? "here" : "ahead";
         return (
@@ -332,7 +350,7 @@ function RoomHeader({ run }: { run: LabRun }) {
             border: `2px solid ${state === "here" ? "#ffd66e" : "#000"}`,
             color: state === "ahead" ? "#666" : "#f1d9a0",
           }}>
-            {n === LAB_ROOMS ? "👁️" : n}
+            {n === DUNGEON_ROOMS ? "👁️" : n}
           </div>
         );
       })}
@@ -340,38 +358,30 @@ function RoomHeader({ run }: { run: LabRun }) {
   );
 }
 
-function Doors({ run, onDoor }: { run: LabRun; onDoor: (d: 0 | 1) => void }) {
+function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: string) => void }) {
   const canFight = fightingTeam(run).length > 0;
-  const boss = run.room === LAB_ROOMS;
+  const boss = run.room === DUNGEON_ROOMS;
   return (
     <div className="stone-panel">
       <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>
-        {boss ? "The last door" : `Room ${run.room} — choose a door`}
+        {boss ? "The lair" : `Room ${run.room} — choose a passageway`}
       </div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
-        {boss ? "Something huge breathes behind it. Make sure the right creatures are on your team."
-          : "You can't tell what's behind either one. You can change your team below at any time before a fight starts."}
+        {boss ? "Something huge breathes up ahead. Make sure the right creatures are on your team."
+          : `You can see ${SIGHT} rooms ahead and where their passageways lead; beyond that is fog. Plan your route — you can change your team below at any time before a fight starts.`}
       </p>
       {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}
-      <div style={{ display: "grid", gridTemplateColumns: boss ? "1fr" : "1fr 1fr", gap: 10 }}>
-        {(boss ? [0] : [0, 1]).map((d) => (
-          <button key={d} className="card-btn" disabled={!canFight} onClick={() => onDoor(d as 0 | 1)}
-            style={{ display: "block", textAlign: "center", padding: "22px 8px" }}>
-            <div style={{ fontSize: 34 }}>{boss ? "👁️" : "🚪"}</div>
-            <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>{boss ? "Enter the lair" : d === 0 ? "Left door" : "Right door"}</div>
-          </button>
-        ))}
-      </div>
+      <DungeonMapView run={run} onEnter={canFight ? onEnter : undefined} />
     </div>
   );
 }
 
-function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFight, onNext }: {
-  run: LabRun; room: Room; found: Drop[] | null; byId: (id: string) => OwnedCreature | undefined;
-  onTreasure: (r: Room) => void; onChest: () => void; onHeal: (id: string) => void; onFight: () => void; onNext: () => void;
+function RoomScreen({ run, room, found, byId, gold, onTreasure, onChest, onHeal, onBuy, onFight, onNext }: {
+  run: DungeonRun; room: Room; found: Drop[] | null; byId: (id: string) => OwnedCreature | undefined; gold: number;
+  onTreasure: (r: Room) => void; onChest: () => void; onHeal: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = ROOM_INFO[room.kind];
-  const nextLabel = room.kind === "boss" ? "Finish" : run.room === LAB_ROOMS - 1 ? "On to the last door" : "On to the next room";
+  const nextLabel = room.kind === "boss" ? "Finish" : run.room === DUNGEON_ROOMS - 1 ? "On to the lair" : "On to the next room";
   const next = <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>{nextLabel} →</button>;
 
   return (
@@ -424,13 +434,39 @@ function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFig
         </>
       ))}
 
-      {(room.kind === "stash" || room.kind === "librarian" || room.kind === "merchant") && (
+      {(room.kind === "stash" || room.kind === "merchant") && (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             {room.kind === "stash" && "A forgotten pack, its potions long gone. (Stashes fill your battle bag once it exists.)"}
-            {room.kind === "librarian" && "A hooded figure shelving books that aren't there. \"Come back when I've unpacked,\" it mutters. (Librarians — moves and codexes — are coming.)"}
             {room.kind === "merchant" && "A cart, a lantern, and a sign: BACK SOON. (Wandering merchants are coming.)"}
           </p>
+          {next}
+        </>
+      )}
+
+      {room.kind === "librarian" && (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
+            A hooded figure sits among towers of crumbling books. &ldquo;Codexes,&rdquo; it whispers. &ldquo;Each teaches one creature a move of its blood — once. {CODEX_PRICE} gold apiece.&rdquo;
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {(room.offers ?? []).map((name) => {
+              const move = MOVE_BY_NAME[name];
+              const sold = room.bought?.includes(name);
+              return (
+                <button key={name} className="card-btn" disabled={sold || gold < CODEX_PRICE} onClick={() => onBuy(name)}
+                  style={{ opacity: sold || gold < CODEX_PRICE ? 0.5 : 1 }}>
+                  <span style={{ flex: 1 }}>
+                    <b style={{ color: "#c7b8ff" }}>📖 Codex: {name}</b>
+                    <span style={{ fontSize: 12, color: move?.race ? RACE_INFO[move.race].color : MUTED }}> · {move?.race ? RACE_INFO[move.race].name : ""} only</span>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{move?.desc}</span>
+                  </span>
+                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "bought" : `🪙 ${CODEX_PRICE}`}</span>
+                </button>
+              );
+            })}
+          </div>
+          {gold < CODEX_PRICE && <p style={{ fontSize: 12, color: MUTED }}>You have {gold} gold.</p>}
           {next}
         </>
       )}
@@ -455,7 +491,7 @@ function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFig
               return (
                 <div key={i} style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
                   <b style={{ color: rarityColor(t.rarity) }}>{t.name}</b>
-                  <span style={{ color: MUTED }}> · {creatureTypeLabel(e.proficiency)} · {e.gear.map(gearName).join(", ")}</span>
+                  <span style={{ color: MUTED }}> · {t.race ? `${RACE_INFO[t.race].name} · ` : ""}{creatureTypeLabel(e.proficiency)} · {e.gear.map(gearName).join(", ")}</span>
                 </div>
               );
             })}
@@ -472,7 +508,7 @@ function RoomScreen({ run, room, found, byId, onTreasure, onChest, onHeal, onFig
 }
 
 // Your party: who fights (in order — the first one leads) and who waits.
-function Party({ run, byId, onTeam }: { run: LabRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void }) {
+function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void }) {
   const team = fightingTeam(run);
   const reserves = run.party.filter((id) => !team.includes(id));
   const move = (i: number, by: number) => {
@@ -526,12 +562,12 @@ function Party({ run, byId, onTeam }: { run: LabRun; byId: (id: string) => Owned
   );
 }
 
-function RunOver({ run, lab, onHome }: { run: LabRun; lab: LabSave; onHome: () => void }) {
-  const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
+function RunOver({ run, lab, onHome }: { run: DungeonRun; lab: DungeonSave; onHome: () => void }) {
+  const title = run.status === "cleared" ? "The dungeon is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
   const text = run.status === "cleared"
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
-      ? `…and you wake up in your dungeon, Klutz standing over you looking pleased with himself. He dragged you out of room ${run.room}. Your creatures are hurt — rest them at the healing pool.`
+      ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out of room ${run.room}. Your creatures are hurt — rest them at the healing pool.`
       : `You leave the way you came, from room ${run.room}.`;
   return (
     <div className="stone-panel" style={{ textAlign: "center" }}>

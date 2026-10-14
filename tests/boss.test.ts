@@ -67,7 +67,7 @@ describe("the Cyclops", () => {
 
   it("the Eye's Float stance: ranged hits it harder than the same melee hit", () => {
     const eye = cyclopsTeam()[CYCLOPS.EYE];
-    const a = buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, {});
+    const a = buildFighter(CREATURE_BY_ID.void_serpent, { melee: 30, ranged: 30 }, {}); // equal melee and ranged %
     const flat = { ...eye, armor: { ...eye.armor, mdef: 0, rdef: 0 } };
     expect(calcDamage(MOVE_BY_NAME.Bolt, a, flat, false).damage).toBeGreaterThan(calcDamage(MOVE_BY_NAME.Slash, a, flat, false).damage);
   });

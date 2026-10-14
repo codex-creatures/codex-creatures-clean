@@ -1,11 +1,11 @@
 "use client";
-// components/DungeonFrame.tsx
-// Shared shell for the screens you open from the dungeon (altar, chest, pit…).
+// components/DenFrame.tsx
+// Shared shell for the screens you open from the Den (altar, chest, pit…).
 
 import Link from "next/link";
 
-export default function DungeonFrame({
-  title, icon, gold, back = "/", backLabel = "Dungeon", children,
+export default function DenFrame({
+  title, icon, gold, back = "/", backLabel = "The Den", children,
 }: {
   title: string;
   icon?: string;

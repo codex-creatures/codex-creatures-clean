@@ -1,5 +1,5 @@
 // lib/drops.ts
-// Turning an outcome (from a barcode, a labyrinth chest, a defeated enemy…)
+// Turning an outcome (from a barcode, a dungeon chest, a defeated enemy…)
 // into a drop for the player's inventory. Item stats are rolled here with the
 // real rollers, so every source gives items exactly like scanning does.
 
@@ -10,7 +10,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorStats } from "./items/rollArmorStats";
 import { ITEM_META } from "./items/metadata";
 import { ARMOR_META } from "./items/armor";
-import { CREATURE_BY_ID } from "./creatures/creatureData";
+import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
 
@@ -39,6 +39,19 @@ export function armorDrop(armorKey: ArmorKey, rarity: Rarity, barcode = "", stat
     stats: stats ?? rollArmorStats(armorKey, rarity, Math.random).stats, createdAt: now(),
   };
 }
+
+// A codex: read it (once) to teach its race move to a creature of that race.
+export function codexDrop(moveName: string): Drop {
+  const move = MOVE_BY_NAME[moveName];
+  const race = move?.race ? RACE_INFO[move.race].name : "";
+  return {
+    id: crypto.randomUUID(), barcode: "", dropType: "item", itemCategory: "consumable", rarity: "epic", roll: 0,
+    name: `Codex: ${moveName}`, codexMove: moveName,
+    desc: `Teaches ${moveName} to one ${race} creature, then crumbles to dust. ${move?.desc ?? ""}`, createdAt: now(),
+  };
+}
+
+export const randomCodexMove = () => RACE_MOVES[Math.floor(Math.random() * RACE_MOVES.length)].name;
 
 function plainItemDrop(itemCategory: ItemCategory, rarity: Rarity, barcode = ""): Drop {
   return { id: crypto.randomUUID(), barcode, dropType: "item", itemCategory, rarity, roll: 0, name: `${rarity} ${itemCategory}`, createdAt: now() };
