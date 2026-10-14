@@ -10,8 +10,11 @@
 // - The dungeon is a labyrinth (lib/dungeon/map.ts): rooms joined by
 //   corridors, the entrance at the bottom and the boss's lair at the top.
 //   Corridors only lead onward (never back), and there are no dead ends:
-//   every way on reaches the lair. Torchlight shows only the area around you.
-// - Finish a room (win its fight, take its loot, or leave it) before moving on.
+//   every way on reaches the lair. You study your map scroll at the
+//   entrance; once you step inside it's too dark to read, and you find your
+//   way by the tunnels leading out of each room.
+// - Finish a room (win its fight, take its loot) before moving on. Pools,
+//   stashes, merchants and librarians can be walked past.
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
@@ -230,6 +233,7 @@ export type DungeonRun = {
   path: string[];              // every room you've stood in, in order (starts at the entrance)
   cleared: string[];           // rooms finished: walking back through them is free
   current: Room | null;        // the room you're in, still to finish; null = choosing a corridor
+  inside?: boolean;            // stepped in past the entrance (the map is put away)
   battle?: unknown;            // the fight in progress (saved by the screen)
   loot: string[];              // what you've found, for the summary
   status: RunStatus;
@@ -246,9 +250,12 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
     path: [map.start],
     cleared: first ? [] : [map.start],
     current: first ? makeRoom("treasure", rng) : null,
-    loot: [], status: "exploring",
+    loot: [], status: "exploring", inside: false,
   };
 }
+
+// Put the map away and step into the first room.
+export const stepInside = (run: DungeonRun): DungeonRun => ({ ...run, inside: true });
 
 export const isAlive = (run: DungeonRun, id: string) => (run.hp[id] ?? 0) > 0;
 
@@ -265,6 +272,20 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
   return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng), room: run.room + 1 };
+}
+
+// Rooms you can walk out of without doing anything.
+const SKIPPABLE: RoomKind[] = ["pool", "stash", "merchant", "librarian"];
+
+// Can you take a tunnel out of here yet? Not until the room is dealt with.
+export const canMoveOn = (run: DungeonRun) =>
+  run.status === "exploring" && (!run.current || run.current.done || SKIPPABLE.includes(run.current.kind));
+
+// Take a tunnel: finish this room and walk into the next.
+export function moveOn(run: DungeonRun, nodeId: string, rng: Rng = Math.random): DungeonRun {
+  if (!canMoveOn(run) || run.current?.kind === "boss") return run;
+  const next = enterRoom(leaveRoom(run), nodeId, rng);
+  return next.path.length > run.path.length ? next : run;
 }
 
 // The current room is finished: it's cleared, and you choose where to go.

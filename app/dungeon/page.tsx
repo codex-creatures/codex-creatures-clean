@@ -1,8 +1,8 @@
 "use client";
 // app/dungeon/page.tsx
-// A run through dungeon 1: pick a party of up to 5, plan a route across the
-// map (9 rooms on any path, seen a few rooms ahead), fight, heal and loot,
-// and face the boss.
+// A run through dungeon 1: pick a party of up to 5, study the map scroll at
+// the entrance, then step inside — from there you see only the room you're
+// in and the tunnels leading on. Fight, heal and loot, and face the boss.
 // The rules live in lib/dungeon/run.ts; the run is saved after every step,
 // so leaving the page (or refreshing) never loses it.
 
@@ -22,7 +22,7 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
-  startRun, enterRoom, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
+  startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
@@ -34,6 +34,7 @@ import {
 import { combatSummary } from "@/lib/combat/loadout";
 import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
 import DungeonMapView from "@/components/DungeonMapView";
+import DungeonRoomView from "@/components/DungeonRoomView";
 
 const GOLD = "#f5c542";
 
@@ -190,10 +191,18 @@ export default function DungeonPage() {
     give(drops, markDone);
   }
 
+  // The boss is beaten: the run is over.
   function nextRoom() {
     setFound(null);
     battle.clear();
     updateRun(leaveRoom);
+  }
+
+  // Down a tunnel into the next room.
+  function goTo(nodeId: string) {
+    setFound(null);
+    battle.clear();
+    updateRun((r) => moveOn(r, nodeId));
   }
 
   // ── Fights ────────────────────────────────────────────────────────
@@ -284,16 +293,22 @@ export default function DungeonPage() {
   return frame(
     <>
       <RoomHeader run={run} />
-      {run.current
-        ? <RoomScreen
-            run={run} room={run.current} found={found} byId={byId}
-            gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
-          />
-        : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))} />}
-      {run.current && (
+      {!run.inside ? (
+        <MapFirst run={run} onStep={() => updateRun(stepInside)} />
+      ) : (
         <>
-          <SectionTitle>The way ahead</SectionTitle>
-          <DungeonMapView run={run} />
+          <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0} onGo={goTo} />
+          {canMoveOn(run) && fightingTeam(run).length === 0 && (
+            <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature that can still fight before you go on.</p>
+          )}
+          <div style={{ marginTop: 12 }}>
+            {run.current
+              ? <RoomScreen
+                  run={run} room={run.current} found={found} byId={byId}
+                  gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+                />
+              : <AtEntrance run={run} />}
+          </div>
         </>
       )}
 
@@ -330,7 +345,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       <div className="stone-panel">
         <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
         <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
-          A labyrinth of rooms and winding corridors, with the boss&apos;s lair somewhere at the top. Your torch lights only what&apos;s close — the rest is darkness — and some rooms are a mystery until you step inside. There&apos;s no going back the way you came.
+          A labyrinth of rooms and winding tunnels, with the boss&apos;s lair somewhere at the top. You get one look at your map at the entrance — once you step inside it&apos;s too dark to read, so you find your way tunnel by tunnel. Some rooms are a mystery until you walk in, and there&apos;s no going back the way you came.
           Take up to {PARTY_SIZE} creatures: {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).
           Wounds carry from room to room. If your team falls you wake up back here — <b>you keep everything you found</b>.
         </p>
@@ -403,19 +418,31 @@ function RoomHeader({ run }: { run: DungeonRun }) {
   );
 }
 
-function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: string) => void }) {
-  const canFight = fightingTeam(run).length > 0;
-  const nextToLair = run.map.nodes[run.map.boss].links.includes(runPosition(run));
+// At the entrance: one good look at the map before you go in.
+function MapFirst({ run, onStep }: { run: DungeonRun; onStep: () => void }) {
   return (
     <div className="stone-panel">
-      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Which way?</div>
-      <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
-        {nextToLair ? "Something huge breathes at the end of one of these corridors. Make sure the right creatures are on your team. "
-          : "Your scroll shows every room, but not what waits in most of them. Rooms near you fill in as you go — except the ones that stay a mystery until you step inside. Every corridor leads on toward the lair; some take the long way round. "}
-        Corridors only lead onward — there&apos;s no going back, so choose your branch carefully. You can change your team below any time before a fight.
+      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Your map of the dungeon</div>
+      <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
+        Study it while you can. Once you step inside it&apos;s too dark to read — you&apos;ll only see the room you&apos;re in and the tunnels leading out of it,
+        so remember which way the lair lies. The rooms you know are marked; the rest are a &ldquo;?&rdquo;. Every tunnel leads onward, never back.
       </p>
-      {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}
-      <DungeonMapView run={run} onEnter={canFight ? onEnter : undefined} />
+      <DungeonMapView run={run} />
+      <button className="pixel-btn" onClick={onStep} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
+        🔥 Put the map away and step inside
+      </button>
+    </div>
+  );
+}
+
+function AtEntrance({ run }: { run: DungeonRun }) {
+  const ways = run.map.nodes[runPosition(run)].links.length;
+  return (
+    <div className="stone-panel">
+      <p style={{ fontSize: 13, color: "#d8d4c8", margin: 0, lineHeight: 1.5 }}>
+        Water drips somewhere in the dark. {ways > 1 ? "Tunnels lead off" : "A tunnel leads off"} into the gloom — the left-most heads furthest west.
+        Tap one to go on. You can change your team below first.
+      </p>
     </div>
   );
 }
@@ -425,8 +452,8 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
   onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = ROOM_INFO[room.kind];
-  const nextLabel = room.kind === "boss" ? "Finish" : "Back to the map";
-  const next = <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>{nextLabel} →</button>;
+  const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
+  const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button> : onward;
 
   return (
     <div className="stone-panel">
@@ -481,7 +508,7 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
               );
             })}
           </div>
-          <button className="card-btn" style={{ marginTop: 6, width: "auto" }} onClick={onNext}>Leave it — nobody needs it</button>
+          {onward}
         </>
       ))}
 
@@ -492,7 +519,7 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
           </p>
           <p style={{ fontSize: 12, color: MUTED }}>Your battle bag: {bag.length}/{BAG_SIZE}{bag.length + (room.stash?.length ?? 0) > BAG_SIZE ? " — not everything will fit" : ""}.</p>
           <button className="pixel-btn" onClick={onStash} disabled={bag.length >= BAG_SIZE}>Pack them in your bag</button>
-          <button className="card-btn" style={{ marginTop: 6, width: "auto" }} onClick={onNext}>Leave them</button>
+          {onward}
         </>
       ))}
 
@@ -568,7 +595,7 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
               );
             })}
           </div>
-          <button className="card-btn" style={{ marginTop: 6, width: "auto" }} onClick={onNext}>Nobody needs it — move on</button>
+          {onward}
         </>
       ) : next) : (
         <>

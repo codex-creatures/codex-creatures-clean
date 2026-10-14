@@ -52,14 +52,14 @@ const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.s
 const mul = (c: RGB, k: number): RGB => [c[0] * k, c[1] * k, c[2] * k];
 const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 
-function hash(a: number, b: number): number {
+export function hash(a: number, b: number): number {
   let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263);
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
 
-function vnoise(x: number, y: number): number {
+export function vnoise(x: number, y: number): number {
   const xi = Math.floor(x), yi = Math.floor(y);
   const xf = x - xi, yf = y - yi;
   const s = (t: number) => t * t * (3 - 2 * t);

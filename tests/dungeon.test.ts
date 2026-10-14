@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
-  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun,
+  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun, stepInside, canMoveOn, moveOn,
 } from "../lib/dungeon/run";
 import {
   rollMap, routeLength, LAIR_DOORS, waysOn, isAhead, inSight, knownRooms, KNOWN_AT_START, MIN_ROUTE, MAX_ROUTE, MYSTERY_CHANCE, ROOM_COUNT,
@@ -239,5 +239,34 @@ describe("a labyrinth run", () => {
     expect(s.sides.A.team[0].hp).toBe(10);
     expect(s.sides.A.team[1].hp).toBe(1); // never starts a fight on 0
     expect(s.sides.B.team[0].hp).toBe(f.maxHp);
+  });
+
+  it("the map comes first; then you move room to room through the tunnels", () => {
+    for (let i = 0; i < 50; i++) {
+      let run = startRun(["a"], ["a"], {}, 2);
+      expect(run.inside).toBe(false);
+      run = stepInside(run);
+      expect(run.inside).toBe(true);
+      // At the entrance, any way on.
+      expect(canMoveOn(run)).toBe(true);
+      const ways = waysOn(run.map, run.map.start);
+      const to = ways[ways.length - 1].id;
+      // Nowhere that isn't a way on.
+      expect(moveOn(run, run.map.boss).path).toEqual(run.path);
+      run = moveOn(run, to);
+      expect(run.path).toEqual([run.map.start, to]);
+      expect(run.cleared).toContain(run.map.start);
+      expect(run.current?.kind).toBe(run.map.nodes[to].kind);
+      // A fight (or loot) has to be dealt with first; pools and shops can be walked past.
+      const skippable = ["pool", "stash", "merchant", "librarian"].includes(run.current!.kind);
+      expect(canMoveOn(run)).toBe(skippable);
+      run = { ...run, current: { ...run.current!, done: true } };
+      expect(canMoveOn(run)).toBe(true);
+      const next = waysOn(run.map, to)[0];
+      const after = moveOn(run, next.id);
+      expect(after.path).toEqual([run.map.start, to, next.id]);
+      expect(after.cleared).toContain(to);
+      expect(after.room).toBe(run.room + 1);
+    }
   });
 });
