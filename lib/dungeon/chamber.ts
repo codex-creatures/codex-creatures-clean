@@ -11,11 +11,16 @@
 //   in an unknown tunnel. A healing pool glows on its own.
 // - Every pixel remembers which tunnel it belongs to, so clicks are
 //   pixel-accurate.
+// - It's drawn on the fine grid: the room is laid out in LW×LH units, and
+//   rendered at RES× that, each fine pixel sampling its own spot — smoother
+//   edges, thinner mortar, finer grain.
 
 import { hash, vnoise } from "../den/scene";
 
-export const CW = 256;
-export const CH = 176;
+const LW = 256, LH = 176;   // layout units
+const RES = 2;              // fine pixels per unit
+export const CW = LW * RES; // the canvas, in fine pixels
+export const CH = LH * RES;
 
 // One-point perspective: the back wall is a rectangle, the side walls,
 // ceiling and floor are trapezoids running out to the edges of the picture.
@@ -66,9 +71,9 @@ function stone(a: number, z: number, seed: number, bw = 20, bh = 9): RGB {
   const off = (row & 1) * (bw / 2);
   const col = Math.floor((a + off) / bw);
   const ia = a + off - col * bw, iz = z - row * bh;
-  if (ia < 1 || iz < 1) return MORTAR;
-  let k = iz >= bh - 1.5 ? 1.12 : iz < 2 ? 0.85 : 1;
-  k *= 0.9 + hash(Math.floor(a), Math.floor(z) + seed * 31) * 0.16;
+  if (ia < 0.6 || iz < 0.6) return MORTAR;
+  let k = iz >= bh - 1 ? 1.14 : iz < 1.3 ? 0.84 : ia < 1.2 ? 1.06 : 1;
+  k *= 0.9 + hash(Math.floor(a * RES), Math.floor(z * RES) + seed * 31) * 0.16;
   return mul(STONES[Math.floor(hash(col * 7 + seed, row) * STONES.length)], k);
 }
 
@@ -109,11 +114,12 @@ export function createChamber(spec: ChamberSpec): Chamber {
     return Math.hypot(dx, y - spring) / w;
   };
 
-  for (let y = 0; y < CH; y++) {
-    for (let x = 0; x < CW; x++) {
-      const i = y * CW + x;
-      const leftTop = (x / BX0) * BY0, rightTop = ((CW - x) / BX0) * BY0;
-      const leftBot = CH - (x / BX0) * (CH - BY1), rightBot = CH - ((CW - x) / BX0) * (CH - BY1);
+  for (let fy = 0; fy < CH; fy++) {
+    for (let fx = 0; fx < CW; fx++) {
+      const i = fy * CW + fx;
+      const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES; // this fine pixel's spot, in layout units
+      const leftTop = (x / BX0) * BY0, rightTop = ((LW - x) / BX0) * BY0;
+      const leftBot = LH - (x / BX0) * (LH - BY1), rightBot = LH - ((LW - x) / BX0) * (LH - BY1);
 
       if (x >= BX0 && x < BX1 && y >= BY0 && y < BY1) {
         // Back wall.
@@ -132,21 +138,21 @@ export function createChamber(spec: ChamberSpec): Chamber {
         put(i, c, d, wet ? 1 : 0);
       } else if (x >= BX1 && y >= rightTop && y < rightBot) {
         // Right wall.
-        const d = (x - BX1) / (CW - BX1);
+        const d = (x - BX1) / (LW - BX1);
         const a = (40 * d) / (1 - 0.6 * d), z = (1 - (y - rightTop) / (rightBot - rightTop)) * WALL_H;
         const { c, wet } = damp(stone(a * 1.4, z, seed + 7, 22, 10), a * 1.4, z, seed + 7);
         put(i, c, d, wet ? 1 : 0);
       } else if (y >= BY1) {
         // Floor: flagstones in perspective, with puddles.
-        const f = (y - BY1) / (CH - BY1);
+        const f = (y - BY1) / (LH - BY1);
         const D = 1 / (0.28 + 0.72 * f);           // distance into the room
         const half = (BX1 - BX0) / 2 + f * BX0;
-        const u = (x - CW / 2) / half;             // -1 … 1 across
+        const u = (x - LW / 2) / half;             // -1 … 1 across
         const row = Math.floor(D * 4);
         const col = Math.floor(u * 4 + (row & 1) * 0.5);
         const fu = u * 4 + (row & 1) * 0.5 - col, fv = D * 4 - row;
-        const gap = fu < 0.05 * (1 + f) / 1.6 || fv < 0.07 / D;
-        let c = gap ? FLAG_GAP : mul(FLAGS[Math.floor(hash(col + seed, row) * FLAGS.length)], 0.88 + hash(x, y) * 0.14);
+        const gap = fu < 0.035 * (1 + f) / 1.6 || fv < 0.05 / D;
+        let c = gap ? FLAG_GAP : mul(FLAGS[Math.floor(hash(col + seed, row) * FLAGS.length)], 0.88 + hash(fx, fy) * 0.14);
         let k = 0;
         if (vnoise(u * 3 + seed, D * 1.6) > 0.6) { c = mix(c, WATER, 0.85); k = 2; }
         put(i, c, f, k);
@@ -182,18 +188,18 @@ export function createChamber(spec: ChamberSpec): Chamber {
 
       // The healing pool.
       if (spec.pool && y >= BY1) {
-        const e = Math.hypot((x - CW / 2) / 46, (y - 146) / 13);
+        const e = Math.hypot((x - LW / 2) / 46, (y - 146) / 13);
         if (e < 1) {
-          put(i, spec.pool === "glow" ? POOL[Math.floor(hash(x >> 1, y) * 3)] : mix(POOL_DIM, WATER, hash(x, y) * 0.4), (y - BY1) / (CH - BY1), spec.pool === "glow" ? 3 : 2);
+          put(i, spec.pool === "glow" ? POOL[Math.floor(hash(fx >> 2, fy >> 1) * 3)] : mix(POOL_DIM, WATER, hash(fx, fy) * 0.4), (y - BY1) / (LH - BY1), spec.pool === "glow" ? 3 : 2);
         } else if (e < 1.14) {
-          put(i, mul(STONES[Math.floor(hash(Math.floor(Math.atan2(y - 146, x - CW / 2) * 9), 5) * STONES.length)], 1.2), (y - BY1) / (CH - BY1), 1);
+          put(i, mul(STONES[Math.floor(hash(Math.floor(Math.atan2(y - 146, x - LW / 2) * 9), 5) * STONES.length)], 1.2), (y - BY1) / (LH - BY1), 1);
         }
       }
     }
   }
 
   // Wall torches, one either side.
-  const torches = [{ x: 18, y: 62, d: 0.6 }, { x: CW - 18, y: 62, d: 0.6 }];
+  const torches = [{ x: 18, y: 62, d: 0.6 }, { x: LW - 18, y: 62, d: 0.6 }];
 
   // Drips: where they fall from, and where they land.
   const drips = Array.from({ length: 6 }, (_, k) => {
@@ -209,16 +215,17 @@ export function createChamber(spec: ChamberSpec): Chamber {
     const flick = torches.map((_, k) => 0.84 + 0.09 * Math.sin(t * 9 + k * 2.1) + 0.07 * Math.sin(t * 23 + k * 5) + (Math.random() - 0.5) * 0.05);
     const breathe = 0.5 + 0.5 * Math.sin(t * 2.4);
 
-    for (let y = 0; y < CH; y++) {
-      for (let x = 0; x < CW; x++) {
-        const i = y * CW + x, o = i * 4;
+    for (let fy = 0; fy < CH; fy++) {
+      for (let fx = 0; fx < CW; fx++) {
+        const i = fy * CW + fx, o = i * 4;
+        const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES;
         let r = albedo[i * 3], g = albedo[i * 3 + 1], b = albedo[i * 3 + 2];
         const k = kind[i], dep = depth[i];
-        const bay = BAYER[(y & 3) * 4 + (x & 3)];
+        const bay = BAYER[(fy & 3) * 4 + (fx & 3)];
 
         if (k === 3) {
           // Glowing pool: lit from within, with slow ripples.
-          const wave = 0.85 + 0.15 * Math.sin(t * 2 + Math.hypot(x - CW / 2, (y - 146) * 3.4) * 0.35);
+          const wave = 0.85 + 0.15 * Math.sin(t * 2 + Math.hypot(x - LW / 2, (y - 146) * 3.4) * 0.35);
           d[o] = r * 255 * wave; d[o + 1] = g * 255 * wave; d[o + 2] = b * 255 * wave; d[o + 3] = 255;
           continue;
         }
@@ -232,7 +239,7 @@ export function createChamber(spec: ChamberSpec): Chamber {
           lr += TORCH[0] * fall; lg += TORCH[1] * fall; lb += TORCH[2] * fall;
           shine += fall * fall;
         }
-        if (poolGlow && y > BY1 - 30) { const p = 1 / (1 + Math.hypot((x - CW / 2) / 50, (y - 146) / 22) ** 2 * 2); lr += 0.15 * p; lg += 0.55 * p; lb += 0.5 * p; }
+        if (poolGlow && y > BY1 - 30) { const p = 1 / (1 + Math.hypot((x - LW / 2) / 50, (y - 146) / 22) ** 2 * 2); lr += 0.15 * p; lg += 0.55 * p; lb += 0.5 * p; }
 
         if (k === 4) {
           // Deeper into a tunnel, darker; a lair glows red at the end.
@@ -267,17 +274,22 @@ export function createChamber(spec: ChamberSpec): Chamber {
         }
 
         // Darker towards the edges of your vision.
-        const vx = (x - CW / 2) / (CW / 2), vy = (y - CH * 0.55) / (CH * 0.6);
+        const vx = (x - LW / 2) / (LW / 2), vy = (y - LH * 0.55) / (LH * 0.6);
         const vig = Math.max(0.25, 1 - 0.55 * (vx * vx + vy * vy));
         d[o] = Math.min(255, R * vig * 255); d[o + 1] = Math.min(255, G * vig * 255); d[o + 2] = Math.min(255, B * vig * 255); d[o + 3] = 255;
       }
     }
 
-    const px = (x: number, y: number, c: string | RGB, alpha = 1) => {
-      x = Math.round(x); y = Math.round(y);
-      if (x < 0 || y < 0 || x >= CW || y >= CH) return;
-      const col = typeof c === "string" ? hex(c) : c, o = (y * CW + x) * 4;
-      d[o] = d[o] + (col[0] * 255 - d[o]) * alpha; d[o + 1] = d[o + 1] + (col[1] * 255 - d[o + 1]) * alpha; d[o + 2] = d[o + 2] + (col[2] * 255 - d[o + 2]) * alpha;
+    // Paint at a layout spot: a square of `size` fine pixels (default one layout unit).
+    const px = (x: number, y: number, c: string | RGB, alpha = 1, size = RES) => {
+      const col = typeof c === "string" ? hex(c) : c;
+      const x0 = Math.round(x * RES), y0 = Math.round(y * RES);
+      for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) {
+        const X = x0 + dx, Y = y0 + dy;
+        if (X < 0 || Y < 0 || X >= CW || Y >= CH) continue;
+        const o = (Y * CW + X) * 4;
+        d[o] = d[o] + (col[0] * 255 - d[o]) * alpha; d[o + 1] = d[o + 1] + (col[1] * 255 - d[o + 1]) * alpha; d[o + 2] = d[o + 2] + (col[2] * 255 - d[o + 2]) * alpha;
+      }
     };
 
     // Torches: an iron bracket and a flame.
@@ -298,17 +310,17 @@ export function createChamber(spec: ChamberSpec): Chamber {
       const p = (t + dr.phase) % dr.period; // seconds into this drip's cycle
       const fall = 0.55;
       if (p < 0.35) {
-        px(dr.x, dr.y0, DRIP, p / 0.35); // the drop gathering
+        px(dr.x, dr.y0, DRIP, p / 0.35, 1); // the drop gathering
       } else if (p < 0.35 + fall) {
         const k = (p - 0.35) / fall;
         const y = dr.y0 + (dr.y1 - dr.y0) * k * k;
-        px(dr.x, y, DRIP); px(dr.x, y - 1, DRIP, 0.5);
+        px(dr.x, y, DRIP, 1, 1); px(dr.x, y - 0.5, DRIP, 0.8, 1); px(dr.x, y - 1, DRIP, 0.4, 1);
       } else if (p < 0.35 + fall + 0.8) {
         const k = (p - 0.35 - fall) / 0.8;
-        const rad = 1 + k * 7, scale = 0.6 + (dr.y1 - BY1) / (CH - BY1);
-        for (let a = 0; a < 24; a++) {
-          const ang = (a / 24) * Math.PI * 2;
-          px(dr.x + Math.cos(ang) * rad * scale, dr.y1 + Math.sin(ang) * rad * 0.3 * scale, DRIP, (1 - k) * 0.7);
+        const rad = 1 + k * 7, scale = 0.6 + (dr.y1 - BY1) / (LH - BY1);
+        for (let a = 0; a < 40; a++) {
+          const ang = (a / 40) * Math.PI * 2;
+          px(dr.x + Math.cos(ang) * rad * scale, dr.y1 + Math.sin(ang) * rad * 0.3 * scale, DRIP, (1 - k) * 0.7, 1);
         }
       }
     }
