@@ -22,7 +22,7 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
-  startRun, enterRoom, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
+  startRun, enterRoom, runPosition, atDeadEnd, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
@@ -158,10 +158,14 @@ export default function DungeonPage() {
   }
 
   // ── The battle bag ──────────────────────────────────────────────
+  // A merchant has one of each potion.
   function buyPotion(key: PotionKey) {
-    if ((loadDungeon().meta.bag ?? []).length >= BAG_SIZE || !game.spendGold(POTIONS[key].price)) return;
+    const cur = loadDungeon();
+    if (cur.run?.current?.bought?.includes(key) || (cur.meta.bag ?? []).length >= BAG_SIZE || !game.spendGold(POTIONS[key].price)) return;
     updateBag((bag) => addToBag(bag, [key]));
-    updateRun((r) => ({ ...r, loot: [...r.loot, POTIONS[key].name] }));
+    updateRun((r) => (r.current
+      ? { ...r, loot: [...r.loot, POTIONS[key].name], current: { ...r.current, bought: [...(r.current.bought ?? []), key] } }
+      : r));
   }
 
   function takeStash() {
@@ -285,7 +289,8 @@ export default function DungeonPage() {
             run={run} room={run.current} found={found} byId={byId}
             gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
           />
-        : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))} />}
+        : <ChooseRoom run={run} onEnter={(id) => updateRun((r) => enterRoom(r, id))}
+            onRetreat={() => updateRun((r) => ({ ...r, status: "retreated", battle: undefined }))} />}
       {run.current && (
         <>
           <SectionTitle>The way ahead</SectionTitle>
@@ -326,7 +331,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       <div className="stone-panel">
         <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
         <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
-          A labyrinth of rooms and winding corridors, with the boss&apos;s lair somewhere at the top. You only see what&apos;s close to you — the rest is fog — and some rooms are a mystery until you step inside.
+          A labyrinth of rooms and winding corridors, with the boss&apos;s lair somewhere at the top. Your torch lights only what&apos;s close — the rest is darkness — and some rooms are a mystery until you step inside. There&apos;s no going back the way you came.
           Take up to {PARTY_SIZE} creatures: {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).
           Wounds carry from room to room. If your team falls you wake up back here — <b>you keep everything you found</b>.
         </p>
@@ -399,16 +404,29 @@ function RoomHeader({ run }: { run: DungeonRun }) {
   );
 }
 
-function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: string) => void }) {
+function ChooseRoom({ run, onEnter, onRetreat }: { run: DungeonRun; onEnter: (nodeId: string) => void; onRetreat: () => void }) {
   const canFight = fightingTeam(run).length > 0;
   const nextToLair = run.map.nodes[run.map.boss].links.includes(runPosition(run));
+  if (atDeadEnd(run)) {
+    return (
+      <div className="stone-panel">
+        <div className="pixel-font" style={{ fontSize: 18, color: "#ff8a80" }}>Dead end</div>
+        <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 12px" }}>
+          The torch gutters against bare stone. Every way on leads back where you&apos;ve already been, and the labyrinth doesn&apos;t let you
+          retrace your steps. Time to find your way out — <b>you keep everything you found</b>.
+        </p>
+        <DungeonMapView run={run} />
+        <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onRetreat}>🏃 Head back out</button>
+      </div>
+    );
+  }
   return (
     <div className="stone-panel">
       <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Which way?</div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
         {nextToLair ? "Something huge breathes at the end of one of these corridors. Make sure the right creatures are on your team. "
-          : "You can only see so far in the dark. Corridors fade into the fog — some lead closer to the lair, some only look like they do. "}
-        You can walk back through rooms you&apos;ve cleared, and change your team below any time before a fight.
+          : "Your torch only lights so far. Tunnels vanish into the dark — some lead closer to the lair, some only look like they do. "}
+        There&apos;s no going back the way you came — choose carefully. You can change your team below any time before a fight.
       </p>
       {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}
       <DungeonMapView run={run} onEnter={canFight ? onEnter : undefined} />
@@ -495,19 +513,20 @@ function RoomScreen({ run, room, found, byId, gold, bag, onTreasure, onChest, on
       {room.kind === "merchant" && (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
-            A cart piled with clinking bottles, and a merchant who smiles too much. &ldquo;Potions! For the bag. One per slot, mind — they don&apos;t stack.&rdquo;
+            A cart with two dusty bottles, and a merchant who smiles too much. &ldquo;One of each, friend — that&apos;s all I&apos;ve got. One per slot in your bag, mind; they don&apos;t stack.&rdquo;
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {(Object.keys(POTIONS) as PotionKey[]).map((k) => {
               const p = POTIONS[k];
-              const can = gold >= p.price && bag.length < BAG_SIZE;
+              const sold = room.bought?.includes(k);
+              const can = !sold && gold >= p.price && bag.length < BAG_SIZE;
               return (
                 <button key={k} className="card-btn" disabled={!can} onClick={() => onBuyPotion(k)} style={{ opacity: can ? 1 : 0.5 }}>
                   <span style={{ flex: 1 }}>
                     <b>{p.icon} {p.name}</b>
                     <span style={{ display: "block", fontSize: 12, color: MUTED }}>Restores {p.heal} HP to one creature. In a fight it uses your turn.</span>
                   </span>
-                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>🪙 {p.price}</span>
+                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "sold" : `🪙 ${p.price}`}</span>
                 </button>
               );
             })}

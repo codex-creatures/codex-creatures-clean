@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
-  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun,
+  fightingTeam, endRun, enemyFighter, nextRooms, runPosition, atDeadEnd, type DungeonSave, type DungeonRun,
 } from "../lib/dungeon/run";
 import {
   rollMap, routeLength, inSight, seenRooms, distance, MIN_ROUTE, MAX_ROUTE, SIGHT_RADIUS, MYSTERY_CHANCE, ROOM_COUNT,
@@ -183,17 +183,21 @@ describe("a labyrinth run", () => {
     expect(nextRooms(inside)).toEqual([]);
   });
 
-  it("cleared rooms are empty when you walk back through them", () => {
-    const run = startRun(party, party.slice(0, 3), {}, 2);
-    const next = run.map.nodes[run.map.start].links[0];
-    let r = enterRoom(run, next);
-    r = leaveRoom({ ...r, current: { ...r.current!, done: true } });
-    expect(r.cleared).toContain(next);
-    r = enterRoom(r, r.map.start);           // back to the entrance
-    expect(r.current).toBeNull();
-    r = enterRoom(r, next);                  // and back again
-    expect(r.current).toBeNull();
-    expect(r.room).toBe(1);                  // still only one room explored
+  it("there's no going back into a room you've been in — a dead end means heading out", () => {
+    for (let i = 0; i < 200; i++) {
+      let run = startRun(party, party.slice(0, 3), {}, 2);
+      // Wander at random until you're stuck or reach the lair.
+      for (let steps = 0; steps < 100 && run.status === "exploring"; steps++) {
+        if (run.current) { run = leaveRoom({ ...run, current: { ...run.current, done: true } }); continue; }
+        const options = nextRooms(run);
+        for (const n of options) expect(run.path).not.toContain(n.id);
+        for (const id of run.path) expect(enterRoom(run, id)).toBe(run);
+        if (options.length === 0) { expect(atDeadEnd(run)).toBe(true); break; }
+        expect(atDeadEnd(run)).toBe(false);
+        run = enterRoom(run, options[Math.floor(Math.random() * options.length)].id);
+      }
+      expect(new Set(run.path).size).toBe(run.path.length); // never the same room twice
+    }
   });
 
   it("knocked-out creatures can't be put in the team, and the team can't change mid-fight", () => {
