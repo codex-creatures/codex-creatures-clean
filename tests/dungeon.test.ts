@@ -4,7 +4,7 @@ import {
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun,
 } from "../lib/dungeon/run";
 import {
-  rollMap, routeLength, waysOn, isAhead, inSight, seenRooms, distance, MIN_ROUTE, MAX_ROUTE, SIGHT_RADIUS, MYSTERY_CHANCE, ROOM_COUNT,
+  rollMap, routeLength, waysOn, isAhead, inSight, knownRooms, KNOWN_AT_START, MIN_ROUTE, MAX_ROUTE, MYSTERY_CHANCE, ROOM_COUNT,
 } from "../lib/dungeon/map";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { createBattle } from "../lib/combat/battle";
@@ -137,20 +137,26 @@ describe("the labyrinth map", () => {
     }
   });
 
-  it("fog: you see a circle around you; what you've seen stays, and the lair is always marked", () => {
+  it("the scroll: a few rooms marked from the start; nearby rooms revealed, but never a mystery until you walk in", () => {
     for (let i = 0; i < 100; i++) {
       const map = rollMap(false);
+      const nodes = Object.values(map.nodes);
+      const marked = nodes.filter((n) => n.known);
+      expect(marked.length).toBe(KNOWN_AT_START);
+      for (const n of marked) expect(n.mystery).toBeFalsy();
+      const known = knownRooms(map, [map.start]);
+      expect(known.has(map.boss)).toBe(true);
       const sight = inSight(map, map.start);
-      for (const n of Object.values(map.nodes)) expect(sight.has(n.id)).toBe(distance(n, map.nodes[map.start]) <= SIGHT_RADIUS);
-      const far = Object.values(map.nodes).find((n) => !sight.has(n.id) && n.id !== map.boss);
-      const seen = seenRooms(map, [map.start]);
-      expect(seen.has(map.boss)).toBe(true);
-      if (far) expect(seen.has(far.id)).toBe(false);
-      // Walking somewhere adds what you saw there, and keeps what you saw before.
-      const next = map.nodes[map.start].links[0];
-      const later = seenRooms(map, [map.start, next]);
-      for (const id of seen) expect(later.has(id)).toBe(true);
-      for (const id of inSight(map, next)) expect(later.has(id)).toBe(true);
+      for (const n of nodes) {
+        if (n.id === map.start || n.id === map.boss) continue;
+        expect(known.has(n.id)).toBe(!!n.known || (sight.has(n.id) && !n.mystery));
+      }
+      // Walking somewhere keeps what you knew, and adds what's near it (and the room itself).
+      const next = waysOn(map, map.start)[0].id;
+      const later = knownRooms(map, [map.start, next]);
+      for (const id of known) expect(later.has(id)).toBe(true);
+      expect(later.has(next)).toBe(true);
+      for (const id of inSight(map, next)) if (!map.nodes[id].mystery) expect(later.has(id)).toBe(true);
     }
   });
 });

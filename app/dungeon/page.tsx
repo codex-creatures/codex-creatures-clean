@@ -411,7 +411,7 @@ function ChooseRoom({ run, onEnter }: { run: DungeonRun; onEnter: (nodeId: strin
       <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Which way?</div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px" }}>
         {nextToLair ? "Something huge breathes at the end of one of these corridors. Make sure the right creatures are on your team. "
-          : "Your torch only lights so far. Tunnels vanish into the dark — every one leads on toward the lair, but some take the long way round. "}
+          : "Your scroll shows every room, but not what waits in most of them. Rooms near you fill in as you go — except the ones that stay a mystery until you step inside. Every corridor leads on toward the lair; some take the long way round. "}
         Corridors only lead onward — there&apos;s no going back, so choose your branch carefully. You can change your team below any time before a fight.
       </p>
       {!canFight && <p style={{ fontSize: 13, color: "#ff8a80" }}>Pick at least one creature that can still fight.</p>}

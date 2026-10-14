@@ -13,11 +13,13 @@
 //   be reached from below. A few long corridors skip ahead.
 // - The lair has one or two ways in. The shortest route from the entrance
 //   to it is MIN_ROUTE–MAX_ROUTE rooms.
-// - Fog is regional: you see SIGHT_RADIUS around where you stand. Rooms
-//   you've seen stay on your map; corridors leaving your circle fade out, so
-//   you know which way they head but not where they end.
-// - MYSTERY_CHANCE of rooms are mysteries: "?" until you walk in, rolled
-//   from MYSTERY_MIX (mostly mini bosses; librarians only turn up there).
+// - You carry a map scroll: every room and corridor is on it, but what's in
+//   a room is "?" until you know. KNOWN_AT_START rooms are marked from the
+//   off, so you can half-plan a route. Rooms within SIGHT_RADIUS of where
+//   you've stood are revealed — except mysteries.
+// - MYSTERY_CHANCE of rooms are mysteries: they stay "?" until you walk in,
+//   even up close, and are rolled from MYSTERY_MIX (mostly mini bosses;
+//   librarians only turn up there).
 
 import { MYSTERY_MIX, ROOM_MIX, rollRoomKind, type RoomKind } from "./run";
 
@@ -31,6 +33,7 @@ export const LONG_CORRIDORS = 2;     // corridors that skip a long way ahead
 export const MIN_ROUTE = 5;          // shortest route to the lair, in rooms walked into
 export const MAX_ROUTE = 9;
 export const MYSTERY_CHANCE = 0.3;   // a room whose kind you can't see until you walk in
+export const KNOWN_AT_START = 5;     // rooms already marked on your scroll
 
 export type MapNode = {
   id: string;
@@ -38,7 +41,8 @@ export type MapNode = {
   y: number;
   kind: RoomKind;
   links: string[];   // corridors to these rooms
-  mystery?: boolean; // shown as "?" until you walk in
+  mystery?: boolean; // stays "?" until you walk in
+  known?: boolean;   // marked on your scroll from the start
 };
 
 export type DungeonMap = {
@@ -147,6 +151,9 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
       if (mystery) n.mystery = true;
     }
   }
+  // A few rooms are marked on the scroll from the start (never mysteries).
+  const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery);
+  for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
   return map;
 }
 
@@ -161,12 +168,15 @@ export function inSight(map: DungeonMap, at: string): Set<string> {
   return new Set(Object.values(map.nodes).filter((n) => distance(n, here) <= SIGHT_RADIUS).map((n) => n.id));
 }
 
-// Everything you've seen so far: what was in sight from every room you've
-// stood in. The lair is always marked.
-export function seenRooms(map: DungeonMap, path: string[]): Set<string> {
-  const seen = new Set<string>([map.boss]);
-  for (const at of new Set(path)) for (const id of inSight(map, at)) seen.add(id);
-  return seen;
+// The rooms whose contents you know: the entrance and the lair, the ones
+// marked from the start, the ones you've walked into, and anything that was
+// in sight from where you've stood — but never a mystery you haven't entered.
+export function knownRooms(map: DungeonMap, path: string[]): Set<string> {
+  const visited = new Set(path);
+  const known = new Set<string>([map.boss, map.start, ...visited]);
+  for (const n of Object.values(map.nodes)) if (n.known) known.add(n.id);
+  for (const at of visited) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
+  return known;
 }
 
 // Which way a corridor heads, for rooms you can't see the end of.
