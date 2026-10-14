@@ -21,6 +21,7 @@ export const PALETTE: Record<string, string> = {
   k: "#101010",                                        // black (pupils)
   z: "#e37aa0",                                        // pink
   i: "#9b8a74", I: "#c9b89c", j: "#6b5d4c",            // dust / sand
+  v: "#9a8a5e", V: "#c4b27e", D: "#5e5236",            // cyclops hide
 };
 
 export type Sprite = string[];

@@ -26,9 +26,10 @@ import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } fr
 import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { YOU, FOE } from "@/components/BattleLog";
+import BossStage from "@/components/BossStage";
 
 export const MUTED = "rgba(255,255,255,0.5)";
-const STEP_MS = { attack: 950, other: 650, phase: 2600 };
+const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
 
 // What the screen shows about each team member (gear names etc.).
 export type MemberInfo = { rarity: Rarity; label: string; weaponName?: string; armorName?: string };
@@ -47,7 +48,7 @@ export type Match = {
 
 // The animation currently playing. Indexes say which creature (team index)
 // when a side has two on the field.
-type Fx =
+export type Fx =
   | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean; gap: boolean;
       attackerIndex?: number; targetIndex?: number; evaded?: boolean }
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey }
@@ -266,7 +267,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
 
   return (
     <>
-      {phaseText && (
+      {foe.boss && <BossStage side={foe} fx={fx} />}
+      {phaseText && !foe.boss && (
         <div className="stone-panel pixel-font" style={{ marginBottom: 10, textAlign: "center", fontSize: 17, color: "#ffd66e", borderColor: "#ffd66e" }}>
           ⚠️ {phaseText}
         </div>

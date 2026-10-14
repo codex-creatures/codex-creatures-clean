@@ -90,7 +90,7 @@ export function bossEndOfRound(state: BattleState, key: SideKey): BattleEvent[] 
     side.active = CYCLOPS.HANDS[0];
     side.partner = CYCLOPS.HANDS[1];
     return [{ type: "lineup", side: key, active: side.active, partner: side.partner, reveal: CYCLOPS.HANDS, gone: [CYCLOPS.BODY],
-      text: "The Cyclops staggers… and falls apart! Its two hands drop to the floor and come scuttling at you." }];
+      text: "The Cyclops falls to the ground… then suddenly both hands tear free of its arms and run at you!" }];
   }
   if (boss.phase === 2 && CYCLOPS.HANDS.every((i) => t[i].hp <= 0)) {
     boss.phase = 3;
@@ -98,7 +98,7 @@ export function bossEndOfRound(state: BattleState, key: SideKey): BattleEvent[] 
     side.active = CYCLOPS.EYE;
     side.partner = null;
     return [{ type: "lineup", side: key, active: side.active, partner: null, reveal: [CYCLOPS.EYE],
-      text: "The skull cracks open. The Eye tears free and floats into the air, crackling with light!" }];
+      text: "The last hand twitches and lies still. Then the Cyclops's skull splits open — the Eye tears itself free and rises into the air, crackling with light!" }];
   }
   return [];
 }

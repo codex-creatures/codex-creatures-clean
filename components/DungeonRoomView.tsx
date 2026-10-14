@@ -100,7 +100,11 @@ function RoomContents({ run }: { run: DungeonRun }) {
   if (isFight(room.kind)) {
     if (room.done) return null;
     if (room.boss) {
-      return <div style={{ ...at, fontSize: "clamp(40px, 12vw, 72px)", filter: "drop-shadow(0 0 10px #ff3b2a)" }}>👁️</div>;
+      return (
+        <div style={{ ...at, filter: "drop-shadow(0 0 10px rgba(255,59,42,0.7)) drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>
+          <div className="boss-breathe"><PixelSprite sprite={creatureSprite("cyclops")} scale={4} /></div>
+        </div>
+      );
     }
     return (
       <div style={at}>
