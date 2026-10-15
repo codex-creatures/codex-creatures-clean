@@ -1,8 +1,9 @@
 "use client";
 // components/DenRoom.tsx
-// The clickable pixel-art Den (drawn by lib/den/scene.ts). It's a wide
-// cavern: on a phone it's wider than the screen, so you swipe sideways to
-// look around (it opens centred); on a big screen it all fits.
+// The clickable pixel-art Den (drawn by lib/den/scene.ts), fitted to the
+// screen. Nothing is labelled until you point at it: hover an object (or
+// tap it once on a touch screen) to see its name; click it (or tap it again)
+// to go in.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,17 +31,20 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
 
 const FPS = 12;
 
-// The room is never drawn narrower than this (px); narrower screens scroll.
-const MIN_WIDTH = 700;
-
 // caged: the creature id waiting in the cage (drawn inside it), if any.
 // klutz: where Klutz is (strolling, healing in the pool, or away hunting).
 // klutzNews: he has something to tell you (a ❗ on his label).
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
 export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [scrollable, setScrollable] = useState(false);
+  // Touch: the first tap picks an object (shows its name), the second goes in.
+  const [picked, setPicked] = useState<ObjId>(OBJ.none);
+  const touchRef = useRef(false);
+  const [touch, setTouch] = useState(false);
+  const klutzNewsRef = useRef(klutzNews);
+  const pickedRef = useRef<ObjId>(OBJ.none);
+  useEffect(() => { klutzNewsRef.current = klutzNews; }, [klutzNews]);
+  useEffect(() => { pickedRef.current = picked; }, [picked]);
   const cagedRef = useRef(caged);
   const klutzRef = useRef(klutz);
   const klutzLabelRef = useRef<HTMLButtonElement | null>(null);
@@ -63,7 +67,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       // Klutz's label follows him about.
       const el = klutzLabelRef.current, at = scene.klutzAt();
       if (el) {
-        el.style.display = at ? "block" : "none";
+        el.style.display = at && (klutzNewsRef.current || hoverRef.current === OBJ.klutz || pickedRef.current === OBJ.klutz) ? "block" : "none";
         if (at) { el.style.left = `${(at[0] / W) * 100}%`; el.style.top = `${(at[1] / H) * 100}%`; }
       }
     };
@@ -82,17 +86,6 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     cagedRef.current = caged;
     sceneRef.current?.setCaged(caged ? CREATURE_SPRITES[caged] ?? null : null);
   }, [caged]);
-
-  // On a narrow screen, start looking at the middle of the room.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const check = () => setScrollable(el.scrollWidth > el.clientWidth + 2);
-    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
 
   function objectAt(e: React.PointerEvent | React.MouseEvent): ObjId {
     const c = canvasRef.current, s = sceneRef.current;
@@ -113,17 +106,28 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     else setNotice(spot);
   }
 
+  // A click or tap on an object. With a mouse it goes straight in; on a
+  // touch screen the first tap shows the name, a second tap on it goes in.
+  function press(id: ObjId) {
+    if (!touchRef.current) { activate(id); return; }
+    if (id && id === picked) { activate(id); return; }
+    setPicked(id);
+    setHovered(id);
+  }
+  // Which object's name is showing: the one you're pointing at or have picked.
+  const shown = (hover || picked) as ObjId;
+
   return (
     <div>
-    <div ref={scrollRef} style={{ overflowX: "auto", overflowY: "hidden", touchAction: "pan-x pan-y", scrollbarWidth: "thin" }}>
-    <div style={{ position: "relative", width: `max(100%, ${MIN_WIDTH}px)`, margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
+    <div style={{ position: "relative", width: "100%", margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
       <canvas
         ref={canvasRef}
         width={W * RES}
         height={H * RES}
-        onPointerMove={(e) => setHovered(objectAt(e))}
-        onPointerLeave={() => setHovered(OBJ.none)}
-        onClick={(e) => activate(objectAt(e))}
+        onPointerDown={(e) => { touchRef.current = e.pointerType !== "mouse"; setTouch(touchRef.current); }}
+        onPointerMove={(e) => { if (e.pointerType === "mouse") setHovered(objectAt(e)); }}
+        onPointerLeave={(e) => { if (e.pointerType === "mouse") setHovered(OBJ.none); }}
+        onClick={(e) => press(objectAt(e))}
         style={{ width: "100%", height: "100%", imageRendering: "pixelated", cursor: hover ? "pointer" : "default", display: "block" }}
         aria-label="The Den"
         role="img"
@@ -132,7 +136,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
-        if (id === OBJ.klutz) return null;
+        if (id === OBJ.klutz || id !== shown) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
         const spot = SPOTS[id];
@@ -141,21 +145,19 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
           <button
             key={id}
             onClick={() => activate(id)}
-            onPointerEnter={() => setHovered(id)}
-            onPointerLeave={() => setHovered(OBJ.none)}
             className="pixel-font"
             style={{
               position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`,
               // Near the edges the label leans inwards, so it never runs off a phone screen.
               transform: `translate(${x / W < 0.12 ? -15 : x / W > 0.88 ? -85 : -50}%, ${a.below ? "15%" : "-100%"})`, whiteSpace: "nowrap",
-              padding: "2px 6px", fontSize: "clamp(11px, 2.6vw, 14px)", lineHeight: 1.3,
+              padding: "2px 6px", fontSize: "clamp(11px, 2.6vw, 14px)", lineHeight: 1.3, pointerEvents: touch ? "auto" : "none",
               background: active ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.78)",
               border: `2px solid ${active ? "#ffd66e" : spot.href ? "#8a6a3a" : "#4a4a55"}`,
               color: spot.href ? (active ? "#ffe9a8" : "#f1d9a0") : "#a9a9b8",
               cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
             }}
           >
-            {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}
+            {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}{touch && spot.href ? " ›" : ""}
           </button>
         );
       })}
@@ -169,13 +171,10 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
           background: hover === OBJ.klutz ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.7)",
           border: `2px solid ${hover === OBJ.klutz ? "#ffd66e" : "#5c7a3a"}`, color: "#d6f0a8", cursor: "pointer",
         }}>
-        {klutzNews && <><span className="news-pulse" aria-label="Klutz has news">❗</span>{" "}</>}Klutz{klutz === "pool" ? " 💤" : ""}
+        {klutzNews && <span className="news-pulse" aria-label="Klutz has news">❗</span>}
+        {(shown === OBJ.klutz || !klutzNews) && <>{klutzNews ? " " : ""}Klutz{klutz === "pool" ? " 💤" : ""}</>}
       </button>
     </div>
-    </div>
-      {scrollable && (
-        <div className="pixel-font" style={{ textAlign: "center", fontSize: 12, color: "#8a8a99", marginTop: 6 }}>◀ swipe to look around ▶</div>
-      )}
 
       {/* "Coming soon" notice */}
       {notice && (

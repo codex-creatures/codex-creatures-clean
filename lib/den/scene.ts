@@ -16,14 +16,14 @@
 
 import { fineGrid, PALETTE, type Sprite } from "../sprites/pixels";
 
-export const W = 416;  // layout units
-export const H = 368;
+export const W = 560;  // layout units
+export const H = 448;
 export const RES = 2;  // fine pixels per unit: the canvas is W*RES × H*RES
 const FW = W * RES, FH = H * RES;
 
 // Isometric layout: 1 floor unit = 32px wide / 16px tall diamond.
-const NU = 13;        // floor units along the right wall (v = 0)
-const NV = 11;        // floor units along the left wall (u = 0)
+const NU = 18;        // floor units along the right wall (v = 0)
+const NV = 15;        // floor units along the left wall (u = 0)
 const TW = 16;        // half tile width
 const TH = 8;         // half tile height
 const CX = 16 + NV * TW; // screen x of the back corner
@@ -36,39 +36,47 @@ export const OBJ = {
 } as const;
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
-// Where things stand (floor units).
-const AL = { u: 3.4, v: 3.4 };              // scanning altar (the centrepiece)
-const PIT = { u0: 6.2, v0: 5.4, u1: 9.6, v1: 8.8, depth: 18 };
-const POOL = { u: 3.6, v: 9.0, ru: 1.9, rv: 1.25 };
-const CAGE = { u0: 0.35, v0: 8.0, u1: 2.15, v1: 9.8, h: 32 };
-const CRATE = { u0: 2.3, v0: 6.95, u1: 3.1, v1: 7.7, h: 14 }; // Klutz's crate, beside the cage
-const ARCH_V = 2.6;                          // archway on the left wall
-const BOARD_V = 5.4;                         // quest board on the left wall
-const TAVERN = { a0: 9.9, a1: 12.3, h: 74 }; // tavern opening on the right wall (along u)
+// Where things stand (floor units), in groups:
+// - the middle: the Scanning Altar, with the Pit and the Healing Pool either side;
+// - the storage corner (right wall, at the back): chest, crates, shelves, bookcase;
+// - further along the right wall: the merchant, then the tavern;
+// - the left wall: the archway, the bindle in its corner, the quest board and lectern;
+// - the front left: the cage, with Klutz's crate beside it.
+const AL = { u: 7.5, v: 6.5 };              // scanning altar (the centrepiece)
+const PIT = { u0: 10.0, v0: 7.2, u1: 13.6, v1: 10.8, depth: 18 };
+const POOL = { u: 5.6, v: 10.6, ru: 2.0, rv: 1.3 };
+const CAGE = { u0: 0.5, v0: 10.4, u1: 2.3, v1: 12.2, h: 32 };
+const CRATE = { u0: 2.75, v0: 11.4, u1: 3.55, v1: 12.15, h: 14 }; // Klutz's crate, beside the cage
+const ARCH_V = 3.2;                          // archway on the left wall
+const BOARD_V = 6.6;                         // quest board on the left wall
+const LECTERN = { u: 1.15, v: 7.45 };        // the Bestiary's lectern, in front of the board
+const SHELF = { u0: 6.2, u1: 7.8, h: 46 };   // the bookcase, standing against the right wall
+const MERCHANT_U = 10.2;                     // the merchant's stall (right wall)
+const TAVERN = { a0: 13.6, a1: 16.0, h: 74 }; // tavern opening on the right wall (along u)
 
 // Where each object's label sits (floor units + height in px).
 // below = the label hangs under the point instead of above it.
 export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: number; below?: boolean }> = {
-  1: { u: 9.6, v: 8.8, z: 0, below: true },        // pit (its front corner)
-  2: { u: 3.0, v: 0, z: 42 },                      // chest (label on the wall above it)
+  1: { u: PIT.u1, v: PIT.v1, z: 0, below: true },   // pit (its front corner)
+  2: { u: 3.0, v: 0.6, z: 30 },                    // chest
   3: { u: AL.u + 0.5, v: AL.v + 0.5, z: 0, below: true }, // altar
-  4: { u: 7.8, v: 0.6, z: 40 },                    // merchant
+  4: { u: MERCHANT_U + 0.75, v: 0.6, z: 40 },      // merchant
   5: { u: 0, v: BOARD_V + 0.75, z: 96 },           // quest board
   6: { u: 0.35, v: 0.65, z: 54 },                  // the bag in the corner by the archway
   7: { u: 0, v: ARCH_V, z: 88 },                   // archway
-  8: { u: 1.15, v: 6.2, z: 0, below: true },                   // the scroll on its lectern
-  9: { u: 1.25, v: 8.9, z: CAGE.h + 6 },           // cage
+  8: { u: LECTERN.u, v: LECTERN.v, z: 0, below: true }, // the scroll on its lectern
+  9: { u: (CAGE.u0 + CAGE.u1) / 2, v: (CAGE.v0 + CAGE.v1) / 2, z: CAGE.h + 6 }, // cage
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
-  12: { u: 5.2, v: 2.0, z: 26 },                   // Klutz (he moves: see klutzAt)
-  13: { u: 6.4, v: 0, z: 58 },                     // the bookcase (a single shelf, for now)
+  12: { u: 8.6, v: 3.2, z: 26 },                   // Klutz (he moves: see klutzAt)
+  13: { u: (SHELF.u0 + SHELF.u1) / 2, v: 0.4, z: SHELF.h + 6 }, // the bookcase
   14: { u: CRATE.u1, v: CRATE.v1, z: 0, below: true }, // Klutz's crate (label under it)
 };
 
 // Klutz's stroll round the Den: a loop of open floor (clear of the pit,
 // pool, altar and furniture), pausing at each stop.
 const KLUTZ_PATH: [number, number][] = [
-  [5.2, 2.0], [9.0, 2.4], [11.0, 4.0], [11.0, 7.4], [10.0, 9.4], [6.4, 9.8], [5.8, 7.6], [5.2, 4.6], [2.6, 6.4],
+  [8.6, 3.2], [12.6, 3.6], [15.6, 5.8], [15.4, 11.0], [11.8, 12.8], [8.6, 12.6], [8.4, 8.6], [4.0, 7.6], [4.6, 4.6],
 ];
 const KLUTZ_SPEED = 0.55;  // floor units a second
 const KLUTZ_PAUSE = 2.5;   // seconds at each stop
@@ -195,8 +203,8 @@ function planks(a: number, z: number, seed: number): RGB {
 type Light = { u: number; v: number; z: number; color: RGB; power: number; radius: number; seed: number; pulse?: boolean; steady?: boolean };
 
 const TORCHES: { u: number; v: number; z: number }[] = [
-  { u: 0.12, v: 1.2, z: 78 }, { u: 0.12, v: 7.3, z: 74 },
-  { u: 1.3, v: 0.12, z: 78 }, { u: 6.3, v: 0.12, z: 76 }, { u: 9.4, v: 0.12, z: 72 },
+  { u: 0.12, v: 1.4, z: 78 }, { u: 0.12, v: 5.2, z: 76 }, { u: 0.12, v: 9.4, z: 74 },
+  { u: 1.3, v: 0.12, z: 78 }, { u: 8.6, v: 0.12, z: 76 }, { u: 12.6, v: 0.12, z: 74 }, { u: 16.8, v: 0.12, z: 72 },
 ];
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => b / 16);
@@ -321,7 +329,7 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
       return { c: mix(hex("#0d0b0a"), hex("#050404"), depth), id: OBJ.tavern };
     }
     // Merchant's hanging sign
-    const sa = a - 7.2 * 16, sz = z - 64;
+    const sa = a - (MERCHANT_U + 0.2) * 16, sz = z - 64;
     if (sa >= 0 && sa < 18 && sz >= 0 && sz < 12) {
       if (sa < 1 || sa >= 17 || sz < 1 || sz >= 11) return { c: WOOD_DARK, id: OBJ.merchant };
       const cx = sa - 9, cz = sz - 6;
@@ -489,16 +497,23 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
   box(OBJ.bag, 0.125, 0.375, 24, 0.975, 0.713, 30, { top: wool, right: (a, b) => (Math.hypot(a - 2.2, b - 2.5) < 1.5 ? hex("#3a4630") : wool(a, b)), left: wool }); // bedroll
   }
 
-  // The bookcase — for now just a shelf on the right wall, a few codexes on it.
-  box(OBJ.bookcase, 5.95, 0, 34, 6.85, 0.45, 37, { top: (a) => planks(a, 2, 1), right: () => WOOD_DARK, left: () => WOOD_DARK });
-  const SPINES = ["#7b3fc4", "#2f6fb0", "#8e2b2b", "#2f7a3a", "#b07a2a", "#5a3a8a"];
-  for (let k = 0; k < 6; k++) {
-    const u0 = 6.0 + k * 0.13, h = 9 + (k * 5) % 5;
-    const spine: Face = (a, b) => (b > h - 2 ? GOLD : hex(SPINES[k]));
-    box(OBJ.bookcase, u0, 0.05, 37, u0 + 0.11, 0.38, 37 + h, { top: () => hex("#d8cba8"), right: spine, left: spine });
-  }
-  box(OBJ.bookcase, 6.2, 0, 26, 6.27, 0.3, 34, { top: () => IRON, right: () => IRON, left: () => IRON });  // brackets
-  box(OBJ.bookcase, 6.6, 0, 26, 6.67, 0.3, 34, { top: () => IRON, right: () => IRON, left: () => IRON });
+  // The bookcase: a tall case of shelves against the right wall, codexes on them.
+  const SPINES = ["#7b3fc4", "#2f6fb0", "#8e2b2b", "#2f7a3a", "#b07a2a", "#5a3a8a", "#2a7a7a"];
+  const bookFront: Face = (a, b) => {
+    const wdt = (SHELF.u1 - SHELF.u0) * 16;
+    if (a < 1.5 || a > wdt - 1.5 || b < 2 || b > SHELF.h - 2) return planks(b, a, 5);   // the frame
+    const row = Math.floor((b - 2) / 11), inRow = (b - 2) % 11;
+    if (inRow < 1.5) return WOOD_DARK;                                                    // a shelf
+    const bookW = 2.2, k = Math.floor((a - 1.5) / bookW) + row * 5;
+    const tall = 6 + Math.floor(hash(k, row) * 3.5);
+    if (inRow > tall + 1.5 || hash(k + 3, row) < 0.12) return mul(WOOD_DARK, 0.6);      // gaps above the books
+    const spine = hex(SPINES[Math.floor(hash(k, row + 7) * SPINES.length)]);
+    if ((a - 1.5) % bookW < 0.35) return mul(spine, 0.55);                              // between books
+    return Math.abs(inRow - tall + 0.5) < 0.6 ? GOLD : spine;                            // gold tops
+  };
+  box(OBJ.bookcase, SHELF.u0, 0.05, 0, SHELF.u1, 0.75, SHELF.h, {
+    top: (a, b) => planks(a, b, 5), right: (a, b) => planks(b, a, 6), left: bookFront,
+  });
 
   // Crates beside the chest.
   const crate: Face = (a, b) => (a < 1.2 || a > 13.8 || b < 1.2 || b > 12 || Math.abs(a - b) < 0.9 ? WOOD_DARK : planks(a, b, 1));
@@ -520,10 +535,11 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
 
   // Merchant stall (right wall, beside the tavern)
   const counter: Face = (a, b) => (b > 11 ? hex("#7e2626") : b > 10 ? GOLD : planks(a, b, 2));
-  box(OBJ.merchant, 7.0, 0.12, 0, 8.5, 1.0, 13, { top: (a, b) => ((Math.floor(a / 4) + Math.floor(b / 4)) % 2 ? hex("#932f2f") : hex("#7e2626")), right: counter, left: counter });
-  box(OBJ.merchant, 7.15, 0.3, 13, 7.35, 0.5, 20, { top: () => hex("#cfc6b0"), right: potion("#b060e0"), left: potion("#b060e0") });
-  box(OBJ.merchant, 7.55, 0.25, 13, 7.95, 0.65, 16, { top: () => ({ c: hex("#ffe27a"), glow: 1 }), right: () => GOLD, left: () => mul(GOLD, 0.85) });
-  box(OBJ.merchant, 8.1, 0.35, 13, 8.28, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
+  const MU = MERCHANT_U;
+  box(OBJ.merchant, MU, 0.12, 0, MU + 1.5, 1.0, 13, { top: (a, b) => ((Math.floor(a / 4) + Math.floor(b / 4)) % 2 ? hex("#932f2f") : hex("#7e2626")), right: counter, left: counter });
+  box(OBJ.merchant, MU + 0.15, 0.3, 13, MU + 0.35, 0.5, 20, { top: () => hex("#cfc6b0"), right: potion("#b060e0"), left: potion("#b060e0") });
+  box(OBJ.merchant, MU + 0.55, 0.25, 13, MU + 0.95, 0.65, 16, { top: () => ({ c: hex("#ffe27a"), glow: 1 }), right: () => GOLD, left: () => mul(GOLD, 0.85) });
+  box(OBJ.merchant, MU + 1.1, 0.35, 13, MU + 1.28, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
 
   // Scanning altar (the centrepiece, in front of the back corner)
   const altarStone: Face = (a, b) => (b > 15 ? mul(CAP_STONES[1], 1.1) : rock(a + 30, b, 11));
@@ -539,14 +555,15 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
 
   // Lectern with an open scroll (in front of the quest board).
   const post: Face = (a, b) => planks(a, b, 3);
-  box(OBJ.scroll, 1.0, 6.05, 0, 1.3, 6.35, 14, { top: () => WOOD_DARK, right: post, left: post });
-  box(OBJ.scroll, 0.75, 5.85, 14, 1.55, 6.55, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
+  const LU = LECTERN.u - 0.15, LV = LECTERN.v - 0.15;
+  box(OBJ.scroll, LU, LV, 0, LU + 0.3, LV + 0.3, 14, { top: () => WOOD_DARK, right: post, left: post });
+  box(OBJ.scroll, LU - 0.25, LV - 0.2, 14, LU + 0.55, LV + 0.5, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
   const parchment: Face = (a, b) => {
     if (b < 1.5 || b > 14.5) return hex("#c9b07a"); // rolled ends
     const line = a > 2 && a < 13 && Math.floor(a) % 3 === 0 && b > 3 && b < 13 && Math.abs(b - 8) > 0.8;
     return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
   };
-  box(OBJ.scroll, 0.8, 5.9, 17, 1.5, 6.5, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+  box(OBJ.scroll, LU - 0.2, LV - 0.15, 17, LU + 0.5, LV + 0.45, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
 
   // Klutz's crate: rough planks with iron bands, where he dumps the gear he finds.
   const crateSide: Face = (a, b) => (b < 1.2 || b > CRATE.h - 1.5 || Math.abs(b - CRATE.h / 2) < 0.8 ? IRON : planks(a, b, 3));
