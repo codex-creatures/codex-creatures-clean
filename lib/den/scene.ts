@@ -53,9 +53,9 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   3: { u: AL.u, v: AL.v, z: 50 },                  // altar
   4: { u: 7.8, v: 0.6, z: 40 },                    // merchant
   5: { u: 0, v: BOARD_V + 0.75, z: 96 },           // quest board
-  6: { u: 5.0, v: 0, z: 78 },                      // bag shelf
+  6: { u: 1.9, v: 4.2, z: 0, below: true },        // the backpack by the archway
   7: { u: 0, v: ARCH_V, z: 72 },                   // archway
-  8: { u: 1.15, v: 4.6, z: 0, below: true },                   // the scroll on its lectern
+  8: { u: 1.15, v: 4.6, z: 26 },                   // the scroll on its lectern
   9: { u: 1.25, v: 8.9, z: CAGE.h + 6 },           // cage
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
@@ -438,17 +438,36 @@ export function createDen(): DenScene {
   }
 
   // Back to front so nearer objects cover farther ones.
-  // Storage corner (right wall): the bag shelf, sacks and potions.
+  // Storage corner (right wall): a shelf of sacks and potions.
   const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
-  box(OBJ.bag, 4.2, 0, 28, 5.8, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
-  box(OBJ.bag, 4.2, 0, 52, 5.8, 0.4, 55, { top: (a) => planks(a, 2, 1), right: shelf, left: shelf });
+  box(OBJ.chest, 4.2, 0, 28, 5.8, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
+  box(OBJ.chest, 4.2, 0, 52, 5.8, 0.4, 55, { top: (a) => planks(a, 2, 1), right: shelf, left: shelf });
   const sack: Face = (a, b) => (b > 8 && b < 10 ? hex("#3d2a17") : mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15));
-  box(OBJ.bag, 4.35, 0.05, 55, 4.95, 0.35, 67, { top: () => hex("#8a6640"), right: sack, left: sack });
+  box(OBJ.chest, 4.35, 0.05, 55, 4.95, 0.35, 67, { top: () => hex("#8a6640"), right: sack, left: sack });
   const potion = (col: string): Face => (a, b) => (b > 6 ? hex("#cfc6b0") : { c: mul(hex(col), b < 2 ? 0.7 : 1), glow: 1 });
-  box(OBJ.bag, 5.1, 0.1, 55, 5.28, 0.28, 63, { top: () => hex("#cfc6b0"), right: potion("#e04848"), left: potion("#e04848") });
-  box(OBJ.bag, 5.38, 0.1, 55, 5.56, 0.28, 62, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
-  box(OBJ.bag, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
-  box(OBJ.bag, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
+  box(OBJ.chest, 5.1, 0.1, 55, 5.28, 0.28, 63, { top: () => hex("#cfc6b0"), right: potion("#e04848"), left: potion("#e04848") });
+  box(OBJ.chest, 5.38, 0.1, 55, 5.56, 0.28, 62, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
+  box(OBJ.chest, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
+  box(OBJ.chest, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
+
+  // A rugged backpack on the floor in front of the archway, ready for the next run:
+  // leather body with a front pocket, a flap with a buckle, a bedroll on top.
+  const LEATHER = hex("#6b4a2b"), LEATHER_D = hex("#4a3019"), STRAP = hex("#2e1e10");
+  const leather: Face = (a, b) => {
+    if (Math.abs(a - 3) < 0.9 || Math.abs(a - 12) < 0.9) return STRAP;           // straps
+    if (Math.floor(b) % 5 === 0 && Math.floor(a) % 2 === 0) return LEATHER_D;     // stitching
+    return mul(LEATHER, 0.92 + hash(Math.floor(a), Math.floor(b) + 7) * 0.14);
+  };
+  box(OBJ.bag, 1.35, 3.45, 0, 2.038, 4.075, 20, { top: () => LEATHER_D, right: leather, left: leather });
+  box(OBJ.bag, 2.038, 3.55, 4, 2.15, 3.975, 14, {                                   // front pocket
+    top: () => LEATHER_D, right: (a, b) => (b > 6 ? LEATHER_D : Math.abs(a - 2.7) < 0.7 && b > 4 ? GOLD : mul(LEATHER, 1.05)), left: () => LEATHER_D,
+  });
+  box(OBJ.bag, 1.313, 3.413, 20, 2.075, 4.112, 24, {                                  // the flap
+    top: (a, b) => (Math.abs(b - 4) < 1 && a > 6 ? IRON_LIGHT : LEATHER_D),
+    right: (a) => (Math.abs(a - 4.5) < 1 ? GOLD : LEATHER_D), left: () => LEATHER_D,
+  });
+  const wool: Face = (a, b) => (Math.floor(a) % 4 === 0 ? hex("#4b5a3e") : mul(hex("#6f7d5a"), 0.92 + hash(Math.floor(a), Math.floor(b)) * 0.12));
+  box(OBJ.bag, 1.275, 3.575, 24, 2.125, 3.913, 30, { top: wool, right: (a, b) => (Math.hypot(a - 2.2, b - 2.5) < 1.5 ? hex("#3a4630") : wool(a, b)), left: wool }); // bedroll
 
   // Crates beside the chest.
   const crate: Face = (a, b) => (a < 1.2 || a > 13.8 || b < 1.2 || b > 12 || Math.abs(a - b) < 0.9 ? WOOD_DARK : planks(a, b, 1));
