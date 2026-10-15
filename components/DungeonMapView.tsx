@@ -11,7 +11,7 @@
 
 import { useId } from "react";
 import { ROOM_INFO, runPosition, nextRooms, type DungeonRun } from "@/lib/dungeon/run";
-import { MAP_W, MAP_H, SIGHT_RADIUS, distance, heading, knownRooms, type MapNode } from "@/lib/dungeon/map";
+import { MAP_W, MAP_H, SIGHT_RADIUS, distance, heading, knownRooms, linkKey, type MapNode } from "@/lib/dungeon/map";
 import type { RoomKind } from "@/lib/dungeon/run";
 import { MUTED } from "@/components/BattleScreen";
 
@@ -74,6 +74,8 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
   const corridors = all.flatMap((a) => a.links.filter((b) => a.id < b).map((b) => [a, map.nodes[b]] as const));
   const walked = new Set(run.path.slice(1).map((id, i) => [run.path[i], id].sort().join("|")));
   const isWalked = (a: MapNode, b: MapNode) => walked.has([a.id, b.id].sort().join("|"));
+  const marked = new Set(map.knownLinks ?? []); // corridors inked on the scroll from the start
+  const isMarked = (a: MapNode, b: MapNode) => marked.has(linkKey(a.id, b.id));
   const isWayOn = (a: MapNode, b: MapNode) => (a.id === pos && choiceIds.has(b.id)) || (b.id === pos && choiceIds.has(a.id));
 
   // The scroll: parchment between two wooden rollers.
@@ -168,6 +170,11 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
           filter={`url(#${uid}-fog)`} mask={`url(#${uid}-fogmask)`} />
 
         <g filter={`url(#${uid}-ink)`}>
+          {/* Corridors marked on the scroll from the start: dashed ink, out in the dark too. */}
+          {corridors.filter(([a, b]) => isMarked(a, b) && !isWalked(a, b)).map(([a, b]) => (
+            <line key={`m-${a.id}-${b.id}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+              stroke={INK} strokeWidth={0.8} strokeDasharray="2.2 1.6" strokeOpacity={0.75} strokeLinecap="round" />
+          ))}
           {/* Your route, in red. */}
           {corridors.filter(([a, b]) => isWalked(a, b)).map(([a, b]) => (
             <line key={`w-${a.id}-${b.id}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={RED_INK} strokeWidth={1.3} strokeLinecap="round" />

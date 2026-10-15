@@ -17,7 +17,9 @@
 // - You carry a map scroll: every room and corridor is on it, but what's in
 //   a room is "?" until you know. KNOWN_AT_START rooms are marked from the
 //   off, so you can half-plan a route. Rooms within SIGHT_RADIUS of where
-//   you've stood are revealed — except mysteries.
+//   you've stood are revealed — except mysteries. KNOWN_CORRIDORS corridors
+//   deeper in are inked on the scroll too, so you can try to remember a
+//   route once the scroll is put away.
 // - MYSTERY_CHANCE of rooms are mysteries: they stay "?" until you walk in,
 //   even up close, and are rolled from MYSTERY_MIX (mostly mini bosses;
 //   librarians only turn up there).
@@ -37,6 +39,8 @@ export const MIN_ROUTE = 5;          // shortest route to the lair, in rooms wal
 export const MAX_ROUTE = 9;
 export const MYSTERY_CHANCE = 0.3;   // a room whose kind you can't see until you walk in
 export const KNOWN_AT_START = 5;     // rooms already marked on your scroll
+export const KNOWN_CORRIDORS = 3;    // …and corridors, somewhere past the 2nd room
+export const KNOWN_CORRIDOR_DEPTH = 2; // (both their rooms at least this many rooms in)
 
 export type MapNode = {
   id: string;
@@ -52,6 +56,7 @@ export type DungeonMap = {
   start: string;                  // the entrance (bottom)
   boss: string;                   // the lair (top)
   nodes: Record<string, MapNode>;
+  knownLinks?: string[];          // corridors marked on the scroll from the start ("a|b", sorted)
 };
 
 type Rng = () => number;
@@ -64,6 +69,23 @@ function link(nodes: Record<string, MapNode>, a: string, b: string) {
   nodes[a].links.push(b);
   nodes[b].links.push(a);
 }
+
+// How many rooms in each room is (walking onward only, the shortest way).
+export function depths(map: DungeonMap): Map<string, number> {
+  const seen = new Map<string, number>([[map.start, 0]]);
+  const queue = [map.start];
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    for (const n of map.nodes[id].links.filter((l) => isAhead(map.nodes[id], map.nodes[l]))) {
+      if (seen.has(n)) continue;
+      seen.set(n, seen.get(id)! + 1);
+      queue.push(n);
+    }
+  }
+  return seen;
+}
+
+export const linkKey = (a: string, b: string) => [a, b].sort().join("|");
 
 // Rooms walked into on the shortest route from the entrance to `to`
 // (walking onward only).
@@ -159,6 +181,14 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
   // A few rooms are marked on the scroll from the start (never mysteries).
   const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery);
   for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
+  // …and a few corridors deeper in.
+  const depth = depths(map);
+  const deep = Object.values(map.nodes).flatMap((a) => a.links.filter((b) => a.id < b)
+    .filter((b) => (depth.get(a.id) ?? 0) >= KNOWN_CORRIDOR_DEPTH && (depth.get(b) ?? 0) >= KNOWN_CORRIDOR_DEPTH)
+    .map((b) => linkKey(a.id, b)));
+  const knownLinks: string[] = [];
+  for (let i = 0; i < KNOWN_CORRIDORS && deep.length > 0; i++) knownLinks.push(deep.splice(Math.floor(rng() * deep.length), 1)[0]);
+  map.knownLinks = knownLinks;
   return map;
 }
 

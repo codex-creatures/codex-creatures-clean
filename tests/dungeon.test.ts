@@ -4,7 +4,7 @@ import {
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun, stepInside, canMoveOn, moveOn,
 } from "../lib/dungeon/run";
 import {
-  rollMap, routeLength, LAIR_DOORS, waysOn, isAhead, inSight, knownRooms, KNOWN_AT_START, MIN_ROUTE, MAX_ROUTE, MYSTERY_CHANCE, ROOM_COUNT,
+  rollMap, routeLength, LAIR_DOORS, waysOn, isAhead, inSight, knownRooms, KNOWN_AT_START, KNOWN_CORRIDORS, KNOWN_CORRIDOR_DEPTH, depths, MIN_ROUTE, MAX_ROUTE, MYSTERY_CHANCE, ROOM_COUNT,
 } from "../lib/dungeon/map";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { createBattle } from "../lib/combat/battle";
@@ -126,6 +126,20 @@ describe("the labyrinth map", () => {
       expect(waysOn(map, map.start).length).toBeGreaterThanOrEqual(2); // a choice from the off
     }
     expect(choices / rooms).toBeGreaterThan(0.3); // plenty of branches
+  });
+
+  it("the scroll marks real corridors from the start, both rooms past the 2nd", () => {
+    for (let i = 0; i < 200; i++) {
+      const map = rollMap(false);
+      const depth = depths(map);
+      expect(map.knownLinks).toHaveLength(KNOWN_CORRIDORS);
+      for (const key of map.knownLinks!) {
+        const [a, b] = key.split("|");
+        expect(map.nodes[a].links).toContain(b);
+        expect(depth.get(a)!).toBeGreaterThanOrEqual(KNOWN_CORRIDOR_DEPTH);
+        expect(depth.get(b)!).toBeGreaterThanOrEqual(KNOWN_CORRIDOR_DEPTH);
+      }
+    }
   });
 
   it(`about ${MYSTERY_CHANCE * 100}% of rooms are mysteries — never the entrance or the lair`, () => {
