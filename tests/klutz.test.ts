@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { KLUTZ } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, type KlutzState } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, UPGRADE_CHANCE, type KlutzState } from "../lib/klutz";
 
 // A small seeded random number generator, so expeditions are repeatable.
 function seeded(seed: number) {
@@ -57,5 +57,35 @@ describe("Klutz's expeditions", () => {
     const first = collectKlutz(k, ex.endsAt);
     expect(first.loot.length).toBe(3);
     expect(collectKlutz(first.state, ex.endsAt + 1).loot).toEqual([]);
+  });
+});
+
+describe("Klutz's finds", () => {
+  it("are like a piece he's wearing: same slot, same rarity, 5% one tier better", () => {
+    expect(rollFind([])).toBeUndefined();
+    let up = 0;
+    const N = 4000;
+    for (let i = 0; i < N; i++) {
+      const d = rollFind([{ slot: "helmet", rarity: "rare" }]) as { itemCategory: string; armorSlot: string; rarity: string };
+      expect(d).toMatchObject({ itemCategory: "armor", armorSlot: "helmet" });
+      expect(["rare", "epic"]).toContain(d.rarity);
+      if (d.rarity === "epic") up++;
+    }
+    expect(Math.abs(up / N - UPGRADE_CHANCE)).toBeLessThan(0.015);
+    const w = rollFind([{ slot: "weapon", rarity: "legendary" }]) as { itemCategory: string; rarity: string };
+    expect(w).toMatchObject({ itemCategory: "weapon", rarity: "legendary" }); // can't go above legendary
+  });
+
+  it("turn up on about 35% of trips (win or lose) and come home with the loot", () => {
+    let found = 0;
+    for (let s = 1; s <= 400; s++) {
+      const ex = planExpedition(plain(), t0, seeded(s), [{ slot: "weapon", rarity: "common" }]);
+      if (ex.find) {
+        found++;
+        expect(collectKlutz({ expedition: ex }, ex.endsAt).loot).toContain(ex.find);
+      }
+    }
+    expect(Math.abs(found / 400 - FIND_CHANCE)).toBeLessThan(0.08);
+    expect(planExpedition(plain(), t0, seeded(3)).find).toBeUndefined(); // wearing nothing: nothing to find
   });
 });

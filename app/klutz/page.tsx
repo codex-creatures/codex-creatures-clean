@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
 import CreatureDetailModal from "@/components/CreatureDetailModal";
 import { StatsLine } from "@/components/BattleScreen";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
@@ -15,7 +15,7 @@ import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import {
-  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, type Expedition, type KlutzEncounter,
+  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, UPGRADE_CHANCE, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -70,7 +70,9 @@ export default function KlutzPage() {
           <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>Send him hunting</div>
           <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: "6px 0 10px" }}>
             He&apos;ll walk the Labyrinth until he runs into a wild creature — usually somewhere between {WALK_MIN_MS / 60000} and {WALK_MAX_MS / 60000} minutes —
-            then fight it and come home. It could be any rarity, wearing gear one tier below it. If he wins he brings it home;
+            then fight it and come home. It could be any rarity, wearing gear one tier below it.
+            He also has a {Math.round(FIND_CHANCE * 100)}% chance each trip to pick up a piece of gear like one he&apos;s wearing — same slot, same rarity
+            ({Math.round(UPGRADE_CHANCE * 100)}% chance of one tier better). Better gear on Klutz, better finds. If he wins he brings it home;
             if he loses he limps back to the pool and heals 1 HP every {HEAL_MS_PER_HP / 1000} seconds. Better gear means he can take on tougher creatures.
           </p>
           <button className="pixel-btn" onClick={game.sendKlutzOff}>🌀 Send Klutz into the Labyrinth</button>
@@ -102,6 +104,12 @@ export default function KlutzPage() {
         <div className="stone-panel" style={{ marginTop: 14 }}>
           <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}>Last trip</div>
           <EncounterLog ex={ex} upTo={ex.endsAt} />
+          {ex.find && (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6, marginTop: 6 }}>
+              {itemSprite(ex.find as CreatureOrItemDrop) && <PixelSprite sprite={itemSprite(ex.find as CreatureOrItemDrop)!} scale={2} />}
+              <span style={{ fontSize: 13 }}>🎁 On the way he picked up <b style={{ color: RARITY_COLORS[(ex.find as CreatureOrItemDrop).rarity].text }}>{(ex.find as CreatureOrItemDrop).name}</b> <span style={{ color: MUTED }}>({(ex.find as CreatureOrItemDrop).rarity})</span> — it&apos;s in your storage.</span>
+            </div>
+          )}
           {ex.encounters.some((e) => e.won) && (
             <p style={{ fontSize: 13, margin: "8px 0 0" }}>Caught creatures are waiting in the <Link href="/cage" style={{ textDecoration: "underline" }}>cage</Link>; their gear is in your inventory.</p>
           )}

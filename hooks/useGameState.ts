@@ -185,7 +185,14 @@ export function useGameState(initialTab: TabKey = "all") {
   const klutzIsAway = () => { const ex = klutz.expedition; return !!ex && !ex.collected && Date.now() < ex.endsAt; };
 
   function sendKlutzOff() {
-    setKlutz((k) => sendKlutzOut(k, klutzFighter));
+    // What he's wearing decides what he might find.
+    const l = equipment[KLUTZ_DROP_ID];
+    const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
+    const worn = EQUIP_SLOTS.flatMap((slot) => {
+      const it = l?.[SLOT_FIELD[slot]] ? byId.get(l[SLOT_FIELD[slot]]!) : undefined;
+      return it ? [{ slot, rarity: it.rarity }] : [];
+    });
+    setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, worn));
   }
 
   // Testing: skip to the end of his expedition, or heal him at once.

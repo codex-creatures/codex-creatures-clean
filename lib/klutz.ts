@@ -12,7 +12,12 @@
 //   HP. He can only set off again at full health (a win can leave him hurt
 //   too).
 //
-// The whole hour is decided when he sets off (so it plays out even with the
+// He also has a FIND_CHANCE on every trip (win or lose) to bring back a
+// piece of gear like one he's wearing: the same slot (any weapon, any helm…)
+// at the same rarity as his piece in that slot — with an UPGRADE_CHANCE of
+// one tier better. Better gear on Klutz means better finds.
+//
+// The whole trip is decided when he sets off (so it plays out even with the
 // game closed); the screens reveal it as the time passes.
 
 import { createBattle, resolveRound, sendInReplacement } from "./combat/battle";
@@ -23,13 +28,20 @@ import { RARITY_WEIGHTS, type Rarity } from "./items/budgets";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
 import { makeCreatureDrop } from "./creatures/summon";
 import { weaponDrop, armorDrop, randomArmorSlot } from "./drops";
-import { pieceStats, type ArmorKey } from "./items/armor";
-import type { ItemKey } from "./items/ceilings";
+import { ARMOR_KEYS, pieceStats, type ArmorKey, type ArmorSlot } from "./items/armor";
+import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
+import { rollItemStats } from "./items/rollItemStats";
+import { rollArmorPiece } from "./items/rollArmorStats";
 import type { Drop } from "./types";
 
 export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something
 export const WALK_MAX_MS = 60 * 60 * 1000;
 export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
+export const FIND_CHANCE = 0.35;       // each trip: a piece of gear like one he's wearing
+export const UPGRADE_CHANCE = 0.05;    // …one rarity tier better than his piece
+
+// What Klutz is wearing, slot by slot (for his finds).
+export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
 
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 type Rng = () => number;
@@ -50,6 +62,7 @@ export type Expedition = {
   endsAt: number;        // when he meets something (the fight is quick) and heads home
   maxHp: number;
   encounters: KlutzEncounter[];
+  find?: Drop;           // a piece of gear he picked up on the way
   collected: boolean;    // its loot has been handed over
 };
 
@@ -95,15 +108,30 @@ function fight(klutz: Fighter, hp: number, foe: Fighter): { won: boolean; hpAfte
   return { won: s.winner === "A", hpAfter: Math.max(0, s.sides.A.team[0].hp), rounds: s.round };
 }
 
+// A piece of gear like one he's wearing (or nothing, if he isn't wearing any).
+export function rollFind(worn: WornPiece[], rng: Rng = Math.random): Drop | undefined {
+  if (worn.length === 0) return undefined;
+  const piece = worn[Math.floor(rng() * worn.length)];
+  const up = rng() < UPGRADE_CHANCE;
+  const rarity = RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(piece.rarity) + (up ? 1 : 0))];
+  if (piece.slot === "weapon") {
+    const key = ITEM_KEYS[Math.floor(rng() * ITEM_KEYS.length)];
+    return weaponDrop(key, rarity, "", rollItemStats(key, rarity, rng).stats);
+  }
+  const key = ARMOR_KEYS[Math.floor(rng() * ARMOR_KEYS.length)];
+  return armorDrop(key, rarity, "", rollArmorPiece(key, rarity, piece.slot, rng), piece.slot);
+}
+
 // Plan a whole expedition the moment he sets off: how long he walks, what
-// he meets, and how the fight goes.
-export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random): Expedition {
+// he meets, how the fight goes, and anything he picks up.
+export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = []): Expedition {
   const at = Math.round(now + WALK_MIN_MS + rng() * (WALK_MAX_MS - WALK_MIN_MS));
   const rarity = rollRarity(rng), gearRarity = oneLower(rarity);
   const enemy = makeEnemy(rarity, gearRarity, [], rng);
   const r = fight(klutz, klutz.maxHp, enemyFighter(enemy));
   const encounter: KlutzEncounter = { at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [] };
-  return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters: [encounter], collected: false };
+  const find = rng() < FIND_CHANCE ? rollFind(worn, rng) : undefined;
+  return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters: [encounter], ...(find ? { find } : {}), collected: false };
 }
 
 // Where Klutz is right now.
@@ -122,9 +150,9 @@ export function currentHp(k: KlutzState, maxHp: number, now = Date.now()): numbe
 }
 
 // Send him off (only from home, at full health).
-export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: Rng = Math.random): KlutzState {
+export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = []): KlutzState {
   if (klutzStatus(k, klutz.maxHp, now).kind !== "home") return k;
-  return { expedition: planExpedition(klutz, now, rng) };
+  return { expedition: planExpedition(klutz, now, rng, worn) };
 }
 
 // After an expedition ends: his HP when he got back, and the loot to hand
@@ -136,6 +164,6 @@ export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzSta
   const hp = last ? last.hpAfter : ex.maxHp;
   return {
     state: { ...k, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true } },
-    loot: ex.encounters.flatMap((e) => e.loot),
+    loot: [...ex.encounters.flatMap((e) => e.loot), ...(ex.find ? [ex.find] : [])],
   };
 }
