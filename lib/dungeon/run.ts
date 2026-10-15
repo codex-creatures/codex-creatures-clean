@@ -30,7 +30,7 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
-import { rollMap, waysOn, type DungeonMap } from "./map";
+import { rollMap, routeLength, waysOn, type DungeonMap } from "./map";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -69,6 +69,15 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
 };
 
 // Fights.
+// Creature dens grow with depth (a room's depth: rooms walked into on the
+// shortest way to it from the entrance). Up to EARLY_DEPTH deep they hold
+// 1–2 creatures; deeper, 2–3. Picked from the end of EASY_PACK, so one is
+// an Uncommon, two a Common and an Uncommon, three adds another Common.
+// (Hard rooms and mini bosses are a single creature at any depth.)
+export const EARLY_DEPTH = 4;
+export const EASY_SIZE_EARLY: [number, number] = [1, 2];
+export const EASY_SIZE_DEEP: [number, number] = [2, 3];
+export const EASY_PACK: Rarity[] = ["common", "common", "uncommon"];
 export const EASY_GOLD: [number, number] = [10, 20];
 export const HARD_GOLD: [number, number] = [30, 50];
 export const BOSS_GOLD: [number, number] = [80, 120];
@@ -202,15 +211,17 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], f
   return mix[0][0];
 }
 
-// What's inside a room, rolled as you walk in.
-export function makeRoom(kind: RoomKind, rng: Rng = Math.random): Room {
+// What's inside a room, rolled as you walk in. depth: how deep it is (see
+// EARLY_DEPTH); left out = deep.
+export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity): Room {
   switch (kind) {
     case "treasure":
       return { kind, gold: FIRST_TREASURE_GOLD, done: false };
     case "easy": {
-      // 2 Commons and an Uncommon with Common gear.
+      // 1–3 creatures (by depth) with Common gear.
+      const size = randInt(...(depth <= EARLY_DEPTH ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
       const enemies: Enemy[] = [];
-      for (const r of ["common", "common", "uncommon"] as Rarity[]) enemies.push(makeEnemy(r, "common", enemies.map((e) => e.creatureId), rng));
+      for (const r of EASY_PACK.slice(-size)) enemies.push(makeEnemy(r, "common", enemies.map((e) => e.creatureId), rng));
       if (rng() < UPGRADE_CHANCE) upgradeAndDrop(enemies, rng);
       return { kind, enemies, level: "easy", gold: randInt(...EASY_GOLD, rng), done: false };
     }
@@ -300,7 +311,7 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng), room: run.room + 1 };
+  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng, routeLength(run.map, node.id)), room: run.room + 1 };
 }
 
 // Rooms you can walk out of without doing anything.

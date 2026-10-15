@@ -32,10 +32,21 @@ describe("dungeon rooms", () => {
     for (const [kind, pct] of ROOM_MIX) expect(Math.abs((counts[kind] ?? 0) / N * 100 - pct)).toBeLessThan(1.5);
   });
 
-  it("easy fights: 2 Commons + an Uncommon with Common gear (bar the rare upgrade)", () => {
+  it("easy fights: 1–2 creatures up to depth 4, then 2–3", () => {
+    const sizes = (depth: number) => new Set(Array.from({ length: 300 }, () => makeRoom("easy", Math.random, depth).enemies!.length));
+    expect([...sizes(1)].sort()).toEqual([1, 2]);
+    expect([...sizes(4)].sort()).toEqual([1, 2]);
+    expect([...sizes(5)].sort()).toEqual([2, 3]);
+    expect(makeRoom("easy", Math.random, 1).enemies!.length).toBeLessThanOrEqual(2);
+    const rar = (n: number) => { for (;;) { const r = makeRoom("easy", Math.random, n <= 2 ? 1 : 9); if (r.enemies!.length === n) return r.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity); } };
+    expect(rar(1)).toEqual(["uncommon"]);
+    expect(rar(2)).toEqual(["common", "uncommon"]);
+    expect(rar(3)).toEqual(["common", "common", "uncommon"]);
+  });
+
+  it("easy fights: Common gear (bar the rare upgrade)", () => {
     for (let i = 0; i < 200; i++) {
       const room = makeRoom("easy");
-      expect(room.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity)).toEqual(["common", "common", "uncommon"]);
       const gear = room.enemies!.flatMap((e) => e.gear);
       const upgraded = gear.filter((p) => p.rarity !== "common");
       expect(upgraded.length).toBeLessThanOrEqual(1);
