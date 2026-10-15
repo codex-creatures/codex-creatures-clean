@@ -15,7 +15,7 @@ type BatchSummary = {
 };
 
 function emptyStats(): StatBlock {
-  return { melee: 0, ranged: 0, agility: 0, hp: 0 };
+  return { melee: 0, ranged: 0, magic: 0, agility: 0, hp: 0 };
 }
 
 function sumStats(s: StatBlock): number {
@@ -43,8 +43,8 @@ function getZeroStats(s: StatBlock) {
 function computeBatchSummary(list: StatBlock[]): BatchSummary {
   const rolls = list.length;
 
-  const min: StatBlock = { melee: Infinity, ranged: Infinity, agility: Infinity, hp: Infinity };
-  const max: StatBlock = { melee: -Infinity, ranged: -Infinity, agility: -Infinity, hp: -Infinity };
+  const min: StatBlock = { melee: Infinity, ranged: Infinity, magic: Infinity, agility: Infinity, hp: Infinity };
+  const max: StatBlock = { melee: -Infinity, ranged: -Infinity, magic: -Infinity, agility: -Infinity, hp: -Infinity };
   const sum: StatBlock = emptyStats();
 
   for (const s of list) {

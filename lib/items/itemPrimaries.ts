@@ -13,15 +13,19 @@ export const PRIMARY_STATS_BY_ITEMKEY: Record<ItemKey, [StatKey, StatKey]> = {
   serrated_fanblade:  ["melee", "agility"],  // fast melee — speed matters
   stormlash_whip:     ["melee", "ranged"],   // hybrid reach weapon
 
-  // RANGED WEAPONS — primary: ranged + agility or hp
-  soul_storm:         ["ranged", "hp"],      // sustained ranged — needs staying power
+  // RANGED WEAPONS — primary: ranged + hp or melee
   weeping_greatbow:   ["ranged", "hp"],      // sniper — range + survive
-  chaos_orb:          ["ranged", "agility"], // mobile caster — speed + range
   lightning_trident:  ["ranged", "melee"],   // hybrid thrower
+  thunderhead_crossbow: ["ranged", "hp"],    // sustained ranged — needs staying power
+
+  // MAGIC WEAPONS — primary: magic + hp or agility
+  soul_storm:         ["magic", "hp"],       // sustained caster — needs staying power
+  chaos_orb:          ["magic", "agility"],  // mobile caster — speed + magic
+  frostspire_staff:   ["magic", "hp"],       // heavy caster
 
   // DEFENCE WEAPONS (shields/aegis) — primary: hp + melee or ranged
   chainbound_aegis:   ["hp", "ranged"],      // ranged tank
   ironfang_guard:     ["hp", "melee"],       // melee tank
   basalt_bulwark:     ["hp", "melee"],       // pure wall
-  aether_shield:      ["hp", "agility"],     // mobile defender
+  aether_shield:      ["hp", "magic"],       // magic-lean defender
 };

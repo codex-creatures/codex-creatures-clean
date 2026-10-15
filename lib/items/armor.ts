@@ -10,13 +10,14 @@ export type ArmorKey =
   | "juggernaut_platemail";
 
 export type ArmorStatBlock = {
-  mDef: number;
-  rDef: number;
+  mDef: number;   // melee defence
+  rDef: number;   // ranged defence
+  magDef: number; // magic defence
   agility: number;
   hp: number;
 };
 
-export const ARMOR_STAT_KEYS: (keyof ArmorStatBlock)[] = ["mDef", "rDef", "agility", "hp"];
+export const ARMOR_STAT_KEYS: (keyof ArmorStatBlock)[] = ["mDef", "rDef", "magDef", "agility", "hp"];
 
 export const ARMOR_KEYS: ArmorKey[] = [
   "frontiers_mail",
@@ -47,67 +48,67 @@ export const ARMOR_META: Record<ArmorKey, { name: string; desc: string }> = {
   },
   arcane_nullifier: {
     name: "Arcane Nullifier",
-    desc: "True anti-ranged tank. Massive RDef + HP, low agility.",
+    desc: "True anti-magic tank. Massive Magic Def + HP, low agility.",
   },
   polished_chainbolster: {
     name: "Polished Chainbolster",
-    desc: "All-rounder armour. Consistent, never extreme.",
+    desc: "All-rounder armour. Consistent against every style, never extreme.",
   },
   juggernaut_platemail: {
     name: "Juggernaut Platemail",
-    desc: "Hybrid defence wall. High MDef + RDef with decent HP, low agility.",
+    desc: "Defence wall. High defence against every style with decent HP, low agility.",
   },
 };
 
 export const ARMOR_CEILINGS: Record<ArmorKey, Record<Rarity, ArmorStatBlock>> = {
   frontiers_mail: {
-    common: { mDef: 70, rDef: 35, agility: 35, hp: 60 },
-    uncommon: { mDef: 90, rDef: 40, agility: 40, hp: 80 },
-    rare: { mDef: 110, rDef: 45, agility: 45, hp: 100 },
-    epic: { mDef: 130, rDef: 50, agility: 50, hp: 120 },
-    legendary: { mDef: 160, rDef: 60, agility: 60, hp: 150 },
+    common: { mDef: 70, rDef: 35, magDef: 35, agility: 35, hp: 60 },
+    uncommon: { mDef: 90, rDef: 40, magDef: 40, agility: 40, hp: 80 },
+    rare: { mDef: 110, rDef: 45, magDef: 45, agility: 45, hp: 100 },
+    epic: { mDef: 130, rDef: 50, magDef: 50, agility: 50, hp: 120 },
+    legendary: { mDef: 160, rDef: 60, magDef: 60, agility: 60, hp: 150 },
   },
   arrowward_mantle: {
-    common: { mDef: 35, rDef: 70, agility: 35, hp: 60 },
-    uncommon: { mDef: 40, rDef: 90, agility: 40, hp: 80 },
-    rare: { mDef: 45, rDef: 110, agility: 45, hp: 100 },
-    epic: { mDef: 50, rDef: 130, agility: 50, hp: 120 },
-    legendary: { mDef: 60, rDef: 160, agility: 60, hp: 150 },
+    common: { mDef: 26, rDef: 70, magDef: 41, agility: 35, hp: 60 },
+    uncommon: { mDef: 30, rDef: 90, magDef: 47, agility: 40, hp: 80 },
+    rare: { mDef: 34, rDef: 110, magDef: 53, agility: 45, hp: 100 },
+    epic: { mDef: 38, rDef: 130, magDef: 59, agility: 50, hp: 120 },
+    legendary: { mDef: 45, rDef: 160, magDef: 70, agility: 60, hp: 150 },
   },
   dragonscale_tunic: {
-    common: { mDef: 35, rDef: 35, agility: 70, hp: 60 },
-    uncommon: { mDef: 40, rDef: 40, agility: 90, hp: 80 },
-    rare: { mDef: 45, rDef: 45, agility: 110, hp: 100 },
-    epic: { mDef: 50, rDef: 50, agility: 130, hp: 120 },
-    legendary: { mDef: 60, rDef: 60, agility: 160, hp: 150 },
+    common: { mDef: 26, rDef: 35, magDef: 41, agility: 70, hp: 60 },
+    uncommon: { mDef: 30, rDef: 40, magDef: 47, agility: 90, hp: 80 },
+    rare: { mDef: 34, rDef: 45, magDef: 53, agility: 110, hp: 100 },
+    epic: { mDef: 38, rDef: 50, magDef: 59, agility: 130, hp: 120 },
+    legendary: { mDef: 45, rDef: 60, magDef: 70, agility: 160, hp: 150 },
   },
   colossal_shellarmor: {
-    common: { mDef: 80, rDef: 35, agility: 20, hp: 80 },
-    uncommon: { mDef: 100, rDef: 40, agility: 22, hp: 105 },
-    rare: { mDef: 120, rDef: 45, agility: 25, hp: 130 },
-    epic: { mDef: 145, rDef: 50, agility: 28, hp: 160 },
-    legendary: { mDef: 180, rDef: 60, agility: 32, hp: 200 },
+    common: { mDef: 80, rDef: 35, magDef: 30, agility: 20, hp: 80 },
+    uncommon: { mDef: 100, rDef: 40, magDef: 35, agility: 22, hp: 105 },
+    rare: { mDef: 120, rDef: 45, magDef: 40, agility: 25, hp: 130 },
+    epic: { mDef: 145, rDef: 50, magDef: 45, agility: 28, hp: 160 },
+    legendary: { mDef: 180, rDef: 60, magDef: 55, agility: 32, hp: 200 },
   },
   arcane_nullifier: {
-    common: { mDef: 35, rDef: 80, agility: 20, hp: 80 },
-    uncommon: { mDef: 40, rDef: 100, agility: 22, hp: 105 },
-    rare: { mDef: 45, rDef: 120, agility: 25, hp: 130 },
-    epic: { mDef: 50, rDef: 145, agility: 28, hp: 160 },
-    legendary: { mDef: 60, rDef: 180, agility: 32, hp: 200 },
+    common: { mDef: 35, rDef: 49, magDef: 80, agility: 20, hp: 80 },
+    uncommon: { mDef: 40, rDef: 56, magDef: 100, agility: 22, hp: 105 },
+    rare: { mDef: 45, rDef: 63, magDef: 120, agility: 25, hp: 130 },
+    epic: { mDef: 50, rDef: 70, magDef: 145, agility: 28, hp: 160 },
+    legendary: { mDef: 60, rDef: 84, magDef: 180, agility: 32, hp: 200 },
   },
   polished_chainbolster: {
-    common: { mDef: 55, rDef: 55, agility: 55, hp: 55 },
-    uncommon: { mDef: 70, rDef: 70, agility: 70, hp: 70 },
-    rare: { mDef: 85, rDef: 85, agility: 85, hp: 85 },
-    epic: { mDef: 100, rDef: 100, agility: 100, hp: 100 },
-    legendary: { mDef: 120, rDef: 120, agility: 120, hp: 120 },
+    common: { mDef: 55, rDef: 55, magDef: 55, agility: 55, hp: 55 },
+    uncommon: { mDef: 70, rDef: 70, magDef: 70, agility: 70, hp: 70 },
+    rare: { mDef: 85, rDef: 85, magDef: 85, agility: 85, hp: 85 },
+    epic: { mDef: 100, rDef: 100, magDef: 100, agility: 100, hp: 100 },
+    legendary: { mDef: 120, rDef: 120, magDef: 120, agility: 120, hp: 120 },
   },
   juggernaut_platemail: {
-    common: { mDef: 65, rDef: 65, agility: 30, hp: 60 },
-    uncommon: { mDef: 85, rDef: 85, agility: 35, hp: 80 },
-    rare: { mDef: 105, rDef: 105, agility: 40, hp: 100 },
-    epic: { mDef: 125, rDef: 125, agility: 45, hp: 120 },
-    legendary: { mDef: 155, rDef: 155, agility: 55, hp: 150 },
+    common: { mDef: 55, rDef: 55, magDef: 55, agility: 30, hp: 60 },
+    uncommon: { mDef: 71, rDef: 71, magDef: 71, agility: 35, hp: 80 },
+    rare: { mDef: 88, rDef: 88, magDef: 88, agility: 40, hp: 100 },
+    epic: { mDef: 105, rDef: 105, magDef: 105, agility: 45, hp: 120 },
+    legendary: { mDef: 130, rDef: 130, magDef: 130, agility: 55, hp: 150 },
   },
 };
 
@@ -117,7 +118,7 @@ export const ARMOR_PRIMARY_STATS: Record<ArmorKey, readonly (keyof ArmorStatBloc
   arrowward_mantle: ["rDef", "hp"],
   dragonscale_tunic: ["agility", "hp"],
   colossal_shellarmor: ["mDef", "hp"],
-  arcane_nullifier: ["rDef", "hp"],
+  arcane_nullifier: ["magDef", "hp"],
   polished_chainbolster: ["mDef", "rDef"],
   juggernaut_platemail: ["mDef", "rDef"],
 };
@@ -137,9 +138,9 @@ export const ARMOR_SLOT_INFO: Record<ArmorSlot, { name: string; piece: string }>
 };
 
 export const PIECE_SHARE: Record<ArmorSlot, ArmorStatBlock> = {
-  helmet: { mDef: 0.2, rDef: 0.2, agility: 0.2, hp: 0.4 },
-  chest:  { mDef: 0.6, rDef: 0.6, agility: 0.3, hp: 0.4 },
-  legs:   { mDef: 0.2, rDef: 0.2, agility: 0.5, hp: 0.2 },
+  helmet: { mDef: 0.2, rDef: 0.2, magDef: 0.2, agility: 0.2, hp: 0.4 },
+  chest:  { mDef: 0.6, rDef: 0.6, magDef: 0.6, agility: 0.3, hp: 0.4 },
+  legs:   { mDef: 0.2, rDef: 0.2, magDef: 0.2, agility: 0.5, hp: 0.2 },
 };
 
 // How much of a set's worth a piece is (for selling).
@@ -159,7 +160,7 @@ export const pieceName = (key: ArmorKey, slot: ArmorSlot) => `${ARMOR_META[key].
 export const SET_BONUS: Record<ArmorKey, { name: string; text: string }> = {
   colossal_shellarmor:   { name: "Hard Shell",  text: "The first hit it takes each fight does half damage." },
   dragonscale_tunic:     { name: "Quickscale",  text: "Its first attack each fight goes before everyone else's." },
-  arcane_nullifier:      { name: "Nullify",     text: "Reflects 25% of ranged damage it takes back at the attacker." },
+  arcane_nullifier:      { name: "Nullify",     text: "Reflects 25% of magic damage it takes back at the attacker." },
   arrowward_mantle:      { name: "Deflect",     text: "25% of ranged attacks against it miss." },
   polished_chainbolster: { name: "Steadfast",   text: "It can't be crippled." },
   juggernaut_platemail:  { name: "Unstoppable", text: "Once per fight, a blow that would knock it out leaves it on 1 HP." },

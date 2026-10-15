@@ -8,7 +8,7 @@ import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID, MOVE_BY_NAME } from "../lib/creatures/creatureData";
 
 // A sturdy player creature with plain moves.
-const hero = (hp = 5000) => ({ ...buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, { mDef: 10, rDef: 10 }), hp, maxHp: hp });
+const hero = (hp = 5000) => ({ ...buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, { mDef: 10, rDef: 10, magDef: 10 }, ["Slash", "Heavy Blow", "Crush", "Jab"]), hp, maxHp: hp });
 const pass = { kind: "pass" } as const;
 const fight = () => createBattle([hero(), hero(), hero()], cyclopsTeam(), {}, "cyclops");
 

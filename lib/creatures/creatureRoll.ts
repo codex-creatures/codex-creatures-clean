@@ -10,7 +10,6 @@
 // chance to be a rare (learnable) move instead.
 
 import { LEARNABLE_MOVES, MOVE_SLOTS, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
-import { styleFromProficiency } from "../combat/engine";
 import { rollAbility, type AbilityKey } from "./abilities";
 
 export const ROLL_SPREAD = 2;          // max ± per stat
@@ -19,7 +18,7 @@ export const RARE_MOVE_CHANCE = 0.1;   // per move slot
 
 type Rng = () => number;
 type ProfKey = keyof CreatureProficiency;
-const KEYS: ProfKey[] = ["atk", "rng", "agil", "mdef", "rdef"];
+const KEYS: ProfKey[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef"];
 
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
 const pick = <T,>(arr: T[], rng: Rng) => arr[Math.floor(rng() * arr.length)];
@@ -28,7 +27,7 @@ export function rollProficiency(base: CreatureProficiency, rng: Rng = Math.rando
   const p = { ...base };
   const transfers = randInt(ROLL_TRANSFERS[0], ROLL_TRANSFERS[1], rng);
   for (let i = 0; i < transfers; i++) {
-    const from = KEYS.filter((k) => p[k] > Math.max(0, base[k] - ROLL_SPREAD));
+    const from = KEYS.filter((k) => (p[k] ?? 0) > Math.max(0, (base[k] ?? 0) - ROLL_SPREAD));
     const fromKey = pick(from, rng);
     const to = KEYS.filter((k) => k !== fromKey && p[k] < base[k] + ROLL_SPREAD);
     if (!fromKey || to.length === 0) continue;
@@ -42,8 +41,7 @@ export function rollProficiency(base: CreatureProficiency, rng: Rng = Math.rando
 export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[] {
   // Species moves in a random order, first MOVE_SLOTS of them.
   const own = [...c.skills].sort(() => rng() - 0.5).slice(0, MOVE_SLOTS).map((m) => m.name);
-  const style = styleFromProficiency(c.proficiency);
-  const fitting = LEARNABLE_MOVES.filter((m) => style === "hybrid" || m.type === style);
+  const fitting = LEARNABLE_MOVES.filter((m) => m.type === c.cls);
   const moves = [...own];
   for (let i = 0; i < MOVE_SLOTS; i++) {
     if (rng() >= RARE_MOVE_CHANCE) continue;

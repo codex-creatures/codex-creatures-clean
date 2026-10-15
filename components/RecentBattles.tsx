@@ -63,7 +63,7 @@ function Team({ title, color, members }: { title: string; color: string; members
           <div style={{ color: MUTED }}>{m.weapon ?? "no weapon"} · {m.armor ?? "no armour"}</div>
           <div style={{ color: "#c9b48a" }}>{m.moves.join(" · ")}</div>
           <div style={{ color: MUTED, fontVariantNumeric: "tabular-nums" }}>
-            HP {m.stats.hp} · Atk {m.stats.atk} · Rng {m.stats.rng} · Agi {m.stats.agil} · MDef {m.stats.mdef} · RDef {m.stats.rdef}
+            HP {m.stats.hp} · Atk {m.stats.atk} · Rng {m.stats.rng} · Mag {m.stats.mag ?? 0} · Agi {m.stats.agil} · MDef {m.stats.mdef} · RDef {m.stats.rdef} · MgDef {m.stats.magdef ?? 0}
           </div>
         </div>
       ))}

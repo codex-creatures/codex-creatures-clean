@@ -57,7 +57,7 @@ export const CORPSIFY_ROUNDS = 2;
 // SET_BONUS in lib/items/armor.ts). The once-a-fight ones mark setUsed.
 // - Hard Shell: the first hit it takes is halved.
 // - Quickscale: its first attack goes before everyone (like a pounce).
-// - Nullify: reflects some of the ranged damage it takes.
+// - Nullify: reflects some of the magic damage it takes.
 // - Deflect: a chance for ranged attacks against it to miss.
 // - Steadfast: can't be crippled.
 // - Unstoppable: once, a knockout blow leaves it on 1 HP.
@@ -419,8 +419,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         evaded: evaded || undefined, venom, pounced: pounced || undefined, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
       if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
 
-      // Nullify: some of a ranged hit bounces back at the attacker.
-      if (!missed && damage > 0 && skill.type === "ranged" && hasSet(target, "arcane_nullifier") && actor.hp > 0) {
+      // Nullify: some of a magic hit bounces back at the attacker.
+      if (!missed && damage > 0 && skill.type === "magic" && hasSet(target, "arcane_nullifier") && actor.hp > 0) {
         const back = Math.min(actor.hp - bossMinHp(state, key, actorIdx), Math.max(1, Math.round(damage * NULLIFY_REFLECT)));
         if (back > 0) {
           actor.hp -= back;

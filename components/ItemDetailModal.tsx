@@ -7,6 +7,9 @@ import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { ARMOR_META, ARMOR_SLOT_INFO, SET_BONUS } from "@/lib/items/armor";
 import { computeSellGold } from "@/lib/items/economy/sell";
+import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
+import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
+import { AFFINITY_BONUS } from "@/lib/combat/engine";
 
 type Props = {
   item: CreatureOrItemDrop;
@@ -19,8 +22,9 @@ type Props = {
 };
 
 const WEAPON_STATS = [
-  { label: "Attack",  key: "melee"   },
-  { label: "Range",   key: "ranged"  },
+  { label: "Melee",   key: "melee"   },
+  { label: "Ranged",  key: "ranged"  },
+  { label: "Magic",   key: "magic"   },
   { label: "Agility", key: "agility" },
   { label: "Health",  key: "hp"      },
 ];
@@ -28,6 +32,7 @@ const WEAPON_STATS = [
 const ARMOR_STATS = [
   { label: "Melee Def",  key: "mDef"    },
   { label: "Ranged Def", key: "rDef"    },
+  { label: "Magic Def",  key: "magDef"  },
   { label: "Agility",    key: "agility" },
   { label: "Health",     key: "hp"      },
 ];
@@ -102,6 +107,11 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
           </div>
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 24, fontWeight: 600, color: rarityColor, lineHeight: 1.2 }}>{item.name}</h2>
           {item.desc && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{item.desc}</p>}
+          {item.itemCategory === "weapon" && item.itemKey && WEAPON_AFFINITY[item.itemKey] && (
+            <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.4, color: DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].color }}>
+              {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].icon} Strong in {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name}: {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name} moves do +{Math.round(AFFINITY_BONUS * 100)}% damage with it.
+            </p>
+          )}
           {item.armorKey && (
             <div style={{ marginTop: 10, padding: "8px 10px", fontSize: 12, lineHeight: 1.4, background: "rgba(255,214,110,0.06)", border: "1px solid rgba(241,217,160,0.25)", borderRadius: 8, color: "#f1d9a0" }}>
               <b>Set bonus — {SET_BONUS[item.armorKey].name}</b> <span style={{ opacity: 0.6 }}>(wear the {ARMOR_META[item.armorKey].name} helmet, chest and legs)</span>

@@ -16,7 +16,7 @@ export type BattleMember = {
   weapon?: string;
   armor?: string;
   moves: string[];
-  stats: { hp: number; atk: number; rng: number; agil: number; mdef: number; rdef: number };
+  stats: { hp: number; atk: number; rng: number; mag?: number; agil: number; mdef: number; rdef: number; magdef?: number };
 };
 
 export type BattleRecord = {

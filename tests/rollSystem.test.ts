@@ -28,7 +28,7 @@ describe("locked numbers", () => {
   });
 
   it("Legendary Void Scythe ceilings match the design", () => {
-    expect(ITEM_CEILINGS.void_scythe.legendary).toEqual({ melee: 110, ranged: 35, agility: 45, hp: 130 });
+    expect(ITEM_CEILINGS.void_scythe.legendary).toEqual({ melee: 110, ranged: 35, magic: 18, agility: 45, hp: 130 });
     expect(PRIMARY_STATS_BY_ITEMKEY.void_scythe).toEqual(["melee", "hp"]);
   });
 });
@@ -130,7 +130,7 @@ describe("god-roll scarcity (statistical)", () => {
 describe("broken configs fail loudly", () => {
   it("throws if ceilings can't hold the budget", () => {
     const original = ITEM_CEILINGS.void_scythe.legendary;
-    ITEM_CEILINGS.void_scythe.legendary = { melee: 10, ranged: 10, agility: 10, hp: 10 };
+    ITEM_CEILINGS.void_scythe.legendary = { melee: 10, ranged: 10, magic: 10, agility: 10, hp: 10 };
     try {
       expect(() => rollItemStats("void_scythe", "legendary")).toThrow(/below budget/);
     } finally {

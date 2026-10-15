@@ -18,6 +18,7 @@ import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState"
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
 import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
+import ClassBadge from "./ClassBadge";
 import AbilityTag from "./AbilityTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 
@@ -45,18 +46,20 @@ const MUTED = "rgba(255,255,255,0.45)";
 const GOLD = "#f1d9a0";
 const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 
-const WEAPON_STAT_LABELS: [string, string][] = [["melee", "Atk"], ["ranged", "Rng"], ["agility", "Agi"], ["hp", "HP"]];
-const ARMOR_STAT_LABELS:  [string, string][] = [["mDef", "MDef"], ["rDef", "RDef"], ["agility", "Agi"], ["hp", "HP"]];
+const WEAPON_STAT_LABELS: [string, string][] = [["melee", "Atk"], ["ranged", "Rng"], ["magic", "Mag"], ["agility", "Agi"], ["hp", "HP"]];
+const ARMOR_STAT_LABELS:  [string, string][] = [["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"], ["agility", "Agi"], ["hp", "HP"]];
 
 // Each stat's bar is full at about the best a creature reaches with Legendary gear.
-type StatKey = "hp" | "atk" | "rng" | "agil" | "mdef" | "rdef";
+type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | "magdef";
 const STATS: { key: StatKey; icon: string; label: string; max: number; color: string }[] = [
   { key: "hp",   icon: "❤️", label: "Health",     max: 350, color: "#e0524a" },
   { key: "atk",  icon: "⚔️", label: "Melee",      max: 180, color: "#ff9f43" },
   { key: "rng",  icon: "🏹", label: "Ranged",     max: 180, color: "#ffd84a" },
+  { key: "mag",  icon: "🔮", label: "Magic",      max: 180, color: "#c08cff" },
   { key: "agil", icon: "💨", label: "Agility",    max: 240, color: "#5ee0c0" },
   { key: "mdef", icon: "🛡️", label: "Melee Def",  max: 160, color: "#7aa7ff" },
-  { key: "rdef", icon: "🔰", label: "Ranged Def", max: 160, color: "#b58cff" },
+  { key: "rdef", icon: "🔰", label: "Ranged Def", max: 160, color: "#8fd0ff" },
+  { key: "magdef", icon: "🧿", label: "Magic Def", max: 160, color: "#e0a8ff" },
 ];
 
 const rarityColor = (r: Rarity) => RARITY_COLORS[r]?.text ?? "white";
@@ -94,7 +97,7 @@ export default function CreatureDetailModal({
 
   const summary = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[]) => {
     if (!template) return null;
-    const f = fighterFor(creature, template, w?.stats, pieces, loadout?.moves);
+    const f = fighterFor(creature, template, w?.stats, pieces, loadout?.moves, w?.itemKey);
     return { f, s: combatSummary(f) };
   };
   const now = summary(weapon, worn);
@@ -146,6 +149,7 @@ export default function CreatureDetailModal({
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <RaceTag race={template?.race} />
+            <ClassBadge cls={template?.cls} />
             {template && prof && <TypeTags roles={creatureRoles(prof)} />}
           </div>
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1 }}>{creature.name}</h2>
@@ -235,10 +239,10 @@ export default function CreatureDetailModal({
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
               Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· how much this creature adds to its gear</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 5 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
               {STATS.filter((st) => st.key !== "hp").map((st) => {
                 const k = st.key as Exclude<StatKey, "hp">;
-                const d = base ? prof![k] - base[k] : 0;
+                const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
                 return (
                   <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by +${prof![k]}%`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
@@ -292,9 +296,11 @@ function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: StatKey):
   switch (key) {
     case "atk":  return f.weapon.atk;
     case "rng":  return f.weapon.rng;
+    case "mag":  return f.weapon.mag;
     case "agil": return f.weapon.agil + f.armor.agil;
     case "mdef": return f.armor.mdef;
     case "rdef": return f.armor.rdef;
+    case "magdef": return f.armor.magdef;
     default:     return 0;
   }
 }

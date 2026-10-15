@@ -30,25 +30,37 @@ export const ITEM_META: Record<ItemKey, ItemMeta> = {
   },
 
   // RANGED WEAPONS
-  soul_storm: {
-    name: "Soul Storm",
-    category: "Ranged - Bruiser",
-    desc: "Bruiser ranged weapon. High ranged and HP, moderate agility.",
-  },
   weeping_greatbow: {
     name: "Weeping Great-Bow",
     category: "Ranged - Heavy",
     desc: "Heavy ranged weapon. Massive ranged damage, low agility.",
   },
-  chaos_orb: {
-    name: "Chaos Orb",
-    category: "Ranged - Agile",
-    desc: "Agile ranged weapon. High agility and ranged, lower HP.",
-  },
   lightning_trident: {
     name: "Lightning Trident",
     category: "Ranged - Hybrid",
     desc: "Hybrid ranged weapon. Balanced melee and ranged capabilities.",
+  },
+  thunderhead_crossbow: {
+    name: "Thunderhead Crossbow",
+    category: "Ranged - Bruiser",
+    desc: "Bruiser ranged weapon. High ranged and HP, moderate agility.",
+  },
+
+  // MAGIC WEAPONS
+  soul_storm: {
+    name: "Soul Storm",
+    category: "Magic - Bruiser",
+    desc: "Bruiser magic weapon. High magic and HP, moderate agility.",
+  },
+  chaos_orb: {
+    name: "Chaos Orb",
+    category: "Magic - Agile",
+    desc: "Agile magic weapon. High agility and magic, lower HP.",
+  },
+  frostspire_staff: {
+    name: "Frostspire Staff",
+    category: "Magic - Heavy",
+    desc: "Heavy magic weapon. Massive magic damage, low agility.",
   },
 
   // DEFENCE WEAPONS
@@ -69,7 +81,7 @@ export const ITEM_META: Record<ItemKey, ItemMeta> = {
   },
   aether_shield: {
     name: "Aether Shield",
-    category: "Defence - Agile Tank",
-    desc: "Agile tank weapon. High HP and agility, low offensive stats.",
+    category: "Defence - Magic Lean",
+    desc: "Defensive weapon with magic focus. High HP and agility, moderate magic.",
   },
 };

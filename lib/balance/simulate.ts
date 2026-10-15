@@ -35,13 +35,13 @@ function pick<T>(arr: readonly T[]): T {
 const FITTED_WEAPONS: Record<CombatStyle, ItemKey[]> = {
   melee:  ITEM_KEYS.filter((k) => PRIMARY_STATS_BY_ITEMKEY[k].includes("melee")),
   ranged: ITEM_KEYS.filter((k) => PRIMARY_STATS_BY_ITEMKEY[k].includes("ranged")),
-  hybrid: ITEM_KEYS,
+  magic:  ITEM_KEYS.filter((k) => PRIMARY_STATS_BY_ITEMKEY[k].includes("magic")),
 };
 
 // Random weapon + armour of the given rarity, rolled with the real rollers.
 // Pass a creature to give it a weapon that suits its type ("fitted").
 export function rollGear(rarity: Rarity, fitTo?: CreatureTemplate): Gear {
-  const weaponKey = pick(fitTo ? FITTED_WEAPONS[styleFromProficiency(fitTo.proficiency)] : ITEM_KEYS);
+  const weaponKey = pick(fitTo ? FITTED_WEAPONS[fitTo.cls] : ITEM_KEYS);
   const armorKey = pick(ARMOR_KEYS);
   return {
     weaponKey,
@@ -50,6 +50,10 @@ export function rollGear(rarity: Rarity, fitTo?: CreatureTemplate): Gear {
     armor: { ...rollArmorStats(armorKey, rarity).stats },
   };
 }
+
+// A creature in rolled gear (with its weapon's damage-type affinity).
+export const gearedFighter = (c: CreatureTemplate, g?: Gear | null): Fighter =>
+  buildFighter(c, g?.weapon, g?.armor, undefined, undefined, undefined, g?.weaponKey as ItemKey | undefined);
 
 export type DuelResult = {
   winner: "A" | "B" | "draw";
@@ -65,8 +69,8 @@ export function duel(
   creatureA: CreatureTemplate, gearA: Gear | null,
   creatureB: CreatureTemplate, gearB: Gear | null,
 ): DuelResult {
-  const fa: Fighter = { ...buildFighter(creatureA, gearA?.weapon, gearA?.armor), name: "A" };
-  const fb: Fighter = { ...buildFighter(creatureB, gearB?.weapon, gearB?.armor), name: "B" };
+  const fa: Fighter = { ...gearedFighter(creatureA, gearA), name: "A" };
+  const fb: Fighter = { ...gearedFighter(creatureB, gearB), name: "B" };
   const aFirstArg = Math.random() < 0.5;
   const [x, y] = aFirstArg ? [fa, fb] : [fb, fa];
   const res = runBattle(x, y, MAX_TURNS);
@@ -320,7 +324,7 @@ export function runTeamBattles(
       const g = opts.gearMode === "optimized"
         ? optimizedGear(c, opts.gearRarity, refs)
         : rollGear(opts.gearRarity, opts.gearMode === "fitted" ? c : undefined);
-      return buildFighter(c, g.weapon, g.armor);
+      return gearedFighter(c, g);
     });
 
   for (let i = 0; i < opts.battles; i++) {
@@ -449,7 +453,7 @@ export function referenceOpponents(creatures: CreatureTemplate[], rarity: Rarity
   return Array.from({ length: n }, () => {
     const c = pick(creatures);
     const g = rollGear(rarity, c);
-    return buildFighter(c, g.weapon, g.armor);
+    return gearedFighter(c, g);
   });
 }
 
@@ -491,13 +495,13 @@ export function runGearShowdown(opts: ShowdownOptions): ShowdownRow[] {
     for (let b = 0; b < opts.battles; b++) {
       const team = randomTeam(opts.teamSize ?? 3, creatures);
       const shuffled = [...team].sort(() => Math.random() - 0.5);
-      const optLow = team.map((c) => { const g = optimizedGear(c, low, refsLow); return buildFighter(c, g.weapon, g.armor); });
-      const fitHigh = shuffled.map((c) => { const g = rollGear(high, c); return buildFighter(c, g.weapon, g.armor); });
+      const optLow = team.map((c) => { const g = optimizedGear(c, low, refsLow); return gearedFighter(c, g); });
+      const fitHigh = shuffled.map((c) => { const g = rollGear(high, c); return gearedFighter(c, g); });
       const r = runTeamBattle(optLow, fitHigh, { swapsA: true, swapsB: true });
       if (r.winner !== "draw") { n++; if (r.winner === "A") w++; }
 
       // Control: optimised vs ordinary at the SAME (higher) rarity.
-      const optHigh = team.map((c) => { const g = optimizedGear(c, high, refsHigh); return buildFighter(c, g.weapon, g.armor); });
+      const optHigh = team.map((c) => { const g = optimizedGear(c, high, refsHigh); return gearedFighter(c, g); });
       const r2 = runTeamBattle(optHigh, fitHigh, { swapsA: true, swapsB: true });
       if (r2.winner !== "draw") { ns++; if (r2.winner === "A") ws++; }
     }

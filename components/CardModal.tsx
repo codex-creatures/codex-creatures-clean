@@ -11,9 +11,10 @@ import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { MoveInfo } from "./MoveSlots";
 import AbilityTag from "./AbilityTag";
 import RaceTag from "./RaceTag";
+import ClassBadge from "./ClassBadge";
 
 const MUTED = "rgba(255,255,255,0.5)";
-const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["agil", "Agility"], ["mdef", "Melee Def"], ["rdef", "Ranged Def"]];
+const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"], ["mdef", "Melee Def"], ["rdef", "Ranged Def"], ["magdef", "Magic Def"]];
 
 type Props = {
   card: CreatureOrItemDrop;
@@ -68,6 +69,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
               <span style={{ padding: "2px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: c.text, border: `1px solid ${c.border}` }}>{t.rarity}</span>
               <RaceTag race={t.race} />
+              <ClassBadge cls={t.cls} />
               <span style={{ fontSize: 12, color: MUTED }}>🃏 Creature card · {creatureTypeLabel(card.proficiency ?? t.proficiency)}</span>
             </div>
             <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text }}>{t.name}</h2>
@@ -129,13 +131,13 @@ function Section({ children }: { children: React.ReactNode }) {
 
 function RollTable({ p, base }: { p: CreatureProficiency; base: CreatureProficiency }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, textAlign: "center" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(72px, 1fr))", gap: 4, textAlign: "center" }}>
       {STATS.map(([k, label]) => {
-        const d = p[k] - base[k];
+        const d = (p[k] ?? 0) - (base[k] ?? 0);
         return (
           <div key={k} style={{ background: "#12131a", padding: "6px 2px" }}>
             <div style={{ fontSize: 11, color: MUTED }}>{label}</div>
-            <div style={{ fontWeight: 700 }}>+{p[k]}%</div>
+            <div style={{ fontWeight: 700 }}>+{p[k] ?? base[k]}%</div>
             <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d}` : d < 0 ? d : "—"}</div>
           </div>
         );

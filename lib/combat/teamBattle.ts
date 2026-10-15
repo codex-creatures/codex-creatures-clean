@@ -6,7 +6,7 @@
 // The AI swaps when its matchup is clearly losing and a teammate would
 // clearly win it, even after taking the free hit.
 
-import { AUTO_BATTLE, ENERGY_REGEN, calcDamage, chooseSkill, combatStyle, effectiveAgil, type Fighter } from "./engine";
+import { ENERGY_REGEN, calcDamage, chooseSkill, effectiveAgil, type Fighter } from "./engine";
 import {
   activeOf, affordableSkills, attackTargets, createBattle, currentAgility, isCrippled, other, resolveRound, sendInReplacement,
   CRIPPLE_AGILITY_LOSS,
@@ -125,9 +125,8 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
   if (usable.length === 0) return undefined;
   const attacks = usable.filter((s) => !s.self);
   const affordable = attacks.length > 0 ? attacks : usable;
-  const style = combatStyle(me);
-  const own = style === "hybrid" || AUTO_BATTLE.policy === "maxDamage" ? affordable : affordable.filter((s) => s.type === style);
-  const pool = own.length > 0 ? own : affordable;
+  // Any style: the value below already weighs the triangle and armour.
+  const pool = affordable;
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
   const theirHit = expectedDamage(them, me);

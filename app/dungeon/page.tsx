@@ -41,7 +41,7 @@ const GOLD = "#f5c542";
 
 function combatLine(f: Parameters<typeof combatSummary>[0]): string {
   const s = combatSummary(f);
-  return `${s.hp} HP · Atk ${Math.round(s.atk)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)}`;
+  return `${s.hp} HP · Atk ${Math.round(s.atk)} · Rng ${Math.round(s.rng)} · Mag ${Math.round(s.mag)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)} · MgDef ${Math.round(s.magdef)}`;
 }
 
 function dropLabel(d: Drop): string {
@@ -610,7 +610,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onCh
             {room.kind === "easy" && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
             {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Beat it and you can heal or revive one of your party."}
-            {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close, and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
+            {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close (magic hits it hardest), and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
             {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

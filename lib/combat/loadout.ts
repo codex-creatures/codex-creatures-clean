@@ -6,20 +6,23 @@
 import { resolveMoves, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
 import { effectiveStats, type CombatItem, type Fighter } from "./engine";
 import type { ArmorKey } from "../items/armor";
+import { WEAPON_AFFINITY, type ItemKey } from "../items/ceilings";
 
-const EMPTY: CombatItem = { atk: 0, rng: 0, agil: 0, mdef: 0, rdef: 0, hp: 0 };
+const EMPTY: CombatItem = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0, hp: 0 };
 
 // Item stat names → combat stat names. Missing stats count as 0, so an empty
 // slot (no item) is simply all zeros.
 export function itemToCombatStats(stats?: Record<string, number>): CombatItem {
   if (!stats) return EMPTY;
   return {
-    atk:  stats.melee   ?? 0,
-    rng:  stats.ranged  ?? 0,
-    agil: stats.agility ?? 0,
-    mdef: stats.mDef    ?? 0,
-    rdef: stats.rDef    ?? 0,
-    hp:   stats.hp      ?? 0,
+    atk:    stats.melee   ?? 0,
+    rng:    stats.ranged  ?? 0,
+    mag:    stats.magic   ?? 0,
+    agil:   stats.agility ?? 0,
+    mdef:   stats.mDef    ?? 0,
+    rdef:   stats.rDef    ?? 0,
+    magdef: stats.magDef  ?? 0,
+    hp:     stats.hp      ?? 0,
   };
 }
 
@@ -30,8 +33,10 @@ export function buildFighter(
   moveNames?: string[], // the creature's 4 move slots (defaults if omitted)
   proficiency?: CreatureProficiency, // this individual's rolled %s (species values if omitted)
   armorSet?: ArmorKey,               // a full armour set (its mechanic applies)
+  weaponKey?: ItemKey,               // the weapon's type (its damage-type affinity)
 ): Fighter {
-  const weapon = itemToCombatStats(weaponStats);
+  const affinity = weaponKey ? WEAPON_AFFINITY[weaponKey] : undefined;
+  const weapon = { ...itemToCombatStats(weaponStats), ...(affinity ? { affinity } : {}) };
   const armor  = itemToCombatStats(armorStats);
   const totalHp = creature.baseHp + weapon.hp + armor.hp;
   return {
@@ -39,7 +44,9 @@ export function buildFighter(
     hp: totalHp,
     maxHp: totalHp,
     energy: 100,
-    proficiency: proficiency ?? creature.proficiency,
+    // Older rolls may lack newer stats: those fall back to the species value.
+    proficiency: { ...creature.proficiency, ...proficiency },
+    cls: creature.cls,
     skills: resolveMoves(creature, moveNames),
     weapon,
     armor,

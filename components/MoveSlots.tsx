@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
+import { moveKind } from "./ClassBadge";
 
 const MUTED = "rgba(255,255,255,0.45)";
 
@@ -12,7 +13,7 @@ export function MoveInfo({ m }: { m: Skill }) {
   return (
     <>
       <span style={{ fontWeight: 600, color: m.effect ? "#ffd98a" : "white" }}>{m.name}</span>
-      <span style={{ fontSize: 12, color: MUTED }}> · {m.self ? "utility" : `${m.type} · ${m.damage} dmg`} · {m.energyCost}⚡</span>
+      <span style={{ fontSize: 12, color: MUTED }}> · {m.self ? "utility" : `${moveKind(m)} · ${m.damage} dmg`} · {m.energyCost}⚡</span>
       {m.desc && <span style={{ display: "block", fontSize: 11, color: "#c9b48a", marginTop: 2 }}>{m.desc}</span>}
     </>
   );

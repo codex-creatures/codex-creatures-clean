@@ -29,8 +29,10 @@ export type CreatureOrItemDrop = {
   stats?: {
     melee?: number;
     ranged?: number;
+    magic?: number;
     mDef?: number;
     rDef?: number;
+    magDef?: number;
     agility?: number;
     hp?: number;
   };

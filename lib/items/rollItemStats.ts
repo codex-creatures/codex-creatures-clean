@@ -54,7 +54,7 @@ export function rollItemStats(item: ItemKey, rarity: Rarity, rng: () => number =
   }
   const effectiveBudget = budget;
 
-  const stats: StatBlock = { melee: 0, ranged: 0, agility: 0, hp: 0 };
+  const stats: StatBlock = { melee: 0, ranged: 0, magic: 0, agility: 0, hp: 0 };
   let remaining = effectiveBudget;
 
   const room = (k: keyof StatBlock) => ceilings[k] - stats[k];

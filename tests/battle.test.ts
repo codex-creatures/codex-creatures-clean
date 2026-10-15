@@ -73,7 +73,7 @@ describe("move slots and learnable moves", () => {
 
   it("a creature fights with 4 moves: its first 4 by default, learnable moves allowed", () => {
     expect(buildFighter(CREATURE_BY_ID.void_serpent).skills.map((s) => s.name))
-      .toEqual(["Devastator", "Annihilator", "Crush", "Piercing Shot"]);
+      .toEqual(["Starfall", "Soul Drain", "Hex", "Devastator"]);
     expect(mv("dire_wolf", ["Crush", "Cripple", "Dash Lash", "Precise Slice", "Slash"]).skills.map((s) => s.name))
       .toEqual(["Crush", "Cripple", "Dash Lash", "Precise Slice"]);
     expect(mv("dire_wolf", ["Annihilator"]).skills.map((s) => s.name)).toEqual(defaultMoveNames(CREATURE_BY_ID.dire_wolf));
@@ -181,9 +181,9 @@ describe("armour gap (same move, same target)", () => {
 describe("resting", () => {
   it("a creature with no affordable move rests and recovers energy (no soft-lock)", () => {
     const s = createBattle([buildFighter(CREATURE_BY_ID.void_serpent)], [buildFighter(CREATURE_BY_ID.crystal_golem, undefined, { hp: 900 })]);
-    activeOf(s.sides.A).energy = 30; // Void Serpent's cheapest default move costs 40
+    activeOf(s.sides.A).energy = 20; // Void Serpent's cheapest default move costs 30
     resolveRound(s, { A: { kind: "pass" }, B: { kind: "attack", skillName: "Jab" } });
-    expect(activeOf(s.sides.A).energy).toBe(60);
+    expect(activeOf(s.sides.A).energy).toBe(50);
   });
 });
 

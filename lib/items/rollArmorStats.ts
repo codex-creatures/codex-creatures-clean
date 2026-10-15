@@ -59,7 +59,7 @@ export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => nu
   }
   const effectiveBudget = budget;
 
-  const stats: ArmorStatBlock = { mDef: 0, rDef: 0, agility: 0, hp: 0 };
+  const stats: ArmorStatBlock = { mDef: 0, rDef: 0, magDef: 0, agility: 0, hp: 0 };
   let remaining = effectiveBudget;
 
   const room = (k: keyof ArmorStatBlock) => ceilings[k] - stats[k];

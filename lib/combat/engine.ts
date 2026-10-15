@@ -1,20 +1,23 @@
 // lib/combat/engine.ts
 
-import type { Skill } from "../creatures/creatureData";
+import type { CombatClass, CreatureProficiency, DamageType, Skill } from "../creatures/creatureData";
 
 // Type guard for brace skill
 function isBraceSkill(skill: Skill): boolean {
-  return (skill as any).isBrace === true;
+  return (skill as { isBrace?: boolean }).isBrace === true;
 }
 export type Stance = "neutral" | "float" | "entrench";
 
 export type CombatItem = {
-  atk: number;
-  rng: number;
+  atk: number;    // melee
+  rng: number;    // ranged
+  mag: number;    // magic
   agil: number;
-  mdef: number;
-  rdef: number;
+  mdef: number;   // melee defence
+  rdef: number;   // ranged defence
+  magdef: number; // magic defence
   hp: number;
+  affinity?: DamageType; // weapons: moves of this damage type hit harder with it
 };
 
 export type Fighter = {
@@ -22,7 +25,8 @@ export type Fighter = {
   hp: number;
   maxHp: number;
   energy: number;
-  proficiency: { atk: number; rng: number; agil: number; mdef: number; rdef: number };
+  proficiency: CreatureProficiency;
+  cls: CombatClass; // primary class (the triangle)
   skills: Skill[];
   weapon: CombatItem;
   armor: CombatItem;
@@ -59,13 +63,13 @@ export type BattleResult = {
   totalTurns: number;
 };
 
-function stanceDamageDealt(stance: Stance, moveType: "melee" | "ranged"): number {
+function stanceDamageDealt(stance: Stance, moveType: CombatClass): number {
   if (stance === "entrench" && moveType === "melee")  return 1.10;
   if (stance === "float"    && moveType === "ranged") return 1.10;
   return 1.0;
 }
 
-function stanceDamageTaken(stance: Stance, moveType: "melee" | "ranged"): number {
+function stanceDamageTaken(stance: Stance, moveType: CombatClass): number {
   if (stance === "float"    && moveType === "melee")  return 0.90;
   if (stance === "entrench" && moveType === "ranged") return 0.90;
   if (stance === "float"    && moveType === "ranged") return 1.10;
@@ -85,8 +89,37 @@ function elementalModifier(atk: Fighter["elemental"], def: Fighter["elemental"])
 }
 
 function withProf(stat: number, profPct: number): number {
-  return stat * (1 + profPct / 100);
+  return stat * (1 + (profPct ?? 0) / 100);
 }
+
+// ── The combat triangle ─────────────────────────────────
+// Melee beats ranged, ranged beats magic, magic beats melee. A move's style
+// against the target's primary class.
+export const TRIANGLE = { strong: 1.5, weak: 0.5 }; // +50% / −50% damage
+export const BEATS: Record<CombatClass, CombatClass> = { melee: "ranged", ranged: "magic", magic: "melee" };
+
+export function triangleModifier(moveStyle: CombatClass, targetClass: CombatClass): number {
+  if (BEATS[moveStyle] === targetClass) return TRIANGLE.strong;
+  if (BEATS[targetClass] === moveStyle) return TRIANGLE.weak;
+  return 1;
+}
+
+// ── Damage types ────────────────────────────────────────
+// mult: the hit after armour; pen: share of armour it ignores;
+// maxHp: arcane moves also take this share of the target's max HP per
+// ARCANE_REF_POWER of move power (capped at ARCANE_CAP per hit).
+export const DAMAGE_TYPES: Record<DamageType, { mult: number; pen: number; maxHp: number }> = {
+  force:  { mult: 1.1,  pen: 0,    maxHp: 0 },
+  pierce: { mult: 0.95, pen: 0.5,  maxHp: 0 },
+  arcane: { mult: 0.9,  pen: 0.2,  maxHp: 0.04 },
+};
+export const ARCANE_REF_POWER = 25; // a 25-power arcane move takes 4% of max HP
+export const ARCANE_CAP = 15;
+export const AFFINITY_BONUS = 0.15; // weapon affinity matches the move's damage type
+
+// Which stats a move uses.
+export const ATTACK_STAT: Record<CombatClass, "atk" | "rng" | "mag"> = { melee: "atk", ranged: "rng", magic: "mag" };
+export const DEFENCE_STAT: Record<CombatClass, "mdef" | "rdef" | "magdef"> = { melee: "mdef", ranged: "rdef", magic: "magdef" };
 
 export function effectiveAgil(f: Fighter): number {
   return withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil);
@@ -94,11 +127,13 @@ export function effectiveAgil(f: Fighter): number {
 
 export function effectiveStats(f: Fighter) {
   return {
-    atk:  withProf(f.weapon.atk,  f.proficiency.atk),
-    rng:  withProf(f.weapon.rng,  f.proficiency.rng),
-    agil: withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil),
-    mdef: withProf(f.armor.mdef,  f.proficiency.mdef),
-    rdef: withProf(f.armor.rdef,  f.proficiency.rdef),
+    atk:    withProf(f.weapon.atk,  f.proficiency.atk),
+    rng:    withProf(f.weapon.rng,  f.proficiency.rng),
+    mag:    withProf(f.weapon.mag ?? 0, f.proficiency.mag),
+    agil:   withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil),
+    mdef:   withProf(f.armor.mdef,  f.proficiency.mdef),
+    rdef:   withProf(f.armor.rdef,  f.proficiency.rdef),
+    magdef: withProf(f.armor.magdef ?? 0, f.proficiency.magdef),
   };
 }
 
@@ -130,21 +165,27 @@ export function calcDamage(
     }
   }
 
-  const weaponStat   = moveType === "melee" ? attacker.weapon.atk  : attacker.weapon.rng;
-  const atkProf      = moveType === "melee" ? attacker.proficiency.atk : attacker.proficiency.rng;
-  const effectiveAtk = withProf(weaponStat, atkProf);
+  const dmgType = DAMAGE_TYPES[skill.dmgType ?? "force"];
+  const atkKey = ATTACK_STAT[moveType], defKey = DEFENCE_STAT[moveType];
+  const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]);
+  const affinity     = attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
   const raw          = (skill.damage + effectiveAtk) * roll;
 
   const atkStance    = stanceDamageDealt(attacker.stance, moveType);
   const defStance    = stanceDamageTaken(defender.stance, moveType);
   const elemental    = elementalModifier(attacker.elemental, defender.elemental);
+  const triangle     = triangleModifier(moveType, defender.cls);
 
-  const armorStat      = moveType === "melee" ? defender.armor.mdef  : defender.armor.rdef;
-  const defProf        = moveType === "melee" ? defender.proficiency.mdef : defender.proficiency.rdef;
-  const effectiveDef   = withProf(armorStat, defProf);
-  const defenseApplied = precise ? effectiveDef * (1 - preciseIgnore) : effectiveDef;
+  // Penetration and precise hits each ignore a share of the armour.
+  const effectiveDef   = withProf(defender.armor[defKey] ?? 0, defender.proficiency[defKey]);
+  const defenseApplied = effectiveDef * (1 - dmgType.pen) * (precise ? 1 - preciseIgnore : 1);
 
-  let finalDmg = Math.max(1, Math.round(raw * atkStance * defStance * elemental - defenseApplied));
+  // Attack against defence as a ratio: defence always cuts damage, but a hit
+  // never drops to nothing (a hit as big as the armour does half).
+  const afterArmor = raw > 0 ? (raw * raw) / (raw + defenseApplied) : 0;
+  const arcane = Math.min(ARCANE_CAP, defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
+
+  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));
 
   return { damage: finalDmg, braceBlocked, braceFailed };
@@ -162,48 +203,27 @@ export const DAMAGE_VARIANCE = 0.05;
 export const rollDamage = (rng: () => number = Math.random) => 1 - DAMAGE_VARIANCE + rng() * 2 * DAMAGE_VARIANCE;
 
 // ── Auto-battle move choice ─────────────────────────────
-export type CombatStyle = "melee" | "ranged" | "hybrid";
-
-// A creature is a hybrid when its weaker attack proficiency is at least
-// this share of its stronger one (e.g. Veilstalker 18/18, Amber Wasp 8/10).
-export const HYBRID_RATIO = 0.6;
+export type CombatStyle = CombatClass;
 
 export function combatStyle(f: Fighter): CombatStyle {
-  return styleFromProficiency(f.proficiency);
+  return f.cls;
 }
 
-export function styleFromProficiency({ atk, rng }: { atk: number; rng: number }): CombatStyle {
-  const hi = Math.max(atk, rng);
-  const lo = Math.min(atk, rng);
-  if (hi === 0 || lo / hi >= HYBRID_RATIO) return "hybrid";
-  return atk > rng ? "melee" : "ranged";
+// The class a set of %s points to: its best attack multiplier (for gear
+// suggestions; a creature's real class is set on its template).
+export function styleFromProficiency(p: { atk: number; rng: number; mag?: number }): CombatStyle {
+  const mag = p.mag ?? 0;
+  if (mag > p.atk && mag > p.rng) return "magic";
+  return p.atk >= p.rng ? "melee" : "ranged";
 }
 
-// Auto-battle behaviour, switchable for balance experiments:
-// - "style":     melee/ranged creatures stick to their own move type
-//                (default — what was agreed for normal play);
-// - "maxDamage": every creature uses whichever affordable move hurts most,
-//                e.g. a melee attacker sneaking in a ranged hit on a melee tank.
-export const AUTO_BATTLE: { policy: "style" | "maxDamage" } = { policy: "style" };
-
-// What a sensible player would pick:
-// - melee/ranged creatures use their biggest affordable move of their own
-//   type, falling back to the other type only if none is affordable;
-// - hybrids use whichever affordable move does the most damage against
-//   this opponent's actual defences.
+// Auto-battle: the affordable move that hurts this opponent most (its
+// damage already accounts for the triangle, armour and damage types).
 export function chooseSkill(atk: Fighter, def: Fighter): Skill | undefined {
-  const affordable = atk.skills.filter(s => !isBraceSkill(s) && s.energyCost <= atk.energy);
+  const affordable = atk.skills.filter(s => !isBraceSkill(s) && !s.self && s.energyCost <= atk.energy);
   if (affordable.length === 0) return undefined;
-
-  const style = combatStyle(atk);
-  if (style === "hybrid" || AUTO_BATTLE.policy === "maxDamage") {
-    const dmg = (s: Skill) => calcDamage(s, atk, def, false).damage;
-    return affordable.reduce((best, s) => (dmg(s) > dmg(best) ? s : best));
-  }
-
-  const own = affordable.filter(s => s.type === style);
-  const pool = own.length > 0 ? own : affordable;
-  return pool.reduce((best, s) => (s.damage > best.damage ? s : best));
+  const dmg = (s: Skill) => calcDamage(s, atk, def, false).damage;
+  return affordable.reduce((best, s) => (dmg(s) > dmg(best) ? s : best));
 }
 
 export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): BattleResult {

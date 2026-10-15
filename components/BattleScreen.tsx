@@ -14,7 +14,9 @@ import { findCreatureTemplate, type CreatureTemplate, type Skill } from "@/lib/c
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
-import { calcDamage, type Fighter } from "@/lib/combat/engine";
+import { calcDamage, triangleModifier, type Fighter } from "@/lib/combat/engine";
+import { CLASS_INFO } from "@/lib/creatures/creatureData";
+import { moveKind } from "./ClassBadge";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf,
@@ -90,7 +92,7 @@ export function loadOwnedCreatures(): OwnedCreature[] {
       weaponName: w?.name,
       armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
-      fighter: fighterFor(d, t, w?.stats, pieces, equipment[d.id]?.moves),
+      fighter: fighterFor(d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
     });
   }
   return list.sort((x, y) =>
@@ -149,7 +151,7 @@ function historyMembers(m: Match, k: SideKey): BattleMember[] {
       name: f.name, rarity: m.info[k][i].rarity, label: m.info[k][i].label,
       weapon: m.info[k][i].weaponName, armor: m.info[k][i].armorName,
       moves: f.skills.map((sk) => sk.name),
-      stats: { hp: s.hp, atk: Math.round(s.atk), rng: Math.round(s.rng), agil: Math.round(s.agil), mdef: Math.round(s.mdef), rdef: Math.round(s.rdef) },
+      stats: { hp: s.hp, atk: Math.round(s.atk), rng: Math.round(s.rng), mag: Math.round(s.mag), agil: Math.round(s.agil), mdef: Math.round(s.mdef), rdef: Math.round(s.rdef), magdef: Math.round(s.magdef) },
     };
   });
 }
@@ -401,6 +403,9 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   const fx = sk.effect;
   const dmg = moveDamage(sk, me, them);
   const tags: string[] = [];
+  const tri = sk.self ? 1 : triangleModifier(sk.type, them.cls);
+  if (tri > 1) tags.push(`▲ strong vs ${CLASS_INFO[them.cls].name} (+${Math.round((tri - 1) * 100)}%)`);
+  if (tri < 1) tags.push(`▼ ${CLASS_INFO[them.cls].name} resists it (−${Math.round((1 - tri) * 100)}%)`);
   const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
   if (run > STREAK_START) tags.push(`run ×${run}: ${Math.round(streakEffects({ ...me.streak!, hits: run }).preciseChance * 100)}% precise`);
   else if (run > 2) tags.push(`run ×${run} (armour gap from ×${STREAK_START + 1})`);
@@ -419,7 +424,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   return (
     <button disabled={disabled} onClick={onClick} className="card-btn" style={{ display: "block", opacity: sk.energyCost > me.energy || cooling > 0 ? 0.35 : 1 }}>
-      <b style={{ color: fx ? "#ffd98a" : "white" }}>{sk.name}</b> <span style={{ fontSize: 11, color: MUTED }}>{sk.self ? "utility" : sk.type}</span>
+      <b style={{ color: fx ? "#ffd98a" : "white" }}>{sk.name}</b> <span style={{ fontSize: 11, color: MUTED }}>{sk.self ? "utility" : moveKind(sk)}</span>
       <span style={{ display: "block", fontSize: 12, color: MUTED }}>{sk.self ? "no damage" : `~${dmg} dmg`} · {sk.energyCost}⚡</span>
       {tags.map((t) => <span key={t} style={{ display: "block", fontSize: 11, color: "#c9b48a" }}>{t}</span>)}
     </button>
@@ -463,7 +468,7 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
             <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", color: rarityColor(info.rarity), lineHeight: 1.1, overflowWrap: "anywhere" }}>{f.name}</div>
-            <div style={{ fontSize: 11, color: MUTED }}>{info.label}</div>
+            <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span> · {info.label}</div>
           </div>
         </div>
         <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
@@ -561,7 +566,7 @@ export function StatsLine({ stats }: { stats: ReturnType<typeof combatSummary> }
   const r = Math.round;
   return (
     <span style={{ display: "block", fontSize: 11, color: MUTED, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
-      HP {stats.hp} · Atk {r(stats.atk)} · Rng {r(stats.rng)} · Agi {r(stats.agil)} · MDef {r(stats.mdef)} · RDef {r(stats.rdef)}
+      HP {stats.hp} · Atk {r(stats.atk)} · Rng {r(stats.rng)} · Mag {r(stats.mag)} · Agi {r(stats.agil)} · MDef {r(stats.mdef)} · RDef {r(stats.rdef)} · MgDef {r(stats.magdef)}
     </span>
   );
 }

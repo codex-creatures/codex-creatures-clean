@@ -139,7 +139,7 @@ export function enemyFighter(e: Enemy): Fighter {
   const t = CREATURE_BY_ID[e.creatureId];
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
-  return buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency);
+  return buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined);
 }
 
 export function gearName(p: GearPiece): string {

@@ -67,7 +67,7 @@ describe("set bonuses", () => {
   // A one-on-one fight between two Klutzes; B wears `set`.
   function duel(set: ArmorKey, moveA: string, opts: { hpB?: number; agilA?: number; agilB?: number } = {}) {
     const t = CREATURE_BY_ID.klutz;
-    const make = (agil: number): Fighter => ({ ...buildFighter(t, { melee: 40, ranged: 40, agility: agil }, { mDef: 10, rDef: 10 }), skills: [MOVE_BY_NAME[moveA]] });
+    const make = (agil: number): Fighter => ({ ...buildFighter(t, { melee: 40, ranged: 40, magic: 40, agility: agil }, { mDef: 10, rDef: 10, magDef: 10 }), skills: [MOVE_BY_NAME[moveA]] });
     const A = make(opts.agilA ?? 100);
     const B = { ...make(opts.agilB ?? 0), armorSet: set };
     const state = createBattle([A], [B], opts.hpB ? { B: [opts.hpB] } : {});
@@ -118,9 +118,9 @@ describe("set bonuses", () => {
     expect(attacksOn(melee.state.log, "A")[0].missed).toBe(false);
   });
 
-  it("Nullify reflects part of a ranged hit back at the attacker", () => {
+  it("Nullify reflects part of a magic hit back at the attacker", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.99);
-    const { A, state, round } = duel("arcane_nullifier", "Bolt", { agilA: 100, agilB: 0 });
+    const { A, state, round } = duel("arcane_nullifier", "Hex", { agilA: 100, agilB: 0 });
     round();
     const hit = attacksOn(state.log, "A")[0];
     const back = Math.max(1, Math.round(hit.damage * NULLIFY_REFLECT));
