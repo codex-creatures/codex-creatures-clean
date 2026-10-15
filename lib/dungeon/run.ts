@@ -32,6 +32,10 @@ import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
 import { rollMap, routeLength, waysOn, type DungeonMap } from "./map";
 import { readSave, writeSaveField } from "../save";
+import { ITEM_KEYS } from "../items/ceilings";
+import { ARMOR_KEYS } from "../items/armor";
+import { pickRarity } from "../items/gameHelpers";
+import { weaponDrop, armorDrop } from "../drops";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -61,7 +65,7 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   pool:      { name: "Healing pool",       icon: "⛲" },
   hard:      { name: "Lurking brute",      icon: "⚔️" },
   chest:     { name: "Chest",              icon: "🧰" },
-  stash:     { name: "Stash",              icon: "🎒" },
+  stash:     { name: "Stash",              icon: "💰" },
   librarian: { name: "Wandering librarian", icon: "📚" },
   merchant:  { name: "Wandering merchant", icon: "🪙" },
   cards:     { name: "Deck of cards",      icon: "🃏" },
@@ -121,8 +125,19 @@ export const POTIONS: Record<PotionKey, { name: string; heal: number; price: num
   potion: { name: "Healing Potion", heal: 100, price: 100, icon: "🧪" },
   lesser: { name: "Lesser Potion",  heal: 50,  price: 50,  icon: "🧴" },
 };
-export const STASH_ITEMS = 3;
-export const STASH_POTION_CHANCE = 0.3; // each stash item: a Healing Potion (else a Lesser one)
+// A stash: a burlap sack. Open it and take what you want (one slot each,
+// gold takes none); what you leave stays on the floor.
+// - STASH_POTIONS potions, or one more STASH_EXTRA_POTION_CHANCE of the time
+//   (each a Healing Potion STASH_POTION_CHANCE of the time, else a Lesser one);
+// - STASH_GOLD_CHANCE of some gold (STASH_GOLD);
+// - STASH_GEAR_CHANCE of a weapon or armour piece, rolled like a scan.
+export const STASH_POTIONS = 2;
+export const STASH_EXTRA_POTION_CHANCE = 0.25;
+export const STASH_POTION_CHANCE = 0.3;
+export const STASH_GOLD_CHANCE = 0.5;
+export const STASH_GOLD: [number, number] = [100, 250];
+export const STASH_GEAR_CHANCE = 0.25;
+export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop };
 
 // Room for more in the bag? Adds what fits; returns the new bag.
 export function addToBag(bag: BagEntry[], items: BagEntry[], size: number): BagEntry[] {
@@ -193,7 +208,8 @@ export type Room = {
   offers?: string[];   // a librarian: the codexes (race moves) for sale
   bought?: string[];   // …and the ones you bought (librarian codexes; merchant potions)
   blessed?: boolean;   // a mini boss's heal/revive has been used
-  stash?: PotionKey[]; // a stash: the potions inside
+  sack?: SackItem[];   // a stash: what's (still) in the sack
+  opened?: boolean;    // …and you've opened it
   quest?: "club" | "rattlebones"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the Rattlebones' room: you've picked up Klutz's box
   done: boolean;
@@ -232,8 +248,18 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
       return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
     }
-    case "stash":
-      return { kind, stash: Array.from({ length: STASH_ITEMS }, (): PotionKey => (rng() < STASH_POTION_CHANCE ? "potion" : "lesser")), done: false };
+    case "stash": {
+      const sack: SackItem[] = [];
+      const potions = STASH_POTIONS + (rng() < STASH_EXTRA_POTION_CHANCE ? 1 : 0);
+      for (let i = 0; i < potions; i++) sack.push({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
+      if (rng() < STASH_GOLD_CHANCE) sack.push({ gold: randInt(...STASH_GOLD, rng) });
+      if (rng() < STASH_GEAR_CHANCE) {
+        // Like a scan: any rarity at the usual odds; armour twice as likely as a weapon.
+        const rarity = pickRarity("", "random");
+        sack.push({ gear: rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity) });
+      }
+      return { kind, sack, done: false };
+    }
     case "miniboss": {
       // One tough creature: an Epic with Rare gear, played by the Hard AI.
       // Beat it and you can heal or revive one of your party.

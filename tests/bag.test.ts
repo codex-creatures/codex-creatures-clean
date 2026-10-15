@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, STASH_ITEMS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -31,12 +31,23 @@ describe("the battle bag", () => {
     expect(POTIONS.lesser).toMatchObject({ heal: 50, price: 50 });
   });
 
-  it("stashes hold 3 potions", () => {
-    for (let i = 0; i < 50; i++) {
-      const room = makeRoom("stash");
-      expect(room.stash).toHaveLength(STASH_ITEMS);
-      for (const k of room.stash!) expect(POTIONS[k]).toBeTruthy();
+  it("stashes: 2-3 potions (3 a quarter of the time), gold half the time, gear a quarter", () => {
+    const N = 4000;
+    let three = 0, gold = 0, gear = 0;
+    for (let i = 0; i < N; i++) {
+      const sack = makeRoom("stash").sack!;
+      const potions = sack.filter((x) => "potion" in x);
+      expect(potions.length === 2 || potions.length === 3).toBe(true);
+      for (const p of potions) expect(POTIONS[(p as { potion: "potion" | "lesser" }).potion]).toBeTruthy();
+      if (potions.length === 3) three++;
+      const g = sack.find((x) => "gold" in x) as { gold: number } | undefined;
+      if (g) { gold++; expect(g.gold).toBeGreaterThanOrEqual(100); expect(g.gold).toBeLessThanOrEqual(250); }
+      const it = sack.find((x) => "gear" in x) as { gear: { dropType: string; itemCategory?: string } } | undefined;
+      if (it) { gear++; expect(["weapon", "armor"]).toContain(it.gear.itemCategory); }
     }
+    expect(Math.abs(three / N - 0.25)).toBeLessThan(0.03);
+    expect(Math.abs(gold / N - 0.5)).toBeLessThan(0.03);
+    expect(Math.abs(gear / N - 0.25)).toBeLessThan(0.03);
   });
 
   it("in a fight, a potion uses your turn and heals before anyone attacks", () => {

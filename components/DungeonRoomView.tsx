@@ -15,7 +15,7 @@ import { createChamber, CW, CH, type Chamber, type TunnelLook } from "@/lib/dung
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
-import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX } from "@/lib/sprites/props";
+import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN } from "@/lib/sprites/props";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const FPS = 12;
@@ -120,6 +120,7 @@ function RoomContents({ run, onObject }: { run: DungeonRun; onObject?: () => voi
   // The Rattlebones' box, once it's beaten.
   if (room.quest === "rattlebones" && room.done) return room.boxTaken ? null : prop(ARMOURY_BOX, "Pick up the box");
   if (room.kind === "chest") return prop(room.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST, room.done ? "An open chest" : "Open the chest");
+  if (room.kind === "stash") return prop(room.opened ? BURLAP_SACK_OPEN : BURLAP_SACK, room.opened ? "An open sack" : "Open the sack", 3.4);
 
   if (isFight(room.kind)) {
     if (room.done) return null;

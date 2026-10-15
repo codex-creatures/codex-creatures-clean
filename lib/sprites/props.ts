@@ -4,6 +4,7 @@
 // Same text-grid format as the other sprites (lib/sprites/pixels.ts).
 
 import type { Sprite } from "./pixels";
+import { draw, T } from "./draw";
 
 // A domed wooden chest with gold bands and a lock.
 export const TREASURE_CHEST: Sprite = [
@@ -53,3 +54,26 @@ export const ARMOURY_BOX: Sprite = [
   "dWwwwwwwwwwwWd",
   "dddddddddddddd",
 ];
+
+// A stash: a lumpy burlap sack tied at the neck…
+export const BURLAP_SACK: Sprite = draw((p) => {
+  p.ellipse(22, 31, 14, 11, T.sand);                                  // the sack
+  p.ellipse(15, 34, 5, 5, T.sand).ellipse(29, 33, 6, 5, T.sand);      // lumps
+  p.poly([[16, 21], [28, 21], [25, 14], [19, 14]], T.sand);           // neck
+  p.poly([[18, 14], [26, 14], [28, 8], [22, 11], [16, 8]], T.sand);   // the gathered top
+  p.line(17, 17, 27, 17, 2, T.wood);                                  // the tie
+  p.path([[26, 17], [30, 20], [29, 24]], 1.4, T.wood);               // its loose end
+  for (const [x, y] of [[12, 28], [18, 36], [27, 29], [32, 37], [21, 26], [24, 39]] as const) p.dot(x, y, "j"); // weave
+  p.rect(26, 31, 30, 34, "l").dot(27, 32, "m").dot(29, 33, "m");      // a patch
+});
+
+// …and opened, its neck pulled wide.
+export const BURLAP_SACK_OPEN: Sprite = draw((p) => {
+  p.ellipse(22, 31, 14, 11, T.sand);
+  p.ellipse(15, 34, 5, 5, T.sand).ellipse(29, 33, 6, 5, T.sand);
+  p.ellipse(22, 21, 10, 4, T.sand);                                   // the rim, pulled open
+  p.ellipse(22, 21, 7.5, 2.6, "K");                                   // dark inside
+  p.path([[30, 22], [35, 25], [36, 30]], 1.4, T.wood);               // the untied cord
+  for (const [x, y] of [[12, 28], [18, 36], [27, 29], [32, 37], [24, 39]] as const) p.dot(x, y, "j");
+  p.rect(26, 31, 30, 34, "l").dot(27, 32, "m").dot(29, 33, "m");
+});

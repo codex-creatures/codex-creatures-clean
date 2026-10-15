@@ -326,14 +326,44 @@ export default function DungeonPage() {
       : r));
   }
 
-  function takeStash() {
-    const cur = loadDungeon();
-    const items = cur.run?.current?.stash ?? [];
-    const room = bagSize(cur.meta) - (cur.meta.bag ?? []).length;
-    const taken = items.slice(0, Math.max(0, room)), left = items.slice(Math.max(0, room));
-    updateBag((bag) => addToBag(bag, taken, bagSize(cur.meta)));
-    updateRun((r) => markDone({ ...r, loot: [...r.loot, ...taken.map((k) => POTIONS[k].name)], floor: [...(r.floor ?? []), ...left.map((k) => ({ room: here(r), potion: k }))] }));
+  // A stash: open the sack…
+  function openSack() {
+    updateRun((r) => (r.current ? { ...r, current: { ...r.current, opened: true, done: true } } : r));
   }
+  // …and take something out: potions and gear need a slot in your bag, gold doesn't.
+  function takeFromSack(index: number) {
+    const cur = loadDungeon();
+    const item = cur.run?.current?.sack?.[index];
+    if (!cur.run?.current || !item) return;
+    const full = (cur.meta.bag ?? []).length >= bagSize(cur.meta);
+    if ("gold" in item) game.addGold(item.gold);
+    else if (full) return;
+    else if ("potion" in item) updateBag((bag) => addToBag(bag, [item.potion], bagSize(cur.meta)));
+    else carry([item.gear]);
+    const label = "gold" in item ? `${item.gold} gold` : "potion" in item ? POTIONS[item.potion].name : dropLabel(item.gear);
+    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, label], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
+  }
+  function takeAllFromSack() {
+    // Gold first (it's free), then whatever fits, in order.
+    const sack = loadDungeon().run?.current?.sack ?? [];
+    const order = sack.map((x, i) => [x, i] as const).sort(([a], [b]) => Number(!("gold" in a)) - Number(!("gold" in b))).map(([, i]) => i);
+    // Take from the back so earlier indices stay valid.
+    for (const i of [...order].sort((a, b) => b - a).filter((i) => "gold" in sack[i])) takeFromSack(i);
+    let left = loadDungeon().run?.current?.sack ?? [];
+    while (left.length > 0 && (loadDungeon().meta.bag ?? []).length < bagSize(loadDungeon().meta)) {
+      takeFromSack(0);
+      const next = loadDungeon().run?.current?.sack ?? [];
+      if (next.length === left.length) break;
+      left = next;
+    }
+  }
+  // Whatever you leave in the sack stays on the floor.
+  const leaveSack = (r: DungeonRun): DungeonRun => {
+    const sack = r.current?.kind === "stash" ? r.current.sack ?? [] : [];
+    if (!r.current?.opened || sack.length === 0) return r;
+    const floor: FloorItem[] = sack.map((x) => ("potion" in x ? { room: here(r), potion: x.potion } : { room: here(r), drop: "gold" in x ? goldOnly(x.gold) : x.gear }));
+    return { ...r, floor: [...(r.floor ?? []), ...floor] };
+  };
 
   // Between rooms: drink a potion on anyone still standing.
   function drink(key: PotionKey, id: string) {
@@ -366,7 +396,7 @@ export default function DungeonPage() {
     battle.clear();
     const thief = wantsThief(game.quest);
     updateRun((r) => {
-      const n = moveOn(leavePending(r), nodeId);
+      const n = moveOn(leaveSack(leavePending(r)), nodeId);
       return thief ? { ...n, current: rattlebonesRoom() } : n;
     });
   }
@@ -532,7 +562,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -681,10 +711,10 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
   run: DungeonRun; room: Room; found: Drop[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
@@ -788,13 +818,29 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
         </>
       ))}
 
-      {room.kind === "stash" && (room.done ? next : (
+      {room.kind === "stash" && (!room.opened ? (
         <>
-          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
-            A forgotten pack, half rotted through. Inside: {(room.stash ?? []).map((k) => `${POTIONS[k].icon} ${POTIONS[k].name}`).join(", ")}.
-          </p>
-          <p style={{ fontSize: 12, color: MUTED }}>You&apos;re carrying {bagUsed}/{bagSlots}{bagUsed + (room.stash?.length ?? 0) > bagSlots ? " — not everything will fit" : ""}.</p>
-          <button className="pixel-btn" onClick={onStash} disabled={bagUsed >= bagSlots}>Take what fits</button>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>A burlap sack slumps against the wall, tied at the neck. Something inside clinks.</p>
+          <button className="pixel-btn" onClick={onOpenSack}>Open the sack</button>
+          {onward}
+        </>
+      ) : (
+        <>
+          {(room.sack ?? []).length > 0 ? (
+            <>
+              <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>Inside the sack — tap something to take it:</p>
+              <BagSlots slots={(room.sack ?? []).length} selected={null} onSelect={(i) => i !== null && onTakeSack(i)}
+                looks={(room.sack ?? []).map((x) => "gold" in x ? { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.2)" }
+                  : "potion" in x ? slotLook(x.potion) : slotLook(gearEntry(x.gear.id), x.gear as CreatureOrItemDrop))} />
+              <div style={{ fontSize: 12, color: MUTED, margin: "6px 0" }}>
+                {(room.sack ?? []).map((x) => ("gold" in x ? `🪙 ${x.gold} gold` : "potion" in x ? `${POTIONS[x.potion].icon} ${POTIONS[x.potion].name}` : `📦 ${dropLabel(x.gear)}`)).join(" · ")}
+              </div>
+              <p style={{ fontSize: 12, color: MUTED, margin: "0 0 8px" }}>
+                Your bag: {bagUsed}/{bagSlots}. Gold takes no space; anything you leave stays on the floor.
+              </p>
+              <button className="pixel-btn" onClick={onTakeAllSack}>Take everything that fits</button>
+            </>
+          ) : <p style={{ fontSize: 13, color: "#d8d4c8" }}>The sack is empty.</p>}
           {onward}
         </>
       ))}
