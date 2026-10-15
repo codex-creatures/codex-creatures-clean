@@ -261,12 +261,20 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // ── The cage ──────────────────────────────────────────
   // Free a caged creature: it joins your creatures (and your roster).
-  function releaseCaged(id: string) {
+  // Capture: the creature in the cage becomes yours (and joins your roster).
+  function captureCaged(id: string) {
     const d = caged.find((c) => c.id === id);
     if (!d) return;
     setCaged((prev) => prev.filter((c) => c.id !== id));
     setInventory((prev) => [d, ...prev]);
     setFavoriteIds((prev) => new Set([...prev, d.id]));
+  }
+  // Release: let it go back to the wild. It's gone for good (but stays in the Bestiary).
+  function releaseCaged(id: string) {
+    const d = caged.find((c) => c.id === id) as CreatureOrItemDrop | undefined;
+    if (!d) return;
+    if (d.creatureId) markSeen([d.creatureId]);
+    setCaged((prev) => prev.filter((c) => c.id !== id));
   }
 
   // ── Equipment ─────────────────────────────────────────
@@ -537,6 +545,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop, markSeen,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop, markSeen,
   };
 }

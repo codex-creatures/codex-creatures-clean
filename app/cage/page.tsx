@@ -1,7 +1,9 @@
 "use client";
 // app/cage/page.tsx
-// The cage in the Den. A new player's first creature is waiting in it; open
-// the cage to make it yours. (Later, creatures Klutz captures will end up here.)
+// The cage in the Den. A new player's first creature is waiting in it, and
+// creatures Klutz beats in the Labyrinth end up here. For each one: capture
+// it (it's yours) or release it (gone for good — tap twice). You can't
+// release your only creature.
 
 import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
@@ -21,9 +23,18 @@ const MUTED = "rgba(255,255,255,0.5)";
 export default function CagePage() {
   const game = useGameState();
   const [freed, setFreed] = useState<CreatureOrItemDrop | null>(null);
+  const [released, setReleased] = useState<CreatureOrItemDrop | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null); // release asks twice
   const caged = game.caged as CreatureOrItemDrop[];
+  const ownsAny = game.inventory.some((d) => d.dropType === "creature");
 
-  const open = (d: CreatureOrItemDrop) => { game.releaseCaged(d.id); setFreed(d); };
+  const capture = (d: CreatureOrItemDrop) => { game.captureCaged(d.id); setFreed(d); };
+  const release = (d: CreatureOrItemDrop) => {
+    if (confirming !== d.id) { setConfirming(d.id); return; }
+    game.releaseCaged(d.id);
+    setConfirming(null);
+    setReleased(d);
+  };
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
 
@@ -39,6 +50,16 @@ export default function CagePage() {
           <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s in your Creatures and on your roster. Give it some gear in the Pit.</p>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             <Link href="/pit" className="pixel-btn">To the Pit</Link>
+            <Link href="/" className="pixel-btn">Back to the Den</Link>
+          </div>
+        </div>
+      ) : released ? (
+        <div className="stone-panel" style={{ textAlign: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", opacity: 0.45 }}><PixelSprite sprite={creatureSprite(released.creatureId)} scale={4} /></div>
+          <div className="pixel-font" style={{ fontSize: 20, color: "#d8d4c8", marginTop: 8 }}>{released.name} scurries off into the dark.</div>
+          <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s back in the Labyrinth where it belongs.</p>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            {caged.length > 0 && <button className="pixel-btn" onClick={() => setReleased(null)}>Back to the cage</button>}
             <Link href="/" className="pixel-btn">Back to the Den</Link>
           </div>
         </div>
@@ -59,7 +80,16 @@ export default function CagePage() {
               </div>
               <AbilityTag ability={d.ability} />
               {t && <p style={{ color: "#a9a59a", fontSize: 13, fontStyle: "italic" }}>{t.flavour}</p>}
-              <button className="pixel-btn" onClick={() => open(d)} style={{ marginTop: 6 }}>🔓 Open the cage</button>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 6 }}>
+                <button className="pixel-btn" onClick={() => capture(d)}>🪢 Capture</button>
+                <button className="pixel-btn" onClick={() => release(d)} disabled={!ownsAny}
+                  title={ownsAny ? "Let it go back to the wild — it's gone for good" : "It's your only creature — you can't let it go"}
+                  style={{ background: confirming === d.id ? "#6e1f18" : undefined, opacity: ownsAny ? 1 : 0.45 }}>
+                  {confirming === d.id ? "Tap again to release" : "🔓 Release"}
+                </button>
+              </div>
+              {!ownsAny && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>It&apos;s your only creature — you can&apos;t let this one go.</p>}
+              {confirming === d.id && <p style={{ fontSize: 12, color: "#ff8a80", margin: "6px 0 0" }}>Released creatures are gone for good.</p>}
             </div>
           );
         })
