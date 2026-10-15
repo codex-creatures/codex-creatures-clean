@@ -33,7 +33,8 @@ const MIN_WIDTH = 700;
 
 // caged: the creature id waiting in the cage (drawn inside it), if any.
 // klutz: where Klutz is (strolling, healing in the pool, or away hunting).
-export default function DenRoom({ caged, klutz = "home" }: { caged?: string; klutz?: KlutzMode }) {
+// klutzNews: he has something to tell you (a ❗ on his label).
+export default function DenRoom({ caged, klutz = "home", klutzNews = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [scrollable, setScrollable] = useState(false);
@@ -165,7 +166,7 @@ export default function DenRoom({ caged, klutz = "home" }: { caged?: string; klu
           background: hover === OBJ.klutz ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.7)",
           border: `2px solid ${hover === OBJ.klutz ? "#ffd66e" : "#5c7a3a"}`, color: "#d6f0a8", cursor: "pointer",
         }}>
-        Klutz{klutz === "pool" ? " 💤" : ""}
+        {klutzNews ? "❗ " : ""}Klutz{klutz === "pool" ? " 💤" : ""}
       </button>
     </div>
     </div>

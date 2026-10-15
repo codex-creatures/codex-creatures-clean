@@ -35,6 +35,7 @@ import { rollMap, waysOn, type DungeonMap } from "./map";
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
 export const ENTRY_FEE = 50;
+export const FREE_RUNS = 5; // your first runs cost nothing
 export const FIRST_TREASURE_GOLD = 50;
 
 export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "boss";
@@ -159,6 +160,7 @@ export type Room = {
   bought?: string[];   // …and the ones you bought (librarian codexes; merchant potions)
   blessed?: boolean;   // a mini boss's heal/revive has been used
   stash?: PotionKey[]; // a stash: the potions inside
+  quest?: "club" | "rattlebones"; // part of the first quest (lib/quest.ts)
   done: boolean;
 };
 

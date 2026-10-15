@@ -15,6 +15,7 @@ export type ItemKey =
   | "lightning_trident"
   | "thunderhead_crossbow"
   | "frostspire_staff"
+  | "klutz_club"
   | "chainbound_aegis"
   | "ironfang_guard"
   | "basalt_bulwark"
@@ -99,6 +100,15 @@ export const ITEM_CEILINGS: Record<ItemKey, ItemCeilings> = {
     legendary: { melee: 35, ranged: 18, magic: 140, agility: 40, hp: 75 },
   },
 
+  // STORY WEAPONS (not rolled: see KLUTZ_CLUB_STATS)
+  klutz_club: {
+    common: { melee: 12, ranged: 12, magic: 12, agility: 12, hp: 12 },
+    uncommon: { melee: 16, ranged: 16, magic: 16, agility: 16, hp: 16 },
+    rare: { melee: 20, ranged: 20, magic: 20, agility: 20, hp: 20 },
+    epic: { melee: 24, ranged: 24, magic: 24, agility: 24, hp: 24 },
+    legendary: { melee: 30, ranged: 30, magic: 30, agility: 30, hp: 30 },
+  },
+
   // DEFENCE WEAPONS
   chainbound_aegis: {
     common: { melee: 25, ranged: 45, magic: 10, agility: 25, hp: 85 },
@@ -129,7 +139,13 @@ export const ITEM_CEILINGS: Record<ItemKey, ItemCeilings> = {
     legendary: { melee: 40, ranged: 35, magic: 75, agility: 105, hp: 165 },
   },
 };
-export const ITEM_KEYS = Object.keys(ITEM_CEILINGS) as ItemKey[];
+// Weapons that only come from the story (never from scans or chests).
+export const STORY_WEAPONS: ItemKey[] = ["klutz_club"];
+export const ITEM_KEYS = (Object.keys(ITEM_CEILINGS) as ItemKey[]).filter((k) => !STORY_WEAPONS.includes(k));
+
+// Klutz's Club: a common club that doesn't roll its stats — the budget is
+// split evenly across every stat.
+export const KLUTZ_CLUB_STATS: StatBlock = { melee: 12, ranged: 12, magic: 12, agility: 12, hp: 12 };
 export const STAT_KEYS: StatKey[] = ["melee", "ranged", "magic", "agility", "hp"];
 
 // Each weapon is strong in one damage type: moves of that type do extra
@@ -139,4 +155,5 @@ export const WEAPON_AFFINITY: Record<ItemKey, DamageType> = {
   weeping_greatbow: "pierce", lightning_trident: "arcane", thunderhead_crossbow: "force",
   soul_storm: "arcane", chaos_orb: "force", frostspire_staff: "pierce",
   chainbound_aegis: "force", ironfang_guard: "pierce", basalt_bulwark: "force", aether_shield: "arcane",
+  klutz_club: "force",
 };

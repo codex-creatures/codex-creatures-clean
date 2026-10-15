@@ -17,12 +17,13 @@ import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { rollBarcodeOutcome } from "@/lib/barcodeRegistry";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
+import { clubRoom, klutzClub, rattlebonesRoom, rollBox, wantsClub, wantsThief, BOX_ROLLS } from "@/lib/quest";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
+  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, BAG_SIZE, POTIONS, addToBag, type PotionKey,
   startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
@@ -86,16 +87,26 @@ export default function DungeonPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Gear put on mid-run (Klutz's Club) shows up in the fight.
+  useEffect(() => {
+    if (game.hydrated) setOwned(loadOwnedCreatures());
+  }, [game.hydrated, game.equipment, game.inventory]);
+
   const byId = (id: string) => owned.find((c) => c.id === id);
   const run = lab?.run ?? null;
 
   // ── Starting and ending runs ──────────────────────────────────────
   function begin(party: string[]) {
     if (!lab) return;
-    const free = lab.meta.runs === 0;
+    const free = lab.meta.runs < FREE_RUNS;
     if (!free && !game.spendGold(ENTRY_FEE)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
-    const r = startRun(party, party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0), hp, lab.meta.runs + 1);
+    let r = startRun(party, party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0), hp, lab.meta.runs + 1);
+    // Klutz's box: his club lies in the first room until you've picked it up.
+    if (wantsClub(game.quest)) {
+      game.acceptQuest();
+      r = { ...r, current: clubRoom(), cleared: [], room: Math.max(1, r.room) };
+    }
     update({ meta: { ...lab.meta, runs: lab.meta.runs + 1 }, run: r });
   }
 
@@ -207,7 +218,17 @@ export default function DungeonPage() {
     setFound(null);
     setNotes([]);
     battle.clear();
-    updateRun((r) => moveOn(r, nodeId));
+    const thief = wantsThief(game.quest);
+    updateRun((r) => {
+      const n = moveOn(r, nodeId);
+      return thief ? { ...n, current: rattlebonesRoom() } : n;
+    });
+  }
+
+  // Klutz's Club, picked up off the floor.
+  function takeClub() {
+    give([klutzClub()], markDone);
+    game.questFoundClub();
   }
 
   // ── Fights ────────────────────────────────────────────────────────
@@ -220,8 +241,8 @@ export default function DungeonPage() {
       : room.enemies!.map((e) => ({
           rarity: CREATURE_BY_ID[e.creatureId].rarity,
           label: creatureTypeLabel(e.proficiency), creatureId: e.creatureId,
-          weaponName: gearName(e.gear[0]),
-          armorName: gearName(e.gear[1]),
+          weaponName: e.gear[0] ? gearName(e.gear[0]) : undefined,
+          armorName: e.gear[1] ? gearName(e.gear[1]) : undefined,
         }));
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     battle.start(
@@ -257,6 +278,12 @@ export default function DungeonPage() {
       return;
     }
     const room = r.current!;
+    if (room.quest === "rattlebones") {
+      game.questBoxFound(rollBox());
+      give([goldOnly(room.gold ?? 0)], (x) => markDone({ ...x, hp, battle: undefined, loot: [...x.loot, "Klutz's box"] }));
+      setNotes([`📦 You got Klutz's box back! It's heavy — ${BOX_ROLLS} things clank about inside. Take it home to Klutz.`]);
+      return;
+    }
     const drops: Drop[] = [goldOnly(room.gold ?? 0)];
     for (const e of room.enemies ?? []) {
       for (const p of e.gear) {
@@ -321,7 +348,11 @@ export default function DungeonPage() {
             {run.current
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
-                  gold={game.gold} onTreasure={takeTreasure} onChest={openChest} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+                  gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
+                  clubId={(game.inventory.find((x) => x.dropType === "item" && x.itemKey === "klutz_club") as { id: string } | undefined)?.id}
+                  equippedWeapon={(id) => game.equipment[id]?.weaponId}
+                  onEquipClub={(id, clubId) => game.equipItem(id, "weapon", clubId)}
+                  onTakeBoxHome={() => updateRun((x) => ({ ...x, status: "retreated", battle: undefined }))} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={lab.meta.bag ?? []} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -348,7 +379,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 }) {
   const [party, setParty] = useState<string[]>(() =>
     owned.filter((c) => c.roster && (lab.meta.injuries[c.id] ?? 1) > 0).slice(0, PARTY_SIZE).map((c) => c.id));
-  const free = lab.meta.runs === 0;
+  const free = lab.meta.runs < FREE_RUNS;
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
   const canPay = free || gold >= ENTRY_FEE;
 
@@ -416,7 +447,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       )}
 
       <button onClick={() => onBegin(party)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        🌀 Enter the labyrinth {free ? "(first time free)" : `(${ENTRY_FEE} gold)`}
+        🌀 Enter the labyrinth {free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
       </button>
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
     </>
@@ -453,13 +484,21 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onClub, clubId, equippedWeapon, onEquipClub, onTakeBoxHome, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
   run: DungeonRun; room: Room; found: Drop[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
-  onTreasure: (r: Room) => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
+  onTreasure: (r: Room) => void; onClub: () => void; clubId?: string; equippedWeapon: (creatureId: string) => string | undefined;
+  onEquipClub: (creatureId: string, clubId: string) => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
-  const info = ROOM_INFO[room.kind];
+  const info = room.quest === "club" ? { name: "A dropped club", icon: "🪓" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
-  const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button> : onward;
+  const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
+    : room.quest === "rattlebones" ? (
+      <div style={{ marginTop: 12 }}>
+        <button className="pixel-btn" onClick={onTakeBoxHome}>📦 Take the box home to Klutz</button>
+        <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>…or keep exploring with it — it&apos;s yours to carry either way.</p>
+        {onward}
+      </div>
+    ) : onward;
 
   return (
     <div className="stone-panel">
@@ -477,7 +516,35 @@ function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onCh
       )}
       {notes.map((n) => <div key={n} style={{ fontSize: 13, color: "#f1d9a0", marginTop: 4 }}>{n}</div>)}
 
-      {room.kind === "treasure" && (room.done ? next : (
+      {room.quest === "club" && (room.done ? (
+        <>
+          {clubId && !run.party.some((id) => equippedWeapon(id) === clubId) ? (
+            <div style={{ marginTop: 8 }}>
+              <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
+                It&apos;s not much, but it&apos;s better than nothing. Give it to one of your creatures before you go on:
+              </p>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {fightingTeam(run).map((id) => (
+                  <button key={id} className="pixel-btn" onClick={() => onEquipClub(id, clubId)}>🪓 Equip it on {byId(id)?.name ?? "your creature"}</button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: "#d8d4c8", marginTop: 8 }}>Club in hand. Somewhere ahead, bones are rattling…</p>
+          )}
+          {onward}
+        </>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
+            Something lies on the floor just inside the entrance: a battered old club with <i>KLUTZ</i> scratched into the handle.
+            He must have dropped it chasing that thief.
+          </p>
+          <button className="pixel-btn" onClick={onClub}>Pick up the club</button>
+        </>
+      ))}
+
+      {room.kind === "treasure" && !room.quest && (room.done ? next : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>A battered chest sits in the middle of the room, coins spilling from the lid.</p>
           <button className="pixel-btn" onClick={() => onTreasure(room)}>Take the gold</button>
@@ -607,7 +674,8 @@ function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onCh
       ) : next) : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 10px" }}>
-            {room.kind === "easy" && "A few creatures look up from their scraps. They don't look tough."}
+            {room.quest === "rattlebones" && "There it is: a Rattlebones, hunched over a battered box, picking through Klutz's weapons. It hasn't seen you yet."}
+            {room.kind === "easy" && !room.quest && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
             {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Beat it and you can heal or revive one of your party."}
             {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close (magic hits it hardest), and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
@@ -625,13 +693,13 @@ function RoomScreen({ run, room, found, notes, byId, gold, bag, onTreasure, onCh
               return (
                 <div key={i} style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
                   <b style={{ color: rarityColor(t.rarity) }}>{t.name}</b>
-                  <span style={{ color: MUTED }}> · {t.race ? `${RACE_INFO[t.race].name} · ` : ""}{creatureTypeLabel(e.proficiency)} · {e.gear.map(gearName).join(", ")}</span>
+                  <span style={{ color: MUTED }}> · {t.race ? `${RACE_INFO[t.race].name} · ` : ""}{creatureTypeLabel(e.proficiency)} · {e.gear.length ? e.gear.map(gearName).join(", ") : "no gear"}</span>
                 </div>
               );
             })}
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>
-            Win: {room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}.
+            Win: {room.quest === "rattlebones" ? "Klutz's box" : <>{room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}</>}.
             Your team: {fightingTeam(run).map((id) => byId(id)?.name).join(", ")}.
           </p>
           <button className="pixel-btn" onClick={onFight}>⚔️ Fight</button>
@@ -702,7 +770,9 @@ function RunOver({ run, lab, onHome }: { run: DungeonRun; lab: DungeonSave; onHo
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
       ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. Your creatures are hurt — rest them at the healing pool.`
-      : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;
+      : run.loot.includes("Klutz's box")
+        ? "You head back to the Den with Klutz's box under your arm. He'll be thrilled — go and find him."
+        : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;
   return (
     <div className="stone-panel" style={{ textAlign: "center" }}>
       <div className="pixel-font" style={{ fontSize: 26, color: run.status === "cleared" ? "#5ee08a" : run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>

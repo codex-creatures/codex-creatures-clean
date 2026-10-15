@@ -8,6 +8,7 @@ import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
 import DenRoom, { SPOTS } from "@/components/DenRoom";
 import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
+import { klutzHasNews } from "@/lib/quest";
 
 export default function Home() {
   const game = useGameState();
@@ -28,7 +29,8 @@ export default function Home() {
       </div>
 
       <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
-        klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"} />
+        klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
+        klutzNews={game.hydrated && klutzHasNews(game.quest)} />
 
       {/* Plain links too — quicker on small screens and for keyboard users. */}
       <nav style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>

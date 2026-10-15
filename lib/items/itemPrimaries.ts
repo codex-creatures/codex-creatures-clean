@@ -28,4 +28,7 @@ export const PRIMARY_STATS_BY_ITEMKEY: Record<ItemKey, [StatKey, StatKey]> = {
   ironfang_guard:     ["hp", "melee"],       // melee tank
   basalt_bulwark:     ["hp", "melee"],       // pure wall
   aether_shield:      ["hp", "magic"],       // magic-lean defender
+
+  // STORY
+  klutz_club:         ["melee", "hp"],       // Klutz's old club: a bit of everything
 };

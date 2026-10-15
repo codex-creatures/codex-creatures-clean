@@ -79,6 +79,11 @@ export const ITEM_META: Record<ItemKey, ItemMeta> = {
     category: "Defence - True Tank",
     desc: "True tank weapon. Massive HP, minimal offensive stats.",
   },
+  klutz_club: {
+    name: "Klutz's Club",
+    category: "Melee - Starter",
+    desc: "Klutz's battered old club. A little bit of everything, and not much of anything.",
+  },
   aether_shield: {
     name: "Aether Shield",
     category: "Defence - Magic Lean",

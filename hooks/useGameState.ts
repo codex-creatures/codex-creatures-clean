@@ -12,6 +12,7 @@ import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon } from "@/lib/dungeon/run";
 import { collectKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { NEW_QUEST, type QuestState } from "@/lib/quest";
 import { fighterFor } from "@/lib/creatures/instance";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
@@ -55,6 +56,7 @@ type SaveState = {
   recentScans?: string[];              // drop ids of your last scans, newest first
   caged?: Drop[];                      // creatures waiting in the Den's cage (tap to free them)
   klutz?: KlutzState;                  // your helper: his health and any expedition
+  quest?: QuestState;                  // the first quest (lib/quest.ts)
 };
 
 // A new player's first creature: a random Rare, waiting in the cage.
@@ -93,6 +95,7 @@ export function loadSave(): SaveState | null {
     // A save from before the cage gets the starter waiting in it once.
     caged: Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()],
     klutz: obj(parsed.klutz) as KlutzState,
+    quest: parsed.quest && typeof parsed.quest === "object" ? (parsed.quest as QuestState) : { ...NEW_QUEST },
   };
 }
 
@@ -113,6 +116,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [recentScanIds, setRecentScanIds] = useState<string[]>([]);
   const [caged, setCaged]             = useState<Drop[]>([]);
   const [klutz, setKlutz]             = useState<KlutzState>({});
+  const [quest, setQuest]             = useState<QuestState>({ ...NEW_QUEST });
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -138,14 +142,27 @@ export function useGameState(initialTab: TabKey = "all") {
       setRecentScanIds(saved.recentScans ?? []);
       setCaged(saved.caged ?? []);
       setKlutz(saved.klutz ?? {});
+      setQuest(saved.quest ?? { ...NEW_QUEST });
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest]);
+
+  // ── The first quest (Klutz's box) ─────────────────────
+  const acceptQuest = () => setQuest((q) => (q.stage === "start" ? { ...q, stage: "hunt" } : q));
+  const questFoundClub = () => setQuest((q) => ({ ...q, stage: q.stage === "start" ? "hunt" : q.stage, clubFound: true }));
+  const questBoxFound = (box: Drop[]) => setQuest((q) => ({ ...q, stage: "boxFound", box }));
+  // Klutz puts what was in the box into your storage.
+  function handOverBox() {
+    const box = quest.box ?? [];
+    if (quest.stage !== "boxFound") return;
+    setInventory((prev) => [...box, ...prev]);
+    setQuest({ stage: "done", clubFound: true });
+  }
 
   // ── Klutz ─────────────────────────────────────────────
   // What he fights as: his template with the gear and moves set on him.
@@ -418,6 +435,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setScanCounts({});
     setFavoriteIds(new Set());
     setKlutz({});
+    setQuest({ ...NEW_QUEST });
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -435,7 +453,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, quest,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
@@ -446,6 +464,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged, sendKlutzOff, klutzSkipAhead,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox,
   };
 }

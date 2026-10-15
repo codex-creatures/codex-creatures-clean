@@ -57,6 +57,8 @@ export default function KlutzPage() {
         </div>
       </div>
 
+      <QuestTalk game={game} />
+
       <button className="pixel-btn" style={{ marginTop: 12 }} disabled={status.kind === "away"} onClick={() => setGearOpen(true)}>
         🎒 Klutz&apos;s gear &amp; moves
       </button>
@@ -120,6 +122,50 @@ export default function KlutzPage() {
       )}
     </DenFrame>
   );
+}
+
+// Klutz's lines for the first quest (his stolen box).
+function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
+  const q = game.quest;
+  const [handed, setHanded] = useState<number | null>(null);
+  const say = (lines: React.ReactNode, action?: React.ReactNode) => (
+    <div className="stone-panel" style={{ marginTop: 12, borderColor: "#8a6a3a" }}>
+      <div className="pixel-font" style={{ fontSize: 14, color: "#d6f0a8", marginBottom: 6 }}>Klutz says:</div>
+      <div style={{ fontSize: 14, color: "#e8e2d0", lineHeight: 1.55, fontStyle: "italic" }}>{lines}</div>
+      {action && <div style={{ marginTop: 10 }}>{action}</div>}
+    </div>
+  );
+  if (handed !== null) {
+    return say(<>&ldquo;There. Put the lot in your storage — {handed} bits of gear, all yours. Now go on, get stuck in!&rdquo;</>,
+      <Link href="/chest" className="pixel-btn">Open your storage</Link>);
+  }
+  if (q.stage === "start") {
+    return say(
+      <>
+        &ldquo;Oi! You&apos;re up. Listen — I&apos;ve been collecting weapons and armour down in the Labyrinth for ages. Kept &apos;em all in a box.
+        Woke up this morning and there&apos;s a <b>Rattlebones</b> legging it into the Labyrinth with the whole lot!
+        Get it back for me, would you?&rdquo;
+      </>,
+      <button className="pixel-btn" onClick={game.acceptQuest}>&ldquo;I&apos;ll find it.&rdquo;</button>,
+    );
+  }
+  if (q.stage === "hunt") {
+    return say(
+      <>&ldquo;It went through the archway, rattling like a bag of spoons. {q.clubFound ? "You found my club! Good — bonk it with that." : "Oh — and I dropped my old club in there chasing it. Grab it if you see it."}&rdquo;</>,
+      <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
+    );
+  }
+  if (q.stage === "boxFound") {
+    return say(
+      <>
+        &ldquo;MY BOX! You actually got it back! … Funny thing — while you were down there I heard the whole Labyrinth <b>shift</b>.
+        Walls grinding about, tunnels moving. Every time you go in, it&apos;ll be different.
+        Tell you what — you keep what&apos;s in the box. I&apos;ll put it all in your storage.&rdquo;
+      </>,
+      <button className="pixel-btn" onClick={() => { setHanded(q.box?.length ?? 0); game.handOverBox(); }}>📦 Hand over the box</button>,
+    );
+  }
+  return null;
 }
 
 function EncounterLog({ ex, upTo }: { ex: Expedition; upTo: number }) {
