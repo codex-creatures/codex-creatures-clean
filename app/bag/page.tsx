@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { itemSprite } from "@/components/PixelSprite";
+import BagSlots, { slotLook } from "@/components/BagSlots";
 import { useGameState } from "@/hooks/useGameState";
 import {
   loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootIdOf, POTIONS, BINDLE, BACKPACK, BOOKCASE_SIZE,
@@ -26,6 +27,7 @@ const GOLD = "#f1d9a0";
 export default function BagPage() {
   const game = useGameState();
   const [lab, setLab] = useState<DungeonSave | null>(null);
+  const [sel, setSel] = useState<number | null>(null);
   useEffect(() => { setLab(loadDungeon()); }, []);
 
   if (!lab || !game.hydrated) return <DenFrame title="Bindle" icon="🎒"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
@@ -38,7 +40,7 @@ export default function BagPage() {
   // Spare gear: not on a creature (or Klutz) and not already packed.
   const spare = gear.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
   const shelfFree = BOOKCASE_SIZE - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
-  const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); };
+  const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
   const away = !!lab.run;
 
@@ -80,24 +82,24 @@ export default function BagPage() {
       </div>
 
       <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "16px 0 8px" }}>Carrying ({bag.length}/{slots})</div>
-      <div style={{ display: "grid", gap: 6 }}>
-        {Array.from({ length: slots }, (_, i) => {
-          const e = bag[i];
-          const own = e ? byId.get(gearIdOf(e) ?? "") : undefined;
-          const found = e && lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined;
-          return (
-            <div key={i} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-              {!e ? <span style={{ color: MUTED }}>— empty —</span>
-                : isPotionEntry(e) ? <span>{POTIONS[e].icon} <b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
-                : own ? gearLine(own)
-                : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
-                : <span style={{ color: MUTED }}>Something you no longer have</span>}
-              {e && own && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>Take out</button>}
-              {e && found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
-            </div>
-          );
-        })}
-      </div>
+      <BagSlots slots={slots} selected={sel} onSelect={setSel}
+        looks={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : byId.get(gearIdOf(e) ?? "") ?? (lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined)))} />
+      {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty — pack some spare gear below.</p>}
+      {sel !== null && bag[sel] && (() => {
+        const e = bag[sel];
+        const own = byId.get(gearIdOf(e) ?? "");
+        const found = lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined;
+        return (
+          <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
+            {isPotionEntry(e) ? <span>{POTIONS[e].icon} <b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
+              : own ? gearLine(own)
+              : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
+              : <span style={{ color: MUTED }}>Something you no longer have</span>}
+            {own && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>Take out</button>}
+            {found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
+          </div>
+        );
+      })()}
       {away && <p style={{ fontSize: 12, color: MUTED }}>You&apos;re in the middle of a Labyrinth run — repack when you&apos;re home.</p>}
 
       {!away && (

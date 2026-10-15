@@ -8,6 +8,7 @@ import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
 import CreatureDetailModal from "@/components/CreatureDetailModal";
+import CodeCache from "@/components/CodeCache";
 import { StatsLine } from "@/components/BattleScreen";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { combatSummary } from "@/lib/combat/loadout";
@@ -42,6 +43,8 @@ export default function KlutzPage() {
   const weapons = items.filter((d) => d.itemCategory === "weapon"), armors = items.filter((d) => d.itemCategory === "armor");
   const names = new Map<string, string>([...game.inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]);
   const rc = RARITY_COLORS[KLUTZ.rarity];
+  // His gear, moves and hunting only open up once you've got his box back to him.
+  const helping = game.quest.stage === "done";
 
   return (
     <DenFrame title="Klutz" icon="👺">
@@ -51,21 +54,27 @@ export default function KlutzPage() {
           <div className="pixel-font" style={{ fontSize: 22, color: GOLD }}>Klutz</div>
           <div style={{ fontSize: 13, color: MUTED }}>Your helper · <span style={{ color: rc.text, textTransform: "capitalize" }}>{KLUTZ.rarity}</span></div>
           <p style={{ fontSize: 13, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.45 }}>
-            Pay him in gear and he&apos;ll hunt the Labyrinth for you. Whatever he beats, he drags home to the cage — along with its gear.
+            {helping
+              ? "Klutz is willing to patrol the Labyrinth in search of gear to find or creatures to capture. Equip him with better items so that he can overpower enemies and find better loot!"
+              : "Klutz has promised to help you after you rewarded him so generously for saving you."}
           </p>
-          <StatsLine stats={combatSummary(f)} />
+          {helping && <StatsLine stats={combatSummary(f)} />}
         </div>
       </div>
 
       <QuestTalk game={game} />
 
-      <button className="pixel-btn" style={{ marginTop: 12 }} disabled={status.kind === "away"} onClick={() => setGearOpen(true)}>
-        🎒 Klutz&apos;s gear &amp; moves
-      </button>
-      {status.kind === "away" && <span style={{ fontSize: 12, color: MUTED, marginLeft: 8 }}>(he&apos;s got it with him)</span>}
+      {helping && (
+        <>
+          <button className="pixel-btn" style={{ marginTop: 12 }} disabled={status.kind === "away"} onClick={() => setGearOpen(true)}>
+            🎒 Klutz&apos;s gear &amp; moves
+          </button>
+          {status.kind === "away" && <span style={{ fontSize: 12, color: MUTED, marginLeft: 8 }}>(he&apos;s got it with him)</span>}
+        </>
+      )}
 
       {/* Where he is */}
-      {status.kind === "home" && (
+      {helping && status.kind === "home" && (
         <div className="stone-panel" style={{ marginTop: 14 }}>
           <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>Send him hunting</div>
           <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: "6px 0 10px" }}>
@@ -139,6 +148,7 @@ export default function KlutzPage() {
 function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   const q = game.quest;
   const [handed, setHanded] = useState<number | null>(null);
+  const [opening, setOpening] = useState(false);
   const say = (lines: React.ReactNode, action?: React.ReactNode) => (
     <div className="stone-panel" style={{ marginTop: 12, borderColor: "#8a6a3a" }}>
       <div className="pixel-font" style={{ fontSize: 14, color: "#d6f0a8", marginBottom: 6 }}>Klutz says:</div>
@@ -147,7 +157,7 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
     </div>
   );
   if (handed !== null) {
-    return say(<>&ldquo;There. Put the lot in your storage — {handed} bits of gear, all yours. Now go on, get stuck in!&rdquo;</>,
+    return say(<>&ldquo;There — {handed} bits of gear, all in your storage. And I owe you one. Kit me out with something decent and I&apos;ll patrol the Labyrinth for you: gear, creatures, whatever I can drag home.&rdquo;</>,
       <Link href="/chest" className="pixel-btn">Open your storage</Link>);
   }
   if (q.stage === "start") {
@@ -162,7 +172,7 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   }
   if (q.stage === "hunt") {
     return say(
-      <>&ldquo;It went through the archway, rattling like a bag of spoons. {q.clubFound ? "You found my club! Good — bonk it with that." : "Oh — and I dropped my old club in there chasing it. Grab it if you see it."}&rdquo;</>,
+      <>&ldquo;It went through the archway, rattling like a bag of spoons. {q.clubFound ? "You found my club! It dropped it running off, did it? Ha! Good — bonk it with that." : "It had my old club too — clumsy thing kept dropping stuff as it ran. Keep your eyes peeled."}&rdquo;</>,
       <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
     );
   }
@@ -171,9 +181,17 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       <>
         &ldquo;MY BOX! You actually got it back! … Funny thing — while you were down there I heard the whole Labyrinth <b>shift</b>.
         Walls grinding about, tunnels moving. Every time you go in, it&apos;ll be different.
-        Tell you what — you keep what&apos;s in the box. I&apos;ll put it all in your storage.&rdquo;
+        Tell you what — you keep what&apos;s in the box. Go on, open it up!&rdquo;
       </>,
-      <button className="pixel-btn" onClick={() => { setHanded(q.box?.length ?? 0); game.handOverBox(); }}>📦 Hand over the box</button>,
+      <>
+        <button className="pixel-btn" onClick={() => setOpening(true)}>📦 Open the box</button>
+        {opening && (
+          <CodeCache title="Klutz's armoury box" items={q.box ?? []}
+            intro="Ten bundles of rusty weapons and dented armour. Tap one to unwrap it."
+            doneLabel="Put it all in storage"
+            onDone={() => { setOpening(false); setHanded(q.box?.length ?? 0); game.handOverBox(); }} />
+        )}
+      </>,
     );
   }
   return null;

@@ -8,6 +8,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import BagSlots, { slotLook } from "@/components/BagSlots";
+import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -21,7 +24,7 @@ import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
-import { clubRoom, klutzClub, rattlebonesRoom, rollBox, wantsClub, wantsThief, BOX_ROLLS } from "@/lib/quest";
+import { clubRoom, klutzClub, rattlebonesRoom, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
@@ -29,13 +32,13 @@ import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
-  startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, setTeam, fightingTeam, isAlive, isFight, enemyFighter, gearName, endRun,
+  startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
 import {
-  BattleView, Bar, SectionTitle, StatsLine, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
+  BattleView, SectionTitle, StatsLine, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
   type Match, type MemberInfo, type OwnedCreature, type BagItem,
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
@@ -58,6 +61,7 @@ function dropLabel(d: Drop): string {
 
 export default function DungeonPage() {
   const game = useGameState();
+  const router = useRouter();
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [found, setFound] = useState<Drop[] | null>(null); // what the current room just gave you
@@ -360,6 +364,18 @@ export default function DungeonPage() {
     });
   }
 
+  // Klutz's box, picked up off the floor where the Rattlebones dropped it.
+  function takeBox() {
+    game.questBoxFound(rollBox());
+    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, "Klutz's box"], current: { ...r.current, boxTaken: true } } : r));
+  }
+  // …and straight home with it, to Klutz.
+  function boxHome() {
+    updateRun((x) => ({ ...x, status: "retreated", battle: undefined }));
+    goHome();
+    router.push("/");
+  }
+
   // Klutz's Club, picked up off the floor.
   function takeClub() {
     give([klutzClub()], markDone);
@@ -415,9 +431,8 @@ export default function DungeonPage() {
     }
     const room = r.current!;
     if (room.quest === "rattlebones") {
-      game.questBoxFound(rollBox());
-      give([goldOnly(room.gold ?? 0)], (x) => markDone({ ...x, hp, battle: undefined, loot: [...x.loot, "Klutz's box"] }));
-      setNotes([`📦 You got Klutz's box back! It's heavy — ${BOX_ROLLS} things clank about inside. Take it home to Klutz.`]);
+      // It falls apart, and the box it was carrying drops to the floor.
+      give([goldOnly(room.gold ?? 0)], (x) => markDone({ ...x, hp, battle: undefined }));
       return;
     }
     const drops: Drop[] = [goldOnly(room.gold ?? 0)];
@@ -476,13 +491,23 @@ export default function DungeonPage() {
     return frame(<RunOver run={run} lab={lab} onHome={goHome} onGather={gatherFloor} />);
   }
 
+  // The club tutorial: it's in your bindle and not on anyone yet.
+  const clubEntry = (lab.meta.bag ?? []).find((e) => itemOf(e)?.itemKey === "klutz_club");
+  const clubTutorial = run.current?.quest === "club" && run.current.done && clubEntry ? clubEntry : undefined;
+  // The Rattlebones' room: once it's beaten, the way on is home (with the box).
+  const boxRoom = run.current?.quest === "rattlebones" && run.current.done;
+
   return frame(
     <>
       {!run.inside ? (
         <MapFirst run={run} onStep={() => updateRun(stepInside)} />
       ) : (
         <>
-          <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0} onGo={goTo} />
+          <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !boxRoom} onGo={goTo}
+            onObject={run.current?.quest === "club" && !run.current.done ? takeClub
+              : run.current?.kind === "chest" && !run.current.done ? openChest
+              : run.current?.quest === "rattlebones" && run.current.done && !run.current.boxTaken ? takeBox
+              : undefined} />
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
             <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature that can still fight before you go on.</p>
           )}
@@ -491,16 +516,18 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={(lab.meta.bag ?? []).find((e) => itemOf(e)?.itemKey === "klutz_club")}
-                  onEquipClub={(id, entry) => equipFromBag(entry, id)}
-                  onTakeBoxHome={() => updateRun((x) => ({ ...x, status: "retreated", battle: undefined }))} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onStash={takeStash} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
                 />
               : <AtEntrance run={run} />}
           </div>
         </>
       )}
 
-      <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />
+      {/* During the club tutorial the bindle comes first, right under the room. */}
+      {!clubTutorial && <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />}
+      <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
+        byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} tutorial={clubTutorial} />
+      {clubTutorial && <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />}
       {(run.pending?.length ?? 0) > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, borderColor: "#c9a24a" }}>
           <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>Your {bagName(lab.meta).toLowerCase()} is full</div>
@@ -515,8 +542,6 @@ export default function DungeonPage() {
           ))}
         </div>
       )}
-      <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
-        byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} />
 
       <div style={{ marginTop: 24, textAlign: "center" }}>
         <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
@@ -640,21 +665,29 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onEquipClub, onTakeBoxHome, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onStash, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
   run: DungeonRun; room: Room; found: Drop[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onEquipClub: (creatureId: string, entry: BagEntry) => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onStash: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
-  const info = room.quest === "club" ? { name: "A dropped club", icon: "🪓" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
+  const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
   const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
-    : room.quest === "rattlebones" ? (
+    : room.quest === "rattlebones" ? (room.boxTaken ? (
       <div style={{ marginTop: 12 }}>
-        <button className="pixel-btn" onClick={onTakeBoxHome}>📦 Take the box home to Klutz</button>
-        <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>…or keep exploring with it — it&apos;s yours to carry either way.</p>
-        {onward}
+        <p style={{ fontSize: 14, color: "#f1d9a0", fontStyle: "italic", margin: "0 0 10px" }}>
+          &ldquo;This looks like the box Klutz was talking about. Let&apos;s take it to him.&rdquo;
+        </p>
+        <button className="pixel-btn" onClick={onTakeBoxHome}>Continue</button>
       </div>
-    ) : onward;
+    ) : (
+      <div style={{ marginTop: 12 }}>
+        <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
+          The Rattlebones clatters into a heap of bones. Something heavy thuds onto the floor beside it: a battered box, a sword hilt poking out of the lid.
+        </p>
+        <button className="pixel-btn" onClick={onTakeBox}>📦 Pick up the box</button>
+      </div>
+    )) : onward;
 
   return (
     <div className="stone-panel">
@@ -675,26 +708,23 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
       {room.quest === "club" && (room.done ? (
         <>
           {clubEntry ? (
-            <div style={{ marginTop: 8 }}>
-              <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
-                It&apos;s in your bindle. It&apos;s not much, but it&apos;s better than nothing — give it to one of your creatures before you go on:
-              </p>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {fightingTeam(run).map((id) => (
-                  <button key={id} className="pixel-btn" onClick={() => onEquipClub(id, clubEntry)}>🪓 Equip it on {byId(id)?.name ?? "your creature"}</button>
-                ))}
-              </div>
+            <div className="tutorial-tip" style={{ marginTop: 10 }}>
+              <b>Equipping gear.</b> Klutz&apos;s Club is in your bindle now. It&apos;s not much, but it&apos;s better than bare claws —
+              give it to one of your creatures before you go on. Tap the club in your bindle below.
+              <div style={{ textAlign: "center", fontSize: 22, marginTop: 4 }}><span className="tutorial-arrow">👇</span></div>
             </div>
           ) : (
-            <p style={{ fontSize: 13, color: "#d8d4c8", marginTop: 8 }}>Club in hand. Somewhere ahead, bones are rattling…</p>
+            <>
+              <p style={{ fontSize: 13, color: "#d8d4c8", marginTop: 8 }}>Club in hand. Somewhere ahead, bones are rattling…</p>
+              {onward}
+            </>
           )}
-          {onward}
         </>
       ) : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             Something lies on the floor just inside the entrance: a battered old club with <i>KLUTZ</i> scratched into the handle.
-            He must have dropped it chasing that thief.
+            The Rattlebones must have dropped it as it ran off — you can still hear it clattering away down the tunnels.
           </p>
           <button className="pixel-btn" onClick={onClub}>Pick up the club</button>
         </>
@@ -865,57 +895,17 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
   );
 }
 
-// Your party: who fights (in order — the first one leads) and who waits.
+// Your party: three in the team (the first one leads), two on the bench.
 function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void }) {
-  const team = fightingTeam(run);
-  const reserves = run.party.filter((id) => !team.includes(id));
-  const move = (i: number, by: number) => {
-    const next = [...team];
-    [next[i], next[i + by]] = [next[i + by], next[i]];
-    onTeam(next);
-  };
-  const card = (id: string, extra: React.ReactNode, fights: boolean) => {
+  const member = (id: string): PartyMember[] => {
     const c = byId(id);
-    if (!c) return null;
-    const hp = run.hp[id] ?? 1;
-    return (
-      <div key={id} className="card-btn" style={{ cursor: "default", borderColor: fights ? YOU : undefined, opacity: hp <= 0 ? 0.45 : 1 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ fontWeight: 600, color: rarityColor(c.rarity) }}>{c.name}</span>
-          {hp <= 0 && <span style={{ fontSize: 11, color: MUTED }}> · knocked out</span>}
-          <Bar label="HP" value={`${Math.round(hp * c.fighter.maxHp)}/${c.fighter.maxHp}`} pct={hp * 100}
-            color={hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444"} />
-        </div>
-        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>{extra}</div>
-      </div>
-    );
+    return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp, hp: run.hp[id] ?? 1 }] : [];
   };
-  const btn = (label: string, title: string, onClick: () => void, disabled = false) => (
-    <button className="chip" title={title} aria-label={title} onClick={onClick} disabled={disabled}
-      style={{ padding: "4px 9px", opacity: disabled ? 0.3 : 1, cursor: disabled ? "default" : "pointer" }}>{label}</button>
-  );
+  const team = fightingTeam(run);
   return (
     <>
-      <SectionTitle>Fighting — in order ({team.length}/{TEAM_SIZE})</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {team.map((id, i) => card(id, <>
-          <span className="pixel-font" style={{ fontSize: 13, color: i === 0 ? "#ffd66e" : MUTED, alignSelf: "center", marginRight: 4 }}>{i === 0 ? "leads" : `#${i + 1}`}</span>
-          {btn("▲", "Move up", () => move(i, -1), i === 0)}
-          {btn("▼", "Move down", () => move(i, 1), i === team.length - 1)}
-          {btn("✕", "Send to reserve", () => onTeam(team.filter((x) => x !== id)))}
-        </>, true))}
-        {team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: 0 }}>Nobody is set to fight — add someone from your reserves.</p>}
-      </div>
-      {reserves.length > 0 && (
-        <>
-          <SectionTitle>Reserves</SectionTitle>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {reserves.map((id) => card(id,
-              btn("＋ Fight", team.length >= TEAM_SIZE ? "Your team is full — send someone to reserve first" : "Add to the fighting team",
-                () => onTeam([...team, id]), team.length >= TEAM_SIZE || !isAlive(run, id)), false))}
-          </div>
-        </>
-      )}
+      <PartySlots team={team.flatMap(member)} bench={run.party.filter((id) => !team.includes(id)).flatMap(member)} onTeam={onTeam} />
+      {team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: "6px 0 0" }}>Nobody is set to fight — move someone from the bench into the team.</p>}
     </>
   );
 }
@@ -956,47 +946,67 @@ function bagItems(bag: PotionKey[]): BagItem[] {
     .filter((it) => it.count > 0);
 }
 
-// Between rooms: your battle bag, and who could use a potion.
-function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, onLeave }: {
+// Between rooms: your battle bag as slots. Tap one for what you can do with it.
+// tutorial: the entry to walk the player through equipping (Klutz's Club).
+function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, onLeave, tutorial }: {
   run: DungeonRun; bag: BagEntry[]; slots: number; name: string;
   itemOf: (e: BagEntry) => CreatureOrItemDrop | undefined; slotOf: (it: CreatureOrItemDrop) => EquipSlot | null;
   byId: (id: string) => OwnedCreature | undefined; onDrink: (k: PotionKey, id: string) => void;
-  onEquip: (e: BagEntry, creatureId: string) => void; onLeave: (e: BagEntry) => void;
+  onEquip: (e: BagEntry, creatureId: string) => void; onLeave: (e: BagEntry) => void; tutorial?: BagEntry;
 }) {
+  const [sel, setSel] = useState<number | null>(null);
   const standing = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0);
   const hurt = standing.filter((id) => (run.hp[id] ?? 1) < 1);
+  const e = sel !== null ? bag[sel] : undefined;
+  const it = e && !isPotionEntry(e) ? itemOf(e) : undefined;
+  const slot = it ? slotOf(it) : null;
+  const tutorialAt = tutorial ? bag.indexOf(tutorial) : -1;
+  const teaching = tutorialAt >= 0 && e === tutorial;
+  const done = (fn: () => void) => () => { fn(); setSel(null); };
+  const chip = (key: string, label: string, onClick: () => void, extra: React.CSSProperties = {}, pulse = false) => (
+    <button key={key} className={`chip${pulse ? " tutorial-pulse" : ""}`} style={{ padding: "5px 10px", ...extra }} onClick={onClick}>{label}</button>
+  );
+
   return (
     <>
       <SectionTitle>{name} ({bag.length}/{slots})</SectionTitle>
-      {bag.length === 0 ? (
-        <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>Empty. Gold and creature cards take no space; gear, codexes and potions take a slot each.</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {bag.map((e, i) => {
-            const it = isPotionEntry(e) ? undefined : itemOf(e);
-            const slot = it ? slotOf(it) : null;
-            return (
-              <div key={`${e}-${i}`} className="card-btn" style={{ cursor: "default", flexWrap: "wrap" }}>
-                <span style={{ flex: 1, minWidth: 150 }}>
-                  {isPotionEntry(e)
-                    ? <><b>{POTIONS[e].icon} {POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></>
-                    : it
-                      ? <><b style={{ color: RARITY_COLORS[it.rarity].text }}>{it.codexMove ? "📖" : it.itemCategory === "weapon" ? "🗡️" : "🛡️"} {it.name}</b>
-                          <span style={{ fontSize: 12, color: MUTED }}> {lootIdOf(e) ? "· found this run" : "· yours"}</span></>
-                      : <span style={{ color: MUTED }}>Something you no longer have</span>}
-                </span>
-                <span style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                  {isPotionEntry(e) && hurt.map((id) => (
-                    <button key={id} className="chip" style={{ padding: "4px 9px" }} onClick={() => onDrink(e, id)}>Give {byId(id)!.name}</button>
-                  ))}
-                  {slot && standing.map((id) => (
-                    <button key={id} className="chip" style={{ padding: "4px 9px" }} onClick={() => onEquip(e, id)}>Equip on {byId(id)!.name}</button>
-                  ))}
-                  <button className="chip" style={{ padding: "4px 9px", color: "#ff8a80" }} onClick={() => onLeave(e)}>Leave</button>
-                </span>
+      {tutorialAt >= 0 && sel !== tutorialAt && (
+        <div className="tutorial-tip" style={{ marginBottom: 8 }}>
+          <span className="tutorial-arrow">👇</span> Tap <b>Klutz&apos;s Club</b> to see what you can do with it.
+        </div>
+      )}
+      <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
+        selected={sel} onSelect={setSel} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
+      {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty. Gold and creature cards take no space; gear, codexes and potions take a slot each.</p>}
+
+      {e && (
+        <div className="stone-panel" style={{ marginTop: 8, padding: "10px 12px" }}>
+          {isPotionEntry(e) ? (
+            <>
+              <b>{POTIONS[e].icon} {POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>restores {POTIONS[e].heal} HP to one creature</span>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {hurt.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>Nobody needs it right now.</span>}
+                {hurt.map((id) => chip(id, `Give ${byId(id)!.name}`, done(() => onDrink(e, id))))}
+                {chip("leave", "Leave it here", done(() => onLeave(e)), { color: "#ff8a80" })}
               </div>
-            );
-          })}
+            </>
+          ) : it ? (
+            <>
+              <b style={{ color: RARITY_COLORS[it.rarity].text }}>{it.name}</b>
+              <span style={{ fontSize: 12, color: MUTED }}> · {it.rarity}{lootIdOf(e) ? " · found this run" : " · yours"}</span>
+              {teaching && (
+                <div className="tutorial-tip" style={{ margin: "8px 0 0" }}>
+                  <span className="tutorial-arrow">👇</span> Now choose who carries it. Gear you find down here works the same way: tap it in your bag, then equip it.
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {slot && standing.map((id) => chip(id, `Equip on ${byId(id)!.name}`, done(() => onEquip(e, id)), {}, teaching))}
+                {!teaching && chip("leave", "Leave it here", done(() => onLeave(e)), { color: "#ff8a80" })}
+              </div>
+            </>
+          ) : (
+            <span style={{ color: MUTED }}>Something you no longer have.</span>
+          )}
         </div>
       )}
     </>

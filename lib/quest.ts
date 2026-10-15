@@ -5,10 +5,12 @@
 // box — and a Rattlebones ran off into the Labyrinth with it.
 // 1. "start":    Klutz has something to tell you (talk to him).
 // 2. "hunt":     into the Labyrinth. The first room has Klutz's old club on
-//                the floor (pick it up, equip it). The first room you walk
-//                into after that is the Rattlebones.
-// 3. "boxFound": you beat it and have the box: take it back to Klutz.
-// 4. "done":     he puts what was inside into your storage.
+//                the floor, dropped by the fleeing Rattlebones (pick it up;
+//                a tutorial walks you through equipping it from your bag).
+//                The first room you walk into after that is the Rattlebones.
+// 3. "boxFound": you beat it, it drops the box, you pick it up and head home.
+// 4. "done":     you open the box at Klutz's (like a Code Cache) and its gear
+//                goes into your storage; Klutz's gear and hunting open up.
 // The box holds BOX_ROLLS pieces of Common/Uncommon gear (Uncommon at
 // BOX_UNCOMMON odds), rolled when you win — never anything better, so
 // restarting the game for a lucky box isn't worth it.

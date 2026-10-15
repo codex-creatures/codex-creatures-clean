@@ -161,14 +161,14 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
 
       <button ref={klutzLabelRef} onClick={() => activate(OBJ.klutz)}
         onPointerEnter={() => setHovered(OBJ.klutz)} onPointerLeave={() => setHovered(OBJ.none)}
-        className="pixel-font"
+        className={`pixel-font${klutzNews ? " news-glow" : ""}`}
         style={{
           position: "absolute", display: "none", transform: "translate(-50%, -100%)", whiteSpace: "nowrap",
           padding: "1px 6px", fontSize: "clamp(11px, 2.4vw, 13px)", lineHeight: 1.3,
           background: hover === OBJ.klutz ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.7)",
           border: `2px solid ${hover === OBJ.klutz ? "#ffd66e" : "#5c7a3a"}`, color: "#d6f0a8", cursor: "pointer",
         }}>
-        {klutzNews ? "❗ " : ""}Klutz{klutz === "pool" ? " 💤" : ""}
+        {klutzNews && <><span className="news-pulse" aria-label="Klutz has news">❗</span>{" "}</>}Klutz{klutz === "pool" ? " 💤" : ""}
       </button>
     </div>
     </div>

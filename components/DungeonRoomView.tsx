@@ -5,6 +5,8 @@
 // can't tell what's down a tunnel (that's what the map at the entrance was
 // for). Once the room is dealt with, tap a tunnel to walk down it. What's in
 // the room (enemies, a chest, a merchant…) stands on the floor in the middle.
+// Some things on the floor can be tapped (onObject): Klutz's club, a chest,
+// the box the Rattlebones dropped.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, runPosition, isFight, type DungeonRun } from "@/lib/dungeon/run";
@@ -12,13 +14,16 @@ import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type TunnelLook } from "@/lib/dungeon/chamber";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
+import { WEAPON_SPRITES } from "@/lib/sprites/items";
+import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX } from "@/lib/sprites/props";
+import type { Sprite } from "@/lib/sprites/pixels";
 
 const FPS = 12;
 
 // A short stable number from a room id, so each room looks a bit different.
 const seedOf = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
-export default function DungeonRoomView({ run, open, onGo }: { run: DungeonRun; open: boolean; onGo: (nodeId: string) => void }) {
+export default function DungeonRoomView({ run, open, onGo, onObject }: { run: DungeonRun; open: boolean; onGo: (nodeId: string) => void; onObject?: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chamberRef = useRef<Chamber | null>(null);
   const hoverRef = useRef(0);
@@ -63,7 +68,8 @@ export default function DungeonRoomView({ run, open, onGo }: { run: DungeonRun; 
     if (open && id > 0 && ways[id - 1]) onGo(ways[id - 1].id);
   }
 
-  const title = pos === run.map.start && !room ? "The entrance" : ROOM_INFO[node.kind].name;
+  const title = pos === run.map.start && !room ? "The entrance"
+    : room?.quest === "club" ? "A dropped club" : room?.quest === "rattlebones" ? "The thief" : ROOM_INFO[node.kind].name;
 
   return (
     <div style={{ position: "relative", width: "100%", maxWidth: 640, margin: "0 auto", aspectRatio: `${CW} / ${CH}`, border: "3px solid #1a1d20", boxShadow: "0 4px 0 rgba(0,0,0,0.6)" }}>
@@ -88,15 +94,32 @@ export default function DungeonRoomView({ run, open, onGo }: { run: DungeonRun; 
       </div>
 
       {/* What's in the room. */}
-      <RoomContents run={run} />
+      <RoomContents run={run} onObject={onObject} />
     </div>
   );
 }
 
-function RoomContents({ run }: { run: DungeonRun }) {
+function RoomContents({ run, onObject }: { run: DungeonRun; onObject?: () => void }) {
   const room = run.current;
   if (!room || room.kind === "pool" || room.kind === "entrance") return null;
   const at: React.CSSProperties = { position: "absolute", left: "50%", top: "80%", transform: "translate(-50%, -100%)", display: "flex", gap: "3%", alignItems: "flex-end", pointerEvents: "none" };
+
+  // Something lying on the floor: drawn as a sprite, and tappable when there's something to do with it.
+  const prop = (sprite: Sprite, label: string, scale = 4, style: React.CSSProperties = {}) => (
+    <div style={{ ...at, pointerEvents: onObject ? "auto" : "none" }}>
+      <button onClick={onObject} disabled={!onObject} aria-label={label} title={onObject ? label : undefined}
+        className={onObject ? "floor-prop" : undefined}
+        style={{ background: "none", border: "none", padding: 0, cursor: onObject ? "pointer" : "default", filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))", ...style }}>
+        <PixelSprite sprite={sprite} scale={scale} />
+      </button>
+    </div>
+  );
+
+  // Klutz's club, lying where the Rattlebones dropped it.
+  if (room.quest === "club") return room.done ? null : prop(WEAPON_SPRITES.klutz_club, "Pick up the club", 3.5, { transform: "rotate(-60deg)" });
+  // The Rattlebones' box, once it's beaten.
+  if (room.quest === "rattlebones" && room.done) return room.boxTaken ? null : prop(ARMOURY_BOX, "Pick up the box");
+  if (room.kind === "chest") return prop(room.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST, room.done ? "An open chest" : "Open the chest");
 
   if (isFight(room.kind)) {
     if (room.done) return null;

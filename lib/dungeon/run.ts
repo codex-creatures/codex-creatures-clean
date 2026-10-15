@@ -185,6 +185,7 @@ export type Room = {
   blessed?: boolean;   // a mini boss's heal/revive has been used
   stash?: PotionKey[]; // a stash: the potions inside
   quest?: "club" | "rattlebones"; // part of the first quest (lib/quest.ts)
+  boxTaken?: boolean;  // the Rattlebones' room: you've picked up Klutz's box
   done: boolean;
 };
 
