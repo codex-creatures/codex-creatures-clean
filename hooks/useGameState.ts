@@ -1,5 +1,5 @@
 // hooks/useGameState.ts
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Drop } from "@/lib/types";
 import { ARMOR_SLOTS, type ArmorSlot } from "@/lib/items/armor";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
@@ -11,17 +11,21 @@ import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, CREATURES_BY_RARITY } 
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon } from "@/lib/dungeon/run";
+import { collectKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { fighterFor } from "@/lib/creatures/instance";
 
-// Klutz is every player's first creature (and always in the roster).
+// Klutz is your helper, not one of your creatures (lib/klutz.ts). This
+// stand-in drop is what his gear and moves are stored under (equipment
+// keyed by KLUTZ_DROP_ID) and what the creature window shows for him.
 export const KLUTZ_DROP_ID = "klutz-companion";
-function klutzDrop(): Drop {
+export function klutzDrop(): CreatureOrItemDrop {
   return {
     id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
     rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour,
     createdAt: new Date().toISOString(),
   };
 }
-const hasKlutz = (inv: Drop[]) => inv.some((d) => isCreatureDrop(d) && d.creatureId === KLUTZ.id);
+const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 
 const STORAGE_KEY = "codex_creatures_save_v2";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
@@ -50,6 +54,7 @@ type SaveState = {
   equipment?: Record<string, Loadout>; // creature drop id → loadout
   recentScans?: string[];              // drop ids of your last scans, newest first
   caged?: Drop[];                      // creatures waiting in the Den's cage (tap to free them)
+  klutz?: KlutzState;                  // your helper: his health and any expedition
 };
 
 // A new player's first creature: a random Rare, waiting in the cage.
@@ -59,21 +64,17 @@ export function starterCreature(): Drop {
   return makeCreatureDrop(t, "creature", "");
 }
 
-// Also used read-only by the battle and dungeon screens. Everyone has
-// Klutz: he's added here (to new games and older saves), so every reader
-// sees him even before the game has saved him.
+// Also used read-only by the battle and dungeon screens.
 export function loadSave(): SaveState | null {
   if (typeof window === "undefined") return null;
   let parsed: Record<string, unknown> = {};
   try {
     parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}") ?? {};
   } catch {}
-  const inventory: Drop[] = Array.isArray(parsed.inventory) ? parsed.inventory : [];
-  const favoriteIds: string[] = Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : [];
-  if (!hasKlutz(inventory)) {
-    inventory.unshift(klutzDrop());
-    if (!favoriteIds.includes(KLUTZ_DROP_ID)) favoriteIds.push(KLUTZ_DROP_ID);
-  }
+  // Klutz used to be one of your creatures; older saves drop him (his gear
+  // stays on him: it's stored under KLUTZ_DROP_ID).
+  const inventory: Drop[] = (Array.isArray(parsed.inventory) ? parsed.inventory : []).filter((d: Drop) => !isKlutz(d));
+  const favoriteIds: string[] = (Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : []).filter((id: string) => id !== KLUTZ_DROP_ID);
   // Creatures and cards show their species' current rarity (some species
   // changed tier when races arrived).
   for (const d of inventory) {
@@ -91,6 +92,7 @@ export function loadSave(): SaveState | null {
     recentScans: Array.isArray(parsed.recentScans) ? parsed.recentScans : [],
     // A save from before the cage gets the starter waiting in it once.
     caged: Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()],
+    klutz: obj(parsed.klutz) as KlutzState,
   };
 }
 
@@ -110,6 +112,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [equipment, setEquipment]     = useState<Record<string, Loadout>>({});
   const [recentScanIds, setRecentScanIds] = useState<string[]>([]);
   const [caged, setCaged]             = useState<Drop[]>([]);
+  const [klutz, setKlutz]             = useState<KlutzState>({});
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -134,14 +137,59 @@ export function useGameState(initialTab: TabKey = "all") {
       setEquipment(saved.equipment ?? {});
       setRecentScanIds(saved.recentScans ?? []);
       setCaged(saved.caged ?? []);
+      setKlutz(saved.klutz ?? {});
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz]);
+
+  // ── Klutz ─────────────────────────────────────────────
+  // What he fights as: his template with the gear and moves set on him.
+  const klutzFighter = useMemo(() => {
+    const l = equipment[KLUTZ_DROP_ID];
+    const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
+    const w = l?.weaponId ? byId.get(l.weaponId) : undefined;
+    return fighterFor(klutzDrop(), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
+  }, [equipment, inventory]);
+
+  function sendKlutzOff() {
+    setKlutz((k) => sendKlutzOut(k, klutzFighter));
+  }
+
+  // Testing: skip to the end of his expedition, or heal him at once.
+  function klutzSkipAhead() {
+    setKlutz((k) => {
+      const ex = k.expedition;
+      if (ex && !ex.collected && Date.now() < ex.endsAt) {
+        const by = ex.endsAt - Date.now() + 1;
+        return { ...k, expedition: { ...ex, startedAt: ex.startedAt - by, endsAt: ex.endsAt - by, encounters: ex.encounters.map((e) => ({ ...e, at: e.at - by })) } };
+      }
+      return { ...k, hp: undefined, hpAt: undefined };
+    });
+  }
+
+  // When an expedition is over, hand over what he caught: creatures to the
+  // cage, their gear to your inventory. Checked every few seconds.
+  const klutzRef = useRef(klutz);
+  useEffect(() => { klutzRef.current = klutz; }, [klutz]);
+  useEffect(() => {
+    if (!hydrated) return;
+    const check = () => {
+      const { state, loot } = collectKlutz(klutzRef.current);
+      if (state === klutzRef.current) return;
+      klutzRef.current = state; // so a second check before the re-render can't collect twice
+      setKlutz(state);
+      setCaged((prev) => [...prev, ...loot.filter(isCreatureDrop)]);
+      setInventory((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]);
+    };
+    check();
+    const timer = window.setInterval(check, 5000);
+    return () => window.clearInterval(timer);
+  }, [hydrated]);
 
   // ── The cage ──────────────────────────────────────────
   // Free a caged creature: it joins your creatures (and your roster).
@@ -365,10 +413,11 @@ export function useGameState(initialTab: TabKey = "all") {
   // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
     clearDungeon();
-    setInventory([klutzDrop()]);
+    setInventory([]);
     setGold(0);
     setScanCounts({});
-    setFavoriteIds(new Set([KLUTZ_DROP_ID]));
+    setFavoriteIds(new Set());
+    setKlutz({});
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -386,7 +435,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
@@ -397,6 +446,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged, sendKlutzOff, klutzSkipAhead,
   };
 }

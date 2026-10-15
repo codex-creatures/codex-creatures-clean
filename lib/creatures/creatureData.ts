@@ -217,14 +217,14 @@ export const RETIRED_CREATURES: CreatureTemplate[] = [
   { id: "ashen_drifter",  name: "Ashen Drifter",   rarity: "rare",      baseHp: 88, cls: "ranged", proficiency: { atk: 8, rng: 32, mag: 0, agil: 16, mdef: 6, rdef: 12, magdef: 9 }, skills: s("Bolt","Piercing Shot","Stone Throw","Annihilator"),   flavour: "Orbiting rocks wrapped in smoke. Cold and quiet." },
 ];
 
-// Klutz: the dopey goblin who drags you out of the dungeon and decides to
-// stay. Every player starts with him. A bruiser-style hybrid, so he suits
-// almost any gear.
+// Klutz: the dopey goblin who drags you into the Den. He's your helper, not
+// one of your creatures: gear him up and he'll hunt in the Labyrinth for
+// you (lib/klutz.ts). Starts as an Uncommon.
 export const KLUTZ: CreatureTemplate = {
-  id: "klutz", name: "Klutz", race: "underdweller", rarity: "rare", baseHp: 98, companion: true, cls: "melee",
-  proficiency: { atk: 26, rng: 18, mag: 0, agil: 8, mdef: 12, rdef: 10, magdef: 11 },
+  id: "klutz", name: "Klutz", race: "underdweller", rarity: "uncommon", baseHp: 80, companion: true, cls: "melee",
+  proficiency: { atk: 18, rng: 10, mag: 0, agil: 8, mdef: 10, rdef: 8, magdef: 9 },
   skills: s("Slash", "Bolt", "Heavy Blow", "Stone Throw"),
-  flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. He found you down there, so now you're his.",
+  flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. Pay him, gear him, and he'll go hunting for you.",
 };
 
 export const COMPANIONS: CreatureTemplate[] = [KLUTZ];

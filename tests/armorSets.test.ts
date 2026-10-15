@@ -67,7 +67,7 @@ describe("set bonuses", () => {
   // A one-on-one fight between two Klutzes; B wears `set`.
   function duel(set: ArmorKey, moveA: string, opts: { hpB?: number; agilA?: number; agilB?: number } = {}) {
     const t = CREATURE_BY_ID.klutz;
-    const make = (agil: number): Fighter => ({ ...buildFighter(t, { melee: 40, ranged: 40, magic: 40, agility: agil }, { mDef: 10, rDef: 10, magDef: 10 }), skills: [MOVE_BY_NAME[moveA]] });
+    const make = (agil: number): Fighter => ({ ...buildFighter(t, { melee: 40, ranged: 40, magic: 40, agility: agil }, { mDef: 10, rDef: 10, magDef: 10, hp: 300 }), skills: [MOVE_BY_NAME[moveA]] });
     const A = make(opts.agilA ?? 100);
     const B = { ...make(opts.agilB ?? 0), armorSet: set };
     const state = createBattle([A], [B], opts.hpB ? { B: [opts.hpB] } : {});

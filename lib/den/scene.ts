@@ -32,7 +32,7 @@ const WALL_H = 150;   // tallest the rock walls get (px)
 
 // ── Clickable objects ─────────────────────────────────────────────
 export const OBJ = {
-  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11,
+  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11, klutz: 12,
 } as const;
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
@@ -59,7 +59,17 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   9: { u: 1.25, v: 8.9, z: CAGE.h + 6 },           // cage
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
+  12: { u: 5.2, v: 2.0, z: 26 },                   // Klutz (he moves: see klutzAt)
 };
+
+// Klutz's stroll round the Den: a loop of open floor (clear of the pit,
+// pool, altar and furniture), pausing at each stop.
+const KLUTZ_PATH: [number, number][] = [
+  [5.2, 2.0], [9.0, 2.4], [11.0, 4.0], [11.0, 7.4], [10.0, 9.4], [6.4, 9.8], [5.8, 7.6], [5.2, 4.6], [2.6, 6.4],
+];
+const KLUTZ_SPEED = 0.55;  // floor units a second
+const KLUTZ_PAUSE = 2.5;   // seconds at each stop
+export type KlutzMode = "home" | "pool" | "away";
 
 export function project(u: number, v: number, z: number): [number, number] {
   return [CX + (u - v) * TW, Y0 + (u + v) * TH - z];
@@ -192,7 +202,31 @@ export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
   idAt: (x: number, y: number) => ObjId;
   setCaged: (sprite: Sprite | null) => void; // the creature shown inside the cage
+  setKlutz: (mode: KlutzMode, sprite: Sprite | null) => void;
+  klutzAt: () => [number, number] | null;     // where his label goes (layout units), if he's here
 };
+
+// Where Klutz is along his stroll at time t: floor position and which way he faces.
+function strollAt(t: number): { u: number; v: number; left: boolean; walking: boolean } {
+  const legs = KLUTZ_PATH.map((p, i) => {
+    const q = KLUTZ_PATH[(i + 1) % KLUTZ_PATH.length];
+    return { from: p, to: q, time: Math.hypot(q[0] - p[0], q[1] - p[1]) / KLUTZ_SPEED };
+  });
+  const loop = legs.reduce((s, l) => s + l.time + KLUTZ_PAUSE, 0);
+  let x = t % loop;
+  for (const l of legs) {
+    // Screen x goes with u − v: facing left when that shrinks.
+    const left = (l.to[0] - l.to[1]) < (l.from[0] - l.from[1]);
+    if (x < KLUTZ_PAUSE) return { u: l.from[0], v: l.from[1], left, walking: false };
+    x -= KLUTZ_PAUSE;
+    if (x < l.time) {
+      const k = x / l.time;
+      return { u: l.from[0] + (l.to[0] - l.from[0]) * k, v: l.from[1] + (l.to[1] - l.from[1]) * k, left, walking: true };
+    }
+    x -= l.time;
+  }
+  return { u: KLUTZ_PATH[0][0], v: KLUTZ_PATH[0][1], left: false, walking: false };
+}
 
 export function createDen(): DenScene {
   const n = FW * FH;
@@ -504,6 +538,9 @@ export function createDen(): DenScene {
   let embers: Ember[] = [];
   let lastT = 0;
   let caged: string[] | null = null; // the caged creature, on the fine grid
+  let klutz: string[] | null = null;
+  let klutzMode: KlutzMode = "away";
+  let klutzLabel: [number, number] | null = null;
 
   const out = new ImageData(FW, FH);
   const frameIds = new Uint8Array(n);
@@ -643,6 +680,29 @@ export function createDen(): DenScene {
     for (let v = CAGE.v0; v <= CAGE.v1 + 0.01; v += STEP) bar(CAGE.u1, v);
     for (let u = CAGE.u0; u < CAGE.u1 - 0.01; u += STEP) bar(u, CAGE.v1);
 
+    // Klutz: strolling about, or soaking in the pool up to his chin.
+    klutzLabel = null;
+    if (klutz && klutzMode !== "away") {
+      const h = klutz.length, w = Math.max(...klutz.map((r) => r.length));
+      const at = klutzMode === "pool" ? { u: POOL.u + 0.3, v: POOL.v - 0.2, left: false, walking: false } : strollAt(t);
+      const [kx, ky] = project(at.u, at.v, klutzMode === "pool" ? -1 : 0);
+      const bob = at.walking ? Math.round(Math.abs(Math.sin(t * 8)) * 2) : Math.round(Math.sin(t * 1.3));
+      const rows = klutzMode === "pool" ? Math.floor(h * 0.52) : h; // in the pool, only his head shows
+      const top = ky * RES - (klutzMode === "pool" ? rows : h) - bob;
+      for (let y = 0; y < rows; y++) for (let x = 0; x < w; x++) {
+        const ch = klutz[y][at.left ? w - 1 - x : x];
+        if (ch === "." || !PALETTE[ch]) continue;
+        fpx(kx * RES - w / 2 + x, top + y, mul(hex(PALETTE[ch]), 0.85), OBJ.klutz);
+      }
+      if (klutzMode === "pool") {
+        for (let s2 = 0; s2 < 14; s2++) {
+          const an = (s2 / 14) * Math.PI * 2, rad = 10 + Math.sin(t * 2) * 1.5;
+          fpx(kx * RES + Math.cos(an) * rad * 2, ky * RES + Math.sin(an) * rad, hex("#5f9a9a"), OBJ.klutz);
+        }
+      }
+      klutzLabel = [kx, top / RES - 2];
+    }
+
     // Hover: brighten the object and outline it in gold.
     if (hover) {
       const glow = 0.75 + 0.25 * Math.sin(t * 6);
@@ -668,5 +728,7 @@ export function createDen(): DenScene {
       return frameIds[fy * FW + fx] as ObjId;
     },
     setCaged: (sprite) => { caged = sprite ? fineGrid(sprite) : null; },
+    setKlutz: (mode, sprite) => { klutzMode = mode; klutz = sprite ? fineGrid(sprite) : null; },
+    klutzAt: () => klutzLabel,
   };
 }

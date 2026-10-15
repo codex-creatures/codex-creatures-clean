@@ -25,7 +25,7 @@ import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 type Props = {
   creature: CreatureOrItemDrop;
   isFavorite: boolean;
-  onToggleFavorite: (id: string) => void;
+  onToggleFavorite?: (id: string) => void; // missing: no roster button (e.g. Klutz)
   loadout?: Loadout;
   weapons: CreatureOrItemDrop[];
   armors: CreatureOrItemDrop[];
@@ -283,10 +283,12 @@ export default function CreatureDetailModal({
           </>
         )}
 
-        <button onClick={() => onToggleFavorite(creature.id)} className="chip" data-active={isFavorite}
-          style={{ marginTop: 16, width: "100%", padding: "9px 0", textTransform: "none" }}>
-          {isFavorite ? "★ In your roster" : "☆ Add to roster"}
-        </button>
+        {onToggleFavorite && (
+          <button onClick={() => onToggleFavorite(creature.id)} className="chip" data-active={isFavorite}
+            style={{ marginTop: 16, width: "100%", padding: "9px 0", textTransform: "none" }}>
+            {isFavorite ? "★ In your roster" : "☆ Add to roster"}
+          </button>
+        )}
       </div>
     </div>
   );

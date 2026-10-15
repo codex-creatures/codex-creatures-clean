@@ -19,7 +19,7 @@ import { CreatureFilterBar, NO_FILTER, matchesFilter, type CreatureFilter } from
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
 const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor"]);
-import type { TabKey as GameTabKey, Loadout, EquipSlot } from "@/hooks/useGameState";
+import { KLUTZ_DROP_ID, type TabKey as GameTabKey, type Loadout, type EquipSlot } from "@/hooks/useGameState";
 
 const hasArmor = (l?: Loadout) => !!(l?.helmetId || l?.chestId || l?.legsId);
 
@@ -89,7 +89,7 @@ export default function InventoryList({
   const allWeapons = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "weapon") as CreatureOrItemDrop[], [inventory]);
   const allArmors  = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "armor") as CreatureOrItemDrop[], [inventory]);
   const creatureNameById = useMemo(
-    () => new Map(inventory.filter(isCreatureDrop).map((c) => [c.id, c.name])),
+    () => new Map([...inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]),
     [inventory]
   );
   const openCreature = openCreatureId ? inventory.find((d) => d.id === openCreatureId) : undefined;

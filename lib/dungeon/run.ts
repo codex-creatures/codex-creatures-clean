@@ -108,7 +108,7 @@ const pick = <T,>(arr: readonly T[], rng: Rng) => arr[Math.floor(rng() * arr.len
 export type GearPiece = { slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean };
 export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[] };
 
-function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng): Enemy {
+export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random): Enemy {
   const pool = CREATURES_BY_RARITY[rarity].filter((c) => !exclude.includes(c.id));
   const t = pick(pool.length > 0 ? pool : CREATURES_BY_RARITY[rarity], rng);
   const roll = rollCreature(t, rng);

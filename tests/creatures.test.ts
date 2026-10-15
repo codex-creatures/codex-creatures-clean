@@ -74,12 +74,12 @@ describe("cards and summoning", () => {
 });
 
 describe("Klutz", () => {
-  it("is a Rare companion that can't be found by scanning", () => {
-    expect(KLUTZ.rarity).toBe("rare");
+  it("is an Uncommon helper that can't be found by scanning", () => {
+    expect(KLUTZ.rarity).toBe("uncommon");
     expect(CREATURE_BY_ID.klutz).toBe(KLUTZ);
     expect(CREATURE_TEMPLATES).not.toContain(KLUTZ);
-    expect(CREATURES_BY_RARITY.rare).not.toContain(KLUTZ);
-    for (let i = 0; i < 2000; i++) expect(pickCreatureId("rare")).not.toBe("klutz");
+    expect(CREATURES_BY_RARITY.uncommon).not.toContain(KLUTZ);
+    for (let i = 0; i < 2000; i++) expect(pickCreatureId("uncommon")).not.toBe("klutz");
   });
 });
 

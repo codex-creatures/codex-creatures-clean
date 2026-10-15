@@ -6,9 +6,15 @@ import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
 import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
 import DenRoom, { SPOTS } from "@/components/DenRoom";
+import { useEffect, useState } from "react";
+import { klutzStatus } from "@/lib/klutz";
 
 export default function Home() {
   const game = useGameState();
+  // Klutz comes and goes with the clock.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);
+  const k = klutzStatus(game.klutz, game.klutzFighter.maxHp, now).kind;
 
   return (
     <main style={{ padding: "16px 12px 32px", maxWidth: 960, margin: "0 auto", color: "white" }}>
@@ -21,7 +27,8 @@ export default function Home() {
         </div>
       </div>
 
-      <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId} />
+      <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
+        klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"} />
 
       {/* Plain links too — quicker on small screens and for keyboard users. */}
       <nav style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>

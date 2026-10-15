@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDen, project, ANCHORS, OBJ, W, H, RES, type DenScene, type ObjId } from "@/lib/den/scene";
+import { createDen, project, ANCHORS, OBJ, W, H, RES, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 
 type Spot = { label: string; href?: string; soon?: string };
@@ -22,6 +22,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.scroll]:   { label: "Bestiary & Rules", href: "/guide" },
   [OBJ.cage]:     { label: "Cage", href: "/cage" },
   [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
+  [OBJ.klutz]:    { label: "Klutz", href: "/klutz" },
   [OBJ.tavern]:   { label: "Tavern", soon: "The tavern isn't built yet. One day travellers, merchants and librarians will gather here." },
 };
 
@@ -31,11 +32,14 @@ const FPS = 12;
 const MIN_WIDTH = 700;
 
 // caged: the creature id waiting in the cage (drawn inside it), if any.
-export default function DenRoom({ caged }: { caged?: string }) {
+// klutz: where Klutz is (strolling, healing in the pool, or away hunting).
+export default function DenRoom({ caged, klutz = "home" }: { caged?: string; klutz?: KlutzMode }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [scrollable, setScrollable] = useState(false);
   const cagedRef = useRef(caged);
+  const klutzRef = useRef(klutz);
+  const klutzLabelRef = useRef<HTMLButtonElement | null>(null);
   const sceneRef = useRef<DenScene | null>(null);
   const hoverRef = useRef<ObjId>(OBJ.none);
   const [hover, setHover] = useState<ObjId>(OBJ.none);
@@ -49,11 +53,25 @@ export default function DenRoom({ caged }: { caged?: string }) {
     sceneRef.current = scene;
     const start = performance.now();
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null);
-    const draw = () => ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
+    scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null);
+    const draw = () => {
+      ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
+      // Klutz's label follows him about.
+      const el = klutzLabelRef.current, at = scene.klutzAt();
+      if (el) {
+        el.style.display = at ? "block" : "none";
+        if (at) { el.style.left = `${(at[0] / W) * 100}%`; el.style.top = `${(at[1] / H) * 100}%`; }
+      }
+    };
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    klutzRef.current = klutz;
+    sceneRef.current?.setKlutz(klutz, CREATURE_SPRITES.klutz ?? null);
+  }, [klutz]);
 
   // Who's in the cage (the save loads after the first draw).
   useEffect(() => {
@@ -110,6 +128,7 @@ export default function DenRoom({ caged }: { caged?: string }) {
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
+        if (id === OBJ.klutz) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
         const spot = SPOTS[id];
@@ -137,6 +156,17 @@ export default function DenRoom({ caged }: { caged?: string }) {
         );
       })}
 
+      <button ref={klutzLabelRef} onClick={() => activate(OBJ.klutz)}
+        onPointerEnter={() => setHovered(OBJ.klutz)} onPointerLeave={() => setHovered(OBJ.none)}
+        className="pixel-font"
+        style={{
+          position: "absolute", display: "none", transform: "translate(-50%, -100%)", whiteSpace: "nowrap",
+          padding: "1px 6px", fontSize: "clamp(11px, 2.4vw, 13px)", lineHeight: 1.3,
+          background: hover === OBJ.klutz ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.7)",
+          border: `2px solid ${hover === OBJ.klutz ? "#ffd66e" : "#5c7a3a"}`, color: "#d6f0a8", cursor: "pointer",
+        }}>
+        Klutz{klutz === "pool" ? " 💤" : ""}
+      </button>
     </div>
     </div>
       {scrollable && (
