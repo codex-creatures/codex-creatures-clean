@@ -1,50 +1,64 @@
 // lib/den/scene.ts
-// The Den (home screen), drawn as pixel art in code: an isometric "cube"
-// room (two stone walls + flagstone floor on a floating block) with
-// clickable objects. Everything is rendered at a low resolution into a pixel
-// buffer and scaled up sharp by the browser.
+// The Den (home screen), drawn as pixel art in code: a large, gloomy cavern
+// seen isometrically: two rough rock walls whose ragged tops fade into the
+// dark, and a floor whose far edges dissolve into shadow. Clickable objects
+// stand around it (see OBJ / ANCHORS).
 //
-// - The static room (stone, moss, objects) is built once.
-// - Each frame re-lights it (flickering torches, pulsing altar), then draws
-//   the animated bits (flames, embers, floating crystal) and the hover outline.
+// - The static room (rock, moss, objects) is built once, and so is the
+//   lighting: each pixel keeps its light and which torch lights it most.
+// - Each frame applies the light (flickering torches, pulsing altar), then
+//   draws the animated bits (flames, embers, crystal, pool ripples, the caged
+//   creature behind its bars) and the hover outline.
 // - Every pixel remembers which object it belongs to, so clicks are
 //   pixel-accurate.
 // - It's drawn on the fine grid: laid out in W×H units (labels, taps), and
 //   rendered at RES× that, each fine pixel sampling its own spot.
 
-export const W = 256;  // layout units
-export const H = 288;
+import { fineGrid, PALETTE, type Sprite } from "../sprites/pixels";
+
+export const W = 416;  // layout units
+export const H = 368;
 export const RES = 2;  // fine pixels per unit: the canvas is W*RES × H*RES
 const FW = W * RES, FH = H * RES;
 
 // Isometric layout: 1 floor unit = 32px wide / 16px tall diamond.
-const N = 7;          // room is N × N floor units
+const NU = 13;        // floor units along the right wall (v = 0)
+const NV = 11;        // floor units along the left wall (u = 0)
 const TW = 16;        // half tile width
 const TH = 8;         // half tile height
-const CX = 128;       // screen x of the back corner
-const Y0 = 150;       // screen y of the back corner at floor level
-const WALL_H = 120;   // wall height (px)
-const WALL_T = 0.4;   // wall thickness (units)
-const SLAB = 12;      // floor block thickness (px)
-const AL = 1.2;       // altar centre (u = v)
+const CX = 16 + NV * TW; // screen x of the back corner
+const Y0 = 168;       // screen y of the back corner at floor level
+const WALL_H = 150;   // tallest the rock walls get (px)
 
 // ── Clickable objects ─────────────────────────────────────────────
 export const OBJ = {
-  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8,
+  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11,
 } as const;
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
+
+// Where things stand (floor units).
+const AL = { u: 3.4, v: 3.4 };              // scanning altar (the centrepiece)
+const PIT = { u0: 6.2, v0: 5.4, u1: 9.6, v1: 8.8, depth: 18 };
+const POOL = { u: 3.6, v: 9.0, ru: 1.9, rv: 1.25 };
+const CAGE = { u0: 0.35, v0: 8.0, u1: 2.15, v1: 9.8, h: 32 };
+const ARCH_V = 2.6;                          // archway on the left wall
+const BOARD_V = 5.4;                         // quest board on the left wall
+const TAVERN = { a0: 9.9, a1: 12.3, h: 74 }; // tavern opening on the right wall (along u)
 
 // Where each object's label sits (floor units + height in px).
 // below = the label hangs under the point instead of above it.
 export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: number; below?: boolean }> = {
-  1: { u: 4.75, v: 4.75, z: 0, below: true }, // pit
-  2: { u: 0.7, v: 5.8, z: 22 },    // chest
-  3: { u: 1.2, v: 1.2, z: 46 },    // altar
-  4: { u: 5.95, v: 0.55, z: 34 },  // merchant
-  5: { u: 0, v: 5.9, z: 104 },     // quest board (above the archway label)
-  6: { u: 2.9, v: 0, z: 74 },      // bag shelf
-  7: { u: 0, v: 3.0, z: 66 },      // archway
-  8: { u: 4.45, v: 0.45, z: 0, below: true }, // the scroll on its lectern
+  1: { u: 9.6, v: 8.8, z: 0, below: true },        // pit (its front corner)
+  2: { u: 3.0, v: 0, z: 42 },                      // chest (label on the wall above it)
+  3: { u: AL.u, v: AL.v, z: 50 },                  // altar
+  4: { u: 7.8, v: 0.6, z: 40 },                    // merchant
+  5: { u: 0, v: BOARD_V + 0.75, z: 96 },           // quest board
+  6: { u: 5.0, v: 0, z: 78 },                      // bag shelf
+  7: { u: 0, v: ARCH_V, z: 72 },                   // archway
+  8: { u: 1.15, v: 4.6, z: 0, below: true },                   // the scroll on its lectern
+  9: { u: 1.25, v: 8.9, z: CAGE.h + 6 },           // cage
+  10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
+  11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
 };
 
 export function project(u: number, v: number, z: number): [number, number] {
@@ -56,6 +70,7 @@ type RGB = [number, number, number];
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
 const mul = (c: RGB, k: number): RGB => [c[0] * k, c[1] * k, c[2] * k];
 const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
 export function hash(a: number, b: number): number {
   let h = Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263);
@@ -73,70 +88,87 @@ export function vnoise(x: number, y: number): number {
 }
 
 const pal = (...h: string[]) => h.map(hex);
-const WALL_STONES = pal("#4a5163", "#535b6e", "#434958", "#5b6276", "#4e5466", "#575d6b");
+const ROCK        = pal("#3f4452", "#474c5b", "#3a3e4b", "#4d5262", "#424757", "#4a4f5e");
 const CAP_STONES  = pal("#6a7184", "#737a8d", "#62697b");
-const MORTAR      = hex("#22252d");
-const FLOOR       = pal("#7d6a55", "#86735c", "#73614f", "#8f7c64", "#6e5d4c");
-const FLOOR_MORT  = hex("#3a3129");
-const MOSS        = pal("#3e6b2c", "#4f8235", "#2f5523", "#5f9440");
-const SAND        = pal("#b4955f", "#a8895a", "#bfa06a", "#9e8052");
-const WOOD        = pal("#7a4a26", "#86532b", "#6d4122");
-const WOOD_DARK   = hex("#4a2c16");
-const IRON        = hex("#3b3d44");
+const CRACK       = hex("#1b1d24");
+const FLAG        = pal("#6f604f", "#786856", "#675948", "#7f6e5a", "#62554a");
+const DIRT        = pal("#4a4038", "#524638", "#43392f", "#584b3d");
+const FLOOR_MORT  = hex("#2c2620");
+const MOSS        = pal("#33592a", "#41702f", "#284a21", "#4f8238");
+const SAND        = pal("#a88a58", "#9c7f52", "#b39463", "#93774b");
+const WOOD        = pal("#6e4423", "#7a4b27", "#62391e");
+const WOOD_DARK   = hex("#40260f");
+const IRON        = hex("#34363d");
+const IRON_LIGHT  = hex("#5a5e68");
 const GOLD        = hex("#e8b84a");
-const VOID        = hex("#07080c");
+const WATER       = hex("#16323a");
+const VOID        = hex("#050609");
 
 // ── Surface textures ─────────────────────────────────────────────
+// Rough cave rock: big irregular blocks with wandering cracks.
 // a = distance along the surface (px), z = height (px).
-function stone(a: number, z: number, seed: number, stones = WALL_STONES): RGB {
-  const row = Math.floor(z / 8);
-  const off = (row & 1) * 11;
-  const col = Math.floor((a + off) / 22);
-  const ia = a + off - col * 22, iz = z - row * 8;
-  if (ia < 0.6 || iz < 0.6) return MORTAR; // a thin line on the fine grid
-  let c = stones[Math.floor(hash(col * 7 + seed, row) * stones.length)];
-  let k = 1;
-  if (iz >= 7) k = 1.14; else if (iz < 2) k = 0.86;
-  if (ia < 2) k *= 1.07;
-  k *= 0.93 + hash(Math.floor(a * RES), Math.floor(z * RES) + seed * 31) * 0.14;
+function rock(a: number, z: number, seed: number): RGB {
+  const wa = a + 7 * vnoise(z / 10 + seed, seed * 3);
+  const wz = z + 5 * vnoise(a / 12 + seed * 7, seed);
+  const row = Math.floor(wz / 14);
+  const off = hash(row, seed) * 20;
+  const col = Math.floor((wa + off) / (18 + hash(row, seed + 1) * 10));
+  const ia = (wa + off) % (18 + hash(row, seed + 1) * 10), iz = wz - row * 14;
+  if (ia < 0.8 || iz < 0.8) return CRACK;
+  let c = ROCK[Math.floor(hash(col * 7 + seed, row) * ROCK.length)];
+  let k = iz > 11 ? 1.12 : iz < 2.5 ? 0.85 : 1;
+  k *= 0.9 + vnoise(a / 3, z / 3 + seed) * 0.2;
   c = mul(c, k);
   return c;
 }
 
-function mossy(c: RGB, a: number, z: number, seed: number, height: number): RGB {
-  const n = vnoise(a / 9 + seed * 13, z / 7)
-    + (z < 16 ? ((16 - z) / 16) * 0.45 : 0)
-    + (z > height - 22 ? ((z - (height - 22)) / 22) * 0.3 : 0);
+function mossy(c: RGB, a: number, z: number, seed: number, top: number): RGB {
+  const n = vnoise(a / 10 + seed * 13, z / 8)
+    + (z < 18 ? ((18 - z) / 18) * 0.5 : 0);
   const h = hash(Math.floor(a) + seed, Math.floor(z));
-  if (n > 0.8 || (n > 0.72 && h > 0.5)) return MOSS[Math.floor(h * MOSS.length)];
-  // hanging ivy
-  const ci = Math.floor(a / 9);
-  const hv = hash(ci, seed + 5);
-  if (hv < 0.28) {
-    const len = 18 + hash(ci, seed + 9) * 55;
-    if (z > height - len) {
-      const vx = ci * 9 + 4 + Math.round(Math.sin(z * 0.35 + ci) * 1.5);
+  if (n > 0.82 || (n > 0.74 && h > 0.55)) return MOSS[Math.floor(h * MOSS.length)];
+  // Roots and ivy hanging from the dark above.
+  const ci = Math.floor(a / 11);
+  if (hash(ci, seed + 5) < 0.22) {
+    const len = 14 + hash(ci, seed + 9) * 60;
+    if (z > top - len) {
+      const vx = ci * 11 + 5 + Math.round(Math.sin(z * 0.3 + ci) * 1.5);
       const d = Math.abs(a - vx);
-      if (d < 1) return hex("#2c4a20");
-      if (d < 3 && hash(Math.floor(a), Math.floor(z / 3) + ci) > 0.55) return MOSS[(ci + Math.floor(z)) % 4];
+      if (d < 1) return hex("#22381b");
+      if (d < 3 && hash(Math.floor(a), Math.floor(z / 3) + ci) > 0.6) return MOSS[(ci + Math.floor(z)) % 4];
     }
   }
+  // Damp streaks running down the rock.
+  if (hash(Math.floor(a / 4), seed + 21) < 0.06 && z < top - 10) return mul(c, 0.78);
   return c;
 }
 
+// How tall the wall stands here (its ragged top), at a px along it.
+const wallTop = (a: number, seed: number) =>
+  WALL_H - 20 - 34 * vnoise(a / 16, seed) - 14 * vnoise(a / 5, seed + 4) - (hash(Math.floor(a / 3), seed) < 0.08 ? 10 : 0);
+
+// The floor: worn flagstones in the middle of the cavern, rough dirt and
+// rock towards the walls, wet patches near the pool.
 function floorTex(u: number, v: number): RGB {
   const fu = u * 16, fv = v * 16;
-  const row = Math.floor(fv / 16);
-  const off = (row & 1) * 8;
-  const col = Math.floor((fu + off) / 16);
-  const iu = fu + off - col * 16, iv = fv - row * 16;
-  if (iu < 0.6 || iv < 0.6) {
-    return vnoise(fu / 12, fv / 12) > 0.62 ? MOSS[Math.floor(hash(Math.floor(fu), Math.floor(fv)) * 4)] : FLOOR_MORT;
+  const centre = 1 - clamp01((Math.hypot(u - 6.2, v - 5.4) - 3.2) / 3.5) ;
+  const flag = centre + (vnoise(u * 0.8, v * 0.8) - 0.5) * 0.7 > 0.45;
+  if (flag) {
+    const row = Math.floor(fv / 16);
+    const off = (row & 1) * 8;
+    const col = Math.floor((fu + off) / 16);
+    const iu = fu + off - col * 16, iv = fv - row * 16;
+    if (iu < 0.7 || iv < 0.7) {
+      return vnoise(fu / 12, fv / 12) > 0.6 ? MOSS[Math.floor(hash(Math.floor(fu), Math.floor(fv)) * 4)] : FLOOR_MORT;
+    }
+    let k = iu < 2 || iv < 2 ? 1.08 : iu > 14.5 || iv > 14.5 ? 0.86 : 1;
+    k *= 0.9 + hash(Math.floor(fu * 2), Math.floor(fv * 2)) * 0.14;
+    return mul(FLAG[Math.floor(hash(col, row + 99) * FLAG.length)], k);
   }
-  let k = 1;
-  if (iu < 2 || iv < 2) k = 1.1; else if (iu > 14.5 || iv > 14.5) k = 0.85;
-  k *= 0.92 + hash(Math.floor(fu * 2), Math.floor(fv * 2)) * 0.14;
-  return mul(FLOOR[Math.floor(hash(col, row + 99) * FLOOR.length)], k);
+  const n = vnoise(fu / 6, fv / 6);
+  if (n > 0.78) return mul(ROCK[Math.floor(hash(Math.floor(fu / 4), Math.floor(fv / 4)) * ROCK.length)], 0.95); // pebbles
+  if (vnoise(fu / 14 + 9, fv / 14) > 0.76) return MOSS[Math.floor(hash(Math.floor(fu), Math.floor(fv)) * 4)];
+  return mul(DIRT[Math.floor(hash(Math.floor(fu / 3), Math.floor(fv / 3)) * DIRT.length)], 0.9 + n * 0.2);
 }
 
 function planks(a: number, z: number, seed: number): RGB {
@@ -147,11 +179,11 @@ function planks(a: number, z: number, seed: number): RGB {
 }
 
 // ── The scene ────────────────────────────────────────────────────
-type Light = { u: number; v: number; z: number; color: RGB; power: number; radius: number; seed: number; pulse?: boolean };
+type Light = { u: number; v: number; z: number; color: RGB; power: number; radius: number; seed: number; pulse?: boolean; steady?: boolean };
 
 const TORCHES: { u: number; v: number; z: number }[] = [
-  { u: 0.12, v: 1.1, z: 74 }, { u: 0.12, v: 4.7, z: 74 },
-  { u: 1.1, v: 0.12, z: 74 }, { u: 4.7, v: 0.12, z: 74 },
+  { u: 0.12, v: 1.2, z: 78 }, { u: 0.12, v: 7.3, z: 74 },
+  { u: 1.3, v: 0.12, z: 78 }, { u: 6.3, v: 0.12, z: 76 }, { u: 9.4, v: 0.12, z: 72 },
 ];
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => b / 16);
@@ -159,6 +191,7 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => 
 export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
   idAt: (x: number, y: number) => ObjId;
+  setCaged: (sprite: Sprite | null) => void; // the creature shown inside the cage
 };
 
 export function createDen(): DenScene {
@@ -167,6 +200,7 @@ export function createDen(): DenScene {
   const pos = new Float32Array(n * 3).fill(NaN);
   const ids = new Uint8Array(n);
   const emissive = new Uint8Array(n); // 1 = glows (not lit), 2 = glows + pulses
+  const shadow = new Float32Array(n).fill(1); // fades the room's far edges into the dark
 
   // (fx, fy): a fine pixel.
   function put(fx: number, fy: number, c: RGB, u: number, v: number, z: number, id: number = 0, glow = 0) {
@@ -194,39 +228,41 @@ export function createDen(): DenScene {
   };
   const spot = (f: number) => (f + 0.5) / RES; // a fine pixel's centre, in layout units
 
-  // Fight pit, sunk into the middle of the floor.
-  const P0 = 2.3, P1 = 4.7, PD = 16;
-  const inPit = (u: number, v: number) => u >= P0 && u < P1 && v >= P0 && v < P1;
+  const inPit = (u: number, v: number) => u >= PIT.u0 && u < PIT.u1 && v >= PIT.v0 && v < PIT.v1;
+  const poolD = (u: number, v: number) => Math.hypot((u - POOL.u) / POOL.ru, (v - POOL.v) / POOL.rv)
+    + (vnoise(u * 2.2, v * 2.2) - 0.5) * 0.25; // < 1 = water
+  // The far edges of the floor (and the ends of the walls) sink into the dark.
+  const edgeFade = (u: number, v: number) => clamp01((NU - u) / 2.2) * clamp01((NV - v) / 2.2);
 
   // Wall features (in wall coordinates: a = px along the wall from the back corner).
   function leftWallFeature(a: number, z: number): { c: RGB; id: number } | null {
-    // Archway
-    const ac = 3.0 * 16, r = 13;
+    // Archway into the Labyrinth: rough-cut, framed in old dressed stone.
+    const ac = ARCH_V * 16, r = 15, spring = 46;
     const da = a - ac;
-    const top = 42 + Math.sqrt(Math.max(0, r * r - da * da));
+    const top = spring + Math.sqrt(Math.max(0, r * r - da * da));
     if (Math.abs(da) < r && z < top) {
-      const depth = Math.min(1, z / 60);
-      const fog = z < 8 ? 0.06 * (8 - z) / 8 : 0;
-      return { c: mix(hex("#0c0e16"), hex("#05060a"), depth).map((x, k) => x + (k === 2 ? fog * 1.6 : fog)) as RGB, id: OBJ.arch };
+      const depth = Math.min(1, z / 70);
+      const fog = z < 10 ? 0.07 * (10 - z) / 10 : 0;
+      return { c: mix(hex("#0b0d15"), hex("#040509"), depth).map((x, k) => x + (k === 2 ? fog * 1.6 : fog)) as RGB, id: OBJ.arch };
     }
-    const outer = Math.sqrt(da * da + Math.max(0, z - 42) ** 2);
-    if ((z >= 42 && outer < r + 6) || (z < 42 && Math.abs(da) < r + 5)) {
-      const ang = Math.atan2(z - 42, da);
-      const block = z >= 42 ? Math.floor((ang / Math.PI) * 7) : Math.floor(z / 9) + 20;
-      const edge = z >= 42 ? Math.abs(((ang / Math.PI) * 7) % 1) < 0.08 : z % 9 < 1;
-      if (edge) return { c: MORTAR, id: OBJ.arch };
-      return { c: mul(CAP_STONES[block % 3], 0.95 + hash(Math.floor(a), Math.floor(z)) * 0.1), id: OBJ.arch };
+    const outer = Math.sqrt(da * da + Math.max(0, z - spring) ** 2);
+    if ((z >= spring && outer < r + 6) || (z < spring && Math.abs(da) < r + 5)) {
+      const ang = Math.atan2(z - spring, da);
+      const block = z >= spring ? Math.floor((ang / Math.PI) * 7) : Math.floor(z / 9) + 20;
+      const edge = z >= spring ? Math.abs(((ang / Math.PI) * 7) % 1) < 0.08 : z % 9 < 1;
+      if (edge) return { c: CRACK, id: OBJ.arch };
+      return { c: mul(CAP_STONES[block % 3], 0.85 + hash(Math.floor(a), Math.floor(z)) * 0.1), id: OBJ.arch };
     }
     // Quest board
-    const qa = a - 5.2 * 16, qz = z - 40;
-    if (qa >= 0 && qa < 24 && qz >= 0 && qz < 30) {
-      if (qa < 2 || qa >= 22 || qz < 2 || qz >= 28) return { c: WOOD_DARK, id: OBJ.quests };
-      const notes = [[4, 15, 7, 9], [13, 17, 7, 8], [7, 4, 9, 8]];
+    const qa = a - BOARD_V * 16, qz = z - 46;
+    if (qa >= 0 && qa < 26 && qz >= 0 && qz < 32) {
+      if (qa < 2 || qa >= 24 || qz < 2 || qz >= 30) return { c: WOOD_DARK, id: OBJ.quests };
+      const notes = [[4, 16, 7, 9], [14, 18, 7, 8], [7, 4, 9, 8], [17, 5, 5, 7]];
       for (const [nx, nz, nw, nh] of notes) {
         if (qa >= nx && qa < nx + nw && qz >= nz && qz < nz + nh) {
           if (Math.floor(qa) === nx + Math.floor(nw / 2) && Math.floor(qz) === nz + nh - 1) return { c: hex("#c0392b"), id: OBJ.quests };
           const line = Math.floor(qz - nz) % 2 === 0 && qa > nx + 0.5 && qa < nx + nw - 1 && qz < nz + nh - 2 && (qz - nz) % 1 < 0.6;
-          return { c: line ? hex("#9c8f74") : hex("#e8dcc0"), id: OBJ.quests };
+          return { c: line ? hex("#9c8f74") : hex("#d8ccb0"), id: OBJ.quests };
         }
       }
       return { c: planks(qa, qz, 2), id: OBJ.quests };
@@ -235,8 +271,19 @@ export function createDen(): DenScene {
   }
 
   function rightWallFeature(a: number, z: number): { c: RGB; id: number } | null {
+    // The tavern: a tall opening into the dark, framed in timber and
+    // half boarded up — it isn't built yet.
+    const ta = a - TAVERN.a0 * 16, tw = (TAVERN.a1 - TAVERN.a0) * 16;
+    if (ta >= -4 && ta < tw + 4 && z < TAVERN.h + 6) {
+      const inside = ta >= 0 && ta < tw && z < TAVERN.h;
+      if (!inside) return { c: planks(z, ta + 40, 1), id: OBJ.tavern }; // frame
+      const board = [18, 34, 52].some((bz) => z >= bz && z < bz + 6) && Math.abs((ta - tw / 2) / tw) < 0.47 + (z % 7) * 0.003;
+      if (board) return { c: mul(planks(ta, z, 2), 0.85), id: OBJ.tavern };
+      const depth = clamp01(z / 60);
+      return { c: mix(hex("#0d0b0a"), hex("#050404"), depth), id: OBJ.tavern };
+    }
     // Merchant's hanging sign
-    const sa = a - 5.45 * 16, sz = z - 64;
+    const sa = a - 7.2 * 16, sz = z - 64;
     if (sa >= 0 && sa < 18 && sz >= 0 && sz < 12) {
       if (sa < 1 || sa >= 17 || sz < 1 || sz >= 11) return { c: WOOD_DARK, id: OBJ.merchant };
       const cx = sa - 9, cz = sz - 6;
@@ -251,75 +298,78 @@ export function createDen(): DenScene {
   for (let fy = 0; fy < FH; fy++) {
     for (let fx = 0; fx < FW; fx++) {
       const x = spot(fx), y = spot(fy);
-      // Floor (and the pit)
+      // Floor (with the pit and the pool)
       const f = onZ(x, y, 0);
-      if (f.u >= 0 && f.v >= 0 && f.u < N && f.v < N) {
+      if (f.u >= 0 && f.v >= 0 && f.u < NU && f.v < NV) {
+        const fade = edgeFade(f.u, f.v);
+        // The very edge breaks up into darkness.
+        if (fade < 0.35 * hash(Math.floor(f.u * 9), Math.floor(f.v * 9))) continue;
+        const i = fy * FW + fx;
         if (inPit(f.u, f.v)) {
-          const s = onZ(x, y, -PD);
+          const s = onZ(x, y, -PIT.depth);
           if (inPit(s.u, s.v)) {
             const h = hash(Math.floor(s.u * 32), Math.floor(s.v * 32));
-            put(fx, fy, mul(SAND[Math.floor(h * 4)], 0.9 + h * 0.15), s.u, s.v, -PD, OBJ.pit);
+            put(fx, fy, mul(SAND[Math.floor(h * 4)], 0.9 + h * 0.15), s.u, s.v, -PIT.depth, OBJ.pit);
           } else {
-            const wu = onU(x, y, P0), wv = onV(x, y, P0);
-            if (wu.v >= P0 && wu.v < P1 && wu.z <= 0 && wu.z > -PD) put(fx, fy, mul(stone(wu.v * 16, wu.z + PD, 3), 0.62), P0, wu.v, wu.z, OBJ.pit);
-            else put(fx, fy, mul(stone(wv.u * 16, wv.z + PD, 4), 0.5), wv.u, P0, wv.z, OBJ.pit);
+            const wu = onU(x, y, PIT.u0), wv = onV(x, y, PIT.v0);
+            if (wu.v >= PIT.v0 && wu.v < PIT.v1 && wu.z <= 0 && wu.z > -PIT.depth) put(fx, fy, mul(rock(wu.v * 16, wu.z + PIT.depth, 3), 0.62), PIT.u0, wu.v, wu.z, OBJ.pit);
+            else put(fx, fy, mul(rock(wv.u * 16, wv.z + PIT.depth, 4), 0.5), wv.u, PIT.v0, wv.z, OBJ.pit);
           }
+          shadow[i] = fade;
           continue;
         }
-        const nearPit = f.u >= P0 - 0.2 && f.u < P1 + 0.2 && f.v >= P0 - 0.2 && f.v < P1 + 0.2;
+        const nearPit = f.u >= PIT.u0 - 0.25 && f.u < PIT.u1 + 0.25 && f.v >= PIT.v0 - 0.25 && f.v < PIT.v1 + 0.25;
         if (nearPit) {
-          const k = 0.95 + hash(Math.floor(f.u * 10), Math.floor(f.v * 10)) * 0.15;
-          put(fx, fy, mul(CAP_STONES[Math.floor(hash(Math.floor(f.u * 4), Math.floor(f.v * 4)) * 3)], k), f.u, f.v, 0, OBJ.pit);
+          const k = 0.9 + hash(Math.floor(f.u * 10), Math.floor(f.v * 10)) * 0.15;
+          put(fx, fy, mul(CAP_STONES[Math.floor(hash(Math.floor(f.u * 4), Math.floor(f.v * 4)) * 3)], k * 0.85), f.u, f.v, 0, OBJ.pit);
+          shadow[i] = fade;
           continue;
         }
-        put(fx, fy, floorTex(f.u, f.v), f.u, f.v, 0);
+        const pd = poolD(f.u, f.v);
+        if (pd < 1) {
+          // Murky water, a little darker towards the middle.
+          const deep = clamp01(1 - pd);
+          put(fx, fy, mul(WATER, 1.15 - deep * 0.45), f.u, f.v, -1, OBJ.pool);
+          shadow[i] = fade;
+          continue;
+        }
+        if (pd < 1.28) {
+          // A soggy rim of wet stones and moss.
+          const h = hash(Math.floor(f.u * 12), Math.floor(f.v * 12));
+          const c = h > 0.55 ? MOSS[Math.floor(h * 8) % 4] : mul(ROCK[Math.floor(h * ROCK.length)], 0.8);
+          put(fx, fy, c, f.u, f.v, 0, OBJ.pool);
+          shadow[i] = fade;
+          continue;
+        }
+        let c = floorTex(f.u, f.v);
+        if (pd < 1.9 && vnoise(f.u * 3, f.v * 3) > 0.55) c = mul(c, 0.7); // puddles
+        put(fx, fy, c, f.u, f.v, 0);
+        shadow[i] = fade;
         continue;
       }
 
-      // Wall tops (the cut edge of the cube)
-      const cap = onZ(x, y, WALL_H);
-      if (cap.u >= -WALL_T && cap.v >= -WALL_T && cap.u < N && cap.v < N && (cap.u < 0 || cap.v < 0)) {
-        const c = stone(cap.u * 16 + 40, cap.v * 16 + 40, 9, CAP_STONES);
-        put(fx, fy, mul(c, 1.08), cap.u, cap.v, WALL_H);
-        continue;
-      }
-
-      // Right wall (v = 0) and left wall (u = 0), inner faces
+      // Right wall (v = 0) and left wall (u = 0), inner faces, with ragged tops.
       const rw = onV(x, y, 0);
-      if (rw.u >= 0 && rw.u < N && rw.z >= 0 && rw.z < WALL_H && x >= CX) {
-        const feat = rightWallFeature(rw.u * 16, rw.z);
-        if (feat) put(fx, fy, feat.c, rw.u, 0.02, rw.z, feat.id);
-        else put(fx, fy, mul(mossy(stone(rw.u * 16, rw.z, 1), rw.u * 16, rw.z, 1, WALL_H), 0.82), rw.u, 0, rw.z);
-        continue;
+      if (rw.u >= 0 && rw.u < NU && rw.z >= 0 && x >= CX) {
+        const top = wallTop(rw.u * 16, 1);
+        if (rw.z < top) {
+          const feat = rightWallFeature(rw.u * 16, rw.z);
+          if (feat) put(fx, fy, feat.c, rw.u, 0.02, rw.z, feat.id);
+          else put(fx, fy, mul(mossy(rock(rw.u * 16, rw.z, 1), rw.u * 16, rw.z, 1, top), 0.84), rw.u, 0, rw.z);
+          shadow[fy * FW + fx] = clamp01((NU - rw.u) / 2.2) * clamp01((top - rw.z) / 40);
+          continue;
+        }
       }
       const lw = onU(x, y, 0);
-      if (lw.v >= 0 && lw.v < N && lw.z >= 0 && lw.z < WALL_H && x < CX) {
-        const feat = leftWallFeature(lw.v * 16, lw.z);
-        if (feat) put(fx, fy, feat.c, 0.02, lw.v, lw.z, feat.id);
-        else put(fx, fy, mossy(stone(lw.v * 16, lw.z, 2), lw.v * 16, lw.z, 2, WALL_H), 0, lw.v, lw.z);
-        continue;
-      }
-
-      // Wall ends and floor block sides (outside of the cube)
-      const endR = onU(x, y, N);
-      if (endR.v >= -WALL_T && endR.v < 0 && endR.z >= -SLAB && endR.z < WALL_H) {
-        put(fx, fy, mul(stone(endR.v * 16 + 20, endR.z + SLAB, 5, CAP_STONES), 0.7), N, endR.v, endR.z);
-        continue;
-      }
-      const endL = onV(x, y, N);
-      if (endL.u >= -WALL_T && endL.u < 0 && endL.z >= -SLAB && endL.z < WALL_H) {
-        put(fx, fy, mul(stone(endL.u * 16 + 20, endL.z + SLAB, 6, CAP_STONES), 0.6), endL.u, N, endL.z);
-        continue;
-      }
-      const slabR = onU(x, y, N);
-      if (slabR.v >= 0 && slabR.v < N && slabR.z >= -SLAB && slabR.z < 0) {
-        put(fx, fy, mul(stone(slabR.v * 16, slabR.z + SLAB, 7), slabR.z > -2 ? 0.8 : 0.55), N, slabR.v, slabR.z);
-        continue;
-      }
-      const slabL = onV(x, y, N);
-      if (slabL.u >= 0 && slabL.u < N && slabL.z >= -SLAB && slabL.z < 0) {
-        put(fx, fy, mul(stone(slabL.u * 16, slabL.z + SLAB, 8), slabL.z > -2 ? 0.7 : 0.45), slabL.u, N, slabL.z);
-        continue;
+      if (lw.v >= 0 && lw.v < NV && lw.z >= 0 && x < CX) {
+        const top = wallTop(lw.v * 16, 2);
+        if (lw.z < top) {
+          const feat = leftWallFeature(lw.v * 16, lw.z);
+          if (feat) put(fx, fy, feat.c, 0.02, lw.v, lw.z, feat.id);
+          else put(fx, fy, mossy(rock(lw.v * 16, lw.z, 2), lw.v * 16, lw.z, 2, top), 0, lw.v, lw.z);
+          shadow[fy * FW + fx] = clamp01((NV - lw.v) / 2.2) * clamp01((top - lw.z) / 40);
+          continue;
+        }
       }
     }
   }
@@ -354,75 +404,106 @@ export function createDen(): DenScene {
   }
 
   // Back to front so nearer objects cover farther ones.
-  // Bag shelf (right wall)
+  // Storage corner (right wall): the bag shelf, sacks and potions.
   const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
-  box(OBJ.bag, 2.2, 0, 26, 3.7, 0.4, 29, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
-  box(OBJ.bag, 2.2, 0, 50, 3.7, 0.4, 53, { top: (a) => planks(a, 2, 1), right: shelf, left: shelf });
+  box(OBJ.bag, 4.2, 0, 28, 5.8, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
+  box(OBJ.bag, 4.2, 0, 52, 5.8, 0.4, 55, { top: (a) => planks(a, 2, 1), right: shelf, left: shelf });
   const sack: Face = (a, b) => (b > 8 && b < 10 ? hex("#3d2a17") : mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15));
-  box(OBJ.bag, 2.35, 0.05, 53, 2.95, 0.35, 65, { top: () => hex("#8a6640"), right: sack, left: sack });
+  box(OBJ.bag, 4.35, 0.05, 55, 4.95, 0.35, 67, { top: () => hex("#8a6640"), right: sack, left: sack });
   const potion = (col: string): Face => (a, b) => (b > 6 ? hex("#cfc6b0") : { c: mul(hex(col), b < 2 ? 0.7 : 1), glow: 1 });
-  box(OBJ.bag, 3.1, 0.1, 53, 3.28, 0.28, 61, { top: () => hex("#cfc6b0"), right: potion("#e04848"), left: potion("#e04848") });
-  box(OBJ.bag, 3.38, 0.1, 53, 3.56, 0.28, 60, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
-  box(OBJ.bag, 2.4, 0.08, 29, 2.62, 0.3, 36, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
-  box(OBJ.bag, 2.9, 0.06, 29, 3.5, 0.34, 33, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
+  box(OBJ.bag, 5.1, 0.1, 55, 5.28, 0.28, 63, { top: () => hex("#cfc6b0"), right: potion("#e04848"), left: potion("#e04848") });
+  box(OBJ.bag, 5.38, 0.1, 55, 5.56, 0.28, 62, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
+  box(OBJ.bag, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
+  box(OBJ.bag, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
 
-  // Lectern with an open scroll (between the bag shelf and the stall):
-  // a post, a wooden top, then the parchment with a rolled end each side.
-  const post: Face = (a, b) => planks(a, b, 3);
-  box(OBJ.scroll, 4.3, 0.3, 0, 4.6, 0.6, 14, { top: () => WOOD_DARK, right: post, left: post });
-  box(OBJ.scroll, 4.05, 0.15, 14, 4.85, 0.8, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
-  const parchment: Face = (a, b) => {
-    if (a < 1.5 || a > 14.5) return hex("#c9b07a");        // rolled ends
-    const line = b > 2 && b < 13 && Math.floor(b) % 3 === 0 && a > 3 && a < 13 && Math.abs(a - 8) > 0.8;
-    return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
-  };
-  box(OBJ.scroll, 4.1, 0.2, 17, 4.8, 0.75, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
-  box(OBJ.scroll, 4.05, 0.2, 17, 4.15, 0.75, 19.5, { top: () => hex("#b89a62"), right: () => hex("#a8894f"), left: () => hex("#b89a62") });
-  box(OBJ.scroll, 4.75, 0.2, 17, 4.85, 0.75, 19.5, { top: () => hex("#b89a62"), right: () => hex("#a8894f"), left: () => hex("#b89a62") });
+  // Crates beside the chest.
+  const crate: Face = (a, b) => (a < 1.2 || a > 13.8 || b < 1.2 || b > 12 || Math.abs(a - b) < 0.9 ? WOOD_DARK : planks(a, b, 1));
+  box(OBJ.chest, 3.25, 0.15, 0, 4.05, 0.95, 13, { top: crate, right: crate, left: crate });
+  box(OBJ.chest, 3.35, 0.25, 13, 3.95, 0.85, 23, { top: crate, right: crate, left: crate });
 
-  // Merchant stall (against the right wall)
-  const counter: Face = (a, b) => (b > 11 ? hex("#8e2b2b") : b > 10 ? GOLD : planks(a, b, 2));
-  box(OBJ.merchant, 5.2, 0.12, 0, 6.7, 1.0, 13, { top: (a, b) => ((Math.floor(a / 4) + Math.floor(b / 4)) % 2 ? hex("#a33636") : hex("#8e2b2b")), right: counter, left: counter });
-  box(OBJ.merchant, 5.35, 0.3, 13, 5.55, 0.5, 20, { top: () => hex("#cfc6b0"), right: potion("#b060e0"), left: potion("#b060e0") });
-  box(OBJ.merchant, 5.75, 0.25, 13, 6.15, 0.65, 16, { top: () => ({ c: hex("#ffe27a"), glow: 1 }), right: () => GOLD, left: () => mul(GOLD, 0.85) });
-  box(OBJ.merchant, 6.3, 0.35, 13, 6.48, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
-
-  // Chest (against the left wall)
+  // Chest (right wall, in the storage corner)
   const chestSide: Face = (a, b) => {
     if (a < 1.5 || a > 13) return IRON;
     if (b > 6 && b < 8) return IRON;
     if (Math.abs(a - 7.5) < 2 && b > 3 && b < 8) return Math.abs(a - 7.5) < 0.8 && b > 4 && b < 6 ? hex("#2a1a0a") : GOLD;
     return planks(a, b, 0);
   };
-  box(OBJ.chest, 0.2, 5.25, 0, 1.15, 6.25, 12, {
-    top: (a, b) => (b < 1.5 || b > 14.5 || Math.abs(a - 7.5) < 1 ? IRON : planks(b, a, 1)),
-    right: chestSide,
-    left: (a, b) => (a < 1.5 || a > 13.5 || (b > 6 && b < 8) ? IRON : planks(a, b, 2)),
+  box(OBJ.chest, 2.0, 0.2, 0, 3.0, 1.15, 12, {
+    top: (a, b) => (a < 1.5 || a > 14.5 || Math.abs(b - 7.5) < 1 ? IRON : planks(a, b, 1)),
+    right: (a, b) => (a < 1.5 || a > 13.5 || (b > 6 && b < 8) ? IRON : planks(a, b, 2)),
+    left: chestSide,
   });
 
-  // Scanning altar (a shrine in the back corner, between the torches)
-  const altarStone: Face = (a, b) => (b > 13 ? mul(CAP_STONES[1], 1.1) : stone(a + 30, b, 11, CAP_STONES));
-  box(OBJ.altar, AL - 0.4, AL - 0.4, 0, AL + 0.4, AL + 0.4, 16, {
+  // Merchant stall (right wall, beside the tavern)
+  const counter: Face = (a, b) => (b > 11 ? hex("#7e2626") : b > 10 ? GOLD : planks(a, b, 2));
+  box(OBJ.merchant, 7.0, 0.12, 0, 8.5, 1.0, 13, { top: (a, b) => ((Math.floor(a / 4) + Math.floor(b / 4)) % 2 ? hex("#932f2f") : hex("#7e2626")), right: counter, left: counter });
+  box(OBJ.merchant, 7.15, 0.3, 13, 7.35, 0.5, 20, { top: () => hex("#cfc6b0"), right: potion("#b060e0"), left: potion("#b060e0") });
+  box(OBJ.merchant, 7.55, 0.25, 13, 7.95, 0.65, 16, { top: () => ({ c: hex("#ffe27a"), glow: 1 }), right: () => GOLD, left: () => mul(GOLD, 0.85) });
+  box(OBJ.merchant, 8.1, 0.35, 13, 8.28, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
+
+  // Scanning altar (the centrepiece, in front of the back corner)
+  const altarStone: Face = (a, b) => (b > 15 ? mul(CAP_STONES[1], 1.1) : rock(a + 30, b, 11));
+  box(OBJ.altar, AL.u - 0.5, AL.v - 0.5, 0, AL.u + 0.5, AL.v + 0.5, 18, {
     top: (a, b) => {
-      const d = Math.hypot(a - 6.4, b - 6.4);
-      if (d < 1.5 || (d > 3.6 && d < 4.8)) return { c: hex("#6ff2ff"), glow: 2 };
+      const d = Math.hypot(a - 8, b - 8);
+      if (d < 1.8 || (d > 4.4 && d < 5.8)) return { c: hex("#6ff2ff"), glow: 2 };
       return mul(CAP_STONES[0], 1.1);
     },
     right: altarStone,
-    left: (a, b) => (Math.abs(a - 6.4) < 1 && b > 4 && b < 11 ? { c: hex("#3fc6e0"), glow: 2 } : altarStone(a, b)),
+    left: (a, b) => (Math.abs(a - 8) < 1 && b > 4 && b < 13 ? { c: hex("#3fc6e0"), glow: 2 } : altarStone(a, b)),
+  });
+
+  // Lectern with an open scroll (between the archway and the quest board).
+  const post: Face = (a, b) => planks(a, b, 3);
+  box(OBJ.scroll, 1.0, 4.45, 0, 1.3, 4.75, 14, { top: () => WOOD_DARK, right: post, left: post });
+  box(OBJ.scroll, 0.75, 4.25, 14, 1.55, 4.95, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
+  const parchment: Face = (a, b) => {
+    if (b < 1.5 || b > 14.5) return hex("#c9b07a"); // rolled ends
+    const line = a > 2 && a < 13 && Math.floor(a) % 3 === 0 && b > 3 && b < 13 && Math.abs(b - 8) > 0.8;
+    return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
+  };
+  box(OBJ.scroll, 0.8, 4.3, 17, 1.5, 4.9, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+
+  // The cage: an iron floor plate and roof (its bars, and whoever is
+  // inside, are drawn each frame).
+  box(OBJ.cage, CAGE.u0, CAGE.v0, 0, CAGE.u1, CAGE.v1, 3, { top: () => mul(IRON, 1.1), right: () => IRON, left: () => IRON });
+  box(OBJ.cage, CAGE.u0, CAGE.v0, CAGE.h - 3, CAGE.u1, CAGE.v1, CAGE.h, {
+    top: (a, b) => (a < 1 || b < 1 || a > 27 || b > 27 ? IRON_LIGHT : IRON), right: () => IRON, left: () => IRON,
   });
 
   // ── Lights ──
   const lights: Light[] = [
-    ...TORCHES.map((t, i) => ({ ...t, color: hex("#ffa04a"), power: 1.5, radius: 2.4, seed: i * 1.7 })),
-    { u: AL, v: AL, z: 30, color: hex("#5fe0ff"), power: 0.9, radius: 1.5, seed: 9, pulse: true },
+    ...TORCHES.map((t, i) => ({ ...t, color: hex("#ff9a44"), power: 1.35, radius: 2.3, seed: i * 1.7 })),
+    { u: AL.u, v: AL.v, z: 34, color: hex("#5fe0ff"), power: 0.9, radius: 1.7, seed: 9, pulse: true },
+    { u: POOL.u, v: POOL.v, z: 6, color: hex("#3fa0a0"), power: 0.35, radius: 1.8, seed: 11, steady: true },
   ];
-  const AMBIENT: RGB = [0.24, 0.26, 0.36];
+  const AMBIENT: RGB = [0.13, 0.145, 0.22];
+
+  // Light baked once: the total at full strength, plus the strongest light
+  // on each pixel (only that one flickers, which is close enough and cheap).
+  const lit = new Float32Array(n * 3);
+  const domIdx = new Uint8Array(n).fill(255);
+  const domFall = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const u = pos[i * 3];
+    if (Number.isNaN(u)) continue;
+    const v = pos[i * 3 + 1], z = pos[i * 3 + 2] / 16;
+    let best = 0, bestK = 255;
+    for (let k = 0; k < lights.length; k++) {
+      const l = lights[k];
+      const du = u - l.u, dv = v - l.v, dz = z - l.z / 16;
+      const fall = l.power / (1 + (du * du + dv * dv + dz * dz) / (l.radius * l.radius));
+      lit[i * 3] += l.color[0] * fall; lit[i * 3 + 1] += l.color[1] * fall; lit[i * 3 + 2] += l.color[2] * fall;
+      if (fall > best) { best = fall; bestK = k; }
+    }
+    domIdx[i] = bestK; domFall[i] = best;
+  }
 
   // Embers drifting up from the torches.
   type Ember = { x: number; y: number; vx: number; life: number };
   let embers: Ember[] = [];
   let lastT = 0;
+  let caged: string[] | null = null; // the caged creature, on the fine grid
 
   const out = new ImageData(FW, FH);
   const frameIds = new Uint8Array(n);
@@ -430,23 +511,22 @@ export function createDen(): DenScene {
   function render(t: number, hover: ObjId): ImageData {
     const d = out.data;
     const flick = lights.map((l) =>
-      l.pulse
-        ? 0.75 + 0.25 * Math.sin(t * 2.2)
-        : 0.86 + 0.08 * Math.sin(t * 9 + l.seed) + 0.06 * Math.sin(t * 23 + l.seed * 3) + (Math.random() - 0.5) * 0.04
+      l.steady ? 1
+        : l.pulse ? 0.75 + 0.25 * Math.sin(t * 2.2)
+        : 0.84 + 0.09 * Math.sin(t * 9 + l.seed) + 0.07 * Math.sin(t * 23 + l.seed * 3) + (Math.random() - 0.5) * 0.04
     );
     const altarPulse = 0.8 + 0.2 * Math.sin(t * 2.2);
 
     for (let fy = 0; fy < FH; fy++) {
       for (let fx = 0; fx < FW; fx++) {
         const i = fy * FW + fx, o = i * 4;
-        const x = spot(fx), y = spot(fy);
         const u = pos[i * 3];
+        const bay = BAYER[(fy & 3) * 4 + (fx & 3)];
         if (Number.isNaN(u)) {
-          // Background: dark void with a faint glow under the room.
-          const g = Math.max(0, 1 - Math.hypot((x - CX) / 150, (y - 200) / 110));
-          const b = BAYER[(fy & 3) * 4 + (fx & 3)];
-          const k = Math.floor((g * 0.5) * 4 + b) / 4;
-          d[o] = (VOID[0] + k * 0.05) * 255; d[o + 1] = (VOID[1] + k * 0.05) * 255; d[o + 2] = (VOID[2] + k * 0.09) * 255; d[o + 3] = 255;
+          // The dark beyond: a faint cold haze low down.
+          const y = spot(fy);
+          const k = Math.floor(clamp01((y - 120) / 400) * 0.6 * 4 + bay) / 4;
+          d[o] = (VOID[0] + k * 0.03) * 255; d[o + 1] = (VOID[1] + k * 0.035) * 255; d[o + 2] = (VOID[2] + k * 0.06) * 255; d[o + 3] = 255;
           continue;
         }
         const r = albedo[i * 3], g = albedo[i * 3 + 1], bl = albedo[i * 3 + 2];
@@ -455,16 +535,14 @@ export function createDen(): DenScene {
           d[o] = Math.min(255, r * 255 * k); d[o + 1] = Math.min(255, g * 255 * k); d[o + 2] = Math.min(255, bl * 255 * k); d[o + 3] = 255;
           continue;
         }
-        const v = pos[i * 3 + 1], z = pos[i * 3 + 2] / 16;
-        let lr = AMBIENT[0], lg = AMBIENT[1], lb = AMBIENT[2];
-        for (let k = 0; k < lights.length; k++) {
-          const l = lights[k];
-          const du = u - l.u, dv = v - l.v, dz = z - l.z / 16;
-          const fall = (l.power * flick[k]) / (1 + (du * du + dv * dv + dz * dz) / (l.radius * l.radius));
-          lr += l.color[0] * fall; lg += l.color[1] * fall; lb += l.color[2] * fall;
-        }
+        const dk = domIdx[i];
+        const extra = dk === 255 ? 0 : (flick[dk] - 1) * domFall[i];
+        const col = dk === 255 ? AMBIENT : lights[dk].color;
+        const s = shadow[i];
+        const lr = (AMBIENT[0] + lit[i * 3] + col[0] * extra) * s;
+        const lg = (AMBIENT[1] + lit[i * 3 + 1] + col[1] * extra) * s;
+        const lb = (AMBIENT[2] + lit[i * 3 + 2] + col[2] * extra) * s;
         // Ordered dithering on the light gives the stepped pixel-art glow.
-        const bay = BAYER[(fy & 3) * 4 + (fx & 3)];
         const q = (L: number) => Math.floor(L * 6 + bay) / 6;
         d[o] = Math.min(255, r * q(lr) * 255);
         d[o + 1] = Math.min(255, g * q(lg) * 255);
@@ -485,6 +563,14 @@ export function createDen(): DenScene {
         d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
         if (id) frameIds[Y * FW + X] = id;
       }
+    };
+    // Paint one fine pixel.
+    const fpx = (X: number, Y: number, col: RGB, id = 0) => {
+      X = Math.round(X); Y = Math.round(Y);
+      if (X < 0 || Y < 0 || X >= FW || Y >= FH) return;
+      const o = (Y * FW + X) * 4;
+      d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
+      if (id) frameIds[Y * FW + X] = id;
     };
 
     // Torches: iron bracket + animated flame.
@@ -512,7 +598,7 @@ export function createDen(): DenScene {
     }
 
     // Floating crystal above the altar.
-    const [cx, cy] = project(AL, AL, 30 + Math.sin(t * 2) * 2.5);
+    const [cx, cy] = project(AL.u, AL.v, 34 + Math.sin(t * 2) * 2.5);
     const shape = [1, 2, 3, 3, 3, 2, 2, 1, 1, 0];
     shape.forEach((w, k) => {
       for (let s = -w; s <= w; s++) {
@@ -521,6 +607,42 @@ export function createDen(): DenScene {
       }
     });
 
+    // Pool: slow ripples glinting on the murky water, and the odd drip.
+    for (let k = 0; k < 7; k++) {
+      const ph = t * 0.6 + k * 1.7;
+      const a = hash(k, Math.floor(ph)) * Math.PI * 2, rr = 0.25 + hash(k + 9, Math.floor(ph)) * 0.55;
+      const grow = ph % 1;
+      const [rx, ry] = project(POOL.u + Math.cos(a) * rr * POOL.ru, POOL.v + Math.sin(a) * rr * POOL.rv, -1);
+      if (grow > 0.85) continue;
+      const rad = 1 + grow * 4;
+      for (let s = 0; s < 10; s++) {
+        const an = (s / 10) * Math.PI * 2;
+        fpx(rx * RES + Math.cos(an) * rad * 2, ry * RES + Math.sin(an) * rad, mix(hex("#2c5a62"), hex("#7fb8b8"), 1 - grow), OBJ.pool);
+      }
+    }
+
+    // The cage: whoever is inside, then the bars in front of them.
+    const [bx, by] = project((CAGE.u0 + CAGE.u1) / 2, (CAGE.v0 + CAGE.v1) / 2, 3);
+    if (caged) {
+      const h = caged.length, w = Math.max(...caged.map((r) => r.length));
+      const bob = Math.round(Math.sin(t * 1.5) * 1);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const ch = caged[y][x];
+        if (ch === "." || !PALETTE[ch]) continue;
+        fpx(bx * RES - w / 2 + x, by * RES - h + y + bob, mul(hex(PALETTE[ch]), 0.8), OBJ.cage);
+      }
+    }
+    // Bars on the two faces you can see (u = u1 and v = v1), plus the corners.
+    const bar = (u: number, v: number) => {
+      const [x0, y0] = project(u, v, 3), [, y1] = project(u, v, CAGE.h - 3);
+      for (let y = y1 * RES; y <= y0 * RES; y++) {
+        fpx(x0 * RES, y, IRON_LIGHT, OBJ.cage); fpx(x0 * RES + 1, y, IRON, OBJ.cage);
+      }
+    };
+    const STEP = 0.3;
+    for (let v = CAGE.v0; v <= CAGE.v1 + 0.01; v += STEP) bar(CAGE.u1, v);
+    for (let u = CAGE.u0; u < CAGE.u1 - 0.01; u += STEP) bar(u, CAGE.v1);
+
     // Hover: brighten the object and outline it in gold.
     if (hover) {
       const glow = 0.75 + 0.25 * Math.sin(t * 6);
@@ -528,7 +650,7 @@ export function createDen(): DenScene {
         for (let x = 1; x < FW - 1; x++) {
           const i = y * FW + x, o = i * 4;
           if (frameIds[i] === hover) {
-            d[o] = Math.min(255, d[o] * 1.25 + 12); d[o + 1] = Math.min(255, d[o + 1] * 1.25 + 10); d[o + 2] = Math.min(255, d[o + 2] * 1.2 + 6);
+            d[o] = Math.min(255, d[o] * 1.35 + 14); d[o + 1] = Math.min(255, d[o + 1] * 1.35 + 12); d[o + 2] = Math.min(255, d[o + 2] * 1.3 + 8);
           } else if (frameIds[i - 1] === hover || frameIds[i + 1] === hover || frameIds[i - FW] === hover || frameIds[i + FW] === hover) {
             d[o] = 255 * glow; d[o + 1] = 214 * glow; d[o + 2] = 110 * glow;
           }
@@ -545,5 +667,6 @@ export function createDen(): DenScene {
       if (fx < 0 || fy < 0 || fx >= FW || fy >= FH) return OBJ.none;
       return frameIds[fy * FW + fx] as ObjId;
     },
+    setCaged: (sprite) => { caged = sprite ? fineGrid(sprite) : null; },
   };
 }

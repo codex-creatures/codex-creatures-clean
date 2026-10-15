@@ -373,12 +373,12 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 
       {injured.length > 0 && (
         <div className="stone-panel" style={{ marginTop: 12 }}>
-          <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>⛲ Healing pool</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>⛲ Healing in the Den&apos;s pool</div>
           <div style={{ fontSize: 13, color: MUTED, margin: "4px 0 8px" }}>
             Hurt from your last run: {injured.map((c) => `${c.name} ${Math.round(lab.meta.injuries[c.id] * 100)}%`).join(", ")}.
-            Knocked-out creatures can&apos;t join a party until healed.
+            They heal slowly while they&apos;re home. Knocked-out creatures can&apos;t join a party until they&apos;re back above 0.
           </div>
-          <button className="pixel-btn" onClick={onHeal}>Rest in the pool — heal everyone (free for now)</button>
+          <button className="chip" onClick={onHeal} title="A shortcut for playtesting">Testing: heal everyone now</button>
         </div>
       )}
 

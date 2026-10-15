@@ -314,7 +314,34 @@ export type DungeonMeta = {
   firstClearRun?: number;            // the run you first beat the boss on (for the trophy)
   injuries: Record<string, number>;  // creature id → share of HP left after a run (missing = full)
   bag: PotionKey[];                  // the battle bag (kept between runs)
+  poolLevel?: number;                // the Den's healing pool (1 = a soggy cave pool)
+  soakedAt?: string;                 // when the pool last healed the injured (ISO time)
 };
+
+// ── The healing pool (in the Den) ──────────────────────────────────
+// Hurt creatures heal slowly in real time while they're home. Upgrades
+// will come later; each level heals faster.
+export const POOL_LEVELS = [
+  { name: "Soggy cave pool", healPerHour: 0.25, desc: "A murky puddle in the rock. It heals, slowly." },
+];
+export const poolLevel = (meta: DungeonMeta) => POOL_LEVELS[Math.min(POOL_LEVELS.length, Math.max(1, meta.poolLevel ?? 1)) - 1];
+
+// Heal the injured for the time since the pool last ran. A creature at
+// full health leaves the list.
+export function soak(meta: DungeonMeta, now = Date.now()): DungeonMeta {
+  const last = meta.soakedAt ? Date.parse(meta.soakedAt) : now;
+  const hours = Math.max(0, (now - last) / 3_600_000);
+  const rate = poolLevel(meta).healPerHour;
+  const injuries: Record<string, number> = {};
+  for (const [id, hp] of Object.entries(meta.injuries)) {
+    const healed = hp + rate * hours;
+    if (healed < 1) injuries[id] = healed;
+  }
+  return { ...meta, injuries, soakedAt: new Date(now).toISOString() };
+}
+
+// How long until a creature at this share of HP is back to full.
+export const hoursToFull = (meta: DungeonMeta, hp: number) => Math.max(0, (1 - hp) / poolLevel(meta).healPerHour);
 
 export type DungeonSave = { meta: DungeonMeta; run: DungeonRun | null };
 
@@ -327,7 +354,8 @@ export function loadDungeon(): DungeonSave {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
     if (!parsed || typeof parsed !== "object") return EMPTY;
-    const save: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
+    const loaded: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
+    const save: DungeonSave = loaded.run ? loaded : { ...loaded, meta: soak(loaded.meta) };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
     if (save.run && !save.run.map?.start) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
     return save;
@@ -354,7 +382,7 @@ export function endRun(save: DungeonSave): DungeonSave {
   const cleared = run.status === "cleared";
   return {
     meta: {
-      ...save.meta, injuries,
+      ...save.meta, injuries, soakedAt: new Date().toISOString(),
       clears: save.meta.clears + (cleared ? 1 : 0),
       firstClearRun: save.meta.firstClearRun ?? (cleared ? run.runNumber : undefined),
     },

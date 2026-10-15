@@ -7,7 +7,8 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
-import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, CREATURES_BY_RARITY } from "@/lib/creatures/creatureData";
+import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon } from "@/lib/dungeon/run";
 
@@ -48,7 +49,15 @@ type SaveState = {
   favoriteIds?: string[];
   equipment?: Record<string, Loadout>; // creature drop id → loadout
   recentScans?: string[];              // drop ids of your last scans, newest first
+  caged?: Drop[];                      // creatures waiting in the Den's cage (tap to free them)
 };
+
+// A new player's first creature: a random Rare, waiting in the cage.
+export function starterCreature(): Drop {
+  const pool = CREATURES_BY_RARITY.rare;
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  return makeCreatureDrop(t, "creature", "");
+}
 
 // Also used read-only by the battle and dungeon screens. Everyone has
 // Klutz: he's added here (to new games and older saves), so every reader
@@ -80,6 +89,8 @@ export function loadSave(): SaveState | null {
     favoriteIds,
     equipment:  obj(parsed.equipment) as Record<string, Loadout>,
     recentScans: Array.isArray(parsed.recentScans) ? parsed.recentScans : [],
+    // A save from before the cage gets the starter waiting in it once.
+    caged: Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()],
   };
 }
 
@@ -98,6 +109,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [equipment, setEquipment]     = useState<Record<string, Loadout>>({});
   const [recentScanIds, setRecentScanIds] = useState<string[]>([]);
+  const [caged, setCaged]             = useState<Drop[]>([]);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -121,14 +133,25 @@ export function useGameState(initialTab: TabKey = "all") {
       setScanCounts(saved.scanCounts);
       setEquipment(saved.equipment ?? {});
       setRecentScanIds(saved.recentScans ?? []);
+      setCaged(saved.caged ?? []);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged]);
+
+  // ── The cage ──────────────────────────────────────────
+  // Free a caged creature: it joins your creatures (and your roster).
+  function releaseCaged(id: string) {
+    const d = caged.find((c) => c.id === id);
+    if (!d) return;
+    setCaged((prev) => prev.filter((c) => c.id !== id));
+    setInventory((prev) => [d, ...prev]);
+    setFavoriteIds((prev) => new Set([...prev, d.id]));
+  }
 
   // ── Equipment ─────────────────────────────────────────
   // item drop id → creature drop id it's equipped on
@@ -348,6 +371,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setFavoriteIds(new Set([KLUTZ_DROP_ID]));
     setEquipment({});
     setRecentScanIds([]);
+    setCaged([starterCreature()]);
     setLastDrop(null);
     setSellMode(false);
     setSelectedForSale(new Set());
@@ -362,7 +386,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
@@ -373,6 +397,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged,
   };
 }

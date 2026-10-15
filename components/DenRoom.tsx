@@ -1,10 +1,13 @@
 "use client";
 // components/DenRoom.tsx
-// The clickable pixel-art Den (drawn by lib/den/scene.ts).
+// The clickable pixel-art Den (drawn by lib/den/scene.ts). It's a wide
+// cavern: on a phone it's wider than the screen, so you swipe sideways to
+// look around (it opens centred); on a big screen it all fits.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, type DenScene, type ObjId } from "@/lib/den/scene";
+import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -17,12 +20,22 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.bag]:      { label: "Battle Bag", soon: "Your battle bag holds up to 10 potions, one per slot. Buy them from merchants in the Labyrinth (or find them in stashes) and use them there." },
   [OBJ.arch]:     { label: "The Labyrinth", href: "/dungeon" },
   [OBJ.scroll]:   { label: "Bestiary & Rules", href: "/guide" },
+  [OBJ.cage]:     { label: "Cage", href: "/cage" },
+  [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
+  [OBJ.tavern]:   { label: "Tavern", soon: "The tavern isn't built yet. One day travellers, merchants and librarians will gather here." },
 };
 
 const FPS = 12;
 
-export default function DenRoom() {
+// The room is never drawn narrower than this (px); narrower screens scroll.
+const MIN_WIDTH = 700;
+
+// caged: the creature id waiting in the cage (drawn inside it), if any.
+export default function DenRoom({ caged }: { caged?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [scrollable, setScrollable] = useState(false);
+  const cagedRef = useRef(caged);
   const sceneRef = useRef<DenScene | null>(null);
   const hoverRef = useRef<ObjId>(OBJ.none);
   const [hover, setHover] = useState<ObjId>(OBJ.none);
@@ -35,10 +48,28 @@ export default function DenRoom() {
     const scene = createDen();
     sceneRef.current = scene;
     const start = performance.now();
+    scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null);
     const draw = () => ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
+  }, []);
+
+  // Who's in the cage (the save loads after the first draw).
+  useEffect(() => {
+    cagedRef.current = caged;
+    sceneRef.current?.setCaged(caged ? CREATURE_SPRITES[caged] ?? null : null);
+  }, [caged]);
+
+  // On a narrow screen, start looking at the middle of the room.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const check = () => setScrollable(el.scrollWidth > el.clientWidth + 2);
+    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   function objectAt(e: React.PointerEvent | React.MouseEvent): ObjId {
@@ -61,7 +92,9 @@ export default function DenRoom() {
   }
 
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: 640, margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
+    <div>
+    <div ref={scrollRef} style={{ overflowX: "auto", overflowY: "hidden", touchAction: "pan-x pan-y", scrollbarWidth: "thin" }}>
+    <div style={{ position: "relative", width: `max(100%, ${MIN_WIDTH}px)`, margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
       <canvas
         ref={canvasRef}
         width={W * RES}
@@ -91,7 +124,7 @@ export default function DenRoom() {
             style={{
               position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`,
               // Near the edges the label leans inwards, so it never runs off a phone screen.
-              transform: `translate(${x / W < 0.2 ? -15 : x / W > 0.8 ? -85 : -50}%, ${a.below ? "15%" : "-100%"})`, whiteSpace: "nowrap",
+              transform: `translate(${x / W < 0.12 ? -15 : x / W > 0.88 ? -85 : -50}%, ${a.below ? "15%" : "-100%"})`, whiteSpace: "nowrap",
               padding: "2px 6px", fontSize: "clamp(11px, 2.6vw, 14px)", lineHeight: 1.3,
               background: active ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.78)",
               border: `2px solid ${active ? "#ffd66e" : spot.href ? "#8a6a3a" : "#4a4a55"}`,
@@ -104,9 +137,15 @@ export default function DenRoom() {
         );
       })}
 
+    </div>
+    </div>
+      {scrollable && (
+        <div className="pixel-font" style={{ textAlign: "center", fontSize: 12, color: "#8a8a99", marginTop: 6 }}>◀ swipe to look around ▶</div>
+      )}
+
       {/* "Coming soon" notice */}
       {notice && (
-        <div onClick={() => setNotice(null)} style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}>
+        <div onClick={() => setNotice(null)} style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}>
           <div className="stone-panel" style={{ maxWidth: 320, textAlign: "center" }}>
             <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0", marginBottom: 8 }}>{notice.label}</div>
             <p style={{ fontSize: 14, lineHeight: 1.5, color: "#d8d4c8", margin: 0 }}>{notice.soon}</p>

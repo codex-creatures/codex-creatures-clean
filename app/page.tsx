@@ -11,7 +11,7 @@ export default function Home() {
   const game = useGameState();
 
   return (
-    <main style={{ padding: "16px 12px 32px", maxWidth: 680, margin: "0 auto", color: "white" }}>
+    <main style={{ padding: "16px 12px 32px", maxWidth: 960, margin: "0 auto", color: "white" }}>
       <div className="stone-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", padding: "10px 14px", marginBottom: 12 }}>
         <h1 className="pixel-font" style={{ margin: 0, fontSize: 22, color: "#f1d9a0", fontWeight: 600 }}>Codex Creatures</h1>
         <div className="pixel-font" style={{ display: "flex", gap: 14, fontSize: 15, flexWrap: "wrap" }}>
@@ -21,7 +21,7 @@ export default function Home() {
         </div>
       </div>
 
-      <DenRoom />
+      <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId} />
 
       {/* Plain links too — quicker on small screens and for keyboard users. */}
       <nav style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>
