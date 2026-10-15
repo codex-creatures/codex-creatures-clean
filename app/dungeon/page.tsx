@@ -33,7 +33,7 @@ import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
-  loadDungeon, saveDungeon, type DungeonSave, type DungeonRun, type Room,
+  loadDungeon, saveDungeon, freeHealing, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
@@ -65,7 +65,10 @@ export default function DungeonPage() {
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [found, setFound] = useState<Drop[] | null>(null); // what the current room just gave you
-  const [notes, setNotes] = useState<string[]>([]);          // anything else that just happened (e.g. Second Wind)
+  const [notes, setNotes] = useState<string[]>([]);
+  // Leaving for the Den: keep showing what's on screen until the Den loads
+  // (otherwise the entrance flashes up for a moment on the way out).
+  const [leaving, setLeaving] = useState(false);          // anything else that just happened (e.g. Second Wind)
 
   // Every change to the run is saved straight away.
   function update(next: DungeonSave) {
@@ -375,6 +378,7 @@ export default function DungeonPage() {
   }
   // …and straight home with it, to Klutz.
   function boxHome() {
+    setLeaving(true);
     updateRun((x) => ({ ...x, status: "retreated", battle: undefined }));
     goHome();
     router.push("/");
@@ -466,6 +470,8 @@ export default function DungeonPage() {
     <DenFrame title="The Labyrinth" icon="🌀" gold={game.gold}>{children}</DenFrame>
   );
 
+  if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
+
   if (!run) {
     return frame(<Entrance lab={lab} owned={owned} gold={game.gold} onBegin={begin} onHeal={healAll} />);
   }
@@ -495,7 +501,7 @@ export default function DungeonPage() {
     return frame(<RunOver run={run} lab={lab} onGather={gatherFloor} onHome={() => {
       // Knocked out: Klutz dragged you back to the Den.
       const died = run.status === "dead";
-      if (died) game.noteLabyrinthDeath();
+      if (died) { setLeaving(true); game.noteLabyrinthDeath(); }
       goHome();
       if (died) router.push("/");
     }} />);
@@ -926,7 +932,7 @@ function RunOver({ run, lab, onHome, onGather }: { run: DungeonRun; lab: Dungeon
   const text = run.status === "cleared"
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
-      ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. Your creatures are hurt — rest them at the healing pool.`
+      ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. ${freeHealing(lab.meta) ? "He's patched your creatures up, good as new." : "Your creatures are hurt — rest them at the healing pool."}`
       : run.loot.includes("Klutz's box")
         ? "You head back to the Den with Klutz's box under your arm. He'll be thrilled — go and find him."
         : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;

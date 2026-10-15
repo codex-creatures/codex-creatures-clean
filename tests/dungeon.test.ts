@@ -233,13 +233,21 @@ describe("a labyrinth run", () => {
     expect(setTeam({ ...inRoom, battle: {} }, ["e"]).team).toEqual(["d", "e", "a"]); // not mid-fight
   });
 
+  it("until the first Cyclops kill, a run ends with everyone healed; after it, wounds come home", () => {
+    const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "dead" as const };
+    expect(endRun({ meta: { runs: 4, clears: 0, injuries: { a: 0.3, z: 0.4 }, bag: [] }, run }).meta.injuries).toEqual({ z: 0.4 });
+    expect(endRun({ meta: { runs: 4, clears: 1, injuries: {}, bag: [] }, run }).meta.injuries).toEqual({ a: 0.5, b: 0 });
+  });
+
   it("ending a run brings the wounds home and records the first clear", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "cleared" as const };
     const save: DungeonSave = { meta: { runs: 4, clears: 0, injuries: { c: 0.2 }, bag: [] }, run };
     const after = endRun(save);
     expect(after.run).toBeNull();
-    expect(after.meta.injuries).toEqual({ a: 0.5, b: 0 });
+    expect(after.meta.injuries).toEqual({}); // (healed: the first clear still counts as before it)
     expect(after.meta.clears).toBe(1);
+    const later = endRun({ meta: after.meta, run: { ...run, runNumber: 5 } });
+    expect(later.meta.injuries).toEqual({ a: 0.5, b: 0 });
     expect(after.meta.firstClearRun).toBe(4);
     expect(endRun({ ...after, run: { ...run, runNumber: 6 } }).meta.firstClearRun).toBe(4);
   });

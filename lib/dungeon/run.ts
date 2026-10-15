@@ -411,13 +411,19 @@ export function saveDungeon(save: DungeonSave) {
   writeSaveField(SAVE_FIELD, save);
 }
 
+// Until you first beat the Cyclops, everyone comes home from a run at full
+// health (Klutz patches them up). After that, wounds come home with you and
+// heal at the pool.
+export const freeHealing = (meta: DungeonMeta) => meta.clears === 0;
+
 // The run is over (any way): bring the hurt creatures home.
 export function endRun(save: DungeonSave): DungeonSave {
   const run = save.run;
   if (!run) return save;
   const injuries = { ...save.meta.injuries };
+  const healed = freeHealing(save.meta);
   for (const id of run.party) {
-    if ((run.hp[id] ?? 1) < 1) injuries[id] = run.hp[id];
+    if (!healed && (run.hp[id] ?? 1) < 1) injuries[id] = run.hp[id];
     else delete injuries[id];
   }
   const cleared = run.status === "cleared";
