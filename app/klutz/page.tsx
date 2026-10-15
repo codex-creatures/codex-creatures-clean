@@ -15,7 +15,7 @@ import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import {
-  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, UPGRADE_CHANCE, type Expedition, type KlutzEncounter,
+  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, SAME_RARITY_CHANCE, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -71,8 +71,9 @@ export default function KlutzPage() {
           <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: "6px 0 10px" }}>
             He&apos;ll walk the Labyrinth until he runs into a wild creature — usually somewhere between {WALK_MIN_MS / 60000} and {WALK_MAX_MS / 60000} minutes —
             then fight it and come home. It could be any rarity, wearing gear one tier below it.
-            He also has a {Math.round(FIND_CHANCE * 100)}% chance each trip to pick up a piece of gear like one he&apos;s wearing — same slot, same rarity
-            ({Math.round(UPGRADE_CHANCE * 100)}% chance of one tier better). Better gear on Klutz, better finds. If he wins he brings it home;
+            He also has a {Math.round(FIND_CHANCE * 100)}% chance each trip to pick up a piece of gear for a slot he&apos;s wearing — never better than
+            his own piece: {Math.round(SAME_RARITY_CHANCE * 100)}% the same rarity, otherwise lower (in Common gear, Common or Uncommon). A good way to find
+            alternatives to gear you already have. If he wins he brings it home;
             if he loses he limps back to the pool and heals 1 HP every {HEAL_MS_PER_HP / 1000} seconds. Better gear means he can take on tougher creatures.
           </p>
           <button className="pixel-btn" onClick={game.sendKlutzOff}>🌀 Send Klutz into the Labyrinth</button>

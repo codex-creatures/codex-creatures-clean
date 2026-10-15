@@ -92,7 +92,7 @@ export default function BattlePage() {
   }
 
   return (
-    <DenFrame title="Fight Pit" icon="⚔️" back="/pit" backLabel="Pit">
+    <DenFrame title="VS AI (testing)" icon="⚔️" back="/pit" backLabel="The Pit">
       {owned === null ? (
         <p style={{ color: MUTED }}>Loading…</p>
       ) : !battle.match ? (
@@ -139,7 +139,7 @@ function Setup({
     <>
       <SectionTitle>Your team — pick {TEAM_SIZE} ({picked.length}/{TEAM_SIZE})</SectionTitle>
       <p style={{ fontSize: 12, color: MUTED, margin: "0 0 10px" }}>
-        Number 1 goes in first. Each creature fights with the gear and moves set on it in the Fight Pit. ★ = roster.
+        Number 1 goes in first. Each creature fights with the gear and moves set on it in the Pit. ★ = roster.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {owned.map((c) => {
@@ -193,7 +193,7 @@ function Setup({
       </p>
 
       <button onClick={onStart} disabled={picked.length !== TEAM_SIZE} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        ⚔️ Enter the pit
+        ⚔️ Start the battle
       </button>
     </>
   );

@@ -13,9 +13,11 @@
 //   too).
 //
 // He also has a FIND_CHANCE on every trip (win or lose) to bring back a
-// piece of gear like one he's wearing: the same slot (any weapon, any helm…)
-// at the same rarity as his piece in that slot — with an UPGRADE_CHANCE of
-// one tier better. Better gear on Klutz means better finds.
+// piece of gear for a slot he's wearing (any weapon, any helm…). It's never
+// better than his piece there: SAME_RARITY_CHANCE of the same rarity,
+// otherwise a lower one (spread evenly). In Common gear it's a coin flip
+// between Common and Uncommon, to help new players get going. So Klutz is a
+// way to find alternatives to gear you have, not to climb rarities.
 //
 // The whole trip is decided when he sets off (so it plays out even with the
 // game closed); the screens reveal it as the time passes.
@@ -38,7 +40,8 @@ export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets 
 export const WALK_MAX_MS = 60 * 60 * 1000;
 export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
 export const FIND_CHANCE = 0.35;       // each trip: a piece of gear like one he's wearing
-export const UPGRADE_CHANCE = 0.05;    // …one rarity tier better than his piece
+export const SAME_RARITY_CHANCE = 0.05; // …the same rarity as his piece (otherwise lower)
+export const COMMON_STEP_UP = 0.5;     // in Common gear: Uncommon half the time
 
 // What Klutz is wearing, slot by slot (for his finds).
 export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
@@ -108,12 +111,19 @@ function fight(klutz: Fighter, hp: number, foe: Fighter): { won: boolean; hpAfte
   return { won: s.winner === "A", hpAfter: Math.max(0, s.sides.A.team[0].hp), rounds: s.round };
 }
 
+// The rarity of a find, from the rarity of the piece he's wearing.
+export function findRarity(worn: Rarity, rng: Rng = Math.random): Rarity {
+  const i = RARITIES.indexOf(worn);
+  if (i <= 0) return rng() < COMMON_STEP_UP ? "uncommon" : "common";
+  if (rng() < SAME_RARITY_CHANCE) return worn;
+  return RARITIES[Math.floor(rng() * i)]; // one of the lower rarities, evenly
+}
+
 // A piece of gear like one he's wearing (or nothing, if he isn't wearing any).
 export function rollFind(worn: WornPiece[], rng: Rng = Math.random): Drop | undefined {
   if (worn.length === 0) return undefined;
   const piece = worn[Math.floor(rng() * worn.length)];
-  const up = rng() < UPGRADE_CHANCE;
-  const rarity = RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(piece.rarity) + (up ? 1 : 0))];
+  const rarity = findRarity(piece.rarity, rng);
   if (piece.slot === "weapon") {
     const key = ITEM_KEYS[Math.floor(rng() * ITEM_KEYS.length)];
     return weaponDrop(key, rarity, "", rollItemStats(key, rarity, rng).stats);

@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { CLASS_INFO, DAMAGE_TYPE_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
 import { moveKind } from "./ClassBadge";
+import { MoveTile } from "./MoveTile";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
@@ -86,9 +87,9 @@ export default function MoveSlots({ template, moves, learned, onChange }: {
       <div style={{ fontSize: 13, color: MUTED, marginBottom: 8 }}>
         {onChange ? (editing === null ? "Tap one of your moves to swap it out." : `Now pick a move below to put in slot ${editing + 1}.`) : "Its moves in battle."}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
+      <div className="move-grid">
         {Array.from({ length: MOVE_SLOTS }, (_, i) => current[i]).map((m, i) => m ? (
-          <MoveCard key={i} m={m} slot={i} selected={editing === i}
+          <MoveTile key={i} m={m} slot={i} hitLabel="power" selected={editing === i}
             onClick={onChange ? () => setEditing(editing === i ? null : i) : undefined} />
         ) : (
           <button key={i} disabled={!onChange} onClick={() => setEditing(editing === i ? null : i)}
@@ -101,9 +102,9 @@ export default function MoveSlots({ template, moves, learned, onChange }: {
       {onChange && groups.map(([title, list, tag]) => list.length > 0 && (
         <div key={title} style={{ marginTop: 16 }}>
           <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>{title}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 8 }}>
+          <div className="move-grid">
             {list.map((m) => (
-              <MoveCard key={m.name} m={m} tag={tag} dim={editing === null}
+              <MoveTile key={m.name} m={m} tag={tag} hitLabel="power" dim={editing === null}
                 onClick={() => (editing === null ? undefined : choose(m.name))} />
             ))}
           </div>

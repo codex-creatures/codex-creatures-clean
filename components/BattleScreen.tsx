@@ -17,7 +17,7 @@ import { combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, triangleModifier, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
-import { moveKind } from "./ClassBadge";
+import { MoveTile } from "./MoveTile";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf,
@@ -414,6 +414,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   const tri = sk.self ? 1 : triangleModifier(sk.type, them.cls);
   if (tri > 1) tags.push(`▲ strong vs ${CLASS_INFO[them.cls].name} (+${Math.round((tri - 1) * 100)}%)`);
   if (tri < 1) tags.push(`▼ ${CLASS_INFO[them.cls].name} resists it (−${Math.round((1 - tri) * 100)}%)`);
+  tags.push("Each hit varies ±5%.");
   const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
   if (run > STREAK_START) tags.push(`run ×${run}: ${Math.round(streakEffects({ ...me.streak!, hits: run }).preciseChance * 100)}% precise`);
   else if (run > 2) tags.push(`run ×${run} (armour gap from ×${STREAK_START + 1})`);
@@ -430,12 +431,14 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   if (fx?.kind === "barrage") tags.push("hits every enemy on the field");
   const cooling = me.cooldowns?.[sk.name] ?? 0;
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
+  const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
+    : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
+    : tri > 1 ? { text: `▲ strong vs ${CLASS_INFO[them.cls].name}`, color: "#7CFC9A" }
+    : tri < 1 ? { text: `▼ ${CLASS_INFO[them.cls].name} resists it`, color: "#ff8a80" }
+    : undefined;
   return (
-    <button disabled={disabled} onClick={onClick} className="card-btn" style={{ display: "block", opacity: sk.energyCost > me.energy || cooling > 0 ? 0.35 : 1 }}>
-      <b style={{ color: fx ? "#ffd98a" : "white" }}>{sk.name}</b> <span style={{ fontSize: 11, color: MUTED }}>{sk.self ? "utility" : moveKind(sk)}</span>
-      <span style={{ display: "block", fontSize: 12, color: MUTED }}>{sk.self ? "no damage" : `~${dmg} dmg`} · {sk.energyCost}⚡</span>
-      {tags.map((t) => <span key={t} style={{ display: "block", fontSize: 11, color: "#c9b48a" }}>{t}</span>)}
-    </button>
+    <MoveTile m={sk} hit={sk.self ? undefined : `~${dmg}`} hitColor={tri > 1 ? "#7CFC9A" : tri < 1 ? "#ff8a80" : "#ffb38a"}
+      note={note} extra={tags} disabled={disabled} onClick={onClick} />
   );
 }
 

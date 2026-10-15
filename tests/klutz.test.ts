@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { KLUTZ } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, UPGRADE_CHANCE, type KlutzState } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, SAME_RARITY_CHANCE, findRarity, type KlutzState } from "../lib/klutz";
 
 // A small seeded random number generator, so expeditions are repeatable.
 function seeded(seed: number) {
@@ -61,19 +61,33 @@ describe("Klutz's expeditions", () => {
 });
 
 describe("Klutz's finds", () => {
-  it("are like a piece he's wearing: same slot, same rarity, 5% one tier better", () => {
+  it("are for a slot he's wearing, and never rarer than his piece there", () => {
     expect(rollFind([])).toBeUndefined();
-    let up = 0;
-    const N = 4000;
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < 300; i++) {
       const d = rollFind([{ slot: "helmet", rarity: "rare" }]) as { itemCategory: string; armorSlot: string; rarity: string };
       expect(d).toMatchObject({ itemCategory: "armor", armorSlot: "helmet" });
-      expect(["rare", "epic"]).toContain(d.rarity);
-      if (d.rarity === "epic") up++;
+      expect(["common", "uncommon", "rare"]).toContain(d.rarity);
     }
-    expect(Math.abs(up / N - UPGRADE_CHANCE)).toBeLessThan(0.015);
-    const w = rollFind([{ slot: "weapon", rarity: "legendary" }]) as { itemCategory: string; rarity: string };
-    expect(w).toMatchObject({ itemCategory: "weapon", rarity: "legendary" }); // can't go above legendary
+    expect(rollFind([{ slot: "weapon", rarity: "epic" }])).toMatchObject({ itemCategory: "weapon" });
+  });
+
+  it("rarity: 5% the same as his piece, otherwise lower and evenly spread; in Common gear, Common or Uncommon 50/50", () => {
+    const N = 6000;
+    const count = (worn: "common" | "rare" | "legendary") => {
+      const c: Record<string, number> = {};
+      for (let i = 0; i < N; i++) { const r = findRarity(worn); c[r] = (c[r] ?? 0) + 1; }
+      return c;
+    };
+    const rare = count("rare");
+    expect(Math.abs(rare.rare / N - SAME_RARITY_CHANCE)).toBeLessThan(0.015);
+    expect(rare.epic ?? 0).toBe(0);
+    expect(Math.abs(rare.common / N - 0.475)).toBeLessThan(0.03);
+    expect(Math.abs(rare.uncommon / N - 0.475)).toBeLessThan(0.03);
+    const legendary = count("legendary");
+    expect(Math.abs(legendary.legendary / N - SAME_RARITY_CHANCE)).toBeLessThan(0.015);
+    const common = count("common");
+    expect(Math.abs(common.uncommon / N - 0.5)).toBeLessThan(0.03);
+    expect(Object.keys(common).sort()).toEqual(["common", "uncommon"]);
   });
 
   it("turn up on about 35% of trips (win or lose) and come home with the loot", () => {
