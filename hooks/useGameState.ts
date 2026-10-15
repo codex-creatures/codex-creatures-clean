@@ -7,6 +7,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
+import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, CREATURES_BY_RARITY } from "@/lib/creatures/creatureData";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { summonFromCards } from "@/lib/creatures/summon";
@@ -457,6 +458,15 @@ export function useGameState(initialTab: TabKey = "all") {
     setScanCounts({});
   }
 
+  // A brand-new game, as if you'd never played: your progress, the
+  // Labyrinth, Klutz, the quest, your battle history, and the barcode
+  // registry (so every barcode rolls fresh on its next scan).
+  function startNew() {
+    resetAll();
+    globalReset();
+    clearBattles();
+  }
+
   return {
     // State
     gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, quest,
@@ -470,6 +480,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop,
   };
 }

@@ -19,6 +19,8 @@ export default function AltarPage() {
   const [rollMode, setRollMode]     = useState<"random" | "deterministic">("random");
   const [scannerOn, setScannerOn]   = useState(false);
   const [scanStatus, setScanStatus] = useState("");
+  const [startArmed, setStartArmed] = useState(false); // "Start new" asks for a second tap
+  const [startedNew, setStartedNew] = useState(false);
   const [lastScan, setLastScan]     = useState<Drop[]>([]); // what the latest scan gave
 
   const videoRef        = useRef<HTMLVideoElement | null>(null);
@@ -95,6 +97,13 @@ export default function AltarPage() {
           <span className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>🧰 Items</span>
         </Link>
       </div>
+
+      {startedNew && (
+        <div className="stone-panel" style={{ marginBottom: 10, borderColor: "#c9a24a" }}>
+          <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>✨ A fresh start</div>
+          <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>Everything&apos;s wiped, every barcode included. Scan your first one below — then head back to the Den: there&apos;s something rattling in the cage.</p>
+        </div>
+      )}
 
       <input
         value={barcode}
@@ -194,6 +203,16 @@ export default function AltarPage() {
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>
+        <button onClick={() => {
+          if (!startArmed) { setStartArmed(true); window.setTimeout(() => setStartArmed(false), 4000); return; }
+          setStartArmed(false);
+          game.startNew();
+          setStartedNew(true);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }} title="A brand-new game: progress, Labyrinth, Klutz, the quest, battle history and every barcode wiped"
+          style={{ ...dangerBtn, color: startArmed ? "#1a1a1a" : "#f5c542", background: startArmed ? "#f5c542" : "transparent", borderColor: "rgba(245,197,66,0.6)" }}>
+          {startArmed ? "Tap again to wipe everything" : "✨ Start new"}
+        </button>
         <button onClick={game.resetAll} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>Reset Player</button>
         <button onClick={game.globalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>Global Reset</button>
       </div>

@@ -29,6 +29,11 @@ export type BattleRecord = {
   log: BattleEvent[];
 };
 
+// Forget every saved battle (a brand-new game).
+export function clearBattles() {
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
 export function loadBattles(): BattleRecord[] {
   if (typeof window === "undefined") return [];
   try {
