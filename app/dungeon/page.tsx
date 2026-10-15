@@ -492,7 +492,13 @@ export default function DungeonPage() {
   }
 
   if (run.status !== "exploring") {
-    return frame(<RunOver run={run} lab={lab} onHome={goHome} onGather={gatherFloor} />);
+    return frame(<RunOver run={run} lab={lab} onGather={gatherFloor} onHome={() => {
+      // Knocked out: Klutz dragged you back to the Den.
+      const died = run.status === "dead";
+      if (died) game.noteLabyrinthDeath();
+      goHome();
+      if (died) router.push("/");
+    }} />);
   }
 
   // The club tutorial: it's in your bindle and not on anyone yet.

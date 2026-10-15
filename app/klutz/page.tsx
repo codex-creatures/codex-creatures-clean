@@ -63,6 +63,7 @@ export default function KlutzPage() {
       </div>
 
       <QuestTalk game={game} />
+      <ScanTip game={game} />
 
       {helping && (
         <>
@@ -141,6 +142,25 @@ export default function KlutzPage() {
         />
       )}
     </DenFrame>
+  );
+}
+
+// After SCAN_TIP_DEATHS Labyrinth deaths in a row without a scan: go and scan.
+function ScanTip({ game }: { game: ReturnType<typeof useGameState> }) {
+  const { scanTipDue, scanTipRead, readScanTip } = game;
+  // Seeing it here clears his ❗ (the tip stays until you scan something).
+  useEffect(() => { if (scanTipDue && !scanTipRead) readScanTip(); }, [scanTipDue, scanTipRead, readScanTip]);
+  if (!scanTipDue) return null;
+  return (
+    <div className="stone-panel" style={{ marginTop: 12, borderColor: "#8a6a3a" }}>
+      <div className="pixel-font" style={{ fontSize: 14, color: "#d6f0a8", marginBottom: 6 }}>Klutz says:</div>
+      <div style={{ fontSize: 14, color: "#e8e2d0", lineHeight: 1.55, fontStyle: "italic" }}>
+        &ldquo;That&apos;s three times I&apos;ve dragged you out of there now, and my back&apos;s killing me. You&apos;re not getting past
+        them with what you&apos;ve got. Go and scan some barcodes — every one&apos;s a <b>Code Cache</b>, and we can crack them open:
+        gear, potions, codexes, creatures… Stock up, then have another go.&rdquo;
+      </div>
+      <Link href="/altar" className="pixel-btn" style={{ marginTop: 10, display: "inline-block" }}>🔮 To the Scanning Altar</Link>
+    </div>
   );
 }
 

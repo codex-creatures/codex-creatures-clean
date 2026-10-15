@@ -31,6 +31,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 
 const STORAGE_KEY = "codex_creatures_save_v2";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
+export const SCAN_TIP_DEATHS = 3; // Labyrinth deaths in a row, without a scan, before Klutz suggests scanning
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
 // (move names; missing = the creature's default moves).
@@ -59,6 +60,8 @@ type SaveState = {
   klutz?: KlutzState;                  // your helper: his health and any expedition
   quest?: QuestState;                  // the first quest (lib/quest.ts)
   seen?: string[];                     // creature ids you've come across (the Bestiary fills in as you explore)
+  deathsSinceScan?: number;            // Labyrinth runs lost in a row without scanning a barcode
+  scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
 };
 
 // A new player's first creature: a random Rare, waiting in the cage.
@@ -99,6 +102,8 @@ export function loadSave(): SaveState | null {
     klutz: obj(parsed.klutz) as KlutzState,
     quest: parsed.quest && typeof parsed.quest === "object" ? (parsed.quest as QuestState) : { ...NEW_QUEST },
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
+    deathsSinceScan: typeof parsed.deathsSinceScan === "number" ? parsed.deathsSinceScan : 0,
+    scanTipRead: parsed.scanTipRead === true,
   };
 }
 
@@ -121,6 +126,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const [klutz, setKlutz]             = useState<KlutzState>({});
   const [quest, setQuest]             = useState<QuestState>({ ...NEW_QUEST });
   const [seen, setSeen]               = useState<string[]>([]);
+  const [deathsSinceScan, setDeathsSinceScan] = useState(0);
+  const [scanTipRead, setScanTipRead] = useState(false);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -148,14 +155,24 @@ export function useGameState(initialTab: TabKey = "all") {
       setKlutz(saved.klutz ?? {});
       setQuest(saved.quest ?? { ...NEW_QUEST });
       setSeen(saved.seen ?? []);
+      setDeathsSinceScan(saved.deathsSinceScan ?? 0);
+      setScanTipRead(saved.scanTipRead ?? false);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead]);
+
+  // ── Klutz's scanning tip ──────────────────────────────
+  // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
+  // and Klutz has a word (a ❗ over him): go and scan for Code Caches.
+  // Scanning anything resets it.
+  function noteLabyrinthDeath() { setDeathsSinceScan((n) => n + 1); }
+  const scanTipDue = deathsSinceScan >= SCAN_TIP_DEATHS;
+  const readScanTip = () => setScanTipRead(true);
 
   // ── The Bestiary: creatures you've come across ────────
   // Anything you own (or hold a card of) or have waiting in the cage counts,
@@ -364,6 +381,8 @@ export function useGameState(initialTab: TabKey = "all") {
   // A drop from scanning a barcode: added, and remembered in your recent scans.
   function addScan(drop: Drop) {
     addDrop(drop);
+    setDeathsSinceScan(0);
+    setScanTipRead(false);
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
   }
 
@@ -479,6 +498,8 @@ export function useGameState(initialTab: TabKey = "all") {
     setKlutz({});
     setQuest({ ...NEW_QUEST });
     setSeen([]);
+    setDeathsSinceScan(0);
+    setScanTipRead(false);
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -505,7 +526,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

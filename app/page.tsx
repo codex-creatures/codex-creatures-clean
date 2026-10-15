@@ -34,7 +34,7 @@ export default function Home() {
 
       <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
         klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
-        klutzNews={game.hydrated && klutzHasNews(game.quest)} backpack={backpack} />
+        klutzNews={game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} />
 
       {/* Plain links too — quicker on small screens and for keyboard users. */}
       <nav style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>
