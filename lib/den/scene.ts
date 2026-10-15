@@ -45,8 +45,9 @@ export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 const AL = { u: 7.5, v: 6.5 };              // scanning altar (the centrepiece)
 const PIT = { u0: 10.0, v0: 7.2, u1: 13.6, v1: 10.8, depth: 18 };
 const POOL = { u: 5.6, v: 10.6, ru: 2.0, rv: 1.3 };
-const CAGE = { u0: 0.5, v0: 10.4, u1: 2.3, v1: 12.2, h: 32 };
-const CRATE = { u0: 2.75, v0: 11.4, u1: 3.55, v1: 12.15, h: 14 }; // Klutz's crate, beside the cage
+// The cage: a cell hollowed out of the left wall, iron bars down its front.
+const CAGE = { v0: 10.2, v1: 12.4, h: 42 };  // along the left wall (v), and how tall the opening is
+const CRATE = { u0: 0.35, v0: 9.15, u1: 1.15, v1: 9.9, h: 14 }; // Klutz's crate, beside the cell
 const ARCH_V = 3.2;                          // archway on the left wall
 const BOARD_V = 6.6;                         // quest board on the left wall
 const LECTERN = { u: 1.15, v: 7.45 };        // the Bestiary's lectern, in front of the board
@@ -65,7 +66,7 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   6: { u: 0.35, v: 0.65, z: 54 },                  // the bag in the corner by the archway
   7: { u: 0, v: ARCH_V, z: 88 },                   // archway
   8: { u: LECTERN.u, v: LECTERN.v, z: 0, below: true }, // the scroll on its lectern
-  9: { u: (CAGE.u0 + CAGE.u1) / 2, v: (CAGE.v0 + CAGE.v1) / 2, z: CAGE.h + 6 }, // cage
+  9: { u: 0, v: (CAGE.v0 + CAGE.v1) / 2, z: CAGE.h + 8 }, // the cell in the wall
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
   12: { u: 8.6, v: 3.2, z: 26 },                   // Klutz (he moves: see klutzAt)
@@ -298,6 +299,29 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
       const edge = z >= spring ? Math.abs(((ang / Math.PI) * 7) % 1) < 0.08 : z % 9 < 1;
       if (edge) return { c: CRACK, id: OBJ.arch };
       return { c: mul(CAP_STONES[block % 3], 0.85 + hash(Math.floor(a), Math.floor(z)) * 0.1), id: OBJ.arch };
+    }
+    // The cage: a cell hollowed out of the rock — a low arched opening framed
+    // in rough dressed stone, dark inside, straw on its floor, a shackle on
+    // the back wall. (Its bars, and whoever is inside, are drawn each frame.)
+    const ca = a - CAGE.v0 * 16, cw = (CAGE.v1 - CAGE.v0) * 16, half = cw / 2;
+    const off = (ca - half) / half; // −1…1 across the opening
+    const cellTop = CAGE.h - 8 + 8 * Math.sqrt(Math.max(0, 1 - off * off));
+    if (ca >= 0 && ca < cw && z < cellTop) {
+      const depth = 0.18 + 0.22 * (1 - Math.abs(off)) * clamp01(1 - z / CAGE.h); // darkest at the edges and up top
+      if (z < 4) return { c: mul((Math.floor(a * 1.7 + z * 3) % 3 === 0 ? hex("#8a7440") : hex("#5e4e2a")), 0.55), id: OBJ.cage }; // straw
+      const ring = Math.hypot(ca - cw * 0.72, z - 22);
+      if (ring > 1.4 && ring < 2.6) return { c: mul(IRON_LIGHT, 0.7), id: OBJ.cage };           // a shackle
+      if (Math.abs(ca - cw * 0.72) < 0.6 && z > 24 && z < 30) return { c: mul(IRON, 0.8), id: OBJ.cage }; // its chain
+      return { c: mul(rock(a + 300, z, 7), depth), id: OBJ.cage };
+    }
+    const outerTop = cellTop + 6;
+    if (ca >= -5 && ca < cw + 5 && z < outerTop) {
+      // The frame: blocks of dressed stone round the opening.
+      const side = ca < 0 || ca >= cw;
+      const block = side ? Math.floor(z / 8) + (ca < 0 ? 40 : 60) : Math.floor(ca / 7) + 80;
+      const edge = side ? z % 8 < 1 : Math.floor(ca) % 7 === 0;
+      if (edge) return { c: CRACK, id: OBJ.cage };
+      return { c: mul(CAP_STONES[block % 3], 0.8 + hash(Math.floor(a), Math.floor(z)) * 0.1), id: OBJ.cage };
     }
     // Quest board
     const qa = a - BOARD_V * 16, qz = z - 46;
@@ -571,12 +595,6 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     top: (a, b) => (a < 1 || b < 1 || a > 12.5 || b > 12.5 ? IRON_LIGHT : mul(planks(a, b, 4), 0.9)), right: crateSide, left: crateSide,
   });
 
-  // The cage: an iron floor plate and roof (its bars, and whoever is
-  // inside, are drawn each frame).
-  box(OBJ.cage, CAGE.u0, CAGE.v0, 0, CAGE.u1, CAGE.v1, 3, { top: () => mul(IRON, 1.1), right: () => IRON, left: () => IRON });
-  box(OBJ.cage, CAGE.u0, CAGE.v0, CAGE.h - 3, CAGE.u1, CAGE.v1, CAGE.h, {
-    top: (a, b) => (a < 1 || b < 1 || a > 27 || b > 27 ? IRON_LIGHT : IRON), right: () => IRON, left: () => IRON,
-  });
 
   // ── Lights ──
   const lights: Light[] = [
@@ -731,27 +749,33 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
       }
     }
 
-    // The cage: whoever is inside, then the bars in front of them.
-    const [bx, by] = project((CAGE.u0 + CAGE.u1) / 2, (CAGE.v0 + CAGE.v1) / 2, 3);
+    // The cell: whoever is inside (set back in the dark), then the bars.
+    const mid = (CAGE.v0 + CAGE.v1) / 2;
+    const [bx, by] = project(0, mid, 3);
     if (caged) {
       const h = caged.length, w = Math.max(...caged.map((r) => r.length));
       const bob = Math.round(Math.sin(t * 1.5) * 1);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const ch = caged[y][x];
         if (ch === "." || !PALETTE[ch]) continue;
-        fpx(bx * RES - w / 2 + x, by * RES - h + y + bob, mul(hex(PALETTE[ch]), 0.8), OBJ.cage);
+        fpx(bx * RES - w / 2 + x, by * RES - h + y + bob, mul(hex(PALETTE[ch]), 0.62), OBJ.cage);
       }
     }
-    // Bars on the two faces you can see (u = u1 and v = v1), plus the corners.
-    const bar = (u: number, v: number) => {
-      const [x0, y0] = project(u, v, 3), [, y1] = project(u, v, CAGE.h - 3);
+    // Iron bars down the front of the opening, set into a top and bottom rail.
+    const BAR_U = 0.06;
+    const bar = (v: number) => {
+      const [x0, y0] = project(BAR_U, v, 1), [, y1] = project(BAR_U, v, CAGE.h - 4);
       for (let y = y1 * RES; y <= y0 * RES; y++) {
         fpx(x0 * RES, y, IRON_LIGHT, OBJ.cage); fpx(x0 * RES + 1, y, IRON, OBJ.cage);
       }
     };
-    const STEP = 0.3;
-    for (let v = CAGE.v0; v <= CAGE.v1 + 0.01; v += STEP) bar(CAGE.u1, v);
-    for (let u = CAGE.u0; u < CAGE.u1 - 0.01; u += STEP) bar(u, CAGE.v1);
+    for (let v = CAGE.v0 + 0.22; v < CAGE.v1 - 0.1; v += 0.28) bar(v);
+    for (const z of [2, CAGE.h - 5]) {
+      for (let v = CAGE.v0; v <= CAGE.v1; v += 0.02) {
+        const [x, y] = project(BAR_U, v, z);
+        fpx(x * RES, y * RES, IRON_LIGHT, OBJ.cage); fpx(x * RES, y * RES + 1, IRON, OBJ.cage); fpx(x * RES, y * RES + 2, IRON, OBJ.cage);
+      }
+    }
 
     // Klutz: strolling about, or soaking in the pool up to his chin.
     klutzLabel = null;
