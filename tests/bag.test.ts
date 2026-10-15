@@ -1,26 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, POCKETS, FIRST_BAG, POTIONS, STASH_ITEMS, weaponEntry, weaponIdOf, isPotionEntry, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, STASH_ITEMS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 
 describe("the battle bag", () => {
-  it("starts as 2 pockets; the first mini boss's battle bag holds 5, one thing per slot", () => {
-    expect(bagSize({})).toBe(POCKETS);
-    expect(bagName({})).toBe("Pockets");
-    expect(bagName({ bagSize: FIRST_BAG })).toBe("Battle bag");
-    const full = addToBag([], Array<PotionKey>(12).fill("lesser"), POCKETS);
-    expect(full).toHaveLength(POCKETS);
-    expect(addToBag(full, ["potion"], POCKETS)).toHaveLength(POCKETS);
-    expect(addToBag(full, ["potion"], FIRST_BAG)).toHaveLength(3);
+  it("starts as a 3-slot bindle; the first mini boss's rugged backpack holds 5, one thing per slot", () => {
+    expect(bagSize({})).toBe(BINDLE);
+    expect(bagName({})).toBe("Bindle");
+    expect(bagName({ bagSize: BACKPACK })).toBe("Rugged backpack");
+    const full = addToBag([], Array<PotionKey>(12).fill("lesser"), BINDLE);
+    expect(full).toHaveLength(BINDLE);
+    expect(addToBag(full, ["potion"], BINDLE)).toHaveLength(BINDLE);
+    expect(addToBag(full, ["potion"], BACKPACK)).toHaveLength(4);
   });
 
-  it("a slot holds a potion or a weapon", () => {
-    const w = weaponEntry("abc");
-    expect(weaponIdOf(w)).toBe("abc");
-    expect(isPotionEntry(w)).toBe(false);
+  it("a slot holds a potion, your own gear, or loot found this run", () => {
+    const g = gearEntry("abc"), l = lootEntry("xyz");
+    expect(gearIdOf(g)).toBe("abc");
+    expect(lootIdOf(l)).toBe("xyz");
+    expect(gearIdOf(l)).toBeUndefined();
+    expect(isPotionEntry(g)).toBe(false);
+    expect(isPotionEntry(l)).toBe(false);
     expect(isPotionEntry("potion")).toBe(true);
-    expect(weaponIdOf("lesser")).toBeUndefined();
+    expect(gearIdOf("lesser")).toBeUndefined();
   });
 
   it("potions: 100 HP for 100 gold, or a lesser 50 for 50", () => {

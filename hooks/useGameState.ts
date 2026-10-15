@@ -370,6 +370,12 @@ export function useGameState(initialTab: TabKey = "all") {
     });
   }
 
+  // An item leaves your storage (e.g. left behind on a Labyrinth floor).
+  function removeDrop(id: string) {
+    setInventory((prev) => prev.filter((d) => d.id !== id));
+    setFavoriteIds((prev) => { if (!prev.has(id)) return prev; const n = new Set(prev); n.delete(id); return n; });
+  }
+
   function setMoves(creatureId: string, moves: string[]) {
     setEquipment((prev) => ({ ...prev, [creatureId]: { ...prev[creatureId], moves } }));
   }
@@ -464,6 +470,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop,
   };
 }

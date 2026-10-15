@@ -9,6 +9,7 @@ import DenRoom, { SPOTS } from "@/components/DenRoom";
 import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
 import { klutzHasNews } from "@/lib/quest";
+import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 
 export default function Home() {
   const game = useGameState();
@@ -16,6 +17,9 @@ export default function Home() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);
   const k = klutzStatus(game.klutz, game.klutzFighter.maxHp, now).kind;
+  // The bag by the archway: a bindle until your first mini boss's rugged backpack.
+  const [backpack, setBackpack] = useState(false);
+  useEffect(() => { setBackpack(bagSize(loadDungeon().meta) > BINDLE); }, []);
 
   return (
     <main style={{ padding: "16px 12px 32px", maxWidth: 960, margin: "0 auto", color: "white" }}>
@@ -30,7 +34,7 @@ export default function Home() {
 
       <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
         klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
-        klutzNews={game.hydrated && klutzHasNews(game.quest)} />
+        klutzNews={game.hydrated && klutzHasNews(game.quest)} backpack={backpack} />
 
       {/* Plain links too — quicker on small screens and for keyboard users. */}
       <nav style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 14 }}>

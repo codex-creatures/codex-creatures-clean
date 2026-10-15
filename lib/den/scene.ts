@@ -32,7 +32,7 @@ const WALL_H = 150;   // tallest the rock walls get (px)
 
 // ── Clickable objects ─────────────────────────────────────────────
 export const OBJ = {
-  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11, klutz: 12,
+  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11, klutz: 12, bookcase: 13,
 } as const;
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
@@ -50,16 +50,17 @@ const TAVERN = { a0: 9.9, a1: 12.3, h: 74 }; // tavern opening on the right wall
 export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: number; below?: boolean }> = {
   1: { u: 9.6, v: 8.8, z: 0, below: true },        // pit (its front corner)
   2: { u: 3.0, v: 0, z: 42 },                      // chest (label on the wall above it)
-  3: { u: AL.u, v: AL.v, z: 50 },                  // altar
+  3: { u: AL.u + 0.5, v: AL.v + 0.5, z: 0, below: true }, // altar
   4: { u: 7.8, v: 0.6, z: 40 },                    // merchant
   5: { u: 0, v: BOARD_V + 0.75, z: 96 },           // quest board
-  6: { u: 1.9, v: 4.2, z: 0, below: true },        // the backpack by the archway
+  6: { u: 1.7, v: 3.75, z: 46 },                   // the bag by the archway
   7: { u: 0, v: ARCH_V, z: 72 },                   // archway
-  8: { u: 1.15, v: 4.6, z: 26 },                   // the scroll on its lectern
+  8: { u: 1.15, v: 6.2, z: 0, below: true },                   // the scroll on its lectern
   9: { u: 1.25, v: 8.9, z: CAGE.h + 6 },           // cage
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
   12: { u: 5.2, v: 2.0, z: 26 },                   // Klutz (he moves: see klutzAt)
+  13: { u: 6.4, v: 0, z: 58 },                     // the bookcase (a single shelf, for now)
 };
 
 // Klutz's stroll round the Den: a loop of open floor (clear of the pit,
@@ -228,7 +229,8 @@ function strollAt(t: number): { u: number; v: number; left: boolean; walking: bo
   return { u: KLUTZ_PATH[0][0], v: KLUTZ_PATH[0][1], left: false, walking: false };
 }
 
-export function createDen(): DenScene {
+// backpack: you've found the rugged backpack (otherwise a bindle by the archway).
+export function createDen(opts: { backpack?: boolean } = {}): DenScene {
   const n = FW * FH;
   const albedo = new Float32Array(n * 3);
   const pos = new Float32Array(n * 3).fill(NaN);
@@ -450,6 +452,15 @@ export function createDen(): DenScene {
   box(OBJ.chest, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
   box(OBJ.chest, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
 
+  if (!opts.backpack) {
+    // A bindle: a walking stick leaning by the archway, a cloth bundle tied to the top.
+    box(OBJ.bag, 1.62, 3.68, 0, 1.72, 3.78, 40, { top: () => WOOD_DARK, right: (a, b) => planks(a, b, 3), left: (a, b) => planks(a, b, 2) });
+    const cloth: Face = (a, b) => ((Math.floor(a / 3) + Math.floor(b / 3)) % 2 ? hex("#8e2b2b") : hex("#d8cba8"));
+    box(OBJ.bag, 1.42, 3.5, 26, 1.95, 4.0, 38, { top: cloth, right: cloth, left: cloth });
+    box(OBJ.bag, 1.6, 3.68, 38, 1.75, 3.82, 42, { top: () => hex("#c9b07a"), right: () => hex("#a8894f"), left: () => hex("#b89a62") }); // the knot
+    // …and a little sack beside it.
+    box(OBJ.bag, 1.3, 3.85, 0, 1.75, 4.25, 10, { top: () => hex("#8a6640"), right: (a, b) => mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15), left: () => hex("#7a5a38") });
+  } else {
   // A rugged backpack on the floor in front of the archway, ready for the next run:
   // leather body with a front pocket, a flap with a buckle, a bedroll on top.
   const LEATHER = hex("#6b4a2b"), LEATHER_D = hex("#4a3019"), STRAP = hex("#2e1e10");
@@ -468,6 +479,18 @@ export function createDen(): DenScene {
   });
   const wool: Face = (a, b) => (Math.floor(a) % 4 === 0 ? hex("#4b5a3e") : mul(hex("#6f7d5a"), 0.92 + hash(Math.floor(a), Math.floor(b)) * 0.12));
   box(OBJ.bag, 1.275, 3.575, 24, 2.125, 3.913, 30, { top: wool, right: (a, b) => (Math.hypot(a - 2.2, b - 2.5) < 1.5 ? hex("#3a4630") : wool(a, b)), left: wool }); // bedroll
+  }
+
+  // The bookcase — for now just a shelf on the right wall, a few codexes on it.
+  box(OBJ.bookcase, 5.95, 0, 34, 6.85, 0.45, 37, { top: (a) => planks(a, 2, 1), right: () => WOOD_DARK, left: () => WOOD_DARK });
+  const SPINES = ["#7b3fc4", "#2f6fb0", "#8e2b2b", "#2f7a3a", "#b07a2a", "#5a3a8a"];
+  for (let k = 0; k < 6; k++) {
+    const u0 = 6.0 + k * 0.13, h = 9 + (k * 5) % 5;
+    const spine: Face = (a, b) => (b > h - 2 ? GOLD : hex(SPINES[k]));
+    box(OBJ.bookcase, u0, 0.05, 37, u0 + 0.11, 0.38, 37 + h, { top: () => hex("#d8cba8"), right: spine, left: spine });
+  }
+  box(OBJ.bookcase, 6.2, 0, 26, 6.27, 0.3, 34, { top: () => IRON, right: () => IRON, left: () => IRON });  // brackets
+  box(OBJ.bookcase, 6.6, 0, 26, 6.67, 0.3, 34, { top: () => IRON, right: () => IRON, left: () => IRON });
 
   // Crates beside the chest.
   const crate: Face = (a, b) => (a < 1.2 || a > 13.8 || b < 1.2 || b > 12 || Math.abs(a - b) < 0.9 ? WOOD_DARK : planks(a, b, 1));
@@ -506,16 +529,16 @@ export function createDen(): DenScene {
     left: (a, b) => (Math.abs(a - 8) < 1 && b > 4 && b < 13 ? { c: hex("#3fc6e0"), glow: 2 } : altarStone(a, b)),
   });
 
-  // Lectern with an open scroll (between the archway and the quest board).
+  // Lectern with an open scroll (in front of the quest board).
   const post: Face = (a, b) => planks(a, b, 3);
-  box(OBJ.scroll, 1.0, 4.45, 0, 1.3, 4.75, 14, { top: () => WOOD_DARK, right: post, left: post });
-  box(OBJ.scroll, 0.75, 4.25, 14, 1.55, 4.95, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
+  box(OBJ.scroll, 1.0, 6.05, 0, 1.3, 6.35, 14, { top: () => WOOD_DARK, right: post, left: post });
+  box(OBJ.scroll, 0.75, 5.85, 14, 1.55, 6.55, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
   const parchment: Face = (a, b) => {
     if (b < 1.5 || b > 14.5) return hex("#c9b07a"); // rolled ends
     const line = a > 2 && a < 13 && Math.floor(a) % 3 === 0 && b > 3 && b < 13 && Math.abs(b - 8) > 0.8;
     return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
   };
-  box(OBJ.scroll, 0.8, 4.3, 17, 1.5, 4.9, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+  box(OBJ.scroll, 0.8, 5.9, 17, 1.5, 6.5, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
 
   // The cage: an iron floor plate and roof (its bars, and whoever is
   // inside, are drawn each frame).

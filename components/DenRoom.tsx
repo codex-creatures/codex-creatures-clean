@@ -23,6 +23,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.cage]:     { label: "Cage", href: "/cage" },
   [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
   [OBJ.klutz]:    { label: "Klutz", href: "/klutz" },
+  [OBJ.bookcase]: { label: "Bookcase", href: "/bookcase" },
   [OBJ.tavern]:   { label: "Tavern", soon: "The tavern isn't built yet. One day travellers, merchants and librarians will gather here." },
 };
 
@@ -34,7 +35,8 @@ const MIN_WIDTH = 700;
 // caged: the creature id waiting in the cage (drawn inside it), if any.
 // klutz: where Klutz is (strolling, healing in the pool, or away hunting).
 // klutzNews: he has something to tell you (a ❗ on his label).
-export default function DenRoom({ caged, klutz = "home", klutzNews = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean }) {
+// backpack: you've found the rugged backpack (otherwise it's a bindle).
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [scrollable, setScrollable] = useState(false);
@@ -50,7 +52,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false }: { 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    const scene = createDen();
+    const scene = createDen({ backpack });
     sceneRef.current = scene;
     const start = performance.now();
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null);
@@ -67,7 +69,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false }: { 
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [backpack]);
 
   useEffect(() => {
     klutzRef.current = klutz;
@@ -152,7 +154,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false }: { 
               cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
             }}
           >
-            {spot.label}{spot.soon ? " 🔒" : ""}
+            {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}
           </button>
         );
       })}

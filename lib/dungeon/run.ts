@@ -18,7 +18,7 @@
 // - Losing a fight ends the run: you wake up at home and keep all your loot.
 //   Creatures come home hurt and are healed at the pool (instant for now).
 
-import type { Rarity } from "../types";
+import type { Drop, Rarity } from "../types";
 import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
@@ -77,23 +77,35 @@ export const MINIBOSS_REVIVE_HP = 0.7; // beating a mini boss: heal one creature
 export const DECK_CARDS = 5;           // a deck of cards: 5 creature-card rolls
 
 // ── The battle bag ───────────────────────────────────────────────────
-// What you carry into the Labyrinth: one thing per slot (they don't stack),
-// kept between runs. You start with POCKETS slots; your first mini boss
-// drops a proper battle bag with FIRST_BAG. A slot holds a potion or a
-// weapon (packed from the Den's Battle Bag page).
-// - A potion heals one creature: in a fight it costs your turn and heals
-//   the creature on the field; between rooms, tap it on anyone standing.
-// - A weapon can be swapped in mid-fight (it costs your turn): the creature
-//   on the field takes it, and the weapon it had goes into the slot.
-// Merchants sell potions; stashes hold a few.
-export const POCKETS = 2;
-export const FIRST_BAG = 5;
-export type BagEntry = PotionKey | `weapon:${string}`;
-export const bagSize = (meta: { bagSize?: number }) => meta.bagSize ?? POCKETS;
-export const bagName = (meta: { bagSize?: number }) => (bagSize(meta) > POCKETS ? "Battle bag" : "Pockets");
-export const isPotionEntry = (e: BagEntry): e is PotionKey => !e.startsWith("weapon:");
-export const weaponEntry = (dropId: string): BagEntry => `weapon:${dropId}`;
-export const weaponIdOf = (e: BagEntry): string | undefined => (e.startsWith("weapon:") ? e.slice(7) : undefined);
+// Your bag: what you carry in the Labyrinth, one thing per slot (they
+// don't stack), kept between runs. You start with a BINDLE (3 slots); your
+// first mini boss drops a RUGGED BACKPACK (5).
+// A slot holds:
+// - a potion (heals one creature; in a fight it costs your turn);
+// - gear: a weapon or armour piece of yours (packed at home, or swapped
+//   out). Between rooms you can put it on a creature; a weapon can also be
+//   swapped in mid-fight (costs your turn). What it replaces takes the slot;
+// - loot: something found this run (gear or a codex). It comes home with
+//   you: it goes into storage (codexes onto the bookcase) when the run ends.
+// Gold and creature cards take no space. When you're full you choose what
+// to leave on the floor; what's left there is lost — unless you beat the
+// boss, and walk back through to collect it.
+export const BINDLE = 3;
+export const BACKPACK = 5;
+export type BagEntry = PotionKey | `gear:${string}` | `loot:${string}`;
+export const bagSize = (meta: { bagSize?: number }) => meta.bagSize ?? BINDLE;
+export const bagName = (meta: { bagSize?: number }) => (bagSize(meta) > BINDLE ? "Rugged backpack" : "Bindle");
+export const isPotionEntry = (e: BagEntry): e is PotionKey => e === "potion" || e === "lesser";
+export const gearEntry = (dropId: string): BagEntry => `gear:${dropId}`;
+export const gearIdOf = (e: BagEntry): string | undefined => (e.startsWith("gear:") ? e.slice(5) : undefined);
+export const lootEntry = (dropId: string): BagEntry => `loot:${dropId}`;
+export const lootIdOf = (e: BagEntry): string | undefined => (e.startsWith("loot:") ? e.slice(5) : undefined);
+
+// Something left on a room's floor (by name, for the walk back).
+export type FloorItem = { room: string; potion?: PotionKey; drop?: Drop };
+
+// The bookcase in the Den: where codexes are kept (a single shelf to start).
+export const BOOKCASE_SIZE = 10;
 export type PotionKey = "potion" | "lesser";
 export const POTIONS: Record<PotionKey, { name: string; heal: number; price: number; icon: string }> = {
   potion: { name: "Healing Potion", heal: 100, price: 100, icon: "🧪" },
@@ -250,6 +262,8 @@ export type DungeonRun = {
   inside?: boolean;            // stepped in past the entrance (the map is put away)
   battle?: unknown;            // the fight in progress (saved by the screen)
   loot: string[];              // what you've found, for the summary
+  pending?: Drop[];            // found, but the bag's full: take it or leave it
+  floor?: FloorItem[];         // left behind on the floors of this run
   status: RunStatus;
 };
 
@@ -327,8 +341,9 @@ export type DungeonMeta = {
   clears: number;
   firstClearRun?: number;            // the run you first beat the boss on (for the trophy)
   injuries: Record<string, number>;  // creature id → share of HP left after a run (missing = full)
-  bag: BagEntry[];                   // your pockets / battle bag (kept between runs)
-  bagSize?: number;                  // slots (missing = POCKETS)
+  bag: BagEntry[];                   // your bindle / backpack (kept between runs)
+  bagSize?: number;                  // slots (missing = BINDLE)
+  loot?: Record<string, Drop>;       // loot in the bag (by drop id), not yet home
   poolLevel?: number;                // the Den's healing pool (1 = a soggy cave pool)
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
 };

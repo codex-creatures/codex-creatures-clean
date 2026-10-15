@@ -1,19 +1,22 @@
 "use client";
 // app/bag/page.tsx
-// Your pockets / battle bag: what you carry into the Labyrinth. Pack a spare
-// weapon here to swap in mid-fight (say, a Pierce weapon for a heavily
-// armoured foe). Potions come from merchants and stashes.
+// Your bindle (later a rugged backpack): what you carry into the Labyrinth.
+// Pack spare gear here: a weapon to swap in mid-fight (say, a Pierce weapon
+// for a heavily armoured foe), or armour to change into between rooms.
+// Potions come from merchants and stashes. Whatever you find down there
+// needs a free slot to come home.
 
 import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { itemSprite } from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import {
-  loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, weaponEntry, weaponIdOf, POTIONS, POCKETS, FIRST_BAG,
+  loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootIdOf, POTIONS, BINDLE, BACKPACK, BOOKCASE_SIZE,
   type BagEntry, type DungeonSave,
 } from "@/lib/dungeon/run";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
+import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -25,26 +28,41 @@ export default function BagPage() {
   const [lab, setLab] = useState<DungeonSave | null>(null);
   useEffect(() => { setLab(loadDungeon()); }, []);
 
-  if (!lab || !game.hydrated) return <DenFrame title="Battle Bag" icon="🎒"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+  if (!lab || !game.hydrated) return <DenFrame title="Bindle" icon="🎒"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
 
   const bag = lab.meta.bag ?? [];
   const slots = bagSize(lab.meta);
-  const weapons = game.inventory.filter((d) => d.dropType === "item" && d.itemCategory === "weapon") as CreatureOrItemDrop[];
-  const byId = new Map(weapons.map((w) => [w.id, w]));
-  const packed = new Set(bag.map(weaponIdOf).filter(Boolean) as string[]);
-  // Spare weapons: not on a creature (or Klutz) and not already packed.
-  const spare = weapons.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
-  const save = (next: BagEntry[]) => { const s = { ...lab, meta: { ...lab.meta, bag: next } }; saveDungeon(s); setLab(s); };
+  const gear = game.inventory.filter((d) => d.dropType === "item" && (d.itemCategory === "weapon" || d.itemCategory === "armor")) as CreatureOrItemDrop[];
+  const byId = new Map(gear.map((w) => [w.id, w]));
+  const packed = new Set(bag.map(gearIdOf).filter(Boolean) as string[]);
+  // Spare gear: not on a creature (or Klutz) and not already packed.
+  const spare = gear.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
+  const shelfFree = BOOKCASE_SIZE - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
+  const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); };
+  const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
   const away = !!lab.run;
 
-  const weaponLine = (w: CreatureOrItemDrop) => {
-    const aff = w.itemKey ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[w.itemKey]] : undefined;
+  // A codex that came home while the bookcase was full: shelve it once there's room.
+  function shelve(e: BagEntry) {
+    const id = lootIdOf(e);
+    const x = id ? lab!.meta.loot?.[id] : undefined;
+    if (!id || !x || shelfFree <= 0) return;
+    game.addDrop(x);
+    const loot = { ...(lab!.meta.loot ?? {}) };
+    delete loot[id];
+    save({ ...lab!, meta: { ...lab!.meta, bag: bag.filter((b) => b !== e), loot } });
+  }
+
+  const gearLine = (w: CreatureOrItemDrop) => {
+    const aff = w.itemCategory === "weapon" && w.itemKey ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[w.itemKey]] : undefined;
     return (
       <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         {itemSprite(w) && <PixelSprite sprite={itemSprite(w)!} scale={2} />}
         <span style={{ minWidth: 0 }}>
           <b style={{ color: RARITY_COLORS[w.rarity].text }}>{w.name}</b>
-          <span style={{ fontSize: 12, color: MUTED, display: "block" }}>{w.rarity}{aff ? ` · ${aff.icon} ${aff.name}` : ""}</span>
+          <span style={{ fontSize: 12, color: MUTED, display: "block" }}>
+            {w.rarity}{aff ? ` · ${aff.icon} ${aff.name}` : w.armorSlot ? ` · ${ARMOR_SLOT_INFO[w.armorSlot].name}` : ""}
+          </span>
         </span>
       </span>
     );
@@ -54,10 +72,10 @@ export default function BagPage() {
     <DenFrame title={bagName(lab.meta)} icon="🎒">
       <div className="stone-panel">
         <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
-          What you carry into the Labyrinth: <b>{slots} slots</b>, one thing each — a potion or a spare weapon.
-          In a fight you can swap the weapon in (it uses your turn), say a Pierce weapon against something heavily armoured;
-          the weapon you had goes back in the slot.
-          {slots <= POCKETS && <> For now it&apos;s just your two pockets — beat a mini boss in the Labyrinth to find a proper bag with {FIRST_BAG} slots.</>}
+          What you carry in the Labyrinth: <b>{slots} slots</b>, one thing each. Gold and creature cards take no space;
+          potions, gear and codexes take a slot — including what you find, so choose what&apos;s worth bringing home.
+          Packed gear can go on a creature between rooms, and a packed weapon can be swapped in mid-fight (it uses your turn).
+          {slots <= BINDLE && <> It&apos;s only a bindle for now — beat a mini boss to find a rugged backpack with {BACKPACK} slots.</>}
         </p>
       </div>
 
@@ -65,15 +83,17 @@ export default function BagPage() {
       <div style={{ display: "grid", gap: 6 }}>
         {Array.from({ length: slots }, (_, i) => {
           const e = bag[i];
-          const w = e ? byId.get(weaponIdOf(e) ?? "") : undefined;
+          const own = e ? byId.get(gearIdOf(e) ?? "") : undefined;
+          const found = e && lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined;
           return (
             <div key={i} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
               {!e ? <span style={{ color: MUTED }}>— empty —</span>
                 : isPotionEntry(e) ? <span>{POTIONS[e].icon} <b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
-                : w ? weaponLine(w) : <span style={{ color: MUTED }}>A weapon you no longer have</span>}
-              {e && !isPotionEntry(e) && !away && (
-                <button className="chip" onClick={() => save(bag.filter((x) => x !== e))}>Take out</button>
-              )}
+                : own ? gearLine(own)
+                : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
+                : <span style={{ color: MUTED }}>Something you no longer have</span>}
+              {e && own && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>Take out</button>}
+              {e && found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
             </div>
           );
         })}
@@ -82,15 +102,15 @@ export default function BagPage() {
 
       {!away && (
         <>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Spare weapons</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Spare gear</div>
           {spare.length === 0 ? (
-            <p style={{ fontSize: 13, color: MUTED }}>No spare weapons — everything you own is on a creature (or already packed).</p>
+            <p style={{ fontSize: 13, color: MUTED }}>No spare gear — everything you own is on a creature (or already packed).</p>
           ) : (
             <div style={{ display: "grid", gap: 6 }}>
               {spare.map((w) => (
                 <div key={w.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-                  {weaponLine(w)}
-                  <button className="chip" disabled={bag.length >= slots} onClick={() => save([...bag, weaponEntry(w.id)])}>Pack it</button>
+                  {gearLine(w)}
+                  <button className="chip" disabled={bag.length >= slots} onClick={() => setBag([...bag, gearEntry(w.id)])}>Pack it</button>
                 </div>
               ))}
             </div>
