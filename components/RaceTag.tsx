@@ -9,7 +9,7 @@ export default function RaceTag({ race }: { race?: Race }) {
   return (
     <span className="pixel-font" title={`Race: ${r.name}`}
       style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: r.color, border: `2px solid ${r.color}55` }}>
-      {r.name}
+      {r.icon} {r.name}
     </span>
   );
 }

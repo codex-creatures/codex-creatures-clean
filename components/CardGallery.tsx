@@ -8,20 +8,20 @@ import { useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { findCreatureTemplate, RACE_INFO, type CreatureTemplate, type Race } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, COMBAT_CLASSES, RACES, findCreatureTemplate, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { CreatureFilterBar, NO_FILTER, matchesFilter, type CreatureFilter } from "./CreatureMarks";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { ABILITIES } from "@/lib/creatures/abilities";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
 const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
-const RACES = Object.keys(RACE_INFO) as Race[];
 const SERIF = "Georgia, 'Times New Roman', serif";
 
 type Stack = { t: CreatureTemplate; cards: CreatureOrItemDrop[] };
 
 export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDrop[]; onOpen: (card: CreatureOrItemDrop) => void }) {
-  const [race, setRace] = useState<Race | "all">("all");
+  const [filter, setFilter] = useState<CreatureFilter>(NO_FILTER);
 
   // One stack per creature.
   const stacks = new Map<string, Stack>();
@@ -33,29 +33,28 @@ export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDr
     stacks.set(t.id, s);
   }
   const all = [...stacks.values()];
-  const shown = all.filter((s) => race === "all" || s.t.race === race);
-  const countFor = (r: Race | "all") => all.filter((s) => r === "all" || s.t.race === r).reduce((n, s) => n + s.cards.length, 0);
+  const shown = all.filter((s) => matchesFilter(filter, s.t.race, s.t.cls));
+  const count = (pred: (t: CreatureTemplate) => boolean) => all.filter((s) => pred(s.t)).reduce((n, s) => n + s.cards.length, 0);
+  const byRarity = (a: Stack, b: Stack) => RARITY_ORDER.indexOf(a.t.rarity) - RARITY_ORDER.indexOf(b.t.rarity) || a.t.name.localeCompare(b.t.name);
+  const groups: [string, string, string, Stack[]][] =
+    filter.groupBy === "class" ? COMBAT_CLASSES.map((c) => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((s) => s.t.cls === c).sort(byRarity)])
+    : filter.groupBy === "race" ? RACES.map((r) => [r, `${RACE_INFO[r].icon} ${RACE_INFO[r].name}`, RACE_INFO[r].color, shown.filter((s) => s.t.race === r).sort(byRarity)])
+    : RARITY_ORDER.map((r) => [r, r, RARITY_COLORS[r].text, shown.filter((s) => s.t.rarity === r).sort((a, b) => a.t.name.localeCompare(b.t.name))]);
 
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        {(["all", ...RACES] as const).map((r) => (
-          <button key={r} className="chip" data-active={race === r} onClick={() => setRace(r)}
-            style={r === "all" ? undefined : { color: RACE_INFO[r].color }}>
-            {r === "all" ? "All races" : RACE_INFO[r].name} ({countFor(r)})
-          </button>
-        ))}
-      </div>
+      <CreatureFilterBar value={filter} onChange={setFilter}
+        raceCount={(r) => count((t) => t.race === r && (filter.cls === "all" || t.cls === filter.cls))}
+        classCount={(c) => count((t) => t.cls === c && (filter.race === "all" || t.race === filter.race))} />
 
-      {shown.length === 0 && <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No cards of that race yet.</p>}
+      {shown.length === 0 && <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No cards match those filters yet.</p>}
 
-      {RARITY_ORDER.map((rarity) => {
-        const group = shown.filter((s) => s.t.rarity === rarity).sort((a, b) => a.t.name.localeCompare(b.t.name));
+      {groups.map(([key, title, color, group]) => {
         if (group.length === 0) return null;
         return (
-          <section key={rarity} style={{ marginTop: 16 }}>
-            <div className="pixel-font" style={{ fontSize: 15, color: RARITY_COLORS[rarity].text, textTransform: "capitalize", marginBottom: 8 }}>
-              {rarity} <span style={{ opacity: 0.5 }}>· {group.reduce((n, s) => n + s.cards.length, 0)}</span>
+          <section key={key} style={{ marginTop: 16 }}>
+            <div className="pixel-font" style={{ fontSize: 15, color, textTransform: "capitalize", marginBottom: 8 }}>
+              {title} <span style={{ opacity: 0.5 }}>· {group.reduce((n, s) => n + s.cards.length, 0)}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
               {group.map((s) => <TradingCard key={s.t.id} stack={s} onOpen={() => onOpen(s.cards[0])} />)}
@@ -102,17 +101,22 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
           <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(72 / spriteW))} />
         </div>
 
-        {/* Race (and class, one day). */}
+        {/* Race and class. */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, fontSize: 11, whiteSpace: "nowrap" }}>
           {race && (
-            <span style={{ flexShrink: 0, padding: "1px 5px", borderRadius: 8, background: race.color, color: "#1a140c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-              {race.name}
+            <span title={race.name} style={{ flexShrink: 0, padding: "1px 5px", borderRadius: 8, background: race.color, color: "#1a140c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              {race.icon} {race.name}
             </span>
           )}
-          {cards.some((c) => c.ability)
-            ? <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", color: "#7a4b00", fontWeight: 700 }}>✦ {ABILITIES[cards.find((c) => c.ability)!.ability!].name}</span>
-            : <span style={{ opacity: 0.45, fontStyle: "italic", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>Class —</span>}
+          <span title={`Class: ${CLASS_INFO[t.cls].name}`} style={{ flexShrink: 0, fontWeight: 700, color: "#2b1d10" }}>
+            {CLASS_INFO[t.cls].icon} {CLASS_INFO[t.cls].name}
+          </span>
         </div>
+        {cards.some((c) => c.ability) && (
+          <div style={{ fontSize: 11, color: "#7a4b00", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            ✦ {ABILITIES[cards.find((c) => c.ability)!.ability!].name}
+          </div>
+        )}
 
         {/* Flavour. */}
         <div style={{

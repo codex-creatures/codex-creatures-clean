@@ -66,12 +66,12 @@ export type Race = "beast" | "underdweller" | "etherial" | "undead" | "elvish";
 
 export const RACES: Race[] = ["beast", "underdweller", "etherial", "undead", "elvish"];
 
-export const RACE_INFO: Record<Race, { name: string; color: string }> = {
-  beast:        { name: "Beast",         color: "#d89a5b" },
-  underdweller: { name: "Under-dweller", color: "#b8a77a" },
-  etherial:     { name: "Etherial",      color: "#a99cff" },
-  undead:       { name: "Undead",        color: "#9fd3a8" },
-  elvish:       { name: "Elvish",        color: "#7fd16f" },
+export const RACE_INFO: Record<Race, { name: string; color: string; icon: string }> = {
+  beast:        { name: "Beast",         color: "#d89a5b", icon: "🐾" },
+  underdweller: { name: "Under-dweller", color: "#b8a77a", icon: "🪨" },
+  etherial:     { name: "Etherial",      color: "#a99cff", icon: "🌙" },
+  undead:       { name: "Undead",        color: "#9fd3a8", icon: "💀" },
+  elvish:       { name: "Elvish",        color: "#7fd16f", icon: "🍃" },
 };
 
 export type CreatureTemplate = {

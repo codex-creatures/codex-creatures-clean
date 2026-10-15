@@ -30,7 +30,7 @@ const AL = 1.2;       // altar centre (u = v)
 
 // ── Clickable objects ─────────────────────────────────────────────
 export const OBJ = {
-  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7,
+  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8,
 } as const;
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
@@ -44,6 +44,7 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   5: { u: 0, v: 5.9, z: 104 },     // quest board (above the archway label)
   6: { u: 2.9, v: 0, z: 74 },      // bag shelf
   7: { u: 0, v: 3.0, z: 66 },      // archway
+  8: { u: 4.45, v: 0.45, z: 0, below: true }, // the scroll on its lectern
 };
 
 export function project(u: number, v: number, z: number): [number, number] {
@@ -364,6 +365,20 @@ export function createDen(): DenScene {
   box(OBJ.bag, 3.38, 0.1, 53, 3.56, 0.28, 60, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
   box(OBJ.bag, 2.4, 0.08, 29, 2.62, 0.3, 36, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
   box(OBJ.bag, 2.9, 0.06, 29, 3.5, 0.34, 33, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
+
+  // Lectern with an open scroll (between the bag shelf and the stall):
+  // a post, a wooden top, then the parchment with a rolled end each side.
+  const post: Face = (a, b) => planks(a, b, 3);
+  box(OBJ.scroll, 4.3, 0.3, 0, 4.6, 0.6, 14, { top: () => WOOD_DARK, right: post, left: post });
+  box(OBJ.scroll, 4.05, 0.15, 14, 4.85, 0.8, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
+  const parchment: Face = (a, b) => {
+    if (a < 1.5 || a > 14.5) return hex("#c9b07a");        // rolled ends
+    const line = b > 2 && b < 13 && Math.floor(b) % 3 === 0 && a > 3 && a < 13 && Math.abs(a - 8) > 0.8;
+    return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
+  };
+  box(OBJ.scroll, 4.1, 0.2, 17, 4.8, 0.75, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+  box(OBJ.scroll, 4.05, 0.2, 17, 4.15, 0.75, 19.5, { top: () => hex("#b89a62"), right: () => hex("#a8894f"), left: () => hex("#b89a62") });
+  box(OBJ.scroll, 4.75, 0.2, 17, 4.85, 0.75, 19.5, { top: () => hex("#b89a62"), right: () => hex("#a8894f"), left: () => hex("#b89a62") });
 
   // Merchant stall (against the right wall)
   const counter: Face = (a, b) => (b > 11 ? hex("#8e2b2b") : b > 10 ? GOLD : planks(a, b, 2));

@@ -14,7 +14,8 @@ import CreatureDetailModal from "./CreatureDetailModal";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
 import CardGallery from "./CardGallery";
-import TileGrid, { sortByRarity } from "./TileGrid";
+import TileGrid, { groupTiles } from "./TileGrid";
+import { CreatureFilterBar, NO_FILTER, matchesFilter, type CreatureFilter } from "./CreatureMarks";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
 const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor"]);
@@ -72,8 +73,16 @@ export default function InventoryList({
   const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
 
   const asGrid = GRID_TABS.has(activeTab);
-  // In the grid, everything is sorted rarest first; browsing follows that order.
-  const shown: Drop[] = asGrid ? sortByRarity(filteredInventory.filter((d) => !isRewardDrop(d)) as CreatureOrItemDrop[]) : filteredInventory;
+  // Creature tabs can be filtered by race and class, and grouped.
+  const creatureTab = activeTab === "creatures" || activeTab === "roster";
+  const [filter, setFilter] = useState<CreatureFilter>(NO_FILTER);
+  const tplOf = (d: Drop) => (isCreatureDrop(d) ? findCreatureTemplate(d.creatureId, d.name) : undefined);
+  const gridItems = filteredInventory.filter((d) => !isRewardDrop(d)) as CreatureOrItemDrop[];
+  const filtered = creatureTab ? gridItems.filter((d) => !isCreatureDrop(d) || matchesFilter(filter, tplOf(d)?.race, tplOf(d)?.cls)) : gridItems;
+  const groupBy = creatureTab ? filter.groupBy : "rarity";
+  // In the grid, browsing follows the order the groups show.
+  const shown: Drop[] = asGrid ? groupTiles(filtered, groupBy).flatMap(([, , , g]) => g) : filteredInventory;
+  const countWhere = (pred: (d: Drop) => boolean) => gridItems.filter((d) => isCreatureDrop(d) && pred(d)).length;
   // Only item drops are navigable in the modal
   const navigableItems = shown.filter(isItemDrop) as CreatureOrItemDrop[];
 
@@ -163,9 +172,20 @@ export default function InventoryList({
         <CardGallery cards={filteredInventory.filter(isCardDrop) as CreatureOrItemDrop[]} onOpen={(c) => !sellMode && setOpenCard(c)} />
       )}
 
+      {/* Creature filters. */}
+      {asGrid && creatureTab && gridItems.length > 0 && (
+        <CreatureFilterBar value={filter} onChange={setFilter}
+          raceCount={(r) => countWhere((d) => tplOf(d)?.race === r && (filter.cls === "all" || tplOf(d)?.cls === filter.cls))}
+          classCount={(c) => countWhere((d) => tplOf(d)?.cls === c && (filter.race === "all" || tplOf(d)?.race === filter.race))} />
+      )}
+      {asGrid && creatureTab && gridItems.length > 0 && shown.length === 0 && (
+        <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No creatures match those filters.</p>
+      )}
+
       {/* Creatures and gear: sprite squares. */}
       {asGrid && shown.length > 0 && (
         <TileGrid
+          groupBy={groupBy}
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}
           badge={(d) => {
