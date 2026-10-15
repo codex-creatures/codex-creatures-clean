@@ -459,6 +459,7 @@ export default function DungeonPage() {
       <>
         <BattleView
           battle={battle}
+          showEstimates={lab.meta.clears === 0}
           bag={bagForBattle(lab.meta.bag ?? [])}
           onUseItem={useFromBag}
           finishedActions={over && (

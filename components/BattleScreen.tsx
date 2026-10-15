@@ -14,7 +14,7 @@ import { findCreatureTemplate, type CreatureTemplate, type Skill } from "@/lib/c
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
-import { calcDamage, triangleModifier, type CombatItem, type Fighter } from "@/lib/combat/engine";
+import { calcDamage, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
@@ -250,9 +250,11 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
 // A potion has heal; a weapon has weapon (its combat stats) and detail.
 export type BagItem = { key: string; name: string; icon: string; count: number; heal?: number; weapon?: CombatItem; detail?: string };
 
-export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
+// showEstimates: the "hits for ~X, takes ~Y" swap hints (until your first
+// Cyclops; after that you're on your own).
+export function BattleView({ battle, finishedActions, bag = [], onUseItem, showEstimates = true }: {
   battle: ReturnType<typeof usePlayableBattle>; finishedActions: React.ReactNode;
-  bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void;
+  bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void; showEstimates?: boolean;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
   // Kept simple to start with: details, the bag, swaps and the log open on a tap.
@@ -327,7 +329,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
                 <span>
                   <b style={{ color: rarityColor(info.A[i].rarity) }}>{f.name}</b>
                   <span style={{ color: MUTED, fontSize: 12 }}> · {f.hp}/{f.maxHp} HP · {Math.round(f.energy)}⚡ · {info.A[i].label}</span>
-                  <span style={{ display: "block", fontSize: 12, color: MUTED }}>vs their {them.name}: {matchupHint(f, them)}</span>
+                  {showEstimates && <span style={{ display: "block", fontSize: 12, color: MUTED }}>vs their {them.name}: {matchupHint(f, them)}</span>}
                 </span>
               </button>
             ))}
@@ -399,7 +401,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
                 {swapTargets(you).map((i) => (
                   <button key={i} onClick={() => onAct({ kind: "swap", to: i })} disabled={playing} className="card-btn" style={{ display: "block" }}>
                     <b>⇄ {you.team[i].name}</b>
-                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{you.team[i].hp}/{you.team[i].maxHp} HP · {matchupHint(you.team[i], them)}</span>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{you.team[i].hp}/{you.team[i].maxHp} HP{showEstimates && <> · {matchupHint(you.team[i], them)}</>}</span>
                   </button>
                 ))}
               </div>
@@ -432,11 +434,8 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
 }) {
   const fx = sk.effect;
   const dmg = moveDamage(sk, me, them);
-  const tags: string[] = [];
-  const tri = sk.self ? 1 : triangleModifier(sk.type, them.cls);
-  if (tri > 1) tags.push(`▲ strong vs ${CLASS_INFO[them.cls].name} (+${Math.round((tri - 1) * 100)}%)`);
-  if (tri < 1) tags.push(`▼ ${CLASS_INFO[them.cls].name} resists it (−${Math.round((1 - tri) * 100)}%)`);
-  tags.push("Each hit varies ±5%.");
+  // (No "strong against" hints: the class icons and the triangle are the clue.)
+  const tags: string[] = ["Each hit varies ±5%."];
   const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
   if (run > STREAK_START) tags.push(`run ×${run}: ${Math.round(streakEffects({ ...me.streak!, hits: run }).preciseChance * 100)}% precise`);
   else if (run > 2) tags.push(`run ×${run} (armour gap from ×${STREAK_START + 1})`);
@@ -455,11 +454,9 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
     : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
-    : tri > 1 ? { text: `▲ strong vs ${CLASS_INFO[them.cls].name}`, color: "#7CFC9A" }
-    : tri < 1 ? { text: `▼ ${CLASS_INFO[them.cls].name} resists it`, color: "#ff8a80" }
     : undefined;
   return (
-    <MoveTile m={sk} hit={sk.self ? undefined : `~${dmg}`} hitColor={tri > 1 ? "#7CFC9A" : tri < 1 ? "#ff8a80" : "#ffb38a"}
+    <MoveTile m={sk} hit={sk.self ? undefined : `~${dmg}`} hitColor="#ffb38a"
       note={note} extra={tags} disabled={disabled} onClick={onClick} />
   );
 }
