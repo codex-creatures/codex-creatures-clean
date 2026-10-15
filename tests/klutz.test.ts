@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { KLUTZ } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, EXPEDITION_MS, HEAL_MS_PER_HP, ENCOUNTER_CHECKS, type KlutzState } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, type KlutzState } from "../lib/klutz";
 
 // A small seeded random number generator, so expeditions are repeatable.
 function seeded(seed: number) {
@@ -12,19 +12,18 @@ const plain = () => buildFighter(KLUTZ);
 const mighty = () => ({ ...buildFighter(KLUTZ, { melee: 400, agility: 300 }, { mDef: 300, rDef: 300, magDef: 300, hp: 2000 }) });
 
 describe("Klutz's expeditions", () => {
-  it("last an hour, with up to 3 encounters spread across it", () => {
+  it("he walks until he meets one creature (20–60 minutes in), fights it and comes home", () => {
     for (let s = 1; s < 40; s++) {
       const ex = planExpedition(mighty(), t0, seeded(s));
-      expect(ex.encounters.length).toBeLessThanOrEqual(ENCOUNTER_CHECKS);
-      expect(ex.endsAt).toBe(t0 + EXPEDITION_MS); // a mighty Klutz never loses
-      for (const e of ex.encounters) {
-        expect(e.won).toBe(true);
-        expect(e.at).toBeGreaterThan(t0);
-        expect(e.at).toBeLessThan(ex.endsAt);
-        // The loot: the creature, then its weapon and an armour piece one tier below it.
-        expect(e.loot[0]).toMatchObject({ dropType: "creature", creatureId: e.creatureId });
-        expect(e.loot.slice(1).every((d) => d.dropType === "item" && (d as { rarity: string }).rarity === e.gearRarity)).toBe(true);
-      }
+      expect(ex.encounters).toHaveLength(1);
+      const e = ex.encounters[0];
+      expect(e.won).toBe(true); // a mighty Klutz never loses
+      expect(e.at).toBeGreaterThanOrEqual(t0 + WALK_MIN_MS);
+      expect(e.at).toBeLessThanOrEqual(t0 + WALK_MAX_MS);
+      expect(ex.endsAt).toBe(e.at);
+      // The loot: the creature, then its weapon and an armour piece one tier below it.
+      expect(e.loot[0]).toMatchObject({ dropType: "creature", creatureId: e.creatureId });
+      expect(e.loot.slice(1).every((d) => d.dropType === "item" && (d as { rarity: string }).rarity === e.gearRarity)).toBe(true);
     }
   });
 
@@ -56,7 +55,7 @@ describe("Klutz's expeditions", () => {
     const k: KlutzState = { expedition: ex };
     expect(collectKlutz(k, t0 + 1000).loot).toEqual([]); // still away
     const first = collectKlutz(k, ex.endsAt);
-    expect(first.loot.length).toBe(ex.encounters.length * 3);
+    expect(first.loot.length).toBe(3);
     expect(collectKlutz(first.state, ex.endsAt + 1).loot).toEqual([]);
   });
 });

@@ -363,3 +363,113 @@ export const ARMOR_SPRITES: Record<ArmorKey, Sprite> = {
     "..............",
   ],
 };
+
+// ── Helmets and leg pieces ────────────────────────────────────────
+// Drawn from a few shapes (a plate great-helm, a cloth hood, a light cap;
+// plate greaves, cloth leggings), each coloured in its armour's own
+// palette so a set still reads as one set. In a shape: 1 = dark, 2 = main,
+// 3 = light, 4 = accent, 0 = black.
+const HELM_SHAPES = {
+  helm: [
+    ".....4444.....",
+    "....111111....",
+    "...12233221...",
+    "..1223332221..",
+    "..1233222221..",
+    "..1222222221..",
+    "..1000000001..",
+    "..1222002221..",
+    "..1222222221..",
+    "..1221111221..",
+    "..1221..1221..",
+    "...11....11...",
+    "..............",
+    "..............",
+  ],
+  hood: [
+    "......11......",
+    ".....1221.....",
+    "....122321....",
+    "...12233221...",
+    "..1223322221..",
+    "..1232111221..",
+    "..1221000121..",
+    "..1210000012..",
+    "..1210000012..",
+    ".122100000121.",
+    ".122210001221.",
+    "12222244222221",
+    "11111111111111",
+    "..............",
+  ],
+  cap: [
+    "..............",
+    "..............",
+    "....111111....",
+    "...12233221...",
+    "..1223332221..",
+    "..1233222221..",
+    "..1222222221..",
+    "..1444444441..",
+    "..12......21..",
+    "..12......21..",
+    "..12......21..",
+    "...1......1...",
+    "..............",
+    "..............",
+  ],
+};
+const LEGS_SHAPES = {
+  greaves: [
+    "..1444444441..",
+    "..1222112221..",
+    "..1221..1221..",
+    "..1331..1331..",
+    "..1221..1221..",
+    "..1221..1221..",
+    "..1221..1221..",
+    "..1221..1221..",
+    "..1221..1221..",
+    ".11221..12211.",
+    ".12221..12221.",
+    ".11111..11111.",
+    "..............",
+    "..............",
+  ],
+  leggings: [
+    "..1444444441..",
+    "..1222222221..",
+    "..1223113221..",
+    "..1221..1221..",
+    "..1221..1221..",
+    "..1231..1321..",
+    "..1221..1221..",
+    "..1221..1221..",
+    "..1221..1221..",
+    "..1111..1111..",
+    ".10001..10001.",
+    ".11111..11111.",
+    "..............",
+    "..............",
+  ],
+};
+const recolour = (shape: string[], [d, m, l, a]: string) =>
+  shape.map((row) => row.replace(/[01234]/g, (c) => (c === "0" ? "k" : c === "1" ? d : c === "2" ? m : c === "3" ? l : a)));
+
+// [helmet shape, legs shape, palette: dark main light accent]
+const PIECE_LOOK: Record<ArmorKey, [keyof typeof HELM_SHAPES, keyof typeof LEGS_SHAPES, string]> = {
+  frontiers_mail:        ["cap",  "greaves",  "tsSl"],
+  arrowward_mantle:      ["hood", "leggings", "feEg"],
+  dragonscale_tunic:     ["cap",  "leggings", "feEa"],
+  colossal_shellarmor:   ["helm", "greaves",  "jiIb"],
+  arcane_nullifier:      ["hood", "leggings", "qpPG"],
+  polished_chainbolster: ["helm", "greaves",  "tsSg"],
+  juggernaut_platemail:  ["helm", "greaves",  "tsSr"],
+};
+
+export const HELMET_SPRITES = Object.fromEntries(
+  Object.entries(PIECE_LOOK).map(([k, [h, , pal]]) => [k, recolour(HELM_SHAPES[h], pal)]),
+) as Record<ArmorKey, Sprite>;
+export const LEGS_SPRITES = Object.fromEntries(
+  Object.entries(PIECE_LOOK).map(([k, [, l, pal]]) => [k, recolour(LEGS_SHAPES[l], pal)]),
+) as Record<ArmorKey, Sprite>;

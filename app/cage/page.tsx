@@ -3,7 +3,8 @@
 // The cage in the Den. A new player's first creature is waiting in it; open
 // the cage to make it yours. (Later, creatures Klutz captures will end up here.)
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { klutzStatus } from "@/lib/klutz";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
@@ -23,9 +24,12 @@ export default function CagePage() {
   const caged = game.caged as CreatureOrItemDrop[];
 
   const open = (d: CreatureOrItemDrop) => { game.releaseCaged(d.id); setFreed(d); };
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
 
   return (
     <DenFrame title="Cage" icon="🔒">
+      {game.hydrated && <KlutzWhere game={game} now={now} />}
       {!game.hydrated ? (
         <p style={{ color: MUTED }}>Loading…</p>
       ) : freed ? (
@@ -39,7 +43,7 @@ export default function CagePage() {
           </div>
         </div>
       ) : caged.length === 0 ? (
-        <p style={{ color: MUTED }}>The cage is empty. One day, creatures Klutz captures in the Labyrinth will be brought back here.</p>
+        <p style={{ color: MUTED }}>The cage is empty. Creatures Klutz beats in the Labyrinth are brought back here.</p>
       ) : (
         caged.map((d) => {
           const t = findCreatureTemplate(d.creatureId, d.name);
@@ -61,5 +65,22 @@ export default function CagePage() {
         })
       )}
     </DenFrame>
+  );
+}
+
+// Where Klutz is: he fills the cage with whatever he catches in the Labyrinth.
+function KlutzWhere({ game, now }: { game: ReturnType<typeof useGameState>; now: number }) {
+  const s = klutzStatus(game.klutz, game.klutzFighter.maxHp, now);
+  const mins = (ms: number) => `${Math.max(1, Math.round(ms / 60000))} min`;
+  const line = s.kind === "away"
+    ? <>🌀 <b>Klutz is out hunting in the Labyrinth</b> — {mins(now - s.expedition.startedAt)} so far. Whatever he catches ends up in here.</>
+    : s.kind === "healing"
+      ? <>💤 <b>Klutz is soaking in the pool</b> — back on his feet in {mins(s.fullAt - now)}.</>
+      : <>👺 <b>Klutz is wandering the Den.</b> Send him hunting and he&apos;ll bring what he catches back to this cage.</>;
+  return (
+    <div className="stone-panel" style={{ marginBottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+      <span style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.45, flex: "1 1 240px" }}>{line}</span>
+      <Link href="/klutz" className="chip">{s.kind === "home" ? "Talk to Klutz" : "Check on Klutz"}</Link>
+    </div>
   );
 }

@@ -54,6 +54,7 @@ type Props = {
   showSell?: boolean;
   emptyText?: string;
   headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
+  unavailableItems?: Set<string>; // gear you can't take right now (Klutz has it in the Labyrinth)
 };
 
 const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables"];
@@ -65,7 +66,7 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, emptyText, headerExtra,
+  tabs = TABS, title = "Inventory", showSell = true, emptyText, headerExtra, unavailableItems,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
@@ -303,6 +304,7 @@ export default function InventoryList({
           codexes={inventory.filter((d) => isItemDrop(d) && d.codexMove) as CreatureOrItemDrop[]}
           onLearnCodex={onLearnCodex ? (codexId) => onLearnCodex(openCreature.id, codexId) : undefined}
           onClose={() => setOpenCreatureId(null)}
+          unavailable={unavailableItems}
         />
       )}
 

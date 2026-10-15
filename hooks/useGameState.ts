@@ -174,6 +174,16 @@ export function useGameState(initialTab: TabKey = "all") {
     return fighterFor(klutzDrop(), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
   }, [equipment, inventory]);
 
+  // While Klutz is out, the gear he's wearing goes with him: nobody can take
+  // it off him (or put anything on him) until he's back.
+  const klutzAwayItems = useMemo(() => {
+    const ex = klutz.expedition;
+    if (!ex || ex.collected || Date.now() >= ex.endsAt) return new Set<string>();
+    const l = equipment[KLUTZ_DROP_ID];
+    return new Set([l?.weaponId, l?.helmetId, l?.chestId, l?.legsId].filter((x): x is string => !!x));
+  }, [klutz, equipment]);
+  const klutzIsAway = () => { const ex = klutz.expedition; return !!ex && !ex.collected && Date.now() < ex.endsAt; };
+
   function sendKlutzOff() {
     setKlutz((k) => sendKlutzOut(k, klutzFighter));
   }
@@ -361,6 +371,8 @@ export function useGameState(initialTab: TabKey = "all") {
   // on one creature, so equipping it here removes it from anyone else.
   function equipItem(creatureId: string, slot: EquipSlot, itemId: string | null) {
     const key = SLOT_FIELD[slot];
+    // Klutz's gear is in the Labyrinth with him.
+    if (klutzIsAway() && (creatureId === KLUTZ_DROP_ID || (itemId && klutzAwayItems.has(itemId)))) return;
     setEquipment((prev) => {
       const next: Record<string, Loadout> = {};
       for (const [cid, l] of Object.entries(prev)) {
@@ -469,7 +481,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, quest,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

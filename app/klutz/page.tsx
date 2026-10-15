@@ -15,7 +15,7 @@ import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import {
-  klutzStatus, ENCOUNTER_CHANCE, ENCOUNTER_CHECKS, EXPEDITION_MS, HEAL_MS_PER_HP, type Expedition, type KlutzEncounter,
+  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -69,8 +69,8 @@ export default function KlutzPage() {
         <div className="stone-panel" style={{ marginTop: 14 }}>
           <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>Send him hunting</div>
           <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: "6px 0 10px" }}>
-            He&apos;ll be gone for {Math.round(EXPEDITION_MS / 60000)} minutes, with {ENCOUNTER_CHECKS} chances ({Math.round(ENCOUNTER_CHANCE * 100)}% each) to
-            run into a wild creature. It could be any rarity, wearing gear one tier below it. If he wins he brings it home;
+            He&apos;ll walk the Labyrinth until he runs into a wild creature — usually somewhere between {WALK_MIN_MS / 60000} and {WALK_MAX_MS / 60000} minutes —
+            then fight it and come home. It could be any rarity, wearing gear one tier below it. If he wins he brings it home;
             if he loses he limps back to the pool and heals 1 HP every {HEAL_MS_PER_HP / 1000} seconds. Better gear means he can take on tougher creatures.
           </p>
           <button className="pixel-btn" onClick={game.sendKlutzOff}>🌀 Send Klutz into the Labyrinth</button>
@@ -79,7 +79,9 @@ export default function KlutzPage() {
       {status.kind === "away" && (
         <div className="stone-panel" style={{ marginTop: 14 }}>
           <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>Hunting in the Labyrinth…</div>
-          <div style={{ fontSize: 13, color: MUTED, margin: "4px 0 8px" }}>Back in {clock(status.expedition.endsAt - now)} at the latest.</div>
+          <div style={{ fontSize: 13, color: MUTED, margin: "4px 0 8px" }}>
+            Out for {clock(now - status.expedition.startedAt)} so far — he&apos;ll be back once he&apos;s run into something.
+          </div>
           <EncounterLog ex={status.expedition} upTo={now} />
           <button className="chip" style={{ marginTop: 10 }} onClick={game.klutzSkipAhead} title="A shortcut for playtesting">Testing: skip to the end</button>
         </div>

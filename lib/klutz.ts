@@ -2,15 +2,15 @@
 // Klutz, your helper. He isn't one of your creatures: he wanders the Den,
 // and you can send him into the Labyrinth to hunt.
 //
-// An expedition lasts an hour, with ENCOUNTER_CHECKS chances (one in each
-// stretch of the hour) to run into a wild creature. A creature is rolled
-// like a scan (same rarity odds), wearing gear one rarity lower than itself
-// (commons wear common gear). Klutz fights it 1v1 and his HP carries from one
-// fight to the next:
+// On an expedition he walks the Labyrinth until he runs into a wild
+// creature — somewhere between WALK_MIN_MS and WALK_MAX_MS — fights it, and
+// comes home. The creature is rolled like a scan (same rarity odds), wearing
+// gear one rarity lower than itself (commons wear common gear):
 // - win: the creature goes in the Den's cage and its gear (the weapon and
 //   one armour piece) goes into your inventory;
-// - lose: the expedition is over and he's carried back to the pool, where
-//   he heals HEAL_MS_PER_HP per HP. He can only set off again at full health.
+// - lose: he's carried back to the pool, where he heals HEAL_MS_PER_HP per
+//   HP. He can only set off again at full health (a win can leave him hurt
+//   too).
 //
 // The whole hour is decided when he sets off (so it plays out even with the
 // game closed); the screens reveal it as the time passes.
@@ -27,9 +27,8 @@ import { pieceStats, type ArmorKey } from "./items/armor";
 import type { ItemKey } from "./items/ceilings";
 import type { Drop } from "./types";
 
-export const EXPEDITION_MS = 60 * 60 * 1000;
-export const ENCOUNTER_CHECKS = 3;
-export const ENCOUNTER_CHANCE = 0.5;   // each check: the chance he meets something
+export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something
+export const WALK_MAX_MS = 60 * 60 * 1000;
 export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
 
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
@@ -48,7 +47,7 @@ export type KlutzEncounter = {
 
 export type Expedition = {
   startedAt: number;
-  endsAt: number;        // an hour later, or the moment he lost
+  endsAt: number;        // when he meets something (the fight is quick) and heads home
   maxHp: number;
   encounters: KlutzEncounter[];
   collected: boolean;    // its loot has been handed over
@@ -96,23 +95,15 @@ function fight(klutz: Fighter, hp: number, foe: Fighter): { won: boolean; hpAfte
   return { won: s.winner === "A", hpAfter: Math.max(0, s.sides.A.team[0].hp), rounds: s.round };
 }
 
-// Plan a whole expedition the moment he sets off.
+// Plan a whole expedition the moment he sets off: how long he walks, what
+// he meets, and how the fight goes.
 export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random): Expedition {
-  const encounters: KlutzEncounter[] = [];
-  const stretch = EXPEDITION_MS / ENCOUNTER_CHECKS;
-  let hp = klutz.maxHp;
-  let endsAt = now + EXPEDITION_MS;
-  for (let i = 0; i < ENCOUNTER_CHECKS; i++) {
-    const at = Math.round(now + (i + 0.1 + rng() * 0.8) * stretch);
-    if (rng() >= ENCOUNTER_CHANCE) continue;
-    const rarity = rollRarity(rng), gearRarity = oneLower(rarity);
-    const enemy = makeEnemy(rarity, gearRarity, [], rng);
-    const r = fight(klutz, hp, enemyFighter(enemy));
-    hp = r.hpAfter;
-    encounters.push({ at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [] });
-    if (!r.won) { endsAt = at; break; }
-  }
-  return { startedAt: now, endsAt, maxHp: klutz.maxHp, encounters, collected: false };
+  const at = Math.round(now + WALK_MIN_MS + rng() * (WALK_MAX_MS - WALK_MIN_MS));
+  const rarity = rollRarity(rng), gearRarity = oneLower(rarity);
+  const enemy = makeEnemy(rarity, gearRarity, [], rng);
+  const r = fight(klutz, klutz.maxHp, enemyFighter(enemy));
+  const encounter: KlutzEncounter = { at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [] };
+  return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters: [encounter], collected: false };
 }
 
 // Where Klutz is right now.

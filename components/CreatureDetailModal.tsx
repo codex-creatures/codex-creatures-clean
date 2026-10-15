@@ -38,6 +38,7 @@ type Props = {
   codexes?: CreatureOrItemDrop[];          // every codex you own
   onLearnCodex?: (codexId: string) => void;
   onClose: () => void;
+  unavailable?: Set<string>;               // items you can't take right now (with Klutz in the Labyrinth)
   // Flicking through your creatures: where this one sits in the list.
   position?: { index: number; count: number };
   onPrev?: () => void;
@@ -70,7 +71,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, onClose, position, onPrev, onNext,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, onClose, position, onPrev, onNext, unavailable,
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
@@ -218,12 +219,14 @@ export default function CreatureDetailModal({
                       const owner = equippedOn.get(opt.id);
                       const here = owner === creature.id;
                       const sp = itemSprite(opt);
+                      const away = unavailable?.has(opt.id);
                       return (
-                        <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} title={here ? `${opt.name} (worn now)` : opt.name}
+                        <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} disabled={away}
+                          title={away ? `${opt.name} — Klutz has it with him in the Labyrinth` : here ? `${opt.name} (worn now)` : opt.name}
                           onClick={() => setPreview(opt)}>
                           {sp ? <PixelSprite sprite={sp} scale={2.5} /> : <span style={{ fontSize: 22 }}>?</span>}
                           {here && <Badge color={GOLD}>ON</Badge>}
-                          {owner && !here && <Badge color="#f5c542">⚑</Badge>}
+                          {owner && !here && <Badge color="#f5c542">{away ? "🌀" : "⚑"}</Badge>}
                         </Tile>
                       );
                     })}
@@ -388,13 +391,14 @@ function SetLine({ worn, now, next }: { worn: (CreatureOrItemDrop | undefined)[]
   return box(<><b>{ARMOR_META[best[0]].name} {best[1]}/3</b> — the full set gives {SET_BONUS[best[0]].name}: {SET_BONUS[best[0]].text}</>, false);
 }
 
-function Tile({ children, rarity, selected, title, onClick }: {
-  children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void;
+function Tile({ children, rarity, selected, title, onClick, disabled }: {
+  children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void; disabled?: boolean;
 }) {
   const col = rarity ? RARITY_COLORS[rarity] : undefined;
   return (
-    <button onClick={onClick} title={title} aria-pressed={selected}
+    <button onClick={onClick} title={title} aria-pressed={selected} disabled={disabled}
       style={{
+        opacity: disabled ? 0.35 : 1,
         position: "relative", aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
         background: col ? `radial-gradient(circle, ${col.glow}, #101117 75%)` : "#101117",
         border: `2px solid ${selected ? "#ffd66e" : col ? col.border : "#2f3340"}`,

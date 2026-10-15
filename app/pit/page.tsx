@@ -46,6 +46,7 @@ export default function PitPage() {
         onOpenSellConfirm={() => {}}
         onToggleSellMode={() => {}}
         headerExtra={<Link href="/battle" className="chip" title="Testing: a battle against an AI team">VS AI</Link>}
+        unavailableItems={game.klutzAwayItems}
       />
       </div>
 
