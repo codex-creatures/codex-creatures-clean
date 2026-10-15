@@ -316,7 +316,7 @@ button, a, [role="button"] { touch-action: manipulation; }
 @media (prefers-reduced-motion: reduce) { .floor-prop { animation: none; } }
 
 /* Move tablets: the glyph sits faint behind the name, and wakes up a little when you can use it. */
-.rune-tile .rune-glyph { opacity: 0.22; transition: opacity 0.2s; }
-.rune-live:hover .rune-glyph, .rune-live:focus-visible .rune-glyph { opacity: 0.38; }
+.rune-tile .rune-glyph { opacity: 0.14; transition: opacity 0.2s; }
+.rune-live:hover .rune-glyph, .rune-live:focus-visible .rune-glyph { opacity: 0.26; }
 .rune-live:hover { filter: brightness(1.08); }
 .rune-live:active { transform: translateY(1px); }

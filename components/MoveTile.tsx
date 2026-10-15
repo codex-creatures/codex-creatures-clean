@@ -13,10 +13,11 @@ import { CLASS_INFO, DAMAGE_TYPE_INFO, type CombatClass, type DamageType, type S
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
 // The rune glow for each style: the carved name and the glyph behind it.
-export const RUNE_COLOR: Record<CombatClass, { glow: string; text: string }> = {
-  melee:  { glow: "#ff4a3d", text: "#ffd2cb" },
-  ranged: { glow: "#3fd66b", text: "#d0ffd9" },
-  magic:  { glow: "#4f9dff", text: "#d4e7ff" },
+export const RUNE_COLOR: Record<CombatClass, { glow: string; text: string; stone: [string, string, string] }> = {
+  // stone: [lit edge, face, deep shadow]
+  melee:  { glow: "#ff4a3d", text: "#ffb3a8", stone: ["#7a3a34", "#4a2421", "#24110f"] },
+  ranged: { glow: "#3fd66b", text: "#a8f5b9", stone: ["#3c6e47", "#24452c", "#112216"] },
+  magic:  { glow: "#4f9dff", text: "#b0d2ff", stone: ["#3a5680", "#22344f", "#101a28"] },
 };
 
 // The faint glyph behind a move's name.
@@ -26,40 +27,39 @@ function Glyph({ type, color }: { type: DamageType; color: string }) {
     <svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet" aria-hidden className="rune-glyph"
       style={{ position: "absolute", inset: "8% 6%", width: "88%", height: "84%", color, filter: `drop-shadow(0 0 4px ${color})` }}>
       {type === "force" && (
-        // A hadouken-style ball of force, rings rippling out, streaking in from the left.
+        // A hadouken-style ball of force flying left to right, its trail streaming behind.
         <g {...common}>
-          <circle cx="62" cy="30" r="9" fill={color} fillOpacity="0.55" stroke="none" />
-          <circle cx="62" cy="30" r="15" strokeWidth="3" />
-          <circle cx="62" cy="30" r="22" strokeWidth="2" strokeDasharray="6 5" />
-          <path d="M8 22 H34 M4 30 H38 M10 38 H34" strokeWidth="3" />
+          <circle cx="70" cy="30" r="10" fill={color} fillOpacity="0.6" stroke="none" />
+          <circle cx="70" cy="30" r="16" strokeWidth="3" />
+          <path d="M54 18 Q30 14 6 20 M50 30 H2 M54 42 Q30 46 6 40" strokeWidth="3" />
         </g>
       )}
       {type === "pierce" && (
-        // An arrow punching through, with speed lines behind.
+        // An arrow flying left to right, with speed lines behind.
         <g {...common} strokeWidth="3">
-          <path d="M14 46 L80 14" />
-          <path d="M80 14 L66 15 M80 14 L74 26" strokeWidth="4" />
-          <path d="M14 46 L10 36 M14 46 L4 46 M20 43 L16 33 M20 43 L10 43" />
-          <path d="M30 52 L48 43 M40 55 L54 48" strokeWidth="2" strokeDasharray="4 4" />
+          <path d="M10 30 H86" />
+          <path d="M86 30 L74 22 M86 30 L74 38" strokeWidth="4" />
+          <path d="M10 30 L4 22 M10 30 L4 38 M18 30 L12 22 M18 30 L12 38" />
+          <path d="M26 16 H52 M30 44 H56" strokeWidth="2" strokeDasharray="5 4" />
         </g>
       )}
       {type === "arcane" && (
-        // A crackling bolt.
+        // A bolt crackling left to right.
         <g {...common}>
-          <path d="M58 2 L36 32 H52 L40 58 L68 24 H52 L64 2 Z" fill={color} fillOpacity="0.45" strokeWidth="2.5" />
-          <path d="M26 16 l-6 4 M76 40 l7 3 M72 10 l6 -3 M22 46 l-7 3" strokeWidth="2" />
+          <path d="M4 26 L34 20 L30 30 L62 22 L58 32 L96 28 L60 38 L64 30 L32 38 L36 30 Z" fill={color} fillOpacity="0.5" strokeWidth="2" />
+          <path d="M20 12 l5 4 M48 10 l3 5 M70 46 l4 5 M40 48 l-3 5" strokeWidth="2" />
         </g>
       )}
     </svg>
   );
 }
 
-export function MoveTile({ m, note, extra = [], selected, disabled, dim, slot, tag, onClick }: {
+export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, onClick }: {
   m: Skill;
   note?: { text: string; color: string };   // one short line (e.g. "not enough energy")
   extra?: string[];        // more lines for the details side
   selected?: boolean; disabled?: boolean; dim?: boolean;
-  slot?: number;           // its move slot (1–4 shown)
+  slot?: number;           // its move slot (not shown; kept for callers)
   tag?: { text: string; color: string };
   onClick?: () => void;
 }) {
@@ -74,10 +74,14 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, slot, t
       onClick={() => active && onClick!()} onKeyDown={(e) => { if (active && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick!(); } }}
       style={{
         position: "relative", minHeight: 84, padding: "10px 12px", cursor: active ? "pointer" : "default", overflow: "hidden",
-        // Sunk into the stone: dark at the top where the light can't reach, a lit lip below.
-        background: `radial-gradient(ellipse at 50% 55%, ${rune.glow}22, transparent 70%), linear-gradient(180deg, #121319, #1d1f27 55%, #23262f)`,
-        border: `3px solid ${selected ? "#c9a24a" : "#0b0c10"}`,
-        boxShadow: `inset 0 5px 10px rgba(0,0,0,0.75), inset 0 -2px 0 rgba(255,255,255,0.07), inset 0 0 0 1px ${rune.glow}33, 0 2px 0 #3a3e4b, 0 4px 0 rgba(0,0,0,0.5)${selected ? ", 0 0 12px rgba(255,214,110,0.5)" : ""}`,
+        // A block of coloured stone: chiselled edges (lit top-left, shadowed
+        // bottom-right), a rough face, a faint glow from the rune.
+        background: `radial-gradient(ellipse at 50% 50%, ${rune.glow}26, transparent 65%),
+          repeating-linear-gradient(115deg, rgba(0,0,0,0.10) 0 2px, transparent 2px 7px),
+          repeating-linear-gradient(25deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 9px),
+          linear-gradient(160deg, ${rune.stone[1]}, ${rune.stone[2]})`,
+        border: `3px solid ${selected ? "#ffd66e" : "#0b0c10"}`,
+        boxShadow: `inset 3px 3px 0 ${rune.stone[0]}, inset -3px -3px 0 ${rune.stone[2]}, inset 0 0 14px rgba(0,0,0,0.55), 0 4px 0 rgba(0,0,0,0.55)${selected ? ", 0 0 14px rgba(255,214,110,0.6)" : ""}`,
         opacity: disabled ? 0.4 : dim ? 0.6 : 1, userSelect: "none",
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
       }}>
@@ -90,14 +94,13 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, slot, t
           background: info ? "#5a3b1c" : "#1b1d25", border: "2px solid #4a4f5e", color: "#d8d4c8",
           fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 700, fontSize: 12, lineHeight: 1, padding: 0,
         }}>i</button>
-      {slot !== undefined && <span className="pixel-font" style={{ position: "absolute", top: 6, left: 8, fontSize: 12, color: rune.text, opacity: 0.45 }}>{slot + 1}</span>}
 
       {!info ? (
         <div style={{ position: "relative", padding: "0 26px" }}>
           {/* The name, carved: a dark cut above, the rune's glow inside. */}
           <div className="pixel-font" style={{
             fontSize: 18, lineHeight: 1.15, color: rune.text,
-            textShadow: `0 -1px 0 rgba(0,0,0,0.9), 0 0 6px ${rune.glow}, 0 0 14px ${rune.glow}88`,
+            textShadow: `0 -2px 0 rgba(0,0,0,0.85), 0 1px 0 ${rune.stone[0]}, 0 0 8px ${rune.glow}aa`,
           }}>
             {m.name}
           </div>
