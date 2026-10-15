@@ -22,7 +22,7 @@ import {
 } from "@/lib/combat/engine";
 import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, HASTE_ROUNDS, STREAK_PRECISE_STEP, STREAK_START, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
 import { ABILITIES, ABILITY_CHANCE, abilitiesFor } from "@/lib/creatures/abilities";
-import { RARE_MOVE_CHANCE, ROLL_SPREAD } from "@/lib/creatures/creatureRoll";
+import { RARE_MOVE_CHANCE, ROLL_SPREAD_SHARE, ROLL_SPREAD_MIN } from "@/lib/creatures/creatureRoll";
 import { ITEM_CEILINGS, ITEM_KEYS, STAT_KEYS, WEAPON_AFFINITY, type ItemKey } from "@/lib/items/ceilings";
 import { ITEM_META } from "@/lib/items/metadata";
 import { PRIMARY_STATS_BY_ITEMKEY } from "@/lib/items/itemPrimaries";
@@ -120,7 +120,7 @@ function Combat() {
       </ul>
 
       <H>Creature rolls</H>
-      <P>Every creature is an individual: its %s are rolled within ±{ROLL_SPREAD} of its species, each move slot has a {pct(RARE_MOVE_CHANCE)} chance to
+      <P>Every creature is an individual: its %s are rolled around its species&apos; — each within ±{pct(ROLL_SPREAD_SHARE)} of the species&apos; total %s (at least ±{ROLL_SPREAD_MIN}), so rarer creatures, with more to work with, vary more — each move slot has a {pct(RARE_MOVE_CHANCE)} chance to
         be a rare learnable move of its class, and Epic ({pct(ABILITY_CHANCE.epic ?? 0)}) and Legendary ({pct(ABILITY_CHANCE.legendary ?? 0)}) creatures can be born with an ability.</P>
     </div>
   );

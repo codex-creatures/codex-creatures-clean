@@ -1,19 +1,26 @@
 import { describe, it, expect } from "vitest";
 import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, RETIRED_CREATURES } from "../lib/creatures/creatureData";
-import { rollProficiency, rollMoves, ROLL_SPREAD } from "../lib/creatures/creatureRoll";
+import { rollProficiency, rollMoves, rollSpread } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
 
 const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
 
 describe("creature % rolls", () => {
-  it("keep the same total, stay within ±2 of the species, and never go negative", () => {
+  it("vary more for rarer creatures (more stats to work with)", () => {
+    const spread = (id: string) => rollSpread(CREATURE_BY_ID[id].proficiency);
+    expect(spread("moss_wolf")).toBe(2);
+    expect(spread("ironhide")).toBeGreaterThan(spread("monkey_mage"));
+    expect(spread("monkey_mage")).toBeGreaterThan(spread("moss_wolf"));
+  });
+
+  it("keep the same total, stay within the spread for the species, and never go negative", () => {
     for (const c of CREATURE_TEMPLATES) {
       for (let i = 0; i < 300; i++) {
         const p = rollProficiency(c.proficiency);
         expect(sum(p)).toBe(sum(c.proficiency));
         for (const k of Object.keys(p) as (keyof typeof p)[]) {
-          expect(Math.abs(p[k] - c.proficiency[k])).toBeLessThanOrEqual(ROLL_SPREAD);
+          expect(Math.abs(p[k] - c.proficiency[k])).toBeLessThanOrEqual(rollSpread(c.proficiency));
           expect(p[k]).toBeGreaterThanOrEqual(0);
         }
       }
