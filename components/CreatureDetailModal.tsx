@@ -53,8 +53,8 @@ const WEAPON_STAT_LABELS: [string, string][] = [["melee", "Atk"], ["ranged", "Rn
 const ARMOR_STAT_LABELS:  [string, string][] = [["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"], ["agility", "Agi"], ["hp", "HP"]];
 
 // Each stat's bar is full at about the best a creature reaches with Legendary gear.
-type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | "magdef";
-const STATS: { key: StatKey; icon: string; label: string; max: number; color: string }[] = [
+export type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | "magdef";
+export const STATS: { key: StatKey; icon: string; label: string; max: number; color: string }[] = [
   { key: "hp",   icon: "❤️", label: "Health",     max: 350, color: "#e0524a" },
   { key: "atk",  icon: "⚔️", label: "Melee",      max: 180, color: "#ff9f43" },
   { key: "rng",  icon: "🏹", label: "Ranged",     max: 180, color: "#ffd84a" },

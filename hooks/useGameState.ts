@@ -67,6 +67,7 @@ type SaveState = {
   deathsSinceScan?: number;            // Labyrinth runs lost in a row without scanning a barcode
   scanMode?: ScanMode;                 // Looting or Storage
   caches?: Drop[];                     // Code Caches waiting at the altar (Storage mode): what each holds
+  crate?: Drop[];                      // Klutz's crate: gear he brought home, to keep or sell
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
 };
 
@@ -112,6 +113,7 @@ export function loadSave(): SaveState | null {
     scanTipRead: parsed.scanTipRead === true,
     scanMode: parsed.scanMode === "store" ? "store" : "loot",
     caches: Array.isArray(parsed.caches) ? parsed.caches : [],
+    crate: Array.isArray(parsed.crate) ? parsed.crate : [],
   };
 }
 
@@ -136,6 +138,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [scanTipRead, setScanTipRead] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("loot");
   const [caches, setCaches] = useState<Drop[]>([]);
+  const [crate, setCrate] = useState<Drop[]>([]);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -167,14 +170,15 @@ export function useGameState(initialTab: TabKey = "all") {
       setScanTipRead(saved.scanTipRead ?? false);
       setScanMode(saved.scanMode ?? "loot");
       setCaches(saved.caches ?? []);
+      setCrate(saved.crate ?? []);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -268,7 +272,7 @@ export function useGameState(initialTab: TabKey = "all") {
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);
       setCaged((prev) => [...prev, ...caught.slice(0, Math.max(0, CAGE_SIZE - prev.length))]);
-      setInventory((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]);
+      setCrate((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]); // his gear goes in his crate
     };
     check();
     const timer = window.setInterval(check, 5000);
@@ -412,6 +416,21 @@ export function useGameState(initialTab: TabKey = "all") {
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
   }
 
+  // Klutz's crate: keep a piece (it joins your storage) or sell it.
+  const crateSellValue = (d: Drop) => (isSellableItem(d)
+    ? computeSellGold({ drop: d as any, getStatCapForDrop: (drop: any, statKey: string) => getStatCapForDrop(drop, statKey) ?? 0 })
+    : 0);
+  function keepFromCrate(ids: string[]) {
+    const kept = crate.filter((d) => ids.includes(d.id));
+    setCrate((prev) => prev.filter((d) => !ids.includes(d.id)));
+    setInventory((prev) => [...kept, ...prev]);
+  }
+  function sellFromCrate(ids: string[]) {
+    const sold = crate.filter((d) => ids.includes(d.id));
+    setCrate((prev) => prev.filter((d) => !ids.includes(d.id)));
+    setGold((gl) => gl + sold.reduce((s, d) => s + crateSellValue(d), 0));
+  }
+
   // Open stored Code Caches (by drop id): what's inside joins your things.
   function openCaches(ids: string[]) {
     const opened = caches.filter((c) => ids.includes(c.id));
@@ -537,6 +556,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setDeathsSinceScan(0);
     setScanTipRead(false);
     setCaches([]);
+    setCrate([]);
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -563,7 +583,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

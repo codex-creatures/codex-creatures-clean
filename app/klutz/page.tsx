@@ -118,11 +118,11 @@ export default function KlutzPage() {
           {ex.find && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6, marginTop: 6 }}>
               {itemSprite(ex.find as CreatureOrItemDrop) && <PixelSprite sprite={itemSprite(ex.find as CreatureOrItemDrop)!} scale={2} />}
-              <span style={{ fontSize: 13 }}>🎁 On the way he picked up <b style={{ color: RARITY_COLORS[(ex.find as CreatureOrItemDrop).rarity].text }}>{(ex.find as CreatureOrItemDrop).name}</b> <span style={{ color: MUTED }}>({(ex.find as CreatureOrItemDrop).rarity})</span> — it&apos;s in your storage.</span>
+              <span style={{ fontSize: 13 }}>🎁 On the way he picked up <b style={{ color: RARITY_COLORS[(ex.find as CreatureOrItemDrop).rarity].text }}>{(ex.find as CreatureOrItemDrop).name}</b> <span style={{ color: MUTED }}>({(ex.find as CreatureOrItemDrop).rarity})</span> — it&apos;s in <Link href="/crate" style={{ textDecoration: "underline" }}>his crate</Link>.</span>
             </div>
           )}
           {ex.encounters.some((e) => e.won) && !ex.letGo && (
-            <p style={{ fontSize: 13, margin: "8px 0 0" }}>Caught creatures are waiting in the <Link href="/cage" style={{ textDecoration: "underline" }}>cage</Link>; their gear is in your inventory.</p>
+            <p style={{ fontSize: 13, margin: "8px 0 0" }}>Caught creatures are waiting in the <Link href="/cage" style={{ textDecoration: "underline" }}>cage</Link>; their gear is in <Link href="/crate" style={{ textDecoration: "underline" }}>his crate</Link>.</p>
           )}
         </div>
       )}

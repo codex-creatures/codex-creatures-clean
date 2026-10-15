@@ -15,7 +15,9 @@ import RaceTag from "@/components/RaceTag";
 import ClassBadge from "@/components/ClassBadge";
 import AbilityTag from "@/components/AbilityTag";
 import { useGameState } from "@/hooks/useGameState";
-import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { STATS, type StatKey } from "@/components/CreatureDetailModal";
+import { MoveTile } from "@/components/MoveTile";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -26,6 +28,7 @@ export default function CagePage() {
   const [freed, setFreed] = useState<CreatureOrItemDrop | null>(null);
   const [released, setReleased] = useState<CreatureOrItemDrop | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null); // release asks twice
+  const [viewing, setViewing] = useState<string | null>(null);       // a creature's stats, shown
   const caged = game.caged as CreatureOrItemDrop[];
   const ownsAny = game.inventory.some((d) => d.dropType === "creature");
 
@@ -81,6 +84,10 @@ export default function CagePage() {
               </div>
               <AbilityTag ability={d.ability} />
               {t && <p style={{ color: "#a9a59a", fontSize: 13, fontStyle: "italic" }}>{t.flavour}</p>}
+              <button className="chip" onClick={() => setViewing(viewing === d.id ? null : d.id)} style={{ marginBottom: 8 }}>
+                {viewing === d.id ? "Hide its stats" : "📜 View its stats"}
+              </button>
+              {viewing === d.id && t && <CagedStats d={d} t={t} />}
               <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 6 }}>
                 <button className="pixel-btn" onClick={() => capture(d)}>🪢 Capture</button>
                 <button className="pixel-btn" onClick={() => release(d)} disabled={!ownsAny}
@@ -112,6 +119,37 @@ function KlutzWhere({ game, now }: { game: ReturnType<typeof useGameState>; now:
     <div className="stone-panel" style={{ marginBottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
       <span style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.45, flex: "1 1 240px" }}>{line}</span>
       <Link href="/klutz" className="chip">{s.kind === "home" ? "Talk to Klutz" : "Check on Klutz"}</Link>
+    </div>
+  );
+}
+
+// A caged creature's stats, to help you decide: its health, its rolled %s
+// (what it adds to its gear, and how its roll compares with its species),
+// and the moves it was born with.
+function CagedStats({ d, t }: { d: CreatureOrItemDrop; t: CreatureTemplate }) {
+  const prof = d.proficiency ?? t.proficiency;
+  const moves = resolveMoves(t, d.moves);
+  return (
+    <div style={{ textAlign: "left", background: "#15161d", border: "2px solid #0e0f14", padding: 10, margin: "0 0 10px" }}>
+      <div style={{ fontSize: 14, marginBottom: 8 }}>❤️ <b>{t.baseHp}</b> <span style={{ color: MUTED }}>health, before armour</span></div>
+      <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", marginBottom: 6 }}>Gear multipliers</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: 5 }}>
+        {STATS.filter((st) => st.key !== "hp").map((st) => {
+          const k = st.key as Exclude<StatKey, "hp">;
+          const diff = (prof[k] ?? 0) - (t.proficiency[k] ?? 0);
+          return (
+            <div key={k} style={{ textAlign: "center", padding: "5px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
+              <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.icon} {st.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: st.color }}>+{prof[k]}%</div>
+              <div style={{ fontSize: 10, color: diff > 0 ? "#7CFC9A" : diff < 0 ? "#ff8a80" : MUTED }}>{diff > 0 ? `+${diff} roll` : diff < 0 ? `${diff} roll` : "standard"}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", margin: "10px 0 6px" }}>Its moves</div>
+      <div className="move-grid">
+        {moves.map((m) => <MoveTile key={m.name} m={m} />)}
+      </div>
     </div>
   );
 }

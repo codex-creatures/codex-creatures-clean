@@ -32,7 +32,7 @@ const WALL_H = 150;   // tallest the rock walls get (px)
 
 // ── Clickable objects ─────────────────────────────────────────────
 export const OBJ = {
-  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11, klutz: 12, bookcase: 13,
+  none: 0, pit: 1, chest: 2, altar: 3, merchant: 4, quests: 5, bag: 6, arch: 7, scroll: 8, cage: 9, pool: 10, tavern: 11, klutz: 12, bookcase: 13, crate: 14,
 } as const;
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
@@ -41,6 +41,7 @@ const AL = { u: 3.4, v: 3.4 };              // scanning altar (the centrepiece)
 const PIT = { u0: 6.2, v0: 5.4, u1: 9.6, v1: 8.8, depth: 18 };
 const POOL = { u: 3.6, v: 9.0, ru: 1.9, rv: 1.25 };
 const CAGE = { u0: 0.35, v0: 8.0, u1: 2.15, v1: 9.8, h: 32 };
+const CRATE = { u0: 2.3, v0: 6.95, u1: 3.1, v1: 7.7, h: 14 }; // Klutz's crate, beside the cage
 const ARCH_V = 2.6;                          // archway on the left wall
 const BOARD_V = 5.4;                         // quest board on the left wall
 const TAVERN = { a0: 9.9, a1: 12.3, h: 74 }; // tavern opening on the right wall (along u)
@@ -61,6 +62,7 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
   12: { u: 5.2, v: 2.0, z: 26 },                   // Klutz (he moves: see klutzAt)
   13: { u: 6.4, v: 0, z: 58 },                     // the bookcase (a single shelf, for now)
+  14: { u: CRATE.u1, v: CRATE.v1, z: 0, below: true }, // Klutz's crate (label under it)
 };
 
 // Klutz's stroll round the Den: a loop of open floor (clear of the pit,
@@ -545,6 +547,12 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
   };
   box(OBJ.scroll, 0.8, 5.9, 17, 1.5, 6.5, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+
+  // Klutz's crate: rough planks with iron bands, where he dumps the gear he finds.
+  const crateSide: Face = (a, b) => (b < 1.2 || b > CRATE.h - 1.5 || Math.abs(b - CRATE.h / 2) < 0.8 ? IRON : planks(a, b, 3));
+  box(OBJ.crate, CRATE.u0, CRATE.v0, 0, CRATE.u1, CRATE.v1, CRATE.h, {
+    top: (a, b) => (a < 1 || b < 1 || a > 12.5 || b > 12.5 ? IRON_LIGHT : mul(planks(a, b, 4), 0.9)), right: crateSide, left: crateSide,
+  });
 
   // The cage: an iron floor plate and roof (its bars, and whoever is
   // inside, are drawn each frame).
