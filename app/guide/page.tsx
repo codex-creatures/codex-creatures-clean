@@ -18,7 +18,7 @@ import {
   AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, PRECISE_CHANCE, PRECISE_IGNORE,
   TRIANGLE, calcDamage, type CombatItem, type Fighter,
 } from "@/lib/combat/engine";
-import { CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, HASTE_ROUNDS, STREAK_PRECISE_STEP, STREAK_START, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
+import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, HASTE_ROUNDS, STREAK_PRECISE_STEP, STREAK_START, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
 import { ABILITIES, ABILITY_CHANCE, abilitiesFor } from "@/lib/creatures/abilities";
 import { RARE_MOVE_CHANCE, ROLL_SPREAD } from "@/lib/creatures/creatureRoll";
 import { ITEM_CEILINGS, ITEM_KEYS, STAT_KEYS, WEAPON_AFFINITY, type ItemKey } from "@/lib/items/ceilings";
@@ -111,7 +111,7 @@ function Combat() {
         <li><b>Energy</b>: everyone starts on {MAX_ENERGY}. Moves cost energy; you get {ENERGY_REGEN} back after each attack. With nothing affordable, a creature rests.</li>
         <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise and ignore {pct(PRECISE_IGNORE)} of the defence (on top of the damage type).</li>
         <li><b>Armour gap</b>: from the {STREAK_START + 1}th use of the same move on the same target in a row, each use adds {pct(STREAK_PRECISE_STEP)} precise chance, and precise hits in that run crack through more armour. It resets when either side swaps or you change move.</li>
-        <li><b>Cripple</b>: −{pct(CRIPPLE_AGILITY_LOSS)} agility for {CRIPPLE_ROUNDS} rounds. <b>Haste</b>: extra agility this round and the next {HASTE_ROUNDS}.</li>
+        <li><b>Cripple</b>: for {CRIPPLE_ROUNDS} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent). <b>Haste</b>: extra agility this round and the next {HASTE_ROUNDS}.</li>
         <li><b>Stances</b>: floating takes +10% from ranged, −10% from melee; entrenched the other way round.</li>
       </ul>
 

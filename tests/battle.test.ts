@@ -92,7 +92,7 @@ describe("move slots and learnable moves", () => {
     expect(hits / N).toBeLessThan(0.74);
   });
 
-  it("cripple lands 70% of the time, slows by 35%, and lasts the next 3 rounds", () => {
+  it("cripple lands 50% of the time, slows the target, and lasts the next 3 rounds", () => {
     let crippled = 0;
     const N = 4000;
     for (let i = 0; i < N; i++) {
@@ -100,8 +100,8 @@ describe("move slots and learnable moves", () => {
       resolveRound(s, { A: { kind: "attack", skillName: "Cripple" }, B: { kind: "attack", skillName: "Slash" } });
       if (isCrippled(activeOf(s.sides.B))) crippled++;
     }
-    expect(crippled / N).toBeGreaterThan(0.66);
-    expect(crippled / N).toBeLessThan(0.74);
+    expect(crippled / N).toBeGreaterThan(0.46);
+    expect(crippled / N).toBeLessThan(0.54);
 
     const fast = { agility: 100 };
     const s = createBattle([buildFighter(CREATURE_BY_ID.crystal_golem, undefined, undefined, ["Cripple", "Jab"])], [buildFighter(CREATURE_BY_ID.ironhide, fast, undefined, ["Slash"])]);
@@ -112,6 +112,22 @@ describe("move slots and learnable moves", () => {
       resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Slash" } });
       expect(isCrippled(target)).toBe(r < CRIPPLE_ROUNDS - 1);
     }
+  });
+
+  it("a crippled creature stumbles and loses about a quarter of its attacks, spending no energy", () => {
+    let tries = 0, lost = 0;
+    for (let i = 0; i < 3000; i++) {
+      const s = createBattle([mv("crystal_golem", ["Jab"])], [mv("ironhide", ["Slash"])]);
+      const b = activeOf(s.sides.B);
+      b.statuses = [{ id: "cripple", rounds: CRIPPLE_ROUNDS }];
+      resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Slash" } });
+      tries++;
+      const stumbled = s.log.some((e) => e.type === "effect" && e.kind === "stumble");
+      if (stumbled) { lost++; expect(b.energy).toBe(100); }
+      expect(s.log.some((e) => e.type === "attack" && e.side === "B")).toBe(!stumbled);
+    }
+    expect(lost / tries).toBeGreaterThan(0.21);
+    expect(lost / tries).toBeLessThan(0.29);
   });
 
   it("a dash move hastes you: faster this round and the next ones", () => {

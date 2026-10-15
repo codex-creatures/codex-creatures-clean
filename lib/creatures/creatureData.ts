@@ -122,9 +122,9 @@ export const ALL_SKILLS: Skill[] = [
 // Moves any creature can learn into one of its move slots. For now they're
 // all available to test; later they'll come from encounters, drops and quests.
 export const LEARNABLE_MOVES: Skill[] = [
-  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  dmgType: "force",  effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses 50% agility for 3 rounds." },
-  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses 50% agility for 3 rounds." },
-  { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.7 },    desc: "70% chance to cripple: the target loses 50% agility for 3 rounds." },
+  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  dmgType: "force",  effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
+  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
+  { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
   { name: "Dash Lash",      damage: 10, energyCost: 50, type: "melee",  dmgType: "pierce", effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
   { name: "Quick Bolt",     damage: 10, energyCost: 50, type: "ranged", dmgType: "pierce", effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
   { name: "Blink",          damage: 10, energyCost: 50, type: "magic",  dmgType: "force",  effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
@@ -153,7 +153,7 @@ export const RACE_MOVES: Skill[] = [
 export const BOSS_MOVES: Skill[] = [
   { name: "Club Smash",    damage: 20, energyCost: 40, type: "melee", dmgType: "force"  },
   { name: "Backhand",      damage: 10, energyCost: 20, type: "melee", dmgType: "force"  },
-  { name: "Stomp",         damage: 12, energyCost: 40, type: "melee", dmgType: "force",  effect: { kind: "cripple", chance: 0.5, agilityLoss: 0.5 }, desc: "50% chance to cripple: −50% agility for a few rounds." },
+  { name: "Stomp",         damage: 12, energyCost: 40, type: "melee", dmgType: "force",  effect: { kind: "cripple", chance: 0.5, agilityLoss: 0.5 }, desc: "50% chance to cripple: −50% agility, and a 25% chance to stumble and lose each attack, for a few rounds." },
   { name: "Eye Laser",     damage: 30, energyCost: 70, type: "magic", dmgType: "arcane" },
   { name: "Claw Rake",     damage: 15, energyCost: 30, type: "melee", dmgType: "pierce" },
   { name: "Crushing Grip", damage: 25, energyCost: 50, type: "melee", dmgType: "force"  },

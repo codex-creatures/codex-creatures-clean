@@ -33,11 +33,13 @@ import { ABILITIES, DIVINE_HEALING, KEEN_EYE_BONUS } from "../creatures/abilitie
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
 
-// Cripple (from Cripple / Crippling Shot): the target loses agility for the
-// next few rounds. Re-crippling refreshes the duration; it doesn't stack.
-// It keeps counting down while the creature is on the bench.
+// Cripple (from Cripple / Crippling Shot / Hobble Hex): the target loses
+// agility for the next few rounds, and each time it tries to attack it may
+// stumble and lose that attack. Re-crippling refreshes the duration; it
+// doesn't stack. It keeps counting down while the creature is on the bench.
 export const CRIPPLE_AGILITY_LOSS = 0.5;
 export const CRIPPLE_ROUNDS = 3;
+export const CRIPPLE = { stumble: 0.25 }; // chance a crippled creature loses its attack (no energy spent)
 
 // Haste (from Dash Lash / Quick Bolt): the user gains agility this round
 // (so it can strike first) and for the next HASTE_ROUNDS rounds.
@@ -135,7 +137,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "revive" | "item" | "set" | "ability"; damage?: number }
+      kind: "self" | "venom" | "revive" | "item" | "set" | "ability" | "stumble"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -319,6 +321,13 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     if (action.kind !== "attack") continue;
+    // Crippled: it may stumble and lose this attack (no energy spent).
+    if (isCrippled(actor) && Math.random() < CRIPPLE.stumble) {
+      actor.streak = undefined;
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: "is crippled and stumbles — it can't attack this round",
+        hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "stumble" });
+      continue;
+    }
     const quickscale = quick(actor, action);
     if (quickscale) actor.setUsed = true;
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;

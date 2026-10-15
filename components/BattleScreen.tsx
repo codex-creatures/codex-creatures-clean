@@ -16,6 +16,7 @@ import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, triangleModifier, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
+import { CRIPPLE } from "@/lib/combat/battle";
 import { moveKind } from "./ClassBadge";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
@@ -218,8 +219,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
             attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
-            text: e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : "#c7b8ff" }
+            text: e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
       if (!alive.current) return;
@@ -410,7 +411,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   if (run > STREAK_START) tags.push(`run ×${run}: ${Math.round(streakEffects({ ...me.streak!, hits: run }).preciseChance * 100)}% precise`);
   else if (run > 2) tags.push(`run ×${run} (armour gap from ×${STREAK_START + 1})`);
   if (fx?.kind === "precise") tags.push(`${Math.round(fx.hitChance * 100)}% to hit · always precise`);
-  if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple`);
+  if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple: slower, ${Math.round(CRIPPLE.stumble * 100)}% to lose each attack`);
   if (fx?.kind === "dash") {
     const flips = theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil;
     tags.push(`haste +${Math.round(fx.agilityBonus * 100)}% agility for ${HASTE_ROUNDS + 1} rounds${flips ? " → strike first!" : ""}`);
