@@ -18,7 +18,7 @@ describe("race moves", () => {
 
   it("Pounce strikes first even when slower, and hits the wounded harder", () => {
     const slow = fighter("ironhide", ["Pounce", "Slash"]);      // agility 10%
-    const fast = fighter("ember_lynx", ["Slash", "Bolt"]);      // agility 30%
+    const fast = fighter("monkey_mage", ["Slash", "Bolt"]);      // agility 30%
     const s = createBattle([slow], [fast]);
     resolveRound(s, { A: hit("Pounce"), B: hit("Slash") });
     const attacks = s.log.filter((e) => e.type === "attack");

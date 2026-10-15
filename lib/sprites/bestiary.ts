@@ -50,22 +50,28 @@ export const BESTIARY: Record<string, Sprite> = {
     p.line(7, 22, 9, 22, 1, "F");                                             // jaws
   }),
 
-  ember_lynx: draw((p) => {
-    p.ellipse(39, 11, 3.5, 2.5, "n").ellipse(42, 6, 2, 1.6, "b").ellipse(36, 15, 2, 1.5, "b");  // smoke
-    p.path([[34, 36], [40, 30], [41, 22]], 3.5, ORANGE).dot(41, 21, "K").dot(41, 22, "K");      // tail
-    p.ellipse(29, 31, 8, 9, ORANGE);                                          // haunch
-    p.ellipse(24, 27, 9, 9, ORANGE);                                          // body
-    p.rect(17, 30, 19, 40, ORANGE).rect(21, 31, 23, 40, ORANGE);              // front legs
-    p.rect(16, 40, 20, 41, "A").rect(21, 40, 24, 41, "A").rect(29, 39, 34, 41, "a");
-    p.ellipse(16, 16, 7.5, 6.5, ORANGE);                                      // head
-    p.poly([[11, 11], [12, 3], [16, 10]], ORANGE).poly([[17, 10], [20, 3], [21, 11]], ORANGE);
-    p.line(12, 1, 12, 4, 1, "K").line(20, 1, 20, 4, 1, "K");                  // ear tufts
-    p.poly([[8, 18], [12, 15], [15, 22], [10, 23]], ["h", "I", "i"]);         // muzzle
-    p.dot(8, 18, "x").dot(9, 18, "x");                                        // nose
-    p.ellipse(14, 14.5, 1.8, 1.4, "y").dot(14, 14, "k").dot(14, 15, "k");     // eye
-    p.poly([[18, 19], [24, 22], [19, 24]], ["h", "I", "i"]);                  // cheek fluff
-    for (const [x, y] of [[26, 24], [29, 27], [24, 31], [31, 33], [27, 21], [21, 27]]) p.dot(x, y, "x");
-    for (const [x, y, c] of [[33, 18, "F"], [36, 21, "y"], [31, 14, "F"], [38, 26, "F"]] as const) p.dot(x, y, c);
+  monkey_mage: draw((p) => {
+    p.path([[30, 37], [38, 35], [41, 28], [38, 23], [35, 26]], 2.5, T.fur);  // curled tail
+    p.ellipse(17, 41, 3.5, 1.6, T.fur).ellipse(28, 41, 3.5, 1.6, T.fur);       // feet
+    p.poly([[16, 22], [30, 22], [34, 40], [12, 40]], T.purple);                 // robe
+    p.rect(12, 38, 34, 39, T.gold);                                             // hem
+    p.line(17, 23, 29, 33, 1, T.gold);                                          // sash
+    for (const [x, y] of [[26, 26], [18, 33], [29, 36]] as const) p.dot(x, y, "G"); // stars on the robe
+    p.circle(23, 17, 6.5, T.fur);                                               // head
+    p.circle(15.5, 16, 2.6, T.fur).dot(15, 16, "I");                            // ears
+    p.circle(30.5, 16, 2.6, T.fur).dot(31, 16, "I");
+    p.ellipse(21, 18.5, 4.5, 4, T.sand);                                        // face
+    p.dot(19, 17, "k").dot(23, 17, "k").dot(19, 16, "h").dot(23, 16, "h");      // eyes
+    p.dot(20, 20, "m").dot(22, 20, "m");                                        // nostrils
+    p.line(19, 22, 22, 22, 1, "m");                                             // mouth
+    p.ellipse(23, 11.5, 10, 1.8, T.purple);                                     // hat brim
+    p.poly([[15, 11], [31, 11], [28, 5], [34, 0], [22, 3]], T.purple);          // pointed hat, flopping back
+    p.dot(22, 7, "G").dot(26, 5, "G").dot(25, 9, "y");                          // stars on the hat
+    p.path([[18, 26], [13, 28], [10, 27]], 3, T.fur);                           // arm
+    p.circle(10, 27, 2, T.sand);                                                // hand
+    p.line(9, 8, 11, 42, 1.5, T.wood);                                          // staff
+    p.circle(8.5, 5, 3.2, T.cyan).dot(7, 4, "H").dot(8, 3, "H");                // glowing orb
+    for (const [x, y, c] of [[3, 2, "C"], [13, 1, "y"], [2, 9, "y"], [14, 7, "C"], [5, 13, "C"]] as const) p.dot(x, y, c);
   }),
 
   dire_wolf: draw((p) => {
