@@ -380,6 +380,7 @@ export default function DungeonPage() {
           armorName: e.gear[1] ? gearName(e.gear[1]) : undefined,
         }));
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
+    if (room.enemies) game.markSeen(room.enemies.map((e) => e.creatureId));
     battle.start(
       { A: mine.map((c) => c.fighter), B: room.boss ? cyclopsTeam() : room.enemies!.map(enemyFighter) },
       { A: mine, B: info },

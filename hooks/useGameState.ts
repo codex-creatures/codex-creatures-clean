@@ -58,6 +58,7 @@ type SaveState = {
   caged?: Drop[];                      // creatures waiting in the Den's cage (tap to free them)
   klutz?: KlutzState;                  // your helper: his health and any expedition
   quest?: QuestState;                  // the first quest (lib/quest.ts)
+  seen?: string[];                     // creature ids you've come across (the Bestiary fills in as you explore)
 };
 
 // A new player's first creature: a random Rare, waiting in the cage.
@@ -97,6 +98,7 @@ export function loadSave(): SaveState | null {
     caged: Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()],
     klutz: obj(parsed.klutz) as KlutzState,
     quest: parsed.quest && typeof parsed.quest === "object" ? (parsed.quest as QuestState) : { ...NEW_QUEST },
+    seen: Array.isArray(parsed.seen) ? parsed.seen : [],
   };
 }
 
@@ -118,6 +120,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [caged, setCaged]             = useState<Drop[]>([]);
   const [klutz, setKlutz]             = useState<KlutzState>({});
   const [quest, setQuest]             = useState<QuestState>({ ...NEW_QUEST });
+  const [seen, setSeen]               = useState<string[]>([]);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -144,14 +147,26 @@ export function useGameState(initialTab: TabKey = "all") {
       setCaged(saved.caged ?? []);
       setKlutz(saved.klutz ?? {});
       setQuest(saved.quest ?? { ...NEW_QUEST });
+      setSeen(saved.seen ?? []);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen]);
+
+  // ── The Bestiary: creatures you've come across ────────
+  // Anything you own (or hold a card of) or have waiting in the cage counts,
+  // plus anything you've met in the Labyrinth or Klutz has run into.
+  function markSeen(ids: string[]) {
+    setSeen((prev) => (ids.every((id) => prev.includes(id)) ? prev : [...new Set([...prev, ...ids])]));
+  }
+  const seenIds = useMemo(() => new Set<string>([
+    ...seen,
+    ...[...inventory, ...caged].flatMap((d) => (d.dropType === "creature" || d.dropType === "card") && (d as CreatureOrItemDrop).creatureId ? [(d as CreatureOrItemDrop).creatureId!] : []),
+  ]), [seen, inventory, caged]);
 
   // ── The first quest (Klutz's box) ─────────────────────
   const acceptQuest = () => setQuest((q) => (q.stage === "start" ? { ...q, stage: "hunt" } : q));
@@ -178,7 +193,7 @@ export function useGameState(initialTab: TabKey = "all") {
   // it off him (or put anything on him) until he's back.
   const klutzAwayItems = useMemo(() => {
     const ex = klutz.expedition;
-    if (!ex || ex.collected || Date.now() >= ex.endsAt) return new Set<string>();
+    if (!ex || ex.collected) return new Set<string>(); // (collected within seconds of him getting back)
     const l = equipment[KLUTZ_DROP_ID];
     return new Set([l?.weaponId, l?.helmetId, l?.chestId, l?.legsId].filter((x): x is string => !!x));
   }, [klutz, equipment]);
@@ -218,6 +233,8 @@ export function useGameState(initialTab: TabKey = "all") {
       if (state === klutzRef.current) return;
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);
+      const met = (state.expedition?.encounters ?? []).map((e) => e.creatureId);
+      if (met.length) setSeen((prev) => [...new Set([...prev, ...met])]);
       setCaged((prev) => [...prev, ...loot.filter(isCreatureDrop)]);
       setInventory((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]);
     };
@@ -462,6 +479,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setFavoriteIds(new Set());
     setKlutz({});
     setQuest({ ...NEW_QUEST });
+    setSeen([]);
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -488,7 +506,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
@@ -499,6 +517,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop, markSeen,
   };
 }

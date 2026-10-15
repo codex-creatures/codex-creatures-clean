@@ -2,10 +2,12 @@
 // app/guide/page.tsx
 // The Bestiary & Rules scroll (the lectern in the Den): every combat rule,
 // creature, move and piece of gear, drawn straight from the game's data so it
-// is always up to date.
+// is always up to date. Creatures you haven't come across yet are black
+// silhouettes ("???"); you fill the Bestiary in by exploring.
 
 import { useMemo, useState } from "react";
 import DenFrame from "@/components/DenFrame";
+import { useGameState } from "@/hooks/useGameState";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import ClassBadge, { moveKind } from "@/components/ClassBadge";
@@ -41,6 +43,8 @@ const TABS: [Tab, string][] = [["combat", "⚔️ How fights work"], ["creatures
 
 export default function GuidePage() {
   const [tab, setTab] = useState<Tab>("combat");
+  const game = useGameState();
+  const seen = game.seenIds;
   return (
     <DenFrame title="Bestiary & Rules" icon="📜">
       <p style={{ color: MUTED, fontSize: 13, margin: "0 0 10px" }}>
@@ -50,10 +54,10 @@ export default function GuidePage() {
         {TABS.map(([k, label]) => <button key={k} className="chip" data-active={tab === k} onClick={() => setTab(k)}>{label}</button>)}
       </div>
       {tab === "combat" && <Combat />}
-      {tab === "creatures" && <Creatures />}
-      {tab === "moves" && <Moves />}
+      {tab === "creatures" && <Creatures seen={seen} />}
+      {tab === "moves" && <Moves seen={seen} />}
       {tab === "gear" && <Gear />}
-      {tab === "races" && <Races />}
+      {tab === "races" && <Races seen={seen} />}
     </DenFrame>
   );
 }
@@ -212,26 +216,52 @@ function Calculator() {
 const PROF_LABELS: [keyof CreatureProficiency, string][] = [["atk", "⚔️ Melee"], ["rng", "🏹 Ranged"], ["mag", "🔮 Magic"], ["agil", "💨 Agility"], ["mdef", "🛡️ M.Def"], ["rdef", "🔰 R.Def"], ["magdef", "🧿 Mg.Def"]];
 const byRarity = (a: CreatureTemplate, b: CreatureTemplate) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || a.name.localeCompare(b.name);
 
-function Creatures() {
+function Creatures({ seen }: { seen: Set<string> }) {
   const [filter, setFilter] = useState<CreatureFilter>(NO_FILTER);
-  const shown = CREATURE_TEMPLATES.filter((t) => matchesFilter(filter, t.race, t.cls));
+  const known = (t: CreatureTemplate) => seen.has(t.id);
+  // You only know a creature's race and class once you've seen it.
+  const filtering = filter.race !== "all" || filter.cls !== "all";
+  const shown = CREATURE_TEMPLATES.filter((t) => (filtering ? known(t) && matchesFilter(filter, t.race, t.cls) : true));
+  const unseen = shown.filter((t) => !known(t)).sort(byRarity);
   const groups: [string, string, string, CreatureTemplate[]][] =
-    filter.groupBy === "class" ? COMBAT_CLASSES.map((c) => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((t) => t.cls === c).sort(byRarity)])
-    : filter.groupBy === "race" ? RACES.map((r) => [r, `${RACE_INFO[r].icon} ${RACE_INFO[r].name}`, RACE_INFO[r].color, shown.filter((t) => t.race === r).sort(byRarity)])
+    filter.groupBy === "class" ? [...COMBAT_CLASSES.map((c): [string, string, string, CreatureTemplate[]] => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((t) => known(t) && t.cls === c).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
+    : filter.groupBy === "race" ? [...RACES.map((r): [string, string, string, CreatureTemplate[]] => [r, `${RACE_INFO[r].icon} ${RACE_INFO[r].name}`, RACE_INFO[r].color, shown.filter((t) => known(t) && t.race === r).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
     : [...RARITIES].reverse().map((r) => [r, r, RARITY_COLORS[r].text, shown.filter((t) => t.rarity === r).sort(byRarity)]);
+  const count = CREATURE_TEMPLATES.filter(known).length;
   return (
     <div>
+      <P>You&apos;ve come across <b>{count} of {CREATURE_TEMPLATES.length}</b> creatures. The rest are shadows until you see one — scan barcodes,
+        explore the Labyrinth, or send Klutz hunting.</P>
       <CreatureFilterBar value={filter} onChange={setFilter}
-        raceCount={(r) => CREATURE_TEMPLATES.filter((t) => t.race === r && (filter.cls === "all" || t.cls === filter.cls)).length}
-        classCount={(c) => CREATURE_TEMPLATES.filter((t) => t.cls === c && (filter.race === "all" || t.race === filter.race)).length} />
+        raceCount={(r) => CREATURE_TEMPLATES.filter((t) => known(t) && t.race === r && (filter.cls === "all" || t.cls === filter.cls)).length}
+        classCount={(c) => CREATURE_TEMPLATES.filter((t) => known(t) && t.cls === c && (filter.race === "all" || t.race === filter.race)).length} />
       {groups.map(([key, title, color, list]) => list.length > 0 && (
         <section key={key}>
           <H><span style={{ color, textTransform: "capitalize" }}>{title}</span> <span style={{ color: MUTED, fontSize: 13 }}>· {list.length}</span></H>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
-            {list.map((t) => <CreatureCard key={t.id} t={t} />)}
+            {list.map((t) => (known(t) ? <CreatureCard key={t.id} t={t} /> : <UnseenCard key={t.id} t={t} />))}
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+// A creature you haven't come across: a black shape and its rarity, nothing more.
+function UnseenCard({ t }: { t: CreatureTemplate }) {
+  const rc = RARITY_COLORS[t.rarity];
+  return (
+    <div style={{ ...PANEL, marginTop: 0, borderColor: rc.border, opacity: 0.85 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ background: "radial-gradient(circle, rgba(255,255,255,0.06), #101117 75%)", padding: 4 }}>
+          <PixelSprite sprite={creatureSprite(t.id)} scale={2} style={{ filter: "brightness(0) drop-shadow(0 0 1px rgba(255,255,255,0.35))" }} />
+        </div>
+        <div>
+          <div className="pixel-font" style={{ color: MUTED, fontSize: 18 }}>???</div>
+          <div style={{ fontSize: 12, color: rc.text, textTransform: "capitalize", marginTop: 2 }}>{t.rarity}</div>
+          <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>Not seen yet.</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -286,7 +316,7 @@ function MoveChip({ m }: { m: Skill }) {
 }
 
 // ── Moves ─────────────────────────────────────────────────────────
-function Moves() {
+function Moves({ seen }: { seen: Set<string> }) {
   const knownBy = useMemo(() => {
     const map = new Map<string, CreatureTemplate[]>();
     for (const t of CREATURE_TEMPLATES) for (const m of t.skills) map.set(m.name, [...(map.get(m.name) ?? []), t]);
@@ -310,7 +340,9 @@ function Moves() {
           <H><span style={{ color: CLASS_INFO[c].color }}>{CLASS_INFO[c].icon} {CLASS_INFO[c].name} moves</span></H>
           {ALL_SKILLS.filter((m) => m.type === c).map((m) => {
             const who = knownBy.get(m.name) ?? [];
-            return row(m, who.length ? <>Known by {who.length}: {who.map((t) => <CreatureName key={t.id} t={t} />)}</> : "No creature knows this yet.");
+            const met = who.filter((t) => seen.has(t.id)), hidden = who.length - met.length;
+            return row(m, who.length === 0 ? "No creature knows this yet."
+              : <>Known by {met.map((t) => <CreatureName key={t.id} t={t} />)}{hidden > 0 && <span>{met.length ? "and " : ""}{hidden} creature{hidden === 1 ? "" : "s"} you haven&apos;t seen</span>}</>);
           })}
         </section>
       ))}
@@ -408,7 +440,8 @@ function Gear() {
 }
 
 // ── Races × classes ───────────────────────────────────────────────
-function Races() {
+function Races({ seen }: { seen: Set<string> }) {
+  const hidden = CREATURE_TEMPLATES.filter((t) => !seen.has(t.id)).length;
   return (
     <div>
       <P>Every creature has a race and a class. Races decide which codex moves a creature can learn; classes decide the triangle.</P>
@@ -426,7 +459,7 @@ function Races() {
                 <th style={{ padding: 6, textAlign: "left", color: RACE_INFO[r].color, whiteSpace: "nowrap", verticalAlign: "top" }}>{RACE_INFO[r].icon} {RACE_INFO[r].name}</th>
                 {COMBAT_CLASSES.map((c) => (
                   <td key={c} style={{ padding: 6, verticalAlign: "top" }}>
-                    {CREATURE_TEMPLATES.filter((t) => t.race === r && t.cls === c).sort(byRarity).map((t) => (
+                    {CREATURE_TEMPLATES.filter((t) => seen.has(t.id) && t.race === r && t.cls === c).sort(byRarity).map((t) => (
                       <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 4, color: RARITY_COLORS[t.rarity].text }}>
                         <PixelSprite sprite={creatureSprite(t.id)} scale={0.75} /> {t.name}
                       </div>
@@ -437,11 +470,12 @@ function Races() {
             ))}
             <tr style={{ borderTop: "1px solid #2a2d38" }}>
               <th style={{ padding: 6, textAlign: "left", color: MUTED }}>Total</th>
-              {COMBAT_CLASSES.map((c) => <td key={c} style={{ padding: 6, color: MUTED }}>{CREATURE_TEMPLATES.filter((t) => t.cls === c).length}</td>)}
+              {COMBAT_CLASSES.map((c) => <td key={c} style={{ padding: 6, color: MUTED }}>{CREATURE_TEMPLATES.filter((t) => seen.has(t.id) && t.cls === c).length}</td>)}
             </tr>
           </tbody>
         </table>
       </div>
+      {hidden > 0 && <P>❔ {hidden} more creature{hidden === 1 ? "" : "s"} you haven&apos;t come across yet.</P>}
       <H>Race moves</H>
       {RACES.map((r) => (
         <div key={r} style={{ ...PANEL, marginTop: 6 }}>

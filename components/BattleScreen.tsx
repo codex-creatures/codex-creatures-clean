@@ -255,6 +255,10 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
   bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
+  // Kept simple to start with: details, the bag, swaps and the log open on a tap.
+  const [details, setDetails] = useState(false);
+  const [open, setOpen] = useState<"bag" | "swap" | null>(null);
+  const [showLog, setShowLog] = useState(false);
   const match = battle.match!;
   const { info } = match;
   const playing = battle.view !== null;
@@ -286,13 +290,13 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
       {/* The arena */}
       <div className="arena">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-          <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} />
+          <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} details={details} />
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {fieldOf(foe).map((i) => (
               <div key={i} onClick={multi && !playing ? () => setTargetPick(i) : undefined}
                 style={{ cursor: multi && !playing ? "pointer" : undefined, outline: multi && i === target ? "2px solid #ffd66e" : undefined, outlineOffset: 2 }}>
                 {multi && i === target && <div className="pixel-font" style={{ fontSize: 12, color: "#ffd66e", marginBottom: 2 }}>🎯 Your target</div>}
-                <FighterCard side="B" f={foe.team[i]} foe={me} info={info.B[i]} fx={fx} slot={i} compact={multi} />
+                <FighterCard side="B" f={foe.team[i]} foe={me} info={info.B[i]} fx={fx} slot={i} compact={multi} details={details} />
               </div>
             ))}
           </div>
@@ -336,10 +340,12 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
               Two enemies on the field — both attack every round. Tap one to target it: now hitting the {them.name}.
             </div>
           )}
-          <div style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>
-            {myAgil === theirAgil ? "Equal agility — a coin flip decides who strikes first."
-              : myAgil > theirAgil ? `Your ${me.name} is faster (${Math.round(myAgil)} vs ${Math.round(theirAgil)} agility) and strikes first.`
-              : `Their ${them.name} is faster (${Math.round(theirAgil)} vs ${Math.round(myAgil)} agility) and strikes first.`}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: myAgil > theirAgil ? "#7CFC9A" : myAgil < theirAgil ? "#ffb38a" : MUTED }}>
+              {myAgil === theirAgil ? "⚖️ Coin flip for who goes first" : myAgil > theirAgil ? "⚡ You strike first" : `⚡ Their ${them.name} strikes first`}
+              {details && <span style={{ color: MUTED }}> · agility {Math.round(myAgil)} vs {Math.round(theirAgil)}</span>}
+            </span>
+            <button className="chip" data-active={details} onClick={() => setDetails((d) => !d)} style={{ minHeight: 32, padding: "4px 10px", fontSize: 13 }}>ⓘ Details</button>
           </div>
           <div className="move-grid">
             {me.skills.map((sk) => (
@@ -350,7 +356,21 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
           {affordableSkills(me).length === 0 && (
             <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — rest (+30⚡)</button>
           )}
-          {bag.length > 0 && onUseItem && (
+          {((bag.length > 0 && onUseItem) || swapTargets(you).length > 0) && (
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              {bag.length > 0 && onUseItem && (
+                <button className="chip" data-active={open === "bag"} onClick={() => setOpen((o) => (o === "bag" ? null : "bag"))} style={{ flex: 1 }}>
+                  🎒 Bag · {bag.reduce((n, it) => n + it.count, 0)}
+                </button>
+              )}
+              {swapTargets(you).length > 0 && (
+                <button className="chip" data-active={open === "swap"} onClick={() => setOpen((o) => (o === "swap" ? null : "swap"))} style={{ flex: 1 }}>
+                  ⇄ Swap
+                </button>
+              )}
+            </div>
+          )}
+          {open === "bag" && bag.length > 0 && onUseItem && (
             <>
               <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
                 From your bag — uses your turn (before anyone attacks), on your {me.name}:
@@ -370,7 +390,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
               </div>
             </>
           )}
-          {swapTargets(you).length > 0 && (
+          {open === "swap" && swapTargets(you).length > 0 && (
             <>
               <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
                 Swap — uses your turn: {multi ? "both their creatures get" : `their ${them.name} gets`} a free hit on the incoming creature, and your {me.name} recovers 50% of its missing energy.
@@ -388,8 +408,10 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
         </ActionBox>
       )}
 
-      <SectionTitle>Battle log</SectionTitle>
-      <BattleLog log={match.state.log} />
+      <button className="chip" onClick={() => setShowLog((v) => !v)} style={{ marginTop: 14, width: "100%" }}>
+        📜 {showLog ? "Hide" : "Show"} the battle log
+      </button>
+      {showLog && <BattleLog log={match.state.log} />}
     </>
   );
 }
@@ -443,8 +465,8 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
 }
 
 // compact: a smaller card, when two share a column.
-function FighterCard({ side, f, foe, info, fx, slot, compact }: {
-  side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number; compact?: boolean;
+function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: {
+  side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number; compact?: boolean; details?: boolean;
 }) {
   const color = side === "A" ? YOU : FOE;
   const hpPct = (f.hp / f.maxHp) * 100;
@@ -479,7 +501,7 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
             <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", color: rarityColor(info.rarity), lineHeight: 1.1, overflowWrap: "anywhere" }}>{f.name}</div>
-            <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span> · {info.label}</div>
+            <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>{details && <> · {info.label}</>}</div>
           </div>
         </div>
         <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
@@ -495,12 +517,12 @@ function FighterCard({ side, f, foe, info, fx, slot, compact }: {
         ))}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
         <StreakBadges f={f} foe={foe} slot={slot} />
-        {!compact && (
+        {details && !compact && (
           <div style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
             ⚔️ {info.weaponName ?? "no weapon"}<br />🛡️ {info.armorName ?? "no armour"}
           </div>
         )}
-        <StatsLine stats={combatSummary(f)} />
+        {details && <StatsLine stats={combatSummary(f)} />}
       </div>
       {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color }}>{float.text}</div>}
     </div>

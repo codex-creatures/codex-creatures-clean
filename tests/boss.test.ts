@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, currentAgility, fieldOf, type BattleState } from "../lib/combat/battle";
 import { effectiveAgil, calcDamage } from "../lib/combat/engine";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
@@ -15,7 +15,11 @@ const fight = () => createBattle([hero(), hero(), hero()], cyclopsTeam(), {}, "c
 function toPhase2(s: BattleState) {
   const body = s.sides.B.team[CYCLOPS.BODY];
   body.hp = Math.floor(body.maxHp * CYCLOPS.SPLIT_AT) + 1;
+  // Fixed dice for this set-up round: no cripple from a Stomp, no stumble, so
+  // the blow always lands and splits the body.
+  const dice = vi.spyOn(Math, "random").mockReturnValue(0.99);
   resolveRound(s, { A: { kind: "attack", skillName: "Heavy Blow" }, B: pass });
+  dice.mockRestore();
 }
 
 describe("the Cyclops", () => {
