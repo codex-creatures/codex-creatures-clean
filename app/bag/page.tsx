@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { itemSprite } from "@/components/PixelSprite";
 import BagSlots, { slotLook } from "@/components/BagSlots";
+import { GearStatLine } from "@/components/GearCompare";
 import { useGameState } from "@/hooks/useGameState";
 import {
   loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootIdOf, POTIONS, BINDLE, BACKPACK, BOOKCASE_SIZE,
@@ -67,6 +68,7 @@ export default function BagPage() {
           <span style={{ fontSize: 12, color: MUTED, display: "block" }}>
             {w.rarity}{aff ? ` · ${aff.icon} ${aff.name}` : w.armorSlot ? ` · ${ARMOR_SLOT_INFO[w.armorSlot].name}` : ""}
           </span>
+          <GearStatLine item={w} />
         </span>
       </span>
     );

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
 import LootGrid from "@/components/LootGrid";
+import GearCompare, { GearStatLine } from "@/components/GearCompare";
 import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
@@ -586,7 +587,8 @@ export default function DungeonPage() {
       {/* During the club tutorial the bindle comes first, right under the room. */}
       {!clubTutorial && <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />}
       <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
-        byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} tutorial={clubTutorial} />
+        byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} tutorial={clubTutorial}
+        wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
       {clubTutorial && <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />}
       {(run.pending?.length ?? 0) > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, borderColor: "#c9a24a" }}>
@@ -1041,13 +1043,15 @@ function bagItems(bag: PotionKey[]): BagItem[] {
 
 // Between rooms: your battle bag as slots. Tap one for what you can do with it.
 // tutorial: the entry to walk the player through equipping (Klutz's Club).
-function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, onLeave, tutorial }: {
+function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onEquip, onLeave, tutorial }: {
   run: DungeonRun; bag: BagEntry[]; slots: number; name: string;
   itemOf: (e: BagEntry) => CreatureOrItemDrop | undefined; slotOf: (it: CreatureOrItemDrop) => EquipSlot | null;
   byId: (id: string) => OwnedCreature | undefined; onDrink: (k: PotionKey, id: string) => void;
+  wornIn: (creatureId: string, slot: EquipSlot) => CreatureOrItemDrop | undefined; // what a creature wears in a slot
   onEquip: (e: BagEntry, creatureId: string) => void; onLeave: (e: BagEntry) => void; tutorial?: BagEntry;
 }) {
   const [sel, setSel] = useState<number | null>(null);
+  const [comparing, setComparing] = useState(false);
   const standing = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0);
   const hurt = standing.filter((id) => (run.hp[id] ?? 1) < 1);
   const e = sel !== null ? bag[sel] : undefined;
@@ -1055,7 +1059,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, on
   const slot = it ? slotOf(it) : null;
   const tutorialAt = tutorial ? bag.indexOf(tutorial) : -1;
   const teaching = tutorialAt >= 0 && e === tutorial;
-  const done = (fn: () => void) => () => { fn(); setSel(null); };
+  const done = (fn: () => void) => () => { fn(); setSel(null); setComparing(false); };
   const chip = (key: string, label: string, onClick: () => void, extra: React.CSSProperties = {}, pulse = false) => (
     <button key={key} className={`chip${pulse ? " tutorial-pulse" : ""}`} style={{ padding: "5px 10px", ...extra }} onClick={onClick}>{label}</button>
   );
@@ -1069,7 +1073,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, on
         </div>
       )}
       <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
-        selected={sel} onSelect={setSel} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
+        selected={sel} onSelect={(i) => { setSel(i); setComparing(false); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
       {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty. Gold and creature cards take no space; gear, codexes and potions take a slot each.</p>}
 
       {e && (
@@ -1087,6 +1091,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, on
             <>
               <b style={{ color: RARITY_COLORS[it.rarity].text }}>{it.name}</b>
               <span style={{ fontSize: 12, color: MUTED }}> · {it.rarity}{lootIdOf(e) ? " · found this run" : " · yours"}</span>
+              {slot && <GearStatLine item={it} />}
               {teaching && (
                 <div className="tutorial-tip" style={{ margin: "8px 0 0" }}>
                   <span className="tutorial-arrow">👇</span> Now choose who carries it. Gear you find down here works the same way: tap it in your bag, then equip it.
@@ -1094,8 +1099,15 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, onDrink, onEquip, on
               )}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                 {slot && standing.map((id) => chip(id, `Equip on ${byId(id)!.name}`, done(() => onEquip(e, id)), {}, teaching))}
+                {slot && !teaching && !comparing && chip("compare", "⚖️ Compare", () => setComparing(true))}
                 {!teaching && chip("leave", "Leave it here", done(() => onLeave(e)), { color: "#ff8a80" })}
               </div>
+              {slot && comparing && (
+                <GearCompare item={it} slotName={slot}
+                  creatures={run.party.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, creatureId: c.creatureId, worn: wornIn(id, slot) }] : []; })}
+                  onEquip={(id) => { if ((run.hp[id] ?? 1) > 0) done(() => onEquip(e, id))(); }}
+                  onClose={() => setComparing(false)} />
+              )}
             </>
           ) : (
             <span style={{ color: MUTED }}>Something you no longer have.</span>
