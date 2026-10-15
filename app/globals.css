@@ -314,3 +314,9 @@ button, a, [role="button"] { touch-action: manipulation; }
 .floor-prop:hover { filter: drop-shadow(0 4px 0 rgba(0,0,0,0.7)) brightness(1.3) !important; }
 @keyframes floor-prop { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .floor-prop { animation: none; } }
+
+/* Move tablets: the glyph sits faint behind the name, and wakes up a little when you can use it. */
+.rune-tile .rune-glyph { opacity: 0.22; transition: opacity 0.2s; }
+.rune-live:hover .rune-glyph, .rune-live:focus-visible .rune-glyph { opacity: 0.38; }
+.rune-live:hover { filter: brightness(1.08); }
+.rune-live:active { transform: translateY(1px); }
