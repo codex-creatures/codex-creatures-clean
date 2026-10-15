@@ -31,11 +31,12 @@ describe("the battle bag", () => {
     expect(POTIONS.lesser).toMatchObject({ heal: 50, price: 50 });
   });
 
-  it("stashes: 2-3 potions (3 a quarter of the time), gold half the time, gear a quarter", () => {
+  it("stashes: always 3 things — 2 potions, then a potion (25%), gold (50%) or gear (25%)", () => {
     const N = 4000;
     let three = 0, gold = 0, gear = 0;
     for (let i = 0; i < N; i++) {
       const sack = makeRoom("stash").sack!;
+      expect(sack).toHaveLength(3);
       const potions = sack.filter((x) => "potion" in x);
       expect(potions.length === 2 || potions.length === 3).toBe(true);
       for (const p of potions) expect(POTIONS[(p as { potion: "potion" | "lesser" }).potion]).toBeTruthy();

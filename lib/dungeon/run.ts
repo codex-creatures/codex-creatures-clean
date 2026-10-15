@@ -117,6 +117,8 @@ export const lootIdOf = (e: BagEntry): string | undefined => (e.startsWith("loot
 
 // Something left on a room's floor (by name, for the walk back).
 export type FloorItem = { room: string; potion?: PotionKey; drop?: Drop };
+// Something you picked up this run (for the haul at the end).
+export type GotItem = { potion: PotionKey } | { drop: Drop };
 
 // The bookcase in the Den: where codexes are kept (a single shelf to start).
 export const BOOKCASE_SIZE = 10;
@@ -125,18 +127,17 @@ export const POTIONS: Record<PotionKey, { name: string; heal: number; price: num
   potion: { name: "Healing Potion", heal: 100, price: 100, icon: "🧪" },
   lesser: { name: "Lesser Potion",  heal: 50,  price: 50,  icon: "🧴" },
 };
-// A stash: a burlap sack. Open it and take what you want (one slot each,
-// gold takes none); what you leave stays on the floor.
-// - STASH_POTIONS potions, or one more STASH_EXTRA_POTION_CHANCE of the time
-//   (each a Healing Potion STASH_POTION_CHANCE of the time, else a Lesser one);
-// - STASH_GOLD_CHANCE of some gold (STASH_GOLD);
-// - STASH_GEAR_CHANCE of a weapon or armour piece, rolled like a scan.
+// A stash: a burlap sack of STASH_ITEMS things. Open it and take what you
+// want (one slot each, gold takes none); what you leave stays on the floor.
+// - STASH_POTIONS potions (each a Healing Potion STASH_POTION_CHANCE of the
+//   time, else a Lesser one);
+// - the last thing is rolled: STASH_LAST_ROLL — another potion, some gold
+//   (STASH_GOLD), or a weapon or armour piece rolled like a scan.
+export const STASH_ITEMS = 3;
 export const STASH_POTIONS = 2;
-export const STASH_EXTRA_POTION_CHANCE = 0.25;
 export const STASH_POTION_CHANCE = 0.3;
-export const STASH_GOLD_CHANCE = 0.5;
+export const STASH_LAST_ROLL = { potion: 0.25, gold: 0.5, gear: 0.25 };
 export const STASH_GOLD: [number, number] = [100, 250];
-export const STASH_GEAR_CHANCE = 0.25;
 export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop };
 
 // Room for more in the bag? Adds what fits; returns the new bag.
@@ -208,8 +209,9 @@ export type Room = {
   offers?: string[];   // a librarian: the codexes (race moves) for sale
   bought?: string[];   // …and the ones you bought (librarian codexes; merchant potions)
   blessed?: boolean;   // a mini boss's heal/revive has been used
-  sack?: SackItem[];   // a stash: what's (still) in the sack
+  sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
+  container?: "sack" | "chest"; // a beaten fight's loot: a sack (ordinary fights) or a rickety chest (bosses)
   quest?: "club" | "rattlebones"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the Rattlebones' room: you've picked up Klutz's box
   done: boolean;
@@ -249,11 +251,12 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
     }
     case "stash": {
-      const sack: SackItem[] = [];
-      const potions = STASH_POTIONS + (rng() < STASH_EXTRA_POTION_CHANCE ? 1 : 0);
-      for (let i = 0; i < potions; i++) sack.push({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
-      if (rng() < STASH_GOLD_CHANCE) sack.push({ gold: randInt(...STASH_GOLD, rng) });
-      if (rng() < STASH_GEAR_CHANCE) {
+      const potion = (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
+      const sack: SackItem[] = Array.from({ length: STASH_POTIONS }, potion);
+      const last = rng();
+      if (last < STASH_LAST_ROLL.potion) sack.push(potion());
+      else if (last < STASH_LAST_ROLL.potion + STASH_LAST_ROLL.gold) sack.push({ gold: randInt(...STASH_GOLD, rng) });
+      else {
         // Like a scan: any rarity at the usual odds; armour twice as likely as a weapon.
         const rarity = pickRarity("", "random");
         sack.push({ gear: rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity) });
@@ -303,6 +306,7 @@ export type DungeonRun = {
   loot: string[];              // what you've found, for the summary
   pending?: Drop[];            // found, but the bag's full: take it or leave it
   floor?: FloorItem[];         // left behind on the floors of this run
+  got?: GotItem[];             // everything picked up this run (gold, cards, gear, codexes, potions)
   status: RunStatus;
 };
 

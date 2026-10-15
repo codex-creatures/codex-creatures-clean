@@ -77,3 +77,36 @@ export const BURLAP_SACK_OPEN: Sprite = draw((p) => {
   for (const [x, y] of [[12, 28], [18, 36], [27, 29], [32, 37], [24, 39]] as const) p.dot(x, y, "j");
   p.rect(26, 31, 30, 34, "l").dot(27, 32, "m").dot(29, 33, "m");
 });
+
+// What a beaten boss leaves behind: a rickety old chest, its planks warped
+// and one iron band snapped…
+export const RICKETY_CHEST: Sprite = [
+  "...dddddddddd...",
+  "..dwWwdwwWwwdd..",
+  ".dwwwwdwwwwwwwd.",
+  ".dwwwwdwwwwwwwd.",
+  "tssstddddddsssst",
+  "dwwwwdwKKwwwwwwd",
+  "dWwwwdwkKwwwwwWd",
+  "dwwwwd.wwwwwdwwd",
+  "dwwww.wwwwwwdwwd",
+  "tsst..wwwwwssssd",
+  "dwwwwwwwwwwwwwwd",
+  "dddddddddddddddd",
+];
+
+// …and opened.
+export const RICKETY_CHEST_OPEN: Sprite = [
+  "...dddddddddd...",
+  "..dwWwdwwWwwdd..",
+  ".dwwwwdwwwwwwwd.",
+  ".dddddddddddddd.",
+  "tKKKKKKKKKKKKKKt",
+  "dwwwwdwKKwwwwwwd",
+  "dWwwwdwkKwwwwwWd",
+  "dwwwwd.wwwwwdwwd",
+  "dwwww.wwwwwwdwwd",
+  "tsst..wwwwwssssd",
+  "dwwwwwwwwwwwwwwd",
+  "dddddddddddddddd",
+];

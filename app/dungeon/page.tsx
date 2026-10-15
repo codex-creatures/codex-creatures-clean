@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
+import LootGrid from "@/components/LootGrid";
 import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
@@ -32,8 +33,8 @@ import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
-  startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
-  loadDungeon, saveDungeon, freeHealing, type DungeonSave, type DungeonRun, type Room,
+  startRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
+  loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
@@ -64,7 +65,7 @@ export default function DungeonPage() {
   const router = useRouter();
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
-  const [found, setFound] = useState<Drop[] | null>(null); // what the current room just gave you
+  const [found, setFound] = useState<GotItem[] | null>(null); // what the current room just gave you
   const [notes, setNotes] = useState<string[]>([]);
   // Leaving for the Den: keep showing what's on screen until the Den loads
   // (otherwise the entrance flashes up for a moment on the way out).
@@ -175,7 +176,11 @@ export default function DungeonPage() {
     }
     const i = cur.meta.bag.indexOf(entry);
     const bag = i < 0 ? cur.meta.bag : [...cur.meta.bag.slice(0, i), ...cur.meta.bag.slice(i + 1)];
-    update({ meta: { ...cur.meta, bag, loot }, run: { ...cur.run, floor: [...(cur.run.floor ?? []), ...(item ? [item] : [])] } });
+    // (If you picked it up this run, it's not part of your haul any more.)
+    const got = [...(cur.run.got ?? [])];
+    const gi = got.findIndex((g) => (item?.potion ? "potion" in g && g.potion === item.potion : "drop" in g && g.drop.id === item?.drop?.id));
+    if (gi >= 0) got.splice(gi, 1);
+    update({ meta: { ...cur.meta, bag, loot }, run: { ...cur.run, got, floor: [...(cur.run.floor ?? []), ...(item ? [item] : [])] } });
   }
 
   // Take something that was waiting for room.
@@ -205,7 +210,8 @@ export default function DungeonPage() {
       if (f.drop) game.addDrop(f.drop);
       else if (f.potion && bag.length < bagSize(cur.meta)) bag = [...bag, f.potion];
     }
-    update({ meta: { ...cur.meta, bag }, run: { ...cur.run, floor: [], pending: [], loot: [...cur.run.loot, `${floor.length} things gathered on the walk back`] } });
+    const gathered: GotItem[] = floor.map((f) => (f.drop ? { drop: f.drop } : { potion: f.potion! }));
+    update({ meta: { ...cur.meta, bag }, run: { ...cur.run, floor: [], pending: [], got: [...(cur.run.got ?? []), ...gathered], loot: [...cur.run.loot, `${floor.length} things gathered on the walk back`] } });
   }
 
   const battle = usePlayableBattle((m) => updateRun((r) => ({ ...r, battle: m })));
@@ -271,8 +277,8 @@ export default function DungeonPage() {
   // ── Room rewards ──────────────────────────────────────────────────
   function give(drops: Drop[], also: (r: DungeonRun) => DungeonRun = (r) => r) {
     carry(drops);
-    setFound(drops);
-    updateRun((r) => also({ ...r, loot: [...r.loot, ...drops.map(dropLabel)] }));
+    setFound(drops.map((drop) => ({ drop })));
+    updateRun((r) => also({ ...r, loot: [...r.loot, ...drops.map(dropLabel)], got: [...(r.got ?? []), ...drops.map((drop) => ({ drop }))] }));
   }
 
   const goldOnly = (amount: number): Drop => ({ id: crypto.randomUUID(), barcode: "", dropType: "reward", rewardKind: "resource", amount, createdAt: new Date().toISOString() });
@@ -296,8 +302,9 @@ export default function DungeonPage() {
   function buyCodex(move: string) {
     const room = lab?.run?.current;
     if (!room?.offers?.includes(move) || room.bought?.includes(move) || !game.spendGold(CODEX_PRICE)) return;
-    carry([codexDrop(move)]);
-    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, `Codex: ${move}`], current: { ...r.current, bought: [...(r.current.bought ?? []), move] } } : r));
+    const codex = codexDrop(move);
+    carry([codex]);
+    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, `Codex: ${move}`], got: [...(r.got ?? []), { drop: codex }], current: { ...r.current, bought: [...(r.current.bought ?? []), move] } } : r));
   }
 
   function healOne(id: string) {
@@ -341,7 +348,9 @@ export default function DungeonPage() {
     else if ("potion" in item) updateBag((bag) => addToBag(bag, [item.potion], bagSize(cur.meta)));
     else carry([item.gear]);
     const label = "gold" in item ? `${item.gold} gold` : "potion" in item ? POTIONS[item.potion].name : dropLabel(item.gear);
-    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, label], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
+    const got: GotItem = "gold" in item ? { drop: goldOnly(item.gold) } : "potion" in item ? { potion: item.potion } : { drop: item.gear };
+    setFound((f) => [...(f ?? []), got]);
+    updateRun((r) => (r.current ? { ...r, loot: [...r.loot, label], got: [...(r.got ?? []), got], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
   }
   function takeAllFromSack() {
     // Gold first (it's free), then whatever fits, in order.
@@ -357,12 +366,12 @@ export default function DungeonPage() {
       left = next;
     }
   }
-  // Whatever you leave in the sack stays on the floor.
+  // Whatever you leave in a sack or chest (opened or not) stays on the floor.
   const leaveSack = (r: DungeonRun): DungeonRun => {
-    const sack = r.current?.kind === "stash" ? r.current.sack ?? [] : [];
-    if (!r.current?.opened || sack.length === 0) return r;
+    const sack = r.current?.sack ?? [];
+    if (sack.length === 0) return r;
     const floor: FloorItem[] = sack.map((x) => ("potion" in x ? { room: here(r), potion: x.potion } : { room: here(r), drop: "gold" in x ? goldOnly(x.gold) : x.gear }));
-    return { ...r, floor: [...(r.floor ?? []), ...floor] };
+    return { ...r, floor: [...(r.floor ?? []), ...floor], current: r.current ? { ...r.current, sack: [] } : r.current };
   };
 
   // Between rooms: drink a potion on anyone still standing.
@@ -386,7 +395,7 @@ export default function DungeonPage() {
     setFound(null);
     setNotes([]);
     battle.clear();
-    updateRun(leaveRoom);
+    updateRun((r) => leaveRoom(leaveSack(r)));
   }
 
   // Down a tunnel into the next room.
@@ -482,7 +491,10 @@ export default function DungeonPage() {
         drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", pieceStats(p.stats, slot), slot));
       }
     }
-    give(drops, (x) => markDone({ ...x, hp, battle: undefined }));
+    // Its loot lies on the floor: a rickety chest (bosses) or a sack. Open it and take what you want.
+    const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
+    const container = room.kind === "miniboss" || room.kind === "boss" ? "chest" as const : "sack" as const;
+    updateRun((x) => markDone({ ...x, hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: false } : x.current }));
     if (room.kind === "miniboss" && bagSize(loadDungeon().meta) < BACKPACK) {
       const cur = loadDungeon();
       update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
@@ -546,13 +558,15 @@ export default function DungeonPage() {
   return frame(
     <>
       {!run.inside ? (
-        <MapFirst run={run} onStep={() => updateRun(stepInside)} />
+        <MapFirst run={run} onStep={() => updateRun(stepInside)} onEnter={(id) => { updateRun(stepInside); goTo(id); }} />
       ) : (
         <>
           <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !boxRoom} onGo={goTo}
             onObject={run.current?.quest === "club" && !run.current.done ? takeClub
               : run.current?.kind === "chest" && !run.current.done ? openChest
+              : run.current?.container && run.current.done && !run.current.opened ? openSack
               : run.current?.quest === "rattlebones" && run.current.done && !run.current.boxTaken ? takeBox
+              : run.current?.kind === "stash" && !run.current.opened ? openSack
               : undefined} />
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
             <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature that can still fight before you go on.</p>
@@ -591,7 +605,7 @@ export default function DungeonPage() {
 
       <div style={{ marginTop: 24, textAlign: "center" }}>
         <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
-          onClick={() => updateRun((r) => ({ ...r, status: "retreated", battle: undefined }))}
+          onClick={() => updateRun((r) => ({ ...leaveSack(r), status: "retreated", battle: undefined }))}
           disabled={battle.match !== null && !battle.match.state.winner}>
           🏃 Retreat — leave the labyrinth and keep your loot
         </button>
@@ -683,15 +697,18 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 
 // ── In the dungeon ────────────────────────────────────────────────
 // At the entrance: one good look at the map before you go in.
-function MapFirst({ run, onStep }: { run: DungeonRun; onStep: () => void }) {
+// onEnter: tap one of the rooms off the entrance to step inside and head straight there.
+function MapFirst({ run, onStep, onEnter }: { run: DungeonRun; onStep: () => void; onEnter: (nodeId: string) => void }) {
+  const firstRooms = nextRooms(run).length > 0;
   return (
     <div className="stone-panel">
       <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Your map of the labyrinth</div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
         Study it while you can. Once you step inside it&apos;s too dark to read — you&apos;ll only see the room you&apos;re in and the tunnels leading out of it,
         so remember which way the lair lies. The rooms you know are marked; the rest are a &ldquo;?&rdquo;. Every tunnel leads onward, never back.
+        {firstRooms && <> Tap a room next to the entrance to head straight there.</>}
       </p>
-      <DungeonMapView run={run} />
+      <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />
       <button className="pixel-btn" onClick={onStep} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
         🔥 Put the map away and step inside
       </button>
@@ -712,11 +729,37 @@ function AtEntrance({ run }: { run: DungeonRun }) {
 }
 
 function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
-  run: DungeonRun; room: Room; found: Drop[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
+  run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
   onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
+  // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
+  const what = room.container === "chest" ? "chest" : "sack";
+  const sackPanel = (room.sack ?? []).length > 0 ? (
+    <div style={{ marginTop: 8 }}>
+      <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>Inside the {what} — tap something to take it:</p>
+      <BagSlots slots={(room.sack ?? []).length} selected={null} onSelect={(i) => i !== null && onTakeSack(i)}
+        looks={(room.sack ?? []).map((x) => "gold" in x ? { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.2)" }
+          : "potion" in x ? slotLook(x.potion) : slotLook(gearEntry(x.gear.id), x.gear as CreatureOrItemDrop))} />
+      <div style={{ fontSize: 12, color: MUTED, margin: "6px 0" }}>
+        {(room.sack ?? []).map((x) => ("gold" in x ? `🪙 ${x.gold} gold` : "potion" in x ? `${POTIONS[x.potion].icon} ${POTIONS[x.potion].name}` : `📦 ${dropLabel(x.gear)}`)).join(" · ")}
+      </div>
+      <p style={{ fontSize: 12, color: MUTED, margin: "0 0 8px" }}>
+        Your bag: {bagUsed}/{bagSlots}. Gold takes no space; anything you leave stays on the floor.
+      </p>
+      <button className="pixel-btn" onClick={onTakeAllSack}>Take everything that fits</button>
+    </div>
+  ) : <p style={{ fontSize: 13, color: "#d8d4c8" }}>The {what} is empty.</p>;
+  // A beaten fight's loot: the container, then what's in it once opened.
+  const fightLoot = room.container && (room.opened ? sackPanel : (
+    <div style={{ marginTop: 8 }}>
+      <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
+        {room.container === "chest" ? "It leaves a rickety old chest behind, its lid hanging loose." : "It leaves a grubby sack behind."}
+      </p>
+      <button className="pixel-btn" onClick={onOpenSack}>{room.container === "chest" ? "🧰 Loot the chest" : "💰 Loot the sack"}</button>
+    </div>
+  ));
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
   const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
     : room.quest === "rattlebones" ? (room.boxTaken ? (
@@ -739,14 +782,10 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
     <div className="stone-panel">
       <div className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>{info.icon} {info.name}</div>
 
-      {found && (
-        <div style={{ margin: "10px 0 0", fontSize: 14 }}>
-          <div style={{ color: MUTED, fontSize: 12, marginBottom: 4 }}>You found:</div>
-          {found.map((d) => (
-            <div key={d.id} style={{ color: d.dropType === "reward" ? GOLD : d.dropType === "item" ? RARITY_COLORS[d.rarity].text : "white" }}>
-              {d.dropType === "reward" ? "🪙" : d.dropType === "card" ? "🃏" : d.dropType === "creature" ? "🐾" : "📦"} {dropLabel(d)}
-            </div>
-          ))}
+      {found && found.length > 0 && (
+        <div style={{ margin: "10px 0 0" }}>
+          <div style={{ color: MUTED, fontSize: 12, marginBottom: 6 }}>You got:</div>
+          <LootGrid items={found} />
         </div>
       )}
       {notes.map((n) => <div key={n} style={{ fontSize: 13, color: "#f1d9a0", marginTop: 4 }}>{n}</div>)}
@@ -824,26 +863,8 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
           <button className="pixel-btn" onClick={onOpenSack}>Open the sack</button>
           {onward}
         </>
-      ) : (
-        <>
-          {(room.sack ?? []).length > 0 ? (
-            <>
-              <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>Inside the sack — tap something to take it:</p>
-              <BagSlots slots={(room.sack ?? []).length} selected={null} onSelect={(i) => i !== null && onTakeSack(i)}
-                looks={(room.sack ?? []).map((x) => "gold" in x ? { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.2)" }
-                  : "potion" in x ? slotLook(x.potion) : slotLook(gearEntry(x.gear.id), x.gear as CreatureOrItemDrop))} />
-              <div style={{ fontSize: 12, color: MUTED, margin: "6px 0" }}>
-                {(room.sack ?? []).map((x) => ("gold" in x ? `🪙 ${x.gold} gold` : "potion" in x ? `${POTIONS[x.potion].icon} ${POTIONS[x.potion].name}` : `📦 ${dropLabel(x.gear)}`)).join(" · ")}
-              </div>
-              <p style={{ fontSize: 12, color: MUTED, margin: "0 0 8px" }}>
-                Your bag: {bagUsed}/{bagSlots}. Gold takes no space; anything you leave stays on the floor.
-              </p>
-              <button className="pixel-btn" onClick={onTakeAllSack}>Take everything that fits</button>
-            </>
-          ) : <p style={{ fontSize: 13, color: "#d8d4c8" }}>The sack is empty.</p>}
-          {onward}
-        </>
-      ))}
+      ) : <>{sackPanel}{onward}</>)}
+
 
       {room.kind === "merchant" && (
         <>
@@ -898,6 +919,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
         </>
       )}
 
+      {isFight(room.kind) && room.done && fightLoot}
       {isFight(room.kind) && (room.done ? (room.kind === "miniboss" && !room.blessed ? (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
@@ -986,16 +1008,25 @@ function RunOver({ run, lab, onHome, onGather }: { run: DungeonRun; lab: Dungeon
     <div className="stone-panel" style={{ textAlign: "center" }}>
       <div className="pixel-font" style={{ fontSize: 26, color: run.status === "cleared" ? "#5ee08a" : run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>
       <p style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.5 }}>{text}</p>
-      <div style={{ fontSize: 13, color: MUTED, marginBottom: 4 }}>You bring home what&apos;s in your bag:</div>
-      <div style={{ fontSize: 14, marginBottom: 14 }}>{run.loot.length > 0 ? run.loot.join(" · ") : "nothing this time"}</div>
-      {floor.length > 0 && (run.status === "cleared" ? (
-        <div style={{ margin: "0 0 14px" }}>
-          <p style={{ fontSize: 13, color: "#d8d4c8" }}>With the Cyclops gone, you can walk back through and pick up the {floor.length} thing{floor.length === 1 ? "" : "s"} you left behind.</p>
-          <button className="pixel-btn" onClick={onGather}>🚶 Walk back and gather everything</button>
-        </div>
-      ) : (
-        <p style={{ fontSize: 13, color: "#ff8a80" }}>Left behind on the floors (lost): {floor.map((f) => (f.drop ? dropLabel(f.drop) : POTIONS[f.potion!].name)).join(", ")}</p>
-      ))}
+      <div style={{ textAlign: "left" }}>
+        <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", margin: "4px 0 8px" }}>What you got</div>
+        <LootGrid items={run.got ?? []} />
+        {floor.length > 0 && (
+          <>
+            <div className="pixel-font" style={{ fontSize: 15, color: run.status === "cleared" ? "#f1d9a0" : "#ff8a80", margin: "16px 0 8px" }}>
+              Left behind{run.status === "cleared" ? "" : " (lost)"}
+            </div>
+            <LootGrid items={floor.map((f) => (f.drop ? { drop: f.drop } : { potion: f.potion! }))} faded />
+            {run.status === "cleared" && (
+              <div style={{ margin: "10px 0 0" }}>
+                <p style={{ fontSize: 13, color: "#d8d4c8" }}>With the Cyclops gone, you can walk back through and pick up the {floor.length} thing{floor.length === 1 ? "" : "s"} you left behind.</p>
+                <button className="pixel-btn" onClick={onGather}>🚶 Walk back and gather everything</button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div style={{ height: 14 }} />
       <button className="pixel-btn" onClick={onHome}>Continue</button>
     </div>
   );
