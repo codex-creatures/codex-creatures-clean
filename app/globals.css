@@ -315,8 +315,6 @@ button, a, [role="button"] { touch-action: manipulation; }
 @keyframes floor-prop { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .floor-prop { animation: none; } }
 
-/* Move tablets: the glyph sits faint behind the name, and wakes up a little when you can use it. */
-.rune-tile .rune-glyph { opacity: 0.14; transition: opacity 0.2s; }
-.rune-live:hover .rune-glyph, .rune-live:focus-visible .rune-glyph { opacity: 0.26; }
-.rune-live:hover { filter: brightness(1.08); }
-.rune-live:active { transform: translateY(1px); }
+/* Move slabs you can use: a little lift on hover, a press when tapped. */
+.move-live:hover { filter: brightness(1.12); }
+.move-live:active { transform: translateY(1px); }
