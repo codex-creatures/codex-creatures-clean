@@ -12,13 +12,9 @@ export default function PitPage() {
 
   return (
     <DenFrame title="Fight Pit" icon="⚔️" gold={game.gold}>
-      <div className="stone-panel" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Ready to fight?</div>
-          <div style={{ fontSize: 13, opacity: 0.6, marginTop: 2 }}>Pick 3 creatures and battle an AI team.</div>
-        </div>
-        <Link href="/battle" className="pixel-btn">⚔️ Enter the pit</Link>
-      </div>
+      <Link href="/battle" className="pixel-btn" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, width: "100%" }}>
+        ⚔️ Enter the pit <span style={{ fontSize: 12, opacity: 0.7 }}>· 3 of yours vs an AI team</span>
+      </Link>
 
       <InventoryList
         title="Creatures"

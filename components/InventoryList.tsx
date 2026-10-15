@@ -15,7 +15,7 @@ import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
 import CardGallery from "./CardGallery";
 import TileGrid, { groupTiles } from "./TileGrid";
-import { CreatureFilterBar, NO_FILTER, matchesFilter, type CreatureFilter } from "./CreatureMarks";
+import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
 const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor"]);
@@ -75,14 +75,17 @@ export default function InventoryList({
   const asGrid = GRID_TABS.has(activeTab);
   // Creature tabs can be filtered by race and class, and grouped.
   const creatureTab = activeTab === "creatures" || activeTab === "roster";
-  const [filter, setFilter] = useState<CreatureFilter>(NO_FILTER);
+  const [filter, setFilter] = useState<InventoryFilter>(NO_INV_FILTER);
   const tplOf = (d: Drop) => (isCreatureDrop(d) ? findCreatureTemplate(d.creatureId, d.name) : undefined);
   const gridItems = filteredInventory.filter((d) => !isRewardDrop(d)) as CreatureOrItemDrop[];
-  const filtered = creatureTab ? gridItems.filter((d) => !isCreatureDrop(d) || matchesFilter(filter, tplOf(d)?.race, tplOf(d)?.cls)) : gridItems;
-  const groupBy = creatureTab ? filter.groupBy : "rarity";
-  // In the grid, browsing follows the order the groups show.
-  const shown: Drop[] = asGrid ? groupTiles(filtered, groupBy).flatMap(([, , , g]) => g) : filteredInventory;
-  const countWhere = (pred: (d: Drop) => boolean) => gridItems.filter((d) => isCreatureDrop(d) && pred(d)).length;
+  // Creatures: one flat grid, filtered and sorted; gear: grouped by rarity.
+  const filtered = creatureTab
+    ? sortCreatures(gridItems.filter((d) => !isCreatureDrop(d) || passes(filter, d.name, tplOf(d)?.race, tplOf(d)?.cls)), filter.sort,
+        (d) => ({ name: d.name, rarity: d.rarity, race: tplOf(d)?.race, cls: tplOf(d)?.cls, createdAt: d.createdAt }))
+    : gridItems;
+  const groupBy = creatureTab ? "none" as const : "rarity" as const;
+  // Browsing (flicking through creatures) follows the order shown.
+  const shown: Drop[] = asGrid ? (groupBy === "none" ? filtered : groupTiles(filtered, groupBy).flatMap(([, , , g]) => g)) : filteredInventory;
   // Only item drops are navigable in the modal
   const navigableItems = shown.filter(isItemDrop) as CreatureOrItemDrop[];
 
@@ -155,16 +158,21 @@ export default function InventoryList({
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {tabs.map((tab) => (
-          <button key={tab} onClick={() => onTabChange(tab)} className="chip" data-active={activeTab === tab}>
-            {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)} ({tabCounts[tab] ?? 0})
-          </button>
-        ))}
+      {/* Tabs: one segmented control. */}
+      <div role="tablist" style={{ marginTop: 14, display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117" }}>
+        {tabs.map((tab, i) => {
+          const on = activeTab === tab;
+          return (
+            <button key={tab} role="tab" aria-selected={on} onClick={() => onTabChange(tab)} className="pixel-font"
+              style={{ flex: 1, minHeight: 44, padding: "6px 4px", fontSize: 14, cursor: "pointer", border: "none",
+                borderLeft: i ? "2px solid #2a2d38" : "none", background: on ? "#3a2c16" : "transparent", color: on ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
+              {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)} <span style={{ opacity: 0.6 }}>{tabCounts[tab] ?? 0}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {!sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap a creature to open it, equip it and add it to your roster (★). Tap any weapon or armour for its full details.</p>}
+      {!sellMode && !creatureTab && activeTab !== "cards" && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap any weapon or armour for its full details.</p>}
       {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favourited and equipped items are protected and cannot be sold.</p>}
 
       {/* Creature cards: a binder of trading cards. */}
@@ -172,11 +180,9 @@ export default function InventoryList({
         <CardGallery cards={filteredInventory.filter(isCardDrop) as CreatureOrItemDrop[]} onOpen={(c) => !sellMode && setOpenCard(c)} />
       )}
 
-      {/* Creature filters. */}
+      {/* Creature search, filter and sort. */}
       {asGrid && creatureTab && gridItems.length > 0 && (
-        <CreatureFilterBar value={filter} onChange={setFilter}
-          raceCount={(r) => countWhere((d) => tplOf(d)?.race === r && (filter.cls === "all" || tplOf(d)?.cls === filter.cls))}
-          classCount={(c) => countWhere((d) => tplOf(d)?.cls === c && (filter.race === "all" || tplOf(d)?.race === filter.race))} />
+        <CreatureToolbar value={filter} onChange={setFilter} shown={shown.length} total={gridItems.filter(isCreatureDrop).length} />
       )}
       {asGrid && creatureTab && gridItems.length > 0 && shown.length === 0 && (
         <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No creatures match those filters.</p>

@@ -6,22 +6,20 @@
 
 import { useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
-import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CLASS_INFO, COMBAT_CLASSES, RACES, findCreatureTemplate, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
-import { CreatureFilterBar, NO_FILTER, matchesFilter, type CreatureFilter } from "./CreatureMarks";
+import { CLASS_INFO, findCreatureTemplate, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { ABILITIES } from "@/lib/creatures/abilities";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
-const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const SERIF = "Georgia, 'Times New Roman', serif";
 
 type Stack = { t: CreatureTemplate; cards: CreatureOrItemDrop[] };
 
 export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDrop[]; onOpen: (card: CreatureOrItemDrop) => void }) {
-  const [filter, setFilter] = useState<CreatureFilter>(NO_FILTER);
+  const [filter, setFilter] = useState<InventoryFilter>(NO_INV_FILTER);
 
   // One stack per creature.
   const stacks = new Map<string, Stack>();
@@ -33,35 +31,16 @@ export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDr
     stacks.set(t.id, s);
   }
   const all = [...stacks.values()];
-  const shown = all.filter((s) => matchesFilter(filter, s.t.race, s.t.cls));
-  const count = (pred: (t: CreatureTemplate) => boolean) => all.filter((s) => pred(s.t)).reduce((n, s) => n + s.cards.length, 0);
-  const byRarity = (a: Stack, b: Stack) => RARITY_ORDER.indexOf(a.t.rarity) - RARITY_ORDER.indexOf(b.t.rarity) || a.t.name.localeCompare(b.t.name);
-  const groups: [string, string, string, Stack[]][] =
-    filter.groupBy === "class" ? COMBAT_CLASSES.map((c) => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((s) => s.t.cls === c).sort(byRarity)])
-    : filter.groupBy === "race" ? RACES.map((r) => [r, `${RACE_INFO[r].icon} ${RACE_INFO[r].name}`, RACE_INFO[r].color, shown.filter((s) => s.t.race === r).sort(byRarity)])
-    : RARITY_ORDER.map((r) => [r, r, RARITY_COLORS[r].text, shown.filter((s) => s.t.rarity === r).sort((a, b) => a.t.name.localeCompare(b.t.name))]);
+  const shown = sortCreatures(all.filter((s) => passes(filter, s.t.name, s.t.race, s.t.cls)), filter.sort,
+    (s) => ({ name: s.t.name, rarity: s.t.rarity, race: s.t.race, cls: s.t.cls, createdAt: s.cards.map((c) => c.createdAt).sort().pop() }));
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <CreatureFilterBar value={filter} onChange={setFilter}
-        raceCount={(r) => count((t) => t.race === r && (filter.cls === "all" || t.cls === filter.cls))}
-        classCount={(c) => count((t) => t.cls === c && (filter.race === "all" || t.race === filter.race))} />
-
-      {shown.length === 0 && <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No cards match those filters yet.</p>}
-
-      {groups.map(([key, title, color, group]) => {
-        if (group.length === 0) return null;
-        return (
-          <section key={key} style={{ marginTop: 16 }}>
-            <div className="pixel-font" style={{ fontSize: 15, color, textTransform: "capitalize", marginBottom: 8 }}>
-              {title} <span style={{ opacity: 0.5 }}>· {group.reduce((n, s) => n + s.cards.length, 0)}</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
-              {group.map((s) => <TradingCard key={s.t.id} stack={s} onOpen={() => onOpen(s.cards[0])} />)}
-            </div>
-          </section>
-        );
-      })}
+    <div style={{ marginTop: 2 }}>
+      <CreatureToolbar value={filter} onChange={setFilter} shown={shown.length} total={all.length} noun="cards" />
+      {shown.length === 0 && <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No cards match.</p>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginTop: 14 }}>
+        {shown.map((s) => <TradingCard key={s.t.id} stack={s} onOpen={() => onOpen(s.cards[0])} />)}
+      </div>
     </div>
   );
 }

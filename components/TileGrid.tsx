@@ -42,13 +42,21 @@ type Props = {
   sellable?: (d: CreatureOrItemDrop) => boolean;
   selected?: Set<string>;
   onOpen: (d: CreatureOrItemDrop) => void;
-  groupBy?: GroupBy;
+  groupBy?: GroupBy | "none"; // "none": one grid, in the order given
 };
 
 export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity" }: Props) {
   return (
     <div>
-      {groupTiles(items, groupBy).map(([key, title, color, group]) => {
+      {groupBy === "none" && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 10, marginTop: 12 }}>
+          {items.map((d) => (
+            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)}
+              sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
+          ))}
+        </div>
+      )}
+      {groupBy !== "none" && groupTiles(items, groupBy).map(([key, title, color, group]) => {
         if (group.length === 0) return null;
         return (
           <section key={key} style={{ marginTop: 14 }}>
