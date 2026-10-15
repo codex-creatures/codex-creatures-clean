@@ -29,8 +29,12 @@ export function klutzDrop(): CreatureOrItemDrop {
 }
 const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 
-const STORAGE_KEY = "codex_creatures_save_v2";
+import { readSave, writeMainSave } from "@/lib/save";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
+export const CAGE_SIZE = 1;          // creatures the cage holds (upgrades later)
+// Scanning: "loot" opens each scan's Code Cache straight away; "store"
+// keeps them at the altar to open when you like.
+export type ScanMode = "loot" | "store";
 export const SCAN_TIP_DEATHS = 3; // Labyrinth deaths in a row, without a scan, before Klutz suggests scanning
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
@@ -61,6 +65,8 @@ type SaveState = {
   quest?: QuestState;                  // the first quest (lib/quest.ts)
   seen?: string[];                     // creature ids you've come across (the Bestiary fills in as you explore)
   deathsSinceScan?: number;            // Labyrinth runs lost in a row without scanning a barcode
+  scanMode?: ScanMode;                 // Looting or Storage
+  caches?: Drop[];                     // Code Caches waiting at the altar (Storage mode): what each holds
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
 };
 
@@ -76,7 +82,7 @@ export function loadSave(): SaveState | null {
   if (typeof window === "undefined") return null;
   let parsed: Record<string, unknown> = {};
   try {
-    parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}") ?? {};
+    parsed = readSave();
   } catch {}
   // Klutz used to be one of your creatures; older saves drop him (his gear
   // stays on him: it's stored under KLUTZ_DROP_ID).
@@ -104,13 +110,13 @@ export function loadSave(): SaveState | null {
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     deathsSinceScan: typeof parsed.deathsSinceScan === "number" ? parsed.deathsSinceScan : 0,
     scanTipRead: parsed.scanTipRead === true,
+    scanMode: parsed.scanMode === "store" ? "store" : "loot",
+    caches: Array.isArray(parsed.caches) ? parsed.caches : [],
   };
 }
 
 function safeSave(state: SaveState) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {}
+  writeMainSave(state); // (keeps the Labyrinth's part of the save)
 }
 
 export type TabKey = "all" | "roster" | "creatures" | "cards" | "weapons" | "armor" | "materials" | "consumables";
@@ -128,6 +134,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const [seen, setSeen]               = useState<string[]>([]);
   const [deathsSinceScan, setDeathsSinceScan] = useState(0);
   const [scanTipRead, setScanTipRead] = useState(false);
+  const [scanMode, setScanMode] = useState<ScanMode>("loot");
+  const [caches, setCaches] = useState<Drop[]>([]);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -157,14 +165,16 @@ export function useGameState(initialTab: TabKey = "all") {
       setSeen(saved.seen ?? []);
       setDeathsSinceScan(saved.deathsSinceScan ?? 0);
       setScanTipRead(saved.scanTipRead ?? false);
+      setScanMode(saved.scanMode ?? "loot");
+      setCaches(saved.caches ?? []);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -244,14 +254,20 @@ export function useGameState(initialTab: TabKey = "all") {
   // cage, their gear to your inventory. Checked every few seconds.
   const klutzRef = useRef(klutz);
   useEffect(() => { klutzRef.current = klutz; }, [klutz]);
+  const cagedRef = useRef(caged);
+  useEffect(() => { cagedRef.current = caged; }, [caged]);
   useEffect(() => {
     if (!hydrated) return;
     const check = () => {
-      const { state, loot } = collectKlutz(klutzRef.current);
-      if (state === klutzRef.current) return;
+      const { state: collected, loot } = collectKlutz(klutzRef.current);
+      if (collected === klutzRef.current) return;
+      // The cage only holds CAGE_SIZE: anything that won't fit, he lets go.
+      const room = CAGE_SIZE - cagedRef.current.length;
+      const caught = loot.filter(isCreatureDrop);
+      const state = caught.length > room && collected.expedition ? { ...collected, expedition: { ...collected.expedition, letGo: true } } : collected;
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);
-      setCaged((prev) => [...prev, ...loot.filter(isCreatureDrop)]);
+      setCaged((prev) => [...prev, ...caught.slice(0, Math.max(0, CAGE_SIZE - prev.length))]);
       setInventory((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]);
     };
     check();
@@ -386,12 +402,24 @@ export function useGameState(initialTab: TabKey = "all") {
     if (isRewardDrop(drop)) setGold((g) => g + drop.amount);
   }
 
-  // A drop from scanning a barcode: added, and remembered in your recent scans.
+  // A drop from scanning a barcode — a Code Cache. Looting: opened at once
+  // (added, and remembered in your recent scans). Storage: kept at the altar.
   function addScan(drop: Drop) {
-    addDrop(drop);
     setDeathsSinceScan(0);
     setScanTipRead(false);
+    if (scanMode === "store") { setCaches((prev) => [...prev, drop]); return; }
+    addDrop(drop);
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
+  }
+
+  // Open stored Code Caches (by drop id): what's inside joins your things.
+  function openCaches(ids: string[]) {
+    const opened = caches.filter((c) => ids.includes(c.id));
+    if (opened.length === 0) return;
+    setCaches((prev) => prev.filter((c) => !ids.includes(c.id)));
+    setInventory((prev) => [...opened, ...prev]);
+    setGold((g) => g + opened.reduce((s, d) => s + (isRewardDrop(d) ? d.amount : 0), 0));
+    setRecentScanIds((prev) => [...opened.map((d) => d.id), ...prev].slice(0, RECENT_SCANS));
   }
 
   // Gold that isn't a drop (dungeon rewards, entry fees). spendGold
@@ -508,6 +536,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setSeen([]);
     setDeathsSinceScan(0);
     setScanTipRead(false);
+    setCaches([]);
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -534,7 +563,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

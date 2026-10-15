@@ -61,6 +61,7 @@ export type KlutzEncounter = {
 };
 
 export type Expedition = {
+  letGo?: boolean; // he caught something but the cage was full, so he let it go
   startedAt: number;
   endsAt: number;        // when he meets something (the fight is quick) and heads home
   maxHp: number;

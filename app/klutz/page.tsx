@@ -84,7 +84,7 @@ export default function KlutzPage() {
             He also has a {Math.round(FIND_CHANCE * 100)}% chance each trip to pick up a piece of gear for a slot he&apos;s wearing — never better than
             his own piece: {Math.round(SAME_RARITY_CHANCE * 100)}% the same rarity, otherwise lower (in Common gear, Common or Uncommon). A good way to find
             alternatives to gear you already have. If he wins he brings it home;
-            if he loses he limps back to the pool and heals 1 HP every {HEAL_MS_PER_HP / 1000} seconds. Better gear means he can take on tougher creatures.
+            if he loses he limps back to the pool and heals 1 HP every {HEAL_MS_PER_HP / 1000} seconds. The cage only holds one creature: if it&apos;s full, he lets his catch go (and keeps its gear). Better gear means he can take on tougher creatures.
           </p>
           <button className="pixel-btn" onClick={game.sendKlutzOff}>🌀 Send Klutz into the Labyrinth</button>
         </div>
@@ -121,7 +121,7 @@ export default function KlutzPage() {
               <span style={{ fontSize: 13 }}>🎁 On the way he picked up <b style={{ color: RARITY_COLORS[(ex.find as CreatureOrItemDrop).rarity].text }}>{(ex.find as CreatureOrItemDrop).name}</b> <span style={{ color: MUTED }}>({(ex.find as CreatureOrItemDrop).rarity})</span> — it&apos;s in your storage.</span>
             </div>
           )}
-          {ex.encounters.some((e) => e.won) && (
+          {ex.encounters.some((e) => e.won) && !ex.letGo && (
             <p style={{ fontSize: 13, margin: "8px 0 0" }}>Caught creatures are waiting in the <Link href="/cage" style={{ textDecoration: "underline" }}>cage</Link>; their gear is in your inventory.</p>
           )}
         </div>
@@ -251,7 +251,9 @@ function EncounterRow({ e, ex, seen }: { e: KlutzEncounter; ex: Expedition; seen
         <span style={{ color: MUTED }}>{mins} min in:</span> a wild <b style={{ color: RARITY_COLORS[e.rarity].text }}>{t?.name ?? e.creatureId}</b>{" "}
         <span style={{ color: MUTED }}>({e.rarity}, {e.gearRarity} gear)</span> —{" "}
         {e.won
-          ? <span style={{ color: "#7CFC9A" }}>Klutz won in {e.rounds} rounds and caught it! ({e.hpAfter}/{ex.maxHp} HP left)</span>
+          ? ex.letGo
+            ? <span style={{ color: "#f1d9a0" }}>Klutz won in {e.rounds} rounds — but the cage was full, so he let it go. He kept its gear. ({e.hpAfter}/{ex.maxHp} HP left)</span>
+            : <span style={{ color: "#7CFC9A" }}>Klutz won in {e.rounds} rounds and caught it! ({e.hpAfter}/{ex.maxHp} HP left)</span>
           : <span style={{ color: "#ff8a80" }}>Klutz was beaten and limped home.</span>}
       </div>
     </div>

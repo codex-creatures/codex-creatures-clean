@@ -1,6 +1,7 @@
 "use client";
 // app/cage/page.tsx
-// The cage in the Den. A new player's first creature is waiting in it, and
+// The cage in the Den (it holds CAGE_SIZE creatures; upgrades later). A new
+// player's first creature is waiting in it, and
 // creatures Klutz beats in the Labyrinth end up here. For each one: capture
 // it (it's yours) or release it (gone for good — tap twice). You can't
 // release your only creature.

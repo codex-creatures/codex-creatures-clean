@@ -10,8 +10,13 @@ import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import { RECENT_SCANS } from "@/hooks/useGameState";
+import CodeCache from "@/components/CodeCache";
 
-// The scanning altar: scan or type a barcode to get drops.
+const CACHES_AT_ONCE = 10; // caches opened together (the 2×5 grid)
+
+// The scanning altar: scan or type a barcode to get a Code Cache. In
+// Looting mode it opens straight away; in Storage mode it's kept here, to
+// open (ten at a time) whenever you like.
 export default function AltarPage() {
   const game = useGameState();
 
@@ -22,6 +27,8 @@ export default function AltarPage() {
   const [startArmed, setStartArmed] = useState(false); // "Start new" asks for a second tap
   const [startedNew, setStartedNew] = useState(false);
   const [lastScan, setLastScan]     = useState<Drop[]>([]); // what the latest scan gave
+  const [lastStored, setLastStored] = useState(false);      // …or was it stored as a Code Cache?
+  const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened
 
   const videoRef        = useRef<HTMLVideoElement | null>(null);
   const scanControlsRef = useRef<{ stop: () => void } | null>(null);
@@ -31,7 +38,7 @@ export default function AltarPage() {
     rollMode,
     scanCounts: game.scanCounts,
     onDrop:            game.addScan,
-    onScan:            setLastScan,
+    onScan:            (drops) => { setLastScan(drops); setLastStored(game.scanMode === "store"); },
     onScanCountUpdate: game.updateScanCount,
   });
 
@@ -140,7 +147,45 @@ export default function AltarPage() {
         ))}
       </div>
 
-      {lastScan.length > 0 && (
+      {/* Looting or Storage */}
+      <div className="stone-panel" style={{ marginTop: 18, maxWidth: 520 }}>
+        <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>Every scan is a Code Cache</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {([["loot", "🎁 Looting", "Open each cache as you scan it."], ["store", "📦 Storage", "Keep them here and open them later."]] as const).map(([mode, label, hint]) => (
+            <button key={mode} className="chip" data-active={game.scanMode === mode} onClick={() => game.setScanMode(mode)} title={hint} style={{ flex: 1 }}>{label}</button>
+          ))}
+        </div>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", margin: "8px 0 0" }}>
+          {game.scanMode === "loot" ? "Looting: each scan's cache opens straight away and goes where it belongs." : "Storage: caches wait here. Open them whenever you like — one by one, or extract them all."}
+        </p>
+        {game.caches.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+              {game.caches.slice(0, CACHES_AT_ONCE).map((c) => (
+                <div key={c.id} className="cache-sealed" style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", background: "#23262f", border: "3px solid #12131a", boxShadow: "inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21" }}>
+                  <span className="pixel-font" style={{ fontSize: 20, color: "#8fc1ff", textShadow: "0 0 8px rgba(143,193,255,0.8)" }}>?</span>
+                </div>
+              ))}
+            </div>
+            <button className="pixel-btn" style={{ marginTop: 10 }} onClick={() => setOpening(game.caches.slice(0, CACHES_AT_ONCE))}>
+              📦 Open {Math.min(CACHES_AT_ONCE, game.caches.length)} Code Cache{game.caches.length === 1 ? "" : "s"}{game.caches.length > CACHES_AT_ONCE ? ` (of ${game.caches.length})` : ""}
+            </button>
+          </div>
+        )}
+      </div>
+      {opening && (
+        <CodeCache title="Code Caches" items={opening} revealAllLabel="Extract all" doneLabel="Take it all"
+          intro="Tap a cache to crack it open, or extract them all at once."
+          onDone={() => { game.openCaches(opening.map((d) => d.id)); setOpening(null); }} />
+      )}
+
+      {lastScan.length > 0 && lastStored && (
+        <div style={{ marginTop: 18, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 15 }}>
+          📦 A Code Cache — stored. You have <b>{game.caches.length}</b> waiting.
+        </div>
+      )}
+
+      {lastScan.length > 0 && !lastStored && (
         <div style={{ marginTop: 18, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10 }}>
           <div style={{ fontSize: 11, opacity: 0.4, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
             That scan gave{lastScan.length > 1 ? ` ${lastScan.length} things` : ""}:

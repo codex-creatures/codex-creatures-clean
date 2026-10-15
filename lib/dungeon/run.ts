@@ -31,6 +31,7 @@ import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
 import { rollMap, routeLength, waysOn, type DungeonMap } from "./map";
+import { readSave, writeSaveField } from "../save";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -387,15 +388,15 @@ export const hoursToFull = (meta: DungeonMeta, hp: number) => Math.max(0, (1 - h
 
 export type DungeonSave = { meta: DungeonMeta; run: DungeonRun | null };
 
-// Kept from when dungeons were called labyrinths, so old progress still loads.
-const STORAGE_KEY = "codex_creatures_labyrinth_v1";
+// Part of the player's one save (lib/save.ts), in its own field.
+const SAVE_FIELD = "labyrinth";
 const EMPTY: DungeonSave = { meta: { runs: 0, clears: 0, injuries: {}, bag: [] }, run: null };
 
 export function loadDungeon(): DungeonSave {
   if (typeof window === "undefined") return EMPTY;
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "null");
-    if (!parsed || typeof parsed !== "object") return EMPTY;
+    const parsed = readSave()[SAVE_FIELD] as Partial<DungeonSave> | undefined;
+    if (!parsed || typeof parsed !== "object" || !parsed.meta) return EMPTY;
     const loaded: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
     const save: DungeonSave = loaded.run ? loaded : { ...loaded, meta: soak(loaded.meta) };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
@@ -407,9 +408,7 @@ export function loadDungeon(): DungeonSave {
 }
 
 export function saveDungeon(save: DungeonSave) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
-  } catch {}
+  writeSaveField(SAVE_FIELD, save);
 }
 
 // The run is over (any way): bring the hurt creatures home.
@@ -434,7 +433,5 @@ export function endRun(save: DungeonSave): DungeonSave {
 
 // "Reset Player": dungeon progress goes too (runs, clears, injuries, any run in progress).
 export function clearDungeon() {
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  writeSaveField(SAVE_FIELD, undefined);
 }
