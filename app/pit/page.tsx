@@ -1,5 +1,6 @@
 "use client";
-// app/pit/page.tsx — your creatures: roster, equipping, and the way into battle.
+// app/pit/page.tsx — the Pit: your creatures, their gear and moves. (VS AI is
+// a testing battle against the computer, not a game feature.)
 
 import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
@@ -11,11 +12,8 @@ export default function PitPage() {
   const game = useGameState("roster");
 
   return (
-    <DenFrame title="Fight Pit" icon="⚔️" gold={game.gold}>
-      <Link href="/battle" className="pixel-btn" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, width: "100%" }}>
-        ⚔️ Enter the pit <span style={{ fontSize: 12, opacity: 0.7 }}>· 3 of yours vs an AI team</span>
-      </Link>
-
+    <DenFrame title="The Pit" icon="🐾" gold={game.gold}>
+      <div className="stone-panel" style={{ padding: "14px 14px 22px" }}>
       <InventoryList
         title="Creatures"
         tabs={["roster", "creatures", "cards"]}
@@ -47,7 +45,9 @@ export default function PitPage() {
         sellTotal={0}
         onOpenSellConfirm={() => {}}
         onToggleSellMode={() => {}}
+        headerExtra={<Link href="/battle" className="chip" title="Testing: a battle against an AI team">VS AI</Link>}
       />
+      </div>
 
       <RecentBattles />
     </DenFrame>

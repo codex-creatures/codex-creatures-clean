@@ -1,8 +1,10 @@
 "use client";
 // components/CreatureDetailModal.tsx
-// A creature's equipment screen: the creature on its pedestal with its
-// weapon on one side and its armour (helmet, chest, legs) on the other, its
-// set bonus if it wears a full set, its stats as bars, and its moves.
+// A creature's window, in two tabs:
+// - Gear & stats: the creature on its pedestal with its weapon on one side
+//   and its armour (helmet, chest, legs) on the other, its set bonus if it
+//   wears a full set, its stats as bars and its gear multipliers;
+// - Moves: its 4 move slots, and the moves it could swap in.
 // Tap a slot to browse your gear: picking an item previews the change on
 // every stat before you equip it.
 
@@ -63,6 +65,8 @@ const STATS: { key: StatKey; icon: string; label: string; max: number; color: st
 ];
 
 const rarityColor = (r: Rarity) => RARITY_COLORS[r]?.text ?? "white";
+// Numbers in a plain, bold face: easy to read at a glance.
+const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
@@ -77,6 +81,7 @@ export default function CreatureDetailModal({
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
+  const [tab, setTab] = useState<"gear" | "moves">("gear");
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -161,6 +166,25 @@ export default function CreatureDetailModal({
           <p style={{ fontSize: 13, color: MUTED }}>This creature is from an older roster and has no combat data, so it can&apos;t be equipped.</p>
         ) : (
           <>
+            {/* Tabs: gear & stats, or moves */}
+            <div role="tablist" style={{ display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117", marginBottom: 12 }}>
+              {([["gear", "🛡️ Gear & stats"], ["moves", "⚔️ Moves"]] as const).map(([k, label], i) => (
+                <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setTab(k); closePicker(); }} className="pixel-font"
+                  style={{ flex: 1, minHeight: 44, fontSize: 15, cursor: "pointer", border: "none", borderLeft: i ? "2px solid #2a2d38" : "none",
+                    background: tab === k ? "#3a2c16" : "transparent", color: tab === k ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {tab === "moves" && (
+              <>
+                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} learned={creature.learned} onChange={onSetMoves} />
+                <CodexShelf template={template} learned={creature.learned ?? []} codexes={codexes} onLearn={onLearnCodex} />
+              </>
+            )}
+
+            {tab === "gear" && <>
             {/* Paper doll: weapon · creature · armour */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
               <Slot label="Weapon" item={weapon} active={picking === "weapon"} onClick={() => openSlot("weapon")} />
@@ -235,26 +259,6 @@ export default function CreatureDetailModal({
               </div>
             )}
 
-            {/* The creature's own %s: what each point of gear is multiplied by. */}
-            <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
-              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· how much this creature adds to its gear</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
-              {STATS.filter((st) => st.key !== "hp").map((st) => {
-                const k = st.key as Exclude<StatKey, "hp">;
-                const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
-                return (
-                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by +${prof![k]}%`}
-                    style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
-                    <div style={{ fontSize: 13 }}>{st.icon}</div>
-                    <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
-                    <div className="pixel-font" style={{ fontSize: 17, color: st.color }}>+{prof![k]}%</div>
-                    <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Stats */}
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
               Stats {previewing && <span style={{ fontSize: 12, color: "#ffd66e" }}>· previewing</span>}
@@ -270,16 +274,30 @@ export default function CreatureDetailModal({
                 return <StatRow key={st.key} icon={st.icon} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
               })}
             </div>
+            {/* The creature's own %s: what each point of gear is multiplied by. */}
+            <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
+              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· how much this creature adds to its gear</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
+              {STATS.filter((st) => st.key !== "hp").map((st) => {
+                const k = st.key as Exclude<StatKey, "hp">;
+                const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
+                return (
+                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by +${prof![k]}%`}
+                    style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
+                    <div style={{ fontSize: 13 }}>{st.icon}</div>
+                    <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
+                    <div style={{ ...NUM, fontSize: 18, color: st.color }}>+{prof![k]}%</div>
+                    <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
+                  </div>
+                );
+              })}
+            </div>
+
             <p style={{ fontSize: 11, color: MUTED, margin: "8px 0 0", lineHeight: 1.4 }}>
               Stats come from gear: each one is the gear&apos;s value boosted by the creature&apos;s % above. With no gear on, only Health has a value.
             </p>
-
-            {/* Moves */}
-            <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
-              Moves {onSetMoves && <span style={{ fontSize: 12, color: MUTED }}>· tap a slot to change it</span>}
-            </div>
-            <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} learned={creature.learned} onChange={onSetMoves} />
-            <CodexShelf template={template} learned={creature.learned ?? []} codexes={codexes} onLearn={onLearnCodex} />
+            </>}
           </>
         )}
 
@@ -316,7 +334,7 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
         <PixelSprite sprite={creatureSprite(creature.creatureId)} scale={5} title={creature.name} style={{ position: "relative" }} />
       </div>
       <div style={{ width: 120, height: 14, marginTop: -6, background: "#3a3f4c", borderTop: `3px solid ${border}`, boxShadow: "inset 0 -3px 0 #23262f, 0 3px 0 rgba(0,0,0,0.5)", borderRadius: "50% / 40%" }} />
-      <div className="pixel-font" style={{ fontSize: 12, color: "#ff8a80", marginTop: 6 }}>❤️ {Math.round(hp)} HP</div>
+      <div style={{ ...NUM, fontSize: 15, color: "#ff8a80", marginTop: 6 }}>❤️ {Math.round(hp)} HP</div>
     </div>
   );
 }
@@ -389,7 +407,7 @@ function Tile({ children, rarity, selected, title, onClick }: {
 }
 
 function Badge({ children, color }: { children: React.ReactNode; color: string }) {
-  return <span className="pixel-font" style={{ position: "absolute", top: 1, right: 3, fontSize: 11, color }}>{children}</span>;
+  return <span style={{ ...NUM, position: "absolute", top: 1, right: 3, fontSize: 11, color }}>{children}</span>;
 }
 
 // One stat: icon, name, a chunky bar (with the previewed change), the total.
@@ -400,12 +418,12 @@ function StatRow({ icon, label, color, max, total, after, detail, diff }: {
   const change = after - total;
   const lo = Math.min(total, after), hi = Math.max(total, after);
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "22px minmax(70px, 92px) 1fr auto", alignItems: "center", columnGap: 8 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "22px minmax(70px, 96px) 1fr auto", alignItems: "center", columnGap: 8 }}>
       <span style={{ fontSize: 15, textAlign: "center" }}>{icon}</span>
-      <span style={{ fontSize: 13, lineHeight: 1.1 }}>
+      <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.15 }}>
         {label}
         {diff !== 0 && <sup style={{ marginLeft: 2, fontSize: 11, color: diff > 0 ? "#7CFC9A" : "#ff8a80" }}>{diff > 0 ? `+${diff}` : diff}</sup>}
-        <span style={{ display: "block", fontSize: 11, color: MUTED }}>{detail}</span>
+        <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: MUTED }}>{detail}</span>
       </span>
       <div style={{ position: "relative", height: 12, background: "#0e0f14", border: "2px solid #2a2d38" }}>
         <div style={{ position: "absolute", inset: 0, width: `${pct(lo)}%`, background: color, transition: "width 0.25s" }} />
@@ -416,8 +434,8 @@ function StatRow({ icon, label, color, max, total, after, detail, diff }: {
         <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px)" }} />
       </div>
       {/* Fixed width, change on the same line: flicking between items never moves anything. */}
-      <span className="pixel-font" style={{ minWidth: 104, textAlign: "right", fontSize: 16, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-        {change !== 0 && <span style={{ fontSize: 11, marginRight: 6, color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{change > 0 ? `▲+${change}` : `▼${change}`}</span>}
+      <span style={{ ...NUM, minWidth: 104, textAlign: "right", fontSize: 18, whiteSpace: "nowrap" }}>
+        {change !== 0 && <span style={{ fontSize: 13, marginRight: 6, color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{change > 0 ? `▲+${change}` : `▼${change}`}</span>}
         {change !== 0 ? <span style={{ color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{after}</span> : total}
       </span>
     </div>

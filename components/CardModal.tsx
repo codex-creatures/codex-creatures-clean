@@ -58,7 +58,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
           <div style={{ textAlign: "center", padding: "10px 0" }}>
             <div style={{ fontSize: 40 }}>✨</div>
             <div className="pixel-font" style={{ fontSize: 26, color: c.text }}>{result.name} summoned!</div>
-            <p style={{ color: MUTED, fontSize: 13, margin: "6px 0 14px" }}>It&apos;s now in your Creatures — equip it in the Fight Pit.</p>
+            <p style={{ color: MUTED, fontSize: 13, margin: "6px 0 14px" }}>It&apos;s now in your Creatures — equip it in the Pit.</p>
             <AbilityTag ability={result.ability} />
             <RollTable p={result.proficiency ?? t.proficiency} base={t.proficiency} />
             <Moves names={result.moves ?? []} own={t.skills.map((s) => s.name)} />

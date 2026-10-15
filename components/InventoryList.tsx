@@ -53,6 +53,7 @@ type Props = {
   title?: string;
   showSell?: boolean;
   emptyText?: string;
+  headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
 };
 
 const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables"];
@@ -64,7 +65,7 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, emptyText,
+  tabs = TABS, title = "Inventory", showSell = true, emptyText, headerExtra,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
@@ -129,6 +130,7 @@ export default function InventoryList({
       <div style={{ marginTop: 30, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
         <h2 className="pixel-font" style={{ margin: 0, fontWeight: 600, color: "#f1d9a0" }}>{title}</h2>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {headerExtra}
           {showSell && <button onClick={onToggleSellMode} style={{ padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer", border: sellMode ? "none" : "1px solid rgba(255,80,80,0.5)", background: sellMode ? "#ff5050" : "transparent", color: sellMode ? "white" : "#ff5050", transition: "all 0.15s" }}>
             {sellMode ? "✕ Cancel Sell" : "💰 Sell Mode"}
           </button>}
@@ -192,6 +194,7 @@ export default function InventoryList({
       {asGrid && shown.length > 0 && (
         <TileGrid
           groupBy={groupBy}
+          large={creatureTab}
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}
           badge={(d) => {

@@ -28,7 +28,7 @@ export default function BookcasePage() {
       <div className="stone-panel">
         <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
           Just a shelf for now: it holds <b>{BOOKCASE_SIZE} codexes</b>. Codexes you bring home from the Labyrinth go here;
-          if it&apos;s full they stay in your bag. Each codex teaches its race&apos;s move once — read it from a creature&apos;s page in the Fight Pit.
+          if it&apos;s full they stay in your bag. Each codex teaches its race&apos;s move once — read it from a creature&apos;s page in the Pit.
         </p>
       </div>
       <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "16px 0 8px" }}>On the shelf ({codexes.length}/{BOOKCASE_SIZE})</div>
@@ -48,7 +48,7 @@ export default function BookcasePage() {
                 {move && <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{move.self ? "utility" : moveKind(move)} · {move.desc}</div>}
                 <div style={{ fontSize: 12, marginTop: 6 }}>
                   {learners.length > 0
-                    ? <>Could teach: {learners.map((x) => x.name).join(", ")} — <Link href="/pit" style={{ textDecoration: "underline" }}>open one in the Fight Pit</Link></>
+                    ? <>Could teach: {learners.map((x) => x.name).join(", ")} — <Link href="/pit" style={{ textDecoration: "underline" }}>open one in the Pit</Link></>
                     : <span style={{ color: MUTED }}>None of your creatures can learn it yet.</span>}
                 </div>
               </div>

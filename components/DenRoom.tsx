@@ -12,7 +12,7 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 type Spot = { label: string; href?: string; soon?: string };
 
 export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
-  [OBJ.pit]:      { label: "Fight Pit", href: "/pit" },
+  [OBJ.pit]:      { label: "The Pit", href: "/pit" },
   [OBJ.chest]:    { label: "Chest", href: "/chest" },
   [OBJ.altar]:    { label: "Scanning Altar", href: "/altar" },
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from the Chest for now." },
