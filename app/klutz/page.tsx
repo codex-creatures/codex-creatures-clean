@@ -85,7 +85,7 @@ export default function KlutzPage() {
           <div style={{ fontSize: 13, color: MUTED, margin: "4px 0 8px" }}>
             Out for {clock(now - status.expedition.startedAt)} so far — he&apos;ll be back once he&apos;s run into something.
           </div>
-          <EncounterLog ex={status.expedition} upTo={now} />
+          <EncounterLog ex={status.expedition} upTo={now} seenIds={game.seenIds} />
           <button className="chip" style={{ marginTop: 10 }} onClick={game.klutzSkipAhead} title="A shortcut for playtesting">Testing: skip to the end</button>
         </div>
       )}
@@ -104,7 +104,7 @@ export default function KlutzPage() {
       {ex && status.kind !== "away" && (
         <div className="stone-panel" style={{ marginTop: 14 }}>
           <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}>Last trip</div>
-          <EncounterLog ex={ex} upTo={ex.endsAt} />
+          <EncounterLog ex={ex} upTo={ex.endsAt} seenIds={game.seenIds} />
           {ex.find && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6, marginTop: 6 }}>
               {itemSprite(ex.find as CreatureOrItemDrop) && <PixelSprite sprite={itemSprite(ex.find as CreatureOrItemDrop)!} scale={2} />}
@@ -179,19 +179,33 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   return null;
 }
 
-function EncounterLog({ ex, upTo }: { ex: Expedition; upTo: number }) {
-  const seen = ex.encounters.filter((e) => e.at <= upTo);
-  if (seen.length === 0) return <div style={{ fontSize: 13, color: MUTED }}>{upTo >= ex.endsAt ? "He didn't run into anything this time." : "Nothing yet…"}</div>;
+function EncounterLog({ ex, upTo, seenIds }: { ex: Expedition; upTo: number; seenIds: Set<string> }) {
+  const shown = ex.encounters.filter((e) => e.at <= upTo);
+  if (shown.length === 0) return <div style={{ fontSize: 13, color: MUTED }}>{upTo >= ex.endsAt ? "He didn't run into anything this time." : "Nothing yet…"}</div>;
   return (
     <div style={{ display: "grid", gap: 6 }}>
-      {seen.map((e, i) => <EncounterRow key={i} e={e} ex={ex} />)}
+      {shown.map((e, i) => <EncounterRow key={i} e={e} ex={ex} seen={seenIds} />)}
     </div>
   );
 }
 
-function EncounterRow({ e, ex }: { e: KlutzEncounter; ex: Expedition }) {
+function EncounterRow({ e, ex, seen }: { e: KlutzEncounter; ex: Expedition; seen: Set<string> }) {
   const t = CREATURE_BY_ID[e.creatureId];
   const mins = Math.round((e.at - ex.startedAt) / 60000);
+  if (!e.won && !seen.has(e.creatureId)) {
+    return (
+      <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6 }}>
+        <PixelSprite sprite={creatureSprite(e.creatureId)} scale={1} style={{ filter: "brightness(0) drop-shadow(0 0 1px rgba(255,255,255,0.4))" }} />
+        <div style={{ fontSize: 13, lineHeight: 1.4 }}>
+          <span style={{ color: MUTED }}>{mins} min in:</span> <span style={{ color: "#ff8a80" }}>Klutz was beaten and limped home.</span>
+          <span style={{ display: "block", fontStyle: "italic", color: "#d8d4c8" }}>
+            &ldquo;Something came at me out of the dark — never seen anything like it. Strong. Stronger than anything I know.
+            I didn&apos;t get a proper look… but it&apos;s still down there.&rdquo;
+          </span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6 }}>
       <PixelSprite sprite={creatureSprite(e.creatureId)} scale={1} />

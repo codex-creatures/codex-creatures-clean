@@ -501,11 +501,12 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
             <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", color: rarityColor(info.rarity), lineHeight: 1.1, overflowWrap: "anywhere" }}>{f.name}</div>
-            <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>{details && <> · {info.label}</>}</div>
+            <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>{details && side === "A" && <> · {info.label}</>}</div>
           </div>
         </div>
-        <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
-        <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />
+        {/* Opponents: just a health bar that goes down (no numbers, no energy). */}
+        <Bar label="HP" value={side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.max(0, Math.ceil(hpPct))}%`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
+        {side === "A" && <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />}
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
         {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
         {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "corpsify").map((s) => (
@@ -517,12 +518,12 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
         ))}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
         <StreakBadges f={f} foe={foe} slot={slot} />
-        {details && !compact && (
+        {details && side === "A" && !compact && (
           <div style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
             ⚔️ {info.weaponName ?? "no weapon"}<br />🛡️ {info.armorName ?? "no armour"}
           </div>
         )}
-        {details && <StatsLine stats={combatSummary(f)} />}
+        {details && side === "A" && <StatsLine stats={combatSummary(f)} />}
       </div>
       {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color }}>{float.text}</div>}
     </div>

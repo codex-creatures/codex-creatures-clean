@@ -159,7 +159,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // ── The Bestiary: creatures you've come across ────────
   // Anything you own (or hold a card of) or have waiting in the cage counts,
-  // plus anything you've met in the Labyrinth or Klutz has run into.
+  // plus anything you've fought in the Labyrinth. (What beats Klutz stays a
+  // mystery: he only tells you about it.)
   function markSeen(ids: string[]) {
     setSeen((prev) => (ids.every((id) => prev.includes(id)) ? prev : [...new Set([...prev, ...ids])]));
   }
@@ -233,8 +234,6 @@ export function useGameState(initialTab: TabKey = "all") {
       if (state === klutzRef.current) return;
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);
-      const met = (state.expedition?.encounters ?? []).map((e) => e.creatureId);
-      if (met.length) setSeen((prev) => [...new Set([...prev, ...met])]);
       setCaged((prev) => [...prev, ...loot.filter(isCreatureDrop)]);
       setInventory((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]);
     };
