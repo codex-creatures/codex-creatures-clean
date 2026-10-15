@@ -89,7 +89,7 @@ export default function MoveSlots({ template, moves, learned, onChange }: {
       </div>
       <div className="move-grid">
         {Array.from({ length: MOVE_SLOTS }, (_, i) => current[i]).map((m, i) => m ? (
-          <MoveTile key={i} m={m} slot={i} hitLabel="power" selected={editing === i}
+          <MoveTile key={i} m={m} slot={i} selected={editing === i}
             onClick={onChange ? () => setEditing(editing === i ? null : i) : undefined} />
         ) : (
           <button key={i} disabled={!onChange} onClick={() => setEditing(editing === i ? null : i)}
@@ -104,7 +104,7 @@ export default function MoveSlots({ template, moves, learned, onChange }: {
           <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>{title}</div>
           <div className="move-grid">
             {list.map((m) => (
-              <MoveTile key={m.name} m={m} tag={tag} hitLabel="power" dim={editing === null}
+              <MoveTile key={m.name} m={m} tag={tag} dim={editing === null}
                 onClick={() => (editing === null ? undefined : choose(m.name))} />
             ))}
           </div>

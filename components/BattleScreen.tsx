@@ -4,7 +4,7 @@
 // the step-by-step replay of each round, and the battle log. Used by the
 // Fight Pit (app/battle) and the dungeon (app/dungeon).
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { loadSave, armorPieces } from "@/hooks/useGameState";
 import { ARMOR_META, wornArmor } from "@/lib/items/armor";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
@@ -18,6 +18,7 @@ import { calcDamage, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
+import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf,
@@ -289,7 +290,22 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
         </div>
       )}
 
-      {/* The arena */}
+      {/* The fight, staged in a dungeon room (a boss or two enemies use the arena). */}
+      {!foe.boss && !multi ? (
+        <>
+          <Stage me={me} mySlot={you.active} myInfo={info.A[you.active]} them={them} theirSlot={target} theirInfo={info.B[target]} fx={fx} />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8, alignItems: "start" }}>
+            <Bench team={you.team} active={[you.active]} color={YOU} />
+            <Bench team={foe.team} active={fieldOf(foe)} color={FOE} />
+          </div>
+          {details && (
+            <div className="stone-panel" style={{ marginTop: 8, padding: "8px 10px" }}>
+              <div style={{ fontSize: 12, color: MUTED }}>⚔️ {info.A[you.active].weaponName ?? "no weapon"} · 🛡️ {info.A[you.active].armorName ?? "no armour"} · {info.A[you.active].label}</div>
+              <StatsLine stats={combatSummary(me)} />
+            </div>
+          )}
+        </>
+      ) : (
       <div className="arena">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
           <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} details={details} />
@@ -308,6 +324,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <Bench team={foe.team} active={fieldOf(foe)} color={FOE} />
         </div>
       </div>
+      )}
 
       {finished ? (
         <div className="stone-panel" style={{ marginTop: 16, textAlign: "center" }}>
@@ -342,11 +359,10 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
               Two enemies on the field — both attack every round. Tap one to target it: now hitting the {them.name}.
             </div>
           )}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, color: myAgil > theirAgil ? "#7CFC9A" : myAgil < theirAgil ? "#ffb38a" : MUTED }}>
-              {myAgil === theirAgil ? "⚖️ Coin flip for who goes first" : myAgil > theirAgil ? "⚡ You strike first" : `⚡ Their ${them.name} strikes first`}
-              {details && <span style={{ color: MUTED }}> · agility {Math.round(myAgil)} vs {Math.round(theirAgil)}</span>}
-            </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <div style={{ flex: 1 }}>
+              <Bar label="⚡ Energy" value={`${Math.round(me.energy)} / 100`} pct={me.energy} color="#4EA1FF" />
+            </div>
             <button className="chip" data-active={details} onClick={() => setDetails((d) => !d)} style={{ minHeight: 32, padding: "4px 10px", fontSize: 13 }}>ⓘ Details</button>
           </div>
           <div className="move-grid">
@@ -358,20 +374,18 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           {affordableSkills(me).length === 0 && (
             <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — rest (+30⚡)</button>
           )}
-          {((bag.length > 0 && onUseItem) || swapTargets(you).length > 0) && (
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              {bag.length > 0 && onUseItem && (
-                <button className="chip" data-active={open === "bag"} onClick={() => setOpen((o) => (o === "bag" ? null : "bag"))} style={{ flex: 1 }}>
-                  🎒 Bag · {bag.reduce((n, it) => n + it.count, 0)}
-                </button>
-              )}
-              {swapTargets(you).length > 0 && (
-                <button className="chip" data-active={open === "swap"} onClick={() => setOpen((o) => (o === "swap" ? null : "swap"))} style={{ flex: 1 }}>
-                  ⇄ Swap
-                </button>
-              )}
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button className="chip" data-active={open === "swap"} disabled={swapTargets(you).length === 0}
+              onClick={() => setOpen((o) => (o === "swap" ? null : "swap"))} style={{ flex: 1, opacity: swapTargets(you).length ? 1 : 0.4 }}>
+              ⇄ Swap
+            </button>
+            {onUseItem && (
+              <button className="chip" data-active={open === "bag"} disabled={bag.length === 0}
+                onClick={() => setOpen((o) => (o === "bag" ? null : "bag"))} style={{ flex: 1, opacity: bag.length ? 1 : 0.4 }}>
+                🎒 Battle Bag{bag.length ? ` · ${bag.reduce((n, it) => n + it.count, 0)}` : ""}
+              </button>
+            )}
+          </div>
           {open === "bag" && bag.length > 0 && onUseItem && (
             <>
               <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
@@ -433,7 +447,6 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   sk: Skill; me: Combatant; them: Combatant; myAgil: number; theirAgil: number; disabled: boolean; onClick: () => void;
 }) {
   const fx = sk.effect;
-  const dmg = moveDamage(sk, me, them);
   // (No "strong against" hints: the class icons and the triangle are the clue.)
   const tags: string[] = ["Each hit varies ±5%."];
   const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
@@ -456,8 +469,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
     : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
     : undefined;
   return (
-    <MoveTile m={sk} hit={sk.self ? undefined : `~${dmg}`} hitColor="#ffb38a"
-      note={note} extra={tags} disabled={disabled} onClick={onClick} />
+    <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} />
   );
 }
 
@@ -469,9 +481,14 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
   const hpPct = (f.hp / f.maxHp) * 100;
   const cripple = f.statuses.find((s) => s.id === "cripple");
   const haste = f.statuses.find((s) => s.id === "haste");
-  const isMe = (i?: number) => i === undefined || i === slot;
+  const { anim, float } = fighterFx(side, slot, fx);
+  return <FighterCardBody side={side} f={f} foe={foe} info={info} fx={fx} slot={slot} compact={compact} details={details} anim={anim} float={float}
+    color={color} hpPct={hpPct} cripple={cripple} haste={haste} />;
+}
 
-  // Which animation this card plays for the current step.
+// Which animation a creature plays for the current step, and any floating text.
+function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: string; float: { text: string; color: string } | null } {
+  const isMe = (i?: number) => i === undefined || i === slot;
   let anim = "";
   let float: { text: string; color: string } | null = null;
   if (fx) {
@@ -489,7 +506,14 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
     }
     if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex) && fx.missed && fx.evaded) float = { text: "MIRAGE!", color: "#c7b8ff" };
   }
+  return { anim, float };
+}
 
+function FighterCardBody({ side, f, foe, info, fx, slot, compact, details, anim, float, color, hpPct, cripple, haste }: {
+  side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number; compact?: boolean; details: boolean;
+  anim: string; float: { text: string; color: string } | null; color: string; hpPct: number;
+  cripple?: Combatant["statuses"][number]; haste?: Combatant["statuses"][number];
+}) {
   return (
     <div style={{ position: "relative" }}>
       <div key={`${fx?.id ?? 0}-${slot}`} className={`fighter-card ${anim}`} style={{ borderColor: `${color}88`, opacity: f.hp <= 0 ? 0.4 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
@@ -634,6 +658,65 @@ export function Chips<T extends string>({ value, onChange, options }: { value: T
       {options.map(([v, label]) => (
         <button key={v} onClick={() => onChange(v)} className="chip" data-active={value === v}>{label}</button>
       ))}
+    </div>
+  );
+}
+
+// The fight in a dungeon room: your creature on the left, theirs on the right,
+// each with a small health bar floating above. (Opponents: a percentage only.)
+function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
+  me: Combatant; mySlot: number; myInfo: MemberInfo; them: Combatant; theirSlot: number; theirInfo: MemberInfo; fx: Fx | null;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const chamber = useMemo(() => createChamber({ tunnels: ["unknown"], seed: 7 }), []);
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    const start = performance.now();
+    const draw = () => ctx.putImageData(chamber.render((performance.now() - start) / 1000, 0, false), 0, 0);
+    draw();
+    const timer = window.setInterval(draw, 1000 / 10);
+    return () => window.clearInterval(timer);
+  }, [chamber]);
+
+  const fighter = (f: Combatant, side: SideKey, slot: number, mi: MemberInfo) => {
+    const { anim, float } = fighterFx(side, slot, fx);
+    const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
+    const sprite = mi.creatureId ? CREATURE_SPRITES[mi.creatureId] : undefined;
+    const icons = [
+      f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
+      f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
+      f.statuses.some((s) => s.id === "corpsify") && "⚰️",
+    ].filter(Boolean).join(" ");
+    return (
+      <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
+        display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
+        {/* Floating label: name, a small health bar, any statuses. */}
+        <div className="pixel-font" style={{ fontSize: "clamp(10px, 2.4vw, 13px)", color: rarityColor(mi.rarity), textShadow: "0 2px 0 #000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+          <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon}</span> {f.name}
+        </div>
+        <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
+          <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />
+        </div>
+        <div style={{ fontSize: 11, color: "#d8d4c8", textShadow: "0 1px 0 #000", marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
+          {side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.ceil(hpPct)}%`}{icons && <span style={{ marginLeft: 4 }}>{icons}</span>}
+        </div>
+        <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
+          {sprite
+            ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={side === "A" ? { transform: "scaleX(-1)" } : undefined} />
+            : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
+          <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />
+          {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color, top: 0 }}>{float.text}</div>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: `${CW} / ${CH}`, border: "3px solid #1a1d20", boxShadow: "0 4px 0 rgba(0,0,0,0.6)", overflow: "hidden" }}>
+      <canvas ref={canvasRef} width={CW} height={CH} style={{ width: "100%", height: "100%", imageRendering: "pixelated", display: "block" }} aria-hidden />
+      {fighter(me, "A", mySlot, myInfo)}
+      {fighter(them, "B", theirSlot, theirInfo)}
     </div>
   );
 }
