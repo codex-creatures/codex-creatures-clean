@@ -163,7 +163,7 @@ export const SET_BONUS: Record<ArmorKey, { name: string; text: string }> = {
   arrowward_mantle:      { name: "Deflect",     text: "25% of ranged attacks against it miss." },
   polished_chainbolster: { name: "Steadfast",   text: "It can't be crippled." },
   juggernaut_platemail:  { name: "Unstoppable", text: "Once per fight, a blow that would knock it out leaves it on 1 HP." },
-  frontiers_mail:        { name: "Second Wind", text: "Heals 15% of its max HP after every fight it wins in the dungeon." },
+  frontiers_mail:        { name: "Second Wind", text: "Heals 15% of its max HP after every fight it wins in the labyrinth." },
 };
 export const NULLIFY_REFLECT = 0.25;
 export const DEFLECT_CHANCE = 0.25;

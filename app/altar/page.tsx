@@ -194,7 +194,7 @@ export default function AltarPage() {
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>
-        <button onClick={game.resetAll} title="Wipe your progress (inventory, gold, dungeon) but keep registered barcodes — test as a new player" style={dangerBtn}>Reset Player</button>
+        <button onClick={game.resetAll} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>Reset Player</button>
         <button onClick={game.globalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>Global Reset</button>
       </div>
 

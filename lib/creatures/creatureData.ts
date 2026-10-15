@@ -178,7 +178,7 @@ export const KLUTZ: CreatureTemplate = {
   id: "klutz", name: "Klutz", race: "underdweller", rarity: "rare", baseHp: 98, companion: true,
   proficiency: { atk: 26, rng: 18, agil: 8, mdef: 12, rdef: 10 },
   skills: s("Slash", "Bolt", "Heavy Blow", "Stone Throw"),
-  flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the dungeon. He found you down there, so now you're his.",
+  flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. He found you down there, so now you're his.",
 };
 
 export const COMPANIONS: CreatureTemplate[] = [KLUTZ];
@@ -190,7 +190,7 @@ const NO_PROF: CreatureProficiency = { atk: 0, rng: 0, agil: 0, mdef: 0, rdef: 0
 export const BOSS_PARTS: CreatureTemplate[] = [
   { id: "cyclops", name: "Cyclops", rarity: "legendary", baseHp: 240, boss: true, proficiency: NO_PROF,
     skills: bossMoves("Club Smash", "Stomp", "Backhand", "Eye Laser"),
-    flavour: "A mountain of muscle with one huge, rolling eye. The dungeon's first warden." },
+    flavour: "A mountain of muscle with one huge, rolling eye. The labyrinth's first warden." },
   { id: "cyclops_hand", name: "Crawling Hand", rarity: "epic", baseHp: 70, boss: true, proficiency: NO_PROF,
     skills: bossMoves("Claw Rake", "Crushing Grip"),
     flavour: "It scuttles on its fingertips, much too fast." },

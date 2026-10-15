@@ -177,7 +177,7 @@ export default function CreatureDetailModal({
                   Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`} — tap any to compare
                 </div>
                 {options.length === 0 ? (
-                  <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the dungeon to find some.</p>
+                  <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the labyrinth to find some.</p>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(62px, 1fr))", gap: 6 }}>
                     {current && (
@@ -458,7 +458,7 @@ function CodexShelf({ template, learned, codexes, onLearn }: {
       ))}
       {known.length === 0 && readable.length === 0 && (
         <div style={{ fontSize: 12, color: MUTED }}>
-          📖 {raceMoves.map((m) => m.name).join(", ")}: this creature&apos;s race move — learned from a codex (wandering librarians sell them; dungeon chests sometimes hold one).
+          📖 {raceMoves.map((m) => m.name).join(", ")}: this creature&apos;s race move — learned from a codex (wandering librarians sell them; labyrinth chests sometimes hold one).
         </div>
       )}
     </div>

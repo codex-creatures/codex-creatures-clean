@@ -230,7 +230,7 @@ export default function DungeonPage() {
       room.level ?? "hard",
       {
         startHp: mine.map((c, i) => Math.round((r.hp[ids[i]] ?? 1) * c.fighter.maxHp)),
-        title: room.boss ? "Dungeon · the Cyclops" : `Dungeon · ${ROOM_INFO[room.kind].name}`,
+        title: room.boss ? "Labyrinth · the Cyclops" : `Labyrinth · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
       },
     );
@@ -272,11 +272,11 @@ export default function DungeonPage() {
 
   // ── Screens ───────────────────────────────────────────────────────
   if (!lab || !game.hydrated) {
-    return <DenFrame title="The Dungeon" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+    return <DenFrame title="The Labyrinth" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   }
 
   const frame = (children: React.ReactNode) => (
-    <DenFrame title="The Dungeon" icon="🌀" gold={game.gold}>{children}</DenFrame>
+    <DenFrame title="The Labyrinth" icon="🌀" gold={game.gold}>{children}</DenFrame>
   );
 
   if (!run) {
@@ -335,7 +335,7 @@ export default function DungeonPage() {
         <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
           onClick={() => updateRun((r) => ({ ...r, status: "retreated", battle: undefined }))}
           disabled={battle.match !== null && !battle.match.state.winner}>
-          🏃 Retreat — leave the dungeon and keep your loot
+          🏃 Retreat — leave the labyrinth and keep your loot
         </button>
       </div>
     </>
@@ -416,7 +416,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
       )}
 
       <button onClick={() => onBegin(party)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        🌀 Enter the dungeon {free ? "(first time free)" : `(${ENTRY_FEE} gold)`}
+        🌀 Enter the labyrinth {free ? "(first time free)" : `(${ENTRY_FEE} gold)`}
       </button>
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
     </>
@@ -428,7 +428,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 function MapFirst({ run, onStep }: { run: DungeonRun; onStep: () => void }) {
   return (
     <div className="stone-panel">
-      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Your map of the dungeon</div>
+      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Your map of the labyrinth</div>
       <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
         Study it while you can. Once you step inside it&apos;s too dark to read — you&apos;ll only see the room you&apos;re in and the tunnels leading out of it,
         so remember which way the lair lies. The rooms you know are marked; the rest are a &ldquo;?&rdquo;. Every tunnel leads onward, never back.
@@ -697,7 +697,7 @@ function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => O
 }
 
 function RunOver({ run, lab, onHome }: { run: DungeonRun; lab: DungeonSave; onHome: () => void }) {
-  const title = run.status === "cleared" ? "The dungeon is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
+  const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
   const text = run.status === "cleared"
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
