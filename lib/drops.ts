@@ -10,7 +10,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { ITEM_META } from "./items/metadata";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, pieceName } from "./items/armor";
-import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
+import { CREATURE_BY_ID, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
 
@@ -44,18 +44,30 @@ export function armorDrop(armorKey: ArmorKey, rarity: Rarity, barcode = "", stat
   };
 }
 
-// A codex: read it (once) to teach its race move to a creature of that race.
-export function codexDrop(moveName: string): Drop {
+// A codex: read it (once) to teach its move to a creature, then it crumbles.
+// Race moves (Epic codexes) only to a creature of that race; learnable
+// moves (Uncommon codexes, from scans and Labyrinth chests) to anyone.
+export function codexDrop(moveName: string, barcode = ""): Drop {
   const move = MOVE_BY_NAME[moveName];
   const race = move?.race ? RACE_INFO[move.race].name : "";
   return {
-    id: crypto.randomUUID(), barcode: "", dropType: "item", itemCategory: "consumable", rarity: "epic", roll: 0,
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: move?.race ? "epic" : "uncommon", roll: 0,
     name: `Codex: ${moveName}`, codexMove: moveName,
-    desc: `Teaches ${moveName} to one ${race} creature, then crumbles to dust. ${move?.desc ?? ""}`, createdAt: now(),
+    desc: `Teaches ${moveName} to ${race ? `one ${race} creature` : "any one creature"}, then crumbles to dust. ${move?.desc ?? ""}`, createdAt: now(),
   };
 }
 
 export const randomCodexMove = () => RACE_MOVES[Math.floor(Math.random() * RACE_MOVES.length)].name;
+export const randomLearnableMove = () => LEARNABLE_MOVES[Math.floor(Math.random() * LEARNABLE_MOVES.length)].name;
+
+// A Lesser Potion (heals 50): the Common consumable. It goes into your
+// storage; pack it in your bag to take it into the Labyrinth.
+export function potionDrop(barcode = ""): Drop {
+  return {
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: "common", roll: 0,
+    name: "Lesser Potion", potion: "lesser", desc: "Restores 50 HP to one creature. Pack it in your bag to use it in the Labyrinth.", createdAt: now(),
+  };
+}
 
 function plainItemDrop(itemCategory: ItemCategory, rarity: Rarity, barcode = ""): Drop {
   return { id: crypto.randomUUID(), barcode, dropType: "item", itemCategory, rarity, roll: 0, name: `${rarity} ${itemCategory}`, createdAt: now() };
@@ -70,6 +82,8 @@ export function dropFromOutcome(result: BarcodeOutcome, barcode = ""): Drop | nu
     return creature ? creatureOrCard(creature, barcode) : null;
   }
   const { itemCategory, rarity, itemKey, armorKey, armorSlot } = result;
+  // Consumables: a Lesser Potion (Common) or a codex of a learnable move (Uncommon).
+  if (itemCategory === "consumable") return rarity === "common" ? potionDrop(barcode) : codexDrop(randomLearnableMove(), barcode);
   if (itemCategory === "weapon") return itemKey ? weaponDrop(itemKey, rarity, barcode) : null;
   if (itemCategory === "armor") return armorKey ? armorDrop(armorKey, rarity, barcode, undefined, armorSlot) : null;
   return plainItemDrop(itemCategory, rarity, barcode);

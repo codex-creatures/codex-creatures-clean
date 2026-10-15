@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { findCreatureTemplate, raceMovesFor, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { canLearnFromCodex, findCreatureTemplate, MOVE_BY_NAME, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
@@ -180,8 +180,8 @@ export default function CreatureDetailModal({
 
             {tab === "moves" && (
               <>
-                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} learned={creature.learned} onChange={onSetMoves} />
-                <CodexShelf template={template} learned={creature.learned ?? []} codexes={codexes} onLearn={onLearnCodex} />
+                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} born={creature.moves} learned={creature.learned} onChange={onSetMoves} />
+                <CodexShelf template={template} known={[...(creature.moves ?? template.skills.slice(0, 4).map((s) => s.name)), ...(creature.learned ?? [])]} codexes={codexes} onLearn={onLearnCodex} />
               </>
             )}
 
@@ -464,31 +464,41 @@ export function TypeTags({ roles }: { roles: string[] }) {
   );
 }
 
-// Codexes this creature could read: its race's move, if you own a codex
-// for it and it hasn't learned it yet. Reading uses the codex up.
-function CodexShelf({ template, learned, codexes, onLearn }: {
-  template: CreatureTemplate; learned: string[]; codexes: CreatureOrItemDrop[]; onLearn?: (codexId: string) => void;
+// Codexes on your bookcase this creature could read (one per move): any
+// learnable move, or its own race's move — if it doesn't know it already.
+// Reading uses the codex up.
+function CodexShelf({ template, known, codexes, onLearn }: {
+  template: CreatureTemplate; known: string[]; codexes: CreatureOrItemDrop[]; onLearn?: (codexId: string) => void;
 }) {
-  const raceMoves = raceMovesFor(template);
-  if (raceMoves.length === 0) return null;
-  const readable = codexes.filter((c) => raceMoves.some((m) => m.name === c.codexMove) && !learned.includes(c.codexMove!));
-  const known = raceMoves.filter((m) => learned.includes(m.name));
+  const seen = new Set<string>();
+  const readable = codexes.filter((c) => {
+    const mv = c.codexMove!;
+    if (seen.has(mv) || known.includes(mv) || !canLearnFromCodex(template, mv)) return false;
+    seen.add(mv);
+    return true;
+  });
   return (
-    <div style={{ marginTop: 10 }}>
-      {known.length > 0 && (
-        <div style={{ fontSize: 12, color: "#9fd3a8" }}>📖 Learned from a codex: {known.map((m) => m.name).join(", ")} — pick it in a move slot above.</div>
-      )}
-      {readable.slice(0, 1).map((c) => (
-        <button key={c.id} className="card-btn" disabled={!onLearn} onClick={() => onLearn?.(c.id)} style={{ marginTop: 6, borderColor: "#a99cff" }}>
-          <span>
-            <b style={{ color: "#c7b8ff" }}>📖 Read {c.name}</b>
-            <span style={{ display: "block", fontSize: 12, color: MUTED }}>Learns {c.codexMove} for good. The codex crumbles to dust.</span>
-          </span>
-        </button>
-      ))}
-      {known.length === 0 && readable.length === 0 && (
+    <div style={{ marginTop: 16 }}>
+      <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>On your bookcase</div>
+      {readable.length === 0 ? (
         <div style={{ fontSize: 12, color: MUTED }}>
-          📖 {raceMoves.map((m) => m.name).join(", ")}: this creature&apos;s race move — learned from a codex (wandering librarians sell them; labyrinth chests sometimes hold one).
+          📖 No codexes it could read. Codexes teach new moves — find them by scanning and exploring the Labyrinth.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 6 }}>
+          {readable.map((c) => {
+            const mv = MOVE_BY_NAME[c.codexMove!];
+            return (
+              <button key={c.id} className="card-btn" disabled={!onLearn} onClick={() => onLearn?.(c.id)} style={{ borderColor: "#a99cff" }}>
+                <span>
+                  <b style={{ color: "#c7b8ff" }}>📖 Read {c.name}</b>
+                  <span style={{ display: "block", fontSize: 12, color: MUTED }}>
+                    {mv ? `${mv.self ? "Utility" : `${mv.type} · ${mv.damage} dmg`} · ${mv.energyCost} energy. ` : ""}Learns {c.codexMove} for good; the codex crumbles to dust.
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

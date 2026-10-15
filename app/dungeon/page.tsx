@@ -144,8 +144,10 @@ export default function DungeonPage() {
       const x = (raw.dropType === "creature" ? { ...raw, dropType: "card" } : raw) as Drop;
       if (x.dropType === "reward") { game.addGold(x.amount); continue; }
       if (x.dropType === "card") { game.addDrop(x); continue; }
-      if (bag.length < bagSize(cur.meta)) { loot[x.id] = x; bag.push(lootEntry(x.id)); }
-      else pending.push(x);
+      const potion = x.dropType === "item" ? x.potion : undefined;
+      if (bag.length >= bagSize(cur.meta)) pending.push(x);
+      else if (potion) bag.push(potion); // a potion found down here goes straight in the bag, ready to drink
+      else { loot[x.id] = x; bag.push(lootEntry(x.id)); }
     }
     update({ meta: { ...cur.meta, bag, loot }, run: cur.run ? { ...cur.run, pending: [...(cur.run.pending ?? []), ...pending] } : null });
   }
@@ -178,8 +180,10 @@ export default function DungeonPage() {
     const cur = loadDungeon();
     const x = cur.run?.pending?.find((p) => p.id === id);
     if (!cur.run || !x || cur.meta.bag.length >= bagSize(cur.meta)) return;
+    const potion = x.dropType === "item" ? x.potion : undefined;
     update({
-      meta: { ...cur.meta, bag: [...cur.meta.bag, lootEntry(x.id)], loot: { ...(cur.meta.loot ?? {}), [x.id]: x } },
+      meta: potion ? { ...cur.meta, bag: [...cur.meta.bag, potion] }
+        : { ...cur.meta, bag: [...cur.meta.bag, lootEntry(x.id)], loot: { ...(cur.meta.loot ?? {}), [x.id]: x } },
       run: { ...cur.run, pending: (cur.run.pending ?? []).filter((p) => p.id !== id) },
     });
   }

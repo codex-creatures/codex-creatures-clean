@@ -272,16 +272,26 @@ export function defaultMoveNames(c: CreatureTemplate): string[] {
   return c.skills.slice(0, MOVE_SLOTS).map((m) => m.name);
 }
 
-// learned: race moves this creature has learned from codexes.
-export function movesAvailableTo(c: CreatureTemplate, learned: string[] = []): Skill[] {
-  return [...c.skills, ...raceMovesFor(c).filter((m) => learned.includes(m.name)), ...LEARNABLE_MOVES];
+// Can this creature learn a move from a codex? Learnable moves: anyone.
+// Race moves: only creatures of that race.
+export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
+  if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
+  return raceMovesFor(c).some((m) => m.name === moveName);
+}
+
+// The moves a creature can put in its slots: the ones it was born with (its
+// rolled moves; the species' first 4 if it has none saved) plus any it has
+// learned from codexes.
+export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], own?: string[]): Skill[] {
+  const names = [...new Set([...(own?.length ? own : defaultMoveNames(c)), ...learned.filter((n) => canLearnFromCodex(c, n))])];
+  return names.map((n) => MOVE_BY_NAME[n]).filter(Boolean);
 }
 
 // The 4 moves a creature fights with. Unknown or duplicate names are
 // dropped; an empty selection falls back to the defaults. (Race moves are
 // only offered once learned, so a saved one is trusted here.)
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
-  const allowed = new Set(movesAvailableTo(c, raceMovesFor(c).map((m) => m.name)).map((m) => m.name));
+  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
   const picked = [...new Set(names ?? [])].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => MOVE_BY_NAME[n]);
 }

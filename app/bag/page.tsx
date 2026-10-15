@@ -39,6 +39,8 @@ export default function BagPage() {
   const packed = new Set(bag.map(gearIdOf).filter(Boolean) as string[]);
   // Spare gear: not on a creature (or Klutz) and not already packed.
   const spare = gear.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
+  // Potions in storage (from scans) can be packed too: they become bag potions.
+  const potions = game.inventory.filter((d) => d.dropType === "item" && d.potion) as CreatureOrItemDrop[];
   const shelfFree = BOOKCASE_SIZE - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
   const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
@@ -101,6 +103,20 @@ export default function BagPage() {
         );
       })()}
       {away && <p style={{ fontSize: 12, color: MUTED }}>You&apos;re in the middle of a Labyrinth run — repack when you&apos;re home.</p>}
+
+      {!away && potions.length > 0 && (
+        <>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Potions in storage</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {potions.map((x) => (
+              <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
+                <span>{POTIONS[x.potion!].icon} <b>{POTIONS[x.potion!].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[x.potion!].heal} HP</span></span>
+                <button className="chip" disabled={bag.length >= slots} onClick={() => { game.removeDrop(x.id); setBag([...bag, x.potion!]); }}>Pack it</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {!away && (
         <>

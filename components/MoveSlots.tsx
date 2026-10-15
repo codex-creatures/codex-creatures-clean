@@ -1,9 +1,9 @@
 "use client";
 // components/MoveSlots.tsx
-// A creature's moves. Its 4 move slots sit on top as full cards (name, style,
-// damage type, damage, energy); below are the other moves it could use —
-// its own, the learnable ones, and race moves learned from a codex. Tap a
-// slot, then tap a move below to swap it in.
+// A creature's moves. Its 4 move slots sit on top; below are the other moves
+// it knows — the ones it was born with (3–4) and any learned from a codex
+// (codexes on the bookcase are offered under these, in the creature
+// window). Tap a slot, then tap a move below to swap it in.
 
 import { useState } from "react";
 import { CLASS_INFO, DAMAGE_TYPE_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
@@ -58,20 +58,20 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
   );
 }
 
-export default function MoveSlots({ template, moves, learned, onChange }: {
+export default function MoveSlots({ template, moves, born, learned, onChange }: {
   template: CreatureTemplate;
-  moves?: string[];
-  learned?: string[]; // race moves learned from codexes
+  moves?: string[];   // what's in its slots
+  born?: string[];    // the moves it was born with (its roll)
+  learned?: string[]; // moves learned from codexes
   onChange?: (moves: string[]) => void;
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const current = resolveMoves(template, moves);
-  const own = new Set(template.skills.map((s) => s.name));
-  const options = movesAvailableTo(template, learned).filter((m) => !current.some((c) => c.name === m.name));
+  const options = movesAvailableTo(template, learned, born).filter((m) => !current.some((c) => c.name === m.name));
+  const fromCodex = new Set(learned ?? []);
   const groups: [string, Skill[], { text: string; color: string } | undefined][] = [
-    ["Its own moves", options.filter((m) => own.has(m.name)), undefined],
-    ["Learned from a codex", options.filter((m) => !own.has(m.name) && m.race), { text: "codex", color: "#c7b8ff" }],
-    ["Learnable moves", options.filter((m) => !own.has(m.name) && !m.race), { text: "learnable", color: "#8fc1ff" }],
+    ["Its other moves", options.filter((m) => !fromCodex.has(m.name)), undefined],
+    ["Learned from a codex", options.filter((m) => fromCodex.has(m.name)), { text: "codex", color: "#c7b8ff" }],
   ];
 
   function choose(name: string) {

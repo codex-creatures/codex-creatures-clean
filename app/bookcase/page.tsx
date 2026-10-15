@@ -9,7 +9,7 @@ import DenFrame from "@/components/DenFrame";
 import RaceTag from "@/components/RaceTag";
 import { useGameState } from "@/hooks/useGameState";
 import { BOOKCASE_SIZE } from "@/lib/dungeon/run";
-import { MOVE_BY_NAME, findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { MOVE_BY_NAME, canLearnFromCodex, findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { moveKind } from "@/components/ClassBadge";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -28,17 +28,20 @@ export default function BookcasePage() {
       <div className="stone-panel">
         <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
           Just a shelf for now: it holds <b>{BOOKCASE_SIZE} codexes</b>. Codexes you bring home from the Labyrinth go here;
-          if it&apos;s full they stay in your bag. Each codex teaches its race&apos;s move once — read it from a creature&apos;s page in the Pit.
+          if it&apos;s full they stay in your bag. Each codex teaches one creature its move — read it from the creature&apos;s Moves tab in the Pit. Race codexes only work on creatures of that race.
         </p>
       </div>
       <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "16px 0 8px" }}>On the shelf ({codexes.length}/{BOOKCASE_SIZE})</div>
       {codexes.length === 0 ? (
-        <p style={{ fontSize: 13, color: MUTED }}>Nothing yet. Wandering librarians in the Labyrinth sell codexes, and chests sometimes hold one.</p>
+        <p style={{ fontSize: 13, color: MUTED }}>Nothing yet. Codexes come from scanning and Labyrinth chests; wandering librarians sell race codexes.</p>
       ) : (
         <div style={{ display: "grid", gap: 8 }}>
           {codexes.map((c) => {
             const move = MOVE_BY_NAME[c.codexMove!];
-            const learners = creatures.filter((x) => findCreatureTemplate(x.creatureId, x.name)?.race === move?.race && !x.learned?.includes(c.codexMove!));
+            const learners = creatures.filter((x) => {
+              const t = findCreatureTemplate(x.creatureId, x.name);
+              return t && canLearnFromCodex(t, c.codexMove!) && !x.learned?.includes(c.codexMove!) && !(x.moves ?? []).includes(c.codexMove!);
+            });
             return (
               <div key={c.id} className="stone-panel" style={{ padding: 10 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

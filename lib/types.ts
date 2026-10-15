@@ -25,7 +25,8 @@ export type CreatureOrItemDrop = {
   moves?: string[];
   learned?: string[];   // creatures: race moves learned from codexes
   ability?: import("./creatures/abilities").AbilityKey; // creatures/cards: a rare passive (Epic+)
-  codexMove?: string;   // a codex (consumable item): the race move it teaches
+  codexMove?: string;   // a codex (consumable item): the move it teaches
+  potion?: "potion" | "lesser"; // a potion (consumable item; see POTIONS in lib/dungeon/run.ts)
   stats?: {
     melee?: number;
     ranged?: number;

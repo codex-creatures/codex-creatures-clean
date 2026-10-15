@@ -44,6 +44,7 @@ describe("outcome odds (statistical)", () => {
   const N = 100000;
   const outcomes = { creature: 0, item: 0, gold: 0 };
   const rarity: Record<string, number> = {};
+  const consumable: Record<string, number> = {}; // potions (Common) and codexes (Uncommon) only
   let rarityTotal = 0;
   const weapons = new Set<string>();
   const armour = new Set<string>();
@@ -53,6 +54,7 @@ describe("outcome odds (statistical)", () => {
     const e = rollBarcodeOutcome();
     outcomes[e.outcome]++;
     if (e.outcome === "gold") continue;
+    if (e.outcome === "item" && e.itemCategory === "consumable") { consumable[e.rarity] = (consumable[e.rarity] ?? 0) + 1; continue; }
     rarity[e.rarity] = (rarity[e.rarity] ?? 0) + 1;
     rarityTotal++;
     if (e.outcome === "creature") creatures.add(e.creatureId);
@@ -67,7 +69,12 @@ describe("outcome odds (statistical)", () => {
     expect(pct(outcomes.gold, N)).toBeCloseTo(20, 0);
   });
 
-  it("rarity follows 40/30/20/9/1", () => {
+  it("consumables are only Common (potion) or Uncommon (codex), 40:30", () => {
+    expect(Object.keys(consumable).sort()).toEqual(["common", "uncommon"]);
+    expect(consumable.common / (consumable.common + consumable.uncommon)).toBeCloseTo(40 / 70, 1);
+  });
+
+  it("rarity follows 40/30/20/9/1 (everything but consumables)", () => {
     const expected = { common: 40, uncommon: 30, rare: 20, epic: 9, legendary: 1 };
     for (const [r, target] of Object.entries(expected)) {
       expect(Math.abs(pct(rarity[r] ?? 0, rarityTotal) - target), r).toBeLessThan(0.6);

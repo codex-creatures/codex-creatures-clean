@@ -12,6 +12,7 @@
 
 import type { Rarity, ItemCategory } from "./types";
 import type { ItemKey } from "./items/ceilings";
+import { RARITY_WEIGHTS } from "./items/budgets";
 import { ARMOR_SLOTS, type ArmorKey, type ArmorSlot } from "./items/armor";
 import {
   pickRarity,
@@ -54,6 +55,13 @@ function saveRegistry(registry: Record<string, BarcodeEntry>) {
   } catch {}
 }
 
+// Consumables are Common (a Lesser Potion) or Uncommon (a codex), at the
+// usual odds between those two rarities.
+function consumableRarity(): Rarity {
+  const c = RARITY_WEIGHTS.common, u = RARITY_WEIGHTS.uncommon;
+  return Math.random() * (c + u) < c ? "common" : "uncommon";
+}
+
 // A fresh random outcome — 20% creature / 60% item / 20% gold.
 export function rollBarcodeOutcome(): BarcodeOutcome {
   const outcomeRoll = Math.floor(Math.random() * 100) + 1;
@@ -68,7 +76,7 @@ export function rollBarcodeOutcome(): BarcodeOutcome {
   }
 
   const itemCategory = pickItemCategory("", "random");
-  const rarity = pickRarity("", "random");
+  const rarity = itemCategory === "consumable" ? consumableRarity() : pickRarity("", "random");
   if (itemCategory === "weapon") {
     return { outcome: "item", itemCategory, rarity, itemKey: pickWeaponKey("", "random") };
   }

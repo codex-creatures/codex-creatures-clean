@@ -1,10 +1,33 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { CREATURE_BY_ID, RACE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+import { dropFromOutcome } from "../lib/drops";
 
 const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName });
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20 }, { mDef: 5, rDef: 5 }, moves);
+
+describe("what a creature can use and learn", () => {
+  it("only its own (rolled) moves plus what it learned from codexes", () => {
+    const wolf = CREATURE_BY_ID.moss_wolf;
+    const names = (own: string[], learned: string[] = []) => movesAvailableTo(wolf, learned, own).map((m) => m.name);
+    expect(names(["Slash", "Jab", "Heavy Blow"])).toEqual(["Slash", "Jab", "Heavy Blow"]);
+    expect(names(["Slash"], [LEARNABLE_MOVES[0].name, "Pounce", "Mirage"])).toEqual(["Slash", LEARNABLE_MOVES[0].name, "Pounce"]);
+  });
+
+  it("learnable codexes work on anyone; race codexes only on that race", () => {
+    expect(canLearnFromCodex(CREATURE_BY_ID.cave_bat, LEARNABLE_MOVES[0].name)).toBe(true);
+    expect(canLearnFromCodex(CREATURE_BY_ID.cave_bat, "Pounce")).toBe(false);
+    expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Pounce")).toBe(true);
+  });
+
+  it("consumables: a Common is a Lesser Potion, an Uncommon a learnable codex", () => {
+    const potion = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
+    const codex = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "uncommon" });
+    expect(potion && "potion" in potion && potion.potion).toBe("lesser");
+    expect(codex && "codexMove" in codex && LEARNABLE_MOVES.some((m) => m.name === codex.codexMove)).toBe(true);
+  });
+});
 
 describe("race moves", () => {
   it("each race has one, and only creatures of that race can learn it", () => {
