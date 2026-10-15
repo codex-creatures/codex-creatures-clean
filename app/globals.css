@@ -123,7 +123,7 @@ button, a, [role="button"] { touch-action: manipulation; }
     #8a7048;
 }
 /* Moves: two to a row on a phone, more on wider screens. */
-.move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 480px; margin-inline: auto; }
 .fighter-card {
   padding: 10px; background: rgba(16, 17, 23, 0.9); border: 3px solid;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
