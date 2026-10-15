@@ -77,11 +77,23 @@ export const MINIBOSS_REVIVE_HP = 0.7; // beating a mini boss: heal one creature
 export const DECK_CARDS = 5;           // a deck of cards: 5 creature-card rolls
 
 // ── The battle bag ───────────────────────────────────────────────────
-// Up to BAG_SIZE items, one per slot (they don't stack). It stays with you
-// between runs. Merchants sell potions; stashes hold a few.
-// A potion heals one creature: in a fight it costs your turn and heals the
-// creature on the field; between rooms, tap it on anyone still standing.
-export const BAG_SIZE = 10;
+// What you carry into the Labyrinth: one thing per slot (they don't stack),
+// kept between runs. You start with POCKETS slots; your first mini boss
+// drops a proper battle bag with FIRST_BAG. A slot holds a potion or a
+// weapon (packed from the Den's Battle Bag page).
+// - A potion heals one creature: in a fight it costs your turn and heals
+//   the creature on the field; between rooms, tap it on anyone standing.
+// - A weapon can be swapped in mid-fight (it costs your turn): the creature
+//   on the field takes it, and the weapon it had goes into the slot.
+// Merchants sell potions; stashes hold a few.
+export const POCKETS = 2;
+export const FIRST_BAG = 5;
+export type BagEntry = PotionKey | `weapon:${string}`;
+export const bagSize = (meta: { bagSize?: number }) => meta.bagSize ?? POCKETS;
+export const bagName = (meta: { bagSize?: number }) => (bagSize(meta) > POCKETS ? "Battle bag" : "Pockets");
+export const isPotionEntry = (e: BagEntry): e is PotionKey => !e.startsWith("weapon:");
+export const weaponEntry = (dropId: string): BagEntry => `weapon:${dropId}`;
+export const weaponIdOf = (e: BagEntry): string | undefined => (e.startsWith("weapon:") ? e.slice(7) : undefined);
 export type PotionKey = "potion" | "lesser";
 export const POTIONS: Record<PotionKey, { name: string; heal: number; price: number; icon: string }> = {
   potion: { name: "Healing Potion", heal: 100, price: 100, icon: "🧪" },
@@ -91,8 +103,8 @@ export const STASH_ITEMS = 3;
 export const STASH_POTION_CHANCE = 0.3; // each stash item: a Healing Potion (else a Lesser one)
 
 // Room for more in the bag? Adds what fits; returns the new bag.
-export function addToBag(bag: PotionKey[], items: PotionKey[]): PotionKey[] {
-  return [...bag, ...items].slice(0, BAG_SIZE);
+export function addToBag(bag: BagEntry[], items: BagEntry[], size: number): BagEntry[] {
+  return [...bag, ...items].slice(0, Math.max(bag.length, size));
 }
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
@@ -315,7 +327,8 @@ export type DungeonMeta = {
   clears: number;
   firstClearRun?: number;            // the run you first beat the boss on (for the trophy)
   injuries: Record<string, number>;  // creature id → share of HP left after a run (missing = full)
-  bag: PotionKey[];                  // the battle bag (kept between runs)
+  bag: BagEntry[];                   // your pockets / battle bag (kept between runs)
+  bagSize?: number;                  // slots (missing = POCKETS)
   poolLevel?: number;                // the Den's healing pool (1 = a soggy cave pool)
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
 };

@@ -14,7 +14,7 @@ import { findCreatureTemplate, type CreatureTemplate, type Skill } from "@/lib/c
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
-import { calcDamage, triangleModifier, type Fighter } from "@/lib/combat/engine";
+import { calcDamage, triangleModifier, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { moveKind } from "./ClassBadge";
@@ -245,12 +245,14 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
 // ── Battle screen ─────────────────────────────────────────────────
 // finishedActions: the buttons shown when the battle is over.
 // bag: battle-bag items you can use, one entry per kind (count = how many);
-// onUseItem(key) takes one out of the bag when you use it.
-export type BagItem = { key: string; name: string; icon: string; heal: number; count: number };
+// onUseItem(key, activeIndex) takes it out of the bag when you use it
+// (activeIndex: your creature on the field, by team order).
+// A potion has heal; a weapon has weapon (its combat stats) and detail.
+export type BagItem = { key: string; name: string; icon: string; count: number; heal?: number; weapon?: CombatItem; detail?: string };
 
 export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
   battle: ReturnType<typeof usePlayableBattle>; finishedActions: React.ReactNode;
-  bag?: BagItem[]; onUseItem?: (key: string) => void;
+  bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
   const match = battle.match!;
@@ -351,13 +353,18 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem }: {
           {bag.length > 0 && onUseItem && (
             <>
               <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
-                Battle bag — uses your turn (before anyone attacks) on your {me.name}{me.hp >= me.maxHp ? ", who is already at full HP" : ""}:
+                From your bag — uses your turn (before anyone attacks), on your {me.name}:
               </div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {bag.map((it) => (
+                {bag.map((it) => it.weapon ? (
+                  <button key={it.key} className="card-btn" style={{ width: "auto" }} disabled={playing}
+                    onClick={() => { onUseItem(it.key, you.active); onAct({ kind: "weapon", name: it.name, weapon: it.weapon! }); }}>
+                    {it.icon} Swap to {it.name} <span style={{ fontSize: 12, color: MUTED }}>{it.detail}</span>
+                  </button>
+                ) : (
                   <button key={it.key} className="card-btn" style={{ width: "auto" }} disabled={playing || me.hp >= me.maxHp}
-                    onClick={() => { onUseItem(it.key); onAct({ kind: "item", item: it.name, heal: it.heal }); }}>
-                    {it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>+{Math.min(it.heal, me.maxHp - me.hp)} HP{it.heal > me.maxHp - me.hp && me.hp < me.maxHp ? ` (of ${it.heal})` : ""}</span>
+                    onClick={() => { onUseItem(it.key, you.active); onAct({ kind: "item", item: it.name, heal: it.heal ?? 0 }); }}>
+                    {it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>{me.hp >= me.maxHp ? "already at full HP" : `+${Math.min(it.heal ?? 0, me.maxHp - me.hp)} HP`}</span>
                   </button>
                 ))}
               </div>

@@ -17,7 +17,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.altar]:    { label: "Scanning Altar", href: "/altar" },
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from the Chest for now." },
   [OBJ.quests]:   { label: "Quest Board", soon: "Daily quests (and the utility moves they reward) are coming." },
-  [OBJ.bag]:      { label: "Battle Bag", soon: "Your battle bag holds up to 10 potions, one per slot. Buy them from merchants in the Labyrinth (or find them in stashes) and use them there." },
+  [OBJ.bag]:      { label: "Battle Bag", href: "/bag" },
   [OBJ.arch]:     { label: "The Labyrinth", href: "/dungeon" },
   [OBJ.scroll]:   { label: "Bestiary & Rules", href: "/guide" },
   [OBJ.cage]:     { label: "Cage", href: "/cage" },

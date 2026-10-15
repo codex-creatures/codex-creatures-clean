@@ -24,6 +24,7 @@ import {
   calcDamage, effectiveAgil, rollDamage,
   MAX_ENERGY, ENERGY_REGEN, PRECISE_CHANCE, PRECISE_IGNORE,
   type Fighter,
+  type CombatItem,
 } from "./engine";
 import type { Skill } from "../creatures/creatureData";
 import { bossActions, bossEndOfRound, bossHiddenAtStart, bossMinHp, type BossKind, type BossState } from "./bossAi";
@@ -100,6 +101,7 @@ export type BattleAction =
   | { kind: "attack"; skillName: string; target?: number }
   | { kind: "swap"; to: number }
   | { kind: "item"; item: string; heal: number }
+  | { kind: "weapon"; name: string; weapon: CombatItem } // swap a weapon in from the bag (uses your turn)
   | { kind: "pass" }; // rest: only when no move is affordable; recovers energy
 
 // Status effects (cripple; later fear, blind, vampirism…).
@@ -232,6 +234,7 @@ export function isValidAction(state: BattleState, key: SideKey, a: BattleAction)
       && (a.target === undefined || attackTargets(state, key).includes(a.target));
     case "swap":   return swapTargets(s).includes(a.to);
     case "item":   return !s.boss && me.hp > 0 && me.hp < me.maxHp && a.heal > 0;
+    case "weapon": return !s.boss && me.hp > 0;
     case "pass":   return affordableSkills(me).length === 0;
   }
 }
@@ -280,6 +283,17 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   // 1b. Items (from the battle bag) are used before anyone attacks.
   for (const k of ["A", "B"] as SideKey[]) {
     const a = actions[k];
+    if (a.kind === "weapon" && !state.sides[k].boss) {
+      // A new weapon: its attack stats and damage-type affinity apply from
+      // now on (its HP bonus waits until after the fight).
+      const s = state.sides[k];
+      const me = activeOf(s);
+      me.weapon = { ...a.weapon, hp: me.weapon.hp };
+      me.streak = undefined;
+      state.log.push({ type: "effect", side: k, index: s.active, name: me.name, text: `switches to the ${a.name}`, hp: me.hp,
+        statuses: me.statuses.map((x) => ({ ...x })), kind: "item" });
+      continue;
+    }
     if (a.kind !== "item" || state.sides[k].boss) continue;
     const s = state.sides[k];
     const me = activeOf(s);
@@ -297,7 +311,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   for (const k of ["A", "B"] as SideKey[]) {
     const s = state.sides[k];
     if (s.boss) turns.push(...bossActions(state, k).map((t) => ({ key: k, ...t })));
-    else if (actions[k].kind !== "swap" && actions[k].kind !== "item") turns.push({ key: k, index: s.active, action: actions[k] });
+    else if (actions[k].kind !== "swap" && actions[k].kind !== "item" && actions[k].kind !== "weapon") turns.push({ key: k, index: s.active, action: actions[k] });
   }
   // Pounce (and a Quickscale set's first attack) goes before everyone; otherwise fastest first.
   const quick = (f: Combatant, a: BattleAction) => a.kind === "attack" && hasSet(f, "dragonscale_tunic") && !f.setUsed;
