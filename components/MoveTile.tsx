@@ -1,24 +1,22 @@
 "use client";
 // components/MoveTile.tsx
 // A move as an old, cracked stone tablet (lib/sprites/moveSlab.ts) in its
-// style's stone: red for melee, green for ranged, blue for magic. Its name is
-// chiselled into the middle, big and bold. How it hurts is a small carved
-// icon in a socket in the bottom-left corner — an impact (Force), an
-// arrowhead (Pierce), a bolt (Arcane) — like the type marker on a move
-// button in other monster-battling games; the energy cost sits opposite, in
-// a circle in the bottom-right. The (i) flips the tablet to the details.
+// style's stone: red for melee, green for ranged, blue for magic. Behind the
+// name, big and in a darker shade of the stone, is the icon for how it hurts:
+// an impact (Force), an arrowhead (Pierce), a bolt (Arcane). The name is
+// large and bold over it. The energy cost sits in a circle in the
+// bottom-right; the (i) flips the tablet to the details.
 
 import { useMemo, useState } from "react";
 import { CLASS_INFO, DAMAGE_TYPE_INFO, type Skill } from "@/lib/creatures/creatureData";
-import { moveSlab, SLAB_W, SLAB_H, SLAB_STONE, DAMAGE_ICONS } from "@/lib/sprites/moveSlab";
-import PixelSprite from "./PixelSprite";
+import { moveSlab, SLAB_W, SLAB_H, SLAB_STONE } from "@/lib/sprites/moveSlab";
 
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
 // The stone, as crisp SVG pixels filling the tile.
 function Slab({ m, faded }: { m: Skill; faded: boolean }) {
   const rects = useMemo(() => {
-    const g = moveSlab(m.name, m.type);
+    const g = moveSlab(m.name, m.type, m.self ? undefined : m.dmgType);
     const out: [number, number, number, string][] = [];
     g.forEach((row, y) => {
       for (let x = 0; x < row.length;) {
@@ -29,7 +27,7 @@ function Slab({ m, faded }: { m: Skill; faded: boolean }) {
       }
     });
     return out;
-  }, [m.name, m.type]);
+  }, [m.name, m.type, m.dmgType, m.self]);
   return (
     <svg viewBox={`0 0 ${SLAB_W} ${SLAB_H}`} preserveAspectRatio="none" shapeRendering="crispEdges" aria-hidden
       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block", filter: faded ? "brightness(0.5) saturate(0.6)" : undefined }}>
@@ -73,11 +71,11 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, on
         }}>i</button>
 
       {!info ? (
-        // The name, chiselled in: dark cut letters, a dark edge above, a lit lip below.
-        <div style={{ position: "absolute", inset: "0 26px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", paddingBottom: 6 }}>
+        // The name: large and bold, pale stone edged with the dark of the cut.
+        <div style={{ position: "absolute", inset: "0 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
           <div className="pixel-font" style={{
-            fontSize: "clamp(15px, 4.4vw, 19px)", lineHeight: 1.05, color: stone.cut, letterSpacing: "0.02em",
-            textShadow: `1px 0 0 ${stone.cut}, 0 -1px 0 rgba(0,0,0,0.45), 0 1px 0 ${stone.lip}, 1px 1px 0 ${stone.lip}`,
+            fontSize: "clamp(18px, 5.4vw, 23px)", lineHeight: 1.05, color: "#fbf1dc", letterSpacing: "0.03em",
+            textShadow: `1px 0 0 #fbf1dc, 2px 0 0 ${stone.cut}, -1px 0 0 ${stone.cut}, 0 -1px 0 ${stone.cut}, 1px -1px 0 ${stone.cut}, 0 2px 0 ${stone.cut}, 1px 2px 0 ${stone.cut}, 0 3px 0 rgba(0,0,0,0.35)`,
           }}>
             {m.name}
           </div>
@@ -94,18 +92,6 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, on
           {m.desc && <div style={{ color: "#f0d9a4" }}>{m.desc}</div>}
           {extra.map((t) => <div key={t} style={{ color: "#f0d9a4" }}>{t}</div>)}
         </div>
-      )}
-
-      {/* How it hurts: a carved icon in a socket, bottom-left. */}
-      {!info && (
-        <span title={m.self ? "Utility" : dtype.name} style={{
-          position: "absolute", left: 6, bottom: 7, width: 26, height: 26, borderRadius: 13,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: `radial-gradient(circle at 50% 60%, ${stone.cut}cc, ${stone.cut})`,
-          boxShadow: `inset 0 2px 3px rgba(0,0,0,0.7), 0 1px 0 ${stone.lip}`,
-        }}>
-          {m.self ? <span style={{ color: "#eee4cc", fontSize: 13 }}>✦</span> : <PixelSprite sprite={DAMAGE_ICONS[m.dmgType]} scale={1.8} />}
-        </span>
       )}
 
       {/* The cost: energy, in a circle in the corner. */}
