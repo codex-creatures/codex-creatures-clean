@@ -46,7 +46,7 @@ const AL = { u: 7.5, v: 6.5 };              // scanning altar (the centrepiece)
 const PIT = { u0: 10.0, v0: 7.2, u1: 13.6, v1: 10.8, depth: 18 };
 const POOL = { u: 5.6, v: 10.6, ru: 2.0, rv: 1.3 };
 // The cage: a cell hollowed out of the left wall, iron bars down its front.
-const CAGE = { v0: 10.2, v1: 12.4, h: 42 };  // along the left wall (v), and how tall the opening is
+const CAGE = { v0: 10.0, v1: 13.6, h: 70, arch: 16 }; // along the left wall (v); how tall the opening is; how much of that is the arch
 const CRATE = { u0: 0.35, v0: 9.15, u1: 1.15, v1: 9.9, h: 14 }; // Klutz's crate, beside the cell
 const ARCH_V = 3.2;                          // archway on the left wall
 const BOARD_V = 6.6;                         // quest board on the left wall
@@ -305,13 +305,15 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     // the back wall. (Its bars, and whoever is inside, are drawn each frame.)
     const ca = a - CAGE.v0 * 16, cw = (CAGE.v1 - CAGE.v0) * 16, half = cw / 2;
     const off = (ca - half) / half; // −1…1 across the opening
-    const cellTop = CAGE.h - 8 + 8 * Math.sqrt(Math.max(0, 1 - off * off));
+    const cellTop = CAGE.h - CAGE.arch + CAGE.arch * Math.sqrt(Math.max(0, 1 - off * off));
     if (ca >= 0 && ca < cw && z < cellTop) {
       const depth = 0.18 + 0.22 * (1 - Math.abs(off)) * clamp01(1 - z / CAGE.h); // darkest at the edges and up top
       if (z < 4) return { c: mul((Math.floor(a * 1.7 + z * 3) % 3 === 0 ? hex("#8a7440") : hex("#5e4e2a")), 0.55), id: OBJ.cage }; // straw
-      const ring = Math.hypot(ca - cw * 0.72, z - 22);
-      if (ring > 1.4 && ring < 2.6) return { c: mul(IRON_LIGHT, 0.7), id: OBJ.cage };           // a shackle
-      if (Math.abs(ca - cw * 0.72) < 0.6 && z > 24 && z < 30) return { c: mul(IRON, 0.8), id: OBJ.cage }; // its chain
+      for (const sx of [0.28, 0.72]) {                                                              // two shackles on chains
+        const ring = Math.hypot(ca - cw * sx, z - 30);
+        if (ring > 1.4 && ring < 2.6) return { c: mul(IRON_LIGHT, 0.7), id: OBJ.cage };
+        if (Math.abs(ca - cw * sx) < 0.6 && z > 32 && z < 42) return { c: mul(IRON, 0.8), id: OBJ.cage };
+      }
       return { c: mul(rock(a + 300, z, 7), depth), id: OBJ.cage };
     }
     const outerTop = cellTop + 6;
@@ -764,13 +766,15 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     // Iron bars down the front of the opening, set into a top and bottom rail.
     const BAR_U = 0.06;
     const bar = (v: number) => {
-      const [x0, y0] = project(BAR_U, v, 1), [, y1] = project(BAR_U, v, CAGE.h - 4);
+      const off = (v - mid) / ((CAGE.v1 - CAGE.v0) / 2);
+      const top = CAGE.h - CAGE.arch + CAGE.arch * Math.sqrt(Math.max(0, 1 - off * off)) - 1; // up into the arch
+      const [x0, y0] = project(BAR_U, v, 1), [, y1] = project(BAR_U, v, top);
       for (let y = y1 * RES; y <= y0 * RES; y++) {
         fpx(x0 * RES, y, IRON_LIGHT, OBJ.cage); fpx(x0 * RES + 1, y, IRON, OBJ.cage);
       }
     };
-    for (let v = CAGE.v0 + 0.22; v < CAGE.v1 - 0.1; v += 0.28) bar(v);
-    for (const z of [2, CAGE.h - 5]) {
+    for (let v = CAGE.v0 + 0.25; v < CAGE.v1 - 0.1; v += 0.3) bar(v);
+    for (const z of [2, CAGE.h - CAGE.arch - 2]) {
       for (let v = CAGE.v0; v <= CAGE.v1; v += 0.02) {
         const [x, y] = project(BAR_U, v, z);
         fpx(x * RES, y * RES, IRON_LIGHT, OBJ.cage); fpx(x * RES, y * RES + 1, IRON, OBJ.cage); fpx(x * RES, y * RES + 2, IRON, OBJ.cage);
