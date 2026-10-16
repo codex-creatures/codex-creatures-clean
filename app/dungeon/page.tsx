@@ -34,7 +34,7 @@ import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
-  startRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
+  startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
@@ -48,6 +48,7 @@ import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
 import DungeonMapView from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import EncounterCards from "@/components/EncounterCards";
+import Help from "@/components/Help";
 
 const GOLD = "#f5c542";
 
@@ -249,12 +250,11 @@ export default function DungeonPage() {
     const free = lab.meta.runs < FREE_RUNS;
     if (!free && !game.spendGold(ENTRY_FEE)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
-    let r = startRun(party, party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0), hp, lab.meta.runs + 1);
-    // Klutz's box: his club lies in the first room until you've picked it up.
-    if (wantsClub(game.quest)) {
-      game.acceptQuest();
-      r = { ...r, current: clubRoom(), cleared: [], room: Math.max(1, r.room) };
-    }
+    const team = party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0);
+    // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
+    const quest = wantsClub(game.quest) || wantsThief(game.quest);
+    if (quest) game.acceptQuest();
+    const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1);
     update({ meta: { ...lab.meta, runs: lab.meta.runs + 1 }, run: r });
   }
 
@@ -413,10 +413,13 @@ export default function DungeonPage() {
     setFound(null);
     setNotes([]);
     battle.clear();
-    const thief = wantsThief(game.quest);
+    // On the quest's run: the club's room (empty once you've got it), then the thief.
+    const club = wantsClub(game.quest);
     updateRun((r) => {
       const n = moveOn(leaveSack(leavePending(r)), nodeId);
-      return thief ? { ...n, current: rattlebonesRoom() } : n;
+      if (!r.map.quest || n.path.length === r.path.length) return n;
+      if (nodeId === "thief") return { ...n, current: rattlebonesRoom() };
+      return { ...n, current: club ? clubRoom() : { kind: "treasure", gold: 0, done: true } };
     });
   }
 
@@ -488,8 +491,8 @@ export default function DungeonPage() {
     }
     const room = r.current!;
     if (room.quest === "rattlebones") {
-      // It falls apart, and the box it was carrying drops to the floor.
-      give([goldOnly(room.gold ?? 0)], (x) => markDone({ ...x, hp, battle: undefined }));
+      // It falls apart, and the box it was carrying drops to the floor (the box is the prize: no gold).
+      updateRun((x) => markDone({ ...x, hp, battle: undefined }));
       return;
     }
     const drops: Drop[] = [goldOnly(room.gold ?? 0)];
@@ -723,11 +726,20 @@ function MapFirst({ run, onStep, onEnter }: { run: DungeonRun; onStep: () => voi
   const firstRooms = nextRooms(run).length > 0;
   return (
     <div className="stone-panel">
-      <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Your map of the labyrinth</div>
-      <p style={{ fontSize: 13, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
-        Study it while you can. Once you step inside it&apos;s too dark to read — you&apos;ll only see the room you&apos;re in and the tunnels leading out of it,
-        so remember which way the lair lies. The rooms you know are marked; the rest are a &ldquo;?&rdquo;. Every tunnel leads onward, never back.
-        {firstRooms && <> Tap a room next to the entrance to head straight there.</>}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Your map of the labyrinth</div>
+        <Help title="The map">
+          <ul>
+            <li><b>Study it now:</b> once you step inside it&apos;s too dark to read.</li>
+            <li>Inside, you only see <b>the room you&apos;re in</b> and the tunnels out of it.</li>
+            <li>Rooms you know are marked; the rest are a <b>&ldquo;?&rdquo;</b>.</li>
+            <li>Every tunnel leads <b>onward, never back</b>.</li>
+            <li>Tap a room next to the entrance to <b>head straight there</b>.</li>
+          </ul>
+        </Help>
+      </div>
+      <p style={{ fontSize: 15, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
+        {run.map.quest ? "Just a short way in — it went this way." : "Remember the way to the lair: it's too dark to read inside."}
       </p>
       <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />
       <button className="pixel-btn" onClick={onStep} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
@@ -828,9 +840,8 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
         </>
       ) : (
         <>
-          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
-            Something lies on the floor just inside the entrance: a battered old club with <i>KLUTZ</i> scratched into the handle.
-            The Rattlebones must have dropped it as it ran off — you can still hear it clattering away down the tunnels.
+          <p style={{ fontSize: 15, color: "#d8d4c8" }}>
+            A battered old club with <i>KLUTZ</i> scratched into it. The Rattlebones dropped it — you can hear it clattering on ahead.
           </p>
           <button className="pixel-btn" onClick={onClub}>Pick up the club</button>
         </>

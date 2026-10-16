@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Pixelify_Sans } from "next/font/google";
 import "./globals.css";
 import EscapeBack from "@/components/EscapeBack";
+import Polyfills from "@/components/Polyfills";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} ${pixel.variable}`}>
+        <Polyfills />
         <EscapeBack />
         {children}
       </body>

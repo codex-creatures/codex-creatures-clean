@@ -30,7 +30,7 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
-import { rollMap, routeLength, waysOn, type DungeonMap } from "./map";
+import { questMap, rollMap, routeLength, waysOn, type DungeonMap } from "./map";
 import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
@@ -321,6 +321,19 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
     path: [map.start],
     cleared: first ? [] : [map.start],
     current: first ? makeRoom("treasure", rng) : null,
+    loot: [], status: "exploring", inside: false,
+  };
+}
+
+// The first quest's run (lib/quest.ts): the short questMap, starting at the
+// entrance. What's in its two rooms is set as you walk in (the club, then
+// the Rattlebones).
+export function startQuestRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number): DungeonRun {
+  const map = questMap();
+  return {
+    id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(),
+    party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
+    room: 0, map, path: [map.start], cleared: [map.start], current: null,
     loot: [], status: "exploring", inside: false,
   };
 }

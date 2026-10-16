@@ -9,10 +9,12 @@ import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
 import CreatureDetailModal from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
+import Help, { HelpSection } from "@/components/Help";
 import { StatsLine } from "@/components/BattleScreen";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { combatSummary } from "@/lib/combat/loadout";
 import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
+import { klutzHelping } from "@/lib/quest";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import {
@@ -43,8 +45,9 @@ export default function KlutzPage() {
   const weapons = items.filter((d) => d.itemCategory === "weapon"), armors = items.filter((d) => d.itemCategory === "armor");
   const names = new Map<string, string>([...game.inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]);
   const rc = RARITY_COLORS[KLUTZ.rarity];
-  // His gear, moves and hunting only open up once you've got his box back to him.
-  const helping = game.quest.stage === "done";
+  // His gear, moves and hunting only open up once you've got his box back to
+  // him, looked through it, and agreed to lend him some.
+  const helping = klutzHelping(game.quest);
 
   return (
     <DenFrame title="Klutz" icon="👺">
@@ -53,10 +56,8 @@ export default function KlutzPage() {
         <div style={{ flex: 1, minWidth: 200 }}>
           <div className="pixel-font" style={{ fontSize: 22, color: GOLD }}>Klutz</div>
           <div style={{ fontSize: 13, color: MUTED }}>Your helper · <span style={{ color: rc.text, textTransform: "capitalize" }}>{KLUTZ.rarity}</span></div>
-          <p style={{ fontSize: 13, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.45 }}>
-            {helping
-              ? "Klutz is willing to patrol the Labyrinth in search of gear to find or creatures to capture. Equip him with better items so that he can overpower enemies and find better loot!"
-              : "Klutz has promised to help you after you rewarded him so generously for saving you."}
+          <p style={{ fontSize: 15, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.45 }}>
+            {helping ? "Gear him up and he'll hunt the Labyrinth for loot and creatures." : "Your dopey goblin helper."}
           </p>
           {helping && <StatsLine stats={combatSummary(f)} />}
         </div>
@@ -77,14 +78,33 @@ export default function KlutzPage() {
       {/* Where he is */}
       {helping && status.kind === "home" && (
         <div className="stone-panel" style={{ marginTop: 14 }}>
-          <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>Send him hunting</div>
-          <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: "6px 0 10px" }}>
-            He&apos;ll walk the Labyrinth until he runs into a wild creature — usually somewhere between {WALK_MIN_MS / 60000} and {WALK_MAX_MS / 60000} minutes —
-            then fight it and come home. It could be any rarity, wearing gear one tier below it.
-            He also has a {Math.round(FIND_CHANCE * 100)}% chance each trip to pick up a piece of gear for a slot he&apos;s wearing — never better than
-            his own piece: {Math.round(SAME_RARITY_CHANCE * 100)}% the same rarity, otherwise lower (in Common gear, Common or Uncommon). A good way to find
-            alternatives to gear you already have. If he wins he brings it home;
-            if he loses he limps back to the pool and heals 1 HP every {HEAL_MS_PER_HP / 1000} seconds. The cage only holds one creature: if it&apos;s full, he lets his catch go (and keeps its gear). Better gear means he can take on tougher creatures.
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="pixel-font" style={{ fontSize: 18, color: GOLD }}>Send him hunting</div>
+            <Help title="Klutz's hunts">
+              <HelpSection title="The trip">
+                <ul>
+                  <li>He walks the Labyrinth until he meets a <b>wild creature</b>: usually <b>{WALK_MIN_MS / 60000}–{WALK_MAX_MS / 60000} minutes</b>.</li>
+                  <li>It can be <b>any rarity</b>, wearing gear <b>one tier below</b> it.</li>
+                  <li>He fights it, then comes home.</li>
+                </ul>
+              </HelpSection>
+              <HelpSection title="If he wins">
+                <ul>
+                  <li>The creature goes in the <b>cage</b> and its gear in <b>his crate</b>.</li>
+                  <li>The cage holds <b>one</b>: if it&apos;s full, he lets his catch go (and keeps its gear).</li>
+                </ul>
+              </HelpSection>
+              <HelpSection title="If he loses">
+                <p>He limps home to the <b>healing pool</b>: <b>1 HP every {HEAL_MS_PER_HP / 1000}s</b>.</p>
+              </HelpSection>
+              <HelpSection title="Gear he finds">
+                <p><b>{Math.round(FIND_CHANCE * 100)}%</b> a trip: a piece for a slot he&apos;s wearing, <b>never better than his own</b> ({Math.round(SAME_RARITY_CHANCE * 100)}% the same rarity). Handy for alternatives to gear you have.</p>
+              </HelpSection>
+              <p><b>Better gear = tougher creatures he can beat.</b></p>
+            </Help>
+          </div>
+          <p style={{ fontSize: 15, color: "#c8c4b8", lineHeight: 1.5, margin: "6px 0 10px" }}>
+            He&apos;ll bring home a creature for the cage — and maybe some gear.
           </p>
           <button className="pixel-btn" onClick={game.sendKlutzOff}>🌀 Send Klutz into the Labyrinth</button>
         </div>
@@ -154,64 +174,63 @@ function ScanTip({ game }: { game: ReturnType<typeof useGameState> }) {
   return (
     <div className="stone-panel" style={{ marginTop: 12, borderColor: "#8a6a3a" }}>
       <div className="pixel-font" style={{ fontSize: 14, color: "#d6f0a8", marginBottom: 6 }}>Klutz says:</div>
-      <div style={{ fontSize: 14, color: "#e8e2d0", lineHeight: 1.55, fontStyle: "italic" }}>
-        &ldquo;That&apos;s three times I&apos;ve dragged you out of there now, and my back&apos;s killing me. You&apos;re not getting past
-        them with what you&apos;ve got. Go and scan some barcodes — every one&apos;s a <b>Code Cache</b>, and we can crack them open:
-        gear, potions, codexes, creatures… Stock up, then have another go.&rdquo;
+      <div style={{ fontSize: 16, color: "#e8e2d0", lineHeight: 1.5, fontStyle: "italic" }}>
+        &ldquo;Three times I&apos;ve dragged you out of there! Go scan some barcodes — each one&apos;s a <b>Code Cache</b> full of gear,
+        potions and creatures. Stock up, then try again.&rdquo;
       </div>
       <Link href="/altar" className="pixel-btn" style={{ marginTop: 10, display: "inline-block" }}>🔮 To the Scanning Altar</Link>
     </div>
   );
 }
 
-// Klutz's lines for the first quest (his stolen box).
+// Klutz's lines for the first quest (his stolen box): short, with the
+// action you take next.
 function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   const q = game.quest;
-  const [handed, setHanded] = useState<number | null>(null);
   const [opening, setOpening] = useState(false);
   const say = (lines: React.ReactNode, action?: React.ReactNode) => (
     <div className="stone-panel" style={{ marginTop: 12, borderColor: "#8a6a3a" }}>
       <div className="pixel-font" style={{ fontSize: 14, color: "#d6f0a8", marginBottom: 6 }}>Klutz says:</div>
-      <div style={{ fontSize: 14, color: "#e8e2d0", lineHeight: 1.55, fontStyle: "italic" }}>{lines}</div>
+      <div style={{ fontSize: 16, color: "#e8e2d0", lineHeight: 1.5, fontStyle: "italic" }}>{lines}</div>
       {action && <div style={{ marginTop: 10 }}>{action}</div>}
     </div>
   );
-  if (handed !== null) {
-    return say(<>&ldquo;There — {handed} bits of gear, all in your storage. And I owe you one. Kit me out with something decent and I&apos;ll patrol the Labyrinth for you: gear, creatures, whatever I can drag home.&rdquo;</>,
-      <Link href="/chest" className="pixel-btn">Open your storage</Link>);
-  }
   if (q.stage === "start") {
     return say(
-      <>
-        &ldquo;Oi! You&apos;re up. Listen — I&apos;ve been collecting weapons and armour down in the Labyrinth for ages. Kept &apos;em all in a box.
-        Woke up this morning and there&apos;s a <b>Rattlebones</b> legging it into the Labyrinth with the whole lot!
-        Get it back for me, would you?&rdquo;
-      </>,
+      <>&ldquo;Oi, you&apos;re up! A <b>Rattlebones</b> ran into the Labyrinth with my box of weapons and armour. Get it back for me?&rdquo;</>,
       <button className="pixel-btn" onClick={game.acceptQuest}>&ldquo;I&apos;ll find it.&rdquo;</button>,
     );
   }
   if (q.stage === "hunt") {
     return say(
-      <>&ldquo;It went through the archway, rattling like a bag of spoons. {q.clubFound ? "You found my club! It dropped it running off, did it? Ha! Good — bonk it with that." : "It had my old club too — clumsy thing kept dropping stuff as it ran. Keep your eyes peeled."}&rdquo;</>,
+      <>&ldquo;{q.clubFound ? "You found my club! Good — bonk it with that." : "It went through the archway, dropping my old club as it ran. Keep an eye out."}&rdquo;</>,
       <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
     );
   }
   if (q.stage === "boxFound") {
     return say(
-      <>
-        &ldquo;MY BOX! You actually got it back! … Funny thing — while you were down there I heard the whole Labyrinth <b>shift</b>.
-        Walls grinding about, tunnels moving. Every time you go in, it&apos;ll be different.
-        Tell you what — you keep what&apos;s in the box. Go on, open it up!&rdquo;
-      </>,
+      <>&ldquo;MY BOX! You got it back! Keep what&apos;s inside — go on, open it.&rdquo;</>,
       <>
         <button className="pixel-btn" onClick={() => setOpening(true)}>📦 Open the box</button>
         {opening && (
           <CodeCache title="Klutz's armoury box" items={q.box ?? []}
             intro="Ten bundles of rusty weapons and dented armour. Tap one to unwrap it."
             doneLabel="Put it all in storage"
-            onDone={() => { setOpening(false); setHanded(q.box?.length ?? 0); game.handOverBox(); }} />
+            onDone={() => { setOpening(false); game.handOverBox(); }} />
         )}
       </>,
+    );
+  }
+  if (q.stage === "stash") {
+    return say(
+      <>&ldquo;There — it&apos;s all in your storage. Go and have a look!&rdquo;</>,
+      <Link href="/chest" className="pixel-btn">🧰 Open your storage</Link>,
+    );
+  }
+  if (q.stage === "lend") {
+    return say(
+      <>&ldquo;Now we&apos;ve got some weapons and armour… I&apos;ll explore the Labyrinth for loot, if you lend me some?&rdquo;</>,
+      <button className="pixel-btn" onClick={game.questLend}>&ldquo;Deal.&rdquo;</button>,
     );
   }
   return null;

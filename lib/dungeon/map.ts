@@ -57,6 +57,7 @@ export type DungeonMap = {
   boss: string;                   // the lair (top)
   nodes: Record<string, MapNode>;
   knownLinks?: string[];          // corridors marked on the scroll from the start ("a|b", sorted)
+  quest?: boolean;                // the first quest's short run: no lair (see questMap)
 };
 
 type Rng = () => number;
@@ -192,6 +193,23 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
   return map;
 }
 
+// The first quest's run: just the first bit of the Labyrinth. One tunnel
+// from the entrance to a "?" room (Klutz's club), one on to another "?"
+// (the Rattlebones with his box), and that's all: no lair on the scroll,
+// so the Cyclops is a surprise for the first real run. (Its "boss" is the
+// thief's room, only because every map names one.)
+export function questMap(): DungeonMap {
+  const node = (id: string, y: number, kind: RoomKind, links: string[]): MapNode => ({ id, x: MAP_W / 2, y, kind, links, mystery: kind !== "entrance" });
+  return {
+    start: "start", boss: "thief", quest: true,
+    nodes: {
+      start: node("start", MAP_H - 20, "entrance", ["club"]),
+      club: node("club", MAP_H - 60, "treasure", ["start", "thief"]),
+      thief: node("thief", MAP_H - 100, "easy", ["club"]),
+    },
+  };
+}
+
 export const neighbours = (map: DungeonMap, id: string): MapNode[] => map.nodes[id].links.map((l) => map.nodes[l]);
 
 // The corridors on from a room (the ones leading further in).
@@ -208,7 +226,7 @@ export function inSight(map: DungeonMap, at: string): Set<string> {
 // in sight from where you've stood — but never a mystery you haven't entered.
 export function knownRooms(map: DungeonMap, path: string[]): Set<string> {
   const visited = new Set(path);
-  const known = new Set<string>([map.boss, map.start, ...visited]);
+  const known = new Set<string>([...(map.quest ? [] : [map.boss]), map.start, ...visited]);
   for (const n of Object.values(map.nodes)) if (n.known) known.add(n.id);
   for (const at of visited) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
   return known;

@@ -204,13 +204,17 @@ export function useGameState(initialTab: TabKey = "all") {
   const acceptQuest = () => setQuest((q) => (q.stage === "start" ? { ...q, stage: "hunt" } : q));
   const questFoundClub = () => setQuest((q) => ({ ...q, stage: q.stage === "start" ? "hunt" : q.stage, clubFound: true }));
   const questBoxFound = (box: Drop[]) => setQuest((q) => ({ ...q, stage: "boxFound", box }));
-  // Klutz puts what was in the box into your storage.
+  // Klutz puts what was in the box into your storage (and sends you to look).
   function handOverBox() {
     const box = quest.box ?? [];
     if (quest.stage !== "boxFound") return;
     setInventory((prev) => [...box, ...prev]);
-    setQuest({ stage: "done", clubFound: true });
+    setQuest({ stage: "stash", clubFound: true });
   }
+  // You've opened your storage: Klutz has something to ask.
+  const questSawStorage = () => setQuest((q) => (q.stage === "stash" ? { ...q, stage: "lend" } : q));
+  // …and you've agreed to lend him gear: he'll hunt for you.
+  const questLend = () => setQuest((q) => (q.stage === "lend" ? { ...q, stage: "done" } : q));
 
   // ── Klutz ─────────────────────────────────────────────
   // What he fights as: his template with the gear and moves set on him.
@@ -594,6 +598,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, removeDrop, markSeen,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen,
   };
 }

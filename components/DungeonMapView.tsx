@@ -206,7 +206,7 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
           })}
         </g>
 
-        <text x={map.nodes[map.boss].x} y={map.nodes[map.boss].y + R + 6.5} textAnchor="middle" fontSize={4} fontFamily={SERIF} fontStyle="italic" fill={RED_INK}>the lair</text>
+        {!map.quest && <text x={map.nodes[map.boss].x} y={map.nodes[map.boss].y + R + 6.5} textAnchor="middle" fontSize={4} fontFamily={SERIF} fontStyle="italic" fill={RED_INK}>the lair</text>}
         <text x={map.nodes[map.start].x} y={map.nodes[map.start].y + R + 4.6} textAnchor="middle" fontSize={3.4} fontFamily={SERIF} fontStyle="italic" fill={INK}>entrance</text>
 
         {/* Compass. */}

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { rollBox, rattlebonesRoom, klutzClub, wantsClub, wantsThief, klutzHasNews, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { rollBox, rattlebonesRoom, klutzClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
+import { startQuestRun, nextRooms } from "../lib/dungeon/run";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "../lib/items/ceilings";
 
 describe("the first quest: Klutz's box", () => {
@@ -11,9 +13,10 @@ describe("the first quest: Klutz's box", () => {
     expect(ITEM_KEYS).not.toContain("klutz_club");
   });
 
-  it("the thief is a lone Rattlebones with no gear", () => {
+  it("the thief is a lone Rattlebones with no gear, and no gold (the box is the prize)", () => {
     const room = rattlebonesRoom();
     expect(room.quest).toBe("rattlebones");
+    expect(room.gold).toBe(0);
     expect(room.enemies).toHaveLength(1);
     expect(room.enemies![0]).toMatchObject({ creatureId: "rattlebones", gear: [] });
   });
@@ -32,6 +35,28 @@ describe("the first quest: Klutz's box", () => {
       }
     }
     expect(Math.abs(uncommon / total - BOX_UNCOMMON)).toBeLessThan(0.03);
+  });
+
+  it("the quest's run is one tunnel to a ? room, one on to another, and no lair on the map", () => {
+    const map = questMap();
+    expect(waysOn(map, map.start).map((n) => n.id)).toEqual(["club"]);
+    expect(waysOn(map, "club").map((n) => n.id)).toEqual(["thief"]);
+    expect(waysOn(map, "thief")).toEqual([]);
+    expect(Object.values(map.nodes).some((n) => n.kind === "boss")).toBe(false);
+    // Both rooms stay "?" until you walk in.
+    const known = knownRooms(map, [map.start]);
+    expect(known.has("club")).toBe(false);
+    expect(known.has("thief")).toBe(false);
+    const run = startQuestRun(["a"], ["a"], {}, 1);
+    expect(run.current).toBeNull();
+    expect(nextRooms(run).map((n) => n.id)).toEqual(["club"]);
+  });
+
+  it("after the box: storage, then Klutz asks to borrow gear, then he hunts", () => {
+    expect(klutzHasNews({ stage: "stash" })).toBe(false);
+    expect(klutzHasNews({ stage: "lend" })).toBe(true);
+    expect(klutzHelping({ stage: "lend" })).toBe(false);
+    expect(klutzHelping({ stage: "done" })).toBe(true);
   });
 
   it("goes club → thief → back to Klutz", () => {

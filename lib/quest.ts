@@ -4,13 +4,17 @@
 // Klutz has been stashing weapons and armour he found in the Labyrinth in a
 // box — and a Rattlebones ran off into the Labyrinth with it.
 // 1. "start":    Klutz has something to tell you (talk to him).
-// 2. "hunt":     into the Labyrinth. The first room has Klutz's old club on
-//                the floor, dropped by the fleeing Rattlebones (pick it up;
-//                a tutorial walks you through equipping it from your bag).
-//                The first room you walk into after that is the Rattlebones.
-// 3. "boxFound": you beat it, it drops the box, you pick it up and head home.
-// 4. "done":     you open the box at Klutz's (like a Code Cache) and its gear
-//                goes into your storage; Klutz's gear and hunting open up.
+// 2. "hunt":     into the Labyrinth: a short run of its own (questMap in
+//                lib/dungeon/map.ts), one tunnel to a "?" room with Klutz's
+//                old club on the floor, dropped by the fleeing Rattlebones
+//                (pick it up; a tutorial walks you through equipping it from
+//                your bag), then one on to the Rattlebones itself.
+// 3. "boxFound": you beat it (no gold: the box is the prize), it drops the
+//                box, you pick it up and head home.
+// 4. "stash":    you open the box at Klutz's (like a Code Cache); its gear
+//                goes into your storage, and Klutz sends you to look.
+// 5. "lend":     you've opened your storage: Klutz asks to borrow some gear.
+// 6. "done":     you agree: Klutz's gear, moves and hunting open up.
 // The box holds BOX_ROLLS pieces of Common/Uncommon gear (Uncommon at
 // BOX_UNCOMMON odds), rolled when you win — never anything better, so
 // restarting the game for a lucky box isn't worth it.
@@ -26,7 +30,7 @@ import type { Enemy, Room } from "./dungeon/run";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
 import { rollCreature } from "./creatures/creatureRoll";
 
-export type QuestStage = "start" | "hunt" | "boxFound" | "done";
+export type QuestStage = "start" | "hunt" | "boxFound" | "stash" | "lend" | "done";
 export type QuestState = {
   stage: QuestStage;
   clubFound?: boolean; // Klutz's Club has been picked up
@@ -42,14 +46,15 @@ const pick = <T,>(a: readonly T[], rng: Rng) => a[Math.floor(rng() * a.length)];
 
 export const klutzClub = (): Drop => weaponDrop("klutz_club", "common", "", { ...KLUTZ_CLUB_STATS });
 
-// The room the club lies in (the start of your first run).
+// The room the club lies in (the first room of the quest run).
 export const clubRoom = (): Room => ({ kind: "treasure", quest: "club", done: false });
 
-// The thief: a lone Rattlebones with nothing but its bones.
+// The thief: a lone Rattlebones with nothing but its bones (and no gold:
+// beating it gets you the box, and only the box).
 export function rattlebonesRoom(rng: Rng = Math.random): Room {
   const roll = rollCreature(CREATURE_BY_ID.rattlebones, rng);
   const thief: Enemy = { creatureId: "rattlebones", proficiency: roll.proficiency, moves: roll.moves, gear: [] };
-  return { kind: "easy", quest: "rattlebones", enemies: [thief], level: "easy", gold: 15, done: false };
+  return { kind: "easy", quest: "rattlebones", enemies: [thief], level: "easy", gold: 0, done: false };
 }
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
@@ -70,4 +75,6 @@ export function rollBox(rng: Rng = Math.random): Drop[] {
 export const wantsClub = (q: QuestState) => (q.stage === "start" || q.stage === "hunt") && !q.clubFound;
 export const wantsThief = (q: QuestState) => (q.stage === "start" || q.stage === "hunt") && !!q.clubFound;
 // Klutz has something to say (a ❗ over his head).
-export const klutzHasNews = (q: QuestState) => q.stage === "start" || q.stage === "boxFound";
+export const klutzHasNews = (q: QuestState) => q.stage === "start" || q.stage === "boxFound" || q.stage === "lend";
+// Klutz will borrow your gear and hunt for you.
+export const klutzHelping = (q: QuestState) => q.stage === "done";
