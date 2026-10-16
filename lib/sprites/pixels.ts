@@ -119,7 +119,7 @@ export const fineGrid = (sprite: Sprite): Sprite => (FINE.has(sprite) ? sprite :
 // A sprite's width in drawn (coarse) pixels — for picking a display scale.
 export const spriteWidth = (sprite: Sprite): number => {
   const art = artFor(sprite);
-  if (art) return art.w / 2;
+  if (art) return (art.size ?? art.w) / 2;
   const w = Math.max(...sprite.map((r) => r.length));
   return FINE.has(sprite) ? w / 2 : w;
 };

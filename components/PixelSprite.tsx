@@ -22,11 +22,15 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
     return { w: g[0].length, h: g.length, rects: runs(g) };
   }, [sprite]);
   if (art && broken !== art.src) {
+    const width = ((art.size ?? art.w) * scale) / 2, height = (width * art.h) / art.w;
+    // Crisp pixels when shown at its own size or bigger; shrunk, smooth (crisp
+    // shrinking drops pixels unevenly).
+    const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio;
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={art.src} alt={title ?? ""} title={title} width={(art.w * scale) / 2} height={(art.h * scale) / 2}
+      <img src={art.src} alt={title ?? ""} title={title} width={width} height={height}
         onError={() => setBroken(art.src)} draggable={false}
-        style={{ display: "block", flexShrink: 0, imageRendering: "pixelated", ...style }} />
+        style={{ display: "block", flexShrink: 0, imageRendering: width * dpr >= art.w ? "pixelated" : "auto", ...style }} />
     );
   }
   return (

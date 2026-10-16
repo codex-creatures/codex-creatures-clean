@@ -1,8 +1,9 @@
 // lib/sprites/items.ts
 // One 14×14 sprite per weapon and armour type (16×16 with the outline).
-// Colours: see PALETTE in ./pixels.
+// Colours: see PALETTE in ./pixels. Weapons also have PixelLab art over them.
 
 import type { Sprite } from "./pixels";
+import { withArt } from "./art";
 import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey } from "../items/armor";
 
@@ -248,6 +249,12 @@ export const WEAPON_SPRITES: Record<ItemKey, Sprite> = {
     "..............",
   ],
 };
+
+// Every weapon has PixelLab art (public/sprites/items/<key>.png, 64×64),
+// shown in the space its grid took; the grid stays as the fallback.
+for (const key of Object.keys(WEAPON_SPRITES) as ItemKey[]) {
+  withArt(WEAPON_SPRITES[key], { src: `/sprites/items/${key}.png`, w: 64, h: 64, size: 32 });
+}
 
 export const ARMOR_SPRITES: Record<ArmorKey, Sprite> = {
   frontiers_mail: [

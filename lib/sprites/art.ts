@@ -9,7 +9,9 @@ import type { Sprite } from "./pixels";
 // An animation: a strip of equal frames side by side (w×h each), with the
 // still sprite's top-left at (x, y) in every frame, so the two line up.
 export type Anim = { src: string; frames: number; w: number; h: number; x: number; y: number };
-export type Art = { src: string; w: number; h: number; walk?: Anim };
+// size: how wide it's shown, in fine pixels, when that isn't its own width
+// (item icons are drawn at 64px but take the 32px space the grids did).
+export type Art = { src: string; w: number; h: number; size?: number; walk?: Anim };
 
 const ART = new WeakMap<Sprite, Art>();
 
