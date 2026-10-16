@@ -1,6 +1,6 @@
 // lib/sprites/items.ts
 // One 14×14 sprite per weapon and armour type (16×16 with the outline).
-// Colours: see PALETTE in ./pixels. Weapons also have PixelLab art over them.
+// Colours: see PALETTE in ./pixels. Weapons and armour also have PixelLab art over them.
 
 import type { Sprite } from "./pixels";
 import { withArt } from "./art";
@@ -480,3 +480,13 @@ export const HELMET_SPRITES = Object.fromEntries(
 export const LEGS_SPRITES = Object.fromEntries(
   Object.entries(PIECE_LOOK).map(([k, [, l, pal]]) => [k, recolour(LEGS_SHAPES[l], pal)]),
 ) as Record<ArmorKey, Sprite>;
+
+// Every armour piece has PixelLab art too: a chestpiece, helmet and legs for
+// each set (public/sprites/items/armor/<piece>_<key>.png), so a set reads
+// as one set. The recoloured grids above stay as the fallback.
+for (const key of Object.keys(ARMOR_SPRITES) as ArmorKey[]) {
+  const art = (piece: string) => ({ src: `/sprites/items/armor/${piece}_${key}.png`, w: 64, h: 64, size: 32 });
+  withArt(ARMOR_SPRITES[key], art("chest"));
+  withArt(HELMET_SPRITES[key], art("helmet"));
+  withArt(LEGS_SPRITES[key], art("legs"));
+}
