@@ -7,9 +7,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDen, project, ANCHORS, OBJ, W, H, RES, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
+import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { artFor, loadArt, type LoadedArt } from "@/lib/sprites/art";
+import { artFor, loadArt, loadPixels, type LoadedArt } from "@/lib/sprites/art";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -26,7 +26,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.crate]:    { label: "Klutz's Crate", href: "/crate" },
   [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
   [OBJ.klutz]:    { label: "Klutz", href: "/klutz" },
-  [OBJ.bookcase]: { label: "Bookcase", href: "/bookcase" },
+  [OBJ.bookcase]: { label: "Shelves", href: "/bookcase" },
   [OBJ.tavern]:   { label: "Tavern", soon: "The tavern isn't built yet. One day travellers, merchants and librarians will gather here." },
 };
 
@@ -55,11 +55,31 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   const [hover, setHover] = useState<ObjId>(OBJ.none);
   const [notice, setNotice] = useState<Spot | null>(null);
   const router = useRouter();
+  // Crisp pixels when the canvas is shown at full size or bigger; shrunk to
+  // fit, smooth scaling (crisp scaling drops pixels unevenly and looks grainy).
+  const [crisp, setCrisp] = useState(false);
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const fit = () => setCrisp(c.clientWidth * window.devicePixelRatio >= c.width);
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(c);
+    return () => ro.disconnect();
+  }, []);
+  // The furniture art (the room is rebuilt with it once it has loaded).
+  const [props, setProps] = useState<DenProps>({});
+  useEffect(() => {
+    let live = true;
+    Promise.all(PROP_KEYS.map((k) => loadPixels(propSrc(k)).then((px) => [k, px] as const).catch(() => null)))
+      .then((all) => { if (live) setProps(Object.fromEntries(all.filter((x) => x !== null))); });
+    return () => { live = false; };
+  }, []);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    const scene = createDen({ backpack });
+    const scene = createDen({ backpack, props });
     sceneRef.current = scene;
     const start = performance.now();
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null);
@@ -76,7 +96,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, [backpack]);
+  }, [backpack, props]);
 
   useEffect(() => {
     klutzRef.current = klutz;
@@ -143,7 +163,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         onPointerMove={(e) => { if (e.pointerType === "mouse") setHovered(objectAt(e)); }}
         onPointerLeave={(e) => { if (e.pointerType === "mouse") setHovered(OBJ.none); }}
         onClick={(e) => press(objectAt(e))}
-        style={{ width: "100%", height: "100%", imageRendering: "pixelated", cursor: hover ? "pointer" : "default", display: "block" }}
+        style={{ width: "100%", height: "100%", imageRendering: crisp ? "pixelated" : "auto", cursor: hover ? "pointer" : "default", display: "block" }}
         aria-label="The Den"
         role="img"
       />

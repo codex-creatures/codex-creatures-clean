@@ -17,14 +17,14 @@
 import { fineGrid, PALETTE, type Sprite } from "../sprites/pixels";
 import type { LoadedArt, Pixels } from "../sprites/art";
 
-export const W = 560;  // layout units
-export const H = 448;
+export const W = 720;  // layout units
+export const H = 528;
 export const RES = 2;  // fine pixels per unit: the canvas is W*RES × H*RES
 const FW = W * RES, FH = H * RES;
 
 // Isometric layout: 1 floor unit = 32px wide / 16px tall diamond.
-const NU = 18;        // floor units along the right wall (v = 0)
-const NV = 15;        // floor units along the left wall (u = 0)
+const NU = 24;        // floor units along the right wall (v = 0)
+const NV = 19;        // floor units along the left wall (u = 0)
 const TW = 16;        // half tile width
 const TH = 8;         // half tile height
 const CX = 16 + NV * TW; // screen x of the back corner
@@ -39,22 +39,30 @@ export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
 // Where things stand (floor units), in groups:
 // - the middle: the Scanning Altar, with the Pit and the Healing Pool either side;
-// - the storage corner (right wall, at the back): chest, crates, shelves, bookcase;
-// - further along the right wall: the merchant, then the tavern;
+// - the storage corner (right wall, at the back): chest, crates, shelves (the
+//   codex shelf: a bookcase comes with upgrades);
+// - further along the right wall: the merchant, then the tavern, with open
+//   floor in front of it to grow into;
 // - the left wall: the archway, the bindle in its corner, the quest board and lectern;
 // - the front left: the cage, with Klutz's crate beside it.
-const AL = { u: 7.5, v: 6.5 };              // scanning altar (the centrepiece)
-const PIT = { u0: 10.0, v0: 7.2, u1: 13.6, v1: 10.8, depth: 18 };
-const POOL = { u: 5.6, v: 10.6, ru: 2.0, rv: 1.3 };
+const AL = { u: 9.5, v: 8.0 };              // scanning altar (the centrepiece)
+// The fighting pit, out towards the front corner: a deep sand pit walled in
+// timber, roped off between posts, with a brazier burning on two of them.
+const PIT = { u0: 15.0, v0: 11.2, u1: 20.4, v1: 16.6, depth: 30 };
+const PIT_POST_H = 26;
+const BRAZIERS: { u: number; v: number; z: number }[] = [
+  { u: PIT.u1 + 0.1, v: PIT.v0 - 0.1, z: PIT_POST_H + 6 }, { u: PIT.u0 - 0.1, v: PIT.v1 + 0.1, z: PIT_POST_H + 6 },
+];
+const POOL = { u: 7.6, v: 12.1, ru: 2.0, rv: 1.3 };
 // The cage: a cell hollowed out of the left wall, iron bars down its front.
 const CAGE = { v0: 10.0, v1: 13.6, h: 70, arch: 16 }; // along the left wall (v); how tall the opening is; how much of that is the arch
 const CRATE = { u0: 0.35, v0: 9.15, u1: 1.15, v1: 9.9, h: 14 }; // Klutz's crate, beside the cell
 const ARCH_V = 3.2;                          // archway on the left wall
 const BOARD_V = 6.6;                         // quest board on the left wall
 const LECTERN = { u: 1.15, v: 7.45 };        // the Bestiary's lectern, in front of the board
-const SHELF = { u0: 6.2, u1: 7.8, h: 46 };   // the bookcase, standing against the right wall
+const SHELF = { u0: 4.2, u1: 5.8 };          // the shelves on the right wall (codexes, sacks, potions)
 const MERCHANT_U = 10.2;                     // the merchant's stall (right wall)
-const TAVERN = { a0: 13.6, a1: 16.0, h: 74 }; // tavern opening on the right wall (along u)
+const TAVERN = { a0: 15.6, a1: 18.0, h: 74 }; // tavern opening on the right wall (along u)
 
 // Where each object's label sits (floor units + height in px).
 // below = the label hangs under the point instead of above it.
@@ -70,15 +78,15 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   9: { u: 0, v: (CAGE.v0 + CAGE.v1) / 2, z: CAGE.h + 8 }, // the cell in the wall
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
   11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
-  12: { u: 8.6, v: 3.2, z: 26 },                   // Klutz (he moves: see klutzAt)
-  13: { u: (SHELF.u0 + SHELF.u1) / 2, v: 0.4, z: SHELF.h + 6 }, // the bookcase
+  12: { u: 9.0, v: 3.4, z: 26 },                   // Klutz (he moves: see klutzAt)
+  13: { u: (SHELF.u0 + SHELF.u1) / 2, v: 0.2, z: 72 }, // the shelves
   14: { u: CRATE.u1, v: CRATE.v1, z: 0, below: true }, // Klutz's crate (label under it)
 };
 
 // Klutz's stroll round the Den: a loop of open floor (clear of the pit,
 // pool, altar and furniture), pausing at each stop.
 const KLUTZ_PATH: [number, number][] = [
-  [8.6, 3.2], [12.6, 3.6], [15.6, 5.8], [15.4, 11.0], [11.8, 12.8], [8.6, 12.6], [8.4, 8.6], [4.0, 7.6], [4.6, 4.6],
+  [9.0, 3.4], [14.0, 3.6], [19.6, 6.2], [21.4, 9.4], [13.4, 9.6], [12.6, 14.8], [9.4, 16.4], [10.8, 10.4], [5.2, 9.0], [5.4, 5.6],
 ];
 const KLUTZ_SPEED = 0.55;  // floor units a second
 const KLUTZ_PAUSE = 2.5;   // seconds at each stop
@@ -185,7 +193,7 @@ const wallTop = (a: number, seed: number) =>
 // rock towards the walls, wet patches near the pool.
 function floorTex(u: number, v: number): RGB {
   const fu = u * 16, fv = v * 16;
-  const centre = 1 - clamp01((Math.hypot(u - 6.2, v - 5.4) - 3.2) / 3.5) ;
+  const centre = 1 - clamp01((Math.hypot(u - 8.6, v - 7.0) - 4.4) / 4.5);
   const flag = centre + (vnoise(u * 0.8, v * 0.8) - 0.5) * 0.7 > 0.45;
   if (flag) {
     const row = Math.floor(fv / 16);
@@ -196,7 +204,7 @@ function floorTex(u: number, v: number): RGB {
       return vnoise(fu / 12, fv / 12) > 0.6 ? MOSS[Math.floor(hash(Math.floor(fu), Math.floor(fv)) * 4)] : FLOOR_MORT;
     }
     let k = iu < 2 || iv < 2 ? 1.08 : iu > 14.5 || iv > 14.5 ? 0.86 : 1;
-    k *= 0.9 + hash(Math.floor(fu * 2), Math.floor(fv * 2)) * 0.14;
+    k *= 0.94 + hash(Math.floor(fu / 3), Math.floor(fv / 3)) * 0.08;
     return mul(FLAG[Math.floor(hash(col, row + 99) * FLAG.length)], k);
   }
   const n = vnoise(fu / 6, fv / 6);
@@ -216,11 +224,18 @@ function planks(a: number, z: number, seed: number): RGB {
 type Light = { u: number; v: number; z: number; color: RGB; power: number; radius: number; seed: number; pulse?: boolean; steady?: boolean };
 
 const TORCHES: { u: number; v: number; z: number }[] = [
-  { u: 0.12, v: 1.4, z: 78 }, { u: 0.12, v: 5.2, z: 76 }, { u: 0.12, v: 9.4, z: 74 },
-  { u: 1.3, v: 0.12, z: 78 }, { u: 8.6, v: 0.12, z: 76 }, { u: 12.6, v: 0.12, z: 74 }, { u: 16.8, v: 0.12, z: 72 },
+  { u: 0.12, v: 1.4, z: 78 }, { u: 0.12, v: 5.2, z: 76 }, { u: 0.12, v: 9.4, z: 74 }, { u: 0.12, v: 15.6, z: 72 },
+  { u: 1.3, v: 0.12, z: 78 }, { u: 8.6, v: 0.12, z: 76 }, { u: 13.4, v: 0.12, z: 74 }, { u: 19.6, v: 0.12, z: 72 },
 ];
 
-const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((b) => b / 16);
+
+// The Den's furniture drawn in PixelLab (public/sprites/den/<key>.png). Each is
+// stamped into the room where its code-drawn box used to be, and lit by the
+// torches like the rest; anything whose art is missing falls back to the box.
+export const PROP_KEYS = ["altar", "chest", "crates", "shelves", "merchant", "lectern", "crate", "bindle", "backpack", "board"] as const;
+export type PropKey = (typeof PROP_KEYS)[number];
+export const propSrc = (key: PropKey) => `/sprites/den/${key}.png`;
+export type DenProps = Partial<Record<PropKey, Pixels>>;
 
 export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
@@ -254,7 +269,9 @@ function strollAt(t: number): { u: number; v: number; left: boolean; walking: bo
 }
 
 // backpack: you've found the rugged backpack (otherwise a bindle by the archway).
-export function createDen(opts: { backpack?: boolean } = {}): DenScene {
+// props: the furniture art that has loaded (see PROP_KEYS).
+export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): DenScene {
+  const props = opts.props ?? {};
   const n = FW * FH;
   const albedo = new Float32Array(n * 3);
   const pos = new Float32Array(n * 3).fill(NaN);
@@ -338,9 +355,9 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
       if (edge) return { c: CRACK, id: OBJ.cage };
       return { c: mul(CAP_STONES[block % 3], 0.8 + hash(Math.floor(a), Math.floor(z)) * 0.1), id: OBJ.cage };
     }
-    // Quest board
+    // Quest board (unless it's drawn as a prop)
     const qa = a - BOARD_V * 16, qz = z - 46;
-    if (qa >= 0 && qa < 26 && qz >= 0 && qz < 32) {
+    if (!props.board && qa >= 0 && qa < 26 && qz >= 0 && qz < 32) {
       if (qa < 2 || qa >= 24 || qz < 2 || qz >= 30) return { c: WOOD_DARK, id: OBJ.quests };
       const notes = [[4, 16, 7, 9], [14, 18, 7, 8], [7, 4, 9, 8], [17, 5, 5, 7]];
       for (const [nx, nz, nw, nh] of notes) {
@@ -393,12 +410,20 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
         if (inPit(f.u, f.v)) {
           const s = onZ(x, y, -PIT.depth);
           if (inPit(s.u, s.v)) {
-            const h = hash(Math.floor(s.u * 32), Math.floor(s.v * 32));
-            put(fx, fy, mul(SAND[Math.floor(h * 4)], 0.9 + h * 0.15), s.u, s.v, -PIT.depth, OBJ.pit);
+            // Raked sand, a fighting ring scratched into it, old dark stains.
+            const h = hash(Math.floor(s.u * 16), Math.floor(s.v * 16));
+            let c = mul(SAND[Math.floor(h * 4)], 0.92 + h * 0.1);
+            const ring = Math.hypot(s.u - (PIT.u0 + PIT.u1) / 2, s.v - (PIT.v0 + PIT.v1) / 2);
+            if (Math.abs(ring - 2.0) < 0.07) c = mul(c, 0.62);
+            const stain = vnoise(s.u * 2.6 + 40, s.v * 2.6);
+            if (stain > 0.74) c = mix(c, hex("#5a2418"), clamp01((stain - 0.74) * 6) * 0.7);
+            put(fx, fy, c, s.u, s.v, -PIT.depth, OBJ.pit);
           } else {
             const wu = onU(x, y, PIT.u0), wv = onV(x, y, PIT.v0);
-            if (wu.v >= PIT.v0 && wu.v < PIT.v1 && wu.z <= 0 && wu.z > -PIT.depth) put(fx, fy, mul(rock(wu.v * 16, wu.z + PIT.depth, 3), 0.62), PIT.u0, wu.v, wu.z, OBJ.pit);
-            else put(fx, fy, mul(rock(wv.u * 16, wv.z + PIT.depth, 4), 0.5), wv.u, PIT.v0, wv.z, OBJ.pit);
+            // Timber walls: upright logs, an iron band near the top.
+            const wall = (a: number, z: number, k: number) => (Math.abs(z + 5) < 1 ? mul(IRON, 1.2) : mul(planks(z + PIT.depth, a, 6), k));
+            if (wu.v >= PIT.v0 && wu.v < PIT.v1 && wu.z <= 0 && wu.z > -PIT.depth) put(fx, fy, wall(wu.v * 16, wu.z, 0.7), PIT.u0, wu.v, wu.z, OBJ.pit);
+            else put(fx, fy, wall(wv.u * 16, wv.z, 0.55), wv.u, PIT.v0, wv.z, OBJ.pit);
           }
           shadow[i] = fade;
           continue;
@@ -488,132 +513,191 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     }
   }
 
-  // Back to front so nearer objects cover farther ones.
-  // Storage corner (right wall): a shelf of sacks and potions.
-  const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
-  box(OBJ.chest, 4.2, 0, 28, 5.8, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
-  box(OBJ.chest, 4.2, 0, 52, 5.8, 0.4, 55, { top: (a) => planks(a, 2, 1), right: shelf, left: shelf });
-  const sack: Face = (a, b) => (b > 8 && b < 10 ? hex("#3d2a17") : mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15));
-  box(OBJ.chest, 4.35, 0.05, 55, 4.95, 0.35, 67, { top: () => hex("#8a6640"), right: sack, left: sack });
-  const potion = (col: string): Face => (a, b) => (b > 6 ? hex("#cfc6b0") : { c: mul(hex(col), b < 2 ? 0.7 : 1), glow: 1 });
-  box(OBJ.chest, 5.1, 0.1, 55, 5.28, 0.28, 63, { top: () => hex("#cfc6b0"), right: potion("#e04848"), left: potion("#e04848") });
-  box(OBJ.chest, 5.38, 0.1, 55, 5.56, 0.28, 62, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
-  box(OBJ.chest, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
-  box(OBJ.chest, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
-
-  if (!opts.backpack) {
-    // A bindle in the back corner: a walking stick leaning against the left
-    // wall (drawn as short steps that creep towards the wall as it rises),
-    // with a cloth bundle tied on the top, resting on the stones.
-    const stick: Face = (a, b) => planks(a, b, 3);
-    for (let k = 0; k < 9; k++) {
-      const u0 = 0.86 - k * 0.075;
-      box(OBJ.bag, u0, 0.62, k * 5, u0 + 0.1, 0.72, k * 5 + 5, { top: () => WOOD_DARK, right: stick, left: stick });
+  // A prop's art, stamped into the room over its footprint (u0..u1, v0..v1,
+  // standing on height z): centred on the footprint, its lowest pixel on the
+  // footprint's front corner. Its pixels light as if at the footprint's
+  // middle, at their height above its base. glow marks pixels that shine.
+  function stamp(id: number, px: Pixels, u0: number, v0: number, u1: number, v1: number, z = 0,
+    glow?: (c: RGB) => number) {
+    let x0 = px.w, x1 = -1, y1 = -1;
+    for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
+      if (px.data[(y * px.w + x) * 4 + 3] > 127) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
     }
-    const cloth: Face = (a, b) => ((Math.floor(a / 3) + Math.floor(b / 3)) % 2 ? hex("#8e2b2b") : hex("#d8cba8"));
-    box(OBJ.bag, 0.06, 0.4, 33, 0.52, 0.94, 46, { top: cloth, right: cloth, left: cloth });
-    box(OBJ.bag, 0.12, 0.6, 46, 0.3, 0.74, 50, { top: () => hex("#c9b07a"), right: () => hex("#a8894f"), left: () => hex("#b89a62") }); // the knot
-    // …and a little sack slumped beside it.
-    box(OBJ.bag, 0.1, 1.0, 0, 0.6, 1.42, 10, { top: () => hex("#8a6640"), right: (a, b) => mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15), left: () => hex("#7a5a38") });
-  } else {
-  // A rugged backpack on the floor in the back corner, ready for the next run:
-  // leather body with a front pocket, a flap with a buckle, a bedroll on top.
-  const LEATHER = hex("#6b4a2b"), LEATHER_D = hex("#4a3019"), STRAP = hex("#2e1e10");
-  const leather: Face = (a, b) => {
-    if (Math.abs(a - 3) < 0.9 || Math.abs(a - 12) < 0.9) return STRAP;           // straps
-    if (Math.floor(b) % 5 === 0 && Math.floor(a) % 2 === 0) return LEATHER_D;     // stitching
-    return mul(LEATHER, 0.92 + hash(Math.floor(a), Math.floor(b) + 7) * 0.14);
-  };
-  box(OBJ.bag, 0.200, 0.250, 0, 0.888, 0.875, 20, { top: () => LEATHER_D, right: leather, left: leather });
-  box(OBJ.bag, 0.888, 0.350, 4, 1.000, 0.775, 14, {                                   // front pocket
-    top: () => LEATHER_D, right: (a, b) => (b > 6 ? LEATHER_D : Math.abs(a - 2.7) < 0.7 && b > 4 ? GOLD : mul(LEATHER, 1.05)), left: () => LEATHER_D,
-  });
-  box(OBJ.bag, 0.163, 0.213, 20, 0.925, 0.912, 24, {                                  // the flap
-    top: (a, b) => (Math.abs(b - 4) < 1 && a > 6 ? IRON_LIGHT : LEATHER_D),
-    right: (a) => (Math.abs(a - 4.5) < 1 ? GOLD : LEATHER_D), left: () => LEATHER_D,
-  });
-  const wool: Face = (a, b) => (Math.floor(a) % 4 === 0 ? hex("#4b5a3e") : mul(hex("#6f7d5a"), 0.92 + hash(Math.floor(a), Math.floor(b)) * 0.12));
-  box(OBJ.bag, 0.125, 0.375, 24, 0.975, 0.713, 30, { top: wool, right: (a, b) => (Math.hypot(a - 2.2, b - 2.5) < 1.5 ? hex("#3a4630") : wool(a, b)), left: wool }); // bedroll
+    if (x1 < 0) return;
+    const um = (u0 + u1) / 2, vm = (v0 + v1) / 2;
+    const ax = Math.round(project(um, vm, z)[0] * RES), ay = Math.round(project(u1, v1, z)[1] * RES);
+    const cx = Math.round((x0 + x1) / 2);
+    for (let y = 0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const o = (y * px.w + x) * 4;
+      if (px.data[o + 3] <= 127) continue;
+      const c: RGB = [px.data[o] / 255, px.data[o + 1] / 255, px.data[o + 2] / 255];
+      put(ax + x - cx, ay + y - y1, c, um, vm, z + (y1 - y) / RES, id, glow ? glow(c) : 0);
+    }
   }
 
-  // The bookcase: a tall case of shelves against the right wall, codexes on them.
-  const SPINES = ["#7b3fc4", "#2f6fb0", "#8e2b2b", "#2f7a3a", "#b07a2a", "#5a3a8a", "#2a7a7a"];
-  const bookFront: Face = (a, b) => {
-    const wdt = (SHELF.u1 - SHELF.u0) * 16;
-    if (a < 1.5 || a > wdt - 1.5 || b < 2 || b > SHELF.h - 2) return planks(b, a, 5);   // the frame
-    const row = Math.floor((b - 2) / 11), inRow = (b - 2) % 11;
-    if (inRow < 1.5) return WOOD_DARK;                                                    // a shelf
-    const bookW = 2.2, k = Math.floor((a - 1.5) / bookW) + row * 5;
-    const tall = 6 + Math.floor(hash(k, row) * 3.5);
-    if (inRow > tall + 1.5 || hash(k + 3, row) < 0.12) return mul(WOOD_DARK, 0.6);      // gaps above the books
-    const spine = hex(SPINES[Math.floor(hash(k, row + 7) * SPINES.length)]);
-    if ((a - 1.5) % bookW < 0.35) return mul(spine, 0.55);                              // between books
-    return Math.abs(inRow - tall + 0.5) < 0.6 ? GOLD : spine;                            // gold tops
-  };
-  box(OBJ.bookcase, SHELF.u0, 0.05, 0, SHELF.u1, 0.75, SHELF.h, {
-    top: (a, b) => planks(a, b, 5), right: (a, b) => planks(b, a, 6), left: bookFront,
-  });
+  // Back to front so nearer objects cover farther ones.
+  const potion = (col: string): Face => (a, b) => (b > 6 ? hex("#cfc6b0") : { c: mul(hex(col), b < 2 ? 0.7 : 1), glow: 1 });
 
-  // Crates beside the chest.
-  const crate: Face = (a, b) => (a < 1.2 || a > 13.8 || b < 1.2 || b > 12 || Math.abs(a - b) < 0.9 ? WOOD_DARK : planks(a, b, 1));
-  box(OBJ.chest, 3.25, 0.15, 0, 4.05, 0.95, 13, { top: crate, right: crate, left: crate });
-  box(OBJ.chest, 3.35, 0.25, 13, 3.95, 0.85, 23, { top: crate, right: crate, left: crate });
+  if (!opts.backpack) {
+    if (props.bindle) stamp(OBJ.bag, props.bindle, 0.06, 0.4, 0.96, 1.42);
+    else {
+      // A bindle in the back corner: a walking stick leaning against the left
+      // wall (drawn as short steps that creep towards the wall as it rises),
+      // with a cloth bundle tied on the top, resting on the stones.
+      const stick: Face = (a, b) => planks(a, b, 3);
+      for (let k = 0; k < 9; k++) {
+        const u0 = 0.86 - k * 0.075;
+        box(OBJ.bag, u0, 0.62, k * 5, u0 + 0.1, 0.72, k * 5 + 5, { top: () => WOOD_DARK, right: stick, left: stick });
+      }
+      const cloth: Face = (a, b) => ((Math.floor(a / 3) + Math.floor(b / 3)) % 2 ? hex("#8e2b2b") : hex("#d8cba8"));
+      box(OBJ.bag, 0.06, 0.4, 33, 0.52, 0.94, 46, { top: cloth, right: cloth, left: cloth });
+      box(OBJ.bag, 0.12, 0.6, 46, 0.3, 0.74, 50, { top: () => hex("#c9b07a"), right: () => hex("#a8894f"), left: () => hex("#b89a62") }); // the knot
+      // …and a little sack slumped beside it.
+      box(OBJ.bag, 0.1, 1.0, 0, 0.6, 1.42, 10, { top: () => hex("#8a6640"), right: (a, b) => mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15), left: () => hex("#7a5a38") });
+    }
+  } else if (props.backpack) stamp(OBJ.bag, props.backpack, 0.16, 0.21, 1.0, 0.91);
+  else {
+    // A rugged backpack on the floor in the back corner, ready for the next run:
+    // leather body with a front pocket, a flap with a buckle, a bedroll on top.
+    const LEATHER = hex("#6b4a2b"), LEATHER_D = hex("#4a3019"), STRAP = hex("#2e1e10");
+    const leather: Face = (a, b) => {
+      if (Math.abs(a - 3) < 0.9 || Math.abs(a - 12) < 0.9) return STRAP;           // straps
+      if (Math.floor(b) % 5 === 0 && Math.floor(a) % 2 === 0) return LEATHER_D;     // stitching
+      return mul(LEATHER, 0.92 + hash(Math.floor(a), Math.floor(b) + 7) * 0.14);
+    };
+    box(OBJ.bag, 0.200, 0.250, 0, 0.888, 0.875, 20, { top: () => LEATHER_D, right: leather, left: leather });
+    box(OBJ.bag, 0.888, 0.350, 4, 1.000, 0.775, 14, {                                   // front pocket
+      top: () => LEATHER_D, right: (a, b) => (b > 6 ? LEATHER_D : Math.abs(a - 2.7) < 0.7 && b > 4 ? GOLD : mul(LEATHER, 1.05)), left: () => LEATHER_D,
+    });
+    box(OBJ.bag, 0.163, 0.213, 20, 0.925, 0.912, 24, {                                  // the flap
+      top: (a, b) => (Math.abs(b - 4) < 1 && a > 6 ? IRON_LIGHT : LEATHER_D),
+      right: (a) => (Math.abs(a - 4.5) < 1 ? GOLD : LEATHER_D), left: () => LEATHER_D,
+    });
+    const wool: Face = (a, b) => (Math.floor(a) % 4 === 0 ? hex("#4b5a3e") : mul(hex("#6f7d5a"), 0.92 + hash(Math.floor(a), Math.floor(b)) * 0.12));
+    box(OBJ.bag, 0.125, 0.375, 24, 0.975, 0.713, 30, { top: wool, right: (a, b) => (Math.hypot(a - 2.2, b - 2.5) < 1.5 ? hex("#3a4630") : wool(a, b)), left: wool }); // bedroll
+  }
 
   // Chest (right wall, in the storage corner)
-  const chestSide: Face = (a, b) => {
-    if (a < 1.5 || a > 13) return IRON;
-    if (b > 6 && b < 8) return IRON;
-    if (Math.abs(a - 7.5) < 2 && b > 3 && b < 8) return Math.abs(a - 7.5) < 0.8 && b > 4 && b < 6 ? hex("#2a1a0a") : GOLD;
-    return planks(a, b, 0);
-  };
-  box(OBJ.chest, 2.0, 0.2, 0, 3.0, 1.15, 12, {
-    top: (a, b) => (a < 1.5 || a > 14.5 || Math.abs(b - 7.5) < 1 ? IRON : planks(a, b, 1)),
-    right: (a, b) => (a < 1.5 || a > 13.5 || (b > 6 && b < 8) ? IRON : planks(a, b, 2)),
-    left: chestSide,
-  });
+  if (props.chest) stamp(OBJ.chest, props.chest, 2.0, 0.2, 3.0, 1.15);
+  else {
+    const chestSide: Face = (a, b) => {
+      if (a < 1.5 || a > 13) return IRON;
+      if (b > 6 && b < 8) return IRON;
+      if (Math.abs(a - 7.5) < 2 && b > 3 && b < 8) return Math.abs(a - 7.5) < 0.8 && b > 4 && b < 6 ? hex("#2a1a0a") : GOLD;
+      return planks(a, b, 0);
+    };
+    box(OBJ.chest, 2.0, 0.2, 0, 3.0, 1.15, 12, {
+      top: (a, b) => (a < 1.5 || a > 14.5 || Math.abs(b - 7.5) < 1 ? IRON : planks(a, b, 1)),
+      right: (a, b) => (a < 1.5 || a > 13.5 || (b > 6 && b < 8) ? IRON : planks(a, b, 2)),
+      left: chestSide,
+    });
+  }
 
-  // Merchant stall (right wall, beside the tavern)
-  const counter: Face = (a, b) => (b > 11 ? hex("#7e2626") : b > 10 ? GOLD : planks(a, b, 2));
-  const MU = MERCHANT_U;
-  box(OBJ.merchant, MU, 0.12, 0, MU + 1.5, 1.0, 13, { top: (a, b) => ((Math.floor(a / 4) + Math.floor(b / 4)) % 2 ? hex("#932f2f") : hex("#7e2626")), right: counter, left: counter });
-  box(OBJ.merchant, MU + 0.15, 0.3, 13, MU + 0.35, 0.5, 20, { top: () => hex("#cfc6b0"), right: potion("#b060e0"), left: potion("#b060e0") });
-  box(OBJ.merchant, MU + 0.55, 0.25, 13, MU + 0.95, 0.65, 16, { top: () => ({ c: hex("#ffe27a"), glow: 1 }), right: () => GOLD, left: () => mul(GOLD, 0.85) });
-  box(OBJ.merchant, MU + 1.1, 0.35, 13, MU + 1.28, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
+  // Crates beside the chest.
+  if (props.crates) stamp(OBJ.chest, props.crates, 3.25, 0.15, 4.05, 0.95);
+  else {
+    const crate: Face = (a, b) => (a < 1.2 || a > 13.8 || b < 1.2 || b > 12 || Math.abs(a - b) < 0.9 ? WOOD_DARK : planks(a, b, 1));
+    box(OBJ.chest, 3.25, 0.15, 0, 4.05, 0.95, 13, { top: crate, right: crate, left: crate });
+    box(OBJ.chest, 3.35, 0.25, 13, 3.95, 0.85, 23, { top: crate, right: crate, left: crate });
+  }
 
-  // Scanning altar (the centrepiece, in front of the back corner)
-  const altarStone: Face = (a, b) => (b > 15 ? mul(CAP_STONES[1], 1.1) : rock(a + 30, b, 11));
-  box(OBJ.altar, AL.u - 0.5, AL.v - 0.5, 0, AL.u + 0.5, AL.v + 0.5, 18, {
-    top: (a, b) => {
-      const d = Math.hypot(a - 8, b - 8);
-      if (d < 1.8 || (d > 4.4 && d < 5.8)) return { c: hex("#6ff2ff"), glow: 2 };
-      return mul(CAP_STONES[0], 1.1);
-    },
-    right: altarStone,
-    left: (a, b) => (Math.abs(a - 8) < 1 && b > 4 && b < 13 ? { c: hex("#3fc6e0"), glow: 2 } : altarStone(a, b)),
-  });
+  // The shelves on the right wall: codexes, a sack and potions. (They open
+  // the codex shelf; a proper bookcase comes with upgrades.)
+  if (props.shelves) stamp(OBJ.bookcase, props.shelves, SHELF.u0, 0, SHELF.u1, 0.4, 26);
+  else {
+    const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
+    box(OBJ.bookcase, SHELF.u0, 0, 28, SHELF.u1, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
+    box(OBJ.bookcase, SHELF.u0, 0, 52, SHELF.u1, 0.4, 55, { top: (a) => planks(a, 2, 1), right: shelf, left: shelf });
+    const sack: Face = (a, b) => (b > 8 && b < 10 ? hex("#3d2a17") : mul(hex("#9a7448"), 0.9 + hash(Math.floor(a), Math.floor(b)) * 0.15));
+    box(OBJ.bookcase, 4.35, 0.05, 55, 4.95, 0.35, 67, { top: () => hex("#8a6640"), right: sack, left: sack });
+    box(OBJ.bookcase, 5.1, 0.1, 55, 5.28, 0.28, 63, { top: () => hex("#cfc6b0"), right: potion("#e04848"), left: potion("#e04848") });
+    box(OBJ.bookcase, 5.38, 0.1, 55, 5.56, 0.28, 62, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
+    box(OBJ.bookcase, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
+    box(OBJ.bookcase, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
+  }
+
+  // The quest board, hung on the left wall (code-drawn in leftWallFeature otherwise).
+  if (props.board) stamp(OBJ.quests, props.board, 0, BOARD_V, 0.1, BOARD_V + 1.6, 44);
 
   // Lectern with an open scroll (in front of the quest board).
-  const post: Face = (a, b) => planks(a, b, 3);
   const LU = LECTERN.u - 0.15, LV = LECTERN.v - 0.15;
-  box(OBJ.scroll, LU, LV, 0, LU + 0.3, LV + 0.3, 14, { top: () => WOOD_DARK, right: post, left: post });
-  box(OBJ.scroll, LU - 0.25, LV - 0.2, 14, LU + 0.55, LV + 0.5, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
-  const parchment: Face = (a, b) => {
-    if (b < 1.5 || b > 14.5) return hex("#c9b07a"); // rolled ends
-    const line = a > 2 && a < 13 && Math.floor(a) % 3 === 0 && b > 3 && b < 13 && Math.abs(b - 8) > 0.8;
-    return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
-  };
-  box(OBJ.scroll, LU - 0.2, LV - 0.15, 17, LU + 0.5, LV + 0.45, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+  if (props.lectern) stamp(OBJ.scroll, props.lectern, LU - 0.25, LV - 0.2, LU + 0.55, LV + 0.5);
+  else {
+    const post: Face = (a, b) => planks(a, b, 3);
+    box(OBJ.scroll, LU, LV, 0, LU + 0.3, LV + 0.3, 14, { top: () => WOOD_DARK, right: post, left: post });
+    box(OBJ.scroll, LU - 0.25, LV - 0.2, 14, LU + 0.55, LV + 0.5, 17, { top: (a) => planks(a, 3, 2), right: () => WOOD_DARK, left: () => WOOD_DARK });
+    const parchment: Face = (a, b) => {
+      if (b < 1.5 || b > 14.5) return hex("#c9b07a"); // rolled ends
+      const line = a > 2 && a < 13 && Math.floor(a) % 3 === 0 && b > 3 && b < 13 && Math.abs(b - 8) > 0.8;
+      return line ? hex("#7a6448") : { c: hex("#f2e4bf"), glow: 0.4 };
+    };
+    box(OBJ.scroll, LU - 0.2, LV - 0.15, 17, LU + 0.5, LV + 0.45, 18, { top: parchment, right: () => hex("#c9b07a"), left: () => hex("#d8c290") });
+  }
 
   // Klutz's crate: rough planks with iron bands, where he dumps the gear he finds.
-  const crateSide: Face = (a, b) => (b < 1.2 || b > CRATE.h - 1.5 || Math.abs(b - CRATE.h / 2) < 0.8 ? IRON : planks(a, b, 3));
-  box(OBJ.crate, CRATE.u0, CRATE.v0, 0, CRATE.u1, CRATE.v1, CRATE.h, {
-    top: (a, b) => (a < 1 || b < 1 || a > 12.5 || b > 12.5 ? IRON_LIGHT : mul(planks(a, b, 4), 0.9)), right: crateSide, left: crateSide,
-  });
+  if (props.crate) stamp(OBJ.crate, props.crate, CRATE.u0, CRATE.v0, CRATE.u1, CRATE.v1);
+  else {
+    const crateSide: Face = (a, b) => (b < 1.2 || b > CRATE.h - 1.5 || Math.abs(b - CRATE.h / 2) < 0.8 ? IRON : planks(a, b, 3));
+    box(OBJ.crate, CRATE.u0, CRATE.v0, 0, CRATE.u1, CRATE.v1, CRATE.h, {
+      top: (a, b) => (a < 1 || b < 1 || a > 12.5 || b > 12.5 ? IRON_LIGHT : mul(planks(a, b, 4), 0.9)), right: crateSide, left: crateSide,
+    });
+  }
 
+  // Merchant stall (right wall, beside the tavern)
+  const MU = MERCHANT_U;
+  if (props.merchant) stamp(OBJ.merchant, props.merchant, MU, 0.12, MU + 1.5, 1.0);
+  else {
+    const counter: Face = (a, b) => (b > 11 ? hex("#7e2626") : b > 10 ? GOLD : planks(a, b, 2));
+    box(OBJ.merchant, MU, 0.12, 0, MU + 1.5, 1.0, 13, { top: (a, b) => ((Math.floor(a / 4) + Math.floor(b / 4)) % 2 ? hex("#932f2f") : hex("#7e2626")), right: counter, left: counter });
+    box(OBJ.merchant, MU + 0.15, 0.3, 13, MU + 0.35, 0.5, 20, { top: () => hex("#cfc6b0"), right: potion("#b060e0"), left: potion("#b060e0") });
+    box(OBJ.merchant, MU + 0.55, 0.25, 13, MU + 0.95, 0.65, 16, { top: () => ({ c: hex("#ffe27a"), glow: 1 }), right: () => GOLD, left: () => mul(GOLD, 0.85) });
+    box(OBJ.merchant, MU + 1.1, 0.35, 13, MU + 1.28, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
+  }
+
+  // Scanning altar (the centrepiece). Its runes glow and pulse.
+  if (props.altar) {
+    stamp(OBJ.altar, props.altar, AL.u - 0.5, AL.v - 0.5, AL.u + 0.5, AL.v + 0.5, 0,
+      ([r, g, b]) => (b > 0.55 && g > 0.45 && r < 0.5 && b - r > 0.25 ? 2 : 0));
+  } else {
+    const altarStone: Face = (a, b) => (b > 15 ? mul(CAP_STONES[1], 1.1) : rock(a + 30, b, 11));
+    box(OBJ.altar, AL.u - 0.5, AL.v - 0.5, 0, AL.u + 0.5, AL.v + 0.5, 18, {
+      top: (a, b) => {
+        const d = Math.hypot(a - 8, b - 8);
+        if (d < 1.8 || (d > 4.4 && d < 5.8)) return { c: hex("#6ff2ff"), glow: 2 };
+        return mul(CAP_STONES[0], 1.1);
+      },
+      right: altarStone,
+      left: (a, b) => (Math.abs(a - 8) < 1 && b > 4 && b < 13 ? { c: hex("#3fc6e0"), glow: 2 } : altarStone(a, b)),
+    });
+  }
+
+  // The fighting pit's posts and ropes, back to front, braziers on two posts.
+  {
+    const post: Face = (a, b) => (b > PIT_POST_H - 3 ? IRON_LIGHT : planks(b, a, 7));
+    const rope: Face = (a) => mul(hex("#a8894f"), Math.floor(a) % 3 === 0 ? 0.7 : 1);
+    const P = 0.11, RZ = 17;
+    const postAt = (u: number, v: number) => box(OBJ.pit, u - P, v - P, 0, u + P, v + P, PIT_POST_H, { top: () => IRON_LIGHT, right: post, left: post });
+    const um = (PIT.u0 + PIT.u1) / 2, vm = (PIT.v0 + PIT.v1) / 2;
+    const U0 = PIT.u0 - 0.2, U1 = PIT.u1 + 0.2, V0 = PIT.v0 - 0.2, V1 = PIT.v1 + 0.2;
+    postAt(U0, V0); postAt(um, V0); postAt(U0, vm);
+    box(OBJ.pit, U0, V0 - 0.03, RZ, U1, V0 + 0.03, RZ + 2, { top: rope, right: rope, left: rope });
+    box(OBJ.pit, U0 - 0.03, V0, RZ, U0 + 0.03, V1, RZ + 2, { top: rope, right: rope, left: rope });
+    postAt(U1, V0); postAt(U0, V1);
+    box(OBJ.pit, U1 - 0.03, V0, RZ, U1 + 0.03, V1, RZ + 2, { top: rope, right: rope, left: rope });
+    box(OBJ.pit, U0, V1 - 0.03, RZ, U1, V1 + 0.03, RZ + 2, { top: rope, right: rope, left: rope });
+    postAt(U1, vm); postAt(um, V1); postAt(U1, V1);
+    // Iron fire bowls on the side posts (their flames are drawn each frame).
+    for (const b of BRAZIERS) {
+      box(OBJ.pit, b.u - 0.22, b.v - 0.22, PIT_POST_H, b.u + 0.22, b.v + 0.22, PIT_POST_H + 5, {
+        top: () => ({ c: hex("#ff8a2a"), glow: 1 }), right: () => IRON, left: () => mul(IRON_LIGHT, 0.9),
+      });
+    }
+  }
 
   // ── Lights ──
   const lights: Light[] = [
     ...TORCHES.map((t, i) => ({ ...t, color: hex("#ff9a44"), power: 1.35, radius: 2.3, seed: i * 1.7 })),
+    ...BRAZIERS.map((b, i) => ({ ...b, z: b.z + 8, color: hex("#ff8a3c"), power: 1.5, radius: 2.8, seed: 20 + i * 2.3 })),
     { u: AL.u, v: AL.v, z: 34, color: hex("#5fe0ff"), power: 0.9, radius: 1.7, seed: 9, pulse: true },
     { u: POOL.u, v: POOL.v, z: 6, color: hex("#3fa0a0"), power: 0.35, radius: 1.8, seed: 11, steady: true },
   ];
@@ -665,11 +749,10 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
       for (let fx = 0; fx < FW; fx++) {
         const i = fy * FW + fx, o = i * 4;
         const u = pos[i * 3];
-        const bay = BAYER[(fy & 3) * 4 + (fx & 3)];
         if (Number.isNaN(u)) {
           // The dark beyond: a faint cold haze low down.
           const y = spot(fy);
-          const k = Math.floor(clamp01((y - 120) / 400) * 0.6 * 4 + bay) / 4;
+          const k = clamp01((y - 120) / 400) * 0.6;
           d[o] = (VOID[0] + k * 0.03) * 255; d[o + 1] = (VOID[1] + k * 0.035) * 255; d[o + 2] = (VOID[2] + k * 0.06) * 255; d[o + 3] = 255;
           continue;
         }
@@ -686,11 +769,11 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
         const lr = (AMBIENT[0] + lit[i * 3] + col[0] * extra) * s;
         const lg = (AMBIENT[1] + lit[i * 3 + 1] + col[1] * extra) * s;
         const lb = (AMBIENT[2] + lit[i * 3 + 2] + col[2] * extra) * s;
-        // Ordered dithering on the light gives the stepped pixel-art glow.
-        const q = (L: number) => Math.floor(L * 6 + bay) / 6;
-        d[o] = Math.min(255, r * q(lr) * 255);
-        d[o + 1] = Math.min(255, g * q(lg) * 255);
-        d[o + 2] = Math.min(255, bl * q(lb) * 255);
+        // Smooth light (no dithering: it turned into a grainy checkerboard
+        // once the canvas is scaled to fit the screen).
+        d[o] = Math.min(255, r * lr * 255);
+        d[o + 1] = Math.min(255, g * lg * 255);
+        d[o + 2] = Math.min(255, bl * lb * 255);
         d[o + 3] = 255;
       }
     }
@@ -718,13 +801,17 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     };
 
     // Torches: iron bracket + animated flame.
-    TORCHES.forEach((tc, i) => {
-      const [tx, ty] = project(tc.u, tc.v, tc.z);
-      for (let k = 0; k < 6; k++) px(tx, ty + k, k < 2 ? "#5a5e68" : "#2c2e34");
-      px(tx - 1, ty, "#5a5e68"); px(tx + 1, ty, "#5a5e68");
-      const hgt = 5 + Math.floor((Math.sin(t * 11 + i * 2) + 1) * 1.5 + Math.random() * 1.5);
+    // (and the pit's braziers: bigger flames, no bracket)
+    [...TORCHES, ...BRAZIERS].forEach((tc, i) => {
+      const brazier = i >= TORCHES.length;
+      const [tx, ty] = project(tc.u, tc.v, tc.z - (brazier ? 1 : 0));
+      if (!brazier) {
+        for (let k = 0; k < 6; k++) px(tx, ty + k, k < 2 ? "#5a5e68" : "#2c2e34");
+        px(tx - 1, ty, "#5a5e68"); px(tx + 1, ty, "#5a5e68");
+      }
+      const hgt = (brazier ? 8 : 5) + Math.floor((Math.sin(t * 11 + i * 2) + 1) * 1.5 + Math.random() * 1.5);
       for (let k = 0; k < hgt; k++) {
-        const wdt = k < 2 ? 1 : k < hgt - 2 ? 1 : 0;
+        const wdt = brazier ? (k < 3 ? 3 : k < hgt - 3 ? 2 : k < hgt - 1 ? 1 : 0) : k < 2 ? 1 : k < hgt - 2 ? 1 : 0;
         const sway = k > hgt / 2 ? Math.round(Math.sin(t * 7 + i + k) * 0.8) : 0;
         const c = k < 2 ? "#fff3b0" : k < hgt - 2 ? "#ffb347" : "#e2582a";
         for (let w = -wdt; w <= wdt; w++) px(tx + w + sway, ty - 1 - k, w === 0 ? c : "#ff8a2a");
