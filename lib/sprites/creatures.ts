@@ -1,8 +1,9 @@
 // lib/sprites/creatures.ts
-// Creature sprites, keyed by creature id. Most are drawn in code on the fine
-// grid (lib/sprites/bestiary.ts); Klutz has PixelLab art (lib/sprites/art.ts),
-// with his old 44×44 grid kept here as the fallback, and the
-// Cyclops parts are 28-wide drawn pixels (BossStage reshapes the body).
+// Creature sprites, keyed by creature id. Each scannable creature and Klutz
+// has PixelLab art (lib/sprites/art.ts, see ART_SIZES), over a grid drawn in
+// code that stays as the fallback (lib/sprites/bestiary.ts; Klutz's 44×44
+// grid is here). The Cyclops parts are 28-wide drawn pixels (BossStage
+// reshapes the body).
 // Creatures without one yet show a rune egg instead (see EGG).
 
 import { fine, type Sprite } from "./pixels";
@@ -122,6 +123,41 @@ export const CREATURE_SPRITES: Record<string, Sprite> = {
     ".......x........",
   ],
 };
+
+// PixelLab art for the scannable roster (public/sprites/creatures/<id>.png),
+// facing left like the grids; each creature's grid stays as its fallback.
+// [width, height] of each image.
+const ART_SIZES: Record<string, [number, number]> = {
+  moss_wolf: [82, 65],
+  amber_wasp: [62, 55],
+  monkey_mage: [63, 73],
+  dire_wolf: [119, 118],
+  ironhide: [122, 87],
+  cave_bat: [58, 50],
+  rust_beetle: [81, 68],
+  crystalback: [85, 72],
+  crystal_golem: [121, 117],
+  hollow_matriarch: [124, 106],
+  dust_sprite: [54, 50],
+  flicker_wisp: [46, 48],
+  veilstalker: [85, 83],
+  the_watcher: [68, 81],
+  void_serpent: [110, 96],
+  rattlebones: [70, 84],
+  shambler: [73, 88],
+  dustwraith: [84, 86],
+  mr_shadows: [94, 94],
+  storm_phoenix: [105, 113],
+  thicket_archer: [81, 76],
+  leafblade_scout: [73, 81],
+  aurelius: [115, 113],
+  swamp_witch: [86, 89],
+  sylvaran: [71, 94],
+};
+for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
+  if (CREATURE_SPRITES[id]) withArt(CREATURE_SPRITES[id], { src: `/sprites/creatures/${id}.png`, w, h });
+}
+
 
 // Shown for creatures that don't have their own sprite yet.
 export const EGG: Sprite = [

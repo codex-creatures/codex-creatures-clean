@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { artFor, loadArt, loadPixels, type LoadedArt } from "@/lib/sprites/art";
+import { artFor, loadArt, loadPixels, type LoadedArt, type Pixels } from "@/lib/sprites/art";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -49,6 +49,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   const cagedRef = useRef(caged);
   const klutzRef = useRef(klutz);
   const klutzPixels = useRef<LoadedArt | null>(null); // his drawn art, once loaded
+  const cagedArt = useRef<Pixels | null>(null);        // the caged creature's, once loaded
   const klutzLabelRef = useRef<HTMLButtonElement | null>(null);
   const sceneRef = useRef<DenScene | null>(null);
   const hoverRef = useRef<ObjId>(OBJ.none);
@@ -82,7 +83,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     const scene = createDen({ backpack, props });
     sceneRef.current = scene;
     const start = performance.now();
-    scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null);
+    scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null, cagedArt.current);
     scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null, klutzPixels.current);
     const draw = () => {
       ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
@@ -116,10 +117,21 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     return () => { live = false; };
   }, []);
 
-  // Who's in the cage (the save loads after the first draw).
+  // Who's in the cage (the save loads after the first draw), then their art once it loads.
   useEffect(() => {
     cagedRef.current = caged;
-    sceneRef.current?.setCaged(caged ? CREATURE_SPRITES[caged] ?? null : null);
+    cagedArt.current = null;
+    const sprite = caged ? CREATURE_SPRITES[caged] ?? null : null;
+    sceneRef.current?.setCaged(sprite);
+    const art = sprite && artFor(sprite);
+    if (!art) return;
+    let live = true;
+    loadPixels(art.src).then((px) => {
+      if (!live) return;
+      cagedArt.current = px;
+      sceneRef.current?.setCaged(sprite, px);
+    }).catch(() => {});
+    return () => { live = false; };
   }, [caged]);
 
   function objectAt(e: React.PointerEvent | React.MouseEvent): ObjId {

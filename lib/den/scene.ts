@@ -240,7 +240,7 @@ export type DenProps = Partial<Record<PropKey, Pixels>>;
 export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
   idAt: (x: number, y: number) => ObjId;
-  setCaged: (sprite: Sprite | null) => void; // the creature shown inside the cage
+  setCaged: (sprite: Sprite | null, art?: Pixels | null) => void; // the creature shown inside the cage (its art once loaded)
   // His drawn art once loaded, else his grid sprite.
   setKlutz: (mode: KlutzMode, sprite: Sprite | null, art?: LoadedArt | null) => void;
   klutzAt: () => [number, number] | null;     // where his label goes (layout units), if he's here
@@ -727,7 +727,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   type Ember = { x: number; y: number; vx: number; life: number };
   let embers: Ember[] = [];
   let lastT = 0;
-  let caged: string[] | null = null; // the caged creature, on the fine grid
+  let caged: Pic | null = null; // the caged creature
   let klutz: Pic | null = null;
   let klutzWalk: { frames: Pic[]; x: number; y: number } | null = null; // his walk, lined up with his still
   let klutzMode: KlutzMode = "away";
@@ -856,12 +856,11 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
     const mid = (CAGE.v0 + CAGE.v1) / 2;
     const [bx, by] = project(0, mid, 3);
     if (caged) {
-      const h = caged.length, w = Math.max(...caged.map((r) => r.length));
+      const { w, h } = caged;
       const bob = Math.round(Math.sin(t * 1.5) * 1);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-        const ch = caged[y][x];
-        if (ch === "." || !PALETTE[ch]) continue;
-        fpx(bx * RES - w / 2 + x, by * RES - h + y + bob, mul(hex(PALETTE[ch]), 0.62), OBJ.cage);
+        const col = caged.at(x, y);
+        if (col) fpx(bx * RES - w / 2 + x, by * RES - h + y + bob, mul(col, 0.62), OBJ.cage);
       }
     }
     // Iron bars down the front of the opening, set into a top and bottom rail.
@@ -934,7 +933,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
       if (fx < 0 || fy < 0 || fx >= FW || fy >= FH) return OBJ.none;
       return frameIds[fy * FW + fx] as ObjId;
     },
-    setCaged: (sprite) => { caged = sprite ? fineGrid(sprite) : null; },
+    setCaged: (sprite, art) => { caged = art ? picFromPixels(art) : sprite ? picFromGrid(fineGrid(sprite)) : null; },
     setKlutz: (mode, sprite, art) => {
       klutzMode = mode;
       klutz = art ? picFromPixels(art.still) : sprite ? picFromGrid(fineGrid(sprite)) : null;
