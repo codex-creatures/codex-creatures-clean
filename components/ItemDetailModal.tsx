@@ -88,7 +88,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
     function handleKey(e: KeyboardEvent) {
       if (e.key === "ArrowLeft" && hasPrev) onNavigate(currentIndex - 1);
       if (e.key === "ArrowRight" && hasNext) onNavigate(currentIndex + 1);
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { e.preventDefault(); onClose(); } // (so it doesn't also go back a page)
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);

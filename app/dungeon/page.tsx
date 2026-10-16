@@ -47,8 +47,13 @@ import { combatSummary } from "@/lib/combat/loadout";
 import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
 import DungeonMapView from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
+import EncounterCards from "@/components/EncounterCards";
 
 const GOLD = "#f5c542";
+
+// Rooms whose creature cards you've put away (kept while you move round the
+// app, so popping out to the Den and back doesn't bring them up again).
+const CARDS_DONE = new Set<string>();
 
 function combatLine(f: Parameters<typeof combatSummary>[0]): string {
   const s = combatSummary(f);
@@ -71,6 +76,10 @@ export default function DungeonPage() {
   // Leaving for the Den: keep showing what's on screen until the Den loads
   // (otherwise the entrance flashes up for a moment on the way out).
   const [leaving, setLeaving] = useState(false);          // anything else that just happened (e.g. Second Wind)
+  // The creature cards for the fight you've walked into (see EncounterCards):
+  // which rooms' cards you've put away, and whether you've reopened them.
+  const [cardsDone, setCardsDone] = useState<string[]>(() => [...CARDS_DONE]);
+  const [cardsOpen, setCardsOpen] = useState(false);
 
   // Every change to the run is saved straight away.
   function update(next: DungeonSave) {
@@ -555,6 +564,13 @@ export default function DungeonPage() {
   const clubTutorial = run.current?.quest === "club" && run.current.done && clubEntry ? clubEntry : undefined;
   // The Rattlebones' room: once it's beaten, the way on is home (with the box).
   const boxRoom = run.current?.quest === "rattlebones" && run.current.done;
+  // A fight waiting here: the Fight! button sits on the room. Until you've
+  // beaten the Cyclops (the tutorial), its creatures' cards come up first.
+  const fightHere = !!run.current && isFight(run.current.kind) && !run.current.done;
+  const enemyIds = fightHere && !run.current!.boss ? (run.current!.enemies ?? []).map((e) => e.creatureId) : [];
+  const roomKey = `${lab.meta.runs}:${runPosition(run)}`;
+  const showCards = run.inside && enemyIds.length > 0 && (cardsOpen || (lab.meta.clears === 0 && !cardsDone.includes(roomKey)));
+  const closeCards = () => { setCardsOpen(false); CARDS_DONE.add(roomKey); setCardsDone([...CARDS_DONE]); };
 
   return frame(
     <>
@@ -568,7 +584,10 @@ export default function DungeonPage() {
               : run.current?.container && run.current.done && !run.current.opened ? openSack
               : run.current?.quest === "rattlebones" && run.current.done && !run.current.boxTaken ? takeBox
               : run.current?.kind === "stash" && !run.current.opened ? openSack
-              : undefined} />
+              : undefined}
+            onFight={fightHere && fightingTeam(run).length > 0 ? () => startFight(run) : undefined}
+            onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} />
+          {showCards && <EncounterCards creatureIds={enemyIds} onClose={closeCards} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
             <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature that can still fight before you go on.</p>
           )}
@@ -577,7 +596,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onFight={() => startFight(run)} onNext={nextRoom}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -730,10 +749,10 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onFight, onNext }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onNext }: {
   run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onFight: () => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
@@ -972,9 +991,8 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>
             Win: {room.quest === "rattlebones" ? "Klutz's box" : <>{room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}</>}.
-            Your team: {fightingTeam(run).map((id) => byId(id)?.name).join(", ")}.
+            Your team: {fightingTeam(run).map((id) => byId(id)?.name).join(", ")}. Press <b>Fight!</b> on the room when you&apos;re ready.
           </p>
-          <button className="pixel-btn" onClick={onFight}>⚔️ Fight</button>
         </>
       ))}
     </div>

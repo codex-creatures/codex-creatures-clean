@@ -86,7 +86,7 @@ export default function CreatureDetailModal({
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") { e.preventDefault(); onClose(); } // (so it doesn't also go back a page)
       if (e.key === "ArrowLeft") onPrev?.();
       if (e.key === "ArrowRight") onNext?.();
     }
@@ -136,18 +136,21 @@ export default function CreatureDetailModal({
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
+      {/* Previous / next creature, on the sides of the screen (← → keys too) */}
+      {position && position.count > 1 && (["prev", "next"] as const).map((d) => (
+        <button key={d} className={`side-arrow ${d}`} aria-label={d === "prev" ? "Previous creature" : "Next creature"}
+          onClick={(e) => { e.stopPropagation(); (d === "prev" ? onPrev : onNext)?.(); }}>
+          {d === "prev" ? "‹" : "›"}
+        </button>
+      ))}
       <div onClick={(e) => e.stopPropagation()} className="modal-panel stone-panel"
         style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, maxHeight: "92vh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
-        {/* Previous / next creature */}
+        {/* Which creature this is of the list (the arrows are on the screen's sides) */}
         {position && position.count > 1 && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10, paddingRight: 28 }}>
-            <button className="chip" onClick={onPrev} aria-label="Previous creature">◀ Prev</button>
-            <span className="pixel-font" style={{ fontSize: 13, color: MUTED }}>{position.index + 1} / {position.count}</span>
-            <button className="chip" onClick={onNext} aria-label="Next creature">Next ▶</button>
-          </div>
+          <div className="pixel-font" style={{ fontSize: 13, color: MUTED, marginBottom: 8 }}>{position.index + 1} / {position.count}</div>
         )}
 
         {/* Name plate */}

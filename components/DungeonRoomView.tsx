@@ -6,7 +6,9 @@
 // for). Once the room is dealt with, tap a tunnel to walk down it. What's in
 // the room (enemies, a chest, a merchant…) stands on the floor in the middle.
 // Some things on the floor can be tapped (onObject): Klutz's club, a chest,
-// the box the Rattlebones dropped.
+// the box the Rattlebones dropped. A fight waiting here gets a big Fight!
+// button at the bottom (onFight), and its creatures can be tapped for their
+// cards (onEnemies).
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, runPosition, isFight, type DungeonRun } from "@/lib/dungeon/run";
@@ -23,7 +25,9 @@ const FPS = 12;
 // A short stable number from a room id, so each room looks a bit different.
 const seedOf = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
-export default function DungeonRoomView({ run, open, onGo, onObject }: { run: DungeonRun; open: boolean; onGo: (nodeId: string) => void; onObject?: () => void }) {
+export default function DungeonRoomView({ run, open, onGo, onObject, onFight, onEnemies }: {
+  run: DungeonRun; open: boolean; onGo: (nodeId: string) => void; onObject?: () => void; onFight?: () => void; onEnemies?: () => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chamberRef = useRef<Chamber | null>(null);
   const hoverRef = useRef(0);
@@ -94,12 +98,14 @@ export default function DungeonRoomView({ run, open, onGo, onObject }: { run: Du
       </div>
 
       {/* What's in the room. */}
-      <RoomContents run={run} onObject={onObject} />
+      <RoomContents run={run} onObject={onObject} onEnemies={onEnemies} />
+
+      {onFight && <button className="fight-btn" onClick={onFight}>⚔️ Fight!</button>}
     </div>
   );
 }
 
-function RoomContents({ run, onObject }: { run: DungeonRun; onObject?: () => void }) {
+function RoomContents({ run, onObject, onEnemies }: { run: DungeonRun; onObject?: () => void; onEnemies?: () => void }) {
   const room = run.current;
   if (!room || room.kind === "pool" || room.kind === "entrance") return null;
   const at: React.CSSProperties = { position: "absolute", left: "50%", top: "80%", transform: "translate(-50%, -100%)", display: "flex", gap: "3%", alignItems: "flex-end", pointerEvents: "none" };
@@ -137,7 +143,8 @@ function RoomContents({ run, onObject }: { run: DungeonRun; onObject?: () => voi
       );
     }
     return (
-      <div style={at}>
+      <div style={{ ...at, pointerEvents: onEnemies ? "auto" : "none", cursor: onEnemies ? "pointer" : "default" }} onClick={onEnemies}
+        title={onEnemies ? "See their cards" : undefined}>
         {(room.enemies ?? []).map((e, i) => {
           const sprite = creatureSprite(e.creatureId);
           const w = spriteWidth(sprite);

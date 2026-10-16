@@ -318,3 +318,32 @@ button, a, [role="button"] { touch-action: manipulation; }
 /* Move slabs you can use: a little lift on hover, a press when tapped. */
 .move-live:hover { filter: brightness(1.12); }
 .move-live:active { transform: translateY(1px); }
+
+/* Big arrows on the screen's sides, to flick between creatures. */
+.side-arrow {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 210;
+  width: 44px; height: 72px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-pixel), monospace; font-size: 40px; line-height: 1; color: #f1d9a0;
+  background: rgba(20, 16, 12, 0.82); border: 2px solid #8a6a3a; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
+}
+.side-arrow.prev { left: max(6px, env(safe-area-inset-left)); }
+.side-arrow.next { right: max(6px, env(safe-area-inset-right)); }
+.side-arrow:hover { background: #3a2a18; color: #ffe9b0; }
+.side-arrow:active { transform: translateY(calc(-50% + 1px)); }
+
+/* The big Fight! button, bottom centre of the room. */
+.fight-btn {
+  position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%); z-index: 5;
+  font-family: var(--font-pixel), monospace; font-size: clamp(16px, 4.2vw, 24px); letter-spacing: 0.04em;
+  padding: 0.45em 1.4em; color: #fff3d6; background: #8e2b22; border: 3px solid #2a0d09; cursor: pointer;
+  box-shadow: inset 3px 3px 0 #c4483a, inset -3px -3px 0 #5c1a14, 0 4px 0 rgba(0, 0, 0, 0.7), 0 0 18px rgba(255, 90, 60, 0.35);
+  animation: fight-pulse 2.2s ease-in-out infinite;
+}
+.fight-btn:hover { filter: brightness(1.12); }
+.fight-btn:active { transform: translateX(-50%) translateY(2px); }
+@keyframes fight-pulse { 50% { box-shadow: inset 3px 3px 0 #c4483a, inset -3px -3px 0 #5c1a14, 0 4px 0 rgba(0, 0, 0, 0.7), 0 0 30px rgba(255, 90, 60, 0.6); } }
+
+/* Encounter cards: loosely stacked, the front one straight, the rest fanned behind. */
+.encounter-card { transition: transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease; }
+@media (prefers-reduced-motion: reduce) { .fight-btn { animation: none; } .encounter-card { transition: none; } }
