@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
+import { artFor, loadArt, type LoadedArt } from "@/lib/sprites/art";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -47,6 +48,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   useEffect(() => { pickedRef.current = picked; }, [picked]);
   const cagedRef = useRef(caged);
   const klutzRef = useRef(klutz);
+  const klutzPixels = useRef<LoadedArt | null>(null); // his drawn art, once loaded
   const klutzLabelRef = useRef<HTMLButtonElement | null>(null);
   const sceneRef = useRef<DenScene | null>(null);
   const hoverRef = useRef<ObjId>(OBJ.none);
@@ -61,7 +63,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     sceneRef.current = scene;
     const start = performance.now();
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null);
-    scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null);
+    scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null, klutzPixels.current);
     const draw = () => {
       ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
       // Klutz's label follows him about.
@@ -78,8 +80,21 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
 
   useEffect(() => {
     klutzRef.current = klutz;
-    sceneRef.current?.setKlutz(klutz, CREATURE_SPRITES.klutz ?? null);
+    sceneRef.current?.setKlutz(klutz, CREATURE_SPRITES.klutz ?? null, klutzPixels.current);
   }, [klutz]);
+
+  // Klutz's drawn art (his grid sprite stands in until it loads).
+  useEffect(() => {
+    const art = CREATURE_SPRITES.klutz && artFor(CREATURE_SPRITES.klutz);
+    if (!art) return;
+    let live = true;
+    loadArt(art).then((px) => {
+      if (!live) return;
+      klutzPixels.current = px;
+      sceneRef.current?.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null, px);
+    }).catch(() => {});
+    return () => { live = false; };
+  }, []);
 
   // Who's in the cage (the save loads after the first draw).
   useEffect(() => {

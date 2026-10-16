@@ -1,16 +1,18 @@
 // lib/sprites/creatures.ts
 // Creature sprites, keyed by creature id. Most are drawn in code on the fine
-// grid (lib/sprites/bestiary.ts); Klutz is hand-drawn at 44×44 here, and the
+// grid (lib/sprites/bestiary.ts); Klutz has PixelLab art (lib/sprites/art.ts),
+// with his old 44×44 grid kept here as the fallback, and the
 // Cyclops parts are 28-wide drawn pixels (BossStage reshapes the body).
 // Creatures without one yet show a rune egg instead (see EGG).
 
 import { fine, type Sprite } from "./pixels";
 import { BESTIARY } from "./bestiary";
+import { withArt } from "./art";
 
 export const CREATURE_SPRITES: Record<string, Sprite> = {
   ...BESTIARY,
-  // Drawn on the fine grid (44×44).
-  klutz: fine([
+  // PixelLab art (69×85, with an 8-frame walk), over a fine-grid fallback (44×44).
+  klutz: withArt(fine([
     "............................................",
     "............................................",
     "............................................",
@@ -55,7 +57,10 @@ export const CREATURE_SPRITES: Record<string, Sprite> = {
     ".........eeEEEEEee........eeEEEEEee.........",
     "........eeeEEEEEee........eeEEEEEeee........",
     "........efEfEfEEe..........eEEfEfEfe........",
-  ]),
+  ]), {
+    src: "/sprites/creatures/klutz.png", w: 69, h: 85,
+    walk: { src: "/sprites/creatures/klutz-walk.png", frames: 8, w: 96, h: 96, x: 13, y: 7 },
+  }),
   // ── The Cyclops (dungeon 1 boss): body, crawling hand, eye ──
   cyclops: [
     "..........DDvvvvDD..........",

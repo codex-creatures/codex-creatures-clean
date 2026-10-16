@@ -15,6 +15,7 @@
 //   rendered at RES× that, each fine pixel sampling its own spot.
 
 import { fineGrid, PALETTE, type Sprite } from "../sprites/pixels";
+import type { LoadedArt, Pixels } from "../sprites/art";
 
 export const W = 560;  // layout units
 export const H = 448;
@@ -91,6 +92,17 @@ export function project(u: number, v: number, z: number): [number, number] {
 type RGB = [number, number, number];
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
 const mul = (c: RGB, k: number): RGB => [c[0] * k, c[1] * k, c[2] * k];
+
+// A sprite to stamp into the scene: its size, and each pixel's colour (null: see-through).
+type Pic = { w: number; h: number; at: (x: number, y: number) => RGB | null };
+const picFromGrid = (g: string[]): Pic => ({
+  w: Math.max(...g.map((r) => r.length)), h: g.length,
+  at: (x, y) => { const ch = g[y]?.[x]; return ch && ch !== "." && PALETTE[ch] ? hex(PALETTE[ch]) : null; },
+});
+const picFromPixels = ({ w, h, data }: Pixels): Pic => ({
+  w, h,
+  at: (x, y) => { const o = (y * w + x) * 4; return data[o + 3] > 127 ? [data[o] / 255, data[o + 1] / 255, data[o + 2] / 255] : null; },
+});
 const mix = (a: RGB, b: RGB, t: number): RGB => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
 
@@ -214,7 +226,8 @@ export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
   idAt: (x: number, y: number) => ObjId;
   setCaged: (sprite: Sprite | null) => void; // the creature shown inside the cage
-  setKlutz: (mode: KlutzMode, sprite: Sprite | null) => void;
+  // His drawn art once loaded, else his grid sprite.
+  setKlutz: (mode: KlutzMode, sprite: Sprite | null, art?: LoadedArt | null) => void;
   klutzAt: () => [number, number] | null;     // where his label goes (layout units), if he's here
 };
 
@@ -631,7 +644,8 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
   let embers: Ember[] = [];
   let lastT = 0;
   let caged: string[] | null = null; // the caged creature, on the fine grid
-  let klutz: string[] | null = null;
+  let klutz: Pic | null = null;
+  let klutzWalk: { frames: Pic[]; x: number; y: number } | null = null; // his walk, lined up with his still
   let klutzMode: KlutzMode = "away";
   let klutzLabel: [number, number] | null = null;
 
@@ -784,16 +798,21 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
     // Klutz: strolling about, or soaking in the pool up to his chin.
     klutzLabel = null;
     if (klutz && klutzMode !== "away") {
-      const h = klutz.length, w = Math.max(...klutz.map((r) => r.length));
+      const { w, h } = klutz;
       const at = klutzMode === "pool" ? { u: POOL.u + 0.3, v: POOL.v - 0.2, left: false, walking: false } : strollAt(t);
       const [kx, ky] = project(at.u, at.v, klutzMode === "pool" ? -1 : 0);
-      const bob = at.walking ? Math.round(Math.abs(Math.sin(t * 8)) * 2) : Math.round(Math.sin(t * 1.3));
+      const stepping = at.walking && klutzWalk && klutzMode !== "pool";
+      const bob = stepping ? 0 : at.walking ? Math.round(Math.abs(Math.sin(t * 8)) * 2) : Math.round(Math.sin(t * 1.3));
       const rows = klutzMode === "pool" ? Math.floor(h * 0.52) : h; // in the pool, only his head shows
       const top = ky * RES - (klutzMode === "pool" ? rows : h) - bob;
-      for (let y = 0; y < rows; y++) for (let x = 0; x < w; x++) {
-        const ch = klutz[y][at.left ? w - 1 - x : x];
-        if (ch === "." || !PALETTE[ch]) continue;
-        fpx(kx * RES - w / 2 + x, top + y, mul(hex(PALETTE[ch]), 0.85), OBJ.klutz);
+      // Walking: a frame of his walk, placed so his still would sit where it always does.
+      const walk = stepping ? klutzWalk : null;
+      const pic = walk ? walk.frames[Math.floor(t * 9) % walk.frames.length] : klutz;
+      const ox = walk ? (at.left ? pic.w - walk.x - w : walk.x) : 0, oy = walk ? walk.y : 0;
+      const left0 = kx * RES - w / 2 - ox, top0 = top - oy;
+      for (let y = 0; y < (walk ? pic.h : rows); y++) for (let x = 0; x < pic.w; x++) {
+        const col = pic.at(at.left ? pic.w - 1 - x : x, y);
+        if (col) fpx(left0 + x, top0 + y, mul(col, 0.85), OBJ.klutz);
       }
       if (klutzMode === "pool") {
         for (let s2 = 0; s2 < 14; s2++) {
@@ -829,7 +848,11 @@ export function createDen(opts: { backpack?: boolean } = {}): DenScene {
       return frameIds[fy * FW + fx] as ObjId;
     },
     setCaged: (sprite) => { caged = sprite ? fineGrid(sprite) : null; },
-    setKlutz: (mode, sprite) => { klutzMode = mode; klutz = sprite ? fineGrid(sprite) : null; },
+    setKlutz: (mode, sprite, art) => {
+      klutzMode = mode;
+      klutz = art ? picFromPixels(art.still) : sprite ? picFromGrid(fineGrid(sprite)) : null;
+      klutzWalk = art?.walk ? { frames: art.walk.frames.map(picFromPixels), x: art.walk.x, y: art.walk.y } : null;
+    },
     klutzAt: () => klutzLabel,
   };
 }

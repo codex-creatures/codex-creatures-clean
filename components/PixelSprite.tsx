@@ -1,10 +1,12 @@
 // components/PixelSprite.tsx
 // Draws a text-grid sprite (lib/sprites) as crisp SVG pixels, outline included,
 // on the fine grid (each drawn pixel is 2×2, smoothed; see lib/sprites/pixels.ts).
+// A sprite with drawn art (lib/sprites/art.ts) shows that image instead.
 // scale: screen pixels per drawn pixel, as before (so sizes don’t change).
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { fineGrid, outlined, runs, type Sprite } from "@/lib/sprites/pixels";
+import { artFor } from "@/lib/sprites/art";
 import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES } from "@/lib/sprites/items";
 import { CREATURE_SPRITES, EGG } from "@/lib/sprites/creatures";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -12,10 +14,21 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 export default function PixelSprite({ sprite, scale = 4, title, style }: {
   sprite: Sprite; scale?: number; title?: string; style?: React.CSSProperties;
 }) {
+  // Drawn art, if the sprite has some (the grid below is its fallback).
+  const art = artFor(sprite);
+  const [broken, setBroken] = useState<string | null>(null);
   const { w, h, rects } = useMemo(() => {
     const g = outlined(fineGrid(sprite));
     return { w: g[0].length, h: g.length, rects: runs(g) };
   }, [sprite]);
+  if (art && broken !== art.src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={art.src} alt={title ?? ""} title={title} width={(art.w * scale) / 2} height={(art.h * scale) / 2}
+        onError={() => setBroken(art.src)} draggable={false}
+        style={{ display: "block", flexShrink: 0, imageRendering: "pixelated", ...style }} />
+    );
+  }
   return (
     <svg width={(w * scale) / 2} height={(h * scale) / 2} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges"
       role="img" aria-label={title} style={{ display: "block", flexShrink: 0, ...style }}>
