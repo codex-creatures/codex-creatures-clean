@@ -137,7 +137,7 @@ withArt(BURLAP_SACK, { src: "/sprites/props/burlap_sack.png", w: 54, h: 56, size
 withArt(BURLAP_SACK_OPEN, { src: "/sprites/props/burlap_sack_open.png", w: 54, h: 50, size: 42 });
 withArt(RICKETY_CHEST, { src: "/sprites/props/rickety_chest.png", w: 56, h: 53, size: 46 });
 withArt(RICKETY_CHEST_OPEN, { src: "/sprites/props/rickety_chest_open.png", w: 56, h: 59, size: 46 });
-export const TREASURE_PILE: Sprite = withArt(["."], { src: "/sprites/props/treasure_pile.png", w: 60, h: 51, size: 46 });
+export const TREASURE_PILE: Sprite = withArt(["."], { src: "/sprites/props/treasure_pile.png", w: 58, h: 37, size: 44 });
 export const CARD_DECK: Sprite = withArt(["."], { src: "/sprites/props/card_deck.png", w: 55, h: 58, size: 42 });
 // A healing pool's ring of stones round its glowing water (shown dimmed once used).
-export const HEALING_POOL: Sprite = withArt(["."], { src: "/sprites/props/healing_pool.png", w: 73, h: 55, size: 110 });
+export const HEALING_POOL: Sprite = withArt(["."], { src: "/sprites/props/healing_pool.png", w: 68, h: 37, size: 110 });

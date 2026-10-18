@@ -37,10 +37,13 @@ const FPS = 12;
 const WANDERERS: Partial<Record<RoomKind, Sprite>> = { merchant: MERCHANT, librarian: LIBRARIAN, witch: CARD_WITCH, treasure: TREASURE_PILE, cards: CARD_DECK };
 
 // The painted rooms: public/sprites/rooms/<theme>-<size>-<tunnels>.png.
-const THEMES = ["hall", "crypt", "cave", "ruin"] as const;
+const THEMES = ["hall", "crypt", "cave"] as const;
 const PAINTED_TUNNELS = 3; // paintings exist for 1–3 tunnels
 // Those painted (at the creatures' own pixel size) for the far camera, in rooms/far.
-const FAR_PAINTED = new Set(["crypt-normal-2", "ruin-normal-2"]);
+const FAR_PAINTED = new Set([
+  ...["hall", "crypt", "cave"].flatMap((t) => ["normal", "large"].flatMap((s) => [1, 2, 3].map((n) => `${t}-${s}-${n}`))),
+  "lair-large-1",
+]);
 
 // How big things in the room are drawn, against the room's own pixels (a
 // large room is further off, so a little smaller).
