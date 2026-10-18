@@ -189,14 +189,17 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
     } else {
       kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;
       const stats = g.stats as Record<string, number> | undefined;
-      const rows = GEAR_STATS.filter(([k]) => stats?.[k]);
-      body = rows.length === 0 ? <span style={{ color: MUTED }}>No stats</span> : (
+      // Every stat, in the same order each time (0 where it has none, dimmed).
+      body = (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {rows.map(([k, label]) => (
-            <span key={k} style={{ padding: "2px 8px", background: "rgba(0,0,0,0.35)", border: "1px solid #3a3326", fontSize: 13 }}>
-              <span style={{ color: MUTED }}>{label}</span> <b style={{ fontVariantNumeric: "tabular-nums" }}>{stats![k]}</b>
-            </span>
-          ))}
+          {GEAR_STATS.map(([k, label]) => {
+            const v = stats?.[k] ?? 0;
+            return (
+              <span key={k} style={{ padding: "2px 8px", background: "rgba(0,0,0,0.35)", border: "1px solid #3a3326", fontSize: 13, opacity: v ? 1 : 0.45 }}>
+                <span style={{ color: MUTED }}>{label}</span> <b style={{ fontVariantNumeric: "tabular-nums" }}>{v}</b>
+              </span>
+            );
+          })}
         </div>
       );
     }
