@@ -7,8 +7,9 @@
 
 import PixelSprite from "./PixelSprite";
 import { itemSprite } from "./PixelSprite";
-import { POTION_SPRITES } from "@/lib/sprites/items";
-import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { POTION_SPRITES, POTION_RARITY } from "@/lib/sprites/items";
+import { ICON } from "./ContainerLoot";
+import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { isPotionEntry, POTIONS, type BagEntry } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
@@ -19,10 +20,10 @@ export type SlotLook = { name: string; sprite?: Sprite; icon?: string; color: st
 
 // What a bag entry looks like in its slot.
 export function slotLook(e: BagEntry, item?: CreatureOrItemDrop): SlotLook {
-  if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.18)" };
+  if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: RARITY_COLORS[POTION_RARITY[e]].text, glow: rarityGlow(POTION_RARITY[e]) };
   if (!item) return { name: "Something you no longer have", icon: "❔", color: MUTED };
   const rc = RARITY_COLORS[item.rarity];
-  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : "📦", color: rc.text, glow: rc.glow };
+  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : "📦", color: rc.text, glow: rarityGlow(item.rarity) };
 }
 
 export default function BagSlots({ slots, looks, selected, onSelect, pulse, size = 60 }: {
@@ -47,7 +48,7 @@ export default function BagSlots({ slots, looks, selected, onSelect, pulse, size
               ...(l ? { background: `radial-gradient(circle, ${l.glow ?? "rgba(255,255,255,0.05)"} 0%, rgba(0,0,0,0.35) 65%)` } : {}),
               ...(active ? { borderColor: "#ffd66e", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.6), 0 0 12px rgba(255,214,110,0.5)" } : {}),
             }}>
-            {l && (l.sprite ? <PixelSprite sprite={l.sprite} scale={size >= 60 ? 2.6 : 2.2} /> : <span style={{ fontSize: size * 0.42 }}>{l.icon}</span>)}
+            {l && (l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: size * 0.42 }}>{l.icon}</span>)}
           </button>
         );
       })}

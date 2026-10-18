@@ -497,3 +497,8 @@ const icon = (file: string): Sprite => withArt(["."], { src: `/sprites/items/${f
 export const GOLD_SPRITE = icon("gold");
 export const POTION_SPRITES: Record<"potion" | "lesser", Sprite> = { potion: icon("potion"), lesser: icon("lesser_potion") };
 export const BACKPACK_SPRITE = icon("backpack");
+// …and the rarity their glow shows in an inventory: gold and the backpack are
+// treasure (legendary); a full potion uncommon, a lesser one common.
+export const GOLD_RARITY = "legendary" as const;
+export const BACKPACK_RARITY = "legendary" as const;
+export const POTION_RARITY = { potion: "uncommon", lesser: "common" } as const;

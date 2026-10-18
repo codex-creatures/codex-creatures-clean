@@ -22,6 +22,9 @@ export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow:
   legendary: { text: "#FFCC4D", border: "rgba(255,204,77,0.55)",  glow: "rgba(255,204,77,0.22)" },
 };
 
+// A rarity's glow behind a thing in an inventory (stronger than .glow).
+export const rarityGlow = (r: Rarity) => `${RARITY_COLORS[r].text}5c`;
+
 // ── Deterministic hashing ────────────────────────────────
 export function deterministicRoll(seed: string): number {
   let hash = 0;

@@ -7,26 +7,27 @@
 // one stack you can tap to look through (CardStack); gold shows as one total.
 
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
-import { GOLD_SPRITE, POTION_SPRITES } from "@/lib/sprites/items";
-import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { GOLD_SPRITE, POTION_SPRITES, GOLD_RARITY, POTION_RARITY } from "@/lib/sprites/items";
+import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { POTIONS, type GotItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import CardStack, { type CardPile } from "./CardStack";
+import { ICON, NAME } from "./ContainerLoot";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
 type Look = { name: string; sprite?: Sprite; icon?: string; color: string; glow: string };
 
 function lookOf(g: GotItem): Look {
-  if ("potion" in g) return { name: POTIONS[g.potion].name, sprite: POTION_SPRITES[g.potion], icon: POTIONS[g.potion].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.18)" };
+  if ("potion" in g) return { name: POTIONS[g.potion].name, sprite: POTION_SPRITES[g.potion], icon: POTIONS[g.potion].icon, color: RARITY_COLORS[POTION_RARITY[g.potion]].text, glow: rarityGlow(POTION_RARITY[g.potion]) };
   const d = g.drop;
-  if (d.dropType === "reward") return { name: `${d.amount} gold`, sprite: GOLD_SPRITE, icon: "🪙", color: "#f5c542", glow: "rgba(245,197,66,0.2)" };
+  if (d.dropType === "reward") return { name: `${d.amount} gold`, sprite: GOLD_SPRITE, icon: "🪙", color: RARITY_COLORS[GOLD_RARITY].text, glow: rarityGlow(GOLD_RARITY) };
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
-  if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rc.glow };
-  return { name: x.name, sprite: itemSprite(x), icon: x.codexMove ? "📖" : x.potion ? POTIONS[x.potion].icon : "📦", color: rc.text, glow: rc.glow };
+  if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rarityGlow(x.rarity) };
+  return { name: x.name, sprite: itemSprite(x), icon: x.codexMove ? "📖" : x.potion ? POTIONS[x.potion].icon : "📦", color: rc.text, glow: rarityGlow(x.rarity) };
 }
 
 // A creature card in the haul (its template, if we know the creature).
@@ -112,9 +113,9 @@ function Tile({ g, faded, onGear }: { g: GotItem; faded?: boolean; onGear?: (ite
         background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)`,
         filter: faded ? "grayscale(0.6)" : undefined,
       }}>
-        {l.sprite ? <PixelSprite sprite={l.sprite} scale={2.2} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} /> : <span style={{ fontSize: 24 }}>{l.icon}</span>}
+        {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 24 }}>{l.icon}</span>}
       </div>
-      <div style={{ fontSize: 10, color: l.color, marginTop: 3, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name}</div>
+      <div style={{ ...NAME, color: l.color }}>{l.name}</div>
     </Tag>
   );
 }

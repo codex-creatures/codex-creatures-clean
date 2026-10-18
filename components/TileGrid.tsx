@@ -7,11 +7,12 @@
 
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
-import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureMarks, type GroupBy } from "./CreatureMarks";
+import { ICON, NAME } from "./ContainerLoot";
 
 export const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const MUTED = "rgba(255,255,255,0.45)";
@@ -95,16 +96,16 @@ function Tile({ d, fav, badge, sell, onClick }: {
       {/* Loose in the panel: a soft glow of its rarity under it, no frame (a gold ring when picked to sell). */}
       <span style={{
         position: "relative", aspectRatio: "1", width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-        background: `radial-gradient(circle, ${col.glow} 0%, transparent 62%)`, borderRadius: 8,
+        background: `radial-gradient(circle, ${rarityGlow(d.rarity)} 0%, transparent 62%)`, borderRadius: 8,
         boxShadow: sell?.on ? "inset 0 0 0 2px #f5c542, 0 0 12px rgba(245,197,66,0.5)" : undefined,
       }}>
-        {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} /> : <span style={{ fontSize: 26 }}>{d.codexMove ? "📖" : d.potion ? "🧴" : "📦"}</span>}
+        {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{d.codexMove ? "📖" : d.potion ? "🧴" : "📦"}</span>}
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
         {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} cls={tpl.cls} size={10} /></span>}
         {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
       </span>
-      <span style={{ display: "block", marginTop: 4, fontSize: 11, color: col.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>
+      <span style={{ ...NAME, display: "-webkit-box", color: col.text }}>
         {d.name}
       </span>
     </button>
