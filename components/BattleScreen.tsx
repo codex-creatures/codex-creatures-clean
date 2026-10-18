@@ -36,7 +36,7 @@ import BossStage from "@/components/BossStage";
 import PixelSprite from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
-import { artFor, flipToFace } from "@/lib/sprites/art";
+import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
 // Most art faces left, so yours is mirrored; art drawn facing right is the other way round.
@@ -758,6 +758,17 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
   );
 }
 
+// How big a fighter stands on the stage: STAGE_SCALE of the stage's own
+// pixels, but never taller than STAGE_TALL of it (the big art, Aurelius or
+// the Void Serpent, would fill the room). FIGHTER_W: its column's share.
+const STAGE_SCALE = 2.2;
+const STAGE_TALL = 0.4;
+const FIGHTER_W = 0.4;
+const stageWidth = (sprite: Sprite) => {
+  const fit = Math.min(STAGE_SCALE, (STAGE_TALL * CH) / fineHeight(sprite));
+  return `${Math.min(100, ((fineWidth(sprite) * fit) / CW / FIGHTER_W) * 100)}%`;
+};
+
 // One fighter standing on the stage: a floating label (name, health,
 // statuses) over its sprite, reacting to this step. `at` places it (by
 // default your side left of centre, theirs right); `maxW` caps the sprite's
@@ -776,7 +787,7 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
     ].filter(Boolean).join(" ");
     return (
       <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
-        display: "flex", flexDirection: "column", alignItems: "center", width: "40%", ...at }}>
+        display: "flex", flexDirection: "column", alignItems: "center", width: `${FIGHTER_W * 100}%`, ...at }}>
         {/* Floating label: name, a small health bar, any statuses. */}
         <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
           <LevelTag level={f.level} />
@@ -789,11 +800,11 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
         <div style={{ fontSize: 11, color: "#d8d4c8", textShadow: "0 1px 0 #000", marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
           {side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.ceil(hpPct)}%`}{icons && <span style={{ marginLeft: 4 }}>{icons}</span>}
         </div>
-        <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
+        <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite) } : {}), opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
           {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
           <div className={floats ? "float-bob" : undefined}>
             {sprite
-              ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : {}) }} />
+              ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : { width: "100%", height: "auto" }) }} />
               : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
           </div>
           {floats

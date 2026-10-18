@@ -24,8 +24,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, runPosition, isFight, type DungeonRun, type RoomKind } from "@/lib/dungeon/run";
 import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type ChamberSize, type ChamberView, type TunnelLook } from "@/lib/dungeon/chamber";
-import { spriteWidth } from "@/lib/sprites/pixels";
-import { artFor, flipToFace } from "@/lib/sprites/art";
+import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, MERCHANT, LIBRARIAN, CARD_WITCH, TREASURE_PILE, CARD_DECK, HEALING_POOL } from "@/lib/sprites/props";
@@ -61,9 +60,6 @@ const ROW_FILL = 0.8;
 // A short stable number from a room id, so each room looks a bit different.
 const seedOf = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
-// A sprite's width in fine pixels (art as drawn, a grid sprite at 2 fine pixels a cell).
-const fineWidth = (s: Sprite) => { const a = artFor(s); return a ? (a.size ?? a.w) : spriteWidth(s) * 2; };
-const fineHeight = (s: Sprite) => { const a = artFor(s); return a ? a.h * ((a.size ?? a.w) / a.w) : s.length * 2; };
 
 export default function DungeonRoomView({ run, open, onGo, onObject, onFight, onEnemies }: {
   run: DungeonRun; open: boolean; onGo: (nodeId: string) => void; onObject?: () => void; onFight?: () => void; onEnemies?: () => void;

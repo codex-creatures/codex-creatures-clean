@@ -4,7 +4,7 @@
 // image loads, or if it fails. Art pixels count as fine-grid pixels, so a
 // sprite's size on screen follows the same scale rules as the grids.
 
-import type { Sprite } from "./pixels";
+import { spriteWidth, type Sprite } from "./pixels";
 
 // An animation: a strip of equal frames side by side (w×h each), with the
 // still sprite's top-left at (x, y) in every frame, so the two line up.
@@ -26,6 +26,10 @@ export function withArt(sprite: Sprite, art: Art): Sprite {
 }
 
 export const artFor = (sprite: Sprite): Art | undefined => ART.get(sprite);
+
+// A sprite's size in fine pixels (art as drawn, a grid sprite at 2 fine pixels a cell).
+export const fineWidth = (s: Sprite) => { const a = artFor(s); return a ? (a.size ?? a.w) : spriteWidth(s) * 2; };
+export const fineHeight = (s: Sprite) => { const a = artFor(s); return a ? a.h * ((a.size ?? a.w) / a.w) : s.length * 2; };
 
 // Decoded RGBA pixels, for scenes drawn pixel by pixel (the Den).
 export type Pixels = { w: number; h: number; data: Uint8ClampedArray };
