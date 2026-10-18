@@ -65,6 +65,10 @@ body {
 }
 button, a, [role="button"] { touch-action: manipulation; }
 
+/* The pixel font: Silkscreen for digits (clearer), Pixelify for everything
+   else (both set up in app/layout.tsx). */
+body { --font-pixel: var(--font-digits), var(--font-pixelify); }
+
 .pixel-font {
   font-family: var(--font-pixel), "Courier New", monospace;
   letter-spacing: 0.04em;
