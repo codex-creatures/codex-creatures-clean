@@ -1,9 +1,12 @@
 "use client";
 // app/lab/cards/page.tsx — the creature card (CardFace) across every rarity,
-// for checking its look (dev tool). The Skull Raven is the benchmark.
+// and a run's stack of cards, for checking their look (dev tool). The
+// Skull Raven is the benchmark.
 
 import { CREATURE_BY_ID, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { CardFace } from "@/components/CardGallery";
+import CardStack from "@/components/CardStack";
+import { makeCreatureDrop } from "@/lib/creatures/summon";
 
 export default function CardLab() {
   // One of each rarity, plus a few more.
@@ -16,7 +19,9 @@ export default function CardLab() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 220px)", gap: 20 }}>
         {[CREATURE_BY_ID.storm_phoenix, CREATURE_BY_ID.rust_beetle].map(card)}
       </div>
-      <h2 className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0", marginTop: 28 }}>At summary size</h2>
+      <h2 className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0", marginTop: 28 }}>A run's cards (tap the stack)</h2>
+      <CardStack piles={[["storm_phoenix", 1], ["rust_beetle", 2], ["cave_bat", 1], ["crystal_golem", 1], ["crystalback", 1]].map(([id, n]) => ({ x: makeCreatureDrop(CREATURE_BY_ID[id], "card", ""), t: CREATURE_BY_ID[id], n: n as number }))} />
+      <h2 className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0", marginTop: 12 }}>At summary size</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 140px)", gap: 12 }}>
         {creatures.map(card)}
       </div>

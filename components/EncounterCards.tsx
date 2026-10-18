@@ -1,10 +1,12 @@
 "use client";
 // components/EncounterCards.tsx
-// The tutorial's creature cards (until you've beaten the Cyclops): when you
-// walk into a fight, the creatures waiting there come up as cards, loosely
-// stacked, the front one straight and the rest fanned behind. Each shows
-// the creature's base % stats, race and class. Flick through them with the
-// arrows, ← →, or a swipe; "Got it" (or Esc) puts them away.
+// Cards fanned out to flick through: the front one straight and the rest
+// fanned behind. Flick with the arrows, ← →, a swipe, or a tap on a card
+// behind; "Got it" (or Esc) puts them away. CardFan is the shared viewer
+// (also for the cards you got on a run — see CardStack); EncounterCards is
+// the tutorial's use of it: when you walk into a fight (until you've beaten
+// the Cyclops), the creatures waiting there come up as cards showing their
+// base % stats, race and class.
 
 import { useEffect, useRef, useState } from "react";
 import { CLASS_INFO, findCreatureTemplate, type CreatureProficiency } from "@/lib/creatures/creatureData";
@@ -20,8 +22,21 @@ const STATS: [keyof CreatureProficiency, string, string][] = [
 ];
 
 export default function EncounterCards({ creatureIds, onClose }: { creatureIds: string[]; onClose: () => void }) {
-  const [at, setAt] = useState(0);
   const n = creatureIds.length;
+  return (
+    <CardFan count={n} label="The creatures you're about to fight" onClose={onClose}
+      title={n === 1 ? "A creature blocks the way" : `${n} creatures block the way`}
+      size={{ width: "min(300px, 78vw)", height: "min(440px, 66vh)" }}
+      render={(i) => <Card creatureId={creatureIds[i]} />} />
+  );
+}
+
+// The viewer: count cards, drawn by render(i), in a box of the given size.
+export function CardFan({ count: n, title, label, size, render, onClose }: {
+  count: number; title: string; label: string; size: { width: string; height: string };
+  render: (i: number) => React.ReactNode; onClose: () => void;
+}) {
+  const [at, setAt] = useState(0);
   const step = (d: number) => setAt((i) => (i + d + n) % n);
   const touchX = useRef<number | null>(null);
 
@@ -36,7 +51,7 @@ export default function EncounterCards({ creatureIds, onClose }: { creatureIds: 
   }, [n, onClose]);
 
   return (
-    <div role="dialog" aria-label="The creatures you're about to fight"
+    <div role="dialog" aria-label={label}
       onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
         const dx = touchX.current === null ? 0 : e.changedTouches[0].clientX - touchX.current;
@@ -45,12 +60,12 @@ export default function EncounterCards({ creatureIds, onClose }: { creatureIds: 
       }}
       style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(4,5,9,0.78)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div className="pixel-font" style={{ fontSize: "clamp(15px, 4vw, 19px)", color: "#f1d9a0", textShadow: "0 2px 0 #000", marginBottom: 14, textAlign: "center" }}>
-        {n === 1 ? "A creature blocks the way" : `${n} creatures block the way`}
+        {title}
       </div>
 
       {/* The stack */}
-      <div style={{ position: "relative", width: "min(300px, 78vw)", height: "min(440px, 66vh)" }}>
-        {creatureIds.map((id, i) => {
+      <div style={{ position: "relative", ...size }}>
+        {Array.from({ length: n }, (_, i) => {
           // How far behind the front card this one sits (−1 just left, +1 just right).
           let k = i - at;
           if (k > n / 2) k -= n;
@@ -62,7 +77,7 @@ export default function EncounterCards({ creatureIds, onClose }: { creatureIds: 
                 transform: k === 0 ? "none" : `translateX(${k * 34}px) translateY(${Math.abs(k) * 10}px) rotate(${k * 5}deg) scale(0.92)`,
                 filter: k === 0 ? "none" : "brightness(0.55)",
               }}>
-              <Card creatureId={id} />
+              {render(i)}
             </div>
           );
         })}

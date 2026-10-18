@@ -3,16 +3,16 @@
 // A haul of loot as a grid of framed tiles with sprites: gear and codexes
 // by rarity, potions, gold — and creature cards shown as the cards
 // themselves. Used for what a room just gave you, and at the end of a run
-// for what you got and what you left behind. Duplicate cards stack, and
-// gold shows as one total.
+// for what you got and what you left behind. Creature cards go in one
+// stack you can tap to look through (CardStack); gold shows as one total.
 
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { POTIONS, type GotItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
-import { findCreatureTemplate, type CreatureTemplate } from "@/lib/creatures/creatureData";
-import { CardFace } from "./CardGallery";
+import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import CardStack, { type CardPile } from "./CardStack";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -39,7 +39,7 @@ const cardOf = (g: GotItem) => {
 
 // Copies of the same creature's card stack into one, with a count.
 function stackCards(items: GotItem[]) {
-  const stacks = new Map<string, { x: CreatureOrItemDrop; t: CreatureTemplate; n: number }>();
+  const stacks = new Map<string, CardPile>();
   for (const g of items) {
     const c = cardOf(g);
     if (!c) continue;
@@ -63,20 +63,7 @@ export default function LootGrid({ items, faded, grouped }: { items: GotItem[]; 
   const gold = items.reduce((n, g) => n + goldOf(g), 0);
   const tiles = items.filter((g) => !cardOf(g) && !isGold(g));
 
-  const cardGrid = cards.length > 0 && (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 14, margin: "6px 0 10px", opacity: faded ? 0.55 : 1 }}>
-      {cards.map(({ x, t, n }) => (
-        <div key={t.id} style={{ position: "relative" }}>
-          {/* The copies underneath, peeking out. */}
-          {n > 1 && <div style={{ position: "absolute", inset: 0, transform: "translate(5px, 5px) rotate(3deg)", background: "#23262f", border: "2px solid #12131a", boxShadow: "0 3px 8px rgba(0,0,0,0.5)" }} />}
-          {n > 2 && <div style={{ position: "absolute", inset: 0, transform: "translate(-4px, 3px) rotate(-3deg)", background: "#23262f", border: "2px solid #12131a", boxShadow: "0 3px 8px rgba(0,0,0,0.5)" }} />}
-          <div style={{ position: "relative" }}>
-            <CardFace t={t} creatureId={x.creatureId ?? t.id} ability={x.ability} badge={n > 1 ? `×${n}` : undefined} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const cardGrid = cards.length > 0 && <CardStack piles={cards} faded={faded} />;
   const tileGrid = tiles.length > 0 && (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, opacity: faded ? 0.55 : 1 }}>
       {tiles.map((g, i) => <Tile key={i} g={g} faded={faded} />)}
