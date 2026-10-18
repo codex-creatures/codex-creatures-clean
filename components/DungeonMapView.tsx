@@ -5,15 +5,15 @@
 // the start; rooms near where you've stood fill in as you go (mysteries stay
 // "?" until you walk in). Fog of war covers everything outside your
 // torchlight, and the corridors only show up close to the flame. Your route
-// is traced in red. Rooms you can walk to pulse; tap one, or use the
-// buttons underneath. Fights are marked with crossed swords: ink for a
+// is traced in red. Rooms you can walk to pulse: tap one. The corridors
+// from the entrance to the first and second rooms are always inked. Fights
+// are marked with crossed swords: ink for a
 // creature den, red for a lurking brute.
 
 import { useId } from "react";
 import { ROOM_INFO, runPosition, nextRooms, type DungeonRun } from "@/lib/dungeon/run";
 import { MAP_W, MAP_H, SIGHT_RADIUS, distance, heading, knownRooms, linkKey, type MapNode } from "@/lib/dungeon/map";
 import type { RoomKind } from "@/lib/dungeon/run";
-import { MUTED } from "@/components/BattleScreen";
 
 const R = 5.6;              // room radius (map units)
 const INK = "#4a2f17";
@@ -38,13 +38,6 @@ const SWORDS: Partial<Record<RoomKind, { ink: string; light: string }>> = {
   easy: { ink: "#4a2f17", light: "#e9d6a6" },
   hard: { ink: "#9b2a1d", light: "#ff8a80" },
 };
-
-// A room's icon at a size (px), for the buttons under the map.
-function RoomIcon({ kind, size }: { kind: RoomKind; size: number }) {
-  const sw = SWORDS[kind];
-  if (!sw) return <>{ROOM_INFO[kind].icon}</>;
-  return <svg width={size} height={size} viewBox="0 0 24 24" style={{ verticalAlign: "middle" }}><Swords color={sw.light} /></svg>;
-}
 
 // What a room looks like on your scroll: "?" until you know what's there.
 export function roomLook(n: MapNode, known: Set<string>) {
@@ -238,21 +231,6 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
         {roller(BOTTOM)}
       </svg>
 
-      {onEnter && choices.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8, marginTop: 10 }}>
-          {choices.map((n) => {
-            const isKnown = known.has(n.id);
-            return (
-              <button key={n.id} className="card-btn" onClick={() => onEnter(n.id)}
-                style={{ display: "block", textAlign: "center", padding: "10px 4px", borderColor: RED_INK }}>
-                <div style={{ fontSize: 22, fontFamily: SERIF, fontWeight: 700, color: "#e9d6a6" }}>{isKnown ? <RoomIcon kind={n.kind} size={24} /> : "?"}</div>
-                <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0" }}>{corridorLabel(run, n)}</div>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      {onEnter && choices.length === 0 && run.current && <p style={{ fontSize: 12, color: MUTED, textAlign: "center" }}>Finish this room to move on.</p>}
     </div>
   );
 }

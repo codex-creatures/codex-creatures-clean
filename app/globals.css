@@ -471,3 +471,6 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
   box-shadow: inset 0 0 0 1px #c9a860, inset 2px 2px 0 #e8d4a0, inset -2px -2px 0 #6b5428, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0, 0, 0, 0.5);
   padding: 10px 16px;
 }
+.sheet-up { animation: sheet-up 0.22s ease-out; }
+@keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sheet-up { animation: none; } }

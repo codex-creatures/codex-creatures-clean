@@ -56,9 +56,13 @@ import DungeonMapView from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
+import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
 
 const GOLD = "#f5c542";
+// Every Labyrinth screen keeps to one phone-sized column (the room picture is
+// 518px; with the page's padding), so nothing jumps about from room to room.
+const COLUMN = 552;
 
 function combatLine(f: Parameters<typeof combatSummary>[0]): string {
   const s = combatSummary(f);
@@ -85,6 +89,8 @@ export default function DungeonPage() {
   const [cardsOpen, setCardsOpen] = useState(false);
   // A weapon or armour piece you just found, opened up (to compare and swap).
   const [viewGear, setViewGear] = useState<CreatureOrItemDrop | null>(null);
+  // The roster or the bag, open over the screen (see Sheet).
+  const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
 
@@ -622,11 +628,11 @@ export default function DungeonPage() {
 
   // ── Screens ───────────────────────────────────────────────────────
   if (!lab || !game.hydrated) {
-    return <DenFrame title="The Labyrinth" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+    return <DenFrame title="The Labyrinth" icon="🌀" width={COLUMN}><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   }
 
   const frame = (children: React.ReactNode) => (
-    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold}><Shaker shake={shake}>{children}</Shaker></DenFrame>
+    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN}><Shaker shake={shake}>{children}</Shaker></DenFrame>
   );
 
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
@@ -698,6 +704,13 @@ export default function DungeonPage() {
     );
   };
 
+  const partyView = <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />;
+  const bagView = (
+    <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
+      byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} tutorial={clubTutorial}
+      wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
+  );
+
   return frame(
     <>
       {!run.inside ? (
@@ -731,12 +744,26 @@ export default function DungeonPage() {
         </>
       )}
 
-      {/* During the club tutorial the bindle comes first, right under the room. */}
-      {!clubTutorial && <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />}
-      <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
-        byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} tutorial={clubTutorial}
-        wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
-      {clubTutorial && <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />}
+      {/* Your roster and your bag: two buttons that open over the screen.
+          (During the club tutorial the bag stays open under the room, to teach it.) */}
+      {clubTutorial ? (
+        <>
+          {bagView}
+          {partyView}
+        </>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
+          <button className="pixel-btn" onClick={() => setSheet("roster")}>
+            🐾 Roster <span style={{ opacity: 0.7 }}>{fightingTeam(run).length}/{run.party.length}</span>
+          </button>
+          <button className="pixel-btn" onClick={() => setSheet("bag")} style={{ position: "relative" }}>
+            🎒 {bagName(lab.meta)} <span style={{ opacity: 0.7 }}>{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
+            {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: -5, right: -5, width: 14, height: 14, borderRadius: 7, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
+          </button>
+        </div>
+      )}
+      {sheet === "roster" && !clubTutorial && <Sheet title="Your party" onClose={() => setSheet(null)}>{partyView}</Sheet>}
+      {sheet === "bag" && !clubTutorial && <Sheet title={`Your ${bagName(lab.meta).toLowerCase()}`} onClose={() => setSheet(null)}>{bagView}</Sheet>}
       {(run.pending?.length ?? 0) > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, borderColor: "#c9a24a" }}>
           <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>Your {bagName(lab.meta).toLowerCase()} is full</div>
@@ -917,7 +944,7 @@ function AtEntrance({ run }: { run: DungeonRun }) {
     <div className="stone-panel">
       <p style={{ fontSize: 13, color: "#d8d4c8", margin: 0, lineHeight: 1.5 }}>
         Water drips somewhere in the dark. {ways > 1 ? "Tunnels lead off" : "A tunnel leads off"} into the gloom — the left-most heads furthest west.
-        Tap one to go on. You can change your team below first.
+        Tap one to go on.
       </p>
     </div>
   );

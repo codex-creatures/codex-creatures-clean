@@ -28,9 +28,11 @@ export const CH = LH * RES;
 // smaller back wall, so a deeper, wider-looking room with more floor.
 // (The back wall is always centred: BX1 = LW - BX0.)
 export type ChamberSize = "normal" | "large";
+// A healing pool is sunk in the floor off to the left (room to walk past it).
+export const POOL_AT = { x: 64, y: 148, rx: 34, ry: 10 };
 const GEOMETRY: Record<ChamberSize, { BX0: number; BX1: number; BY0: number; BY1: number }> = {
-  normal: { BX0: 44, BX1: 212, BY0: 26, BY1: 112 }, // back wall: left, right, top, floor line
-  large:  { BX0: 72, BX1: 184, BY0: 34, BY1: 98 },
+  normal: { BX0: 68, BX1: 188, BY0: 36, BY1: 98 },  // back wall: left, right, top, floor line
+  large:  { BX0: 84, BX1: 172, BY0: 42, BY1: 90 },
 };
 
 // What's down a tunnel, as far as you know.
@@ -202,11 +204,11 @@ export function createChamber(spec: ChamberSpec): Chamber {
 
       // The healing pool.
       if (spec.pool && y >= BY1) {
-        const e = Math.hypot((x - LW / 2) / 46, (y - 146) / 13);
+        const e = Math.hypot((x - POOL_AT.x) / POOL_AT.rx, (y - POOL_AT.y) / POOL_AT.ry);
         if (e < 1) {
           put(i, spec.pool === "glow" ? POOL[Math.floor(hash(fx >> 2, fy >> 1) * 3)] : mix(POOL_DIM, WATER, hash(fx, fy) * 0.4), (y - BY1) / (LH - BY1), spec.pool === "glow" ? 3 : 2);
         } else if (e < 1.14) {
-          put(i, mul(STONES[Math.floor(hash(Math.floor(Math.atan2(y - 146, x - LW / 2) * 9), 5) * STONES.length)], 1.2), (y - BY1) / (LH - BY1), 1);
+          put(i, mul(STONES[Math.floor(hash(Math.floor(Math.atan2(y - POOL_AT.y, x - POOL_AT.x) * 9), 5) * STONES.length)], 1.2), (y - BY1) / (LH - BY1), 1);
         }
       }
     }
@@ -273,7 +275,7 @@ export function createChamber(spec: ChamberSpec): Chamber {
 
         if (k === 3) {
           // Glowing pool: lit from within, with slow ripples.
-          const wave = 0.85 + 0.15 * Math.sin(t * 2 + Math.hypot(x - LW / 2, (y - 146) * 3.4) * 0.35);
+          const wave = 0.85 + 0.15 * Math.sin(t * 2 + Math.hypot(x - POOL_AT.x, (y - POOL_AT.y) * 3.4) * 0.35);
           d[o] = r * 255 * wave; d[o + 1] = g * 255 * wave; d[o + 2] = b * 255 * wave; d[o + 3] = 255;
           continue;
         }
@@ -287,7 +289,7 @@ export function createChamber(spec: ChamberSpec): Chamber {
           lr += TORCH[0] * fall; lg += TORCH[1] * fall; lb += TORCH[2] * fall;
           shine += fall * fall;
         }
-        if (poolGlow && y > BY1 - 30) { const p = 1 / (1 + Math.hypot((x - LW / 2) / 50, (y - 146) / 22) ** 2 * 2); lr += 0.15 * p; lg += 0.55 * p; lb += 0.5 * p; }
+        if (poolGlow && y > BY1 - 30) { const p = 1 / (1 + Math.hypot((x - POOL_AT.x) / 50, (y - POOL_AT.y) / 22) ** 2 * 2); lr += 0.15 * p; lg += 0.55 * p; lb += 0.5 * p; }
 
         if (k === 4) {
           // Deeper into a tunnel, darker; a lair glows red at the end.
