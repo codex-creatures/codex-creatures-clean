@@ -9,7 +9,7 @@
 // - The painting was made over the code-drawn chamber (lib/dungeon/chamber.ts),
 //   so the chamber's tunnels line up with it: it still decides what a tap
 //   hits, and draws the moving parts on top (drips, mist, eyes in the dark,
-//   the healing pool, the hovered tunnel). With no painting for a room (or
+//   the hovered tunnel). With no painting for a room (or
 //   while one fails to load) the chamber draws the whole room itself.
 // - A den with several creatures (and the boss's lair) is a large room: the
 //   back wall further off, more floor.
@@ -82,7 +82,6 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   // lair) still has a dark way out — it just doesn't lead anywhere you can go.
   const looks: TunnelLook[] = ways.length ? ways.map(() => "unknown") : ["unknown"];
   const room = run.current;
-  const pool = node.kind === "pool" ? (room && !room.done ? "glow" : "still") : undefined;
   const size: ChamberSize = room?.boss || (room?.enemies?.length ?? 0) >= 2 ? "large" : "normal";
   // The boss's room is always its lair.
   const theme = (room?.kind === "boss" || node.kind === "boss") && looks.length === 1 ? "lair" : THEMES[seedOf(pos) % THEMES.length];
@@ -93,9 +92,9 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   const painting = looks.length <= PAINTED_TUNNELS ? `/sprites/rooms/${view === "far" ? "far/" : ""}${name}.png` : null;
   const [painted, setPainted] = useState<string | null>(null); // the painting that's loaded
   const usePainting = !!painting && painted === painting;
-  const key = `${pos}|${looks.join(",")}|${pool ?? ""}|${size}|${view}`;
+  const key = `${pos}|${looks.join(",")}|${size}|${view}`;
 
-  const chamber = useMemo(() => createChamber({ tunnels: looks, pool, seed: seedOf(pos), size, view }),
+  const chamber = useMemo(() => createChamber({ tunnels: looks, seed: seedOf(pos), size, view }), // (no pool: the healing pool is always the sprite, see RoomContents)
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key]);
 
