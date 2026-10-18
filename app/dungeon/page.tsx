@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
 import LootWindow from "@/components/LootWindow";
+import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN } from "@/lib/sprites/props";
 import LootGrid from "@/components/LootGrid";
 import GearCompare, { GearStatLine } from "@/components/GearCompare";
@@ -83,6 +84,8 @@ export default function DungeonPage() {
   const [found, setFound] = useState<GotItem[] | null>(null); // what the current room just gave you
   const [lootOpen, setLootOpen] = useState(false); // an opened chest or sack, in its window with your bag
   const [notes, setNotes] = useState<string[]>([]);
+  // Creatures that just levelled up: their show plays over the room (LevelUpShow).
+  const [levelUps, setLevelUps] = useState<LevelUpInfo[]>([]);
   // Leaving for the Den: keep showing what's on screen until the Den loads
   // (otherwise the entrance flashes up for a moment on the way out).
   const [leaving, setLeaving] = useState(false);          // anything else that just happened (e.g. Second Wind)
@@ -631,7 +634,13 @@ export default function DungeonPage() {
       mineAt.forEach((i, k) => { gains[ids[i]] = shares[k]; });
       const parts = mineAt.map((i, k) => `${byId(ids[i])?.name} +${shares[k]}`);
       xpNotes.push(`✨ ${xp} XP — ${parts.join(", ")}`);
-      for (const u of game.gainXp(gains)) xpNotes.push(`⬆️ ${u.name} reached level ${u.to}!`);
+      const ups = game.gainXp(gains);
+      for (const u of ups) xpNotes.push(`⬆️ ${u.name} reached level ${u.to}!`);
+      setLevelUps(ups.flatMap((u) => {
+        const c = byId(u.id);
+        const drop = game.inventory.find((d) => d.id === u.id) as CreatureOrItemDrop | undefined;
+        return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency }] : [];
+      }));
       const you = game.gainPlayerXp(xp);
       if (you) xpNotes.push(`🌟 You reached explorer level ${you}!`);
     }
@@ -796,6 +805,7 @@ export default function DungeonPage() {
                 onClose={() => setLootOpen(false)} />
             );
           })()}
+          {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
           {showCards && <EncounterCards creatureIds={enemyIds} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (

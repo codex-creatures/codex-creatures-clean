@@ -598,3 +598,15 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
   .game-screen { --trim: 0px; }
   .game-screen::before, .game-screen::after { display: none; }
 }
+
+/* Level-up show (components/LevelUpShow.tsx). */
+.levelup-pop { animation: levelup-pop 0.45s cubic-bezier(.2,1.4,.4,1) both; }
+@keyframes levelup-pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+.levelup-title { animation: levelup-glow 1.2s ease-in-out infinite alternate; }
+@keyframes levelup-glow { from { text-shadow: 0 2px 0 #000, 0 0 4px rgba(255,214,110,0.3); } to { text-shadow: 0 2px 0 #000, 0 0 14px rgba(255,214,110,0.9); } }
+.levelup-hop { animation: levelup-hop 0.7s ease-in-out infinite; }
+@keyframes levelup-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } }
+.levelup-bump { display: inline-block; animation: levelup-bump 0.35s ease-out; }
+@keyframes levelup-bump { 0% { transform: scale(1.6); color: #fff; } 100% { transform: scale(1); } }
+.levelup-stats { animation: swapin 0.35s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .levelup-pop, .levelup-title, .levelup-hop, .levelup-bump, .levelup-stats { animation: none; } }

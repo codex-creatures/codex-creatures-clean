@@ -12,6 +12,8 @@ import { lookOf } from "@/components/ContainerLoot";
 import type { SackItem } from "@/lib/dungeon/run";
 import { RICKETY_CHEST_OPEN } from "@/lib/sprites/props";
 import { weaponDrop } from "@/lib/drops";
+import LevelUpShow from "@/components/LevelUpShow";
+import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
 
 const KINDS: RoomKind[] = ["easy", "hard", "miniboss", "boss", "chest", "stash", "treasure", "pool", "merchant", "librarian", "witch", "cards", "entrance"];
 
@@ -40,6 +42,7 @@ export default function RoomsLab() {
   const [seed, setSeed] = useState(7);
   // A loot window to try (nothing is saved): drag between the chest and a 3-slot bag.
   const [lootOpen, setLootOpen] = useState(false);
+  const [levelOpen, setLevelOpen] = useState(false);
   const [sack, setSack] = useState<SackItem[]>(() => [{ gold: 120 }, { potion: "potion" }, { gear: weaponDrop("void_scythe", "epic") }, { gear: weaponDrop("klutz_club", "common") }]);
   const [bag, setBag] = useState<SackItem[]>(() => [{ potion: "lesser" }, { gear: weaponDrop("klutz_club", "rare") }]);
   const roomless = (x: SackItem) => lookOf(x).free;
@@ -58,7 +61,14 @@ export default function RoomsLab() {
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Labyrinth rooms</h1>
       <div className="stone-panel" style={{ maxWidth: 518, marginBottom: 16 }}>
-        <button className="pixel-btn" onClick={() => setLootOpen(true)}>Try the loot window</button>
+        <button className="pixel-btn" onClick={() => setLootOpen(true)}>Try the loot window</button>{" "}
+        <button className="pixel-btn" onClick={() => setLevelOpen(true)}>Try the level-up show</button>
+        {levelOpen && (
+          <LevelUpShow onDone={() => setLevelOpen(false)} ups={[
+            { id: "a", name: "Aurelius", creatureId: "aurelius", template: CREATURE_BY_ID.aurelius, from: 4, to: 5 },
+            { id: "b", name: "Moss Wolf", creatureId: "moss_wolf", template: CREATURE_BY_ID.moss_wolf, from: 2, to: 4 },
+          ]} />
+        )}
         {lootOpen && (
           <LootWindow name="The rickety chest" sprite={RICKETY_CHEST_OPEN} items={sack} slots={3} bagName="Bindle"
             bag={bag.map((x) => { const l = lookOf(x); return { name: l.name, sprite: l.sprite, icon: l.icon, color: l.color, glow: l.glow, peek: x }; })}

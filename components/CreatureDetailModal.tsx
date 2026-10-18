@@ -369,7 +369,9 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
       <div style={{ position: "relative", padding: "6px 10px 0" }}>
         <div style={{ position: "absolute", inset: "10% 0 12%", background: `radial-gradient(circle, ${glow}, transparent 70%)`, filter: "blur(2px)" }} />
-        <PixelSprite sprite={creatureSprite(creature.creatureId)} scale={5} title={creature.name} style={{ position: "relative" }} />
+        {/* Fitted to a box: the widest art (Aurelius, 124px) would push the slots off the screen. */}
+        <PixelSprite sprite={creatureSprite(creature.creatureId)} scale={5} title={creature.name}
+          style={{ position: "relative", width: "auto", height: "auto", maxWidth: "min(150px, 34cqw)", maxHeight: 150 }} />
       </div>
       <div style={{ width: 120, height: 14, marginTop: -6, background: "#3a3f4c", borderTop: `3px solid ${border}`, boxShadow: "inset 0 -3px 0 #23262f, 0 3px 0 rgba(0,0,0,0.5)", borderRadius: "50% / 40%" }} />
       <div style={{ ...NUM, fontSize: 15, color: "#ff8a80", marginTop: 6 }}>❤️ {Math.round(hp)} HP</div>
