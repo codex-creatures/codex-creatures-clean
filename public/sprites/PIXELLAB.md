@@ -5,6 +5,11 @@ facing left), in the PixelLab Creator gallery. Search the gallery for
 **CODEX FINAL** to see them all. The raw generations they came from are in the
 gallery too, under their original prompts.
 
+Not all of them actually face left: the Leafblade Scout (and Klutz) are drawn
+facing right, and are marked `faces: "right"` in `lib/sprites/creatures.ts`
+(FACING_RIGHT) so fights and rooms turn them the right way. Look at each new
+creature's PNG and add it there if it faces right.
+
 To update a sprite in both places: fix it, then
 `save_to_asset(image=..., target="gallery:<id>")` with the id below, and copy
 the PNG here.
