@@ -30,9 +30,14 @@ export const CH = LH * RES;
 export type ChamberSize = "normal" | "large";
 // A healing pool is sunk in the floor off to the left (room to walk past it).
 export const POOL_AT = { x: 64, y: 148, rx: 34, ry: 10 };
-const GEOMETRY: Record<ChamberSize, { BX0: number; BX1: number; BY0: number; BY1: number }> = {
-  normal: { BX0: 68, BX1: 188, BY0: 36, BY1: 98 },  // back wall: left, right, top, floor line
-  large:  { BX0: 84, BX1: 172, BY0: 42, BY1: 90 },
+// The camera: "far" stands further back (a smaller back wall, long side walls
+// and lots of floor: a room you can walk about in); "close" is the first,
+// nearer view, kept while some rooms are still painted for it.
+export type ChamberView = "close" | "far";
+type Geometry = { BX0: number; BX1: number; BY0: number; BY1: number }; // back wall: left, right, top, floor line
+const GEOMETRY: Record<ChamberView, Record<ChamberSize, Geometry>> = {
+  close: { normal: { BX0: 44, BX1: 212, BY0: 26, BY1: 112 }, large: { BX0: 72, BX1: 184, BY0: 34, BY1: 98 } },
+  far:   { normal: { BX0: 68, BX1: 188, BY0: 36, BY1: 98 },  large: { BX0: 84, BX1: 172, BY0: 42, BY1: 90 } },
 };
 
 // What's down a tunnel, as far as you know.
@@ -43,6 +48,7 @@ export type ChamberSpec = {
   pool?: "glow" | "still";     // a healing pool in the floor (still = used up)
   seed: number;                // so every room looks a little different
   size?: ChamberSize;          // (default normal)
+  view?: ChamberView;          // (default far)
 };
 
 export type Chamber = {
@@ -100,7 +106,7 @@ function damp(c: RGB, a: number, z: number, seed: number): { c: RGB; wet: boolea
 }
 
 export function createChamber(spec: ChamberSpec): Chamber {
-  const { BX0, BX1, BY0, BY1 } = GEOMETRY[spec.size ?? "normal"];
+  const { BX0, BX1, BY0, BY1 } = GEOMETRY[spec.view ?? "far"][spec.size ?? "normal"];
   const WALL_H = BY1 - BY0;
   const n = CW * CH;
   const seed = spec.seed % 997;

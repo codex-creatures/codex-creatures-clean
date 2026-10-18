@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, runPosition, isFight, type DungeonRun, type RoomKind } from "@/lib/dungeon/run";
 import { waysOn } from "@/lib/dungeon/map";
-import { createChamber, CW, CH, type Chamber, type ChamberSize, type TunnelLook } from "@/lib/dungeon/chamber";
+import { createChamber, CW, CH, type Chamber, type ChamberSize, type ChamberView, type TunnelLook } from "@/lib/dungeon/chamber";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import { artFor } from "@/lib/sprites/art";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
@@ -39,10 +39,15 @@ const WANDERERS: Partial<Record<RoomKind, Sprite>> = { merchant: MERCHANT, libra
 // The painted rooms: public/sprites/rooms/<theme>-<size>-<tunnels>.png.
 const THEMES = ["hall", "crypt", "cave", "ruin"] as const;
 const PAINTED_TUNNELS = 3; // paintings exist for 1–3 tunnels
+// Those painted (at the creatures' own pixel size) for the far camera, in rooms/far.
+const FAR_PAINTED = new Set(["crypt-normal-2", "ruin-normal-2"]);
 
 // How big things in the room are drawn, against the room's own pixels (a
 // large room is further off, so a little smaller).
-const STAND_SCALE: Record<ChamberSize, number> = { normal: 1.35, large: 1.05 };
+const STAND_SCALE: Record<ChamberView, Record<ChamberSize, number>> = {
+  close: { normal: 1.35, large: 1.05 },
+  far: { normal: 1.1, large: 0.95 }, // (painted at the creatures' own pixel size)
+};
 
 // A short stable number from a room id, so each room looks a bit different.
 const seedOf = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -71,12 +76,16 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   const size: ChamberSize = room?.boss || (room?.enemies?.length ?? 0) >= 2 ? "large" : "normal";
   // The boss's room is always its lair.
   const theme = (room?.kind === "boss" || node.kind === "boss") && looks.length === 1 ? "lair" : THEMES[seedOf(pos) % THEMES.length];
-  const painting = looks.length <= PAINTED_TUNNELS ? `/sprites/rooms/${theme}-${size}-${looks.length}.png` : null;
+  // Rooms repainted for the far camera live in rooms/far (see FAR_PAINTED); the
+  // rest still have their first painting, made for the close camera.
+  const name = `${theme}-${size}-${looks.length}`;
+  const view: ChamberView = FAR_PAINTED.has(name) || looks.length > PAINTED_TUNNELS ? "far" : "close";
+  const painting = looks.length <= PAINTED_TUNNELS ? `/sprites/rooms/${view === "far" ? "far/" : ""}${name}.png` : null;
   const [painted, setPainted] = useState<string | null>(null); // the painting that's loaded
   const usePainting = !!painting && painted === painting;
-  const key = `${pos}|${looks.join(",")}|${pool ?? ""}|${size}`;
+  const key = `${pos}|${looks.join(",")}|${pool ?? ""}|${size}|${view}`;
 
-  const chamber = useMemo(() => createChamber({ tunnels: looks, pool, seed: seedOf(pos), size }),
+  const chamber = useMemo(() => createChamber({ tunnels: looks, pool, seed: seedOf(pos), size, view }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key]);
 
@@ -147,20 +156,20 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
       <div className="pixel-font room-title">{title}</div>
 
       {/* What's in the room. */}
-      <RoomContents run={run} size={size} onObject={onObject} onEnemies={onEnemies} />
+      <RoomContents run={run} size={size} view={view} onObject={onObject} onEnemies={onEnemies} />
 
       {onFight && <button className="fight-btn" onClick={onFight}>⚔️ Fight!</button>}
     </div>
   );
 }
 
-function RoomContents({ run, size, onObject, onEnemies }: { run: DungeonRun; size: ChamberSize; onObject?: () => void; onEnemies?: () => void }) {
+function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRun; size: ChamberSize; view: ChamberView; onObject?: () => void; onEnemies?: () => void }) {
   const room = run.current;
   if (!room || room.kind === "entrance") return null;
   // A row standing on the floor, across the whole room (so widths below are shares of the room).
   const at: React.CSSProperties = { position: "absolute", left: 0, width: "100%", top: "84%", transform: "translateY(-100%)", display: "flex", justifyContent: "center", gap: "2%", alignItems: "flex-end", pointerEvents: "none" };
   // How wide a sprite stands, as a share of the room: the room's own pixel size.
-  const share = (sprite: Sprite) => `${(fineWidth(sprite) / CW) * 100 * STAND_SCALE[size]}%`;
+  const share = (sprite: Sprite) => `${(fineWidth(sprite) / CW) * 100 * STAND_SCALE[view][size]}%`;
   const draw = (sprite: Sprite, style: React.CSSProperties = {}) => (
     <PixelSprite sprite={sprite} scale={4}
       style={{ width: "100%", height: "auto", imageRendering: "pixelated", ...(artFor(sprite)?.faces === "right" ? { transform: "scaleX(-1)" } : {}), ...style }} />
@@ -177,10 +186,10 @@ function RoomContents({ run, size, onObject, onEnemies }: { run: DungeonRun; siz
     </div>
   );
 
-  // The healing pool, sunk in the floor: glowing until it's used, then dim.
+  // The healing pool, sunk in the floor off to one side: glowing until it's used, then dim.
   if (room.kind === "pool") {
     return (
-      <div style={{ ...at, top: "92%" }}>
+      <div style={{ ...at, top: "94%", justifyContent: "flex-start", paddingLeft: "5%" }}>
         <div className={room.done ? undefined : "pool-glow"} style={{ width: share(HEALING_POOL), filter: room.done ? "grayscale(0.7) brightness(0.6)" : undefined }}>{draw(HEALING_POOL)}</div>
       </div>
     );
