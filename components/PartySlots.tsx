@@ -70,7 +70,7 @@ export default function PartySlots({ team, bench, onTeam }: {
           {leads && !ko && <span className="pixel-font" style={{ position: "absolute", bottom: 3, left: 5, fontSize: 10, color: "#ffd66e" }}>leads</span>}
           {ko && <span className="pixel-font" style={{ position: "absolute", bottom: 3, left: 0, right: 0, fontSize: 10, color: "#ff8a80", textAlign: "center" }}>knocked out</span>}
         </span>
-        <span style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: col.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>{m.name}</span>
+        <span style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: col.text, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>{m.name}</span>
       </button>
     );
   };

@@ -4,6 +4,8 @@
 // it knows — the ones it was born with (3–4) and any learned from a codex
 // (codexes on the bookcase are offered under these, in the creature
 // window). Tap a slot, then tap a move below to swap it in.
+// Reading a codex with all 4 slots full: `teaching` asks you to tap the
+// move it replaces.
 
 import { useState } from "react";
 import { CLASS_INFO, DAMAGE_TYPE_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
@@ -58,12 +60,13 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
   );
 }
 
-export default function MoveSlots({ template, moves, born, learned, onChange }: {
+export default function MoveSlots({ template, moves, born, learned, onChange, teaching }: {
   template: CreatureTemplate;
   moves?: string[];   // what's in its slots
   born?: string[];    // the moves it was born with (its roll)
   learned?: string[]; // moves learned from codexes
   onChange?: (moves: string[]) => void;
+  teaching?: { move: string; onPick: (slot: number) => void; onCancel: () => void };
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const current = resolveMoves(template, moves);
@@ -84,13 +87,19 @@ export default function MoveSlots({ template, moves, born, learned, onChange }: 
 
   return (
     <div>
-      <div style={{ fontSize: 13, color: MUTED, marginBottom: 8 }}>
+      {teaching && (
+        <div className="tutorial-tip" style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <span>Learning <b>{teaching.move}</b>: tap a move to forget.</span>
+          <button className="chip" onClick={teaching.onCancel}>Cancel</button>
+        </div>
+      )}
+      <div style={{ fontSize: 13, color: MUTED, marginBottom: 8, display: teaching ? "none" : undefined }}>
         {onChange ? (editing === null ? "Tap one of your moves to swap it out." : `Now pick a move below to put in slot ${editing + 1}.`) : "Its moves in battle."}
       </div>
       <div className="move-grid">
         {Array.from({ length: MOVE_SLOTS }, (_, i) => current[i]).map((m, i) => m ? (
-          <MoveTile key={i} m={m} slot={i} selected={editing === i}
-            onClick={onChange ? () => setEditing(editing === i ? null : i) : undefined} />
+          <MoveTile key={i} m={m} slot={i} selected={!teaching && editing === i}
+            onClick={teaching ? () => teaching.onPick(i) : onChange ? () => setEditing(editing === i ? null : i) : undefined} />
         ) : (
           <button key={i} disabled={!onChange} onClick={() => setEditing(editing === i ? null : i)}
             style={{ padding: 12, borderRadius: 10, border: `2px dashed ${editing === i ? "#ffd66e" : "#2a2d38"}`, background: "transparent", color: MUTED, cursor: "pointer" }}>
@@ -99,7 +108,7 @@ export default function MoveSlots({ template, moves, born, learned, onChange }: 
         ))}
       </div>
 
-      {onChange && groups.map(([title, list, tag]) => list.length > 0 && (
+      {onChange && !teaching && groups.map(([title, list, tag]) => list.length > 0 && (
         <div key={title} style={{ marginTop: 16 }}>
           <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>{title}</div>
           <div className="move-grid">

@@ -257,6 +257,16 @@ export default function DungeonPage() {
 
   const byId = (id: string) => owned.find((c) => c.id === id);
   const run = lab?.run ?? null;
+  // No going back to the Den mid-fight, or from a room you haven't dealt with
+  // yet (the same rule as taking a tunnel on).
+  const denLocked = !!run && run.status === "exploring" && (!canMoveOn(run) || (!!battle.match && !battle.match.state.winner));
+  useEffect(() => {
+    if (!denLocked) return;
+    // Esc would go back a page (EscapeBack): not now.
+    const stop = (e: KeyboardEvent) => { if (e.key === "Escape") e.preventDefault(); };
+    window.addEventListener("keydown", stop);
+    return () => window.removeEventListener("keydown", stop);
+  }, [denLocked]);
 
   // ── Starting and ending runs ──────────────────────────────────────
   function begin(party: string[], dungeon: DungeonId = 1) {
@@ -673,7 +683,8 @@ export default function DungeonPage() {
 
   // fill: the content gets the whole screen (a battle); dock: built into the bottom of the screen.
   const frame = (children: React.ReactNode, opts: { fill?: boolean; dock?: React.ReactNode } = {}) => (
-    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}>
+    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}
+      backLocked={denLocked ? (battle.match && !battle.match.state.winner ? "Not mid-fight" : "Deal with this room first") : undefined}>
       <Shaker shake={shake} fill={opts.fill}>{children}</Shaker>
     </DenFrame>
   );
@@ -938,7 +949,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
                   boxShadow: picked ? `inset 0 0 0 2px ${fights ? "#f1d9a0" : "#6b6350"}` : undefined,
                   color: "white", cursor: hp <= 0 ? "default" : "pointer", opacity: hp <= 0 ? 0.35 : 1,
                 }}>
-                <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 12, color: rarityColor(c.rarity), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 12, color: rarityColor(c.rarity), textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
                   <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name}
                 </span>
                 <span style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "6%" }}>

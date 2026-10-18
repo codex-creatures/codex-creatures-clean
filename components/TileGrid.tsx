@@ -121,14 +121,14 @@ function CreatureCard({ d, fav, badge, onClick }: { d: CreatureOrItemDrop; fav: 
   return (
     <button onClick={onClick} title={d.name}
       style={{ position: "relative", background: "none", border: "none", padding: "4px 2px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-      <span className="pixel-font" style={{ display: "block", maxWidth: "100%", fontSize: 14, color: col.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>
+      <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 14, color: col.text, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
         <span style={{ color: "#f1d9a0" }}>Lv {d.level ?? 1}</span> {d.name}
       </span>
       <span style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "6%" }}>
         <PixelSprite sprite={sprite} scale={3.4} style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
       </span>
       {tpl && (
-        <span className="pixel-font" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+        <span className="pixel-font" style={{ fontSize: 12, textAlign: "center" }}>
           <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
           {tpl.race && <span style={{ color: "#f1d9a0" }}> · {RACE_INFO[tpl.race].name}</span>}
         </span>

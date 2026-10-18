@@ -18,9 +18,15 @@ type Scene = "split" | "eye" | null;
 
 // How big each part is drawn (a PixelSprite scale; the art is about 120px for
 // the body, 85px a hand and 55px the eye). The body also plays its own fall.
+// On a narrow screen each is also capped to a share of the screen's width
+// (MAX_W), so the boss and your creature both fit in the lair.
 const SCALE: Record<string, number> = { cyclops: 3, cyclops_hand: 1.8, cyclops_eye: 2.4 };
+const MAX_W: Record<string, string> = { cyclops: "40cqw", cyclops_hand: "20cqw", cyclops_eye: "18cqw" };
+const fit = (id: string): React.CSSProperties => ({ maxWidth: MAX_W[id] ?? "40cqw", height: "auto" });
+// The boss stands in the right part of the lair; your creature on the left.
+const BOSS_SIDE: React.CSSProperties = { paddingLeft: "38%", paddingRight: "2%" };
 
-export default function BossStage({ side, fx }: { side: BattleSide; fx: Fx | null }) {
+export default function BossStage({ side, fx, you }: { side: BattleSide; fx: Fx | null; you?: React.ReactNode }) {
   const t = side.team;
   // A phase change playing right now?
   const scene: Scene = fx?.kind === "lineup" && fx.side === side.key && fx.text
@@ -43,13 +49,16 @@ export default function BossStage({ side, fx }: { side: BattleSide; fx: Fx | nul
       {scene === "eye" && <div key={`flash-${fx!.id}`} className="boss-flash" />}
 
       <div className="boss-floor" />
-      <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 28, height: "100%", paddingBottom: 14 }}>
-        {/* The body topples as its hands tear free. */}
-        {scene === "split" && (
-          <div key={`fall-${fx!.id}`} className="boss-collapse" style={{ position: "absolute", bottom: 14, left: "50%", marginLeft: -89 }}>
-            <PixelSprite sprite={creatureSprite("cyclops")} scale={SCALE.cyclops} style={{ filter: "brightness(0.8) sepia(0.3)" }} />
+      {you}
+      {/* The body topples as its hands tear free. */}
+      {scene === "split" && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 14, ...BOSS_SIDE }}>
+          <div key={`fall-${fx!.id}`} className="boss-collapse">
+            <PixelSprite sprite={creatureSprite("cyclops")} scale={SCALE.cyclops} style={{ ...fit("cyclops"), filter: "brightness(0.8) sepia(0.3)" }} />
           </div>
-        )}
+        </div>
+      )}
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: "4%", height: "100%", paddingBottom: 14, ...BOSS_SIDE }}>
 
         {shown.map((i, n) => {
           const id = CYCLOPS_PARTS[i]?.id ?? "cyclops";
@@ -61,7 +70,7 @@ export default function BossStage({ side, fx }: { side: BattleSide; fx: Fx | nul
               <div key={reaction(i) ? `r-${fx!.id}` : "r"} className={dead ? "boss-dead" : reaction(i)}>
                 <div className={dead ? "" : idle}>
                   <PixelSprite sprite={creatureSprite(id)} scale={SCALE[id] ?? 3}
-                    style={id === "cyclops_hand" && n === 1 ? { transform: "scaleX(-1)" } : undefined} />
+                    style={{ ...fit(id), ...(id === "cyclops_hand" && n === 1 ? { transform: "scaleX(-1)" } : {}) }} />
                 </div>
               </div>
             </div>

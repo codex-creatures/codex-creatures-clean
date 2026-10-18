@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { canLearnFromCodex, findCreatureTemplate, MOVE_BY_NAME, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { canLearnFromCodex, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL } from "@/lib/creatures/levels";
@@ -84,6 +84,7 @@ export default function CreatureDetailModal({
   const [picking, setPicking] = useState<EquipSlot | null>(null);
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
+  const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -195,8 +196,27 @@ export default function CreatureDetailModal({
 
             {tab === "moves" && (
               <>
-                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} born={creature.moves} learned={creature.learned} onChange={onSetMoves} />
-                <CodexShelf template={template} known={[...(creature.moves ?? template.skills.slice(0, 4).map((s) => s.name)), ...(creature.learned ?? [])]} codexes={codexes} onLearn={onLearnCodex} />
+                <MoveSlots template={template} moves={loadout?.moves ?? creature.moves} born={creature.moves} learned={creature.learned} onChange={onSetMoves}
+                  teaching={teaching ? {
+                    move: teaching.codexMove!,
+                    onPick: (i) => {
+                      const next = resolveMoves(template, loadout?.moves ?? creature.moves).map((m) => m.name);
+                      next[i] = teaching.codexMove!;
+                      onLearnCodex?.(teaching.id); onSetMoves?.(next); setTeaching(null);
+                    },
+                    onCancel: () => setTeaching(null),
+                  } : undefined} />
+                {!teaching && (
+                  <CodexShelf template={template} known={[...(creature.moves ?? template.skills.slice(0, 4).map((s) => s.name)), ...(creature.learned ?? [])]} codexes={codexes}
+                    onLearn={onLearnCodex && ((codexId) => {
+                      // The new move goes straight into a slot: a free one, or one you choose to forget.
+                      const codex = codexes.find((c) => c.id === codexId);
+                      const slots = resolveMoves(template, loadout?.moves ?? creature.moves).map((m) => m.name);
+                      if (!codex?.codexMove || !onSetMoves) { onLearnCodex(codexId); return; }
+                      if (slots.length >= MOVE_SLOTS) { setTeaching(codex); return; }
+                      onLearnCodex(codexId); onSetMoves([...slots, codex.codexMove]);
+                    })} />
+                )}
               </>
             )}
 
@@ -508,7 +528,7 @@ function CodexShelf({ template, known, codexes, onLearn }: {
                 <span>
                   <b style={{ color: "#c7b8ff" }}>📖 Read {c.name}</b>
                   <span style={{ display: "block", fontSize: 12, color: MUTED }}>
-                    {mv ? `${mv.self ? "Utility" : `${mv.type} · ${mv.damage} dmg`} · ${mv.energyCost} energy. ` : ""}Learns {c.codexMove} for good; the codex crumbles to dust.
+                    {mv ? `${mv.self ? "Utility" : `${mv.type} · ${mv.damage} dmg`} · ${mv.energyCost} energy. ` : ""}Learns {c.codexMove} into a move slot; the codex crumbles to dust.
                   </span>
                 </span>
               </button>

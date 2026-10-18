@@ -353,7 +353,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#ffd66e", borderColor: "#ffd66e" }}>⚠️ {phaseText}</div>
         )}
         {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
-        {foe.boss && <BossStage side={foe} fx={fx} />}
+        {foe.boss && <BossStage side={foe} fx={fx}
+          you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
 
         {/* The fight, staged in a dungeon room (two enemies use the arena). */}
         {foe.boss ? null : !multi ? (
@@ -748,7 +749,22 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
     return () => window.clearInterval(timer);
   }, [chamber]);
 
-  const fighter = (f: Combatant, side: SideKey, slot: number, mi: MemberInfo) => {
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: `${CW} / ${CH}`, border: "3px solid #1a1d20", boxShadow: "0 4px 0 rgba(0,0,0,0.6)", overflow: "hidden" }}>
+      <canvas ref={canvasRef} width={CW} height={CH} style={{ width: "100%", height: "100%", imageRendering: "pixelated", display: "block" }} aria-hidden />
+      <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} />
+      <Fighter f={them} side="B" slot={theirSlot} mi={theirInfo} fx={fx} />
+    </div>
+  );
+}
+
+// One fighter standing on the stage: a floating label (name, health,
+// statuses) over its sprite, reacting to this step. `at` places it (by
+// default your side left of centre, theirs right); `maxW` caps the sprite's
+// width (the boss's lair is crowded).
+export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
+  f: Combatant; side: SideKey; slot: number; mi: MemberInfo; fx: Fx | null; at?: React.CSSProperties; maxW?: string;
+}) {
     const { anim, float } = fighterFx(side, slot, fx);
     const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
     const sprite = mi.creatureId ? CREATURE_SPRITES[mi.creatureId] : undefined;
@@ -760,7 +776,7 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
     ].filter(Boolean).join(" ");
     return (
       <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
-        display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
+        display: "flex", flexDirection: "column", alignItems: "center", width: "40%", ...at }}>
         {/* Floating label: name, a small health bar, any statuses. */}
         <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
           <LevelTag level={f.level} />
@@ -777,7 +793,7 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
           {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
           <div className={floats ? "float-bob" : undefined}>
             {sprite
-              ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : undefined} />
+              ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : {}) }} />
               : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
           </div>
           {floats
@@ -787,13 +803,4 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
         </div>
       </div>
     );
-  };
-
-  return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: `${CW} / ${CH}`, border: "3px solid #1a1d20", boxShadow: "0 4px 0 rgba(0,0,0,0.6)", overflow: "hidden" }}>
-      <canvas ref={canvasRef} width={CW} height={CH} style={{ width: "100%", height: "100%", imageRendering: "pixelated", display: "block" }} aria-hidden />
-      {fighter(me, "A", mySlot, myInfo)}
-      {fighter(them, "B", theirSlot, theirInfo)}
-    </div>
-  );
 }
