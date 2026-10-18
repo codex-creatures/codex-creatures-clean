@@ -757,6 +757,7 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
     const { anim, float } = fighterFx(side, slot, fx);
     const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
     const sprite = mi.creatureId ? CREATURE_SPRITES[mi.creatureId] : undefined;
+    const floats = !!sprite && !!artFor(sprite)?.floats && f.hp > 0;
     const icons = [
       f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
       f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
@@ -778,10 +779,15 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
           {side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.ceil(hpPct)}%`}{icons && <span style={{ marginLeft: 4 }}>{icons}</span>}
         </div>
         <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
-          {sprite
-            ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : undefined} />
-            : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
-          <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />
+          {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
+          <div className={floats ? "float-bob" : undefined}>
+            {sprite
+              ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : undefined} />
+              : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
+          </div>
+          {floats
+            ? <div className="float-shadow" style={{ width: "60%", height: 8, margin: "34px auto 0" }} />
+            : <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />}
           {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color, top: 0 }}>{float.text}</div>}
         </div>
       </div>

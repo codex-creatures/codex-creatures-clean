@@ -48,15 +48,22 @@ const FAR_PAINTED = new Set([
 // How big things in the room are drawn, against the room's own pixels (a
 // large room is further off, so a little smaller).
 const STAND_SCALE: Record<ChamberView, Record<ChamberSize, number>> = {
-  close: { normal: 1.35, large: 1.05 },
-  far: { normal: 1.1, large: 0.95 }, // (painted at the creatures' own pixel size)
+  close: { normal: 1.2, large: 0.95 },
+  far: { normal: 1.0, large: 0.85 }, // (painted at the creatures' own pixel size)
 };
+// …but nothing stands taller than this share of the room (the big creatures
+// would tower over the tunnels), and a row of creatures never fills more
+// than ROW_FILL of the room's width.
+const MAX_TALL: Record<ChamberSize, number> = { normal: 0.3, large: 0.25 };
+const BOSS_TALL = 0.4;
+const ROW_FILL = 0.8;
 
 // A short stable number from a room id, so each room looks a bit different.
 const seedOf = (id: string) => [...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 // A sprite's width in fine pixels (art as drawn, a grid sprite at 2 fine pixels a cell).
 const fineWidth = (s: Sprite) => { const a = artFor(s); return a ? (a.size ?? a.w) : spriteWidth(s) * 2; };
+const fineHeight = (s: Sprite) => { const a = artFor(s); return a ? a.h * ((a.size ?? a.w) / a.w) : s.length * 2; };
 
 export default function DungeonRoomView({ run, open, onGo, onObject, onFight, onEnemies }: {
   run: DungeonRun; open: boolean; onGo: (nodeId: string) => void; onObject?: () => void; onFight?: () => void; onEnemies?: () => void;
@@ -171,8 +178,11 @@ function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRu
   if (!room || room.kind === "entrance") return null;
   // A row standing on the floor, across the whole room (so widths below are shares of the room).
   const at: React.CSSProperties = { position: "absolute", left: 0, width: "100%", top: "84%", transform: "translateY(-100%)", display: "flex", justifyContent: "center", gap: "2%", alignItems: "flex-end", pointerEvents: "none" };
-  // How wide a sprite stands, as a share of the room: the room's own pixel size.
-  const share = (sprite: Sprite) => `${(fineWidth(sprite) / CW) * 100 * STAND_SCALE[view][size]}%`;
+  // How wide a sprite stands, as a share of the room: the room's own pixel
+  // size, shrunk to fit under MAX_TALL (or `tall`).
+  const scale = STAND_SCALE[view][size];
+  const fit = (sprite: Sprite, tall = MAX_TALL[size]) => Math.min(scale, (tall * CH) / fineHeight(sprite));
+  const share = (sprite: Sprite, tall?: number) => `${(fineWidth(sprite) / CW) * 100 * fit(sprite, tall)}%`;
   const draw = (sprite: Sprite, style: React.CSSProperties = {}) => (
     <PixelSprite sprite={sprite} scale={4}
       style={{ width: "100%", height: "auto", imageRendering: "pixelated", ...(artFor(sprite)?.faces === "right" ? { transform: "scaleX(-1)" } : {}), ...style }} />
@@ -215,21 +225,24 @@ function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRu
       const boss = creatureSprite("cyclops");
       return (
         <div style={at}>
-          <div className="boss-breathe" style={{ width: share(boss), filter: "drop-shadow(0 0 10px rgba(255,59,42,0.7)) drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(boss)}</div>
+          <div className="boss-breathe" style={{ width: share(boss, BOSS_TALL), filter: "drop-shadow(0 0 10px rgba(255,59,42,0.7)) drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(boss)}</div>
         </div>
       );
     }
+    // A row of creatures: each at the room's pixel size (capped), then all
+    // shrunk together if the row would be too wide.
+    const sprites = (room.enemies ?? []).map((e) => creatureSprite(e.creatureId));
+    const widths = sprites.map((sp) => (fineWidth(sp) / CW) * fit(sp));
+    const gaps = 0.02 * Math.max(0, sprites.length - 1);
+    const squeeze = Math.min(1, (ROW_FILL - gaps) / Math.max(0.01, widths.reduce((a, b) => a + b, 0)));
     return (
       <div style={at}>
-        {(room.enemies ?? []).map((e, i) => {
-          const sprite = creatureSprite(e.creatureId);
-          return (
-            <button key={i} onClick={onEnemies} disabled={!onEnemies} aria-label="See their cards" title={onEnemies ? "See their cards" : undefined}
-              style={{ width: share(sprite), background: "none", border: "none", padding: 0, pointerEvents: onEnemies ? "auto" : "none", cursor: onEnemies ? "pointer" : "default", filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.7)) brightness(0.92)" }}>
-              {draw(sprite)}
-            </button>
-          );
-        })}
+        {sprites.map((sprite, i) => (
+          <button key={i} onClick={onEnemies} disabled={!onEnemies} aria-label="See their cards" title={onEnemies ? "See their cards" : undefined}
+            style={{ width: `${widths[i] * squeeze * 100}%`, background: "none", border: "none", padding: 0, pointerEvents: onEnemies ? "auto" : "none", cursor: onEnemies ? "pointer" : "default" }}>
+            <Standing sprite={sprite} filter="drop-shadow(0 3px 0 rgba(0,0,0,0.7)) brightness(0.92)">{draw(sprite)}</Standing>
+          </button>
+        ))}
       </div>
     );
   }
@@ -248,6 +261,18 @@ function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRu
   return (
     <div style={{ ...at, fontSize: "clamp(28px, 8vw, 46px)", opacity: room.done ? 0.4 : 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>
       {ROOM_INFO[room.kind].icon}
+    </div>
+  );
+}
+
+// A creature on the floor. One that floats (a wisp, a bat) hangs in the air,
+// bobbing, with its shadow on the floor below.
+function Standing({ sprite, filter, children }: { sprite: Sprite; filter: string; children: React.ReactNode }) {
+  if (!artFor(sprite)?.floats) return <div style={{ filter }}>{children}</div>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="float-bob" style={{ width: "100%", filter }}>{children}</div>
+      <div className="float-shadow" aria-hidden style={{ width: "70%", aspectRatio: "5 / 1", marginTop: "55%" }} />
     </div>
   );
 }

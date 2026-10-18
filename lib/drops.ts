@@ -60,12 +60,18 @@ export function codexDrop(moveName: string, barcode = ""): Drop {
 export const randomCodexMove = () => RACE_MOVES[Math.floor(Math.random() * RACE_MOVES.length)].name;
 export const randomLearnableMove = () => LEARNABLE_MOVES[Math.floor(Math.random() * LEARNABLE_MOVES.length)].name;
 
-// A Lesser Potion (heals 50): the Common consumable. It goes into your
-// storage; pack it in your bag to take it into the Labyrinth.
-export function potionDrop(barcode = ""): Drop {
+// A potion in your storage: a Lesser Potion (heals 50) is the Common
+// consumable from scans; a Healing Potion (heals 100) only comes out of the
+// Labyrinth (stored from your bag). Pack one in your bag to take it back in.
+const STORED_POTIONS = {
+  lesser: { name: "Lesser Potion", heal: 50, rarity: "common" },
+  potion: { name: "Healing Potion", heal: 100, rarity: "uncommon" },
+} as const;
+export function potionDrop(barcode = "", kind: keyof typeof STORED_POTIONS = "lesser"): Drop {
+  const p = STORED_POTIONS[kind];
   return {
-    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: "common", roll: 0,
-    name: "Lesser Potion", potion: "lesser", desc: "Restores 50 HP to one creature. Pack it in your bag to use it in the Labyrinth.", createdAt: now(),
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: p.rarity, roll: 0,
+    name: p.name, potion: kind, desc: `Restores ${p.heal} HP to one creature. Pack it in your bag to use it in the Labyrinth.`, createdAt: now(),
   };
 }
 

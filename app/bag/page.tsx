@@ -20,6 +20,7 @@ import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { potionDrop } from "@/lib/drops";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -46,6 +47,13 @@ export default function BagPage() {
   const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
   const away = !!lab.run;
+  // Put a potion from the bag back into storage (the Chest), freeing its slot.
+  function store(i: number) {
+    const e = bag[i];
+    if (!isPotionEntry(e)) return;
+    game.addDrop(potionDrop("", e));
+    setBag(bag.filter((_, j) => j !== i));
+  }
 
   // A codex that came home while the bookcase was full: shelve it once there's room.
   function shelve(e: BagEntry) {
@@ -100,6 +108,7 @@ export default function BagPage() {
               : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
               : <span style={{ color: MUTED }}>Something you no longer have</span>}
             {own && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>Take out</button>}
+            {isPotionEntry(e) && !away && <button className="chip" onClick={() => store(sel)}>Store in Chest</button>}
             {found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
           </div>
         );
@@ -108,7 +117,7 @@ export default function BagPage() {
 
       {!away && potions.length > 0 && (
         <>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Potions in storage</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Potions in the Chest</div>
           <div style={{ display: "grid", gap: 6 }}>
             {potions.map((x) => (
               <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>

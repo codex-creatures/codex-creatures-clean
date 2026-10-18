@@ -158,8 +158,10 @@ const ART_SIZES: Record<string, [number, number]> = {
   swamp_witch: [86, 89],
   sylvaran: [71, 94],
 };
+// Those that float rather than stand: drawn hanging in the air, bobbing.
+const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "cave_bat", "amber_wasp", "storm_phoenix"]);
 for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
-  if (CREATURE_SPRITES[id]) withArt(CREATURE_SPRITES[id], { src: `/sprites/creatures/${id}.png`, w, h });
+  if (CREATURE_SPRITES[id]) withArt(CREATURE_SPRITES[id], { src: `/sprites/creatures/${id}.png`, w, h, ...(FLOATERS.has(id) ? { floats: true } : {}) });
 }
 
 

@@ -13,7 +13,8 @@ export type Anim = { src: string; frames: number; w: number; h: number; x: numbe
 // (item icons are drawn at 64px but take the 32px space the grids did).
 // faces: which way the drawing faces. Creature art faces left (towards the
 // player's side of a fight) unless it says "right" (Klutz, drawn walking right).
-export type Art = { src: string; w: number; h: number; size?: number; walk?: Anim; faces?: "right" };
+// floats: it hangs in the air (a wisp, a bat): drawn off the floor, bobbing.
+export type Art = { src: string; w: number; h: number; size?: number; walk?: Anim; faces?: "right"; floats?: boolean };
 
 const ART = new WeakMap<Sprite, Art>();
 

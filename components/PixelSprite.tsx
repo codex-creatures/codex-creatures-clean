@@ -7,7 +7,7 @@
 import { useMemo, useState } from "react";
 import { fineGrid, outlined, runs, type Sprite } from "@/lib/sprites/pixels";
 import { artFor } from "@/lib/sprites/art";
-import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES } from "@/lib/sprites/items";
+import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES, POTION_SPRITES } from "@/lib/sprites/items";
 import { CREATURE_SPRITES, EGG } from "@/lib/sprites/creatures";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -44,6 +44,7 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
 
 // The sprite for a weapon or armour drop (undefined for other items).
 export function itemSprite(item: CreatureOrItemDrop): Sprite | undefined {
+  if (item.potion) return POTION_SPRITES[item.potion];
   if (item.itemKey) return WEAPON_SPRITES[item.itemKey];
   if (item.armorKey) {
     // Each piece has its own look: a helmet, a chestpiece, leg armour.

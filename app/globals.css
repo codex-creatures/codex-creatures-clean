@@ -474,3 +474,10 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .sheet-up { animation: sheet-up 0.22s ease-out; }
 @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .sheet-up { animation: none; } }
+
+/* Creatures that float (wisps, bats, wraiths): they hang off the floor and
+   bob, their shadow on the floor shrinking as they rise. */
+.float-bob { animation: float-bob 2.8s ease-in-out infinite; }
+@keyframes float-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9%); } }
+.float-shadow { background: radial-gradient(ellipse, rgba(0,0,0,0.55), transparent 70%); animation: float-shadow 2.8s ease-in-out infinite; }
+@keyframes float-shadow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.75); opacity: 0.6; } }
