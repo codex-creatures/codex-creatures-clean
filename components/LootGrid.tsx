@@ -7,6 +7,7 @@
 // one stack you can tap to look through (CardStack); gold shows as one total.
 
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
+import { GOLD_SPRITE, POTION_SPRITES } from "@/lib/sprites/items";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { POTIONS, type GotItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -19,9 +20,9 @@ const MUTED = "rgba(255,255,255,0.5)";
 type Look = { name: string; sprite?: Sprite; icon?: string; color: string; glow: string };
 
 function lookOf(g: GotItem): Look {
-  if ("potion" in g) return { name: POTIONS[g.potion].name, icon: POTIONS[g.potion].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.18)" };
+  if ("potion" in g) return { name: POTIONS[g.potion].name, sprite: POTION_SPRITES[g.potion], icon: POTIONS[g.potion].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.18)" };
   const d = g.drop;
-  if (d.dropType === "reward") return { name: `${d.amount} gold`, icon: "🪙", color: "#f5c542", glow: "rgba(245,197,66,0.2)" };
+  if (d.dropType === "reward") return { name: `${d.amount} gold`, sprite: GOLD_SPRITE, icon: "🪙", color: "#f5c542", glow: "rgba(245,197,66,0.2)" };
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
   if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rc.glow };
@@ -71,7 +72,9 @@ export default function LootGrid({ items, faded, grouped, onGear }: { items: Got
     </div>
   );
   const goldLine = gold > 0 && (
-    <div className="pixel-font" style={{ fontSize: 18, color: "#f5c542", opacity: faded ? 0.55 : 1 }}>🪙 {gold} gold</div>
+    <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, color: "#f5c542", opacity: faded ? 0.55 : 1 }}>
+      <PixelSprite sprite={GOLD_SPRITE} scale={1.6} style={{ filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.6))" }} />{gold} gold
+    </div>
   );
 
   if (grouped) return (

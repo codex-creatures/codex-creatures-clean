@@ -490,3 +490,10 @@ for (const key of Object.keys(ARMOR_SPRITES) as ArmorKey[]) {
   withArt(HELMET_SPRITES[key], art("helmet"));
   withArt(LEGS_SPRITES[key], art("legs"));
 }
+
+// Icons for the things that aren't gear (64px PixelLab art in a 32px space,
+// like the gear): gold, the two potions, and the rugged backpack.
+const icon = (file: string): Sprite => withArt(["."], { src: `/sprites/items/${file}.png`, w: 64, h: 64, size: 32 });
+export const GOLD_SPRITE = icon("gold");
+export const POTION_SPRITES: Record<"potion" | "lesser", Sprite> = { potion: icon("potion"), lesser: icon("lesser_potion") };
+export const BACKPACK_SPRITE = icon("backpack");

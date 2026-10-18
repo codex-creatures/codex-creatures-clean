@@ -11,15 +11,16 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { POTIONS, type SackItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
+import { GOLD_SPRITE, POTION_SPRITES, BACKPACK_SPRITE } from "@/lib/sprites/items";
 
 const GOLD = "#f5c542";
 const MUTED = "rgba(255,255,255,0.55)";
 
 type Look = { name: string; sprite?: Sprite; icon?: string; color: string; glow: string; free: boolean };
 function lookOf(x: SackItem): Look {
-  if ("backpack" in x) return { name: "Rugged backpack", icon: "🎒", color: GOLD, glow: "rgba(245,197,66,0.3)", free: true };
-  if ("gold" in x) return { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.22)", free: true };
-  if ("potion" in x) return { name: POTIONS[x.potion].name, icon: POTIONS[x.potion].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.2)", free: false };
+  if ("backpack" in x) return { name: "Rugged backpack", sprite: BACKPACK_SPRITE, icon: "🎒", color: GOLD, glow: "rgba(245,197,66,0.3)", free: true };
+  if ("gold" in x) return { name: `${x.gold} gold`, sprite: GOLD_SPRITE, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.22)", free: true };
+  if ("potion" in x) return { name: POTIONS[x.potion].name, sprite: POTION_SPRITES[x.potion], icon: POTIONS[x.potion].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.2)", free: false };
   const g = x.gear as CreatureOrItemDrop;
   const rc = RARITY_COLORS[g.rarity];
   return { name: g.name, sprite: itemSprite(g), icon: g.codexMove ? "📖" : "📦", color: rc.text, glow: rc.glow, free: false };

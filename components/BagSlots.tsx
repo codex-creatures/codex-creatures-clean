@@ -7,6 +7,7 @@
 
 import PixelSprite from "./PixelSprite";
 import { itemSprite } from "./PixelSprite";
+import { POTION_SPRITES } from "@/lib/sprites/items";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isPotionEntry, POTIONS, type BagEntry } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -18,7 +19,7 @@ export type SlotLook = { name: string; sprite?: Sprite; icon?: string; color: st
 
 // What a bag entry looks like in its slot.
 export function slotLook(e: BagEntry, item?: CreatureOrItemDrop): SlotLook {
-  if (isPotionEntry(e)) return { name: POTIONS[e].name, icon: POTIONS[e].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.18)" };
+  if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: "#ff9fb0", glow: "rgba(255,120,150,0.18)" };
   if (!item) return { name: "Something you no longer have", icon: "❔", color: MUTED };
   const rc = RARITY_COLORS[item.rarity];
   return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : "📦", color: rc.text, glow: rc.glow };

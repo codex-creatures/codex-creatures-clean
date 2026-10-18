@@ -7,6 +7,9 @@ import { useMemo, useState } from "react";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import { makeRoom, type DungeonRun, type Room, type RoomKind } from "@/lib/dungeon/run";
 import type { DungeonMap } from "@/lib/dungeon/map";
+import ContainerLoot from "@/components/ContainerLoot";
+import { RICKETY_CHEST_OPEN } from "@/lib/sprites/props";
+import { weaponDrop } from "@/lib/drops";
 
 const KINDS: RoomKind[] = ["easy", "hard", "miniboss", "boss", "chest", "stash", "treasure", "pool", "merchant", "librarian", "witch", "cards", "entrance"];
 
@@ -37,6 +40,10 @@ export default function RoomsLab() {
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Labyrinth rooms</h1>
+      <div className="stone-panel" style={{ maxWidth: 518, marginBottom: 16 }}>
+        <ContainerLoot name="The rickety chest" sprite={RICKETY_CHEST_OPEN} bagUsed={3} bagSlots={5} onTake={() => {}} onTakeAll={() => {}}
+          items={[{ gold: 120 }, { potion: "potion" }, { gear: weaponDrop("void_scythe", "epic") }, { gear: weaponDrop("klutz_club", "common") }, { backpack: true }]} />
+      </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         {[1, 2, 3].map((n) => <button key={n} className="chip" aria-pressed={ways === n} onClick={() => setWays(n)}>{n} tunnel{n > 1 ? "s" : ""}</button>)}
         <button className="chip" onClick={() => setDone((d) => !d)}>{done ? "Showing: dealt with" : "Showing: fresh"}</button>
