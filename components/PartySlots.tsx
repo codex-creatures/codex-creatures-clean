@@ -1,7 +1,7 @@
 "use client";
 // components/PartySlots.tsx
 // Your party in the Labyrinth, drawn like the Pit's creature cards: three
-// team slots (the first one leads) and two on the bench. Each card has its
+// team slots (the first one leads) and, at the map, two waiting in the Den. Each card has its
 // health bar across the top. Tap a creature, then tap another creature (or
 // an empty slot) to swap them round.
 
@@ -17,15 +17,16 @@ export const BENCH_SLOTS = 2;
 
 export type PartyMember = { id: string; name: string; rarity: Rarity; creatureId?: string; maxHp: number; hp: number }; // hp: share 0–1
 
-export default function PartySlots({ team, bench, onTeam }: {
+export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }: {
   team: PartyMember[];   // fighting, in order
-  bench: PartyMember[];  // the rest of the party
+  bench?: PartyMember[]; // the rest of the party (none: just the team, to change who leads)
+  benchLabel?: string;
   onTeam: (ids: string[]) => void;
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   const slots: (PartyMember | null)[] = [
     ...Array.from({ length: TEAM_SLOTS }, (_, i) => team[i] ?? null),
-    ...Array.from({ length: BENCH_SLOTS }, (_, i) => bench[i] ?? null),
+    ...(bench ? Array.from({ length: BENCH_SLOTS }, (_, i) => bench[i] ?? null) : []),
   ];
 
   function tap(i: number) {
@@ -81,10 +82,14 @@ export default function PartySlots({ team, bench, onTeam }: {
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS}, minmax(0, 120px))`, gap: 10 }}>
         {slots.slice(0, TEAM_SLOTS).map((m, i) => card(m, i))}
       </div>
-      <div className="pixel-font" style={{ fontSize: 13, color: MUTED, margin: "12px 0 6px" }}>Bench</div>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS}, minmax(0, 120px))`, gap: 10 }}>
-        {slots.slice(TEAM_SLOTS).map((m, i) => card(m, TEAM_SLOTS + i))}
-      </div>
+      {bench && (
+        <>
+          <div className="pixel-font" style={{ fontSize: 13, color: MUTED, margin: "12px 0 6px" }}>{benchLabel}</div>
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS}, minmax(0, 120px))`, gap: 10 }}>
+            {slots.slice(TEAM_SLOTS).map((m, i) => card(m, TEAM_SLOTS + i))}
+          </div>
+        </>
+      )}
       <p style={{ fontSize: 12, color: MUTED, margin: "8px 0 0" }}>
         {picked === null ? "Tap a creature, then another creature or slot, to swap them round." : `Now tap where ${slots[picked]?.name} should go.`}
       </p>

@@ -249,6 +249,16 @@ describe("a labyrinth run", () => {
     expect(setTeam({ ...inRoom, battle: {} }, ["e"]).team).toEqual(["d", "e", "a"]); // not mid-fight
   });
 
+  it("only the team steps inside: the rest of the party waits in the Den, so nobody can be swapped in", () => {
+    let run = startRun(party, party.slice(0, 3), { b: 0.4 }, 2);
+    run = setTeam(run, ["d", "b", "e"]);
+    run = stepInside(run);
+    expect(run.party).toEqual(["d", "b", "e"]);
+    expect(run.hp).toEqual({ d: 1, b: 0.4, e: 1 });
+    expect(setTeam(run, ["a", "d"]).team).toEqual(["d"]);    // a stayed home
+    expect(setTeam(run, ["e", "d", "b"]).team).toEqual(["e", "d", "b"]); // who leads can still change
+  });
+
   it("until the first Cyclops kill, a run ends with everyone healed; after it, wounds come home", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "dead" as const };
     expect(endRun({ meta: { runs: 4, clears: 0, injuries: { a: 0.3, z: 0.4 }, bag: [] }, run }).meta.injuries).toEqual({ z: 0.4 });

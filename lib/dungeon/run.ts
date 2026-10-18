@@ -3,9 +3,9 @@
 //
 // - Entering costs ENTRY_FEE gold; your very first run is free, and its first
 //   room is a treasure with FIRST_TREASURE_GOLD in it.
-// - You take a party of up to PARTY_SIZE creatures (at least 1): the first
-//   TEAM_SIZE fight, the rest wait in reserve. You can change them any time
-//   you're not mid-fight.
+// - You bring a party of up to PARTY_SIZE creatures (at least 1) to the
+//   entrance. Looking at the map, you pick the TEAM_SIZE that go in; the
+//   rest wait in the Den. Once inside there's no swapping (only who leads).
 // - HP carries over from room to room (energy is full at each fight).
 // - The dungeon is a labyrinth (lib/dungeon/map.ts): rooms joined by
 //   corridors, the entrance at the bottom and the boss's lair at the top.
@@ -195,7 +195,8 @@ export const STASH_LAST_ROLL = { potion: 0.25, gold: 0.5, gear: 0.25 };
 export const STASH_GOLD: [number, number] = [100, 250];
 // The Cyclops' chest: CYCLOPS_GEAR rolls on the weapon & armour table,
 // CYCLOPS_ITEMS on the item table and CYCLOPS_POTIONS on the potion table,
-// at most CYCLOPS_CHEST_MAX things (its gold and the backpack come on top).
+// at most CYCLOPS_CHEST_MAX rolls in all (its gold and the backpack come on
+// top). Gear is rolled last, so it's what gets cut if the rolls run over.
 // - weapon & armour: like a scan (any rarity at the usual odds; armour twice
 //   as likely as a weapon), as in a stash;
 // - items: a codex (CYCLOPS_RACE_CODEX of the time a race codex, else one any
@@ -212,11 +213,12 @@ export function rollGearPiece(rng: Rng = Math.random): Drop {
 }
 export function cyclopsChest(rng: Rng = Math.random): SackItem[] {
   const times = (range: [number, number], roll: () => SackItem) => Array.from({ length: randInt(...range, rng) }, roll);
-  return [
-    ...times(CYCLOPS_GEAR, () => ({ gear: rollGearPiece(rng) })),
+  const chest = [
     ...times(CYCLOPS_ITEMS, () => ({ gear: codexDrop(rng() < CYCLOPS_RACE_CODEX ? randomCodexMove() : randomLearnableMove()) })),
     ...times(CYCLOPS_POTIONS, (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" })),
-  ].slice(0, CYCLOPS_CHEST_MAX);
+  ];
+  const gear = Math.min(randInt(...CYCLOPS_GEAR, rng), CYCLOPS_CHEST_MAX - chest.length);
+  return [...chest, ...Array.from({ length: gear }, (): SackItem => ({ gear: rollGearPiece(rng) }))];
 }
 // backpack: the rugged backpack (in the Cyclops' chest, the first time you beat it).
 export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop } | { backpack: true };
@@ -444,8 +446,12 @@ export function startQuestRun(party: string[], team: string[], hp: Record<string
   };
 }
 
-// Put the map away and step into the first room.
-export const stepInside = (run: DungeonRun): DungeonRun => ({ ...run, inside: true });
+// Put the map away and step into the first room. Only the team goes in (the
+// rest of the party waits in the Den): no swapping creatures in after this.
+export function stepInside(run: DungeonRun): DungeonRun {
+  const team = fightingTeam(run);
+  return { ...run, inside: true, party: team, team, hp: Object.fromEntries(team.map((id) => [id, run.hp[id]])) };
+}
 
 export const isAlive = (run: DungeonRun, id: string) => (run.hp[id] ?? 0) > 0;
 

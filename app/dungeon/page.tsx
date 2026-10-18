@@ -780,7 +780,8 @@ export default function DungeonPage() {
   return frame(
     <>
       {!run.inside ? (
-        <MapFirst run={run} onStep={() => updateRun(stepInside)} onEnter={(id) => { updateRun(stepInside); goTo(id); }} />
+        <MapFirst run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))}
+          onStep={() => updateRun(stepInside)} onEnter={(id) => { updateRun(stepInside); goTo(id); }} />
       ) : (
         <>
           <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !boxRoom} onGo={goTo}
@@ -811,7 +812,7 @@ export default function DungeonPage() {
           {showCards && <EncounterCards creatureIds={enemyIds} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
-            <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature that can still fight before you go on.</p>
+            <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Nobody in your team can still fight.</p>
           )}
           <div style={{ marginTop: 12 }}>
             {run.current
@@ -917,7 +918,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
               <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
               <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
               <li>Some rooms are a <b>mystery</b> until you walk in.</li>
-              <li>Take up to <b>{PARTY_SIZE} creatures</b>: the first {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).</li>
+              <li>Bring up to <b>{PARTY_SIZE} creatures</b>. Once you&apos;ve seen the map you pick the <b>{TEAM_SIZE}</b> that go in — <b>no swapping</b> inside.</li>
               <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
             </ul>
           </Help>
@@ -937,7 +938,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
         <SectionTitle>Your party ({party.length}/{PARTY_SIZE})</SectionTitle>
-        <span style={{ fontSize: 12, color: MUTED }}>1–{TEAM_SIZE} fight · {TEAM_SIZE + 1}–{PARTY_SIZE} reserve</span>
+        <span style={{ fontSize: 12, color: MUTED }}>{TEAM_SIZE} go in — you choose at the map</span>
       </div>
       {owned.length < PARTY_SIZE && (
         <p style={{ color: MUTED, fontSize: 13, margin: "0 0 8px" }}>
@@ -951,7 +952,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
             const hp = lab.meta.injuries[c.id] ?? 1;
             const cls = CLASS_INFO[c.template.cls];
             const picked = slot >= 0;
-            const fights = picked && slot < TEAM_SIZE;
+            const fights = picked;
             return (
               <button key={c.id} onClick={() => toggle(c.id)} disabled={hp <= 0} aria-pressed={picked}
                 title={hp <= 0 ? `${c.name} is knocked out` : picked ? `Take ${c.name} out of the party` : `Add ${c.name} to the party`}
@@ -997,8 +998,11 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 // ── In the dungeon ────────────────────────────────────────────────
 // At the entrance: one good look at the map before you go in.
 // onEnter: tap one of the rooms off the entrance to step inside and head straight there.
-function MapFirst({ run, onStep, onEnter }: { run: DungeonRun; onStep: () => void; onEnter: (nodeId: string) => void }) {
-  const firstRooms = nextRooms(run).length > 0;
+function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
+  run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void; onStep: () => void; onEnter: (nodeId: string) => void;
+}) {
+  const ready = fightingTeam(run).length > 0;
+  const firstRooms = nextRooms(run).length > 0 && ready;
   return (
     <div className="stone-panel">
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1010,6 +1014,7 @@ function MapFirst({ run, onStep, onEnter }: { run: DungeonRun; onStep: () => voi
             <li>Rooms you know are marked; the rest are a <b>&ldquo;?&rdquo;</b>.</li>
             <li>Every tunnel leads <b>onward, never back</b>.</li>
             <li>Tap a room next to the entrance to <b>head straight there</b>.</li>
+            <li>Pick the <b>{TEAM_SIZE} creatures</b> that suit your route. The rest wait in the Den: <b>no swapping</b> once you&apos;re inside.</li>
           </ul>
         </Help>
       </div>
@@ -1017,7 +1022,8 @@ function MapFirst({ run, onStep, onEnter }: { run: DungeonRun; onStep: () => voi
         {run.map.quest ? "Just a short way in — it went this way." : "Remember the way to the lair: it's too dark to read inside."}
       </p>
       <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />
-      <button className="pixel-btn" onClick={onStep} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
+      {run.party.length > TEAM_SIZE && <Party run={run} byId={byId} onTeam={onTeam} bench="Waits in the Den" />}
+      <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
         🔥 Put the map away and step inside
       </button>
     </div>
@@ -1278,7 +1284,8 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
 }
 
 // Your party: three in the team (the first one leads), two on the bench.
-function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void }) {
+// bench: at the map, the rest of the party (under this label); inside, just the team.
+function Party({ run, byId, onTeam, bench }: { run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void; bench?: string }) {
   const member = (id: string): PartyMember[] => {
     const c = byId(id);
     return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp, hp: run.hp[id] ?? 1 }] : [];
@@ -1286,8 +1293,8 @@ function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => O
   const team = fightingTeam(run);
   return (
     <>
-      <PartySlots team={team.flatMap(member)} bench={run.party.filter((id) => !team.includes(id)).flatMap(member)} onTeam={onTeam} />
-      {team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: "6px 0 0" }}>Nobody is set to fight — move someone from the bench into the team.</p>}
+      <PartySlots team={team.flatMap(member)} bench={bench ? run.party.filter((id) => !team.includes(id)).flatMap(member) : undefined} benchLabel={bench} onTeam={onTeam} />
+      {bench && team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: "6px 0 0" }}>Pick someone to go in.</p>}
     </>
   );
 }

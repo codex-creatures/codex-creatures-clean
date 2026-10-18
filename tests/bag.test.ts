@@ -94,7 +94,7 @@ describe("swapping a weapon in mid-fight", () => {
 });
 
 describe("the Cyclops' chest", () => {
-  it("holds 3–5 gear, 1–2 codexes and 1–2 potions, never more than 10", () => {
+  it("holds 1–2 codexes, 1–2 potions and then 3–5 gear, never more than 10 rolls (gear is cut first)", () => {
     for (let i = 0; i < 200; i++) {
       const chest = cyclopsChest();
       const gear = chest.filter((x) => "gear" in x && (x.gear.dropType !== "item" || !x.gear.codexMove)).length;
@@ -104,6 +104,7 @@ describe("the Cyclops' chest", () => {
       expect(codexes).toBeGreaterThanOrEqual(1); expect(codexes).toBeLessThanOrEqual(2);
       expect(potions).toBeGreaterThanOrEqual(1); expect(potions).toBeLessThanOrEqual(2);
       expect(chest.length).toBeLessThanOrEqual(CYCLOPS_CHEST_MAX);
+      expect("gear" in chest[chest.length - 1] && !(chest[chest.length - 1] as { gear: { codexMove?: string } }).gear.codexMove).toBe(true); // gear rolled last
     }
   });
 });
