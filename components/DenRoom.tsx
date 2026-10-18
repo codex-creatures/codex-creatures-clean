@@ -1,9 +1,9 @@
 "use client";
 // components/DenRoom.tsx
-// The clickable pixel-art Den (drawn by lib/den/scene.ts), fitted to the
-// screen. Nothing is labelled until you point at it: hover an object (or
-// tap it once on a touch screen) to see its name; click it (or tap it again)
-// to go in.
+// The clickable pixel-art Den (drawn by lib/den/scene.ts), filling the
+// space it's given, like a phone game's map: it opens zoomed in on the room;
+// pinch (or the mouse wheel) to zoom, drag to look around. Tap an object to go
+// in. With a mouse, pointing at one shows its name first.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -59,14 +59,8 @@ function denScene(backpack: boolean, art: DenArt): DenScene {
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
 export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  // Touch: the first tap picks an object (shows its name), the second goes in.
-  const [picked, setPicked] = useState<ObjId>(OBJ.none);
-  const touchRef = useRef(false);
-  const [touch, setTouch] = useState(false);
   const klutzNewsRef = useRef(klutzNews);
-  const pickedRef = useRef<ObjId>(OBJ.none);
   useEffect(() => { klutzNewsRef.current = klutzNews; }, [klutzNews]);
-  useEffect(() => { pickedRef.current = picked; }, [picked]);
   const cagedRef = useRef(caged);
   const klutzRef = useRef(klutz);
   const klutzPixels = useRef<LoadedArt | null>(null); // his drawn art, once loaded
@@ -77,18 +71,120 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   const [hover, setHover] = useState<ObjId>(OBJ.none);
   const [notice, setNotice] = useState<Spot | null>(null);
   const router = useRouter();
-  // Crisp pixels when the canvas is shown at full size or bigger; shrunk to
-  // fit, smooth scaling (crisp scaling drops pixels unevenly and looks grainy).
+  // Crisp pixels when the canvas is shown at full size or bigger; shrunk,
+  // smooth scaling (crisp scaling drops pixels unevenly and looks grainy).
   const [crisp, setCrisp] = useState(false);
-  useEffect(() => {
+
+  // ── The view: zoom and pan ──
+  // The room (the "world") is laid out at the viewport's width; the view
+  // scales it by s and shifts it by (x, y), in screen pixels from the top-left.
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const worldRef = useRef<HTMLDivElement | null>(null);
+  const [vp, setVp] = useState<{ w: number; h: number } | null>(null);
+  const view = useRef({ s: 1, x: 0, y: 0 });
+  const limits = useRef({ min: 1, max: 4 });
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const gesture = useRef<{ s: number; d: number; wx: number; wy: number; moved: number; last: { x: number; y: number } } | null>(null);
+  const dragged = useRef(false); // the last press moved the view: not a tap
+
+  // Keep the room on screen: centred along an axis where it's smaller than
+  // the viewport, otherwise no gap at either edge.
+  function apply(next: { s: number; x: number; y: number }) {
+    const box = viewportRef.current, world = worldRef.current;
+    if (!box || !world) return;
+    const vw = box.clientWidth, vh = box.clientHeight, ww = vw, wh = (vw * H) / W;
+    const s = Math.min(limits.current.max, Math.max(limits.current.min, next.s));
+    const fit = (pos: number, size: number, port: number) => (size * s <= port ? (port - size * s) / 2 : Math.min(0, Math.max(port - size * s, pos)));
+    view.current = { s, x: fit(next.x, ww, vw), y: fit(next.y, wh, vh) };
+    world.style.transform = `translate(${view.current.x}px, ${view.current.y}px) scale(${s})`;
+    world.style.setProperty("--inv", String(1 / s)); // labels stay the same size
     const c = canvasRef.current;
-    if (!c) return;
-    const fit = () => setCrisp(c.clientWidth * window.devicePixelRatio >= c.width);
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(c);
+    if (c) setCrisp(ww * s * window.devicePixelRatio >= c.width);
+  }
+  // Zoom to s, keeping the screen point (px, py) where it is.
+  function zoomAt(s: number, px: number, py: number) {
+    const v = view.current;
+    const wx = (px - v.x) / v.s, wy = (py - v.y) / v.s;
+    const ns = Math.min(limits.current.max, Math.max(limits.current.min, s));
+    apply({ s: ns, x: px - ns * wx, y: py - ns * wy });
+  }
+  // The viewport's size; the first time, open zoomed in on the room (filling the height).
+  useEffect(() => {
+    const box = viewportRef.current;
+    if (!box) return;
+    let first = true;
+    const measure = () => {
+      const vw = box.clientWidth, vh = box.clientHeight;
+      if (!vw || !vh) return;
+      setVp({ w: vw, h: vh });
+      const wh = (vw * H) / W;
+      const cover = vh / wh;
+      limits.current = { min: Math.min(1, cover), max: Math.max(3, cover * 2) };
+      if (first) {
+        first = false;
+        const s = Math.min(2.6, Math.max(1, cover));
+        // Centred on the room (a little below the middle of the picture).
+        apply({ s, x: vw / 2 - s * vw * 0.5, y: vh / 2 - s * wh * 0.55 });
+      } else apply(view.current);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
     return () => ro.disconnect();
   }, []);
+  // The mouse wheel zooms (it needs a non-passive listener to stop the page scrolling).
+  useEffect(() => {
+    const box = viewportRef.current;
+    if (!box) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const r = box.getBoundingClientRect();
+      zoomAt(view.current.s * Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
+    };
+    box.addEventListener("wheel", onWheel, { passive: false });
+    return () => box.removeEventListener("wheel", onWheel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // One finger (or the mouse) drags; two fingers pinch (and drag).
+  function startGesture() {
+    const box = viewportRef.current;
+    if (!box) return;
+    const r = box.getBoundingClientRect();
+    const pts = [...pointers.current.values()];
+    const mid = pts.length > 1 ? { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 } : pts[0];
+    const v = view.current;
+    gesture.current = {
+      s: v.s, d: pts.length > 1 ? Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) : 0,
+      wx: (mid.x - r.left - v.x) / v.s, wy: (mid.y - r.top - v.y) / v.s, moved: gesture.current?.moved ?? 0, last: mid,
+    };
+  }
+  function onDown(e: React.PointerEvent) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (pointers.current.size === 0) { dragged.current = false; gesture.current = null; }
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    startGesture();
+  }
+  function onMove(e: React.PointerEvent) {
+    if (e.pointerType === "mouse" && pointers.current.size === 0) { setHovered(objectAt(e)); return; }
+    if (!pointers.current.has(e.pointerId) || !gesture.current) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const r = viewportRef.current!.getBoundingClientRect();
+    const g = gesture.current;
+    const pts = [...pointers.current.values()];
+    const mid = pts.length > 1 ? { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 } : pts[0];
+    g.moved += Math.hypot(mid.x - g.last.x, mid.y - g.last.y);
+    g.last = mid;
+    if (pts.length > 1 || g.moved > 8) dragged.current = true;
+    if (!dragged.current) return;
+    const s = pts.length > 1 && g.d > 0 ? g.s * (Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) / g.d) : view.current.s;
+    const ns = Math.min(limits.current.max, Math.max(limits.current.min, s));
+    apply({ s: ns, x: mid.x - r.left - ns * g.wx, y: mid.y - r.top - ns * g.wy });
+  }
+  function onUp(e: React.PointerEvent) {
+    if (!pointers.current.delete(e.pointerId)) return;
+    if (pointers.current.size > 0) startGesture(); // a finger lifted mid-pinch: carry on dragging with the other
+  }
   // The furniture art (the room is rebuilt with it once it has loaded).
   const [art, setArt] = useState<DenArt | null>(artCache);
   useEffect(() => {
@@ -107,11 +203,15 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null, cagedArt.current);
     scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null, klutzPixels.current);
     const draw = () => {
-      ctx.putImageData(scene.render((performance.now() - start) / 1000, hoverRef.current), 0, 0);
+      const frame = scene.render((performance.now() - start) / 1000, hoverRef.current);
+      ctx.putImageData(frame, 0, 0);
+      // Round the room, the same dark as the picture's corner (no seam when zoomed out).
+      const box = viewportRef.current;
+      if (box && !box.style.background) box.style.background = `rgb(${frame.data[0]}, ${frame.data[1]}, ${frame.data[2]})`;
       // Klutz's label follows him about.
       const el = klutzLabelRef.current, at = scene.klutzAt();
       if (el) {
-        el.style.display = at && (klutzNewsRef.current || hoverRef.current === OBJ.klutz || pickedRef.current === OBJ.klutz) ? "block" : "none";
+        el.style.display = at && (klutzNewsRef.current || hoverRef.current === OBJ.klutz) ? "block" : "none";
         if (at) { el.style.left = `${(at[0] / W) * 100}%`; el.style.top = `${(at[1] / H) * 100}%`; }
       }
     };
@@ -174,29 +274,25 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     else setNotice(spot);
   }
 
-  // A click or tap on an object. With a mouse it goes straight in; on a
-  // touch screen the first tap shows the name, a second tap on it goes in.
+  // A tap (not the end of a drag) on an object goes straight in.
   function press(id: ObjId) {
-    if (!touchRef.current) { activate(id); return; }
-    if (id && id === picked) { activate(id); return; }
-    setPicked(id);
+    if (dragged.current) return;
     setHovered(id);
+    activate(id);
   }
-  // Which object's name is showing: the one you're pointing at or have picked.
-  const shown = (hover || picked) as ObjId;
+  const shown = hover;
 
   return (
-    <div>
-    <div style={{ position: "relative", width: "100%", margin: "0 auto", aspectRatio: `${W} / ${H}` }}>
+    <div ref={viewportRef} className="den-viewport"
+      onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+      onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHovered(OBJ.none); onUp(e); } }}>
+    <div ref={worldRef} className="den-world" style={{ width: vp?.w ?? "100%", height: vp ? (vp.w * H) / W : undefined, visibility: vp ? "visible" : "hidden" }}>
       <canvas
         ref={canvasRef}
         width={W * RES}
         height={H * RES}
-        onPointerDown={(e) => { touchRef.current = e.pointerType !== "mouse"; setTouch(touchRef.current); }}
-        onPointerMove={(e) => { if (e.pointerType === "mouse") setHovered(objectAt(e)); }}
-        onPointerLeave={(e) => { if (e.pointerType === "mouse") setHovered(OBJ.none); }}
         onClick={(e) => press(objectAt(e))}
-        style={{ width: "100%", height: "100%", imageRendering: crisp ? "pixelated" : "auto", cursor: hover ? "pointer" : "default", display: "block" }}
+        style={{ width: "100%", height: "100%", imageRendering: crisp ? "pixelated" : "auto", cursor: hover ? "pointer" : "grab", display: "block" }}
         aria-label="The Den"
         role="img"
       />
@@ -212,29 +308,29 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         return (
           <button
             key={id}
-            onClick={() => activate(id)}
+            onClick={() => { if (!dragged.current) activate(id); }}
             className="pixel-font"
             style={{
               position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`,
               // Near the edges the label leans inwards, so it never runs off a phone screen.
-              transform: `translate(${x / W < 0.12 ? -15 : x / W > 0.88 ? -85 : -50}%, ${a.below ? "15%" : "-100%"})`, whiteSpace: "nowrap",
-              padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, pointerEvents: touch ? "auto" : "none",
+              transform: `translate(${x / W < 0.12 ? -15 : x / W > 0.88 ? -85 : -50}%, ${a.below ? "15%" : "-100%"}) scale(var(--inv, 1))`, transformOrigin: a.below ? "50% 0" : "50% 100%", whiteSpace: "nowrap",
+              padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, pointerEvents: "none",
               background: active ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.78)",
               border: `2px solid ${active ? "#ffd66e" : spot.href ? "#8a6a3a" : "#4a4a55"}`,
               color: spot.href ? (active ? "#ffe9a8" : "#f1d9a0") : "#a9a9b8",
               cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
             }}
           >
-            {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}{touch && spot.href ? " ›" : ""}
+            {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}
           </button>
         );
       })}
 
-      <button ref={klutzLabelRef} onClick={() => activate(OBJ.klutz)}
+      <button ref={klutzLabelRef} onClick={() => { if (!dragged.current) activate(OBJ.klutz); }}
         onPointerEnter={() => setHovered(OBJ.klutz)} onPointerLeave={() => setHovered(OBJ.none)}
         className={`pixel-font${klutzNews ? " news-glow" : ""}`}
         style={{
-          position: "absolute", display: "none", transform: "translate(-50%, -100%)", whiteSpace: "nowrap",
+          position: "absolute", display: "none", transform: "translate(-50%, -100%) scale(var(--inv, 1))", transformOrigin: "50% 100%", whiteSpace: "nowrap",
           padding: "1px 6px", fontSize: "clamp(11px, 2.4cqw, 13px)", lineHeight: 1.3,
           background: hover === OBJ.klutz ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.7)",
           border: `2px solid ${hover === OBJ.klutz ? "#ffd66e" : "#5c7a3a"}`, color: "#d6f0a8", cursor: "pointer",

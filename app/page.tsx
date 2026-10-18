@@ -38,7 +38,7 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="screen-fill" style={{ justifyContent: "center", padding: 6 }}>
+      <div className="screen-fill">
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} />

@@ -580,3 +580,8 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 .battle-banner { text-align: center; font-size: 15px; padding: 6px 10px; margin-bottom: 6px; }
 /* The boss's lair grows to fill the stage (a room stage keeps its shape). */
 .battle-stage > .boss-stage { flex: 1 1 auto; height: auto; min-height: 170px; margin-bottom: 0; }
+
+/* The Den as a map (components/DenRoom.tsx): fills its space; pinch / wheel
+   to zoom, drag to look around (the page does not scroll or zoom under it). */
+.den-viewport { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.den-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
