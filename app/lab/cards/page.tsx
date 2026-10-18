@@ -2,9 +2,9 @@
 // app/lab/cards/page.tsx — the creature card design, being refined (dev tool).
 // Layout from the user's sketch: name; the sprite on a faded rarity colour
 // (filling the box, 5% clear each side); a Race | Attack style row; then the
-// creature's role over one line of flavour. Three looks in the game's own
-// style (stone, wood, pixel bevels) to choose from; the winner replaces
-// CardFace in components/CardGallery.tsx.
+// creature's role over one line of flavour. The user picked the "stone" look
+// (dark stone, bevelled rarity trim); once refined it replaces CardFace in
+// components/CardGallery.tsx.
 
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CLASS_INFO, CREATURE_BY_ID, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
@@ -89,58 +89,21 @@ const stoneLook = (rc: string): Look => ({
   role: "#f1d9a0", flavour: "rgba(255,255,255,0.6)",
 });
 
-// 2 · Wood & brass: the warm wooden frame of the game's buttons, a rarity
-// stripe under the name, parchment wells.
-const woodLook = (rc: string): Look => ({
-  frame: { background: "#5a3b1c", border: "3px solid #1d1209", boxShadow: "inset 3px 3px 0 #8a5f2f, inset -3px -3px 0 #3a250f, 0 4px 0 rgba(0,0,0,0.5)" },
-  name: { color: "#ffe9b0", textShadow: "1px 1px 0 #1d1209", borderBottom: `3px solid ${rc}`, boxShadow: `0 2px 0 ${shade(rc, -0.5)}` },
-  art: (r) => ({ background: `radial-gradient(circle at 50% 50%, ${r}55, ${r}14 70%), #efe2c0`, border: "2px solid #1d1209", boxShadow: sunken("#cdb98c", 3) }),
-  plaque: () => ({ background: "#3a250f", color: "#ffe9b0", border: "2px solid #1d1209", boxShadow: raised("#4a3015") }),
-  info: { background: "#efe2c0", border: "2px solid #1d1209", boxShadow: sunken("#cdb98c") },
-  role: "#3a250f", flavour: "rgba(43,29,16,0.75)",
-});
-
-// 3 · Rarity metal: a thick stepped-bevel rim in the rarity colour (like a
-// minted metal frame), the name on a dark rarity ribbon, dark stone inside.
-const metalLook = (rc: string): Look => ({
-  frame: {
-    background: `linear-gradient(160deg, ${shade(rc, 0.15)}, ${shade(rc, -0.25)})`, border: "3px solid #0d0e13",
-    boxShadow: `inset 3px 3px 0 ${shade(rc, 0.5)}, inset -3px -3px 0 ${shade(rc, -0.5)}, inset 6px 6px 0 ${shade(rc, 0.2)}, inset -6px -6px 0 ${shade(rc, -0.3)}, 0 4px 0 rgba(0,0,0,0.5)`,
-  },
-  name: { color: "#fff6dc", background: shade(rc, -0.55), textShadow: "1px 1px 0 #000", boxShadow: sunken(shade(rc, -0.4)) },
-  art: (r) => ({ background: `radial-gradient(circle at 50% 50%, ${r}66, ${r}1a 70%), #15171d`, border: "2px solid #0d0e13", boxShadow: sunken("#2a2d36", 3) }),
-  plaque: (c) => ({ background: "#1b1d24", color: c, border: "2px solid #0d0e13", boxShadow: raised("#2a2d36") }),
-  info: { background: "#1b1d24", border: "2px solid #0d0e13", boxShadow: sunken("#2a2d36") },
-  role: "#f1d9a0", flavour: "rgba(255,255,255,0.6)",
-});
-
-const LOOKS = [
-  { key: "1", name: "Stone", make: stoneLook },
-  { key: "2", name: "Wood & brass", make: woodLook },
-  { key: "3", name: "Rarity metal", make: metalLook },
-];
-
 export default function CardLab() {
-  const ids = ["rust_beetle", "moss_wolf", "monkey_mage", "dire_wolf", "storm_phoenix"];
+  // One of each rarity, plus a few more.
+  const ids = ["storm_phoenix", "crystal_golem", "crystalback", "rust_beetle", "cave_bat", "moss_wolf", "monkey_mage", "dire_wolf"];
   const creatures = ids.map((id) => CREATURE_BY_ID[id]).filter(Boolean);
-  const beetle = CREATURE_BY_ID.rust_beetle;
+  const card = (t: CreatureTemplate) => <Card key={t.id} t={t} look={stoneLook(RARITY_COLORS[t.rarity].text)} />;
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
-      <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Creature card</h1>
+      <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Creature card · Stone</h1>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 220px)", gap: 20 }}>
-        {LOOKS.map(({ key, name, make }) => (
-          <div key={key}>
-            <div className="pixel-font" style={{ fontSize: 14, marginBottom: 8, color: "#f1d9a0" }}>{key} · {name}</div>
-            <Card t={beetle} look={make(RARITY_COLORS[beetle.rarity].text)} />
-          </div>
-        ))}
+        {[CREATURE_BY_ID.storm_phoenix, CREATURE_BY_ID.rust_beetle].map(card)}
       </div>
       <h2 className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0", marginTop: 28 }}>At summary size</h2>
-      {LOOKS.map(({ key, make }) => (
-        <div key={key} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 140px)", gap: 12, marginBottom: 16 }}>
-          {creatures.map((t) => <Card key={t.id} t={t} look={make(RARITY_COLORS[t.rarity].text)} />)}
-        </div>
-      ))}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 140px)", gap: 12 }}>
+        {creatures.map(card)}
+      </div>
     </main>
   );
 }
