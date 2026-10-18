@@ -7,7 +7,9 @@ import { useMemo, useState } from "react";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import { makeRoom, type DungeonRun, type Room, type RoomKind } from "@/lib/dungeon/run";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import ContainerLoot from "@/components/ContainerLoot";
+import LootWindow from "@/components/LootWindow";
+import { lookOf } from "@/components/ContainerLoot";
+import type { SackItem } from "@/lib/dungeon/run";
 import { RICKETY_CHEST_OPEN } from "@/lib/sprites/props";
 import { weaponDrop } from "@/lib/drops";
 
@@ -36,13 +38,34 @@ export default function RoomsLab() {
   const [ways, setWays] = useState(2);
   const [done, setDone] = useState(false);
   const [seed, setSeed] = useState(7);
+  // A loot window to try (nothing is saved): drag between the chest and a 3-slot bag.
+  const [lootOpen, setLootOpen] = useState(false);
+  const [sack, setSack] = useState<SackItem[]>(() => [{ gold: 120 }, { potion: "potion" }, { gear: weaponDrop("void_scythe", "epic") }, { gear: weaponDrop("klutz_club", "common") }]);
+  const [bag, setBag] = useState<SackItem[]>(() => [{ potion: "lesser" }, { gear: weaponDrop("klutz_club", "rare") }]);
+  const roomless = (x: SackItem) => lookOf(x).free;
+  const take = (i: number, at?: number) => {
+    const x = sack[i];
+    if (!roomless(x) && bag.length >= 3 && at === undefined) return;
+    let nb = bag, ns = sack.filter((_, j) => j !== i);
+    if (!roomless(x)) {
+      if (at !== undefined && bag[at]) { ns = [...ns, bag[at]]; nb = bag.map((b, j) => (j === at ? x : b)); }
+      else nb = [...bag, x];
+    }
+    setSack(ns); setBag(nb);
+  };
   const runs = useMemo(() => KINDS.map((k) => fakeRun(k, ways, done, seed + KINDS.indexOf(k))), [ways, done, seed]);
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Labyrinth rooms</h1>
       <div className="stone-panel" style={{ maxWidth: 518, marginBottom: 16 }}>
-        <ContainerLoot name="The rickety chest" sprite={RICKETY_CHEST_OPEN} bagUsed={3} bagSlots={5} onTake={() => {}} onTakeAll={() => {}}
-          items={[{ gold: 120 }, { potion: "potion" }, { gear: weaponDrop("void_scythe", "epic") }, { gear: weaponDrop("klutz_club", "common") }, { backpack: true }]} />
+        <button className="pixel-btn" onClick={() => setLootOpen(true)}>Try the loot window</button>
+        {lootOpen && (
+          <LootWindow name="The rickety chest" sprite={RICKETY_CHEST_OPEN} items={sack} slots={3} bagName="Bindle"
+            bag={bag.map((x) => { const l = lookOf(x); return { name: l.name, sprite: l.sprite, icon: l.icon, color: l.color, glow: l.glow }; })}
+            onTake={(i) => take(i)} onTakeAll={() => { for (let i = sack.length - 1; i >= 0; i--) if (roomless(sack[i])) take(i); }}
+            onSwap={(i, at) => take(i, at)} onPutBack={(at) => { setSack([...sack, bag[at]]); setBag(bag.filter((_, j) => j !== at)); }}
+            onClose={() => setLootOpen(false)} />
+        )}
       </div>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         {[1, 2, 3].map((n) => <button key={n} className="chip" aria-pressed={ways === n} onClick={() => setWays(n)}>{n} tunnel{n > 1 ? "s" : ""}</button>)}

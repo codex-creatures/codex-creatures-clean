@@ -20,12 +20,15 @@ export const ICON: React.CSSProperties = { width: "84%", height: "auto", imageRe
 export const NAME: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", marginTop: 2, fontSize: 11, lineHeight: 1.2, minHeight: "2.4em", textAlign: "center" };
 
 type Look = { name: string; sprite?: Sprite; icon?: string; color: string; glow: string; free: boolean };
-function lookOf(x: SackItem): Look {
+export function lookOf(x: SackItem): Look {
   // Everything glows in its rarity: gold and the backpack are legendary.
   const by = (r: Rarity) => ({ color: RARITY_COLORS[r].text, glow: rarityGlow(r) });
   if ("backpack" in x) return { name: "Rugged backpack", sprite: BACKPACK_SPRITE, ...by(BACKPACK_RARITY), free: true };
   if ("gold" in x) return { name: `${x.gold} gold`, sprite: GOLD_SPRITE, ...by(GOLD_RARITY), free: true };
   if ("potion" in x) return { name: POTIONS[x.potion].name, sprite: POTION_SPRITES[x.potion], ...by(POTION_RARITY[x.potion]), free: false };
+  // A creature card or a pouch of gold, from a treasure chest: no room needed.
+  if (x.gear.dropType === "reward") return { name: `${x.gear.amount} gold`, sprite: GOLD_SPRITE, ...by(GOLD_RARITY), free: true };
+  if (x.gear.dropType === "card" || x.gear.dropType === "creature") return { name: `${x.gear.name} card`, icon: "🃏", ...by(x.gear.rarity), free: true };
   const g = x.gear as CreatureOrItemDrop;
   const rc = RARITY_COLORS[g.rarity];
   return { name: g.name, sprite: itemSprite(g), icon: g.codexMove ? "📖" : "📦", color: rc.text, glow: rarityGlow(g.rarity), free: false };

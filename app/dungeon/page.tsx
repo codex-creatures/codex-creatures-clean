@@ -10,8 +10,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
-import ContainerLoot from "@/components/ContainerLoot";
-import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN } from "@/lib/sprites/props";
+import LootWindow from "@/components/LootWindow";
+import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN } from "@/lib/sprites/props";
 import LootGrid from "@/components/LootGrid";
 import GearCompare, { GearStatLine } from "@/components/GearCompare";
 import PartySlots, { type PartyMember } from "@/components/PartySlots";
@@ -81,6 +81,7 @@ export default function DungeonPage() {
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [found, setFound] = useState<GotItem[] | null>(null); // what the current room just gave you
+  const [lootOpen, setLootOpen] = useState(false); // an opened chest or sack, in its window with your bag
   const [notes, setNotes] = useState<string[]>([]);
   // Leaving for the Den: keep showing what's on screen until the Den loads
   // (otherwise the entrance flashes up for a moment on the way out).
@@ -325,7 +326,9 @@ export default function DungeonPage() {
       if (d) drops.push(d);
     }
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
-    give(drops, markDone);
+    const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
+    updateRun((r) => (r.current ? { ...r, current: { ...r.current, sack, opened: true, done: true } } : r));
+    setLootOpen(true);
   }
 
   function buyCodex(move: string) {
@@ -365,6 +368,7 @@ export default function DungeonPage() {
   // A stash: open the sack…
   function openSack() {
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, opened: true, done: true } } : r));
+    setLootOpen(true);
   }
   // …and take something out: potions and gear need a slot in your bag, gold doesn't.
   function takeFromSack(index: number) {
@@ -379,8 +383,9 @@ export default function DungeonPage() {
       updateRun((r) => (r.current ? { ...r, loot: [...r.loot, "A rugged backpack"], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
       return;
     }
+    const roomless = "gear" in item && ["card", "creature", "reward"].includes(item.gear.dropType);
     if ("gold" in item) game.addGold(item.gold);
-    else if (full) return;
+    else if (full && !roomless) return;
     else if ("potion" in item) updateBag((bag) => addToBag(bag, [item.potion], bagSize(cur.meta)));
     else carry([item.gear]);
     const label = "gold" in item ? `${item.gold} gold` : "potion" in item ? POTIONS[item.potion].name : dropLabel(item.gear);
@@ -388,10 +393,42 @@ export default function DungeonPage() {
     setFound((f) => [...(f ?? []), got]);
     updateRun((r) => (r.current ? { ...r, loot: [...r.loot, label], got: [...(r.got ?? []), got], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
   }
+  // From your bag into the open chest or sack (you can take it back while you're here).
+  function putInSack(bagIndex: number) {
+    const cur = loadDungeon();
+    const entry = cur.meta.bag[bagIndex];
+    if (!cur.run?.current || !entry) return;
+    const loot = { ...(cur.meta.loot ?? {}) };
+    let item: SackItem | null = null;
+    if (isPotionEntry(entry)) item = { potion: entry };
+    else {
+      const it = itemOf(entry, cur.meta);
+      if (!it) return;
+      item = { gear: it };
+      if (gearIdOf(entry)) game.removeDrop(it.id); // your own gear: it's down here now
+      const l = lootIdOf(entry);
+      if (l) delete loot[l];
+    }
+    const bag = cur.meta.bag.filter((_, i) => i !== bagIndex);
+    // (If you picked it up this run, it's not part of your haul any more.)
+    const got = [...(cur.run.got ?? [])];
+    const gi = got.findIndex((g) => ("potion" in item! ? "potion" in g && g.potion === (item as { potion: PotionKey }).potion : "drop" in g && g.drop.id === (item as { gear: Drop }).gear.id));
+    if (gi >= 0) got.splice(gi, 1);
+    update({ meta: { ...cur.meta, bag, loot }, run: { ...cur.run, got, current: { ...cur.run.current, sack: [...(cur.run.current.sack ?? []), item] } } });
+  }
+  // Something from the chest into a bag slot: a full slot swaps (its thing goes in the chest).
+  function swapFromSack(lootIndex: number, bagIndex: number) {
+    const cur = loadDungeon();
+    const item = cur.run?.current?.sack?.[lootIndex];
+    if (!item) return;
+    const roomless = "gold" in item || "backpack" in item || ("gear" in item && ["card", "creature", "reward"].includes(item.gear.dropType));
+    if (!roomless && cur.meta.bag[bagIndex]) putInSack(bagIndex); // (it goes on the end: lootIndex still points at the same thing)
+    takeFromSack(lootIndex);
+  }
   function takeAllFromSack() {
     // Gold and the backpack first (they take no space), then whatever fits, in order.
     const sack = loadDungeon().run?.current?.sack ?? [];
-    const free = (x: SackItem) => "gold" in x || "backpack" in x;
+    const free = (x: SackItem) => "gold" in x || "backpack" in x || ("gear" in x && ["card", "creature", "reward"].includes(x.gear.dropType));
     // Take from the back so earlier indices stay valid.
     for (const i of sack.map((_, i) => i).reverse().filter((i) => free(sack[i]))) takeFromSack(i);
     let left = loadDungeon().run?.current?.sack ?? [];
@@ -431,6 +468,7 @@ export default function DungeonPage() {
   // The boss is beaten: the run is over.
   function nextRoom() {
     setFound(null);
+    setLootOpen(false);
     setNotes([]);
     battle.clear();
     updateRun((r) => leaveRoom(leaveSack(r)));
@@ -442,6 +480,7 @@ export default function DungeonPage() {
     const w = loadDungeon().run?.current?.witch;
     if (w?.state === "playing" && w.correct > 0) witchLeave();
     setFound(null);
+    setLootOpen(false);
     setNotes([]);
     battle.clear();
     // On the quest's run: the club's room (empty once you've got it), then the thief.
@@ -723,7 +762,8 @@ export default function DungeonPage() {
       ) : (
         <>
           <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !boxRoom} onGo={goTo}
-            onObject={run.current?.quest === "club" && !run.current.done ? takeClub
+            onObject={run.current?.opened && (run.current.sack?.length ?? 0) > 0 ? () => setLootOpen(true)
+              : run.current?.quest === "club" && !run.current.done ? takeClub
               : run.current?.kind === "chest" && !run.current.done ? openChest
               : run.current?.container && run.current.done && !run.current.opened ? openSack
               : run.current?.quest === "thief" && run.current.done && !run.current.boxTaken ? takeBox
@@ -732,6 +772,19 @@ export default function DungeonPage() {
             onFight={canFight ? () => startFight(run) : undefined}
             onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} />
           {viewGear && gearView(viewGear)}
+          {lootOpen && run.current?.opened && (() => {
+            const c = run.current!;
+            const bag = lab.meta.bag ?? [];
+            return (
+              <LootWindow
+                name={c.kind === "chest" ? "The chest" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash" : "The sack"}
+                sprite={c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
+                items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
+                slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
+                onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
+                onClose={() => setLootOpen(false)} />
+            );
+          })()}
           {showCards && <EncounterCards creatureIds={enemyIds} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
@@ -742,7 +795,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear} onLook={() => setLootOpen(true)}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -960,19 +1013,17 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
-  onWitch: (g: Guess) => void; onWitchLeave: () => void; onGear: (item: CreatureOrItemDrop) => void;
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyPotion, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
+  onWitch: (g: Guess) => void; onWitchLeave: () => void; onGear: (item: CreatureOrItemDrop) => void; onLook: () => void;
   run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "thief" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
-  const sackPanel = (
-    <ContainerLoot name={room.container === "chest" ? "The rickety chest" : room.kind === "stash" ? "The stash" : "The sack"}
-      sprite={room.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
-      items={room.sack ?? []} bagUsed={bagUsed} bagSlots={bagSlots} onTake={onTakeSack} onTakeAll={onTakeAllSack} />
-  );
+  const sackPanel = (room.sack?.length ?? 0) > 0
+    ? <button className="pixel-btn" style={{ marginTop: 8 }} onClick={onLook}>🔍 Look inside ({room.sack!.length})</button>
+    : <p style={{ fontSize: 13, color: "#d8d4c8", margin: "8px 0 0" }}>Empty now.</p>;
   // A beaten fight's loot: the container, then what's in it once opened.
   const fightLoot = room.container && (room.opened ? sackPanel : (
     <div style={{ marginTop: 8 }}>
@@ -1043,7 +1094,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
         </>
       ))}
 
-      {room.kind === "chest" && (room.done ? next : (
+      {room.kind === "chest" && (room.done ? <>{sackPanel}{next}</> : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>An old chest, humming faintly — like the barcodes do. {CHEST_DROPS} things rattle inside.</p>
           <button className="pixel-btn" onClick={onChest}>Open it</button>
