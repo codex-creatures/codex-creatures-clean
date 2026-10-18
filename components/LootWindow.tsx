@@ -44,7 +44,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const [picked, setPicked] = useState<number | null>(null); // a bag slot tapped (to see it, or put it back)
   const [seen, setSeen] = useState<number | null>(null);     // a chest item tapped (to see it before taking it)
   const [was, setWas] = useState(items); // things moved: the indexes are stale
-  if (was !== items) { setWas(items); setSeen(null); setPicked(null); }
+  if (was !== items && (was.length || items.length)) { setWas(items); setSeen(null); setPicked(null); } // (a fresh [] each render is no change)
   const dragRef = useRef<Drag | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null); // the window's backdrop: the ghost is placed within it
 
