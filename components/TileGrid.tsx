@@ -109,37 +109,29 @@ function Tile({ d, fav, badge, sell, onClick }: {
   );
 }
 
-// A creature as a big framed card, drawn like the equip window: glowing on
-// its pedestal. Its class sits on the frame's bottom-left corner, its race on
-// the bottom-right, clear of the sprite.
+// A creature in your collection: "Lv 3 Rust Beetle" on top, the creature
+// itself below (just the sprite, no frame), then its attack style and race.
 function CreatureCard({ d, fav, badge, onClick }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; onClick: () => void }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
-  const chip = (icon: string, color: string, title: string, side: "left" | "right") => (
-    <span title={title} style={{
-      position: "absolute", bottom: -13, [side]: 8, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: 14, background: "#101117", border: `2px solid ${color}`, borderRadius: 6, boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
-    }}>{icon}</span>
-  );
+  const sprite = creatureSprite(d.creatureId);
   return (
     <button onClick={onClick} title={d.name}
-      style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-      <span style={{
-        position: "relative", aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        background: `radial-gradient(ellipse at 50% 55%, ${col.glow}, #101117 72%)`,
-        border: `3px solid ${col.border}`, borderRadius: 10,
-        boxShadow: "inset 0 0 18px rgba(0,0,0,0.6), 0 4px 0 rgba(0,0,0,0.5)",
-      }}>
-        <PixelSprite sprite={creatureSprite(d.creatureId)} scale={3.4} style={{ position: "relative", zIndex: 1 }} />
-        <span style={{ width: "62%", height: 10, marginTop: -4, background: "#3a3f4c", borderTop: `2px solid ${col.border}`, borderRadius: "50% / 40%", boxShadow: "inset 0 -2px 0 #23262f" }} />
-        {fav && <span style={{ position: "absolute", top: 4, left: 7, fontSize: 15, color: "#f5c542" }}>★</span>}
-        {badge && <span style={{ position: "absolute", top: 4, right: 7, fontSize: 13 }}>{badge}</span>}
-        {tpl && chip(CLASS_INFO[tpl.cls].icon, CLASS_INFO[tpl.cls].color, `Class: ${CLASS_INFO[tpl.cls].name}`, "left")}
-        {tpl?.race && chip(RACE_INFO[tpl.race].icon, RACE_INFO[tpl.race].color, `Race: ${RACE_INFO[tpl.race].name}`, "right")}
+      style={{ position: "relative", background: "none", border: "none", padding: "4px 2px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+      <span className="pixel-font" style={{ display: "block", maxWidth: "100%", fontSize: 14, color: col.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>
+        <span style={{ color: "#f1d9a0" }}>Lv {d.level ?? 1}</span> {d.name}
       </span>
-      <span style={{ display: "block", marginTop: 18, fontSize: 14, fontWeight: 600, color: col.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center" }}>
-        {d.name}
+      <span style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "6%" }}>
+        <PixelSprite sprite={sprite} scale={3.4} style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
       </span>
+      {tpl && (
+        <span className="pixel-font" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+          <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
+          {tpl.race && <span style={{ color: "#f1d9a0" }}> · {RACE_INFO[tpl.race].name}</span>}
+        </span>
+      )}
+      {fav && <span style={{ position: "absolute", top: 26, left: 4, fontSize: 15, color: "#f5c542" }}>★</span>}
+      {badge && <span style={{ position: "absolute", top: 26, right: 4, fontSize: 13 }}>{badge}</span>}
     </button>
   );
 }
