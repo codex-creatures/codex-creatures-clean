@@ -1173,13 +1173,13 @@ function RunOver({ run, lab, onHome, onGather }: { run: DungeonRun; lab: Dungeon
       <p style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.5 }}>{text}</p>
       <div style={{ textAlign: "left" }}>
         <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", margin: "4px 0 8px" }}>What you got</div>
-        <LootGrid items={run.got ?? []} />
+        <LootGrid items={run.got ?? []} grouped />
         {floor.length > 0 && (
           <>
             <div className="pixel-font" style={{ fontSize: 15, color: run.status === "cleared" ? "#f1d9a0" : "#ff8a80", margin: "16px 0 8px" }}>
               Left behind{run.status === "cleared" ? "" : " (lost)"}
             </div>
-            <LootGrid items={floor.map((f) => (f.drop ? { drop: f.drop } : { potion: f.potion! }))} faded />
+            <LootGrid items={floor.map((f) => (f.drop ? { drop: f.drop } : { potion: f.potion! }))} faded grouped />
             {run.status === "cleared" && (
               <div style={{ margin: "10px 0 0" }}>
                 <p style={{ fontSize: 13, color: "#d8d4c8" }}>With the Cyclops gone, you can walk back through and pick up the {floor.length} thing{floor.length === 1 ? "" : "s"} you left behind.</p>
