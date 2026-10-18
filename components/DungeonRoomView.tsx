@@ -38,7 +38,9 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   const pos = runPosition(run);
   const node = run.map.nodes[pos];
   const ways = [...waysOn(run.map, pos)].sort((a, b) => a.x - b.x); // west to east
-  const looks: TunnelLook[] = ways.map(() => "unknown"); // every tunnel looks the same from here
+  // Every tunnel looks the same from here. A dead end (the thief's room, a
+  // lair) still has a dark way out — it just doesn't lead anywhere you can go.
+  const looks: TunnelLook[] = ways.length ? ways.map(() => "unknown") : ["unknown"];
   const room = run.current;
   const pool = node.kind === "pool" ? (room && !room.done ? "glow" : "still") : undefined;
   const key = `${pos}|${looks.join(",")}|${pool ?? ""}`;
@@ -65,6 +67,7 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
     return ch.idAt(((e.clientX - r.left) / r.width) * CW, ((e.clientY - r.top) / r.height) * CH);
   }
   function setHovered(id: number) {
+    if (id > 0 && !ways[id - 1]) id = 0; // (a dead end's tunnel goes nowhere)
     hoverRef.current = id;
     setHover(id);
   }

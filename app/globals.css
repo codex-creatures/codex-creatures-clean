@@ -307,7 +307,22 @@ button, a, [role="button"] { touch-action: manipulation; }
   background: #2a1f0e; border: 2px solid #ffd66e; color: #ffe9a8; padding: 8px 10px; font-size: 13px; line-height: 1.45;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6), 0 0 14px rgba(255, 214, 110, 0.25);
 }
-@media (prefers-reduced-motion: reduce) { .tutorial-pulse, .tutorial-arrow { animation: none; } }
+/* The guided fight: the move Klutz wants you to use glows, slowly. */
+.move-glow { border-radius: 6px; animation: move-glow 2.2s ease-in-out infinite; }
+.move-glow > * { width: 100%; }
+@keyframes move-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255, 214, 110, 0.35), 0 0 6px rgba(255, 214, 110, 0.2); }
+  50% { box-shadow: 0 0 0 3px rgba(255, 214, 110, 0.95), 0 0 22px rgba(255, 214, 110, 0.7); }
+}
+/* …and Klutz pops up beside the fight to say so. */
+.klutz-say { animation: klutz-say 0.35s cubic-bezier(0.2, 1.4, 0.4, 1) both; transform-origin: bottom left; }
+@keyframes klutz-say { from { opacity: 0; transform: scale(0.6) translateY(10px); } to { opacity: 1; transform: none; } }
+.tutorial-tip.speech { position: relative; border-radius: 4px; }
+.tutorial-tip.speech::before {
+  content: ""; position: absolute; left: -9px; bottom: 10px;
+  border: 8px solid transparent; border-right-color: #ffd66e; border-left: 0;
+}
+@media (prefers-reduced-motion: reduce) { .tutorial-pulse, .tutorial-arrow, .move-glow, .klutz-say { animation: none; } }
 
 /* Something on a Labyrinth floor you can pick up or open: it bobs and glints. */
 .floor-prop { animation: floor-prop 1.4s ease-in-out infinite; }

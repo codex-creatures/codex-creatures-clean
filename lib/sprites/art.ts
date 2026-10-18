@@ -11,7 +11,9 @@ import type { Sprite } from "./pixels";
 export type Anim = { src: string; frames: number; w: number; h: number; x: number; y: number };
 // size: how wide it's shown, in fine pixels, when that isn't its own width
 // (item icons are drawn at 64px but take the 32px space the grids did).
-export type Art = { src: string; w: number; h: number; size?: number; walk?: Anim };
+// faces: which way the drawing faces. Creature art faces left (towards the
+// player's side of a fight) unless it says "right" (Klutz, drawn walking right).
+export type Art = { src: string; w: number; h: number; size?: number; walk?: Anim; faces?: "right" };
 
 const ART = new WeakMap<Sprite, Art>();
 

@@ -26,10 +26,9 @@ import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
-import { clubRoom, klutzClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_KLUTZ_MOVES } from "@/lib/quest";
+import { clubRoom, klutzClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
 import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard } from "@/lib/dungeon/witch";
 import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
-import { KLUTZ } from "@/lib/creatures/creatureData";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
@@ -483,7 +482,7 @@ export default function DungeonPage() {
     give(Array.from({ length: n }, () => makeCreatureDrop(CREATURE_BY_ID[pickCreatureId(pickRarity("", "random"))], "card", "")), markDone);
   }
 
-  // Klutz's box, picked up off the floor where the Rattlebones dropped it.
+  // Klutz's box, picked up off the floor where the thief dropped it.
   function takeBox() {
     game.questBoxFound(rollBox());
     updateRun((r) => (r.current ? { ...r, loot: [...r.loot, "Klutz's box"], current: { ...r.current, boxTaken: true } } : r));
@@ -507,10 +506,11 @@ export default function DungeonPage() {
     const room = r.current!;
     const own = fightingTeam(r).filter((id) => byId(id));
     const mine = own.map((id) => byId(id)!);
-    // The thief: Klutz fights with you, and talks you through it.
+    // The thief: Klutz talks you through it from the side; your first
+    // creature gets one move for each of his lessons (for this fight only).
     const tutorial = room.quest === "thief";
-    const klutz = { ...game.klutzFighter, skills: TUTORIAL_KLUTZ_MOVES.map((n) => MOVE_BY_NAME[n]) };
-    const ids = tutorial ? [KLUTZ_DROP_ID, ...own] : own;
+    const fighters = mine.map((c, i) => (tutorial && i === 0 ? { ...c.fighter, skills: TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]) } : c.fighter));
+    const ids = own;
     const sick = r.illness ? ids.indexOf(r.illness.id) : -1;
     const info: MemberInfo[] = room.boss
       ? CYCLOPS_PARTS.map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName, creatureId: p.id }))
@@ -523,11 +523,11 @@ export default function DungeonPage() {
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     if (room.enemies) game.markSeen(room.enemies.map((e) => e.creatureId));
     battle.start(
-      { A: [...(tutorial ? [klutz] : []), ...mine.map((c) => c.fighter)], B: room.boss ? cyclopsTeam(CYCLOPS_LEVEL) : room.enemies!.map(enemyFighter) },
-      { A: [...(tutorial ? [{ rarity: KLUTZ.rarity, label: "Your helper", creatureId: KLUTZ.id }] : []), ...mine], B: info },
+      { A: fighters, B: room.boss ? cyclopsTeam(CYCLOPS_LEVEL) : room.enemies!.map(enemyFighter) },
+      { A: mine, B: info },
       room.level ?? "hard",
       {
-        startHp: [...(tutorial ? [klutz.maxHp] : []), ...mine.map((c, i) => Math.round((r.hp[own[i]] ?? 1) * c.fighter.maxHp))],
+        startHp: mine.map((c, i) => Math.round((r.hp[own[i]] ?? 1) * c.fighter.maxHp)),
         title: room.boss ? "Labyrinth · the Cyclops" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
         illness: sick >= 0 ? { index: sick, rounds: r.illness!.left } : undefined,
@@ -663,7 +663,7 @@ export default function DungeonPage() {
   // The club tutorial: it's in your bindle and not on anyone yet.
   const clubEntry = (lab.meta.bag ?? []).find((e) => itemOf(e)?.itemKey === "klutz_club");
   const clubTutorial = run.current?.quest === "club" && run.current.done && clubEntry ? clubEntry : undefined;
-  // The Rattlebones' room: once it's beaten, the way on is home (with the box).
+  // The thief's room: once it's beaten, the way on is home (with the box).
   const boxRoom = run.current?.quest === "thief" && run.current.done;
   // A fight waiting here: the Fight! button sits on the room. Until you've
   // beaten the Cyclops (the tutorial), its creatures' cards come up first.
@@ -958,7 +958,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
       ) : (
         <>
           <p style={{ fontSize: 15, color: "#d8d4c8" }}>
-            A battered old club with <i>KLUTZ</i> scratched into it. The Rattlebones dropped it — you can hear it clattering on ahead.
+            A battered old club with <i>KLUTZ</i> scratched into it. The thief dropped it — you can hear it clattering on ahead.
           </p>
           <button className="pixel-btn" onClick={onClub}>Pick up the club</button>
         </>
@@ -1095,7 +1095,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
       ) : next) : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 10px" }}>
-            {room.quest === "thief" && "There it is: a Baby Cyclops, hunched over a battered box, picking through Klutz's weapons. Klutz cracks his knuckles: “Oi! That's mine. Come on — we'll do this one together.”"}
+            {room.quest === "thief" && "There it is: a Baby Cyclops, hunched over a battered box, picking through Klutz's weapons. Klutz ducks behind you: “Oi! That's mine! Go on — you fight, I'll tell you what to do.”"}
             {room.kind === "easy" && !room.quest && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
             {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Beat it and you can heal or revive one of your party."}

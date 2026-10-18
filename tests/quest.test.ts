@@ -2,8 +2,12 @@ import { describe, it, expect } from "vitest";
 import { enemyFighter } from "../lib/dungeon/run";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
-import { KLUTZ, MOVE_BY_NAME } from "../lib/creatures/creatureData";
-import { TUTORIAL_KLUTZ_MOVES } from "../lib/quest";
+import { CREATURES_BY_RARITY, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { rollCreature } from "../lib/creatures/creatureRoll";
+import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/battle";
+import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
+import { TUTORIAL_MOVES } from "../lib/quest";
+import { STARTER_LEVEL } from "../lib/creatures/starter";
 import { rollBox, thiefRoom, klutzClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
@@ -27,13 +31,31 @@ describe("the first quest: Klutz's box", () => {
     expect(room.enemies![0].gear).toEqual([expect.objectContaining({ slot: "armor", drops: false })]);
   });
 
+  // Your starter (a Lv 3 Rare with Klutz's club and the lesson moves), on its own.
+  const starter = (t = CREATURES_BY_RARITY.rare[0]) => ({
+    ...buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, undefined, rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL),
+    skills: TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]),
+  });
   it("the guided fight teaches: ranged does least, Force bounces off, Pierce goes through", () => {
     const thief = enemyFighter(thiefRoom().enemies![0]);
-    const klutz = { ...buildFighter(KLUTZ, undefined, undefined, undefined, undefined, undefined, undefined, 10), skills: TUTORIAL_KLUTZ_MOVES.map((n) => MOVE_BY_NAME[n]) };
-    const hit = (name: string) => calcDamage(MOVE_BY_NAME[name], klutz, thief, false).damage;
-    expect(hit("Stone Throw")).toBeLessThan(hit("Heavy Blow"));
-    expect(hit("Heavy Blow")).toBeLessThan(hit("Impale"));
-    expect(thief.maxHp).toBeGreaterThan(klutz.maxHp);
+    for (const t of CREATURES_BY_RARITY.rare) {
+      const me = starter(t);
+      const hit = (name: string) => calcDamage(MOVE_BY_NAME[name], me, thief, false).damage;
+      expect(hit("Stone Throw")).toBeLessThan(hit("Heavy Blow"));
+      expect(hit("Heavy Blow")).toBeLessThan(hit("Impale"));
+    }
+  });
+  it("your starter wins the guided fight on its own, after Klutz's three lessons", () => {
+    for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
+      const s = createBattle([starter(t)], [enemyFighter(thiefRoom().enemies![0])]);
+      const lessons = ["Stone Throw", "Heavy Blow", "Impale"];
+      while (!s.winner && s.round < 100) {
+        resolveRound(s, { A: s.round < 3 ? { kind: "attack", skillName: lessons[s.round] } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });
+        for (const side of [...s.needsReplacement]) sendInReplacement(s, side, chooseAiReplacement(s, side, "easy"));
+      }
+      expect(s.winner).toBe("A");
+      expect(s.round).toBeGreaterThan(3);
+    }
   });
 
   it("the box holds 10 pieces of Common or Uncommon gear, about 20% Uncommon", () => {

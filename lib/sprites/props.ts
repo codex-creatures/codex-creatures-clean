@@ -116,3 +116,7 @@ export const RICKETY_CHEST_OPEN: Sprite = [
 // rope (and the same chest opened). 64px art in the space of a 32px sprite.
 withArt(TREASURE_CHEST, { src: "/sprites/props/treasure_chest.png", w: 64, h: 64, size: 32 });
 withArt(TREASURE_CHEST_OPEN, { src: "/sprites/props/treasure_chest_open.png", w: 64, h: 64, size: 32 });
+
+// Klutz's box: the chest the Baby Cyclops carried on its back, dropped on the
+// floor with his gear poking out (one screen pixel an art pixel, like the chest).
+withArt(ARMOURY_BOX, { src: "/sprites/props/klutz_box.png", w: 69, h: 74, size: 34.5 });

@@ -59,7 +59,7 @@ export const CREATURE_SPRITES: Record<string, Sprite> = {
     "........eeeEEEEEee........eeEEEEEeee........",
     "........efEfEfEEe..........eEEfEfEfe........",
   ]), {
-    src: "/sprites/creatures/klutz.png", w: 69, h: 85,
+    src: "/sprites/creatures/klutz.png", w: 69, h: 85, faces: "right",
     walk: { src: "/sprites/creatures/klutz-walk.png", frames: 8, w: 96, h: 96, x: 13, y: 7 },
   }),
   // ── The Cyclops (dungeon 1 boss): body, crawling hand, eye ──

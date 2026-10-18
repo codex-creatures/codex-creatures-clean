@@ -34,25 +34,31 @@ import BattleLog, { YOU, FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
 import PixelSprite from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { spriteWidth } from "@/lib/sprites/pixels";
+import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
+import { artFor } from "@/lib/sprites/art";
+
+// Fighters face each other: yours (on the left) look right, theirs look left.
+// Most art faces left, so yours is mirrored; art drawn facing right is the other way round.
+const faceFoe = (sprite: Sprite, side: "A" | "B") => (side === "A") !== (artFor(sprite)?.faces === "right");
 
 export const MUTED = "rgba(255,255,255,0.5)";
 
-// The first quest's guided fight (you and Klutz against the thief): Klutz
-// talks you through the triangle and damage types, one move at a time.
-// Each step: what he says, and which of his moves you can pick (null = any,
-// and you can swap again).
+// The first quest's guided fight (your creature against the thief): Klutz
+// watches from the side and talks you through the triangle and damage
+// types, one move at a time. It opens on a Fight! button (step -1); each
+// step after that: what he says, and which move you can pick — it glows
+// (null = any, and you can swap and use the bag again).
 export const TUTORIAL_STEPS: { say: string; allow: ((s: Skill) => boolean) | null }[] = [
-  { say: "Right — watch and learn. It's a big melee lump. Let's poke it from a distance first: pick a 🏹 ranged move, Stone Throw.",
+  { say: "Right — that's a big melee lump in a thick hide. Let's see what works. Poke it from a distance first: use 🏹 Stone Throw.",
     allow: (s) => s.type === "ranged" },
-  { say: "Ow, barely a scratch! Yeah… I wouldn't use that one. It's a melee fighter, and melee is strong against ranged — ranged moves only do half. Get up close: try ⚔️ Heavy Blow.",
+  { say: "Barely a scratch! It's a melee fighter, and melee is strong against ranged — ranged moves only do half. Get in close: use ⚔️ Heavy Blow.",
     allow: (s) => s.name === "Heavy Blow" },
-  { say: "Hmm, still not much. Heavy Blow is a 🔨 Force move: it hits hard, but that hide is thick, and Force can't do much against strong defence. Try Impale — a 🗡️ Pierce move. It goes straight through armour.",
+  { say: "Better, but not much. Heavy Blow is a 🔨 Force move: it hits hard, but that hide is thick, and Force can't do much against strong defence. Use 🗡️ Impale — Pierce goes straight through armour.",
     allow: (s) => s.name === "Impale" },
-  { say: "THERE we go! Pierce ignores half its armour. Remember: melee beats ranged, ranged beats magic, magic beats melee. Force for soft targets, Pierce for armoured ones. Now let's finish it — swap your creature in whenever you like!",
+  { say: "THERE we go! Pierce ignores half its armour. Remember: melee beats ranged, ranged beats magic, magic beats melee. Force for soft targets, Pierce for armoured ones. Now finish it off — your call!",
     allow: null },
 ];
-const tutorialLocked = (m: Match) => m.tutorial !== undefined && m.tutorial < TUTORIAL_STEPS.length && TUTORIAL_STEPS[m.tutorial].allow !== null;
+const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial < TUTORIAL_STEPS.length && TUTORIAL_STEPS[m.tutorial].allow !== null));
 const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
 
 // What the screen shows about each team member (gear names etc.).
@@ -69,7 +75,7 @@ export type Match = {
   teams: Record<SideKey, Fighter[]>;  // for rematches and the history
   level: AiLevel;                     // how well the opponent plays
   title?: string;                     // e.g. "Dungeon room 3", shown in the history
-  tutorial?: number;                  // the guided first fight: which step you're on (TUTORIAL_STEPS)
+  tutorial?: number;                  // the guided first fight: which step you're on (TUTORIAL_STEPS; -1 = not started)
 };
 
 // The animation currently playing. Indexes say which creature (team index)
@@ -205,7 +211,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss);
     const sick = opts.illness && state.sides.A.team[opts.illness.index];
     if (sick && opts.illness!.rounds > 0) sick.statuses.push({ id: "illness", rounds: opts.illness!.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });
-    setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: 0 } : {}) });
+    setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: -1 } : {}) });
   }
 
   // Continue a saved battle.
@@ -221,8 +227,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     const after = cloneBattle(before);
     resolveRound(after, { A: action, B: chooseAiAction(after, "B", match.level) });
     if (after.needsReplacement.includes("B")) sendInReplacement(after, "B", chooseAiReplacement(after, "B", match.level));
-    // The guided fight moves on a step with each move Klutz makes.
-    const step = match.tutorial !== undefined && action.kind === "attack" && before.sides.A.active === 0 ? { tutorial: match.tutorial + 1 } : {};
+    // The guided fight moves on a step with each move your first creature makes.
+    const step = match.tutorial !== undefined && match.tutorial >= 0 && action.kind === "attack" && before.sides.A.active === 0 ? { tutorial: match.tutorial + 1 } : {};
     const done: Match = { ...match, state: after, ...step };
     if (after.winner) {
       saveBattle({
@@ -265,7 +271,12 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     setMatch({ ...match, state: s });
   }
 
-  return { match, view, fx, start, resume, act, replace, clear: () => setMatchState(null) };
+  // The guided fight: Fight! pressed, Klutz starts talking.
+  function beginTutorial() {
+    if (match?.tutorial === -1) setMatch({ ...match, tutorial: 0 });
+  }
+
+  return { match, view, fx, start, resume, act, replace, beginTutorial, clear: () => setMatchState(null) };
 }
 
 // ── Battle screen ─────────────────────────────────────────────────
@@ -307,7 +318,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
   // The guided fight: Klutz's tip, and which moves you can pick right now.
-  const tip = match.tutorial !== undefined && match.tutorial < TUTORIAL_STEPS.length && you.active === 0 ? TUTORIAL_STEPS[match.tutorial] : undefined;
+  const tip = match.tutorial !== undefined && match.tutorial >= 0 && match.tutorial < TUTORIAL_STEPS.length && you.active === 0 ? TUTORIAL_STEPS[match.tutorial] : undefined;
+  const notStarted = match.tutorial === -1;
   const locked = tutorialLocked(match) && you.active === 0;
   // The witch's illness biting: the screen shakes.
   const ill = fx?.kind === "effect" && fx.text.includes("ILLNESS");
@@ -374,6 +386,10 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             {finishedActions}
           </div>
         </div>
+      ) : notStarted ? (
+        <div style={{ marginTop: 16, textAlign: "center" }}>
+          <button className="pixel-btn tutorial-pulse" style={{ fontSize: 22, padding: "12px 34px" }} onClick={battle.beginTutorial}>⚔️ Fight!</button>
+        </div>
       ) : mustReplace ? (
         <ActionBox title={`${me.name} fainted — who goes in next?`}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -390,11 +406,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
         </ActionBox>
       ) : (
         <ActionBox title={playing ? "…" : `Round ${state.round + 1} — what will ${me.name} do?`} dim={playing}>
-          {tip && !playing && (
-            <div className="tutorial-tip" style={{ marginBottom: 10, fontSize: 15 }}>
-              <b>💬 Klutz:</b> &ldquo;{tip.say}&rdquo;
-            </div>
-          )}
+          {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
           {multi && (
             <div style={{ fontSize: 12, color: "#ffd66e", marginBottom: 6 }}>
               Two enemies on the field — both attack every round. Tap one to target it: now hitting the {them.name}.
@@ -409,6 +421,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <div className="move-grid">
             {me.skills.map((sk) => (
               <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
+                glow={!playing && !!tip?.allow && tip.allow(sk)}
                 disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
             ))}
           </div>
@@ -484,8 +497,9 @@ function matchupHint(mine: Combatant, them: Combatant): string {
   return `hits for ~${best(mine, them)}, takes ~${best(them, mine)}`;
 }
 
-function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
-  sk: Skill; me: Combatant; them: Combatant; myAgil: number; theirAgil: number; disabled: boolean; onClick: () => void;
+// glow: the move Klutz wants you to use (the guided fight).
+function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }: {
+  sk: Skill; me: Combatant; them: Combatant; myAgil: number; theirAgil: number; disabled: boolean; glow?: boolean; onClick: () => void;
 }) {
   const fx = sk.effect;
   // (No "strong against" hints: the class icons and the triangle are the clue.)
@@ -509,8 +523,19 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, onClick }: {
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
     : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
     : undefined;
+  const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} />;
+  return glow ? <div className="move-glow">{tile}</div> : tile;
+}
+
+// Klutz, at the side of the guided fight, telling you what to do (pops up with each new tip).
+function KlutzSays({ say }: { say: string }) {
   return (
-    <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} />
+    <div className="klutz-say" style={{ display: "flex", alignItems: "flex-end", gap: 8, marginBottom: 10 }}>
+      {CREATURE_SPRITES.klutz && <div style={{ flexShrink: 0 }}><PixelSprite sprite={CREATURE_SPRITES.klutz} scale={1.4} title="Klutz" /></div>}
+      <div className="tutorial-tip speech" style={{ fontSize: 15, flex: 1 }}>
+        <b>Klutz:</b> &ldquo;{say}&rdquo;
+      </div>
+    </div>
   );
 }
 
@@ -744,7 +769,7 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
         </div>
         <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
           {sprite
-            ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={side === "A" ? { transform: "scaleX(-1)" } : undefined} />
+            ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : undefined} />
             : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
           <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />
           {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color, top: 0 }}>{float.text}</div>}

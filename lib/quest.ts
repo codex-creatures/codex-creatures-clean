@@ -8,7 +8,7 @@
 //                lib/dungeon/map.ts), one tunnel to a "?" room with Klutz's
 //                old club on the floor, dropped by the fleeing thief
 //                (pick it up; a tutorial walks you through equipping it from
-//                your bag), then one on to the thief itself (a guided fight, with Klutz).
+//                your bag), then one on to the thief itself (a guided fight: Klutz coaches you).
 // 3. "boxFound": you beat it (no gold: the box is the prize), it drops the
 //                box, you pick it up and head home.
 // 4. "stash":    you open the box at Klutz's (like a Code Cache); its gear
@@ -49,24 +49,28 @@ export const klutzClub = (): Drop => weaponDrop("klutz_club", "common", "", { ..
 export const clubRoom = (): Room => ({ kind: "treasure", quest: "club", done: false });
 
 // The thief: a Baby Cyclops (no gold: beating it gets you the box, and only
-// the box). It's the guided first fight: you and Klutz against it, and Klutz
+// the box). It's the guided first fight: your creature against it (with
+// TUTORIAL_MOVES, and Klutz's club), while Klutz watches from the side and
 // talks you through the triangle and damage types (TUTORIAL_STEPS in
 // components/BattleScreen.tsx). So it's built to teach:
 // - a melee brute (ranged moves do half: melee beats ranged);
 // - a thick hide (THIEF_HIDE): Force moves bounce off, Pierce goes through,
 //   and magic (which beats melee, and its hide does little against) hurts most;
 // - lots of HP, but only a weak slap, so the lesson has time to land.
+// (Sim, a Lv 3 Rare with the club: wins every time, about 6 rounds, most
+// often with ~70% HP left — a 1 in 10 comes down to the last fifth.)
 export const THIEF_HIDE = { mDef: 40, rDef: 30, magDef: 4, agility: 4 };
+export const THIEF_LEVEL = 8;
 export function thiefRoom(): Room {
   const thief: Enemy = {
-    creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"],
+    creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"], level: THIEF_LEVEL,
     gear: [{ slot: "armor", key: "Thick hide", rarity: "rare", stats: { ...THIEF_HIDE }, drops: false }],
   };
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
 
-// Klutz's moves in the guided fight: one of each lesson.
-export const TUTORIAL_KLUTZ_MOVES = ["Stone Throw", "Heavy Blow", "Impale", "Slash"];
+// Your creature's moves in the guided fight (just for that fight): one for each lesson.
+export const TUTORIAL_MOVES = ["Stone Throw", "Heavy Blow", "Impale", "Slash"];
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
 // time, otherwise an armour piece).

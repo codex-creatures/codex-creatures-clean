@@ -49,6 +49,7 @@ the PNG here.
 | den/shelves.png | gallery:83baaff4-1eef-4329-bf8f-2d0b62081222 |
 | props/treasure_chest_open.png | gallery:89cd6782-5a1e-4b57-8267-9888fae07572 |
 | props/treasure_chest.png | gallery:2df0068e-66c1-4280-939c-886481ebfc23 |
+| props/klutz_box.png | gallery:2b204dad-def9-42f7-9e8b-6c13e649ad52 |
 | den/pit.png | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
 | den/bookcase-2.png | gallery:7c56b09e-b67f-46ae-abe7-e2ab98275292 |
 | items/aether_shield.png | gallery:49708af5-5ae3-4cf7-8118-68c3fae8151f |
