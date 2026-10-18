@@ -585,3 +585,16 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
    to zoom, drag to look around (the page does not scroll or zoom under it). */
 .den-viewport { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 .den-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+
+/* Torch flicker over the Den: soft glows (GPU-cheap) instead of relighting every pixel. */
+.den-glow { position: absolute; transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: screen; animation: den-flicker 2.1s steps(7) infinite; }
+.den-glow-pulse { animation: den-pulse 2.9s ease-in-out infinite; }
+@keyframes den-flicker { 0%, 100% { opacity: 0.75; } 15% { opacity: 1; } 30% { opacity: 0.6; } 50% { opacity: 0.95; } 65% { opacity: 0.7; } 80% { opacity: 1; } }
+@keyframes den-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .den-glow, .den-glow-pulse { animation: none; } }
+
+/* On a phone the screen is the phone: no trim (it frames the desktop screen only). */
+@media not all and (min-aspect-ratio: 3 / 4) {
+  .game-screen { --trim: 0px; }
+  .game-screen::before, .game-screen::after { display: none; }
+}

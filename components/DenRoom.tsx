@@ -5,7 +5,7 @@
 // pinch (or the mouse wheel) to zoom, drag to look around. Tap an object to go
 // in. With a mouse, pointing at one shows its name first.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -187,6 +187,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   }
   // The furniture art (the room is rebuilt with it once it has loaded).
   const [art, setArt] = useState<DenArt | null>(artCache);
+  const glows = useMemo(() => (art ? denScene(backpack, art).glows : []), [art, backpack]);
   useEffect(() => {
     if (art) return;
     let live = true;
@@ -200,11 +201,15 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     const scene = denScene(backpack, art);
     sceneRef.current = scene;
     const start = performance.now();
+    let first = true; // (a new canvas or room: draw the whole frame once)
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null, cagedArt.current);
     scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null, klutzPixels.current);
     const draw = () => {
       const frame = scene.render((performance.now() - start) / 1000, hoverRef.current);
-      ctx.putImageData(frame, 0, 0);
+      // Only the patches that changed go to the screen (the whole frame the first time).
+      const dirty = scene.dirty();
+      if (!dirty || first) { ctx.putImageData(frame, 0, 0); first = false; }
+      else for (const [x0, y0, x1, y1] of dirty) ctx.putImageData(frame, 0, 0, x0, y0, x1 - x0, y1 - y0);
       // Round the room, the same dark as the picture's corner (no seam when zoomed out).
       const box = viewportRef.current;
       if (box && !box.style.background) box.style.background = `rgb(${frame.data[0]}, ${frame.data[1]}, ${frame.data[2]})`;
@@ -296,6 +301,12 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         aria-label="The Den"
         role="img"
       />
+
+      {/* The torches' flicker: soft glows over the room (cheaper than relighting it). */}
+      {glows.map((g, i) => (
+        <div key={i} aria-hidden className={g.pulse ? "den-glow den-glow-pulse" : "den-glow"}
+          style={{ left: `${(g.x / W) * 100}%`, top: `${(g.y / H) * 100}%`, width: `${(g.r * 2 / W) * 100}%`, aspectRatio: "1", background: `radial-gradient(circle, rgba(${g.color}, 0.32), rgba(${g.color}, 0.1) 45%, transparent 70%)`, animationDelay: `${-((g.seed * 0.37) % 1) * 2}s` }} />
+      ))}
 
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {

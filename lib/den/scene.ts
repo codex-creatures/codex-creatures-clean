@@ -256,6 +256,10 @@ export type DenScene = {
   // His drawn art once loaded, else his grid sprite.
   setKlutz: (mode: KlutzMode, sprite: Sprite | null, art?: LoadedArt | null) => void;
   klutzAt: () => [number, number] | null;     // where his label goes (layout units), if he's here
+  // The patches of the last frame that changed ([x0, y0, x1, y1) in canvas pixels); null: the whole frame.
+  dirty: () => [number, number, number, number][] | null;
+  // The flickering lights, as glows to lay over the canvas (layout units; colour as "r, g, b").
+  glows: { x: number; y: number; r: number; color: string; pulse: boolean; seed: number }[];
 };
 
 // Where Klutz is along his stroll at time t: floor position and which way he faces.
@@ -783,6 +787,61 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   const out = new ImageData(FW, FH);
   const frameIds = new Uint8Array(n);
 
+  // The lit room, baked once: every pixel lit with the torches at their
+  // average flicker (the flicker itself is a cheap CSS glow over the canvas:
+  // see glows). Each frame starts from this and repaints only what moves —
+  // flames, embers, ripples, the cage, Klutz, the soul fire — and reports
+  // those patches (dirty) so only they are copied to the screen. (Relighting
+  // all 1.5M pixels 12 times a second made phones lag.)
+  const base = new Uint8ClampedArray(n * 4);
+  const meanFlick = lights.map((l) => (l.steady ? 1 : l.pulse ? 0.75 : 0.84));
+  function shade(i: number, d: Uint8ClampedArray, pulse: number) {
+    const o = i * 4;
+    d[o + 3] = 255;
+    if (Number.isNaN(pos[i * 3])) {
+      // The dark beyond: a faint cold haze low down.
+      const k = clamp01((spot(Math.floor(i / FW)) - 120) / 400) * 0.6;
+      d[o] = (VOID[0] + k * 0.03) * 255; d[o + 1] = (VOID[1] + k * 0.035) * 255; d[o + 2] = (VOID[2] + k * 0.06) * 255;
+      return;
+    }
+    const r = albedo[i * 3], g = albedo[i * 3 + 1], bl = albedo[i * 3 + 2];
+    if (emissive[i]) {
+      const k = emissive[i] === 2 ? pulse : 1;
+      d[o] = Math.min(255, r * 255 * k); d[o + 1] = Math.min(255, g * 255 * k); d[o + 2] = Math.min(255, bl * 255 * k);
+      return;
+    }
+    const dk = domIdx[i];
+    const extra = dk === 255 ? 0 : (meanFlick[dk] - 1) * domFall[i];
+    const col = dk === 255 ? AMBIENT : lights[dk].color;
+    const s = shadow[i];
+    d[o] = Math.min(255, r * (AMBIENT[0] + lit[i * 3] + col[0] * extra) * s * 255);
+    d[o + 1] = Math.min(255, g * (AMBIENT[1] + lit[i * 3 + 1] + col[1] * extra) * s * 255);
+    d[o + 2] = Math.min(255, bl * (AMBIENT[2] + lit[i * 3 + 2] + col[2] * extra) * s * 255);
+  }
+
+  // Patches of the frame, in fine pixels: [x0, y0, x1, y1) .
+  type Rect = [number, number, number, number];
+  const boxOf = (idx: Iterable<number>): Rect | null => {
+    let x0 = FW, y0 = FH, x1 = 0, y1 = 0;
+    for (const i of idx) { const x = i % FW, y = (i / FW) | 0; if (x < x0) x0 = x; if (y < y0) y0 = y; if (x >= x1) x1 = x + 1; if (y >= y1) y1 = y + 1; }
+    return x1 > x0 ? [x0, y0, x1, y1] : null;
+  };
+  const union = (a: Rect | null | undefined, b: Rect | null | undefined): Rect | null =>
+    !a ? b ?? null : !b ? a : [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
+  // Put a patch of the baked room back into the frame.
+  const restore = (r: Rect) => {
+    for (let y = r[1]; y < r[3]; y++) { const o0 = (y * FW + r[0]) * 4, o1 = (y * FW + r[2]) * 4; out.data.set(base.subarray(o0, o1), o0); }
+  };
+  let baked = false;
+  let painted: Rect[] = [];       // what this frame painted over the baked room (restored next frame)
+  let dirty: Rect[] | null = null; // what changed since the last frame (null: all of it)
+  const altarIdx = [...behind.keys()];
+  const altarBox = boxOf(altarIdx);
+  const staticSoul: number[] = [];  // pulsing glow outside the altar's frames
+  let soul: number[] = [], soulBox: Rect | null = null;
+  const findSoul = () => { soul = [...staticSoul, ...altarIdx.filter((i) => emissive[i] === 2)]; soulBox = boxOf(soul); };
+  const objBox: (Rect | null)[] = []; // each object's pixels in the baked room (for the hover outline)
+
   // Show frame k of the altar's animation: put back what was behind, then lay the frame over it.
   let altarShown = 0;
   function showAltar(k: number) {
@@ -795,51 +854,45 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
 
   function render(t: number, hover: ObjId): ImageData {
     const d = out.data;
+    const rects: Rect[] = [];
+    const altarPulse = 0.8 + 0.2 * Math.sin(t * 2.2);
+    let full = false;
+    if (!baked) {
+      for (let i = 0; i < n; i++) shade(i, base, 1);
+      const altarSet = new Set(altarIdx);
+      for (let i = 0; i < n; i++) {
+        if (emissive[i] === 2 && !altarSet.has(i)) staticSoul.push(i);
+        const id = ids[i];
+        if (id) { const x = i % FW, y = (i / FW) | 0, b = objBox[id]; objBox[id] = b ? [Math.min(b[0], x), Math.min(b[1], y), Math.max(b[2], x + 1), Math.max(b[3], y + 1)] : [x, y, x + 1, y + 1]; }
+      }
+      objBox[OBJ.altar] = union(objBox[OBJ.altar], altarBox);
+      findSoul();
+      d.set(base);
+      baked = full = true;
+    } else {
+      for (const r of painted) restore(r);
+    }
     if (altarPts.length > 1) {
       const k = Math.floor(t * ALTAR_FPS) % altarPts.length;
-      if (k !== altarShown) showAltar(k);
-    }
-    const flick = lights.map((l) =>
-      l.steady ? 1
-        : l.pulse ? 0.75 + 0.25 * Math.sin(t * 2.2)
-        : 0.84 + 0.09 * Math.sin(t * 9 + l.seed) + 0.07 * Math.sin(t * 23 + l.seed * 3) + (Math.random() - 0.5) * 0.04
-    );
-    const altarPulse = 0.8 + 0.2 * Math.sin(t * 2.2);
-
-    for (let fy = 0; fy < FH; fy++) {
-      for (let fx = 0; fx < FW; fx++) {
-        const i = fy * FW + fx, o = i * 4;
-        const u = pos[i * 3];
-        if (Number.isNaN(u)) {
-          // The dark beyond: a faint cold haze low down.
-          const y = spot(fy);
-          const k = clamp01((y - 120) / 400) * 0.6;
-          d[o] = (VOID[0] + k * 0.03) * 255; d[o + 1] = (VOID[1] + k * 0.035) * 255; d[o + 2] = (VOID[2] + k * 0.06) * 255; d[o + 3] = 255;
-          continue;
-        }
-        const r = albedo[i * 3], g = albedo[i * 3 + 1], bl = albedo[i * 3 + 2];
-        if (emissive[i]) {
-          const k = emissive[i] === 2 ? altarPulse : 1;
-          d[o] = Math.min(255, r * 255 * k); d[o + 1] = Math.min(255, g * 255 * k); d[o + 2] = Math.min(255, bl * 255 * k); d[o + 3] = 255;
-          continue;
-        }
-        const dk = domIdx[i];
-        const extra = dk === 255 ? 0 : (flick[dk] - 1) * domFall[i];
-        const col = dk === 255 ? AMBIENT : lights[dk].color;
-        const s = shadow[i];
-        const lr = (AMBIENT[0] + lit[i * 3] + col[0] * extra) * s;
-        const lg = (AMBIENT[1] + lit[i * 3 + 1] + col[1] * extra) * s;
-        const lb = (AMBIENT[2] + lit[i * 3 + 2] + col[2] * extra) * s;
-        // Smooth light (no dithering: it turned into a grainy checkerboard
-        // once the canvas is scaled to fit the screen).
-        d[o] = Math.min(255, r * lr * 255);
-        d[o + 1] = Math.min(255, g * lg * 255);
-        d[o + 2] = Math.min(255, bl * lb * 255);
-        d[o + 3] = 255;
+      if (k !== altarShown) {
+        showAltar(k);
+        for (const i of altarIdx) shade(i, base, 1);
+        findSoul();
+        if (altarBox) { restore(altarBox); rects.push(altarBox); }
       }
     }
+    for (const i of soul) shade(i, d, altarPulse);
+    if (soulBox) rects.push(soulBox);
 
     frameIds.set(ids);
+    // Each moving thing grows a patch as it paints; group() closes it.
+    let gx0 = FW, gy0 = FH, gx1 = 0, gy1 = 0;
+    const dyn: (Rect | null)[] = []; // where moving objects (Klutz, the caged creature…) were painted, for hover
+    const mark = (X: number, Y: number, id: number) => {
+      if (X < gx0) gx0 = X; if (Y < gy0) gy0 = Y; if (X >= gx1) gx1 = X + 1; if (Y >= gy1) gy1 = Y + 1;
+      if (id) dyn[id] = union(dyn[id], [X, Y, X + 1, Y + 1]);
+    };
+    const group = () => { if (gx1 > gx0) rects.push([gx0, gy0, gx1, gy1]); gx0 = FW; gy0 = FH; gx1 = 0; gy1 = 0; };
     // Paint a layout unit (RES×RES fine pixels).
     const px = (x: number, y: number, c: string | RGB, id = 0) => {
       const col = typeof c === "string" ? hex(c) : c;
@@ -850,6 +903,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         const o = (Y * FW + X) * 4;
         d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
         if (id) frameIds[Y * FW + X] = id;
+        mark(X, Y, id);
       }
     };
     // Paint one fine pixel.
@@ -859,6 +913,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
       const o = (Y * FW + X) * 4;
       d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
       if (id) frameIds[Y * FW + X] = id;
+      mark(X, Y, id);
     };
 
     // Torches: iron bracket + animated flame.
@@ -877,6 +932,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         const c = k < 2 ? "#fff3b0" : k < hgt - 2 ? "#ffb347" : "#e2582a";
         for (let w = -wdt; w <= wdt; w++) px(tx + w + sway, ty - 1 - k, w === 0 ? c : "#ff8a2a");
       }
+      group();
       if (Math.random() < 0.25) embers.push({ x: tx + (Math.random() - 0.5) * 3, y: ty - 6, vx: (Math.random() - 0.5) * 0.3, life: 1 });
     });
 
@@ -887,6 +943,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
     for (const e of embers) {
       e.y -= dt * 14; e.x += e.vx + Math.sin(e.y * 0.3) * 0.15;
       px(e.x, e.y, e.life > 0.5 ? "#ffcf6b" : "#d9541f");
+      group();
     }
 
     // Floating crystal above the altar (the old stone one; the Soul Altar's art has its own spirits).
@@ -899,6 +956,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         px(cx + s, cy - 5 + k, k === 1 && s === -1 ? "#ffffff" : c, OBJ.altar);
       }
     });
+    group();
     }
 
     // Pool: slow ripples glinting on the murky water, and the odd drip.
@@ -913,6 +971,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         const an = (s / 10) * Math.PI * 2;
         fpx(rx * RES + Math.cos(an) * rad * 2, ry * RES + Math.sin(an) * rad, mix(hex("#2c5a62"), hex("#7fb8b8"), 1 - grow), OBJ.pool);
       }
+      group();
     }
 
     // The cell: whoever is inside (set back in the dark), then the bars.
@@ -925,6 +984,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         const col = caged.at(x, y);
         if (col) fpx(bx * RES - w / 2 + x, by * RES - h + y + bob, mul(col, 0.62), OBJ.cage);
       }
+      group();
     }
     // Iron bars down the front of the opening, set into a top and bottom rail.
     const BAR_U = 0.06;
@@ -943,6 +1003,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         fpx(x * RES, y * RES, IRON_LIGHT, OBJ.cage); fpx(x * RES, y * RES + 1, IRON, OBJ.cage); fpx(x * RES, y * RES + 2, IRON, OBJ.cage);
       }
     }
+    group();
 
     // Klutz: strolling about, or soaking in the pool up to his chin.
     klutzLabel = null;
@@ -969,14 +1030,18 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
           fpx(kx * RES + Math.cos(an) * rad * 2, ky * RES + Math.sin(an) * rad, hex("#5f9a9a"), OBJ.klutz);
         }
       }
+      group();
       klutzLabel = [kx, top / RES - 2];
     }
 
     // Hover: brighten the object and outline it in gold.
-    if (hover) {
+    const hb = hover ? union(objBox[hover], dyn[hover]) : null;
+    if (hover && hb) {
       const glow = 0.75 + 0.25 * Math.sin(t * 6);
-      for (let y = 1; y < FH - 1; y++) {
-        for (let x = 1; x < FW - 1; x++) {
+      const hx0 = Math.max(1, hb[0] - 1), hy0 = Math.max(1, hb[1] - 1), hx1 = Math.min(FW - 1, hb[2] + 1), hy1 = Math.min(FH - 1, hb[3] + 1);
+      rects.push([hx0, hy0, hx1, hy1]);
+      for (let y = hy0; y < hy1; y++) {
+        for (let x = hx0; x < hx1; x++) {
           const i = y * FW + x, o = i * 4;
           if (frameIds[i] === hover) {
             d[o] = Math.min(255, d[o] * 1.35 + 14); d[o + 1] = Math.min(255, d[o + 1] * 1.35 + 12); d[o + 2] = Math.min(255, d[o + 2] * 1.3 + 8);
@@ -986,11 +1051,21 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         }
       }
     }
+    dirty = full ? null : [...painted, ...rects];
+    painted = rects;
     return out;
   }
 
+  // The flickering lights, for glows laid over the canvas (layout units).
+  const glows = lights.filter((l) => !l.steady).map((l) => {
+    const [x, y] = project(l.u, l.v, l.z);
+    return { x, y, r: l.pulse ? 46 : l.power > 1.4 ? 70 : 56, color: l.pulse ? "95, 224, 255" : "255, 150, 70", pulse: !!l.pulse, seed: l.seed };
+  });
+
   return {
     render,
+    dirty: () => dirty,
+    glows,
     idAt: (x, y) => { // layout units
       const fx = Math.floor(x * RES), fy = Math.floor(y * RES);
       if (fx < 0 || fy < 0 || fx >= FW || fy >= FH) return OBJ.none;
