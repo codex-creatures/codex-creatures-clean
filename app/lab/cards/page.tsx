@@ -6,9 +6,12 @@
 import { CREATURE_BY_ID, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { CardFace } from "@/components/CardGallery";
 import CardStack from "@/components/CardStack";
+import EncounterCards from "@/components/EncounterCards";
+import { useState } from "react";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 
 export default function CardLab() {
+  const [fight, setFight] = useState(false);
   // One of each rarity, plus a few more.
   const ids = ["storm_phoenix", "crystal_golem", "crystalback", "rust_beetle", "cave_bat", "moss_wolf", "monkey_mage", "dire_wolf"];
   const creatures = ids.map((id) => CREATURE_BY_ID[id]).filter(Boolean);
@@ -16,6 +19,8 @@ export default function CardLab() {
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Creature card</h1>
+      <button className="pixel-btn" style={{ marginBottom: 14 }} onClick={() => setFight(true)}>Preview the fight cards</button>
+      {fight && <EncounterCards creatureIds={["storm_phoenix", "rust_beetle", "monkey_mage"]} onClose={() => setFight(false)} />}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 220px)", gap: 20 }}>
         {[CREATURE_BY_ID.storm_phoenix, CREATURE_BY_ID.rust_beetle].map(card)}
       </div>

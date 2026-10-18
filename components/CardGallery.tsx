@@ -84,53 +84,73 @@ const PIXEL = "var(--font-pixel), 'Courier New', monospace";
 const YELLOW = "#f1d9a0";
 const clamp2: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
 
-// A creature card's face: dark stone with a thin bevelled trim in the rarity
-// colour; the name; the sprite on a faded rarity glow (filling the box, 5%
-// clear each side); attack style | race; then its role over a line of flavour
-// (or its ability, if the card has one). The Skull Raven is the benchmark.
-// Text scales with the card's width. Used in your binder, for cards you've
-// just found, and for the card witch's prize. badge: a corner bubble (how
-// many you hold); footer: a line under the card.
+// A sunken well for text at the bottom of a card.
+export const CARD_WELL: React.CSSProperties = { padding: "2.5cqw 4cqw 3cqw", background: "#191b22", boxShadow: sunken("#2a2d36") };
+export const CARD_YELLOW = YELLOW;
+export const CARD_PIXEL = PIXEL;
+
+// The card itself, shared by every creature card: dark stone with a thin
+// bevelled trim in the rarity colour; the name (and, with showRarity, its
+// rarity under it); the sprite on a faded rarity glow (filling the box, 5%
+// clear each side); attack style | race; then children at the bottom.
+// Text scales with the card's width (cqw), so it must sit inside a box with
+// containerType "inline-size". fill: take the parent's height instead of
+// the usual 5:7 shape.
+export function CardBody({ t, creatureId, glow, showRarity, fill, children }: {
+  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; children?: React.ReactNode;
+}) {
+  const rc = RARITY_COLORS[t.rarity].text;
+  const race = t.race ? RACE_INFO[t.race] : undefined;
+  const cls = CLASS_INFO[t.cls];
+  const plaque: React.CSSProperties = { flex: 1, textAlign: "center", padding: "2cqw 1cqw", background: "#2e323d", boxShadow: raised("#2e323d"), overflow: "hidden", textOverflow: "ellipsis" };
+  return (
+    <div style={{
+      ...(fill ? { height: "100%" } : { aspectRatio: "5 / 7" }), display: "flex", flexDirection: "column", gap: "3cqw", padding: "5.5cqw",
+      background: "#23262f", border: `2px solid ${shade(rc, -0.55)}`,
+      boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)${glow ? `, 0 0 14px ${rc}` : ""}`,
+    }}>
+      <div style={{ textAlign: "center", padding: "2.5cqw 3cqw" }}>
+        <div style={{ fontFamily: PIXEL, fontSize: "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>{t.name}</div>
+        {showRarity && <div style={{ fontFamily: PIXEL, fontSize: "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
+      </div>
+      <div style={{ position: "relative", flex: 1, minHeight: 0, background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }}>
+        <div style={{ position: "absolute", inset: "5%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <PixelSprite sprite={creatureSprite(creatureId)} scale={4} title={t.name}
+            style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated" }} />
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
+        <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
+        {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// A creature card's face (CardBody with its role over a line of flavour, or
+// its ability if the card has one). The Skull Raven is the benchmark. Used
+// in your binder, for cards you've just found, and for the card witch's
+// prize. badge: a corner bubble (how many you hold); footer: a line under the card.
 export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick, label }: {
   t: CreatureTemplate; creatureId: string; ability?: string; footer?: React.ReactNode; badge?: string; glow?: boolean;
   onClick?: () => void; label?: string;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
-  const race = t.race ? RACE_INFO[t.race] : undefined;
-  const cls = CLASS_INFO[t.cls];
   const skill = ability ? ABILITIES[ability as keyof typeof ABILITIES] : undefined;
   const Tag = onClick ? "button" : "div";
-  const plaque: React.CSSProperties = { flex: 1, textAlign: "center", padding: "2cqw 1cqw", background: "#2e323d", boxShadow: raised("#2e323d"), overflow: "hidden", textOverflow: "ellipsis" };
 
   return (
-    // The outer box is the size container, so cqw below means "% of the card's width".
     <Tag onClick={onClick} aria-label={label ?? `${t.name} card`}
       style={{ position: "relative", display: "block", width: "100%", padding: 0, border: "none", background: "none", textAlign: "left", cursor: onClick ? "pointer" : "default", containerType: "inline-size" }}>
-      <div style={{
-        aspectRatio: "5 / 7", display: "flex", flexDirection: "column", gap: "3cqw", padding: "5.5cqw",
-        background: "#23262f", border: `2px solid ${shade(rc, -0.55)}`,
-        boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)${glow ? `, 0 0 14px ${rc}` : ""}`,
-      }}>
-        <div style={{ textAlign: "center", fontFamily: PIXEL, fontSize: "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, padding: "2.5cqw 3cqw", color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>
-          {t.name}
-        </div>
-        <div style={{ position: "relative", flex: 1, minHeight: 0, background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }}>
-          <div style={{ position: "absolute", inset: "5%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <PixelSprite sprite={creatureSprite(creatureId)} scale={4} title={t.name}
-              style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated" }} />
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
-          <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
-          {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
-        </div>
-        <div style={{ padding: "2.5cqw 4cqw 3cqw", background: "#191b22", boxShadow: sunken("#2a2d36") }}>
+      <CardBody t={t} creatureId={creatureId} glow={glow}>
+        <div style={CARD_WELL}>
           <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW }}>{roleOf(t)}</div>
           <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: skill ? "#ffcf6e" : "rgba(255,255,255,0.6)", ...clamp2 }}>
             {skill ? `✦ ${skill.name}` : shortFlavour(t.flavour)}
           </div>
         </div>
-      </div>
+      </CardBody>
 
       {footer && <div style={{ marginTop: 6, fontSize: 11, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.6)" }}>{footer}</div>}
 
