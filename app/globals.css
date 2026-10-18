@@ -406,3 +406,27 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
   box-shadow: 0 3px 0 rgba(0,0,0,0.5), inset 0 0 12px rgba(0,0,0,0.6);
   line-height: 1;
 }
+
+/* ── Inventory panels ───────────────────────────────────────
+   Anywhere loot, creatures or your bag are laid out: a bevelled dungeon-stone
+   trim around a dark, hollow inside, with the sprites sitting loose in it
+   (like an old-school RPG inventory). */
+.inv-panel {
+  position: relative;
+  padding: 12px;
+  background: radial-gradient(ellipse at 50% 30%, rgba(120, 100, 70, 0.08), transparent 70%), #101116;
+  border: 4px solid #4d4738;
+  border-color: #716852 #2b2820 #2b2820 #716852;
+  outline: 2px solid #08080b;
+  box-shadow: inset 0 0 0 2px #08080b, inset 0 0 26px rgba(0, 0, 0, 0.85), 0 4px 0 rgba(0, 0, 0, 0.5);
+}
+/* One hollow slot inside a panel (the bag: you can see how much room is left). */
+.inv-slot {
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid #1e1d1a;
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6), inset -1px -1px 0 rgba(255, 255, 255, 0.04);
+}
+/* A tab with summonable cards glows in the rarest one's colour (--glow). */
+@keyframes tab-glow { 0%, 100% { box-shadow: inset 0 0 10px var(--glow); } 50% { box-shadow: inset 0 0 22px var(--glow); } }
+.tab-glow { animation: tab-glow 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .tab-glow { animation: none; box-shadow: inset 0 0 14px var(--glow); } }

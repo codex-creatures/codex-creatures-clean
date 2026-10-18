@@ -9,14 +9,14 @@ import InventoryList from "@/components/InventoryList";
 import RecentBattles from "@/components/RecentBattles";
 
 export default function PitPage() {
-  const game = useGameState("roster");
+  const game = useGameState("creatures");
 
   return (
     <DenFrame title="The Pit" icon="🐾" gold={game.gold}>
       <div className="stone-panel" style={{ padding: "14px 14px 22px" }}>
       <InventoryList
         title="Creatures"
-        tabs={["roster", "creatures", "cards"]}
+        tabs={["creatures", "roster", "cards"]}
         showSell={false}
         emptyText={game.activeTab === "roster"
           ? "Your roster is empty — ★ creatures in the Creatures tab to add them."

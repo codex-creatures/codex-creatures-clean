@@ -14,7 +14,8 @@ import CreatureDetailModal from "./CreatureDetailModal";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CardModal from "./CardModal";
 import CardGallery from "./CardGallery";
-import TileGrid, { groupTiles } from "./TileGrid";
+import TileGrid, { groupTiles, RARITY_ORDER } from "./TileGrid";
+import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
@@ -97,6 +98,18 @@ export default function InventoryList({
     () => new Map([...inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]),
     [inventory]
   );
+  // The rarest creature you have enough cards to summon (its colour lights up the Cards tab).
+  const summonable = useMemo(() => {
+    const counts = new Map<string, { n: number; rarity: CreatureOrItemDrop["rarity"] }>();
+    for (const d of inventory) {
+      if (!isCardDrop(d)) continue;
+      const t = findCreatureTemplate(d.creatureId, d.name);
+      if (!t) continue;
+      const c = counts.get(t.id) ?? { n: 0, rarity: t.rarity };
+      counts.set(t.id, { ...c, n: c.n + 1 });
+    }
+    return RARITY_ORDER.find((r) => [...counts.values()].some((c) => c.rarity === r && c.n >= CARDS_TO_SUMMON));
+  }, [inventory]);
   const openCreature = openCreatureId ? inventory.find((d) => d.id === openCreatureId) : undefined;
   // The creatures in the current list, to flick through (wrapping round).
   const creatureList = shown.filter(isCreatureDrop);
@@ -165,10 +178,12 @@ export default function InventoryList({
       <div role="tablist" style={{ marginTop: 14, display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117" }}>
         {tabs.map((tab, i) => {
           const on = activeTab === tab;
+          const glow = tab === "cards" && summonable ? RARITY_COLORS[summonable].text : undefined;
           return (
-            <button key={tab} role="tab" aria-selected={on} onClick={() => onTabChange(tab)} className="pixel-font"
-              style={{ flex: 1, minHeight: 44, padding: "6px 4px", fontSize: 14, cursor: "pointer", border: "none",
-                borderLeft: i ? "2px solid #2a2d38" : "none", background: on ? "#3a2c16" : "transparent", color: on ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
+            <button key={tab} role="tab" aria-selected={on} onClick={() => onTabChange(tab)} className={`pixel-font${glow ? " tab-glow" : ""}`}
+              title={glow ? `You can summon a ${summonable} creature` : undefined}
+              style={{ flex: 1, minHeight: 44, padding: "6px 4px", fontSize: 14, cursor: "pointer", border: "none", ["--glow" as string]: glow,
+                borderLeft: i ? "2px solid #2a2d38" : "none", background: on ? "#3a2c16" : "transparent", color: glow ? glow : on ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
               {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)} <span style={{ opacity: 0.6 }}>{tabCounts[tab] ?? 0}</span>
             </button>
           );

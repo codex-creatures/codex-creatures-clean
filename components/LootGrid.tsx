@@ -1,10 +1,10 @@
 "use client";
 // components/LootGrid.tsx
-// A haul of loot as a grid of framed tiles with sprites: gear and codexes
-// by rarity, potions, gold — and creature cards shown as the cards
-// themselves. Used for what a room just gave you, and at the end of a run
-// for what you got and what you left behind. Creature cards go in one
-// stack you can tap to look through (CardStack); gold shows as one total.
+// A haul of loot laid out in an inventory panel (sprites loose inside):
+// gear and codexes by rarity, potions, gold — and creature cards shown as
+// the cards themselves. Used for what a room just gave you, and at the end
+// of a run for what you got and what you left behind. Creature cards go in
+// one stack you can tap to look through (CardStack); gold shows as one total.
 
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -66,7 +66,7 @@ export default function LootGrid({ items, faded, grouped, onGear }: { items: Got
 
   const cardGrid = cards.length > 0 && <CardStack piles={cards} faded={faded} />;
   const tileGrid = tiles.length > 0 && (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, opacity: faded ? 0.55 : 1 }}>
+    <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, opacity: faded ? 0.55 : 1 }}>
       {tiles.map((g, i) => <Tile key={i} g={g} faded={faded} onGear={onGear} />)}
     </div>
   );
@@ -106,11 +106,10 @@ function Tile({ g, faded, onGear }: { g: GotItem; faded?: boolean; onGear?: (ite
       style={{ display: "block", width: "100%", minWidth: 0, textAlign: "center", padding: 0, border: "none", background: "none", color: "inherit", font: "inherit", cursor: gear && onGear ? "pointer" : "default" }}>
       <div style={{
         aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
-        background: `radial-gradient(circle, ${l.glow}, #101117 75%)`, border: `3px solid ${l.color}`,
-        boxShadow: "inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)",
+        background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)`,
         filter: faded ? "grayscale(0.6)" : undefined,
       }}>
-        {l.sprite ? <PixelSprite sprite={l.sprite} scale={2.2} /> : <span style={{ fontSize: 24 }}>{l.icon}</span>}
+        {l.sprite ? <PixelSprite sprite={l.sprite} scale={2.2} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} /> : <span style={{ fontSize: 24 }}>{l.icon}</span>}
       </div>
       <div style={{ fontSize: 10, color: l.color, marginTop: 3, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name}</div>
     </Tag>
