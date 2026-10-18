@@ -20,7 +20,7 @@ export default function CardLab() {
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Creature card</h1>
       <button className="pixel-btn" style={{ marginBottom: 14 }} onClick={() => setFight(true)}>Preview the fight cards</button>
-      {fight && <EncounterCards creatureIds={["storm_phoenix", "rust_beetle", "monkey_mage"]} onClose={() => setFight(false)} />}
+      {fight && <EncounterCards creatureIds={["storm_phoenix", "rust_beetle", "monkey_mage"]} onClose={() => setFight(false)} onFight={() => setFight(false)} />}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 220px)", gap: 20 }}>
         {[CREATURE_BY_ID.storm_phoenix, CREATURE_BY_ID.rust_beetle].map(card)}
       </div>

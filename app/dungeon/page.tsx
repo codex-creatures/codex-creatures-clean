@@ -57,10 +57,6 @@ import Help from "@/components/Help";
 
 const GOLD = "#f5c542";
 
-// Rooms whose creature cards you've put away (kept while you move round the
-// app, so popping out to the Den and back doesn't bring them up again).
-const CARDS_DONE = new Set<string>();
-
 function combatLine(f: Parameters<typeof combatSummary>[0]): string {
   const s = combatSummary(f);
   return `${s.hp} HP · Atk ${Math.round(s.atk)} · Rng ${Math.round(s.rng)} · Mag ${Math.round(s.mag)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)} · MgDef ${Math.round(s.magdef)}`;
@@ -82,9 +78,7 @@ export default function DungeonPage() {
   // Leaving for the Den: keep showing what's on screen until the Den loads
   // (otherwise the entrance flashes up for a moment on the way out).
   const [leaving, setLeaving] = useState(false);          // anything else that just happened (e.g. Second Wind)
-  // The creature cards for the fight you've walked into (see EncounterCards):
-  // which rooms' cards you've put away, and whether you've reopened them.
-  const [cardsDone, setCardsDone] = useState<string[]>(() => [...CARDS_DONE]);
+  // The creature cards for the fight you've walked into (tap the creatures; see EncounterCards).
   const [cardsOpen, setCardsOpen] = useState(false);
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
@@ -673,13 +667,12 @@ export default function DungeonPage() {
   const clubTutorial = run.current?.quest === "club" && run.current.done && clubEntry ? clubEntry : undefined;
   // The thief's room: once it's beaten, the way on is home (with the box).
   const boxRoom = run.current?.quest === "thief" && run.current.done;
-  // A fight waiting here: the Fight! button sits on the room. Until you've
-  // beaten the Cyclops (the tutorial), its creatures' cards come up first.
+  // A fight waiting here: the Fight! button sits on the room, and tapping the
+  // creatures brings up their cards (with a Fight button of their own).
   const fightHere = !!run.current && isFight(run.current.kind) && !run.current.done;
   const enemyIds = fightHere && !run.current!.boss ? (run.current!.enemies ?? []).map((e) => e.creatureId) : [];
-  const roomKey = `${lab.meta.runs}:${runPosition(run)}`;
-  const showCards = run.inside && enemyIds.length > 0 && (cardsOpen || (lab.meta.clears === 0 && !cardsDone.includes(roomKey)));
-  const closeCards = () => { setCardsOpen(false); CARDS_DONE.add(roomKey); setCardsDone([...CARDS_DONE]); };
+  const canFight = fightHere && fightingTeam(run).length > 0;
+  const showCards = run.inside && enemyIds.length > 0 && cardsOpen;
 
   return frame(
     <>
@@ -694,9 +687,10 @@ export default function DungeonPage() {
               : run.current?.quest === "thief" && run.current.done && !run.current.boxTaken ? takeBox
               : run.current?.kind === "stash" && !run.current.opened ? openSack
               : undefined}
-            onFight={fightHere && fightingTeam(run).length > 0 ? () => startFight(run) : undefined}
+            onFight={canFight ? () => startFight(run) : undefined}
             onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} />
-          {showCards && <EncounterCards creatureIds={enemyIds} onClose={closeCards} />}
+          {showCards && <EncounterCards creatureIds={enemyIds} onClose={() => setCardsOpen(false)}
+            onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
             <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature that can still fight before you go on.</p>
           )}

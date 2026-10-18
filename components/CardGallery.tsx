@@ -95,9 +95,10 @@ export const CARD_PIXEL = PIXEL;
 // clear each side); attack style | race; then children at the bottom.
 // Text scales with the card's width (cqw), so it must sit inside a box with
 // containerType "inline-size". fill: take the parent's height instead of
-// the usual 5:7 shape.
-export function CardBody({ t, creatureId, glow, showRarity, fill, children }: {
-  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; children?: React.ReactNode;
+// the usual 5:7 shape. big: a larger name and style / race (a card shown on
+// its own, like the fight cards).
+export function CardBody({ t, creatureId, glow, showRarity, fill, big, children }: {
+  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; children?: React.ReactNode;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
   const race = t.race ? RACE_INFO[t.race] : undefined;
@@ -110,8 +111,8 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, children }: {
       boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)${glow ? `, 0 0 14px ${rc}` : ""}`,
     }}>
       <div style={{ textAlign: "center", padding: "2.5cqw 3cqw" }}>
-        <div style={{ fontFamily: PIXEL, fontSize: "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>{t.name}</div>
-        {showRarity && <div style={{ fontFamily: PIXEL, fontSize: "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
+        <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(13px, 9.5cqw, 22px)" : "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>{t.name}</div>
+        {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
       </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }}>
         <div style={{ position: "absolute", inset: "5%", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -119,7 +120,7 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, children }: {
             style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated" }} />
         </div>
       </div>
-      <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
+      <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
         <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
         {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
       </div>

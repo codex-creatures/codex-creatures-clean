@@ -2,34 +2,36 @@
 // components/EncounterCards.tsx
 // Cards fanned out to flick through: the front one straight and the rest
 // fanned behind. Flick with the arrows, ← →, a swipe, or a tap on a card
-// behind; "Got it" (or Esc) puts them away. CardFan is the shared viewer
-// (also for the cards you got on a run — see CardStack); EncounterCards is
-// the tutorial's use of it: when you walk into a fight (until you've beaten
-// the Cyclops), the creatures waiting there come up as cards showing their
-// base % stats, race and class.
+// behind; the button (or Esc, or ✕) puts them away. CardFan is the shared
+// viewer (also for the cards you got on a run — see CardStack);
+// EncounterCards is the fight's use of it: tap the creatures waiting in a
+// room and they come up as cards with their base stats, and a Fight button.
 
 import { useEffect, useRef, useState } from "react";
 import { CLASS_INFO, findCreatureTemplate, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { CardBody, CARD_WELL, CARD_YELLOW } from "./CardGallery";
 
 const MUTED = "rgba(255,255,255,0.55)";
-const ATTACKS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"]];
+const ATTACKS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"]];
 const DEFENCES: [keyof CreatureProficiency, string][] = [["mdef", "Melee def"], ["rdef", "Ranged def"], ["magdef", "Magic def"]];
 
-export default function EncounterCards({ creatureIds, onClose }: { creatureIds: string[]; onClose: () => void }) {
+// onFight: start the fight (missing when nobody on your team can fight).
+export default function EncounterCards({ creatureIds, onClose, onFight }: { creatureIds: string[]; onClose: () => void; onFight?: () => void }) {
   const n = creatureIds.length;
   return (
     <CardFan count={n} label="The creatures you're about to fight" onClose={onClose}
       title={n === 1 ? "A creature blocks the way" : `${n} creatures block the way`}
       size={{ width: "min(300px, 78vw, 44vh)", height: "min(440px, 114vw, 64.5vh)" }}
+      action={onFight && { label: "⚔️ Fight", onClick: onFight }}
       render={(i) => <Card creatureId={creatureIds[i]} />} />
   );
 }
 
 // The viewer: count cards, drawn by render(i), in a box of the given size.
-export function CardFan({ count: n, title, label, size, render, onClose }: {
+// action: the main button (otherwise "Got it", which just closes).
+export function CardFan({ count: n, title, label, size, render, onClose, action }: {
   count: number; title: string; label: string; size: { width: string; height: string };
-  render: (i: number) => React.ReactNode; onClose: () => void;
+  render: (i: number) => React.ReactNode; onClose: () => void; action?: { label: string; onClick: () => void };
 }) {
   const [at, setAt] = useState(0);
   const step = (d: number) => setAt((i) => (i + d + n) % n);
@@ -84,14 +86,17 @@ export function CardFan({ count: n, title, label, size, render, onClose }: {
         {n > 1 && <span className="pixel-font" style={{ fontSize: 13, color: MUTED }}>{at + 1} / {n}</span>}
         {n > 1 && <button className="chip" aria-label="Next card" onClick={() => step(1)} style={{ fontSize: 20, padding: "4px 14px" }}>›</button>}
       </div>
-      <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onClose}>Got it</button>
+      <button className="pixel-btn" style={{ marginTop: 12, minWidth: 140 }} onClick={action?.onClick ?? onClose}>{action?.label ?? "Got it"}</button>
+      {action && (
+        <button className="chip" aria-label="Close" onClick={onClose} style={{ position: "absolute", top: 14, right: 14, fontSize: 18, padding: "4px 12px" }}>✕</button>
+      )}
     </div>
   );
 }
 
 // A fight card: the creature card (CardBody) with its rarity under the name,
-// and its base stats below — attack %s, HP and agility on the left, the
-// defence %s on the right.
+// and its base stats below: attack %s and agility on the left, HP and the
+// defence %s on the right. Bigger name and style / race than a small card.
 function Card({ creatureId }: { creatureId: string }) {
   const t = findCreatureTemplate(creatureId);
   if (!t) return null;
@@ -105,14 +110,13 @@ function Card({ creatureId }: { creatureId: string }) {
   const pct = (k: keyof CreatureProficiency) => `+${p[k]}%`;
   return (
     <div style={{ height: "100%", containerType: "inline-size" }}>
-      <CardBody t={t} creatureId={creatureId} showRarity fill glow>
+      <CardBody t={t} creatureId={creatureId} showRarity fill glow big>
         <div style={{ ...CARD_WELL, display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: "6cqw", rowGap: "0.6cqw", fontSize: "clamp(9px, 4.6cqw, 13px)", lineHeight: 1.35 }}>
           <div>
             {ATTACKS.map(([k, label]) => row(label, pct(k), k === own ? CLASS_INFO[t.cls].color : undefined))}
-            {row("HP", `${t.baseHp}`, CARD_YELLOW)}
-            {row("Agility", pct("agil"))}
           </div>
           <div>
+            {row("HP", `${t.baseHp}`, CARD_YELLOW)}
             {DEFENCES.map(([k, label]) => row(label, pct(k)))}
           </div>
         </div>
