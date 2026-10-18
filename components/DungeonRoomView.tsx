@@ -6,7 +6,7 @@
 // for). Once the room is dealt with, tap a tunnel to walk down it. What's in
 // the room (enemies, a chest, a merchant…) stands on the floor in the middle.
 // Some things on the floor can be tapped (onObject): Klutz's club, a chest,
-// the box the Rattlebones dropped. A fight waiting here gets a big Fight!
+// the box the thief dropped. A fight waiting here gets a big Fight!
 // button at the bottom (onFight), and its creatures can be tapped for their
 // cards (onEnemies).
 
@@ -73,7 +73,7 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   }
 
   const title = pos === run.map.start && !room ? "The entrance"
-    : room?.quest === "club" ? "A dropped club" : room?.quest === "rattlebones" ? "The thief" : ROOM_INFO[node.kind].name;
+    : room?.quest === "club" ? "A dropped club" : room?.quest === "thief" ? "The thief" : ROOM_INFO[node.kind].name;
 
   return (
     <div style={{ position: "relative", width: "100%", maxWidth: 640, margin: "0 auto", aspectRatio: `${CW} / ${CH}`, border: "3px solid #1a1d20", boxShadow: "0 4px 0 rgba(0,0,0,0.6)" }}>
@@ -121,10 +121,10 @@ function RoomContents({ run, onObject, onEnemies }: { run: DungeonRun; onObject?
     </div>
   );
 
-  // Klutz's club, lying where the Rattlebones dropped it.
+  // Klutz's club, lying where the thief dropped it.
   if (room.quest === "club") return room.done ? null : prop(WEAPON_SPRITES.klutz_club, "Pick up the club", 3.5, { transform: "rotate(-60deg)" });
-  // The Rattlebones' box, once it's beaten.
-  if (room.quest === "rattlebones" && room.done) return room.boxTaken ? null : prop(ARMOURY_BOX, "Pick up the box");
+  // The thief's box, once it's beaten.
+  if (room.quest === "thief" && room.done) return room.boxTaken ? null : prop(ARMOURY_BOX, "Pick up the box");
   if (room.kind === "chest") return prop(room.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST, room.done ? "An open chest" : "Open the chest");
   if (room.kind === "stash") return prop(room.opened ? BURLAP_SACK_OPEN : BURLAP_SACK, room.opened ? "An open sack" : "Open the sack", 3.4);
 

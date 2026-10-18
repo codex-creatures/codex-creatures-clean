@@ -197,7 +197,7 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   );
   if (q.stage === "start") {
     return say(
-      <>&ldquo;Oi, you&apos;re up! A <b>Rattlebones</b> ran into the Labyrinth with my box of weapons and armour. Get it back for me?&rdquo;</>,
+      <>&ldquo;Oi, you&apos;re up! A <b>Baby Cyclops</b> ran into the Labyrinth with my box of weapons and armour. Get it back for me?&rdquo;</>,
       <button className="pixel-btn" onClick={game.acceptQuest}>&ldquo;I&apos;ll find it.&rdquo;</button>,
     );
   }

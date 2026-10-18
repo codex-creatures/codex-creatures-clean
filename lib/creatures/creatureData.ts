@@ -243,6 +243,10 @@ export const BOSS_PARTS: CreatureTemplate[] = [
   { id: "cyclops_eye", name: "The Eye", rarity: "legendary", baseHp: 150, boss: true, cls: "magic", proficiency: NO_PROF,
     skills: bossMoves("Laser", "Searing Beam"),
     flavour: "Free of the skull at last, it floats — and it is furious." },
+  // The first quest's thief (lib/quest.ts): the guided first fight.
+  { id: "baby_cyclops", name: "Baby Cyclops", rarity: "rare", baseHp: 76, boss: true, cls: "melee", proficiency: NO_PROF,
+    skills: bossMoves("Backhand", "Club Smash"),
+    flavour: "A Cyclops whelp with sticky fingers and a hide like a door. It grabbed Klutz's box and ran." },
 ];
 
 // Every creature that can exist (scannable, retired, companions, boss parts), by id.

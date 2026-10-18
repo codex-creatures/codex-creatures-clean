@@ -7,6 +7,7 @@ import { resolveMoves, type CreatureProficiency, type CreatureTemplate } from ".
 import { effectiveStats, type CombatItem, type Fighter } from "./engine";
 import type { ArmorKey } from "../items/armor";
 import { WEAPON_AFFINITY, type ItemKey } from "../items/ceilings";
+import { hpAt, proficiencyAt, REF_LEVEL, clampLevel } from "../creatures/levels";
 
 const EMPTY: CombatItem = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0, hp: 0 };
 
@@ -34,18 +35,22 @@ export function buildFighter(
   proficiency?: CreatureProficiency, // this individual's rolled %s (species values if omitted)
   armorSet?: ArmorKey,               // a full armour set (its mechanic applies)
   weaponKey?: ItemKey,               // the weapon's type (its damage-type affinity)
+  level: number = REF_LEVEL,         // its level (lib/creatures/levels.ts); species %s are as listed at level 15
 ): Fighter {
+  const lv = clampLevel(level);
   const affinity = weaponKey ? WEAPON_AFFINITY[weaponKey] : undefined;
   const weapon = { ...itemToCombatStats(weaponStats), ...(affinity ? { affinity } : {}) };
   const armor  = itemToCombatStats(armorStats);
-  const totalHp = creature.baseHp + weapon.hp + armor.hp;
+  const totalHp = hpAt(creature, lv) + weapon.hp + armor.hp;
   return {
     name: creature.name,
     hp: totalHp,
     maxHp: totalHp,
     energy: 100,
-    // Older rolls may lack newer stats: those fall back to the species value.
-    proficiency: { ...creature.proficiency, ...proficiency },
+    // Its species' %s for its level, plus its own rolls. (Older rolls may
+    // lack newer stats: those count as no roll.)
+    proficiency: proficiencyAt(creature, { ...creature.proficiency, ...proficiency }, lv),
+    level: lv,
     cls: creature.cls,
     skills: resolveMoves(creature, moveNames),
     weapon,

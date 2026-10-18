@@ -36,6 +36,7 @@ export type Fighter = {
   braceConsecutiveCount?: number;
   armorSet?: import("../items/armor").ArmorKey; // wearing a full set: its mechanic applies
   ability?: import("../creatures/abilities").AbilityKey; // a rare passive it was born with
+  level?: number; // its level (lib/creatures/levels.ts)
 };
 
 export type TurnLog = {

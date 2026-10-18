@@ -3,6 +3,8 @@
 // open full-screen in portrait, like a native app.
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-static"; // (also lets the offline build export it)
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Codex Creatures",

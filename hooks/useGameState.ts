@@ -15,15 +15,18 @@ import { clearDungeon } from "@/lib/dungeon/run";
 import { collectKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, type QuestState } from "@/lib/quest";
 import { fighterFor } from "@/lib/creatures/instance";
+import { addXp } from "@/lib/creatures/levels";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
 // keyed by KLUTZ_DROP_ID) and what the creature window shows for him.
 export const KLUTZ_DROP_ID = "klutz-companion";
+export const KLUTZ_LEVEL = 10; // Klutz doesn't level up (yet): he's an old hand
+export type LevelUp = { id: string; name: string; from: number; to: number };
 export function klutzDrop(): CreatureOrItemDrop {
   return {
     id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
-    rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour,
+    rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour, level: KLUTZ_LEVEL,
     createdAt: new Date().toISOString(),
   };
 }
@@ -192,6 +195,23 @@ export function useGameState(initialTab: TabKey = "all") {
   // Anything you own (or hold a card of) or have waiting in the cage counts,
   // plus anything you've fought in the Labyrinth. (What beats Klutz stays a
   // mystery: he only tells you about it.)
+  // XP for your creatures (drop id → XP). Returns who levelled up.
+  function gainXp(gains: Record<string, number>): LevelUp[] {
+    const ups: LevelUp[] = [];
+    for (const d of inventory) {
+      if (!isCreatureDrop(d) || !gains[d.id]) continue;
+      const from = d.level ?? 1;
+      const p = addXp({ level: from, xp: d.xp ?? 0 }, gains[d.id]);
+      if (p.level > from) ups.push({ id: d.id, name: d.name, from, to: p.level });
+    }
+    setInventory((prev) => prev.map((d) => {
+      if (!isCreatureDrop(d) || !gains[d.id]) return d;
+      const p = addXp({ level: d.level ?? 1, xp: d.xp ?? 0 }, gains[d.id]);
+      return { ...d, level: p.level, xp: p.xp };
+    }));
+    return ups;
+  }
+
   function markSeen(ids: string[]) {
     setSeen((prev) => (ids.every((id) => prev.includes(id)) ? prev : [...new Set([...prev, ...ids])]));
   }
@@ -598,6 +618,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp,
   };
 }

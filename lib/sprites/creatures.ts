@@ -179,3 +179,6 @@ export const EGG: Sprite = [
   "......jiiiiiiiij......",
   ".......jjjjjjjj.......",
 ];
+
+// The first quest's thief (PixelLab art; no grid of its own, so the egg is its fallback).
+CREATURE_SPRITES.baby_cyclops = withArt([...EGG], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83 });

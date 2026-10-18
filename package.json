@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:offline": "node offline/build.js"
   },
   "dependencies": {
     "@zxing/browser": "^0.1.5",

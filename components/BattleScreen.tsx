@@ -26,6 +26,7 @@ import {
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
+import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
@@ -36,6 +37,22 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth } from "@/lib/sprites/pixels";
 
 export const MUTED = "rgba(255,255,255,0.5)";
+
+// The first quest's guided fight (you and Klutz against the thief): Klutz
+// talks you through the triangle and damage types, one move at a time.
+// Each step: what he says, and which of his moves you can pick (null = any,
+// and you can swap again).
+export const TUTORIAL_STEPS: { say: string; allow: ((s: Skill) => boolean) | null }[] = [
+  { say: "Right — watch and learn. It's a big melee lump. Let's poke it from a distance first: pick a 🏹 ranged move, Stone Throw.",
+    allow: (s) => s.type === "ranged" },
+  { say: "Ow, barely a scratch! Yeah… I wouldn't use that one. It's a melee fighter, and melee is strong against ranged — ranged moves only do half. Get up close: try ⚔️ Heavy Blow.",
+    allow: (s) => s.name === "Heavy Blow" },
+  { say: "Hmm, still not much. Heavy Blow is a 🔨 Force move: it hits hard, but that hide is thick, and Force can't do much against strong defence. Try Impale — a 🗡️ Pierce move. It goes straight through armour.",
+    allow: (s) => s.name === "Impale" },
+  { say: "THERE we go! Pierce ignores half its armour. Remember: melee beats ranged, ranged beats magic, magic beats melee. Force for soft targets, Pierce for armoured ones. Now let's finish it — swap your creature in whenever you like!",
+    allow: null },
+];
+const tutorialLocked = (m: Match) => m.tutorial !== undefined && m.tutorial < TUTORIAL_STEPS.length && TUTORIAL_STEPS[m.tutorial].allow !== null;
 const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
 
 // What the screen shows about each team member (gear names etc.).
@@ -52,6 +69,7 @@ export type Match = {
   teams: Record<SideKey, Fighter[]>;  // for rematches and the history
   level: AiLevel;                     // how well the opponent plays
   title?: string;                     // e.g. "Dungeon room 3", shown in the history
+  tutorial?: number;                  // the guided first fight: which step you're on (TUTORIAL_STEPS)
 };
 
 // The animation currently playing. Indexes say which creature (team index)
@@ -178,10 +196,16 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
 
   // startHp: your creatures' HP if they start hurt.
   // boss: the opponent is that dungeon boss (played by its script).
-  function start(teams: Match["teams"], info: Match["info"], level: AiLevel, opts: { startHp?: number[]; title?: string; boss?: BossKind } = {}) {
+  // illness: one of your creatures is sick (the witch's curse) for this many rounds.
+  // tutorial: the first quest's guided fight (see TUTORIAL_STEPS).
+  function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
+    opts: { startHp?: number[]; title?: string; boss?: BossKind; illness?: { index: number; rounds: number }; tutorial?: boolean } = {}) {
     setView(null);
     setFx(null);
-    setMatch({ state: createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss), info, teams, level, title: opts.title });
+    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss);
+    const sick = opts.illness && state.sides.A.team[opts.illness.index];
+    if (sick && opts.illness!.rounds > 0) sick.statuses.push({ id: "illness", rounds: opts.illness!.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });
+    setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: 0 } : {}) });
   }
 
   // Continue a saved battle.
@@ -197,7 +221,9 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     const after = cloneBattle(before);
     resolveRound(after, { A: action, B: chooseAiAction(after, "B", match.level) });
     if (after.needsReplacement.includes("B")) sendInReplacement(after, "B", chooseAiReplacement(after, "B", match.level));
-    const done: Match = { ...match, state: after };
+    // The guided fight moves on a step with each move Klutz makes.
+    const step = match.tutorial !== undefined && action.kind === "attack" && before.sides.A.active === 0 ? { tutorial: match.tutorial + 1 } : {};
+    const done: Match = { ...match, state: after, ...step };
     if (after.winner) {
       saveBattle({
         id: crypto.randomUUID(), date: new Date().toISOString(), winner: after.winner, rounds: after.round, title: match.title,
@@ -220,8 +246,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
             attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
-            text: e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
+            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
       if (!alive.current) return;
@@ -280,9 +306,19 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const phaseText = fx?.kind === "lineup" ? fx.text : undefined;
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
+  // The guided fight: Klutz's tip, and which moves you can pick right now.
+  const tip = match.tutorial !== undefined && match.tutorial < TUTORIAL_STEPS.length && you.active === 0 ? TUTORIAL_STEPS[match.tutorial] : undefined;
+  const locked = tutorialLocked(match) && you.active === 0;
+  // The witch's illness biting: the screen shakes.
+  const ill = fx?.kind === "effect" && fx.text.includes("ILLNESS");
 
   return (
-    <>
+    <div className={ill ? "screen-shake" : undefined}>
+      {ill && (
+        <div className="stone-panel pixel-font" style={{ marginBottom: 10, textAlign: "center", fontSize: 17, color: "#d7a6ff", borderColor: "#b06cff" }}>
+          🤢 Your {you.team[fx.index]?.name ?? "creature"} suffers an illness
+        </div>
+      )}
       {foe.boss && <BossStage side={foe} fx={fx} />}
       {phaseText && !foe.boss && (
         <div className="stone-panel pixel-font" style={{ marginBottom: 10, textAlign: "center", fontSize: 17, color: "#ffd66e", borderColor: "#ffd66e" }}>
@@ -354,6 +390,11 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
         </ActionBox>
       ) : (
         <ActionBox title={playing ? "…" : `Round ${state.round + 1} — what will ${me.name} do?`} dim={playing}>
+          {tip && !playing && (
+            <div className="tutorial-tip" style={{ marginBottom: 10, fontSize: 15 }}>
+              <b>💬 Klutz:</b> &ldquo;{tip.say}&rdquo;
+            </div>
+          )}
           {multi && (
             <div style={{ fontSize: 12, color: "#ffd66e", marginBottom: 6 }}>
               Two enemies on the field — both attack every round. Tap one to target it: now hitting the {them.name}.
@@ -368,19 +409,19 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <div className="move-grid">
             {me.skills.map((sk) => (
               <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
-                disabled={playing || !affordableSkills(me).includes(sk)} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
+                disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
             ))}
           </div>
           {affordableSkills(me).length === 0 && (
             <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — rest (+30⚡)</button>
           )}
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button className="chip" data-active={open === "swap"} disabled={swapTargets(you).length === 0}
+            <button className="chip" data-active={open === "swap"} disabled={swapTargets(you).length === 0 || locked}
               onClick={() => setOpen((o) => (o === "swap" ? null : "swap"))} style={{ flex: 1, opacity: swapTargets(you).length ? 1 : 0.4 }}>
               ⇄ Swap
             </button>
             {onUseItem && (
-              <button className="chip" data-active={open === "bag"} disabled={bag.length === 0}
+              <button className="chip" data-active={open === "bag"} disabled={bag.length === 0 || locked}
                 onClick={() => setOpen((o) => (o === "bag" ? null : "bag"))} style={{ flex: 1, opacity: bag.length ? 1 : 0.4 }}>
                 🎒 Battle Bag{bag.length ? ` · ${bag.reduce((n, it) => n + it.count, 0)}` : ""}
               </button>
@@ -428,7 +469,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
         📜 {showLog ? "Hide" : "Show"} the battle log
       </button>
       {showLog && <BattleLog log={match.state.log} />}
-    </>
+    </div>
   );
 }
 

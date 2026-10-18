@@ -49,7 +49,7 @@ function buildOpponents(mine: OwnedCreature[], creatures: OppCreatures, gear: Op
     const w = weaponRarity ? rollGear(weaponRarity, t) : undefined;
     const a = armorRarity  ? rollGear(armorRarity, t)  : undefined;
 
-    fighters.push(buildFighter(t, w?.weapon, a?.armor));
+    fighters.push(buildFighter(t, w?.weapon, a?.armor, undefined, undefined, undefined, undefined, me.fighter.level ?? 1)); // same level as yours
     info.push({
       rarity: t.rarity,
       label: creatureTypeLabel(t.proficiency), creatureId: t.id,

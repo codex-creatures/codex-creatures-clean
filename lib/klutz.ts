@@ -42,6 +42,7 @@ export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
 export const FIND_CHANCE = 0.35;       // each trip: a piece of gear like one he's wearing
 export const SAME_RARITY_CHANCE = 0.05; // …the same rarity as his piece (otherwise lower)
 export const COMMON_STEP_UP = 0.5;     // in Common gear: Uncommon half the time
+export const HUNT_MAX_LEVEL = 10;      // what he meets is level 1 to this (and a catch keeps its level)
 
 // What Klutz is wearing, slot by slot (for his finds).
 export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
@@ -92,7 +93,7 @@ const oneLower = (r: Rarity): Rarity => RARITIES[Math.max(0, RARITIES.indexOf(r)
 // A won encounter's loot: the creature itself, its weapon and one armour piece.
 function lootFrom(e: Enemy): Drop[] {
   const t = CREATURE_BY_ID[e.creatureId];
-  const creature = makeCreatureDrop(t, "creature", "", { proficiency: e.proficiency, moves: e.moves });
+  const creature = { ...makeCreatureDrop(t, "creature", "", { proficiency: e.proficiency, moves: e.moves }), level: e.level ?? 1 };
   const gear = e.gear.map((p) => {
     if (p.slot === "weapon") return weaponDrop(p.key as ItemKey, p.rarity, "", p.stats);
     const slot = randomArmorSlot();
@@ -138,7 +139,7 @@ export function rollFind(worn: WornPiece[], rng: Rng = Math.random): Drop | unde
 export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = []): Expedition {
   const at = Math.round(now + WALK_MIN_MS + rng() * (WALK_MAX_MS - WALK_MIN_MS));
   const rarity = rollRarity(rng), gearRarity = oneLower(rarity);
-  const enemy = makeEnemy(rarity, gearRarity, [], rng);
+  const enemy = makeEnemy(rarity, gearRarity, [], rng, 1 + Math.floor(rng() * HUNT_MAX_LEVEL));
   const r = fight(klutz, klutz.maxHp, enemyFighter(enemy));
   const encounter: KlutzEncounter = { at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [] };
   const find = rng() < FIND_CHANCE ? rollFind(worn, rng) : undefined;

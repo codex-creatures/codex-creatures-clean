@@ -2,13 +2,13 @@
 // The first quest: Klutz's stolen box.
 //
 // Klutz has been stashing weapons and armour he found in the Labyrinth in a
-// box — and a Rattlebones ran off into the Labyrinth with it.
+// box — and a Baby Cyclops ran off into the Labyrinth with it.
 // 1. "start":    Klutz has something to tell you (talk to him).
 // 2. "hunt":     into the Labyrinth: a short run of its own (questMap in
 //                lib/dungeon/map.ts), one tunnel to a "?" room with Klutz's
-//                old club on the floor, dropped by the fleeing Rattlebones
+//                old club on the floor, dropped by the fleeing thief
 //                (pick it up; a tutorial walks you through equipping it from
-//                your bag), then one on to the Rattlebones itself.
+//                your bag), then one on to the thief itself (a guided fight, with Klutz).
 // 3. "boxFound": you beat it (no gold: the box is the prize), it drops the
 //                box, you pick it up and head home.
 // 4. "stash":    you open the box at Klutz's (like a Code Cache); its gear
@@ -28,13 +28,12 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import type { Enemy, Room } from "./dungeon/run";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
-import { rollCreature } from "./creatures/creatureRoll";
 
 export type QuestStage = "start" | "hunt" | "boxFound" | "stash" | "lend" | "done";
 export type QuestState = {
   stage: QuestStage;
   clubFound?: boolean; // Klutz's Club has been picked up
-  box?: Drop[];        // the box's contents (from beating the Rattlebones until you hand it over)
+  box?: Drop[];        // the box's contents (from beating the thief until you hand it over)
 };
 
 export const NEW_QUEST: QuestState = { stage: "start" };
@@ -49,13 +48,25 @@ export const klutzClub = (): Drop => weaponDrop("klutz_club", "common", "", { ..
 // The room the club lies in (the first room of the quest run).
 export const clubRoom = (): Room => ({ kind: "treasure", quest: "club", done: false });
 
-// The thief: a lone Rattlebones with nothing but its bones (and no gold:
-// beating it gets you the box, and only the box).
-export function rattlebonesRoom(rng: Rng = Math.random): Room {
-  const roll = rollCreature(CREATURE_BY_ID.rattlebones, rng);
-  const thief: Enemy = { creatureId: "rattlebones", proficiency: roll.proficiency, moves: roll.moves, gear: [] };
-  return { kind: "easy", quest: "rattlebones", enemies: [thief], level: "easy", gold: 0, done: false };
+// The thief: a Baby Cyclops (no gold: beating it gets you the box, and only
+// the box). It's the guided first fight: you and Klutz against it, and Klutz
+// talks you through the triangle and damage types (TUTORIAL_STEPS in
+// components/BattleScreen.tsx). So it's built to teach:
+// - a melee brute (ranged moves do half: melee beats ranged);
+// - a thick hide (THIEF_HIDE): Force moves bounce off, Pierce goes through,
+//   and magic (which beats melee, and its hide does little against) hurts most;
+// - lots of HP, but only a weak slap, so the lesson has time to land.
+export const THIEF_HIDE = { mDef: 40, rDef: 30, magDef: 4, agility: 4 };
+export function thiefRoom(): Room {
+  const thief: Enemy = {
+    creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"],
+    gear: [{ slot: "armor", key: "Thick hide", rarity: "rare", stats: { ...THIEF_HIDE }, drops: false }],
+  };
+  return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
+
+// Klutz's moves in the guided fight: one of each lesson.
+export const TUTORIAL_KLUTZ_MOVES = ["Stone Throw", "Heavy Blow", "Impale", "Slash"];
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
 // time, otherwise an armour piece).

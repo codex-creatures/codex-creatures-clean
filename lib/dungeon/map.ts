@@ -52,7 +52,13 @@ export type MapNode = {
   known?: boolean;   // marked on your scroll from the start
 };
 
+// The size of a labyrinth (dungeon 1 uses the constants above; deeper
+// dungeons are taller, with more rooms and a longer way to the lair).
+export type MapSpec = { h: number; rooms: number; minRoute: number; maxRoute: number };
+export const DEFAULT_SPEC: MapSpec = { h: MAP_H, rooms: ROOM_COUNT, minRoute: MIN_ROUTE, maxRoute: MAX_ROUTE };
+
 export type DungeonMap = {
+  h?: number;                     // the map's height (missing = MAP_H)
   start: string;                  // the entrance (bottom)
   boss: string;                   // the lair (top)
   nodes: Record<string, MapNode>;
@@ -108,16 +114,17 @@ export function routeLength(map: DungeonMap, to = map.boss): number {
 export const isAhead = (a: Pt, b: Pt) => b.y < a.y;
 
 // One attempt at a layout (may fail the route-length check).
-function layout(rng: Rng): DungeonMap {
+function layout(rng: Rng, spec: MapSpec): DungeonMap {
+  const H = spec.h;
   const nodes: Record<string, MapNode> = {};
   const add = (id: string, x: number, y: number) => { nodes[id] = { id, x, y, kind: "easy", links: [] }; };
-  add("start", MAP_W / 2, MAP_H - 8);
+  add("start", MAP_W / 2, H - 8);
   add("boss", MAP_W / 2, 8);
 
   // Scatter the rooms, keeping them apart.
   const rooms: string[] = [];
-  for (let tries = 0; rooms.length < ROOM_COUNT && tries < 6000; tries++) {
-    const p = { x: 8 + rng() * (MAP_W - 16), y: 26 + rng() * (MAP_H - 50) };
+  for (let tries = 0; rooms.length < spec.rooms && tries < 6000; tries++) {
+    const p = { x: 8 + rng() * (MAP_W - 16), y: 26 + rng() * (H - 50) };
     if (Object.values(nodes).some((n) => distance(n, p) < MIN_SPACING)) continue;
     const id = `r${rooms.length}`;
     add(id, p.x, p.y);
@@ -160,15 +167,15 @@ function layout(rng: Rng): DungeonMap {
     i++;
   }
 
-  return { start: "start", boss: "boss", nodes };
+  return { ...(H !== MAP_H ? { h: H } : {}), start: "start", boss: "boss", nodes };
 }
 
-export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
-  let map = layout(rng);
-  for (let i = 0; i < 300; i++) {
+export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec = DEFAULT_SPEC): DungeonMap {
+  let map = layout(rng, spec);
+  for (let i = 0; i < 600; i++) {
     const r = routeLength(map);
-    if (r >= MIN_ROUTE && r <= MAX_ROUTE && waysOn(map, map.start).length <= MAX_STARTS) break;
-    map = layout(rng);
+    if (r >= spec.minRoute && r <= spec.maxRoute && waysOn(map, map.start).length <= MAX_STARTS) break;
+    map = layout(rng, spec);
   }
   for (const n of Object.values(map.nodes)) {
     if (n.id === map.boss) n.kind = "boss";
@@ -195,7 +202,7 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random): DungeonMap {
 
 // The first quest's run: just the first bit of the Labyrinth. One tunnel
 // from the entrance to a "?" room (Klutz's club), one on to another "?"
-// (the Rattlebones with his box), and that's all: no lair on the scroll,
+// (the thief, a Baby Cyclops, with his box), and that's all: no lair on the scroll,
 // so the Cyclops is a surprise for the first real run. (Its "boss" is the
 // thief's room, only because every map names one.)
 export function questMap(): DungeonMap {

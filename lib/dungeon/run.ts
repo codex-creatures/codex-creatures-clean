@@ -30,7 +30,9 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
-import { questMap, rollMap, routeLength, waysOn, type DungeonMap } from "./map";
+import { questMap, rollMap, routeLength, waysOn, DEFAULT_SPEC, type DungeonMap, type MapSpec } from "./map";
+import { newWitchGame, type WitchGame } from "./witch";
+import { REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
@@ -43,19 +45,59 @@ export const ENTRY_FEE = 50;
 export const FREE_RUNS = 5; // your first runs cost nothing
 export const FIRST_TREASURE_GOLD = 50;
 
-export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "boss";
+export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss";
+
+// ── The dungeons ─────────────────────────────────────────────────────
+// 1: the Labyrinth (the Cyclops at the top). 2: the Deep Labyrinth, open
+// once you've beaten the Cyclops: a longer climb (DEEP_ROUTE rooms to the
+// lair), tougher and higher-level creatures, and the Warden's pack waiting
+// at the top. Enemy levels rise with depth (enemyLevel).
+export type DungeonId = 1 | 2;
+export const DEEP_ROUTE = 15;
+export type DungeonInfo = {
+  name: string;
+  spec: MapSpec;
+  easyPack: Rarity[];  // a creature den, picked from the end (see makeRoom)
+  easyGear: Rarity;
+  hard: [Rarity, Rarity];     // creature, gear
+  miniboss: [Rarity, Rarity];
+  levels: { start: number; perRoom: number; cap: number }; // enemy levels: start + perRoom × depth (dens)
+  goldScale: number;
+};
+export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
+  1: { name: "The Labyrinth", spec: DEFAULT_SPEC, easyPack: ["common", "common", "uncommon"], easyGear: "common",
+       hard: ["rare", "rare"], miniboss: ["epic", "rare"], levels: { start: 1, perRoom: 0.8, cap: 9 }, goldScale: 1 },
+  2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE }, easyPack: ["uncommon", "uncommon", "rare"], easyGear: "uncommon",
+       hard: ["epic", "rare"], miniboss: ["legendary", "epic"], levels: { start: 9, perRoom: 0.6, cap: 20 }, goldScale: 2 },
+};
+export const dungeonOf = (run: { dungeon?: DungeonId }): DungeonId => run.dungeon ?? 1;
+
+// How strong (what level) a room's creatures are: dens follow the depth;
+// lurking brutes are HARD_LEVELS above that, mini bosses MINIBOSS_LEVELS.
+export const HARD_LEVELS = 2;
+export const MINIBOSS_LEVELS = 4;
+export const WARDEN_LEVEL = 20; // the Deep Labyrinth's boss pack
+export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rng: Rng = Math.random): number {
+  const L = DUNGEONS[dungeon].levels;
+  const d = Number.isFinite(depth) ? depth : 8;
+  const den = Math.min(L.cap, Math.floor(L.start + L.perRoom * d + rng() * 2));
+  if (kind === "hard") return den + HARD_LEVELS;
+  if (kind === "miniboss") return den + MINIBOSS_LEVELS;
+  if (kind === "boss") return WARDEN_LEVEL;
+  return den;
+}
 
 // How often each kind of room appears on the map (every row but the boss's), in %.
 export const ROOM_MIX: [RoomKind, number][] = [
-  ["easy", 45], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["merchant", 5],
+  ["easy", 40], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["merchant", 5], ["witch", 5],
 ];
 
 // Mystery rooms ("?" on the map) have their own mix: a gamble. Half are a
 // mini boss; 15% are something good (a librarian — only ever found here —
 // a deck of cards, or a merchant); the rest are ordinary rooms.
 export const MYSTERY_MIX: [RoomKind, number][] = [
-  ["miniboss", 50], ["librarian", 5], ["cards", 5], ["merchant", 5],
-  ["easy", 7], ["pool", 7], ["hard", 7], ["chest", 7], ["stash", 7],
+  ["miniboss", 45], ["witch", 8], ["librarian", 5], ["cards", 5], ["merchant", 5],
+  ["easy", 7], ["pool", 7], ["hard", 6], ["chest", 6], ["stash", 6],
 ];
 
 export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
@@ -70,6 +112,7 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   merchant:  { name: "Wandering merchant", icon: "🪙" },
   cards:     { name: "Deck of cards",      icon: "🃏" },
   miniboss:  { name: "Mini boss",          icon: "👹" },
+  witch:     { name: "The card witch",     icon: "🧙" },
   boss:      { name: "The boss",           icon: "👁️" },
 };
 
@@ -80,6 +123,7 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
 // an Uncommon, two a Common and an Uncommon, three adds another Common.
 // (Hard rooms and mini bosses are a single creature at any depth.)
 export const EARLY_DEPTH = 4;
+export const FIRST_ROOMS = 2; // …and the first FIRST_ROOMS deep hold just one (a new player may have one creature)
 export const EASY_SIZE_EARLY: [number, number] = [1, 2];
 export const EASY_SIZE_DEEP: [number, number] = [2, 3];
 export const EASY_PACK: Rarity[] = ["common", "common", "uncommon"];
@@ -157,15 +201,16 @@ const pick = <T,>(arr: readonly T[], rng: Rng) => arr[Math.floor(rng() * arr.len
 
 // ── Enemies ──────────────────────────────────────────────────────────
 export type GearPiece = { slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean };
-export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[] };
+// level: missing = REF_LEVEL (the species' listed %s).
+export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number };
 
-export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random): Enemy {
+export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random, level?: number): Enemy {
   const pool = CREATURES_BY_RARITY[rarity].filter((c) => !exclude.includes(c.id));
   const t = pick(pool.length > 0 ? pool : CREATURES_BY_RARITY[rarity], rng);
   const roll = rollCreature(t, rng);
   const g = rollGear(gearRarity, t);
   return {
-    creatureId: t.id, proficiency: roll.proficiency, moves: roll.moves,
+    creatureId: t.id, proficiency: roll.proficiency, moves: roll.moves, ...(level ? { level } : {}),
     gear: [
       { slot: "weapon", key: g.weaponKey, rarity: gearRarity, stats: g.weapon, drops: false },
       { slot: "armor",  key: g.armorKey,  rarity: gearRarity, stats: g.armor,  drops: false },
@@ -186,11 +231,18 @@ function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
     : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true };
 }
 
+// The Deep Labyrinth's boss: the Warden, a Legendary in Epic gear, with two Epic guards in Rare gear.
+export function wardenPack(rng: Rng = Math.random): Enemy[] {
+  const warden = makeEnemy("legendary", "epic", [], rng, WARDEN_LEVEL);
+  const guards = [0, 1].map(() => makeEnemy("epic", "rare", [warden.creatureId], rng, WARDEN_LEVEL - 2));
+  return [warden, ...guards];
+}
+
 export function enemyFighter(e: Enemy): Fighter {
   const t = CREATURE_BY_ID[e.creatureId];
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
-  return buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined);
+  return buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
 }
 
 export function gearName(p: GearPiece): string {
@@ -212,8 +264,9 @@ export type Room = {
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
   container?: "sack" | "chest"; // a beaten fight's loot: a sack (ordinary fights) or a rickety chest (bosses)
-  quest?: "club" | "rattlebones"; // part of the first quest (lib/quest.ts)
-  boxTaken?: boolean;  // the Rattlebones' room: you've picked up Klutz's box
+  quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
+  boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
+  witch?: WitchGame;   // the card witch's game (lib/dungeon/witch.ts)
   done: boolean;
 };
 
@@ -232,23 +285,26 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], f
 
 // What's inside a room, rolled as you walk in. depth: how deep it is (see
 // EARLY_DEPTH); left out = deep.
-export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity): Room {
+export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity, dungeon: DungeonId = 1): Room {
+  const D = DUNGEONS[dungeon];
+  const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
+  const level = enemyLevel(dungeon, kind, depth, rng);
   switch (kind) {
     case "treasure":
       return { kind, gold: FIRST_TREASURE_GOLD, done: false };
     case "easy": {
-      // 1–3 creatures (by depth) with Common gear.
-      const size = randInt(...(depth <= EARLY_DEPTH ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
+      // 1–3 creatures (by depth) with Common gear (Uncommon in the Deep Labyrinth).
+      const size = depth <= FIRST_ROOMS ? 1 : randInt(...(depth <= EARLY_DEPTH ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
       const enemies: Enemy[] = [];
-      for (const r of EASY_PACK.slice(-size)) enemies.push(makeEnemy(r, "common", enemies.map((e) => e.creatureId), rng));
+      for (const r of D.easyPack.slice(-size)) enemies.push(makeEnemy(r, D.easyGear, enemies.map((e) => e.creatureId), rng, level));
       if (rng() < UPGRADE_CHANCE) upgradeAndDrop(enemies, rng);
-      return { kind, enemies, level: "easy", gold: randInt(...EASY_GOLD, rng), done: false };
+      return { kind, enemies, level: dungeon === 1 ? "easy" : "normal", gold: gold(EASY_GOLD), done: false };
     }
     case "hard": {
-      // A single Rare with Rare gear.
-      const enemies = [makeEnemy("rare", "rare", [], rng)];
+      // A single Rare with Rare gear (an Epic in the Deep Labyrinth).
+      const enemies = [makeEnemy(D.hard[0], D.hard[1], [], rng, level)];
       if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
-      return { kind, enemies, level: "normal", gold: randInt(...HARD_GOLD, rng), done: false };
+      return { kind, enemies, level: "normal", gold: gold(HARD_GOLD), done: false };
     }
     case "stash": {
       const potion = (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
@@ -266,12 +322,16 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
     case "miniboss": {
       // One tough creature: an Epic with Rare gear, played by the Hard AI.
       // Beat it and you can heal or revive one of your party.
-      const enemies = [makeEnemy("epic", "rare", [], rng)];
-      return { kind, enemies, level: "hard", gold: randInt(...MINIBOSS_GOLD, rng), done: false };
+      const enemies = [makeEnemy(D.miniboss[0], D.miniboss[1], [], rng, level)];
+      return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
+    case "witch":
+      return { kind, witch: newWitchGame(rng), done: false };
     case "boss":
       // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
-      return { kind, boss: "cyclops", gold: randInt(...BOSS_GOLD, rng), done: false };
+      if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
+      // The Deep Labyrinth: the Warden (a Legendary) and two Epic guards, in Epic gear.
+      return { kind, enemies: wardenPack(rng), level: "hard", gold: gold(BOSS_GOLD), done: false };
     case "librarian": {
       // A few different codexes, each for a different race.
       const offers: string[] = [];
@@ -289,8 +349,18 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
 // ── A run ────────────────────────────────────────────────────────────
 export type RunStatus = "exploring" | "dead" | "cleared" | "retreated";
 
+// The witch's curse: a creature loses ILLNESS_DAMAGE of its max HP for each
+// of the next ILLNESS_ACTIONS actions (each room you walk into, each round
+// of a fight).
+export const ILLNESS_DAMAGE = 0.15;
+export const ILLNESS_ACTIONS = 3;
+export type Illness = { id: string; left: number };
+
 export type DungeonRun = {
   id: string;
+  dungeon?: DungeonId;         // which dungeon (missing = 1)
+  lastOnField?: string;        // the creature on the field when the last fight ended
+  illness?: Illness;           // a creature the witch stabbed
   runNumber: number;           // 1 = your first ever run
   startedAt: string;
   party: string[];             // creature drop ids (1 to PARTY_SIZE)
@@ -310,12 +380,12 @@ export type DungeonRun = {
   status: RunStatus;
 };
 
-export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random): DungeonRun {
+export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1): DungeonRun {
   // The very first run opens in a treasure room; otherwise at an empty entrance.
-  const first = runNumber === 1;
-  const map = rollMap(first, rng);
+  const first = runNumber === 1 && dungeon === 1;
+  const map = rollMap(first, rng, DUNGEONS[dungeon].spec);
   return {
-    id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(),
+    id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), ...(dungeon !== 1 ? { dungeon } : {}),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
     room: first ? 1 : 0, map,
     path: [map.start],
@@ -327,7 +397,7 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
 
 // The first quest's run (lib/quest.ts): the short questMap, starting at the
 // entrance. What's in its two rooms is set as you walk in (the club, then
-// the Rattlebones).
+// the thief).
 export function startQuestRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number): DungeonRun {
   const map = questMap();
   return {
@@ -355,11 +425,11 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng, routeLength(run.map, node.id)), room: run.room + 1 };
+  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run)), room: run.room + 1 };
 }
 
 // Rooms you can walk out of without doing anything.
-const SKIPPABLE: RoomKind[] = ["pool", "stash", "merchant", "librarian"];
+const SKIPPABLE: RoomKind[] = ["pool", "stash", "merchant", "librarian", "witch"];
 
 // Can you take a tunnel out of here yet? Not until the room is dealt with.
 export const canMoveOn = (run: DungeonRun) =>
@@ -391,6 +461,29 @@ export function setTeam(run: DungeonRun, team: string[]): DungeonRun {
 // The fighting team, minus anyone knocked out.
 export const fightingTeam = (run: DungeonRun) => run.team.filter((id) => isAlive(run, id));
 
+// ── The witch's curse ────────────────────────────────────────────────
+// Who she stabs: whoever was last on the field in a fight this run, or (no
+// fight yet, or it's down) the first of your team.
+export function stabTarget(run: DungeonRun): string | undefined {
+  const last = run.lastOnField;
+  if (last && run.party.includes(last) && isAlive(run, last)) return last;
+  return fightingTeam(run)[0];
+}
+export function curse(run: DungeonRun): DungeonRun {
+  const id = stabTarget(run);
+  return id ? { ...run, illness: { id, left: ILLNESS_ACTIONS } } : run;
+}
+// One action passes (a room walked into): the sick creature loses its share.
+// Returns the run and who was hurt (if anyone).
+export function illnessTick(run: DungeonRun): { run: DungeonRun; hurt?: string } {
+  const ill = run.illness;
+  if (!ill || ill.left <= 0) return { run: { ...run, illness: undefined } };
+  const left = ill.left - 1;
+  const next = { ...run, illness: left > 0 ? { ...ill, left } : undefined };
+  if (!isAlive(run, ill.id)) return { run: next };
+  return { run: { ...next, hp: { ...run.hp, [ill.id]: Math.max(0, (run.hp[ill.id] ?? 1) - ILLNESS_DAMAGE) } }, hurt: ill.id };
+}
+
 // ── Saved progress (separate from the main save) ─────────────────────
 export type DungeonMeta = {
   runs: number;                      // runs started
@@ -401,6 +494,8 @@ export type DungeonMeta = {
   bagSize?: number;                  // slots (missing = BINDLE)
   loot?: Record<string, Drop>;       // loot in the bag (by drop id), not yet home
   poolLevel?: number;                // the Den's healing pool (1 = a soggy cave pool)
+  deepRuns?: number;                 // the Deep Labyrinth: runs started…
+  deepClears?: number;               // …and its Warden beaten
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
 };
 
@@ -470,6 +565,9 @@ export function endRun(save: DungeonSave): DungeonSave {
     else delete injuries[id];
   }
   const cleared = run.status === "cleared";
+  if (dungeonOf(run) === 2) {
+    return { meta: { ...save.meta, injuries, soakedAt: new Date().toISOString(), deepClears: (save.meta.deepClears ?? 0) + (cleared ? 1 : 0) }, run: null };
+  }
   return {
     meta: {
       ...save.meta, injuries, soakedAt: new Date().toISOString(),

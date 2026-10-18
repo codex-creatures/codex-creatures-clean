@@ -24,6 +24,8 @@ export type CreatureOrItemDrop = {
   proficiency?: import("./creatures/creatureData").CreatureProficiency;
   moves?: string[];
   learned?: string[];   // creatures: race moves learned from codexes
+  level?: number;       // creatures: level (lib/creatures/levels.ts); missing = 1
+  xp?: number;          // …and XP towards the next one
   ability?: import("./creatures/abilities").AbilityKey; // creatures/cards: a rare passive (Epic+)
   codexMove?: string;   // a codex (consumable item): the move it teaches
   potion?: "potion" | "lesser"; // a potion (consumable item; see POTIONS in lib/dungeon/run.ts)

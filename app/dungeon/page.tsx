@@ -6,7 +6,7 @@
 // The rules live in lib/dungeon/run.ts; the run is saved after every step,
 // so leaving the page (or refreshing) never loses it.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
@@ -26,7 +26,11 @@ import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
-import { clubRoom, klutzClub, rattlebonesRoom, rollBox, wantsClub, wantsThief } from "@/lib/quest";
+import { clubRoom, klutzClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_KLUTZ_MOVES } from "@/lib/quest";
+import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard } from "@/lib/dungeon/witch";
+import { xpForEnemy, BOSS_XP } from "@/lib/creatures/levels";
+import { KLUTZ } from "@/lib/creatures/creatureData";
+import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
@@ -36,6 +40,7 @@ import {
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
+  curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, ILLNESS_DAMAGE, ILLNESS_ACTIONS, type DungeonId,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
@@ -81,6 +86,8 @@ export default function DungeonPage() {
   // which rooms' cards you've put away, and whether you've reopened them.
   const [cardsDone, setCardsDone] = useState<string[]>(() => [...CARDS_DONE]);
   const [cardsOpen, setCardsOpen] = useState(false);
+  // Bumped to shake the screen (the witch's stab, and the illness after it).
+  const [shake, setShake] = useState(0);
 
   // Every change to the run is saved straight away.
   function update(next: DungeonSave) {
@@ -245,12 +252,18 @@ export default function DungeonPage() {
   const run = lab?.run ?? null;
 
   // ── Starting and ending runs ──────────────────────────────────────
-  function begin(party: string[]) {
+  function begin(party: string[], dungeon: DungeonId = 1) {
     if (!lab) return;
-    const free = lab.meta.runs < FREE_RUNS;
+    const deep = dungeon === 2;
+    const free = !deep && lab.meta.runs < FREE_RUNS;
     if (!free && !game.spendGold(ENTRY_FEE)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
     const team = party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0);
+    if (deep) {
+      const n = (lab.meta.deepRuns ?? 0) + 1;
+      update({ meta: { ...lab.meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2) });
+      return;
+    }
     // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
     const quest = wantsClub(game.quest) || wantsThief(game.quest);
     if (quest) game.acceptQuest();
@@ -410,17 +423,64 @@ export default function DungeonPage() {
 
   // Down a tunnel into the next room.
   function goTo(nodeId: string) {
+    // Leaving the witch mid-game: you walk away with what you've won.
+    const w = loadDungeon().run?.current?.witch;
+    if (w?.state === "playing" && w.correct > 0) witchLeave();
     setFound(null);
     setNotes([]);
     battle.clear();
     // On the quest's run: the club's room (empty once you've got it), then the thief.
     const club = wantsClub(game.quest);
+    let hurt: string | undefined;
     updateRun((r) => {
-      const n = moveOn(leaveSack(leavePending(r)), nodeId);
-      if (!r.map.quest || n.path.length === r.path.length) return n;
-      if (nodeId === "thief") return { ...n, current: rattlebonesRoom() };
+      let n = moveOn(leaveSack(leavePending(r)), nodeId);
+      if (n.path.length === r.path.length) return n;
+      // The witch's illness: each room walked into is an action.
+      const tick = illnessTick(n);
+      n = tick.run;
+      hurt = tick.hurt;
+      if (!r.map.quest) return n;
+      if (nodeId === "thief") return { ...n, current: thiefRoom() };
       return { ...n, current: club ? clubRoom() : { kind: "treasure", gold: 0, done: true } };
     });
+    if (hurt) {
+      setShake((s) => s + 1);
+      setNotes([`🤢 Your ${byId(hurt)?.name ?? "creature"} suffers an illness: −${Math.round(ILLNESS_DAMAGE * 100)}% HP.`]);
+    }
+  }
+
+  // ── The card witch ─────────────────────────────────────────────────
+  function witchPlay(g: Guess) {
+    let stabbed: string | undefined;
+    updateRun((r) => {
+      const w = r.current?.witch;
+      if (!r.current || !w) return r;
+      const next = witchGuess(w, g);
+      let n: DungeonRun = { ...r, current: { ...r.current, witch: next } };
+      if (next.state === "lost") {
+        n = markDone(curse(n));
+        stabbed = n.illness?.id;
+      }
+      return n;
+    });
+    if (stabbed) {
+      setShake((s) => s + 1);
+      setNotes([`🗡️ The witch lunges and stabs your ${byId(stabbed)?.name ?? "creature"}! It suffers an illness: −${Math.round(ILLNESS_DAMAGE * 100)}% HP for each of the next ${ILLNESS_ACTIONS} actions (rooms or fight rounds).`]);
+    }
+    // Her deck's spent: you walk away with your winnings.
+    const after = loadDungeon().run?.current;
+    if (after?.witch?.state === "left" && !after.done) witchPayout(after.witch.correct);
+  }
+  function witchLeave() {
+    const w = loadDungeon().run?.current?.witch;
+    if (!w || w.state !== "playing") return;
+    updateRun((r) => (r.current?.witch ? { ...r, current: { ...r.current, witch: walkAway(r.current.witch) } } : r));
+    witchPayout(w.correct);
+  }
+  // One creature card per correct guess, rolled like a scan.
+  function witchPayout(n: number) {
+    if (n <= 0) { updateRun(markDone); return; }
+    give(Array.from({ length: n }, () => makeCreatureDrop(CREATURE_BY_ID[pickCreatureId(pickRarity("", "random"))], "card", "")), markDone);
   }
 
   // Klutz's box, picked up off the floor where the Rattlebones dropped it.
@@ -445,8 +505,13 @@ export default function DungeonPage() {
   // ── Fights ────────────────────────────────────────────────────────
   function startFight(r: DungeonRun) {
     const room = r.current!;
-    const ids = fightingTeam(r).filter((id) => byId(id));
-    const mine = ids.map((id) => byId(id)!);
+    const own = fightingTeam(r).filter((id) => byId(id));
+    const mine = own.map((id) => byId(id)!);
+    // The thief: Klutz fights with you, and talks you through it.
+    const tutorial = room.quest === "thief";
+    const klutz = { ...game.klutzFighter, skills: TUTORIAL_KLUTZ_MOVES.map((n) => MOVE_BY_NAME[n]) };
+    const ids = tutorial ? [KLUTZ_DROP_ID, ...own] : own;
+    const sick = r.illness ? ids.indexOf(r.illness.id) : -1;
     const info: MemberInfo[] = room.boss
       ? CYCLOPS_PARTS.map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName, creatureId: p.id }))
       : room.enemies!.map((e) => ({
@@ -458,13 +523,15 @@ export default function DungeonPage() {
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     if (room.enemies) game.markSeen(room.enemies.map((e) => e.creatureId));
     battle.start(
-      { A: mine.map((c) => c.fighter), B: room.boss ? cyclopsTeam() : room.enemies!.map(enemyFighter) },
-      { A: mine, B: info },
+      { A: [...(tutorial ? [klutz] : []), ...mine.map((c) => c.fighter)], B: room.boss ? cyclopsTeam() : room.enemies!.map(enemyFighter) },
+      { A: [...(tutorial ? [{ rarity: KLUTZ.rarity, label: "Your helper", creatureId: KLUTZ.id }] : []), ...mine], B: info },
       room.level ?? "hard",
       {
-        startHp: mine.map((c, i) => Math.round((r.hp[ids[i]] ?? 1) * c.fighter.maxHp)),
-        title: room.boss ? "Labyrinth · the Cyclops" : `Labyrinth · ${ROOM_INFO[room.kind].name}`,
+        startHp: [...(tutorial ? [klutz.maxHp] : []), ...mine.map((c, i) => Math.round((r.hp[own[i]] ?? 1) * c.fighter.maxHp))],
+        title: room.boss ? "Labyrinth · the Cyclops" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
+        illness: sick >= 0 ? { index: sick, rounds: r.illness!.left } : undefined,
+        tutorial,
       },
     );
   }
@@ -473,7 +540,35 @@ export default function DungeonPage() {
   function finishFight(r: DungeonRun, m: Match) {
     const ids = r.current?.fighters ?? [];
     const hp = { ...r.hp };
-    m.state.sides.A.team.forEach((f, i) => { if (ids[i]) hp[ids[i]] = f.hp / f.maxHp; });
+    const A = m.state.sides.A, B = m.state.sides.B;
+    A.team.forEach((f, i) => { if (ids[i] && ids[i] !== KLUTZ_DROP_ID) hp[ids[i]] = f.hp / f.maxHp; });
+    // Who was on the field at the end (the witch's next target), and what's left of any illness.
+    const last = ids[A.active] && ids[A.active] !== KLUTZ_DROP_ID ? ids[A.active] : r.lastOnField;
+    const sickAt = r.illness ? ids.indexOf(r.illness.id) : -1;
+    const sickLeft = sickAt >= 0 ? (A.team[sickAt].statuses.find((s) => s.id === "illness")?.rounds ?? 0) : r.illness?.left ?? 0;
+    const illness = r.illness && sickLeft > 0 && (hp[r.illness.id] ?? 1) > 0 ? { ...r.illness, left: sickLeft } : undefined;
+    // XP: every enemy knocked out, to each of your creatures that took part (won or lost).
+    const took = new Set<number>([0]);
+    for (const e of m.state.log) {
+      if (e.type === "swap" && e.side === "A") took.add(e.toIndex);
+      if (e.type === "sendIn" && e.side === "A") took.add(e.index);
+    }
+    const room0 = r.current!;
+    const xp = B.team.reduce((sum, f, i) => {
+      if (f.hp > 0) return sum;
+      if (room0.boss) return sum + BOSS_XP;
+      const e = room0.enemies?.[i];
+      return sum + (e ? xpForEnemy(e.level ?? 15, CREATURE_BY_ID[e.creatureId].rarity) : 0);
+    }, 0);
+    const xpNotes: string[] = [];
+    if (xp > 0) {
+      const gains: Record<string, number> = {};
+      for (const i of took) if (ids[i] && ids[i] !== KLUTZ_DROP_ID) gains[ids[i]] = xp;
+      const names = Object.keys(gains).map((id) => byId(id)?.name).filter(Boolean);
+      if (names.length) xpNotes.push(`✨ +${xp} XP: ${names.join(", ")}`);
+      for (const u of game.gainXp(gains)) xpNotes.push(`⬆️ ${u.name} reached level ${u.to}!`);
+    }
+    const after = (x: DungeonRun): DungeonRun => ({ ...x, lastOnField: last, illness });
     // Second Wind (a full Frontier's Mail set): a won fight heals a little.
     const winds: string[] = [];
     if (m.state.winner === "A") {
@@ -485,14 +580,15 @@ export default function DungeonPage() {
       }
     }
     if (m.state.winner !== "A") {
-      updateRun((x) => ({ ...x, hp, status: "dead", battle: undefined }));
+      updateRun((x) => ({ ...after(x), hp, status: "dead", battle: undefined }));
       battle.clear();
       return;
     }
     const room = r.current!;
-    if (room.quest === "rattlebones") {
-      // It falls apart, and the box it was carrying drops to the floor (the box is the prize: no gold).
-      updateRun((x) => markDone({ ...x, hp, battle: undefined }));
+    if (room.quest === "thief") {
+      // It runs off, and the box it was carrying drops to the floor (the box is the prize: no gold).
+      updateRun((x) => markDone({ ...after(x), hp, battle: undefined }));
+      setNotes(xpNotes);
       return;
     }
     const drops: Drop[] = [goldOnly(room.gold ?? 0)];
@@ -507,13 +603,13 @@ export default function DungeonPage() {
     // Its loot lies on the floor: a rickety chest (bosses) or a sack. Open it and take what you want.
     const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
     const container = room.kind === "miniboss" || room.kind === "boss" ? "chest" as const : "sack" as const;
-    updateRun((x) => markDone({ ...x, hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: false } : x.current }));
+    updateRun((x) => markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: false } : x.current }));
     if (room.kind === "miniboss" && bagSize(loadDungeon().meta) < BACKPACK) {
       const cur = loadDungeon();
       update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
       winds.push(`🎒 Among the mini boss's things: a rugged backpack! You can carry ${BACKPACK} things now (your bindle held 3).`);
     }
-    setNotes(winds);
+    setNotes([...xpNotes, ...winds]);
   }
 
   // ── Screens ───────────────────────────────────────────────────────
@@ -522,7 +618,7 @@ export default function DungeonPage() {
   }
 
   const frame = (children: React.ReactNode) => (
-    <DenFrame title="The Labyrinth" icon="🌀" gold={game.gold}>{children}</DenFrame>
+    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold}><Shaker shake={shake}>{children}</Shaker></DenFrame>
   );
 
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
@@ -530,6 +626,7 @@ export default function DungeonPage() {
   if (!run) {
     return frame(<Entrance lab={lab} owned={owned} gold={game.gold} onBegin={begin} onHeal={healAll} />);
   }
+
 
   // A fight in progress (or just finished).
   if (battle.match && run.current && isFight(run.current.kind) && !run.current.done && run.status === "exploring") {
@@ -566,7 +663,7 @@ export default function DungeonPage() {
   const clubEntry = (lab.meta.bag ?? []).find((e) => itemOf(e)?.itemKey === "klutz_club");
   const clubTutorial = run.current?.quest === "club" && run.current.done && clubEntry ? clubEntry : undefined;
   // The Rattlebones' room: once it's beaten, the way on is home (with the box).
-  const boxRoom = run.current?.quest === "rattlebones" && run.current.done;
+  const boxRoom = run.current?.quest === "thief" && run.current.done;
   // A fight waiting here: the Fight! button sits on the room. Until you've
   // beaten the Cyclops (the tutorial), its creatures' cards come up first.
   const fightHere = !!run.current && isFight(run.current.kind) && !run.current.done;
@@ -585,7 +682,7 @@ export default function DungeonPage() {
             onObject={run.current?.quest === "club" && !run.current.done ? takeClub
               : run.current?.kind === "chest" && !run.current.done ? openChest
               : run.current?.container && run.current.done && !run.current.opened ? openSack
-              : run.current?.quest === "rattlebones" && run.current.done && !run.current.boxTaken ? takeBox
+              : run.current?.quest === "thief" && run.current.done && !run.current.boxTaken ? takeBox
               : run.current?.kind === "stash" && !run.current.opened ? openSack
               : undefined}
             onFight={fightHere && fightingTeam(run).length > 0 ? () => startFight(run) : undefined}
@@ -599,7 +696,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -640,11 +737,14 @@ export default function DungeonPage() {
 
 // ── The entrance: choose your party ─────────────────────────────────
 function Entrance({ lab, owned, gold, onBegin, onHeal }: {
-  lab: DungeonSave; owned: OwnedCreature[]; gold: number; onBegin: (party: string[]) => void; onHeal: () => void;
+  lab: DungeonSave; owned: OwnedCreature[]; gold: number; onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void;
 }) {
   const [party, setParty] = useState<string[]>(() =>
     owned.filter((c) => c.roster && (lab.meta.injuries[c.id] ?? 1) > 0).slice(0, PARTY_SIZE).map((c) => c.id));
-  const free = lab.meta.runs < FREE_RUNS;
+  // The Deep Labyrinth opens once you've beaten the Cyclops.
+  const deepOpen = lab.meta.clears > 0;
+  const [dungeon, setDungeon] = useState<DungeonId>(1);
+  const free = dungeon === 1 && lab.meta.runs < FREE_RUNS;
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
   const canPay = free || gold >= ENTRY_FEE;
 
@@ -654,6 +754,20 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
 
   return (
     <>
+      {deepOpen && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          {([1, 2] as DungeonId[]).map((d) => (
+            <button key={d} className="card-btn" onClick={() => setDungeon(d)}
+              style={{ flex: 1, display: "block", textAlign: "center", borderColor: dungeon === d ? "#f1d9a0" : undefined, background: dungeon === d ? "rgba(241,217,160,0.1)" : undefined }}>
+              <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 ? "🌀" : "🕳️"} {DUNGEONS[d].name}</b>
+              <span style={{ display: "block", fontSize: 12, color: MUTED }}>
+                {d === 1 ? "The Cyclops · creatures Lv 1–13" : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[2].levels.start}–24 · the Warden`}
+                {d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : ""}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="stone-panel">
         <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
         <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
@@ -701,6 +815,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
                 </span>
                 <span style={{ minWidth: 0, flex: 1 }}>
                   <span style={{ fontWeight: 600, color: rarityColor(c.rarity) }}>{c.roster ? "★ " : ""}{c.name}</span>
+                  <span className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0" }}> Lv {c.fighter.level ?? 1}</span>
                   <span style={{ fontSize: 12, color: MUTED }}> · {c.label}{slot >= 0 ? (slot < TEAM_SIZE ? " · fights" : " · reserve") : ""}</span>
                   {hp < 1 && <span style={{ fontSize: 12, color: "#ff8a80" }}> · {hp <= 0 ? "knocked out" : `${Math.round(hp * 100)}% HP`}</span>}
                   <StatsLine stats={combatSummary(c.fighter)} />
@@ -711,8 +826,8 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
         </div>
       )}
 
-      <button onClick={() => onBegin(party)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        🌀 Enter the labyrinth {free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
+      <button onClick={() => onBegin(party, dungeon)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
+        {dungeon === 2 ? "🕳️ Enter the Deep Labyrinth" : "🌀 Enter the labyrinth"} {free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
       </button>
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
     </>
@@ -761,12 +876,13 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onNext }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave }: {
+  onWitch: (g: Guess) => void; onWitchLeave: () => void;
   run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
   onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
-  const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "rattlebones" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
+  const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "thief" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
   const what = room.container === "chest" ? "chest" : "sack";
   const sackPanel = (room.sack ?? []).length > 0 ? (
@@ -795,7 +911,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
   ));
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
   const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
-    : room.quest === "rattlebones" ? (room.boxTaken ? (
+    : room.quest === "thief" ? (room.boxTaken ? (
       <div style={{ marginTop: 12 }}>
         <p style={{ fontSize: 14, color: "#f1d9a0", fontStyle: "italic", margin: "0 0 10px" }}>
           &ldquo;This looks like the box Klutz was talking about. Let&apos;s take it to him.&rdquo;
@@ -805,7 +921,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
     ) : (
       <div style={{ marginTop: 12 }}>
         <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
-          The Rattlebones clatters into a heap of bones. Something heavy thuds onto the floor beside it: a battered box, a sword hilt poking out of the lid.
+          The Baby Cyclops howls, drops what it was carrying and scampers off into the dark. A battered box thuds onto the floor, a sword hilt poking out of the lid.
         </p>
         <button className="pixel-btn" onClick={onTakeBox}>📦 Pick up the box</button>
       </div>
@@ -860,6 +976,8 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
           <button className="pixel-btn" onClick={onChest}>Open it</button>
         </>
       ))}
+
+      {room.kind === "witch" && room.witch && <WitchTable room={room} victim={byId(run.illness?.id ?? "")?.name} onGuess={onWitch} onLeave={onWitchLeave} next={next} />}
 
       {room.kind === "cards" && (room.done ? next : (
         <>
@@ -976,10 +1094,11 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
       ) : next) : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 10px" }}>
-            {room.quest === "rattlebones" && "There it is: a Rattlebones, hunched over a battered box, picking through Klutz's weapons. It hasn't seen you yet."}
+            {room.quest === "thief" && "There it is: a Baby Cyclops, hunched over a battered box, picking through Klutz's weapons. Klutz cracks his knuckles: “Oi! That's mine. Come on — we'll do this one together.”"}
             {room.kind === "easy" && !room.quest && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
             {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Beat it and you can heal or revive one of your party."}
+            {room.kind === "boss" && !room.boss && "The Warden of the Deep waits at the top of the climb, with two guards at its side. A Legendary, high level, in Epic gear — and they fight smart."}
             {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close (magic hits it hardest), and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
             {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
           </p>
@@ -995,13 +1114,14 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
               return (
                 <div key={i} style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
                   <b style={{ color: rarityColor(t.rarity) }}>{t.name}</b>
+                  <span className="pixel-font" style={{ color: "#f1d9a0" }}> Lv {e.level ?? 15}</span>
                   <span style={{ color: MUTED }}> · {t.race ? `${RACE_INFO[t.race].name} · ` : ""}{creatureTypeLabel(e.proficiency)} · {e.gear.length ? e.gear.map(gearName).join(", ") : "no gear"}</span>
                 </div>
               );
             })}
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>
-            Win: {room.quest === "rattlebones" ? "Klutz's box" : <>{room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}</>}.
+            Win: {room.quest === "thief" ? "Klutz's box" : <>{room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}</>}.
             Your team: {fightingTeam(run).map((id) => byId(id)?.name).join(", ")}. Press <b>Fight!</b> on the room when you&apos;re ready.
           </p>
         </>
@@ -1028,7 +1148,9 @@ function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => O
 function RunOver({ run, lab, onHome, onGather }: { run: DungeonRun; lab: DungeonSave; onHome: () => void; onGather: () => void }) {
   const floor: FloorItem[] = [...(run.floor ?? []), ...(run.pending ?? []).map((x) => ({ room: "", drop: x }))];
   const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
-  const text = run.status === "cleared"
+  const text = run.status === "cleared" && run.dungeon === 2
+    ? `The Warden falls, and the deep goes quiet. You beat the Deep Labyrinth on run ${run.runNumber}!`
+    : run.status === "cleared"
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Codex of Stances, the Tavern and your trophy — come in the next update.)`
     : run.status === "dead"
       ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. ${freeHealing(lab.meta) ? "He's patched your creatures up, good as new." : "Your creatures are hurt — rest them at the healing pool."}`
@@ -1144,5 +1266,79 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
         </div>
       )}
     </>
+  );
+}
+
+// Shakes its contents each time `shake` goes up (the witch's stab, an illness).
+function Shaker({ shake, children }: { shake: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || shake === 0) return;
+    el.classList.remove("screen-shake");
+    void el.offsetWidth; // restart the animation
+    el.classList.add("screen-shake");
+  }, [shake]);
+  return <div ref={ref}>{children}</div>;
+}
+
+// One of the witch's cards.
+function WitchCardView({ card, small }: { card: WitchCard; small?: boolean }) {
+  const s = SUIT_INFO[card.suit];
+  return (
+    <div className="witch-card" style={{ borderColor: s.color, width: small ? 34 : 86, height: small ? 48 : 120, fontSize: small ? 14 : 44 }}>
+      <span className="pixel-font" style={{ color: s.color }}>{card.n}</span>
+      <span style={{ fontSize: small ? 11 : 22 }}>{s.icon}</span>
+    </div>
+  );
+}
+
+// The card witch: higher or lower, for creature cards.
+function WitchTable({ room, victim, onGuess, onLeave, next }: {
+  room: Room; victim?: string; onGuess: (g: Guess) => void; onLeave: () => void; next: React.ReactNode;
+}) {
+  const w = room.witch!;
+  const result = w.last?.result;
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <p style={{ fontSize: 14, color: "#d8d4c8", margin: 0, flex: 1 }}>
+          {w.state === "playing" && w.history.length === 0 && <>A hunched witch shuffles a deck of bone cards. &ldquo;Higher or lower, dearie? A card for every right guess…&rdquo;</>}
+          {w.state === "playing" && result === "right" && <b style={{ color: "#5ee08a" }}>Right! </b>}
+          {w.state === "playing" && result === "stick" && <b style={{ color: "#f1d9a0" }}>Stick — the same number. Guess again. </b>}
+          {w.state === "lost" && <b style={{ color: "#ff8a80" }}>Wrong! She lunges — {victim ?? "your creature"} is stabbed and falls ill.</b>}
+          {w.state === "left" && <b style={{ color: "#f1d9a0" }}>You walk away with {w.correct} card{w.correct === 1 ? "" : "s"}.</b>}
+        </p>
+        <Help title="The card witch">
+          <ul>
+            <li>Cards go from <b>1 to 11</b>, in Melee ⚔️, Ranged 🏹 and Magic 🔮.</li>
+            <li>The next card is <b>higher, lower or the same</b> — equal odds.</li>
+            <li>Right: <b>+1 creature card</b>. Same (&ldquo;stick&rdquo;): guess again.</li>
+            <li>Wrong: she stabs the creature that was <b>last on the field</b> (or your first). It loses <b>{Math.round(ILLNESS_DAMAGE * 100)}% HP</b> each of the next <b>{ILLNESS_ACTIONS} actions</b> — rooms, or rounds of a fight.</li>
+            <li>Walk away any time and keep your cards. Her deck runs out after {MAX_CORRECT}.</li>
+          </ul>
+        </Help>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 10, margin: "12px 0", justifyContent: "center", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 3, flexWrap: "wrap", maxWidth: 180 }}>
+          {w.history.slice(-8).map((c, i) => <WitchCardView key={i} card={c} small />)}
+        </div>
+        <WitchCardView card={w.card} />
+      </div>
+      <div className="pixel-font" style={{ textAlign: "center", fontSize: 16, color: "#f1d9a0", marginBottom: 8 }}>
+        🃏 Cards won: {w.correct}
+      </div>
+      {w.state === "playing" ? (
+        <>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button className="pixel-btn" style={{ flex: 1, fontSize: 18 }} disabled={w.card.n >= 11} onClick={() => onGuess("higher")}>⬆️ Higher</button>
+            <button className="pixel-btn" style={{ flex: 1, fontSize: 18 }} disabled={w.card.n <= 1} onClick={() => onGuess("lower")}>⬇️ Lower</button>
+          </div>
+          <button className="card-btn" style={{ marginTop: 8, justifyContent: "center" }} onClick={onLeave}>
+            {w.correct > 0 ? `🚶 Walk away with ${w.correct} card${w.correct === 1 ? "" : "s"}` : "🚶 Walk away"}
+          </button>
+        </>
+      ) : next}
+    </div>
   );
 }

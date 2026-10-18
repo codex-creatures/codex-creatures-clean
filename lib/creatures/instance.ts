@@ -23,6 +23,6 @@ export function movesOf(drop: CreatureOrItemDrop, t: CreatureTemplate, chosen?: 
 // weaponKey: the weapon's type, for its damage-type affinity.
 export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor: (CreatureOrItemDrop | undefined)[] = [], chosenMoves?: string[], weaponKey?: ItemKey) {
   const worn = wornArmor(armor);
-  const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set, weaponKey);
+  const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set, weaponKey, drop.level ?? 1);
   return drop.ability ? { ...f, ability: drop.ability } : f;
 }

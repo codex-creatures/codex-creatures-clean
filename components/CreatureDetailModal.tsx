@@ -15,6 +15,7 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { canLearnFromCodex, findCreatureTemplate, MOVE_BY_NAME, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
+import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL } from "@/lib/creatures/levels";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
@@ -120,6 +121,7 @@ export default function CreatureDetailModal({
   const setNow = wornArmor(worn).set;
   const setNext = wornArmor(nextPieces).set;
   const prof = template ? proficiencyOf(creature, template) : undefined;
+  const level = clampLevel(creature.level);
   const base = template?.proficiency;
 
   const options = picking === "weapon" ? weapons : armors.filter((a) => (a.armorSlot ?? "chest") === picking);
@@ -161,7 +163,17 @@ export default function CreatureDetailModal({
             <ClassBadge cls={template?.cls} />
             {template && prof && <TypeTags roles={creatureRoles(prof)} />}
           </div>
-          <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1 }}>{creature.name}</h2>
+          <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1 }}>
+            {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
+          </h2>
+          {creature.dropType === "creature" && !template?.companion && level < MAX_LEVEL && (
+            <div title={`${creature.xp ?? 0} / ${xpToNext(level)} XP to level ${level + 1}`} style={{ marginTop: 6, maxWidth: 260 }}>
+              <div style={{ height: 6, background: "#12131a", border: "1px solid #2a2d38" }}>
+                <div style={{ height: "100%", width: `${Math.min(100, (100 * (creature.xp ?? 0)) / xpToNext(level))}%`, background: "#f1d9a0" }} />
+              </div>
+              <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{creature.xp ?? 0} / {xpToNext(level)} XP</div>
+            </div>
+          )}
           {template?.flavour && <p style={{ margin: "6px 0 0", fontSize: 13, color: "#a9a59a", fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
           <AbilityTag ability={creature.ability} />
         </div>
@@ -273,27 +285,27 @@ export default function CreatureDetailModal({
               {STATS.map((st) => {
                 const total = Math.round(now.s[st.key]);
                 const after = next ? Math.round(next.s[st.key]) : total;
-                const p = st.key === "hp" ? null : prof![st.key];
+                const p = st.key === "hp" ? null : now.f.proficiency[st.key];
                 const diff = st.key === "hp" || !base ? 0 : prof![st.key] - base[st.key];
-                const gear = st.key === "hp" ? `${template.baseHp} base + ${now.f.weapon.hp + now.f.armor.hp} gear`
+                const gear = st.key === "hp" ? `${hpAt(template, level)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear`
                   : `${gearValue(now.f, st.key)} gear × +${p}%`;
                 return <StatRow key={st.key} icon={st.icon} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
               })}
             </div>
             {/* The creature's own %s: what each point of gear is multiplied by. */}
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
-              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· how much this creature adds to its gear</span>
+              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· grow with level; its rolls never change</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
               {STATS.filter((st) => st.key !== "hp").map((st) => {
                 const k = st.key as Exclude<StatKey, "hp">;
                 const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
                 return (
-                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by +${prof![k]}%`}
+                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level 30: ${proficiencyAt(template, prof, MAX_LEVEL)[k]}%)`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
                     <div style={{ fontSize: 13 }}>{st.icon}</div>
                     <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
-                    <div style={{ ...NUM, fontSize: 18, color: st.color }}>+{prof![k]}%</div>
+                    <div style={{ ...NUM, fontSize: 18, color: st.color }}>{now.f.proficiency[k] >= 0 ? "+" : ""}{now.f.proficiency[k]}%</div>
                     <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
                   </div>
                 );

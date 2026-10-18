@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { rollBox, rattlebonesRoom, klutzClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { enemyFighter } from "../lib/dungeon/run";
+import { buildFighter } from "../lib/combat/loadout";
+import { calcDamage } from "../lib/combat/engine";
+import { KLUTZ, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { TUTORIAL_KLUTZ_MOVES } from "../lib/quest";
+import { rollBox, thiefRoom, klutzClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "../lib/items/ceilings";
@@ -13,12 +18,22 @@ describe("the first quest: Klutz's box", () => {
     expect(ITEM_KEYS).not.toContain("klutz_club");
   });
 
-  it("the thief is a lone Rattlebones with no gear, and no gold (the box is the prize)", () => {
-    const room = rattlebonesRoom();
-    expect(room.quest).toBe("rattlebones");
+  it("the thief is a lone Baby Cyclops in a thick hide, and no gold (the box is the prize)", () => {
+    const room = thiefRoom();
+    expect(room.quest).toBe("thief");
     expect(room.gold).toBe(0);
     expect(room.enemies).toHaveLength(1);
-    expect(room.enemies![0]).toMatchObject({ creatureId: "rattlebones", gear: [] });
+    expect(room.enemies![0]).toMatchObject({ creatureId: "baby_cyclops" });
+    expect(room.enemies![0].gear).toEqual([expect.objectContaining({ slot: "armor", drops: false })]);
+  });
+
+  it("the guided fight teaches: ranged does least, Force bounces off, Pierce goes through", () => {
+    const thief = enemyFighter(thiefRoom().enemies![0]);
+    const klutz = { ...buildFighter(KLUTZ, undefined, undefined, undefined, undefined, undefined, undefined, 10), skills: TUTORIAL_KLUTZ_MOVES.map((n) => MOVE_BY_NAME[n]) };
+    const hit = (name: string) => calcDamage(MOVE_BY_NAME[name], klutz, thief, false).damage;
+    expect(hit("Stone Throw")).toBeLessThan(hit("Heavy Blow"));
+    expect(hit("Heavy Blow")).toBeLessThan(hit("Impale"));
+    expect(thief.maxHp).toBeGreaterThan(klutz.maxHp);
   });
 
   it("the box holds 10 pieces of Common or Uncommon gear, about 20% Uncommon", () => {

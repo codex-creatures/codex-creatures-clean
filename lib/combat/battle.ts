@@ -139,7 +139,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "revive" | "item" | "set" | "ability" | "stumble"; damage?: number }
+      kind: "self" | "venom" | "illness" | "revive" | "item" | "set" | "ability" | "stumble"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -457,15 +457,19 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
 
   // 3. End of round: venom bites (field and bench), then status effects
   //    and cooldowns tick down.
+  //    The witch's illness works the same way (lib/dungeon/run.ts: curse).
   for (const k of ["A", "B"] as SideKey[]) {
     state.sides[k].team.forEach((f, i) => {
-      const venom = f.statuses.find((s) => s.id === "venom");
-      if (!venom || f.hp <= 0 || f.hidden) return;
-      const damage = Math.min(f.hp - bossMinHp(state, k, i), venom.dmg ?? 0);
-      if (damage <= 0) return;
-      f.hp -= damage;
-      state.log.push({ type: "effect", side: k, index: i, name: f.name, text: `takes ${damage} venom damage`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "venom", damage });
-      if (f.hp <= 0) knockedOut(state, k, i);
+      for (const id of ["venom", "illness"] as const) {
+        const st = f.statuses.find((s) => s.id === id);
+        if (!st || f.hp <= 0 || f.hidden) continue;
+        const damage = Math.min(f.hp - bossMinHp(state, k, i), st.dmg ?? 0);
+        if (damage <= 0) continue;
+        f.hp -= damage;
+        state.log.push({ type: "effect", side: k, index: i, name: f.name, text: id === "venom" ? `takes ${damage} venom damage` : `suffers an illness (${damage} damage)`,
+          hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: id, damage });
+        if (f.hp <= 0) knockedOut(state, k, i);
+      }
     });
   }
   for (const k of ["A", "B"] as SideKey[]) {

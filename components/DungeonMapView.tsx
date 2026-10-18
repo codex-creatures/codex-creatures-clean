@@ -79,7 +79,7 @@ export default function DungeonMapView({ run, onEnter }: { run: DungeonRun; onEn
   const isWayOn = (a: MapNode, b: MapNode) => (a.id === pos && choiceIds.has(b.id)) || (b.id === pos && choiceIds.has(a.id));
 
   // The scroll: parchment between two wooden rollers.
-  const PAD_X = 7, TOP = -9, BOTTOM = MAP_H + 9;
+  const PAD_X = 7, TOP = -9, BOTTOM = (map.h ?? MAP_H) + 9;
   const view = { x: -PAD_X - 4, y: TOP - 8, w: MAP_W + 2 * PAD_X + 8, h: BOTTOM - TOP + 16 };
   const roller = (y: number) => (
     <g>

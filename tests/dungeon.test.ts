@@ -32,13 +32,14 @@ describe("dungeon rooms", () => {
     for (const [kind, pct] of ROOM_MIX) expect(Math.abs((counts[kind] ?? 0) / N * 100 - pct)).toBeLessThan(1.5);
   });
 
-  it("easy fights: 1–2 creatures up to depth 4, then 2–3", () => {
+  it("easy fights: 1 creature in the first 2 rooms, 1–2 up to depth 4, then 2–3", () => {
     const sizes = (depth: number) => new Set(Array.from({ length: 300 }, () => makeRoom("easy", Math.random, depth).enemies!.length));
-    expect([...sizes(1)].sort()).toEqual([1, 2]);
+    expect([...sizes(1)].sort()).toEqual([1]);
+    expect([...sizes(3)].sort()).toEqual([1, 2]);
     expect([...sizes(4)].sort()).toEqual([1, 2]);
     expect([...sizes(5)].sort()).toEqual([2, 3]);
     expect(makeRoom("easy", Math.random, 1).enemies!.length).toBeLessThanOrEqual(2);
-    const rar = (n: number) => { for (;;) { const r = makeRoom("easy", Math.random, n <= 2 ? 1 : 9); if (r.enemies!.length === n) return r.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity); } };
+    const rar = (n: number) => { for (;;) { const r = makeRoom("easy", Math.random, n <= 2 ? 3 : 9); if (r.enemies!.length === n) return r.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity); } };
     expect(rar(1)).toEqual(["uncommon"]);
     expect(rar(2)).toEqual(["common", "uncommon"]);
     expect(rar(3)).toEqual(["common", "common", "uncommon"]);
@@ -57,10 +58,11 @@ describe("dungeon rooms", () => {
     }
   });
 
-  it("the mystery mix adds up to 100%: half mini bosses, 15% good finds", () => {
+  it("the mystery mix adds up to 100%: mostly mini bosses, 15% good finds, and the witch", () => {
     expect(MYSTERY_MIX.reduce((s, [, p]) => s + p, 0)).toBe(100);
     const pct = Object.fromEntries(MYSTERY_MIX);
-    expect(pct.miniboss).toBe(50);
+    expect(pct.miniboss).toBe(45);
+    expect(pct.witch).toBe(8);
     expect(pct.librarian + pct.cards + pct.merchant).toBe(15);
     expect(ROOM_MIX.map(([k]) => k)).not.toContain("librarian"); // librarians only in mysteries
     expect(ROOM_MIX.map(([k]) => k)).toContain("merchant");      // merchants anywhere
@@ -291,7 +293,7 @@ describe("a labyrinth run", () => {
       expect(run.cleared).toContain(run.map.start);
       expect(run.current?.kind).toBe(run.map.nodes[to].kind);
       // A fight (or loot) has to be dealt with first; pools and shops can be walked past.
-      const skippable = ["pool", "stash", "merchant", "librarian"].includes(run.current!.kind);
+      const skippable = ["pool", "stash", "merchant", "librarian", "witch"].includes(run.current!.kind);
       expect(canMoveOn(run)).toBe(skippable);
       run = { ...run, current: { ...run.current!, done: true } };
       expect(canMoveOn(run)).toBe(true);

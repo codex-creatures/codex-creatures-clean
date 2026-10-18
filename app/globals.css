@@ -366,3 +366,24 @@ button, a, [role="button"] { touch-action: manipulation; }
 .help-panel ul { margin: 0 0 8px; padding-left: 20px; }
 .help-panel li { margin-bottom: 4px; }
 .help-panel b { color: #fff3d6; }
+
+/* The witch's stab and the illness after it. */
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-7px, 2px); }
+  25% { transform: translate(6px, -3px); }
+  40% { transform: translate(-5px, 3px); }
+  55% { transform: translate(5px, -2px); }
+  70% { transform: translate(-3px, 1px); }
+  85% { transform: translate(2px, -1px); }
+}
+.screen-shake { animation: screen-shake 0.5s ease-out; }
+
+/* The card witch's cards. */
+.witch-card {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: linear-gradient(160deg, #2a2133, #15111c);
+  border: 2px solid; border-radius: 6px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.5), inset 0 0 12px rgba(0,0,0,0.6);
+  line-height: 1;
+}
