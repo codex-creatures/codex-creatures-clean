@@ -26,11 +26,12 @@ export function GearStatLine({ item }: { item: CreatureOrItemDrop }) {
 
 export type CompareWith = { id: string; name: string; creatureId?: string; worn?: CreatureOrItemDrop };
 
-export default function GearCompare({ item, slotName, creatures, onEquip, onClose }: {
+export default function GearCompare({ item, slotName, creatures, onEquip, equipLabel, onClose }: {
   item: CreatureOrItemDrop;
   slotName: string;                 // "weapon", "helmet"…
   creatures: CompareWith[];         // who to compare against, with what they wear in that slot
   onEquip?: (creatureId: string) => void;
+  equipLabel?: (name: string) => string; // the equip button's text (default "Equip on …")
   onClose: () => void;
 }) {
   const [i, setI] = useState(0);
@@ -86,7 +87,7 @@ export default function GearCompare({ item, slotName, creatures, onEquip, onClos
       </div>
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-        {onEquip && <button className="chip" onClick={() => onEquip(c.id)}>Equip on {c.name}</button>}
+        {onEquip && <button className="chip" onClick={() => onEquip(c.id)}>{equipLabel ? equipLabel(c.name) : `Equip on ${c.name}`}</button>}
         <button className="chip" onClick={onClose}>Close</button>
       </div>
     </div>

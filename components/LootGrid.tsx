@@ -57,7 +57,8 @@ function Heading({ children }: { children: React.ReactNode }) {
 }
 
 // grouped: split into Items, Cards and Gold under headings (the end-of-run summary).
-export default function LootGrid({ items, faded, grouped }: { items: GotItem[]; faded?: boolean; grouped?: boolean }) {
+// onGear: tapping a weapon or armour piece opens it (to compare and swap).
+export default function LootGrid({ items, faded, grouped, onGear }: { items: GotItem[]; faded?: boolean; grouped?: boolean; onGear?: (item: CreatureOrItemDrop) => void }) {
   if (items.length === 0) return <p style={{ fontSize: 13, color: MUTED, margin: "4px 0" }}>Nothing.</p>;
   const cards = stackCards(items);
   const gold = items.reduce((n, g) => n + goldOf(g), 0);
@@ -66,7 +67,7 @@ export default function LootGrid({ items, faded, grouped }: { items: GotItem[]; 
   const cardGrid = cards.length > 0 && <CardStack piles={cards} faded={faded} />;
   const tileGrid = tiles.length > 0 && (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, opacity: faded ? 0.55 : 1 }}>
-      {tiles.map((g, i) => <Tile key={i} g={g} faded={faded} />)}
+      {tiles.map((g, i) => <Tile key={i} g={g} faded={faded} onGear={onGear} />)}
     </div>
   );
   const goldLine = gold > 0 && (
@@ -89,10 +90,20 @@ export default function LootGrid({ items, faded, grouped }: { items: GotItem[]; 
   );
 }
 
-function Tile({ g, faded }: { g: GotItem; faded?: boolean }) {
+// Weapons and armour, which can be opened up.
+const gearOf = (g: GotItem) => {
+  if ("potion" in g) return null;
+  const x = g.drop as CreatureOrItemDrop;
+  return x.dropType === "item" && (x.itemCategory === "weapon" || x.itemCategory === "armor") ? x : null;
+};
+
+function Tile({ g, faded, onGear }: { g: GotItem; faded?: boolean; onGear?: (item: CreatureOrItemDrop) => void }) {
   const l = lookOf(g);
+  const gear = gearOf(g);
+  const Tag = gear && onGear ? "button" : "div";
   return (
-    <div title={l.name} style={{ minWidth: 0, textAlign: "center" }}>
+    <Tag title={l.name} onClick={gear && onGear ? () => onGear(gear) : undefined}
+      style={{ display: "block", width: "100%", minWidth: 0, textAlign: "center", padding: 0, border: "none", background: "none", color: "inherit", font: "inherit", cursor: gear && onGear ? "pointer" : "default" }}>
       <div style={{
         aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
         background: `radial-gradient(circle, ${l.glow}, #101117 75%)`, border: `3px solid ${l.color}`,
@@ -102,6 +113,6 @@ function Tile({ g, faded }: { g: GotItem; faded?: boolean }) {
         {l.sprite ? <PixelSprite sprite={l.sprite} scale={2.2} /> : <span style={{ fontSize: 24 }}>{l.icon}</span>}
       </div>
       <div style={{ fontSize: 10, color: l.color, marginTop: 3, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.name}</div>
-    </div>
+    </Tag>
   );
 }

@@ -53,6 +53,7 @@ import { CYCLOPS_PARTS, cyclopsTeam } from "@/lib/creatures/bosses";
 import DungeonMapView from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import EncounterCards from "@/components/EncounterCards";
+import GearViewModal from "@/components/GearViewModal";
 import Help from "@/components/Help";
 
 const GOLD = "#f5c542";
@@ -80,6 +81,8 @@ export default function DungeonPage() {
   const [leaving, setLeaving] = useState(false);          // anything else that just happened (e.g. Second Wind)
   // The creature cards for the fight you've walked into (tap the creatures; see EncounterCards).
   const [cardsOpen, setCardsOpen] = useState(false);
+  // A weapon or armour piece you just found, opened up (to compare and swap).
+  const [viewGear, setViewGear] = useState<CreatureOrItemDrop | null>(null);
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
 
@@ -674,6 +677,25 @@ export default function DungeonPage() {
   const canFight = fightHere && fightingTeam(run).length > 0;
   const showCards = run.inside && enemyIds.length > 0 && cardsOpen;
 
+  // A piece of gear you just found, opened up: compare it with what your
+  // creatures (those still standing) wear, and swap it onto one. It can only
+  // be swapped while it's in your bag.
+  const gearView = (item: CreatureOrItemDrop) => {
+    const slot = slotOf(item);
+    if (!slot) return null;
+    const entry = lootEntry(item.id);
+    const inBag = (lab.meta.bag ?? []).includes(entry);
+    const standing = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0);
+    return (
+      <GearViewModal item={item} slotName={slot} onClose={() => setViewGear(null)}
+        creatures={standing.map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId, worn: itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "") }))}
+        onSwap={inBag ? (id) => { equipFromBag(entry, id); setViewGear(null); } : undefined}
+        why={inBag ? undefined
+          : (run.pending ?? []).some((d) => d.id === item.id) ? "Your bag's full, so it's still on the floor. Make room to swap it on."
+          : "It's not in your bag any more."} />
+    );
+  };
+
   return frame(
     <>
       {!run.inside ? (
@@ -689,6 +711,7 @@ export default function DungeonPage() {
               : undefined}
             onFight={canFight ? () => startFight(run) : undefined}
             onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} />
+          {viewGear && gearView(viewGear)}
           {showCards && <EncounterCards creatureIds={enemyIds} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
@@ -699,7 +722,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onTakeSack={takeFromSack} onTakeAllSack={takeAllFromSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -879,8 +902,8 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave }: {
-  onWitch: (g: Guess) => void; onWitchLeave: () => void;
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onTakeSack, onTakeAllSack, onBuyPotion, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
+  onWitch: (g: Guess) => void; onWitchLeave: () => void; onGear: (item: CreatureOrItemDrop) => void;
   run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
   onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onTakeSack: (i: number) => void; onTakeAllSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
@@ -938,7 +961,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
       {found && found.length > 0 && (
         <div style={{ margin: "10px 0 0" }}>
           <div style={{ color: MUTED, fontSize: 12, marginBottom: 6 }}>You got:</div>
-          <LootGrid items={found} />
+          <LootGrid items={found} onGear={onGear} />
         </div>
       )}
       {notes.map((n) => <div key={n} style={{ fontSize: 13, color: "#f1d9a0", marginTop: 4 }}>{n}</div>)}
