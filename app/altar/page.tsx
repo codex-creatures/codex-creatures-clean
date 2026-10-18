@@ -220,7 +220,7 @@ export default function AltarPage() {
                     {game.favoriteIds.has(d.id) ? "★" : "☆"}
                   </button>
                   <Link href={isItemDrop(d) ? "/chest" : "/pit"} className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", marginLeft: "auto", whiteSpace: "nowrap" }}>
-                    {isItemDrop(d) ? "→ Chest" : "→ The Pit"}
+                    {isItemDrop(d) ? "→ Inventory" : "→ The Pit"}
                   </Link>
                 </>
               )}

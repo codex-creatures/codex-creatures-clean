@@ -47,7 +47,7 @@ export default function BagPage() {
   const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
   const away = !!lab.run;
-  // Put a potion from the bag back into storage (the Chest), freeing its slot.
+  // Put a potion from the bag back into storage (the Inventory), freeing its slot.
   function store(i: number) {
     const e = bag[i];
     if (!isPotionEntry(e)) return;
@@ -108,7 +108,7 @@ export default function BagPage() {
               : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
               : <span style={{ color: MUTED }}>Something you no longer have</span>}
             {own && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>Take out</button>}
-            {isPotionEntry(e) && !away && <button className="chip" onClick={() => store(sel)}>Store in Chest</button>}
+            {isPotionEntry(e) && !away && <button className="chip" onClick={() => store(sel)}>Store it</button>}
             {found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
           </div>
         );
@@ -117,7 +117,7 @@ export default function BagPage() {
 
       {!away && potions.length > 0 && (
         <>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Potions in the Chest</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Potions in your Inventory</div>
           <div style={{ display: "grid", gap: 6 }}>
             {potions.map((x) => (
               <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
