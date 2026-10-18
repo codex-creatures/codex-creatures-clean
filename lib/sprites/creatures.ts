@@ -158,10 +158,12 @@ const ART_SIZES: Record<string, [number, number]> = {
   swamp_witch: [86, 89],
   sylvaran: [71, 94],
 };
+// Those drawn facing right (the rest face left).
+const FACING_RIGHT = new Set(["void_serpent"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
 const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "cave_bat", "amber_wasp", "storm_phoenix"]);
 for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
-  if (CREATURE_SPRITES[id]) withArt(CREATURE_SPRITES[id], { src: `/sprites/creatures/${id}.png`, w, h, ...(FLOATERS.has(id) ? { floats: true } : {}) });
+  if (CREATURE_SPRITES[id]) withArt(CREATURE_SPRITES[id], { src: `/sprites/creatures/${id}.png`, w, h, ...(FLOATERS.has(id) ? { floats: true } : {}), ...(FACING_RIGHT.has(id) ? { faces: "right" as const } : {}) });
 }
 
 
@@ -187,4 +189,4 @@ export const EGG: Sprite = [
 ];
 
 // The first quest's thief (PixelLab art; no grid of its own, so the egg is its fallback).
-CREATURE_SPRITES.baby_cyclops = withArt([...EGG], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83 });
+CREATURE_SPRITES.baby_cyclops = withArt([...EGG], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83, faces: "right" });

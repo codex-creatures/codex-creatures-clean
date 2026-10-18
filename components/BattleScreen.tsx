@@ -36,11 +36,11 @@ import BossStage from "@/components/BossStage";
 import PixelSprite from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
-import { artFor } from "@/lib/sprites/art";
+import { artFor, flipToFace } from "@/lib/sprites/art";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
 // Most art faces left, so yours is mirrored; art drawn facing right is the other way round.
-const faceFoe = (sprite: Sprite, side: "A" | "B") => (side === "A") !== (artFor(sprite)?.faces === "right");
+const faceFoe = (sprite: Sprite, side: "A" | "B") => flipToFace(sprite, side === "A"); // yours on the left face right; theirs face left
 
 export const MUTED = "rgba(255,255,255,0.5)";
 

@@ -5,7 +5,7 @@
 
 import { useMemo, useState } from "react";
 import DungeonRoomView from "@/components/DungeonRoomView";
-import { makeRoom, type DungeonRun, type Room, type RoomKind } from "@/lib/dungeon/run";
+import { isFight, makeRoom, type DungeonRun, type Room, type RoomKind } from "@/lib/dungeon/run";
 import type { DungeonMap } from "@/lib/dungeon/map";
 import LootWindow from "@/components/LootWindow";
 import { lookOf } from "@/components/ContainerLoot";
@@ -76,7 +76,7 @@ export default function RoomsLab() {
         {runs.map((r, i) => (
           <div key={`${KINDS[i]}-${seed}-${ways}-${done}`}>
             <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", marginBottom: 6 }}>{KINDS[i]}</div>
-            <DungeonRoomView run={r} open onGo={() => {}} onEnemies={() => {}} />
+            <DungeonRoomView run={r} open onGo={() => {}} onEnemies={() => {}} onFight={!done && isFight(KINDS[i]) ? () => {} : undefined} />
           </div>
         ))}
       </div>

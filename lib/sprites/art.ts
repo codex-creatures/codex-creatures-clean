@@ -13,6 +13,7 @@ export type Anim = { src: string; frames: number; w: number; h: number; x: numbe
 // (item icons are drawn at 64px but take the 32px space the grids did).
 // faces: which way the drawing faces. Creature art faces left (towards the
 // player's side of a fight) unless it says "right" (Klutz, drawn walking right).
+// flipToFace says whether to mirror a sprite so it faces the way you want.
 // floats: it hangs in the air (a wisp, a bat): drawn off the floor, bobbing.
 export type Art = { src: string; w: number; h: number; size?: number; walk?: Anim; faces?: "right"; floats?: boolean };
 
@@ -71,3 +72,6 @@ export async function loadArt(art: Art): Promise<LoadedArt> {
   const [still, frames] = await Promise.all([loadPixels(art.src), art.walk ? loadFrames(art.walk).catch(() => null) : null]);
   return { still, walk: frames && art.walk ? { frames, x: art.walk.x, y: art.walk.y } : undefined };
 }
+
+// Mirror this sprite (scaleX(-1)) so it faces right (true) or left (false)?
+export const flipToFace = (s: Sprite, right: boolean) => (artFor(s)?.faces === "right") !== right;

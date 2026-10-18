@@ -25,7 +25,7 @@ import { ROOM_INFO, runPosition, isFight, type DungeonRun, type RoomKind } from 
 import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type ChamberSize, type ChamberView, type TunnelLook } from "@/lib/dungeon/chamber";
 import { spriteWidth } from "@/lib/sprites/pixels";
-import { artFor } from "@/lib/sprites/art";
+import { artFor, flipToFace } from "@/lib/sprites/art";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, MERCHANT, LIBRARIAN, CARD_WITCH, TREASURE_PILE, CARD_DECK, HEALING_POOL } from "@/lib/sprites/props";
@@ -165,26 +165,29 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
       <div className="pixel-font room-title">{title}</div>
 
       {/* What's in the room. */}
-      <RoomContents run={run} size={size} view={view} onObject={onObject} onEnemies={onEnemies} />
+      <RoomContents run={run} size={size} view={view} onObject={onObject} onEnemies={onEnemies} lift={!!onFight} />
 
       {onFight && <button className="fight-btn" onClick={onFight}>⚔️ Fight!</button>}
     </div>
   );
 }
 
-function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRun; size: ChamberSize; view: ChamberView; onObject?: () => void; onEnemies?: () => void }) {
+// lift: the Fight! button is showing at the bottom: stand a little further back, clear of it.
+function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: DungeonRun; size: ChamberSize; view: ChamberView; onObject?: () => void; onEnemies?: () => void; lift?: boolean }) {
   const room = run.current;
   if (!room || room.kind === "entrance") return null;
   // A row standing on the floor, across the whole room (so widths below are shares of the room).
-  const at: React.CSSProperties = { position: "absolute", left: 0, width: "100%", top: "84%", transform: "translateY(-100%)", display: "flex", justifyContent: "center", gap: "2%", alignItems: "flex-end", pointerEvents: "none" };
+  const at: React.CSSProperties = { position: "absolute", left: 0, width: "100%", top: lift ? "76%" : "84%", transform: "translateY(-100%)", display: "flex", justifyContent: "center", gap: "2%", alignItems: "flex-end", pointerEvents: "none" };
   // How wide a sprite stands, as a share of the room: the room's own pixel
   // size, shrunk to fit under MAX_TALL (or `tall`).
   const scale = STAND_SCALE[view][size];
   const fit = (sprite: Sprite, tall = MAX_TALL[size]) => Math.min(scale, (tall * CH) / fineHeight(sprite));
   const share = (sprite: Sprite, tall?: number) => `${(fineWidth(sprite) / CW) * 100 * fit(sprite, tall)}%`;
-  const draw = (sprite: Sprite, style: React.CSSProperties = {}) => (
+  // faceRight: which way it should look (by default left, out at you; a
+  // creature on the left of a row looks right, in towards the middle).
+  const draw = (sprite: Sprite, style: React.CSSProperties = {}, faceRight = false) => (
     <PixelSprite sprite={sprite} scale={4}
-      style={{ width: "100%", height: "auto", imageRendering: "pixelated", ...(artFor(sprite)?.faces === "right" ? { transform: "scaleX(-1)" } : {}), ...style }} />
+      style={{ width: "100%", height: "auto", imageRendering: "pixelated", ...(flipToFace(sprite, faceRight) ? { transform: "scaleX(-1)" } : {}), ...style }} />
   );
 
   // Something lying on the floor: tappable when there's something to do with it.
@@ -239,7 +242,7 @@ function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRu
         {sprites.map((sprite, i) => (
           <button key={i} onClick={onEnemies} disabled={!onEnemies} aria-label="See their cards" title={onEnemies ? "See their cards" : undefined}
             style={{ width: `${widths[i] * squeeze * 100}%`, background: "none", border: "none", padding: 0, pointerEvents: onEnemies ? "auto" : "none", cursor: onEnemies ? "pointer" : "default" }}>
-            <Standing sprite={sprite} filter="drop-shadow(0 3px 0 rgba(0,0,0,0.7)) brightness(0.92)">{draw(sprite)}</Standing>
+            <Standing sprite={sprite} filter="drop-shadow(0 3px 0 rgba(0,0,0,0.7)) brightness(0.92)">{draw(sprite, {}, i < (sprites.length - 1) / 2)}</Standing>
           </button>
         ))}
       </div>
