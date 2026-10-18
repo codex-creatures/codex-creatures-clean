@@ -37,7 +37,7 @@ const ARMOR_STATS = [
   { label: "Health",     key: "hp"      },
 ];
 
-function getBarColor(value: number): string {
+export function getBarColor(value: number): string {
   if (value >= 90) return "#f5c542";               // gold
   if (value >= 70) return "#a855f7";               // purple
   if (value >= 50) return "#4ea1ff";               // blue

@@ -17,6 +17,7 @@ import { ICON, NAME, lookOf } from "./ContainerLoot";
 import type { SlotLook } from "./BagSlots";
 import { POTIONS, type SackItem } from "@/lib/dungeon/run";
 import { GEAR_STATS } from "./GearCompare";
+import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { MOVE_BY_NAME } from "@/lib/creatures/creatureData";
 import { moveKind } from "./ClassBadge";
@@ -24,6 +25,12 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const MUTED = "rgba(255,255,255,0.55)";
+// Where each gear stat sits in a 6-column grid (each box 2 wide): [stat, start column].
+const STAT_GRID: [string, number][] = [
+  ["melee", 1], ["ranged", 3], ["magic", 5],
+  ["mDef", 1], ["rDef", 3], ["magDef", 5],
+  ["agility", 2], ["hp", 4],
+];
 type From = { kind: "loot" | "bag"; i: number };
 type Drag = From & { x: number; y: number; sprite?: Sprite; icon?: string; on: boolean; sx: number; sy: number; ox: number; oy: number };
 
@@ -189,14 +196,21 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
     } else {
       kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;
       const stats = g.stats as Record<string, number> | undefined;
-      // Every stat, in the same order each time (0 where it has none, dimmed).
+      // Every stat in a fixed box (0 where it has none), so flicking between
+      // pieces of gear only changes the numbers: each defence sits under the
+      // attack it guards, Agility and HP centred below. Each box is coloured
+      // like that stat's bar in the Items tab.
+      const label = Object.fromEntries(GEAR_STATS);
       body = (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {GEAR_STATS.map(([k, label]) => {
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6 }}>
+          {STAT_GRID.map(([k, col]) => {
             const v = stats?.[k] ?? 0;
+            const c = getBarColor(v);
             return (
-              <span key={k} style={{ padding: "2px 8px", background: "rgba(0,0,0,0.35)", border: "1px solid #3a3326", fontSize: 13, opacity: v ? 1 : 0.45 }}>
-                <span style={{ color: MUTED }}>{label}</span> <b style={{ fontVariantNumeric: "tabular-nums" }}>{v}</b>
+              <span key={k} style={{ gridColumn: `${col} / span 2`, display: "flex", flexDirection: "column", alignItems: "center", padding: "3px 0",
+                background: v >= 30 ? `color-mix(in srgb, ${c} 18%, rgba(0,0,0,0.4))` : "rgba(0,0,0,0.35)", border: `2px solid ${v >= 30 ? c : "#3a3326"}` }}>
+                <span style={{ fontSize: 11, color: MUTED }}>{label[k]}</span>
+                <b style={{ fontSize: 15, fontVariantNumeric: "tabular-nums", color: v >= 30 ? c : v ? "white" : MUTED }}>{v}</b>
               </span>
             );
           })}
