@@ -21,17 +21,20 @@
 // (onEnemies).
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ROOM_INFO, runPosition, isFight, type DungeonRun } from "@/lib/dungeon/run";
+import { ROOM_INFO, runPosition, isFight, type DungeonRun, type RoomKind } from "@/lib/dungeon/run";
 import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type ChamberSize, type TunnelLook } from "@/lib/dungeon/chamber";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import { artFor } from "@/lib/sprites/art";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
-import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN } from "@/lib/sprites/props";
+import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, MERCHANT, LIBRARIAN, CARD_WITCH, TREASURE_PILE, CARD_DECK, HEALING_POOL } from "@/lib/sprites/props";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const FPS = 12;
+
+// Who (or what) stands in the rooms that aren't fights or chests.
+const WANDERERS: Partial<Record<RoomKind, Sprite>> = { merchant: MERCHANT, librarian: LIBRARIAN, witch: CARD_WITCH, treasure: TREASURE_PILE, cards: CARD_DECK };
 
 // The painted rooms: public/sprites/rooms/<theme>-<size>-<tunnels>.png.
 const THEMES = ["hall", "crypt", "cave", "ruin"] as const;
@@ -66,7 +69,8 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   const room = run.current;
   const pool = node.kind === "pool" ? (room && !room.done ? "glow" : "still") : undefined;
   const size: ChamberSize = room?.boss || (room?.enemies?.length ?? 0) >= 2 ? "large" : "normal";
-  const theme = THEMES[seedOf(pos) % THEMES.length];
+  // The boss's room is always its lair.
+  const theme = (room?.kind === "boss" || node.kind === "boss") && looks.length === 1 ? "lair" : THEMES[seedOf(pos) % THEMES.length];
   const painting = looks.length <= PAINTED_TUNNELS ? `/sprites/rooms/${theme}-${size}-${looks.length}.png` : null;
   const [painted, setPainted] = useState<string | null>(null); // the painting that's loaded
   const usePainting = !!painting && painted === painting;
@@ -152,7 +156,7 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
 
 function RoomContents({ run, size, onObject, onEnemies }: { run: DungeonRun; size: ChamberSize; onObject?: () => void; onEnemies?: () => void }) {
   const room = run.current;
-  if (!room || room.kind === "pool" || room.kind === "entrance") return null;
+  if (!room || room.kind === "entrance") return null;
   // A row standing on the floor, across the whole room (so widths below are shares of the room).
   const at: React.CSSProperties = { position: "absolute", left: 0, width: "100%", top: "84%", transform: "translateY(-100%)", display: "flex", justifyContent: "center", gap: "2%", alignItems: "flex-end", pointerEvents: "none" };
   // How wide a sprite stands, as a share of the room: the room's own pixel size.
@@ -173,6 +177,14 @@ function RoomContents({ run, size, onObject, onEnemies }: { run: DungeonRun; siz
     </div>
   );
 
+  // The healing pool, sunk in the floor: glowing until it's used, then dim.
+  if (room.kind === "pool") {
+    return (
+      <div style={{ ...at, top: "92%" }}>
+        <div className={room.done ? undefined : "pool-glow"} style={{ width: share(HEALING_POOL), filter: room.done ? "grayscale(0.7) brightness(0.6)" : undefined }}>{draw(HEALING_POOL)}</div>
+      </div>
+    );
+  }
   // Klutz's club, lying where the thief dropped it.
   if (room.quest === "club") return room.done ? null : prop(WEAPON_SPRITES.klutz_club, "Pick up the club", { transform: "rotate(-60deg)" });
   // The thief's box, once it's beaten.
@@ -206,6 +218,17 @@ function RoomContents({ run, size, onObject, onEnemies }: { run: DungeonRun; siz
             </button>
           );
         })}
+      </div>
+    );
+  }
+
+  // Someone (or something) waiting in the room.
+  if (room.kind === "treasure" && room.done) return null; // (the gold, once taken, is gone)
+  const who = WANDERERS[room.kind];
+  if (who) {
+    return (
+      <div style={at}>
+        <div style={{ width: share(who), opacity: room.done && room.kind !== "merchant" && room.kind !== "librarian" ? 0.45 : 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(who)}</div>
       </div>
     );
   }

@@ -113,10 +113,31 @@ export const RICKETY_CHEST_OPEN: Sprite = [
 ];
 
 // The treasure chest's PixelLab art: a crooked old chest lashed shut with
-// rope (and the same chest opened). 64px art in the space of a 32px sprite.
-withArt(TREASURE_CHEST, { src: "/sprites/props/treasure_chest.png", w: 64, h: 64, size: 32 });
-withArt(TREASURE_CHEST_OPEN, { src: "/sprites/props/treasure_chest_open.png", w: 64, h: 64, size: 32 });
+// rope (and the same chest opened), at three quarters of its size.
+withArt(TREASURE_CHEST, { src: "/sprites/props/treasure_chest.png", w: 64, h: 64, size: 48 });
+withArt(TREASURE_CHEST_OPEN, { src: "/sprites/props/treasure_chest_open.png", w: 64, h: 64, size: 48 });
 
 // Klutz's box: the chest the Baby Cyclops carried on its back, dropped on the
-// floor with his gear poking out (one screen pixel an art pixel, like the chest).
-withArt(ARMOURY_BOX, { src: "/sprites/props/klutz_box.png", w: 69, h: 74, size: 34.5 });
+// floor with his gear poking out (at about three quarters of its size, like the chest).
+withArt(ARMOURY_BOX, { src: "/sprites/props/klutz_box.png", w: 69, h: 74, size: 50 });
+
+// The Labyrinth's wanderers (PixelLab art, public/sprites/npcs), standing in
+// their rooms: the merchant with his overstuffed pack, the librarian and his
+// book cart, the card witch at her table. Drawn at the art's own pixel size.
+// (Their grid is a single dot: there's no older drawing to fall back on.)
+const npc = (id: string, w: number, h: number): Sprite => withArt(["."], { src: `/sprites/npcs/${id}.png`, w, h });
+export const MERCHANT = npc("merchant", 77, 91);
+export const LIBRARIAN = npc("librarian", 90, 89);
+export const CARD_WITCH = npc("witch", 78, 92);
+
+// Loot lying about (PixelLab art, drawn at about three quarters of its size):
+// a fight's grubby sack and a boss's rickety chest, shut and opened;
+// a treasure room's pile of gold; the deck of cards on its crate.
+withArt(BURLAP_SACK, { src: "/sprites/props/burlap_sack.png", w: 54, h: 56, size: 42 });
+withArt(BURLAP_SACK_OPEN, { src: "/sprites/props/burlap_sack_open.png", w: 54, h: 50, size: 42 });
+withArt(RICKETY_CHEST, { src: "/sprites/props/rickety_chest.png", w: 56, h: 53, size: 46 });
+withArt(RICKETY_CHEST_OPEN, { src: "/sprites/props/rickety_chest_open.png", w: 56, h: 59, size: 46 });
+export const TREASURE_PILE: Sprite = withArt(["."], { src: "/sprites/props/treasure_pile.png", w: 60, h: 51, size: 46 });
+export const CARD_DECK: Sprite = withArt(["."], { src: "/sprites/props/card_deck.png", w: 55, h: 58, size: 42 });
+// A healing pool's ring of stones round its glowing water (shown dimmed once used).
+export const HEALING_POOL: Sprite = withArt(["."], { src: "/sprites/props/healing_pool.png", w: 73, h: 55, size: 110 });

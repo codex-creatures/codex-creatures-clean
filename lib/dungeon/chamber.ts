@@ -47,8 +47,8 @@ export type Chamber = {
   // (extras: false leaves out the drips and the eyes: a still, for painting over)
   render: (t: number, hover: number, open: boolean, extras?: boolean) => ImageData;
   // Just the moving parts, on a see-through background, to lay over a
-  // painted room (public/sprites/rooms): the pool, drips, mist, eyes in the
-  // dark and the hovered tunnel.
+  // painted room (public/sprites/rooms): drips, mist, eyes in the
+  // dark and the hovered tunnel. (A painted room's healing pool is a sprite.)
   overlay: (t: number, hover: number, open: boolean) => ImageData;
   idAt: (x: number, y: number) => number;   // 0 = nothing, else tunnel index + 1
   tunnels: { x: number; top: number }[];    // where each tunnel is (for labels)
@@ -395,12 +395,6 @@ export function createChamber(spec: ChamberSpec): Chamber {
       for (let fx = 0; fx < CW; fx++) {
         const i = fy * CW + fx, o = i * 4;
         const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES;
-        // The healing pool, glowing and rippling (or still, used up).
-        if (kind[i] === 3 || (spec.pool && kind[i] === 2 && Math.hypot((x - LW / 2) / 46, (y - 146) / 13) < 1.14)) {
-          const wave = kind[i] === 3 ? 0.85 + 0.15 * Math.sin(t * 2 + Math.hypot(x - LW / 2, (y - 146) * 3.4) * 0.35) : 0.8;
-          td[o] = albedo[i * 3] * 255 * wave; td[o + 1] = albedo[i * 3 + 1] * 255 * wave; td[o + 2] = albedo[i * 3 + 2] * 255 * wave; td[o + 3] = 255;
-          continue;
-        }
         // Mist creeping over the floor.
         if (y > BY1 - 14) {
           const m = vnoise((x + t * 7) / 26, y / 6 + t * 0.15) - 0.42;

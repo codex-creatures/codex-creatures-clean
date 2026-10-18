@@ -170,9 +170,11 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .boss-stage {
   position: relative; height: 250px; margin-bottom: 10px; overflow: hidden;
   border: 3px solid #12131a; box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 3px 0 rgba(0,0,0,0.5);
-  background: radial-gradient(ellipse at 50% 85%, rgba(160,40,20,0.35), transparent 60%), linear-gradient(#0d0a0c, #1c1416 70%, #120d0e);
+  /* Its lair (the painted boss room), darkened, with a red glow on the floor. */
+  background: radial-gradient(ellipse at 50% 85%, rgba(160,40,20,0.3), transparent 60%), linear-gradient(rgba(10,6,8,0.25), rgba(10,6,8,0.55)), url("/sprites/rooms/lair-large-1.png") center 62% / cover no-repeat, #120d0e;
+  image-rendering: pixelated;
 }
-.boss-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: linear-gradient(#2a1f1c, #150f0e); border-top: 2px solid #3a2a24; }
+.boss-floor { position: absolute; left: 0; right: 0; bottom: 0; height: 26px; background: linear-gradient(rgba(42,31,28,0.2), rgba(21,15,14,0.6)); }
 .boss-torch { position: absolute; top: 30px; width: 120px; height: 120px; border-radius: 50%;
   background: radial-gradient(circle, rgba(255,150,60,0.28), transparent 65%); animation: boss-torch 1.3s ease-in-out infinite alternate; pointer-events: none; }
 .boss-torch-left { left: -30px; }
@@ -456,3 +458,7 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 }
 @keyframes room-flicker { 0%, 100% { opacity: 0.5; } 20% { opacity: 0.4; } 45% { opacity: 0.58; } 60% { opacity: 0.44; } 80% { opacity: 0.54; } }
 @media (prefers-reduced-motion: reduce) { .room-light { animation: none; } }
+/* A healing pool that's still full: its glow breathes. */
+.pool-glow { animation: pool-glow 2.4s ease-in-out infinite; }
+@keyframes pool-glow { 0%, 100% { filter: drop-shadow(0 0 6px rgba(63, 217, 204, 0.45)); } 50% { filter: drop-shadow(0 0 14px rgba(63, 217, 204, 0.8)) brightness(1.1); } }
+@media (prefers-reduced-motion: reduce) { .pool-glow { animation: none; } }

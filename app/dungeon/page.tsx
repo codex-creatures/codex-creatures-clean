@@ -18,7 +18,8 @@ import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
+import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
@@ -45,9 +46,8 @@ import {
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
-import { YOU } from "@/components/BattleLog";
 import {
-  BattleView, SectionTitle, StatsLine, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
+  BattleView, SectionTitle, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
   type Match, type MemberInfo, type OwnedCreature, type BagItem,
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
@@ -797,57 +797,76 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
         </div>
       )}
       <div className="stone-panel">
-        <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
-        <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>
-          A labyrinth of rooms and winding tunnels, with the boss&apos;s lair somewhere at the top. You get one look at your map at the entrance — once you step inside it&apos;s too dark to read, so you find your way tunnel by tunnel. Some rooms are a mystery until you walk in, and there&apos;s no going back the way you came.
-          Take up to {PARTY_SIZE} creatures: {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).
-          Wounds carry from room to room. If your team falls you wake up back here — <b>you keep everything you found</b>.
-        </p>
-        <div style={{ fontSize: 12, color: MUTED, marginTop: 8 }}>
-          Runs: {lab.meta.runs} · Boss defeated: {lab.meta.clears}×
-          {lab.meta.firstClearRun ? ` (first on run ${lab.meta.firstClearRun})` : ""}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
+          <Help title="The labyrinth">
+            <ul>
+              <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
+              <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
+              <li>Some rooms are a <b>mystery</b> until you walk in.</li>
+              <li>Take up to <b>{PARTY_SIZE} creatures</b>: the first {TEAM_SIZE} fight, the rest wait in reserve (swap them between rooms).</li>
+              <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
+            </ul>
+          </Help>
+        </div>
+        <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 0" }}>Find the lair. Choose tunnels in the dark. Fall, and you keep your loot.</p>
+        <div className="pixel-font" style={{ fontSize: 12, color: MUTED, marginTop: 8 }}>
+          Runs {lab.meta.runs} · Lair beaten {lab.meta.clears}×
         </div>
       </div>
 
       {injured.length > 0 && (
-        <div className="stone-panel" style={{ marginTop: 12 }}>
-          <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>⛲ Healing in the Den&apos;s pool</div>
-          <div style={{ fontSize: 13, color: MUTED, margin: "4px 0 8px" }}>
-            Hurt from your last run: {injured.map((c) => `${c.name} ${Math.round(lab.meta.injuries[c.id] * 100)}%`).join(", ")}.
-            They heal slowly while they&apos;re home. Knocked-out creatures can&apos;t join a party until they&apos;re back above 0.
-          </div>
-          <button className="chip" onClick={onHeal} title="A shortcut for playtesting">Testing: heal everyone now</button>
+        <div className="stone-panel" style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: MUTED }}>⛲ {injured.length} hurt — healing in the Den&apos;s pool.</span>
+          <button className="chip" onClick={onHeal} title="A shortcut for playtesting">Testing: heal now</button>
         </div>
       )}
 
-      <SectionTitle>Your party — pick up to {PARTY_SIZE} ({party.length}/{PARTY_SIZE})</SectionTitle>
-      <p style={{ fontSize: 12, color: MUTED, margin: "0 0 10px" }}>
-        The first {TEAM_SIZE} you pick fight; the rest are reserves. ★ = roster.
-      </p>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+        <SectionTitle>Your party ({party.length}/{PARTY_SIZE})</SectionTitle>
+        <span style={{ fontSize: 12, color: MUTED }}>1–{TEAM_SIZE} fight · {TEAM_SIZE + 1}–{PARTY_SIZE} reserve</span>
+      </div>
       {owned.length < PARTY_SIZE && (
-        <p style={{ color: MUTED, lineHeight: 1.5, fontSize: 13 }}>
-          You have {owned.length} creature{owned.length === 1 ? "" : "s"}. You can go in with fewer than {PARTY_SIZE}, but it&apos;s much harder —{" "}
-          <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>scan</Link> or summon more to grow your party.
+        <p style={{ color: MUTED, fontSize: 13, margin: "0 0 8px" }}>
+          More creatures make it easier — <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>scan</Link> or summon more.
         </p>
       )}
       {owned.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 10 }}>
           {owned.map((c) => {
             const slot = party.indexOf(c.id);
             const hp = lab.meta.injuries[c.id] ?? 1;
+            const cls = CLASS_INFO[c.template.cls];
+            const picked = slot >= 0;
+            const fights = picked && slot < TEAM_SIZE;
             return (
-              <button key={c.id} onClick={() => toggle(c.id)} disabled={hp <= 0} className="card-btn"
-                style={{ borderColor: slot >= 0 ? YOU : undefined, background: slot >= 0 ? "rgba(78,161,255,0.12)" : undefined, opacity: hp <= 0 ? 0.4 : 1 }}>
-                <span className="pixel-font" style={{ width: 24, height: 24, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 14, background: slot >= 0 ? YOU : "rgba(255,255,255,0.08)", color: slot >= 0 ? "black" : MUTED }}>
-                  {slot >= 0 ? slot + 1 : ""}
+              <button key={c.id} onClick={() => toggle(c.id)} disabled={hp <= 0} aria-pressed={picked}
+                title={hp <= 0 ? `${c.name} is knocked out` : picked ? `Take ${c.name} out of the party` : `Add ${c.name} to the party`}
+                style={{
+                  position: "relative", minWidth: 0, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                  background: picked ? (fights ? "rgba(241,217,160,0.1)" : "rgba(255,255,255,0.04)") : "none", border: "none", borderRadius: 8,
+                  boxShadow: picked ? `inset 0 0 0 2px ${fights ? "#f1d9a0" : "#6b6350"}` : undefined,
+                  color: "white", cursor: hp <= 0 ? "default" : "pointer", opacity: hp <= 0 ? 0.35 : 1,
+                }}>
+                <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 12, color: rarityColor(c.rarity), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name}
                 </span>
-                <span style={{ minWidth: 0, flex: 1 }}>
-                  <span style={{ fontWeight: 600, color: rarityColor(c.rarity) }}>{c.roster ? "★ " : ""}{c.name}</span>
-                  <span className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0" }}> Lv {c.fighter.level ?? 1}</span>
-                  <span style={{ fontSize: 12, color: MUTED }}> · {c.label}{slot >= 0 ? (slot < TEAM_SIZE ? " · fights" : " · reserve") : ""}</span>
-                  {hp < 1 && <span style={{ fontSize: 12, color: "#ff8a80" }}> · {hp <= 0 ? "knocked out" : `${Math.round(hp * 100)}% HP`}</span>}
-                  <StatsLine stats={combatSummary(c.fighter)} />
+                <span style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "6%" }}>
+                  <PixelSprite sprite={creatureSprite(c.creatureId)} scale={3}
+                    style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
                 </span>
+                <span className="pixel-font" style={{ fontSize: 11, color: cls.color }}>{cls.name}</span>
+                {hp < 1 && (
+                  <span style={{ width: "80%", height: 4, background: "#1a0e0e", border: "1px solid #000" }}>
+                    <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#5ee08a" : hp > 0.25 ? "#f5c542" : "#ff6b5e" }} />
+                  </span>
+                )}
+                {picked && (
+                  <span className="pixel-font" style={{ position: "absolute", top: 20, left: 4, minWidth: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, borderRadius: 10, background: fights ? "#f1d9a0" : "#6b6350", color: "#1a140c" }}>
+                    {slot + 1}
+                  </span>
+                )}
+                {c.roster && <span style={{ position: "absolute", top: 20, right: 6, fontSize: 13, color: "#f5c542" }}>★</span>}
               </button>
             );
           })}
