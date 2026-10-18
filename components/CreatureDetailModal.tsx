@@ -164,7 +164,9 @@ export default function CreatureDetailModal({
             <ClassBadge cls={template?.cls} />
             {template && prof && <TypeTags roles={creatureRoles(prof)} />}
           </div>
-          <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1 }}>
+          {/* Always two lines tall, so flicking between a short name and a long
+              one that wraps never moves anything below it. */}
+          <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, minHeight: "2.2em" }}>
             {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
           </h2>
           {creature.dropType === "creature" && !template?.companion && level < MAX_LEVEL && (

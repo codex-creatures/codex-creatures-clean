@@ -353,7 +353,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#ffd66e", borderColor: "#ffd66e" }}>⚠️ {phaseText}</div>
         )}
         {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
-        {foe.boss && <BossStage side={foe} fx={fx}
+        {foe.boss && <BossStage side={foe} fx={fx} infos={info.B}
           you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
 
         {/* The fight, staged in a dungeon room (two enemies use the arena). */}
@@ -555,7 +555,7 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
 }
 
 // Which animation a creature plays for the current step, and any floating text.
-function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: string; float: { text: string; color: string } | null } {
+export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: string; float: { text: string; color: string } | null } {
   const isMe = (i?: number) => i === undefined || i === slot;
   let anim = "";
   let float: { text: string; color: string } | null = null;
@@ -769,37 +769,46 @@ const stageWidth = (sprite: Sprite) => {
   return `${Math.min(100, ((fineWidth(sprite) * fit) / CW / FIGHTER_W) * 100)}%`;
 };
 
-// One fighter standing on the stage: a floating label (name, health,
-// statuses) over its sprite, reacting to this step. `at` places it (by
-// default your side left of centre, theirs right); `maxW` caps the sprite's
-// width (the boss's lair is crowded).
+// A fighter's floating label: level, name and class, a small health bar
+// (yours shows HP, theirs a percentage only) and any statuses.
+export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?: MemberInfo }) {
+  const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
+  const icons = [
+    f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
+    f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
+    f.statuses.some((s) => s.id === "corpsify") && "⚰️",
+  ].filter(Boolean).join(" ");
+  return (
+    <>
+      <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
+        <LevelTag level={f.level} />
+        <span style={{ color: mi ? rarityColor(mi.rarity) : "#fff", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{f.name}</span>
+        <span style={{ color: CLASS_INFO[f.cls].color }} title={CLASS_INFO[f.cls].name}>{CLASS_INFO[f.cls].icon}</span>
+      </div>
+      <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />
+      </div>
+      <div style={{ fontSize: 11, color: "#d8d4c8", textShadow: "0 1px 0 #000", marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
+        {side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.ceil(hpPct)}%`}{icons && <span style={{ marginLeft: 4 }}>{icons}</span>}
+      </div>
+    </>
+  );
+}
+
+// One fighter standing on the stage: its floating label over its sprite,
+// reacting to this step. `at` places it (by default your side left of
+// centre, theirs right); `maxW` caps the sprite's width (the boss's lair is
+// crowded).
 export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
   f: Combatant; side: SideKey; slot: number; mi: MemberInfo; fx: Fx | null; at?: React.CSSProperties; maxW?: string;
 }) {
     const { anim, float } = fighterFx(side, slot, fx);
-    const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
     const sprite = mi.creatureId ? CREATURE_SPRITES[mi.creatureId] : undefined;
     const floats = !!sprite && !!artFor(sprite)?.floats && f.hp > 0;
-    const icons = [
-      f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
-      f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
-      f.statuses.some((s) => s.id === "corpsify") && "⚰️",
-    ].filter(Boolean).join(" ");
     return (
       <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
         display: "flex", flexDirection: "column", alignItems: "center", width: `${FIGHTER_W * 100}%`, ...at }}>
-        {/* Floating label: name, a small health bar, any statuses. */}
-        <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
-          <LevelTag level={f.level} />
-          <span style={{ color: rarityColor(mi.rarity), overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{f.name}</span>
-          <span style={{ color: CLASS_INFO[f.cls].color }} title={CLASS_INFO[f.cls].name}>{CLASS_INFO[f.cls].icon}</span>
-        </div>
-        <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />
-        </div>
-        <div style={{ fontSize: 11, color: "#d8d4c8", textShadow: "0 1px 0 #000", marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
-          {side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.ceil(hpPct)}%`}{icons && <span style={{ marginLeft: 4 }}>{icons}</span>}
-        </div>
+        <FighterLabel f={f} side={side} mi={mi} />
         <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite) } : {}), opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
           {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
           <div className={floats ? "float-bob" : undefined}>

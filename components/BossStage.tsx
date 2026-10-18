@@ -12,7 +12,8 @@ import { fieldOf } from "@/lib/combat/battle";
 import { CYCLOPS } from "@/lib/combat/bossAi";
 import { CYCLOPS_PARTS } from "@/lib/creatures/bosses";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
-import type { Fx } from "./BattleScreen";
+import type { Fx, MemberInfo } from "./BattleScreen";
+import { FighterLabel, fighterFx } from "./BattleScreen";
 
 type Scene = "split" | "eye" | null;
 
@@ -26,7 +27,7 @@ const fit = (id: string): React.CSSProperties => ({ maxWidth: MAX_W[id] ?? "40cq
 // The boss stands in the right part of the lair; your creature on the left.
 const BOSS_SIDE: React.CSSProperties = { paddingLeft: "38%", paddingRight: "2%" };
 
-export default function BossStage({ side, fx, you }: { side: BattleSide; fx: Fx | null; you?: React.ReactNode }) {
+export default function BossStage({ side, fx, you, infos }: { side: BattleSide; fx: Fx | null; you?: React.ReactNode; infos?: MemberInfo[] }) {
   const t = side.team;
   // A phase change playing right now?
   const scene: Scene = fx?.kind === "lineup" && fx.side === side.key && fx.text
@@ -40,6 +41,12 @@ export default function BossStage({ side, fx, you }: { side: BattleSide; fx: Fx 
     if (fx?.kind === "attack" && fx.side === side.key && (fx.attackerIndex ?? side.active) === i) return "boss-attack";
     if (fx?.kind === "attack" && fx.side !== side.key && (fx.targetIndex ?? side.active) === i) return fx.missed ? "boss-dodge" : "boss-hit";
     return "";
+  };
+  // The damage (or MISS, or effect) floating up off a part this step.
+  // (A step naming no part means the one in front.)
+  const float = (i: number) => {
+    const at = fx?.kind === "attack" ? fx.targetIndex : fx?.kind === "effect" ? fx.index : undefined;
+    return (at ?? side.active) === i ? fighterFx(side.key, i, fx).float : null;
   };
 
   return (
@@ -66,8 +73,12 @@ export default function BossStage({ side, fx, you }: { side: BattleSide; fx: Fx 
           const idle = id === "cyclops" ? "boss-breathe" : id === "cyclops_hand" ? (n === 0 ? "boss-scuttle" : "boss-scuttle boss-scuttle-late") : "boss-float";
           const enter = scene === "split" ? (n === 0 ? "boss-burst-left" : "boss-burst-right") : scene === "eye" ? "boss-eye-rise" : "";
           return (
-            <div key={`${i}-${scene ? fx!.id : 0}`} className={enter} title={t[i].name}>
-              <div key={reaction(i) ? `r-${fx!.id}` : "r"} className={dead ? "boss-dead" : reaction(i)}>
+            <div key={`${i}-${scene ? fx!.id : 0}`} className={enter} title={t[i].name}
+              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {/* Its name and health float above it, like any foe's. */}
+              <FighterLabel f={t[i]} side={side.key} mi={infos?.[i]} />
+              {float(i) && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float(i)!.color, top: 0 }}>{float(i)!.text}</div>}
+              <div key={reaction(i) ? `r-${fx!.id}` : "r"} className={dead ? "boss-dead" : reaction(i)} style={{ marginTop: 4 }}>
                 <div className={dead ? "" : idle}>
                   <PixelSprite sprite={creatureSprite(id)} scale={SCALE[id] ?? 3}
                     style={{ ...fit(id), ...(id === "cyclops_hand" && n === 1 ? { transform: "scaleX(-1)" } : {}) }} />
