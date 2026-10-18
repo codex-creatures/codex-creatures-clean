@@ -19,6 +19,15 @@
 // between Common and Uncommon, to help new players get going. So Klutz is a
 // way to find alternatives to gear you have, not to climb rarities.
 //
+// He levels up like a creature: a won fight gives him the XP a creature
+// would get for that KO (xpForEnemy), and XP scrolls work on him too. His
+// level makes him stronger, and decides what he meets:
+// - wild creatures are around his level (HUNT_BELOW under to HUNT_ABOVE over),
+//   and a catch keeps its level;
+// - rarities open up with his level as they do for scans (SCAN_UNLOCK): until
+//   then, a rarer roll is met as the best rarity he can handle;
+// - his finds come at his own piece's rarity more often (FIND_SAME_PER_LEVEL).
+//
 // The whole trip is decided when he sets off (so it plays out even with the
 // game closed); the screens reveal it as the time passes.
 
@@ -35,6 +44,7 @@ import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import type { Drop } from "./types";
+import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something
 export const WALK_MAX_MS = 60 * 60 * 1000;
@@ -42,7 +52,10 @@ export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
 export const FIND_CHANCE = 0.35;       // each trip: a piece of gear like one he's wearing
 export const SAME_RARITY_CHANCE = 0.05; // …the same rarity as his piece (otherwise lower)
 export const COMMON_STEP_UP = 0.5;     // in Common gear: Uncommon half the time
-export const HUNT_MAX_LEVEL = 10;      // what he meets is level 1 to this (and a catch keeps its level)
+export const HUNT_BELOW = 2;           // what he meets is his level, up to this many under…
+export const HUNT_ABOVE = 1;           // …or this many over (and a catch keeps its level)
+export const FIND_SAME_PER_LEVEL = 0.01; // each level over 1: this much likelier a same-rarity find
+export const FIND_SAME_MAX = 0.3;
 
 // What Klutz is wearing, slot by slot (for his finds).
 export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
@@ -58,6 +71,7 @@ export type KlutzEncounter = {
   won: boolean;
   rounds: number;
   hpAfter: number;       // Klutz's HP after the fight
+  xp?: number;           // XP he got for it (a win)
   loot: Drop[];          // won: the creature, then its gear
 };
 
@@ -72,6 +86,8 @@ export type Expedition = {
 };
 
 export type KlutzState = {
+  level?: number;        // his level (missing = 1)
+  xp?: number;           // …and XP towards the next
   hp?: number;           // HP when he got back (missing = full)
   hpAt?: number;         // when that was
   expedition?: Expedition;
@@ -114,18 +130,19 @@ function fight(klutz: Fighter, hp: number, foe: Fighter): { won: boolean; hpAfte
 }
 
 // The rarity of a find, from the rarity of the piece he's wearing.
-export function findRarity(worn: Rarity, rng: Rng = Math.random): Rarity {
+export const sameRarityChance = (level = 1) => Math.min(FIND_SAME_MAX, SAME_RARITY_CHANCE + FIND_SAME_PER_LEVEL * (clampLevel(level) - 1));
+export function findRarity(worn: Rarity, rng: Rng = Math.random, level = 1): Rarity {
   const i = RARITIES.indexOf(worn);
   if (i <= 0) return rng() < COMMON_STEP_UP ? "uncommon" : "common";
-  if (rng() < SAME_RARITY_CHANCE) return worn;
+  if (rng() < sameRarityChance(level)) return worn;
   return RARITIES[Math.floor(rng() * i)]; // one of the lower rarities, evenly
 }
 
 // A piece of gear like one he's wearing (or nothing, if he isn't wearing any).
-export function rollFind(worn: WornPiece[], rng: Rng = Math.random): Drop | undefined {
+export function rollFind(worn: WornPiece[], rng: Rng = Math.random, level = 1): Drop | undefined {
   if (worn.length === 0) return undefined;
   const piece = worn[Math.floor(rng() * worn.length)];
-  const rarity = findRarity(piece.rarity, rng);
+  const rarity = findRarity(piece.rarity, rng, level);
   if (piece.slot === "weapon") {
     const key = ITEM_KEYS[Math.floor(rng() * ITEM_KEYS.length)];
     return weaponDrop(key, rarity, "", rollItemStats(key, rarity, rng).stats);
@@ -136,13 +153,26 @@ export function rollFind(worn: WornPiece[], rng: Rng = Math.random): Drop | unde
 
 // Plan a whole expedition the moment he sets off: how long he walks, what
 // he meets, how the fight goes, and anything he picks up.
-export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = []): Expedition {
+// The rarest thing he can meet at his level (like scanning: SCAN_UNLOCK).
+export function huntRarity(rolled: Rarity, level = 1): Rarity {
+  let r = rolled;
+  while (!canFind(clampLevel(level), r)) r = oneLower(r);
+  return r;
+}
+
+export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = [], level = 1): Expedition {
+  const L = clampLevel(level);
   const at = Math.round(now + WALK_MIN_MS + rng() * (WALK_MAX_MS - WALK_MIN_MS));
-  const rarity = rollRarity(rng), gearRarity = oneLower(rarity);
-  const enemy = makeEnemy(rarity, gearRarity, [], rng, 1 + Math.floor(rng() * HUNT_MAX_LEVEL));
+  const rarity = huntRarity(rollRarity(rng), L), gearRarity = oneLower(rarity);
+  const lo = Math.max(1, L - HUNT_BELOW), hi = clampLevel(L + HUNT_ABOVE);
+  const foeLevel = lo + Math.floor(rng() * (hi - lo + 1));
+  const enemy = makeEnemy(rarity, gearRarity, [], rng, foeLevel);
   const r = fight(klutz, klutz.maxHp, enemyFighter(enemy));
-  const encounter: KlutzEncounter = { at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [] };
-  const find = rng() < FIND_CHANCE ? rollFind(worn, rng) : undefined;
+  const encounter: KlutzEncounter = {
+    at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [],
+    ...(r.won ? { xp: xpForEnemy(foeLevel, rarity) } : {}),
+  };
+  const find = rng() < FIND_CHANCE ? rollFind(worn, rng, L) : undefined;
   return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters: [encounter], ...(find ? { find } : {}), collected: false };
 }
 
@@ -164,18 +194,28 @@ export function currentHp(k: KlutzState, maxHp: number, now = Date.now()): numbe
 // Send him off (only from home, at full health).
 export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = []): KlutzState {
   if (klutzStatus(k, klutz.maxHp, now).kind !== "home") return k;
-  return { expedition: planExpedition(klutz, now, rng, worn) };
+  return { level: k.level, xp: k.xp, expedition: planExpedition(klutz, now, rng, worn, k.level) };
 }
 
-// After an expedition ends: his HP when he got back, and the loot to hand
-// over (once). Returns the new state and the loot.
-export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzState; loot: Drop[] } {
+// XP for Klutz (a hunt, or a scroll). Returns the new state and his level before.
+export function klutzGainXp(k: KlutzState, gained: number): { state: KlutzState; from: number; to: number } {
+  const from = clampLevel(k.level);
+  const p = addXp({ level: from, xp: k.xp ?? 0 }, gained);
+  return { state: { ...k, level: p.level, xp: p.xp }, from, to: p.level };
+}
+
+// After an expedition ends: his HP when he got back, his XP, and the loot
+// to hand over (once). Returns the new state, the loot and any level-up.
+export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzState; loot: Drop[]; levelUp?: { from: number; to: number } } {
   const ex = k.expedition;
   if (!ex || ex.collected || now < ex.endsAt) return { state: k, loot: [] };
   const last = ex.encounters[ex.encounters.length - 1];
   const hp = last ? last.hpAfter : ex.maxHp;
+  const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0);
+  const { state, from, to } = klutzGainXp(k, xp);
   return {
-    state: { ...k, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true } },
+    state: { ...state, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true } },
     loot: [...ex.encounters.flatMap((e) => e.loot), ...(ex.find ? [ex.find] : [])],
+    ...(to > from ? { levelUp: { from, to } } : {}),
   };
 }

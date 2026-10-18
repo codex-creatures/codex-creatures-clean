@@ -233,6 +233,8 @@ export const CHEST_DROPS = 3;
 export const CHEST_CODEX_CHANCE = 0.1; // a chest holds a codex (instead of one of its drops)
 export const CODEX_PRICE = 500;       // wandering librarians sell codexes
 export const LIBRARIAN_OFFERS = 3;
+export const MERCHANT_SCROLL_CHANCE = 0.2; // a wandering merchant also has an XP scroll
+export const SCROLL_PRICE = 200;
 
 type Rng = () => number;
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
@@ -298,7 +300,8 @@ export type Room = {
   fighters?: string[]; // your creatures in the fight, in battle order
   boss?: BossKind;     // the boss in this room (instead of enemies)
   offers?: string[];   // a librarian: the codexes (race moves) for sale
-  bought?: string[];   // …and the ones you bought (librarian codexes; merchant potions)
+  bought?: string[];   // …and the ones you bought (librarian codexes; merchant potions, "scroll")
+  scroll?: boolean;    // a merchant: has an XP scroll for sale
   blessed?: boolean;   // a mini boss's heal/revive has been used
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
@@ -363,6 +366,8 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       const enemies = [makeEnemy(D.miniboss[0], D.miniboss[1], [], rng, level)];
       return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
+    case "merchant":
+      return { kind, ...(rng() < MERCHANT_SCROLL_CHANCE ? { scroll: true } : {}), done: false };
     case "witch":
       return { kind, witch: newWitchGame(rng, witchPrize), done: false };
     case "boss":

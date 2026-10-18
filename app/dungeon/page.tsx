@@ -30,18 +30,18 @@ import { itemToCombatStats } from "@/lib/combat/loadout";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
-import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
+import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop } from "@/lib/drops";
 import { clubRoom, klutzClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
 import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard, type WitchGame } from "@/lib/dungeon/witch";
 import { CardFace } from "@/components/CardGallery";
-import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
+import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, cyclopsChest, CODEX_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
+  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, cyclopsChest, CODEX_PRICE, SCROLL_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
@@ -379,6 +379,18 @@ export default function DungeonPage() {
       : r));
   }
 
+  // Some merchants have an XP scroll too (it takes a bag slot, like gear).
+  function buyScroll() {
+    const cur = loadDungeon();
+    const room = cur.run?.current;
+    if (!room?.scroll || room.bought?.includes("scroll") || (cur.meta.bag ?? []).length >= bagSize(cur.meta) || !game.spendGold(SCROLL_PRICE)) return;
+    const scroll = scrollDrop();
+    carry([scroll]);
+    updateRun((r) => (r.current
+      ? { ...r, loot: [...r.loot, dropLabel(scroll)], got: [...(r.got ?? []), { drop: scroll }], current: { ...r.current, bought: [...(r.current.bought ?? []), "scroll"] } }
+      : r));
+  }
+
   // A stash: open the sack…
   function openSack() {
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, opened: true, done: true } } : r));
@@ -681,6 +693,8 @@ export default function DungeonPage() {
     const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
     // The Cyclops' chest: gear, codexes and potions as well as its gold.
     if (room.boss) sack.push(...cyclopsChest());
+    // Every mini boss and boss chest holds an XP scroll.
+    if (room.kind === "miniboss" || room.kind === "boss") sack.push({ gear: scrollDrop() });
     // The first time you beat the Cyclops, its chest holds a rugged backpack.
     if (room.boss && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
     const container = room.kind === "miniboss" || room.kind === "boss" ? "chest" as const : "sack" as const;
@@ -820,7 +834,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyPotion={buyPotion} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear} onLook={() => setLootOpen(true)}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyPotion={buyPotion} onBuyScroll={buyScroll} bag={(lab.meta.bag ?? []).filter(isPotionEntry)} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} onHeal={healOne} onBless={bless} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear} onLook={() => setLootOpen(true)}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -1040,11 +1054,11 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyPotion, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyPotion, onBuyScroll, onHeal, onBless, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
   onWitch: (g: Guess) => void; onWitchLeave: () => void; onGear: (item: CreatureOrItemDrop) => void; onLook: () => void;
   run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyPotion: (k: PotionKey) => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyPotion: (k: PotionKey) => void; onBuyScroll: () => void; bag: PotionKey[]; bagUsed: number; bagSlots: number; onHeal: (id: string) => void; onBless: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "thief" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
@@ -1187,6 +1201,19 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
                 </button>
               );
             })}
+            {room.scroll && (() => {
+              const sold = room.bought?.includes("scroll");
+              const can = !sold && gold >= SCROLL_PRICE && bagUsed < bagSlots;
+              return (
+                <button className="card-btn" disabled={!can} onClick={onBuyScroll} style={{ opacity: can ? 1 : 0.5 }}>
+                  <span style={{ flex: 1 }}>
+                    <b>📜 XP Scroll</b>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{SCROLL_XP} XP for one creature, or Klutz.</span>
+                  </span>
+                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "sold" : `🪙 ${SCROLL_PRICE}`}</span>
+                </button>
+              );
+            })()}
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>You&apos;re carrying {bagUsed}/{bagSlots} · {gold} gold.</p>
           {next}

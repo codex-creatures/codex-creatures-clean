@@ -27,7 +27,7 @@ function lookOf(g: GotItem): Look {
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
   if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rarityGlow(x.rarity) };
-  return { name: x.name, sprite: itemSprite(x), icon: x.codexMove ? "📖" : x.potion ? POTIONS[x.potion].icon : "📦", color: rc.text, glow: rarityGlow(x.rarity) };
+  return { name: x.name, sprite: itemSprite(x), icon: x.codexMove ? "📖" : x.scroll ? "📜" : x.potion ? POTIONS[x.potion].icon : "📦", color: rc.text, glow: rarityGlow(x.rarity) };
 }
 
 // A creature card in the haul (its template, if we know the creature).

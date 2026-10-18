@@ -189,7 +189,10 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
   if ("potion" in item) { kind = "potion"; body = <>Heals one creature {POTIONS[item.potion].heal} HP</>; }
   else if ("gear" in item) {
     const g = item.gear as CreatureOrItemDrop;
-    if (g.codexMove) {
+    if (g.scroll) {
+      kind = "xp scroll";
+      body = <>{g.desc}</>;
+    } else if (g.codexMove) {
       const m = MOVE_BY_NAME[g.codexMove];
       kind = `${g.rarity} codex`;
       body = m ? <>Teaches <b>{m.name}</b> · {m.self ? "utility" : moveKind(m)}<div style={{ color: MUTED, marginTop: 2 }}>{m.desc}</div></> : <>Teaches {g.codexMove}</>;

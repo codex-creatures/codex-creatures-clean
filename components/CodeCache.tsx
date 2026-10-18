@@ -19,7 +19,7 @@ function look(d: Drop) {
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
   const sprite = x.dropType === "item" ? itemSprite(x) : creatureSprite(x.creatureId);
-  return { sprite, icon: x.codexMove ? "📖" : x.dropType === "card" ? "🃏" : "📦", name: x.name, color: rc.text, glow: rc.border, rarity: x.rarity };
+  return { sprite, icon: x.codexMove ? "📖" : x.scroll ? "📜" : x.dropType === "card" ? "🃏" : "📦", name: x.name, color: rc.text, glow: rc.border, rarity: x.rarity };
 }
 
 export default function CodeCache({ title, intro, items, revealAllLabel = "Reveal all", doneLabel, onDone }: {

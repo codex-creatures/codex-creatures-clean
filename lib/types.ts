@@ -28,6 +28,7 @@ export type CreatureOrItemDrop = {
   xp?: number;          // …and XP towards the next one
   ability?: import("./creatures/abilities").AbilityKey; // creatures/cards: a rare passive (Epic+)
   codexMove?: string;   // a codex (consumable item): the move it teaches
+  scroll?: "xp";        // an XP scroll (consumable item; SCROLL_XP in lib/creatures/levels.ts)
   potion?: "potion" | "lesser"; // a potion (consumable item; see POTIONS in lib/dungeon/run.ts)
   stats?: {
     melee?: number;

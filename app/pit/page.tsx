@@ -31,6 +31,7 @@ export default function PitPage() {
         onEquip={game.equipItem}
         onSetMoves={game.setMoves}
         onLearnCodex={game.learnCodex}
+        onReadScroll={game.readScroll}
         onSummon={game.summon}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}

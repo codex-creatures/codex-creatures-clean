@@ -15,7 +15,7 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { canLearnFromCodex, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
-import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL } from "@/lib/creatures/levels";
+import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL, SCROLL_XP } from "@/lib/creatures/levels";
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
@@ -38,6 +38,8 @@ type Props = {
   onSetMoves?: (moves: string[]) => void;
   codexes?: CreatureOrItemDrop[];          // every codex you own
   onLearnCodex?: (codexId: string) => void;
+  scrolls?: CreatureOrItemDrop[];          // every XP scroll you own
+  onReadScroll?: (scrollId: string) => void;
   onClose: () => void;
   unavailable?: Set<string>;               // items you can't take right now (with Klutz in the Labyrinth)
   // Flicking through your creatures: where this one sits in the list.
@@ -72,7 +74,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, onClose, position, onPrev, onNext, unavailable,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable,
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
@@ -169,12 +171,19 @@ export default function CreatureDetailModal({
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, minHeight: "2.2em" }}>
             {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
           </h2>
-          {creature.dropType === "creature" && !template?.companion && level < MAX_LEVEL && (
+          {creature.dropType === "creature" && level < MAX_LEVEL && (
             <div title={`${creature.xp ?? 0} / ${xpToNext(level)} XP to level ${level + 1}`} style={{ marginTop: 6, maxWidth: 260 }}>
               <div style={{ height: 6, background: "#12131a", border: "1px solid #2a2d38" }}>
                 <div style={{ height: "100%", width: `${Math.min(100, (100 * (creature.xp ?? 0)) / xpToNext(level))}%`, background: "#f1d9a0" }} />
               </div>
-              <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{creature.xp ?? 0} / {xpToNext(level)} XP</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: MUTED, marginTop: 2 }}>
+                {creature.xp ?? 0} / {xpToNext(level)} XP
+                {onReadScroll && scrolls.length > 0 && (
+                  <button className="pixel-btn" title={`Read an XP scroll: +${SCROLL_XP} XP`} onClick={() => onReadScroll(scrolls[0].id)} style={{ fontSize: 11, padding: "1px 6px" }}>
+                    📜 +{SCROLL_XP} <span style={{ color: MUTED }}>×{scrolls.length}</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
           {template?.flavour && <p style={{ margin: "6px 0 0", fontSize: 13, color: "#a9a59a", fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}

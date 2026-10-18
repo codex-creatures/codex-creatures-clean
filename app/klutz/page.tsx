@@ -15,10 +15,11 @@ import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { combatSummary } from "@/lib/combat/loadout";
 import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
 import { klutzHelping } from "@/lib/quest";
+import { canFind, clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import {
-  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, SAME_RARITY_CHANCE, type Expedition, type KlutzEncounter,
+  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, sameRarityChance, HUNT_BELOW, HUNT_ABOVE, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -48,6 +49,8 @@ export default function KlutzPage() {
   // His gear, moves and hunting only open up once you've got his box back to
   // him, looked through it, and agreed to lend him some.
   const helping = klutzHelping(game.quest);
+  const klutzLv = clampLevel(game.klutz.level);
+  const rarest = (["legendary", "epic", "rare", "uncommon", "common"] as const).find((r) => canFind(klutzLv, r))!;
 
   return (
     <DenFrame title="Klutz" icon="👺">
@@ -55,7 +58,7 @@ export default function KlutzPage() {
         <PixelSprite sprite={creatureSprite("klutz")} scale={3} />
         <div style={{ flex: 1, minWidth: 200 }}>
           <div className="pixel-font" style={{ fontSize: 22, color: GOLD }}>Klutz</div>
-          <div style={{ fontSize: 13, color: MUTED }}>Your helper · <span style={{ color: rc.text, textTransform: "capitalize" }}>{KLUTZ.rarity}</span></div>
+          <div style={{ fontSize: 13, color: MUTED }}>Your helper · <b style={{ color: GOLD }}>Lv {klutzLv}</b> · <span style={{ color: rc.text, textTransform: "capitalize" }}>{KLUTZ.rarity}</span></div>
           <p style={{ fontSize: 15, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.45 }}>
             {helping ? "Gear him up and he'll hunt the Labyrinth for loot and creatures." : "Your dopey goblin helper."}
           </p>
@@ -84,13 +87,15 @@ export default function KlutzPage() {
               <HelpSection title="The trip">
                 <ul>
                   <li>He walks the Labyrinth until he meets a <b>wild creature</b>: usually <b>{WALK_MIN_MS / 60000}–{WALK_MAX_MS / 60000} minutes</b>.</li>
-                  <li>It can be <b>any rarity</b>, wearing gear <b>one tier below</b> it.</li>
+                  <li>It&apos;s around <b>his level</b> ({Math.max(1, klutzLv - HUNT_BELOW)}–{klutzLv + HUNT_ABOVE}), wearing gear <b>one tier below</b> it.</li>
+                  <li>Up to <b style={{ textTransform: "capitalize" }}>{rarest}</b> at his level. Rarer ones open at <b>Lv {SCAN_UNLOCK.rare} / {SCAN_UNLOCK.epic} / {SCAN_UNLOCK.legendary}</b> (Rare / Epic / Legendary).</li>
                   <li>He fights it, then comes home.</li>
                 </ul>
               </HelpSection>
               <HelpSection title="If he wins">
                 <ul>
                   <li>The creature goes in the <b>cage</b> and its gear in <b>his crate</b>.</li>
+                  <li>He gets <b>XP</b> for it, like a creature would. <b>XP scrolls</b> work on him too.</li>
                   <li>The cage holds <b>one</b>: if it&apos;s full, he lets his catch go (and keeps its gear).</li>
                 </ul>
               </HelpSection>
@@ -98,7 +103,7 @@ export default function KlutzPage() {
                 <p>He limps home to the <b>healing pool</b>: <b>1 HP every {HEAL_MS_PER_HP / 1000}s</b>.</p>
               </HelpSection>
               <HelpSection title="Gear he finds">
-                <p><b>{Math.round(FIND_CHANCE * 100)}%</b> a trip: a piece for a slot he&apos;s wearing, <b>never better than his own</b> ({Math.round(SAME_RARITY_CHANCE * 100)}% the same rarity). Handy for alternatives to gear you have.</p>
+                <p><b>{Math.round(FIND_CHANCE * 100)}%</b> a trip: a piece for a slot he&apos;s wearing, <b>never better than his own</b> ({Math.round(sameRarityChance(klutzLv) * 100)}% the same rarity; better as he levels). Handy for alternatives to gear you have.</p>
               </HelpSection>
               <p><b>Better gear = tougher creatures he can beat.</b></p>
             </Help>
@@ -149,7 +154,7 @@ export default function KlutzPage() {
 
       {gearOpen && (
         <CreatureDetailModal
-          creature={klutzDrop()}
+          creature={klutzDrop(game.klutz.level, game.klutz.xp)}
           isFavorite={false}
           loadout={game.equipment[KLUTZ_DROP_ID]}
           weapons={weapons}
@@ -158,6 +163,8 @@ export default function KlutzPage() {
           creatureNameById={names}
           onEquip={(slot, itemId) => game.equipItem(KLUTZ_DROP_ID, slot, itemId)}
           onSetMoves={(moves) => game.setMoves(KLUTZ_DROP_ID, moves)}
+          scrolls={game.inventory.filter((d) => d.dropType === "item" && d.scroll) as CreatureOrItemDrop[]}
+          onReadScroll={(scrollId) => game.readScroll(KLUTZ_DROP_ID, scrollId)}
           onClose={() => setGearOpen(false)}
         />
       )}

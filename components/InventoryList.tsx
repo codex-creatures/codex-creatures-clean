@@ -33,6 +33,7 @@ type Props = {
   onEquip: (creatureId: string, slot: EquipSlot, itemId: string | null) => void;
   onSetMoves?: (creatureId: string, moves: string[]) => void;
   onLearnCodex?: (creatureId: string, codexId: string) => void;
+  onReadScroll?: (creatureId: string, scrollId: string) => void;
   onSummon?: (cardIds: string[], keepId: string | null) => CreatureOrItemDrop;
   tabCounts: Record<GameTabKey, number>;
   activeTab: GameTabKey;
@@ -62,7 +63,7 @@ const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "m
 const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Roster" };
 
 export default function InventoryList({
-  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves, onLearnCodex, onSummon,
+  inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves, onLearnCodex, onReadScroll, onSummon,
   tabCounts, activeTab, onTabChange,
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
@@ -318,6 +319,8 @@ export default function InventoryList({
           onSetMoves={onSetMoves ? (moves) => onSetMoves(openCreature.id, moves) : undefined}
           codexes={inventory.filter((d) => isItemDrop(d) && d.codexMove) as CreatureOrItemDrop[]}
           onLearnCodex={onLearnCodex ? (codexId) => onLearnCodex(openCreature.id, codexId) : undefined}
+          scrolls={inventory.filter((d) => isItemDrop(d) && d.scroll) as CreatureOrItemDrop[]}
+          onReadScroll={onReadScroll ? (scrollId) => onReadScroll(openCreature.id, scrollId) : undefined}
           onClose={() => setOpenCreatureId(null)}
           unavailable={unavailableItems}
         />

@@ -57,7 +57,9 @@ export function hpAt(t: CreatureTemplate, level: number): number {
 
 // ── XP ────────────────────────────────────────────────────────────
 // Gets steeper as you climb (the L² part), so the last levels take a while.
-export const xpToNext = (level: number) => { const L = clampLevel(level); return 25 + 15 * L + Math.round((L * L) / 2); };
+// XP_PACE slows the whole climb (1.5 = half as much XP again per level).
+export const XP_PACE = 1.5;
+export const xpToNext = (level: number) => { const L = clampLevel(level); return Math.round(XP_PACE * (25 + 15 * L + (L * L) / 2)); };
 const RARITY_XP: Record<Rarity, number> = { common: 1, uncommon: 1.2, rare: 1.5, epic: 2, legendary: 3 };
 
 // XP for knocking out one enemy.
@@ -141,3 +143,10 @@ export function xpToReach(level: number): number {
   for (let l = 1; l < clampLevel(level); l++) total += xpToNext(l);
   return total;
 }
+
+// An XP scroll: read it to give one creature (or Klutz) the XP that takes a
+// creature from level 1 to SCROLL_LEVEL, so it's big early on and fades as
+// a creature climbs. Found in mini boss and boss chests; sometimes sold by
+// a wandering merchant (lib/dungeon/run.ts).
+export const SCROLL_LEVEL = 5;
+export const SCROLL_XP = xpToReach(SCROLL_LEVEL);

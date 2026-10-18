@@ -23,7 +23,7 @@ export function slotLook(e: BagEntry, item?: CreatureOrItemDrop): SlotLook {
   if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: RARITY_COLORS[POTION_RARITY[e]].text, glow: rarityGlow(POTION_RARITY[e]), peek: { potion: e } };
   if (!item) return { name: "Something you no longer have", icon: "❔", color: MUTED };
   const rc = RARITY_COLORS[item.rarity];
-  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : "📦", color: rc.text, glow: rarityGlow(item.rarity), peek: { gear: item } };
+  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : item.scroll ? "📜" : "📦", color: rc.text, glow: rarityGlow(item.rarity), peek: { gear: item } };
 }
 
 export default function BagSlots({ slots, looks, selected, onSelect, pulse, size = 60 }: {

@@ -11,22 +11,22 @@ import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon } from "@/lib/dungeon/run";
-import { collectKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, type QuestState } from "@/lib/quest";
 import { fighterFor } from "@/lib/creatures/instance";
-import { addXp, addPlayerXp, type Progress } from "@/lib/creatures/levels";
+import { addXp, addPlayerXp, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
 // keyed by KLUTZ_DROP_ID) and what the creature window shows for him.
 export const KLUTZ_DROP_ID = "klutz-companion";
-export const KLUTZ_LEVEL = 10; // Klutz doesn't level up (yet): he's an old hand
 export type LevelUp = { id: string; name: string; from: number; to: number };
-export function klutzDrop(): CreatureOrItemDrop {
+// His level and XP live in KlutzState (lib/klutz.ts); he starts at level 1.
+export function klutzDrop(level = 1, xp = 0): CreatureOrItemDrop {
   return {
     id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
-    rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour, level: KLUTZ_LEVEL,
+    rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour, level, xp,
     createdAt: new Date().toISOString(),
   };
 }
@@ -219,6 +219,19 @@ export function useGameState(initialTab: TabKey = "all") {
     return p.gained > 0 ? p.level : null;
   }
 
+  // Read an XP scroll on a creature or on Klutz (SCROLL_XP); the scroll is used up.
+  function readScroll(targetId: string, scrollId: string): LevelUp | null {
+    const scroll = inventory.find((d) => d.id === scrollId);
+    if (!scroll || scroll.dropType !== "item" || !scroll.scroll) return null;
+    setInventory((prev) => prev.filter((d) => d.id !== scrollId));
+    if (targetId === KLUTZ_DROP_ID) {
+      const r = klutzGainXp(klutz, SCROLL_XP);
+      setKlutz((k) => klutzGainXp(k, SCROLL_XP).state);
+      return r.to > r.from ? { id: KLUTZ_DROP_ID, name: "Klutz", from: r.from, to: r.to } : null;
+    }
+    return gainXp({ [targetId]: SCROLL_XP })[0] ?? null;
+  }
+
   function markSeen(ids: string[]) {
     setSeen((prev) => (ids.every((id) => prev.includes(id)) ? prev : [...new Set([...prev, ...ids])]));
   }
@@ -249,8 +262,8 @@ export function useGameState(initialTab: TabKey = "all") {
     const l = equipment[KLUTZ_DROP_ID];
     const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
     const w = l?.weaponId ? byId.get(l.weaponId) : undefined;
-    return fighterFor(klutzDrop(), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
-  }, [equipment, inventory]);
+    return fighterFor(klutzDrop(klutz.level), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
+  }, [equipment, inventory, klutz.level]);
 
   // While Klutz is out, the gear he's wearing goes with him: nobody can take
   // it off him (or put anything on him) until he's back.
@@ -626,6 +639,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, player, gainPlayerXp,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp,
   };
 }

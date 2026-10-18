@@ -13,6 +13,7 @@ import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, pieceName } from "./items/arm
 import { CREATURE_BY_ID, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
+import { SCROLL_LEVEL, SCROLL_XP } from "./creatures/levels";
 
 const now = () => new Date().toISOString();
 
@@ -72,6 +73,14 @@ export function potionDrop(barcode = "", kind: keyof typeof STORED_POTIONS = "le
   return {
     id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: p.rarity, roll: 0,
     name: p.name, potion: kind, desc: `Restores ${p.heal} HP to one creature. Pack it in your bag to use it in the Labyrinth.`, createdAt: now(),
+  };
+}
+
+// An XP scroll: read it on a creature (or Klutz) for SCROLL_XP, then it's gone.
+export function scrollDrop(barcode = ""): Drop {
+  return {
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: "rare", roll: 0,
+    name: "XP Scroll", scroll: "xp", desc: `Read it to give one creature, or Klutz, ${SCROLL_XP} XP (level 1 to ${SCROLL_LEVEL}).`, createdAt: now(),
   };
 }
 
