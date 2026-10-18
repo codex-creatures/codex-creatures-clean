@@ -11,7 +11,7 @@
 // Gold, the backpack and creature cards take no room. Whatever's left in the
 // chest stays on the floor when you move on.
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import PixelSprite from "./PixelSprite";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
 import type { SlotLook } from "./BagSlots";
@@ -43,7 +43,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const [over, setOver] = useState<string | null>(null); // the drop target under the finger
   const [picked, setPicked] = useState<number | null>(null); // a bag slot tapped (to see it, or put it back)
   const [seen, setSeen] = useState<number | null>(null);     // a chest item tapped (to see it before taking it)
-  useEffect(() => { setSeen(null); setPicked(null); }, [items]); // things moved: the indexes are stale
+  const [was, setWas] = useState(items); // things moved: the indexes are stale
+  if (was !== items) { setWas(items); setSeen(null); setPicked(null); }
   const dragRef = useRef<Drag | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null); // the window's backdrop: the ghost is placed within it
 
