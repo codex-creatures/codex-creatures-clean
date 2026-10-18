@@ -11,7 +11,7 @@ import { CLASS_INFO, findCreatureTemplate, RACE_INFO, type CreatureTemplate } fr
 import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { ABILITIES } from "@/lib/creatures/abilities";
-import PixelSprite, { creatureSprite } from "./PixelSprite";
+import { CreatureArt } from "./CreaturePortrait";
 
 
 type Stack = { t: CreatureTemplate; cards: CreatureOrItemDrop[] };
@@ -115,10 +115,7 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, children 
         {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
       </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }}>
-        <div style={{ position: "absolute", inset: "5%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <PixelSprite sprite={creatureSprite(creatureId)} scale={4} title={t.name}
-            style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated" }} />
-        </div>
+        <CreatureArt creatureId={creatureId} title={t.name} />
       </div>
       <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
         <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>

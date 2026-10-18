@@ -6,9 +6,8 @@
 // an empty slot) to swap them round.
 
 import { useState } from "react";
-import PixelSprite, { creatureSprite } from "./PixelSprite";
+import { CreatureArt, PORTRAIT_RATIO } from "./CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { spriteWidth } from "@/lib/sprites/pixels";
 import type { Rarity } from "@/lib/items/budgets";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -44,20 +43,19 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
     if (!m) {
       return (
         <button key={i} onClick={() => tap(i)} aria-label={`Empty ${i < TEAM_SLOTS ? "team" : "bench"} slot`}
-          style={{ aspectRatio: "1", width: "100%", background: "#101117", border: `3px dashed ${picked !== null ? "#8a6a3a" : "#2a2d38"}`, borderRadius: 10, cursor: picked !== null ? "pointer" : "default", color: MUTED, fontSize: 12 }}>
+          style={{ aspectRatio: PORTRAIT_RATIO, width: "100%", background: "#101117", border: `3px dashed ${picked !== null ? "#8a6a3a" : "#2a2d38"}`, borderRadius: 10, cursor: picked !== null ? "pointer" : "default", color: MUTED, fontSize: 12 }}>
           {picked !== null ? "Move here" : "Empty"}
         </button>
       );
     }
     const col = RARITY_COLORS[m.rarity];
     const ko = m.hp <= 0;
-    const sprite = creatureSprite(m.creatureId);
     const sel = picked === i;
     return (
       <button key={m.id} onClick={() => tap(i)} title={`${m.name}: ${Math.round(m.hp * m.maxHp)}/${m.maxHp} HP`}
         style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column" }}>
         <span style={{
-          position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
+          position: "relative", aspectRatio: PORTRAIT_RATIO, display: "flex", alignItems: "center", justifyContent: "center",
           background: `radial-gradient(ellipse at 50% 60%, ${col.glow}, #101117 72%)`,
           border: `3px solid ${sel ? "#ffd66e" : col.border}`, borderRadius: 10, overflow: "hidden",
           boxShadow: `inset 0 0 18px rgba(0,0,0,0.6), 0 4px 0 rgba(0,0,0,0.5)${sel ? ", 0 0 14px rgba(255,214,110,0.55)" : ""}`,
@@ -66,8 +64,7 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
           <span style={{ position: "absolute", top: 0, left: 0, right: 0, height: 7, background: "rgba(0,0,0,0.7)" }}>
             <span style={{ display: "block", height: "100%", width: `${Math.max(0, m.hp) * 100}%`, background: m.hp > 0.5 ? "#22c55e" : m.hp > 0.25 ? "#f5c542" : "#ef4444", transition: "width 0.3s" }} />
           </span>
-          <PixelSprite sprite={sprite} scale={Math.max(2.4, Math.min(3.4, 60 / spriteWidth(sprite)))}
-            style={{ opacity: ko ? 0.35 : 1, filter: ko ? "grayscale(1)" : undefined }} />
+          <CreatureArt creatureId={m.creatureId} title={m.name} style={{ opacity: ko ? 0.35 : 1, filter: ko ? "grayscale(1)" : undefined }} />
           {leads && !ko && <span className="pixel-font" style={{ position: "absolute", bottom: 3, left: 5, fontSize: 10, color: "#ffd66e" }}>leads</span>}
           {ko && <span className="pixel-font" style={{ position: "absolute", bottom: 3, left: 0, right: 0, fontSize: 10, color: "#ff8a80", textAlign: "center" }}>knocked out</span>}
         </span>

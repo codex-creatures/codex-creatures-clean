@@ -20,7 +20,8 @@ import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CLASS_INFO, CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
-import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
+import { PotionIcon } from "@/components/PixelSprite";
+import CreaturePortrait from "@/components/CreaturePortrait";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
@@ -965,10 +966,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
                 <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 12, color: rarityColor(c.rarity), textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
                   <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name}
                 </span>
-                <span style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "6%" }}>
-                  <PixelSprite sprite={creatureSprite(c.creatureId)} scale={3}
-                    style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
-                </span>
+                <CreaturePortrait creatureId={c.creatureId} title={c.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
                 <span className="pixel-font" style={{ fontSize: 11, color: cls.color }}>{cls.name}</span>
                 {hp < 1 && (
                   <span style={{ width: "80%", height: 4, background: "#1a0e0e", border: "1px solid #000" }}>

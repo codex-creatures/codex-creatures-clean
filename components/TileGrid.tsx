@@ -10,6 +10,7 @@ import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
+import CreaturePortrait from "./CreaturePortrait";
 import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureMarks, type GroupBy } from "./CreatureMarks";
 import { ICON, NAME } from "./ContainerLoot";
@@ -117,16 +118,13 @@ function Tile({ d, fav, badge, sell, onClick }: {
 function CreatureCard({ d, fav, badge, onClick }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; onClick: () => void }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
-  const sprite = creatureSprite(d.creatureId);
   return (
     <button onClick={onClick} title={d.name}
       style={{ position: "relative", background: "none", border: "none", padding: "4px 2px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
       <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 14, color: col.text, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
         <span style={{ color: "#f1d9a0" }}>Lv {d.level ?? 1}</span> {d.name}
       </span>
-      <span style={{ width: "100%", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: "6%" }}>
-        <PixelSprite sprite={sprite} scale={3.4} style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated", filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
-      </span>
+      <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
       {tpl && (
         <span className="pixel-font" style={{ fontSize: 12, textAlign: "center" }}>
           <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
