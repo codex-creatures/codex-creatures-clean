@@ -19,7 +19,7 @@ import { canFind, clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import {
-  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, sameRarityChance, HUNT_BELOW, HUNT_ABOVE, type Expedition, type KlutzEncounter,
+  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, CAPTURE_XP, FIND_XP, sameRarityChance, HUNT_BELOW, HUNT_ABOVE, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -95,7 +95,7 @@ export default function KlutzPage() {
               <HelpSection title="If he wins">
                 <ul>
                   <li>The creature goes in the <b>cage</b> and its gear in <b>his crate</b>.</li>
-                  <li>He gets <b>XP</b> for it, like a creature would. <b>XP scrolls</b> work on him too.</li>
+                  <li>He gets <b>XP</b>: <b>+{CAPTURE_XP}</b> on top of the fight. Gear he finds gives <b>+{FIND_XP}</b>. <b>XP scrolls</b> work on him too.</li>
                   <li>The cage holds <b>one</b>: if it&apos;s full, he lets his catch go (and keeps its gear).</li>
                 </ul>
               </HelpSection>

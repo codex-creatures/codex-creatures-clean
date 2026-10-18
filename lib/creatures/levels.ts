@@ -144,9 +144,8 @@ export function xpToReach(level: number): number {
   return total;
 }
 
-// An XP scroll: read it to give one creature (or Klutz) the XP that takes a
-// creature from level 1 to SCROLL_LEVEL, so it's big early on and fades as
-// a creature climbs. Found in mini boss and boss chests; sometimes sold by
+// A tattered XP scroll: read it to give one creature (or Klutz) SCROLL_XP,
+// about what takes a creature from level 1 to 5, so it's big early on and
+// fades as a creature climbs. Found in mini boss and boss chests; sometimes sold by
 // a wandering merchant (lib/dungeon/run.ts).
-export const SCROLL_LEVEL = 5;
-export const SCROLL_XP = xpToReach(SCROLL_LEVEL);
+export const SCROLL_XP = 400; // about xpToReach(5)

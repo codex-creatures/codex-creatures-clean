@@ -13,7 +13,7 @@ import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, pieceName } from "./items/arm
 import { CREATURE_BY_ID, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
-import { SCROLL_LEVEL, SCROLL_XP } from "./creatures/levels";
+import { SCROLL_XP } from "./creatures/levels";
 
 const now = () => new Date().toISOString();
 
@@ -80,7 +80,7 @@ export function potionDrop(barcode = "", kind: keyof typeof STORED_POTIONS = "le
 export function scrollDrop(barcode = ""): Drop {
   return {
     id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: "rare", roll: 0,
-    name: "XP Scroll", scroll: "xp", desc: `Read it to give one creature, or Klutz, ${SCROLL_XP} XP (level 1 to ${SCROLL_LEVEL}).`, createdAt: now(),
+    name: "Tattered XP Scroll", scroll: "xp", desc: `Read it to give one creature, or Klutz, ${SCROLL_XP} XP.`, createdAt: now(),
   };
 }
 

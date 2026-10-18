@@ -19,8 +19,9 @@
 // between Common and Uncommon, to help new players get going. So Klutz is a
 // way to find alternatives to gear you have, not to climb rarities.
 //
-// He levels up like a creature: a won fight gives him the XP a creature
-// would get for that KO (xpForEnemy), and XP scrolls work on him too. His
+// He levels up like a creature: a catch gives him the XP a creature would
+// get for that KO (xpForEnemy) plus CAPTURE_XP (so a first catch takes him
+// to level 2), a find gives FIND_XP, and XP scrolls work on him too. His
 // level makes him stronger, and decides what he meets:
 // - wild creatures are around his level (HUNT_BELOW under to HUNT_ABOVE over),
 //   and a catch keeps its level;
@@ -56,6 +57,8 @@ export const HUNT_BELOW = 2;           // what he meets is his level, up to this
 export const HUNT_ABOVE = 1;           // …or this many over (and a catch keeps its level)
 export const FIND_SAME_PER_LEVEL = 0.01; // each level over 1: this much likelier a same-rarity find
 export const FIND_SAME_MAX = 0.3;
+export const CAPTURE_XP = 50;          // on top of the KO's XP, for bringing a creature home
+export const FIND_XP = 20;             // for bringing home a piece of gear
 
 // What Klutz is wearing, slot by slot (for his finds).
 export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
@@ -170,7 +173,7 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
   const r = fight(klutz, klutz.maxHp, enemyFighter(enemy));
   const encounter: KlutzEncounter = {
     at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [],
-    ...(r.won ? { xp: xpForEnemy(foeLevel, rarity) } : {}),
+    ...(r.won ? { xp: xpForEnemy(foeLevel, rarity) + CAPTURE_XP } : {}),
   };
   const find = rng() < FIND_CHANCE ? rollFind(worn, rng, L) : undefined;
   return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters: [encounter], ...(find ? { find } : {}), collected: false };
@@ -211,7 +214,7 @@ export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzSta
   if (!ex || ex.collected || now < ex.endsAt) return { state: k, loot: [] };
   const last = ex.encounters[ex.encounters.length - 1];
   const hp = last ? last.hpAfter : ex.maxHp;
-  const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0);
+  const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0) + (ex.find ? FIND_XP : 0);
   const { state, from, to } = klutzGainXp(k, xp);
   return {
     state: { ...state, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true } },

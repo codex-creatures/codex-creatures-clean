@@ -175,9 +175,10 @@ describe("the labyrinth map", () => {
       const known = knownRooms(map, [map.start]);
       expect(known.has(map.boss)).toBe(true);
       const sight = inSight(map, map.start);
+      const first = new Set(waysOn(map, map.start).map((n) => n.id)); // the first step is blind
       for (const n of nodes) {
         if (n.id === map.start || n.id === map.boss) continue;
-        expect(known.has(n.id)).toBe(!!n.known || (sight.has(n.id) && !n.mystery));
+        expect(known.has(n.id)).toBe(!first.has(n.id) && (!!n.known || (sight.has(n.id) && !n.mystery)));
       }
       // Walking somewhere keeps what you knew, and adds what's near it (and the room itself).
       const next = waysOn(map, map.start)[0].id;

@@ -103,3 +103,12 @@ describe("Klutz's finds", () => {
     expect(planExpedition(plain(), t0, seeded(3)).find).toBeUndefined(); // wearing nothing: nothing to find
   });
 });
+
+import { klutzGainXp, CAPTURE_XP } from "../lib/klutz";
+import { xpForEnemy, xpToNext } from "../lib/creatures/levels";
+describe("Klutz's levels", () => {
+  it("his first catch (the weakest there is) takes him to level 2", () => {
+    expect(xpForEnemy(1, "common") + CAPTURE_XP).toBeGreaterThanOrEqual(xpToNext(1));
+    expect(klutzGainXp({}, xpForEnemy(1, "common") + CAPTURE_XP).state.level).toBe(2);
+  });
+});

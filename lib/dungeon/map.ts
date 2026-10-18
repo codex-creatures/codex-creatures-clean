@@ -236,6 +236,8 @@ export function knownRooms(map: DungeonMap, path: string[]): Set<string> {
   const known = new Set<string>([...(map.quest ? [] : [map.boss]), map.start, ...visited]);
   for (const n of Object.values(map.nodes)) if (n.known) known.add(n.id);
   for (const at of visited) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
+  // Your first step is blind: the rooms off the entrance are all "?" (a flare will light them later).
+  if (path.length <= 1) for (const n of waysOn(map, map.start)) known.delete(n.id);
   return known;
 }
 

@@ -235,6 +235,8 @@ export const CODEX_PRICE = 500;       // wandering librarians sell codexes
 export const LIBRARIAN_OFFERS = 3;
 export const MERCHANT_SCROLL_CHANCE = 0.2; // a wandering merchant also has an XP scroll
 export const SCROLL_PRICE = 200;
+export const MINIBOSS_SCROLL_CHANCE = 0.25; // a beaten mini boss's chest holds an XP scroll
+export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
 
 type Rng = () => number;
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));

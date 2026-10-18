@@ -41,7 +41,7 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, cyclopsChest, CODEX_PRICE, SCROLL_PRICE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
+  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, cyclopsChest, CODEX_PRICE, SCROLL_PRICE, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, MINIBOSS_REVIVE_HP, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
@@ -693,8 +693,8 @@ export default function DungeonPage() {
     const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
     // The Cyclops' chest: gear, codexes and potions as well as its gold.
     if (room.boss) sack.push(...cyclopsChest());
-    // Every mini boss and boss chest holds an XP scroll.
-    if (room.kind === "miniboss" || room.kind === "boss") sack.push({ gear: scrollDrop() });
+    // Mini boss and boss chests sometimes hold an XP scroll.
+    if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : room.kind === "miniboss" ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // The first time you beat the Cyclops, its chest holds a rugged backpack.
     if (room.boss && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
     const container = room.kind === "miniboss" || room.kind === "boss" ? "chest" as const : "sack" as const;
@@ -1207,7 +1207,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
               return (
                 <button className="card-btn" disabled={!can} onClick={onBuyScroll} style={{ opacity: can ? 1 : 0.5 }}>
                   <span style={{ flex: 1 }}>
-                    <b>📜 XP Scroll</b>
+                    <b>📜 Tattered XP Scroll</b>
                     <span style={{ display: "block", fontSize: 12, color: MUTED }}>{SCROLL_XP} XP for one creature, or Klutz.</span>
                   </span>
                   <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "sold" : `🪙 ${SCROLL_PRICE}`}</span>
