@@ -61,7 +61,7 @@ export default function RoomsLab() {
         <button className="pixel-btn" onClick={() => setLootOpen(true)}>Try the loot window</button>
         {lootOpen && (
           <LootWindow name="The rickety chest" sprite={RICKETY_CHEST_OPEN} items={sack} slots={3} bagName="Bindle"
-            bag={bag.map((x) => { const l = lookOf(x); return { name: l.name, sprite: l.sprite, icon: l.icon, color: l.color, glow: l.glow }; })}
+            bag={bag.map((x) => { const l = lookOf(x); return { name: l.name, sprite: l.sprite, icon: l.icon, color: l.color, glow: l.glow, peek: x }; })}
             onTake={(i) => take(i)} onTakeAll={() => { for (let i = sack.length - 1; i >= 0; i--) if (roomless(sack[i])) take(i); }}
             onSwap={(i, at) => take(i, at)} onPutBack={(at) => { setSack([...sack, bag[at]]); setBag(bag.filter((_, j) => j !== at)); }}
             onClose={() => setLootOpen(false)} />

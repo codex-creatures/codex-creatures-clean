@@ -2,18 +2,25 @@
 // components/LootWindow.tsx
 // An opened chest or sack, in a window over the room, with your bag right
 // under it: the swap is all on one screen.
-// - Tap something in the chest to take it (if there's room).
+// - Tap something in the chest for a closer look (its stats), with a Take
+//   button. Gold and creature cards have nothing to see: a tap takes them.
+// - Tap something in your bag to see it too (to compare), or put it back.
 // - Drag it onto a bag slot to take it there; a slot that's full swaps:
 //   what was in it goes into the chest.
 // - Drag something from your bag into the chest to leave it there.
 // Gold, the backpack and creature cards take no room. Whatever's left in the
 // chest stays on the floor when you move on.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PixelSprite from "./PixelSprite";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
 import type { SlotLook } from "./BagSlots";
-import type { SackItem } from "@/lib/dungeon/run";
+import { POTIONS, type SackItem } from "@/lib/dungeon/run";
+import { GEAR_STATS } from "./GearCompare";
+import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
+import { MOVE_BY_NAME } from "@/lib/creatures/creatureData";
+import { moveKind } from "./ClassBadge";
+import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const MUTED = "rgba(255,255,255,0.55)";
@@ -34,7 +41,9 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const full = bag.length >= slots;
   const [drag, setDrag] = useState<Drag | null>(null);
   const [over, setOver] = useState<string | null>(null); // the drop target under the finger
-  const [picked, setPicked] = useState<number | null>(null); // a bag slot tapped (to put it back)
+  const [picked, setPicked] = useState<number | null>(null); // a bag slot tapped (to see it, or put it back)
+  const [seen, setSeen] = useState<number | null>(null);     // a chest item tapped (to see it before taking it)
+  useEffect(() => { setSeen(null); setPicked(null); }, [items]); // things moved: the indexes are stale
   const dragRef = useRef<Drag | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null); // the window's backdrop: the ghost is placed within it
 
@@ -61,8 +70,10 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     dragRef.current = null; setDrag(null); setOver(null);
     if (!d) return;
     if (!d.on) { // a tap
-      if (d.kind === "loot") onTake(d.i);
-      else setPicked((p) => (p === d.i ? null : d.i));
+      if (d.kind === "loot") {
+        if (lookOf(items[d.i]).free) onTake(d.i);
+        else { setSeen((s) => (s === d.i ? null : d.i)); setPicked(null); }
+      } else { setPicked((p) => (p === d.i ? null : d.i)); setSeen(null); }
       return;
     }
     const t = targetAt(e.clientX, e.clientY);
@@ -94,7 +105,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             return (
               <div key={i} onPointerDown={press({ kind: "loot", i }, l)} {...handlers} title={l.name}
                 style={{ minWidth: 0, cursor: "grab", touchAction: "none", opacity: lifted ? 0.3 : blocked ? 0.75 : 1 }}>
-                <span style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: glowBg(l.glow) }}>
+                <span style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: glowBg(l.glow),
+                  ...(seen === i ? { outline: "2px solid #ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : {}) }}>
                   {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 28 }}>{l.icon}</span>}
                 </span>
                 <span style={{ ...NAME, color: l.color }}>{l.name}</span>
@@ -103,9 +115,15 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           })}
         </div>
 
-        <div style={{ fontSize: 12, color: MUTED, textAlign: "center" }}>
-          Tap to take · drag onto your bag to swap{full ? " (your bag is full)" : ""}
-        </div>
+        {seen !== null && items[seen] ? (
+          <ItemPeek item={items[seen]} action={
+            <button className="chip" disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
+          } />
+        ) : (
+          <div style={{ fontSize: 12, color: MUTED, textAlign: "center" }}>
+            Tap to look · drag onto your bag to take{full ? " (your bag is full)" : ""}
+          </div>
+        )}
 
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 14, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
@@ -128,12 +146,15 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             );
           })}
         </div>
-        {picked !== null && bag[picked] && (
-          <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-            <b style={{ color: bag[picked].color, minWidth: 0 }}>{bag[picked].name}</b>
-            <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>Put in the chest</button>
-          </div>
-        )}
+        {picked !== null && bag[picked] && (() => {
+          const put = <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>Put in the chest</button>;
+          const l = bag[picked];
+          return l.peek ? <ItemPeek item={l.peek} action={put} /> : (
+            <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
+              <b style={{ color: l.color, minWidth: 0 }}>{l.name}</b>{put}
+            </div>
+          );
+        })()}
 
         <div className="dock-tabs">
           <button className="dock-tab" onClick={onTakeAll} disabled={items.length === 0}>Take all</button>
@@ -149,6 +170,46 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           {drag.sprite ? <PixelSprite sprite={drag.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 32 }}>{drag.icon}</span>}
         </div>
       )}
+    </div>
+  );
+}
+
+// A closer look at one thing: what it is and its stats, with a button.
+function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode }) {
+  const l = lookOf(item);
+  let kind = "", body: React.ReactNode = null;
+  if ("potion" in item) { kind = "potion"; body = <>Heals one creature {POTIONS[item.potion].heal} HP</>; }
+  else if ("gear" in item) {
+    const g = item.gear as CreatureOrItemDrop;
+    if (g.codexMove) {
+      const m = MOVE_BY_NAME[g.codexMove];
+      kind = `${g.rarity} codex`;
+      body = m ? <>Teaches <b>{m.name}</b> · {m.self ? "utility" : moveKind(m)}<div style={{ color: MUTED, marginTop: 2 }}>{m.desc}</div></> : <>Teaches {g.codexMove}</>;
+    } else {
+      kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;
+      const stats = g.stats as Record<string, number> | undefined;
+      const rows = GEAR_STATS.filter(([k]) => stats?.[k]);
+      body = rows.length === 0 ? <span style={{ color: MUTED }}>No stats</span> : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {rows.map(([k, label]) => (
+            <span key={k} style={{ padding: "2px 8px", background: "rgba(0,0,0,0.35)", border: "1px solid #3a3326", fontSize: 13 }}>
+              <span style={{ color: MUTED }}>{label}</span> <b style={{ fontVariantNumeric: "tabular-nums" }}>{stats![k]}</b>
+            </span>
+          ))}
+        </div>
+      );
+    }
+  }
+  return (
+    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <b style={{ color: l.color }}>{l.name}</b>
+          {kind && <div style={{ fontSize: 11, color: MUTED, textTransform: "capitalize" }}>{kind}</div>}
+        </div>
+        {action}
+      </div>
+      {body && <div style={{ fontSize: 13 }}>{body}</div>}
     </div>
   );
 }

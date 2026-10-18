@@ -10,20 +10,20 @@ import { itemSprite } from "./PixelSprite";
 import { POTION_SPRITES, POTION_RARITY } from "@/lib/sprites/items";
 import { ICON } from "./ContainerLoot";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
-import { isPotionEntry, POTIONS, type BagEntry } from "@/lib/dungeon/run";
+import { isPotionEntry, POTIONS, type BagEntry, type SackItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
-export type SlotLook = { name: string; sprite?: Sprite; icon?: string; color: string; glow?: string };
+export type SlotLook = { name: string; sprite?: Sprite; icon?: string; color: string; glow?: string; peek?: SackItem }; // peek: what it is, for a closer look (ItemPeek)
 
 // What a bag entry looks like in its slot.
 export function slotLook(e: BagEntry, item?: CreatureOrItemDrop): SlotLook {
-  if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: RARITY_COLORS[POTION_RARITY[e]].text, glow: rarityGlow(POTION_RARITY[e]) };
+  if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: RARITY_COLORS[POTION_RARITY[e]].text, glow: rarityGlow(POTION_RARITY[e]), peek: { potion: e } };
   if (!item) return { name: "Something you no longer have", icon: "❔", color: MUTED };
   const rc = RARITY_COLORS[item.rarity];
-  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : "📦", color: rc.text, glow: rarityGlow(item.rarity) };
+  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : "📦", color: rc.text, glow: rarityGlow(item.rarity), peek: { gear: item } };
 }
 
 export default function BagSlots({ slots, looks, selected, onSelect, pulse, size = 60 }: {
