@@ -23,7 +23,7 @@ export type Suit = "melee" | "ranged" | "magic";
 export const SUITS: Suit[] = ["melee", "ranged", "magic"];
 export const SUIT_INFO: Record<Suit, { name: string; icon: string; color: string }> = {
   melee:  { name: "Melee",  icon: "⚔️", color: "#ff9f43" },
-  ranged: { name: "Ranged", icon: "🏹", color: "#ffd84a" },
+  ranged: { name: "Ranged", icon: "🏹", color: "#6fdc6f" },
   magic:  { name: "Magic",  icon: "🔮", color: "#c08cff" },
 };
 

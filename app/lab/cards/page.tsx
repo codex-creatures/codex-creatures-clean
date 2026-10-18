@@ -1,7 +1,7 @@
 "use client";
 // app/lab/cards/page.tsx — the creature card design, being refined (dev tool).
 // Layout from the user's sketch: name; the sprite on a faded rarity colour
-// (filling the box, 5% clear each side); a Race | Attack style row; then the
+// (filling the box, 5% clear each side); an Attack style | Race row; then the
 // creature's role over one line of flavour. The user picked the "stone" look
 // (dark stone, bevelled rarity trim); once refined it replaces CardFace in
 // components/CardGallery.tsx.
@@ -63,8 +63,8 @@ function Card({ t, look }: { t: CreatureTemplate; look: Look }) {
         </div>
       </div>
       <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
-        <span style={{ flex: 1, textAlign: "center", padding: "2cqw 1cqw", ...look.plaque(race?.color ?? "#999") }}>{race?.name}</span>
         <span style={{ flex: 1, textAlign: "center", padding: "2cqw 1cqw", ...look.plaque(cls.color) }}>{cls.name}</span>
+        <span style={{ flex: 1, textAlign: "center", padding: "2cqw 1cqw", ...look.plaque("#f1d9a0") }}>{race?.name}</span>
       </div>
       <div style={{ padding: "2.5cqw 4cqw 3cqw", ...look.info }}>
         <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: look.role }}>{roleOf(t)}</div>
@@ -79,8 +79,8 @@ function Card({ t, look }: { t: CreatureTemplate; look: Look }) {
 // dark stone; the art and text sit in sunken wells.
 const stoneLook = (rc: string): Look => ({
   frame: {
-    background: "#23262f", border: `3px solid ${shade(rc, -0.55)}`,
-    boxShadow: `inset 0 0 0 2px ${rc}, inset 4px 4px 0 ${shade(rc, 0.35)}, inset -4px -4px 0 ${shade(rc, -0.35)}, inset 6px 6px 0 #3a3e4b, inset -6px -6px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)`,
+    background: "#23262f", border: `2px solid ${shade(rc, -0.55)}`,
+    boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)`,
   },
   name: { color: "#f1d9a0", textShadow: "1px 1px 0 #000" },
   art: (r) => ({ background: `radial-gradient(circle at 50% 50%, ${r}66, ${r}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }),

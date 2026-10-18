@@ -58,7 +58,7 @@ export type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | 
 export const STATS: { key: StatKey; icon: string; label: string; max: number; color: string }[] = [
   { key: "hp",   icon: "❤️", label: "Health",     max: 350, color: "#e0524a" },
   { key: "atk",  icon: "⚔️", label: "Melee",      max: 180, color: "#ff9f43" },
-  { key: "rng",  icon: "🏹", label: "Ranged",     max: 180, color: "#ffd84a" },
+  { key: "rng",  icon: "🏹", label: "Ranged",     max: 180, color: "#6fdc6f" },
   { key: "mag",  icon: "🔮", label: "Magic",      max: 180, color: "#c08cff" },
   { key: "agil", icon: "💨", label: "Agility",    max: 240, color: "#5ee0c0" },
   { key: "mdef", icon: "🛡️", label: "Melee Def",  max: 160, color: "#7aa7ff" },

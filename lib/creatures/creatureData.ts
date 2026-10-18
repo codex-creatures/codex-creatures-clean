@@ -19,7 +19,7 @@ export type CombatClass = "melee" | "ranged" | "magic";
 export const COMBAT_CLASSES: CombatClass[] = ["melee", "ranged", "magic"];
 export const CLASS_INFO: Record<CombatClass, { name: string; icon: string; beats: CombatClass; color: string }> = {
   melee:  { name: "Melee",  icon: "⚔️", beats: "ranged", color: "#ff9f43" },
-  ranged: { name: "Ranged", icon: "🏹", beats: "magic",  color: "#ffd84a" },
+  ranged: { name: "Ranged", icon: "🏹", beats: "magic",  color: "#6fdc6f" },
   magic:  { name: "Magic",  icon: "🔮", beats: "melee",  color: "#c08cff" },
 };
 
