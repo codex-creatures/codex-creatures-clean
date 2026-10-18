@@ -61,30 +61,39 @@ export type DungeonInfo = {
   easyGear: Rarity;
   hard: [Rarity, Rarity];     // creature, gear
   miniboss: [Rarity, Rarity];
-  levels: { start: number; perRoom: number; cap: number }; // enemy levels: start + perRoom × depth (dens)
+  levels: LevelBand[]; // how strong its creatures are, by depth (enemyLevel)
+  maxLevel: number;    // no creature here (bar the boss) is stronger than this
   goldScale: number;
 };
 export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
   1: { name: "The Labyrinth", spec: DEFAULT_SPEC, easyPack: ["common", "common", "uncommon"], easyGear: "common",
-       hard: ["rare", "rare"], miniboss: ["epic", "rare"], levels: { start: 1, perRoom: 0.8, cap: 9 }, goldScale: 1 },
+       hard: ["rare", "rare"], miniboss: ["epic", "rare"], levels: [[3, 1, 4], [6, 1, 7], [Infinity, 3, 7]], maxLevel: 7, goldScale: 1 },
   2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE }, easyPack: ["uncommon", "uncommon", "rare"], easyGear: "uncommon",
-       hard: ["epic", "rare"], miniboss: ["legendary", "epic"], levels: { start: 9, perRoom: 0.6, cap: 20 }, goldScale: 2 },
+       hard: ["epic", "rare"], miniboss: ["legendary", "epic"], levels: [[5, 7, 11], [10, 9, 14], [Infinity, 11, 15]], maxLevel: 17, goldScale: 2 },
 };
 export const dungeonOf = (run: { dungeon?: DungeonId }): DungeonId => run.dungeon ?? 1;
 
-// How strong (what level) a room's creatures are: dens follow the depth;
-// lurking brutes are HARD_LEVELS above that, mini bosses MINIBOSS_LEVELS.
+// How strong (what level) a room's creatures are. Each dungeon has bands by
+// depth (rooms walked into on the shortest way from the entrance):
+// [up to this depth, lowest level, highest level], any level in between
+// equally likely. The Labyrinth: rooms 1–3 hold Lv 1–4, rooms 4–6 Lv 1–7,
+// and the rest Lv 3–7 — nothing over 7 until the Deep Labyrinth.
+// Lurking brutes are HARD_LEVELS above a den, mini bosses MINIBOSS_LEVELS
+// (both still capped at the dungeon's maxLevel).
+export type LevelBand = [upTo: number, min: number, max: number];
 export const HARD_LEVELS = 2;
-export const MINIBOSS_LEVELS = 4;
-export const WARDEN_LEVEL = 20; // the Deep Labyrinth's boss pack
+export const MINIBOSS_LEVELS = 3;
+// (A boss's strength is mostly its gear and its tricks; its level trims its HP and %s.)
+export const CYCLOPS_LEVEL = 6;  // the Labyrinth's boss
+export const WARDEN_LEVEL = 16;  // the Deep Labyrinth's boss pack (its guards are a level lower)
 export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rng: Rng = Math.random): number {
-  const L = DUNGEONS[dungeon].levels;
-  const d = Number.isFinite(depth) ? depth : 8;
-  const den = Math.min(L.cap, Math.floor(L.start + L.perRoom * d + rng() * 2));
-  if (kind === "hard") return den + HARD_LEVELS;
-  if (kind === "miniboss") return den + MINIBOSS_LEVELS;
-  if (kind === "boss") return WARDEN_LEVEL;
-  return den;
+  const D = DUNGEONS[dungeon];
+  if (kind === "boss") return dungeon === 1 ? CYCLOPS_LEVEL : WARDEN_LEVEL;
+  const d = Number.isFinite(depth) ? depth : Infinity;
+  const [, min, max] = D.levels.find(([upTo]) => d <= upTo) ?? D.levels[D.levels.length - 1];
+  const den = min + Math.floor(rng() * (max - min + 1));
+  const bump = kind === "hard" ? HARD_LEVELS : kind === "miniboss" ? MINIBOSS_LEVELS : 0;
+  return Math.min(D.maxLevel, den + bump);
 }
 
 // How often each kind of room appears on the map (every row but the boss's), in %.
@@ -231,10 +240,10 @@ function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
     : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true };
 }
 
-// The Deep Labyrinth's boss: the Warden, a Legendary in Epic gear, with two Epic guards in Rare gear.
+// The Deep Labyrinth's boss: the Warden, a Legendary in Rare gear, with two Epic guards in Uncommon gear.
 export function wardenPack(rng: Rng = Math.random): Enemy[] {
-  const warden = makeEnemy("legendary", "epic", [], rng, WARDEN_LEVEL);
-  const guards = [0, 1].map(() => makeEnemy("epic", "rare", [warden.creatureId], rng, WARDEN_LEVEL - 2));
+  const warden = makeEnemy("legendary", "rare", [], rng, WARDEN_LEVEL);
+  const guards = [0, 1].map(() => makeEnemy("epic", "uncommon", [warden.creatureId], rng, WARDEN_LEVEL - 1));
   return [warden, ...guards];
 }
 

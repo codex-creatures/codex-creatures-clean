@@ -2,6 +2,8 @@
 import type { Drop } from "@/lib/types";
 import { resolveBarcode, rollBarcodeOutcome } from "@/lib/barcodeRegistry";
 import { dropFromOutcome, goldDrop } from "@/lib/drops";
+import { canFind, SCAN_UNLOCK } from "@/lib/creatures/levels";
+import type { Rarity } from "@/lib/types";
 
 // "deterministic" (Repeatable): outcomes come from the barcode registry,
 //   rolled once on first-ever scan; your own rescans give gold.
@@ -21,6 +23,10 @@ type UseDropGenerationArgs = {
   onDrop: (drop: Drop) => void;
   onScanCountUpdate: (code: string, newCount: number) => void;
   onScan?: (drops: Drop[]) => void; // everything one scan gave
+  playerLevel?: number;              // your explorer level: how rare a creature you can find
+  // A barcode whose creature is too rare for you yet: it stays sealed (the
+  // scan doesn't count), so you can come back for it at level `need`.
+  onSealed?: (rarity: Rarity, need: number) => void;
 };
 
 export function useDropGeneration({
@@ -29,11 +35,22 @@ export function useDropGeneration({
   onDrop,
   onScanCountUpdate,
   onScan,
+  playerLevel = 1,
+  onSealed,
 }: UseDropGenerationArgs) {
   function generateDrop(code: string) {
     if (!/^[0-9]{6,20}$/.test(code)) return;
 
     const alreadyScanned = scanCounts[code] ?? 0;
+
+    // ── TOO RARE FOR YOU YET → SEALED ─────────────────────
+    if (rollMode === "deterministic" && alreadyScanned === 0) {
+      const first = resolveBarcode(code);
+      if (first.outcome === "creature" && !canFind(playerLevel, first.rarity)) {
+        onSealed?.(first.rarity, SCAN_UNLOCK[first.rarity]);
+        return;
+      }
+    }
     onScanCountUpdate(code, alreadyScanned + 1);
 
     // ── RESCAN → GOLD REWARD ──────────────────────────────
@@ -58,7 +75,7 @@ export function useDropGeneration({
     const drops: Drop[] = [];
     for (let i = 0; i < SCAN_DROPS; i++) {
       const key = i === 0 ? code : `${code}:${i + 1}`;
-      const result = rollMode === "deterministic" ? resolveBarcode(key) : rollBarcodeOutcome();
+      const result = rollMode === "deterministic" ? resolveBarcode(key) : rollBarcodeOutcome(playerLevel);
       const drop = dropFromOutcome(result, code);
       if (drop) drops.push(drop);
     }

@@ -28,7 +28,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
 import { clubRoom, klutzClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_KLUTZ_MOVES } from "@/lib/quest";
 import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard } from "@/lib/dungeon/witch";
-import { xpForEnemy, BOSS_XP } from "@/lib/creatures/levels";
+import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
 import { KLUTZ } from "@/lib/creatures/creatureData";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
@@ -40,7 +40,7 @@ import {
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
-  curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, ILLNESS_DAMAGE, ILLNESS_ACTIONS, type DungeonId,
+  curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
@@ -523,7 +523,7 @@ export default function DungeonPage() {
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     if (room.enemies) game.markSeen(room.enemies.map((e) => e.creatureId));
     battle.start(
-      { A: [...(tutorial ? [klutz] : []), ...mine.map((c) => c.fighter)], B: room.boss ? cyclopsTeam() : room.enemies!.map(enemyFighter) },
+      { A: [...(tutorial ? [klutz] : []), ...mine.map((c) => c.fighter)], B: room.boss ? cyclopsTeam(CYCLOPS_LEVEL) : room.enemies!.map(enemyFighter) },
       { A: [...(tutorial ? [{ rarity: KLUTZ.rarity, label: "Your helper", creatureId: KLUTZ.id }] : []), ...mine], B: info },
       room.level ?? "hard",
       {
@@ -547,12 +547,8 @@ export default function DungeonPage() {
     const sickAt = r.illness ? ids.indexOf(r.illness.id) : -1;
     const sickLeft = sickAt >= 0 ? (A.team[sickAt].statuses.find((s) => s.id === "illness")?.rounds ?? 0) : r.illness?.left ?? 0;
     const illness = r.illness && sickLeft > 0 && (hp[r.illness.id] ?? 1) > 0 ? { ...r.illness, left: sickLeft } : undefined;
-    // XP: every enemy knocked out, to each of your creatures that took part (won or lost).
-    const took = new Set<number>([0]);
-    for (const e of m.state.log) {
-      if (e.type === "swap" && e.side === "A") took.add(e.toIndex);
-      if (e.type === "sendIn" && e.side === "A") took.add(e.index);
-    }
+    // XP (won or lost): every enemy knocked out. You get all of it; your
+    // team shares it by how much each did (at least 10% each, even from the bench).
     const room0 = r.current!;
     const xp = B.team.reduce((sum, f, i) => {
       if (f.hp > 0) return sum;
@@ -562,11 +558,16 @@ export default function DungeonPage() {
     }, 0);
     const xpNotes: string[] = [];
     if (xp > 0) {
+      const mineAt = ids.map((id, i) => (id && id !== KLUTZ_DROP_ID ? i : -1)).filter((i) => i >= 0);
+      const impacts = impactsFromLog(m.state.log, "A", ids.length);
+      const shares = shareXp(xp, mineAt.map((i) => impacts[i]));
       const gains: Record<string, number> = {};
-      for (const i of took) if (ids[i] && ids[i] !== KLUTZ_DROP_ID) gains[ids[i]] = xp;
-      const names = Object.keys(gains).map((id) => byId(id)?.name).filter(Boolean);
-      if (names.length) xpNotes.push(`✨ +${xp} XP: ${names.join(", ")}`);
+      mineAt.forEach((i, k) => { gains[ids[i]] = shares[k]; });
+      const parts = mineAt.map((i, k) => `${byId(ids[i])?.name} +${shares[k]}`);
+      xpNotes.push(`✨ ${xp} XP — ${parts.join(", ")}`);
       for (const u of game.gainXp(gains)) xpNotes.push(`⬆️ ${u.name} reached level ${u.to}!`);
+      const you = game.gainPlayerXp(xp);
+      if (you) xpNotes.push(`🌟 You reached explorer level ${you}!`);
     }
     const after = (x: DungeonRun): DungeonRun => ({ ...x, lastOnField: last, illness });
     // Second Wind (a full Frontier's Mail set): a won fight heals a little.
@@ -761,7 +762,7 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
               style={{ flex: 1, display: "block", textAlign: "center", borderColor: dungeon === d ? "#f1d9a0" : undefined, background: dungeon === d ? "rgba(241,217,160,0.1)" : undefined }}>
               <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 ? "🌀" : "🕳️"} {DUNGEONS[d].name}</b>
               <span style={{ display: "block", fontSize: 12, color: MUTED }}>
-                {d === 1 ? "The Cyclops · creatures Lv 1–13" : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[2].levels.start}–24 · the Warden`}
+                {d === 1 ? `The Cyclops · creatures Lv 1–${DUNGEONS[1].maxLevel}` : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[2].levels[0][1]}–${DUNGEONS[2].maxLevel} · the Warden`}
                 {d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : ""}
               </span>
             </button>
@@ -1098,7 +1099,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
             {room.kind === "easy" && !room.quest && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
             {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Beat it and you can heal or revive one of your party."}
-            {room.kind === "boss" && !room.boss && "The Warden of the Deep waits at the top of the climb, with two guards at its side. A Legendary, high level, in Epic gear — and they fight smart."}
+            {room.kind === "boss" && !room.boss && `The Warden of the Deep waits at the top of the climb, with two guards at its side. A Legendary and two Epics, all Lv ${WARDEN_LEVEL - 1}+ — and they fight smart.`}
             {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close (magic hits it hardest), and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
             {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
           </p>
@@ -1106,7 +1107,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
             {room.boss && (
               <div style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
                 <b style={{ color: rarityColor("legendary") }}>Cyclops</b>
-                <span style={{ color: MUTED }}> · {CYCLOPS_PARTS[0].label} · {combatLine(cyclopsTeam()[0])}</span>
+                <span style={{ color: MUTED }}> · {CYCLOPS_PARTS[0].label} · {combatLine(cyclopsTeam(CYCLOPS_LEVEL)[0])}</span>
               </div>
             )}
             {(room.enemies ?? []).map((e, i) => {

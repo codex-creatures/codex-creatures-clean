@@ -8,14 +8,14 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, CREATURES_BY_RARITY } from "@/lib/creatures/creatureData";
-import { makeCreatureDrop } from "@/lib/creatures/summon";
+import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon } from "@/lib/dungeon/run";
 import { collectKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, type QuestState } from "@/lib/quest";
 import { fighterFor } from "@/lib/creatures/instance";
-import { addXp } from "@/lib/creatures/levels";
+import { addXp, addPlayerXp, type Progress } from "@/lib/creatures/levels";
+import { starterCreature } from "@/lib/creatures/starter";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -72,14 +72,11 @@ type SaveState = {
   caches?: Drop[];                     // Code Caches waiting at the altar (Storage mode): what each holds
   crate?: Drop[];                      // Klutz's crate: gear he brought home, to keep or sell
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
+  player?: Progress;                   // your own level and XP (it decides what you can find when you scan)
 };
 
-// A new player's first creature: a random Rare, waiting in the cage.
-export function starterCreature(): Drop {
-  const pool = CREATURES_BY_RARITY.rare;
-  const t = pool[Math.floor(Math.random() * pool.length)];
-  return makeCreatureDrop(t, "creature", "");
-}
+// A new player's first creature (a Lv 3 Rare): lib/creatures/starter.ts.
+export { starterCreature, STARTER_LEVEL } from "@/lib/creatures/starter";
 
 // Also used read-only by the battle and dungeon screens.
 export function loadSave(): SaveState | null {
@@ -114,6 +111,7 @@ export function loadSave(): SaveState | null {
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     deathsSinceScan: typeof parsed.deathsSinceScan === "number" ? parsed.deathsSinceScan : 0,
     scanTipRead: parsed.scanTipRead === true,
+    player: parsed.player && typeof parsed.player === "object" ? (parsed.player as Progress) : { level: 1, xp: 0 },
     scanMode: parsed.scanMode === "store" ? "store" : "loot",
     caches: Array.isArray(parsed.caches) ? parsed.caches : [],
     crate: Array.isArray(parsed.crate) ? parsed.crate : [],
@@ -142,6 +140,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [scanMode, setScanMode] = useState<ScanMode>("loot");
   const [caches, setCaches] = useState<Drop[]>([]);
   const [crate, setCrate] = useState<Drop[]>([]);
+  const [player, setPlayer] = useState<Progress>({ level: 1, xp: 0 });
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -174,14 +173,15 @@ export function useGameState(initialTab: TabKey = "all") {
       setScanMode(saved.scanMode ?? "loot");
       setCaches(saved.caches ?? []);
       setCrate(saved.crate ?? []);
+      setPlayer(saved.player ?? { level: 1, xp: 0 });
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -210,6 +210,13 @@ export function useGameState(initialTab: TabKey = "all") {
       return { ...d, level: p.level, xp: p.xp };
     }));
     return ups;
+  }
+
+  // XP for you, the explorer. Returns your new level if you went up.
+  function gainPlayerXp(n: number): number | null {
+    const p = addPlayerXp(player, n);
+    setPlayer({ level: p.level, xp: p.xp });
+    return p.gained > 0 ? p.level : null;
   }
 
   function markSeen(ids: string[]) {
@@ -581,6 +588,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setScanTipRead(false);
     setCaches([]);
     setCrate([]);
+    setPlayer({ level: 1, xp: 0 });
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -618,6 +626,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, player, gainPlayerXp,
   };
 }

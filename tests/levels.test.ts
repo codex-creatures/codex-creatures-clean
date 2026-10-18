@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { CREATURE_BY_ID, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
 import { rollCreature } from "../lib/creatures/creatureRoll";
-import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP_SCALE } from "../lib/creatures/levels";
+import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP_SCALE, shareXp, impactsFromLog, addPlayerXp, playerXpToNext, canFind, SCAN_UNLOCK } from "../lib/creatures/levels";
+import { rollBarcodeOutcome } from "../lib/barcodeRegistry";
+import { starterCreature, STARTER_LEVEL } from "../lib/creatures/starter";
 import { buildFighter } from "../lib/combat/loadout";
 import { newWitchGame, guess, walkAway, outcomes, drawNext, odds, START_MIN, START_MAX, MAX_CORRECT } from "../lib/dungeon/witch";
 import { startRun, curse, illnessTick, stabTarget, makeRoom, enemyLevel, ILLNESS_DAMAGE, ILLNESS_ACTIONS, DEEP_ROUTE } from "../lib/dungeon/run";
@@ -92,11 +94,68 @@ describe("the Deep Labyrinth", () => {
   it("has higher-level, rarer creatures than the Labyrinth, and the Warden's pack at the top", () => {
     expect(enemyLevel(2, "easy", 1)).toBeGreaterThan(enemyLevel(1, "easy", 1));
     const den = makeRoom("easy", Math.random, 10, 2);
-    expect(den.enemies!.every((e) => (e.level ?? 0) >= 9)).toBe(true);
+    expect(den.enemies!.every((e) => (e.level ?? 0) >= 9)).toBe(true); // rooms 6–10: Lv 9+
     const boss = makeRoom("boss", Math.random, 15, 2);
     expect(boss.boss).toBeUndefined();
     expect(boss.enemies).toHaveLength(3);
     expect(CREATURE_BY_ID[boss.enemies![0].creatureId].rarity).toBe("legendary");
     expect(makeRoom("boss", Math.random, 8, 1).boss).toBe("cyclops");
+  });
+});
+
+describe("enemy levels by depth", () => {
+  const range = (d: 1 | 2, kind: Parameters<typeof enemyLevel>[1], depth: number) => {
+    const seen = new Set<number>();
+    for (let i = 0; i < 400; i++) seen.add(enemyLevel(d, kind, depth));
+    return [Math.min(...seen), Math.max(...seen)];
+  };
+  it("the Labyrinth: rooms 1–3 are Lv 1–4, rooms 4–6 Lv 1–7, the rest Lv 3–7", () => {
+    for (const depth of [1, 2, 3]) expect(range(1, "easy", depth)).toEqual([1, 4]);
+    for (const depth of [4, 5, 6]) expect(range(1, "easy", depth)).toEqual([1, 7]);
+    for (const depth of [7, 8, 9]) expect(range(1, "easy", depth)).toEqual([3, 7]);
+  });
+  it("nothing in the Labyrinth is over Lv 7 (bar the Cyclops); the Deep Labyrinth goes higher", () => {
+    for (const kind of ["easy", "hard", "miniboss"] as const) for (const depth of [1, 5, 9]) expect(range(1, kind, depth)[1]).toBeLessThanOrEqual(7);
+    expect(range(2, "easy", 1)[0]).toBeGreaterThan(5);
+    expect(range(2, "easy", 15)[1]).toBeGreaterThan(7);
+  });
+});
+
+describe("sharing a fight's XP", () => {
+  it("goes by impact, but everyone on the team gets at least 10% — even one that never fought", () => {
+    const shares = shareXp(100, [{ dealt: 300, taken: 100 }, { dealt: 50, taken: 0 }, { dealt: 0, taken: 0 }]);
+    expect(shares[2]).toBe(10);
+    expect(shares[0]).toBeGreaterThan(shares[1]);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(99);
+    expect(shareXp(90, [{ dealt: 0, taken: 0 }, { dealt: 0, taken: 0 }, { dealt: 0, taken: 0 }])).toEqual([30, 30, 30]);
+  });
+  it("reads who did what from the fight's log", () => {
+    const log = [
+      { type: "attack", side: "A", attackerIndex: 0, targetIndex: 0, damage: 20 },
+      { type: "attack", side: "A", attackerIndex: 1, targetIndex: 0, damage: 5, missed: true },
+      { type: "attack", side: "B", attackerIndex: 0, targetIndex: 2, damage: 8 },
+    ];
+    expect(impactsFromLog(log, "A", 3)).toEqual([{ dealt: 20, taken: 0 }, { dealt: 0, taken: 0 }, { dealt: 0, taken: 8 }]);
+  });
+});
+
+describe("your explorer level", () => {
+  it("levels up from XP and decides how rare a creature a scan can find", () => {
+    expect(addPlayerXp({ level: 1, xp: 0 }, playerXpToNext(1)).level).toBe(2);
+    expect(canFind(1, "uncommon")).toBe(true);
+    expect(canFind(1, SCAN_UNLOCK.legendary > 1 ? "legendary" : "common")).toBe(SCAN_UNLOCK.legendary <= 1);
+    expect(canFind(SCAN_UNLOCK.epic, "epic")).toBe(true);
+  });
+  it("scans never roll a creature rarer than you can find", () => {
+    for (let i = 0; i < 2000; i++) {
+      const o = rollBarcodeOutcome(1);
+      if (o.outcome === "creature") expect(canFind(1, o.rarity)).toBe(true);
+    }
+  });
+  it("your first creature is a Rare at level 3", () => {
+    const s = starterCreature() as { rarity: string; level?: number };
+    expect(s.rarity).toBe("rare");
+    expect(s.level).toBe(STARTER_LEVEL);
+    expect(STARTER_LEVEL).toBe(3);
   });
 });

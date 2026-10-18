@@ -21,6 +21,7 @@ import {
   pickArmorKey,
   pickCreatureId,
 } from "./items/gameHelpers";
+import { canFind } from "./creatures/levels";
 
 export type BarcodeOutcome =
   | { outcome: "gold"; amount: number }
@@ -63,7 +64,9 @@ function consumableRarity(): Rarity {
 }
 
 // A fresh random outcome — 20% creature / 60% item / 20% gold.
-export function rollBarcodeOutcome(): BarcodeOutcome {
+// playerLevel: a creature is only ever as rare as that explorer level can
+// find (SCAN_UNLOCK); missing = anything.
+export function rollBarcodeOutcome(playerLevel = Infinity): BarcodeOutcome {
   const outcomeRoll = Math.floor(Math.random() * 100) + 1;
 
   if (outcomeRoll > 80) {
@@ -71,7 +74,8 @@ export function rollBarcodeOutcome(): BarcodeOutcome {
   }
 
   if (outcomeRoll <= 20) {
-    const rarity = pickRarity("", "random");
+    let rarity = pickRarity("", "random");
+    while (!canFind(playerLevel, rarity)) rarity = pickRarity("", "random");
     return { outcome: "creature", rarity, creatureId: pickCreatureId(rarity) };
   }
 

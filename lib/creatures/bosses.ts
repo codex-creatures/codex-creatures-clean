@@ -25,9 +25,10 @@ export const CYCLOPS_PARTS: Part[] = [
     weapon: { magic: 26 }, armor: { mDef: 36, rDef: 18, magDef: 24, agility: 44 }, stance: "float" },
 ];
 
-export function cyclopsTeam(): Fighter[] {
+// level: how strong it is (the Labyrinth's CYCLOPS_LEVEL; missing = REF_LEVEL).
+export function cyclopsTeam(level?: number): Fighter[] {
   return CYCLOPS_PARTS.map((p) => {
-    const f = buildFighter(CREATURE_BY_ID[p.id], p.weapon, p.armor);
+    const f = buildFighter(CREATURE_BY_ID[p.id], p.weapon, p.armor, undefined, undefined, undefined, undefined, level);
     return { ...f, name: p.name, stance: p.stance ?? "neutral" };
   });
 }

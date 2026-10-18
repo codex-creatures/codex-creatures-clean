@@ -11,6 +11,8 @@ import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import { RECENT_SCANS } from "@/hooks/useGameState";
 import CodeCache from "@/components/CodeCache";
+import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
+import type { Rarity } from "@/lib/types";
 
 const CACHES_AT_ONCE = 10; // caches opened together (the 2×5 grid)
 
@@ -29,6 +31,7 @@ export default function AltarPage() {
   const [lastScan, setLastScan]     = useState<Drop[]>([]); // what the latest scan gave
   const [lastStored, setLastStored] = useState(false);      // …or was it stored as a Code Cache?
   const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened
+  const [sealed, setSealed]         = useState<{ rarity: Rarity; need: number } | null>(null); // a creature too rare for you yet
 
   const videoRef        = useRef<HTMLVideoElement | null>(null);
   const scanControlsRef = useRef<{ stop: () => void } | null>(null);
@@ -38,8 +41,10 @@ export default function AltarPage() {
     rollMode,
     scanCounts: game.scanCounts,
     onDrop:            game.addScan,
-    onScan:            (drops) => { setLastScan(drops); setLastStored(game.scanMode === "store"); },
+    onScan:            (drops) => { setLastScan(drops); setLastStored(game.scanMode === "store"); setSealed(null); },
     onScanCountUpdate: game.updateScanCount,
+    playerLevel:       game.player.level,
+    onSealed:          (rarity, need) => { setSealed({ rarity, need }); setLastScan([]); },
   });
 
   const isValidBarcode = useMemo(() => /^[0-9]{6,20}$/.test(barcode.trim()), [barcode]);
@@ -93,6 +98,7 @@ export default function AltarPage() {
         <ProgressBar label="Creatures discovered" current={game.discoveredCreatures} total={TOTAL_CREATURES} pct={creaturePct} color="rgba(78,161,255,0.9)" />
         <ProgressBar label="Items discovered" current={game.discoveredItems} total={TOTAL_ITEMS} pct={itemPct} color="rgba(255,204,77,0.9)" />
         <div className="pixel-font" style={{ fontSize: 14, color: "#c9b48a", marginTop: 4 }}>📊 Total scans: <b style={{ color: "#f1d9a0" }}>{game.totalScans.toLocaleString()}</b></div>
+        <ExplorerLevel level={game.player.level} xp={game.player.xp} />
       </div>
 
       {/* Straight to what you've found, without going back through the Den. */}
@@ -179,6 +185,13 @@ export default function AltarPage() {
           onDone={() => { game.openCaches(opening.map((d) => d.id)); setOpening(null); }} />
       )}
 
+      {sealed && (
+        <div style={{ marginTop: 18, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 15 }}>
+          🔒 Something <b style={{ color: RARITY_COLORS[sealed.rarity]?.text, textTransform: "capitalize" }}>{sealed.rarity}</b> stirs in this barcode — too strong for you yet.
+          Come back at explorer level <b>{sealed.need}</b>.
+        </div>
+      )}
+
       {lastScan.length > 0 && lastStored && (
         <div style={{ marginTop: 18, padding: "10px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 15 }}>
           📦 A Code Cache — stored. You have <b>{game.caches.length}</b> waiting.
@@ -263,6 +276,23 @@ export default function AltarPage() {
       </div>
 
     </DenFrame>
+  );
+}
+
+// Your explorer level: fights level you up, and it decides how rare a creature you can find.
+function ExplorerLevel({ level, xp }: { level: number; xp: number }) {
+  const need = playerXpToNext(level);
+  const next = (Object.entries(SCAN_UNLOCK) as [Rarity, number][]).find(([, l]) => l > level);
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div className="pixel-font" style={{ fontSize: 14, color: "#c9b48a" }}>
+        🌟 Explorer level <b style={{ color: "#f1d9a0" }}>{level}</b>
+        {next && <span style={{ opacity: 0.75 }}> · <span style={{ color: RARITY_COLORS[next[0]].text, textTransform: "capitalize" }}>{next[0]}</span> creatures at {next[1]}</span>}
+      </div>
+      <div style={{ height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 999, overflow: "hidden", marginTop: 4 }}>
+        <div style={{ height: "100%", width: `${Math.min(100, (100 * xp) / need)}%`, background: "rgba(241,217,160,0.85)", borderRadius: 999 }} />
+      </div>
+    </div>
   );
 }
 
