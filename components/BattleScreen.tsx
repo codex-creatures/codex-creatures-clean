@@ -33,7 +33,7 @@ import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { YOU, FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
-import PixelSprite from "@/components/PixelSprite";
+import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
@@ -287,7 +287,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
 // onUseItem(key, activeIndex) takes it out of the bag when you use it
 // (activeIndex: your creature on the field, by team order).
 // A potion has heal; a weapon has weapon (its combat stats) and detail.
-export type BagItem = { key: string; name: string; icon: string; count: number; heal?: number; weapon?: CombatItem; detail?: string };
+export type BagItem = { key: string; name: string; icon: string; potion?: "potion" | "lesser"; count: number; heal?: number; weapon?: CombatItem; detail?: string };
 
 // showEstimates: the "hits for ~X, takes ~Y" swap hints (until your first
 // Cyclops; after that you're on your own).
@@ -399,7 +399,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
               ) : (
                 <button key={it.key} className="card-btn" disabled={playing || me.hp >= me.maxHp}
                   onClick={() => { onUseItem(it.key, you.active); act({ kind: "item", item: it.name, heal: it.heal ?? 0 }); }}>
-                  {it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>{me.hp >= me.maxHp ? "full HP" : `+${Math.min(it.heal ?? 0, me.maxHp - me.hp)} HP`}</span>
+                  {it.potion ? <PotionIcon kind={it.potion} /> : it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>{me.hp >= me.maxHp ? "full HP" : `+${Math.min(it.heal ?? 0, me.maxHp - me.hp)} HP`}</span>
                 </button>
               ))}
             </div>

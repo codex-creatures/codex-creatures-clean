@@ -57,3 +57,9 @@ export function itemSprite(item: CreatureOrItemDrop): Sprite | undefined {
 
 // A creature's sprite, or a rune egg if it hasn't been drawn yet.
 export const creatureSprite = (creatureId?: string): Sprite => (creatureId && CREATURE_SPRITES[creatureId]) || EGG;
+
+// A potion's picture, small enough to sit in a line of text (the red bottle
+// is a Healing Potion, the little vial a Lesser one).
+export function PotionIcon({ kind }: { kind: "potion" | "lesser" }) {
+  return <PixelSprite sprite={POTION_SPRITES[kind]} scale={1.25} style={{ verticalAlign: "middle", marginRight: 4 }} />;
+}

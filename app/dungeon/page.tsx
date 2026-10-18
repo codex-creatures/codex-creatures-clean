@@ -20,7 +20,7 @@ import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CLASS_INFO, CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
-import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, PotionIcon } from "@/components/PixelSprite";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
@@ -1182,7 +1182,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
               return (
                 <button key={k} className="card-btn" disabled={!can} onClick={() => onBuyPotion(k)} style={{ opacity: can ? 1 : 0.5 }}>
                   <span style={{ flex: 1 }}>
-                    <b>{p.icon} {p.name}</b>
+                    <b><PotionIcon kind={k} />{p.name}</b>
                     <span style={{ display: "block", fontSize: 12, color: MUTED }}>Restores {p.heal} HP to one creature. In a fight it uses your turn.</span>
                   </span>
                   <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "sold" : `🪙 ${p.price}`}</span>
@@ -1342,7 +1342,7 @@ function RunOver({ run, lab, onHome, onGather }: { run: DungeonRun; lab: Dungeon
 // The potions in the bag, one entry per kind (for the battle screen).
 function bagItems(bag: PotionKey[]): BagItem[] {
   return (Object.keys(POTIONS) as PotionKey[])
-    .map((k) => ({ key: k, ...POTIONS[k], count: bag.filter((b) => b === k).length }))
+    .map((k) => ({ key: k, ...POTIONS[k], potion: k, count: bag.filter((b) => b === k).length }))
     .filter((it) => it.count > 0);
 }
 
@@ -1385,7 +1385,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
         <div className="stone-panel" style={{ marginTop: 8, padding: "10px 12px" }}>
           {isPotionEntry(e) ? (
             <>
-              <b>{POTIONS[e].icon} {POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>restores {POTIONS[e].heal} HP to one creature</span>
+              <b><PotionIcon kind={e} />{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>restores {POTIONS[e].heal} HP to one creature</span>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                 {hurt.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>Nobody needs it right now.</span>}
                 {hurt.map((id) => chip(id, `Give ${byId(id)!.name}`, done(() => onDrink(e, id))))}

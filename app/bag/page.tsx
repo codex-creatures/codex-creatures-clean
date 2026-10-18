@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { itemSprite } from "@/components/PixelSprite";
+import PixelSprite, { itemSprite, PotionIcon } from "@/components/PixelSprite";
 import BagSlots, { slotLook } from "@/components/BagSlots";
 import { GearStatLine } from "@/components/GearCompare";
 import { useGameState } from "@/hooks/useGameState";
@@ -103,7 +103,7 @@ export default function BagPage() {
         const found = lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined;
         return (
           <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
-            {isPotionEntry(e) ? <span>{POTIONS[e].icon} <b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
+            {isPotionEntry(e) ? <span><PotionIcon kind={e} /><b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
               : own ? gearLine(own)
               : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
               : <span style={{ color: MUTED }}>Something you no longer have</span>}
@@ -121,7 +121,7 @@ export default function BagPage() {
           <div style={{ display: "grid", gap: 6 }}>
             {potions.map((x) => (
               <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-                <span>{POTIONS[x.potion!].icon} <b>{POTIONS[x.potion!].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[x.potion!].heal} HP</span></span>
+                <span><PotionIcon kind={x.potion!} /><b>{POTIONS[x.potion!].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[x.potion!].heal} HP</span></span>
                 <button className="chip" disabled={bag.length >= slots} onClick={() => { game.removeDrop(x.id); setBag([...bag, x.potion!]); }}>Pack it</button>
               </div>
             ))}

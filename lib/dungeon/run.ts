@@ -179,8 +179,8 @@ export type GotItem = { potion: PotionKey } | { drop: Drop };
 export const BOOKCASE_SIZE = 10;
 export type PotionKey = "potion" | "lesser";
 export const POTIONS: Record<PotionKey, { name: string; heal: number; price: number; icon: string }> = {
-  potion: { name: "Healing Potion", heal: 100, price: 100, icon: "🧪" },
-  lesser: { name: "Lesser Potion",  heal: 50,  price: 50,  icon: "🧴" },
+  potion: { name: "Healing Potion", heal: 100, price: 100, icon: "⚗️" }, // (a round flask: the art is a red bottle)
+  lesser: { name: "Lesser Potion",  heal: 50,  price: 50,  icon: "🧪" }, // (a little vial)
 };
 // A stash: a burlap sack of STASH_ITEMS things. Open it and take what you
 // want (one slot each, gold takes none); what you leave stays on the floor.
