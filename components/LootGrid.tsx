@@ -68,8 +68,8 @@ export default function LootGrid({ items, faded, grouped }: { items: GotItem[]; 
       {cards.map(({ x, t, n }) => (
         <div key={t.id} style={{ position: "relative" }}>
           {/* The copies underneath, peeking out. */}
-          {n > 1 && <div style={{ position: "absolute", inset: 0, transform: "translate(5px, 5px) rotate(3deg)", borderRadius: 10, background: "#2a2418", boxShadow: "0 3px 8px rgba(0,0,0,0.5)" }} />}
-          {n > 2 && <div style={{ position: "absolute", inset: 0, transform: "translate(-4px, 3px) rotate(-3deg)", borderRadius: 10, background: "#2a2418", boxShadow: "0 3px 8px rgba(0,0,0,0.5)" }} />}
+          {n > 1 && <div style={{ position: "absolute", inset: 0, transform: "translate(5px, 5px) rotate(3deg)", background: "#23262f", border: "2px solid #12131a", boxShadow: "0 3px 8px rgba(0,0,0,0.5)" }} />}
+          {n > 2 && <div style={{ position: "absolute", inset: 0, transform: "translate(-4px, 3px) rotate(-3deg)", background: "#23262f", border: "2px solid #12131a", boxShadow: "0 3px 8px rgba(0,0,0,0.5)" }} />}
           <div style={{ position: "relative" }}>
             <CardFace t={t} creatureId={x.creatureId ?? t.id} ability={x.ability} badge={n > 1 ? `×${n}` : undefined} />
           </div>

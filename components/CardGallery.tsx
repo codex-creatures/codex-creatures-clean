@@ -11,10 +11,8 @@ import { CLASS_INFO, findCreatureTemplate, RACE_INFO, type CreatureTemplate } fr
 import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { ABILITIES } from "@/lib/creatures/abilities";
-import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 
-const SERIF = "Georgia, 'Times New Roman', serif";
 
 type Stack = { t: CreatureTemplate; cards: CreatureOrItemDrop[] };
 
@@ -53,83 +51,94 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
     <CardFace t={t} creatureId={cards[0].creatureId ?? t.id} ability={ability} glow={ready} onClick={onOpen}
       label={`${t.name} card, ${cards.length} held`}
       badge={`×${cards.length}`}
-      footer={<span style={{ color: ready ? "#7a4b00" : "#6b5a3e", fontWeight: ready ? 700 : 400 }}>{ready ? "✨ Ready to summon" : `${cards.length}/${CARDS_TO_SUMMON} to summon`}</span>} />
+      footer={<span style={{ color: ready ? "#ffcf6e" : undefined, fontWeight: ready ? 700 : 400 }}>{ready ? "✨ Ready to summon" : `${cards.length}/${CARDS_TO_SUMMON} to summon`}</span>} />
   );
 }
 
-// A creature card's face: name, art, race and class, any ability, flavour,
-// and a footer line. Used in your binder, for cards you've just found, and
-// for the card witch's prize. badge: a corner bubble (how many you hold).
+// A creature's role, read off its stats (a rule of thumb — could become a field).
+export function roleOf(t: CreatureTemplate): string {
+  const p = t.proficiency;
+  const off = t.cls === "melee" ? p.atk : t.cls === "ranged" ? p.rng : p.mag;
+  const def = (p.mdef + p.rdef + p.magdef) / 3;
+  if (def >= off * 1.3) return "Tank";
+  if (p.agil >= off * 1.4) return "Skirmisher";
+  if (off >= def * 2.5) return t.cls === "melee" ? "Brute" : t.cls === "ranged" ? "Sharpshooter" : "Glass cannon";
+  return t.cls === "melee" ? "Fighter" : t.cls === "ranged" ? "Marksman" : "Spellcaster";
+}
+
+// Just the first sentence of the flavour, so it fits.
+const shortFlavour = (s: string) => s.split(/(?<=[.!?])\s/)[0];
+
+// Blend a #rrggbb colour toward white (amt > 0) or black (amt < 0).
+function shade(hex: string, amt: number) {
+  const n = parseInt(hex.slice(1), 16), to = amt > 0 ? 255 : 0, a = Math.abs(amt);
+  const ch = (v: number) => Math.round(v + (to - v) * a).toString(16).padStart(2, "0");
+  return `#${ch(n >> 16)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
+}
+
+// Pixel bevels: raised (light top-left, dark bottom-right) and sunken (the reverse).
+const raised = (base: string, px = 2) => `inset ${px}px ${px}px 0 ${shade(base, 0.3)}, inset -${px}px -${px}px 0 ${shade(base, -0.4)}`;
+const sunken = (base: string, px = 2) => `inset ${px}px ${px}px 0 ${shade(base, -0.45)}, inset -${px}px -${px}px 0 ${shade(base, 0.15)}`;
+
+const PIXEL = "var(--font-pixel), 'Courier New', monospace";
+const YELLOW = "#f1d9a0";
+const clamp2: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+
+// A creature card's face: dark stone with a thin bevelled trim in the rarity
+// colour; the name; the sprite on a faded rarity glow (filling the box, 5%
+// clear each side); attack style | race; then its role over a line of flavour
+// (or its ability, if the card has one). The Skull Raven is the benchmark.
+// Text scales with the card's width. Used in your binder, for cards you've
+// just found, and for the card witch's prize. badge: a corner bubble (how
+// many you hold); footer: a line under the card.
 export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick, label }: {
   t: CreatureTemplate; creatureId: string; ability?: string; footer?: React.ReactNode; badge?: string; glow?: boolean;
   onClick?: () => void; label?: string;
 }) {
-  const rc = RARITY_COLORS[t.rarity];
+  const rc = RARITY_COLORS[t.rarity].text;
   const race = t.race ? RACE_INFO[t.race] : undefined;
-  const sprite = creatureSprite(creatureId);
-  const spriteW = spriteWidth(sprite);
+  const cls = CLASS_INFO[t.cls];
+  const skill = ability ? ABILITIES[ability as keyof typeof ABILITIES] : undefined;
   const Tag = onClick ? "button" : "div";
+  const plaque: React.CSSProperties = { flex: 1, textAlign: "center", padding: "2cqw 1cqw", background: "#2e323d", boxShadow: raised("#2e323d"), overflow: "hidden", textOverflow: "ellipsis" };
 
   return (
+    // The outer box is the size container, so cqw below means "% of the card's width".
     <Tag onClick={onClick} aria-label={label ?? `${t.name} card`}
-      style={{
-        position: "relative", aspectRatio: "5 / 7", padding: 6, cursor: onClick ? "pointer" : "default", textAlign: "left",
-        borderRadius: 10, border: "none", display: "block", width: "100%",
-        background: `linear-gradient(145deg, ${rc.text}, #2a2418 55%, ${rc.text})`,
-        boxShadow: glow ? `0 0 14px ${rc.text}, 0 4px 10px rgba(0,0,0,0.6)` : "0 4px 10px rgba(0,0,0,0.6)",
-      }}>
+      style={{ position: "relative", display: "block", width: "100%", padding: 0, border: "none", background: "none", textAlign: "left", cursor: onClick ? "pointer" : "default", containerType: "inline-size" }}>
       <div style={{
-        height: "100%", borderRadius: 6, display: "flex", flexDirection: "column", gap: 4, padding: 6,
-        background: "linear-gradient(180deg, #f3e6c4, #e2cf9f)", color: "#2b1d10", fontFamily: SERIF,
+        aspectRatio: "5 / 7", display: "flex", flexDirection: "column", gap: "3cqw", padding: "5.5cqw",
+        background: "#23262f", border: `2px solid ${shade(rc, -0.55)}`,
+        boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)${glow ? `, 0 0 14px ${rc}` : ""}`,
       }}>
-        {/* Name. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 5, paddingRight: 16 }}>
-          <span title={t.rarity} style={{ width: 8, height: 8, flexShrink: 0, transform: "rotate(45deg)", background: rc.text, border: "1px solid #2b1d10" }} />
-          <span style={{ fontWeight: 700, fontSize: 13, lineHeight: 1.1 }}>{t.name}</span>
+        <div style={{ textAlign: "center", fontFamily: PIXEL, fontSize: "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, padding: "2.5cqw 3cqw", color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>
+          {t.name}
         </div>
-
-        {/* Art. */}
-        <div style={{
-          flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 3,
-          border: "2px solid #8a6a3a", boxShadow: "inset 0 0 12px rgba(0,0,0,0.35)",
-          background: `radial-gradient(circle at 50% 40%, ${race?.color ?? "#999"}cc, #2b2235 85%)`,
-        }}>
-          <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(72 / spriteW))} />
-        </div>
-
-        {/* Race and class. */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 4, fontSize: 11, whiteSpace: "nowrap" }}>
-          {race && (
-            <span title={race.name} style={{ flexShrink: 0, padding: "1px 5px", borderRadius: 8, background: race.color, color: "#1a140c", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-              {race.icon} {race.name}
-            </span>
-          )}
-          <span title={`Class: ${CLASS_INFO[t.cls].name}`} style={{ flexShrink: 0, fontWeight: 700, color: "#2b1d10" }}>
-            {CLASS_INFO[t.cls].icon} {CLASS_INFO[t.cls].name}
-          </span>
-        </div>
-        {ability && ABILITIES[ability as keyof typeof ABILITIES] && (
-          <div style={{ fontSize: 11, color: "#7a4b00", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            ✦ {ABILITIES[ability as keyof typeof ABILITIES].name}
+        <div style={{ position: "relative", flex: 1, minHeight: 0, background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }}>
+          <div style={{ position: "absolute", inset: "5%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <PixelSprite sprite={creatureSprite(creatureId)} scale={4} title={t.name}
+              style={{ width: "100%", height: "100%", objectFit: "contain", imageRendering: "pixelated" }} />
           </div>
-        )}
-
-        {/* Flavour. */}
-        <div style={{
-          fontSize: 11, fontStyle: "italic", lineHeight: 1.25, padding: "3px 5px", border: "1px solid #b49a64", background: "rgba(255,255,255,0.35)",
-          display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden",
-        }}>
-          {t.flavour}
         </div>
-
-        {footer && <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#6b5a3e" }}>{footer}</div>}
+        <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
+          <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
+          {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
+        </div>
+        <div style={{ padding: "2.5cqw 4cqw 3cqw", background: "#191b22", boxShadow: sunken("#2a2d36") }}>
+          <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW }}>{roleOf(t)}</div>
+          <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: skill ? "#ffcf6e" : "rgba(255,255,255,0.6)", ...clamp2 }}>
+            {skill ? `✦ ${skill.name}` : shortFlavour(t.flavour)}
+          </div>
+        </div>
       </div>
+
+      {footer && <div style={{ marginTop: 6, fontSize: 11, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.6)" }}>{footer}</div>}
 
       {badge && (
         <span className="pixel-font" style={{
           position: "absolute", top: -8, right: -8, minWidth: 28, height: 28, padding: "0 6px", borderRadius: 14,
           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
-          background: "#1a140c", color: "#f1d9a0", border: `2px solid ${rc.text}`,
+          background: "#1a140c", color: YELLOW, border: `2px solid ${rc}`,
         }}>
           {badge}
         </span>
