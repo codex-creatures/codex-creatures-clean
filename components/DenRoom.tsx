@@ -7,9 +7,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
+import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { artFor, loadArt, loadPixels, type LoadedArt, type Pixels } from "@/lib/sprites/art";
+import { artFor, loadArt, loadPixels, loadFrames, type LoadedArt, type Pixels } from "@/lib/sprites/art";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -31,6 +31,27 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
 };
 
 const FPS = 12;
+
+// The Den's art and the built room are kept for the whole visit to the site:
+// building the room (lighting every pixel) takes a moment, so it's done once,
+// with all its art, and coming back to the Den shows it straight away.
+type DenArt = { props: DenProps; altarFrames: Pixels[] | null };
+let artCache: DenArt | null = null;
+let artLoading: Promise<DenArt> | null = null;
+function loadDenArt(): Promise<DenArt> {
+  artLoading ??= Promise.all([
+    Promise.all(PROP_KEYS.map((k) => loadPixels(propSrc(k)).then((px) => [k, px] as const).catch(() => null))),
+    loadFrames(ALTAR_ANIM).catch(() => null),
+  ]).then(([all, altarFrames]) => (artCache = { props: Object.fromEntries(all.filter((x) => x !== null)) as DenProps, altarFrames }));
+  return artLoading;
+}
+const scenes = new Map<string, DenScene>();
+function denScene(backpack: boolean, art: DenArt): DenScene {
+  const key = String(backpack);
+  let s = scenes.get(key);
+  if (!s) scenes.set(key, (s = createDen({ backpack, props: art.props, altarFrames: art.altarFrames ?? undefined })));
+  return s;
+}
 
 // caged: the creature id waiting in the cage (drawn inside it), if any.
 // klutz: where Klutz is (strolling, healing in the pool, or away hunting).
@@ -69,18 +90,18 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     return () => ro.disconnect();
   }, []);
   // The furniture art (the room is rebuilt with it once it has loaded).
-  const [props, setProps] = useState<DenProps>({});
+  const [art, setArt] = useState<DenArt | null>(artCache);
   useEffect(() => {
+    if (art) return;
     let live = true;
-    Promise.all(PROP_KEYS.map((k) => loadPixels(propSrc(k)).then((px) => [k, px] as const).catch(() => null)))
-      .then((all) => { if (live) setProps(Object.fromEntries(all.filter((x) => x !== null))); });
+    loadDenArt().then((a) => { if (live) setArt(a); });
     return () => { live = false; };
-  }, []);
+  }, [art]);
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) return;
-    const scene = createDen({ backpack, props });
+    if (!ctx || !art) return;
+    const scene = denScene(backpack, art);
     sceneRef.current = scene;
     const start = performance.now();
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null, cagedArt.current);
@@ -97,7 +118,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, [backpack, props]);
+  }, [backpack, art]);
 
   useEffect(() => {
     klutzRef.current = klutz;

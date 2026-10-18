@@ -15,7 +15,7 @@
 //   rendered at RES× that, each fine pixel sampling its own spot.
 
 import { fineGrid, PALETTE, type Sprite } from "../sprites/pixels";
-import type { LoadedArt, Pixels } from "../sprites/art";
+import type { Anim, LoadedArt, Pixels } from "../sprites/art";
 
 export const W = 720;  // layout units
 export const H = 528;
@@ -46,6 +46,8 @@ export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 // - the left wall: the archway, the bindle in its corner, the quest board and lectern;
 // - the front left: the cage, with Klutz's crate beside it.
 const AL = { u: 9.5, v: 8.0 };              // Soul Altar (the centrepiece)
+const ALTAR_R = 1.0;                         // …its art covers AL ± this (2×2 floor units)
+const ALTAR_FPS = 8;                         // its soul fire's animation
 // The fighting pit, out towards the front corner: a deep sand pit walled in
 // timber, roped off between posts, with a brazier burning on two of them.
 const PIT = { u0: 15.0, v0: 11.2, u1: 20.4, v1: 16.6, depth: 30 };
@@ -243,6 +245,8 @@ const TORCHES: { u: number; v: number; z: number }[] = [
 export const PROP_KEYS = ["altar", "chest", "crates", "shelves", "merchant", "lectern", "crate", "bindle", "backpack", "board", "pit"] as const;
 export type PropKey = (typeof PROP_KEYS)[number];
 export const propSrc = (key: PropKey) => `/sprites/den/${key}.png`;
+// The Soul Altar's soul fire: a strip of frames (frame 0 is its still, den/altar.png).
+export const ALTAR_ANIM: Anim = { src: "/sprites/den/altar-anim.png", frames: 8, w: 128, h: 128, x: 0, y: 0 };
 export type DenProps = Partial<Record<PropKey, Pixels>>;
 
 export type DenScene = {
@@ -278,7 +282,8 @@ function strollAt(t: number): { u: number; v: number; left: boolean; walking: bo
 
 // backpack: you've found the rugged backpack (otherwise a bindle by the archway).
 // props: the furniture art that has loaded (see PROP_KEYS).
-export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): DenScene {
+// altarFrames: the Soul Altar's animation (its soul fire), once loaded; frame 0 is its still.
+export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFrames?: Pixels[] } = {}): DenScene {
   const props = opts.props ?? {};
   const n = FW * FH;
   const albedo = new Float32Array(n * 3);
@@ -527,24 +532,34 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   // footprint's front corner. Its pixels light as if at the footprint's
   // middle, at their height above its base. glow marks pixels that shine.
   // scale: fine pixels per art pixel.
-  function stamp(id: number, px: Pixels, u0: number, v0: number, u1: number, v1: number, z = 0,
-    glow?: (c: RGB) => number, scale = 1) {
-    let x0 = px.w, x1 = -1, y1 = -1;
-    for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
-      if (px.data[(y * px.w + x) * 4 + 3] > 127) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  // Where an image's pixels land (fine x, y, colour, height), standing on its
+  // footprint. ref: the image whose bounds line it up (an animation's frames
+  // all line up with their first).
+  type Pt = { fx: number; fy: number; c: RGB; z: number };
+  function stampPts(px: Pixels, u0: number, v0: number, u1: number, v1: number, z = 0, scale = 1, ref: Pixels = px): Pt[] {
+    let x0 = ref.w, x1 = -1, y1 = -1;
+    for (let y = 0; y < ref.h; y++) for (let x = 0; x < ref.w; x++) {
+      if (ref.data[(y * ref.w + x) * 4 + 3] > 127) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
     }
-    if (x1 < 0) return;
+    if (x1 < 0) return [];
     const um = (u0 + u1) / 2, vm = (v0 + v1) / 2;
     const ax = Math.round(project(um, vm, z)[0] * RES), ay = Math.round(project(u1, v1, z)[1] * RES);
     const cx = Math.round((x0 + x1) / 2);
-    for (let y = 0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    const pts: Pt[] = [];
+    for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
       const o = (y * px.w + x) * 4;
       if (px.data[o + 3] <= 127) continue;
       const c: RGB = [px.data[o] / 255, px.data[o + 1] / 255, px.data[o + 2] / 255];
       for (let sy = 0; sy < scale; sy++) for (let sx = 0; sx < scale; sx++) {
-        put(ax + (x - cx) * scale + sx, ay + (y - y1) * scale - sy, c, um, vm, z + ((y1 - y) * scale + sy) / RES, id, glow ? glow(c) : 0);
+        pts.push({ fx: ax + (x - cx) * scale + sx, fy: ay + (y - y1) * scale - sy, c, z: z + ((y1 - y) * scale + sy) / RES });
       }
     }
+    return pts;
+  }
+  function stamp(id: number, px: Pixels, u0: number, v0: number, u1: number, v1: number, z = 0,
+    glow?: (c: RGB) => number, scale = 1) {
+    const um = (u0 + u1) / 2, vm = (v0 + v1) / 2;
+    for (const p of stampPts(px, u0, v0, u1, v1, z, scale)) put(p.fx, p.fy, p.c, um, vm, p.z, id, glow ? glow(p.c) : 0);
   }
 
   // Back to front so nearer objects cover farther ones.
@@ -667,9 +682,20 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   }
 
   // Soul Altar (the centrepiece): a cauldron of soul fire. Its teal flames and spirits glow and pulse.
-  if (props.altar) {
-    stamp(OBJ.altar, props.altar, AL.u - 0.75, AL.v - 0.75, AL.u + 0.75, AL.v + 0.75, 0,
-      ([r, g, b]) => (g > 0.5 && b > 0.4 && r < 0.55 && g - r > 0.2 ? 2 : 0));
+  // Animated: each frame swaps its pixels in (see showAltar), over a copy of what was behind.
+  const soulGlow = ([r, g, b]: RGB) => (g > 0.5 && b > 0.4 && r < 0.55 && g - r > 0.2 ? 2 : 0);
+  const AF = [AL.u - ALTAR_R, AL.v - ALTAR_R, AL.u + ALTAR_R, AL.v + ALTAR_R] as const;
+  const altarFrames = opts.altarFrames?.length ? opts.altarFrames : null;
+  const altarPts = altarFrames ? altarFrames.map((f) => stampPts(f, ...AF, 0, 1, altarFrames[0]).filter((p) => p.fx >= 0 && p.fy >= 0 && p.fx < FW && p.fy < FH)) : [];
+  const behind = new Map<number, { a: number[]; p: number[]; e: number; id: number }>();
+  for (const pts of altarPts) for (const p of pts) {
+    const i = p.fy * FW + p.fx;
+    if (!behind.has(i)) behind.set(i, { a: [...albedo.subarray(i * 3, i * 3 + 3)], p: [...pos.subarray(i * 3, i * 3 + 3)], e: emissive[i], id: ids[i] });
+  }
+  if (altarFrames) {
+    for (const p of altarPts[0]) put(p.fx, p.fy, p.c, AL.u, AL.v, p.z, OBJ.altar, soulGlow(p.c));
+  } else if (props.altar) {
+    stamp(OBJ.altar, props.altar, ...AF, 0, soulGlow);
   } else {
     const altarStone: Face = (a, b) => (b > 15 ? mul(CAP_STONES[1], 1.1) : rock(a + 30, b, 11));
     box(OBJ.altar, AL.u - 0.5, AL.v - 0.5, 0, AL.u + 0.5, AL.v + 0.5, 18, {
@@ -757,8 +783,22 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   const out = new ImageData(FW, FH);
   const frameIds = new Uint8Array(n);
 
+  // Show frame k of the altar's animation: put back what was behind, then lay the frame over it.
+  let altarShown = 0;
+  function showAltar(k: number) {
+    for (const [i, b] of behind) {
+      albedo.set(b.a, i * 3); pos.set(b.p, i * 3); emissive[i] = b.e; ids[i] = b.id;
+    }
+    for (const p of altarPts[k]) put(p.fx, p.fy, p.c, AL.u, AL.v, p.z, OBJ.altar, soulGlow(p.c));
+    altarShown = k;
+  }
+
   function render(t: number, hover: ObjId): ImageData {
     const d = out.data;
+    if (altarPts.length > 1) {
+      const k = Math.floor(t * ALTAR_FPS) % altarPts.length;
+      if (k !== altarShown) showAltar(k);
+    }
     const flick = lights.map((l) =>
       l.steady ? 1
         : l.pulse ? 0.75 + 0.25 * Math.sin(t * 2.2)
@@ -850,7 +890,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
     }
 
     // Floating crystal above the altar (the old stone one; the Soul Altar's art has its own spirits).
-    if (!props.altar) {
+    if (!props.altar && !altarFrames) {
     const [cx, cy] = project(AL.u, AL.v, 34 + Math.sin(t * 2) * 2.5);
     const shape = [1, 2, 3, 3, 3, 2, 2, 1, 1, 0];
     shape.forEach((w, k) => {
