@@ -27,7 +27,8 @@ import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "@/lib/drops";
 import { clubRoom, klutzClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
-import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard } from "@/lib/dungeon/witch";
+import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard, type WitchGame } from "@/lib/dungeon/witch";
+import { CardFace } from "@/components/CardGallery";
 import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
@@ -39,7 +40,7 @@ import {
   BACKPACK, BOOKCASE_SIZE, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, isFight, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
-  curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
+  curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import { YOU } from "@/components/BattleLog";
@@ -365,6 +366,13 @@ export default function DungeonPage() {
     const item = cur.run?.current?.sack?.[index];
     if (!cur.run?.current || !item) return;
     const full = (cur.meta.bag ?? []).length >= bagSize(cur.meta);
+    if ("backpack" in item) {
+      // The rugged backpack: more room in your bag from now on.
+      update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
+      setNotes((n) => [...n, `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held 3).`]);
+      updateRun((r) => (r.current ? { ...r, loot: [...r.loot, "A rugged backpack"], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
+      return;
+    }
     if ("gold" in item) game.addGold(item.gold);
     else if (full) return;
     else if ("potion" in item) updateBag((bag) => addToBag(bag, [item.potion], bagSize(cur.meta)));
@@ -375,11 +383,11 @@ export default function DungeonPage() {
     updateRun((r) => (r.current ? { ...r, loot: [...r.loot, label], got: [...(r.got ?? []), got], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
   }
   function takeAllFromSack() {
-    // Gold first (it's free), then whatever fits, in order.
+    // Gold and the backpack first (they take no space), then whatever fits, in order.
     const sack = loadDungeon().run?.current?.sack ?? [];
-    const order = sack.map((x, i) => [x, i] as const).sort(([a], [b]) => Number(!("gold" in a)) - Number(!("gold" in b))).map(([, i]) => i);
+    const free = (x: SackItem) => "gold" in x || "backpack" in x;
     // Take from the back so earlier indices stay valid.
-    for (const i of [...order].sort((a, b) => b - a).filter((i) => "gold" in sack[i])) takeFromSack(i);
+    for (const i of sack.map((_, i) => i).reverse().filter((i) => free(sack[i]))) takeFromSack(i);
     let left = loadDungeon().run?.current?.sack ?? [];
     while (left.length > 0 && (loadDungeon().meta.bag ?? []).length < bagSize(loadDungeon().meta)) {
       takeFromSack(0);
@@ -388,11 +396,13 @@ export default function DungeonPage() {
       left = next;
     }
   }
-  // Whatever you leave in a sack or chest (opened or not) stays on the floor.
+  // Whatever you leave in a sack or chest you opened stays on the floor (to
+  // pick up on the walk back once the boss is beaten). One you never opened
+  // keeps what's in it: loot only ever comes out of an opened chest or sack.
   const leaveSack = (r: DungeonRun): DungeonRun => {
-    const sack = r.current?.sack ?? [];
-    if (sack.length === 0) return r;
-    const floor: FloorItem[] = sack.map((x) => ("potion" in x ? { room: here(r), potion: x.potion } : { room: here(r), drop: "gold" in x ? goldOnly(x.gold) : x.gear }));
+    const sack = (r.current?.opened ? r.current.sack : undefined) ?? [];
+    if (sack.length === 0) return r.current?.sack?.length ? { ...r, current: { ...r.current, sack: [] } } : r;
+    const floor: FloorItem[] = sack.filter((x) => !("backpack" in x)).map((x) => ("potion" in x ? { room: here(r), potion: x.potion } : { room: here(r), drop: "gold" in x ? goldOnly(x.gold) : (x as { gear: Drop }).gear }));
     return { ...r, floor: [...(r.floor ?? []), ...floor], current: r.current ? { ...r.current, sack: [] } : r.current };
   };
 
@@ -454,7 +464,7 @@ export default function DungeonPage() {
     updateRun((r) => {
       const w = r.current?.witch;
       if (!r.current || !w) return r;
-      const next = witchGuess(w, g);
+      const next = witchGuess(w, g, Math.random, witchPrize);
       let n: DungeonRun = { ...r, current: { ...r.current, witch: next } };
       if (next.state === "lost") {
         n = markDone(curse(n));
@@ -468,18 +478,19 @@ export default function DungeonPage() {
     }
     // Her deck's spent: you walk away with your winnings.
     const after = loadDungeon().run?.current;
-    if (after?.witch?.state === "left" && !after.done) witchPayout(after.witch.correct);
+    if (after?.witch?.state === "left" && !after.done) witchPayout(after.witch);
   }
   function witchLeave() {
     const w = loadDungeon().run?.current?.witch;
     if (!w || w.state !== "playing") return;
     updateRun((r) => (r.current?.witch ? { ...r, current: { ...r.current, witch: walkAway(r.current.witch) } } : r));
-    witchPayout(w.correct);
+    witchPayout(w);
   }
-  // One creature card per correct guess, rolled like a scan.
-  function witchPayout(n: number) {
-    if (n <= 0) { updateRun(markDone); return; }
-    give(Array.from({ length: n }, () => makeCreatureDrop(CREATURE_BY_ID[pickCreatureId(pickRarity("", "random"))], "card", "")), markDone);
+  // The cards you won from her (the prizes you saw on the table).
+  function witchPayout(w: WitchGame) {
+    const ids = w.won ?? Array.from({ length: w.correct }, witchPrize); // (a game from before her prizes showed)
+    if (ids.length === 0) { updateRun(markDone); return; }
+    give(ids.map((id) => makeCreatureDrop(CREATURE_BY_ID[id], "card", "")), markDone);
   }
 
   // Klutz's box, picked up off the floor where the thief dropped it.
@@ -603,13 +614,10 @@ export default function DungeonPage() {
     }
     // Its loot lies on the floor: a rickety chest (bosses) or a sack. Open it and take what you want.
     const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
+    // The first time you beat the Cyclops, its chest holds a rugged backpack.
+    if (room.boss && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
     const container = room.kind === "miniboss" || room.kind === "boss" ? "chest" as const : "sack" as const;
     updateRun((x) => markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: false } : x.current }));
-    if (room.kind === "miniboss" && bagSize(loadDungeon().meta) < BACKPACK) {
-      const cur = loadDungeon();
-      update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
-      winds.push(`🎒 Among the mini boss's things: a rugged backpack! You can carry ${BACKPACK} things now (your bindle held 3).`);
-    }
     setNotes([...xpNotes, ...winds]);
   }
 
@@ -890,10 +898,11 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
     <div style={{ marginTop: 8 }}>
       <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>Inside the {what} — tap something to take it:</p>
       <BagSlots slots={(room.sack ?? []).length} selected={null} onSelect={(i) => i !== null && onTakeSack(i)}
-        looks={(room.sack ?? []).map((x) => "gold" in x ? { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.2)" }
+        looks={(room.sack ?? []).map((x) => "backpack" in x ? { name: "A rugged backpack", icon: "🎒", color: GOLD, glow: "rgba(245,197,66,0.3)" }
+          : "gold" in x ? { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.2)" }
           : "potion" in x ? slotLook(x.potion) : slotLook(gearEntry(x.gear.id), x.gear as CreatureOrItemDrop))} />
       <div style={{ fontSize: 12, color: MUTED, margin: "6px 0" }}>
-        {(room.sack ?? []).map((x) => ("gold" in x ? `🪙 ${x.gold} gold` : "potion" in x ? `${POTIONS[x.potion].icon} ${POTIONS[x.potion].name}` : `📦 ${dropLabel(x.gear)}`)).join(" · ")}
+        {(room.sack ?? []).map((x) => ("backpack" in x ? "🎒 a rugged backpack" : "gold" in x ? `🪙 ${x.gold} gold` : "potion" in x ? `${POTIONS[x.potion].icon} ${POTIONS[x.potion].name}` : `📦 ${dropLabel(x.gear)}`)).join(" · ")}
       </div>
       <p style={{ fontSize: 12, color: MUTED, margin: "0 0 8px" }}>
         Your bag: {bagUsed}/{bagSlots}. Gold takes no space; anything you leave stays on the floor.
@@ -1304,19 +1313,19 @@ function WitchTable({ room, victim, onGuess, onLeave, next }: {
     <div style={{ marginTop: 6 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <p style={{ fontSize: 14, color: "#d8d4c8", margin: 0, flex: 1 }}>
-          {w.state === "playing" && w.history.length === 0 && <>A hunched witch shuffles a deck of bone cards. &ldquo;Higher or lower, dearie? A card for every right guess…&rdquo;</>}
+          {w.state === "playing" && w.history.length === 0 && <>A hunched witch shuffles a deck of bone cards, a creature card face up beside them. &ldquo;Higher or lower, dearie? Guess right and it&apos;s yours…&rdquo;</>}
           {w.state === "playing" && result === "right" && <b style={{ color: "#5ee08a" }}>Right! </b>}
           {w.state === "playing" && result === "stick" && <b style={{ color: "#f1d9a0" }}>Stick — the same number. Guess again. </b>}
-          {w.state === "lost" && <b style={{ color: "#ff8a80" }}>Wrong! She lunges — {victim ?? "your creature"} is stabbed and falls ill.</b>}
+          {w.state === "lost" && <b style={{ color: "#ff8a80" }}>Wrong! She lunges — {victim ?? "your creature"} is stabbed and falls ill.{(w.won?.length ?? w.correct) > 0 && " She sweeps your cards back into her deck."}</b>}
           {w.state === "left" && <b style={{ color: "#f1d9a0" }}>You walk away with {w.correct} card{w.correct === 1 ? "" : "s"}.</b>}
         </p>
         <Help title="The card witch">
           <ul>
             <li>Cards go from <b>1 to 11</b>, in Melee ⚔️, Ranged 🏹 and Magic 🔮.</li>
             <li>The next card is <b>higher, lower or the same</b> — equal odds.</li>
-            <li>Right: <b>+1 creature card</b>. Same (&ldquo;stick&rdquo;): guess again.</li>
+            <li>Right: you win <b>the creature card on the table</b>, and she turns over another. Same (&ldquo;stick&rdquo;): guess again.</li>
             <li>Wrong: she stabs the creature that was <b>last on the field</b> (or your first). It loses <b>{Math.round(ILLNESS_DAMAGE * 100)}% HP</b> each of the next <b>{ILLNESS_ACTIONS} actions</b> — rooms, or rounds of a fight.</li>
-            <li>Walk away any time and keep your cards. Her deck runs out after {MAX_CORRECT}.</li>
+            <li>Walk away any time and keep your cards — lose, and she takes them all back. Her deck runs out after {MAX_CORRECT}.</li>
           </ul>
         </Help>
       </div>
@@ -1326,8 +1335,18 @@ function WitchTable({ room, victim, onGuess, onLeave, next }: {
         </div>
         <WitchCardView card={w.card} />
       </div>
-      <div className="pixel-font" style={{ textAlign: "center", fontSize: 16, color: "#f1d9a0", marginBottom: 8 }}>
-        🃏 Cards won: {w.correct}
+      {w.state === "playing" && w.prize && CREATURE_BY_ID[w.prize] && (
+        <div style={{ textAlign: "center", marginBottom: 10 }}>
+          <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 6 }}>{w.correct > 0 ? "Her next prize" : "Her prize"} — guess right to win it:</div>
+          <div style={{ width: 150, margin: "0 auto" }}>
+            <CardFace key={`${w.prize}-${w.correct}`} t={CREATURE_BY_ID[w.prize]} creatureId={w.prize} glow footer="🃏 On the table" />
+          </div>
+        </div>
+      )}
+      <div className="pixel-font" style={{ textAlign: "center", fontSize: 15, color: "#f1d9a0", marginBottom: 8 }}>
+        🃏 Won so far: {(w.won ?? []).length === 0 ? (w.correct > 0 ? w.correct : "nothing yet") : (w.won ?? []).map((id, i) => (
+          <span key={i} style={{ color: rarityColor(CREATURE_BY_ID[id]?.rarity ?? "common") }}>{i > 0 ? ", " : ""}{CREATURE_BY_ID[id]?.name ?? "?"}</span>
+        ))}
       </div>
       {w.state === "playing" ? (
         <>

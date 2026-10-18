@@ -17,7 +17,7 @@ export default function Home() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);
   const k = klutzStatus(game.klutz, game.klutzFighter.maxHp, now).kind;
-  // The bag by the archway: a bindle until your first mini boss's rugged backpack.
+  // The bag by the archway: a bindle until the rugged backpack from your first Cyclops.
   const [backpack, setBackpack] = useState(false);
   useEffect(() => { setBackpack(bagSize(loadDungeon().meta) > BINDLE); }, []);
 

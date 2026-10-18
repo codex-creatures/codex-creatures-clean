@@ -159,3 +159,18 @@ describe("your explorer level", () => {
     expect(STARTER_LEVEL).toBe(3);
   });
 });
+
+describe("the card witch's prizes", () => {
+  it("shows the card you'd win; a right guess wins it and turns over another", () => {
+    let n = 0;
+    const roll = () => `prize${++n}`;
+    let g = newWitchGame(Math.random, roll);
+    expect(g.prize).toBe("prize1");
+    expect(g.won).toEqual([]);
+    // Force a right guess: from 1, the next card can only be higher or the same.
+    g = { ...g, card: { n: 1, suit: "melee" } };
+    for (let i = 0; i < 50 && g.correct === 0; i++) g = guess({ ...g, card: { n: 1, suit: "melee" } }, "higher", Math.random, roll);
+    expect(g.won).toEqual(["prize1"]);
+    expect(g.prize).toBe("prize2");
+  });
+});

@@ -27,6 +27,7 @@ import {
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
 import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
+import { REF_LEVEL } from "@/lib/creatures/levels";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
@@ -527,6 +528,11 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   return glow ? <div className="move-glow">{tile}</div> : tile;
 }
 
+// A fighter's level, before its name ("Lv 8"). (No level: a level-15 creature, as everything used to be.)
+function LevelTag({ level }: { level?: number }) {
+  return <span style={{ color: "#f1d9a0", fontSize: "0.85em" }}>Lv {level ?? REF_LEVEL}</span>;
+}
+
 // Klutz, at the side of the guided fight, telling you what to do (pops up with each new tip).
 function KlutzSays({ say }: { say: string }) {
   return (
@@ -587,7 +593,9 @@ function FighterCardBody({ side, f, foe, info, fx, slot, compact, details, anim,
           <Token name={f.name} rarity={info.rarity} creatureId={info.creatureId} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
-            <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", color: rarityColor(info.rarity), lineHeight: 1.1, overflowWrap: "anywhere" }}>{f.name}</div>
+            <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", lineHeight: 1.1, overflowWrap: "anywhere" }}>
+              <LevelTag level={f.level} /> <span style={{ color: rarityColor(info.rarity) }}>{f.name}</span> <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon}</span>
+            </div>
             <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>{details && side === "A" && <> · {info.label}</>}</div>
           </div>
         </div>
@@ -758,8 +766,10 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
       <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
         display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
         {/* Floating label: name, a small health bar, any statuses. */}
-        <div className="pixel-font" style={{ fontSize: "clamp(10px, 2.4vw, 13px)", color: rarityColor(mi.rarity), textShadow: "0 2px 0 #000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
-          <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon}</span> {f.name}
+        <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4vw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
+          <LevelTag level={f.level} />
+          <span style={{ color: rarityColor(mi.rarity), overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{f.name}</span>
+          <span style={{ color: CLASS_INFO[f.cls].color }} title={CLASS_INFO[f.cls].name}>{CLASS_INFO[f.cls].icon}</span>
         </div>
         <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
           <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />

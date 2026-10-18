@@ -47,19 +47,36 @@ export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDr
 
 function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
   const { t, cards } = stack;
+  const ready = cards.length >= CARDS_TO_SUMMON;
+  const ability = cards.find((c) => c.ability)?.ability;
+  return (
+    <CardFace t={t} creatureId={cards[0].creatureId ?? t.id} ability={ability} glow={ready} onClick={onOpen}
+      label={`${t.name} card, ${cards.length} held`}
+      badge={`×${cards.length}`}
+      footer={<span style={{ color: ready ? "#7a4b00" : "#6b5a3e", fontWeight: ready ? 700 : 400 }}>{ready ? "✨ Ready to summon" : `${cards.length}/${CARDS_TO_SUMMON} to summon`}</span>} />
+  );
+}
+
+// A creature card's face: name, art, race and class, any ability, flavour,
+// and a footer line. Used in your binder, for cards you've just found, and
+// for the card witch's prize. badge: a corner bubble (how many you hold).
+export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick, label }: {
+  t: CreatureTemplate; creatureId: string; ability?: string; footer?: React.ReactNode; badge?: string; glow?: boolean;
+  onClick?: () => void; label?: string;
+}) {
   const rc = RARITY_COLORS[t.rarity];
   const race = t.race ? RACE_INFO[t.race] : undefined;
-  const sprite = creatureSprite(cards[0].creatureId);
-  const ready = cards.length >= CARDS_TO_SUMMON;
+  const sprite = creatureSprite(creatureId);
   const spriteW = spriteWidth(sprite);
+  const Tag = onClick ? "button" : "div";
 
   return (
-    <button onClick={onOpen} aria-label={`${t.name} card, ${cards.length} held`}
+    <Tag onClick={onClick} aria-label={label ?? `${t.name} card`}
       style={{
-        position: "relative", aspectRatio: "5 / 7", padding: 6, cursor: "pointer", textAlign: "left",
-        borderRadius: 10, border: "none",
+        position: "relative", aspectRatio: "5 / 7", padding: 6, cursor: onClick ? "pointer" : "default", textAlign: "left",
+        borderRadius: 10, border: "none", display: "block", width: "100%",
         background: `linear-gradient(145deg, ${rc.text}, #2a2418 55%, ${rc.text})`,
-        boxShadow: ready ? `0 0 14px ${rc.text}, 0 4px 10px rgba(0,0,0,0.6)` : "0 4px 10px rgba(0,0,0,0.6)",
+        boxShadow: glow ? `0 0 14px ${rc.text}, 0 4px 10px rgba(0,0,0,0.6)` : "0 4px 10px rgba(0,0,0,0.6)",
       }}>
       <div style={{
         height: "100%", borderRadius: 6, display: "flex", flexDirection: "column", gap: 4, padding: 6,
@@ -91,9 +108,9 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
             {CLASS_INFO[t.cls].icon} {CLASS_INFO[t.cls].name}
           </span>
         </div>
-        {cards.some((c) => c.ability) && (
+        {ability && ABILITIES[ability as keyof typeof ABILITIES] && (
           <div style={{ fontSize: 11, color: "#7a4b00", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            ✦ {ABILITIES[cards.find((c) => c.ability)!.ability!].name}
+            ✦ {ABILITIES[ability as keyof typeof ABILITIES].name}
           </div>
         )}
 
@@ -105,19 +122,18 @@ function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
           {t.flavour}
         </div>
 
-        <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: ready ? "#7a4b00" : "#6b5a3e", fontWeight: ready ? 700 : 400 }}>
-          {ready ? "✨ Ready to summon" : `${cards.length}/${CARDS_TO_SUMMON} to summon`}
-        </div>
+        {footer && <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "#6b5a3e" }}>{footer}</div>}
       </div>
 
-      {/* How many you hold. */}
-      <span className="pixel-font" style={{
-        position: "absolute", top: -8, right: -8, minWidth: 28, height: 28, padding: "0 6px", borderRadius: 14,
-        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
-        background: "#1a140c", color: "#f1d9a0", border: `2px solid ${rc.text}`,
-      }}>
-        ×{cards.length}
-      </span>
-    </button>
+      {badge && (
+        <span className="pixel-font" style={{
+          position: "absolute", top: -8, right: -8, minWidth: 28, height: 28, padding: "0 6px", borderRadius: 14,
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+          background: "#1a140c", color: "#f1d9a0", border: `2px solid ${rc.text}`,
+        }}>
+          {badge}
+        </span>
+      )}
+    </Tag>
   );
 }

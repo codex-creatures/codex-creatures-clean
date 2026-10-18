@@ -36,7 +36,7 @@ import { REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
-import { pickRarity } from "../items/gameHelpers";
+import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop } from "../drops";
 
 export const PARTY_SIZE = 5;
@@ -142,11 +142,13 @@ export const BOSS_GOLD: [number, number] = [80, 120];
 export const MINIBOSS_GOLD: [number, number] = [50, 80];
 export const MINIBOSS_REVIVE_HP = 0.7; // beating a mini boss: heal one creature to full, or revive one to 70%
 export const DECK_CARDS = 5;           // a deck of cards: 5 creature-card rolls
+// The card witch's prizes: a creature card each, rolled like a scan.
+export const witchPrize = () => pickCreatureId(pickRarity("", "random"));
 
 // ── The battle bag ───────────────────────────────────────────────────
 // Your bag: what you carry in the Labyrinth, one thing per slot (they
 // don't stack), kept between runs. You start with a BINDLE (3 slots); your
-// first mini boss drops a RUGGED BACKPACK (5).
+// first Cyclops's chest holds a RUGGED BACKPACK (5).
 // A slot holds:
 // - a potion (heals one creature; in a fight it costs your turn);
 // - gear: a weapon or armour piece of yours (packed at home, or swapped
@@ -191,7 +193,8 @@ export const STASH_POTIONS = 2;
 export const STASH_POTION_CHANCE = 0.3;
 export const STASH_LAST_ROLL = { potion: 0.25, gold: 0.5, gear: 0.25 };
 export const STASH_GOLD: [number, number] = [100, 250];
-export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop };
+// backpack: the rugged backpack (in the Cyclops' chest, the first time you beat it).
+export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop } | { backpack: true };
 
 // Room for more in the bag? Adds what fits; returns the new bag.
 export function addToBag(bag: BagEntry[], items: BagEntry[], size: number): BagEntry[] {
@@ -335,7 +338,7 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "witch":
-      return { kind, witch: newWitchGame(rng), done: false };
+      return { kind, witch: newWitchGame(rng, witchPrize), done: false };
     case "boss":
       // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };

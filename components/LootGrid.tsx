@@ -1,14 +1,17 @@
 "use client";
 // components/LootGrid.tsx
 // A haul of loot as a grid of framed tiles with sprites: gear and codexes
-// by rarity, creature cards, potions, gold. Used for what a room just gave
-// you, and at the end of a run for what you got and what you left behind.
+// by rarity, potions, gold — and creature cards shown as the cards
+// themselves. Used for what a room just gave you, and at the end of a run
+// for what you got and what you left behind.
 
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { POTIONS, type GotItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
+import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { CardFace } from "./CardGallery";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -24,11 +27,31 @@ function lookOf(g: GotItem): Look {
   return { name: x.name, sprite: itemSprite(x), icon: x.codexMove ? "📖" : x.potion ? POTIONS[x.potion].icon : "📦", color: rc.text, glow: rc.glow };
 }
 
+// A creature card in the haul (its template, if we know the creature).
+const cardOf = (g: GotItem) => {
+  if ("potion" in g) return null;
+  const x = g.drop as CreatureOrItemDrop;
+  if (x.dropType !== "card" && x.dropType !== "creature") return null;
+  const t = findCreatureTemplate(x.creatureId, x.name);
+  return t ? { x, t } : null;
+};
+
 export default function LootGrid({ items, faded }: { items: GotItem[]; faded?: boolean }) {
   if (items.length === 0) return <p style={{ fontSize: 13, color: MUTED, margin: "4px 0" }}>Nothing.</p>;
+  const cards = items.map(cardOf).filter((c) => c !== null);
+  const tiles = items.filter((g) => !cardOf(g));
   return (
+    <>
+    {cards.length > 0 && (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 12, margin: "6px 0 10px", opacity: faded ? 0.55 : 1 }}>
+        {cards.map(({ x, t }, i) => (
+          <CardFace key={i} t={t} creatureId={x.creatureId ?? t.id} ability={x.ability} footer="🃏 Creature card" />
+        ))}
+      </div>
+    )}
+    {tiles.length > 0 && (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 8, opacity: faded ? 0.55 : 1 }}>
-      {items.map((g, i) => {
+      {tiles.map((g, i) => {
         const l = lookOf(g);
         return (
           <div key={i} title={l.name} style={{ minWidth: 0, textAlign: "center" }}>
@@ -45,5 +68,7 @@ export default function LootGrid({ items, faded }: { items: GotItem[]; faded?: b
         );
       })}
     </div>
+    )}
+    </>
   );
 }
