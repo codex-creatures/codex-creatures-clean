@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import EscapeBack from "@/components/EscapeBack";
 import Polyfills from "@/components/Polyfills";
+import GameScreen from "@/components/GameScreen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,7 +59,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} ${pixel.variable} ${digits.variable}`}>
         <Polyfills />
         <EscapeBack />
-        {children}
+        <GameScreen>{children}</GameScreen>
       </body>
     </html>
   );

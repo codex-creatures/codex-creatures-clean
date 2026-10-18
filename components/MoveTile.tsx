@@ -36,13 +36,14 @@ function Slab({ m, faded }: { m: Skill; faded: boolean }) {
   );
 }
 
-export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, onClick }: {
+export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fill, onClick }: {
   m: Skill;
   note?: { text: string; color: string };   // one short line (e.g. "not enough energy")
   extra?: string[];        // more lines for the details side
   selected?: boolean; disabled?: boolean; dim?: boolean;
   slot?: number;           // its move slot (not shown; kept for callers)
   tag?: { text: string; color: string };
+  fill?: boolean;          // stretch to fill its grid cell (the battle dock), not the tablet's own shape
   onClick?: () => void;
 }) {
   const [info, setInfo] = useState(false);
@@ -55,7 +56,7 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, on
       className={active ? "move-live" : undefined}
       onClick={() => active && onClick!()} onKeyDown={(e) => { if (active && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onClick!(); } }}
       style={{
-        position: "relative", aspectRatio: `${SLAB_W} / ${SLAB_H}`, minHeight: 76, cursor: active ? "pointer" : "default", userSelect: "none",
+        position: "relative", ...(fill ? { height: "100%", minHeight: 0 } : { aspectRatio: `${SLAB_W} / ${SLAB_H}`, minHeight: 76 }), cursor: active ? "pointer" : "default", userSelect: "none",
         opacity: disabled ? 0.45 : dim ? 0.65 : 1,
         filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.55))",
         outline: selected ? "3px solid #ffd66e" : "none", outlineOffset: 1,
@@ -74,7 +75,7 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, on
         // The name: large and bold, pale stone edged with the dark of the cut.
         <div style={{ position: "absolute", inset: "0 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
           <div className="pixel-font" style={{
-            fontSize: "clamp(18px, 5.4vw, 23px)", lineHeight: 1.05, color: "#fbf1dc", letterSpacing: "0.03em",
+            fontSize: fill ? "clamp(13px, 4.6cqw, 20px)" : "clamp(18px, 5.4cqw, 23px)", lineHeight: 1.05, color: "#fbf1dc", letterSpacing: "0.03em",
             textShadow: `1px 0 0 #fbf1dc, 2px 0 0 ${stone.cut}, -1px 0 0 ${stone.cut}, 0 -1px 0 ${stone.cut}, 1px -1px 0 ${stone.cut}, 0 2px 0 ${stone.cut}, 1px 2px 0 ${stone.cut}, 0 3px 0 rgba(0,0,0,0.35)`,
           }}>
             {m.name}

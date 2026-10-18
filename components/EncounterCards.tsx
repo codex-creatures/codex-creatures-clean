@@ -21,7 +21,7 @@ export default function EncounterCards({ creatureIds, onClose, onFight }: { crea
   return (
     <CardFan count={n} label="The creatures you're about to fight" onClose={onClose}
       title={n === 1 ? "A creature blocks the way" : `${n} creatures block the way`}
-      size={{ width: "min(300px, 78vw, 44vh)", height: "min(440px, 114vw, 64.5vh)" }}
+      size={{ width: "min(300px, 78cqw, 44cqh)", height: "min(440px, 114cqw, 64.5cqh)" }}
       action={onFight && { label: "⚔️ Fight", onClick: onFight }}
       render={(i) => <Card creatureId={creatureIds[i]} />} />
   );
@@ -56,7 +56,7 @@ export function CardFan({ count: n, title, label, size, render, onClose, action 
         if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
       }}
       style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(4,5,9,0.78)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div className="pixel-font" style={{ fontSize: "clamp(15px, 4vw, 19px)", color: "#f1d9a0", textShadow: "0 2px 0 #000", marginBottom: 14, textAlign: "center" }}>
+      <div className="pixel-font" style={{ fontSize: "clamp(15px, 4cqw, 19px)", color: "#f1d9a0", textShadow: "0 2px 0 #000", marginBottom: 14, textAlign: "center" }}>
         {title}
       </div>
 

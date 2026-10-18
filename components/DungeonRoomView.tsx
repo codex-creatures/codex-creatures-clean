@@ -259,7 +259,7 @@ function RoomContents({ run, size, view, onObject, onEnemies }: { run: DungeonRu
   }
 
   return (
-    <div style={{ ...at, fontSize: "clamp(28px, 8vw, 46px)", opacity: room.done ? 0.4 : 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>
+    <div style={{ ...at, fontSize: "clamp(28px, 8cqw, 46px)", opacity: room.done ? 0.4 : 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>
       {ROOM_INFO[room.kind].icon}
     </div>
   );

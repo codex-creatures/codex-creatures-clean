@@ -296,10 +296,9 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void; showEstimates?: boolean;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
-  // Kept simple to start with: details, the bag, swaps and the log open on a tap.
-  const [details, setDetails] = useState(false);
-  const [open, setOpen] = useState<"bag" | "swap" | null>(null);
-  const [showLog, setShowLog] = useState(false);
+  // What's opened over the stage (from the dock's tabs): the bag, a swap, the log, details.
+  const [open, setOpen] = useState<"bag" | "swap" | "log" | "details" | null>(null);
+  const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
   const match = battle.match!;
   const { info } = match;
   const playing = battle.view !== null;
@@ -324,165 +323,161 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const locked = tutorialLocked(match) && you.active === 0;
   // The witch's illness biting: the screen shakes.
   const ill = fx?.kind === "effect" && fx.text.includes("ILLNESS");
+  const act = (a: Parameters<typeof onAct>[0]) => { setOpen(null); onAct(a); };
+  const canSwap = swapTargets(you).length > 0 && !locked;
+  const bagCount = bag.reduce((n, it) => n + it.count, 0);
+  const resting = affordableSkills(me).length === 0;
+  const cols = me.skills.length > 4 ? 3 : 2;
+
+  // A panel opened over the stage, from the dock.
+  const over = (title: string, body: React.ReactNode) => (
+    <div className="stone-panel battle-over">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <span className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>{title}</span>
+        <button className="chip" aria-label="Close" onClick={() => setOpen(null)} style={{ minHeight: 30, padding: "2px 10px" }}>✕</button>
+      </div>
+      {body}
+    </div>
+  );
 
   return (
-    <div className={ill ? "screen-shake" : undefined}>
-      {ill && (
-        <div className="stone-panel pixel-font" style={{ marginBottom: 10, textAlign: "center", fontSize: 17, color: "#d7a6ff", borderColor: "#b06cff" }}>
-          🤢 Your {you.team[fx.index]?.name ?? "creature"} suffers an illness
-        </div>
-      )}
-      {foe.boss && <BossStage side={foe} fx={fx} />}
-      {phaseText && !foe.boss && (
-        <div className="stone-panel pixel-font" style={{ marginBottom: 10, textAlign: "center", fontSize: 17, color: "#ffd66e", borderColor: "#ffd66e" }}>
-          ⚠️ {phaseText}
-        </div>
-      )}
+    <div className={`battle-layout${ill ? " screen-shake" : ""}`}>
+      {/* ── The stage: everything above the dock ── */}
+      <div className="battle-stage">
+        {ill && (
+          <div className="stone-panel pixel-font battle-banner" style={{ color: "#d7a6ff", borderColor: "#b06cff" }}>
+            🤢 Your {you.team[fx.index]?.name ?? "creature"} suffers an illness
+          </div>
+        )}
+        {phaseText && !foe.boss && (
+          <div className="stone-panel pixel-font battle-banner" style={{ color: "#ffd66e", borderColor: "#ffd66e" }}>⚠️ {phaseText}</div>
+        )}
+        {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
+        {foe.boss && <BossStage side={foe} fx={fx} />}
 
-      {/* The fight, staged in a dungeon room (a boss or two enemies use the arena). */}
-      {!foe.boss && !multi ? (
-        <>
+        {/* The fight, staged in a dungeon room (two enemies use the arena). */}
+        {foe.boss ? null : !multi ? (
           <Stage me={me} mySlot={you.active} myInfo={info.A[you.active]} them={them} theirSlot={target} theirInfo={info.B[target]} fx={fx} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 8, alignItems: "start" }}>
-            <Bench team={you.team} active={[you.active]} color={YOU} />
-            <Bench team={foe.team} active={fieldOf(foe)} color={FOE} />
-          </div>
-          {details && (
-            <div className="stone-panel" style={{ marginTop: 8, padding: "8px 10px" }}>
-              <div style={{ fontSize: 12, color: MUTED }}>⚔️ {info.A[you.active].weaponName ?? "no weapon"} · 🛡️ {info.A[you.active].armorName ?? "no armour"} · {info.A[you.active].label}</div>
-              <StatsLine stats={combatSummary(me)} />
-            </div>
-          )}
-        </>
-      ) : (
-      <div className="arena">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "start" }}>
-          <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} details={details} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {fieldOf(foe).map((i) => (
-              <div key={i} onClick={multi && !playing ? () => setTargetPick(i) : undefined}
-                style={{ cursor: multi && !playing ? "pointer" : undefined, outline: multi && i === target ? "2px solid #ffd66e" : undefined, outlineOffset: 2 }}>
-                {multi && i === target && <div className="pixel-font" style={{ fontSize: 12, color: "#ffd66e", marginBottom: 2 }}>🎯 Your target</div>}
-                <FighterCard side="B" f={foe.team[i]} foe={me} info={info.B[i]} fx={fx} slot={i} compact={multi} details={details} />
+        ) : (
+          <div className="arena">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "start" }}>
+              <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} details={open === "details"} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {fieldOf(foe).map((i) => (
+                  <div key={i} onClick={!playing ? () => setTargetPick(i) : undefined}
+                    style={{ cursor: !playing ? "pointer" : undefined, outline: i === target ? "2px solid #ffd66e" : undefined, outlineOffset: 2 }}>
+                    {i === target && <div className="pixel-font" style={{ fontSize: 11, color: "#ffd66e", marginBottom: 2 }}>🎯 Target</div>}
+                    <FighterCard side="B" f={foe.team[i]} foe={me} info={info.B[i]} fx={fx} slot={i} compact details={open === "details"} />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10, alignItems: "start" }}>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6, alignItems: "start" }}>
           <Bench team={you.team} active={[you.active]} color={YOU} />
-          <Bench team={foe.team} active={fieldOf(foe)} color={FOE} />
+          <div style={{ display: "flex", justifyContent: "flex-end" }}><Bench team={foe.team} active={fieldOf(foe)} color={FOE} /></div>
         </div>
+
+        {open === "details" && over(me.name, (
+          <>
+            <div style={{ fontSize: 12, color: MUTED }}>⚔️ {info.A[you.active].weaponName ?? "no weapon"} · 🛡️ {info.A[you.active].armorName ?? "no armour"} · {info.A[you.active].label}</div>
+            <StatsLine stats={combatSummary(me)} />
+          </>
+        ))}
+        {open === "log" && over("Battle log", <BattleLog log={match.state.log} />)}
+        {open === "bag" && bag.length > 0 && onUseItem && over("Battle Bag", (
+          <>
+            <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>Uses your turn, on your {me.name}.</div>
+            <div style={{ display: "grid", gap: 6 }}>
+              {bag.map((it) => it.weapon ? (
+                <button key={it.key} className="card-btn" disabled={playing}
+                  onClick={() => { onUseItem(it.key, you.active); act({ kind: "weapon", name: it.name, weapon: it.weapon! }); }}>
+                  {it.icon} Swap to {it.name} <span style={{ fontSize: 12, color: MUTED }}>{it.detail}</span>
+                </button>
+              ) : (
+                <button key={it.key} className="card-btn" disabled={playing || me.hp >= me.maxHp}
+                  onClick={() => { onUseItem(it.key, you.active); act({ kind: "item", item: it.name, heal: it.heal ?? 0 }); }}>
+                  {it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>{me.hp >= me.maxHp ? "full HP" : `+${Math.min(it.heal ?? 0, me.maxHp - me.hp)} HP`}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        ))}
+        {open === "swap" && canSwap && over("Swap", (
+          <>
+            <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
+              Uses your turn: {multi ? "both foes get" : `their ${them.name} gets`} a free hit on the newcomer; your {me.name} gets back half its missing energy.
+            </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              {swapTargets(you).map((i) => (
+                <button key={i} onClick={() => act({ kind: "swap", to: i })} disabled={playing} className="card-btn" style={{ display: "block" }}>
+                  <b>⇄ {you.team[i].name}</b>
+                  <span style={{ display: "block", fontSize: 12, color: MUTED }}>{you.team[i].hp}/{you.team[i].maxHp} HP{showEstimates && <> · {matchupHint(you.team[i], them)}</>}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        ))}
       </div>
-      )}
 
-      {finished ? (
-        <div className="stone-panel" style={{ marginTop: 16, textAlign: "center" }}>
-          <div className="pixel-font" style={{ fontSize: 30, color: match.state.winner === "A" ? "#5ee08a" : match.state.winner === "B" ? FOE : "white" }}>
-            {match.state.winner === "A" ? "Victory!" : match.state.winner === "B" ? "Defeat" : "Draw"}
-          </div>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>
-            {AI_LEVEL_LABELS[match.level]} AI · {match.state.round} rounds · you swapped {match.state.sides.A.swaps}×, the AI swapped {match.state.sides.B.swaps}× · saved to your battle history
-          </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 14, flexWrap: "wrap" }}>
-            {finishedActions}
-          </div>
-        </div>
-      ) : notStarted ? (
-        <div style={{ marginTop: 16, textAlign: "center" }}>
-          <button className="pixel-btn tutorial-pulse" style={{ fontSize: 22, padding: "12px 34px" }} onClick={battle.beginTutorial}>⚔️ Fight!</button>
-        </div>
-      ) : mustReplace ? (
-        <ActionBox title={`${me.name} fainted — who goes in next?`}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {you.team.map((f, i) => f.hp > 0 && (
-              <button key={i} onClick={() => onReplace(i)} className="card-btn">
-                <span>
-                  <b style={{ color: rarityColor(info.A[i].rarity) }}>{f.name}</b>
-                  <span style={{ color: MUTED, fontSize: 12 }}> · {f.hp}/{f.maxHp} HP · {Math.round(f.energy)}⚡ · {info.A[i].label}</span>
-                  {showEstimates && <span style={{ display: "block", fontSize: 12, color: MUTED }}>vs their {them.name}: {matchupHint(f, them)}</span>}
-                </span>
-              </button>
-            ))}
-          </div>
-        </ActionBox>
-      ) : (
-        <ActionBox title={playing ? "…" : `Round ${state.round + 1} — what will ${me.name} do?`} dim={playing}>
-          {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
-          {multi && (
-            <div style={{ fontSize: 12, color: "#ffd66e", marginBottom: 6 }}>
-              Two enemies on the field — both attack every round. Tap one to target it: now hitting the {them.name}.
+      {/* ── The dock: the bottom of the screen, where you act ── */}
+      <div className="screen-dock battle-dock">
+        {finished ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 6 }}>
+            <div className="pixel-font" style={{ fontSize: 30, color: match.state.winner === "A" ? "#5ee08a" : match.state.winner === "B" ? FOE : "white" }}>
+              {match.state.winner === "A" ? "Victory!" : match.state.winner === "B" ? "Defeat" : "Draw"}
             </div>
-          )}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <div style={{ flex: 1 }}>
-              <Bar label="⚡ Energy" value={`${Math.round(me.energy)} / 100`} pct={me.energy} color="#4EA1FF" />
+            <div style={{ fontSize: 12, color: MUTED }}>{match.state.round} rounds · {AI_LEVEL_LABELS[match.level]} AI</div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 4 }}>{finishedActions}</div>
+            <button className="chip" onClick={() => toggle("log")} style={{ minHeight: 32, padding: "2px 12px", fontSize: 13 }}>📜 Log</button>
+          </div>
+        ) : notStarted ? (
+          <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <button className="pixel-btn tutorial-pulse" style={{ fontSize: 22, padding: "12px 34px" }} onClick={battle.beginTutorial}>⚔️ Fight!</button>
+          </div>
+        ) : mustReplace ? (
+          <>
+            <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>{me.name} fainted. Who&apos;s next?</div>
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "grid", gap: 6, alignContent: "start" }}>
+              {you.team.map((f, i) => f.hp > 0 && (
+                <button key={i} onClick={() => onReplace(i)} className="card-btn">
+                  <span>
+                    <b style={{ color: rarityColor(info.A[i].rarity) }}>{f.name}</b>
+                    <span style={{ color: MUTED, fontSize: 12 }}> · {f.hp}/{f.maxHp} HP · {Math.round(f.energy)}⚡</span>
+                    {showEstimates && <span style={{ display: "block", fontSize: 12, color: MUTED }}>vs {them.name}: {matchupHint(f, them)}</span>}
+                  </span>
+                </button>
+              ))}
             </div>
-            <button className="chip" data-active={details} onClick={() => setDetails((d) => !d)} style={{ minHeight: 32, padding: "4px 10px", fontSize: 13 }}>ⓘ Details</button>
-          </div>
-          <div className="move-grid">
-            {me.skills.map((sk) => (
-              <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
-                glow={!playing && !!tip?.allow && tip.allow(sk)}
-                disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))} onClick={() => onAct({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
-            ))}
-          </div>
-          {affordableSkills(me).length === 0 && (
-            <button onClick={() => onAct({ kind: "pass" })} disabled={playing} className="card-btn" style={{ marginTop: 6 }}>Not enough energy — rest (+30⚡)</button>
-          )}
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button className="chip" data-active={open === "swap"} disabled={swapTargets(you).length === 0 || locked}
-              onClick={() => setOpen((o) => (o === "swap" ? null : "swap"))} style={{ flex: 1, opacity: swapTargets(you).length ? 1 : 0.4 }}>
-              ⇄ Swap
-            </button>
-            {onUseItem && (
-              <button className="chip" data-active={open === "bag"} disabled={bag.length === 0 || locked}
-                onClick={() => setOpen((o) => (o === "bag" ? null : "bag"))} style={{ flex: 1, opacity: bag.length ? 1 : 0.4 }}>
-                🎒 Battle Bag{bag.length ? ` · ${bag.reduce((n, it) => n + it.count, 0)}` : ""}
-              </button>
-            )}
-          </div>
-          {open === "bag" && bag.length > 0 && onUseItem && (
-            <>
-              <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
-                From your bag — uses your turn (before anyone attacks), on your {me.name}:
+          </>
+        ) : (
+          <>
+            {/* Energy, thin, across the top of the dock. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: playing ? 0.6 : 1 }}>
+              <span className="pixel-font" style={{ fontSize: 12, color: "#9cc8ff", whiteSpace: "nowrap" }}>⚡ {Math.round(me.energy)}</span>
+              <div style={{ flex: 1, height: 7, background: "#0d0e12", border: "1px solid #000" }}>
+                <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, me.energy))}%`, background: "#4EA1FF", transition: "width 0.45s ease-out" }} />
               </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {bag.map((it) => it.weapon ? (
-                  <button key={it.key} className="card-btn" style={{ width: "auto" }} disabled={playing}
-                    onClick={() => { onUseItem(it.key, you.active); onAct({ kind: "weapon", name: it.name, weapon: it.weapon! }); }}>
-                    {it.icon} Swap to {it.name} <span style={{ fontSize: 12, color: MUTED }}>{it.detail}</span>
-                  </button>
-                ) : (
-                  <button key={it.key} className="card-btn" style={{ width: "auto" }} disabled={playing || me.hp >= me.maxHp}
-                    onClick={() => { onUseItem(it.key, you.active); onAct({ kind: "item", item: it.name, heal: it.heal ?? 0 }); }}>
-                    {it.icon} {it.name} ×{it.count} <span style={{ fontSize: 12, color: MUTED }}>{me.hp >= me.maxHp ? "already at full HP" : `+${Math.min(it.heal ?? 0, me.maxHp - me.hp)} HP`}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          {open === "swap" && swapTargets(you).length > 0 && (
-            <>
-              <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 6px" }}>
-                Swap — uses your turn: {multi ? "both their creatures get" : `their ${them.name} gets`} a free hit on the incoming creature, and your {me.name} recovers 50% of its missing energy.
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {swapTargets(you).map((i) => (
-                  <button key={i} onClick={() => onAct({ kind: "swap", to: i })} disabled={playing} className="card-btn" style={{ display: "block" }}>
-                    <b>⇄ {you.team[i].name}</b>
-                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{you.team[i].hp}/{you.team[i].maxHp} HP{showEstimates && <> · {matchupHint(you.team[i], them)}</>}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </ActionBox>
-      )}
-
-      <button className="chip" onClick={() => setShowLog((v) => !v)} style={{ marginTop: 14, width: "100%" }}>
-        📜 {showLog ? "Hide" : "Show"} the battle log
-      </button>
-      {showLog && <BattleLog log={match.state.log} />}
+              {multi && <span style={{ fontSize: 11, color: "#ffd66e", whiteSpace: "nowrap" }}>🎯 {them.name}</span>}
+            </div>
+            <div className="battle-moves" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, opacity: playing ? 0.6 : 1 }}>
+              {me.skills.map((sk) => (
+                <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
+                  glow={!playing && !!tip?.allow && tip.allow(sk)}
+                  disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))} onClick={() => act({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
+              ))}
+            </div>
+            <div className="dock-tabs">
+              {resting && <button className="dock-tab" data-active onClick={() => act({ kind: "pass" })} disabled={playing}>💤 Rest</button>}
+              <button className="dock-tab" data-active={open === "swap"} disabled={!canSwap} onClick={() => toggle("swap")}>⇄ Swap</button>
+              {onUseItem && <button className="dock-tab" data-active={open === "bag"} disabled={bag.length === 0 || locked} onClick={() => toggle("bag")}>🎒 Bag{bagCount ? <span className="count">{bagCount}</span> : null}</button>}
+              <button className="dock-tab" data-active={open === "log"} onClick={() => toggle("log")}>📜 Log</button>
+              <button className="dock-tab" data-active={open === "details"} onClick={() => toggle("details")} aria-label="Details">ⓘ</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -524,7 +519,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
     : sk.energyCost > me.energy ? { text: "not enough energy", color: "#ff8a80" }
     : undefined;
-  const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} />;
+  const tile = <MoveTile m={sk} note={note} extra={tags} disabled={disabled} onClick={onClick} fill />;
   return glow ? <div className="move-glow">{tile}</div> : tile;
 }
 
@@ -593,7 +588,7 @@ function FighterCardBody({ side, f, foe, info, fx, slot, compact, details, anim,
           <Token name={f.name} rarity={info.rarity} creatureId={info.creatureId} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
-            <div className="pixel-font" style={{ fontSize: "clamp(14px, 4vw, 17px)", lineHeight: 1.1, overflowWrap: "anywhere" }}>
+            <div className="pixel-font" style={{ fontSize: "clamp(14px, 4cqw, 17px)", lineHeight: 1.1, overflowWrap: "anywhere" }}>
               <LevelTag level={f.level} /> <span style={{ color: rarityColor(info.rarity) }}>{f.name}</span> <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon}</span>
             </div>
             <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>{details && side === "A" && <> · {info.label}</>}</div>
@@ -767,7 +762,7 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
       <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
         display: "flex", flexDirection: "column", alignItems: "center", width: "40%" }}>
         {/* Floating label: name, a small health bar, any statuses. */}
-        <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4vw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
+        <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
           <LevelTag level={f.level} />
           <span style={{ color: rarityColor(mi.rarity), overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{f.name}</span>
           <span style={{ color: CLASS_INFO[f.cls].color }} title={CLASS_INFO[f.cls].name}>{CLASS_INFO[f.cls].icon}</span>

@@ -91,6 +91,7 @@ export default function DungeonPage() {
   const [viewGear, setViewGear] = useState<CreatureOrItemDrop | null>(null);
   // The roster or the bag, open over the screen (see Sheet).
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
+  const [retreatArmed, setRetreatArmed] = useState(false);
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
 
@@ -631,8 +632,11 @@ export default function DungeonPage() {
     return <DenFrame title="The Labyrinth" icon="🌀" width={COLUMN}><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   }
 
-  const frame = (children: React.ReactNode) => (
-    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN}><Shaker shake={shake}>{children}</Shaker></DenFrame>
+  // fill: the content gets the whole screen (a battle); dock: built into the bottom of the screen.
+  const frame = (children: React.ReactNode, opts: { fill?: boolean; dock?: React.ReactNode } = {}) => (
+    <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}>
+      <Shaker shake={shake} fill={opts.fill}>{children}</Shaker>
+    </DenFrame>
   );
 
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
@@ -659,7 +663,8 @@ export default function DungeonPage() {
             </button>
           )}
         />
-      </>
+      </>,
+      { fill: true },
     );
   }
 
@@ -751,17 +756,7 @@ export default function DungeonPage() {
           {bagView}
           {partyView}
         </>
-      ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 14 }}>
-          <button className="pixel-btn" onClick={() => setSheet("roster")}>
-            🐾 Roster <span style={{ opacity: 0.7 }}>{fightingTeam(run).length}/{run.party.length}</span>
-          </button>
-          <button className="pixel-btn" onClick={() => setSheet("bag")} style={{ position: "relative" }}>
-            🎒 {bagName(lab.meta)} <span style={{ opacity: 0.7 }}>{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
-            {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: -5, right: -5, width: 14, height: 14, borderRadius: 7, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
-          </button>
-        </div>
-      )}
+      ) : null}
       {sheet === "roster" && !clubTutorial && <Sheet title="Your party" onClose={() => setSheet(null)}>{partyView}</Sheet>}
       {sheet === "bag" && !clubTutorial && <Sheet title={`Your ${bagName(lab.meta).toLowerCase()}`} onClose={() => setSheet(null)}>{bagView}</Sheet>}
       {(run.pending?.length ?? 0) > 0 && (
@@ -778,15 +773,30 @@ export default function DungeonPage() {
           ))}
         </div>
       )}
-
-      <div style={{ marginTop: 24, textAlign: "center" }}>
-        <button className="card-btn" style={{ width: "auto", display: "inline-flex", color: "#ff8a80" }}
-          onClick={() => updateRun((r) => ({ ...leaveSack(r), status: "retreated", battle: undefined }))}
-          disabled={battle.match !== null && !battle.match.state.winner}>
-          🏃 Retreat — leave the labyrinth and keep your loot
-        </button>
-      </div>
-    </>
+    </>,
+    {
+      dock: (
+        <div className="dock-tabs">
+          <button className="dock-tab" onClick={() => setSheet("roster")} disabled={!!clubTutorial}>
+            🐾 Party <span className="count">{fightingTeam(run).length}/{run.party.length}</span>
+          </button>
+          <button className="dock-tab" onClick={() => setSheet("bag")} disabled={!!clubTutorial}>
+            🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
+            {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
+          </button>
+          {/* Retreat: tap twice (it ends the run). */}
+          <button className="dock-tab" style={{ color: "#ff8a80", background: retreatArmed ? "#6e1f18" : undefined }}
+            disabled={battle.match !== null && !battle.match.state.winner}
+            onClick={() => {
+              if (!retreatArmed) { setRetreatArmed(true); window.setTimeout(() => setRetreatArmed(false), 3000); return; }
+              setRetreatArmed(false);
+              updateRun((r) => ({ ...leaveSack(r), status: "retreated", battle: undefined }));
+            }}>
+            {retreatArmed ? "Tap: leave" : "🏃 Retreat"}
+          </button>
+        </div>
+      ),
+    },
   );
 }
 
@@ -1333,7 +1343,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
 }
 
 // Shakes its contents each time `shake` goes up (the witch's stab, an illness).
-function Shaker({ shake, children }: { shake: number; children: React.ReactNode }) {
+function Shaker({ shake, fill, children }: { shake: number; fill?: boolean; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -1342,7 +1352,7 @@ function Shaker({ shake, children }: { shake: number; children: React.ReactNode 
     void el.offsetWidth; // restart the animation
     el.classList.add("screen-shake");
   }, [shake]);
-  return <div ref={ref}>{children}</div>;
+  return <div ref={ref} style={fill ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : undefined}>{children}</div>;
 }
 
 // One of the witch's cards.

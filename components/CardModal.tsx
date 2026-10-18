@@ -51,7 +51,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} className="modal-panel" style={{ background: "#191b22", border: `3px solid ${c.border}`, boxShadow: `0 0 40px ${c.glow}`, padding: 20, width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+      <div onClick={(e) => e.stopPropagation()} className="modal-panel" style={{ background: "#191b22", border: `3px solid ${c.border}`, boxShadow: `0 0 40px ${c.glow}`, padding: 20, width: "100%", maxWidth: 480, maxHeight: "90cqh", overflowY: "auto", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 12, right: 12, background: "transparent", border: "none", color: MUTED, fontSize: 20, cursor: "pointer" }}>✕</button>
 
         {result ? (

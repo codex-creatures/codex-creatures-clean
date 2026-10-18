@@ -92,7 +92,7 @@ export default function BattlePage() {
   }
 
   return (
-    <DenFrame title="VS AI (testing)" icon="⚔️" back="/pit" backLabel="The Pit">
+    <DenFrame title="VS AI (testing)" icon="⚔️" back="/pit" backLabel="The Pit" fill={!!battle.match}>
       {owned === null ? (
         <p style={{ color: MUTED }}>Loading…</p>
       ) : !battle.match ? (

@@ -35,7 +35,7 @@ export default function GearViewModal({ item, slotName, creatures, onSwap, why, 
     <div role="dialog" aria-label={item.name} onClick={onClose}
       style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(4,5,9,0.78)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div className="stone-panel" onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 380, maxHeight: "90vh", overflowY: "auto", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${rc.border}, 0 0 30px ${rc.glow}` }}>
+        style={{ width: "100%", maxWidth: 380, maxHeight: "90cqh", overflowY: "auto", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${rc.border}, 0 0 30px ${rc.glow}` }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ width: 96, height: 96, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${rc.glow}, #101117 75%)`, border: `3px solid ${rc.text}` }}>
             {sprite ? <PixelSprite sprite={sprite} scale={4} /> : <span style={{ fontSize: 36 }}>📦</span>}

@@ -218,7 +218,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
               position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`,
               // Near the edges the label leans inwards, so it never runs off a phone screen.
               transform: `translate(${x / W < 0.12 ? -15 : x / W > 0.88 ? -85 : -50}%, ${a.below ? "15%" : "-100%"})`, whiteSpace: "nowrap",
-              padding: "2px 6px", fontSize: "clamp(11px, 2.6vw, 14px)", lineHeight: 1.3, pointerEvents: touch ? "auto" : "none",
+              padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, pointerEvents: touch ? "auto" : "none",
               background: active ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.78)",
               border: `2px solid ${active ? "#ffd66e" : spot.href ? "#8a6a3a" : "#4a4a55"}`,
               color: spot.href ? (active ? "#ffe9a8" : "#f1d9a0") : "#a9a9b8",
@@ -235,7 +235,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         className={`pixel-font${klutzNews ? " news-glow" : ""}`}
         style={{
           position: "absolute", display: "none", transform: "translate(-50%, -100%)", whiteSpace: "nowrap",
-          padding: "1px 6px", fontSize: "clamp(11px, 2.4vw, 13px)", lineHeight: 1.3,
+          padding: "1px 6px", fontSize: "clamp(11px, 2.4cqw, 13px)", lineHeight: 1.3,
           background: hover === OBJ.klutz ? "rgba(40, 28, 12, 0.95)" : "rgba(12, 12, 18, 0.7)",
           border: `2px solid ${hover === OBJ.klutz ? "#ffd66e" : "#5c7a3a"}`, color: "#d6f0a8", cursor: "pointer",
         }}>
