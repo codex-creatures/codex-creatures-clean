@@ -16,7 +16,7 @@ type Spot = { label: string; href?: string; soon?: string };
 export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.pit]:      { label: "The Pit", href: "/pit" },
   [OBJ.chest]:    { label: "Chest", href: "/chest" },
-  [OBJ.altar]:    { label: "Scanning Altar", href: "/altar" },
+  [OBJ.altar]:    { label: "Soul Altar", href: "/altar" },
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from the Chest for now." },
   [OBJ.quests]:   { label: "Quest Board", soon: "Daily quests (and the utility moves they reward) are coming." },
   [OBJ.bag]:      { label: "Battle Bag", href: "/bag" },
@@ -26,7 +26,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.crate]:    { label: "Klutz's Crate", href: "/crate" },
   [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
   [OBJ.klutz]:    { label: "Klutz", href: "/klutz" },
-  [OBJ.bookcase]: { label: "Shelves", href: "/bookcase" },
+  [OBJ.bookcase]: { label: "Bookcase", href: "/bookcase" },
   [OBJ.tavern]:   { label: "Tavern", soon: "The tavern isn't built yet. One day travellers, merchants and librarians will gather here." },
 };
 

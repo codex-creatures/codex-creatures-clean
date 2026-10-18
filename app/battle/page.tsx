@@ -130,7 +130,7 @@ function Setup({
     return (
       <p style={{ color: MUTED, lineHeight: 1.5 }}>
         You need at least {TEAM_SIZE} creatures to battle — you have {owned.length}. Scan a few more at the{" "}
-        <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>Scanning Altar</Link> first.
+        <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>Soul Altar</Link> first.
       </p>
     );
   }

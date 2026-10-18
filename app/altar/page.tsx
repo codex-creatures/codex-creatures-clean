@@ -16,7 +16,7 @@ import type { Rarity } from "@/lib/types";
 
 const CACHES_AT_ONCE = 10; // caches opened together (the 2×5 grid)
 
-// The scanning altar: scan or type a barcode to get a Code Cache. In
+// The Soul Altar: scan or type a barcode to get a Code Cache. In
 // Looting mode it opens straight away; in Storage mode it's kept here, to
 // open (ten at a time) whenever you like.
 export default function AltarPage() {
@@ -92,7 +92,7 @@ export default function AltarPage() {
 
 
   return (
-    <DenFrame title="Scanning Altar" icon="🔮" gold={game.gold}>
+    <DenFrame title="Soul Altar" icon="🔮" gold={game.gold}>
 
       <div style={{ marginBottom: 20, maxWidth: 520 }}>
         <ProgressBar label="Creatures discovered" current={game.discoveredCreatures} total={TOTAL_CREATURES} pct={creaturePct} color="rgba(78,161,255,0.9)" />

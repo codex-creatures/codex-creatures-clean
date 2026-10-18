@@ -38,18 +38,26 @@ export const OBJ = {
 export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 
 // Where things stand (floor units), in groups:
-// - the middle: the Scanning Altar, with the Pit and the Healing Pool either side;
+// - the middle: the Soul Altar, with the Pit and the Healing Pool either side;
 // - the storage corner (right wall, at the back): chest, crates, shelves (the
 //   codex shelf: a bookcase comes with upgrades);
 // - further along the right wall: the merchant, then the tavern, with open
 //   floor in front of it to grow into;
 // - the left wall: the archway, the bindle in its corner, the quest board and lectern;
 // - the front left: the cage, with Klutz's crate beside it.
-const AL = { u: 9.5, v: 8.0 };              // scanning altar (the centrepiece)
+const AL = { u: 9.5, v: 8.0 };              // Soul Altar (the centrepiece)
 // The fighting pit, out towards the front corner: a deep sand pit walled in
 // timber, roped off between posts, with a brazier burning on two of them.
 const PIT = { u0: 15.0, v0: 11.2, u1: 20.4, v1: 16.6, depth: 30 };
 const PIT_POST_H = 26;
+// The pit's PixelLab art (a boulder-rimmed pit under an iron grate) covers a
+// 3×4 patch in the middle of that; with it, the drawn sand pit isn't used.
+// (Its art is drawn at 2× — 2 fine pixels an art pixel — to cover the patch.)
+// Two fire bowls on posts stand at its corners, as they did round the old pit.
+const PIT_ART = { u0: 16.2, v0: 11.9, u1: 19.2, v1: 15.9 };
+const PIT_ART_BRAZIERS: { u: number; v: number; z: number }[] = [
+  { u: PIT_ART.u1 + 0.5, v: PIT_ART.v0 - 0.5, z: PIT_POST_H + 6 }, { u: PIT_ART.u0 - 0.5, v: PIT_ART.v1 + 0.5, z: PIT_POST_H + 6 },
+];
 const BRAZIERS: { u: number; v: number; z: number }[] = [
   { u: PIT.u1 + 0.1, v: PIT.v0 - 0.1, z: PIT_POST_H + 6 }, { u: PIT.u0 - 0.1, v: PIT.v1 + 0.1, z: PIT_POST_H + 6 },
 ];
@@ -232,7 +240,7 @@ const TORCHES: { u: number; v: number; z: number }[] = [
 // The Den's furniture drawn in PixelLab (public/sprites/den/<key>.png). Each is
 // stamped into the room where its code-drawn box used to be, and lit by the
 // torches like the rest; anything whose art is missing falls back to the box.
-export const PROP_KEYS = ["altar", "chest", "crates", "shelves", "merchant", "lectern", "crate", "bindle", "backpack", "board"] as const;
+export const PROP_KEYS = ["altar", "chest", "crates", "shelves", "merchant", "lectern", "crate", "bindle", "backpack", "board", "pit"] as const;
 export type PropKey = (typeof PROP_KEYS)[number];
 export const propSrc = (key: PropKey) => `/sprites/den/${key}.png`;
 export type DenProps = Partial<Record<PropKey, Pixels>>;
@@ -305,7 +313,8 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   };
   const spot = (f: number) => (f + 0.5) / RES; // a fine pixel's centre, in layout units
 
-  const inPit = (u: number, v: number) => u >= PIT.u0 && u < PIT.u1 && v >= PIT.v0 && v < PIT.v1;
+  const inPit = (u: number, v: number) => !props.pit && u >= PIT.u0 && u < PIT.u1 && v >= PIT.v0 && v < PIT.v1;
+  const braziers = props.pit ? PIT_ART_BRAZIERS : BRAZIERS; // the pit's fire bowls
   const poolD = (u: number, v: number) => Math.hypot((u - POOL.u) / POOL.ru, (v - POOL.v) / POOL.rv)
     + (vnoise(u * 2.2, v * 2.2) - 0.5) * 0.25; // < 1 = water
   // The far edges of the floor (and the ends of the walls) sink into the dark.
@@ -428,7 +437,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
           shadow[i] = fade;
           continue;
         }
-        const nearPit = f.u >= PIT.u0 - 0.25 && f.u < PIT.u1 + 0.25 && f.v >= PIT.v0 - 0.25 && f.v < PIT.v1 + 0.25;
+        const nearPit = !props.pit && f.u >= PIT.u0 - 0.25 && f.u < PIT.u1 + 0.25 && f.v >= PIT.v0 - 0.25 && f.v < PIT.v1 + 0.25;
         if (nearPit) {
           const k = 0.9 + hash(Math.floor(f.u * 10), Math.floor(f.v * 10)) * 0.15;
           put(fx, fy, mul(CAP_STONES[Math.floor(hash(Math.floor(f.u * 4), Math.floor(f.v * 4)) * 3)], k * 0.85), f.u, f.v, 0, OBJ.pit);
@@ -517,8 +526,9 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   // standing on height z): centred on the footprint, its lowest pixel on the
   // footprint's front corner. Its pixels light as if at the footprint's
   // middle, at their height above its base. glow marks pixels that shine.
+  // scale: fine pixels per art pixel.
   function stamp(id: number, px: Pixels, u0: number, v0: number, u1: number, v1: number, z = 0,
-    glow?: (c: RGB) => number) {
+    glow?: (c: RGB) => number, scale = 1) {
     let x0 = px.w, x1 = -1, y1 = -1;
     for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
       if (px.data[(y * px.w + x) * 4 + 3] > 127) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
@@ -531,7 +541,9 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
       const o = (y * px.w + x) * 4;
       if (px.data[o + 3] <= 127) continue;
       const c: RGB = [px.data[o] / 255, px.data[o + 1] / 255, px.data[o + 2] / 255];
-      put(ax + x - cx, ay + y - y1, c, um, vm, z + (y1 - y) / RES, id, glow ? glow(c) : 0);
+      for (let sy = 0; sy < scale; sy++) for (let sx = 0; sx < scale; sx++) {
+        put(ax + (x - cx) * scale + sx, ay + (y - y1) * scale - sy, c, um, vm, z + ((y1 - y) * scale + sy) / RES, id, glow ? glow(c) : 0);
+      }
     }
   }
 
@@ -603,7 +615,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
 
   // The shelves on the right wall: codexes, a sack and potions. (They open
   // the codex shelf; a proper bookcase comes with upgrades.)
-  if (props.shelves) stamp(OBJ.bookcase, props.shelves, SHELF.u0, 0, SHELF.u1, 0.4, 26);
+  if (props.shelves) stamp(OBJ.bookcase, props.shelves, SHELF.u0, 0, SHELF.u1, 0.4); // the bookcase, standing against the wall
   else {
     const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
     box(OBJ.bookcase, SHELF.u0, 0, 28, SHELF.u1, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });
@@ -654,10 +666,10 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
     box(OBJ.merchant, MU + 1.1, 0.35, 13, MU + 1.28, 0.53, 19, { top: () => hex("#cfc6b0"), right: potion("#e0a030"), left: potion("#e0a030") });
   }
 
-  // Scanning altar (the centrepiece). Its runes glow and pulse.
+  // Soul Altar (the centrepiece): a cauldron of soul fire. Its teal flames and spirits glow and pulse.
   if (props.altar) {
-    stamp(OBJ.altar, props.altar, AL.u - 0.5, AL.v - 0.5, AL.u + 0.5, AL.v + 0.5, 0,
-      ([r, g, b]) => (b > 0.55 && g > 0.45 && r < 0.5 && b - r > 0.25 ? 2 : 0));
+    stamp(OBJ.altar, props.altar, AL.u - 0.75, AL.v - 0.75, AL.u + 0.75, AL.v + 0.75, 0,
+      ([r, g, b]) => (g > 0.5 && b > 0.4 && r < 0.55 && g - r > 0.2 ? 2 : 0));
   } else {
     const altarStone: Face = (a, b) => (b > 15 ? mul(CAP_STONES[1], 1.1) : rock(a + 30, b, 11));
     box(OBJ.altar, AL.u - 0.5, AL.v - 0.5, 0, AL.u + 0.5, AL.v + 0.5, 18, {
@@ -671,8 +683,17 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
     });
   }
 
-  // The fighting pit's posts and ropes, back to front, braziers on two posts.
-  {
+  // The pit: its art, or (without it) the fighting pit's posts and ropes, back to front, braziers on two posts.
+  if (props.pit) {
+    stamp(OBJ.pit, props.pit, PIT_ART.u0, PIT_ART.v0, PIT_ART.u1, PIT_ART.v1, 0, undefined, 2);
+    const post: Face = (a, b) => (b > PIT_POST_H - 3 ? IRON_LIGHT : planks(b, a, 7));
+    for (const b of braziers) {
+      box(OBJ.pit, b.u - 0.11, b.v - 0.11, 0, b.u + 0.11, b.v + 0.11, PIT_POST_H, { top: () => IRON_LIGHT, right: post, left: post });
+      box(OBJ.pit, b.u - 0.22, b.v - 0.22, PIT_POST_H, b.u + 0.22, b.v + 0.22, PIT_POST_H + 5, {
+        top: () => ({ c: hex("#ff8a2a"), glow: 1 }), right: () => IRON, left: () => mul(IRON_LIGHT, 0.9),
+      });
+    }
+  } else {
     const post: Face = (a, b) => (b > PIT_POST_H - 3 ? IRON_LIGHT : planks(b, a, 7));
     const rope: Face = (a) => mul(hex("#a8894f"), Math.floor(a) % 3 === 0 ? 0.7 : 1);
     const P = 0.11, RZ = 17;
@@ -697,7 +718,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
   // ── Lights ──
   const lights: Light[] = [
     ...TORCHES.map((t, i) => ({ ...t, color: hex("#ff9a44"), power: 1.35, radius: 2.3, seed: i * 1.7 })),
-    ...BRAZIERS.map((b, i) => ({ ...b, z: b.z + 8, color: hex("#ff8a3c"), power: 1.5, radius: 2.8, seed: 20 + i * 2.3 })),
+    ...braziers.map((b, i) => ({ ...b, z: b.z + 8, color: hex("#ff8a3c"), power: 1.5, radius: 2.8, seed: 20 + i * 2.3 })),
     { u: AL.u, v: AL.v, z: 34, color: hex("#5fe0ff"), power: 0.9, radius: 1.7, seed: 9, pulse: true },
     { u: POOL.u, v: POOL.v, z: 6, color: hex("#3fa0a0"), power: 0.35, radius: 1.8, seed: 11, steady: true },
   ];
@@ -802,7 +823,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
 
     // Torches: iron bracket + animated flame.
     // (and the pit's braziers: bigger flames, no bracket)
-    [...TORCHES, ...BRAZIERS].forEach((tc, i) => {
+    [...TORCHES, ...braziers].forEach((tc, i) => {
       const brazier = i >= TORCHES.length;
       const [tx, ty] = project(tc.u, tc.v, tc.z - (brazier ? 1 : 0));
       if (!brazier) {
@@ -828,7 +849,8 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
       px(e.x, e.y, e.life > 0.5 ? "#ffcf6b" : "#d9541f");
     }
 
-    // Floating crystal above the altar.
+    // Floating crystal above the altar (the old stone one; the Soul Altar's art has its own spirits).
+    if (!props.altar) {
     const [cx, cy] = project(AL.u, AL.v, 34 + Math.sin(t * 2) * 2.5);
     const shape = [1, 2, 3, 3, 3, 2, 2, 1, 1, 0];
     shape.forEach((w, k) => {
@@ -837,6 +859,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps } = {}): 
         px(cx + s, cy - 5 + k, k === 1 && s === -1 ? "#ffffff" : c, OBJ.altar);
       }
     });
+    }
 
     // Pool: slow ripples glinting on the murky water, and the odd drip.
     for (let k = 0; k < 7; k++) {

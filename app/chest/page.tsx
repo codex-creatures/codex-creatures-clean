@@ -32,7 +32,7 @@ export default function ChestPage() {
       <InventoryList
         title="Items"
         tabs={["weapons", "armor", "materials", "consumables"]}
-        emptyText="No items of this kind yet — visit the Scanning Altar."
+        emptyText="No items of this kind yet — visit the Soul Altar."
         inventory={game.inventory}
         filteredInventory={game.filteredInventory}
         equipment={game.equipment}

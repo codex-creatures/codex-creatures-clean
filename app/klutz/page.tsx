@@ -178,7 +178,7 @@ function ScanTip({ game }: { game: ReturnType<typeof useGameState> }) {
         &ldquo;Three times I&apos;ve dragged you out of there! Go scan some barcodes — each one&apos;s a <b>Code Cache</b> full of gear,
         potions and creatures. Stock up, then try again.&rdquo;
       </div>
-      <Link href="/altar" className="pixel-btn" style={{ marginTop: 10, display: "inline-block" }}>🔮 To the Scanning Altar</Link>
+      <Link href="/altar" className="pixel-btn" style={{ marginTop: 10, display: "inline-block" }}>🔮 To the Soul Altar</Link>
     </div>
   );
 }

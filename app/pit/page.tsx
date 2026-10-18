@@ -22,7 +22,7 @@ export default function PitPage() {
           ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
           : game.activeTab === "cards"
             ? "No creature cards yet. Creature barcodes usually give a card — collect 3 of one creature to summon it."
-            : "No creatures yet — visit the Scanning Altar."}
+            : "No creatures yet — visit the Soul Altar."}
         inventory={game.inventory}
         filteredInventory={game.filteredInventory}
         equipment={game.equipment}

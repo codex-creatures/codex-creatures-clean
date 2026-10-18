@@ -146,7 +146,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   rattlebones: [70, 84],
   shambler: [73, 88],
   dustwraith: [84, 86],
-  mr_shadows: [94, 94],
+  mr_shadows: [89, 95],
   storm_phoenix: [105, 113],
   thicket_archer: [81, 76],
   leafblade_scout: [73, 81],

@@ -1,10 +1,11 @@
 // lib/sprites/props.ts
-// Things lying about in Labyrinth rooms: a pirate-style treasure chest
+// Things lying about in Labyrinth rooms: a treasure chest
 // (shut, and thrown open with gold inside) and Klutz's armoury box.
 // Same text-grid format as the other sprites (lib/sprites/pixels.ts).
 
 import type { Sprite } from "./pixels";
 import { draw, T } from "./draw";
+import { withArt } from "./art";
 
 // A domed wooden chest with gold bands and a lock.
 export const TREASURE_CHEST: Sprite = [
@@ -110,3 +111,8 @@ export const RICKETY_CHEST_OPEN: Sprite = [
   "dwwwwwwwwwwwwwwd",
   "dddddddddddddddd",
 ];
+
+// The treasure chest's PixelLab art: a crooked old chest lashed shut with
+// rope (and the same chest opened). 64px art in the space of a 32px sprite.
+withArt(TREASURE_CHEST, { src: "/sprites/props/treasure_chest.png", w: 64, h: 64, size: 32 });
+withArt(TREASURE_CHEST_OPEN, { src: "/sprites/props/treasure_chest_open.png", w: 64, h: 64, size: 32 });
