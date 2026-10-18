@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, type PotionKey } from "../lib/dungeon/run";
+import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, cyclopsChest, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -90,5 +90,20 @@ describe("swapping a weapon in mid-fight", () => {
     const before = s.sides.B.team[0].hp;
     resolveRound(s, { A: { kind: "attack", skillName: "Crush" }, B: { kind: "attack", skillName: "Jab" } });
     expect(before - s.sides.B.team[0].hp).toBeGreaterThan(60);
+  });
+});
+
+describe("the Cyclops' chest", () => {
+  it("holds 3–5 gear, 1–2 codexes and 1–2 potions, never more than 10", () => {
+    for (let i = 0; i < 200; i++) {
+      const chest = cyclopsChest();
+      const gear = chest.filter((x) => "gear" in x && (x.gear.dropType !== "item" || !x.gear.codexMove)).length;
+      const codexes = chest.filter((x) => "gear" in x && x.gear.dropType === "item" && !!x.gear.codexMove).length;
+      const potions = chest.filter((x) => "potion" in x).length;
+      expect(gear).toBeGreaterThanOrEqual(3); expect(gear).toBeLessThanOrEqual(5);
+      expect(codexes).toBeGreaterThanOrEqual(1); expect(codexes).toBeLessThanOrEqual(2);
+      expect(potions).toBeGreaterThanOrEqual(1); expect(potions).toBeLessThanOrEqual(2);
+      expect(chest.length).toBeLessThanOrEqual(CYCLOPS_CHEST_MAX);
+    }
   });
 });

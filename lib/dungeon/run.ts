@@ -37,7 +37,7 @@ import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -193,6 +193,31 @@ export const STASH_POTIONS = 2;
 export const STASH_POTION_CHANCE = 0.3;
 export const STASH_LAST_ROLL = { potion: 0.25, gold: 0.5, gear: 0.25 };
 export const STASH_GOLD: [number, number] = [100, 250];
+// The Cyclops' chest: CYCLOPS_GEAR rolls on the weapon & armour table,
+// CYCLOPS_ITEMS on the item table and CYCLOPS_POTIONS on the potion table,
+// at most CYCLOPS_CHEST_MAX things (its gold and the backpack come on top).
+// - weapon & armour: like a scan (any rarity at the usual odds; armour twice
+//   as likely as a weapon), as in a stash;
+// - items: a codex (CYCLOPS_RACE_CODEX of the time a race codex, else one any
+//   creature can learn). Battle items join this table when they exist;
+// - potions: a Healing Potion STASH_POTION_CHANCE of the time, else a Lesser one.
+export const CYCLOPS_GEAR: [number, number] = [3, 5];
+export const CYCLOPS_ITEMS: [number, number] = [1, 2];
+export const CYCLOPS_POTIONS: [number, number] = [1, 2];
+export const CYCLOPS_CHEST_MAX = 10;
+export const CYCLOPS_RACE_CODEX = 0.25;
+export function rollGearPiece(rng: Rng = Math.random): Drop {
+  const rarity = pickRarity("", "random");
+  return rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity);
+}
+export function cyclopsChest(rng: Rng = Math.random): SackItem[] {
+  const times = (range: [number, number], roll: () => SackItem) => Array.from({ length: randInt(...range, rng) }, roll);
+  return [
+    ...times(CYCLOPS_GEAR, () => ({ gear: rollGearPiece(rng) })),
+    ...times(CYCLOPS_ITEMS, () => ({ gear: codexDrop(rng() < CYCLOPS_RACE_CODEX ? randomCodexMove() : randomLearnableMove()) })),
+    ...times(CYCLOPS_POTIONS, (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" })),
+  ].slice(0, CYCLOPS_CHEST_MAX);
+}
 // backpack: the rugged backpack (in the Cyclops' chest, the first time you beat it).
 export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop } | { backpack: true };
 
@@ -326,8 +351,7 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       else if (last < STASH_LAST_ROLL.potion + STASH_LAST_ROLL.gold) sack.push({ gold: randInt(...STASH_GOLD, rng) });
       else {
         // Like a scan: any rarity at the usual odds; armour twice as likely as a weapon.
-        const rarity = pickRarity("", "random");
-        sack.push({ gear: rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity) });
+        sack.push({ gear: rollGearPiece(rng) });
       }
       return { kind, sack, done: false };
     }
