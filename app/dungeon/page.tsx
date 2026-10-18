@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
+import ContainerLoot from "@/components/ContainerLoot";
+import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN } from "@/lib/sprites/props";
 import LootGrid from "@/components/LootGrid";
 import GearCompare, { GearStatLine } from "@/components/GearCompare";
 import PartySlots, { type PartyMember } from "@/components/PartySlots";
@@ -910,23 +912,11 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, on
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "thief" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
-  const what = room.container === "chest" ? "chest" : "sack";
-  const sackPanel = (room.sack ?? []).length > 0 ? (
-    <div style={{ marginTop: 8 }}>
-      <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>Inside the {what} — tap something to take it:</p>
-      <BagSlots slots={(room.sack ?? []).length} selected={null} onSelect={(i) => i !== null && onTakeSack(i)}
-        looks={(room.sack ?? []).map((x) => "backpack" in x ? { name: "A rugged backpack", icon: "🎒", color: GOLD, glow: "rgba(245,197,66,0.3)" }
-          : "gold" in x ? { name: `${x.gold} gold`, icon: "🪙", color: GOLD, glow: "rgba(245,197,66,0.2)" }
-          : "potion" in x ? slotLook(x.potion) : slotLook(gearEntry(x.gear.id), x.gear as CreatureOrItemDrop))} />
-      <div style={{ fontSize: 12, color: MUTED, margin: "6px 0" }}>
-        {(room.sack ?? []).map((x) => ("backpack" in x ? "🎒 a rugged backpack" : "gold" in x ? `🪙 ${x.gold} gold` : "potion" in x ? `${POTIONS[x.potion].icon} ${POTIONS[x.potion].name}` : `📦 ${dropLabel(x.gear)}`)).join(" · ")}
-      </div>
-      <p style={{ fontSize: 12, color: MUTED, margin: "0 0 8px" }}>
-        Your bag: {bagUsed}/{bagSlots}. Gold takes no space; anything you leave stays on the floor.
-      </p>
-      <button className="pixel-btn" onClick={onTakeAllSack}>Take everything that fits</button>
-    </div>
-  ) : <p style={{ fontSize: 13, color: "#d8d4c8" }}>The {what} is empty.</p>;
+  const sackPanel = (
+    <ContainerLoot name={room.container === "chest" ? "The rickety chest" : room.kind === "stash" ? "The stash" : "The sack"}
+      sprite={room.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
+      items={room.sack ?? []} bagUsed={bagUsed} bagSlots={bagSlots} onTake={onTakeSack} onTakeAll={onTakeAllSack} />
+  );
   // A beaten fight's loot: the container, then what's in it once opened.
   const fightLoot = room.container && (room.opened ? sackPanel : (
     <div style={{ marginTop: 8 }}>

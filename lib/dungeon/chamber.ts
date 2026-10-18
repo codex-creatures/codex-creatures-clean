@@ -24,9 +24,14 @@ export const CH = LH * RES;
 
 // One-point perspective: the back wall is a rectangle, the side walls,
 // ceiling and floor are trapezoids running out to the edges of the picture.
-const BX0 = 44, BX1 = 212;   // back wall, left and right
-const BY0 = 26, BY1 = 112;   // back wall, top and floor line
-const WALL_H = BY1 - BY0;
+// A large room (a den full of creatures) has its back wall further off: a
+// smaller back wall, so a deeper, wider-looking room with more floor.
+// (The back wall is always centred: BX1 = LW - BX0.)
+export type ChamberSize = "normal" | "large";
+const GEOMETRY: Record<ChamberSize, { BX0: number; BX1: number; BY0: number; BY1: number }> = {
+  normal: { BX0: 44, BX1: 212, BY0: 26, BY1: 112 }, // back wall: left, right, top, floor line
+  large:  { BX0: 72, BX1: 184, BY0: 34, BY1: 98 },
+};
 
 // What's down a tunnel, as far as you know.
 export type TunnelLook = "unknown" | "known" | "boss";
@@ -35,10 +40,16 @@ export type ChamberSpec = {
   tunnels: TunnelLook[];       // west to east
   pool?: "glow" | "still";     // a healing pool in the floor (still = used up)
   seed: number;                // so every room looks a little different
+  size?: ChamberSize;          // (default normal)
 };
 
 export type Chamber = {
-  render: (t: number, hover: number, open: boolean) => ImageData;
+  // (extras: false leaves out the drips and the eyes: a still, for painting over)
+  render: (t: number, hover: number, open: boolean, extras?: boolean) => ImageData;
+  // Just the moving parts, on a see-through background, to lay over a
+  // painted room (public/sprites/rooms): the pool, drips, mist, eyes in the
+  // dark and the hovered tunnel.
+  overlay: (t: number, hover: number, open: boolean) => ImageData;
   idAt: (x: number, y: number) => number;   // 0 = nothing, else tunnel index + 1
   tunnels: { x: number; top: number }[];    // where each tunnel is (for labels)
 };
@@ -87,6 +98,8 @@ function damp(c: RGB, a: number, z: number, seed: number): { c: RGB; wet: boolea
 }
 
 export function createChamber(spec: ChamberSpec): Chamber {
+  const { BX0, BX1, BY0, BY1 } = GEOMETRY[spec.size ?? "normal"];
+  const WALL_H = BY1 - BY0;
   const n = CW * CH;
   const seed = spec.seed % 997;
   const albedo = new Float32Array(n * 3);
@@ -103,8 +116,9 @@ export function createChamber(spec: ChamberSpec): Chamber {
   // ── Tunnels in the back wall ──
   const count = spec.tunnels.length;
   const slot = (BX1 - BX0) / Math.max(1, count);
-  const hw = Math.min(17, slot / 2 - 4);
-  const spring = BY1 - 32; // where the straight sides turn into the arch
+  const far = WALL_H / 86;  // tunnels are smaller further off (a large room)
+  const hw = Math.min(17 * far, slot / 2 - 4);
+  const spring = BY1 - 32 * far; // where the straight sides turn into the arch
   const tunnels = spec.tunnels.map((_, i) => ({ x: BX0 + slot * (i + 0.5), top: spring - hw }));
   // How far inside tunnel i's arch (scaled by `grow`) a point is: <1 inside.
   const archIn = (x: number, y: number, i: number, grow = 0) => {
@@ -207,11 +221,45 @@ export function createChamber(spec: ChamberSpec): Chamber {
     return { x, y0: BY0 + 6, y1: Math.round(BY1 + 6 + hash(k, seed + 2) * 50), period: 2.4 + hash(k, seed + 3) * 3.5, phase: hash(k, seed + 4) * 6 };
   });
 
-  const poolGlow = spec.pool === "glow"; // lights the floor around it
-  const out = new ImageData(CW, CH);
-  const d = out.data;
+  // Water dripping from the ceiling, rippling where it lands; and something
+  // watching from the dark. (Drawn with the given painter, see render/overlay.)
+  type Paint = (x: number, y: number, c: string | RGB, alpha?: number, size?: number) => void;
+  function drawDrips(t: number, px: Paint) {
+    for (const dr of drips) {
+      const p = (t + dr.phase) % dr.period; // seconds into this drip's cycle
+      const fall = 0.55;
+      if (p < 0.35) {
+        px(dr.x, dr.y0, DRIP, p / 0.35, 1); // the drop gathering
+      } else if (p < 0.35 + fall) {
+        const k = (p - 0.35) / fall;
+        const y = dr.y0 + (dr.y1 - dr.y0) * k * k;
+        px(dr.x, y, DRIP, 1, 1); px(dr.x, y - 0.5, DRIP, 0.8, 1); px(dr.x, y - 1, DRIP, 0.4, 1);
+      } else if (p < 0.35 + fall + 0.8) {
+        const k = (p - 0.35 - fall) / 0.8;
+        const rad = 1 + k * 7, scale = 0.6 + (dr.y1 - BY1) / (LH - BY1);
+        for (let a = 0; a < 40; a++) {
+          const ang = (a / 40) * Math.PI * 2;
+          px(dr.x + Math.cos(ang) * rad * scale, dr.y1 + Math.sin(ang) * rad * 0.3 * scale, DRIP, (1 - k) * 0.7, 1);
+        }
+      }
+    }
+  }
+  function drawEyes(t: number, px: Paint) {
+    spec.tunnels.forEach((look, q) => {
+      if (look !== "unknown") return;
+      const cyc = (t + q * 3.7 + seed) % 11;
+      if (cyc > 1.6 || (cyc > 0.7 && cyc < 0.82)) return;
+      const ex = tunnels[q].x + (hash(q, seed) - 0.5) * hw * 0.6, ey = spring + 2 + hash(seed, q) * 6;
+      px(ex - 2, ey, "#ffd84a"); px(ex + 2, ey, "#ffd84a");
+    });
+  }
 
-  function render(t: number, hover: number, open: boolean): ImageData {
+  const poolGlow = spec.pool === "glow"; // lights the floor around it
+  let out: ImageData | null = null;
+
+  function render(t: number, hover: number, open: boolean, extras = true): ImageData {
+    out ??= new ImageData(CW, CH);
+    const d = out.data;
     const flick = torches.map((_, k) => 0.84 + 0.09 * Math.sin(t * 9 + k * 2.1) + 0.07 * Math.sin(t * 23 + k * 5) + (Math.random() - 0.5) * 0.05);
     const breathe = 0.5 + 0.5 * Math.sin(t * 2.4);
 
@@ -305,34 +353,7 @@ export function createChamber(spec: ChamberSpec): Chamber {
       }
     });
 
-    // Water dripping from the ceiling, rippling where it lands.
-    for (const dr of drips) {
-      const p = (t + dr.phase) % dr.period; // seconds into this drip's cycle
-      const fall = 0.55;
-      if (p < 0.35) {
-        px(dr.x, dr.y0, DRIP, p / 0.35, 1); // the drop gathering
-      } else if (p < 0.35 + fall) {
-        const k = (p - 0.35) / fall;
-        const y = dr.y0 + (dr.y1 - dr.y0) * k * k;
-        px(dr.x, y, DRIP, 1, 1); px(dr.x, y - 0.5, DRIP, 0.8, 1); px(dr.x, y - 1, DRIP, 0.4, 1);
-      } else if (p < 0.35 + fall + 0.8) {
-        const k = (p - 0.35 - fall) / 0.8;
-        const rad = 1 + k * 7, scale = 0.6 + (dr.y1 - BY1) / (LH - BY1);
-        for (let a = 0; a < 40; a++) {
-          const ang = (a / 40) * Math.PI * 2;
-          px(dr.x + Math.cos(ang) * rad * scale, dr.y1 + Math.sin(ang) * rad * 0.3 * scale, DRIP, (1 - k) * 0.7, 1);
-        }
-      }
-    }
-
-    // Something watching from the dark.
-    spec.tunnels.forEach((look, q) => {
-      if (look !== "unknown") return;
-      const cyc = (t + q * 3.7 + seed) % 11;
-      if (cyc > 1.6 || (cyc > 0.7 && cyc < 0.82)) return;
-      const ex = tunnels[q].x + (hash(q, seed) - 0.5) * hw * 0.6, ey = spring + 2 + hash(seed, q) * 6;
-      px(ex - 2, ey, "#ffd84a"); px(ex + 2, ey, "#ffd84a");
-    });
+    if (extras) { drawDrips(t, px); drawEyes(t, px); }
 
     // Hover: the tunnel brightens and is outlined in gold.
     if (hover && open) {
@@ -351,8 +372,60 @@ export function createChamber(spec: ChamberSpec): Chamber {
     return out;
   }
 
+  // (Made on first use: there's no ImageData while the page renders on the server.)
+  let top: ImageData | null = null;
+  function overlay(t: number, hover: number, open: boolean): ImageData {
+    top ??= new ImageData(CW, CH);
+    const td = top.data;
+    td.fill(0);
+    // Paint at a layout spot, over whatever's there (alpha builds up).
+    const px = (x: number, y: number, c: string | RGB, alpha = 1, size = RES) => {
+      const col = typeof c === "string" ? hex(c) : c;
+      const x0 = Math.round(x * RES), y0 = Math.round(y * RES);
+      for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) {
+        const X = x0 + dx, Y = y0 + dy;
+        if (X < 0 || Y < 0 || X >= CW || Y >= CH) continue;
+        const o = (Y * CW + X) * 4, a0 = td[o + 3] / 255, a = alpha + a0 * (1 - alpha);
+        for (let ch = 0; ch < 3; ch++) td[o + ch] = a ? (col[ch] * 255 * alpha + td[o + ch] * a0 * (1 - alpha)) / a : 0;
+        td[o + 3] = a * 255;
+      }
+    };
+
+    for (let fy = 0; fy < CH; fy++) {
+      for (let fx = 0; fx < CW; fx++) {
+        const i = fy * CW + fx, o = i * 4;
+        const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES;
+        // The healing pool, glowing and rippling (or still, used up).
+        if (kind[i] === 3 || (spec.pool && kind[i] === 2 && Math.hypot((x - LW / 2) / 46, (y - 146) / 13) < 1.14)) {
+          const wave = kind[i] === 3 ? 0.85 + 0.15 * Math.sin(t * 2 + Math.hypot(x - LW / 2, (y - 146) * 3.4) * 0.35) : 0.8;
+          td[o] = albedo[i * 3] * 255 * wave; td[o + 1] = albedo[i * 3 + 1] * 255 * wave; td[o + 2] = albedo[i * 3 + 2] * 255 * wave; td[o + 3] = 255;
+          continue;
+        }
+        // Mist creeping over the floor.
+        if (y > BY1 - 14) {
+          const m = vnoise((x + t * 7) / 26, y / 6 + t * 0.15) - 0.42;
+          const a = Math.max(0, Math.min(0.32, m * 1.4)) * Math.min(1, (y - BY1 + 14) / 20);
+          if (a > 0.01) { td[o] = MIST[0] * 160; td[o + 1] = MIST[1] * 160; td[o + 2] = MIST[2] * 160; td[o + 3] = a * 255; }
+        }
+      }
+    }
+    drawDrips(t, px);
+    drawEyes(t, px);
+    // Hover: the tunnel warms and is outlined in gold.
+    if (hover && open) {
+      const glow = 0.75 + 0.25 * Math.sin(t * 6);
+      for (let y = 1; y < CH - 1; y++) for (let x = 1; x < CW - 1; x++) {
+        const i = y * CW + x, o = i * 4;
+        if (ids[i] === hover) { td[o] = 255; td[o + 1] = 200; td[o + 2] = 120; td[o + 3] = 40; }
+        else if (ids[i - 1] === hover || ids[i + 1] === hover || ids[i - CW] === hover || ids[i + CW] === hover) { td[o] = 255 * glow; td[o + 1] = 214 * glow; td[o + 2] = 110 * glow; td[o + 3] = 255; }
+      }
+    }
+    return top;
+  }
+
   return {
     render,
+    overlay,
     tunnels,
     idAt: (x, y) => {
       x = Math.floor(x); y = Math.floor(y);

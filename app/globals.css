@@ -430,3 +430,29 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 @keyframes tab-glow { 0%, 100% { box-shadow: inset 0 0 10px var(--glow); } 50% { box-shadow: inset 0 0 22px var(--glow); } }
 .tab-glow { animation: tab-glow 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tab-glow { animation: none; box-shadow: inset 0 0 14px var(--glow); } }
+
+/* ── Labyrinth rooms (components/DungeonRoomView.tsx) ── */
+.room-frame {
+  border: 3px solid #4d4738; border-color: #716852 #2b2820 #2b2820 #716852;
+  outline: 2px solid #08080b; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6);
+  background: #0b0c10;
+}
+.room-title {
+  position: absolute; top: 2.5%; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 2;
+  font-size: clamp(11px, 2.6vw, 15px); color: #f1d9a0; letter-spacing: 0.04em;
+  padding: 3px 10px; background: rgba(12, 12, 16, 0.72); border: 2px solid #2b2820; text-shadow: 0 2px 0 #000;
+}
+/* Torchlight over a painted room: warm light from the side walls that flickers, and dark edges. */
+.room-light {
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: soft-light; opacity: 0.55;
+  background:
+    radial-gradient(ellipse 30% 45% at 6% 42%, rgba(255, 170, 80, 0.55), transparent 70%),
+    radial-gradient(ellipse 30% 45% at 94% 42%, rgba(255, 170, 80, 0.55), transparent 70%);
+  animation: room-flicker 2.2s steps(6) infinite;
+}
+.room-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 52%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+@keyframes room-flicker { 0%, 100% { opacity: 0.5; } 20% { opacity: 0.4; } 45% { opacity: 0.58; } 60% { opacity: 0.44; } 80% { opacity: 0.54; } }
+@media (prefers-reduced-motion: reduce) { .room-light { animation: none; } }

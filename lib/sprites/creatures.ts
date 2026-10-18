@@ -128,6 +128,10 @@ export const CREATURE_SPRITES: Record<string, Sprite> = {
 // facing left like the grids; each creature's grid stays as its fallback.
 // [width, height] of each image.
 const ART_SIZES: Record<string, [number, number]> = {
+  // The Cyclops (dungeon 1 boss), redrawn as the Baby Cyclops' parent: body, a hand, the eye.
+  cyclops: [119, 118],
+  cyclops_hand: [87, 80],
+  cyclops_eye: [54, 88],
   moss_wolf: [82, 65],
   amber_wasp: [62, 55],
   monkey_mage: [63, 73],

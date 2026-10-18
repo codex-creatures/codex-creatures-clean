@@ -16,14 +16,9 @@ import type { Fx } from "./BattleScreen";
 
 type Scene = "split" | "eye" | null;
 
-// The body as it falls: hands torn off at the wrists (red stumps), club dropped.
-const FALLEN = creatureSprite("cyclops").map((row, y) =>
-  [...row].map((c, x) => {
-    if (x >= 24 && y < 18) return ".";                          // the club
-    if (y === 17 && (x >= 3 && x <= 6 || x >= 21 && x <= 24)) return c === "." ? "." : "x";
-    if (y >= 18 && y <= 20 && (x <= 7 || x >= 20)) return ".";   // the hands
-    return c;
-  }).join(""));
+// How big each part is drawn (a PixelSprite scale; the art is about 120px for
+// the body, 85px a hand and 55px the eye). The body also plays its own fall.
+const SCALE: Record<string, number> = { cyclops: 3, cyclops_hand: 1.8, cyclops_eye: 2.4 };
 
 export default function BossStage({ side, fx }: { side: BattleSide; fx: Fx | null }) {
   const t = side.team;
@@ -51,8 +46,8 @@ export default function BossStage({ side, fx }: { side: BattleSide; fx: Fx | nul
       <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 28, height: "100%", paddingBottom: 14 }}>
         {/* The body topples as its hands tear free. */}
         {scene === "split" && (
-          <div key={`fall-${fx!.id}`} className="boss-collapse" style={{ position: "absolute", bottom: 14, left: "50%", marginLeft: -75 }}>
-            <PixelSprite sprite={FALLEN} scale={5} />
+          <div key={`fall-${fx!.id}`} className="boss-collapse" style={{ position: "absolute", bottom: 14, left: "50%", marginLeft: -89 }}>
+            <PixelSprite sprite={creatureSprite("cyclops")} scale={SCALE.cyclops} style={{ filter: "brightness(0.8) sepia(0.3)" }} />
           </div>
         )}
 
@@ -65,7 +60,7 @@ export default function BossStage({ side, fx }: { side: BattleSide; fx: Fx | nul
             <div key={`${i}-${scene ? fx!.id : 0}`} className={enter} title={t[i].name}>
               <div key={reaction(i) ? `r-${fx!.id}` : "r"} className={dead ? "boss-dead" : reaction(i)}>
                 <div className={dead ? "" : idle}>
-                  <PixelSprite sprite={creatureSprite(id)} scale={id === "cyclops_hand" ? 4 : 5}
+                  <PixelSprite sprite={creatureSprite(id)} scale={SCALE[id] ?? 3}
                     style={id === "cyclops_hand" && n === 1 ? { transform: "scaleX(-1)" } : undefined} />
                 </div>
               </div>
