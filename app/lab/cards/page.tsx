@@ -17,7 +17,7 @@ export default function CardLab() {
   const [fight, setFight] = useState(false);
   const [gear, setGear] = useState<CreatureOrItemDrop | null>(null);
   // One of each rarity, plus a few more.
-  const ids = ["storm_phoenix", "crystal_golem", "crystalback", "rust_beetle", "cave_bat", "moss_wolf", "monkey_mage", "dire_wolf"];
+  const ids = ["storm_phoenix", "crystal_golem", "crystalback", "rust_beetle", "cave_bat", "moss_wolf", "bellow_toad", "dire_wolf"];
   const creatures = ids.map((id) => CREATURE_BY_ID[id]).filter(Boolean);
   const card = (t: CreatureTemplate) => <CardFace key={t.id} t={t} creatureId={t.id} />;
   return (
@@ -27,7 +27,7 @@ export default function CardLab() {
       <button className="pixel-btn" style={{ marginBottom: 14, marginLeft: 8 }} onClick={() => setGear(weaponDrop("void_scythe", "epic") as CreatureOrItemDrop)}>Preview found gear</button>
       {gear && <GearViewModal item={gear} slotName="weapon" onClose={() => setGear(null)} onSwap={() => setGear(null)}
         creatures={[{ id: "a", name: "Rust Beetle", creatureId: "rust_beetle" }, { id: "b", name: "Skull Raven", creatureId: "storm_phoenix" }]} />}
-      {fight && <EncounterCards creatureIds={["storm_phoenix", "rust_beetle", "monkey_mage"]} onClose={() => setFight(false)} onFight={() => setFight(false)} />}
+      {fight && <EncounterCards creatureIds={["storm_phoenix", "rust_beetle", "bellow_toad"]} onClose={() => setFight(false)} onFight={() => setFight(false)} />}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, 220px)", gap: 20 }}>
         {[CREATURE_BY_ID.storm_phoenix, CREATURE_BY_ID.rust_beetle].map(card)}
       </div>

@@ -13,7 +13,7 @@ import BagSlots, { slotLook } from "@/components/BagSlots";
 import { GearStatLine } from "@/components/GearCompare";
 import { useGameState } from "@/hooks/useGameState";
 import {
-  loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootIdOf, POTIONS, BINDLE, BACKPACK, BOOKCASE_SIZE,
+  loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootIdOf, POTIONS, BINDLE, BACKPACK,
   type BagEntry, type DungeonSave,
 } from "@/lib/dungeon/run";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
@@ -43,7 +43,7 @@ export default function BagPage() {
   const spare = gear.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
   // Potions in storage (from scans) can be packed too: they become bag potions.
   const potions = game.inventory.filter((d) => d.dropType === "item" && d.potion) as CreatureOrItemDrop[];
-  const shelfFree = BOOKCASE_SIZE - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
+  const shelfFree = game.bookcaseSize - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
   const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
   const away = !!lab.run;

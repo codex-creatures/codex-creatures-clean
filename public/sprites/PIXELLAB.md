@@ -19,6 +19,7 @@ the PNG here.
 | creatures/amber_wasp.png | gallery:8e760486-daef-4018-b3be-a15a4e0b4d6e |
 | creatures/aurelius.png | gallery:c29d5316-b647-4268-b754-884ace94a837 |
 | creatures/baby_cyclops.png | gallery:e7451478-247f-4c4e-bec7-754d61156141 |
+| creatures/bellow_toad.png | gallery:2dd08335-9bf9-51b7-bc63-20ddbefcd7e5 (raw generation; trimmed + mirrored here) |
 | creatures/cave_bat.png | gallery:054e1aad-2c7f-4370-8ba2-bae183383893 |
 | creatures/crystal_golem.png | gallery:39cc6f47-8738-4a8f-8a88-c5e05ee6ad7b |
 | creatures/crystalback.png | gallery:537af213-0666-448e-a72d-cb308fe90489 |

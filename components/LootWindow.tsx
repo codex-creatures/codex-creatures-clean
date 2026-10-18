@@ -189,7 +189,10 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
   if ("potion" in item) { kind = "potion"; body = <>Heals one creature {POTIONS[item.potion].heal} HP</>; }
   else if ("gear" in item) {
     const g = item.gear as CreatureOrItemDrop;
-    if (g.scroll) {
+    if (g.material || g.tool || g.schematic) {
+      kind = g.material ? "material" : g.tool ? `${g.rarity} tool` : `${g.rarity} schematic`;
+      body = <>{g.desc}</>;
+    } else if (g.scroll) {
       kind = "xp scroll";
       body = <>{g.desc}</>;
     } else if (g.codexMove) {

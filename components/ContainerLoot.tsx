@@ -6,6 +6,7 @@
 // in your bag; anything else needs a free slot, and is greyed out when your
 // bag is full. Whatever you leave stays on the floor.
 
+import { goodsIcon } from "@/lib/items/materials";
 import PixelSprite, { itemSprite } from "./PixelSprite";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { POTIONS, type SackItem } from "@/lib/dungeon/run";
@@ -31,7 +32,7 @@ export function lookOf(x: SackItem): Look {
   if (x.gear.dropType === "card" || x.gear.dropType === "creature") return { name: `${x.gear.name} card`, icon: "🃏", ...by(x.gear.rarity), free: true };
   const g = x.gear as CreatureOrItemDrop;
   const rc = RARITY_COLORS[g.rarity];
-  return { name: g.name, sprite: itemSprite(g), icon: g.codexMove ? "📖" : g.scroll ? "📜" : "📦", color: rc.text, glow: rarityGlow(g.rarity), free: false };
+  return { name: g.qty ? `${g.name} ×${g.qty}` : g.name, sprite: itemSprite(g), icon: goodsIcon(g) ?? (g.codexMove ? "📖" : g.scroll ? "📜" : "📦"), color: rc.text, glow: rarityGlow(g.rarity), free: !!g.material };
 }
 
 export default function ContainerLoot({ name, sprite, items, bagUsed, bagSlots, onTake, onTakeAll }: {

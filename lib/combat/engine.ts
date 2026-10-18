@@ -37,6 +37,7 @@ export type Fighter = {
   armorSet?: import("../items/armor").ArmorKey; // wearing a full set: its mechanic applies
   ability?: import("../creatures/abilities").AbilityKey; // a rare passive it was born with
   level?: number; // its level (lib/creatures/levels.ts)
+  hpMult?: number; // its HP was multiplied (an encampment's potion-drunk foes): arcane's cap grows with it
 };
 
 export type TurnLog = {
@@ -108,7 +109,8 @@ export function triangleModifier(moveStyle: CombatClass, targetClass: CombatClas
 // ── Damage types ────────────────────────────────────────
 // mult: the hit after armour; pen: share of armour it ignores;
 // maxHp: arcane moves also take this share of the target's max HP per
-// ARCANE_REF_POWER of move power (capped at ARCANE_CAP per hit).
+// ARCANE_REF_POWER of move power (capped at ARCANE_CAP per hit, times the
+// target's hpMult: arcane is the answer to a foe with swollen HP).
 export const DAMAGE_TYPES: Record<DamageType, { mult: number; pen: number; maxHp: number }> = {
   force:  { mult: 1.1,  pen: 0,    maxHp: 0 },
   pierce: { mult: 0.95, pen: 0.5,  maxHp: 0 },
@@ -184,7 +186,7 @@ export function calcDamage(
   // Attack against defence as a ratio: defence always cuts damage, but a hit
   // never drops to nothing (a hit as big as the armour does half).
   const afterArmor = raw > 0 ? (raw * raw) / (raw + defenseApplied) : 0;
-  const arcane = Math.min(ARCANE_CAP, defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
+  const arcane = Math.min(ARCANE_CAP * (defender.hpMult ?? 1), defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
 
   let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));

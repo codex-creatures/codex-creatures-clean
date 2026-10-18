@@ -135,6 +135,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   moss_wolf: [82, 65],
   amber_wasp: [62, 55],
   monkey_mage: [63, 73],
+  bellow_toad: [90, 68],
   dire_wolf: [112, 111],
   ironhide: [122, 87],
   cave_bat: [58, 50],

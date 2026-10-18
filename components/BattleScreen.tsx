@@ -21,7 +21,7 @@ import { MoveTile } from "./MoveTile";
 import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
-  activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf,
+  activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf, aliveCount,
   CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, HASTE_ROUNDS, STREAK_START, streakEffects,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
@@ -205,11 +205,13 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
   // boss: the opponent is that dungeon boss (played by its script).
   // illness: one of your creatures is sick (the witch's curse) for this many rounds.
   // tutorial: the first quest's guided fight (see TUTORIAL_STEPS).
+  // pair: their first two are both on the field (an ambush). turnLimit: the
+  // room blows after this many rounds (see BattleState.turnLimit).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
-    opts: { startHp?: number[]; title?: string; boss?: BossKind; illness?: { index: number; rounds: number }; tutorial?: boolean } = {}) {
+    opts: { startHp?: number[]; title?: string; boss?: BossKind; illness?: { index: number; rounds: number }; tutorial?: boolean; pair?: boolean; turnLimit?: number } = {}) {
     setView(null);
     setFx(null);
-    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss);
+    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit });
     const sick = opts.illness && state.sides.A.team[opts.illness.index];
     if (sick && opts.illness!.rounds > 0) sick.statuses.push({ id: "illness", rounds: opts.illness!.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });
     setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: -1 } : {}) });
@@ -353,6 +355,11 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#ffd66e", borderColor: "#ffd66e" }}>⚠️ {phaseText}</div>
         )}
         {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
+        {state.turnLimit && !match.state.winner && (
+          <div className="stone-panel pixel-font battle-banner" style={{ color: "#ff8a5c", borderColor: "#ff8a5c" }}>
+            🧨 {Math.max(0, state.turnLimit - state.round)} round{state.turnLimit - state.round === 1 ? "" : "s"} until the room blows
+          </div>
+        )}
         {foe.boss && <BossStage side={foe} fx={fx} infos={info.B}
           you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
 
@@ -429,7 +436,10 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             <div className="pixel-font" style={{ fontSize: 30, color: match.state.winner === "A" ? "#5ee08a" : match.state.winner === "B" ? FOE : "white" }}>
               {match.state.winner === "A" ? "Victory!" : match.state.winner === "B" ? "Defeat" : "Draw"}
             </div>
-            <div style={{ fontSize: 12, color: MUTED }}>{match.state.round} rounds · {AI_LEVEL_LABELS[match.level]} AI</div>
+            <div style={{ fontSize: 12, color: MUTED }}>
+              {match.state.winner === "B" && match.state.turnLimit && match.state.round >= match.state.turnLimit && aliveCount(you) > 0 ? "💥 The room collapses on you. " : ""}
+              {match.state.round} rounds · {AI_LEVEL_LABELS[match.level]} AI
+            </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 4 }}>{finishedActions}</div>
             <button className="chip" onClick={() => toggle("log")} style={{ minHeight: 32, padding: "2px 12px", fontSize: 13 }}>📜 Log</button>
           </div>

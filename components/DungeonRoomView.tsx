@@ -21,7 +21,7 @@
 // (onEnemies).
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ROOM_INFO, runPosition, isFight, type DungeonRun, type RoomKind } from "@/lib/dungeon/run";
+import { ROOM_INFO, runPosition, hasFight, type DungeonRun, type RoomKind } from "@/lib/dungeon/run";
 import { waysOn } from "@/lib/dungeon/map";
 import { createChamber, CW, CH, type Chamber, type ChamberSize, type ChamberView, type TunnelLook } from "@/lib/dungeon/chamber";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
@@ -78,7 +78,7 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
   // lair) still has a dark way out — it just doesn't lead anywhere you can go.
   const looks: TunnelLook[] = ways.length ? ways.map(() => "unknown") : ["unknown"];
   const room = run.current;
-  const size: ChamberSize = room?.boss || (room?.enemies?.length ?? 0) >= 2 ? "large" : "normal";
+  const size: ChamberSize = room?.boss || node.large || (room?.enemies?.length ?? 0) >= 2 ? "large" : "normal";
   // The boss's room is always its lair.
   const theme = (room?.kind === "boss" || node.kind === "boss") && looks.length === 1 ? "lair" : THEMES[seedOf(pos) % THEMES.length];
   // Rooms repainted for the far camera live in rooms/far (see FAR_PAINTED); the
@@ -212,7 +212,8 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
   if (room.kind === "chest") return prop(room.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST, room.done ? "An open chest" : "Open the chest");
   if (room.kind === "stash") return prop(room.opened ? BURLAP_SACK_OPEN : BURLAP_SACK, room.opened ? "An open sack" : "Open the sack");
 
-  if (isFight(room.kind)) {
+  // (An ambush that hasn't sprung yet looks like an empty camp.)
+  if (hasFight(room)) {
     // Beaten: what it leaves behind — a rickety chest (bosses) or a sack.
     if (room.done) {
       if (room.container === "chest") return prop(room.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST, room.opened ? "Its chest, opened" : "Loot the chest");
@@ -247,11 +248,11 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
 
   // Someone (or something) waiting in the room.
   if (room.kind === "treasure" && room.done) return null; // (the gold, once taken, is gone)
-  const who = WANDERERS[room.kind];
+  const who = room.kind === "library" && room.librarian ? LIBRARIAN : WANDERERS[room.kind];
   if (who) {
     return (
       <div style={at}>
-        <div style={{ width: share(who), opacity: room.done && room.kind !== "merchant" && room.kind !== "librarian" ? 0.45 : 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(who)}</div>
+        <div style={{ width: share(who), opacity: room.done && room.kind !== "merchant" && room.kind !== "librarian" && room.kind !== "library" ? 0.45 : 1, filter: "drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(who)}</div>
       </div>
     );
   }

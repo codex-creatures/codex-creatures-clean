@@ -6,6 +6,7 @@
 // of a run for what you got and what you left behind. Creature cards go in
 // one stack you can tap to look through (CardStack); gold shows as one total.
 
+import { goodsIcon } from "@/lib/items/materials";
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { GOLD_SPRITE, POTION_SPRITES, GOLD_RARITY, POTION_RARITY } from "@/lib/sprites/items";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
@@ -27,7 +28,7 @@ function lookOf(g: GotItem): Look {
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
   if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rarityGlow(x.rarity) };
-  return { name: x.name, sprite: itemSprite(x), icon: x.codexMove ? "📖" : x.scroll ? "📜" : x.potion ? POTIONS[x.potion].icon : "📦", color: rc.text, glow: rarityGlow(x.rarity) };
+  return { name: x.name, sprite: itemSprite(x), icon: goodsIcon(x) ?? (x.codexMove ? "📖" : x.scroll ? "📜" : x.potion ? POTIONS[x.potion].icon : "📦"), color: rc.text, glow: rarityGlow(x.rarity) };
 }
 
 // A creature card in the haul (its template, if we know the creature).

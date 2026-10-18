@@ -14,6 +14,7 @@ import { CREATURE_BY_ID, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } 
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
 import { SCROLL_XP } from "./creatures/levels";
+import { materialBundle } from "./items/materials";
 
 const now = () => new Date().toISOString();
 
@@ -101,5 +102,6 @@ export function dropFromOutcome(result: BarcodeOutcome, barcode = ""): Drop | nu
   if (itemCategory === "consumable") return rarity === "common" ? potionDrop(barcode) : codexDrop(randomLearnableMove(), barcode);
   if (itemCategory === "weapon") return itemKey ? weaponDrop(itemKey, rarity, barcode) : null;
   if (itemCategory === "armor") return armorKey ? armorDrop(armorKey, rarity, barcode, undefined, armorSlot) : null;
+  if (itemCategory === "material") return { ...materialBundle(rarity), barcode };
   return plainItemDrop(itemCategory, rarity, barcode);
 }

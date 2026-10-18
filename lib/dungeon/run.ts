@@ -30,7 +30,7 @@ import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
 import { rollGear, RARITIES } from "../balance/simulate";
 import type { BossKind } from "../combat/bossAi";
-import { questMap, rollMap, routeLength, waysOn, DEFAULT_SPEC, type DungeonMap, type MapSpec } from "./map";
+import { questMap, rollMap, routeLength, waysOn, type DungeonMap, type MapSpec } from "./map";
 import { newWitchGame, type WitchGame } from "./witch";
 import { REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
@@ -38,6 +38,8 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS } from "../items/armor";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
+import { LEARNABLE_MOVES } from "../creatures/creatureData";
+import { TOOLS, MATERIALS, materialBundle, toolDrop, schematicDrop, type MaterialKey, type ToolKey } from "../items/materials";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -45,7 +47,8 @@ export const ENTRY_FEE = 50;
 export const FREE_RUNS = 5; // your first runs cost nothing
 export const FIRST_TREASURE_GOLD = 50;
 
-export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss";
+export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss"
+  | "encampment" | "library" | "storehouse"; // (the large rooms: LARGE_MIX)
 
 // ── The dungeons ─────────────────────────────────────────────────────
 // 1: the Labyrinth (the Cyclops at the top). 2: the Deep Labyrinth, open
@@ -66,9 +69,9 @@ export type DungeonInfo = {
   goldScale: number;
 };
 export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
-  1: { name: "The Labyrinth", spec: DEFAULT_SPEC, easyPack: ["common", "common", "uncommon"], easyGear: "common",
+  1: { name: "The Labyrinth", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 }, easyPack: ["common", "common", "uncommon"], easyGear: "common",
        hard: ["rare", "rare"], miniboss: ["epic", "rare"], levels: [[3, 1, 4], [6, 1, 7], [Infinity, 3, 7]], maxLevel: 7, goldScale: 1 },
-  2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE }, easyPack: ["uncommon", "uncommon", "rare"], easyGear: "uncommon",
+  2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 }, easyPack: ["uncommon", "uncommon", "rare"], easyGear: "uncommon",
        hard: ["epic", "rare"], miniboss: ["legendary", "epic"], levels: [[5, 7, 11], [10, 9, 14], [Infinity, 11, 15]], maxLevel: 17, goldScale: 2 },
 };
 export const dungeonOf = (run: { dungeon?: DungeonId }): DungeonId => run.dungeon ?? 1;
@@ -92,7 +95,7 @@ export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rn
   const d = Number.isFinite(depth) ? depth : Infinity;
   const [, min, max] = D.levels.find(([upTo]) => d <= upTo) ?? D.levels[D.levels.length - 1];
   const den = min + Math.floor(rng() * (max - min + 1));
-  const bump = kind === "hard" ? HARD_LEVELS : kind === "miniboss" ? MINIBOSS_LEVELS : 0;
+  const bump = kind === "hard" ? HARD_LEVELS : kind === "miniboss" || kind === "storehouse" ? MINIBOSS_LEVELS : 0;
   return Math.min(D.maxLevel, den + bump);
 }
 
@@ -104,6 +107,22 @@ export const ROOM_MIX: [RoomKind, number][] = [
 // Mystery rooms ("?" on the map) have their own mix: a gamble. Half are a
 // mini boss; 15% are something good (a librarian — only ever found here —
 // a deck of cards, or a merchant); the rest are ordinary rooms.
+// The large rooms (lib/dungeon/map.ts: placeLarge): a run has one in the
+// Labyrinth, two in the Deep Labyrinth. Mini objectives off the main route.
+// - Encampment: 2–3 Rares (Epics in the Deep) and 1–3 cages, each of which
+//   may hold a creature you can take home. One of four kinds
+//   (ENCAMP_VARIANTS, equally likely): plain; drunk (they've been at the
+//   potions: ENCAMP_DRUNK_HP × HP — arcane moves are the answer); ambush (it
+//   looks empty, until you open a cage: two jump you at once); rigged
+//   (barrels of blackpowder: beat them in ENCAMP_FUSE rounds or the room
+//   comes down on you, and the run is over).
+// - Library: LIBRARY_FIND of the time 1–3 codexes lying about; otherwise a
+//   wandering librarian with LIBRARY_BOOKS books for sale.
+// - Storehouse: materials mostly, some potions, now and then a weapon, a
+//   flare, a clairvoyance scroll or a schematic. STOREHOUSE_GUARD of the
+//   time a mini boss has made it its lair.
+export const LARGE_MIX: [RoomKind, number][] = [["encampment", 34], ["library", 33], ["storehouse", 33]];
+
 export const MYSTERY_MIX: [RoomKind, number][] = [
   ["miniboss", 45], ["witch", 8], ["librarian", 5], ["cards", 5], ["merchant", 5],
   ["easy", 7], ["pool", 7], ["hard", 6], ["chest", 6], ["stash", 6],
@@ -123,6 +142,9 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   miniboss:  { name: "Mini boss",          icon: "👹" },
   witch:     { name: "The card witch",     icon: "🧙" },
   boss:      { name: "The boss",           icon: "👁️" },
+  encampment: { name: "Encampment",        icon: "⛺" },
+  library:   { name: "Library",            icon: "🏛️" },
+  storehouse: { name: "Storehouse",        icon: "🏚️" },
 };
 
 // Fights.
@@ -140,7 +162,6 @@ export const EASY_GOLD: [number, number] = [10, 20];
 export const HARD_GOLD: [number, number] = [30, 50];
 export const BOSS_GOLD: [number, number] = [80, 120];
 export const MINIBOSS_GOLD: [number, number] = [50, 80];
-export const MINIBOSS_REVIVE_HP = 0.7; // beating a mini boss: heal one creature to full, or revive one to 70%
 export const DECK_CARDS = 5;           // a deck of cards: 5 creature-card rolls
 // The card witch's prizes: a creature card each, rolled like a scan.
 export const witchPrize = () => pickCreatureId(pickRarity("", "random"));
@@ -175,8 +196,6 @@ export type FloorItem = { room: string; potion?: PotionKey; drop?: Drop };
 // Something you picked up this run (for the haul at the end).
 export type GotItem = { potion: PotionKey } | { drop: Drop };
 
-// The bookcase in the Den: where codexes are kept (a single shelf to start).
-export const BOOKCASE_SIZE = 10;
 export type PotionKey = "potion" | "lesser";
 export const POTIONS: Record<PotionKey, { name: string; heal: number; price: number; icon: string }> = {
   potion: { name: "Healing Potion", heal: 100, price: 100, icon: "⚗️" }, // (a round flask: the art is a red bottle)
@@ -237,15 +256,91 @@ export const MERCHANT_SCROLL_CHANCE = 0.2; // a wandering merchant also has an X
 export const SCROLL_PRICE = 200;
 export const MINIBOSS_SCROLL_CHANCE = 0.25; // a beaten mini boss's chest holds an XP scroll
 export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
+// A mini boss's chest: potions instead of the heal it used to give, and now
+// and then a clairvoyance scroll or the crooked bookcase schematic.
+export const MINIBOSS_POTIONS: [number, number] = [1, 2];
+export const MINIBOSS_CLAIRVOYANCE = 0.1;
+export const SCHEMATIC_CHANCE = { miniboss: 0.05, boss: 0.1, storehouse: 0.04 };
+export function minibossExtras(rng: Rng = Math.random): SackItem[] {
+  const potion = (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
+  return [
+    ...Array.from({ length: randInt(...MINIBOSS_POTIONS, rng) }, potion),
+    ...(rng() < MINIBOSS_CLAIRVOYANCE ? [{ gear: toolDrop("clairvoyance") }] : []),
+    ...(rng() < SCHEMATIC_CHANCE.miniboss ? [{ gear: schematicDrop("crooked_bookcase") }] : []),
+  ];
+}
+
+// ── The large rooms ─────────────────────────────────────────────────
+export type EncampVariant = "plain" | "drunk" | "ambush" | "rigged";
+export const ENCAMP_VARIANTS: EncampVariant[] = ["plain", "drunk", "ambush", "rigged"];
+export const ENCAMP_SIZE: [number, number] = [2, 3];
+export const ENCAMP_AMBUSHERS = 2;
+export const ENCAMP_DRUNK_HP = 3;
+export const ENCAMP_FUSE = 10;
+export const ENCAMP_GOLD: [number, number] = [60, 100];
+export const ENCAMP_CAGES: [number, number] = [1, 3];
+export const CAGE_CREATURE_CHANCE = 0.5;
+// A cage in an encampment: maybe a creature (rolled like a scan), until you open it.
+export type Cage = { creatureId?: string; opened?: boolean };
+export const LIBRARY_FIND = 0.75;
+export const LIBRARY_CODEXES: [number, number] = [1, 3];
+export const LIBRARY_BOOKS = 5;
+export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read (race codexes: CODEX_PRICE)
+export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
+export const STOREHOUSE_GUARD = 0.35;
+export const STOREHOUSE_MATERIALS: [number, number] = [3, 5];
+export const STOREHOUSE_POTIONS: [number, number] = [1, 2];
+export const STOREHOUSE_FINDS = { weapon: 0.15, flare: 0.3, clairvoyance: 0.08 };
+// How rare a storehouse's materials are (out of 100).
+const STORE_RARITY: [Rarity, number][] = [["common", 50], ["uncommon", 30], ["rare", 15], ["epic", 5]];
+
+// ── The wandering merchant ───────────────────────────────────────────
+// MERCHANT_SLOTS things on the cart, one of each: both potions and a flare;
+// an XP scroll MERCHANT_SCROLL_CHANCE of the time and a clairvoyance scroll
+// MERCHANT_CLAIRVOYANCE of the time; the rest is materials.
+export const MERCHANT_SLOTS = 5;
+export const MERCHANT_CLAIRVOYANCE = 0.4;
+export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: number }[] = [
+  { material: "planks", qty: 5, price: 40 },
+  { material: "nails", qty: 5, price: 30 },
+  { material: "metal_bars", qty: 2, price: 90 },
+  { material: "essence_stones", qty: 1, price: 150 },
+];
+export type Ware = { key: string; price: number } & (
+  | { potion: PotionKey } | { scroll: true } | { tool: ToolKey } | { material: MaterialKey; qty: number });
+export function rollWares(rng: Rng = Math.random): Ware[] {
+  const wares: Ware[] = [
+    { key: "potion", potion: "potion", price: POTIONS.potion.price },
+    { key: "lesser", potion: "lesser", price: POTIONS.lesser.price },
+    { key: "flare", tool: "flare", price: TOOLS.flare.price },
+  ];
+  if (rng() < MERCHANT_SCROLL_CHANCE) wares.push({ key: "scroll", scroll: true, price: SCROLL_PRICE });
+  if (rng() < MERCHANT_CLAIRVOYANCE) wares.push({ key: "clairvoyance", tool: "clairvoyance", price: TOOLS.clairvoyance.price });
+  const mats = [...MERCHANT_MATERIALS];
+  while (wares.length < MERCHANT_SLOTS && mats.length > 0) {
+    const m = mats.splice(Math.floor(rng() * mats.length), 1)[0];
+    wares.push({ key: m.material, ...m });
+  }
+  return wares;
+}
+export const wareName = (w: Ware) => ("potion" in w ? POTIONS[w.potion].name : "scroll" in w ? "Tattered XP Scroll"
+  : "tool" in w ? TOOLS[w.tool].name : MATERIALS[w.material].name + " ×" + w.qty);
 
 type Rng = () => number;
+// A weighted pick from [thing, weight] pairs.
+function weighted<T>(mix: [T, number][], rng: Rng): T {
+  let r = rng() * mix.reduce((s, [, w]) => s + w, 0);
+  for (const [t, w] of mix) { if (r < w) return t; r -= w; }
+  return mix[0][0];
+}
 const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
 const pick = <T,>(arr: readonly T[], rng: Rng) => arr[Math.floor(rng() * arr.length)];
 
 // ── Enemies ──────────────────────────────────────────────────────────
 export type GearPiece = { slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean };
 // level: missing = REF_LEVEL (the species' listed %s).
-export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number };
+// hpMult: its HP is multiplied (an encampment's potion-drunk foes).
+export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number };
 
 export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random, level?: number): Enemy {
   const pool = CREATURES_BY_RARITY[rarity].filter((c) => !exclude.includes(c.id));
@@ -285,7 +380,10 @@ export function enemyFighter(e: Enemy): Fighter {
   const t = CREATURE_BY_ID[e.creatureId];
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
-  return buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
+  const f = buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
+  if (!e.hpMult) return f;
+  const maxHp = Math.round(f.maxHp * e.hpMult);
+  return { ...f, maxHp, hp: maxHp, hpMult: e.hpMult };
 }
 
 export function gearName(p: GearPiece): string {
@@ -301,10 +399,14 @@ export type Room = {
   gold?: number;    // gold for winning (fights) or finding (treasure)
   fighters?: string[]; // your creatures in the fight, in battle order
   boss?: BossKind;     // the boss in this room (instead of enemies)
-  offers?: string[];   // a librarian: the codexes (race moves) for sale
-  bought?: string[];   // …and the ones you bought (librarian codexes; merchant potions, "scroll")
-  scroll?: boolean;    // a merchant: has an XP scroll for sale
-  blessed?: boolean;   // a mini boss's heal/revive has been used
+  offers?: string[];   // a librarian: the codexes for sale
+  bought?: string[];   // …and the ones you bought (librarian codexes; merchant wares, by key)
+  wares?: Ware[];      // a merchant's cart
+  librarian?: boolean; // a library: a wandering librarian is in (otherwise there are codexes to find)
+  variant?: EncampVariant; // an encampment: which kind
+  cages?: Cage[];      // …its cages
+  sprung?: boolean;    // …an ambush: you opened a cage and they jumped you
+  guarded?: boolean;   // a storehouse: a mini boss guards it
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
   container?: "sack" | "chest"; // a beaten fight's loot: a sack (ordinary fights) or a rickety chest (bosses)
@@ -315,6 +417,11 @@ export type Room = {
 };
 
 export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "miniboss" || k === "boss";
+// Is there a fight in this room (now)? Fight rooms, an encampment (an
+// ambush only once it's sprung), a guarded storehouse.
+export const hasFight = (r: Room) => isFight(r.kind)
+  || (r.kind === "encampment" && (r.variant !== "ambush" || !!r.sprung))
+  || (r.kind === "storehouse" && !!r.guarded);
 
 // A room from a mix, leaving out the given kinds (their share goes to the rest).
 export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], from: [RoomKind, number][] = ROOM_MIX): RoomKind {
@@ -369,7 +476,42 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "merchant":
-      return { kind, ...(rng() < MERCHANT_SCROLL_CHANCE ? { scroll: true } : {}), done: false };
+      return { kind, wares: rollWares(rng), bought: [], done: false };
+    case "encampment": {
+      const variant = pick(ENCAMP_VARIANTS, rng);
+      const size = variant === "ambush" ? ENCAMP_AMBUSHERS : randInt(...ENCAMP_SIZE, rng);
+      const gear = RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(D.easyGear) + 1)];
+      const enemies: Enemy[] = [];
+      for (let i = 0; i < size; i++) enemies.push(makeEnemy(D.hard[0], gear, enemies.map((e) => e.creatureId), rng, level));
+      if (variant === "drunk") for (const e of enemies) e.hpMult = ENCAMP_DRUNK_HP;
+      const cages: Cage[] = Array.from({ length: randInt(...ENCAMP_CAGES, rng) }, () =>
+        (rng() < CAGE_CREATURE_CHANCE ? { creatureId: pickCreatureId(pickRarity("", "random")) } : {}));
+      return { kind, variant, enemies, cages, level: "normal", gold: gold(ENCAMP_GOLD), done: false };
+    }
+    case "library": {
+      if (rng() < LIBRARY_FIND) {
+        const sack: SackItem[] = Array.from({ length: randInt(...LIBRARY_CODEXES, rng) }, () =>
+          ({ gear: codexDrop(rng() < CYCLOPS_RACE_CODEX ? randomCodexMove() : randomLearnableMove()) }));
+        return { kind, sack, done: false };
+      }
+      const books = [...RACE_MOVES, ...LEARNABLE_MOVES].map((m) => m.name);
+      const offers: string[] = [];
+      while (offers.length < Math.min(LIBRARY_BOOKS, books.length)) offers.push(books.splice(Math.floor(rng() * books.length), 1)[0]);
+      return { kind, librarian: true, offers, bought: [], done: false };
+    }
+    case "storehouse": {
+      const sack: SackItem[] = [
+        ...Array.from({ length: randInt(...STOREHOUSE_MATERIALS, rng) }, () => ({ gear: materialBundle(weighted(STORE_RARITY, rng), rng) })),
+        ...Array.from({ length: randInt(...STOREHOUSE_POTIONS, rng) }, (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" })),
+        ...(rng() < STOREHOUSE_FINDS.weapon ? [{ gear: weaponDrop(pick(ITEM_KEYS, rng), pickRarity("", "random")) }] : []),
+        ...(rng() < STOREHOUSE_FINDS.flare ? [{ gear: toolDrop("flare") }] : []),
+        ...(rng() < STOREHOUSE_FINDS.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
+        ...(rng() < SCHEMATIC_CHANCE.storehouse ? [{ gear: schematicDrop("crooked_bookcase") }] : []),
+      ];
+      if (rng() >= STOREHOUSE_GUARD) return { kind, sack, done: false };
+      const enemies = [makeEnemy(D.miniboss[0], D.miniboss[1], [], rng, level)];
+      return { kind, guarded: true, sack, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
+    }
     case "witch":
       return { kind, witch: newWitchGame(rng, witchPrize), done: false };
     case "boss":
@@ -422,6 +564,8 @@ export type DungeonRun = {
   pending?: Drop[];            // found, but the bag's full: take it or leave it
   floor?: FloorItem[];         // left behind on the floors of this run
   got?: GotItem[];             // everything picked up this run (gold, cards, gear, codexes, potions)
+  lit?: string[];              // rooms a flare or a clairvoyance scroll lit up (see knownRooms)
+  seen?: string[];             // rooms a clairvoyance scroll looked into
   status: RunStatus;
 };
 
@@ -477,12 +621,14 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run)), room: run.room + 1 };
 }
 
-// Rooms you can walk out of without doing anything.
-const SKIPPABLE: RoomKind[] = ["pool", "stash", "merchant", "librarian", "witch"];
+// Rooms you can walk out of without doing anything (and the large rooms
+// with no fight waiting: a library, an unguarded storehouse, an encampment
+// that looks empty).
+const SKIPPABLE: RoomKind[] = ["pool", "stash", "merchant", "librarian", "witch", "library", "storehouse", "encampment"];
 
 // Can you take a tunnel out of here yet? Not until the room is dealt with.
 export const canMoveOn = (run: DungeonRun) =>
-  run.status === "exploring" && (!run.current || run.current.done || SKIPPABLE.includes(run.current.kind));
+  run.status === "exploring" && (!run.current || run.current.done || (SKIPPABLE.includes(run.current.kind) && !hasFight(run.current)));
 
 // Take a tunnel: finish this room and walk into the next.
 export function moveOn(run: DungeonRun, nodeId: string, rng: Rng = Math.random): DungeonRun {

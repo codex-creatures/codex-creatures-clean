@@ -30,6 +30,11 @@ export type CreatureOrItemDrop = {
   codexMove?: string;   // a codex (consumable item): the move it teaches
   scroll?: "xp";        // an XP scroll (consumable item; SCROLL_XP in lib/creatures/levels.ts)
   potion?: "potion" | "lesser"; // a potion (consumable item; see POTIONS in lib/dungeon/run.ts)
+  // lib/items/materials.ts:
+  material?: import("./items/materials").MaterialKey; // a material: a stack of qty
+  qty?: number;
+  tool?: import("./items/materials").ToolKey;          // a Labyrinth tool (flare, clairvoyance scroll)
+  schematic?: import("./items/materials").SchematicKey; // plans for something to build at home
   stats?: {
     melee?: number;
     ranged?: number;

@@ -7,7 +7,11 @@
 // Rules (confirmed by design):
 // - One active creature per side, and each round both sides pick ONE action.
 //   (Bosses can have a second creature on the field, its "partner"; then you
-//   choose which of the two to attack. A boss side is played by bossAi.ts.)
+//   choose which of the two to attack. A boss side is played by bossAi.ts.
+//   An ordinary side can have a partner too — an ambush, two on one — and
+//   the partner simply uses its hardest-hitting move: partnerAction.)
+// - A fight can have a turn limit (a room rigged to blow): if side B still
+//   has someone standing when the last round ends, side B wins.
 // - Swaps resolve first, then attacks in Agility order (ties random). A side
 //   that swaps gives the opponent a free hit on the creature coming in.
 // - The creature swapped out restores 50% of its missing energy.
@@ -121,7 +125,7 @@ export type BattleSide = {
   key: SideKey;
   team: Combatant[];
   active: number;
-  partner?: number | null; // a second creature on the field (bosses only)
+  partner?: number | null; // a second creature on the field (bosses, or an ambush)
   swaps: number;
   lastSwapRound: number;
   boss?: BossState;        // set when this side is a scripted boss
@@ -155,6 +159,7 @@ export type BattleState = {
   needsReplacement: SideKey[];
   winner: SideKey | "draw" | null;
   log: BattleEvent[];
+  turnLimit?: number; // after this many rounds, if B still stands, B wins (side A is caught in the blast)
   // Running totals for the Balance Lab.
   hits: number;
   minDamageHits: number;
@@ -169,7 +174,10 @@ export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).leng
 // startHp: creatures that start hurt (e.g. HP carried between dungeon
 // rooms); missing = full health. Everyone starts with full energy.
 // bossB: side B is that boss, played by its script.
-export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}, bossB?: BossKind): BattleState {
+// opts.pairB: side B's first two creatures are both on the field (an ambush).
+// opts.turnLimit: see BattleState.
+export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}, bossB?: BossKind,
+  opts: { pairB?: boolean; turnLimit?: number } = {}): BattleState {
   const fresh = (t: Fighter[], hp?: number[]): Combatant[] =>
     t.map((f, i) => ({ ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] }));
   const side = (key: SideKey, team: Fighter[]): BattleSide =>
@@ -179,8 +187,9 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partia
     B.boss = { kind: bossB, phase: 1 };
     B.partner = null;
     for (const i of bossHiddenAtStart(bossB)) B.team[i].hidden = true;
-  }
+  } else if (opts.pairB && B.team.length > 1) B.partner = 1;
   return {
+    ...(opts.turnLimit ? { turnLimit: opts.turnLimit } : {}),
     round: 0,
     sides: { A: side("A", teamA), B },
     needsReplacement: [],
@@ -217,7 +226,7 @@ export function affordableSkills(f: Combatant): Skill[] {
 // Bench creatures this side could swap to. (Future: fear blocks this.)
 export function swapTargets(s: BattleSide): number[] {
   if (s.boss) return [];
-  return s.team.map((f, i) => i).filter((i) => i !== s.active && s.team[i].hp > 0);
+  return s.team.map((f, i) => i).filter((i) => i !== s.active && i !== s.partner && s.team[i].hp > 0);
 }
 
 // Enemy creatures this side can attack right now (team indexes).
@@ -312,6 +321,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     const s = state.sides[k];
     if (s.boss) turns.push(...bossActions(state, k).map((t) => ({ key: k, ...t })));
     else if (actions[k].kind !== "swap" && actions[k].kind !== "item" && actions[k].kind !== "weapon") turns.push({ key: k, index: s.active, action: actions[k] });
+    if (!s.boss && s.partner != null && s.team[s.partner].hp > 0) turns.push({ key: k, index: s.partner, action: partnerAction(state, k) });
   }
   // Pounce (and a Quickscale set's first attack) goes before everyone; otherwise fastest first.
   const quick = (f: Combatant, a: BattleAction) => a.kind === "attack" && hasSet(f, "dragonscale_tunic") && !f.setUsed;
@@ -536,9 +546,22 @@ export function sendInReplacement(state: BattleState, key: SideKey, index: numbe
 
 function checkWinner(state: BattleState) {
   const a = aliveCount(state.sides.A), b = aliveCount(state.sides.B);
-  if (a > 0 && b > 0 && state.round < MAX_ROUNDS) return;
-  state.winner = a > 0 && b === 0 ? "A" : b > 0 && a === 0 ? "B" : "draw";
+  const timeUp = !!state.turnLimit && state.round >= state.turnLimit;
+  if (a > 0 && b > 0 && state.round < MAX_ROUNDS && !timeUp) return;
+  state.winner = a > 0 && b === 0 ? "A" : b > 0 && (a === 0 || timeUp) ? "B" : "draw";
   state.log.push({ type: "end", winner: state.winner });
+}
+
+// An ambush partner's turn (an ordinary side with two on the field): its
+// hardest-hitting affordable move on the foe's main creature, or a rest.
+export function partnerAction(state: BattleState, key: SideKey): BattleAction {
+  const s = state.sides[key];
+  const me = s.team[s.partner!];
+  const them = activeOf(state.sides[other(key)]);
+  const best = affordableSkills(me)
+    .map((sk) => ({ sk, dmg: calcDamage(sk, me, them, false).damage }))
+    .sort((x, y) => y.dmg - x.dmg)[0];
+  return best ? { kind: "attack", skillName: best.sk.name } : { kind: "pass" };
 }
 
 // Deep-enough copy for React state updates.

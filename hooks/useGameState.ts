@@ -16,6 +16,7 @@ import { NEW_QUEST, type QuestState } from "@/lib/quest";
 import { fighterFor } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
+import { SCHEMATICS, bookcaseSize, canAfford, type MaterialKey } from "@/lib/items/materials";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -73,6 +74,7 @@ type SaveState = {
   crate?: Drop[];                      // Klutz's crate: gear he brought home, to keep or sell
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
   player?: Progress;                   // your own level and XP (it decides what you can find when you scan)
+  bookcase?: number;                   // the bookcase's level (1: the broken shelf; lib/items/materials.ts)
 };
 
 // A new player's first creature (a Lv 3 Rare): lib/creatures/starter.ts.
@@ -115,6 +117,7 @@ export function loadSave(): SaveState | null {
     scanMode: parsed.scanMode === "store" ? "store" : "loot",
     caches: Array.isArray(parsed.caches) ? parsed.caches : [],
     crate: Array.isArray(parsed.crate) ? parsed.crate : [],
+    bookcase: typeof parsed.bookcase === "number" ? parsed.bookcase : 1,
   };
 }
 
@@ -141,6 +144,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [caches, setCaches] = useState<Drop[]>([]);
   const [crate, setCrate] = useState<Drop[]>([]);
   const [player, setPlayer] = useState<Progress>({ level: 1, xp: 0 });
+  const [bookcase, setBookcase] = useState(1);
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -174,14 +178,15 @@ export function useGameState(initialTab: TabKey = "all") {
       setCaches(saved.caches ?? []);
       setCrate(saved.crate ?? []);
       setPlayer(saved.player ?? { level: 1, xp: 0 });
+      setBookcase(saved.bookcase ?? 1);
     }
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -446,6 +451,17 @@ export function useGameState(initialTab: TabKey = "all") {
   // ── Actions ───────────────────────────────────────────
   function addDrop(drop: Drop) {
     setLastDrop(drop);
+    // Materials stack: one entry per material.
+    if (drop.dropType === "item" && drop.material) {
+      const key = drop.material;
+      setInventory((prev) => {
+        const at = prev.findIndex((d) => d.dropType === "item" && d.material === key);
+        if (at < 0) return [drop, ...prev];
+        const had = prev[at] as CreatureOrItemDrop;
+        return prev.map((d, i) => (i === at ? { ...had, qty: (had.qty ?? 1) + (drop.qty ?? 1) } : d));
+      });
+      return;
+    }
     setInventory((prev) => [drop, ...prev]);
     if (isRewardDrop(drop)) setGold((g) => g + drop.amount);
   }
@@ -522,6 +538,22 @@ export function useGameState(initialTab: TabKey = "all") {
       next[creatureId] = { ...next[creatureId], [key]: itemId ?? undefined };
       return next;
     });
+  }
+
+  // Build what a schematic shows, if you have the materials: the schematic
+  // and the materials are used up. Returns whether it was built.
+  function buildSchematic(schematicId: string): boolean {
+    const plan = inventory.find((d) => d.id === schematicId);
+    if (!plan || plan.dropType !== "item" || !plan.schematic) return false;
+    const cost = SCHEMATICS[plan.schematic].cost;
+    if (!canAfford(inventory, cost)) return false;
+    setInventory((prev) => prev.filter((d) => d.id !== schematicId).flatMap((d) => {
+      if (d.dropType !== "item" || !d.material || !cost[d.material as MaterialKey]) return [d];
+      const left = (d.qty ?? 1) - cost[d.material as MaterialKey]!;
+      return left > 0 ? [{ ...d, qty: left }] : [];
+    }));
+    if (plan.schematic === "crooked_bookcase") setBookcase((b) => Math.max(b, 2));
+    return true;
   }
 
   // An item leaves your storage (e.g. left behind on a Labyrinth floor).
@@ -602,6 +634,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setCaches([]);
     setCrate([]);
     setPlayer({ level: 1, xp: 0 });
+    setBookcase(1);
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -637,7 +670,7 @@ export function useGameState(initialTab: TabKey = "all") {
     discoveredCreatures, discoveredItems,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
-    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated,
+    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp,
   };

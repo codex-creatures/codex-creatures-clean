@@ -23,23 +23,31 @@
 // - MYSTERY_CHANCE of rooms are mysteries: they stay "?" until you walk in,
 //   even up close, and are rolled from MYSTERY_MIX (mostly mini bosses;
 //   librarians only turn up there).
+// - A few rooms are LARGE (spec.large of them): an encampment, a library or
+//   a storehouse (LARGE_MIX). They're drawn bigger on the scroll, so you can
+//   plan a route through one — or round it. Half the time you can see what's
+//   in one from the start (LARGE_KNOWN); otherwise it's a "?" until you walk in.
+// - A flare or a clairvoyance scroll lights up the map round a spot, like
+//   your torch (see knownRooms: lit and seen).
 
-import { MYSTERY_MIX, ROOM_MIX, rollRoomKind, type RoomKind } from "./run";
+import { MYSTERY_MIX, ROOM_MIX, LARGE_MIX, rollRoomKind, type RoomKind } from "./run";
 
-export const MAP_W = 100;
-export const MAP_H = 170;
-export const ROOM_COUNT = 18;        // not counting the entrance and the lair
-export const MIN_SPACING = 18;       // how close two rooms can be
-export const SIGHT_RADIUS = 30;      // how far you can see from where you stand
+export const MAP_W = 140;
+export const MAP_H = 500;
+export const ROOM_COUNT = 36;        // not counting the entrance and the lair
+export const MIN_SPACING = 22;       // how close two rooms can be
+export const LARGE_SPACING = 30;     // …and a large room, from anything
+export const LARGE_KNOWN = 0.5;      // a large room's contents are marked on the scroll
+export const SIGHT_RADIUS = 36;      // how far you can see from where you stand
 export const BRANCH_CHANCE = 0.45;   // a room gets a second way on
 export const LONG_CORRIDORS = 2;     // corridors that skip a long way ahead
 export const MAX_STARTS = 3;         // ways out of the entrance (at least 2)
 export const LAIR_DOORS = 2;         // always two ways into the lair
-export const MIN_ROUTE = 5;          // shortest route to the lair, in rooms walked into
-export const MAX_ROUTE = 9;
+export const MIN_ROUTE = 15;         // shortest route to the lair, in rooms walked into
+export const MAX_ROUTE = 15;
 export const MYSTERY_CHANCE = 0.3;   // a room whose kind you can't see until you walk in
-export const KNOWN_AT_START = 5;     // rooms already marked on your scroll
-export const KNOWN_CORRIDORS = 3;    // …and corridors, somewhere past the 2nd room
+export const KNOWN_AT_START = 8;     // rooms already marked on your scroll
+export const KNOWN_CORRIDORS = 5;    // …and corridors, somewhere past the 2nd room
 export const KNOWN_CORRIDOR_DEPTH = 2; // (both their rooms at least this many rooms in)
 
 export type MapNode = {
@@ -50,12 +58,14 @@ export type MapNode = {
   links: string[];   // corridors to these rooms
   mystery?: boolean; // stays "?" until you walk in
   known?: boolean;   // marked on your scroll from the start
+  large?: boolean;   // a large room (drawn bigger on the scroll)
 };
 
 // The size of a labyrinth (dungeon 1 uses the constants above; deeper
 // dungeons are taller, with more rooms and a longer way to the lair).
-export type MapSpec = { h: number; rooms: number; minRoute: number; maxRoute: number };
-export const DEFAULT_SPEC: MapSpec = { h: MAP_H, rooms: ROOM_COUNT, minRoute: MIN_ROUTE, maxRoute: MAX_ROUTE };
+// large: how many large rooms it has.
+export type MapSpec = { h: number; rooms: number; minRoute: number; maxRoute: number; large: number };
+export const DEFAULT_SPEC: MapSpec = { h: MAP_H, rooms: ROOM_COUNT, minRoute: MIN_ROUTE, maxRoute: MAX_ROUTE, large: 1 };
 
 export type DungeonMap = {
   h?: number;                     // the map's height (missing = MAP_H)
@@ -197,7 +207,40 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   const knownLinks: string[] = [];
   for (let i = 0; i < KNOWN_CORRIDORS && deep.length > 0; i++) knownLinks.push(deep.splice(Math.floor(rng() * deep.length), 1)[0]);
   map.knownLinks = knownLinks;
+  placeLarge(map, spec.large, rng);
   return map;
+}
+
+// Turn a few rooms into large ones: well inside the labyrinth (not the
+// first rooms or the lair's doors), with space around them, and spread
+// out (each at a different depth from the last). Each kind turns up once
+// before any repeats.
+function placeLarge(map: DungeonMap, count: number, rng: Rng) {
+  if (count <= 0) return;
+  const depth = depths(map);
+  const route = routeLength(map);
+  const lairDoors = new Set(map.nodes[map.boss].links);
+  const room = (n: MapNode) => n.id !== map.start && n.id !== map.boss;
+  const nodes = Object.values(map.nodes);
+  const spacious = (n: MapNode) => nodes.every((o) => o.id === n.id || distance(o, n) >= LARGE_SPACING);
+  // (Not one of the rooms already marked on the scroll.)
+  let pool = nodes.filter((n) => room(n) && !n.known && !lairDoors.has(n.id) && (depth.get(n.id) ?? 0) >= 3 && (depth.get(n.id) ?? 0) <= route - 2);
+  const roomy = pool.filter(spacious);
+  if (roomy.length >= count) pool = roomy;
+  const kinds: RoomKind[] = [];
+  const placed: MapNode[] = [];
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    // Away from the last ones if possible (a few rooms deeper or shallower).
+    const apart = pool.filter((o) => placed.every((p) => Math.abs((depth.get(o.id) ?? 0) - (depth.get(p.id) ?? 0)) >= 3));
+    const from = apart.length > 0 ? apart : pool;
+    const n = from[Math.floor(rng() * from.length)];
+    pool = pool.filter((o) => o !== n);
+    const kind = rollRoomKind(rng, kinds.length < LARGE_MIX.length ? kinds : [], LARGE_MIX);
+    kinds.push(kind);
+    placed.push(n);
+    Object.assign(n, { kind, large: true, mystery: rng() >= LARGE_KNOWN });
+    if (!n.mystery) n.known = true;
+  }
 }
 
 // The first quest's run: just the first bit of the Labyrinth. One tunnel
@@ -207,12 +250,13 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
 // thief's room, only because every map names one.)
 export function questMap(): DungeonMap {
   const node = (id: string, y: number, kind: RoomKind, links: string[]): MapNode => ({ id, x: MAP_W / 2, y, kind, links, mystery: kind !== "entrance" });
+  const h = 140;
   return {
-    start: "start", boss: "thief", quest: true,
+    h, start: "start", boss: "thief", quest: true,
     nodes: {
-      start: node("start", MAP_H - 20, "entrance", ["club"]),
-      club: node("club", MAP_H - 60, "treasure", ["start", "thief"]),
-      thief: node("thief", MAP_H - 100, "easy", ["club"]),
+      start: node("start", h - 20, "entrance", ["club"]),
+      club: node("club", h - 60, "treasure", ["start", "thief"]),
+      thief: node("thief", h - 100, "easy", ["club"]),
     },
   };
 }
@@ -231,13 +275,16 @@ export function inSight(map: DungeonMap, at: string): Set<string> {
 // The rooms whose contents you know: the entrance and the lair, the ones
 // marked from the start, the ones you've walked into, and anything that was
 // in sight from where you've stood — but never a mystery you haven't entered.
-export function knownRooms(map: DungeonMap, path: string[]): Set<string> {
+// lit: spots lit by a flare or a clairvoyance scroll (rooms in sight of them
+// are known too); seen: rooms a clairvoyance scroll looked into (even mysteries).
+export function knownRooms(map: DungeonMap, path: string[], lit: string[] = [], seen: string[] = []): Set<string> {
   const visited = new Set(path);
-  const known = new Set<string>([...(map.quest ? [] : [map.boss]), map.start, ...visited]);
+  const known = new Set<string>([...(map.quest ? [] : [map.boss]), map.start, ...visited, ...seen]);
   for (const n of Object.values(map.nodes)) if (n.known) known.add(n.id);
   for (const at of visited) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
-  // Your first step is blind: the rooms off the entrance are all "?" (a flare will light them later).
-  if (path.length <= 1) for (const n of waysOn(map, map.start)) known.delete(n.id);
+  // Your first step is blind: the rooms off the entrance are all "?" (unless a flare lights them).
+  if (path.length <= 1) for (const n of waysOn(map, map.start)) if (!seen.includes(n.id)) known.delete(n.id);
+  for (const at of lit) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
   return known;
 }
 

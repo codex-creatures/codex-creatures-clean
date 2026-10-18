@@ -5,6 +5,7 @@
 // rarity (rarest first), A–Z within. Tap one to open it (or, in sell mode,
 // to select it).
 
+import { goodsIcon } from "@/lib/items/materials";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
@@ -100,14 +101,14 @@ function Tile({ d, fav, badge, sell, onClick }: {
         background: `radial-gradient(circle, ${rarityGlow(d.rarity)} 0%, transparent 62%)`, borderRadius: 8,
         boxShadow: sell?.on ? "inset 0 0 0 2px #f5c542, 0 0 12px rgba(245,197,66,0.5)" : undefined,
       }}>
-        {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{d.codexMove ? "📖" : d.scroll ? "📜" : d.potion ? "🧴" : "📦"}</span>}
+        {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{goodsIcon(d) ?? (d.codexMove ? "📖" : d.scroll ? "📜" : d.potion ? "🧴" : "📦")}</span>}
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
         {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} cls={tpl.cls} size={10} /></span>}
         {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
       </span>
       <span style={{ ...NAME, display: "-webkit-box", color: col.text }}>
-        {d.name}
+        {d.name}{d.qty ? ` ×${d.qty}` : ""}
       </span>
     </button>
   );

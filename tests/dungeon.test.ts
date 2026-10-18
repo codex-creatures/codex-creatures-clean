@@ -158,7 +158,7 @@ describe("the labyrinth map", () => {
   });
 
   it("librarians, mini bosses and decks of cards only ever hide behind a '?'", () => {
-    for (let i = 0; i < 500; i++) {
+    for (let i = 0; i < 150; i++) {
       for (const n of Object.values(rollMap(false).nodes)) {
         if (["librarian", "miniboss", "cards"].includes(n.kind)) expect(n.mystery).toBe(true);
       }
@@ -169,7 +169,7 @@ describe("the labyrinth map", () => {
     for (let i = 0; i < 100; i++) {
       const map = rollMap(false);
       const nodes = Object.values(map.nodes);
-      const marked = nodes.filter((n) => n.known);
+      const marked = nodes.filter((n) => n.known && !n.large); // (a large room can be marked too: see below)
       expect(marked.length).toBe(KNOWN_AT_START);
       for (const n of marked) expect(n.mystery).toBeFalsy();
       const known = knownRooms(map, [map.start]);

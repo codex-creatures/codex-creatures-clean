@@ -57,7 +57,7 @@ export default function InventoryPage() {
         </div>
       )}
       {part === "codex" ? (
-        <CodexShelf inventory={game.inventory} />
+        <CodexShelf inventory={game.inventory} size={game.bookcaseSize} />
       ) : (
         <InventoryList
           title={part === "items" ? "Items" : "Creatures"}

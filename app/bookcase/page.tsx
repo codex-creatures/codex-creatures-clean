@@ -1,13 +1,17 @@
 "use client";
 // app/bookcase/page.tsx
-// The bookcase in the Den, where codexes are kept. It starts as a single
-// shelf holding BOOKCASE_SIZE; upgrades will come later. A codex is read
-// from a creature's page (only creatures of its race can learn it).
+// The bookcase in the Den, where codexes are kept. It starts as a broken
+// shelf holding 10; a Crooked Bookcase Schematic (an Epic find in the
+// Labyrinth) builds it up to 25, with planks and nails (lib/items/materials.ts).
+// A codex is read from a creature's page (only creatures of its race can
+// learn a race codex).
 
 import DenFrame from "@/components/DenFrame";
 import CodexShelf from "@/components/CodexShelf";
+import Help from "@/components/Help";
 import { useGameState } from "@/hooks/useGameState";
-import { BOOKCASE_SIZE } from "@/lib/dungeon/run";
+import { MATERIALS, SCHEMATICS, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
+import type { CreatureOrItemDrop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -15,15 +19,45 @@ export default function BookcasePage() {
   const game = useGameState();
   if (!game.hydrated) return <DenFrame title="Bookcase" icon="📚"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
 
+  // A bookcase schematic you could build from.
+  const plan = game.bookcase < 2
+    ? (game.inventory.find((d) => d.dropType === "item" && d.schematic === "crooked_bookcase") as CreatureOrItemDrop | undefined)
+    : undefined;
+  const cost = SCHEMATICS.crooked_bookcase.cost;
+
   return (
     <DenFrame title="Bookcase" icon="📚">
       <div className="stone-panel">
-        <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
-          Just a shelf for now: it holds <b>{BOOKCASE_SIZE} codexes</b>. Codexes you bring home from the Labyrinth go here;
-          if it&apos;s full they stay in your bag. Each codex teaches one creature its move — read it from the creature&apos;s Moves tab in the Pit. Race codexes only work on creatures of that race.
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0" }}>
+            {game.bookcase >= 2 ? "Crooked bookcase" : "Broken shelf"} · holds {game.bookcaseSize}
+          </div>
+          <Help title="The bookcase">
+            <ul>
+              <li>Codexes you bring home go here. If it&apos;s full they <b>stay in your bag</b>.</li>
+              <li>Read a codex from a creature&apos;s <b>Moves</b> tab. Race codexes only work on that race.</li>
+              <li>A <b>Crooked Bookcase Schematic</b> (rare, from the Labyrinth) builds it up to <b>25</b>: {SCHEMATICS.crooked_bookcase.cost.planks} planks and {SCHEMATICS.crooked_bookcase.cost.nails} nails.</li>
+            </ul>
+          </Help>
+        </div>
+        {plan && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 You have the <b>{plan.name}</b>.</div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "6px 0 8px" }}>
+              {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
+                const have = countMaterial(game.inventory, k);
+                return (
+                  <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
+                    {MATERIALS[k].icon} {have}/{n} {MATERIALS[k].name.toLowerCase()}
+                  </span>
+                );
+              })}
+            </div>
+            <button className="pixel-btn" disabled={!canAfford(game.inventory, cost)} onClick={() => game.buildSchematic(plan.id)}>🔨 Build it</button>
+          </div>
+        )}
       </div>
-      <div style={{ marginTop: 14 }}><CodexShelf inventory={game.inventory} /></div>
+      <div style={{ marginTop: 14 }}><CodexShelf inventory={game.inventory} size={game.bookcaseSize} /></div>
     </DenFrame>
   );
 }

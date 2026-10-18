@@ -5,6 +5,7 @@
 // drawn as its sprite on a soft glow of its rarity. Tap a slot to see
 // what's in it and what you can do with it.
 
+import { goodsIcon } from "@/lib/items/materials";
 import PixelSprite from "./PixelSprite";
 import { itemSprite } from "./PixelSprite";
 import { POTION_SPRITES, POTION_RARITY } from "@/lib/sprites/items";
@@ -23,7 +24,7 @@ export function slotLook(e: BagEntry, item?: CreatureOrItemDrop): SlotLook {
   if (isPotionEntry(e)) return { name: POTIONS[e].name, sprite: POTION_SPRITES[e], icon: POTIONS[e].icon, color: RARITY_COLORS[POTION_RARITY[e]].text, glow: rarityGlow(POTION_RARITY[e]), peek: { potion: e } };
   if (!item) return { name: "Something you no longer have", icon: "❔", color: MUTED };
   const rc = RARITY_COLORS[item.rarity];
-  return { name: item.name, sprite: itemSprite(item), icon: item.codexMove ? "📖" : item.scroll ? "📜" : "📦", color: rc.text, glow: rarityGlow(item.rarity), peek: { gear: item } };
+  return { name: item.name, sprite: itemSprite(item), icon: goodsIcon(item) ?? (item.codexMove ? "📖" : item.scroll ? "📜" : "📦"), color: rc.text, glow: rarityGlow(item.rarity), peek: { gear: item } };
 }
 
 export default function BagSlots({ slots, looks, selected, onSelect, pulse, size = 60 }: {
