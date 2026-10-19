@@ -911,7 +911,7 @@ export default function DungeonPage() {
           onStep={() => updateRun(stepInside)} onEnter={(id) => { updateRun(stepInside); goTo(id); }} />
       ) : (
         <>
-          <DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !boxRoom} onGo={goTo}
+          <div className="room-bleed"><DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !boxRoom} onGo={goTo}
             onObject={run.current?.opened && (run.current.sack?.length ?? 0) > 0 ? () => setLootOpen(true)
               : run.current?.quest === "club" && !run.current.done ? takeClub
               : run.current?.kind === "chest" && !run.current.done ? openChest
@@ -921,7 +921,7 @@ export default function DungeonPage() {
               : (run.current?.kind === "storehouse" || run.current?.kind === "library") && !hasFight(run.current) && run.current.sack && !run.current.opened ? openSack
               : undefined}
             onFight={canFight ? () => startFight(run) : undefined}
-            onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} />
+            onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} /></div>
           {viewGear && gearView(viewGear)}
           {lootOpen && run.current?.opened && (() => {
             const c = run.current!;

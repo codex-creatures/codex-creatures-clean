@@ -432,11 +432,14 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .tab-glow { animation: tab-glow 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .tab-glow { animation: none; box-shadow: inset 0 0 14px var(--glow); } }
 
-/* ── Labyrinth rooms (components/DungeonRoomView.tsx) ── */
-.room-frame {
-  border: 3px solid #4d4738; border-color: #716852 #2b2820 #2b2820 #716852;
-  outline: 2px solid #08080b; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.6);
-  background: #0b0c10;
+/* ── Labyrinth rooms (components/DungeonRoomView.tsx) ──
+   No frame: the room runs edge to edge (.room-bleed undoes the page's
+   padding) and its floor fades into the screen below. */
+.room-frame { background: #0b0c11; }
+.room-bleed { margin: -12px -12px 0; }
+.room-fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 16%; pointer-events: none;
+  background: linear-gradient(to bottom, rgba(11, 12, 17, 0), #0b0c11);
 }
 .room-title {
   position: absolute; top: 2.5%; left: 50%; transform: translateX(-50%); white-space: nowrap; z-index: 2;
@@ -560,6 +563,10 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 .battle-banner { text-align: center; font-size: 15px; padding: 6px 10px; margin-bottom: 6px; }
 /* The boss's lair grows to fill the stage (a room stage keeps its shape). */
 .battle-stage > .boss-stage { flex: 1 1 auto; height: auto; min-height: 170px; margin-bottom: 0; }
+/* A one-on-one fight: the room fills the stage behind everything (BattleScreen
+   Stage), and the banners sit over it at the top. */
+.battle-stage-room { justify-content: flex-start; isolation: isolate; }
+.battle-room { position: absolute; inset: 0; overflow: hidden; z-index: -1; background: #07080b; }
 
 /* The Den as a map (components/DenRoom.tsx): fills its space; pinch / wheel
    to zoom, drag to look around (the page does not scroll or zoom under it). */

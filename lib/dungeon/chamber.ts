@@ -49,6 +49,9 @@ export type ChamberSpec = {
   seed: number;                // so every room looks a little different
   size?: ChamberSize;          // (default normal)
   view?: ChamberView;          // (default far)
+  // More room above and below the usual picture, in layout units: the
+  // ceiling and the floor carry on (a battle fills a tall screen with it).
+  extend?: { above: number; below: number };
 };
 
 export type Chamber = {
@@ -60,6 +63,7 @@ export type Chamber = {
   overlay: (t: number, hover: number, open: boolean) => ImageData;
   idAt: (x: number, y: number) => number;   // 0 = nothing, else tunnel index + 1
   tunnels: { x: number; top: number }[];    // where each tunnel is (for labels)
+  height: number;                           // the canvas height, in fine pixels (CH, plus any extension)
 };
 
 type RGB = [number, number, number];
@@ -108,7 +112,11 @@ function damp(c: RGB, a: number, z: number, seed: number): { c: RGB; wet: boolea
 export function createChamber(spec: ChamberSpec): Chamber {
   const { BX0, BX1, BY0, BY1 } = GEOMETRY[spec.view ?? "far"][spec.size ?? "normal"];
   const WALL_H = BY1 - BY0;
-  const n = CW * CH;
+  // The canvas: CW wide, and CH plus the extension tall. Layout y still runs
+  // 0…LH over the usual picture (negative above it, past LH below).
+  const ABOVE = Math.round(spec.extend?.above ?? 0), BELOW = Math.round(spec.extend?.below ?? 0);
+  const FH = (LH + ABOVE + BELOW) * RES, OY = ABOVE * RES;
+  const n = CW * FH;
   const seed = spec.seed % 997;
   const albedo = new Float32Array(n * 3);
   const depth = new Float32Array(n);   // 0 = back wall … 1 = right in front of you
@@ -136,10 +144,10 @@ export function createChamber(spec: ChamberSpec): Chamber {
     return Math.hypot(dx, y - spring) / w;
   };
 
-  for (let fy = 0; fy < CH; fy++) {
+  for (let fy = 0; fy < FH; fy++) {
     for (let fx = 0; fx < CW; fx++) {
       const i = fy * CW + fx;
-      const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES; // this fine pixel's spot, in layout units
+      const x = (fx + 0.5) / RES, y = (fy - OY + 0.5) / RES; // this fine pixel's spot, in layout units
       const leftTop = (x / BX0) * BY0, rightTop = ((LW - x) / BX0) * BY0;
       const leftBot = LH - (x / BX0) * (LH - BY1), rightBot = LH - ((LW - x) / BX0) * (LH - BY1);
 
@@ -266,15 +274,15 @@ export function createChamber(spec: ChamberSpec): Chamber {
   let out: ImageData | null = null;
 
   function render(t: number, hover: number, open: boolean, extras = true): ImageData {
-    out ??= new ImageData(CW, CH);
+    out ??= new ImageData(CW, FH);
     const d = out.data;
     const flick = torches.map((_, k) => 0.84 + 0.09 * Math.sin(t * 9 + k * 2.1) + 0.07 * Math.sin(t * 23 + k * 5) + (Math.random() - 0.5) * 0.05);
     const breathe = 0.5 + 0.5 * Math.sin(t * 2.4);
 
-    for (let fy = 0; fy < CH; fy++) {
+    for (let fy = 0; fy < FH; fy++) {
       for (let fx = 0; fx < CW; fx++) {
         const i = fy * CW + fx, o = i * 4;
-        const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES;
+        const x = (fx + 0.5) / RES, y = (fy - OY + 0.5) / RES;
         let r = albedo[i * 3], g = albedo[i * 3 + 1], b = albedo[i * 3 + 2];
         const k = kind[i], dep = depth[i];
         const bay = BAYER[(fy & 3) * 4 + (fx & 3)];
@@ -339,10 +347,10 @@ export function createChamber(spec: ChamberSpec): Chamber {
     // Paint at a layout spot: a square of `size` fine pixels (default one layout unit).
     const px = (x: number, y: number, c: string | RGB, alpha = 1, size = RES) => {
       const col = typeof c === "string" ? hex(c) : c;
-      const x0 = Math.round(x * RES), y0 = Math.round(y * RES);
+      const x0 = Math.round(x * RES), y0 = Math.round(y * RES) + OY;
       for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) {
         const X = x0 + dx, Y = y0 + dy;
-        if (X < 0 || Y < 0 || X >= CW || Y >= CH) continue;
+        if (X < 0 || Y < 0 || X >= CW || Y >= FH) continue;
         const o = (Y * CW + X) * 4;
         d[o] = d[o] + (col[0] * 255 - d[o]) * alpha; d[o + 1] = d[o + 1] + (col[1] * 255 - d[o + 1]) * alpha; d[o + 2] = d[o + 2] + (col[2] * 255 - d[o + 2]) * alpha;
       }
@@ -366,7 +374,7 @@ export function createChamber(spec: ChamberSpec): Chamber {
     // Hover: the tunnel brightens and is outlined in gold.
     if (hover && open) {
       const glow = 0.75 + 0.25 * Math.sin(t * 6);
-      for (let y = 1; y < CH - 1; y++) {
+      for (let y = 1; y < FH - 1; y++) {
         for (let x = 1; x < CW - 1; x++) {
           const i = y * CW + x, o = i * 4;
           if (ids[i] === hover) {
@@ -383,26 +391,26 @@ export function createChamber(spec: ChamberSpec): Chamber {
   // (Made on first use: there's no ImageData while the page renders on the server.)
   let top: ImageData | null = null;
   function overlay(t: number, hover: number, open: boolean): ImageData {
-    top ??= new ImageData(CW, CH);
+    top ??= new ImageData(CW, FH);
     const td = top.data;
     td.fill(0);
     // Paint at a layout spot, over whatever's there (alpha builds up).
     const px = (x: number, y: number, c: string | RGB, alpha = 1, size = RES) => {
       const col = typeof c === "string" ? hex(c) : c;
-      const x0 = Math.round(x * RES), y0 = Math.round(y * RES);
+      const x0 = Math.round(x * RES), y0 = Math.round(y * RES) + OY;
       for (let dy = 0; dy < size; dy++) for (let dx = 0; dx < size; dx++) {
         const X = x0 + dx, Y = y0 + dy;
-        if (X < 0 || Y < 0 || X >= CW || Y >= CH) continue;
+        if (X < 0 || Y < 0 || X >= CW || Y >= FH) continue;
         const o = (Y * CW + X) * 4, a0 = td[o + 3] / 255, a = alpha + a0 * (1 - alpha);
         for (let ch = 0; ch < 3; ch++) td[o + ch] = a ? (col[ch] * 255 * alpha + td[o + ch] * a0 * (1 - alpha)) / a : 0;
         td[o + 3] = a * 255;
       }
     };
 
-    for (let fy = 0; fy < CH; fy++) {
+    for (let fy = 0; fy < FH; fy++) {
       for (let fx = 0; fx < CW; fx++) {
         const i = fy * CW + fx, o = i * 4;
-        const x = (fx + 0.5) / RES, y = (fy + 0.5) / RES;
+        const x = (fx + 0.5) / RES, y = (fy - OY + 0.5) / RES;
         // Mist creeping over the floor.
         if (y > BY1 - 14) {
           const m = vnoise((x + t * 7) / 26, y / 6 + t * 0.15) - 0.42;
@@ -416,7 +424,7 @@ export function createChamber(spec: ChamberSpec): Chamber {
     // Hover: the tunnel warms and is outlined in gold.
     if (hover && open) {
       const glow = 0.75 + 0.25 * Math.sin(t * 6);
-      for (let y = 1; y < CH - 1; y++) for (let x = 1; x < CW - 1; x++) {
+      for (let y = 1; y < FH - 1; y++) for (let x = 1; x < CW - 1; x++) {
         const i = y * CW + x, o = i * 4;
         if (ids[i] === hover) { td[o] = 255; td[o + 1] = 200; td[o + 2] = 120; td[o + 3] = 40; }
         else if (ids[i - 1] === hover || ids[i + 1] === hover || ids[i - CW] === hover || ids[i + CW] === hover) { td[o] = 255 * glow; td[o + 1] = 214 * glow; td[o + 2] = 110 * glow; td[o + 3] = 255; }
@@ -429,9 +437,10 @@ export function createChamber(spec: ChamberSpec): Chamber {
     render,
     overlay,
     tunnels,
+    height: FH,
     idAt: (x, y) => {
       x = Math.floor(x); y = Math.floor(y);
-      if (x < 0 || y < 0 || x >= CW || y >= CH) return 0;
+      if (x < 0 || y < 0 || x >= CW || y >= FH) return 0;
       return ids[y * CW + x];
     },
   };

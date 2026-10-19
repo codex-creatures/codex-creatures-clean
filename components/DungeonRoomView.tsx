@@ -135,7 +135,7 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
     : room?.quest === "club" ? "A dropped club" : room?.quest === "thief" ? "The thief" : ROOM_INFO[node.kind].name;
 
   return (
-    <div className="room-frame" style={{ position: "relative", width: "100%", maxWidth: 518, margin: "0 auto", aspectRatio: `${CW} / ${CH}`, overflow: "hidden" }}>
+    <div className="room-frame" style={{ position: "relative", width: "100%", aspectRatio: `${CW} / ${CH}`, overflow: "hidden" }}>
       {usePainting && (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -156,6 +156,8 @@ export default function DungeonRoomView({ run, open, onGo, onObject, onFight, on
         aria-label={`${title}: a dark chamber with ${ways.length} tunnel${ways.length === 1 ? "" : "s"} leading on`}
         role="img"
       />
+
+      <div className="room-fade" aria-hidden />
 
       {/* Where you are. */}
       <div className="pixel-font room-title">{title}</div>

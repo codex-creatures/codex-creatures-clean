@@ -344,10 +344,13 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
     </div>
   );
 
+  // One-on-one in a room: the room fills the whole stage, banners float over it.
+  const roomStage = !foe.boss && !multi;
+
   return (
     <div className={`battle-layout${ill ? " screen-shake" : ""}`}>
       {/* ── The stage: everything above the dock ── */}
-      <div className="battle-stage">
+      <div className={`battle-stage${roomStage ? " battle-stage-room" : ""}`}>
         {ill && (
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#d7a6ff", borderColor: "#b06cff" }}>
             🤢 Your {you.team[fx.index]?.name ?? "creature"} suffers an illness
@@ -384,10 +387,6 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             </div>
           </div>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 6, alignItems: "start" }}>
-          <Bench team={you.team} active={[you.active]} color={YOU} />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}><Bench team={foe.team} active={fieldOf(foe)} color={FOE} /></div>
-        </div>
 
         {open === "details" && over(me.name, (
           <>
@@ -681,23 +680,6 @@ export function Token({ name, rarity, creatureId }: { name: string; rarity: Rari
   );
 }
 
-// active: who's on the field. Hidden boss creatures aren't shown.
-export function Bench({ team, active, color }: { team: Combatant[]; active: number[]; color: string }) {
-  return (
-    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-      {team.map((f, i) => !f.hidden && (
-        <span key={i} style={{
-          fontSize: 11, padding: "3px 6px", background: "rgba(10,10,14,0.7)",
-          border: active.includes(i) ? `1px solid ${color}` : "1px solid rgba(255,255,255,0.12)",
-          opacity: f.hp <= 0 ? 0.4 : 1, textDecoration: f.hp <= 0 ? "line-through" : "none",
-        }}>
-          {f.name} <span style={{ color: MUTED }}>{f.hp > 0 ? `${Math.round((f.hp / f.maxHp) * 100)}%` : "KO"}</span>
-        </span>
-      ))}
-    </div>
-  );
-}
-
 // ── Small pieces ──────────────────────────────────────────────────
 export function StatsLine({ stats }: { stats: ReturnType<typeof combatSummary> }) {
   const r = Math.round;
@@ -746,11 +728,28 @@ export function Chips<T extends string>({ value, onChange, options }: { value: T
 
 // The fight in a dungeon room: your creature on the left, theirs on the right,
 // each with a small health bar floating above. (Opponents: a percentage only.)
+// The room fills the whole stage: the usual picture sits in the middle (the
+// fighters stand on it, where they always have) and the ceiling and floor
+// carry on above and below it, as far as the stage goes.
 function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
   me: Combatant; mySlot: number; myInfo: MemberInfo; them: Combatant; theirSlot: number; theirInfo: MemberInfo; fx: Fx | null;
 }) {
+  const boxRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const chamber = useMemo(() => createChamber({ tunnels: ["unknown"], seed: 7 }), []);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBox({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // How much room to add on each side, in the room's layout units (rounded
+  // up to steps of STAGE_EXTEND_STEP, so resizing doesn't redraw it each pixel).
+  const unit = box.w ? box.w / (CW / 2) : 1; // screen px per layout unit
+  const extra = box.w ? Math.max(0, (box.h - box.w * (CH / CW)) / 2 / unit) : 0;
+  const ext = Math.ceil(extra / STAGE_EXTEND_STEP) * STAGE_EXTEND_STEP;
+  const chamber = useMemo(() => createChamber({ tunnels: ["unknown"], seed: 7, extend: { above: ext, below: ext } }), [ext]);
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
@@ -761,11 +760,17 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
     return () => window.clearInterval(timer);
   }, [chamber]);
 
+  // The usual picture, centred in the stage: the fighters stand on it.
+  const picH = box.w * (CH / CW);
+  const picTop = (box.h - picH) / 2;
   return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: `${CW} / ${CH}`, border: "3px solid #1a1d20", boxShadow: "0 4px 0 rgba(0,0,0,0.6)", overflow: "hidden" }}>
-      <canvas ref={canvasRef} width={CW} height={CH} style={{ width: "100%", height: "100%", imageRendering: "pixelated", display: "block" }} aria-hidden />
-      <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} />
-      <Fighter f={them} side="B" slot={theirSlot} mi={theirInfo} fx={fx} />
+    <div ref={boxRef} className="battle-room">
+      <canvas ref={canvasRef} width={CW} height={chamber.height} aria-hidden
+        style={{ position: "absolute", left: 0, width: "100%", top: picTop - ext * unit, height: picH + 2 * ext * unit, imageRendering: "pixelated", display: "block" }} />
+      <div style={{ position: "absolute", left: 0, width: "100%", top: picTop, height: picH }}>
+        <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} />
+        <Fighter f={them} side="B" slot={theirSlot} mi={theirInfo} fx={fx} />
+      </div>
     </div>
   );
 }
@@ -774,6 +779,7 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
 // pixels, but never taller than STAGE_TALL of it (the big art, Aurelius or
 // the Void Serpent, would fill the room). FIGHTER_W: its column's share.
 const STAGE_SCALE = 2.2;
+const STAGE_EXTEND_STEP = 8;
 const STAGE_TALL = 0.4;
 const FIGHTER_W = 0.4;
 const stageWidth = (sprite: Sprite) => {

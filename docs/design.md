@@ -283,7 +283,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - **One fixed phone-sized screen** (`components/GameScreen.tsx`). On a laptop: no border, full window height, 9:16 wide, centred.
   - The page never grows or shrinks between areas; long lists scroll inside panels.
   - Actions sit in docks built into the screen, not floating buttons.
-  - In battle, the moves fill the bottom ~30% of the screen.
+  - In battle, the moves fill the bottom ~30% of the screen. Above them, a one-on-one fight's room
+    fills the whole stage (the code-drawn room's ceiling and floor carry on, `extend` in
+    `lib/dungeon/chamber.ts`); there's no row of who's left (Swap shows your bench).
+  - Labyrinth rooms have no frame: edge to edge, the floor fading into the screen.
   - On a laptop, Esc closes whatever's open (`hooks/useEscape.ts`); with nothing open it goes back
     a page (`components/EscapeBack.tsx`), except mid-fight in the Labyrinth.
 - **Few words.** One-line summaries on screen, and depth behind a "?" (`components/Help.tsx`) in
