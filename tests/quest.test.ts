@@ -8,7 +8,7 @@ import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/bat
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { TUTORIAL_MOVES } from "../lib/quest";
 import { STARTER_LEVEL } from "../lib/creatures/starter";
-import { rollBox, thiefRoom, klutzClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "../lib/items/ceilings";
@@ -20,6 +20,16 @@ describe("the first quest: Klutz's box", () => {
     expect(club.stats).toEqual(KLUTZ_CLUB_STATS);
     expect(Object.values(club.stats).reduce((a, b) => a + b, 0)).toBe(60);
     expect(ITEM_KEYS).not.toContain("klutz_club");
+  });
+
+  it("the club lies in a rickety chest, looted like any other, with only the club inside", () => {
+    const room = clubRoom();
+    expect(room).toMatchObject({ quest: "club", container: "chest", done: false });
+    expect(room.opened).toBeFalsy();
+    expect(room.sack).toHaveLength(1);
+    const item = room.sack![0];
+    expect("gear" in item && isClub(item.gear as { itemKey?: string })).toBe(true);
+    expect(isClub({ itemKey: "void_scythe" })).toBe(false);
   });
 
   it("the thief is a lone Baby Cyclops in a thick hide, and no gold (the box is the prize)", () => {

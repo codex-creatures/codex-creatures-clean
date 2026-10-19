@@ -8,12 +8,17 @@
 // - Drag it onto a bag slot to take it there; a slot that's full swaps:
 //   what was in it goes into the chest.
 // - Drag something from your bag into the chest to leave it there.
+// - Drag a weapon or armour piece from your bag onto one of your creatures
+//   (the row under the bag) to equip it, or tap it and pick who.
+// - teach: Klutz's Club's chest, the first one you open, walks you through
+//   all of this (take it, then equip it).
 // Gold, the backpack and creature cards take no room. Whatever's left in the
 // chest stays on the floor when you move on.
 
 import { useRef, useState } from "react";
 import { useEscape } from "@/hooks/useEscape";
 import PixelSprite from "./PixelSprite";
+import CreaturePortrait from "./CreaturePortrait";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
 import { StackCount, type SlotLook } from "./BagSlots";
 import { POTIONS, type SackItem } from "@/lib/dungeon/run";
@@ -33,9 +38,16 @@ const STAT_GRID: [string, number][] = [
   ["agility", 2], ["hp", 4],
 ];
 type From = { kind: "loot" | "bag"; i: number };
+// The club tutorial's step: take it (item i of the chest), equip it (bag slot i), or done.
+export type LootTeach = { step: "take" | "equip" | "done"; i: number };
+// Can it go on a creature? (a weapon, or an armour piece)
+const wearable = (l?: SlotLook) => {
+  const g = l?.peek && "gear" in l.peek ? (l.peek.gear as CreatureOrItemDrop) : undefined;
+  return !!g && (g.itemCategory === "weapon" || (g.itemCategory === "armor" && !!g.armorSlot));
+};
 type Drag = From & { x: number; y: number; sprite?: Sprite; icon?: string; on: boolean; sx: number; sy: number; ox: number; oy: number };
 
-export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose }: {
+export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, teach }: {
   name: string; sprite: Sprite;
   items: SackItem[];
   bag: SlotLook[];          // what's in each filled slot, in order
@@ -45,6 +57,9 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   onSwap: (lootIndex: number, bagIndex: number) => void; // into that slot (swapping if it's full)
   onPutBack: (bagIndex: number) => void;                 // from the bag into the chest
   onClose: () => void;
+  party?: { id: string; name: string; creatureId?: string }[]; // your creatures still standing: drop gear on them
+  onEquip?: (bagIndex: number, creatureId: string) => void;
+  teach?: LootTeach;
 }) {
   const full = bag.length >= slots;
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -90,6 +105,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     const t = targetAt(e.clientX, e.clientY);
     if (d.kind === "loot" && t?.startsWith("bag:")) onSwap(d.i, Number(t.slice(4)));
     else if (d.kind === "bag" && t === "loot") { onPutBack(d.i); setPicked(null); }
+    else if (d.kind === "bag" && t?.startsWith("who:") && onEquip && wearable(bag[d.i])) { onEquip(d.i, t.slice(4)); setPicked(null); }
   };
   const cancel = () => { dragRef.current = null; setDrag(null); setOver(null); };
   const handlers = { onPointerMove: move, onPointerUp: release, onPointerCancel: cancel };
@@ -106,6 +122,13 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0", flex: 1 }}>{name}</div>
           <button className="chip" aria-label="Close" onClick={onClose} style={{ minHeight: 34, padding: "2px 12px" }}>✕</button>
         </div>
+        {teach && (
+          <div className="tutorial-tip" style={{ fontSize: 13 }}>
+            {teach.step === "take" ? <><b>Looting.</b> Drag Klutz&apos;s Club down into your bag, or tap it, then Take. <span className="tutorial-arrow">👇</span></>
+              : teach.step === "equip" ? <><b>Equipping.</b> Now drag it from your bag onto a creature, or tap it and pick who. <span className="tutorial-arrow">👇</span></>
+              : <><b>That&apos;s it.</b> Gear you find down here works the same way. Tap Done.</>}
+          </div>
+        )}
         <div data-drop="loot" className="inv-panel"
           style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, minHeight: 96, outline: over === "loot" ? "2px solid #ffd66e" : undefined }}>
           {items.length === 0 && <div style={{ gridColumn: "1 / -1", alignSelf: "center", textAlign: "center", fontSize: 13, color: MUTED }}>Empty</div>}
@@ -115,6 +138,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             const lifted = drag?.on && drag.kind === "loot" && drag.i === i;
             return (
               <div key={i} onPointerDown={press({ kind: "loot", i }, l)} {...handlers} title={l.name}
+                className={teach?.step === "take" && teach.i === i && !lifted ? "tutorial-pulse" : undefined}
                 style={{ minWidth: 0, cursor: "grab", touchAction: "none", opacity: lifted ? 0.3 : blocked ? 0.75 : 1 }}>
                 <span style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: glowBg(l.glow),
                   ...(seen === i ? { outline: "2px solid #ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : {}) }}>
@@ -128,7 +152,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 
         {seen !== null && items[seen] ? (
           <ItemPeek item={items[seen]} action={
-            <button className="chip" disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
+            <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
           } />
         ) : (
           <div style={{ fontSize: 12, color: MUTED, textAlign: "center" }}>
@@ -150,6 +174,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
                   position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", cursor: l ? "grab" : "default",
                   ...(l ? { background: `radial-gradient(circle, ${l.glow ?? "rgba(255,255,255,0.05)"} 0%, rgba(0,0,0,0.35) 65%)` } : {}),
                   ...(hot || picked === i ? { borderColor: "#ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : {}),
+                ...(teach?.step === "equip" && teach.i === i && picked !== i && !lifted ? { animation: "tutorial-pulse 1s ease-in-out infinite" } : {}),
                   opacity: lifted ? 0.3 : 1,
                 }}>
                 {l && (l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 26 }}>{l.icon}</span>)}
@@ -159,8 +184,16 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           })}
         </div>
         {picked !== null && bag[picked] && (() => {
-          const put = <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>Put in the chest</button>;
           const l = bag[picked];
+          const teaching = teach?.step === "equip" && teach.i === picked;
+          const put = (
+            <span style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {onEquip && wearable(l) && party.map((c) => (
+                <button key={c.id} className={`chip${teaching ? " tutorial-pulse" : ""}`} onClick={() => { onEquip(picked, c.id); setPicked(null); }}>Equip on {c.name}</button>
+              ))}
+              {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>Put in the chest</button>}
+            </span>
+          );
           return l.peek ? <ItemPeek item={l.peek} action={put} /> : (
             <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
               <b style={{ color: l.color, minWidth: 0 }}>{l.name}</b>{put}
@@ -168,9 +201,27 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           );
         })()}
 
+        {/* Your creatures: drop a weapon or armour piece on one to equip it. */}
+        {onEquip && party.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${party.length}, 1fr)`, gap: 6 }}>
+            {party.map((c) => {
+              const hot = over === `who:${c.id}`;
+              const want = teach?.step === "equip" || (drag?.on && drag.kind === "bag" && wearable(bag[drag.i]));
+              return (
+                <div key={c.id} data-drop={`who:${c.id}`} className={`inv-slot${teach?.step === "equip" && !drag?.on ? " tutorial-pulse" : ""}`} title={c.name}
+                  style={{ padding: 4, display: "grid", gap: 2, justifyItems: "center",
+                    ...(hot ? { borderColor: "#ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : want ? { borderColor: "#c9a24a" } : {}) }}>
+                  <span style={{ width: "100%", maxWidth: 72 }}><CreaturePortrait creatureId={c.creatureId} title={c.name} /></span>
+                  <span style={{ ...NAME, color: "#f1d9a0" }}>{c.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="dock-tabs">
           <button className="dock-tab" onClick={onTakeAll} disabled={items.length === 0}>Take all</button>
-          <button className="dock-tab" data-active onClick={onClose}>Done</button>
+          <button className={`dock-tab${teach?.step === "done" ? " tutorial-pulse" : ""}`} data-active onClick={onClose}>Done</button>
         </div>
       </div>
 
