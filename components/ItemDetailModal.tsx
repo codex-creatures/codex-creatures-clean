@@ -159,12 +159,6 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
           <button onClick={() => onToggleFavorite(item.id)} style={{ padding: "11px 0", borderRadius: 10, border: isFavorite ? "1px solid rgba(245,197,66,0.6)" : "1px solid rgba(255,255,255,0.15)", background: isFavorite ? "rgba(245,197,66,0.12)" : "transparent", color: isFavorite ? "#f5c542" : "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>
             {isFavorite ? "★ Favorited — protected from selling" : "☆ Add to Favourites"}
           </button>
-          <button disabled style={{ padding: "11px 0", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.25)", cursor: "not-allowed", fontWeight: 600, fontSize: 14 }}>
-            🎲 Reroll Stats <span style={{ fontSize: 11, opacity: 0.6 }}>(Coming soon)</span>
-          </button>
-          <button disabled style={{ padding: "11px 0", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.25)", cursor: "not-allowed", fontWeight: 600, fontSize: 14 }}>
-            ⬆ Upgrade Item <span style={{ fontSize: 11, opacity: 0.6 }}>(Coming soon)</span>
-          </button>
         </div>
 
         {items.length > 1 && (

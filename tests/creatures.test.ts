@@ -3,6 +3,8 @@ import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNAB
 import { rollProficiency, rollMoves, rollSpread } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
+import { CREATURE_SPRITES } from "../lib/sprites/creatures";
+import { artFor } from "../lib/sprites/art";
 
 const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
 
@@ -108,5 +110,13 @@ describe("races", () => {
     for (const r of ["common", "uncommon", "rare", "epic", "legendary"] as const) {
       for (let i = 0; i < 500; i++) expect(scannable.has(pickCreatureId(r))).toBe(true);
     }
+  });
+});
+
+describe("creature art", () => {
+  it("every creature you can scan has its PixelLab art (none falls back to the egg)", () => {
+    const scannable = Object.values(CREATURES_BY_RARITY).flat();
+    expect(scannable.length).toBeGreaterThan(0);
+    for (const t of scannable) expect(artFor(CREATURE_SPRITES[t.id]), t.id).toMatchObject({ src: `/sprites/creatures/${t.id}.png` });
   });
 });

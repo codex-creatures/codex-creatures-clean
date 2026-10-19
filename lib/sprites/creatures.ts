@@ -163,9 +163,6 @@ const ART_SIZES: Record<string, [number, number]> = {
 const FACING_RIGHT = new Set(["leafblade_scout"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
 const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "cave_bat", "amber_wasp", "storm_phoenix"]);
-for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
-  if (CREATURE_SPRITES[id]) withArt(CREATURE_SPRITES[id], { src: `/sprites/creatures/${id}.png`, w, h, ...(FLOATERS.has(id) ? { floats: true } : {}), ...(FACING_RIGHT.has(id) ? { faces: "right" as const } : {}) });
-}
 
 
 // Shown for creatures that don't have their own sprite yet.
@@ -188,6 +185,12 @@ export const EGG: Sprite = [
   "......jiiiiiiiij......",
   ".......jjjjjjjj.......",
 ];
+
+// Each one's art. Creatures that never had a grid (the Bellow Toad) get a copy
+// of the egg underneath, so the art still has something to hang on.
+for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
+  CREATURE_SPRITES[id] = withArt(CREATURE_SPRITES[id] ?? [...EGG], { src: `/sprites/creatures/${id}.png`, w, h, ...(FLOATERS.has(id) ? { floats: true } : {}), ...(FACING_RIGHT.has(id) ? { faces: "right" as const } : {}) });
+}
 
 // The first quest's thief (PixelLab art; no grid of its own, so the egg is its fallback).
 CREATURE_SPRITES.baby_cyclops = withArt([...EGG], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83 });
