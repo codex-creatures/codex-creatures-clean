@@ -44,6 +44,17 @@ and the game itself. You only need the internet again to pull/push code or to re
 
 ## 2. Running the game
 
+**The easy way (Windows):** double-click in the project folder:
+
+- **`Start Game.bat`**: starts the game and opens http://localhost:3000. Works offline. Keep its
+  window open while you play; close it to stop. If the game is already running, it just opens it.
+- **`Update.bat`**: gets the latest code from GitHub (`git pull --ff-only origin main`) and
+  reinstalls packages if they changed. It stops, changing nothing, if you have uncommitted work, are
+  offline, or this computer and GitHub have split. It never pushes, resets or discards anything, and
+  never touches your save.
+
+Or from a terminal:
+
 | What | Command | Address |
 |---|---|---|
 | Develop and play | `npm run dev` | http://localhost:3000 |
@@ -101,11 +112,13 @@ GitHub is the meeting point. The one rule is: **pull when you sit down, push whe
 **Starting a session** (in the project folder):
 
 ```powershell
-git status          # should say "nothing to commit, working tree clean"
-git pull            # get what you did on the other computer
-npm ci              # only if package.json / package-lock.json changed
+git status                       # should say "nothing to commit, working tree clean"
+git pull --ff-only origin main   # get what you did on the other computer
+npm ci                           # only if package.json / package-lock.json changed
 npm run dev
 ```
+
+(`Update.bat` does the first three lines for you, then `Start Game.bat` the last.)
 
 **Finishing a session:**
 
@@ -113,7 +126,8 @@ npm run dev
 git status                       # see what changed
 git add -A
 git commit -m "What I changed"
-git push
+git push origin main
+git status                       # should say "up to date with 'origin/main'"
 ```
 
 And if you want to carry on *playing* where you left off, export your save (section 3).
@@ -123,8 +137,12 @@ And if you want to carry on *playing* where you left off, export your save (sect
 - Don't leave work uncommitted on one computer and then start editing the same files on the other.
   That's how you end up merging by hand.
 - If `git pull` says your local changes would be overwritten, commit them first, then pull again.
-- If `git push` is rejected ("fetch first"), run `git pull`, then `git push`.
-- Never use `git push --force` here.
+- `--ff-only` means a pull only ever moves forward. If it refuses ("Not possible to fast-forward"),
+  both computers have new commits: the histories have split. Don't force anything; ask Claude to
+  look (it will explain before changing anything).
+- If `git push` is rejected ("fetch first"), the other computer pushed first: run
+  `git pull --ff-only origin main` and push again. If that pull refuses, see the point above.
+- Never use `git push --force`, `git reset --hard` or similar here.
 - Working offline is fine: commit as usual (commits are stored locally) and `git push` once you're
   back online. Pull on the other computer before working there.
 
@@ -145,8 +163,9 @@ Needs the internet:
 
 Per-computer setup that isn't in GitHub:
 
-- Claude Code's memory/notes for this project live in your user folder
-  (`%USERPROFILE%\.claude\projects\…`), not in the repo. The laptop starts without them.
+- Claude Code's own memory for this project lives in your user folder
+  (`%USERPROFILE%\.claude\projects\…`), not in the repo. Anything both computers need is in
+  `CLAUDE.md` and `docs/design.md` instead, so Claude starts with it on either computer.
 - The PixelLab connection (its API key) is set up in Claude Code on each computer. **Never put that
   key, or any other key, in this repo.** (`.gitignore` already ignores `.env*` files.)
 
@@ -160,4 +179,7 @@ Per-computer setup that isn't in GitHub:
 - `app/fonts/`: the fonts (open-licensed; licences next to them).
 - `offline/`: the standalone copy's launchers (`npm run build:offline`).
 - `scripts/check-port.mjs`: stops `npm run dev` with a clear message if port 3000 is taken.
+- `Start Game.bat` / `Update.bat`: the double-click launchers (their logic is in `scripts/`).
+- `CLAUDE.md` (how to work on the project) and `docs/design.md` (the game design, and what's
+  built vs planned): these are what Claude Code reads on either computer.
 - `tests/`: `npm test`.

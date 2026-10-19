@@ -1,0 +1,21 @@
+# Line endings, the same on every computer whatever its Git settings:
+# text files are stored in the repo with LF (as they already are), and Git
+# picks binary files out by itself.
+* text=auto
+
+# Windows batch files need CRLF in the working folder (cmd.exe misreads
+# labels and gotos in LF-only .bat files). Still stored as LF in the repo.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Art and fonts are never text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
