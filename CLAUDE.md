@@ -131,4 +131,7 @@ kill theirs.
   full rollout. When the user supplies their own art, restyle it and keep their design.
 - **Reports to the user:** plain English, short, with specific questions. Say what changed, which
   tests passed, and whether it's pushed. The user's on a usage budget: keep sessions to one task,
-  use the browser only when it really matters, and end a finished task with a reminder to `/clear`.
+  and end a finished task with a reminder to `/clear`.
+- **No browser checks** unless you can say why tests can't cover it, and the user agrees first.
+  They cost about 6x a plain request (69% of all usage, Oct 2026). Rely on tests; the user
+  looks in the game and sends a screenshot if something's off.
