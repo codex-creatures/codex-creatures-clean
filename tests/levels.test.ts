@@ -5,7 +5,7 @@ import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP
 import { rollBarcodeOutcome } from "../lib/barcodeRegistry";
 import { starterCreature, STARTER_LEVEL } from "../lib/creatures/starter";
 import { buildFighter } from "../lib/combat/loadout";
-import { newWitchGame, guess, walkAway, outcomes, drawNext, odds, START_MIN, START_MAX, MAX_CORRECT } from "../lib/dungeon/witch";
+import { newWitchGame, guess, walkAway, remaining, drawNext, odds, DECK, MAX_CORRECT } from "../lib/dungeon/witch";
 import { startRun, curse, illnessTick, stabTarget, makeRoom, enemyLevel, ILLNESS_DAMAGE, ILLNESS_ACTIONS, DEEP_ROUTE } from "../lib/dungeon/run";
 import { rollMap, routeLength } from "../lib/dungeon/map";
 import { DUNGEONS } from "../lib/dungeon/run";
@@ -45,33 +45,48 @@ describe("creature levels", () => {
 });
 
 describe("the card witch", () => {
-  it("starts on 4–7, and the next card goes higher, lower or sticks at equal odds", () => {
-    for (let i = 0; i < 200; i++) {
-      const g = newWitchGame();
-      expect(g.card.n).toBeGreaterThanOrEqual(START_MIN);
-      expect(g.card.n).toBeLessThanOrEqual(START_MAX);
-    }
-    expect(outcomes(11)).toEqual(["lower", "same"]);
-    expect(outcomes(1)).toEqual(["higher", "same"]);
-    odds(6, "higher").forEach((p) => expect(p).toBeCloseTo(1 / 3));
-    expect(odds(11, "lower")).toEqual([0.5, 0.5, 0]); // can't lose at the top
-    let up = 0, down = 0, same = 0;
-    for (let i = 0; i < 6000; i++) {
-      const n = drawNext(6).n;
-      if (n > 6) up++; else if (n < 6) down++; else same++;
-    }
-    for (const c of [up, down, same]) expect(c / 6000).toBeCloseTo(1 / 3, 1);
+  it("deals from a 33-card deck (1–11 in three suits), every card left equally likely", () => {
+    expect(DECK).toHaveLength(33);
+    const firsts = new Map<number, number>();
+    for (let i = 0; i < 11000; i++) { const n = newWitchGame().card.n; firsts.set(n, (firsts.get(n) ?? 0) + 1); }
+    for (let n = 1; n <= 11; n++) expect((firsts.get(n) ?? 0) / 11000).toBeCloseTo(1 / 11, 1);
+    // From a 6 with nothing else played: 15 higher, 15 lower, 2 more sixes.
+    const g = { card: { n: 6, suit: "melee" as const }, history: [] };
+    expect(remaining(g)).toHaveLength(32);
+    const [right, stick, wrong] = odds(g, "higher");
+    expect(right).toBeCloseTo(15 / 32);
+    expect(stick).toBeCloseTo(2 / 32);
+    expect(wrong).toBeCloseTo(15 / 32);
+    expect(odds({ card: { n: 11, suit: "magic" }, history: [] }, "lower")[2]).toBe(0); // can't lose at the top
   });
 
-  it("right +1, stick nothing, wrong loses; walk away any time; the deck runs out", () => {
+  it("a card that's been played never comes up again", () => {
+    // All three sixes and every high card gone: from the last six, the next is always lower.
+    const history = [{ n: 6, suit: "melee" as const }, { n: 6, suit: "ranged" as const },
+      ...DECK.filter((c) => c.n > 6)];
+    const g = { card: { n: 6, suit: "magic" as const }, history };
+    expect(odds(g, "lower")).toEqual([1, 0, 0]);
+    for (let i = 0; i < 200; i++) expect(drawNext(g).n).toBeLessThan(6);
+    // Play a whole game out: no card twice.
+    let w = newWitchGame();
+    for (let i = 0; i < 100 && w.state === "playing"; i++) w = guess(w, w.card.n >= 6 ? "lower" : "higher");
+    const seen = [...w.history, w.card].map((c) => `${c.n}${c.suit}`);
+    expect(new Set(seen).size).toBe(seen.length);
+  });
+
+  it("right +1, stick nothing, wrong loses; walk away any time and see the next card; the deck runs out", () => {
     const seq = (xs: number[]) => { let i = 0; return () => xs[i++ % xs.length]; };
     const g = { ...newWitchGame(), card: { n: 6, suit: "melee" as const } };
-    // rng: way (0.0 → higher), number, suit
-    expect(guess(g, "higher", seq([0, 0.5, 0])).last?.result).toBe("right");
-    expect(guess(g, "higher", seq([0.99, 0, 0]))).toMatchObject({ correct: 0, state: "playing", last: { result: "stick" } });
-    expect(guess(g, "lower", seq([0, 0.5, 0]))).toMatchObject({ state: "lost" });
-    expect(walkAway({ ...g, correct: 3 })).toMatchObject({ state: "left", correct: 3 });
-    expect(guess({ ...g, correct: MAX_CORRECT - 1 }, "higher", seq([0, 0.5, 0])).state).toBe("left");
+    // The 32 cards left run 1–5, 7–11 melee, then 1–11 ranged…: index 31 is the 11 of magic, index 5 the 7 of melee.
+    const at = (i: number) => seq([(i + 0.5) / 32]);
+    expect(guess(g, "higher", at(5)).last?.result).toBe("right");
+    expect(guess(g, "higher", at(15))).toMatchObject({ correct: 0, state: "playing", last: { result: "stick" } }); // the 6 of ranged
+    expect(guess(g, "lower", at(31))).toMatchObject({ state: "lost" });
+    const left = walkAway({ ...g, correct: 3 });
+    expect(left).toMatchObject({ state: "left", correct: 3 });
+    expect(left.peek).toBeDefined();
+    expect(remaining(g).some((c) => c.n === left.peek!.n && c.suit === left.peek!.suit)).toBe(true);
+    expect(guess({ ...g, correct: MAX_CORRECT - 1 }, "higher", at(5))).toMatchObject({ state: "left", peek: expect.anything() });
   });
 
   it("losing stabs whoever was last on the field (else the first of your team): 15% a room for 3 rooms", () => {

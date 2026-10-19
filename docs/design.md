@@ -221,8 +221,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     the run (loot kept) are Claude's defaults.
 - ✅ **Card witch:** higher or lower on cards 1–11. Each correct guess wins a creature card. Lose and
   she stabs a creature: an illness costing 15% max HP per action for 3 actions.
-  - ❓ Claude read "equal %s including stick" as higher / lower / same at equal odds, with "same"
-    as a push. Confirm with the user.
+  - ✅ (the user, 2026-10-19) Her deck is 33 cards: 1–11 in each of three suits (Melee, Ranged,
+    Magic, for variety). Every card, the first included, is drawn evenly from what's left; played
+    cards are gone. The same number again ("stick") is a push: guess again.
+  - ✅ Walking away (or winning all 10 prizes), she turns over the card that would have come next.
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in

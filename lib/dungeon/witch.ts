@@ -1,13 +1,12 @@
 // lib/dungeon/witch.ts
 // The card witch: a game of higher or lower, played in a Labyrinth room.
 //
-// - Her cards run from 1 to 11, in three suits: Melee ⚔️, Ranged 🏹 and
-//   Magic 🔮 (instead of hearts and spades). The first card is START_MIN to
-//   START_MAX.
-// - Each turn you guess whether the next card is higher or lower. The next
-//   card is higher, lower or the same ("stick") at equal odds (only the
-//   ones that can happen: nothing is higher than 11). Then its number is
-//   picked evenly in that direction.
+// - Her deck holds the cards 1 to 11 once in each of three suits: Melee ⚔️,
+//   Ranged 🏹 and Magic 🔮 (instead of hearts and spades), so 33 cards.
+// - Every card, the first one included, is drawn from what's left of the deck,
+//   each card equally likely. A card that's been played is gone, so after a
+//   7 or two the next card is less likely to be a 7.
+// - Each turn you guess whether the next card is higher or lower.
 //   - Right: +1 correct guess.
 //   - Stick (the same number): nothing happens, guess again.
 //   - Wrong: you lose. The witch lunges and stabs one of your creatures
@@ -16,8 +15,9 @@
 // - Her prize for the next right guess lies face up on the table (a creature
 //   card, rolled like a scan), to tempt you into one more. Guess right and
 //   it's yours, and a new prize is turned over. You can walk away whenever
-//   you like with the cards you've won. After MAX_CORRECT her deck is spent
-//   and you walk away with them anyway. Lose and you lose them all.
+//   you like with the cards you've won, and she turns over the card that
+//   would have come next. After MAX_CORRECT her prizes are spent and you walk
+//   away with them anyway. Lose and you lose them all.
 
 export type Suit = "melee" | "ranged" | "magic";
 export const SUITS: Suit[] = ["melee", "ranged", "magic"];
@@ -29,8 +29,6 @@ export const SUIT_INFO: Record<Suit, { name: string; icon: string; color: string
 
 export const LOW = 1;
 export const HIGH = 11;
-export const START_MIN = 4;
-export const START_MAX = 7;
 export const MAX_CORRECT = 10;
 
 export type WitchCard = { n: number; suit: Suit };
@@ -44,49 +42,63 @@ export type WitchGame = {
   won?: string[];           // the creature cards won so far (creature ids)
   state: "playing" | "lost" | "left";
   last?: { guess: Guess; result: WitchResult };
+  peek?: WitchCard;         // the card that would have come next, turned over when you walk away
 };
 
 type Rng = () => number;
-const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() * (max - min + 1));
-const suit = (rng: Rng): Suit => SUITS[Math.floor(rng() * SUITS.length)];
+type Table = Pick<WitchGame, "card" | "history">;
+
+// The full deck: 1 to 11 in each suit.
+export const DECK: WitchCard[] = SUITS.flatMap((suit) => Array.from({ length: HIGH - LOW + 1 }, (_, i) => ({ n: LOW + i, suit })));
+
+// What's left of her deck: every card not yet played (the history and the card showing).
+// Worked out from the cards played, so a game saved before the deck still works.
+export function remaining(game: Table): WitchCard[] {
+  const played = [...game.history, game.card];
+  return DECK.filter((c) => !played.some((p) => p.n === c.n && p.suit === c.suit));
+}
+
+const pick = (cards: WitchCard[], rng: Rng) => cards[Math.floor(rng() * cards.length)];
 
 // rollPrize: a creature card (its id), rolled like a scan.
 export function newWitchGame(rng: Rng = Math.random, rollPrize?: () => string): WitchGame {
-  return { card: { n: randInt(START_MIN, START_MAX, rng), suit: suit(rng) }, history: [], correct: 0, state: "playing",
+  return { card: pick(DECK, rng), history: [], correct: 0, state: "playing",
     ...(rollPrize ? { prize: rollPrize(), won: [] } : {}) };
 }
 
-// Which ways the next card can go from here (all at equal odds).
-export function outcomes(n: number): ("higher" | "lower" | "same")[] {
-  return [...(n < HIGH ? ["higher" as const] : []), ...(n > LOW ? ["lower" as const] : []), "same" as const];
-}
-
-export function drawNext(n: number, rng: Rng = Math.random): WitchCard {
-  const ways = outcomes(n);
-  const way = ways[Math.floor(rng() * ways.length)];
-  const next = way === "higher" ? randInt(n + 1, HIGH, rng) : way === "lower" ? randInt(LOW, n - 1, rng) : n;
-  return { n: next, suit: suit(rng) };
-}
+// The next card off the deck.
+export const drawNext = (game: Table, rng: Rng = Math.random): WitchCard => pick(remaining(game), rng);
 
 // Your odds for a guess right now: [right, stick, wrong].
-export function odds(n: number, g: Guess): [number, number, number] {
-  const ways = outcomes(n);
-  const share = 1 / ways.length;
-  const right = ways.includes(g) ? share : 0;
-  return [right, share, 1 - right - share];
+export function odds(game: Table, g: Guess): [number, number, number] {
+  const left = remaining(game);
+  const n = game.card.n;
+  const share = (f: (c: WitchCard) => boolean) => left.filter(f).length / left.length;
+  const right = share((c) => (g === "higher" ? c.n > n : c.n < n));
+  const stick = share((c) => c.n === n);
+  return [right, stick, 1 - right - stick];
 }
 
 export function guess(game: WitchGame, g: Guess, rng: Rng = Math.random, rollPrize?: () => string): WitchGame {
   if (game.state !== "playing") return game;
-  const next = drawNext(game.card.n, rng);
+  if (remaining(game).length === 0) return { ...game, state: "left" }; // (can't happen within MAX_CORRECT, but just in case)
+  const next = drawNext(game, rng);
   const result: WitchResult = next.n === game.card.n ? "stick" : (next.n > game.card.n) === (g === "higher") ? "right" : "wrong";
   const correct = game.correct + (result === "right" ? 1 : 0);
   const state = result === "wrong" ? "lost" : correct >= MAX_CORRECT ? "left" : "playing";
   // Right: the prize is yours, and the next one is turned over.
   const won = result === "right" && game.prize ? [...(game.won ?? []), game.prize] : game.won;
   const prize = result === "right" && rollPrize && state === "playing" ? rollPrize() : result === "right" ? undefined : game.prize;
-  return { ...game, card: next, history: [...game.history, game.card], correct, state, last: { guess: g, result }, won, prize };
+  const after: WitchGame = { ...game, card: next, history: [...game.history, game.card], correct, state, last: { guess: g, result }, won, prize };
+  return state === "left" ? withPeek(after, rng) : after;
+}
+
+// Leaving the table, she turns over the card that would have come next.
+function withPeek(game: WitchGame, rng: Rng): WitchGame {
+  const left = remaining(game);
+  return left.length ? { ...game, peek: pick(left, rng) } : game;
 }
 
 // Walk away with your cards.
-export const walkAway = (game: WitchGame): WitchGame => (game.state === "playing" ? { ...game, state: "left" } : game);
+export const walkAway = (game: WitchGame, rng: Rng = Math.random): WitchGame =>
+  (game.state === "playing" ? withPeek({ ...game, state: "left" }, rng) : game);

@@ -1823,11 +1823,11 @@ function WitchTable({ room, victim, onGuess, onLeave, next }: {
         </p>
         <Help title="The card witch">
           <ul>
-            <li>Cards go from <b>1 to 11</b>, in Melee ⚔️, Ranged 🏹 and Magic 🔮.</li>
-            <li>The next card is <b>higher, lower or the same</b> — equal odds.</li>
+            <li>Her deck: <b>1 to 11</b> in each of Melee ⚔️, Ranged 🏹 and Magic 🔮 — 33 cards.</li>
+            <li>Every card left in the deck is <b>equally likely</b>. Cards played are gone for good.</li>
             <li>Right: you win <b>the creature card on the table</b>, and she turns over another. Same (&ldquo;stick&rdquo;): guess again.</li>
             <li>Wrong: she stabs the creature that was <b>last on the field</b> (or your first). It loses <b>{Math.round(ILLNESS_DAMAGE * 100)}% HP</b> each of the next <b>{ILLNESS_ACTIONS} actions</b> — rooms, or rounds of a fight.</li>
-            <li>Walk away any time and keep your cards — lose, and she takes them all back. Her deck runs out after {MAX_CORRECT}.</li>
+            <li>Walk away any time and keep your cards — she shows you <b>the card that would have come next</b>. Lose, and she takes them all back. Her prizes run out after {MAX_CORRECT}.</li>
           </ul>
         </Help>
       </div>
@@ -1836,6 +1836,12 @@ function WitchTable({ room, victim, onGuess, onLeave, next }: {
           {w.history.slice(-8).map((c, i) => <WitchCardView key={i} card={c} small />)}
         </div>
         <WitchCardView card={w.card} />
+        {w.peek && (
+          <div style={{ textAlign: "center", opacity: 0.75 }}>
+            <div className="pixel-font" style={{ fontSize: 12, color: "#f1d9a0", marginBottom: 4 }}>Next</div>
+            <WitchCardView card={w.peek} />
+          </div>
+        )}
       </div>
       {w.state === "playing" && w.prize && CREATURE_BY_ID[w.prize] && (
         <div style={{ textAlign: "center", marginBottom: 10 }}>
