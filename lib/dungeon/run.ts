@@ -316,7 +316,7 @@ export function rareLeftBehind(run: DungeonRun): Drop[] {
   return [...sack.flatMap((x) => ("gear" in x ? [x.gear] : [])), ...(run.pending ?? [])].filter(isRareFind);
 }
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
-export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
+export const ENEMY_DROP_CHANCE = 0.2;  // any enemy: one of its items (at random) drops if you win
 export const CHEST_DROPS = 3;
 export const CHEST_CODEX_CHANCE = 0.1; // a chest holds a codex (instead of one of its drops)
 export const CODEX_PRICE = 500;       // wandering librarians sell codexes
@@ -503,9 +503,24 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], f
   return mix[0][0];
 }
 
+// Each enemy has ENEMY_DROP_CHANCE of dropping one of its pieces (at random)
+// when you win. One piece at most: an upgraded piece already drops.
+export function rollEnemyDrops(enemies: Enemy[], rng: Rng = Math.random) {
+  for (const e of enemies) {
+    if (e.gear.length === 0 || e.gear.some((p) => p.drops)) continue;
+    if (rng() < ENEMY_DROP_CHANCE) e.gear[Math.floor(rng() * e.gear.length)].drops = true;
+  }
+}
+
 // What's inside a room, rolled as you walk in. depth: how deep it is (see
 // EARLY_DEPTH); left out = deep.
 export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity, dungeon: DungeonId = 1): Room {
+  const room = rollRoom(kind, rng, depth, dungeon);
+  if (room.enemies) rollEnemyDrops(room.enemies, rng);
+  return room;
+}
+
+function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId): Room {
   const D = DUNGEONS[dungeon];
   const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
   const level = enemyLevel(dungeon, kind, depth, rng);
@@ -526,7 +541,6 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
     case "hard": {
       // A single brute: Uncommon early on, then a Rare in Rare gear (an Epic in the Deep Labyrinth).
       const enemies = [foe("hard")];
-      if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
       return { kind, enemies, level: "normal", gold: gold(HARD_GOLD), done: false };
     }
     case "stash": {
