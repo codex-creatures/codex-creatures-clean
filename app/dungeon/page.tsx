@@ -4,7 +4,8 @@
 // the entrance, then step inside — from there you see only the room you're
 // in and the tunnels leading on. Fight, heal and loot, and face the boss.
 // The rules live in lib/dungeon/run.ts; the run is saved after every step,
-// so leaving the page (or refreshing) never loses it.
+// so a refresh never loses it. Going back to the Den ends it (you keep your
+// bag), so a run can't be paused and picked up later.
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -110,6 +111,7 @@ export default function DungeonPage() {
   // The roster or the bag, open over the screen (see Sheet).
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
   const [retreatArmed, setRetreatArmed] = useState(false);
+  const [leaveAsk, setLeaveAsk] = useState(false); // tapped back to the Den mid-run: it ends the run, so a word first
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
 
@@ -318,13 +320,14 @@ export default function DungeonPage() {
   // No going back to the Den mid-fight, or from a room you haven't dealt with
   // yet (the same rule as taking a tunnel on).
   const denLocked = !!run && run.status === "exploring" && (!canMoveOn(run) || (!!battle.match && !battle.match.state.winner));
+  const inRun = !!run;
   useEffect(() => {
-    if (!denLocked) return;
-    // Esc would go back a page (EscapeBack): not now.
+    if (!inRun) return;
+    // Esc would go back a page (EscapeBack), skipping the run's ending: the Den button does that.
     const stop = (e: KeyboardEvent) => { if (e.key === "Escape") e.preventDefault(); };
     window.addEventListener("keydown", stop);
     return () => window.removeEventListener("keydown", stop);
-  }, [denLocked]);
+  }, [inRun]);
 
   // ── Starting and ending runs ──────────────────────────────────────
   function begin(party: string[], dungeon: DungeonId = 1) {
@@ -685,6 +688,22 @@ export default function DungeonPage() {
     router.push("/");
   }
 
+  // Back to the Den: the run ends there and then, as if you'd retreated (your
+  // bag comes home; what's on the floors is lost).
+  function leaveRun() {
+    const r = loadDungeon().run;
+    if (!r) return;
+    setLeaveAsk(false);
+    setLeaving(true);
+    if (r.status === "exploring") {
+      witchLeave(); // (mid-game with the witch: you walk away with the cards you've won)
+      updateRun((x) => ({ ...leaveSack(x), status: "retreated", battle: undefined }));
+    }
+    if (r.status === "dead") game.noteLabyrinthDeath();
+    goHome();
+    router.push("/");
+  }
+
   // Klutz's Club, picked up off the floor (a club room from an older save:
   // now it's in a chest, looted like any other).
   function takeClub() {
@@ -828,8 +847,20 @@ export default function DungeonPage() {
   // fill: the content gets the whole screen (a battle); dock: built into the bottom of the screen.
   const frame = (children: React.ReactNode, opts: { fill?: boolean; dock?: React.ReactNode } = {}) => (
     <DenFrame title={run?.dungeon === 2 ? DUNGEONS[2].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}
-      backLocked={denLocked ? (battle.match && !battle.match.state.winner ? "Not mid-fight" : "Deal with this room first") : undefined}>
+      backLocked={denLocked ? (battle.match && !battle.match.state.winner ? "Not mid-fight" : "Deal with this room first") : undefined}
+      onBack={!run || leaving ? undefined : run.status === "dead" || run.status === "retreated" ? leaveRun : () => setLeaveAsk(true)}>
       <Shaker shake={shake} fill={opts.fill}>{children}</Shaker>
+      {leaveAsk && run && (
+        <Sheet title="Leave the labyrinth?" onClose={() => setLeaveAsk(false)}>
+          <p style={{ fontSize: 14, color: "#d8d4c8", margin: "0 0 8px" }}>
+            {run.status === "cleared" ? "You head home. Anything still on the floors is lost." : "This run ends. Your bag comes home; anything on the floors is lost."}
+          </p>
+          <div className="dock-tabs">
+            <button className="dock-tab" onClick={() => setLeaveAsk(false)}>Stay</button>
+            <button className="dock-tab" style={{ color: "#ff8a80" }} onClick={leaveRun}>Leave</button>
+          </div>
+        </Sheet>
+      )}
     </DenFrame>
   );
 

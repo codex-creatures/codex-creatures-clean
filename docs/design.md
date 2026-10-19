@@ -226,7 +226,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
-  your bag comes home. Retreating keeps the witch's winnings.
+  your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
+  retreat (after a "Leave the labyrinth?" check): runs can't be paused.
 - ✅ After a boss clear, the **walk back** gathers what you left behind.
 - ✅ **Healing pool (Den):** heals 25% HP an hour on one global clock, runs included.
   - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,

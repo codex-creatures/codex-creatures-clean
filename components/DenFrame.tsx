@@ -12,7 +12,7 @@ import Link from "next/link";
 import GoldCount from "./GoldCount";
 
 export default function DenFrame({
-  title, icon, gold, back = "/", backLabel = "Den", backLocked, fill, dock, children,
+  title, icon, gold, back = "/", backLabel = "Den", backLocked, onBack, fill, dock, children,
 }: {
   title: string;
   icon?: string;
@@ -20,6 +20,7 @@ export default function DenFrame({
   back?: string;
   backLabel?: string;
   backLocked?: string; // why you can't go back right now (shown on tap/hover)
+  onBack?: () => void; // going back needs a word first (leaving the Labyrinth ends the run)
   width?: number; // (no longer used: every screen is the game screen's width)
   fill?: boolean;
   dock?: React.ReactNode;
@@ -30,6 +31,8 @@ export default function DenFrame({
       <header className="screen-header">
         {backLocked
           ? <span className="pixel-font" title={backLocked} aria-disabled style={{ color: "#c9b48a", opacity: 0.35, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "not-allowed" }}>🔒 {backLabel}</span>
+          : onBack
+          ? <button onClick={onBack} className="pixel-font" style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", color: "#c9b48a", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</button>
           : <Link href={back} className="pixel-font" style={{ color: "#c9b48a", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</Link>}
         <h1 className="pixel-font" style={{ margin: 0, fontSize: 19, color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60cqw" }}>
           {icon ? `${icon} ` : ""}{title}
