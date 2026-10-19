@@ -14,6 +14,11 @@ http.createServer((req, res) => {
   if (!fs.existsSync(file)) { file = path.join(ROOT, "404.html"); res.statusCode = 404; }
   res.setHeader("Content-Type", TYPES[path.extname(file)] ?? "application/octet-stream");
   fs.createReadStream(file).pipe(res);
+}).on("error", (err) => {
+  if (err.code !== "EADDRINUSE") throw err;
+  console.error(`Port ${PORT} is already in use, so the game can't start. It's probably already running in another window: use that one, or close it and try again.
+The game always uses port ${PORT} on purpose: your save is kept by the browser for http://localhost:${PORT}.`);
+  process.exit(1);
 }).listen(PORT, "127.0.0.1", () => {
   const url = `http://localhost:${PORT}/`;
   console.log(`Codex Creatures is running at ${url} — keep this window open while you play.`);

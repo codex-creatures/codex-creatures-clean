@@ -260,7 +260,7 @@ export default function AltarPage() {
       <p style={{ fontSize: 11, opacity: 0.35, margin: "6px 0 0" }}>Your last {RECENT_SCANS} finds, newest first. Sold items and summoned cards drop off the list.</p>
 
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools</span>
+        <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools · <Link href="/settings" style={{ color: "inherit", textDecoration: "underline" }}>export your save first</Link></span>
         <button onClick={() => {
           if (!startArmed) { setStartArmed(true); window.setTimeout(() => setStartArmed(false), 4000); return; }
           setStartArmed(false);

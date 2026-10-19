@@ -1,26 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Pixelify_Sans } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import EscapeBack from "@/components/EscapeBack";
 import Polyfills from "@/components/Polyfills";
 import GameScreen from "@/components/GameScreen";
 
-const geistSans = Geist({
+// Every font is a file in app/fonts (no Google Fonts download), so the game
+// builds and runs with no internet. They're the same variable fonts Google
+// serves, latin subset (licences: app/fonts/OFL-*.txt).
+const geistSans = localFont({
+  src: "./fonts/Geist-latin.woff2",
+  weight: "100 900",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "./fonts/GeistMono-latin.woff2",
+  weight: "100 900",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 // Headings, labels and buttons in the dungeon style. (globals.css builds
 // --font-pixel from this plus the digits below.)
-const pixel = Pixelify_Sans({
+const pixel = localFont({
+  src: "./fonts/PixelifySans-latin.woff2",
+  weight: "400 700",
   variable: "--font-pixelify",
-  subsets: ["latin"],
 });
 
 // Pixelify's digits are hard to tell apart when small (8 looks like 2), so

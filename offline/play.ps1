@@ -7,7 +7,13 @@ $types = @{ ".html"="text/html; charset=utf-8"; ".js"="text/javascript"; ".css"=
   ".woff"="font/woff"; ".txt"="text/plain"; ".webmanifest"="application/manifest+json"; ".gif"="image/gif" }
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")
-$listener.Start()
+try { $listener.Start() } catch {
+  Write-Host ""
+  Write-Host "Port $port is already in use, so the game can't start." -ForegroundColor Red
+  Write-Host "It's probably already open in another Codex Creatures window: use that one (or close it and try again)."
+  Write-Host "The game always uses port $port on purpose: your save is kept by the browser for http://localhost:$port."
+  exit 1
+}
 Write-Host "Codex Creatures is running at http://localhost:$port/ - keep this window open while you play."
 Start-Process "http://localhost:$port/"
 while ($listener.IsListening) {

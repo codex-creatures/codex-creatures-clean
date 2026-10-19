@@ -22,6 +22,7 @@ import {
   pickCreatureId,
 } from "./items/gameHelpers";
 import { canFind } from "./creatures/levels";
+import { savesLocked } from "./save";
 
 export type BarcodeOutcome =
   | { outcome: "gold"; amount: number }
@@ -37,7 +38,7 @@ export type BarcodeOutcome =
 
 export type BarcodeEntry = BarcodeOutcome & { registeredAt: string };
 
-const REGISTRY_KEY = "codex_creatures_registry_v2"; // v2: creatures stored by id
+export const REGISTRY_KEY = "codex_creatures_registry_v2"; // v2: creatures stored by id
 
 function loadRegistry(): Record<string, BarcodeEntry> {
   if (typeof window === "undefined") return {};
@@ -51,6 +52,7 @@ function loadRegistry(): Record<string, BarcodeEntry> {
 }
 
 function saveRegistry(registry: Record<string, BarcodeEntry>) {
+  if (savesLocked()) return;
   try {
     window.localStorage.setItem(REGISTRY_KEY, JSON.stringify(registry));
   } catch {}

@@ -20,7 +20,16 @@ export function readSave(): Record<string, unknown> {
   }
 }
 
+// Locked while a save file is being loaded (lib/saveFile.ts): the page is
+// about to reload with it, and nothing still running may write the old
+// game over it in the meantime.
+let locked = false;
+export const lockSaves = () => { locked = true; };
+export const unlockSaves = () => { locked = false; }; // (a load that failed: nothing changed)
+export const savesLocked = () => locked;
+
 function write(save: Record<string, unknown>) {
+  if (locked) return;
   try {
     window.localStorage.setItem(SAVE_KEY, JSON.stringify(save));
   } catch {}
