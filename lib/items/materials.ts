@@ -29,7 +29,7 @@ export type ToolKey = "flare" | "clairvoyance";
 export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity; price: number; desc: string }> = {
   flare:        { name: "Flare",               icon: "🧨", rarity: "uncommon", price: 75,
                   desc: "Light it in the Labyrinth: see the rooms around you and look at your map again." },
-  clairvoyance: { name: "Clairvoyance Scroll", icon: "🔮", rarity: "epic",     price: 400,
+  clairvoyance: { name: "Clairvoyance Scroll", icon: "🔮", rarity: "epic",     price: 200,
                   desc: "Read it in the Labyrinth: look at your map and pick any room — you see what's in it, and the rooms around it." },
 };
 
