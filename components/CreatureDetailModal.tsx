@@ -12,7 +12,8 @@ import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { canLearnFromCodex, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
+import { canLearnFromCodex, DAMAGE_TYPE_INFO, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL, SCROLL_XP } from "@/lib/creatures/levels";
@@ -80,6 +81,8 @@ export default function CreatureDetailModal({
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
   const worn   = armorPieces(loadout, (id) => armors.find((a) => a.id === id)); // helmet, chest, legs
+  // A weapon's damage type (Force, Pierce or Arcane): its moves of that type hit harder.
+  const weaponKind = weapon?.itemKey && WEAPON_AFFINITY[weapon.itemKey] ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[weapon.itemKey]] : undefined;
   const inSlot = (slot: EquipSlot) => (slot === "weapon" ? weapon : worn[ARMOR_SLOTS.indexOf(slot)]);
   const c = RARITY_COLORS[creature.rarity];
 
@@ -174,21 +177,6 @@ export default function CreatureDetailModal({
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, minHeight: "2.2em" }}>
             {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
           </h2>
-          {creature.dropType === "creature" && level < MAX_LEVEL && (
-            <div title={`${creature.xp ?? 0} / ${xpToNext(level)} XP to level ${level + 1}`} style={{ marginTop: 6, maxWidth: 260 }}>
-              <div style={{ height: 6, background: "#12131a", border: "1px solid #2a2d38" }}>
-                <div style={{ height: "100%", width: `${Math.min(100, (100 * (creature.xp ?? 0)) / xpToNext(level))}%`, background: "#f1d9a0" }} />
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, color: MUTED, marginTop: 2 }}>
-                {creature.xp ?? 0} / {xpToNext(level)} XP
-                {onReadScroll && scrolls.length > 0 && (
-                  <button className="pixel-btn" title={`Read an XP scroll: +${SCROLL_XP} XP`} onClick={() => onReadScroll(scrolls[0].id)} style={{ fontSize: 11, padding: "1px 6px" }}>
-                    📜 +{SCROLL_XP} <span style={{ color: MUTED }}>×{scrolls.length}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
           {template?.flavour && <p style={{ margin: "6px 0 0", fontSize: 13, color: "#a9a59a", fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
           <AbilityTag ability={creature.ability} />
         </div>
@@ -237,7 +225,7 @@ export default function CreatureDetailModal({
             {tab === "gear" && <>
             {/* Paper doll: weapon · creature · armour */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
-              <Slot label="Weapon" slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} />
+              <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} />
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 {ARMOR_SLOTS.map((slot, i) => (
@@ -245,6 +233,11 @@ export default function CreatureDetailModal({
                 ))}
               </div>
             </div>
+
+            {creature.dropType === "creature" && (
+              <LevelBar level={level} xp={creature.xp ?? 0}
+                scroll={onReadScroll && scrolls.length > 0 ? { count: scrolls.length, read: () => onReadScroll(scrolls[0].id) } : undefined} />
+            )}
 
             <SetLine worn={worn} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow} />
 
@@ -397,14 +390,14 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 
 // An equipment slot: a framed square with the item's sprite.
 // slot: its name as a drop target (data-drop="slot:<slot>"); hot: gear's being dragged over it.
-function Slot({ label, slot, item, active, hot, onClick, small }: { label: string; slot: EquipSlot; item?: CreatureOrItemDrop; active: boolean; hot?: boolean; onClick: () => void; small?: boolean }) {
+function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { label: string; labelColor?: string; slot: EquipSlot; item?: CreatureOrItemDrop; active: boolean; hot?: boolean; onClick: () => void; small?: boolean }) {
   const col = item ? RARITY_COLORS[item.rarity] : undefined;
   const sp = item && itemSprite(item);
   const size = small ? 46 : 72;
   return (
     <button onClick={onClick} data-drop={`slot:${slot}`} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "white", minWidth: 0 }}>
-      <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
+      <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: labelColor ?? MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center", lineHeight: 1.2 }}>{label}</span>
       <span style={{
         width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center",
         background: item ? `radial-gradient(circle, ${col!.glow}, #101117 75%)` : "#101117",
@@ -419,6 +412,28 @@ function Slot({ label, slot, item, active, hot, onClick, small }: { label: strin
         </span>
       )}
     </button>
+  );
+}
+
+// The creature's level: this level on the left, the next on the right, the
+// XP between as a bar (the numbers on hover). An XP scroll, if you have one.
+function LevelBar({ level, xp, scroll }: { level: number; xp: number; scroll?: { count: number; read: () => void } }) {
+  const max = level >= MAX_LEVEL;
+  const need = xpToNext(level);
+  return (
+    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+      <span className="pixel-font" style={{ fontSize: 13, color: GOLD, whiteSpace: "nowrap" }}>Lv {level}</span>
+      <div title={max ? "Max level" : `${xp} / ${need} XP to level ${level + 1}`} style={{ position: "relative", flex: 1, height: 12, background: "#0e0f14", border: "2px solid #2a2d38" }}>
+        <div style={{ position: "absolute", inset: 0, width: `${max ? 100 : Math.min(100, (100 * xp) / need)}%`, background: GOLD, transition: "width 0.3s" }} />
+        <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px)" }} />
+      </div>
+      <span className="pixel-font" style={{ fontSize: 13, color: max ? MUTED : GOLD, whiteSpace: "nowrap" }}>{max ? "Max" : `Lv ${level + 1}`}</span>
+      {scroll && !max && (
+        <button className="pixel-btn" title={`Read an XP scroll: +${SCROLL_XP} XP`} onClick={scroll.read} style={{ fontSize: 11, padding: "1px 6px", minHeight: 28 }}>
+          📜 +{SCROLL_XP} <span style={{ color: MUTED }}>×{scroll.count}</span>
+        </button>
+      )}
+    </div>
   );
 }
 
