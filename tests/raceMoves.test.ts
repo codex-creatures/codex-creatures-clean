@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { BASIC_MOVES, CREATURE_BY_ID, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+import { BASIC_MOVES, STRONG_MOVES, CREATURE_BY_ID, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
 import { dropFromOutcome } from "../lib/drops";
 
 const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName });
@@ -21,13 +21,19 @@ describe("what a creature can use and learn", () => {
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Pounce")).toBe(true);
   });
 
-  it("consumables: a Common is a Lesser Potion or a basic codex, an Uncommon a learnable codex", () => {
+  it("consumables: Common a Lesser Potion or basic codex, Uncommon a learnable codex, Rare a Healing Potion or strong codex", () => {
     const random = vi.spyOn(Math, "random");
-    random.mockReturnValue(0.99); // past BASIC_CODEX_SHARE: the potion
+    random.mockReturnValue(0.99); // past the codex share: the potion
     const potion = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
-    random.mockReturnValue(0);    // under it: a basic codex
+    const healing = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "rare" });
+    random.mockReturnValue(0);    // under it: a codex
     const basic = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
+    const strong = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "rare" });
     random.mockRestore();
+    expect(healing && "potion" in healing && healing.potion).toBe("potion");
+    expect(healing && "rarity" in healing && healing.rarity).toBe("rare");
+    expect(strong && "codexMove" in strong && STRONG_MOVES.some((m) => m.name === strong.codexMove)).toBe(true);
+    expect(strong && "rarity" in strong && strong.rarity).toBe("rare");
     const codex = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "uncommon" });
     expect(potion && "potion" in potion && potion.potion).toBe("lesser");
     expect(basic && "codexMove" in basic && BASIC_MOVES.some((m) => m.name === basic.codexMove)).toBe(true);
@@ -43,10 +49,18 @@ describe("what a creature can use and learn", () => {
     expect(wolf.cls).toBe("melee");
     expect(canLearnFromCodex(wolf, "Heavy Blow")).toBe(true);
     expect(canLearnFromCodex(wolf, "Ice Lance")).toBe(false);  // magic
-    expect(canLearnFromCodex(wolf, "Crush")).toBe(false);      // 25 damage: not basic
     // Once learned, it can go in a slot and is kept there.
     expect(movesAvailableTo(wolf, ["Heavy Blow", "Ice Lance"], ["Slash"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
     expect(resolveMoves(wolf, ["Slash", "Heavy Blow"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
+  });
+
+  it("strong codexes: the rest of the natural moves, also for creatures of that class", () => {
+    expect(STRONG_MOVES).toHaveLength(10);
+    expect(STRONG_MOVES.every((m) => m.damage > 20)).toBe(true);
+    const wolf = CREATURE_BY_ID.moss_wolf; // melee
+    expect(canLearnFromCodex(wolf, "Devastator")).toBe(true);
+    expect(canLearnFromCodex(wolf, "Starfall")).toBe(false); // magic
+    expect(resolveMoves(wolf, ["Slash", "Devastator"]).map((m) => m.name)).toEqual(["Slash", "Devastator"]);
   });
 });
 

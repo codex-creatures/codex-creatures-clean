@@ -149,12 +149,13 @@ export const RACE_MOVES: Skill[] = [
     desc: "A volley that hits every enemy on the field." },
 ];
 
-// Basic moves: the everyday moves creatures are born with, up to this much
-// damage. Each also comes as a Common codex (from scans), which teaches it to
-// a creature of the move's own class. The big hitters stay with their species.
+// Every move creatures are born with also comes as a codex (from scans), which
+// teaches it to a creature of the move's own class. Basic moves (up to this
+// much damage) are Common codexes; the stronger ones are Rare.
 export const BASIC_CODEX_MAX_DAMAGE = 20;
 export const BASIC_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage <= BASIC_CODEX_MAX_DAMAGE);
-const basicMovesFor = (c: CreatureTemplate): Skill[] => BASIC_MOVES.filter((m) => m.type === c.cls);
+export const STRONG_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage > BASIC_CODEX_MAX_DAMAGE);
+const classMovesFor = (c: CreatureTemplate): Skill[] => ALL_SKILLS.filter((m) => m.type === c.cls);
 
 // Boss-only moves (see lib/creatures/bosses.ts). Never learnable.
 export const BOSS_MOVES: Skill[] = [
@@ -286,11 +287,11 @@ export function defaultMoveNames(c: CreatureTemplate): string[] {
 }
 
 // Can this creature learn a move from a codex? Learnable moves: anyone.
-// Race moves: only creatures of that race. Basic moves: only creatures of
-// that move's class.
+// Race moves: only creatures of that race. Basic and strong moves: only
+// creatures of that move's class.
 export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
   if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
-  return [...raceMovesFor(c), ...basicMovesFor(c)].some((m) => m.name === moveName);
+  return [...raceMovesFor(c), ...classMovesFor(c)].some((m) => m.name === moveName);
 }
 
 // The moves a creature can put in its slots: the ones it was born with (its
@@ -302,10 +303,10 @@ export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], ow
 }
 
 // The 4 moves a creature fights with. Unknown or duplicate names are
-// dropped; an empty selection falls back to the defaults. (Race and basic
+// dropped; an empty selection falls back to the defaults. (Race and class
 // codex moves are only offered once learned, so a saved one is trusted here.)
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
-  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...basicMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
+  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
   const picked = [...new Set(names ?? [])].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => MOVE_BY_NAME[n]);
 }

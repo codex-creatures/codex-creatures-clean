@@ -169,9 +169,13 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Race moves:** single-use codexes, learnable only by that race. Pounce (Beast), Rabid Bite
   (Under-dweller, venom ticks even on the bench), Mirage (Etherial), Corpsify (Undead), Barrage
   (Elvish, hits every enemy).
-- ✅ **Basic codexes** (Common, decided 2026-10-19): the natural moves of up to 20 damage
-  (`BASIC_MOVES`, 15 moves), each teachable only to a creature of that move's class. Half of
-  Common consumables from scans are one (`BASIC_CODEX_SHARE`); the other half are Lesser Potions.
+- ✅ **Move codexes** (decided 2026-10-19): every natural move comes as a codex from scans, each
+  teachable only to a creature of that move's class. Up to 20 damage (`BASIC_MOVES`, 15 moves)
+  they're Common; above that (`STRONG_MOVES`, 10 moves) they're Rare.
+- 🧪 **Consumables from scans** roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a basic
+  codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex. Rare
+  is a strong codex or a Healing Potion, half each (`STRONG_CODEX_SHARE`). The Healing Potion is
+  Rare everywhere now (it was Uncommon). The half-and-half splits are Claude's defaults.
 - Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In, Meditate), once
   a planned Cyclops reward.
 - ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.

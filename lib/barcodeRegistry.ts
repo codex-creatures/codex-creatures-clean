@@ -58,11 +58,13 @@ function saveRegistry(registry: Record<string, BarcodeEntry>) {
   } catch {}
 }
 
-// Consumables are Common (a Lesser Potion or a basic codex) or Uncommon (a learnable codex), at the
-// usual odds between those two rarities.
+// Consumables are Common (a Lesser Potion or a basic codex), Uncommon (a
+// learnable codex) or Rare (a Healing Potion or a strong codex), at the usual
+// odds between those three rarities.
 function consumableRarity(): Rarity {
-  const c = RARITY_WEIGHTS.common, u = RARITY_WEIGHTS.uncommon;
-  return Math.random() * (c + u) < c ? "common" : "uncommon";
+  const c = RARITY_WEIGHTS.common, u = RARITY_WEIGHTS.uncommon, r = RARITY_WEIGHTS.rare;
+  const roll = Math.random() * (c + u + r);
+  return roll < c ? "common" : roll < c + u ? "uncommon" : "rare";
 }
 
 // A fresh random outcome — 20% creature / 60% item / 20% gold.

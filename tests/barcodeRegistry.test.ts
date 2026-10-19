@@ -44,7 +44,7 @@ describe("outcome odds (statistical)", () => {
   const N = 100000;
   const outcomes = { creature: 0, item: 0, gold: 0 };
   const rarity: Record<string, number> = {};
-  const consumable: Record<string, number> = {}; // potions (Common) and codexes (Uncommon) only
+  const consumable: Record<string, number> = {}; // potions and codexes
   let rarityTotal = 0;
   const weapons = new Set<string>();
   const armour = new Set<string>();
@@ -69,9 +69,11 @@ describe("outcome odds (statistical)", () => {
     expect(pct(outcomes.gold, N)).toBeCloseTo(20, 0);
   });
 
-  it("consumables are only Common (potion) or Uncommon (codex), 40:30", () => {
-    expect(Object.keys(consumable).sort()).toEqual(["common", "uncommon"]);
-    expect(consumable.common / (consumable.common + consumable.uncommon)).toBeCloseTo(40 / 70, 1);
+  it("consumables are only Common, Uncommon or Rare, 40:30:20", () => {
+    expect(Object.keys(consumable).sort()).toEqual(["common", "rare", "uncommon"]);
+    const total = consumable.common + consumable.uncommon + consumable.rare;
+    expect(consumable.common / total).toBeCloseTo(40 / 90, 1);
+    expect(consumable.rare / total).toBeCloseTo(20 / 90, 1);
   });
 
   it("rarity follows 40/30/20/9/1 (everything but consumables)", () => {
