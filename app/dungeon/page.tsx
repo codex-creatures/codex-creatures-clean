@@ -11,6 +11,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
 import LootWindow from "@/components/LootWindow";
+import EquipPreview from "@/components/EquipPreview";
+import TeamDropRow from "@/components/TeamDropRow";
+import { useDragDrop } from "@/hooks/useDragDrop";
+import { WEAPON_SPRITES } from "@/lib/sprites/items";
 import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
 import LootGrid from "@/components/LootGrid";
@@ -99,6 +103,9 @@ export default function DungeonPage() {
   const [cardsOpen, setCardsOpen] = useState(false);
   // A weapon or armour piece you just found, opened up (to compare and swap).
   const [viewGear, setViewGear] = useState<CreatureOrItemDrop | null>(null);
+  // Gear about to go on a creature: compare first (EquipPreview), then equip.
+  const [equipAsk, setEquipAsk] = useState<{ entry: BagEntry; creatureId: string } | null>(null);
+  const askEquip = (entry: BagEntry, creatureId: string) => setEquipAsk({ entry, creatureId });
   // The roster or the bag, open over the screen (see Sheet).
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
   const [retreatArmed, setRetreatArmed] = useState(false);
@@ -871,8 +878,8 @@ export default function DungeonPage() {
   // The club tutorial: it's in your bindle and not on anyone yet.
   const clubEntry = (lab.meta.bag ?? []).find((e) => itemOf(e)?.itemKey === "klutz_club");
   const clubTutorial = run.current?.quest === "club" && run.current.done && clubEntry ? clubEntry : undefined;
-  // …or still in its chest: the way on stays shut until it's on someone.
-  const clubInChest = run.current?.quest === "club" && (run.current.sack ?? []).some((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
+  // …or still on the floor: the way on stays shut until it's on someone.
+  const clubOnFloor = run.current?.quest === "club" && (run.current.sack ?? []).some((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
   // Your creatures still standing: gear from the bag can be dragged onto them.
   const standingTeam = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0)
     .map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId }));
@@ -897,7 +904,7 @@ export default function DungeonPage() {
     return (
       <GearViewModal item={item} slotName={slot} onClose={() => setViewGear(null)}
         creatures={standing.map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId, worn: itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "") }))}
-        onSwap={inBag ? (id) => { equipFromBag(entry, id); setViewGear(null); } : undefined}
+        onSwap={inBag ? (id) => { askEquip(entry, id); setViewGear(null); } : undefined}
         why={inBag ? undefined
           : (run.pending ?? []).some((d) => d.id === item.id) ? "Your bag's full, so it's still on the floor. Make room to swap it on."
           : "It's not in your bag any more."} />
@@ -907,7 +914,7 @@ export default function DungeonPage() {
   const partyView = <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />;
   const bagView = (
     <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
-      byId={byId} onDrink={drink} onEquip={equipFromBag} onLeave={leaveOnFloor} tutorial={clubTutorial} onTool={useTool}
+      byId={byId} onDrink={drink} onEquip={askEquip} onLeave={leaveOnFloor} tutorial={clubTutorial} onTool={useTool}
       wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
   );
 
@@ -918,7 +925,7 @@ export default function DungeonPage() {
           onStep={() => updateRun(stepInside)} onEnter={(id) => { updateRun(stepInside); goTo(id); }} />
       ) : (
         <>
-          <div className="room-bleed"><DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !clubInChest && !boxRoom} onGo={goTo}
+          <div className="room-bleed"><DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !clubOnFloor && !boxRoom} onGo={goTo}
             onObject={run.current?.opened && (run.current.sack?.length ?? 0) > 0 ? () => setLootOpen(true)
               : run.current?.quest === "club" && !run.current.done ? (run.current.sack ? openSack : takeClub)
               : run.current?.kind === "chest" && !run.current.done ? openChest
@@ -933,7 +940,7 @@ export default function DungeonPage() {
           {lootOpen && run.current?.opened && (() => {
             const c = run.current!;
             const bag = lab.meta.bag ?? [];
-            // The club's chest teaches looting: into your bag, then onto a creature.
+            // The club teaches looting: into your bag, then onto a creature.
             const clubAt = (c.sack ?? []).findIndex((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
             const clubInBag = bag.findIndex((e) => isClub(itemOf(e)));
             const teach = c.quest !== "club" ? undefined
@@ -942,15 +949,30 @@ export default function DungeonPage() {
               : { step: "done" as const, i: -1 };
             return (
               <LootWindow
-                name={c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The Warden's strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash"
+                name={c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The Warden's strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash"
                   : c.kind === "library" ? "The shelves" : c.kind === "storehouse" ? "The stores" : "The sack"}
-                sprite={c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
+                sprite={c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
-                party={standingTeam} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) equipFromBag(e, id); }}
-                teach={teach}
+                party={standingTeam} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
+                teach={teach} putLabel={c.quest === "club" ? "Drop it" : undefined}
                 onClose={() => setLootOpen(false)} />
+            );
+          })()}
+          {equipAsk && (() => {
+            const it = itemOf(equipAsk.entry);
+            const slot = it && slotOf(it);
+            if (!it || !slot) return null;
+            const team = standingTeam.flatMap(({ id }) => {
+              const drop = game.inventory.find((x) => x.id === id) as CreatureOrItemDrop | undefined;
+              return drop ? [{ creature: drop, loadout: game.equipment[id] }] : [];
+            });
+            return (
+              <EquipPreview team={team} start={equipAsk.creatureId} find={(id) => itemsById.get(id)} item={it} slot={slot}
+                teach={isClub(it) && run.current?.quest === "club"}
+                onCancel={() => setEquipAsk(null)}
+                onConfirm={(id) => { equipFromBag(equipAsk.entry, id); setEquipAsk(null); }} />
             );
           })()}
           {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
@@ -1223,7 +1245,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
       <button className="pixel-btn" onClick={onOpenSack}>{room.container === "strongbox" ? "🗝️ Open the strongbox" : room.container === "chest" ? "🧰 Loot the chest" : "💰 Loot the sack"}</button>
     </div>
   ));
-  // The club's chest: not opened yet, or the club's still in it.
+  // The club on the floor: not looked at yet, or still lying there.
   const clubShut = room.quest === "club" && !!room.sack && !room.opened;
   const clubLeft = room.quest === "club" && !!room.opened && (room.sack ?? []).some((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
@@ -1259,23 +1281,23 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
       {clubShut ? (
         <>
           <p style={{ fontSize: 15, color: "#d8d4c8" }}>
-            A rickety chest, its lid hanging loose: the thief has been through it. Something&apos;s still rattling inside.
+            A battered old club with <i>KLUTZ</i> scratched into it. The thief dropped it — you can hear it clattering on ahead.
           </p>
-          <button className="pixel-btn tutorial-pulse" onClick={onOpenSack}>🧰 Open the chest</button>
+          <button className="pixel-btn tutorial-pulse" onClick={onOpenSack}>Pick up the club</button>
         </>
       ) : clubLeft ? (
         <>
           <div className="tutorial-tip" style={{ marginTop: 10 }}>
-            <b>Looting.</b> Klutz&apos;s old club is in the chest. Take it, and give it to one of your creatures before you go on.
+            <b>Looting.</b> Klutz&apos;s Club is still on the floor. Pick it up, and give it to one of your creatures before you go on.
           </div>
-          <button className="pixel-btn tutorial-pulse" style={{ marginTop: 8 }} onClick={onLook}>🔍 Look inside</button>
+          <button className="pixel-btn tutorial-pulse" style={{ marginTop: 8 }} onClick={onLook}>Pick up the club</button>
         </>
       ) : room.quest === "club" && (room.done ? (
         <>
           {clubEntry ? (
             <div className="tutorial-tip" style={{ marginTop: 10 }}>
               <b>Equipping gear.</b> Klutz&apos;s Club is in your bindle now. It&apos;s not much, but it&apos;s better than bare claws —
-              give it to one of your creatures before you go on. Tap the club in your bindle below.
+              give it to one of your creatures before you go on. Drag it onto one below, or tap it.
               <div style={{ textAlign: "center", fontSize: 22, marginTop: 4 }}><span className="tutorial-arrow">👇</span></div>
             </div>
           ) : (
@@ -1661,6 +1683,10 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
   const [sel, setSel] = useState<number | null>(null);
   const [comparing, setComparing] = useState(false);
   const standing = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0);
+  // Drag a weapon or armour piece onto one of your creatures to equip it.
+  const wears = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined; return !!w && !!slotOf(w); };
+  const { box: dragBox, ...dnd } = useDragDrop<number>({ onDrop: (i, t) => { if (t?.startsWith("who:") && wears(i)) { onEquip(bag[i], t.slice(4)); setSel(null); } } });
+  const anyGear = bag.some((_, i) => wears(i));
   const hurt = standing.filter((id) => (run.hp[id] ?? 1) < 1);
   const e = sel !== null ? bag[sel] : undefined;
   const it = e && !isPotionEntry(e) ? itemOf(e) : undefined;
@@ -1673,15 +1699,22 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
   );
 
   return (
-    <>
+    <div ref={dragBox} style={{ position: "relative" }}>
       <SectionTitle>{name} ({bag.length}/{slots})</SectionTitle>
       {tutorialAt >= 0 && sel !== tutorialAt && (
         <div className="tutorial-tip" style={{ marginBottom: 8 }}>
-          <span className="tutorial-arrow">👇</span> Tap <b>Klutz&apos;s Club</b> to see what you can do with it.
+          <span className="tutorial-arrow">👇</span> Drag <b>Klutz&apos;s Club</b> onto a creature, or tap it to see what you can do with it.
         </div>
       )}
       <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
-        selected={sel} onSelect={(i) => { setSel(i); setComparing(false); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
+        grab={(i, l) => (wears(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
+        selected={sel} onSelect={(i) => { if (dnd.wasDrag()) return; setSel(i); setComparing(false); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
+      {anyGear && standing.length > 0 && (
+        <div style={{ marginTop: 8 }}>
+          <TeamDropRow team={standing.map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId }))}
+            over={dnd.over} ready={dnd.lifted !== undefined} pulse={tutorialAt >= 0} />
+        </div>
+      )}
       {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty. Gold and creature cards take no space; gear, codexes, potions and materials take a slot each (materials stack).</p>}
 
       {e && (
@@ -1724,7 +1757,8 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
           )}
         </div>
       )}
-    </>
+      {dnd.ghost}
+    </div>
   );
 }
 

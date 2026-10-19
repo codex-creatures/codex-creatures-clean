@@ -22,9 +22,10 @@ describe("the first quest: Klutz's box", () => {
     expect(ITEM_KEYS).not.toContain("klutz_club");
   });
 
-  it("the club lies in a rickety chest, looted like any other, with only the club inside", () => {
+  it("the club lies on the floor, picked up like any other loot, on its own", () => {
     const room = clubRoom();
-    expect(room).toMatchObject({ quest: "club", container: "chest", done: false });
+    expect(room).toMatchObject({ quest: "club", done: false });
+    expect(room.container).toBeUndefined();
     expect(room.opened).toBeFalsy();
     expect(room.sack).toHaveLength(1);
     const item = room.sack![0];

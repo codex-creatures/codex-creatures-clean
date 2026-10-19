@@ -6,10 +6,10 @@
 // 1. "start":    Klutz has something to tell you (talk to him).
 // 2. "hunt":     into the Labyrinth: a short run of its own (questMap in
 //                lib/dungeon/map.ts), one tunnel to a "?" room with Klutz's
-//                old club in a rickety chest the fleeing thief rummaged
-//                through (looted like any chest: a tutorial in the loot window
-//                walks you through taking it and equipping it, by tap or by
-//                drag), then one on to the thief itself (a guided fight: Klutz coaches you).
+//                old club on the floor, dropped by the fleeing thief (picked
+//                up like any loot: a tutorial in the loot window walks you
+//                through taking it and equipping it, by tap or by drag), then
+//                one on to the thief itself (a guided fight: Klutz coaches you).
 // 3. "boxFound": you beat it (no gold: the box is the prize), it drops the
 //                box, you pick it up and head home.
 // 4. "stash":    you open the box at Klutz's (like a Code Cache); its gear
@@ -46,9 +46,9 @@ const pick = <T,>(a: readonly T[], rng: Rng) => a[Math.floor(rng() * a.length)];
 
 export const klutzClub = (): Drop => weaponDrop("klutz_club", "common", "", { ...KLUTZ_CLUB_STATS });
 
-// The room the club lies in (the first room of the quest run): a rickety
-// chest, opened and looted like any other, with the club inside.
-export const clubRoom = (): Room => ({ kind: "treasure", quest: "club", container: "chest", sack: [{ gear: klutzClub() }], done: false });
+// The room the club lies in (the first room of the quest run): on the
+// floor, picked up like any other loot (its sack: just the club).
+export const clubRoom = (): Room => ({ kind: "treasure", quest: "club", sack: [{ gear: klutzClub() }], done: false });
 export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club";
 
 // The thief: a Baby Cyclops (no gold: beating it gets you the box, and only

@@ -207,11 +207,10 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
       </div>
     );
   }
-  // Klutz's club, in the chest the thief rummaged through (or, in a room
-  // from an older save, lying on the floor).
+  // Klutz's club, lying where the thief dropped it (until it's picked up).
   if (room.quest === "club") {
-    if (room.sack) return prop(room.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST, room.opened ? "The chest, opened" : "Open the chest");
-    return room.done ? null : prop(WEAPON_SPRITES.klutz_club, "Pick up the club", { transform: "rotate(-60deg)" });
+    const there = room.sack ? room.sack.some((x) => "gear" in x && (x.gear as { itemKey?: string }).itemKey === "klutz_club") : !room.done;
+    return there ? prop(WEAPON_SPRITES.klutz_club, "Pick up the club", { transform: "rotate(-60deg)" }) : null;
   }
   // The thief's box, once it's beaten.
   if (room.quest === "thief" && room.done) return room.boxTaken ? null : prop(ARMOURY_BOX, "Pick up the box");

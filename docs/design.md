@@ -260,9 +260,13 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   him, and the user wants that to feel worthwhile ("the closest thing to you").
 - ✅ **First quest, "Klutz's box":** a Baby Cyclops stole his box. In a guided first fight he gives
   advice (he doesn't fight). The box holds 10 pieces of Common/Uncommon gear (lib/quest.ts).
-  On the way, Klutz's Club is in a rickety chest, looted like any other: a tutorial in the loot
-  window teaches taking it into the bag and equipping it (tap, or drag onto a creature). Any loot
-  window in the Labyrinth now shows your standing creatures as drop targets for gear.
+  On the way, Klutz's Club lies on the floor and is picked up through the loot window: a tutorial
+  there teaches taking it into the bag and equipping it (tap, or drag onto a creature), and the
+  equip window explains where stats come from (gear × the creature's %).
+- ✅ **Equipping:** gear can be dragged onto a creature (loot windows and the bag in the Labyrinth)
+  or onto its slot (the creature window). In the Labyrinth, equipping opens a compare window first:
+  the slot's old piece vs the new one, each stat's change, and your party along the top marked ▲/▼
+  so you can see who it helps.
 - 📌 **Kidnap plan** (after the first Cyclops kill): hunts can end with Klutz kidnapped, rescued
   through a mini dungeon; rare smoke bombs let him escape. ❓ The chance, smoke-bomb sources, mini
   dungeon and kidnappers are all undecided.

@@ -5,8 +5,8 @@
 //   and its armour (helmet, chest, legs) on the other, its set bonus if it
 //   wears a full set, its stats as bars and its gear multipliers;
 // - Moves: its 4 move slots, and the moves it could swap in.
-// Tap a slot to browse your gear: picking an item previews the change on
-// every stat before you equip it.
+// Tap a slot to browse your gear: picking an item (tap it, or drag it onto
+// the slot) previews the change on every stat before you equip it.
 
 import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -24,6 +24,7 @@ import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import AbilityTag from "./AbilityTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
+import { useDragDrop } from "@/hooks/useDragDrop";
 
 type Props = {
   creature: CreatureOrItemDrop;
@@ -87,6 +88,8 @@ export default function CreatureDetailModal({
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
+  // Gear dragged from the picker onto its slot: previewed, like a tap.
+  const { box: dragBox, ...dnd } = useDragDrop<CreatureOrItemDrop>({ onDrop: (opt, t) => { if (picking && t === `slot:${picking}`) setPreview(opt); } });
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -140,7 +143,7 @@ export default function CreatureDetailModal({
   }
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
+    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
       {/* Previous / next creature, on the sides of the screen (← → keys too) */}
       {position && position.count > 1 && (["prev", "next"] as const).map((d) => (
         <button key={d} className={`side-arrow ${d}`} aria-label={d === "prev" ? "Previous creature" : "Next creature"}
@@ -234,11 +237,11 @@ export default function CreatureDetailModal({
             {tab === "gear" && <>
             {/* Paper doll: weapon · creature · armour */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
-              <Slot label="Weapon" item={weapon} active={picking === "weapon"} onClick={() => openSlot("weapon")} />
+              <Slot label="Weapon" slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} />
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 {ARMOR_SLOTS.map((slot, i) => (
-                  <Slot key={slot} label={ARMOR_SLOT_INFO[slot].name} item={worn[i]} active={picking === slot} onClick={() => openSlot(slot)} small />
+                  <Slot key={slot} label={ARMOR_SLOT_INFO[slot].name} slot={slot} item={worn[i]} active={picking === slot} hot={dnd.over === `slot:${slot}`} onClick={() => openSlot(slot)} small />
                 ))}
               </div>
             </div>
@@ -249,7 +252,7 @@ export default function CreatureDetailModal({
             {picking && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
-                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`} — tap any to compare
+                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`} — tap or drag one onto the slot
                 </div>
                 {options.length === 0 ? (
                   <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the labyrinth to find some.</p>
@@ -269,7 +272,8 @@ export default function CreatureDetailModal({
                       return (
                         <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} disabled={away}
                           title={away ? `${opt.name} — Klutz has it with him in the Labyrinth` : here ? `${opt.name} (worn now)` : opt.name}
-                          onClick={() => setPreview(opt)}>
+                          grab={away ? undefined : { onPointerDown: dnd.press(opt, { sprite: sp, icon: "📦" }), ...dnd.handlers }}
+                          onClick={() => { if (!dnd.wasDrag()) setPreview(opt); }}>
                           {sp ? <PixelSprite sprite={sp} scale={2.5} /> : <span style={{ fontSize: 22 }}>?</span>}
                           {here && <Badge color={GOLD}>ON</Badge>}
                           {owner && !here && <Badge color="#f5c542">{away ? "🌀" : "⚑"}</Badge>}
@@ -357,11 +361,12 @@ export default function CreatureDetailModal({
           </button>
         )}
       </div>
+      {dnd.ghost}
     </div>
   );
 }
 
-function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: StatKey): number {
+export function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: StatKey): number {
   switch (key) {
     case "atk":  return f.weapon.atk;
     case "rng":  return f.weapon.rng;
@@ -391,19 +396,20 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 }
 
 // An equipment slot: a framed square with the item's sprite.
-function Slot({ label, item, active, onClick, small }: { label: string; item?: CreatureOrItemDrop; active: boolean; onClick: () => void; small?: boolean }) {
+// slot: its name as a drop target (data-drop="slot:<slot>"); hot: gear's being dragged over it.
+function Slot({ label, slot, item, active, hot, onClick, small }: { label: string; slot: EquipSlot; item?: CreatureOrItemDrop; active: boolean; hot?: boolean; onClick: () => void; small?: boolean }) {
   const col = item ? RARITY_COLORS[item.rarity] : undefined;
   const sp = item && itemSprite(item);
   const size = small ? 46 : 72;
   return (
-    <button onClick={onClick} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
+    <button onClick={onClick} data-drop={`slot:${slot}`} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "white", minWidth: 0 }}>
       <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
       <span style={{
         width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center",
         background: item ? `radial-gradient(circle, ${col!.glow}, #101117 75%)` : "#101117",
-        border: `3px solid ${active ? "#ffd66e" : col ? col.border : "#2f3340"}`,
-        boxShadow: `inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)${active ? ", 0 0 12px rgba(255,214,110,0.5)" : ""}`,
+        border: `3px solid ${active || hot ? "#ffd66e" : col ? col.border : "#2f3340"}`,
+        boxShadow: `inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)${hot ? ", 0 0 18px rgba(255,214,110,0.8)" : active ? ", 0 0 12px rgba(255,214,110,0.5)" : ""}`,
       }}>
         {sp ? <PixelSprite sprite={sp} scale={small ? 2.2 : 3.5} /> : <span style={{ fontSize: small ? 18 : 26, color: "#3a3e4b" }}>＋</span>}
       </span>
@@ -439,14 +445,15 @@ function SetLine({ worn, now, next }: { worn: (CreatureOrItemDrop | undefined)[]
   return box(<><b>{ARMOR_META[best[0]].name} {best[1]}/3</b> — the full set gives {SET_BONUS[best[0]].name}: {SET_BONUS[best[0]].text}</>, false);
 }
 
-function Tile({ children, rarity, selected, title, onClick, disabled }: {
+function Tile({ children, rarity, selected, title, onClick, disabled, grab }: {
   children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void; disabled?: boolean;
+  grab?: React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
 }) {
   const col = rarity ? RARITY_COLORS[rarity] : undefined;
   return (
-    <button onClick={onClick} title={title} aria-pressed={selected} disabled={disabled}
+    <button onClick={onClick} title={title} aria-pressed={selected} disabled={disabled} {...grab}
       style={{
-        opacity: disabled ? 0.35 : 1,
+        opacity: disabled ? 0.35 : 1, ...(grab ? { touchAction: "none" } : {}),
         position: "relative", aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
         background: col ? `radial-gradient(circle, ${col.glow}, #101117 75%)` : "#101117",
         border: `2px solid ${selected ? "#ffd66e" : col ? col.border : "#2f3340"}`,
@@ -463,14 +470,15 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
 }
 
 // One stat: icon, name, a chunky bar (with the previewed change), the total.
-function StatRow({ icon, label, color, max, total, after, detail, diff }: {
-  icon: string; label: string; color: string; max: number; total: number; after: number; detail: string; diff: number;
+// compact: smaller, for narrow windows (EquipPreview).
+export function StatRow({ icon, label, color, max, total, after, detail, diff, compact }: {
+  icon: string; label: string; color: string; max: number; total: number; after: number; detail: string; diff: number; compact?: boolean;
 }) {
   const pct = (v: number) => Math.min(100, (v / max) * 100);
   const change = after - total;
   const lo = Math.min(total, after), hi = Math.max(total, after);
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "22px minmax(70px, 96px) 1fr auto", alignItems: "center", columnGap: 8 }}>
+    <div style={{ display: "grid", gridTemplateColumns: compact ? "18px minmax(64px, 1.3fr) 1fr auto" : "22px minmax(70px, 96px) 1fr auto", alignItems: "center", columnGap: compact ? 6 : 8 }}>
       <span style={{ fontSize: 15, textAlign: "center" }}>{icon}</span>
       <span style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.15 }}>
         {label}
@@ -486,7 +494,7 @@ function StatRow({ icon, label, color, max, total, after, detail, diff }: {
         <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px)" }} />
       </div>
       {/* Fixed width, change on the same line: flicking between items never moves anything. */}
-      <span style={{ ...NUM, minWidth: 104, textAlign: "right", fontSize: 18, whiteSpace: "nowrap" }}>
+      <span style={{ ...NUM, minWidth: compact ? 72 : 104, textAlign: "right", fontSize: compact ? 15 : 18, whiteSpace: "nowrap" }}>
         {change !== 0 && <span style={{ fontSize: 13, marginRight: 6, color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{change > 0 ? `▲+${change}` : `▼${change}`}</span>}
         {change !== 0 ? <span style={{ color: change > 0 ? "#7CFC9A" : "#ff8a80" }}>{after}</span> : total}
       </span>
