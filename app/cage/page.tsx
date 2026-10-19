@@ -83,7 +83,6 @@ export default function CagePage() {
                 <ClassBadge cls={t?.cls} />
               </div>
               <AbilityTag ability={d.ability} />
-              {t && <p style={{ color: "#a9a59a", fontSize: 13, fontStyle: "italic" }}>{t.flavour}</p>}
               <button className="chip" onClick={() => setViewing(viewing === d.id ? null : d.id)} style={{ marginBottom: 8 }}>
                 {viewing === d.id ? "Hide its stats" : "📜 View its stats"}
               </button>

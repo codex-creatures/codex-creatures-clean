@@ -301,7 +301,6 @@ function CreatureCard({ t }: { t: CreatureTemplate }) {
       {abilities.length > 0 && (
         <div style={{ fontSize: 12, color: "#ffd98a", marginTop: 6 }}>Can be born with: {abilities.map((a) => ABILITIES[a].name).join(", ")}</div>
       )}
-      <div style={{ fontSize: 12, color: "#a9a59a", fontStyle: "italic", marginTop: 6 }}>{t.flavour}</div>
     </div>
   );
 }

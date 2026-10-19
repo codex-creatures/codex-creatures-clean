@@ -73,7 +73,6 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
               <span style={{ fontSize: 12, color: MUTED }}>🃏 Creature card · {creatureTypeLabel(card.proficiency ?? t.proficiency)}</span>
             </div>
             <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text }}>{t.name}</h2>
-            <p style={{ margin: "6px 0 12px", fontSize: 13, color: MUTED, fontStyle: "italic" }}>{t.flavour}</p>
 
             <Section>Creature % on this card</Section>
             <AbilityTag ability={card.ability} />
