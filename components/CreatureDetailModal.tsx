@@ -5,8 +5,8 @@
 //   and its armour (helmet, chest, legs) on the other, its set bonus if it
 //   wears a full set, its stats as bars and its gear multipliers;
 // - Moves: its 4 move slots, and the moves it could swap in.
-// Tap a slot to browse your gear: picking an item (tap it, or drag it onto
-// the slot) previews the change on every stat before you equip it.
+// Tap a slot to browse your gear: tapping an item previews the change on
+// every stat before you equip it; dragging it onto its slot equips it.
 
 import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -23,7 +23,8 @@ import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type Ar
 import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
-import AbilityTag from "./AbilityTag";
+import Help from "./Help";
+import { ABILITIES } from "@/lib/creatures/abilities";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
 
@@ -92,14 +93,19 @@ export default function CreatureDetailModal({
   const weaponKind = weapon?.itemKey && WEAPON_AFFINITY[weapon.itemKey] ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[weapon.itemKey]] : undefined;
   const inSlot = (slot: EquipSlot) => (slot === "weapon" ? weapon : worn[ARMOR_SLOTS.indexOf(slot)]);
   const c = RARITY_COLORS[creature.rarity];
+  const ability = creature.ability ? ABILITIES[creature.ability] : undefined;
 
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
-  // Gear dragged from the picker onto its slot: previewed, like a tap.
-  const { box: dragBox, ...dnd } = useDragDrop<CreatureOrItemDrop>({ onDrop: (opt, t) => { if (picking && t === `slot:${picking}`) setPreview(opt); } });
+  // Gear dragged from the picker onto its slot goes straight on (a tap only previews it).
+  const { box: dragBox, ...dnd } = useDragDrop<CreatureOrItemDrop>({ onDrop: (opt, t) => {
+    if (!picking || t !== `slot:${picking}` || locked) return;
+    if (opt.id !== inSlot(picking)?.id) onEquip(picking, opt.id);
+    closePicker();
+  } });
 
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
@@ -179,13 +185,17 @@ export default function CreatureDetailModal({
             <RaceTag race={template?.race} />
             <ClassBadge cls={template?.cls} />
             {template && prof && <TypeTags roles={creatureRoles(prof)} />}
+            {ability && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#ffe9a8", padding: "1px 6px", border: "2px solid rgba(255,233,168,0.35)", background: "rgba(255,233,168,0.07)" }}>
+                ✦ {ability.name}
+                <Help title={`Ability: ${ability.name}`}><p>{ability.text}</p></Help>
+              </span>
+            )}
           </div>
-          {/* Always two lines tall, so flicking between a short name and a long
-              one that wraps never moves anything below it. */}
-          <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, minHeight: "2.2em" }}>
+          {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it. */}
+          <h2 className="pixel-font" title={creature.name} style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
           </h2>
-          <AbilityTag ability={creature.ability} reserve />
         </div>
 
         {!template || !now ? (
@@ -253,7 +263,7 @@ export default function CreatureDetailModal({
             {picking && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
-                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`} — tap or drag one onto the slot
+                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`}: tap to compare, or drag onto the slot to equip
                 </div>
                 {options.length === 0 ? (
                   <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the labyrinth to find some.</p>
@@ -275,7 +285,7 @@ export default function CreatureDetailModal({
                           title={away ? `${opt.name} — Klutz has it with him in the Labyrinth` : here ? `${opt.name} (worn now)` : opt.name}
                           grab={away ? undefined : { onPointerDown: dnd.press(opt, { sprite: sp, icon: "📦" }), ...dnd.handlers }}
                           onClick={() => { if (!dnd.wasDrag()) setPreview(opt); }}>
-                          {sp ? <PixelSprite sprite={sp} scale={2.5} /> : <span style={{ fontSize: 22 }}>?</span>}
+                          {sp ? <PixelSprite sprite={sp} scale={3} /> : <span style={{ fontSize: 22 }}>?</span>}
                           {here && <Badge color={GOLD}>ON</Badge>}
                           {owner && !here && <Badge color="#f5c542">{away ? "🌀" : "⚑"}</Badge>}
                         </Tile>
@@ -405,7 +415,7 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { label: string; labelColor?: string; slot: EquipSlot; item?: CreatureOrItemDrop; active: boolean; hot?: boolean; onClick: () => void; small?: boolean }) {
   const col = item ? RARITY_COLORS[item.rarity] : undefined;
   const sp = item && itemSprite(item);
-  const size = small ? 46 : 72;
+  const size = small ? 60 : 72;
   return (
     <button onClick={onClick} data-drop={`slot:${slot}`} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "white", minWidth: 0 }}>
@@ -416,7 +426,7 @@ function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { 
         border: `3px solid ${active || hot ? "#ffd66e" : col ? col.border : "#2f3340"}`,
         boxShadow: `inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)${hot ? ", 0 0 18px rgba(255,214,110,0.8)" : active ? ", 0 0 12px rgba(255,214,110,0.5)" : ""}`,
       }}>
-        {sp ? <PixelSprite sprite={sp} scale={small ? 2.2 : 3.5} /> : <span style={{ fontSize: small ? 18 : 26, color: "#3a3e4b" }}>＋</span>}
+        {sp ? <PixelSprite sprite={sp} scale={small ? 3.3 : 3.5} /> : <span style={{ fontSize: small ? 18 : 26, color: "#3a3e4b" }}>＋</span>}
       </span>
       {!small && (
         <span style={{ fontSize: 11, textAlign: "center", color: item ? rarityColor(item.rarity) : MUTED, maxWidth: 110, ...lines(2, 1.2) }}>
