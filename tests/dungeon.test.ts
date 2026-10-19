@@ -39,23 +39,25 @@ describe("dungeon rooms", () => {
     expect([...sizes(4)].sort()).toEqual([1, 2]);
     expect([...sizes(5)].sort()).toEqual([2, 3]);
     expect(makeRoom("easy", Math.random, 1).enemies!.length).toBeLessThanOrEqual(2);
-    const rar = (n: number) => { for (;;) { const r = makeRoom("easy", Math.random, n <= 2 ? 3 : 9); if (r.enemies!.length === n) return r.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity); } };
-    expect(rar(1)).toEqual(["uncommon"]);
-    expect(rar(2)).toEqual(["common", "uncommon"]);
-    expect(rar(3)).toEqual(["common", "common", "uncommon"]);
   });
 
-  it("easy fights: Common gear (bar the rare upgrade)", () => {
-    for (let i = 0; i < 200; i++) {
-      const room = makeRoom("easy");
-      const gear = room.enemies!.flatMap((e) => e.gear);
-      const upgraded = gear.filter((p) => p.rarity !== "common");
-      expect(upgraded.length).toBeLessThanOrEqual(1);
-      expect(gear.filter((p) => p.drops)).toEqual(upgraded); // the upgraded item is the one that drops
+  it("easy fights: Commons in Common gear; past room 3, 20% step up to Uncommon (creature and gear together)", () => {
+    let foes = 0, up = 0;
+    for (let i = 0; i < 400; i++) {
+      const depth = i % 2 ? 2 : 9;
+      const room = makeRoom("easy", Math.random, depth);
+      expect(room.enemies!.flatMap((e) => e.gear).filter((p) => p.drops).length).toBeLessThanOrEqual(1);
+      for (const e of room.enemies!) {
+        const r = CREATURE_BY_ID[e.creatureId].rarity;
+        expect(depth <= 3 ? ["common"] : ["common", "uncommon"]).toContain(r);
+        for (const p of e.gear) if (!p.drops) expect(p.rarity).toBe(r); // (a dropping piece is a tier up)
+        if (depth > 3) { foes++; if (r === "uncommon") up++; }
+      }
       expect(room.level).toBe("easy");
       expect(room.gold).toBeGreaterThan(0);
       room.enemies!.forEach((e) => expect(enemyFighter(e).maxHp).toBeGreaterThan(0));
     }
+    expect(up / foes).toBeCloseTo(0.2, 1);
   });
 
   it("the mystery mix adds up to 100%: mostly mini bosses, 15% good finds, and the witch", () => {
@@ -68,12 +70,15 @@ describe("dungeon rooms", () => {
     expect(ROOM_MIX.map(([k]) => k)).toContain("merchant");      // merchants anywhere
   });
 
-  it("mini bosses: one Epic with Rare gear, played by the Hard AI", () => {
+  it("mini bosses: one Rare in Rare gear, played by the Hard AI (the Deep Labyrinth: 30% Epic)", () => {
     const room = makeRoom("miniboss");
     expect(room.enemies).toHaveLength(1);
-    expect(CREATURE_BY_ID[room.enemies![0].creatureId].rarity).toBe("epic");
+    expect(CREATURE_BY_ID[room.enemies![0].creatureId].rarity).toBe("rare");
     expect(room.enemies![0].gear.every((p) => p.rarity === "rare")).toBe(true);
     expect(room.level).toBe("hard");
+    const deep = Array.from({ length: 1000 }, () => CREATURE_BY_ID[makeRoom("miniboss", Math.random, 9, 2).enemies![0].creatureId].rarity);
+    expect(new Set(deep)).toEqual(new Set(["rare", "epic"]));
+    expect(deep.filter((r) => r === "epic").length / 1000).toBeCloseTo(0.3, 1);
     expect(isFight("miniboss")).toBe(true);
   });
 
@@ -86,11 +91,18 @@ describe("dungeon rooms", () => {
     }
   });
 
-  it("hard fights: a single Rare with Rare gear", () => {
-    const room = makeRoom("hard");
-    expect(room.enemies).toHaveLength(1);
-    expect(CREATURE_BY_ID[room.enemies![0].creatureId].rarity).toBe("rare");
-    expect(room.enemies![0].gear.every((p) => p.rarity === "rare")).toBe(true);
+  it("hard fights: a single brute, Uncommon to room 6 then Rare, in matching gear (20% a step up)", () => {
+    for (const [depth, base, up] of [[5, "uncommon", "rare"], [9, "rare", "epic"]] as const) {
+      const rs = Array.from({ length: 500 }, () => {
+        const room = makeRoom("hard", Math.random, depth);
+        expect(room.enemies).toHaveLength(1);
+        const e = room.enemies![0], r = CREATURE_BY_ID[e.creatureId].rarity;
+        for (const p of e.gear) if (!p.drops) expect(p.rarity).toBe(r);
+        return r;
+      });
+      expect(new Set(rs)).toEqual(new Set([base, up]));
+      expect(rs.filter((r) => r === up).length / 500).toBeCloseTo(0.2, 1);
+    }
   });
 });
 

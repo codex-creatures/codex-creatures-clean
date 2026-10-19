@@ -77,7 +77,7 @@ describe("large rooms", () => {
     for (let i = 0; i < 300; i++) {
       const r = makeRoom("storehouse", Math.random, 8);
       expect(r.sack!.some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.material)).toBe(true);
-      if (r.guarded) { guarded++; expect(hasFight(r)).toBe(true); expect(CREATURE_BY_ID[r.enemies![0].creatureId].rarity).toBe("epic"); }
+      if (r.guarded) { guarded++; expect(hasFight(r)).toBe(true); expect(CREATURE_BY_ID[r.enemies![0].creatureId].rarity).toBe("rare"); }
     }
     expect(guarded / 300).toBeGreaterThan(0.25);
     expect(guarded / 300).toBeLessThan(0.45);

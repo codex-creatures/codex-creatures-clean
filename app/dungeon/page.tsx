@@ -1453,7 +1453,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
             {room.quest === "thief" && "There it is: a Baby Cyclops, hunched over a battered box, picking through Klutz's weapons. Klutz ducks behind you: “Oi! That's mine! Go on — you fight, I'll tell you what to do.”"}
             {room.kind === "easy" && !room.quest && "A few creatures look up from their scraps. They don't look tough."}
             {room.kind === "hard" && "One creature, alone. Well fed. Well armed."}
-            {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but an Epic one, well armed, and it fights smart. Its chest is worth it."}
+            {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but a Rare one, well armed, and it fights smart. Its chest is worth it."}
             {room.kind === "storehouse" && "Crates and barrels to the rafters — and something big has made its lair among them. Beat it and the stores are yours."}
             {room.kind === "encampment" && room.variant === "ambush" && "They were hiding behind the cages! Two of them come at you at once."}
             {room.kind === "encampment" && room.variant !== "ambush" && "A camp: bedrolls, a cookfire, cages along the wall — and the creatures who live here."}

@@ -60,20 +60,41 @@ export const DEEP_ROUTE = 15;
 export type DungeonInfo = {
   name: string;
   spec: MapSpec;
-  easyPack: Rarity[];  // a creature den, picked from the end (see makeRoom)
-  easyGear: Rarity;
-  hard: [Rarity, Rarity];     // creature, gear
-  miniboss: [Rarity, Rarity];
+  foes: FoeBand[];     // how rare its creatures and their gear are, by depth (foeAt)
   levels: LevelBand[]; // how strong its creatures are, by depth (enemyLevel)
   maxLevel: number;    // no creature here (bar the boss) is stronger than this
   goldScale: number;
 };
+// How rare a room's creatures are (the user, 2026-10-19). Each kind of
+// fight has a creature rarity and a gear rarity, by depth, and each enemy
+// has its chance to step up one rarity, creature and gear together (a
+// little surprise, never a big jump). Dens: creature dens; hard: lurking
+// brutes; camp: encampments; miniboss: mini bosses (and a storehouse's guard).
+export const STEP_UP = 0.2;
+export type Foe = [creature: Rarity, gear: Rarity, stepUp: number];
+export type FoeBand = { upTo: number; easy: Foe; hard: Foe; camp: Foe; miniboss: Foe };
 export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
-  1: { name: "The Labyrinth", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 }, easyPack: ["common", "common", "uncommon"], easyGear: "common",
-       hard: ["rare", "rare"], miniboss: ["epic", "rare"], levels: [[3, 1, 4], [6, 1, 7], [Infinity, 3, 7]], maxLevel: 7, goldScale: 1 },
-  2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 }, easyPack: ["uncommon", "uncommon", "rare"], easyGear: "uncommon",
-       hard: ["epic", "rare"], miniboss: ["legendary", "epic"], levels: [[5, 7, 11], [10, 9, 14], [Infinity, 11, 15]], maxLevel: 17, goldScale: 2 },
+  1: { name: "The Labyrinth", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 },
+       foes: [
+         { upTo: 3,        easy: ["common", "common", 0],       hard: ["uncommon", "uncommon", STEP_UP], camp: ["uncommon", "uncommon", 0], miniboss: ["rare", "rare", 0] },
+         { upTo: 6,        easy: ["common", "common", STEP_UP], hard: ["uncommon", "uncommon", STEP_UP], camp: ["uncommon", "uncommon", 0], miniboss: ["rare", "rare", 0] },
+         { upTo: Infinity, easy: ["common", "common", STEP_UP], hard: ["rare", "rare", STEP_UP],         camp: ["rare", "uncommon", 0],     miniboss: ["rare", "rare", 0] },
+       ],
+       levels: [[3, 1, 4], [6, 1, 7], [Infinity, 3, 7]], maxLevel: 7, goldScale: 1 },
+  2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 },
+       foes: [
+         { upTo: Infinity, easy: ["uncommon", "uncommon", STEP_UP], hard: ["epic", "rare", STEP_UP], camp: ["epic", "rare", 0], miniboss: ["rare", "rare", 0.3] },
+       ],
+       levels: [[5, 7, 11], [10, 9, 14], [Infinity, 11, 15]], maxLevel: 17, goldScale: 2 },
 };
+// The creature and gear rarity for one enemy of this kind at this depth (its step-up rolled).
+export function foeAt(dungeon: DungeonId, kind: "easy" | "hard" | "camp" | "miniboss", depth: number, rng: Rng = Math.random): [Rarity, Rarity] {
+  const bands = DUNGEONS[dungeon].foes;
+  const [creature, gear, stepUp] = (bands.find((b) => depth <= b.upTo) ?? bands[bands.length - 1])[kind];
+  if (rng() >= stepUp) return [creature, gear];
+  const up = (r: Rarity) => RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(r) + 1)];
+  return [up(creature), up(gear)];
+}
 export const dungeonOf = (run: { dungeon?: DungeonId }): DungeonId => run.dungeon ?? 1;
 
 // How strong (what level) a room's creatures are. Each dungeon has bands by
@@ -488,20 +509,23 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
   const D = DUNGEONS[dungeon];
   const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
   const level = enemyLevel(dungeon, kind, depth, rng);
+  // One enemy of this kind, at this depth (foeAt), not the same species as those in `others`.
+  const foe = (k: "easy" | "hard" | "camp" | "miniboss", others: Enemy[] = []) =>
+    makeEnemy(...foeAt(dungeon, k, depth, rng), others.map((e) => e.creatureId), rng, level);
   switch (kind) {
     case "treasure":
       return { kind, gold: FIRST_TREASURE_GOLD, done: false };
     case "easy": {
-      // 1–3 creatures (by depth) with Common gear (Uncommon in the Deep Labyrinth).
+      // 1–3 creatures (by depth): Commons in Common gear (Uncommons in the Deep Labyrinth).
       const size = depth <= FIRST_ROOMS ? 1 : randInt(...(depth <= EARLY_DEPTH ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
       const enemies: Enemy[] = [];
-      for (const r of D.easyPack.slice(-size)) enemies.push(makeEnemy(r, D.easyGear, enemies.map((e) => e.creatureId), rng, level));
+      for (let i = 0; i < size; i++) enemies.push(foe("easy", enemies));
       if (rng() < UPGRADE_CHANCE) upgradeAndDrop(enemies, rng);
       return { kind, enemies, level: dungeon === 1 ? "easy" : "normal", gold: gold(EASY_GOLD), done: false };
     }
     case "hard": {
-      // A single Rare with Rare gear (an Epic in the Deep Labyrinth).
-      const enemies = [makeEnemy(D.hard[0], D.hard[1], [], rng, level)];
+      // A single brute: Uncommon early on, then a Rare in Rare gear (an Epic in the Deep Labyrinth).
+      const enemies = [foe("hard")];
       if (rng() < HARD_DROP_CHANCE) enemies[0].gear[Math.floor(rng() * 2)].drops = true;
       return { kind, enemies, level: "normal", gold: gold(HARD_GOLD), done: false };
     }
@@ -518,9 +542,9 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
       return { kind, sack, done: false };
     }
     case "miniboss": {
-      // One tough creature: an Epic with Rare gear, played by the Hard AI.
+      // One tough creature: a Rare in Rare gear, played by the Hard AI.
       // Beat it and you can heal or revive one of your party.
-      const enemies = [makeEnemy(D.miniboss[0], D.miniboss[1], [], rng, level)];
+      const enemies = [foe("miniboss")];
       return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "merchant":
@@ -528,9 +552,8 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
     case "encampment": {
       const variant = pick(ENCAMP_VARIANTS, rng);
       const size = variant === "ambush" ? ENCAMP_AMBUSHERS : randInt(...ENCAMP_SIZE, rng);
-      const gear = RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(D.easyGear) + 1)];
       const enemies: Enemy[] = [];
-      for (let i = 0; i < size; i++) enemies.push(makeEnemy(D.hard[0], gear, enemies.map((e) => e.creatureId), rng, level));
+      for (let i = 0; i < size; i++) enemies.push(foe("camp", enemies));
       if (variant === "drunk") for (const e of enemies) e.hpMult = ENCAMP_DRUNK_HP;
       const cages: Cage[] = Array.from({ length: randInt(...ENCAMP_CAGES, rng) }, () =>
         (rng() < CAGE_CREATURE_CHANCE ? { creatureId: pickCreatureId(pickRarity("", "random")) } : {}));
@@ -557,7 +580,7 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
         ...(rng() < SCHEMATIC_CHANCE.storehouse ? [{ gear: schematicDrop("crooked_bookcase") }] : []),
       ];
       if (rng() >= STOREHOUSE_GUARD || !minibossAllowed(dungeon, depth)) return { kind, sack, done: false };
-      const enemies = [makeEnemy(D.miniboss[0], D.miniboss[1], [], rng, level)];
+      const enemies = [foe("miniboss")];
       return { kind, guarded: true, sack, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "witch":

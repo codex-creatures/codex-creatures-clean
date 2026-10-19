@@ -256,9 +256,19 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   rooms (tap them), some rooms empty; the first Cyclops run twice the sketch's size; the scroll and
   flares still give a peek. Estimate: 8–12 sessions (generator, movement, room objects, saves,
   ~50–100 PixelLab generations). If picked up: a 1-session throwaway prototype in /lab first.
-- ❓ **Next balance fix, waiting on the user:** shrink enemies' gear value (not their levels or
-  rarity) by depth, Cyclops' Labyrinth only: rooms 1–2 ×0.6, 3–6 ×0.8, 7+ full; drops keep full
-  stats. Sim: a lone starter beats a first-room den 67% today, ~85% at ×0.6.
+- ✅ **Enemy rarity by room and depth** (the user, 2026-10-19; `DUNGEONS[d].foes`, `foeAt`). Every
+  enemy wears a full kit (weapon + whole armour set). Each has a chance to **step up** one rarity,
+  creature and gear together (`STEP_UP` 20%):
+  - Labyrinth dens: Commons in Common gear; rooms 1–3 never step up.
+  - Labyrinth brutes: Uncommon to room 6, then Rare (in matching gear). Encampments: Uncommon
+    to room 6, then Rare creatures in Uncommon gear (no step-up).
+  - Labyrinth mini bosses: Rare in Rare gear, no step-up.
+  - Deep: dens Uncommon, brutes Epic in Rare gear, encampments Epic in Rare gear, mini bosses Rare
+    in Rare gear with 30% Epic.
+  - Sim (60 players × 25 runs, no scans): a lone starter beats a first-room den 75% (was 67%);
+    players with a Cyclops clear by run 25: 28/60 (was 16/60); the Cyclops itself is still beaten
+    only ~15% of attempts. (The shelved alternative, shrinking enemy gear by level, was tried and
+    dropped as too complicated.)
 
 ## 8. Klutz
 
