@@ -228,7 +228,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
 - ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room.
-  - 🧪 Prices (`merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
+  - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
     scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
     Claude's defaults, added 2026-10-19.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
