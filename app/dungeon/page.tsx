@@ -40,8 +40,8 @@ import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
 import { clubRoom, klutzClub, isClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
-import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard, type WitchGame } from "@/lib/dungeon/witch";
-import { CardFace } from "@/components/CardGallery";
+import { guess as witchGuess, walkAway, sitDown, isSeated, type Guess, type WitchGame } from "@/lib/dungeon/witch";
+import WitchWindow from "@/components/WitchWindow";
 import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
@@ -661,6 +661,9 @@ export default function DungeonPage() {
   }
 
   // ── The card witch ─────────────────────────────────────────────────
+  function witchSit() {
+    updateRun((r) => (r.current?.witch ? { ...r, current: { ...r.current, witch: sitDown(r.current.witch) } } : r));
+  }
   function witchPlay(g: Guess) {
     let stabbed: string | undefined;
     updateRun((r) => {
@@ -1043,7 +1046,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)}
                   bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
                 />
               : <AtEntrance run={run} />}
@@ -1283,8 +1286,8 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave, bagLooks, bagOffers, onSell }: {
-  onWitch: (g: Guess) => void; onWitchLeave: () => void; onLook: () => void;
+function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell }: {
+  onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void;
   bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void;
   run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
@@ -1383,7 +1386,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
         </>
       ))}
 
-      {room.kind === "witch" && room.witch && <WitchTable room={room} victim={byId(run.illness?.id ?? "")?.name} onGuess={onWitch} onLeave={onWitchLeave} next={next} />}
+      {room.kind === "witch" && room.witch && <WitchTable key={run.path.length} room={room} victim={byId(run.illness?.id ?? "")?.name} onSit={onWitchSit} onGuess={onWitch} onLeave={onWitchLeave} next={next} />}
 
       {room.kind === "cards" && (room.done ? next : (
         <>
@@ -1811,79 +1814,25 @@ function Shaker({ shake, fill, children }: { shake: number; fill?: boolean; chil
   return <div ref={ref} style={fill ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : undefined}>{children}</div>;
 }
 
-// One of the witch's cards.
-function WitchCardView({ card, small }: { card: WitchCard; small?: boolean }) {
-  const s = SUIT_INFO[card.suit];
-  return (
-    <div className="witch-card" style={{ borderColor: s.color, width: small ? 34 : 86, height: small ? 48 : 120, fontSize: small ? 14 : 44 }}>
-      <span className="pixel-font" style={{ color: s.color }}>{card.n}</span>
-      <span style={{ fontSize: small ? 11 : 22 }}>{s.icon}</span>
-    </div>
-  );
-}
-
-// The card witch: higher or lower, for creature cards.
-function WitchTable({ room, victim, onGuess, onLeave, next }: {
-  room: Room; victim?: string; onGuess: (g: Guess) => void; onLeave: () => void; next: React.ReactNode;
+// The card witch: she offers a game of higher or lower, played in a window
+// over her room (components/WitchWindow.tsx). Once it's over, the room says how it went.
+function WitchTable({ room, victim, onSit, onGuess, onLeave, next }: {
+  room: Room; victim?: string; onSit: () => void; onGuess: (g: Guess) => void; onLeave: () => void; next: React.ReactNode;
 }) {
   const w = room.witch!;
-  const result = w.last?.result;
+  // The window stays up when the game ends, until you leave her table.
+  const [shut, setShut] = useState(() => w.state !== "playing");
+  const won = w.won?.length ?? w.correct;
   return (
     <div style={{ marginTop: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <p style={{ fontSize: 14, color: "#d8d4c8", margin: 0, flex: 1 }}>
-          {w.state === "playing" && w.history.length === 0 && <>A hunched witch shuffles a deck of bone cards, a creature card face up beside them. &ldquo;Higher or lower, dearie? Guess right and it&apos;s yours…&rdquo;</>}
-          {w.state === "playing" && result === "right" && <b style={{ color: "#5ee08a" }}>Right! </b>}
-          {w.state === "playing" && result === "stick" && <b style={{ color: "#f1d9a0" }}>Stick — the same number. Guess again. </b>}
-          {w.state === "lost" && <b style={{ color: "#ff8a80" }}>Wrong! She lunges — {victim ?? "your creature"} is stabbed and falls ill.{(w.won?.length ?? w.correct) > 0 && " She sweeps your cards back into her deck."}</b>}
-          {w.state === "left" && <b style={{ color: "#f1d9a0" }}>You walk away with {w.correct} card{w.correct === 1 ? "" : "s"}.</b>}
-        </p>
-        <Help title="The card witch">
-          <ul>
-            <li>Her deck: <b>1 to 11</b> in each of Melee ⚔️, Ranged 🏹 and Magic 🔮 — 33 cards.</li>
-            <li>Every card left in the deck is <b>equally likely</b>. Cards played are gone for good.</li>
-            <li>Right: you win <b>the creature card on the table</b>, and she turns over another. Same (&ldquo;stick&rdquo;): guess again.</li>
-            <li>Wrong: she stabs the creature that was <b>last on the field</b> (or your first). It loses <b>{Math.round(ILLNESS_DAMAGE * 100)}% HP</b> each of the next <b>{ILLNESS_ACTIONS} actions</b> — rooms, or rounds of a fight.</li>
-            <li>Walk away any time and keep your cards — she shows you <b>the card that would have come next</b>. Lose, and she takes them all back. Her prizes run out after {MAX_CORRECT}.</li>
-          </ul>
-        </Help>
-      </div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 10, margin: "12px 0", justifyContent: "center", flexWrap: "wrap" }}>
-        <div style={{ display: "flex", gap: 3, flexWrap: "wrap", maxWidth: 180 }}>
-          {w.history.slice(-8).map((c, i) => <WitchCardView key={i} card={c} small />)}
-        </div>
-        <WitchCardView card={w.card} />
-        {w.peek && (
-          <div style={{ textAlign: "center", opacity: 0.75 }}>
-            <div className="pixel-font" style={{ fontSize: 12, color: "#f1d9a0", marginBottom: 4 }}>Next</div>
-            <WitchCardView card={w.peek} />
-          </div>
-        )}
-      </div>
-      {w.state === "playing" && w.prize && CREATURE_BY_ID[w.prize] && (
-        <div style={{ textAlign: "center", marginBottom: 10 }}>
-          <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 6 }}>{w.correct > 0 ? "Her next prize" : "Her prize"} — guess right to win it:</div>
-          <div style={{ width: 150, margin: "0 auto" }}>
-            <CardFace key={`${w.prize}-${w.correct}`} t={CREATURE_BY_ID[w.prize]} creatureId={w.prize} glow footer="🃏 On the table" />
-          </div>
-        </div>
-      )}
-      <div className="pixel-font" style={{ textAlign: "center", fontSize: 15, color: "#f1d9a0", marginBottom: 8 }}>
-        🃏 Won so far: {(w.won ?? []).length === 0 ? (w.correct > 0 ? w.correct : "nothing yet") : (w.won ?? []).map((id, i) => (
-          <span key={i} style={{ color: rarityColor(CREATURE_BY_ID[id]?.rarity ?? "common") }}>{i > 0 ? ", " : ""}{CREATURE_BY_ID[id]?.name ?? "?"}</span>
-        ))}
-      </div>
-      {w.state === "playing" ? (
-        <>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button className="pixel-btn" style={{ flex: 1, fontSize: 18 }} disabled={w.card.n >= 11} onClick={() => onGuess("higher")}>⬆️ Higher</button>
-            <button className="pixel-btn" style={{ flex: 1, fontSize: 18 }} disabled={w.card.n <= 1} onClick={() => onGuess("lower")}>⬇️ Lower</button>
-          </div>
-          <button className="card-btn" style={{ marginTop: 8, justifyContent: "center" }} onClick={onLeave}>
-            {w.correct > 0 ? `🚶 Walk away with ${w.correct} card${w.correct === 1 ? "" : "s"}` : "🚶 Walk away"}
-          </button>
-        </>
-      ) : next}
+      <p style={{ fontSize: 14, color: "#d8d4c8", margin: "0 0 10px" }}>
+        {w.state === "playing" && <>A hunched witch shuffles a deck of bone cards. &ldquo;Fancy a game, dearie? Guess right and the creature&apos;s yours…&rdquo;</>}
+        {w.state === "lost" && <b style={{ color: "#ff8a80" }}>She stabbed {victim ?? "your creature"}{won > 0 ? " and swept your cards back into her deck" : ""}.</b>}
+        {w.state === "left" && <b style={{ color: "#f1d9a0" }}>You walked away with {w.correct} card{w.correct === 1 ? "" : "s"}.</b>}
+      </p>
+      {w.state === "playing" && !isSeated(w) ? <button className="pixel-btn" onClick={onSit}>🃏 Play her game</button>
+        : w.state === "playing" ? null : next}
+      {isSeated(w) && !shut && <WitchWindow game={w} victim={victim} onGuess={onGuess} onLeave={onLeave} onClose={() => setShut(true)} />}
     </div>
   );
 }

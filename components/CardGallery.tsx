@@ -89,6 +89,14 @@ export const CARD_WELL: React.CSSProperties = { padding: "2.5cqw 4cqw 3cqw", bac
 export const CARD_YELLOW = YELLOW;
 export const CARD_PIXEL = PIXEL;
 
+// A card's stone and its bevelled trim in the rarity colour rc (glow: a halo too).
+export const cardTrim = (rc: string, glow?: boolean): React.CSSProperties => ({
+  background: "#23262f", border: `2px solid ${shade(rc, -0.55)}`,
+  boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)${glow ? `, 0 0 14px ${rc}` : ""}`,
+});
+// The sunken box a card's sprite sits in, on a faded glow of its rarity colour.
+export const cardWell = (rc: string): React.CSSProperties => ({ background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) });
+
 // The card itself, shared by every creature card: dark stone with a thin
 // bevelled trim in the rarity colour; the name (and, with showRarity, its
 // rarity under it); the sprite on a faded rarity glow (filling the box, 5%
@@ -107,14 +115,13 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, children 
   return (
     <div style={{
       ...(fill ? { height: "100%" } : { aspectRatio: "5 / 7" }), display: "flex", flexDirection: "column", gap: "3cqw", padding: "5.5cqw",
-      background: "#23262f", border: `2px solid ${shade(rc, -0.55)}`,
-      boxShadow: `inset 0 0 0 1px ${rc}, inset 2px 2px 0 ${shade(rc, 0.35)}, inset -2px -2px 0 ${shade(rc, -0.35)}, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0,0,0,0.5)${glow ? `, 0 0 14px ${rc}` : ""}`,
+      ...cardTrim(rc, glow),
     }}>
       <div style={{ textAlign: "center", padding: "2.5cqw 3cqw" }}>
         <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(13px, 9.5cqw, 22px)" : "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>{t.name}</div>
         {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
       </div>
-      <div style={{ position: "relative", flex: 1, minHeight: 0, background: `radial-gradient(circle at 50% 50%, ${rc}66, ${rc}1a 70%), #15171d`, boxShadow: sunken("#2a2d36", 3) }}>
+      <div style={{ position: "relative", flex: 1, minHeight: 0, ...cardWell(rc) }}>
         <CreatureArt creatureId={creatureId} title={t.name} />
       </div>
       <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>

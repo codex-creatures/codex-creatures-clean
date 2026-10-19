@@ -225,6 +225,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     Magic, for variety). Every card, the first included, is drawn evenly from what's left; played
     cards are gone. The same number again ("stick") is a push: guess again.
   - ✅ Walking away (or winning all 10 prizes), she turns over the card that would have come next.
+  - ✅ (the user, 2026-10-19) She offers a game; accept and it opens in a window over her room. Her card keeps the
+    creature card's shape and rarity trim, laid out like a playing card: the prize's sprite in the middle, the number top
+    right and bottom left, the suit (attack style) top left and bottom right. Lower to its left, higher to its right, walk
+    away under it. The next prize lies face down behind it (its rarity shows); a right guess sparkles the card away and
+    the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
 - ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room.

@@ -12,9 +12,11 @@
 //   - Wrong: you lose. The witch lunges and stabs one of your creatures
 //     (see curse() in run.ts): it loses 15% of its max HP for each of the
 //     next 3 actions.
+// - She offers you a game when you walk in; you sit down at her table or walk on.
 // - Her prize for the next right guess lies face up on the table (a creature
-//   card, rolled like a scan), to tempt you into one more. Guess right and
-//   it's yours, and a new prize is turned over. You can walk away whenever
+//   card, rolled like a scan), to tempt you into one more, with the prize after
+//   it face down behind (you can see its rarity). Guess right and it's yours,
+//   the one behind comes forward and a new one goes behind it. You can walk away whenever
 //   you like with the cards you've won, and she turns over the card that
 //   would have come next. After MAX_CORRECT her prizes are spent and you walk
 //   away with them anyway. Lose and you lose them all.
@@ -39,6 +41,8 @@ export type WitchGame = {
   history: WitchCard[];     // earlier cards, oldest first
   correct: number;
   prize?: string;           // the creature card on offer for the next right guess
+  nextPrize?: string;       // the prize after it, face down behind (none once her prizes run out)
+  seated?: boolean;         // you took her up on her game
   won?: string[];           // the creature cards won so far (creature ids)
   state: "playing" | "lost" | "left";
   last?: { guess: Guess; result: WitchResult };
@@ -63,8 +67,13 @@ const pick = (cards: WitchCard[], rng: Rng) => cards[Math.floor(rng() * cards.le
 // rollPrize: a creature card (its id), rolled like a scan.
 export function newWitchGame(rng: Rng = Math.random, rollPrize?: () => string): WitchGame {
   return { card: pick(DECK, rng), history: [], correct: 0, state: "playing",
-    ...(rollPrize ? { prize: rollPrize(), won: [] } : {}) };
+    ...(rollPrize ? { prize: rollPrize(), nextPrize: rollPrize(), won: [] } : {}) };
 }
+
+// Taking a seat at her table.
+export const sitDown = (game: WitchGame): WitchGame => (game.state === "playing" ? { ...game, seated: true } : game);
+// Are you at her table? (a game already underway, from before you had to sit down, counts)
+export const isSeated = (game: WitchGame) => !!game.seated || game.history.length > 0;
 
 // The next card off the deck.
 export const drawNext = (game: Table, rng: Rng = Math.random): WitchCard => pick(remaining(game), rng);
@@ -86,10 +95,13 @@ export function guess(game: WitchGame, g: Guess, rng: Rng = Math.random, rollPri
   const result: WitchResult = next.n === game.card.n ? "stick" : (next.n > game.card.n) === (g === "higher") ? "right" : "wrong";
   const correct = game.correct + (result === "right" ? 1 : 0);
   const state = result === "wrong" ? "lost" : correct >= MAX_CORRECT ? "left" : "playing";
-  // Right: the prize is yours, and the next one is turned over.
+  // Right: the prize is yours, the one behind it comes forward, and a new one
+  // goes behind (unless that's more prizes than she has).
   const won = result === "right" && game.prize ? [...(game.won ?? []), game.prize] : game.won;
-  const prize = result === "right" && rollPrize && state === "playing" ? rollPrize() : result === "right" ? undefined : game.prize;
-  const after: WitchGame = { ...game, card: next, history: [...game.history, game.card], correct, state, last: { guess: g, result }, won, prize };
+  const right = result === "right" && state === "playing";
+  const prize = result !== "right" ? game.prize : right ? game.nextPrize ?? rollPrize?.() : undefined;
+  const nextPrize = result !== "right" ? game.nextPrize : right && rollPrize && correct + 1 < MAX_CORRECT ? rollPrize() : undefined;
+  const after: WitchGame = { ...game, card: next, history: [...game.history, game.card], correct, state, last: { guess: g, result }, won, prize, nextPrize };
   return state === "left" ? withPeek(after, rng) : after;
 }
 

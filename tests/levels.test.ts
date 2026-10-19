@@ -5,7 +5,7 @@ import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP
 import { rollBarcodeOutcome } from "../lib/barcodeRegistry";
 import { starterCreature, STARTER_LEVEL } from "../lib/creatures/starter";
 import { buildFighter } from "../lib/combat/loadout";
-import { newWitchGame, guess, walkAway, remaining, drawNext, odds, DECK, MAX_CORRECT } from "../lib/dungeon/witch";
+import { newWitchGame, guess, walkAway, remaining, drawNext, odds, sitDown, isSeated, DECK, MAX_CORRECT, type WitchGame } from "../lib/dungeon/witch";
 import { startRun, curse, illnessTick, stabTarget, makeRoom, enemyLevel, ILLNESS_DAMAGE, ILLNESS_ACTIONS, DEEP_ROUTE } from "../lib/dungeon/run";
 import { rollMap, routeLength } from "../lib/dungeon/map";
 import { DUNGEONS } from "../lib/dungeon/run";
@@ -188,6 +188,30 @@ describe("the card witch's prizes", () => {
     for (let i = 0; i < 50 && g.correct === 0; i++) g = guess({ ...g, card: { n: 1, suit: "melee" } }, "higher", Math.random, roll);
     expect(g.won).toEqual(["prize1"]);
     expect(g.prize).toBe("prize2");
+  });
+
+  it("the prize after this one waits face down behind it, and comes forward on a right guess", () => {
+    let n = 0;
+    const roll = () => `prize${++n}`;
+    let g = newWitchGame(Math.random, roll);
+    expect([g.prize, g.nextPrize]).toEqual(["prize1", "prize2"]);
+    const fromOne = (w: WitchGame) => { let x = w; for (let i = 0; i < 50 && x.correct === w.correct; i++) x = guess({ ...x, card: { n: 1, suit: "melee" } }, "higher", Math.random, roll); return x; };
+    g = fromOne(g);
+    expect([g.prize, g.nextPrize]).toEqual(["prize2", "prize3"]);
+    // Her last prize has nothing behind it, and winning it ends the game.
+    g = fromOne({ ...g, correct: MAX_CORRECT - 2 });
+    expect(g.prize).toBe("prize3");
+    expect(g.nextPrize).toBeUndefined();
+    g = fromOne(g);
+    expect(g.state).toBe("left");
+    expect(g.won?.at(-1)).toBe("prize3");
+  });
+
+  it("you sit down at her table first (a game underway from an old save counts)", () => {
+    const g = newWitchGame();
+    expect(isSeated(g)).toBe(false);
+    expect(isSeated(sitDown(g))).toBe(true);
+    expect(isSeated({ ...g, history: [{ n: 3, suit: "magic" }] })).toBe(true);
   });
 });
 
