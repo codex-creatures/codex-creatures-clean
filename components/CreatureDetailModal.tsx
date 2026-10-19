@@ -57,6 +57,12 @@ const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary
 const WEAPON_STAT_LABELS: [string, string][] = [["melee", "Atk"], ["ranged", "Rng"], ["magic", "Mag"], ["agility", "Agi"], ["hp", "HP"]];
 const ARMOR_STAT_LABELS:  [string, string][] = [["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"], ["agility", "Agi"], ["hp", "HP"]];
 
+// Text cut to a number of lines (with …) in a box always that tall: the
+// window's boxes stay put whatever the words.
+const lines = (n: number, lineHeight: number): React.CSSProperties => ({
+  display: "-webkit-box", WebkitLineClamp: n, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight, height: `${n * lineHeight}em`,
+});
+
 // Each stat's bar is full at about the best a creature reaches with Legendary gear.
 export type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | "magdef";
 export const STATS: { key: StatKey; icon: string; label: string; max: number; color: string }[] = [
@@ -155,7 +161,7 @@ export default function CreatureDetailModal({
         </button>
       ))}
       <div onClick={(e) => e.stopPropagation()} className="modal-panel stone-panel"
-        style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, maxHeight: "92cqh", overflowY: "auto", position: "relative" }}>
+        style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, height: "92cqh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
@@ -166,7 +172,7 @@ export default function CreatureDetailModal({
 
         {/* Name plate */}
         <div style={{ paddingRight: 28, marginBottom: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignContent: "flex-start", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap", height: 52, overflow: "hidden" }}>
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <RaceTag race={template?.race} />
             <ClassBadge cls={template?.cls} />
@@ -177,8 +183,8 @@ export default function CreatureDetailModal({
           <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, minHeight: "2.2em" }}>
             {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
           </h2>
-          {template?.flavour && <p style={{ margin: "6px 0 0", fontSize: 13, color: "#a9a59a", fontStyle: "italic", lineHeight: 1.4 }}>{template.flavour}</p>}
-          <AbilityTag ability={creature.ability} />
+          <p title={template?.flavour} style={{ margin: "6px 0 0", fontSize: 13, color: "#a9a59a", fontStyle: "italic", ...lines(2, 1.4) }}>{template?.flavour}</p>
+          <AbilityTag ability={creature.ability} reserve />
         </div>
 
         {!template || !now ? (
@@ -376,7 +382,7 @@ export function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: St
 function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop; glow: string; border: string; hp: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-      <div style={{ position: "relative", padding: "6px 10px 0" }}>
+      <div style={{ position: "relative", padding: "6px 10px 0", height: 156, boxSizing: "border-box", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: "10% 0 12%", background: `radial-gradient(circle, ${glow}, transparent 70%)`, filter: "blur(2px)" }} />
         {/* Fitted to a box: the widest art (Aurelius, 124px) would push the slots off the screen. */}
         <PixelSprite sprite={creatureSprite(creature.creatureId)} scale={5} title={creature.name}
@@ -397,7 +403,7 @@ function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { 
   return (
     <button onClick={onClick} data-drop={`slot:${slot}`} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "white", minWidth: 0 }}>
-      <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: labelColor ?? MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center", lineHeight: 1.2 }}>{label}</span>
+      <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: labelColor ?? MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center", ...(small ? { lineHeight: 1.2 } : { ...lines(2, 1.2), display: "flex", alignItems: "flex-end", justifyContent: "center" }) }}>{label}</span>
       <span style={{
         width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center",
         background: item ? `radial-gradient(circle, ${col!.glow}, #101117 75%)` : "#101117",
@@ -407,7 +413,7 @@ function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { 
         {sp ? <PixelSprite sprite={sp} scale={small ? 2.2 : 3.5} /> : <span style={{ fontSize: small ? 18 : 26, color: "#3a3e4b" }}>＋</span>}
       </span>
       {!small && (
-        <span style={{ fontSize: 11, lineHeight: 1.2, textAlign: "center", color: item ? rarityColor(item.rarity) : MUTED, maxWidth: 110 }}>
+        <span style={{ fontSize: 11, textAlign: "center", color: item ? rarityColor(item.rarity) : MUTED, maxWidth: 110, ...lines(2, 1.2) }}>
           {item ? item.name : "Empty"}
         </span>
       )}
@@ -442,7 +448,7 @@ function LevelBar({ level, xp, scroll }: { level: number; xp: number; scroll?: {
 function SetLine({ worn, now, next }: { worn: (CreatureOrItemDrop | undefined)[]; now?: ArmorKey; next?: ArmorKey }) {
   const box = (children: React.ReactNode, lit: boolean) => (
     <div style={{ marginTop: 8, padding: "7px 10px", fontSize: 12, lineHeight: 1.4, background: lit ? "rgba(255,214,110,0.08)" : "#12131a",
-      border: `2px solid ${lit ? "#8a6a3a" : "#2a2d38"}`, color: lit ? "#f1d9a0" : MUTED, minHeight: 40 }}>{children}</div>
+      border: `2px solid ${lit ? "#8a6a3a" : "#2a2d38"}`, color: lit ? "#f1d9a0" : MUTED, height: "calc(3 * 1.4em + 18px)", overflow: "hidden", boxSizing: "border-box" }}>{children}</div>
   );
   if (next) {
     const b = SET_BONUS[next];

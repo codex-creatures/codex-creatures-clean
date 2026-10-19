@@ -120,8 +120,12 @@ kill theirs.
     floating buttons.
   - Touch first: tap targets of 44px or more, and no hover-only information.
   - **Few words on screen.** Depth goes behind a "?" (`components/Help.tsx`).
-  - The stone card look (`CardFace` / `.inv-panel`, yellow pixel font #f1d9a0, rarity trim). Cycling
-    a menu shouldn't move the layout: reserve space for text that varies.
+  - The stone card look (`CardFace` / `.inv-panel`, yellow pixel font #f1d9a0, rarity trim).
+  - **Fixed structure, text fits it.** Every window is a fixed frame of boxes. Flicking between
+    items, creatures or tabs changes only the words and pictures inside them; no box, slot, bar or
+    button moves. Give each varying bit of text a fixed number of lines (clamp with "…", full text
+    on hover or behind "?"), keep optional parts' space when they're absent (`visibility: hidden`),
+    and anchor windows to the top rather than centring content of varying height.
 - **Art comes from PixelLab** (the `pixellab` MCP, set up per machine). Don't hand-draw detailed
   sprites in code: that was tried and scrapped. Samples first, and the user's approval before a
   full rollout. When the user supplies their own art, restyle it and keep their design.

@@ -303,7 +303,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - the pixel font in yellow #f1d9a0, and sunken wells for text;
   - `.inv-panel` for anything holding loot or creatures;
   - Ranged is green #6fdc6f everywhere.
-- Cycling a menu shouldn't move anything: reserve space for text that varies.
+- **Fixed structure, text fits it** (the user, 2026-10-19: "the text around the box should move as
+  that is the variable, not the constant"). Windows are a standard frame of fixed boxes; flicking
+  through items or creatures changes only the contents. Varying text gets a fixed number of lines
+  (clamped), and absent parts keep their space. This is what makes the game feel polished.
 - One tap on a Den object goes in (no name-first double tap).
 
 ## 11. Art and PixelLab
