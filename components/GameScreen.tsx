@@ -1,8 +1,8 @@
 "use client";
 // components/GameScreen.tsx
 // The game's one screen: always the same size, like a handheld's display.
-// On a phone it fills the screen; anywhere wider it's a phone-shaped
-// portrait screen in the middle. A carved trim runs round its edge. Nothing
+// On a phone it fills the screen; on a laptop it's a borderless portrait
+// screen, the full height of the window, in the middle. Nothing
 // makes the page taller: a long list scrolls inside its own panel, and
 // sheets and modals open inside the screen (it's their containing block,
 // and the size for cqw/cqh units). See .game-screen in globals.css.

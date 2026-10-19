@@ -280,7 +280,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
 - **Mobile-first**, for iOS/Android later. Touch only: tap targets of 44px or more, no hover-only
   information, safe areas.
-- **One fixed phone-sized screen** with a handheld-style trim on desktop (`components/GameScreen.tsx`).
+- **One fixed phone-sized screen** (`components/GameScreen.tsx`). On a laptop: no border, full window height, 9:16 wide, centred.
   - The page never grows or shrinks between areas; long lists scroll inside panels.
   - Actions sit in docks built into the screen, not floating buttons.
   - In battle, the moves fill the bottom ~30% of the screen.

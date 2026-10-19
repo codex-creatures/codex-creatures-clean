@@ -483,45 +483,25 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 
 /* ── The game screen (components/GameScreen.tsx) ─────────────────
    One fixed screen, always the same size: it fills a phone; on anything
-   wider it's a phone-shaped portrait screen (9 : 19.5) in the middle. A
-   carved trim runs round it: dark iron, a thin gold line inside, a brass
-   stud in each corner. The page itself never scrolls; panels inside do. */
+   wider (a laptop) it's a borderless portrait screen the full height of the
+   window, as wide as a 9 : 16 phone, on a dark backdrop. The page itself
+   never scrolls; panels inside do. */
 html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 .game-shell {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(ellipse at 50% 40%, #171922, #050608 70%);
 }
 .game-screen {
-  --trim: 6px;
   position: relative; width: 100vw; height: 100dvh; overflow: hidden;
   container-type: size;      /* cqw / cqh: shares of the screen, not the window */
   transform: translateZ(0);  /* position: fixed inside it means "fixed to the screen" */
   display: flex; flex-direction: column;
-  padding: calc(env(safe-area-inset-top) + var(--trim)) calc(env(safe-area-inset-right) + var(--trim))
-           calc(env(safe-area-inset-bottom) + var(--trim)) calc(env(safe-area-inset-left) + var(--trim));
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background: #0b0c11;
 }
-/* The trim, over everything (sheets and modals open under it). */
-.game-screen::before, .game-screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 400; }
-.game-screen::before {
-  border: var(--trim) solid #2a241b;
-  border-color: #3d3426 #1b1712 #1b1712 #3d3426;
-  box-shadow: inset 0 0 0 1px #0a0907, inset 0 0 0 2px #c9a860, inset 0 0 0 3px #5b4622, inset 0 0 18px rgba(0, 0, 0, 0.6);
-}
-.game-screen::after {
-  --stud: radial-gradient(circle at 40% 35%, #f3dc9c 0 1.5px, #b98d3e 2.5px, #5b4320 4.5px, transparent 5px);
-  background: var(--stud) top left / 12px 12px no-repeat, var(--stud) top right / 12px 12px no-repeat,
-              var(--stud) bottom left / 12px 12px no-repeat, var(--stud) bottom right / 12px 12px no-repeat;
-}
 @media (min-aspect-ratio: 3 / 4) {
-  .game-screen {
-    --trim: 12px;
-    height: min(100dvh - 24px, 940px);
-    width: calc(min(100dvh - 24px, 940px) * 9 / 19.5);
-    border-radius: 6px;
-    box-shadow: 0 0 0 2px #050505, 0 18px 60px rgba(0, 0, 0, 0.8);
-  }
-  .game-screen::after { background-size: 20px 20px; }
+  /* 9 : 16 is a real (older) phone shape, so every screen already fits it. */
+  .game-screen { width: min(100vw, 100dvh * 9 / 16); box-shadow: 0 0 60px rgba(0, 0, 0, 0.8); }
 }
 .screen-body {
   position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
@@ -592,12 +572,6 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 @keyframes den-flicker { 0%, 100% { opacity: 0.75; } 15% { opacity: 1; } 30% { opacity: 0.6; } 50% { opacity: 0.95; } 65% { opacity: 0.7; } 80% { opacity: 1; } }
 @keyframes den-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .den-glow, .den-glow-pulse { animation: none; } }
-
-/* On a phone the screen is the phone: no trim (it frames the desktop screen only). */
-@media not all and (min-aspect-ratio: 3 / 4) {
-  .game-screen { --trim: 0px; }
-  .game-screen::before, .game-screen::after { display: none; }
-}
 
 /* Level-up show (components/LevelUpShow.tsx). */
 .levelup-pop { animation: levelup-pop 0.45s cubic-bezier(.2,1.4,.4,1) both; }
