@@ -235,6 +235,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,
     and may use it as a monetisation lever later. The instant heal at the entrance is a testing
     shortcut.
+  - 🧪 **For testing, everyone comes home at full health** (`HEAL_AT_HOME` in lib/dungeon/run.ts,
+    on since 2026-10-19). Set it to `false` to bring the pool back.
+  - ❓ How healing after a death should really work is open. Options the user was given: keep the
+    slow pool (25%/h, about 4 h from knocked out to full), a faster pool (50%/h), a full heal on
+    getting home, or a quick heal to about half then the slow pool.
 - 📌 **Re-entry cooldown** as the anti-farming bar, with cooldown potions from barcode merchants
   (or real money later). Not built: today the gold fee is the only bar.
 - ❓ Labyrinth look: a top-down voxel style is the likely long-term direction, not committed.

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { HEAL_AT_HOME } from "../lib/dungeon/run";
 import {
   ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun, stepInside, canMoveOn, moveOn,
@@ -296,13 +297,19 @@ describe("a labyrinth run", () => {
     expect(setTeam(run, ["e", "d", "b"]).team).toEqual(["e", "d", "b"]); // who leads can still change
   });
 
-  it("until the first Cyclops kill, a run ends with everyone healed; after it, wounds come home", () => {
+  it.runIf(HEAL_AT_HOME)("with the testing shortcut on, every run ends with everyone healed", () => {
+    const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "dead" as const };
+    expect(endRun({ meta: { runs: 4, clears: 1, injuries: {}, bag: [] }, run }).meta.injuries).toEqual({});
+  });
+
+  // The slow-healing rules, skipped while HEAL_AT_HOME (the testing shortcut) is on.
+  it.skipIf(HEAL_AT_HOME)("until the first Cyclops kill, a run ends with everyone healed; after it, wounds come home", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "dead" as const };
     expect(endRun({ meta: { runs: 4, clears: 0, injuries: { a: 0.3, z: 0.4 }, bag: [] }, run }).meta.injuries).toEqual({ z: 0.4 });
     expect(endRun({ meta: { runs: 4, clears: 1, injuries: {}, bag: [] }, run }).meta.injuries).toEqual({ a: 0.5, b: 0 });
   });
 
-  it("ending a run brings the wounds home and records the first clear", () => {
+  it.skipIf(HEAL_AT_HOME)("ending a run brings the wounds home and records the first clear", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "cleared" as const };
     const save: DungeonSave = { meta: { runs: 4, clears: 0, injuries: { c: 0.2 }, bag: [] }, run };
     const after = endRun(save);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { soak, hoursToFull, endRun, startRun, POOL_LEVELS, type DungeonMeta } from "../lib/dungeon/run";
+import { soak, hoursToFull, endRun, startRun, POOL_LEVELS, HEAL_AT_HOME, type DungeonMeta } from "../lib/dungeon/run";
 
 const meta = (injuries: Record<string, number>, soakedAt?: string): DungeonMeta => ({ runs: 1, clears: 0, injuries, bag: [], soakedAt });
 
@@ -23,7 +23,8 @@ describe("the healing pool", () => {
     expect(hoursToFull(meta({}), 1)).toBe(0);
   });
 
-  it("keeps ticking for everyone at home while a run is on; the party comes home with its run wounds", () => {
+  // The slow-healing rules, skipped while HEAL_AT_HOME (the testing shortcut) is on.
+  it.skipIf(HEAL_AT_HOME)("keeps ticking for everyone at home while a run is on; the party comes home with its run wounds", () => {
     const home = { ...meta({ resting: 0.2 }, new Date(t0).toISOString()), clears: 1 }; // (past the first Cyclops: no free healing)
     const run = { ...startRun(["out"], ["out"], {}, 2), hp: { out: 0.4 }, status: "retreated" as const };
     const after = endRun({ meta: home, run }, t0 + 2 * 3_600_000);

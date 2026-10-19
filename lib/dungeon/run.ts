@@ -834,6 +834,9 @@ export type DungeonMeta = {
 export const POOL_LEVELS = [
   { name: "Soggy cave pool", healPerHour: 0.25, desc: "A murky puddle in the rock. It heals, slowly." },
 ];
+// Testing shortcut: everyone's back to full health as soon as you're home,
+// instead of waiting on the pool. Turn off to bring the pool's slow healing back.
+export const HEAL_AT_HOME = true;
 export const poolLevel = (meta: DungeonMeta) => POOL_LEVELS[Math.min(POOL_LEVELS.length, Math.max(1, meta.poolLevel ?? 1)) - 1];
 
 // Heal the injured for the time since the pool last ran. A creature at
@@ -865,7 +868,8 @@ export function loadDungeon(): DungeonSave {
     const parsed = readSave()[SAVE_FIELD] as Partial<DungeonSave> | undefined;
     if (!parsed || typeof parsed !== "object" || !parsed.meta) return EMPTY;
     const loaded: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
-    const save: DungeonSave = { ...loaded, meta: soak(loaded.meta) };
+    const soaked = soak(loaded.meta);
+    const save: DungeonSave = { ...loaded, meta: HEAL_AT_HOME ? { ...soaked, injuries: {} } : soaked };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
     if (save.run && !save.run.map?.start) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
     return save;
@@ -881,7 +885,7 @@ export function saveDungeon(save: DungeonSave) {
 // Until you first beat the Cyclops, everyone comes home from a run at full
 // health (Klutz patches them up). After that, wounds come home with you and
 // heal at the pool.
-export const freeHealing = (meta: DungeonMeta) => meta.clears === 0;
+export const freeHealing = (meta: DungeonMeta) => HEAL_AT_HOME || meta.clears === 0;
 
 // The run is over (any way): bring the hurt creatures home.
 export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
