@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook } from "@/components/BagSlots";
 import LootWindow from "@/components/LootWindow";
+import MerchantCart from "@/components/MerchantCart";
 import EquipPreview from "@/components/EquipPreview";
 import TeamDropRow from "@/components/TeamDropRow";
 import { useDragDrop } from "@/hooks/useDragDrop";
@@ -38,7 +39,7 @@ import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, ran
 import { clubRoom, klutzClub, isClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
 import { guess as witchGuess, walkAway, SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard, type WitchGame } from "@/lib/dungeon/witch";
 import { CardFace } from "@/components/CardGallery";
-import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, SCROLL_XP } from "@/lib/creatures/levels";
+import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
@@ -66,7 +67,7 @@ import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
-import { TOOLS, MATERIALS, materialDrop, toolDrop, schematicDrop, goodsIcon } from "@/lib/items/materials";
+import { TOOLS, materialDrop, toolDrop, schematicDrop } from "@/lib/items/materials";
 
 const GOLD = "#f5c542";
 // Every Labyrinth screen keeps to one phone-sized column (the room picture is
@@ -987,7 +988,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} found={found} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWare={buyWare} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear} onLook={() => setLootOpen(true)}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear} onLook={() => setLootOpen(true)}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -1226,11 +1227,11 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWare, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
+function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
   onWitch: (g: Guess) => void; onWitchLeave: () => void; onGear: (item: CreatureOrItemDrop) => void; onLook: () => void;
   run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyWare: (w: Ware) => void; onCage: (i: number) => void; bagUsed: number; bagSlots: number; stacks: string[]; onHeal: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyWares: (ws: Ware[]) => void; onCage: (i: number) => void; bagUsed: number; bagSlots: number; stacks: string[]; onHeal: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "thief" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
@@ -1375,25 +1376,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             A cart piled with odds and ends, and a merchant who smiles too much. &ldquo;One of each, friend. Everything takes a slot in your bag — the timber stacks, mind.&rdquo;
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {(room.wares ?? []).map((w) => {
-              const sold = room.bought?.includes(w.key);
-              const can = !sold && gold >= w.price && (("material" in w && stacks.includes(w.material)) || bagUsed < bagSlots);
-              const detail = "potion" in w ? `Restores ${POTIONS[w.potion].heal} HP to one creature. In a fight it uses your turn.`
-                : "scroll" in w ? `${SCROLL_XP} XP for one creature, or Klutz.`
-                : "tool" in w ? TOOLS[w.tool].desc : `${MATERIALS[w.material].desc} Takes a slot (it stacks); it's yours once you're home.`;
-              return (
-                <button key={w.key} className="card-btn" disabled={!can} onClick={() => onBuyWare(w)} style={{ opacity: can ? 1 : 0.5 }}>
-                  <span style={{ flex: 1 }}>
-                    <b>{"potion" in w ? <PotionIcon kind={w.potion} /> : <>{"scroll" in w ? "📜" : goodsIcon(w)} </>}{wareName(w)}</b>
-                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{detail}</span>
-                  </span>
-                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "sold" : `🪙 ${w.price}`}</span>
-                </button>
-              );
-            })}
-          </div>
-          <p style={{ fontSize: 12, color: MUTED }}>You&apos;re carrying {bagUsed}/{bagSlots} · {gold} gold.</p>
+          <MerchantCart key={run.path.length} wares={room.wares ?? []} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
           {next}
         </>
       )}

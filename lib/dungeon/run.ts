@@ -406,6 +406,16 @@ export function rollWares(rng: Rng = Math.random): Ware[] {
   }
   return wares;
 }
+// The things picked off the cart, priced up: their total, the bag slots they
+// need (a material joins a stack you already carry), and what's stopping you
+// buying them all ("gold", "room"), if anything.
+export function priceUp(wares: Ware[], picked: string[], gold: number, bagFree: number, stacks: string[]) {
+  const chosen = wares.filter((w) => picked.includes(w.key));
+  const total = chosen.reduce((s, w) => s + w.price, 0);
+  const slots = chosen.filter((w) => !("material" in w && stacks.includes(w.material))).length;
+  const short: "gold" | "room" | null = total > gold ? "gold" : slots > bagFree ? "room" : null;
+  return { chosen, total, slots, short };
+}
 export const wareName = (w: Ware) => ("potion" in w ? POTIONS[w.potion].name : "scroll" in w ? "Tattered XP Scroll"
   : "tool" in w ? TOOLS[w.tool].name : MATERIALS[w.material].name + " ×" + w.qty);
 

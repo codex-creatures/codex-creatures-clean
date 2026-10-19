@@ -413,3 +413,24 @@ describe("Take all", () => {
     expect(nextToTake([], free, sackRank, false)).toBe(-1);
   });
 });
+
+import { priceUp, type Ware } from "../lib/dungeon/run";
+
+describe("the merchant's cart", () => {
+  const wares: Ware[] = [
+    { key: "potion", potion: "potion", price: 100 },
+    { key: "lesser", potion: "lesser", price: 50 },
+    { key: "planks", material: "planks", qty: 5, price: 40 },
+  ];
+  it("adds up what's picked, and the slots it needs", () => {
+    expect(priceUp(wares, ["potion", "planks"], 500, 3, [])).toMatchObject({ total: 140, slots: 2, short: null });
+    expect(priceUp(wares, [], 0, 0, [])).toMatchObject({ total: 0, slots: 0, short: null });
+  });
+  it("a material you already carry joins its stack: no slot", () => {
+    expect(priceUp(wares, ["planks"], 500, 0, ["planks"])).toMatchObject({ slots: 0, short: null });
+  });
+  it("says what's stopping you: gold first, then room", () => {
+    expect(priceUp(wares, ["potion", "lesser"], 120, 0, []).short).toBe("gold");
+    expect(priceUp(wares, ["potion", "lesser"], 500, 1, []).short).toBe("room");
+  });
+});
