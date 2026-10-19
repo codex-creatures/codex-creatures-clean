@@ -1,5 +1,9 @@
 "use client";
 // components/ItemDetailModal.tsx
+// One item up close: its stats against the most it could roll, its sell
+// value, and ← → to flick through the rest. Every part has a fixed height
+// (names and notes are clamped to their lines), so flicking between items
+// only changes what's written: nothing moves.
 
 import { useEffect } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -28,6 +32,11 @@ const WEAPON_STATS = [
   { label: "Agility", key: "agility" },
   { label: "Health",  key: "hp"      },
 ];
+
+// Text cut to a number of lines (with …), in a box always that tall.
+const clamp = (lines: number, lineHeight: number): React.CSSProperties => ({
+  display: "-webkit-box", WebkitLineClamp: lines, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight, minHeight: `${lines * lineHeight}em`,
+});
 
 const ARMOR_STATS = [
   { label: "Melee Def",  key: "mDef"    },
@@ -105,19 +114,26 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
             <RarityBadge rarity={item.rarity} />
             <span style={{ fontSize: 12, opacity: 0.45, textTransform: "capitalize" }}>{item.itemCategory === "armor" && item.armorSlot ? `armour · ${ARMOR_SLOT_INFO[item.armorSlot].name}` : item.itemCategory}</span>
           </div>
-          <h2 className="pixel-font" style={{ margin: 0, fontSize: 24, fontWeight: 600, color: rarityColor, lineHeight: 1.2 }}>{item.name}</h2>
-          {item.desc && <p style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", lineHeight: 1.4 }}>{item.desc}</p>}
-          {item.itemCategory === "weapon" && item.itemKey && WEAPON_AFFINITY[item.itemKey] && (
-            <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.4, color: DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].color }}>
-              {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].icon} Strong in {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name}: {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name} moves do +{Math.round(AFFINITY_BONUS * 100)}% damage with it.
-            </p>
-          )}
-          {item.armorKey && (
-            <div style={{ marginTop: 10, padding: "8px 10px", fontSize: 12, lineHeight: 1.4, background: "rgba(255,214,110,0.06)", border: "1px solid rgba(241,217,160,0.25)", borderRadius: 8, color: "#f1d9a0" }}>
-              <b>Set bonus — {SET_BONUS[item.armorKey].name}</b> <span style={{ opacity: 0.6 }}>(wear the {ARMOR_META[item.armorKey].name} helmet, chest and legs)</span>
-              <div style={{ opacity: 0.85 }}>{SET_BONUS[item.armorKey].text}</div>
-            </div>
-          )}
+          <h2 className="pixel-font" title={item.name} style={{ margin: 0, fontSize: 24, fontWeight: 600, color: rarityColor, ...clamp(2, 1.2) }}>{item.name}</h2>
+          {/* Its note, two lines (empty or not). */}
+          <p title={item.desc} style={{ margin: "8px 0 0", fontSize: 13, opacity: 0.55, fontStyle: "italic", ...clamp(2, 1.4) }}>{item.desc}</p>
+          {/* What it's good for: a weapon's damage type, or an armour piece's set
+              bonus. The same height either way (and when there's neither). */}
+          <div style={{ marginTop: 10, height: 70 }}>
+            {item.itemCategory === "weapon" && item.itemKey && WEAPON_AFFINITY[item.itemKey] ? (
+              <p style={{ margin: 0, fontSize: 13, color: DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].color, ...clamp(3, 1.4) }}>
+                {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].icon} Strong in {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name}: {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name} moves do +{Math.round(AFFINITY_BONUS * 100)}% damage with it.
+              </p>
+            ) : item.armorKey ? (
+              <div title={`Wear the ${ARMOR_META[item.armorKey].name} helmet, chest and legs`}
+                style={{ height: "100%", boxSizing: "border-box", padding: "6px 10px", fontSize: 12, background: "rgba(255,214,110,0.06)", border: "1px solid rgba(241,217,160,0.25)", borderRadius: 8, color: "#f1d9a0" }}>
+                <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.4 }}>
+                  <b>Set bonus — {SET_BONUS[item.armorKey].name}</b> <span style={{ opacity: 0.6 }}>(full {ARMOR_META[item.armorKey].name} set)</span>
+                </div>
+                <div style={{ opacity: 0.85, ...clamp(2, 1.4) }}>{SET_BONUS[item.armorKey].text}</div>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
@@ -148,12 +164,12 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
 
-        {item.itemCategory !== "material" && item.itemCategory !== "consumable" && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, padding: "10px 14px", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.2)", borderRadius: 10 }}>
-            <span style={{ fontSize: 14, opacity: 0.7 }}>Sell value</span>
-            <span style={{ fontSize: 18, fontWeight: 700, color: "#f5c542" }}>{sellValue.toLocaleString()}g</span>
-          </div>
-        )}
+        {/* (Kept in place, hidden, for things that don't sell: so nothing below moves.) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, padding: "10px 14px", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.2)", borderRadius: 10,
+          visibility: item.itemCategory !== "material" && item.itemCategory !== "consumable" ? "visible" : "hidden" }}>
+          <span style={{ fontSize: 14, opacity: 0.7 }}>Sell value</span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: "#f5c542" }}>{sellValue.toLocaleString()}g</span>
+        </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <button onClick={() => onToggleFavorite(item.id)} style={{ padding: "11px 0", borderRadius: 10, border: isFavorite ? "1px solid rgba(245,197,66,0.6)" : "1px solid rgba(255,255,255,0.15)", background: isFavorite ? "rgba(245,197,66,0.12)" : "transparent", color: isFavorite ? "#f5c542" : "rgba(255,255,255,0.7)", cursor: "pointer", fontWeight: 600, fontSize: 14, transition: "all 0.15s" }}>
