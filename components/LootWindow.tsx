@@ -12,6 +12,7 @@
 // chest stays on the floor when you move on.
 
 import { useRef, useState } from "react";
+import { useEscape } from "@/hooks/useEscape";
 import PixelSprite from "./PixelSprite";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
 import { StackCount, type SlotLook } from "./BagSlots";
@@ -51,6 +52,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const [picked, setPicked] = useState<number | null>(null); // a bag slot tapped (to see it, or put it back)
   const [seen, setSeen] = useState<number | null>(null);     // a chest item tapped (to see it before taking it)
   const [was, setWas] = useState(items); // things moved: the indexes are stale
+  // Esc puts away a closer look first, then closes the window.
+  useEscape(() => (seen !== null ? setSeen(null) : picked !== null ? setPicked(null) : onClose()));
   if (was !== items && (was.length || items.length)) { setWas(items); setSeen(null); setPicked(null); } // (a fresh [] each render is no change)
   const dragRef = useRef<Drag | null>(null);
   const boxRef = useRef<HTMLDivElement | null>(null); // the window's backdrop: the ghost is placed within it

@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useEscape } from "@/hooks/useEscape";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor, loadArt, loadPixels, loadFrames, type LoadedArt, type Pixels } from "@/lib/sprites/art";
@@ -70,6 +71,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   const hoverRef = useRef<ObjId>(OBJ.none);
   const [hover, setHover] = useState<ObjId>(OBJ.none);
   const [notice, setNotice] = useState<Spot | null>(null);
+  useEscape(notice ? () => setNotice(null) : null);
   const router = useRouter();
   // Crisp pixels when the canvas is shown at full size or bigger; shrunk,
   // smooth scaling (crisp scaling drops pixels unevenly and looks grainy).

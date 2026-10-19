@@ -1,6 +1,7 @@
 "use client";
 // components/SellConfirmModal.tsx
 
+import { useEscape } from "@/hooks/useEscape";
 import type { Drop } from "@/lib/types";
 import { isCreatureOrItemDrop, isItemDrop } from "@/lib/types";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export default function SellConfirmModal({ items, totalGold, onConfirm, onCancel }: Props) {
+  useEscape(onCancel);
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }}>
       <div style={{ background: "#1a1a2e", border: "1px solid rgba(255,80,80,0.4)", borderRadius: 12, padding: 24, maxWidth: 420, width: "100%" }}>

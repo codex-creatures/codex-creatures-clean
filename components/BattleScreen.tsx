@@ -18,6 +18,7 @@ import { calcDamage, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
+import { useEscape } from "@/hooks/useEscape";
 import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
@@ -301,6 +302,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   // What's opened over the stage (from the dock's tabs): the bag, a swap, the log, details.
   const [open, setOpen] = useState<"bag" | "swap" | "log" | "details" | null>(null);
   const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
+  useEscape(open ? () => setOpen(null) : null);
   const match = battle.match!;
   const { info } = match;
   const playing = battle.view !== null;

@@ -6,6 +6,7 @@
 // saved up while offline: "Extract all").
 
 import { useState } from "react";
+import { useEscape } from "@/hooks/useEscape";
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop, Drop } from "@/lib/types";
@@ -32,6 +33,7 @@ export default function CodeCache({ title, intro, items, revealAllLabel = "Revea
 }) {
   const [open, setOpen] = useState<boolean[]>(() => items.map(() => false));
   const [last, setLast] = useState<number | null>(null);
+  useEscape(() => {}); // the page stays put until you've seen what's inside
   const all = open.every(Boolean);
 
   const reveal = (i: number) => {

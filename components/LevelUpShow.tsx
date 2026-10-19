@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
+import { useEscape } from "@/hooks/useEscape";
 import { STATS } from "./CreatureDetailModal";
 import { hpAt, proficiencyAt } from "@/lib/creatures/levels";
 import type { CreatureProficiency, CreatureTemplate } from "@/lib/creatures/creatureData";
@@ -50,9 +51,11 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
     return () => cancelAnimationFrame(raf);
   }, [n, u, end]);
 
-  if (!u) return null;
   const done = t >= end;
   const next = () => { if (!done) { setT(end); return; } if (n + 1 < ups.length) { setN(n + 1); setT(0); } else onDone(); };
+  useEscape(next); // Esc works like a tap: skip, then Next
+
+  if (!u) return null;
 
   // The bar: which level it's filling towards, and how full.
   const barT = Math.max(0, t - INTRO);
