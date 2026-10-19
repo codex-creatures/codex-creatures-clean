@@ -392,3 +392,24 @@ describe("the Labyrinth's gentle start", () => {
     expect(minibossAllowed(2, 1)).toBe(true);
   });
 });
+
+import { nextToTake, sackRank, type SackItem as Sack } from "../lib/dungeon/run";
+import type { Drop as AnyDrop } from "../lib/types";
+
+describe("Take all", () => {
+  const gear = (rarity: string): Sack => ({ gear: { id: rarity, dropType: "item", rarity } as unknown as AnyDrop });
+  const free = (x: Sack) => "gold" in x;
+  it("takes what needs no room first, then the rarest", () => {
+    const chest: Sack[] = [{ potion: "lesser" }, gear("common"), gear("epic"), { gold: 5 }, gear("rare")];
+    expect(nextToTake(chest, free, sackRank, false)).toBe(3);
+    const noGold = chest.filter((x) => !free(x));
+    expect(nextToTake(noGold, free, sackRank, false)).toBe(2); // the epic
+    expect(nextToTake([{ potion: "lesser" }, gear("common")], free, sackRank, false)).toBe(1); // potions after Commons
+  });
+  it("ties go to the first, and a full bag only takes what needs no room", () => {
+    expect(nextToTake([gear("rare"), gear("rare")], free, sackRank, false)).toBe(0);
+    expect(nextToTake([gear("epic"), { gold: 1 }], free, sackRank, true)).toBe(1);
+    expect(nextToTake([gear("epic")], free, sackRank, true)).toBe(-1);
+    expect(nextToTake([], free, sackRank, false)).toBe(-1);
+  });
+});

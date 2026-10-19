@@ -51,7 +51,7 @@ import {
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
-  needsSlot, stowDrop, rareLeftBehind, isRareFind, wipedOut,
+  needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import {
@@ -286,9 +286,10 @@ export default function DungeonPage() {
       const cur = loadDungeon();
       const full = cur.meta.bag.length >= bagSize(cur.meta);
       const floor = cur.run?.floor ?? [];
-      const i = floor.findIndex((f) => !full || !needsSlot(cur.meta, floorDrop(f)));
+      const i = nextToTake(floor, (f) => !needsSlot(cur.meta, floorDrop(f)), (f) => (f.drop ? dropRank(f.drop) : -1), full);
       if (i < 0) break;
       floorTake(i);
+      if ((loadDungeon().run?.floor ?? []).length === floor.length) break;
     }
   }
 
@@ -550,14 +551,14 @@ export default function DungeonPage() {
   }
   function takeAllFromSack() {
     // Whatever takes no space first (gold, the backpack, cards, materials
-    // that join a stack), then whatever fits, in order.
+    // that join a stack), then the rarest things, while they fit.
     for (let guard = 0; guard < 100; guard++) {
       const cur = loadDungeon();
       const sack = cur.run?.current?.sack ?? [];
       const free = (x: SackItem) => "gold" in x || "backpack" in x || ("gear" in x && !needsSlot(cur.meta, x.gear));
       const full = cur.meta.bag.length >= bagSize(cur.meta);
-      const i = sack.findIndex(free) >= 0 ? sack.findIndex(free) : full ? -1 : 0;
-      if (i < 0 || i >= sack.length) break;
+      const i = nextToTake(sack, free, sackRank, full);
+      if (i < 0) break;
       takeFromSack(i);
       if ((loadDungeon().run?.current?.sack ?? []).length === sack.length) break;
     }

@@ -279,6 +279,20 @@ export function addToBag(bag: BagEntry[], items: BagEntry[], size: number): BagE
   return [...bag, ...items].slice(0, Math.max(bag.length, size));
 }
 
+// "Take all", one thing at a time: whatever takes no room first, then the
+// rarest thing that needs a slot (a tie goes to the first one). -1 when
+// nothing more can be taken. rank: higher is rarer.
+export function nextToTake<T>(items: T[], free: (x: T) => boolean, rank: (x: T) => number, full: boolean): number {
+  const f = items.findIndex(free);
+  if (f >= 0 || full) return f;
+  let best = -1;
+  items.forEach((x, i) => { if (best < 0 || rank(x) > rank(items[best])) best = i; });
+  return best;
+}
+// How rare a thing in a chest is, for "Take all": potions come after Commons.
+export const dropRank = (d?: Drop) => (d && "rarity" in d ? RARITIES.indexOf(d.rarity) : -1);
+export const sackRank = (x: SackItem) => ("gear" in x ? dropRank(x.gear) : -1);
+
 // Materials found down here are a stack in one bag slot; more of the same
 // material joins it. They only join your tally at home (once you're back).
 export function materialStackIn(meta: { bag: BagEntry[]; loot?: Record<string, Drop> }, d: Drop): string | undefined {

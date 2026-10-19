@@ -12,6 +12,8 @@
 //   (the row under the bag) to equip it, or tap it and pick who.
 // - teach: Klutz's Club, the first loot you pick up, walks you through
 //   all of this (take it, then equip it).
+// Take all grabs what takes no room, then the rarest things first, and says
+// so if your bag fills up before the chest is empty.
 // Gold, the backpack and creature cards take no room. Whatever's left in the
 // chest stays on the floor when you move on.
 
@@ -62,18 +64,23 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const [picked, setPicked] = useState<number | null>(null); // a bag slot tapped (to see it, or put it back)
   const [seen, setSeen] = useState<number | null>(null);     // a loot item tapped (to see it before taking it)
   const [was, setWas] = useState(items); // things moved: the indexes are stale
+  const [triedAll, setTriedAll] = useState(false); // Take all was tapped (and nothing else since)
+  // Take all left things behind for want of room: say so.
+  const noRoom = triedAll && full && items.some((x) => !lookOf(x).free);
   // Esc puts away a closer look first, then closes the window.
   useEscape(() => (seen !== null ? setSeen(null) : picked !== null ? setPicked(null) : onClose()));
   if (was !== items && (was.length || items.length)) { setWas(items); setSeen(null); setPicked(null); } // (a fresh [] each render is no change)
 
   const { box: dragBox, ...dnd } = useDragDrop<From>({
     onTap: (d) => {
+      setTriedAll(false);
       if (d.kind === "loot") {
         if (lookOf(items[d.i]).free) onTake(d.i);
         else { setSeen((s) => (s === d.i ? null : d.i)); setPicked(null); }
       } else { setPicked((p) => (p === d.i ? null : d.i)); setSeen(null); }
     },
     onDrop: (d, t) => {
+      setTriedAll(false);
       if (d.kind === "loot" && t?.startsWith("bag:")) onSwap(d.i, Number(t.slice(4)));
       else if (d.kind === "bag" && t === "loot") { onPutBack(d.i); setPicked(null); }
       else if (d.kind === "bag" && t?.startsWith("who:") && onEquip && wearable(bag[d.i])) { onEquip(d.i, t.slice(4)); setPicked(null); }
@@ -127,8 +134,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
           } />
         ) : (
-          <div style={{ fontSize: 12, color: MUTED, textAlign: "center" }}>
-            Tap to look · drag onto your bag to take{full ? " (your bag is full)" : ""}
+          <div style={{ fontSize: 12, color: noRoom ? "#ff8a80" : MUTED, textAlign: "center" }}>
+            {noRoom ? `Your ${bagName.toLowerCase()} is full` : `Tap to look · drag onto your bag to take${full ? " (your bag is full)" : ""}`}
           </div>
         )}
 
@@ -180,7 +187,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         )}
 
         <div className="dock-tabs">
-          <button className="dock-tab" onClick={onTakeAll} disabled={items.length === 0}>Take all</button>
+          <button className="dock-tab" onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
           <button className={`dock-tab${teach?.step === "done" ? " tutorial-pulse" : ""}`} data-active onClick={onClose}>Done</button>
         </div>
       </div>
