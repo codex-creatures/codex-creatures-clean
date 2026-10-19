@@ -57,7 +57,7 @@ export default function InventoryPage() {
         </div>
       )}
       {part === "codex" ? (
-        <CodexShelf inventory={game.inventory} size={game.bookcaseSize} />
+        <CodexShelf inventory={game.inventory} size={game.bookcaseSize} teach={{ onLearn: game.learnCodex, onSetMoves: game.setMoves, movesOf: (id) => game.equipment[id]?.moves }} />
       ) : (
         <InventoryList
           title={part === "items" ? "Items" : "Creatures"}

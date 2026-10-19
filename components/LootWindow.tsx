@@ -29,6 +29,7 @@ import { GEAR_STATS } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import CodexMove from "./CodexMove";
+import { MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
@@ -211,7 +212,8 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
       kind = "xp scroll";
       body = <>{g.desc}</>;
     } else if (g.codexMove) {
-      kind = `${g.rarity} codex`;
+      const race = MOVE_BY_NAME[g.codexMove]?.race;
+      kind = `${g.rarity} ${race ? `${RACE_INFO[race].name} ` : ""}codex`;
       body = <CodexMove move={g.codexMove} />;
     } else {
       kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;

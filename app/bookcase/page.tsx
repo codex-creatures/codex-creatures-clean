@@ -57,7 +57,7 @@ export default function BookcasePage() {
           </div>
         )}
       </div>
-      <div style={{ marginTop: 14 }}><CodexShelf inventory={game.inventory} size={game.bookcaseSize} /></div>
+      <div style={{ marginTop: 14 }}><CodexShelf inventory={game.inventory} size={game.bookcaseSize} teach={{ onLearn: game.learnCodex, onSetMoves: game.setMoves, movesOf: (id) => game.equipment[id]?.moves }} /></div>
     </DenFrame>
   );
 }

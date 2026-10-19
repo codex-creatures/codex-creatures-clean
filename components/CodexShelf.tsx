@@ -2,14 +2,18 @@
 // components/CodexShelf.tsx
 // Your codexes, on the bookcase's shelves (size: how many it holds). Shown in
 // the Bookcase and the Inventory's Codex tab. Each is a book on the shelf;
-// tap one to see the move it teaches, as the move itself (CodexMove), and who
-// could learn it. The box on top keeps its size whatever's picked, so nothing
-// moves.
+// tap one to see it in the box on top: its title (and race, for a race
+// codex), then the move it teaches (CodexMove). Teach shows your creatures,
+// greyed out where one can't learn it; tap one to teach it (if its move
+// slots are full, you pick a move for it to forget). The codex is used up.
+// The box on top keeps its size whatever's picked, so nothing moves.
 
 import { useState } from "react";
-import Link from "next/link";
 import CodexMove from "./CodexMove";
-import { canLearnFromCodex, findCreatureTemplate } from "@/lib/creatures/creatureData";
+import RaceTag from "./RaceTag";
+import { MoveTile } from "./MoveTile";
+import PixelSprite, { creatureSprite } from "./PixelSprite";
+import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, findCreatureTemplate, resolveMoves } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
 import { NAME } from "./ContainerLoot";
@@ -18,53 +22,124 @@ import type { CreatureOrItemDrop, Drop } from "@/lib/types";
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
 
-export default function CodexShelf({ inventory, size }: { inventory: Drop[]; size: number }) {
+// Teaching from the shelf: the game's learnCodex and setMoves, and a
+// creature's current move slots (its loadout's, if set).
+type Teach = { onLearn: (creatureId: string, codexId: string) => void; onSetMoves: (creatureId: string, moves: string[]) => void; movesOf: (creatureId: string) => string[] | undefined };
+
+export default function CodexShelf({ inventory, size, teach }: { inventory: Drop[]; size: number; teach?: Teach }) {
   const codexes = sortByRarity(inventory.filter((d) => d.dropType === "item" && d.codexMove) as CreatureOrItemDrop[]);
   const creatures = inventory.filter((d) => d.dropType === "creature") as CreatureOrItemDrop[];
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [teaching, setTeaching] = useState(false);                   // choosing who to teach
+  const [forgetting, setForgetting] = useState<string | null>(null); // that creature's slots are full: which move goes
+  const [taught, setTaught] = useState<string | null>(null);         // "X learned Y!"
   const picked = codexes.find((c) => c.id === pickedId);
-  const learners = picked ? creatures.filter((x) => {
+  const move = picked?.codexMove;
+  const race = move ? MOVE_BY_NAME[move]?.race : undefined;
+
+  const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setTaught(null); };
+  const slotsOf = (x: CreatureOrItemDrop) => {
     const t = findCreatureTemplate(x.creatureId, x.name);
-    return t && canLearnFromCodex(t, picked.codexMove!) && !x.learned?.includes(picked.codexMove!) && !(x.moves ?? []).includes(picked.codexMove!);
-  }) : [];
+    return t ? resolveMoves(t, teach?.movesOf(x.id) ?? x.moves).map((m) => m.name) : [];
+  };
+  // Why a creature can't learn it (undefined if it can).
+  const why = (x: CreatureOrItemDrop) => {
+    const t = findCreatureTemplate(x.creatureId, x.name);
+    if (!t || !move) return "Can't learn it";
+    if (!canLearnFromCodex(t, move)) return race ? "Wrong race" : "Can't learn it";
+    if (x.learned?.includes(move) || slotsOf(x).includes(move)) return "Knows it";
+    return undefined;
+  };
+  const learn = (x: CreatureOrItemDrop, moves: string[]) => {
+    teach!.onLearn(x.id, picked!.id);
+    teach!.onSetMoves(x.id, moves);
+    setTaught(`${x.name} learned ${move}!`);
+    setPickedId(null); setTeaching(false); setForgetting(null);
+  };
+  const choose = (x: CreatureOrItemDrop) => {
+    const slots = slotsOf(x);
+    if (slots.length < MOVE_SLOTS) learn(x, [...slots, move!]);
+    else setForgetting(x.id);
+  };
+  const forgetter = creatures.find((x) => x.id === forgetting);
+
   return (
     <>
       <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "4px 0 8px" }}>On the shelf ({codexes.length}/{size})</div>
-      {codexes.length === 0 ? (
+      {codexes.length === 0 && !taught ? (
         <p style={{ fontSize: 13, color: MUTED }}>Nothing yet. Codexes come from scanning and Labyrinth chests; wandering librarians sell race codexes.</p>
       ) : (
         <>
-          {/* The picked codex: its move, and who could learn it. */}
-          <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 150, boxSizing: "border-box", display: "grid", alignContent: "start", gap: 6 }}>
+          {/* The picked codex: its title, its move, and Teach. */}
+          <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
             {picked ? (
               <>
-                <b style={{ color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={picked.name}>📖 {picked.name}</b>
-                <CodexMove move={picked.codexMove!} />
-                <div style={{ fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {learners.length > 0
-                    ? <>Could teach: {learners.map((x) => x.name).join(", ")} · <Link href="/pit" style={{ textDecoration: "underline" }}>Pit</Link></>
-                    : <span style={{ color: MUTED }}>None of your creatures can learn it yet.</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 }}>{picked.name}</span>
+                  {race && <RaceTag race={race} />}
+                </div>
+                <CodexMove move={move!} />
+                <div style={{ display: "flex", gap: 6, visibility: teach ? "visible" : "hidden" }}>
+                  <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
+                    onClick={() => { setTeaching((v) => !v); setForgetting(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: 13, color: MUTED, alignSelf: "center" }}>Tap a codex to see its move.</div>
+              <div style={{ gridRow: "1 / -1", fontSize: 13, color: taught ? "#7CFC9A" : MUTED, alignSelf: "center", textAlign: "center" }}>{taught ?? "Tap a codex to see its move."}</div>
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 6 }}>
-            {codexes.map((c) => {
-              const rc = RARITY_COLORS[c.rarity];
-              const on = c.id === pickedId;
-              return (
-                <button key={c.id} onClick={() => setPickedId(on ? null : c.id)} aria-pressed={on} title={c.name}
-                  style={{ minHeight: 72, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                    background: `radial-gradient(circle, ${rarityGlow(c.rarity)}, #101117 75%)`, border: `2px solid ${on ? "#ffd66e" : rc.border}`,
-                    boxShadow: on ? "0 0 10px rgba(255,214,110,0.55)" : "0 2px 0 rgba(0,0,0,0.5)", color: "white" }}>
-                  <span style={{ fontSize: 26, lineHeight: 1 }}>📖</span>
-                  <span style={{ ...NAME, color: rc.text }}>{c.name}</span>
-                </button>
-              );
-            })}
-          </div>
+
+          {picked && teaching ? (
+            forgetter ? (
+              <>
+                <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>{forgetter.name}&apos;s slots are full: forget which?</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {slotsOf(forgetter).map((n, i) => MOVE_BY_NAME[n] && (
+                    <MoveTile key={n} m={MOVE_BY_NAME[n]} onClick={() => { const next = slotsOf(forgetter); next[i] = move!; learn(forgetter, next); }} />
+                  ))}
+                </div>
+                <button className="chip" style={{ marginTop: 8 }} onClick={() => setForgetting(null)}>Back</button>
+              </>
+            ) : (
+              <>
+                <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Teach it to:</div>
+                {creatures.length === 0 && <p style={{ fontSize: 13, color: MUTED }}>You haven&apos;t got any creatures yet.</p>}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(76px, 1fr))", gap: 6 }}>
+                  {creatures.map((x) => {
+                    const no = why(x);
+                    const rc = RARITY_COLORS[x.rarity];
+                    return (
+                      <button key={x.id} disabled={!!no} onClick={() => choose(x)} title={no ? `${x.name}: ${no}` : `Teach ${x.name}`}
+                        style={{ minHeight: 92, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", cursor: no ? "default" : "pointer",
+                          background: `radial-gradient(circle, ${rarityGlow(x.rarity)}, #101117 75%)`, border: `2px solid ${rc.border}`, color: "white",
+                          opacity: no ? 0.4 : 1, filter: no ? "grayscale(1)" : undefined }}>
+                        <PixelSprite sprite={creatureSprite(x.creatureId)} scale={1.5} style={{ maxWidth: "100%", maxHeight: 48, width: "auto", height: "auto" }} />
+                        <span style={{ ...NAME, color: rc.text }}>{x.name}</span>
+                        <span style={{ fontSize: 10, color: MUTED, visibility: no ? "visible" : "hidden" }}>{no ?? "-"}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: 6 }}>
+              {codexes.map((c) => {
+                const rc = RARITY_COLORS[c.rarity];
+                const on = c.id === pickedId;
+                return (
+                  <button key={c.id} onClick={() => pick(on ? null : c.id)} aria-pressed={on} title={c.name}
+                    style={{ minHeight: 72, padding: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer",
+                      background: `radial-gradient(circle, ${rarityGlow(c.rarity)}, #101117 75%)`, border: `2px solid ${on ? "#ffd66e" : rc.border}`,
+                      boxShadow: on ? "0 0 10px rgba(255,214,110,0.55)" : "0 2px 0 rgba(0,0,0,0.5)", color: "white" }}>
+                    <span style={{ fontSize: 26, lineHeight: 1 }}>📖</span>
+                    <span style={{ ...NAME, color: rc.text }}>{c.name.replace(/^Codex: /, "")}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </>
