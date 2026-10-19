@@ -1480,7 +1480,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
             })}
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>
-            Win: {room.quest === "thief" ? "Klutz's box" : <>{room.gold} gold{(room.enemies ?? []).some((e) => e.gear.some((p) => p.drops)) ? " and something shiny one of them is carrying" : ""}</>}.
+            Win: {room.quest === "thief" ? "Klutz's box" : <>{room.gold} gold</>}.
             Your team: {fightingTeam(run).map((id) => byId(id)?.name).join(", ")}. Press <b>Fight!</b> on the room when you&apos;re ready.
           </p>
         </>
