@@ -94,7 +94,6 @@ export default function DungeonPage() {
   const router = useRouter();
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
-  const [found, setFound] = useState<GotItem[] | null>(null); // what the current room just gave you
   const [lootOpen, setLootOpen] = useState(false); // an opened chest or sack, in its window with your bag
   const [notes, setNotes] = useState<string[]>([]);
   // Creatures that just levelled up: their show plays over the room (LevelUpShow).
@@ -369,7 +368,6 @@ export default function DungeonPage() {
     }
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     battle.clear();
-    setFound(null);
     setNotes([]);
   }
 
@@ -380,7 +378,6 @@ export default function DungeonPage() {
   // ── Room rewards ──────────────────────────────────────────────────
   function give(drops: Drop[], also: (r: DungeonRun) => DungeonRun = (r) => r) {
     carry(drops);
-    setFound(drops.map((drop) => ({ drop })));
     updateRun((r) => also({ ...r, loot: [...r.loot, ...drops.map(dropLabel)], got: [...(r.got ?? []), ...drops.map((drop) => ({ drop }))] }));
   }
 
@@ -522,7 +519,6 @@ export default function DungeonPage() {
     if ("gear" in item && isClub(item.gear as CreatureOrItemDrop)) game.questFoundClub();
     const label = "gold" in item ? `${item.gold} gold` : "potion" in item ? POTIONS[item.potion].name : dropLabel(item.gear);
     const got: GotItem = "gold" in item ? { drop: goldOnly(item.gold) } : "potion" in item ? { potion: item.potion } : { drop: item.gear };
-    setFound((f) => [...(f ?? []), got]);
     updateRun((r) => (r.current ? { ...r, loot: [...r.loot, label], got: [...(r.got ?? []), got], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
   }
   // From your bag into the open chest or sack (you can take it back while you're here).
@@ -599,7 +595,6 @@ export default function DungeonPage() {
 
   // The boss is beaten: the run is over.
   function nextRoom() {
-    setFound(null);
     setLootOpen(false);
     setNotes([]);
     battle.clear();
@@ -617,7 +612,6 @@ export default function DungeonPage() {
     // Leaving the witch mid-game: you walk away with what you've won.
     const w = loadDungeon().run?.current?.witch;
     if (w?.state === "playing" && w.correct > 0) witchLeave();
-    setFound(null);
     setLootOpen(false);
     setNotes([]);
     battle.clear();
@@ -1022,9 +1016,9 @@ export default function DungeonPage() {
           <div style={{ marginTop: 12 }}>
             {run.current
               ? <RoomScreen
-                  run={run} room={run.current} found={found} notes={notes} byId={byId}
+                  run={run} room={run.current} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onGear={setViewGear} onLook={() => setLootOpen(true)}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -1263,9 +1257,9 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave, onGear }: {
-  onWitch: (g: Guess) => void; onWitchLeave: () => void; onGear: (item: CreatureOrItemDrop) => void; onLook: () => void;
-  run: DungeonRun; room: Room; found: GotItem[] | null; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
+function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave }: {
+  onWitch: (g: Guess) => void; onWitchLeave: () => void; onLook: () => void;
+  run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
   onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyWares: (ws: Ware[]) => void; onCage: (i: number) => void; bagUsed: number; bagSlots: number; stacks: string[]; onHeal: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
@@ -1308,12 +1302,6 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
     <div className="stone-panel">
       <div className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>{info.icon} {info.name}</div>
 
-      {found && found.length > 0 && (
-        <div style={{ margin: "10px 0 0" }}>
-          <div style={{ color: MUTED, fontSize: 12, marginBottom: 6 }}>You got:</div>
-          <LootGrid items={found} onGear={onGear} />
-        </div>
-      )}
       {notes.map((n) => <div key={n} style={{ fontSize: 13, color: "#f1d9a0", marginTop: 4 }}>{n}</div>)}
 
       {clubShut ? (
