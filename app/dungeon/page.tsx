@@ -791,8 +791,8 @@ export default function DungeonPage() {
     for (const e of room.enemies ?? []) {
       for (const p of e.gear) {
         if (!p.drops) continue;
-        // Enemies wear a whole set; one piece of it drops.
-        const slot = randomArmorSlot();
+        // Enemies wear a whole set; one piece of it drops (chosen with the room; old saves: at random).
+        const slot = p.dropSlot ?? randomArmorSlot();
         drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", pieceStats(p.stats, slot), slot));
       }
     }

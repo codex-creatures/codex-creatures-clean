@@ -20,7 +20,7 @@
 
 import type { Drop, Rarity } from "../types";
 import type { ItemKey } from "../items/ceilings";
-import type { ArmorKey } from "../items/armor";
+import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META } from "../items/armor";
 import { CREATURES_BY_RARITY, CREATURE_BY_ID, RACE_MOVES, type CreatureProficiency } from "../creatures/creatureData";
@@ -35,7 +35,7 @@ import { newWitchGame, type WitchGame } from "./witch";
 import { REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
-import { ARMOR_KEYS } from "../items/armor";
+import { ARMOR_KEYS, ARMOR_SLOTS } from "../items/armor";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
@@ -406,7 +406,8 @@ const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() *
 const pick = <T,>(arr: readonly T[], rng: Rng) => arr[Math.floor(rng() * arr.length)];
 
 // ── Enemies ──────────────────────────────────────────────────────────
-export type GearPiece = { slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean };
+// dropSlot: a dropping armour set, which piece of it drops (missing = one at random, as old saves had).
+export type GearPiece = { slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean; dropSlot?: ArmorSlot };
 // level: missing = REF_LEVEL (the species' listed %s).
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
 export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number };
@@ -425,17 +426,26 @@ export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[],
   };
 }
 
+// Which of an enemy's 4 items could drop: its weapon, helmet, chest or legs,
+// each 1 in 4. The gear index, and for armour which piece of the set.
+function pickDropItem(e: Enemy, rng: Rng): { i: number; dropSlot?: ArmorSlot } {
+  const n = Math.floor(rng() * (1 + ARMOR_SLOTS.length));
+  const want = n === 0 ? "weapon" : "armor";
+  const i = Math.max(0, e.gear.findIndex((p) => p.slot === want));
+  return e.gear[i].slot === "armor" ? { i, dropSlot: ARMOR_SLOTS[Math.max(0, n - 1)] } : { i };
+}
+
 // Re-rolls a piece one rarity tier higher and marks it as loot.
 function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
   const e = pick(enemies, rng);
-  const i = Math.floor(rng() * e.gear.length);
+  const { i, dropSlot } = pickDropItem(e, rng);
   const old = e.gear[i];
   const rarity = RARITIES[Math.min(RARITIES.length - 1, RARITIES.indexOf(old.rarity) + 1)];
   const t = CREATURE_BY_ID[e.creatureId];
   const g = rollGear(rarity, t);
   e.gear[i] = old.slot === "weapon"
     ? { slot: "weapon", key: g.weaponKey, rarity, stats: g.weapon, drops: true }
-    : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true };
+    : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot };
 }
 
 // The Deep Labyrinth's boss: the Warden, a Legendary in Rare gear, with two Epic guards in Uncommon gear.
@@ -503,12 +513,14 @@ export function rollRoomKind(rng: Rng = Math.random, exclude: RoomKind[] = [], f
   return mix[0][0];
 }
 
-// Each enemy has ENEMY_DROP_CHANCE of dropping one of its pieces (at random)
-// when you win. One piece at most: an upgraded piece already drops.
+// Each enemy has ENEMY_DROP_CHANCE of dropping one of its 4 items when you
+// win, each item equally likely. One at most: an upgraded piece already drops.
 export function rollEnemyDrops(enemies: Enemy[], rng: Rng = Math.random) {
   for (const e of enemies) {
     if (e.gear.length === 0 || e.gear.some((p) => p.drops)) continue;
-    if (rng() < ENEMY_DROP_CHANCE) e.gear[Math.floor(rng() * e.gear.length)].drops = true;
+    if (rng() >= ENEMY_DROP_CHANCE) continue;
+    const { i, dropSlot } = pickDropItem(e, rng);
+    e.gear[i] = { ...e.gear[i], drops: true, ...(dropSlot ? { dropSlot } : {}) };
   }
 }
 

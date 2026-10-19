@@ -105,21 +105,26 @@ describe("dungeon rooms", () => {
     }
   });
 
-  it("each enemy has a 20% chance to drop one of its pieces, at random", () => {
-    let foes = 0, dropping = 0, weapons = 0;
-    for (let i = 0; i < 1500; i++) {
+  it("each enemy has a 20% chance to drop an item, then 1 in 4 for each: weapon, helmet, chest, legs", () => {
+    let foes = 0, dropping = 0;
+    const which: Record<string, number> = { weapon: 0, helmet: 0, chest: 0, legs: 0 };
+    for (let i = 0; i < 3000; i++) {
       const room = makeRoom((["easy", "hard", "miniboss", "encampment"] as const)[i % 4], Math.random, 9);
       for (const e of room.enemies!) {
         const d = e.gear.filter((p) => p.drops);
         expect(d.length).toBeLessThanOrEqual(1);
         foes++;
-        if (d.length) { dropping++; if (d[0].slot === "weapon") weapons++; }
+        if (!d.length) continue;
+        dropping++;
+        const item = d[0].slot === "weapon" ? "weapon" : d[0].dropSlot!;
+        expect(item).toBeDefined();
+        which[item]++;
       }
     }
     // A touch over 20%: an easy fight's upgraded piece (5% of rooms) drops too.
     expect(dropping / foes).toBeGreaterThan(0.18);
     expect(dropping / foes).toBeLessThan(0.24);
-    expect(weapons / dropping).toBeCloseTo(0.5, 1);
+    for (const n of Object.values(which)) expect(n / dropping).toBeCloseTo(0.25, 1);
   });
 });
 

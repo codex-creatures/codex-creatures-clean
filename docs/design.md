@@ -270,9 +270,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     only ~15% of attempts. (The shelved alternative, shrinking enemy gear by level, was tried and
     dropped as too complicated.)
 - ✅ **Enemy gear drops** (the user, 2026-10-19; `ENEMY_DROP_CHANCE`): every enemy you fight has a
-  20% chance to drop one of its equipped pieces (weapon or armour, at random) when you win; it goes
-  in the fight's sack. One piece per enemy at most. (Was 5%, brutes only.) Easy fights' 5% upgraded
-  piece (`UPGRADE_CHANCE`) still drops as before. The Cyclops has no gear, so no change there.
+  20% chance to drop one of its 4 equipped items when you win, each 1 in 4: weapon, helmet, chest
+  or legs (chosen when the room is made, `dropSlot`). It goes in the fight's sack. One item per
+  enemy at most. (Was 5%, brutes only.) Easy fights' 5% upgraded piece (`UPGRADE_CHANCE`) still
+  drops, picked the same 1-in-4 way. The Cyclops has no gear, so no change there.
 
 ## 8. Klutz
 
