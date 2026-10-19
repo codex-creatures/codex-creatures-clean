@@ -130,11 +130,13 @@ describe("the labyrinth map", () => {
     expect(choices / rooms).toBeGreaterThan(0.3); // plenty of branches
   });
 
-  it("the scroll marks real corridors from the start, both rooms past the 2nd", () => {
+  it("the scroll marks real corridors from the start, both rooms past the 2nd, never two touching one room", () => {
     for (let i = 0; i < 200; i++) {
       const map = rollMap(false);
       const depth = depths(map);
       expect(map.knownLinks).toHaveLength(KNOWN_CORRIDORS);
+      const ends = map.knownLinks!.flatMap((k) => k.split("|"));
+      expect(new Set(ends).size).toBe(ends.length); // no room touches two (no clusters)
       for (const key of map.knownLinks!) {
         const [a, b] = key.split("|");
         expect(map.nodes[a].links).toContain(b);

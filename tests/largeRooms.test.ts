@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rollMap, depths, routeLength, knownRooms, inSight, waysOn } from "../lib/dungeon/map";
+import { rollMap, depths, routeLength, knownRooms, inSight, waysOn, LARGE_FROM } from "../lib/dungeon/map";
 import {
   DUNGEONS, makeRoom, hasFight, canMoveOn, startRun, enemyFighter, rollWares, codexPrice, minibossExtras,
   MERCHANT_SLOTS, ENCAMP_DRUNK_HP, LIBRARY_BOOKS, LARGE_MIX, type DungeonRun,
@@ -21,7 +21,7 @@ describe("large rooms", () => {
         const depth = depths(map);
         for (const n of large) {
           expect(LARGE).toContain(n.kind);
-          expect(depth.get(n.id)!).toBeGreaterThanOrEqual(3);
+          expect(depth.get(n.id)!).toBeGreaterThanOrEqual(LARGE_FROM); // room 5 at the earliest
           expect(!!n.known).toBe(!n.mystery); // either marked from the start, or a "?"
         }
       }

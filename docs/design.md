@@ -212,6 +212,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   without scanned gear): no mini boss (nor a guarded storehouse) before room 7 (`MINIBOSS_FROM`);
   the first 2 rooms are creature dens 90% of the time (`FIRST_ROOM_DENS`, otherwise a room with
   no fight), their creatures Lv 1 60% / Lv 2 25% / Lv 3 15% (`FIRST_ROOM_LEVELS`).
+- ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
+  scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.
 - ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you
   keep, in 4 variants: plain, drunk, ambush, rigged), Library (codexes to find, or a librarian
   selling) and Storehouse (mostly materials, sometimes guarded by a mini boss).

@@ -47,7 +47,8 @@ export const MIN_ROUTE = 15;         // shortest route to the lair, in rooms wal
 export const MAX_ROUTE = 15;
 export const MYSTERY_CHANCE = 0.3;   // a room whose kind you can't see until you walk in
 export const KNOWN_AT_START = 8;     // rooms already marked on your scroll
-export const KNOWN_CORRIDORS = 5;    // …and corridors, somewhere past the 2nd room
+export const KNOWN_CORRIDORS = 7;    // …and corridors, somewhere past the 2nd room, no two touching the same room
+export const LARGE_FROM = 5;         // a large room is never nearer than this (rooms walked into)
 export const KNOWN_CORRIDOR_DEPTH = 2; // (both their rooms at least this many rooms in)
 
 export type MapNode = {
@@ -211,7 +212,14 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
     .filter((b) => (depth.get(a.id) ?? 0) >= KNOWN_CORRIDOR_DEPTH && (depth.get(b) ?? 0) >= KNOWN_CORRIDOR_DEPTH)
     .map((b) => linkKey(a.id, b)));
   const knownLinks: string[] = [];
-  for (let i = 0; i < KNOWN_CORRIDORS && deep.length > 0; i++) knownLinks.push(deep.splice(Math.floor(rng() * deep.length), 1)[0]);
+  // Each room touches at most one of them (no clusters of marked corridors).
+  let free = deep;
+  for (let i = 0; i < KNOWN_CORRIDORS && free.length > 0; i++) {
+    const k = free[Math.floor(rng() * free.length)];
+    knownLinks.push(k);
+    const [a, b] = k.split("|");
+    free = free.filter((o) => !o.split("|").some((end) => end === a || end === b));
+  }
   map.knownLinks = knownLinks;
   placeLarge(map, spec.large, rng);
   return map;
@@ -230,7 +238,7 @@ function placeLarge(map: DungeonMap, count: number, rng: Rng) {
   const nodes = Object.values(map.nodes);
   const spacious = (n: MapNode) => nodes.every((o) => o.id === n.id || distance(o, n) >= LARGE_SPACING);
   // (Not one of the rooms already marked on the scroll.)
-  let pool = nodes.filter((n) => room(n) && !n.known && !lairDoors.has(n.id) && (depth.get(n.id) ?? 0) >= 3 && (depth.get(n.id) ?? 0) <= route - 2);
+  let pool = nodes.filter((n) => room(n) && !n.known && !lairDoors.has(n.id) && (depth.get(n.id) ?? 0) >= LARGE_FROM && (depth.get(n.id) ?? 0) <= route - 2);
   const roomy = pool.filter(spacious);
   if (roomy.length >= count) pool = roomy;
   const kinds: RoomKind[] = [];
