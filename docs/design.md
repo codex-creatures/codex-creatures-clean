@@ -250,6 +250,15 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - 📌 Also decided as Cyclops rewards, **not built** (the game says "next update"): building the
   **Tavern** for 300 gold, and a **trophy** showing which run you won on (that run is already
   recorded: `meta.firstClearRun`).
+- ⏸ **Shelved (2026-10-19): an explorable Labyrinth** (the user's sketch: [ideas/labyrinth-v2.png](ideas/labyrinth-v2.png)).
+  Rooms of different sizes joined by corridors, walked by a little person (tap to move); one-way
+  points going up (no going back), sideways moves allowed; pools, chests and the witch *inside*
+  rooms (tap them), some rooms empty; the first Cyclops run twice the sketch's size; the scroll and
+  flares still give a peek. Estimate: 8–12 sessions (generator, movement, room objects, saves,
+  ~50–100 PixelLab generations). If picked up: a 1-session throwaway prototype in /lab first.
+- ❓ **Next balance fix, waiting on the user:** shrink enemies' gear value (not their levels or
+  rarity) by depth, Cyclops' Labyrinth only: rooms 1–2 ×0.6, 3–6 ×0.8, 7+ full; drops keep full
+  stats. Sim: a lone starter beats a first-room den 67% today, ~85% at ×0.6.
 
 ## 8. Klutz
 
