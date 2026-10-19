@@ -12,7 +12,7 @@ import CodeCache from "@/components/CodeCache";
 import Help, { HelpSection } from "@/components/Help";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
-import { klutzHelping } from "@/lib/quest";
+import { klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { canFind, clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
@@ -201,6 +201,14 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       {action && <div style={{ marginTop: 10 }}>{action}</div>}
     </div>
   );
+  const mine = game.inventory.filter((d) => d.dropType === "creature");
+  if (needsFirstCreature(q, mine.length > 0)) {
+    return say(
+      <>&ldquo;Oi, you&apos;re awake! I dragged you in out of the Labyrinth. You was kind to me once, so now I&apos;ll help you.
+        I caught an <b>evil creature</b> when I was exploring. It&apos;s in the <b>cage</b> — you can recruit it, if you want.&rdquo;</>,
+      <Link href="/cage" className="pixel-btn tutorial-pulse">🔒 To the cage</Link>,
+    );
+  }
   if (q.stage === "start") {
     return say(
       <>&ldquo;Oi, you&apos;re up! A <b>Baby Cyclops</b> ran into the Labyrinth with my box of weapons and armour. Get it back for me?&rdquo;</>,
@@ -231,6 +239,12 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
     return say(
       <>&ldquo;There — it&apos;s all in your storage. Go and have a look!&rdquo;</>,
       <Link href="/chest" className="pixel-btn">🧰 Open your storage</Link>,
+    );
+  }
+  if (needsGearUp(q, mine.map((c) => game.equipment[c.id]))) {
+    return say(
+      <>&ldquo;Before I take any, kit out your creature! Put some of that <b>armour</b> on it in the Pit.&rdquo;</>,
+      <Link href="/pit" className="pixel-btn tutorial-pulse">🐾 To the Pit</Link>,
     );
   }
   if (q.stage === "lend") {

@@ -8,7 +8,7 @@ import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/bat
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { TUTORIAL_MOVES } from "../lib/quest";
 import { STARTER_LEVEL } from "../lib/creatures/starter";
-import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "../lib/items/ceilings";
@@ -105,6 +105,19 @@ describe("the first quest: Klutz's box", () => {
     expect(klutzHasNews({ stage: "lend" })).toBe(true);
     expect(klutzHelping({ stage: "lend" })).toBe(false);
     expect(klutzHelping({ stage: "done" })).toBe(true);
+  });
+
+  it("a new game starts with Klutz sending you to the cage, then the box", () => {
+    expect(needsFirstCreature({ stage: "start" }, false)).toBe(true);
+    expect(needsFirstCreature({ stage: "start" }, true)).toBe(false);
+    expect(needsFirstCreature({ stage: "hunt" }, false)).toBe(false);
+  });
+
+  it("Klutz won't borrow gear until your creature wears some armour (the club alone doesn't count)", () => {
+    expect(needsGearUp({ stage: "lend" }, [undefined])).toBe(true);
+    expect(needsGearUp({ stage: "lend" }, [{ weaponId: "club" } as { chestId?: string }])).toBe(true);
+    expect(needsGearUp({ stage: "lend" }, [{}, { legsId: "x" }])).toBe(false);
+    expect(needsGearUp({ stage: "stash" }, [])).toBe(false);
   });
 
   it("goes club → thief → back to Klutz", () => {

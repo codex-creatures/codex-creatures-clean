@@ -10,7 +10,7 @@ import DenRoom, { SPOTS } from "@/components/DenRoom";
 import GoldCount from "@/components/GoldCount";
 import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
-import { klutzHasNews } from "@/lib/quest";
+import { klutzHasNews, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 
@@ -26,6 +26,11 @@ export default function Home() {
   // The bag by the archway: a bindle until the rugged backpack from your first Cyclops.
   const [backpack, setBackpack] = useState(false);
   useEffect(() => { setBackpack(bagSize(loadDungeon().meta) > BINDLE); }, []);
+  // Where Klutz has sent you: the cage for your first creature, then the Pit to kit it out.
+  const mine = game.inventory.filter((d) => d.dropType === "creature");
+  const highlight = !game.hydrated ? undefined
+    : needsFirstCreature(game.quest, mine.length > 0) && game.caged.length > 0 ? OBJ.cage
+    : needsGearUp(game.quest, mine.map((c) => game.equipment[c.id])) ? OBJ.pit : undefined;
 
   return (
     <main className="screen-page">
@@ -42,7 +47,7 @@ export default function Home() {
       <div className="screen-fill">
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
-          klutzNews={game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} />
+          klutzNews={game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} highlight={highlight} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}
@@ -53,7 +58,7 @@ export default function Home() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 5 }}>
           {PLACES.map((id) => {
             const s = SPOTS[id as keyof typeof SPOTS];
-            return s?.href ? <Link key={id} href={s.href} className="dock-tab" style={{ fontSize: 11, whiteSpace: "normal", textAlign: "center", lineHeight: 1.1, minHeight: 40 }}>{s.label}</Link> : null;
+            return s?.href ? <Link key={id} href={s.href} className={`dock-tab${id === highlight ? " tutorial-pulse" : ""}`} style={{ fontSize: 11, whiteSpace: "normal", textAlign: "center", lineHeight: 1.1, minHeight: 40 }}>{s.label}</Link> : null;
           })}
         </div>
       </nav>

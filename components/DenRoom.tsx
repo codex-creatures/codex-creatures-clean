@@ -58,7 +58,8 @@ function denScene(backpack: boolean, art: DenArt): DenScene {
 // klutz: where Klutz is (strolling, healing in the pool, or away hunting).
 // klutzNews: he has something to tell you (a ❗ on his label).
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean }) {
+// highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const klutzNewsRef = useRef(klutzNews);
   useEffect(() => { klutzNewsRef.current = klutzNews; }, [klutzNews]);
@@ -313,7 +314,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
-        if (id === OBJ.klutz || id !== shown) return null;
+        if (id === OBJ.klutz || (id !== shown && id !== highlight)) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
         const spot = SPOTS[id];

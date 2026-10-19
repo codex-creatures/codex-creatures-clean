@@ -53,7 +53,9 @@ export default function CagePage() {
           <div className="pixel-font" style={{ fontSize: 22, color: RARITY_COLORS[freed.rarity].text, marginTop: 8 }}>{freed.name} is yours!</div>
           <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s in your Creatures and on your roster. Give it some gear in the Pit.</p>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link href="/pit" className="pixel-btn">To the Pit</Link>
+            {game.quest.stage === "start"
+              ? <Link href="/klutz" className="pixel-btn tutorial-pulse">👺 Back to Klutz</Link>
+              : <Link href="/pit" className="pixel-btn">To the Pit</Link>}
             <Link href="/" className="pixel-btn">Back to the Den</Link>
           </div>
         </div>

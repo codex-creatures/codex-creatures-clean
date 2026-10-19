@@ -288,11 +288,16 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   piece** (the same rarity only 5%, rising slightly with his level).
 - ✅ **Levels:** only won hunts give XP. A first catch reaches Lv 2; a find gives 20. Scrolls work on
   him, and the user wants that to feel worthwhile ("the closest thing to you").
+- ✅ **A new game starts at Klutz:** he dragged you in out of the Labyrinth and, because you were kind
+  to him, he'll help you. He caught an evil creature exploring: you can recruit it. The cage glows
+  until you do; only then does he tell you about his box (`needsFirstCreature`, lib/quest.ts).
 - ✅ **First quest, "Klutz's box":** a Baby Cyclops stole his box. In a guided first fight he gives
   advice (he doesn't fight). The box holds 10 pieces of Common/Uncommon gear (lib/quest.ts).
   On the way, Klutz's Club lies on the floor and is picked up through the loot window: a tutorial
   there teaches taking it into the bag and equipping it (tap, or drag onto a creature), and the
   equip window explains where stats come from (gear × the creature's %).
+  Before he borrows any gear, you have to put some armour from the box on your creature (the Pit
+  glows; `needsGearUp`).
 - ✅ **Equipping:** gear can be dragged onto a creature (loot windows and the bag in the Labyrinth)
   or onto its slot (the creature window). In the Labyrinth, equipping opens a compare window first:
   the slot's old piece vs the new one, each stat's change, and your party along the top marked ▲/▼

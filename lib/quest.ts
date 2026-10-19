@@ -3,6 +3,10 @@
 //
 // Klutz has been stashing weapons and armour he found in the Labyrinth in a
 // box — and a Baby Cyclops ran off into the Labyrinth with it.
+// 0. A new player has no creature yet: Klutz's first words are that he
+//    dragged you in out of the Labyrinth, and that he caught an evil
+//    creature you can recruit. The cage glows until you do (the starter
+//    waits in it: lib/creatures/starter.ts). (Still the "start" stage.)
 // 1. "start":    Klutz has something to tell you (talk to him).
 // 2. "hunt":     into the Labyrinth: a short run of its own (questMap in
 //                lib/dungeon/map.ts), one tunnel to a "?" room with Klutz's
@@ -15,6 +19,8 @@
 // 4. "stash":    you open the box at Klutz's (like a Code Cache); its gear
 //                goes into your storage, and Klutz sends you to look.
 // 5. "lend":     you've opened your storage: Klutz asks to borrow some gear.
+//                But first he has you kit out your own creature: some armour
+//                from his box (the club alone doesn't count).
 // 6. "done":     you agree: Klutz's gear, moves and hunting open up.
 // The box holds BOX_ROLLS pieces of Common/Uncommon gear (Uncommon at
 // BOX_UNCOMMON odds), rolled when you win — never anything better, so
@@ -94,5 +100,11 @@ export const wantsClub = (q: QuestState) => (q.stage === "start" || q.stage === 
 export const wantsThief = (q: QuestState) => (q.stage === "start" || q.stage === "hunt") && !!q.clubFound;
 // Klutz has something to say (a ❗ over his head).
 export const klutzHasNews = (q: QuestState) => q.stage === "start" || q.stage === "boxFound" || q.stage === "lend";
+// The intro: you haven't got a creature yet, so Klutz sends you to the cage.
+export const needsFirstCreature = (q: QuestState, ownsCreature: boolean) => q.stage === "start" && !ownsCreature;
+// Before he borrows gear, one of your creatures has to wear some armour.
+type Worn = { helmetId?: string; chestId?: string; legsId?: string };
+export const wearsArmour = (l?: Worn) => !!(l?.helmetId || l?.chestId || l?.legsId);
+export const needsGearUp = (q: QuestState, loadouts: (Worn | undefined)[]) => q.stage === "lend" && !loadouts.some(wearsArmour);
 // Klutz will borrow your gear and hunt for you.
 export const klutzHelping = (q: QuestState) => q.stage === "done";
