@@ -13,3 +13,9 @@ export default function GoldCount({ gold, size = 16 }: { gold: number; size?: nu
     </span>
   );
 }
+
+// The gold coin on its own, sized to the text around it. (Not the 🪙 emoji:
+// Windows draws that one silver.)
+export function Coin({ size = 14 }: { size?: number }) {
+  return <PixelSprite sprite={GOLD_SPRITE} scale={size / 16} style={{ display: "inline-block", verticalAlign: "-0.15em" }} />;
+}

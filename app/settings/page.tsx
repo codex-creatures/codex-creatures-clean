@@ -8,6 +8,7 @@
 // This screen doesn't load the game itself (no useGameState), so nothing
 // here saves the game behind your back while you swap saves.
 
+import { Coin } from "@/components/GoldCount";
 import { useEffect, useRef, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
@@ -31,7 +32,7 @@ function when(iso: string) {
 
 function SummaryLine({ s }: { s: SaveSummary }) {
   if (s.empty) return <span style={{ color: MUTED }}>An empty save (a brand-new game).</span>;
-  return <span>🪙 {s.gold} gold · 🐾 {s.creatures} creature{s.creatures === 1 ? "" : "s"} · 🎒 {s.items} item{s.items === 1 ? "" : "s"} · 🔍 {s.scans} scan{s.scans === 1 ? "" : "s"}</span>;
+  return <span><Coin /> {s.gold} gold · 🐾 {s.creatures} creature{s.creatures === 1 ? "" : "s"} · 🎒 {s.items} item{s.items === 1 ? "" : "s"} · 🔍 {s.scans} scan{s.scans === 1 ? "" : "s"}</span>;
 }
 
 export default function SettingsPage() {

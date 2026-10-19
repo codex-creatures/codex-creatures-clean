@@ -5,6 +5,7 @@
 // Used for Klutz's box (an armoury box) and, later, Code Caches (scans
 // saved up while offline: "Extract all").
 
+import { GOLD_SPRITE } from "@/lib/sprites/items";
 import { useState } from "react";
 import { useEscape } from "@/hooks/useEscape";
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
@@ -16,7 +17,7 @@ const COLUMNS = 5;
 const REVEAL_ALL_STEP_MS = 140; // "reveal all" still opens them one after another
 
 function look(d: Drop) {
-  if (d.dropType === "reward") return { icon: "🪙", name: `${d.amount} gold`, color: "#f1d9a0", glow: "rgba(241,217,160,0.35)" };
+  if (d.dropType === "reward") return { sprite: GOLD_SPRITE, icon: "💰", name: `${d.amount} gold`, color: "#f1d9a0", glow: "rgba(241,217,160,0.35)" };
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
   const sprite = x.dropType === "item" ? itemSprite(x) : creatureSprite(x.creatureId);

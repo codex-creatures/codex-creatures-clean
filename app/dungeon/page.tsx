@@ -7,6 +7,7 @@
 // so a refresh never loses it. Going back to the Den ends it (you keep your
 // bag), so a run can't be paused and picked up later.
 
+import { Coin } from "@/components/GoldCount";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -1435,7 +1436,7 @@ function RoomScreen({ run, room, found, notes, byId, gold, bagUsed, bagSlots, st
                     <span style={{ fontSize: 12, color: move?.race ? RACE_INFO[move.race].color : MUTED }}> · {move?.race ? `${RACE_INFO[move.race].name} only` : "any creature"}</span>
                     <span style={{ display: "block", fontSize: 12, color: MUTED }}>{move?.desc}</span>
                   </span>
-                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "bought" : `🪙 ${price}`}</span>
+                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "bought" : <><Coin /> {price}</>}</span>
                 </button>
               );
             })}

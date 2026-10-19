@@ -1,6 +1,7 @@
 "use client";
 // components/InventoryList.tsx
 
+import { Coin } from "./GoldCount";
 import { useMemo, useState } from "react";
 import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -262,7 +263,7 @@ export default function InventoryList({
                     return sp ? <PixelSprite sprite={sp} scale={isCreature || isCard ? 1.25 : 1.75} style={{ opacity: isCard ? 0.75 : 1 }} /> : null;
                   })()}
                   {isRewardDrop(d) ? (
-                    <span style={{ opacity: 0.7 }}>🪙 +{d.amount} Gold</span>
+                    <span style={{ opacity: 0.7 }}><Coin /> +{d.amount} Gold</span>
                   ) : (
                     <span style={{ color: RARITY_COLORS[(d as CreatureOrItemDrop).rarity]?.text ?? "white" }}>
                       {isCard ? "🃏 " : ""}{isItem ? (d as CreatureOrItemDrop).name ?? (d as any).itemKey ?? "Unknown" : (d as CreatureOrItemDrop).name}{isCard ? " card" : ""}

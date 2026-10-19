@@ -4,6 +4,7 @@
 // his trips (what his catches were wearing, and anything he picks up on the
 // way). Keep a piece (it goes into your storage) or sell it for gold.
 
+import { Coin } from "@/components/GoldCount";
 import { useState } from "react";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
@@ -48,7 +49,7 @@ export default function CratePage() {
               if (!sellAllArmed) { setSellAllArmed(true); window.setTimeout(() => setSellAllArmed(false), 4000); return; }
               setSellAllArmed(false);
               game.sellFromCrate(items.map((d) => d.id));
-            }}>{sellAllArmed ? `Tap again: sell all for 🪙 ${total}` : `Sell all · 🪙 ${total}`}</button>
+            }}>{sellAllArmed ? <>Tap again: sell all for <Coin /> {total}</> : <>Sell all · <Coin /> {total}</>}</button>
           </div>
           <div style={{ display: "grid", gap: 8 }}>
             {items.map((it) => {
@@ -70,7 +71,7 @@ export default function CratePage() {
                   </span>
                   <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button className="chip" onClick={() => game.keepFromCrate([it.id])}>Keep</button>
-                    <button className="chip" onClick={() => game.sellFromCrate([it.id])} style={{ color: GOLD }}>Sell · 🪙 {value}</button>
+                    <button className="chip" onClick={() => game.sellFromCrate([it.id])} style={{ color: GOLD }}>Sell · <Coin /> {value}</button>
                   </span>
                 </div>
               );

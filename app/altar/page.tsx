@@ -1,5 +1,6 @@
 "use client";
 
+import { Coin } from "@/components/GoldCount";
 import { useRef, useState, useMemo, useEffect } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useGameState } from "@/hooks/useGameState";
@@ -206,7 +207,7 @@ export default function AltarPage() {
           {lastScan.map((d) => (
             <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "3px 0" }}>
               {isRewardDrop(d) ? (
-                <span style={{ fontSize: 16, color: "#f5c542", fontWeight: 600 }}>🪙 +{d.amount}g</span>
+                <span style={{ fontSize: 16, color: "#f5c542", fontWeight: 600 }}><Coin size={16} /> +{d.amount}g</span>
               ) : (
                 <>
                   <span style={{ fontSize: 16, fontWeight: 600, color: RARITY_COLORS[d.rarity]?.text ?? "white" }}>

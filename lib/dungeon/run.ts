@@ -169,7 +169,7 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   chest:     { name: "Chest",              icon: "🧰" },
   stash:     { name: "Stash",              icon: "💰" },
   librarian: { name: "Wandering librarian", icon: "📚" },
-  merchant:  { name: "Wandering merchant", icon: "🪙" },
+  merchant:  { name: "Wandering merchant", icon: "💰" },
   cards:     { name: "Deck of cards",      icon: "🃏" },
   miniboss:  { name: "Mini boss",          icon: "👹" },
   witch:     { name: "The card witch",     icon: "🧙" },

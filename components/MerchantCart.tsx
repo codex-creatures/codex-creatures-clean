@@ -5,6 +5,7 @@
 // to put one back); the box on top says what the last one picked does, and
 // what everything picked costs together. Buy takes them all at once.
 
+import { Coin } from "./GoldCount";
 import { useMemo, useState } from "react";
 import PixelSprite from "./PixelSprite";
 import { ICON, lookOf } from "./ContainerLoot";
@@ -46,8 +47,8 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
         <b style={{ color: focus ? looks[wares.indexOf(focus)].color : MUTED, ...lines(1, 1.3) }}>{focus ? wareName(focus) : "Tap something to look at it"}</b>
         <span title={focus ? detailOf(focus) : undefined} style={{ fontSize: 12, color: MUTED, ...lines(2, 1.35) }}>{focus ? detailOf(focus) : "Tap again to put it back."}</span>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13 }}>
-          <span className="pixel-font" style={{ color: short === "gold" ? "#ff8a80" : GOLD }}>Total 🪙 {total}</span>
-          <span style={{ color: MUTED }}>🪙 {gold} · 🎒 {bagUsed}/{bagSlots}</span>
+          <span className="pixel-font" style={{ color: short === "gold" ? "#ff8a80" : GOLD }}>Total <Coin size={13} /> {total}</span>
+          <span style={{ color: MUTED }}><Coin size={13} /> {gold} · 🎒 {bagUsed}/{bagSlots}</span>
         </div>
       </div>
 
@@ -66,14 +67,14 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
                 {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 26 }}>{l.icon}</span>}
                 {"qty" in w && <span style={{ position: "absolute", right: 3, bottom: 1, fontSize: 11, fontWeight: 700, textShadow: "0 1px 0 #000" }}>×{w.qty}</span>}
               </span>
-              <span className="pixel-font" style={{ display: "block", marginTop: 3, fontSize: 11, textAlign: "center", color: sold ? MUTED : on ? "#ffd66e" : GOLD }}>{sold ? "sold" : `🪙 ${w.price}`}</span>
+              <span className="pixel-font" style={{ display: "block", marginTop: 3, fontSize: 11, textAlign: "center", color: sold ? MUTED : on ? "#ffd66e" : GOLD }}>{sold ? "sold" : <><Coin size={11} /> {w.price}</>}</span>
             </button>
           );
         })}
       </div>
 
       <button className="pixel-btn" disabled={!chosen.length || !!short} onClick={buy} style={{ width: "100%" }}>
-        {short === "gold" ? "Not enough gold" : short === "room" ? "No room in your bag" : chosen.length ? `Buy ${chosen.length} for 🪙 ${total}` : "Buy"}
+        {short === "gold" ? "Not enough gold" : short === "room" ? "No room in your bag" : chosen.length ? <>Buy {chosen.length} for <Coin /> {total}</> : "Buy"}
       </button>
     </div>
   );

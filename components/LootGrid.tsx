@@ -24,7 +24,7 @@ type Look = { name: string; sprite?: Sprite; icon?: string; color: string; glow:
 function lookOf(g: GotItem): Look {
   if ("potion" in g) return { name: POTIONS[g.potion].name, sprite: POTION_SPRITES[g.potion], icon: POTIONS[g.potion].icon, color: RARITY_COLORS[POTION_RARITY[g.potion]].text, glow: rarityGlow(POTION_RARITY[g.potion]) };
   const d = g.drop;
-  if (d.dropType === "reward") return { name: `${d.amount} gold`, sprite: GOLD_SPRITE, icon: "🪙", color: RARITY_COLORS[GOLD_RARITY].text, glow: rarityGlow(GOLD_RARITY) };
+  if (d.dropType === "reward") return { name: `${d.amount} gold`, sprite: GOLD_SPRITE, icon: "💰", color: RARITY_COLORS[GOLD_RARITY].text, glow: rarityGlow(GOLD_RARITY) };
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
   if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rarityGlow(x.rarity) };
