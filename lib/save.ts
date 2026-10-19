@@ -5,6 +5,8 @@
 // are kept in their own field. Every writer reads the save, changes only its
 // own part and writes it back, so they never overwrite each other.
 
+import { ARMOR_V2, upgradeOldArmorStats } from "./items/armor";
+
 export const SAVE_KEY = "codex_creatures_save_v2";
 
 // Fields written by something other than useGameState.
@@ -14,10 +16,30 @@ export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return parsed && typeof parsed === "object" ? upgradeOldArmor(parsed) : {};
   } catch {
     return {};
   }
+}
+
+// Armour from before every piece rolled in full (lib/items/armor.ts), wherever
+// it is in the save (the chest, a creature, the Labyrinth's bag, an enemy's
+// gear): its defence goes up to the new scale so it blocks what it did. Each
+// is marked, so it happens once; the save keeps it the next time it's written.
+export function upgradeOldArmor<T>(save: T): T {
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (!v || typeof v !== "object") return;
+    const o = v as Record<string, unknown>;
+    const isArmour = o.itemCategory === "armor" || (o.slot === "armor" && "drops" in o);
+    if (isArmour && o.armorV !== ARMOR_V2 && o.stats && typeof o.stats === "object") {
+      o.stats = upgradeOldArmorStats(o.stats as Record<string, number>);
+      o.armorV = ARMOR_V2;
+    }
+    for (const k in o) walk(o[k]);
+  };
+  walk(save);
+  return save;
 }
 
 // Locked while a save file is being loaded (lib/saveFile.ts): the page is

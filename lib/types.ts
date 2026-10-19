@@ -18,6 +18,7 @@ export type CreatureOrItemDrop = {
   itemKey?: import("./items/ceilings").ItemKey;
   armorKey?: import("./items/armor").ArmorKey;
   armorSlot?: import("./items/armor").ArmorSlot; // armour: helmet, chest or legs
+  armorV?: number; // armour on the full-roll scale (ARMOR_V2); missing = older, upgraded on load (lib/save.ts)
   creatureId?: string; // stable id from lib/creatures/creatureData.ts
   // Creatures and cards: this individual's rolled %s and starting moves.
   // Missing on older creatures → the species' standard values.

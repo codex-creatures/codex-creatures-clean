@@ -7,7 +7,7 @@ import { RARITY_WEIGHTS } from "./budgets";
 import type { ItemKey } from "./ceilings";
 import { ITEM_CEILINGS } from "./ceilings";
 import type { ArmorKey } from "./armor";
-import { ARMOR_CEILINGS, ARMOR_KEYS, pieceStats } from "./armor";
+import { ARMOR_CEILINGS, ARMOR_KEYS, pieceCeilings } from "./armor";
 import type { ItemCategory, Drop } from "../types";
 import { isItemDrop } from "../types";
 import { ITEM_KEYS } from "./ceilings";
@@ -100,8 +100,8 @@ export function getStatCapForDrop(d: Drop, stat: string): number | null {
     if (!ceilings) return null;
     const rc = ceilings[d.rarity as Rarity];
     if (!rc) return null;
-    // A piece's caps are its share of the whole set's.
-    const caps = d.armorSlot ? pieceStats(rc, d.armorSlot) : (rc as Record<string, number>);
+    // A piece rolls within its armour's ceilings, with a share of the HP.
+    const caps = d.armorSlot ? (pieceCeilings(d.armorKey as ArmorKey, d.rarity as Rarity) as Record<string, number>) : (rc as Record<string, number>);
     return caps[stat] ?? null;
   }
   return null;

@@ -35,12 +35,12 @@
 import { createBattle, resolveRound, sendInReplacement } from "./combat/battle";
 import { chooseAiAction, chooseAiReplacement } from "./combat/thinkingAi";
 import type { Fighter } from "./combat/engine";
-import { makeEnemy, enemyFighter, type Enemy } from "./dungeon/run";
+import { makeEnemy, enemyFighter, droppedPieceStats, type Enemy } from "./dungeon/run";
 import { RARITY_WEIGHTS, type Rarity } from "./items/budgets";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
 import { makeCreatureDrop } from "./creatures/summon";
 import { weaponDrop, armorDrop, randomArmorSlot } from "./drops";
-import { ARMOR_KEYS, pieceStats, type ArmorKey, type ArmorSlot } from "./items/armor";
+import { ARMOR_KEYS, type ArmorKey, type ArmorSlot } from "./items/armor";
 import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
@@ -116,7 +116,7 @@ function lootFrom(e: Enemy): Drop[] {
   const gear = e.gear.map((p) => {
     if (p.slot === "weapon") return weaponDrop(p.key as ItemKey, p.rarity, "", p.stats);
     const slot = randomArmorSlot();
-    return armorDrop(p.key as ArmorKey, p.rarity, "", pieceStats(p.stats, slot), slot);
+    return armorDrop(p.key as ArmorKey, p.rarity, "", droppedPieceStats(p, slot), slot);
   });
   return [creature, ...gear];
 }
@@ -151,7 +151,7 @@ export function rollFind(worn: WornPiece[], rng: Rng = Math.random, level = 1): 
     return weaponDrop(key, rarity, "", rollItemStats(key, rarity, rng).stats);
   }
   const key = ARMOR_KEYS[Math.floor(rng() * ARMOR_KEYS.length)];
-  return armorDrop(key, rarity, "", rollArmorPiece(key, rarity, piece.slot, rng), piece.slot);
+  return armorDrop(key, rarity, "", rollArmorPiece(key, rarity, rng), piece.slot);
 }
 
 // Plan a whole expedition the moment he sets off: how long he walks, what

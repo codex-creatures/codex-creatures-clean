@@ -4,7 +4,8 @@ import {
   ARMOR_CEILINGS,
   ARMOR_PRIMARY_STATS,
   ARMOR_STAT_KEYS,
-  pieceStats,
+  ARMOR_SLOTS,
+  pieceCeilings,
   type ArmorKey,
   type ArmorSlot,
   type ArmorStatBlock,
@@ -48,9 +49,10 @@ function pickWeightedStat(
   return candidates[candidates.length - 1];
 }
 
-export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => number = Math.random) {
+// ceilingsOverride: what to roll within instead of the armour's own ceilings (a piece: pieceCeilings).
+export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => number = Math.random, ceilingsOverride?: ArmorStatBlock) {
   const budget = RARITY_BUDGETS[rarity];
-  const ceilings = ARMOR_CEILINGS[armorKey]?.[rarity];
+  const ceilings = ceilingsOverride ?? ARMOR_CEILINGS[armorKey]?.[rarity];
   if (!ceilings) throw new Error(`Missing armor ceilings for key=${armorKey} rarity=${rarity}`);
 
   const maxCapacity = ARMOR_STAT_KEYS.reduce((sum, k) => sum + ceilings[k], 0);
@@ -112,7 +114,13 @@ export function rollArmorStats(armorKey: ArmorKey, rarity: Rarity, rng: () => nu
   return { armorKey, rarity, budget: effectiveBudget, ceilings, stats };
 }
 
-// One piece of armour: a whole set's roll, cut down to that piece's share.
-export function rollArmorPiece(armorKey: ArmorKey, rarity: Rarity, slot: ArmorSlot, rng: () => number = Math.random) {
-  return pieceStats(rollArmorStats(armorKey, rarity, rng).stats, slot);
+// One piece of armour: a full roll of the budget, within a piece's ceilings.
+// (Every slot rolls the same way.)
+export function rollArmorPiece(armorKey: ArmorKey, rarity: Rarity, rng: () => number = Math.random): Record<string, number> {
+  return { ...rollArmorStats(armorKey, rarity, rng, pieceCeilings(armorKey, rarity)).stats };
+}
+
+// A whole set: a helmet, chest and legs, each rolled on its own.
+export function rollArmorSet(armorKey: ArmorKey, rarity: Rarity, rng: () => number = Math.random): Record<ArmorSlot, Record<string, number>> {
+  return Object.fromEntries(ARMOR_SLOTS.map((slot) => [slot, rollArmorPiece(armorKey, rarity, rng)])) as Record<ArmorSlot, Record<string, number>>;
 }

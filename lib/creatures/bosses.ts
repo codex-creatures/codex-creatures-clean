@@ -14,15 +14,16 @@ type Part = {
 };
 
 // Team order matters (see CYCLOPS in bossAi.ts): body, hand, hand, eye.
+// Armour is on the full-set scale (defence counts at a third: ARMOR_DEFENCE_WEIGHT).
 export const CYCLOPS_PARTS: Part[] = [
   { id: "cyclops", name: "Cyclops", label: "Boss · Melee Tank", weaponName: "Tree-trunk club", armorName: "Stone-hard hide",
-    weapon: { melee: 28, magic: 22 }, armor: { mDef: 38, rDef: 18, magDef: 18, agility: 26 } },
+    weapon: { melee: 28, magic: 22 }, armor: { mDef: 114, rDef: 54, magDef: 54, agility: 78 } },
   { id: "cyclops_hand", name: "Left Hand", label: "Boss · Skirmisher", weaponName: "Hooked nails", armorName: "Calloused skin",
-    weapon: { melee: 22 }, armor: { mDef: 20, rDef: 14, magDef: 14, agility: 60 } },
+    weapon: { melee: 22 }, armor: { mDef: 60, rDef: 42, magDef: 42, agility: 180 } },
   { id: "cyclops_hand", name: "Right Hand", label: "Boss · Skirmisher", weaponName: "Hooked nails", armorName: "Calloused skin",
-    weapon: { melee: 22 }, armor: { mDef: 20, rDef: 14, magDef: 14, agility: 60 } },
+    weapon: { melee: 22 }, armor: { mDef: 60, rDef: 42, magDef: 42, agility: 180 } },
   { id: "cyclops_eye", name: "Eye", label: "Boss · Floating Caster", weaponName: "Its own glare", armorName: "Glassy lens",
-    weapon: { magic: 26 }, armor: { mDef: 36, rDef: 18, magDef: 24, agility: 44 }, stance: "float" },
+    weapon: { magic: 26 }, armor: { mDef: 108, rDef: 54, magDef: 72, agility: 132 }, stance: "float" },
 ];
 
 // level: how strong it is (the Labyrinth's CYCLOPS_LEVEL; missing = REF_LEVEL).

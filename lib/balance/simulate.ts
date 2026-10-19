@@ -7,10 +7,10 @@
 
 import { RARITY_WEIGHTS, type Rarity } from "../items/budgets";
 import { ITEM_KEYS, type ItemKey } from "../items/ceilings";
-import { ARMOR_KEYS } from "../items/armor";
+import { ARMOR_KEYS, wornArmor, type ArmorKey, type ArmorSlot } from "../items/armor";
 import { PRIMARY_STATS_BY_ITEMKEY } from "../items/itemPrimaries";
 import { rollItemStats } from "../items/rollItemStats";
-import { rollArmorStats } from "../items/rollArmorStats";
+import { rollArmorSet } from "../items/rollArmorStats";
 import { CREATURE_TEMPLATES, type CreatureTemplate } from "../creatures/creatureData";
 import { runBattle, effectiveAgil, styleFromProficiency, chooseSkill, calcDamage, type CombatStyle, type Fighter } from "../combat/engine";
 import { buildFighter } from "../combat/loadout";
@@ -23,8 +23,16 @@ export type Gear = {
   weaponKey: string;
   weapon: Record<string, number>;
   armorKey: string;
-  armor: Record<string, number>;
+  armor: Record<string, number>;                           // the whole set's stats, summed
+  armorPieces?: Record<ArmorSlot, Record<string, number>>; // the helmet, chest and legs it's made of
 };
+
+// A whole set of one armour: three pieces rolled on their own, and what they add up to.
+export function rollWornSet(key: ArmorKey, rarity: Rarity) {
+  const pieces = rollArmorSet(key, rarity);
+  const stats = wornArmor(Object.values(pieces).map((stats) => ({ stats }))).stats;
+  return { pieces, stats };
+}
 
 function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -43,11 +51,13 @@ const FITTED_WEAPONS: Record<CombatStyle, ItemKey[]> = {
 export function rollGear(rarity: Rarity, fitTo?: CreatureTemplate): Gear {
   const weaponKey = pick(fitTo ? FITTED_WEAPONS[fitTo.cls] : ITEM_KEYS);
   const armorKey = pick(ARMOR_KEYS);
+  const set = rollWornSet(armorKey, rarity);
   return {
     weaponKey,
     weapon: { ...rollItemStats(weaponKey, rarity).stats },
     armorKey,
-    armor: { ...rollArmorStats(armorKey, rarity).stats },
+    armor: set.stats,
+    armorPieces: set.pieces,
   };
 }
 
@@ -426,7 +436,7 @@ function rollWeapon(rarity: Rarity, keys: readonly ItemKey[] = ITEM_KEYS) {
 
 function rollArmor(rarity: Rarity) {
   const key = pick(ARMOR_KEYS);
-  return { key, stats: { ...rollArmorStats(key, rarity).stats } as Record<string, number> };
+  return { key, stats: rollWornSet(key, rarity).stats };
 }
 
 function expectedHit(atk: Fighter, def: Fighter): number {

@@ -179,12 +179,13 @@ export function calcDamage(
   const elemental    = elementalModifier(attacker.elemental, defender.elemental);
   const triangle     = triangleModifier(moveType, defender.cls);
 
-  // Penetration and precise hits each ignore a share of the armour.
-  const effectiveDef   = withProf(defender.armor[defKey] ?? 0, defender.proficiency[defKey]);
+  // Armour defence counts at ARMOR_DEFENCE_WEIGHT. Penetration and precise
+  // hits each ignore a share of what's left.
+  const effectiveDef   = withProf(defender.armor[defKey] ?? 0, defender.proficiency[defKey]) * ARMOR_DEFENCE_WEIGHT;
   const defenseApplied = effectiveDef * (1 - dmgType.pen) * (precise ? 1 - preciseIgnore : 1);
 
   // Attack against defence as a ratio: defence always cuts damage, but a hit
-  // never drops to nothing (a hit as big as the armour does half).
+  // never drops to nothing (a hit as big as the counted defence does half).
   const afterArmor = raw > 0 ? (raw * raw) / (raw + defenseApplied) : 0;
   const arcane = Math.min(ARCANE_CAP * (defender.hpMult ?? 1), defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
 
@@ -199,6 +200,11 @@ export const MAX_ENERGY = 100;
 export const ENERGY_REGEN = 30;     // after each attack
 export const PRECISE_CHANCE = 0.05; // chance of a precise hit…
 export const PRECISE_IGNORE = 0.25; // …which ignores 25% of defence
+
+// Armour pieces each roll a whole budget, so a full set shows about three
+// times the defence one roll used to; it counts at a third, blocking what it
+// always did (lib/items/armor.ts).
+export const ARMOR_DEFENCE_WEIGHT = 1 / 3;
 
 // Every hit rolls its damage (before armour) within ±DAMAGE_VARIANCE of the
 // average, so fights don't settle into the same numbers every round.

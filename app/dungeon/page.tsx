@@ -44,7 +44,7 @@ import { guess as witchGuess, walkAway, sitDown, isSeated, type Guess, type Witc
 import WitchWindow from "@/components/WitchWindow";
 import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
-import { pieceStats, SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
+import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
@@ -55,7 +55,7 @@ import {
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
-  needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut, merchantOffer,
+  needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut, merchantOffer, droppedPieceStats,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import {
@@ -840,7 +840,7 @@ export default function DungeonPage() {
         if (!p.drops) continue;
         // Enemies wear a whole set; one piece of it drops (chosen with the room; old saves: at random).
         const slot = p.dropSlot ?? randomArmorSlot();
-        drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", pieceStats(p.stats, slot), slot));
+        drops.push(p.slot === "weapon" ? weaponDrop(p.key as ItemKey, p.rarity, "", p.stats) : armorDrop(p.key as ArmorKey, p.rarity, "", droppedPieceStats(p, slot), slot));
       }
     }
     // Its loot lies on the floor: a rickety chest (bosses) or a sack. Open it and take what you want.

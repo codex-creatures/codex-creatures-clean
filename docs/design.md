@@ -79,6 +79,19 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 ### Gear
 
 - ✅ 15 weapons and 7 armour sets (helmet / chest / legs).
+- ✅ **Armour pieces roll in full** (decided 2026-10-19, so armour doesn't look weak next to
+  weapons): every piece rolls the whole budget (60–150) within its armour's ceilings, and the slot
+  doesn't change what it can roll. Defence counts at a third in the damage maths
+  (`ARMOR_DEFENCE_WEIGHT`, lib/combat/engine.ts): 30 melee defence blocks what 10 used to, so
+  defence is unchanged. HP and agility count in full; a piece can roll ⅓ of its armour's HP
+  ceiling (`PIECE_HP_SHARE`).
+  - Enemies wear three real pieces, and the one that drops is one they wore. Bosses' and the
+    thief's hand-set armour is on the same scale.
+  - Old saves: armour's defence is multiplied by 3 on load (`upgradeOldArmor`, lib/save.ts), so it
+    blocks what it did.
+  - ⚠️ Provisional: HP at ⅓ is the user's playtest choice. A full set gives about twice the old
+    armour HP (rare +46, legendary +72), and fights run about ½–1 hit longer (sim: ~5.9 hits to
+    KO at every rarity, against 4.9–5.9 before). ⅕ would keep fights as they were.
 - ✅ Full-set bonuses (all 3 pieces) are effects, not stats (`SET_BONUS` in lib/items/armor.ts):
   Hard Shell, Quickscale, Nullify, Deflect, Steadfast, Unstoppable, Second Wind.
 - ✅ Weapons have a damage-type affinity (+15% when the move's type matches: `AFFINITY_BONUS`).

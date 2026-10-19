@@ -29,7 +29,7 @@
 import type { Drop } from "./types";
 import type { Rarity } from "./items/budgets";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "./items/ceilings";
-import { ARMOR_KEYS, ARMOR_SLOTS } from "./items/armor";
+import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "./items/armor";
 import { weaponDrop, armorDrop } from "./drops";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
@@ -68,12 +68,13 @@ export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club
 // - lots of HP, but only a weak slap, so the lesson has time to land.
 // (Sim, a Lv 3 Rare with the club: wins every time, about 6 rounds, most
 // often with ~70% HP left — a 1 in 10 comes down to the last fifth.)
-export const THIEF_HIDE = { mDef: 40, rDef: 30, magDef: 4, agility: 4 };
+// (On the full-set armour scale: defence counts at a third.)
+export const THIEF_HIDE = { mDef: 120, rDef: 90, magDef: 12, agility: 12 };
 export const THIEF_LEVEL = 8;
 export function thiefRoom(): Room {
   const thief: Enemy = {
     creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"], level: THIEF_LEVEL,
-    gear: [{ slot: "armor", key: "Thick hide", rarity: "rare", stats: { ...THIEF_HIDE }, drops: false }],
+    gear: [{ slot: "armor", key: "Thick hide", rarity: "rare", stats: { ...THIEF_HIDE }, drops: false, armorV: ARMOR_V2 }],
   };
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
@@ -91,7 +92,7 @@ export function rollBox(rng: Rng = Math.random): Drop[] {
       return weaponDrop(key, rarity, "", rollItemStats(key, rarity, rng).stats);
     }
     const key = pick(ARMOR_KEYS, rng), slot = pick(ARMOR_SLOTS, rng);
-    return armorDrop(key, rarity, "", rollArmorPiece(key, rarity, slot, rng), slot);
+    return armorDrop(key, rarity, "", rollArmorPiece(key, rarity, rng), slot);
   });
 }
 

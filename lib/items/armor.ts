@@ -124,10 +124,16 @@ export const ARMOR_PRIMARY_STATS: Record<ArmorKey, readonly (keyof ArmorStatBloc
 };
 
 // ── Armour pieces ─────────────────────────────────────────────────
-// Armour comes in three pieces: helmet, chest and legs. The ceilings above
-// are for a whole set; each piece gets a share of every stat, so a full set
-// of one rarity is worth about one old single armour. The chest carries most
-// of the defence, the helmet leans to health and the legs to agility.
+// Armour comes in three pieces: helmet, chest and legs. Every piece rolls the
+// whole budget (60–150, like a weapon) with its armour's ceilings, so the slot
+// doesn't change what it can roll. Two things keep a full set about as strong
+// as before, when a piece was a third of one roll:
+// - defence counts at a third in the damage maths (ARMOR_DEFENCE_WEIGHT,
+//   lib/combat/engine.ts), so 30 melee defence blocks what 10 used to;
+// - a piece can roll only a share of its armour's HP ceiling
+//   (PIECE_HP_SHARE). HP counts in full, so this decides how much bulk
+//   armour adds (a full set: about twice the old HP at ⅓).
+export const PIECE_HP_SHARE = 1 / 3;
 export type ArmorSlot = "helmet" | "chest" | "legs";
 export const ARMOR_SLOTS: ArmorSlot[] = ["helmet", "chest", "legs"];
 
@@ -137,19 +143,25 @@ export const ARMOR_SLOT_INFO: Record<ArmorSlot, { name: string; piece: string }>
   legs:   { name: "Legs",   piece: "Greaves" },
 };
 
-export const PIECE_SHARE: Record<ArmorSlot, ArmorStatBlock> = {
-  helmet: { mDef: 0.2, rDef: 0.2, magDef: 0.2, agility: 0.2, hp: 0.4 },
-  chest:  { mDef: 0.6, rDef: 0.6, magDef: 0.6, agility: 0.3, hp: 0.4 },
-  legs:   { mDef: 0.2, rDef: 0.2, magDef: 0.2, agility: 0.5, hp: 0.2 },
-};
-
 // How much of a set's worth a piece is (for selling).
-export const PIECE_VALUE: Record<ArmorSlot, number> = { helmet: 0.25, chest: 0.5, legs: 0.25 };
+export const PIECE_VALUE: Record<ArmorSlot, number> = { helmet: 1 / 3, chest: 1 / 3, legs: 1 / 3 };
 
-// A piece's share of a whole set's stats (or ceilings).
-export function pieceStats(set: Record<string, number>, slot: ArmorSlot): Record<string, number> {
-  const share = PIECE_SHARE[slot] as Record<string, number>;
-  return Object.fromEntries(Object.entries(set).map(([k, v]) => [k, Math.round(v * (share[k] ?? 1 / 3))]));
+// What one piece can roll: its armour's ceilings, with a share of the HP.
+export function pieceCeilings(key: ArmorKey, rarity: Rarity): ArmorStatBlock {
+  const c = ARMOR_CEILINGS[key][rarity];
+  return { ...c, hp: Math.max(1, Math.round(c.hp * PIECE_HP_SHARE)) };
+}
+
+// Pieces from before every piece rolled in full were a share of one roll
+// (the old split, by slot). Their defence is multiplied up so it blocks what
+// it did; their HP and agility count as they always did. ARMOR_V2 marks a
+// piece (or an enemy's armour) that's already on the new scale.
+export const ARMOR_V2 = 2;
+export const OLD_DEFENCE_SCALE = 3;
+export function upgradeOldArmorStats(stats: Record<string, number>): Record<string, number> {
+  const out = { ...stats };
+  for (const k of ["mDef", "rDef", "magDef"]) if (typeof out[k] === "number") out[k] = out[k] * OLD_DEFENCE_SCALE;
+  return out;
 }
 
 export const pieceName = (key: ArmorKey, slot: ArmorSlot) => `${ARMOR_META[key].name} ${ARMOR_SLOT_INFO[slot].piece}`;

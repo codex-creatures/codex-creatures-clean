@@ -35,7 +35,8 @@ import { newWitchGame, type WitchGame } from "./witch";
 import { REF_LEVEL } from "../creatures/levels";
 import { readSave, writeSaveField } from "../save";
 import { ITEM_KEYS } from "../items/ceilings";
-import { ARMOR_KEYS, ARMOR_SLOTS } from "../items/armor";
+import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
+import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
@@ -457,8 +458,14 @@ const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() *
 const pick = <T,>(arr: readonly T[], rng: Rng) => arr[Math.floor(rng() * arr.length)];
 
 // ── Enemies ──────────────────────────────────────────────────────────
+// Armour is a whole set: stats is what it adds up to, pieces the helmet,
+// chest and legs it wears (one of those is what drops).
 // dropSlot: a dropping armour set, which piece of it drops (missing = one at random, as old saves had).
-export type GearPiece = { slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean; dropSlot?: ArmorSlot };
+// armorV: ARMOR_V2 = on the full-roll scale (older saves are upgraded on load, lib/save.ts).
+export type GearPiece = {
+  slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean; dropSlot?: ArmorSlot;
+  pieces?: Record<ArmorSlot, Record<string, number>>; armorV?: number;
+};
 // level: missing = REF_LEVEL (the species' listed %s).
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
 export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number };
@@ -472,9 +479,15 @@ export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[],
     creatureId: t.id, proficiency: roll.proficiency, moves: roll.moves, ...(level ? { level } : {}),
     gear: [
       { slot: "weapon", key: g.weaponKey, rarity: gearRarity, stats: g.weapon, drops: false },
-      { slot: "armor",  key: g.armorKey,  rarity: gearRarity, stats: g.armor,  drops: false },
+      { slot: "armor",  key: g.armorKey,  rarity: gearRarity, stats: g.armor,  drops: false, pieces: g.armorPieces, armorV: ARMOR_V2 },
     ],
   };
+}
+
+// The stats of the piece an enemy's armour drops: the one it wore (older
+// saves didn't keep the pieces, so it rolls a fresh one).
+export function droppedPieceStats(p: GearPiece, slot: ArmorSlot): Record<string, number> {
+  return p.pieces?.[slot] ?? rollArmorPiece(p.key as ArmorKey, p.rarity);
 }
 
 // Which of an enemy's 4 items could drop: its weapon, helmet, chest or legs,
@@ -496,7 +509,7 @@ function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
   const g = rollGear(rarity, t);
   e.gear[i] = old.slot === "weapon"
     ? { slot: "weapon", key: g.weaponKey, rarity, stats: g.weapon, drops: true }
-    : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot };
+    : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot, pieces: g.armorPieces, armorV: ARMOR_V2 };
 }
 
 // The Deep Labyrinth's boss: the Warden, a Legendary in Rare gear, with two Epic guards in Uncommon gear.

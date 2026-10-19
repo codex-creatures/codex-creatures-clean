@@ -422,7 +422,7 @@ function Gear() {
         </section>
       ))}
       <H>Armour</H>
-      <P>Armour comes as helmet, chest and legs (the chest carries most of the defence). Wear all three of one kind for its set bonus.</P>
+      <P>Armour comes as helmet, chest and legs, and every piece rolls the same way. Defence counts at a third: 30 blocks like 10. Wear all three of one kind for its set bonus.</P>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 8 }}>
         {ARMOR_KEYS.map((k) => (
           <div key={k} style={{ ...PANEL, marginTop: 0 }}>

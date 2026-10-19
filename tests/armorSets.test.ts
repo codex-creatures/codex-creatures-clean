@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  ARMOR_KEYS, ARMOR_SLOTS, ARMOR_STAT_KEYS, PIECE_SHARE, PIECE_VALUE, NULLIFY_REFLECT, wornArmor, pieceStats, type ArmorKey,
+  ARMOR_CEILINGS, ARMOR_KEYS, ARMOR_SLOTS, ARMOR_STAT_KEYS, ARMOR_V2, OLD_DEFENCE_SCALE, PIECE_HP_SHARE, PIECE_VALUE, NULLIFY_REFLECT,
+  pieceCeilings, upgradeOldArmorStats, wornArmor, type ArmorKey,
 } from "../lib/items/armor";
-import { rollArmorStats } from "../lib/items/rollArmorStats";
+import { rollArmorPiece } from "../lib/items/rollArmorStats";
+import { RARITY_BUDGETS } from "../lib/items/budgets";
+import { upgradeOldArmor } from "../lib/save";
+import { makeEnemy, droppedPieceStats } from "../lib/dungeon/run";
 import { RARITIES } from "../lib/balance/simulate";
 import { armorDrop } from "../lib/drops";
 import { computeSellGold } from "../lib/items/economy/sell";
 import { getStatCapForDrop } from "../lib/items/gameHelpers";
 import { buildFighter } from "../lib/combat/loadout";
-import { calcDamage, rollDamage, PRECISE_IGNORE, type Fighter } from "../lib/combat/engine";
+import { calcDamage, rollDamage, PRECISE_IGNORE, ARMOR_DEFENCE_WEIGHT, type Fighter } from "../lib/combat/engine";
 import { createBattle, resolveRound, type BattleEvent } from "../lib/combat/battle";
 import { CREATURE_BY_ID, MOVE_BY_NAME } from "../lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "../lib/types";
@@ -16,24 +20,55 @@ import type { CreatureOrItemDrop } from "../lib/types";
 afterEach(() => vi.restoreAllMocks());
 
 describe("armour pieces", () => {
-  it("each stat's share adds up to a whole set across helmet, chest and legs", () => {
-    for (const k of ARMOR_STAT_KEYS) {
-      expect(ARMOR_SLOTS.reduce((s, slot) => s + PIECE_SHARE[slot][k], 0)).toBeCloseTo(1);
+  it("every piece rolls the whole budget, like a weapon, with a share of the HP ceiling", () => {
+    for (const key of ARMOR_KEYS) for (const r of RARITIES) {
+      const caps = pieceCeilings(key, r);
+      expect(caps.hp).toBe(Math.round(ARMOR_CEILINGS[key][r].hp * PIECE_HP_SHARE));
+      for (let i = 0; i < 20; i++) {
+        const p = rollArmorPiece(key, r);
+        expect(ARMOR_STAT_KEYS.reduce((s, k) => s + p[k], 0)).toBe(RARITY_BUDGETS[r]);
+        for (const k of ARMOR_STAT_KEYS) expect(p[k]).toBeLessThanOrEqual(caps[k]);
+      }
     }
     expect(ARMOR_SLOTS.reduce((s, slot) => s + PIECE_VALUE[slot], 0)).toBeCloseTo(1);
   });
 
-  it("three pieces of a roll are worth about the whole roll", () => {
-    for (const key of ARMOR_KEYS) for (const r of RARITIES) {
-      const full = rollArmorStats(key, r).stats as Record<string, number>;
-      const pieces = ARMOR_SLOTS.map((slot) => pieceStats(full, slot));
-      for (const st of ARMOR_STAT_KEYS) {
-        expect(Math.abs(pieces.reduce((s, p) => s + p[st], 0) - full[st])).toBeLessThanOrEqual(2);
-      }
-    }
+  it("defence counts at a third, so old pieces scaled up block exactly what they did", () => {
+    expect(ARMOR_DEFENCE_WEIGHT * OLD_DEFENCE_SCALE).toBeCloseTo(1);
+    const t = CREATURE_BY_ID.klutz;
+    const A = buildFighter(t, { melee: 40 });
+    const hit = (armor: Record<string, number>) => calcDamage(MOVE_BY_NAME.Slash, A, buildFighter(t, undefined, armor), false).damage;
+    expect(hit({ mDef: 30 })).toBeLessThan(hit({ mDef: 0 }));
+    expect(hit({ mDef: 90 })).toBeLessThan(hit({ mDef: 30 }));
+    expect(upgradeOldArmorStats({ mDef: 10, rDef: 4, magDef: 2, agility: 7, hp: 12 })).toEqual({ mDef: 30, rDef: 12, magDef: 6, agility: 7, hp: 12 });
   });
 
-  it("a dropped piece knows its slot, is named after it, and its caps are its share", () => {
+  it("old armour anywhere in a save is upgraded once, and new armour is left alone", () => {
+    const old = { dropType: "item", itemCategory: "armor", armorSlot: "chest", stats: { mDef: 10, hp: 5 } };
+    const fresh = armorDrop("frontiers_mail", "rare") as CreatureOrItemDrop;
+    const freshStats = { ...fresh.stats };
+    const weapon = { dropType: "item", itemCategory: "weapon", stats: { melee: 10 } };
+    const enemyArmour = { slot: "armor", key: "frontiers_mail", rarity: "common", stats: { mDef: 8 }, drops: false };
+    const save = { inventory: [old, fresh, weapon], labyrinth: { run: { rooms: [{ enemies: [{ gear: [enemyArmour] }] }] } } };
+    upgradeOldArmor(save);
+    upgradeOldArmor(save); // a second load changes nothing
+    expect(old.stats).toEqual({ mDef: 30, hp: 5 });
+    expect(fresh.stats).toEqual(freshStats);
+    expect(weapon.stats).toEqual({ melee: 10 });
+    expect(enemyArmour.stats).toEqual({ mDef: 24 });
+  });
+
+  it("enemies wear three real pieces, and the piece that drops is one they wore", () => {
+    const e = makeEnemy("rare", "rare", []);
+    const armour = e.gear.find((p) => p.slot === "armor")!;
+    expect(armour.armorV).toBe(ARMOR_V2);
+    for (const k of ARMOR_STAT_KEYS) {
+      expect(ARMOR_SLOTS.reduce((s, slot) => s + (armour.pieces![slot][k] ?? 0), 0)).toBe(armour.stats[k] ?? 0);
+    }
+    for (const slot of ARMOR_SLOTS) expect(droppedPieceStats(armour, slot)).toEqual(armour.pieces![slot]);
+  });
+
+  it("a dropped piece knows its slot, is named after it, and stays within its caps", () => {
     for (const slot of ARMOR_SLOTS) {
       const d = armorDrop("colossal_shellarmor", "rare", "", undefined, slot) as CreatureOrItemDrop;
       expect(d.armorSlot).toBe(slot);
@@ -43,13 +78,15 @@ describe("armour pieces", () => {
     expect(["helmet", "chest", "legs"]).toContain((armorDrop("frontiers_mail", "common") as CreatureOrItemDrop).armorSlot);
   });
 
-  it("a piece sells for its share of what a whole set would", () => {
-    const full = rollArmorStats("frontiers_mail", "epic").stats as Record<string, number>;
-    const sell = (d: object) => computeSellGold({ drop: d as never, getStatCapForDrop: (x, k) => getStatCapForDrop(x as never, k) ?? 0 });
-    const whole = sell({ dropType: "item", itemCategory: "armor", armorKey: "frontiers_mail", rarity: "epic", stats: full });
-    const chest = sell({ dropType: "item", itemCategory: "armor", armorKey: "frontiers_mail", armorSlot: "chest", rarity: "epic", stats: pieceStats(full, "chest") });
-    expect(chest).toBeLessThan(whole * 0.7);
-    expect(chest).toBeGreaterThan(whole * 0.3);
+  it("every slot sells the same for the same roll", () => {
+    const stats = rollArmorPiece("frontiers_mail", "epic");
+    const sell = (slot: string) => computeSellGold({
+      drop: { dropType: "item", itemCategory: "armor", armorKey: "frontiers_mail", armorSlot: slot, rarity: "epic", stats } as never,
+      getStatCapForDrop: (x, k) => getStatCapForDrop(x as never, k) ?? 0,
+    });
+    expect(sell("helmet")).toBeGreaterThan(0);
+    expect(sell("chest")).toBe(sell("helmet"));
+    expect(sell("legs")).toBe(sell("helmet"));
   });
 });
 

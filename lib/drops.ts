@@ -9,7 +9,7 @@ import type { ArmorKey, ArmorSlot } from "./items/armor";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { ITEM_META } from "./items/metadata";
-import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, pieceName } from "./items/armor";
+import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, ARMOR_V2, pieceName } from "./items/armor";
 import { BASIC_MOVES, STRONG_MOVES, CLASS_INFO, CREATURE_BY_ID, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_INFO, RACE_MOVES } from "./creatures/creatureData";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
@@ -39,10 +39,10 @@ export const randomArmorSlot = (): ArmorSlot => ARMOR_SLOTS[Math.floor(Math.rand
 export function armorDrop(armorKey: ArmorKey, rarity: Rarity, barcode = "", stats?: Record<string, number>, slot: ArmorSlot = randomArmorSlot()): Drop {
   const meta = ARMOR_META[armorKey];
   return {
-    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "armor", armorKey, armorSlot: slot, rarity,
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "armor", armorKey, armorSlot: slot, armorV: ARMOR_V2, rarity,
     roll: Math.floor(Math.random() * 100), name: meta ? pieceName(armorKey, slot) : armorKey,
     desc: meta ? `${ARMOR_SLOT_INFO[slot].name} piece. ${meta.desc}` : "",
-    stats: stats ?? rollArmorPiece(armorKey, rarity, slot, Math.random), createdAt: now(),
+    stats: stats ?? rollArmorPiece(armorKey, rarity, Math.random), createdAt: now(),
   };
 }
 
