@@ -887,7 +887,7 @@ export default function DungeonPage() {
   const clubOnFloor = run.current?.quest === "club" && (run.current.sack ?? []).some((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
   // Your creatures still standing: gear from the bag can be dragged onto them.
   const standingTeam = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0)
-    .map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId }));
+    .map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId, hp: run.hp[id] ?? 1 }));
   // The thief's room: once it's beaten, the way on is home (with the box).
   const boxRoom = run.current?.quest === "thief" && run.current.done;
   // A fight waiting here: the Fight! button sits on the room, and tapping the
@@ -961,6 +961,7 @@ export default function DungeonPage() {
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
                 party={standingTeam} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
+                onDrink={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e && isPotionEntry(e)) drink(e, id); }}
                 teach={teach} putLabel={c.quest === "club" ? "Drop it" : undefined}
                 onClose={() => setLootOpen(false)} />
             );
