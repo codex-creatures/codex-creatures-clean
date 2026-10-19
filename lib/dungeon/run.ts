@@ -80,7 +80,8 @@ export const dungeonOf = (run: { dungeon?: DungeonId }): DungeonId => run.dungeo
 // depth (rooms walked into on the shortest way from the entrance):
 // [up to this depth, lowest level, highest level], any level in between
 // equally likely. The Labyrinth: rooms 1–3 hold Lv 1–4, rooms 4–6 Lv 1–7,
-// and the rest Lv 3–7 — nothing over 7 until the Deep Labyrinth.
+// and the rest Lv 3–7 — nothing over 7 until the Deep Labyrinth. (Bar its
+// first FIRST_ROOMS rooms: Lv 1–3, weighted to Lv 1 — FIRST_ROOM_LEVELS.)
 // Lurking brutes are HARD_LEVELS above a den, mini bosses MINIBOSS_LEVELS
 // (both still capped at the dungeon's maxLevel).
 export type LevelBand = [upTo: number, min: number, max: number];
@@ -94,10 +95,20 @@ export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rn
   if (kind === "boss") return dungeon === 1 ? CYCLOPS_LEVEL : WARDEN_LEVEL;
   const d = Number.isFinite(depth) ? depth : Infinity;
   const [, min, max] = D.levels.find(([upTo]) => d <= upTo) ?? D.levels[D.levels.length - 1];
-  const den = min + Math.floor(rng() * (max - min + 1));
+  const den = dungeon === 1 && d <= FIRST_ROOMS ? weighted(FIRST_ROOM_LEVELS, rng) : min + Math.floor(rng() * (max - min + 1));
   const bump = kind === "hard" ? HARD_LEVELS : kind === "miniboss" || kind === "storehouse" ? MINIBOSS_LEVELS : 0;
   return Math.min(D.maxLevel, den + bump);
 }
+
+// The Labyrinth eases you in (the Cyclops' Labyrinth only; the user, 2026-10-19):
+// - no mini boss (nor a mini boss's lair, a guarded storehouse) before room MINIBOSS_FROM;
+// - the first FIRST_ROOMS rooms are creature dens FIRST_ROOM_DENS of the time
+//   (otherwise a room with no fight), and their creatures are Lv 1–3 at the
+//   FIRST_ROOM_LEVELS odds (a level, its weight).
+export const MINIBOSS_FROM = 7;
+export const FIRST_ROOM_DENS = 0.9;
+export const FIRST_ROOM_LEVELS: [number, number][] = [[1, 60], [2, 25], [3, 15]];
+export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon !== 1 || depth >= MINIBOSS_FROM;
 
 // How often each kind of room appears on the map (every row but the boss's), in %.
 export const ROOM_MIX: [RoomKind, number][] = [
@@ -545,7 +556,7 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
         ...(rng() < STOREHOUSE_FINDS.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
         ...(rng() < SCHEMATIC_CHANCE.storehouse ? [{ gear: schematicDrop("crooked_bookcase") }] : []),
       ];
-      if (rng() >= STOREHOUSE_GUARD) return { kind, sack, done: false };
+      if (rng() >= STOREHOUSE_GUARD || !minibossAllowed(dungeon, depth)) return { kind, sack, done: false };
       const enemies = [makeEnemy(D.miniboss[0], D.miniboss[1], [], rng, level)];
       return { kind, guarded: true, sack, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
@@ -609,7 +620,7 @@ export type DungeonRun = {
 export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1): DungeonRun {
   // The very first run opens in a treasure room; otherwise at an empty entrance.
   const first = runNumber === 1 && dungeon === 1;
-  const map = rollMap(first, rng, DUNGEONS[dungeon].spec);
+  const map = rollMap(first, rng, DUNGEONS[dungeon].spec, dungeon);
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), ...(dungeon !== 1 ? { dungeon } : {}),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),

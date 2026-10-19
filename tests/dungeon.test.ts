@@ -316,3 +316,43 @@ describe("a labyrinth run", () => {
     }
   });
 });
+
+// The user's gentle start for the Cyclops' Labyrinth (2026-10-19).
+import { MINIBOSS_FROM, FIRST_ROOMS, FIRST_ROOM_DENS, enemyLevel as levelAt, makeRoom as roomOf, minibossAllowed } from "../lib/dungeon/run";
+import { rollMap as mapOf, depths as depthsOf } from "../lib/dungeon/map";
+
+describe("the Labyrinth's gentle start", () => {
+  it(`no mini boss before room ${MINIBOSS_FROM}; the first ${FIRST_ROOMS} rooms are ~${FIRST_ROOM_DENS * 100}% creature dens and never a fight that isn't one`, () => {
+    let first = 0, dens = 0;
+    for (let i = 0; i < 200; i++) {
+      const map = mapOf(false);
+      const d = depthsOf(map);
+      for (const n of Object.values(map.nodes)) {
+        const at = d.get(n.id) ?? Infinity;
+        if (at < MINIBOSS_FROM) expect(n.kind, `room ${at}`).not.toBe("miniboss");
+        if (at >= 1 && at <= FIRST_ROOMS) {
+          first++;
+          if (n.kind === "easy") dens++;
+          expect(["hard", "miniboss", "boss"]).not.toContain(n.kind);
+        }
+      }
+    }
+    expect(dens / first).toBeGreaterThan(FIRST_ROOM_DENS - 0.05);
+  });
+
+  it("the first rooms' creatures are Lv 1–3: about 60% Lv 1, 25% Lv 2, 15% Lv 3", () => {
+    const n = 20000, count = [0, 0, 0, 0];
+    for (let i = 0; i < n; i++) count[levelAt(1, "easy", 1 + (i % FIRST_ROOMS))]++;
+    expect(count[0]).toBe(0);
+    expect(count.reduce((a, b) => a + b, 0)).toBe(n); // nothing above Lv 3
+    expect(count[1] / n).toBeCloseTo(0.6, 1);
+    expect(count[2] / n).toBeCloseTo(0.25, 1);
+    expect(count[3] / n).toBeCloseTo(0.15, 1);
+  });
+
+  it("a storehouse before then is never a mini boss's lair; the Deep Labyrinth keeps its mini bosses anywhere", () => {
+    for (let i = 0; i < 300; i++) expect(roomOf("storehouse", Math.random, MINIBOSS_FROM - 1, 1).guarded).toBeFalsy();
+    expect(Array.from({ length: 300 }, () => roomOf("storehouse", Math.random, MINIBOSS_FROM, 1).guarded).some(Boolean)).toBe(true);
+    expect(minibossAllowed(2, 1)).toBe(true);
+  });
+});

@@ -208,6 +208,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     high reward. Don't soften them.
 - ✅ **Dens scale with depth** (the user's fix after progression sims): the first 2 rooms hold 1
   creature, up to depth 4 hold 1–2, deeper hold 2–3.
+- ✅ **Gentle start, the Cyclops' Labyrinth only** (the user, 2026-10-19, as the game felt too hard
+  without scanned gear): no mini boss (nor a guarded storehouse) before room 7 (`MINIBOSS_FROM`);
+  the first 2 rooms are creature dens 90% of the time (`FIRST_ROOM_DENS`, otherwise a room with
+  no fight), their creatures Lv 1 60% / Lv 2 25% / Lv 3 15% (`FIRST_ROOM_LEVELS`).
 - ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you
   keep, in 4 variants: plain, drunk, ambush, rigged), Library (codexes to find, or a librarian
   selling) and Storehouse (mostly materials, sometimes guarded by a mini boss).

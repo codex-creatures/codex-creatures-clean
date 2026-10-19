@@ -30,7 +30,7 @@
 // - A flare or a clairvoyance scroll lights up the map round a spot, like
 //   your torch (see knownRooms: lit and seen).
 
-import { MYSTERY_MIX, ROOM_MIX, LARGE_MIX, rollRoomKind, type RoomKind } from "./run";
+import { MYSTERY_MIX, ROOM_MIX, LARGE_MIX, rollRoomKind, minibossAllowed, FIRST_ROOMS, FIRST_ROOM_DENS, type RoomKind, type DungeonId } from "./run";
 
 export const MAP_W = 140;
 export const MAP_H = 500;
@@ -180,20 +180,26 @@ function layout(rng: Rng, spec: MapSpec): DungeonMap {
   return { ...(H !== MAP_H ? { h: H } : {}), start: "start", boss: "boss", nodes };
 }
 
-export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec = DEFAULT_SPEC): DungeonMap {
+export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec = DEFAULT_SPEC, dungeon: DungeonId = 1): DungeonMap {
   let map = layout(rng, spec);
   for (let i = 0; i < 600; i++) {
     const r = routeLength(map);
     if (r >= spec.minRoute && r <= spec.maxRoute && waysOn(map, map.start).length <= MAX_STARTS) break;
     map = layout(rng, spec);
   }
+  // The Labyrinth's gentle start (MINIBOSS_FROM, FIRST_ROOM_DENS in run.ts):
+  // its first rooms are nearly all creature dens, and no mini boss lurks early.
+  const roomDepth = depths(map);
   for (const n of Object.values(map.nodes)) {
+    const d = roomDepth.get(n.id) ?? Infinity;
     if (n.id === map.boss) n.kind = "boss";
     else if (n.id === map.start) n.kind = firstRun ? "treasure" : "entrance";
     else {
       const mystery = rng() < MYSTERY_CHANCE;
-      n.kind = rollRoomKind(rng, [], mystery ? MYSTERY_MIX : ROOM_MIX);
       if (mystery) n.mystery = true;
+      // (A "?" among the first rooms is still nearly always a den.)
+      if (dungeon === 1 && d <= FIRST_ROOMS) n.kind = rng() < FIRST_ROOM_DENS ? "easy" : rollRoomKind(rng, ["easy", "hard", "miniboss"]);
+      else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
     }
   }
   // A few rooms are marked on the scroll from the start (never mysteries).

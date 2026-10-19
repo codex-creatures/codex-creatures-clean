@@ -109,8 +109,9 @@ describe("enemy levels by depth", () => {
     for (let i = 0; i < 400; i++) seen.add(enemyLevel(d, kind, depth));
     return [Math.min(...seen), Math.max(...seen)];
   };
-  it("the Labyrinth: rooms 1–3 are Lv 1–4, rooms 4–6 Lv 1–7, the rest Lv 3–7", () => {
-    for (const depth of [1, 2, 3]) expect(range(1, "easy", depth)).toEqual([1, 4]);
+  it("the Labyrinth: rooms 1–2 are Lv 1–3, room 3 Lv 1–4, rooms 4–6 Lv 1–7, the rest Lv 3–7", () => {
+    for (const depth of [1, 2]) expect(range(1, "easy", depth)).toEqual([1, 3]);
+    expect(range(1, "easy", 3)).toEqual([1, 4]);
     for (const depth of [4, 5, 6]) expect(range(1, "easy", depth)).toEqual([1, 7]);
     for (const depth of [7, 8, 9]) expect(range(1, "easy", depth)).toEqual([3, 7]);
   });
