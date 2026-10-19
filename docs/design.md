@@ -169,6 +169,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Race moves:** single-use codexes, learnable only by that race. Pounce (Beast), Rabid Bite
   (Under-dweller, venom ticks even on the bench), Mirage (Etherial), Corpsify (Undead), Barrage
   (Elvish, hits every enemy).
+- ✅ **Basic codexes** (Common, decided 2026-10-19): the natural moves of up to 20 damage
+  (`BASIC_MOVES`, 15 moves), each teachable only to a creature of that move's class. Half of
+  Common consumables from scans are one (`BASIC_CODEX_SHARE`); the other half are Lesser Potions.
+- Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In, Meditate), once
+  a planned Cyclops reward.
 - ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.
 - 🧪 Balance in general: the user tunes from sims (the balance lab is at /lab and /simulator). Their
   goals: rarity raises the ceiling but a Legendary must not always win; well-fitted, well-rolled
@@ -232,8 +237,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - It's meant to take a few attempts (sims: a median of about 12–13 runs to the first kill).
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
   Warden drops a strongbox.
-- 📌 Also decided as Cyclops rewards, **not built** (the game says "next update"): a **Codex of
-  Stances** (Aerial Assault → Float, Dig In → Entrench, Meditate; reusable), building the
+- 📌 Also decided as Cyclops rewards, **not built** (the game says "next update"): building the
   **Tavern** for 300 gold, and a **trophy** showing which run you won on (that run is already
   recorded: `meta.firstClearRun`).
 

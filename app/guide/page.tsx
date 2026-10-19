@@ -13,7 +13,7 @@ import RaceTag from "@/components/RaceTag";
 import ClassBadge, { moveKind } from "@/components/ClassBadge";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
-  ALL_SKILLS, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, RACES, RACE_INFO, RACE_MOVES,
+  ALL_SKILLS, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, RACES, RACE_INFO, RACE_MOVES,
   raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type DamageType, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
@@ -349,6 +349,8 @@ function Moves({ seen }: { seen: Set<string> }) {
       <H>Learnable moves</H>
       <P>Any creature can put these in a slot. Each slot also has a {pct(RARE_MOVE_CHANCE)} chance to be born with one of its own class.</P>
       {LEARNABLE_MOVES.map((m) => row(m, `${CLASS_INFO[m.type].icon} Rolls on ${CLASS_INFO[m.type].name} creatures`))}
+      <H>Basic codexes</H>
+      <P>Every {CLASS_INFO.melee.name}, {CLASS_INFO.ranged.name} and {CLASS_INFO.magic.name} move above of up to {BASIC_CODEX_MAX_DAMAGE} damage also comes as a Common codex, from scans. It teaches a creature of that move&apos;s class.</P>
       <H>Race moves (codexes)</H>
       {RACE_MOVES.map((m) => row(m, <>Only {m.race && <RaceTag race={m.race} />} creatures can learn it, from a codex.</>))}
       <H>Boss moves</H>

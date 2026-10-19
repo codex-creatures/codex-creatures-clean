@@ -58,7 +58,7 @@ function saveRegistry(registry: Record<string, BarcodeEntry>) {
   } catch {}
 }
 
-// Consumables are Common (a Lesser Potion) or Uncommon (a codex), at the
+// Consumables are Common (a Lesser Potion or a basic codex) or Uncommon (a learnable codex), at the
 // usual odds between those two rarities.
 function consumableRarity(): Rarity {
   const c = RARITY_WEIGHTS.common, u = RARITY_WEIGHTS.uncommon;

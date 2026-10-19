@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { CREATURE_BY_ID, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+import { BASIC_MOVES, CREATURE_BY_ID, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
 import { dropFromOutcome } from "../lib/drops";
 
 const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName });
@@ -21,11 +21,32 @@ describe("what a creature can use and learn", () => {
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Pounce")).toBe(true);
   });
 
-  it("consumables: a Common is a Lesser Potion, an Uncommon a learnable codex", () => {
+  it("consumables: a Common is a Lesser Potion or a basic codex, an Uncommon a learnable codex", () => {
+    const random = vi.spyOn(Math, "random");
+    random.mockReturnValue(0.99); // past BASIC_CODEX_SHARE: the potion
     const potion = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
+    random.mockReturnValue(0);    // under it: a basic codex
+    const basic = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
+    random.mockRestore();
     const codex = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "uncommon" });
     expect(potion && "potion" in potion && potion.potion).toBe("lesser");
+    expect(basic && "codexMove" in basic && BASIC_MOVES.some((m) => m.name === basic.codexMove)).toBe(true);
+    expect(basic && "rarity" in basic && basic.rarity).toBe("common");
     expect(codex && "codexMove" in codex && LEARNABLE_MOVES.some((m) => m.name === codex.codexMove)).toBe(true);
+  });
+
+  it("basic codexes: the natural moves up to 20 damage, for creatures of that class", () => {
+    expect(BASIC_MOVES).toHaveLength(15);
+    expect(BASIC_MOVES.every((m) => m.damage <= 20 && !m.effect)).toBe(true);
+    expect(BASIC_MOVES.map((m) => m.name)).not.toContain("Devastator");
+    const wolf = CREATURE_BY_ID.moss_wolf; // melee
+    expect(wolf.cls).toBe("melee");
+    expect(canLearnFromCodex(wolf, "Heavy Blow")).toBe(true);
+    expect(canLearnFromCodex(wolf, "Ice Lance")).toBe(false);  // magic
+    expect(canLearnFromCodex(wolf, "Crush")).toBe(false);      // 25 damage: not basic
+    // Once learned, it can go in a slot and is kept there.
+    expect(movesAvailableTo(wolf, ["Heavy Blow", "Ice Lance"], ["Slash"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
+    expect(resolveMoves(wolf, ["Slash", "Heavy Blow"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
   });
 });
 
