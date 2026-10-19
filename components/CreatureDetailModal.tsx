@@ -44,6 +44,7 @@ type Props = {
   onReadScroll?: (scrollId: string) => void;
   onClose: () => void;
   unavailable?: Set<string>;               // items you can't take right now (with Klutz in the Labyrinth)
+  locked?: string;                         // gear can't be changed right now: why (Klutz is away)
   // Flicking through your creatures: where this one sits in the list.
   position?: { index: number; count: number };
   onPrev?: () => void;
@@ -82,7 +83,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked,
 }: Props) {
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
@@ -112,6 +113,7 @@ export default function CreatureDetailModal({
 
   // Opening a slot starts on what's worn now, so you can flick between it and the others.
   const openSlot = (slot: EquipSlot) => {
+    if (locked) return;
     setPicking((p) => (p === slot ? null : slot));
     setPreview(inSlot(slot));
   };
@@ -231,7 +233,7 @@ export default function CreatureDetailModal({
             {tab === "gear" && <>
             {/* Paper doll: weapon · creature · armour */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
-              <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} />
+              <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 {ARMOR_SLOTS.map((slot, i) => (
@@ -246,6 +248,7 @@ export default function CreatureDetailModal({
             )}
 
             <SetLine worn={worn} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow} />
+            {locked && <div style={{ marginTop: 6, fontSize: 12, color: MUTED, textAlign: "center" }}>🔒 {locked}</div>}
 
             {/* Gear picker */}
             {picking && (
@@ -382,13 +385,14 @@ export function gearValue(f: NonNullable<ReturnType<typeof fighterFor>>, key: St
 function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop; glow: string; border: string; hp: number }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
-      <div style={{ position: "relative", padding: "6px 10px 0", height: 156, boxSizing: "border-box", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{ position: "relative", padding: "6px 10px 0", height: 186, boxSizing: "border-box", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
         <div style={{ position: "absolute", inset: "10% 0 12%", background: `radial-gradient(circle, ${glow}, transparent 70%)`, filter: "blur(2px)" }} />
-        {/* Fitted to a box: the widest art (Aurelius, 124px) would push the slots off the screen. */}
+        {/* Fitted to a box: the widest art (Aurelius, 124px) would push the slots off the screen.
+            (The weapon slot is the armour slots' size, so the creature gets the room.) */}
         <PixelSprite sprite={creatureSprite(creature.creatureId)} scale={5} title={creature.name}
-          style={{ position: "relative", width: "auto", height: "auto", maxWidth: "min(150px, 34cqw)", maxHeight: 150 }} />
+          style={{ position: "relative", width: "auto", height: "auto", maxWidth: "min(180px, 40cqw)", maxHeight: 180 }} />
       </div>
-      <div style={{ width: 120, height: 14, marginTop: -6, background: "#3a3f4c", borderTop: `3px solid ${border}`, boxShadow: "inset 0 -3px 0 #23262f, 0 3px 0 rgba(0,0,0,0.5)", borderRadius: "50% / 40%" }} />
+      <div style={{ width: 150, height: 14, marginTop: -6, background: "#3a3f4c", borderTop: `3px solid ${border}`, boxShadow: "inset 0 -3px 0 #23262f, 0 3px 0 rgba(0,0,0,0.5)", borderRadius: "50% / 40%" }} />
       <div style={{ ...NUM, fontSize: 15, color: "#ff8a80", marginTop: 6 }}>❤️ {Math.round(hp)} HP</div>
     </div>
   );
@@ -423,7 +427,7 @@ function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { 
 
 // The creature's level: this level on the left, the next on the right, the
 // XP between as a bar (the numbers on hover). An XP scroll, if you have one.
-function LevelBar({ level, xp, scroll }: { level: number; xp: number; scroll?: { count: number; read: () => void } }) {
+export function LevelBar({ level, xp, scroll }: { level: number; xp: number; scroll?: { count: number; read: () => void } }) {
   const max = level >= MAX_LEVEL;
   const need = xpToNext(level);
   return (

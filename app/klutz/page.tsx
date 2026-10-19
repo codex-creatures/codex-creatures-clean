@@ -7,12 +7,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
-import CreatureDetailModal from "@/components/CreatureDetailModal";
+import CreatureDetailModal, { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
 import Help, { HelpSection } from "@/components/Help";
-import { StatsLine } from "@/components/BattleScreen";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
-import { combatSummary } from "@/lib/combat/loadout";
 import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
 import { klutzHelping } from "@/lib/quest";
 import { canFind, clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
@@ -62,19 +60,19 @@ export default function KlutzPage() {
           <p style={{ fontSize: 15, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.45 }}>
             {helping ? "Gear him up and he'll hunt the Labyrinth for loot and creatures." : "Your dopey goblin helper."}
           </p>
-          {helping && <StatsLine stats={combatSummary(f)} />}
         </div>
       </div>
+      {helping && <LevelBar level={klutzLv} xp={game.klutz.xp ?? 0} />}
 
       <QuestTalk game={game} />
       <ScanTip game={game} />
 
       {helping && (
         <>
-          <button className="pixel-btn" style={{ marginTop: 12 }} disabled={status.kind === "away"} onClick={() => setGearOpen(true)}>
-            🎒 Klutz&apos;s gear &amp; moves
+          {/* (Open while he's away too, to look: his gear's with him, so no swapping.) */}
+          <button className="pixel-btn" style={{ marginTop: 12 }} onClick={() => setGearOpen(true)}>
+            📊 View stats
           </button>
-          {status.kind === "away" && <span style={{ fontSize: 12, color: MUTED, marginLeft: 8 }}>(he&apos;s got it with him)</span>}
         </>
       )}
 
@@ -162,7 +160,8 @@ export default function KlutzPage() {
           equippedOn={game.equippedOn}
           creatureNameById={names}
           onEquip={(slot, itemId) => game.equipItem(KLUTZ_DROP_ID, slot, itemId)}
-          onSetMoves={(moves) => game.setMoves(KLUTZ_DROP_ID, moves)}
+          onSetMoves={status.kind === "away" ? undefined : (moves) => game.setMoves(KLUTZ_DROP_ID, moves)}
+          locked={status.kind === "away" ? "He's got his gear with him: swap it when he's home." : undefined}
           scrolls={game.inventory.filter((d) => d.dropType === "item" && d.scroll) as CreatureOrItemDrop[]}
           onReadScroll={(scrollId) => game.readScroll(KLUTZ_DROP_ID, scrollId)}
           onClose={() => setGearOpen(false)}
