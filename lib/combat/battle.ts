@@ -332,6 +332,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     })
     .sort((x, y) => (y.first - x.first) || (y.agil - x.agil) || (Math.random() - 0.5));
 
+  const leader = attackers.find((t) => t.action.kind === "attack")?.actor; // for First Strike!
   for (const { key, index: actorIdx, actor, action } of attackers) {
     if (actor.hp <= 0) continue; // fainted before acting
     if (action.kind === "pass") {
@@ -390,8 +391,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     actor.streak = streak;
     const gapFx = streakEffects(streak);
 
-    // Haste only sped up this round's turn order (turnAgility); it's just logged.
-    const hasted = fx?.kind === "dash" ? fx.agilityBonus : undefined;
+    // Haste only sped up this round's turn order (turnAgility); logged as First Strike! when it went first.
+    const hasted = fx?.kind === "dash" && actor === leader ? fx.agilityBonus : undefined;
 
     for (const targetIdx of targets) {
       const target = foe.team[targetIdx];

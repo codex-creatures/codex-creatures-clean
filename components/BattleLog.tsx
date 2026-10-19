@@ -50,7 +50,7 @@ function LogLine({ e }: { e: BattleEvent }) {
           {e.pounced && <span style={{ color: "#d89a5b" }}> · pounces on the wounded!</span>}
           {e.venom && <span style={{ color: "#9be15d" }}> · envenomed!</span>}
           {e.precise && <span style={{ color: e.defenceIgnored > 0.25 ? "#ff9f43" : "#f5c542" }}> · precise hit{e.defenceIgnored > 0.25 ? ` (armour gap: ignores ${Math.round(e.defenceIgnored * 100)}% defence)` : ""}!</span>}
-          {e.hasted && <span style={{ color: "#7fe0ff" }}> · hasted!</span>}
+          {e.hasted && <span style={{ color: "#7fe0ff" }}> · First Strike!</span>}
           {e.crippled && <span style={{ color: "#c792ea" }}> · crippled!</span>}
           <span style={{ color: MUTED }}> ({e.side === "A" ? "their" : "your"} {e.target}: {e.targetHpAfter} HP left)</span>
         </div>

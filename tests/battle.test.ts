@@ -140,7 +140,7 @@ describe("move slots and learnable moves", () => {
       return s.log.find((x) => x.type === "attack")!;
     };
     expect(first("Jab")).toMatchObject({ side: "B" });
-    expect(first("Dash Lash")).toMatchObject({ side: "A" }); // 106 × 2 = 212 > 116.6
+    expect(first("Dash Lash")).toMatchObject({ side: "A", hasted: 1 }); // 106 × 2 = 212 > 116.6: logged as First Strike!
 
     // Nothing carries over: next round, a plain move from A goes second again.
     const s = createBattle([a], [b]);
