@@ -87,7 +87,7 @@ export default function BagPage() {
       <div className="stone-panel">
         <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
           What you carry in the Labyrinth: <b>{slots} slots</b>, one thing each. Gold and creature cards take no space;
-          potions, gear and codexes take a slot — including what you find, so choose what&apos;s worth bringing home.
+          potions, gear, codexes and materials take a slot (materials stack) — including what you find, so choose what&apos;s worth bringing home.
           Packed gear can go on a creature between rooms, and a packed weapon can be swapped in mid-fight (it uses your turn).
           {slots <= BINDLE && <> It&apos;s only a bindle for now — beat the Cyclops to find a rugged backpack with {BACKPACK} slots.</>}
         </p>
@@ -107,7 +107,7 @@ export default function BagPage() {
               : own ? gearLine(own)
               : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
               : <span style={{ color: MUTED }}>Something you no longer have</span>}
-            {own && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>Take out</button>}
+            {(own || (!isPotionEntry(e) && !found)) && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>{own ? "Take out" : "Clear the slot"}</button>}
             {isPotionEntry(e) && !away && <button className="chip" onClick={() => store(sel)}>Store it</button>}
             {found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
           </div>

@@ -246,6 +246,43 @@ export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop }
 export function addToBag(bag: BagEntry[], items: BagEntry[], size: number): BagEntry[] {
   return [...bag, ...items].slice(0, Math.max(bag.length, size));
 }
+
+// Materials found down here are a stack in one bag slot; more of the same
+// material joins it. They only join your tally at home (once you're back).
+export function materialStackIn(meta: { bag: BagEntry[]; loot?: Record<string, Drop> }, d: Drop): string | undefined {
+  if (d.dropType !== "item" || !d.material) return undefined;
+  return meta.bag.map(lootIdOf).find((id) => {
+    const x = id ? meta.loot?.[id] : undefined;
+    return !!x && x.dropType === "item" && x.material === d.material;
+  });
+}
+// Does it need a free slot? Gold and creature cards never do; a material
+// doesn't if a stack of it is already in the bag.
+export const needsSlot = (meta: DungeonMeta, d: Drop) =>
+  d.dropType !== "reward" && d.dropType !== "card" && d.dropType !== "creature" && !materialStackIn(meta, d);
+// Put a found thing (a potion, gear, a codex, a material…) in the bag: the
+// new meta, or null if there's no room. (Gold and cards are handled by the screen.)
+export function stowDrop(meta: DungeonMeta, d: Drop): DungeonMeta | null {
+  const stack = materialStackIn(meta, d);
+  if (stack) {
+    const had = meta.loot![stack];
+    return { ...meta, loot: { ...meta.loot, [stack]: { ...had, qty: (had.dropType === "item" ? had.qty ?? 1 : 1) + (d.dropType === "item" ? d.qty ?? 1 : 1) } as Drop } };
+  }
+  if (meta.bag.length >= bagSize(meta)) return null;
+  const potion = d.dropType === "item" ? d.potion : undefined;
+  if (potion) return { ...meta, bag: [...meta.bag, potion] };
+  return { ...meta, bag: [...meta.bag, lootEntry(d.id)], loot: { ...(meta.loot ?? {}), [d.id]: d } };
+}
+
+// Rare or better: worth a word before you walk off and leave it.
+const RARE_UP: Rarity[] = ["rare", "epic", "legendary"];
+export const isRareFind = (d: Drop) => d.dropType !== "reward" && RARE_UP.includes(d.rarity);
+// What you'd leave behind by moving on: rare-or-better things still in an
+// opened chest or sack here, or waiting for room in your bag.
+export function rareLeftBehind(run: DungeonRun): Drop[] {
+  const sack = run.current?.opened ? run.current.sack ?? [] : [];
+  return [...sack.flatMap((x) => ("gear" in x ? [x.gear] : [])), ...(run.pending ?? [])].filter(isRareFind);
+}
 export const UPGRADE_CHANCE = 0.05;   // easy fight: one enemy item is a tier higher, and drops if you win
 export const HARD_DROP_CHANCE = 0.05; // hard enemy: one of its items drops if you win
 export const CHEST_DROPS = 3;
@@ -409,7 +446,7 @@ export type Room = {
   guarded?: boolean;   // a storehouse: a mini boss guards it
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
-  container?: "sack" | "chest"; // a beaten fight's loot: a sack (ordinary fights) or a rickety chest (bosses)
+  container?: "sack" | "chest" | "strongbox"; // a beaten fight's loot: a sack (ordinary fights), a rickety chest (mini bosses, the Cyclops) or the Warden's strongbox
   quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
   witch?: WitchGame;   // the card witch's game (lib/dungeon/witch.ts)
@@ -655,6 +692,11 @@ export function setTeam(run: DungeonRun, team: string[]): DungeonRun {
 
 // The fighting team, minus anyone knocked out.
 export const fightingTeam = (run: DungeonRun) => run.team.filter((id) => isAlive(run, id));
+
+// Nobody left standing (outside a fight: a lost fight ends the run itself):
+// the run is over, and you wake up in the Den.
+export const wipedOut = (run: DungeonRun) =>
+  run.status === "exploring" && !run.battle && run.party.length > 0 && run.party.every((id) => !isAlive(run, id));
 
 // ── The witch's curse ────────────────────────────────────────────────
 // Who she stabs: whoever was last on the field in a fight this run, or (no

@@ -10,13 +10,13 @@ import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
-import { clearDungeon } from "@/lib/dungeon/run";
+import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf } from "@/lib/dungeon/run";
 import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, type QuestState } from "@/lib/quest";
 import { fighterFor } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
-import { SCHEMATICS, bookcaseSize, canAfford, type MaterialKey } from "@/lib/items/materials";
+import { SCHEMATICS, MATERIAL_KEYS, bookcaseSize, canAfford, addMaterials, materialDrop, type Materials } from "@/lib/items/materials";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -39,6 +39,8 @@ export const CAGE_SIZE = 1;          // creatures the cage holds (upgrades later
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
 // keeps them at the altar to open when you like.
 export type ScanMode = "loot" | "store";
+// A new player loots, unless they start offline (then their scans keep for later).
+export const defaultScanMode = (): ScanMode => (typeof navigator !== "undefined" && navigator.onLine === false ? "store" : "loot");
 export const SCAN_TIP_DEATHS = 3; // Labyrinth deaths in a row, without a scan, before Klutz suggests scanning
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
@@ -75,6 +77,7 @@ type SaveState = {
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
   player?: Progress;                   // your own level and XP (it decides what you can find when you scan)
   bookcase?: number;                   // the bookcase's level (1: the broken shelf; lib/items/materials.ts)
+  materials?: Materials;               // your materials at home: a tally, like gold
 };
 
 // A new player's first creature (a Lv 3 Rare): lib/creatures/starter.ts.
@@ -114,12 +117,16 @@ export function loadSave(): SaveState | null {
     deathsSinceScan: typeof parsed.deathsSinceScan === "number" ? parsed.deathsSinceScan : 0,
     scanTipRead: parsed.scanTipRead === true,
     player: parsed.player && typeof parsed.player === "object" ? (parsed.player as Progress) : { level: 1, xp: 0 },
-    scanMode: parsed.scanMode === "store" ? "store" : "loot",
+    scanMode: parsed.scanMode === "store" || parsed.scanMode === "loot" ? parsed.scanMode : defaultScanMode(),
     caches: Array.isArray(parsed.caches) ? parsed.caches : [],
     crate: Array.isArray(parsed.crate) ? parsed.crate : [],
     bookcase: typeof parsed.bookcase === "number" ? parsed.bookcase : 1,
+    materials: obj(parsed.materials) as Materials,
   };
 }
+
+// The ids of the gear packed in your bag.
+const packedGear = () => new Set(loadDungeon().meta.bag.map(gearIdOf).filter((x): x is string => !!x));
 
 function safeSave(state: SaveState) {
   writeMainSave(state); // (keeps the Labyrinth's part of the save)
@@ -145,6 +152,9 @@ export function useGameState(initialTab: TabKey = "all") {
   const [crate, setCrate] = useState<Drop[]>([]);
   const [player, setPlayer] = useState<Progress>({ level: 1, xp: 0 });
   const [bookcase, setBookcase] = useState(1);
+  const [materials, setMaterials] = useState<Materials>({});
+  // Gear packed in your bag (lib/dungeon/run.ts): it can't be sold.
+  const [packedIds, setPackedIds] = useState<Set<string>>(new Set());
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
   const [activeTab, setActiveTab]     = useState<TabKey>(initialTab);
 
@@ -179,14 +189,16 @@ export function useGameState(initialTab: TabKey = "all") {
       setCrate(saved.crate ?? []);
       setPlayer(saved.player ?? { level: 1, xp: 0 });
       setBookcase(saved.bookcase ?? 1);
+      setMaterials(saved.materials ?? {});
     }
+    setPackedIds(packedGear());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, materials });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, materials]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -356,24 +368,26 @@ export function useGameState(initialTab: TabKey = "all") {
     return map;
   }, [equipment]);
 
-  // Items that can't be sold: favourited or currently equipped.
+  // Items that can't be sold: favourited, equipped or packed in your bag.
   const lockedIds = useMemo(
-    () => new Set([...favoriteIds, ...equippedOn.keys()]),
-    [favoriteIds, equippedOn]
+    () => new Set([...favoriteIds, ...equippedOn.keys(), ...packedIds]),
+    [favoriteIds, equippedOn, packedIds]
   );
 
   // ── Inventory filters ─────────────────────────────────
   const creaturesOnly   = useMemo(() => inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature"), [inventory]);
   const weaponsOnly     = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "weapon"), [inventory]);
   const armorOnly       = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "armor"), [inventory]);
-  const materialsOnly   = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "material"), [inventory]);
+  // Materials are a tally (like gold): shown as one stack each, with a stable id.
+  const materialsOnly   = useMemo(() => MATERIAL_KEYS.filter((k) => (materials[k] ?? 0) > 0)
+    .map((k): Drop => ({ ...materialDrop(k, materials[k]!), id: `material:${k}`, createdAt: "" })), [materials]);
   const consumablesOnly = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "consumable"), [inventory]);
   const cardsOnly       = useMemo(() => inventory.filter(isCardDrop), [inventory]);
   // Roster = favourited creatures.
   const rosterOnly      = useMemo(() => creaturesOnly.filter((d) => favoriteIds.has(d.id)), [creaturesOnly, favoriteIds]);
 
   const tabCounts = useMemo(() => ({
-    all:         inventory.length,
+    all:         inventory.length + materialsOnly.length,
     roster:      rosterOnly.length,
     creatures:   creaturesOnly.length,
     cards:       cardsOnly.length,
@@ -392,7 +406,7 @@ export function useGameState(initialTab: TabKey = "all") {
       case "armor":       return armorOnly;
       case "materials":   return materialsOnly;
       case "consumables": return consumablesOnly;
-      default:            return inventory;
+      default:            return [...inventory, ...materialsOnly];
     }
   }, [activeTab, inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
 
@@ -451,19 +465,20 @@ export function useGameState(initialTab: TabKey = "all") {
   // ── Actions ───────────────────────────────────────────
   function addDrop(drop: Drop) {
     setLastDrop(drop);
-    // Materials stack: one entry per material.
+    // Materials join your tally.
     if (drop.dropType === "item" && drop.material) {
-      const key = drop.material;
-      setInventory((prev) => {
-        const at = prev.findIndex((d) => d.dropType === "item" && d.material === key);
-        if (at < 0) return [drop, ...prev];
-        const had = prev[at] as CreatureOrItemDrop;
-        return prev.map((d, i) => (i === at ? { ...had, qty: (had.qty ?? 1) + (drop.qty ?? 1) } : d));
-      });
+      depositMaterials([drop]);
       return;
     }
     setInventory((prev) => [drop, ...prev]);
     if (isRewardDrop(drop)) setGold((g) => g + drop.amount);
+  }
+
+  // Materials (stacks brought home, or found at home) join your tally.
+  function depositMaterials(drops: Drop[]) {
+    const more: Materials = {};
+    for (const d of drops) if (d.dropType === "item" && d.material) more[d.material] = (more[d.material] ?? 0) + (d.qty ?? 1);
+    if (Object.keys(more).length) setMaterials((m) => addMaterials(m, more));
   }
 
   // A drop from scanning a barcode — a Code Cache. Looting: opened at once
@@ -496,7 +511,8 @@ export function useGameState(initialTab: TabKey = "all") {
     const opened = caches.filter((c) => ids.includes(c.id));
     if (opened.length === 0) return;
     setCaches((prev) => prev.filter((c) => !ids.includes(c.id)));
-    setInventory((prev) => [...opened, ...prev]);
+    depositMaterials(opened);
+    setInventory((prev) => [...opened.filter((d) => !(d.dropType === "item" && d.material)), ...prev]);
     setGold((g) => g + opened.reduce((s, d) => s + (isRewardDrop(d) ? d.amount : 0), 0));
     setRecentScanIds((prev) => [...opened.map((d) => d.id), ...prev].slice(0, RECENT_SCANS));
   }
@@ -538,6 +554,12 @@ export function useGameState(initialTab: TabKey = "all") {
       next[creatureId] = { ...next[creatureId], [key]: itemId ?? undefined };
       return next;
     });
+    // Put on at home, a piece packed in your bag comes out of it.
+    if (itemId && packedIds.has(itemId)) {
+      const lab = loadDungeon();
+      if (!lab.run) saveDungeon({ ...lab, meta: { ...lab.meta, bag: lab.meta.bag.filter((e) => e !== gearEntry(itemId)) } });
+      setPackedIds(packedGear());
+    }
   }
 
   // Build what a schematic shows, if you have the materials: the schematic
@@ -546,12 +568,9 @@ export function useGameState(initialTab: TabKey = "all") {
     const plan = inventory.find((d) => d.id === schematicId);
     if (!plan || plan.dropType !== "item" || !plan.schematic) return false;
     const cost = SCHEMATICS[plan.schematic].cost;
-    if (!canAfford(inventory, cost)) return false;
-    setInventory((prev) => prev.filter((d) => d.id !== schematicId).flatMap((d) => {
-      if (d.dropType !== "item" || !d.material || !cost[d.material as MaterialKey]) return [d];
-      const left = (d.qty ?? 1) - cost[d.material as MaterialKey]!;
-      return left > 0 ? [{ ...d, qty: left }] : [];
-    }));
+    if (!canAfford(materials, cost)) return false;
+    setInventory((prev) => prev.filter((d) => d.id !== schematicId));
+    setMaterials((m) => addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n]))));
     if (plan.schematic === "crooked_bookcase") setBookcase((b) => Math.max(b, 2));
     return true;
   }
@@ -560,6 +579,12 @@ export function useGameState(initialTab: TabKey = "all") {
   function removeDrop(id: string) {
     setInventory((prev) => prev.filter((d) => d.id !== id));
     setFavoriteIds((prev) => { if (!prev.has(id)) return prev; const n = new Set(prev); n.delete(id); return n; });
+    // …and off whoever was wearing it.
+    setEquipment((prev) => {
+      if (!Object.values(prev).some((l) => EQUIP_SLOTS.some((s) => l[SLOT_FIELD[s]] === id))) return prev;
+      return Object.fromEntries(Object.entries(prev).map(([cid, l]) =>
+        [cid, Object.fromEntries(Object.entries(l).map(([k, v]) => [k, v === id ? undefined : v])) as Loadout]));
+    });
   }
 
   function setMoves(creatureId: string, moves: string[]) {
@@ -635,6 +660,9 @@ export function useGameState(initialTab: TabKey = "all") {
     setCrate([]);
     setPlayer({ level: 1, xp: 0 });
     setBookcase(1);
+    setMaterials({});
+    setScanMode(defaultScanMode());
+    setPackedIds(new Set());
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
@@ -672,6 +700,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp,
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

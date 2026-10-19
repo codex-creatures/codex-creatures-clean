@@ -27,7 +27,7 @@ import { createChamber, CW, CH, type Chamber, type ChamberSize, type ChamberView
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
-import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, MERCHANT, LIBRARIAN, CARD_WITCH, TREASURE_PILE, CARD_DECK, HEALING_POOL } from "@/lib/sprites/props";
+import { TREASURE_CHEST, TREASURE_CHEST_OPEN, ARMOURY_BOX, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, STRONGBOX, STRONGBOX_OPEN, MERCHANT, LIBRARIAN, CARD_WITCH, TREASURE_PILE, CARD_DECK, HEALING_POOL } from "@/lib/sprites/props";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const FPS = 12;
@@ -214,8 +214,9 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
 
   // (An ambush that hasn't sprung yet looks like an empty camp.)
   if (hasFight(room)) {
-    // Beaten: what it leaves behind — a rickety chest (bosses) or a sack.
+    // Beaten: what it leaves behind — the Warden's strongbox, a rickety chest (bosses) or a sack.
     if (room.done) {
+      if (room.container === "strongbox") return prop(room.opened ? STRONGBOX_OPEN : STRONGBOX, room.opened ? "The strongbox, opened" : "Open the strongbox");
       if (room.container === "chest") return prop(room.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST, room.opened ? "Its chest, opened" : "Loot the chest");
       if (room.container === "sack") return prop(room.opened ? BURLAP_SACK_OPEN : BURLAP_SACK, room.opened ? "Its sack, opened" : "Loot the sack");
       return null;

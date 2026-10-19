@@ -2,9 +2,10 @@
 // Materials, schematics and the Labyrinth's tools.
 //
 // - Materials (planks, metal bars, nails, essence stones) are what you build
-//   and upgrade things with. They stack: your storage holds one entry per
-//   material, with a count (qty). In the Labyrinth they go in your pouch and
-//   take no bag slot, like gold.
+//   and upgrade things with. At home they're a tally, like gold (Materials:
+//   a count of each). In the Labyrinth a find is a stack (a drop with a qty)
+//   that takes a bag slot (more of the same joins its stack); it only joins
+//   your tally once you bring it home.
 // - A schematic is a plan for something you can build at home (the crooked
 //   bookcase: BUILDS). Building it uses up the schematic and its materials.
 // - Tools are used in the Labyrinth, from your bag:
@@ -74,12 +75,17 @@ export function materialBundle(rarity: Rarity, rng: () => number = Math.random):
   return materialDrop(key, min + Math.floor(rng() * (max - min + 1)));
 }
 
-// How much of a material you have (its stack in your storage).
-export function countMaterial(inventory: Drop[], key: MaterialKey): number {
-  return inventory.reduce((n, d) => n + (d.dropType === "item" && d.material === key ? d.qty ?? 1 : 0), 0);
+// Your materials at home: how many of each.
+export type Materials = Partial<Record<MaterialKey, number>>;
+export const countMaterial = (materials: Materials, key: MaterialKey): number => materials[key] ?? 0;
+export const canAfford = (materials: Materials, cost: Materials) =>
+  (Object.entries(cost) as [MaterialKey, number][]).every(([k, n]) => countMaterial(materials, k) >= n);
+// Add (or, with negative counts, take away) materials.
+export function addMaterials(materials: Materials, more: Materials): Materials {
+  const out = { ...materials };
+  for (const [k, n] of Object.entries(more) as [MaterialKey, number][]) out[k] = Math.max(0, (out[k] ?? 0) + n);
+  return out;
 }
-export const canAfford = (inventory: Drop[], cost: Partial<Record<MaterialKey, number>>) =>
-  (Object.entries(cost) as [MaterialKey, number][]).every(([k, n]) => countMaterial(inventory, k) >= n);
 
 // The emoji for a material, tool or schematic (undefined for anything else).
 export function goodsIcon(d: { material?: MaterialKey; tool?: ToolKey; schematic?: SchematicKey }): string | undefined {

@@ -137,6 +137,10 @@ withArt(BURLAP_SACK, { src: "/sprites/props/burlap_sack.png", w: 54, h: 56, size
 withArt(BURLAP_SACK_OPEN, { src: "/sprites/props/burlap_sack_open.png", w: 54, h: 50, size: 42 });
 withArt(RICKETY_CHEST, { src: "/sprites/props/rickety_chest.png", w: 56, h: 53, size: 46 });
 withArt(RICKETY_CHEST_OPEN, { src: "/sprites/props/rickety_chest_open.png", w: 56, h: 59, size: 46 });
+// The Warden's strongbox (the Deep Labyrinth's boss chest): blackened iron,
+// chains and a teal-glowing lock — shut, and thrown open.
+export const STRONGBOX: Sprite = withArt(["."], { src: "/sprites/props/warden_strongbox.png", w: 60, h: 60, size: 50 });
+export const STRONGBOX_OPEN: Sprite = withArt(["."], { src: "/sprites/props/warden_strongbox_open.png", w: 61, h: 62, size: 50 });
 export const TREASURE_PILE: Sprite = withArt(["."], { src: "/sprites/props/treasure_pile.png", w: 58, h: 37, size: 44 });
 export const CARD_DECK: Sprite = withArt(["."], { src: "/sprites/props/card_deck.png", w: 55, h: 58, size: 42 });
 // A healing pool's ring of stones round its glowing water (shown dimmed once used).

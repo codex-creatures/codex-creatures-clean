@@ -14,7 +14,8 @@
 // is HP_SCALE times what it used to be.
 //
 // XP: every enemy knocked out adds to the fight's XP, which is shared across
-// your team by how much each creature did (shareXp; won or lost). Levelling
+// your team by how much each creature did (shareXp). Only a won fight gives
+// XP (no levelling up by throwing yourself at a boss). Levelling
 // needs xpToNext(level) XP.
 
 import type { CreatureProficiency, CreatureTemplate } from "./creatureData";

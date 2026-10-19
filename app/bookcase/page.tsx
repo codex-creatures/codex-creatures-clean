@@ -45,7 +45,7 @@ export default function BookcasePage() {
             <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 You have the <b>{plan.name}</b>.</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "6px 0 8px" }}>
               {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
-                const have = countMaterial(game.inventory, k);
+                const have = countMaterial(game.materials, k);
                 return (
                   <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
                     {MATERIALS[k].icon} {have}/{n} {MATERIALS[k].name.toLowerCase()}
@@ -53,7 +53,7 @@ export default function BookcasePage() {
                 );
               })}
             </div>
-            <button className="pixel-btn" disabled={!canAfford(game.inventory, cost)} onClick={() => game.buildSchematic(plan.id)}>🔨 Build it</button>
+            <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => game.buildSchematic(plan.id)}>🔨 Build it</button>
           </div>
         )}
       </div>

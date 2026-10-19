@@ -32,7 +32,7 @@ export function lookOf(x: SackItem): Look {
   if (x.gear.dropType === "card" || x.gear.dropType === "creature") return { name: `${x.gear.name} card`, icon: "🃏", ...by(x.gear.rarity), free: true };
   const g = x.gear as CreatureOrItemDrop;
   const rc = RARITY_COLORS[g.rarity];
-  return { name: g.qty ? `${g.name} ×${g.qty}` : g.name, sprite: itemSprite(g), icon: goodsIcon(g) ?? (g.codexMove ? "📖" : g.scroll ? "📜" : "📦"), color: rc.text, glow: rarityGlow(g.rarity), free: !!g.material };
+  return { name: g.qty ? `${g.name} ×${g.qty}` : g.name, sprite: itemSprite(g), icon: goodsIcon(g) ?? (g.codexMove ? "📖" : g.scroll ? "📜" : "📦"), color: rc.text, glow: rarityGlow(g.rarity), free: false }; // (materials take a slot now: they come home in your bag)
 }
 
 export default function ContainerLoot({ name, sprite, items, bagUsed, bagSlots, onTake, onTakeAll }: {

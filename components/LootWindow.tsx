@@ -14,7 +14,7 @@
 import { useRef, useState } from "react";
 import PixelSprite from "./PixelSprite";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
-import type { SlotLook } from "./BagSlots";
+import { StackCount, type SlotLook } from "./BagSlots";
 import { POTIONS, type SackItem } from "@/lib/dungeon/run";
 import { GEAR_STATS } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
@@ -144,12 +144,13 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
               <div key={i} data-drop={`bag:${i}`} className="inv-slot" title={l ? l.name : "Empty"}
                 onPointerDown={l ? press({ kind: "bag", i }, l) : undefined} {...(l ? handlers : {})}
                 style={{
-                  aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", cursor: l ? "grab" : "default",
+                  position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", cursor: l ? "grab" : "default",
                   ...(l ? { background: `radial-gradient(circle, ${l.glow ?? "rgba(255,255,255,0.05)"} 0%, rgba(0,0,0,0.35) 65%)` } : {}),
                   ...(hot || picked === i ? { borderColor: "#ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : {}),
                   opacity: lifted ? 0.3 : 1,
                 }}>
                 {l && (l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 26 }}>{l.icon}</span>)}
+                {l?.count && <StackCount n={l.count} />}
               </div>
             );
           })}
