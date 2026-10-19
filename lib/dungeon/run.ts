@@ -425,6 +425,27 @@ export function priceUp(wares: Ware[], picked: string[], gold: number, bagFree: 
 export const wareName = (w: Ware) => ("potion" in w ? POTIONS[w.potion].name : "scroll" in w ? "Tattered XP Scroll"
   : "tool" in w ? TOOLS[w.tool].name : MATERIALS[w.material].name + " ×" + w.qty);
 
+// Selling to the merchant, to make room in your bag. Weapons and armour go
+// for what the crate at home pays (gearValue); the rest for MERCHANT_BUYBACK
+// of what he (or a librarian, for a codex) would charge. 0: he won't take it
+// (Klutz's club, a schematic).
+export const MERCHANT_BUYBACK = 0.5;
+export function merchantOffer(entry: BagEntry, item: Drop | undefined, gearValue: (d: Drop) => number): number {
+  const half = (price: number) => Math.floor(price * MERCHANT_BUYBACK);
+  if (isPotionEntry(entry)) return half(POTIONS[entry].price);
+  if (!item || item.dropType !== "item") return 0;
+  if (item.itemKey === "klutz_club") return 0;
+  if (item.itemCategory === "weapon" || item.itemCategory === "armor") return gearValue(item);
+  if (item.material) {
+    const m = MERCHANT_MATERIALS.find((x) => x.material === item.material);
+    return m ? half((m.price / m.qty) * (item.qty ?? 1)) : 0;
+  }
+  if (item.scroll) return half(SCROLL_PRICE);
+  if (item.tool) return half(TOOLS[item.tool].price);
+  if (item.codexMove) return half(codexPrice(item.codexMove));
+  return 0;
+}
+
 type Rng = () => number;
 // A weighted pick from [thing, weight] pairs.
 function weighted<T>(mix: [T, number][], rng: Rng): T {

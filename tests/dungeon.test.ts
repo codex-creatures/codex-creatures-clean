@@ -453,3 +453,28 @@ describe("the haul (Loot at the end of a run)", () => {
     expect(usedUp(got, { potion: "potion" })).toBe(got); // one brought from home: nothing to take off
   });
 });
+
+import { merchantOffer } from "../lib/dungeon/run";
+import { materialDrop, toolDrop } from "../lib/items/materials";
+import { scrollDrop } from "../lib/drops";
+
+describe("selling to the merchant", () => {
+  const gearValue = () => 321;
+  const item = (x: object) => ({ dropType: "item", ...x }) as unknown as AnyDrop;
+  it("buys back what he sells at half his price", () => {
+    expect(merchantOffer("potion", undefined, gearValue)).toBe(50);
+    expect(merchantOffer("lesser", undefined, gearValue)).toBe(25);
+    expect(merchantOffer("loot:x", materialDrop("planks", 5), gearValue)).toBe(20);
+    expect(merchantOffer("loot:x", materialDrop("planks", 2), gearValue)).toBe(8);
+    expect(merchantOffer("loot:x", toolDrop("flare"), gearValue)).toBe(37);
+    expect(merchantOffer("loot:x", scrollDrop(), gearValue)).toBe(100);
+  });
+  it("pays what the crate pays for weapons and armour", () => {
+    expect(merchantOffer("gear:x", item({ itemCategory: "weapon", itemKey: "sword" }), gearValue)).toBe(321);
+    expect(merchantOffer("loot:x", item({ itemCategory: "armor" }), gearValue)).toBe(321);
+  });
+  it("won't take Klutz's club, or something that's gone", () => {
+    expect(merchantOffer("gear:x", item({ itemCategory: "weapon", itemKey: "klutz_club" }), gearValue)).toBe(0);
+    expect(merchantOffer("gear:x", undefined, gearValue)).toBe(0);
+  });
+});

@@ -11,9 +11,10 @@ import { Coin } from "@/components/GoldCount";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import BagSlots, { slotLook } from "@/components/BagSlots";
+import BagSlots, { slotLook, type SlotLook } from "@/components/BagSlots";
 import LootWindow from "@/components/LootWindow";
 import MerchantCart from "@/components/MerchantCart";
+import MerchantBag from "@/components/MerchantBag";
 import EquipPreview from "@/components/EquipPreview";
 import TeamDropRow from "@/components/TeamDropRow";
 import { useDragDrop } from "@/hooks/useDragDrop";
@@ -54,7 +55,7 @@ import {
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
-  needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut,
+  needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut, merchantOffer,
 } from "@/lib/dungeon/run";
 import DenFrame from "@/components/DenFrame";
 import {
@@ -432,6 +433,30 @@ export default function DungeonPage() {
     updateRun((r) => (r.current
       ? { ...r, loot: [...r.loot, wareName(w)], got: [...(r.got ?? []), got], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } }
       : r));
+  }
+
+  // Sell something from your bag to the merchant, to make room. Your own gear
+  // leaves your collection; something found this run leaves the haul.
+  const offerFor = (e: BagEntry, meta = lab?.meta) => merchantOffer(e, isPotionEntry(e) ? undefined : itemOf(e, meta), game.crateSellValue);
+  function sellToMerchant(bagIndex: number) {
+    const cur = loadDungeon();
+    const entry = cur.meta.bag[bagIndex];
+    if (cur.run?.current?.kind !== "merchant" || !entry) return;
+    const price = offerFor(entry, cur.meta);
+    if (price <= 0) return;
+    const loot = { ...(cur.meta.loot ?? {}) };
+    let got = cur.run.got;
+    if (isPotionEntry(entry)) got = usedUp(got, { potion: entry });
+    else {
+      const it = itemOf(entry, cur.meta);
+      if (!it) return;
+      if (gearIdOf(entry)) game.removeDrop(it.id);
+      const l = lootIdOf(entry);
+      if (l) delete loot[l];
+      got = usedUp(got, { dropId: it.id });
+    }
+    game.addGold(price);
+    update({ meta: { ...cur.meta, bag: cur.meta.bag.filter((_, i) => i !== bagIndex), loot }, run: { ...cur.run, got } });
   }
 
   // ── Encampments ─────────────────────────────────────────────────
@@ -1019,6 +1044,7 @@ export default function DungeonPage() {
                   run={run} room={run.current} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
                   clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)}
+                  bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
                 />
               : <AtEntrance run={run} />}
           </div>
@@ -1257,8 +1283,9 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave }: {
+function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchLeave, bagLooks, bagOffers, onSell }: {
   onWitch: (g: Guess) => void; onWitchLeave: () => void; onLook: () => void;
+  bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void;
   run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
   onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyWares: (ws: Ware[]) => void; onCage: (i: number) => void; bagUsed: number; bagSlots: number; stacks: string[]; onHeal: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
@@ -1401,6 +1428,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
             A cart piled with odds and ends, and a merchant who smiles too much. &ldquo;One of each, friend. Everything takes a slot in your bag — the timber stacks, mind.&rdquo;
           </p>
           <MerchantCart key={run.path.length} wares={room.wares ?? []} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
+          <MerchantBag key={`bag${run.path.length}`} slots={bagSlots} looks={bagLooks} offers={bagOffers} onSell={onSell} />
           {next}
         </>
       )}

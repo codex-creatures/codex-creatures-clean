@@ -227,6 +227,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - ✅ Walking away (or winning all 10 prizes), she turns over the card that would have come next.
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
+- ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room.
+  - 🧪 Prices (`merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
+    scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
+    Claude's defaults, added 2026-10-19.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
   retreat (after a "Leave the labyrinth?" check): runs can't be paused.
