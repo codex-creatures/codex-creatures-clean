@@ -175,3 +175,25 @@ describe("the card witch's prizes", () => {
     expect(g.prize).toBe("prize2");
   });
 });
+
+import { withQuickAttack, QUICK_ATTACK } from "../lib/creatures/starter";
+import { MOVE_BY_NAME as MOVES } from "../lib/creatures/creatureData";
+
+describe("the starter's quick attack", () => {
+  it("every starter knows a quick attack (haste), whatever it rolls", () => {
+    for (let i = 0; i < 300; i++) {
+      const s = starterCreature() as { moves?: string[] };
+      expect(s.moves?.some((n) => MOVES[n]?.effect?.kind === "dash")).toBe(true);
+      expect(s.moves?.length).toBeLessThanOrEqual(4);
+    }
+  });
+  it("takes the last species move's place, of its own class; one it rolled is kept", () => {
+    const t = CREATURES_BY_RARITY.rare[0];
+    const own = t.skills.map((s) => s.name).slice(0, 4);
+    const out = withQuickAttack(t, own);
+    expect(out).toContain(QUICK_ATTACK[t.cls]);
+    expect(MOVES[QUICK_ATTACK[t.cls]].type).toBe(t.cls);
+    expect(out.slice(0, own.length - 1)).toEqual(own.slice(0, own.length - 1));
+    expect(withQuickAttack(t, [...own.slice(0, 3), "Blink"])).toEqual([...own.slice(0, 3), "Blink"]);
+  });
+});

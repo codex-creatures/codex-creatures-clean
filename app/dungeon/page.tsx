@@ -50,7 +50,7 @@ import {
   hasFight, minibossExtras, codexPrice, wareName, SCHEMATIC_CHANCE, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
-  loadDungeon, saveDungeon, freeHealing, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
+  loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
   needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut,
 } from "@/lib/dungeon/run";
@@ -129,10 +129,13 @@ export default function DungeonPage() {
     const cur = loadDungeon();
     update({ ...cur, meta: { ...cur.meta, bag: fn(cur.meta.bag ?? []) } });
   }
-  const takeOne = (key: BagEntry) => updateBag((bag) => {
-    const i = bag.indexOf(key);
-    return i < 0 ? bag : [...bag.slice(0, i), ...bag.slice(i + 1)];
-  });
+  // A potion drunk: out of the bag, and (if it was found this run) out of the haul.
+  const takeOne = (key: PotionKey) => {
+    const cur = loadDungeon();
+    const i = cur.meta.bag.indexOf(key);
+    if (i < 0) return;
+    update({ meta: { ...cur.meta, bag: [...cur.meta.bag.slice(0, i), ...cur.meta.bag.slice(i + 1)] }, run: cur.run && { ...cur.run, got: usedUp(cur.run.got, { potion: key }) } });
+  };
 
   // What a bag entry holds: gear is one of your items (in storage); loot was
   // found this run and is kept in the bag until you get home.
@@ -477,7 +480,7 @@ export default function DungeonPage() {
     const loot = { ...(cur.meta.loot ?? {}) };
     if (id) delete loot[id];
     const i = cur.meta.bag.indexOf(entry);
-    update({ ...cur, meta: { ...cur.meta, loot, bag: i < 0 ? cur.meta.bag : [...cur.meta.bag.slice(0, i), ...cur.meta.bag.slice(i + 1)] } });
+    update({ meta: { ...cur.meta, loot, bag: i < 0 ? cur.meta.bag : [...cur.meta.bag.slice(0, i), ...cur.meta.bag.slice(i + 1)] }, run: cur.run && id ? { ...cur.run, got: usedUp(cur.run.got, { dropId: id }) } : cur.run });
   }
   // The clairvoyance scroll: you picked a room.
   function foresee(nodeId: string) {
@@ -1538,7 +1541,7 @@ function RunOver({ run, lab, onHome, onWalkBack }: { run: DungeonRun; lab: Dunge
       <div className="pixel-font" style={{ fontSize: 26, color: run.status === "cleared" ? "#5ee08a" : run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>
       <p style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.5 }}>{text}</p>
       <div style={{ textAlign: "left" }}>
-        <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", margin: "4px 0 8px" }}>What you got</div>
+        <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", margin: "4px 0 8px" }}>Loot</div>
         <LootGrid items={run.got ?? []} grouped />
         {floor.length > 0 && (
           <>

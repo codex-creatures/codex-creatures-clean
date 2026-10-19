@@ -227,6 +227,12 @@ export const lootIdOf = (e: BagEntry): string | undefined => (e.startsWith("loot
 export type FloorItem = { room: string; potion?: PotionKey; drop?: Drop };
 // Something you picked up this run (for the haul at the end).
 export type GotItem = { potion: PotionKey } | { drop: Drop };
+// Something found this run was used up (a potion drunk, a flare lit): it
+// doesn't come home, so it leaves the haul. One of that potion, or that drop.
+export function usedUp(got: GotItem[] = [], what: { potion: PotionKey } | { dropId: string }): GotItem[] {
+  const i = got.findIndex((g) => ("potion" in what ? "potion" in g && g.potion === what.potion : "drop" in g && g.drop.id === what.dropId));
+  return i < 0 ? got : [...got.slice(0, i), ...got.slice(i + 1)];
+}
 
 export type PotionKey = "potion" | "lesser";
 export const POTIONS: Record<PotionKey, { name: string; heal: number; price: number; icon: string }> = {

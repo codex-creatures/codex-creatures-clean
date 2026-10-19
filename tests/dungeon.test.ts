@@ -434,3 +434,15 @@ describe("the merchant's cart", () => {
     expect(priceUp(wares, ["potion", "lesser"], 500, 1, []).short).toBe("room");
   });
 });
+
+import { usedUp, type GotItem } from "../lib/dungeon/run";
+
+describe("the haul (Loot at the end of a run)", () => {
+  it("a found potion that's drunk, or a found tool that's used, doesn't come home", () => {
+    const flare = { drop: { id: "f1" } } as unknown as GotItem;
+    const got: GotItem[] = [{ potion: "lesser" }, flare, { potion: "lesser" }];
+    expect(usedUp(got, { potion: "lesser" })).toEqual([flare, { potion: "lesser" }]);
+    expect(usedUp(got, { dropId: "f1" })).toEqual([{ potion: "lesser" }, { potion: "lesser" }]);
+    expect(usedUp(got, { potion: "potion" })).toBe(got); // one brought from home: nothing to take off
+  });
+});
