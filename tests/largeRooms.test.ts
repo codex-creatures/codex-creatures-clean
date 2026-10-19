@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rollMap, depths, routeLength, knownRooms, inSight, waysOn, LARGE_FROM } from "../lib/dungeon/map";
+import { rollMap, depths, routeLength, knownRooms, inSight, waysOn, LARGE_FROM, FLARE_RADIUS, SIGHT_RADIUS } from "../lib/dungeon/map";
 import {
   DUNGEONS, makeRoom, hasFight, canMoveOn, startRun, enemyFighter, rollWares, codexPrice, minibossExtras,
   MERCHANT_SLOTS, ENCAMP_DRUNK_HP, LIBRARY_BOOKS, LARGE_MIX, type DungeonRun,
@@ -129,5 +129,21 @@ describe("flares and clairvoyance", () => {
       const lit = knownRooms(map, [map.start], [map.start]);
       for (const n of waysOn(map, map.start)) if (!n.mystery && inSight(map, map.start).has(n.id)) expect(lit.has(n.id)).toBe(true);
     }
+  });
+
+  it("a flare lights twice as far as a torch; a clairvoyance look only a torch's worth", () => {
+    expect(FLARE_RADIUS).toBe(SIGHT_RADIUS * 2);
+    let further = 0;
+    for (let i = 0; i < 30; i++) {
+      const map = rollMap(false);
+      const flared = knownRooms(map, [map.start], [map.start]);
+      for (const id of inSight(map, map.start, FLARE_RADIUS)) if (!map.nodes[id].mystery) expect(flared.has(id)).toBe(true);
+      // Past the torch, so only the flare shows it.
+      const beyond = [...inSight(map, map.start, FLARE_RADIUS)].filter((id) => !inSight(map, map.start).has(id) && !map.nodes[id].mystery && !map.nodes[id].known);
+      further += beyond.length;
+      const looked = knownRooms(map, [map.start], [map.start], [map.start]);
+      for (const id of beyond) expect(looked.has(id)).toBe(false);
+    }
+    expect(further).toBeGreaterThan(0);
   });
 });

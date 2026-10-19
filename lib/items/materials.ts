@@ -9,7 +9,7 @@
 // - A schematic is a plan for something you can build at home (the crooked
 //   bookcase: BUILDS). Building it uses up the schematic and its materials.
 // - Tools are used in the Labyrinth, from your bag:
-//   - a flare lights up the dark around you (the torch's radius) and lets you
+//   - a flare lights up the dark around you (twice the torch's radius) and lets you
 //     look at your map scroll again;
 //   - a clairvoyance scroll lets you look at the map and pick any room: you
 //     see what's in it (even a mystery) and the rooms around it.

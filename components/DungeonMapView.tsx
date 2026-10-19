@@ -17,7 +17,7 @@
 
 import { useId, useLayoutEffect, useRef } from "react";
 import { ROOM_INFO, runPosition, nextRooms, type DungeonRun } from "@/lib/dungeon/run";
-import { MAP_W, MAP_H, SIGHT_RADIUS, distance, heading, knownRooms, linkKey, type MapNode } from "@/lib/dungeon/map";
+import { MAP_W, MAP_H, SIGHT_RADIUS, litRadius, distance, heading, knownRooms, linkKey, type MapNode } from "@/lib/dungeon/map";
 import type { RoomKind } from "@/lib/dungeon/run";
 
 const R = 5.6;              // room radius (map units)
@@ -79,9 +79,13 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
   const marked = new Set(map.knownLinks ?? []); // corridors inked on the scroll from the start
   const isMarked = (a: MapNode, b: MapNode) => marked.has(linkKey(a.id, b.id));
   const isWayOn = (a: MapNode, b: MapNode) => (a.id === pos && choiceIds.has(b.id)) || (b.id === pos && choiceIds.has(a.id));
-  // Light: your torch, and anywhere a flare or a clairvoyance scroll lit.
-  const lights = [here, ...(run.lit ?? []).filter((id) => id !== pos).map((id) => map.nodes[id]).filter(Boolean)];
-  const inLight = (n: MapNode) => lights.some((l) => distance(n, l) <= SIGHT_RADIUS);
+  // Light: your torch, and anywhere a flare or a clairvoyance scroll lit (a flare reaches further).
+  const lit = (run.lit ?? []).filter((id) => map.nodes[id]);
+  const lights = [
+    ...(lit.includes(pos) ? [] : [{ ...here, r: SIGHT_RADIUS }]),
+    ...lit.map((id) => ({ ...map.nodes[id], r: litRadius(id, run.seen) })),
+  ];
+  const inLight = (n: MapNode) => lights.some((l) => distance(n, l) <= l.r);
 
   // The scroll: parchment between two wooden rollers.
   const PAD_X = 7, TOP = -9, BOTTOM = (map.h ?? MAP_H) + 9;
@@ -167,7 +171,7 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
           {/* Fog of war: everything but the light. */}
           <mask id={`${uid}-fogmask`} maskUnits="userSpaceOnUse" x={view.x} y={view.y} width={view.w} height={view.h}>
             <rect x={view.x} y={view.y} width={view.w} height={view.h} fill="white" />
-            {lights.map((l) => <circle key={l.id} cx={l.x} cy={l.y} r={SIGHT_RADIUS + 3} fill={`url(#${uid}-hole)`}>{flicker(SIGHT_RADIUS + 3)}</circle>)}
+            {lights.map((l) => <circle key={l.id} cx={l.x} cy={l.y} r={l.r + 3} fill={`url(#${uid}-hole)`}>{flicker(l.r + 3)}</circle>)}
           </mask>
           <radialGradient id={`${uid}-hole`}>
             <stop offset="65%" stopColor="black" />
@@ -175,7 +179,7 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
           </radialGradient>
           {/* Corridors only show near the flame. */}
           <mask id={`${uid}-lit`} maskUnits="userSpaceOnUse" x={view.x} y={view.y} width={view.w} height={view.h}>
-            {lights.map((l) => <circle key={l.id} cx={l.x} cy={l.y} r={SIGHT_RADIUS + 3} fill={`url(#${uid}-light)`}>{flicker(SIGHT_RADIUS + 3)}</circle>)}
+            {lights.map((l) => <circle key={l.id} cx={l.x} cy={l.y} r={l.r + 3} fill={`url(#${uid}-light)`}>{flicker(l.r + 3)}</circle>)}
           </mask>
           <filter id={`${uid}-fog`} x="0" y="0" width="100%" height="100%">
             <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="11" result="cloud" />
@@ -188,7 +192,7 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
         <rect x={-PAD_X} y={TOP} width={MAP_W + 2 * PAD_X} height={BOTTOM - TOP} fill={`url(#${uid}-age)`} />
 
         {/* Your torch's glow (and any flare's). */}
-        {lights.map((l) => <circle key={l.id} clipPath={`url(#${uid}-sheet)`} cx={l.x} cy={l.y} r={SIGHT_RADIUS + 3} fill={`url(#${uid}-glow)`}>{flicker(SIGHT_RADIUS + 3)}</circle>)}
+        {lights.map((l) => <circle key={l.id} clipPath={`url(#${uid}-sheet)`} cx={l.x} cy={l.y} r={l.r + 3} fill={`url(#${uid}-glow)`}>{flicker(l.r + 3)}</circle>)}
 
         {/* Corridors near the flame: dashed ink, the ways on darker. */}
         <g filter={`url(#${uid}-ink)`} mask={`url(#${uid}-lit)`}>

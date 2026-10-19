@@ -28,7 +28,8 @@
 //   plan a route through one — or round it. Half the time you can see what's
 //   in one from the start (LARGE_KNOWN); otherwise it's a "?" until you walk in.
 // - A flare or a clairvoyance scroll lights up the map round a spot, like
-//   your torch (see knownRooms: lit and seen).
+//   your torch (see knownRooms: lit and seen). A flare burns brighter than
+//   a torch: it lights FLARE_RADIUS round you, so you see a few rooms on.
 
 import { MYSTERY_MIX, ROOM_MIX, LARGE_MIX, rollRoomKind, minibossAllowed, FIRST_ROOMS, FIRST_ROOM_DENS, type RoomKind, type DungeonId } from "./run";
 
@@ -39,6 +40,7 @@ export const MIN_SPACING = 22;       // how close two rooms can be
 export const LARGE_SPACING = 30;     // …and a large room, from anything
 export const LARGE_KNOWN = 0.5;      // a large room's contents are marked on the scroll
 export const SIGHT_RADIUS = 36;      // how far you can see from where you stand
+export const FLARE_RADIUS = SIGHT_RADIUS * 2; // how far a lit flare shows
 export const BRANCH_CHANCE = 0.45;   // a room gets a second way on
 export const LONG_CORRIDORS = 2;     // corridors that skip a long way ahead
 export const MAX_STARTS = 3;         // ways out of the entrance (at least 2)
@@ -281,10 +283,14 @@ export const neighbours = (map: DungeonMap, id: string): MapNode[] => map.nodes[
 export const waysOn = (map: DungeonMap, id: string): MapNode[] => neighbours(map, id).filter((n) => isAhead(map.nodes[id], n));
 
 // Rooms in sight from a spot.
-export function inSight(map: DungeonMap, at: string): Set<string> {
+export function inSight(map: DungeonMap, at: string, radius = SIGHT_RADIUS): Set<string> {
   const here = map.nodes[at];
-  return new Set(Object.values(map.nodes).filter((n) => distance(n, here) <= SIGHT_RADIUS).map((n) => n.id));
+  return new Set(Object.values(map.nodes).filter((n) => distance(n, here) <= radius).map((n) => n.id));
 }
+
+// How far a lit spot shows: a clairvoyance scroll's look (it's in seen too)
+// is torch-sized; anything else lit was a flare.
+export const litRadius = (at: string, seen: string[] = []) => (seen.includes(at) ? SIGHT_RADIUS : FLARE_RADIUS);
 
 // The rooms whose contents you know: the entrance and the lair, the ones
 // marked from the start, the ones you've walked into, and anything that was
@@ -298,7 +304,7 @@ export function knownRooms(map: DungeonMap, path: string[], lit: string[] = [], 
   for (const at of visited) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
   // Your first step is blind: the rooms off the entrance are all "?" (unless a flare lights them).
   if (path.length <= 1) for (const n of waysOn(map, map.start)) if (!seen.includes(n.id)) known.delete(n.id);
-  for (const at of lit) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
+  for (const at of lit) for (const id of inSight(map, at, litRadius(at, seen))) if (!map.nodes[id].mystery) known.add(id);
   return known;
 }
 

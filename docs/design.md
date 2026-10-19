@@ -223,7 +223,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   she stabs a creature: an illness costing 15% max HP per action for 3 actions.
   - ❓ Claude read "equal %s including stick" as higher / lower / same at equal odds, with "same"
     as a push. Confirm with the user.
-- ✅ **Tools:** flare (re-view the map and light around you), clairvoyance scroll (reveal any room
+- ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings.
