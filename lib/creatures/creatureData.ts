@@ -37,7 +37,7 @@ export const DAMAGE_TYPE_INFO: Record<DamageType, { name: string; icon: string; 
 // Extra behaviour on top of damage (tuning numbers live in lib/combat/battle.ts).
 export type MoveEffect =
   | { kind: "cripple"; chance: number; agilityLoss?: number } // chance to cripple (slow) the target; loss defaults to CRIPPLE_AGILITY_LOSS
-  | { kind: "dash"; agilityBonus: number }    // extra agility this round and the next HASTE_ROUNDS
+  | { kind: "dash"; agilityBonus: number }    // extra agility this round only (to strike first)
   | { kind: "precise"; hitChance: number }    // can miss, but every hit is precise
   // Race moves (from codexes):
   | { kind: "pounce"; lowHpBonus: number }    // acts first this round; extra damage vs a target below half HP
@@ -125,9 +125,9 @@ export const LEARNABLE_MOVES: Skill[] = [
   { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  dmgType: "force",  effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
   { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
   { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
-  { name: "Dash Lash",      damage: 10, energyCost: 50, type: "melee",  dmgType: "pierce", effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
-  { name: "Quick Bolt",     damage: 10, energyCost: 50, type: "ranged", dmgType: "pierce", effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
-  { name: "Blink",          damage: 10, energyCost: 50, type: "magic",  dmgType: "force",  effect: { kind: "dash", agilityBonus: 0.5 }, desc: "Haste: +50% agility this round (so it can strike first) and the next 2." },
+  { name: "Dash Lash",      damage: 15, energyCost: 60, type: "melee",  dmgType: "pierce", effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
+  { name: "Quick Bolt",     damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
+  { name: "Blink",          damage: 15, energyCost: 60, type: "magic",  dmgType: "force",  effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
   { name: "Precise Slice",  damage: 15, energyCost: 30, type: "melee",  dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
   { name: "Precise Shot",   damage: 15, energyCost: 30, type: "ranged", dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
   { name: "Seeker Spark",   damage: 15, energyCost: 30, type: "magic",  dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },

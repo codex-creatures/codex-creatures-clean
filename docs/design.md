@@ -164,7 +164,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   ranged, and deals +10% ranged; Entrench is the mirror image (melee). The stance rules are
   provisional in the original design, and there's no elemental type chart.
 - ✅ **Utility moves** (learnable): Cripple (−50% agility for 3 rounds, plus a 25% chance each
-  attack is lost), Haste/Blink (+50% agility this round and the next 2), Precise (70% to hit,
+  attack is lost), Haste/Blink (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
   always precise).
 - ✅ **Race moves:** single-use codexes, learnable only by that race. Pounce (Beast), Rabid Bite
   (Under-dweller, venom ticks even on the bench), Mirage (Etherial), Corpsify (Undead), Barrage

@@ -118,7 +118,7 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
 // picks); special moves add what a sensible player would see in them:
 // - Precise: expected damage = hit chance × precise-hit damage (good vs tanks).
 // - Cripple: worth an extra hit when it would make me faster than them.
-// - Dash: worth part of their next hit when it makes me faster (all of it if I then knock them out).
+// - Dash: worth their whole next hit when going first lets me knock them out before it lands.
 export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined {
   // Utility moves (Mirage, Corpsify) are left to the thinking AI's lookahead.
   const usable = affordableSkills(me);
@@ -130,23 +130,25 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
   const theirHit = expectedDamage(them, me);
-  const value = (s: Skill) => {
+  // Damage past a knockout is worth nothing (overkill = false only for the walled check).
+  const value = (s: Skill, overkill = false) => {
     const fx = s.effect;
     const hit = calcDamage(s, me, them, fx?.kind === "precise").damage;
-    let v = fx?.kind === "precise" ? hit * fx.hitChance : hit;
+    const counted = overkill ? hit : Math.min(hit, them.hp);
+    let v = fx?.kind === "precise" ? counted * fx.hitChance : counted;
     if (fx?.kind === "cripple" && !isCrippled(them) && theirAgil >= myAgil && theirAgil * (1 - CRIPPLE_AGILITY_LOSS) < myAgil) {
       v += fx.chance * expectedDamage(me, them);
     }
-    // Haste lasts a few rounds, so going first pays off even without a knockout.
-    if (fx?.kind === "dash" && !me.statuses.some((st) => st.id === "haste") && theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil) {
-      v += hit >= them.hp ? theirHit : theirHit / 2;
+    // Haste is this round only, so going first is only worth it for a knockout.
+    if (fx?.kind === "dash" && hit >= them.hp && theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil) {
+      v += theirHit;
     }
     return v;
   };
 
   // Walled (nothing gets through)? Then hammer the same spot: keep the
   // current run going with a move that pays for itself, so the armour gap opens.
-  if (Math.max(...pool.map(value)) <= WALLED_DAMAGE) {
+  if (Math.max(...pool.map((s) => value(s, true))) <= WALLED_DAMAGE) {
     const sustainable = pool.filter((s) => s.energyCost <= ENERGY_REGEN);
     const run = sustainable.find((s) => s.name === me.streak?.move);
     if (run) return run;

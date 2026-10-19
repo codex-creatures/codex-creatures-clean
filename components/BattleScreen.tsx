@@ -23,7 +23,7 @@ import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf, aliveCount,
-  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, HASTE_ROUNDS, STREAK_START, streakEffects,
+  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, STREAK_START, streakEffects,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
@@ -147,7 +147,6 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       attacker.energy = e.attackerEnergyAfter;
       attacker.streak = { ...e.streak };
       target.hp = e.targetHpAfter;
-      if (e.hasted) attacker.statuses = [...attacker.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: HASTE_ROUNDS, gain: e.hasted }];
       if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS, loss: e.crippleLoss }];
       if (e.venom) target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), { ...e.venom }];
       break;
@@ -519,7 +518,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple: slower, ${Math.round(CRIPPLE.stumble * 100)}% to lose each attack`);
   if (fx?.kind === "dash") {
     const flips = theirAgil >= myAgil && myAgil * (1 + fx.agilityBonus) > theirAgil;
-    tags.push(`haste +${Math.round(fx.agilityBonus * 100)}% agility for ${HASTE_ROUNDS + 1} rounds${flips ? " → strike first!" : ""}`);
+    tags.push(`haste +${Math.round(fx.agilityBonus * 100)}% agility this round${flips ? " → strike first!" : ""}`);
   }
   if (fx?.kind === "pounce") tags.push(`strikes first${them.hp < them.maxHp / 2 ? ` · +${Math.round(fx.lowHpBonus * 100)}% vs wounded!` : ""}`);
   if (fx?.kind === "venom") tags.push(`venom: −${Math.round(fx.tick * 100)}% HP a round for ${fx.minRounds}–${fx.maxRounds} rounds`);

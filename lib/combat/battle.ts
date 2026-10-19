@@ -46,10 +46,8 @@ export const CRIPPLE_AGILITY_LOSS = 0.5;
 export const CRIPPLE_ROUNDS = 3;
 export const CRIPPLE = { stumble: 0.25 }; // chance a crippled creature loses its attack (no energy spent)
 
-// Haste (from Dash Lash / Quick Bolt): the user gains agility this round
-// (so it can strike first) and for the next HASTE_ROUNDS rounds.
-// Re-dashing refreshes it; it doesn't stack.
-export const HASTE_ROUNDS = 2;
+// Haste (from Dash Lash / Quick Bolt / Blink): extra agility for this
+// round's turn order only, so it can strike first. Nothing carries over.
 
 // Race moves (numbers on the moves themselves, in creatureData.ts):
 // - Mirage: a chance to dodge each attack for a few rounds.
@@ -392,9 +390,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     actor.streak = streak;
     const gapFx = streakEffects(streak);
 
-    // Haste lasts this round and the next HASTE_ROUNDS (+1: it ticks at the end of this one).
+    // Haste only sped up this round's turn order (turnAgility); it's just logged.
     const hasted = fx?.kind === "dash" ? fx.agilityBonus : undefined;
-    if (hasted) actor.statuses = [...actor.statuses.filter((s) => s.id !== "haste"), { id: "haste", rounds: HASTE_ROUNDS + 1, gain: hasted }];
 
     for (const targetIdx of targets) {
       const target = foe.team[targetIdx];
