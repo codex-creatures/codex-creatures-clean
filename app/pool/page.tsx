@@ -44,7 +44,7 @@ export default function PoolPage() {
       <div className="stone-panel">
         <div className="pixel-font" style={{ fontSize: 17, color: "#9fd8d8" }}>{level.name}</div>
         <p style={{ fontSize: 13, color: "#c8c4b8", margin: "4px 0 0", lineHeight: 1.5 }}>
-          {level.desc} Creatures hurt in the Labyrinth soak here while they&apos;re home and get back
+          {level.desc} Creatures hurt in the Labyrinth soak here and get back
           <b> {Math.round(level.healPerHour * 100)}% of their health an hour</b>. Upgrades to the pool will come later.
         </p>
       </div>

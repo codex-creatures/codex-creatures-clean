@@ -737,8 +737,10 @@ export type DungeonMeta = {
 };
 
 // ── The healing pool (in the Den) ──────────────────────────────────
-// Hurt creatures heal slowly in real time while they're home. Upgrades
-// will come later; each level heals faster.
+// Hurt creatures heal slowly in real time, on one clock for everyone: it
+// keeps ticking whatever you're doing (a run in progress included). The
+// creatures out on a run come home with their wounds from the run instead
+// (endRun). Upgrades will come later; each level heals faster.
 export const POOL_LEVELS = [
   { name: "Soggy cave pool", healPerHour: 0.25, desc: "A murky puddle in the rock. It heals, slowly." },
 ];
@@ -773,7 +775,7 @@ export function loadDungeon(): DungeonSave {
     const parsed = readSave()[SAVE_FIELD] as Partial<DungeonSave> | undefined;
     if (!parsed || typeof parsed !== "object" || !parsed.meta) return EMPTY;
     const loaded: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
-    const save: DungeonSave = loaded.run ? loaded : { ...loaded, meta: soak(loaded.meta) };
+    const save: DungeonSave = { ...loaded, meta: soak(loaded.meta) };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
     if (save.run && !save.run.map?.start) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
     return save;
@@ -792,9 +794,11 @@ export function saveDungeon(save: DungeonSave) {
 export const freeHealing = (meta: DungeonMeta) => meta.clears === 0;
 
 // The run is over (any way): bring the hurt creatures home.
-export function endRun(save: DungeonSave): DungeonSave {
-  const run = save.run;
-  if (!run) return save;
+export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
+  const run = save0.run;
+  if (!run) return save0;
+  // The pool catches up first (everyone left at home has been healing all along).
+  const save = { ...save0, meta: soak(save0.meta, now) };
   const injuries = { ...save.meta.injuries };
   const healed = freeHealing(save.meta);
   for (const id of run.party) {
@@ -803,11 +807,11 @@ export function endRun(save: DungeonSave): DungeonSave {
   }
   const cleared = run.status === "cleared";
   if (dungeonOf(run) === 2) {
-    return { meta: { ...save.meta, injuries, soakedAt: new Date().toISOString(), deepClears: (save.meta.deepClears ?? 0) + (cleared ? 1 : 0) }, run: null };
+    return { meta: { ...save.meta, injuries, deepClears: (save.meta.deepClears ?? 0) + (cleared ? 1 : 0) }, run: null };
   }
   return {
     meta: {
-      ...save.meta, injuries, soakedAt: new Date().toISOString(),
+      ...save.meta, injuries,
       clears: save.meta.clears + (cleared ? 1 : 0),
       firstClearRun: save.meta.firstClearRun ?? (cleared ? run.runNumber : undefined),
     },
