@@ -28,8 +28,7 @@ import { POTIONS, type SackItem } from "@/lib/dungeon/run";
 import { GEAR_STATS } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
-import { MOVE_BY_NAME } from "@/lib/creatures/creatureData";
-import { moveKind } from "./ClassBadge";
+import CodexMove from "./CodexMove";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
@@ -212,9 +211,8 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
       kind = "xp scroll";
       body = <>{g.desc}</>;
     } else if (g.codexMove) {
-      const m = MOVE_BY_NAME[g.codexMove];
       kind = `${g.rarity} codex`;
-      body = m ? <>Teaches <b>{m.name}</b> · {m.self ? "utility" : moveKind(m)}<div style={{ color: MUTED, marginTop: 2 }}>{m.desc}</div></> : <>Teaches {g.codexMove}</>;
+      body = <CodexMove move={g.codexMove} />;
     } else {
       kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;
       const stats = g.stats as Record<string, number> | undefined;
