@@ -11,6 +11,8 @@
 // - Drag a weapon or armour piece from your bag onto one of your creatures
 //   (the row under the bag, with each one's HP %) to equip it, or tap it and
 //   pick who. A potion goes on a hurt creature the same way, to heal it.
+// - A potion in the chest can go straight onto a hurt creature too (drag it,
+//   or tap it and Give): no need to make room in your bag for it first.
 // - teach: Klutz's Club, the first loot you pick up, walks you through
 //   all of this (take it, then equip it).
 // Take all grabs what takes no room, then the rarest things first, and says
@@ -47,10 +49,12 @@ export const wearable = (l?: SlotLook) => {
 };
 // Is it a potion? (in the bag a potion is just its kind: see slotLook)
 const potionOf = (l?: SlotLook) => (l?.peek && "potion" in l.peek ? l.peek.potion : undefined);
+// Is this thing in the chest a potion? (loose, or one found as an item)
+const sackPotion = (x?: SackItem) => (!x ? undefined : "potion" in x ? x.potion : "gear" in x ? (x.gear as CreatureOrItemDrop).potion : undefined);
 // Can a potion help them? (not at full health)
 const hurt = (c: TeamMember) => (c.hp ?? 0) < 1;
 
-export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, teach, putLabel = "Put in the chest" }: {
+export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, onDrinkLoot, teach, putLabel = "Put in the chest" }: {
   name: string; sprite: Sprite;
   items: SackItem[];
   bag: SlotLook[];          // what's in each filled slot, in order
@@ -63,6 +67,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   party?: TeamMember[];                                  // your creatures still standing: drop gear on them
   onEquip?: (bagIndex: number, creatureId: string) => void; // (asks first: see EquipPreview)
   onDrink?: (bagIndex: number, creatureId: string) => void; // a potion from the bag, on a hurt creature
+  onDrinkLoot?: (lootIndex: number, creatureId: string) => void; // a potion straight from the chest (no bag slot needed)
   teach?: LootTeach;
   putLabel?: string;                                     // "Put in the chest", "Drop it"…
 }) {
@@ -88,6 +93,10 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     onDrop: (d, t) => {
       setTriedAll(false);
       if (d.kind === "loot" && t?.startsWith("bag:")) onSwap(d.i, Number(t.slice(4)));
+      else if (d.kind === "loot" && t?.startsWith("who:") && onDrinkLoot && sackPotion(items[d.i])) {
+        const c = party.find((m) => m.id === t.slice(4));
+        if (c && hurt(c)) { onDrinkLoot(d.i, c.id); setSeen(null); }
+      }
       else if (d.kind === "bag" && t === "loot") { onPutBack(d.i); setPicked(null); }
       else if (d.kind === "bag" && t?.startsWith("who:") && onEquip && wearable(bag[d.i])) { onEquip(d.i, t.slice(4)); setPicked(null); }
       else if (d.kind === "bag" && t?.startsWith("who:") && onDrink && potionOf(bag[d.i])) {
@@ -148,7 +157,12 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         </div>
         {seen !== null && items[seen] && (
           <ItemPeek item={items[seen]} action={
-            <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
+            <span style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {onDrinkLoot && sackPotion(items[seen]) && party.filter(hurt).map((c) => (
+                <button key={c.id} className="chip" onClick={() => { onDrinkLoot(seen, c.id); setSeen(null); }}>Give {c.name}</button>
+              ))}
+              <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
+            </span>
           } />
         )}
 
@@ -197,9 +211,10 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         })()}
 
         {/* Your creatures: drop a weapon or armour piece on one to equip it, or a potion to heal it. */}
-        {(onEquip || onDrink) && (
+        {(onEquip || onDrink || onDrinkLoot) && (
           <TeamDropRow team={party} over={over} pulse={teach?.step === "equip"}
-            ready={dnd.lifted?.kind !== "bag" ? false : wearable(bag[dnd.lifted.i]) || (!!onDrink && !!potionOf(bag[dnd.lifted.i]) && hurt)} />
+            ready={dnd.lifted?.kind === "loot" ? !!onDrinkLoot && !!sackPotion(items[dnd.lifted.i]) && hurt
+              : dnd.lifted?.kind !== "bag" ? false : wearable(bag[dnd.lifted.i]) || (!!onDrink && !!potionOf(bag[dnd.lifted.i]) && hurt)} />
         )}
 
         <div className="dock-tabs">

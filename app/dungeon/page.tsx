@@ -630,6 +630,17 @@ export default function DungeonPage() {
     takeOne(key);
     updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) } }));
   }
+  // …or one straight out of the open chest or sack, without it going in your bag.
+  function drinkFromSack(index: number, id: string) {
+    const c = byId(id);
+    const r0 = loadDungeon().run;
+    const item = r0?.current?.sack?.[index];
+    const key = !item ? undefined : "potion" in item ? item.potion : "gear" in item ? (item.gear as CreatureOrItemDrop).potion : undefined;
+    const hp = r0?.hp[id] ?? 1;
+    if (!c || !key || hp <= 0 || hp >= 1) return;
+    updateRun((r) => (r.current ? { ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) },
+      current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
+  }
 
   // A deck of cards: DECK_CARDS creature cards, each rolled like a scan.
   function openDeck() {
@@ -1037,6 +1048,7 @@ export default function DungeonPage() {
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
                 party={standingTeam} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
                 onDrink={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e && isPotionEntry(e)) drink(e, id); }}
+                onDrinkLoot={drinkFromSack}
                 teach={teach} putLabel={c.quest === "club" ? "Drop it" : undefined}
                 onClose={() => setLootOpen(false)} />
             );
