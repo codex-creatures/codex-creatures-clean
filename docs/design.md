@@ -530,6 +530,15 @@ fields optional with defaults.
   - items: `create_image_pro_flash` 64×64 with the Void Scythe as the style image;
   - rooms: `edit_image` over the code-drawn chamber, so the tunnels line up.
   - Ask before using the expensive generators (`create_image_pro`, pro characters).
+- **Scale (the block standard, 2026-10-20):** the Den and its rooms draw art 1:1 (one PNG pixel =
+  one room pixel), and **1 floor block = 64px across**. Plan a prop's footprint in blocks first; its
+  width in pixels follows. The Soul Altar is 2×2 blocks (128px); Klutz is about 1 block wide and 1⅓
+  tall (69×85px) and is the yardstick for doors. The tavern is about 7×3 blocks (387px), its door
+  about 100px. An isometric footprint of a×b blocks is (a+b)×32px wide, so Pro Flash's 256px limit
+  fits a 5×3 footprint; anything bigger needs the enlarge-then-redraw step below, or drawing in parts.
+  - buildings: draft with `create_image_pro_flash` (the altar as the style image), then enlarge it to
+    its block size and redraw with `create_image_pixflux` (init image, strength 200, up to 400px).
+    Its no_background comes back grey: cut that out by flood fill from the edges.
 - Hand-drawn detailed sprites in code were tried and scrapped. Don't do it again.
 - Rejected, so don't reopen: the mushroom/ruin room theme, the Mr. Shadows redraws (keep the old
   sprite), and the parchment / MTG / wood-and-brass card styles.
