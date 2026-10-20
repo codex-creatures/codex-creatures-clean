@@ -50,7 +50,7 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
-  hasFight, minibossExtras, codexPrice, wareName, SCHEMATIC_CHANCE, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
+  hasFight, minibossExtras, codexPrice, wareName, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
@@ -72,7 +72,7 @@ import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
-import { TOOLS, materialDrop, toolDrop, schematicDrop } from "@/lib/items/materials";
+import { TOOLS, materialDrop, toolDrop } from "@/lib/items/materials";
 
 const GOLD = "#f5c542";
 // Every Labyrinth screen keeps to one phone-sized column (the room picture is
@@ -860,9 +860,8 @@ export default function DungeonPage() {
     // A boss's chest (the Cyclops', the Warden's strongbox): gear, codexes and potions as well as its gold.
     if (room.kind === "boss") sack.push(...cyclopsChest());
     const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded);
-    // A mini boss's chest: potions (and now and then a clairvoyance scroll or a schematic).
+    // A mini boss's chest: potions (and now and then a clairvoyance scroll).
     if (miniboss) sack.push(...minibossExtras());
-    if (room.kind === "boss" && Math.random() < SCHEMATIC_CHANCE.boss) sack.push({ gear: schematicDrop("crooked_bookcase") });
     // Mini boss and boss chests sometimes hold an XP scroll.
     if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // A guarded storehouse: its stores are yours too, in the same haul.
@@ -1603,7 +1602,7 @@ function RunOver({ run, lab, onHome, onWalkBack }: { run: DungeonRun; lab: Dunge
   const text = run.status === "cleared" && run.dungeon === 2
     ? `The Warden falls, and the deep goes quiet. You beat the Deep Labyrinth on run ${run.runNumber}!`
     : run.status === "cleared"
-    ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! (Its rewards — the Tavern and your trophy — come in the next update.)`
+    ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`
     : run.status === "dead"
       ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. ${freeHealing(lab.meta) ? "He's patched your creatures up, good as new." : "Your creatures are hurt — rest them at the healing pool."}`
       : run.loot.includes("Klutz's box")

@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
-import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL } from "../lib/tavern";
+import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan } from "../lib/tavern";
+import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize } from "../lib/items/materials";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -120,5 +121,48 @@ describe("the tavern questline: the rubble and the repair", () => {
     expect(done.tavern.repaired).toBe(true);
     expect(done.materials).toEqual({ metal_bars: 1, planks: 0, nails: 4, essence_stones: 2 });
     expect(repair(done.tavern, { metal_bars: 50, planks: 50, nails: 50 })).toBeNull();
+  });
+});
+
+describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
+  const repaired = { accepted: true, dynamite: true, blasted: true, seen: true, repaired: true };
+
+  it("the bounty can only be taken from a repaired tavern, once", () => {
+    expect(canTakeBounty({ blasted: true })).toBe(false);
+    expect(canTakeBounty(repaired)).toBe(true);
+    expect(canTakeBounty({ ...repaired, bounty: true })).toBe(false);
+  });
+
+  it("the head needs the bounty and a Cyclops win (one from before the bounty counts)", () => {
+    expect(headToMount(repaired, 3)).toBe(false);                 // no bounty taken
+    expect(headToMount({ ...repaired, bounty: true }, 0)).toBe(false); // not beaten yet
+    expect(headToMount({ ...repaired, bounty: true }, 1)).toBe(true);
+    expect(mountHead({ ...repaired, bounty: true }, 0).mounted).toBeUndefined();
+  });
+
+  it("mounting it is once only, and pays the bookcase schematic", () => {
+    const t = mountHead({ ...repaired, bounty: true }, 2);
+    expect(t.mounted).toBe(true);
+    expect(headToMount(t, 2)).toBe(false);
+    expect(tavernPlan(t, 1)).toBe(true);
+    expect(tavernPlan({ ...repaired, bounty: true }, 1)).toBe(false);
+    expect(tavernPlan(t, BOOKCASE_BUILT)).toBe(false); // already built
+    expect(tavernPlan(t, 2)).toBe(false);              // an old save's crooked bookcase
+  });
+
+  it("the crooked bookcase: 10 planks and 5 nails for 20 slots; an old save's keeps 25", () => {
+    expect(SCHEMATICS.crooked_bookcase.cost).toEqual({ planks: 10, nails: 5 });
+    expect(bookcaseSize(1)).toBe(10);
+    expect(bookcaseSize(BOOKCASE_BUILT)).toBe(20);
+    expect(bookcaseSize(2)).toBe(25);
+    expect(bookcaseSize()).toBe(10);
+  });
+
+  it("the schematic no longer turns up in the Labyrinth", () => {
+    for (let i = 0; i < 400; i++) {
+      expect(minibossExtras().some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic)).toBe(false);
+      const r = makeRoom("storehouse", Math.random, 8);
+      expect((r.sack ?? []).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic)).toBe(false);
+    }
   });
 });

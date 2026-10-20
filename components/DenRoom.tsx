@@ -50,10 +50,10 @@ function loadDenArt(): Promise<DenArt> {
   return artLoading;
 }
 const scenes = new Map<string, DenScene>();
-function denScene(backpack: boolean, opened: boolean, art: DenArt): DenScene {
-  const key = `${backpack}|${opened}`;
+function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: DenArt): DenScene {
+  const key = `${backpack}|${opened}|${upgraded}`;
   let s = scenes.get(key);
-  if (!s) scenes.set(key, (s = createDen({ backpack, opened, props: art.props, altarFrames: art.altarFrames ?? undefined })));
+  if (!s) scenes.set(key, (s = createDen({ backpack, opened, upgraded, props: art.props, altarFrames: art.altarFrames ?? undefined })));
   return s;
 }
 
@@ -64,7 +64,8 @@ function denScene(backpack: boolean, opened: boolean, art: DenArt): DenScene {
 // highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
 // rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
 // tavernNews: someone's visiting the tavern (a ❗ at the doorway).
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean }) {
+// upgraded: the crooked bookcase is built.
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean }) {
   const opened = rubble === "open";
   const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
   // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
@@ -205,7 +206,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   }
   // The furniture art (the room is rebuilt with it once it has loaded).
   const [art, setArt] = useState<DenArt | null>(artCache);
-  const glows = useMemo(() => (art ? denScene(backpack, opened, art).glows : []), [art, backpack, opened]);
+  const glows = useMemo(() => (art ? denScene(backpack, opened, upgraded, art).glows : []), [art, backpack, opened, upgraded]);
   useEffect(() => {
     if (art) return;
     let live = true;
@@ -216,7 +217,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx || !art) return;
-    const scene = denScene(backpack, opened, art);
+    const scene = denScene(backpack, opened, upgraded, art);
     sceneRef.current = scene;
     const start = performance.now();
     let first = true; // (a new canvas or room: draw the whole frame once)
@@ -241,7 +242,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, [backpack, opened, art]);
+  }, [backpack, opened, upgraded, art]);
 
   useEffect(() => {
     klutzRef.current = klutz;

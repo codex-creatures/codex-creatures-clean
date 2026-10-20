@@ -40,7 +40,7 @@ import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
-import { TOOLS, MATERIALS, materialBundle, toolDrop, schematicDrop, type MaterialKey, type ToolKey } from "../items/materials";
+import { TOOLS, MATERIALS, materialBundle, toolDrop, type MaterialKey, type ToolKey } from "../items/materials";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -152,7 +152,7 @@ export const ROOM_MIX: [RoomKind, number][] = [
 // - Library: LIBRARY_FIND of the time 1–3 codexes lying about; otherwise a
 //   wandering librarian with LIBRARY_BOOKS books for sale.
 // - Storehouse: materials mostly, some potions, now and then a weapon, a
-//   flare, a clairvoyance scroll or a schematic. STOREHOUSE_GUARD of the
+//   flare or a clairvoyance scroll. STOREHOUSE_GUARD of the
 //   time a mini boss has made it its lair.
 export const LARGE_MIX: [RoomKind, number][] = [["encampment", 34], ["library", 33], ["storehouse", 33]];
 
@@ -347,16 +347,16 @@ export const SCROLL_PRICE = 200;
 export const MINIBOSS_SCROLL_CHANCE = 0.25; // a beaten mini boss's chest holds an XP scroll
 export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
 // A mini boss's chest: potions instead of the heal it used to give, and now
-// and then a clairvoyance scroll or the crooked bookcase schematic.
+// and then a clairvoyance scroll. (The bookcase schematic used to drop here,
+// from bosses and storehouses too; now only the tavern's bounty gives it:
+// lib/tavern.ts.)
 export const MINIBOSS_POTIONS: [number, number] = [1, 2];
 export const MINIBOSS_CLAIRVOYANCE = 0.1;
-export const SCHEMATIC_CHANCE = { miniboss: 0.05, boss: 0.1, storehouse: 0.04 };
 export function minibossExtras(rng: Rng = Math.random): SackItem[] {
   const potion = (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
   return [
     ...Array.from({ length: randInt(...MINIBOSS_POTIONS, rng) }, potion),
     ...(rng() < MINIBOSS_CLAIRVOYANCE ? [{ gear: toolDrop("clairvoyance") }] : []),
-    ...(rng() < SCHEMATIC_CHANCE.miniboss ? [{ gear: schematicDrop("crooked_bookcase") }] : []),
   ];
 }
 
@@ -668,7 +668,6 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId): 
         ...(rng() < STOREHOUSE_FINDS.weapon ? [{ gear: weaponDrop(pick(ITEM_KEYS, rng), pickRarity("", "random")) }] : []),
         ...(rng() < STOREHOUSE_FINDS.flare ? [{ gear: toolDrop("flare") }] : []),
         ...(rng() < STOREHOUSE_FINDS.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
-        ...(rng() < SCHEMATIC_CHANCE.storehouse ? [{ gear: schematicDrop("crooked_bookcase") }] : []),
       ];
       if (rng() >= STOREHOUSE_GUARD || !minibossAllowed(dungeon, depth)) return { kind, sack, done: false };
       const enemies = [foe("miniboss")];

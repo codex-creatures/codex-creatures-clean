@@ -3,8 +3,10 @@
 // The tavern's room, behind the Den's rubble once Klutz's dynamite has blown
 // it open (lib/tavern.ts). The tavern stands broken against the far wall, a
 // Cyclops wanted poster already up; the first time you see it Klutz has his
-// say. Repairing it takes REPAIR_COST in materials, once.
-// (Placeholder art until the PixelLab pass; the bounty comes next.)
+// say. Repairing it takes REPAIR_COST in materials, once. Then the poster's
+// Cyclops bounty: take it, bring the head (any Cyclops win counts, even one
+// from before), mount it on the wall, and the bookcase schematic is yours.
+// (Placeholder art until the PixelLab pass.)
 
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
@@ -14,7 +16,8 @@ import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { MATERIALS } from "@/lib/items/materials";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
-import { canRepair, repairNeeds, tavernVisitor } from "@/lib/tavern";
+import { loadDungeon } from "@/lib/dungeon/run";
+import { canRepair, canTakeBounty, headToMount, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -34,6 +37,9 @@ export default function TavernPage() {
   const needs = repairNeeds(game.materials);
   // A wanderer calling, standing as they do in the Labyrinth's tunnels.
   const visitor = tavernVisitor(t);
+  // The Cyclops: how often you've beaten it, and the run you first did.
+  const { clears, firstClearRun } = loadDungeon().meta;
+  const head = CREATURE_SPRITES.cyclops;
   return (
     <DenFrame title={t.repaired ? "Tavern" : "Broken tavern"} icon="🍺">
       <div className="stone-panel">
@@ -42,7 +48,7 @@ export default function TavernPage() {
           <Help title="The tavern">
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>5 metal bars, 20 planks and 5 nails</b>.</li>
-              <li>The <b>wanted poster</b> is for the Cyclops. Its bounty opens in a coming update.</li>
+              <li>The <b>wanted poster</b> is for the Cyclops. Once it&apos;s repaired, take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
               <li>Once it&apos;s repaired, travellers will start to call (coming soon).</li>
             </ul>
           </Help>
@@ -59,10 +65,17 @@ export default function TavernPage() {
               <PixelSprite sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} scale={1.4} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} />
             </div>
           )}
+          {/* The Cyclops Head, mounted over the door, with the run you first beat it on. */}
+          {t.mounted && head && (
+            <div style={{ position: "absolute", left: "14%", top: 4, textAlign: "center", background: "#5a3e22", border: "2px solid #2a1c10", padding: "2px 4px" }}>
+              <PixelSprite sprite={head} scale={0.7} title="The Cyclops Head" style={{ display: "block", margin: "0 auto" }} />
+              <div className="pixel-font" style={{ fontSize: 10, color: "#f1d9a0" }}>{firstClearRun ? `Run ${firstClearRun}` : "Cyclops"}</div>
+            </div>
+          )}
           <div style={{ position: "absolute", right: "8%", top: 20, width: 92, padding: "4px 4px 6px", background: "#e8d6a8", border: "2px solid #8a6a3a", boxShadow: "0 3px 0 rgba(0,0,0,0.6)", transform: "rotate(3deg)", textAlign: "center" }}>
             <div className="pixel-font" style={{ fontSize: 13, color: "#7a1e14", letterSpacing: 1 }}>WANTED</div>
             {CREATURE_SPRITES.cyclops && <PixelSprite sprite={CREATURE_SPRITES.cyclops} scale={1.1} style={{ display: "block", margin: "2px auto" }} />}
-            <div className="pixel-font" style={{ fontSize: 11, color: "#3a2a14" }}>The Cyclops</div>
+            <div className="pixel-font" style={{ fontSize: 11, color: "#3a2a14" }}>{t.mounted ? "PAID" : "The Cyclops"}</div>
           </div>
         </div>
 
@@ -91,7 +104,21 @@ export default function TavernPage() {
             <button className="pixel-btn" disabled={!canRepair(t, game.materials)} onClick={game.repairTavern}>🔨 Repair the tavern</button>
           </div>
         ) : (
-          <div className="pixel-font" style={{ marginTop: 10, fontSize: 13, color: "#5ee08a" }}>Repaired. The bounty and visitors are coming soon.</div>
+          // The bounty, step by step.
+          <div style={{ marginTop: 10, minHeight: 64 }}>
+            {canTakeBounty(t) ? (
+              <button className="pixel-btn" onClick={game.takeBounty}>📜 Take the Cyclops bounty</button>
+            ) : headToMount(t, clears) ? (
+              <>
+                <div style={{ fontSize: 13, color: "#d8d4c8", marginBottom: 6 }}>🗿 You have the <b>Cyclops Head</b>{firstClearRun ? ` (run ${firstClearRun})` : ""}.</div>
+                <button className="pixel-btn" onClick={game.mountCyclopsHead}>🔨 Mount it on the wall</button>
+              </>
+            ) : t.mounted ? (
+              <div style={{ fontSize: 13, color: "#5ee08a" }}>Bounty paid: the <b>Crooked Bookcase Schematic</b>. {game.bookcase < 2 ? "Build it at the bookcase." : ""}</div>
+            ) : (
+              <div style={{ fontSize: 13, color: "#d8d4c8" }}>📜 Bounty taken. Beat the <b>Cyclops</b> and bring back its head.</div>
+            )}
+          </div>
         )}
       </div>
     </DenFrame>

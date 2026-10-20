@@ -341,7 +341,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 ## 9. The Den and economy
 
 - ✅ Places: Soul Altar (scanning), Labyrinth archway, quest board, Bestiary lectern, cage, pool,
-  Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 25 upgraded), bindle/bag, merchant
+  Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 20 upgraded), bindle/bag, merchant
   stall, and a boarded-up Tavern.
 - 📌 **Tavern:** where travellers, merchants and librarians gather. Now reached through the
   questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). Not
@@ -350,7 +350,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
   (~18 a room), and re-scan gold has no cap.
 
-### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–5 built, lib/tavern.ts)
+### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–8 built, lib/tavern.ts)
 
 Each stage unlocks the next, so every stage can ship on its own and leave the game playable.
 Placeholder art (existing sprites, simple markers) until a later PixelLab pass. All new save
@@ -384,16 +384,23 @@ fields optional with defaults.
    building (🏚️ broken, 🏠 repaired) and a parchment poster with the Cyclops sprite.
 5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
-6. **Bounty:** the poster offers the Cyclops bounty. If you'd already beaten the Cyclops
+6. ✅ **Bounty:** the poster offers the Cyclops bounty. If you'd already beaten the Cyclops
    (`meta.clears`), it completes as soon as you open the tavern. Cyclops combat is unchanged.
-7. **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
+   🧪 Built as a "Take the Cyclops bounty" button once the tavern's repaired; with a win already
+   on record, the head is ready to mount straight away.
+7. ✅ **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
    the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Mounting
    it on the tavern wall (once) completes the bounty and unlocks the bookcase schematic.
-8. **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
+   🧪 The head isn't an item in your storage: it's yours once you've beaten the Cyclops and taken
+   the bounty, so it can't be sold, used, lost or doubled. Mounted, it hangs over the tavern door
+   (placeholder: the Cyclops sprite on a plaque marked with the run), and the poster says PAID.
+   The schematic it pays isn't an item either: the bookcase just offers to build.
+8. ✅ **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
    **only** way to get it: it no longer drops from mini bosses, the Cyclops or storehouses. It costs
    10 planks and 5 nails, is built separately, holds **20** codexes, and uses the user's upgraded
    bookcase art (`den/bookcase-2.png`). (It was 20 planks + 10 nails for 25.) A save that already
-   built it keeps its 25 slots, and schematics already in a save stay buildable.
+   built it keeps its 25 slots, and schematics already in a save stay buildable (now 20 slots).
+   In the Den the shelf swaps to the upgraded art once it's built.
 9. **Visitors** (after the repair): on returning home from each run, roll a merchant (12%), a
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Already built for it: while one is in (`tavern.visitor`), a ❗ shows at the Den's doorway and they stand in the tavern, drawn as in the tunnels (user, 2026-10-20). The roll itself isn't built.

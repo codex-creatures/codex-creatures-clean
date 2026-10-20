@@ -15,7 +15,13 @@
 // 4. The tavern stands there broken, a Cyclops wanted poster already up. The
 //    first time you see it Klutz has something to say (once).
 // 5. The repair: REPAIR_COST in materials, taken once, and it's restored.
-// (Next: the Cyclops bounty, the head, the bookcase schematic.)
+// 6. The bounty: take it from the poster. The Cyclops's head is yours once
+//    you've beaten it (before or after taking the bounty: lib/dungeon/run.ts
+//    meta.clears), so it can't be lost, sold or doubled.
+// 7. Mount the head on the tavern wall (once): the bounty's paid with the
+//    Crooked Bookcase Schematic, the only way to get it (built at the
+//    bookcase).
+// (Next: visitors.)
 //
 // Kept in its own field of the save (lib/save.ts: OWN_FIELDS), as both the
 // Den (Klutz) and the Labyrinth (the dynamite) write it.
@@ -32,6 +38,8 @@ export type TavernQuest = {
   blasted?: boolean;  // the rubble's blown open: the tavern's room is open
   seen?: boolean;     // you've seen the tavern (and heard Klutz on it)
   repaired?: boolean; // the tavern's been repaired
+  bounty?: boolean;   // you've taken the Cyclops bounty from the poster
+  mounted?: boolean;  // the Cyclops Head is on the tavern wall: the bounty's paid (the bookcase schematic)
   visitor?: Visitor;  // a wanderer calling at the tavern (who comes is rolled in stage 9, not built yet)
 };
 export type Visitor = "merchant" | "librarian";
@@ -68,6 +76,15 @@ export function repair(t: TavernQuest, have: Materials): { tavern: TavernQuest; 
   const cost = Object.fromEntries(Object.entries(REPAIR_COST).map(([k, n]) => [k, -n!]));
   return { tavern: { ...t, repaired: true }, materials: addMaterials(have, cost) };
 }
+
+// The Cyclops bounty. clears: how many times you've beaten the Cyclops.
+export const canTakeBounty = (t: TavernQuest) => !!t.repaired && !t.bounty;
+// The head's waiting to go up on the wall.
+export const headToMount = (t: TavernQuest, clears: number) => !!t.bounty && clears > 0 && !t.mounted;
+export const mountHead = (t: TavernQuest, clears: number): TavernQuest => (headToMount(t, clears) ? { ...t, mounted: true } : t);
+// The bounty's reward: the bookcase schematic, to build while the bookcase is
+// still the broken shelf (level 1).
+export const tavernPlan = (t: TavernQuest, bookcaseLevel: number) => !!t.mounted && bookcaseLevel < 2;
 
 // ── Saved progress ───────────────────────────────────────────────────
 export const TAVERN_FIELD = "tavern";

@@ -36,13 +36,16 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
 
 export type SchematicKey = "crooked_bookcase";
 export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; desc: string }> = {
-  crooked_bookcase: { name: "Crooked Bookcase Schematic", rarity: "epic", cost: { planks: 20, nails: 10 },
-                      desc: "Plans for a taller, leaning bookcase: it holds 25 codexes instead of 10." },
+  crooked_bookcase: { name: "Crooked Bookcase Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
+                      desc: "Plans for a taller, leaning bookcase: it holds 20 codexes instead of 10." },
 };
 
-// The bookcase: how many codexes it holds at each level (1: the broken
-// shelf you start with; 2: the crooked bookcase).
-export const BOOKCASE_LEVELS = [10, 25];
+// The bookcase: how many codexes it holds at each level. 1: the broken shelf
+// you start with; 3: the crooked bookcase (BOOKCASE_BUILT), from the tavern's
+// schematic. 2 is the crooked bookcase as built before the tavern questline:
+// those saves keep their 25. Level 2 or more is the crooked bookcase.
+export const BOOKCASE_LEVELS = [10, 25, 20];
+export const BOOKCASE_BUILT = 3;
 export const bookcaseSize = (level = 1) => BOOKCASE_LEVELS[Math.min(BOOKCASE_LEVELS.length, Math.max(1, level)) - 1];
 
 const now = () => new Date().toISOString();

@@ -13,11 +13,11 @@ import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf } from "@/lib/dungeon/run";
 import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
-import { blast, clearTavern, loadTavern, repair, tavernQuestDue, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { blast, canTakeBounty, clearTavern, loadTavern, mountHead, repair, tavernPlan, tavernQuestDue, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
-import { SCHEMATICS, MATERIAL_KEYS, bookcaseSize, canAfford, addMaterials, materialDrop, type Materials } from "@/lib/items/materials";
+import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, canAfford, addMaterials, materialDrop, type Materials } from "@/lib/items/materials";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -313,6 +313,9 @@ export function useGameState(initialTab: TabKey = "all") {
     setMaterials(done.materials);
     return true;
   }
+  const takeBounty = () => setTavern(updateTavern((t) => (canTakeBounty(t) ? { ...t, bounty: true } : t)));
+  // The head goes up once you've beaten the Cyclops (the Labyrinth's record).
+  const mountCyclopsHead = () => setTavern(updateTavern((t) => mountHead(t, loadDungeon().meta.clears)));
 
   function sendKlutzOff() {
     // What he's wearing decides what he might find.
@@ -586,14 +589,17 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // Build what a schematic shows, if you have the materials: the schematic
   // and the materials are used up. Returns whether it was built.
-  function buildSchematic(schematicId: string): boolean {
-    const plan = inventory.find((d) => d.id === schematicId);
-    if (!plan || plan.dropType !== "item" || !plan.schematic) return false;
-    const cost = SCHEMATICS[plan.schematic].cost;
+  // schematicId: one in your storage (an old save's Labyrinth find); without
+  // it, the tavern bounty's bookcase plan.
+  function buildSchematic(schematicId?: string): boolean {
+    const plan = schematicId ? inventory.find((d) => d.id === schematicId) : undefined;
+    const key = plan?.dropType === "item" ? plan.schematic : !schematicId && tavernPlan(tavern, bookcase) ? "crooked_bookcase" : undefined;
+    if (!key) return false;
+    const cost = SCHEMATICS[key].cost;
     if (!canAfford(materials, cost)) return false;
-    setInventory((prev) => prev.filter((d) => d.id !== schematicId));
+    if (plan) setInventory((prev) => prev.filter((d) => d.id !== schematicId));
     setMaterials((m) => addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n]))));
-    if (plan.schematic === "crooked_bookcase") setBookcase((b) => Math.max(b, 2));
+    if (key === "crooked_bookcase") setBookcase((b) => (b < 2 ? BOOKCASE_BUILT : b));
     return true;
   }
 
@@ -713,7 +719,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, seeTavern, repairTavern, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, seeTavern, repairTavern, takeBounty, mountCyclopsHead, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

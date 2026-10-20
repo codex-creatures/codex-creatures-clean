@@ -253,7 +253,7 @@ const TORCHES: { u: number; v: number; z: number }[] = [
 // The Den's furniture drawn in PixelLab (public/sprites/den/<key>.png). Each is
 // stamped into the room where its code-drawn box used to be, and lit by the
 // torches like the rest; anything whose art is missing falls back to the box.
-export const PROP_KEYS = ["altar", "chest", "crates", "shelves", "merchant", "lectern", "crate", "bindle", "backpack", "board", "pit"] as const;
+export const PROP_KEYS = ["altar", "chest", "crates", "shelves", "bookcase-2", "merchant", "lectern", "crate", "bindle", "backpack", "board", "pit"] as const;
 export type PropKey = (typeof PROP_KEYS)[number];
 export const propSrc = (key: PropKey) => `/sprites/den/${key}.png`;
 // The Soul Altar's soul fire: a strip of frames (frame 0 is its still, den/altar.png).
@@ -299,7 +299,8 @@ function strollAt(t: number): { u: number; v: number; left: boolean; walking: bo
 // props: the furniture art that has loaded (see PROP_KEYS).
 // altarFrames: the Soul Altar's animation (its soul fire), once loaded; frame 0 is its still.
 // opened: the rubble's been blown open (lib/tavern.ts).
-export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFrames?: Pixels[]; opened?: boolean } = {}): DenScene {
+// upgraded: the crooked bookcase is built (the user's upgraded art).
+export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFrames?: Pixels[]; opened?: boolean; upgraded?: boolean } = {}): DenScene {
   const props = opts.props ?? {};
   const n = FW * FH;
   const albedo = new Float32Array(n * 3);
@@ -665,7 +666,8 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   // The shelves on the right wall: codexes, a sack and potions. (They open
   // the codex shelf; a proper bookcase comes with upgrades.)
   // The bookcase, standing against the wall (its art is drawn for the other wall, so it's mirrored).
-  if (props.shelves) stamp(OBJ.bookcase, mirrored(props.shelves), SHELF.u0, 0, SHELF.u1, 0.4);
+  const shelfArt = (opts.upgraded && props["bookcase-2"]) || props.shelves;
+  if (shelfArt) stamp(OBJ.bookcase, mirrored(shelfArt), SHELF.u0, 0, SHELF.u1, 0.4);
   else {
     const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
     box(OBJ.bookcase, SHELF.u0, 0, 28, SHELF.u1, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });

@@ -17,7 +17,10 @@ describe("materials", () => {
     expect(countMaterial(m, "planks")).toBe(27);
     const cost = SCHEMATICS.crooked_bookcase.cost;
     expect(canAfford(m, cost)).toBe(true);
-    m = addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n!])));
+    const build = () => (m = addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n!]))));
+    build();
+    expect(m).toEqual({ planks: 17, nails: 5 });
+    build();
     expect(m).toEqual({ planks: 7, nails: 0 });
     expect(canAfford(m, cost)).toBe(false);
   });
