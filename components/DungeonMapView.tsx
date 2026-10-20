@@ -104,7 +104,7 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
   // The window onto the scroll: opens on where you stand; drag to look around.
   const box = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null);
-  const small = (map.h ?? MAP_H) < 200; // a short scroll (the first quest's) fits the window as it is (no h = full height)
+  const small = !map.h || map.h < 200; // a short scroll (the first quest's) fits the window as it is
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
