@@ -21,12 +21,17 @@
 // 7. Mount the head on the tavern wall (once): the bounty's paid with the
 //    Crooked Bookcase Schematic, the only way to get it (built at the
 //    bookcase).
-// (Next: visitors.)
+// 8. Visitors. Once it's repaired, each time you come home from a run there's
+//    a chance a travelling merchant or a wandering librarian calls
+//    (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
+//    the Labyrinth to sell. The first roll after the repair always brings
+//    someone, and so does the one after VISITOR_PITY misses in a row.
 //
 // Kept in its own field of the save (lib/save.ts: OWN_FIELDS), as both the
 // Den (Klutz) and the Labyrinth (the dynamite) write it.
 
 import { readSave, writeSaveField } from "./save";
+import { makeRoom, type Ware } from "./dungeon/run";
 import { addMaterials, canAfford, countMaterial, type MaterialKey, type Materials } from "./items/materials";
 
 export const QUEST_CREATURE_LEVEL = 6;
@@ -40,13 +45,44 @@ export type TavernQuest = {
   repaired?: boolean; // the tavern's been repaired
   bounty?: boolean;   // you've taken the Cyclops bounty from the poster
   mounted?: boolean;  // the Cyclops Head is on the tavern wall: the bounty's paid (the bookcase schematic)
-  visitor?: Visitor;  // a wanderer calling at the tavern (who comes is rolled in stage 9, not built yet)
+  visitor?: Visitor;  // a wanderer calling at the tavern
+  stay?: number;      // …how many more runs they'll stay
+  wares?: Ware[];     // a merchant's cart
+  offers?: string[];  // a librarian's codexes
+  bought?: string[];  // …and what you've bought (ware keys, codex names)
+  visited?: boolean;  // someone's called since the repair (the first roll's a sure thing)
+  misses?: number;    // homecomings in a row with nobody calling
 };
 export type Visitor = "merchant" | "librarian";
 
 // Who's in the tavern: only a repaired tavern has visitors. (A ❗ shows at the
 // Den's doorway while someone's there.)
 export const tavernVisitor = (t: TavernQuest): Visitor | undefined => (t.repaired ? t.visitor : undefined);
+
+// Who calls, each homecoming (the rest of the time, nobody).
+export const VISITOR_ODDS: Record<Visitor, number> = { merchant: 0.12, librarian: 0.08 };
+export const VISITOR_STAY = 2;  // runs a visitor stays
+export const VISITOR_PITY = 3;  // after this many misses in a row, someone's sure to call
+
+// Home from a run: whoever's calling stays one run less (and leaves at 0),
+// then, if nobody's here, roll for someone new.
+export function comeHome(t: TavernQuest, rng: () => number = Math.random): TavernQuest {
+  if (!t.repaired) return t;
+  if (t.visitor && (t.stay ?? 0) > 1) return { ...t, stay: (t.stay ?? 0) - 1 };
+  const gone: TavernQuest = { ...t, visitor: undefined, stay: undefined, wares: undefined, offers: undefined, bought: undefined };
+  const sure = !t.visited || (t.misses ?? 0) >= VISITOR_PITY;
+  const total = VISITOR_ODDS.merchant + VISITOR_ODDS.librarian;
+  // A sure visit is still the merchant or the librarian in their usual proportions.
+  const r = rng() * (sure ? total : 1);
+  const who: Visitor | undefined = r < VISITOR_ODDS.merchant ? "merchant" : r < total ? "librarian" : undefined;
+  if (!who) return { ...gone, misses: (t.misses ?? 0) + 1 };
+  const stock = makeRoom(who, rng);
+  return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
+}
+
+// Mark something bought from the visitor (one of each).
+export const buyFromVisitor = (t: TavernQuest, key: string): TavernQuest =>
+  (t.visitor && !t.bought?.includes(key) ? { ...t, bought: [...(t.bought ?? []), key] } : t);
 
 // What the repair takes.
 export const REPAIR_COST: Materials = { metal_bars: 5, planks: 20, nails: 5 };

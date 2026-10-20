@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan, comeHome, buyFromVisitor, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize } from "../lib/items/materials";
 
 describe("the tavern questline: Klutz's quest", () => {
@@ -164,5 +164,71 @@ describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
       const r = makeRoom("storehouse", Math.random, 8);
       expect((r.sack ?? []).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic)).toBe(false);
     }
+  });
+});
+
+describe("the tavern questline: visitors", () => {
+  // These rolls first, then real ones (the stock rolls need them: a librarian picks 3 different codexes).
+  const seq = (...xs: number[]) => { let i = 0; return () => (i < xs.length ? xs[i++] : Math.random()); };
+
+  it("only call at a repaired tavern", () => {
+    expect(comeHome({ blasted: true }, seq(0))).toEqual({ blasted: true });
+  });
+
+  it("the first roll after the repair always brings someone, in the usual proportions", () => {
+    let merchants = 0;
+    for (let i = 0; i < 400; i++) {
+      const t = comeHome({ repaired: true });
+      expect(t.visitor).toBeDefined();
+      if (t.visitor === "merchant") merchants++;
+    }
+    // 12 : 8 → 60% merchants.
+    expect(merchants / 400).toBeGreaterThan(0.5);
+    expect(merchants / 400).toBeLessThan(0.7);
+  });
+
+  it("rolls 12% merchant, 8% librarian, else nobody", () => {
+    expect(VISITOR_ODDS).toEqual({ merchant: 0.12, librarian: 0.08 });
+    const base = { repaired: true, visited: true };
+    expect(comeHome(base, seq(0.05)).visitor).toBe("merchant");
+    expect(comeHome(base, seq(0.15)).visitor).toBe("librarian");
+    const none = comeHome(base, seq(0.5));
+    expect(none.visitor).toBeUndefined();
+    expect(none.misses).toBe(1);
+  });
+
+  it("is sure to bring someone after 3 misses in a row", () => {
+    expect(VISITOR_PITY).toBe(3);
+    let t: TavernQuest = { repaired: true, visited: true };
+    for (let i = 0; i < 3; i++) t = comeHome(t, seq(0.99));
+    expect(t.visitor).toBeUndefined();
+    t = comeHome(t, seq(0.99));
+    expect(t.visitor).toBe("librarian"); // 0.99 of the sure range
+    expect(t.misses).toBe(0);
+  });
+
+  it("brings their stock, stays 2 runs, then leaves", () => {
+    expect(VISITOR_STAY).toBe(2);
+    const m = comeHome({ repaired: true }, seq(0.1));
+    expect(m.visitor).toBe("merchant");
+    expect(m.wares?.length).toBeGreaterThan(0);
+    const l = comeHome({ repaired: true }, seq(0.9));
+    expect(l.visitor).toBe("librarian");
+    expect(l.offers?.length).toBe(3);
+    const still = comeHome(m, seq(0.99));
+    expect(still.visitor).toBe("merchant");
+    expect(still.wares).toBe(m.wares);
+    const gone = comeHome(still, seq(0.99));
+    expect(gone.visitor).toBeUndefined();
+    expect(gone.wares).toBeUndefined();
+  });
+
+  it("sells one of each", () => {
+    const m = comeHome({ repaired: true }, seq(0.1));
+    const key = m.wares![0].key;
+    const once = buyFromVisitor(m, key);
+    expect(once.bought).toEqual([key]);
+    expect(buyFromVisitor(once, key)).toBe(once);
+    expect(buyFromVisitor({ repaired: true }, key).bought).toBeUndefined();
   });
 });

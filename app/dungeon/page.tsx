@@ -58,7 +58,7 @@ import {
   needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut, merchantOffer, droppedPieceStats,
   dynamiteHere, takeDynamite,
 } from "@/lib/dungeon/run";
-import { loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
+import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
 import {
   BattleView, SectionTitle, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
@@ -380,6 +380,7 @@ export default function DungeonPage() {
       delete loot[id];
     }
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
+    updateTavern(comeHome); // home: a visitor may call at the tavern
     battle.clear();
     setNotes([]);
   }

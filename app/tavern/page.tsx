@@ -6,9 +6,15 @@
 // say. Repairing it takes REPAIR_COST in materials, once. Then the poster's
 // Cyclops bounty: take it, bring the head (any Cyclops win counts, even one
 // from before), mount it on the wall, and the bookcase schematic is yours.
+// Once it's repaired, a merchant or librarian sometimes calls (rolled on
+// coming home from a run: lib/tavern.ts comeHome), selling what they would
+// in the Labyrinth.
 // (Placeholder art until the PixelLab pass.)
 
 import Link from "next/link";
+import MerchantCart from "@/components/MerchantCart";
+import { Coin } from "@/components/GoldCount";
+import { MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
 import PixelSprite from "@/components/PixelSprite";
@@ -16,7 +22,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { MATERIALS } from "@/lib/items/materials";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
-import { loadDungeon } from "@/lib/dungeon/run";
+import { codexPrice, loadDungeon } from "@/lib/dungeon/run";
 import { canRepair, canTakeBounty, headToMount, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -49,7 +55,7 @@ export default function TavernPage() {
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>5 metal bars, 20 planks and 5 nails</b>.</li>
               <li>The <b>wanted poster</b> is for the Cyclops. Once it&apos;s repaired, take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
-              <li>Once it&apos;s repaired, travellers will start to call (coming soon).</li>
+              <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for 2 runs.</li>
             </ul>
           </Help>
         </div>
@@ -118,6 +124,36 @@ export default function TavernPage() {
             ) : (
               <div style={{ fontSize: 13, color: "#d8d4c8" }}>📜 Bounty taken. Beat the <b>Cyclops</b> and bring back its head.</div>
             )}
+          </div>
+        )}
+
+        {/* Whoever's calling, and what they sell. */}
+        {visitor === "merchant" && (
+          <div style={{ marginTop: 10 }}>
+            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;One of each, friend. Flares and scrolls of clairvoyance go in your bag.&rdquo;</p>
+            <MerchantCart wares={t.wares ?? []} bought={t.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
+          </div>
+        )}
+        {visitor === "librarian" && (
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+            <p style={{ fontSize: 13, color: "#d8d4c8", margin: 0 }}>&ldquo;Codexes,&rdquo; it whispers. &ldquo;Each teaches one creature a move — once.&rdquo;</p>
+            {(t.offers ?? []).map((name) => {
+              const move = MOVE_BY_NAME[name];
+              const sold = t.bought?.includes(name);
+              const price = codexPrice(name);
+              const off = sold || game.gold < price || game.shelfFree <= 0;
+              return (
+                <button key={name} className="card-btn" disabled={off} onClick={() => game.buyTavernCodex(name)} style={{ opacity: off ? 0.5 : 1 }}>
+                  <span style={{ flex: 1 }}>
+                    <b style={{ color: "#c7b8ff" }}>📖 Codex: {name}</b>
+                    <span style={{ fontSize: 12, color: move?.race ? RACE_INFO[move.race].color : MUTED }}> · {move?.race ? `${RACE_INFO[move.race].name} only` : "any creature"}</span>
+                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{move?.desc}</span>
+                  </span>
+                  <span className="pixel-font" style={{ color: "#f1d9a0", flexShrink: 0 }}>{sold ? "bought" : <><Coin /> {price}</>}</span>
+                </button>
+              );
+            })}
+            <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>You have {game.gold} gold.{game.shelfFree <= 0 ? " The bookcase is full." : ""}</p>
           </div>
         )}
       </div>
