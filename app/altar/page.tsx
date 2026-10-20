@@ -11,13 +11,18 @@ import DenFrame from "@/components/DenFrame";
 import CodeCache from "@/components/CodeCache";
 import Help, { HelpSection } from "@/components/Help";
 import PixelSprite from "@/components/PixelSprite";
-import { ICON, lookOf } from "@/components/ContainerLoot";
+import { ICON, NAME, lookOf } from "@/components/ContainerLoot";
+import { CardFace } from "@/components/CardGallery";
+import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
-const SLOT = 60;        // the same slot size as your bag
+
+// A square for each find, with two lines for its name under it (as in your Inventory).
+const TILE: React.CSSProperties = { aspectRatio: "1", width: "100%", display: "flex", alignItems: "center", justifyContent: "center" };
+const TILE_BTN: React.CSSProperties = { display: "block", minWidth: 0, padding: 0, background: "none", border: "none", color: "inherit", font: "inherit", cursor: "pointer" };
 
 // The Soul Altar: scan a barcode for a Code Cache. Looting: it opens at once,
 // what's inside goes straight to your things, and the window shows your
@@ -34,7 +39,6 @@ export default function AltarPage() {
   const [startArmed, setStartArmed] = useState(false); // "Start new" asks for a second tap
   const [startedNew, setStartedNew] = useState(false);
   const [shown, setShown]           = useState<Drop[]>([]); // this visit's finds, newest first (Looting)
-  const [picked, setPicked]         = useState<string | null>(null); // the find you tapped
   const [note, setNote]             = useState<React.ReactNode>(null); // sealed, storage full…
   const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened
 
@@ -50,7 +54,7 @@ export default function AltarPage() {
     onDrop:            game.addScan,
     onScan:            (drops) => {
       setNote(null);
-      if (!storing) { setShown((s) => [...drops, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS)); setPicked(drops[0]?.id ?? null); }
+      if (!storing) setShown((s) => [...drops, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS));
     },
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
@@ -109,8 +113,6 @@ export default function AltarPage() {
   // What the window holds: this visit's finds, or the caches in storage.
   const slots = storing ? game.caches.slice(0, CACHE_LIMIT) : shown;
   const rows = slots.length ? WINDOW_ROWS : 1;
-  const pickedDrop = storing ? undefined : shown.find((d) => d.id === picked);
-  const pickedLook = pickedDrop ? lookOf({ gear: pickedDrop }) : null;
 
   return (
     <DenFrame title="Soul Altar" icon="🔮" gold={game.gold}>
@@ -152,38 +154,34 @@ export default function AltarPage() {
           </Help>
         </div>
 
-        {/* The loot window: a fixed 3-wide panel, one row while empty. */}
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 12 }}>
-          <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${WINDOW_COLS}, ${SLOT}px)`, gap: 8, padding: 10 }}>
-            {Array.from({ length: rows * WINDOW_COLS }, (_, i) => {
-              const d = slots[i];
-              if (!d) return <div key={i} className="inv-slot" style={{ width: SLOT, height: SLOT }} />;
-              if (storing) return (
-                <button key={d.id} className="inv-slot cache-sealed" onClick={() => setOpening([d])} title="Open this Code Cache" aria-label="Open this Code Cache"
-                  style={{ width: SLOT, height: SLOT, padding: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: "#23262f" }}>
-                  <span className="pixel-font" style={{ fontSize: 24, color: "#8fc1ff", textShadow: "0 0 8px rgba(143,193,255,0.8)" }}>?</span>
-                </button>
-              );
-              const l = lookOf({ gear: d });
-              const active = picked === d.id;
-              return (
-                <button key={d.id} className="inv-slot" onClick={() => setPicked(d.id)} title={l.name} aria-label={l.name} aria-pressed={active}
-                  style={{ width: SLOT, height: SLOT, padding: 0, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    background: `radial-gradient(circle, ${l.glow} 0%, rgba(0,0,0,0.35) 65%)`,
-                    ...(active ? { borderColor: "#ffd66e", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.6), 0 0 12px rgba(255,214,110,0.5)" } : {}) }}>
-                  {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: SLOT * 0.42 }}>{l.icon}</span>}
-                </button>
-              );
-            })}
-          </div>
+        {/* The loot window: laid out like your Inventory (each find loose on its
+            rarity glow, its name under it), 3 wide, one row while empty. */}
+        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${WINDOW_COLS}, minmax(0, 1fr))`, gap: 10, marginTop: 14 }}>
+          {Array.from({ length: rows * WINDOW_COLS }, (_, i) => {
+            const d = slots[i];
+            if (!d) return (
+              <div key={i}>
+                <div style={{ ...TILE, borderRadius: 8, background: "rgba(0,0,0,0.25)", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.5)" }} />
+                <div style={NAME} />
+              </div>
+            );
+            if (storing) return (
+              <button key={d.id} onClick={() => setOpening([d])} title="Open this Code Cache" aria-label="Open this Code Cache" style={TILE_BTN}>
+                <span className="cache-sealed" style={{ ...TILE, borderRadius: 8, background: "radial-gradient(circle, rgba(143,193,255,0.35) 0%, transparent 62%)" }}>
+                  <span className="pixel-font" style={{ fontSize: 30, color: "#8fc1ff", textShadow: "0 0 8px rgba(143,193,255,0.8)" }}>?</span>
+                </span>
+                <span style={{ ...NAME, color: "#8fc1ff" }}>Code Cache</span>
+              </button>
+            );
+            return <Find key={d.id} d={d} />;
+          })}
         </div>
 
-        {/* Two lines under the window: what you tapped, a warning, or how full storage is. */}
+        {/* Two lines under the window: a warning, or how full storage is. */}
         <div className="pixel-font" style={{ minHeight: "2.6em", marginTop: 8, fontSize: 14, textAlign: "center", color: "#c9b48a", lineHeight: 1.3,
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           {note ?? (storing ? `📦 ${game.caches.length}/${CACHE_LIMIT} Code Caches stored`
-            : pickedLook ? <span style={{ color: pickedLook.color }}>{pickedLook.name}</span>
-            : "Scan a barcode to see what's inside")}
+            : shown.length ? "" : "Scan a barcode to see what's inside")}
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginTop: 4, visibility: storing && game.caches.length > 0 ? "visible" : "hidden" }}>
           <button className="pixel-btn" onClick={() => setOpening(game.caches.slice(0, CACHE_LIMIT))}>📦 Open all</button>
@@ -245,6 +243,23 @@ export default function AltarPage() {
       </div>
 
     </DenFrame>
+  );
+}
+
+// One find in the window: on a soft glow of its rarity, its name under it.
+// A creature card shows as the card itself, sized to fit the square.
+function Find({ d }: { d: Drop }) {
+  const l = lookOf({ gear: d });
+  const card = (d.dropType === "card" || d.dropType === "creature") ? findCreatureTemplate(d.creatureId, d.name) : undefined;
+  return (
+    <div title={l.name} style={{ minWidth: 0, textAlign: "center" }}>
+      <div style={{ ...TILE, borderRadius: 8, background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)` }}>
+        {card && d.dropType !== "reward" ? (
+          <div style={{ width: "71%" }}><CardFace t={card} creatureId={d.creatureId ?? card.id} ability={d.ability} /></div>
+        ) : l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 30 }}>{l.icon}</span>}
+      </div>
+      <div style={{ ...NAME, color: l.color }}>{l.name}</div>
+    </div>
   );
 }
 
