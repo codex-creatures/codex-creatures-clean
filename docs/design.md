@@ -350,21 +350,23 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
   (~18 a room), and re-scan gold has no cap.
 
-### The tavern questline (📌 the user's spec, 2026-10-20; not built)
+### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–2 built, lib/tavern.ts)
 
 Each stage unlocks the next, so every stage can ship on its own and leave the game playable.
 Placeholder art (existing sprites, simple markers) until a later PixelLab pass. All new save
 fields optional with defaults.
 
-1. **Klutz's quest.** It unlocks once any creature reaches Lv 6 **and** Klutz is Lv 2 or more
+1. ✅ **Klutz's quest.** It unlocks once any creature reaches Lv 6 **and** Klutz is Lv 2 or more
    (either order). Only won hunts give him XP and a first catch takes him to Lv 2, so his level
    is the record of having hunted, and old saves work too. While he's out, the quest waits until
    he's home. Then a "!" shows over him; talking to him gives the quest, once.
-2. **Storehouse.** Once the quest is accepted and until you have the dynamite, a Labyrinth's
+2. ✅ **Storehouse.** Once the quest is accepted and until you have the dynamite, a Labyrinth's
    Large Room is always a Storehouse, always marked on the scroll from the start (no extra room).
    In the Deep (2 large rooms) only one is. The first-quest run has no large room. The dynamite
    lies among its crates and barrels. Taking it is permanent: rooms go back to normal and you
-   can't get a second one. 🧪 Its usual mini-boss guard chance stays (Claude's default; not asked).
+   can't get a second one. 🧪 Its usual mini-boss guard chance stays (the dynamite waits until the
+   guard's beaten). 🧪 The dynamite takes no bag slot and is yours the moment you pick it up, even if
+   the run then goes wrong (there's no second one). Both Claude's defaults; not asked.
 3. **Rubble.** A pile of rubble on the Den's right-hand wall, between the bookcase corner and the
    merchant (the user's sketch: [ideas/den-second-room.png](ideas/den-second-room.png)). The
    boarded-up tavern doorway goes. Using the dynamite on it (once) blows it open with an

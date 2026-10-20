@@ -12,9 +12,10 @@ import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf } from "@/lib/dungeon/run";
 import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
-import { NEW_QUEST, type QuestState } from "@/lib/quest";
+import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
+import { clearTavern, loadTavern, tavernQuestDue, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
-import { addXp, addPlayerXp, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
+import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
 import { SCHEMATICS, MATERIAL_KEYS, bookcaseSize, canAfford, addMaterials, materialDrop, type Materials } from "@/lib/items/materials";
 
@@ -144,7 +145,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const [caged, setCaged]             = useState<Drop[]>([]);
   const [klutz, setKlutz]             = useState<KlutzState>({});
   const [quest, setQuest]             = useState<QuestState>({ ...NEW_QUEST });
-  const [seen, setSeen]               = useState<string[]>([]);
+  const [tavern, setTavern]           = useState<TavernQuest>({}); // (its own save field: lib/tavern.ts)
+  const [seen, setSeen]            = useState<string[]>([]);
   const [deathsSinceScan, setDeathsSinceScan] = useState(0);
   const [scanTipRead, setScanTipRead] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("loot");
@@ -191,6 +193,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setBookcase(saved.bookcase ?? 1);
       setMaterials(saved.materials ?? {});
     }
+    setTavern(loadTavern());
     setPackedIds(packedGear());
     setHydrated(true);
   }, []);
@@ -291,6 +294,14 @@ export function useGameState(initialTab: TabKey = "all") {
     return new Set([l?.weaponId, l?.helmetId, l?.chestId, l?.legsId].filter((x): x is string => !!x));
   }, [klutz, equipment]);
   const klutzIsAway = () => { const ex = klutz.expedition; return !!ex && !ex.collected && Date.now() < ex.endsAt; };
+
+  // ── The tavern questline (lib/tavern.ts) ──────────────
+  // Klutz's quest is waiting (a ❗ over him) once a creature's Lv 6 and he's Lv 2
+  // (and he's home: back from a trip once it's collected).
+  const tavernDue = tavernQuestDue(tavern, klutzHelping(quest),
+    inventory.filter(isCreatureDrop).map((d) => clampLevel((d as CreatureOrItemDrop).level)), clampLevel(klutz.level),
+    !!klutz.expedition && !klutz.expedition.collected);
+  const acceptTavernQuest = () => setTavern(updateTavern((t) => ({ ...t, accepted: true })));
 
   function sendKlutzOff() {
     // What he's wearing decides what he might find.
@@ -647,6 +658,8 @@ export function useGameState(initialTab: TabKey = "all") {
   // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
     clearDungeon();
+    clearTavern();
+    setTavern({});
     setInventory([]);
     setGold(0);
     setScanCounts({});
@@ -689,7 +702,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

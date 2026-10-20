@@ -47,7 +47,7 @@ export default function Home() {
       <div className="screen-fill">
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
-          klutzNews={game.hydrated && (klutzHasNews(game.quest) || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} highlight={highlight} />
+          klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} highlight={highlight} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}

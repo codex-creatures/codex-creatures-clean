@@ -27,6 +27,8 @@
 //   a storehouse (LARGE_MIX). They're drawn bigger on the scroll, so you can
 //   plan a route through one — or round it. Half the time you can see what's
 //   in one from the start (LARGE_KNOWN); otherwise it's a "?" until you walk in.
+//   While Klutz's dynamite quest wants it (lib/tavern.ts), the first is the
+//   storehouse with the dynamite, always marked (rollMap's `dynamite`).
 // - A flare or a clairvoyance scroll lights up the map round a spot, like
 //   your torch (see knownRooms: lit and seen). A flare burns brighter than
 //   a torch: it lights FLARE_RADIUS round you, so you see a few rooms on.
@@ -62,6 +64,7 @@ export type MapNode = {
   mystery?: boolean; // stays "?" until you walk in
   known?: boolean;   // marked on your scroll from the start
   large?: boolean;   // a large room (drawn bigger on the scroll)
+  dynamite?: boolean; // the storehouse with Klutz's dynamite in it (lib/tavern.ts)
 };
 
 // The size of a labyrinth (dungeon 1 uses the constants above; deeper
@@ -183,7 +186,7 @@ function layout(rng: Rng, spec: MapSpec): DungeonMap {
   return { ...(H !== MAP_H ? { h: H } : {}), start: "start", boss: "boss", nodes };
 }
 
-export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec = DEFAULT_SPEC, dungeon: DungeonId = 1): DungeonMap {
+export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec = DEFAULT_SPEC, dungeon: DungeonId = 1, dynamite = false): DungeonMap {
   let map = layout(rng, spec);
   for (let i = 0; i < 600; i++) {
     const r = routeLength(map);
@@ -223,15 +226,15 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
     free = free.filter((o) => !o.split("|").some((end) => end === a || end === b));
   }
   map.knownLinks = knownLinks;
-  placeLarge(map, spec.large, rng);
+  placeLarge(map, spec.large, rng, dynamite);
   return map;
 }
 
 // Turn a few rooms into large ones: well inside the labyrinth (not the
 // first rooms or the lair's doors), with space around them, and spread
 // out (each at a different depth from the last). Each kind turns up once
-// before any repeats.
-function placeLarge(map: DungeonMap, count: number, rng: Rng) {
+// before any repeats. dynamite: the first is the dynamite's storehouse, marked.
+function placeLarge(map: DungeonMap, count: number, rng: Rng, dynamite = false) {
   if (count <= 0) return;
   const depth = depths(map);
   const route = routeLength(map);
@@ -251,10 +254,11 @@ function placeLarge(map: DungeonMap, count: number, rng: Rng) {
     const from = apart.length > 0 ? apart : pool;
     const n = from[Math.floor(rng() * from.length)];
     pool = pool.filter((o) => o !== n);
-    const kind = rollRoomKind(rng, kinds.length < LARGE_MIX.length ? kinds : [], LARGE_MIX);
+    const stash = dynamite && i === 0;
+    const kind: RoomKind = stash ? "storehouse" : rollRoomKind(rng, kinds.length < LARGE_MIX.length ? kinds : [], LARGE_MIX);
     kinds.push(kind);
     placed.push(n);
-    Object.assign(n, { kind, large: true, mystery: rng() >= LARGE_KNOWN });
+    Object.assign(n, { kind, large: true, mystery: !stash && rng() >= LARGE_KNOWN, ...(stash ? { dynamite: true } : {}) });
     if (!n.mystery) n.known = true;
   }
 }

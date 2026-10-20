@@ -253,6 +253,23 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       <button className="pixel-btn" onClick={game.questLend}>&ldquo;Deal.&rdquo;</button>,
     );
   }
+  // The tavern questline (lib/tavern.ts): Klutz wants dynamite for the rubble.
+  if (game.tavernDue) {
+    return say(
+      <>&ldquo;You&apos;re getting tough! See the Den&apos;s right-hand wall? I reckon there&apos;s a whole room behind it.
+        Find me some <b>dynamite</b> and we&apos;ll blow it open. Try a <b>storehouse</b> down there.&rdquo;</>,
+      <button className="pixel-btn" onClick={game.acceptTavernQuest}>&ldquo;I&apos;ll find some.&rdquo;</button>,
+    );
+  }
+  if (game.tavern.accepted && !game.tavern.dynamite) {
+    return say(
+      <>&ldquo;The <b>storehouse</b>&apos;s marked on your scroll. The dynamite&apos;s in there somewhere!&rdquo;</>,
+      <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
+    );
+  }
+  if (game.tavern.dynamite) {
+    return say(<>&ldquo;Dynamite! Hang on to that. Now, where to put it…&rdquo; <span style={{ color: MUTED }}>(Next update.)</span></>);
+  }
   return null;
 }
 

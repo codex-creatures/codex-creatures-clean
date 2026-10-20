@@ -56,7 +56,9 @@ import {
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
   needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, isRareFind, wipedOut, merchantOffer, droppedPieceStats,
+  dynamiteHere, takeDynamite,
 } from "@/lib/dungeon/run";
+import { loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
 import {
   BattleView, SectionTitle, loadOwnedCreatures, rarityColor, usePlayableBattle, MUTED,
@@ -338,16 +340,26 @@ export default function DungeonPage() {
     if (!free && !game.spendGold(ENTRY_FEE)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
     const team = party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0);
+    // Klutz's dynamite quest: the large room is its storehouse (lib/tavern.ts).
+    const dynamite = wantsStorehouse(loadTavern());
     if (deep) {
       const n = (lab.meta.deepRuns ?? 0) + 1;
-      update({ meta: { ...lab.meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2) });
+      update({ meta: { ...lab.meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2, dynamite) });
       return;
     }
     // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
     const quest = wantsClub(game.quest) || wantsThief(game.quest);
     if (quest) game.acceptQuest();
-    const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1);
+    const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1, Math.random, 1, dynamite);
     update({ meta: { ...lab.meta, runs: lab.meta.runs + 1 }, run: r });
+  }
+
+  // Klutz's dynamite: yours for good as soon as you pick it up (no bag slot,
+  // and it comes home whatever happens next: there isn't another).
+  function grabDynamite() {
+    if (!dynamiteHere(loadDungeon().run?.current ?? null)) return;
+    updateTavern((t) => ({ ...t, dynamite: true }));
+    updateRun(takeDynamite);
   }
 
   function goHome() {
@@ -1046,7 +1058,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite}
                   bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
                 />
               : <AtEntrance run={run} />}
@@ -1286,8 +1298,8 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell }: {
-  onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void;
+function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onDynamite }: {
+  onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void; onDynamite: () => void;
   bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void;
   run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
@@ -1480,6 +1492,15 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
           {onward}
         </>
       ) : <>{sackPanel}{onward}</>)}
+
+      {/* Klutz's dynamite (lib/tavern.ts): among the crates, once any guard is beaten. */}
+      {dynamiteHere(room) && (
+        <>
+          <p style={{ fontSize: 13, color: "#ffb38a", margin: "8px 0 0" }}>Behind the barrels: a crate stamped <b>DANGER</b>. Dynamite!</p>
+          <button className="pixel-btn tutorial-pulse" style={{ marginTop: 6 }} onClick={onDynamite}>🧨 Take the dynamite</button>
+        </>
+      )}
+      {room.dynamite === false && <p style={{ fontSize: 13, color: "#7CFC9A", margin: "8px 0 0" }}>🧨 Klutz&apos;s dynamite is yours.</p>}
 
       {room.kind === "encampment" && (
         <EncampmentPanel room={room} onCage={onCage} />

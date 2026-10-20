@@ -550,6 +550,7 @@ export type Room = {
   cages?: Cage[];      // …its cages
   sprung?: boolean;    // …an ambush: you opened a cage and they jumped you
   guarded?: boolean;   // a storehouse: a mini boss guards it
+  dynamite?: boolean;  // …Klutz's dynamite is among its crates, still to take (lib/tavern.ts)
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
   container?: "sack" | "chest" | "strongbox"; // a beaten fight's loot: a sack (ordinary fights), a rickety chest (mini bosses, the Cyclops) or the Warden's strongbox
@@ -730,10 +731,11 @@ export type DungeonRun = {
   status: RunStatus;
 };
 
-export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1): DungeonRun {
+// dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts: wantsStorehouse).
+export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1, dynamite = false): DungeonRun {
   // The very first run opens in a treasure room; otherwise at an empty entrance.
   const first = runNumber === 1 && dungeon === 1;
-  const map = rollMap(first, rng, DUNGEONS[dungeon].spec, dungeon);
+  const map = rollMap(first, rng, DUNGEONS[dungeon].spec, dungeon, dynamite);
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), ...(dungeon !== 1 ? { dungeon } : {}),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
@@ -779,7 +781,15 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  return { ...run, path: [...run.path, node.id], current: makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run)), room: run.room + 1 };
+  const room = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run));
+  return { ...run, path: [...run.path, node.id], current: node.dynamite ? { ...room, dynamite: true } : room, room: run.room + 1 };
+}
+
+// Klutz's dynamite, in its storehouse: there to take once any guard is beaten.
+export const dynamiteHere = (r: Room | null) => !!r?.dynamite && (!hasFight(r) || r.done);
+export function takeDynamite(run: DungeonRun): DungeonRun {
+  if (!dynamiteHere(run.current)) return run;
+  return { ...run, current: { ...run.current!, dynamite: false } };
 }
 
 // Rooms you can walk out of without doing anything (and the large rooms
