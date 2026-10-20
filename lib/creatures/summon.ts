@@ -13,7 +13,7 @@ import type { CreatureOrItemDrop } from "../types";
 import { findCreatureTemplate, type CreatureTemplate } from "./creatureData";
 import { rollCreature, type CreatureRoll } from "./creatureRoll";
 
-export const REAL_CREATURE_CHANCE = 0.1;
+export const REAL_CREATURE_CHANCE = 0.2;
 export const CARDS_TO_SUMMON = 3;
 
 type Rng = () => number;

@@ -69,7 +69,7 @@ export function useDropGeneration({
 
     // ── FIRST SCAN (for this player) → BARCODE OUTCOMES ───
     // Registry: same barcode gives everyone the same outcomes. Creature: the
-    // barcode fixes WHICH creature, you usually get a card of it (10%: the
+    // barcode fixes WHICH creature, you usually get a card of it (20%: the
     // creature itself). Items: identity + rarity from the barcode, stats
     // roll fresh per player.
     const drops: Drop[] = [];

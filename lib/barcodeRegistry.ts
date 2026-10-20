@@ -16,7 +16,6 @@ import { RARITY_WEIGHTS } from "./items/budgets";
 import { ARMOR_SLOTS, type ArmorKey, type ArmorSlot } from "./items/armor";
 import {
   pickRarity,
-  pickItemCategory,
   pickWeaponKey,
   pickArmorKey,
   pickCreatureId,
@@ -67,23 +66,35 @@ function consumableRarity(): Rarity {
   return roll < c ? "common" : roll < c + u ? "uncommon" : "rare";
 }
 
-// A fresh random outcome — 20% creature / 60% item / 20% gold.
+// What a fresh barcode gives, out of 100. Weapons and armour share 40, armour
+// twice as often (it comes in three pieces, so you need more of it).
+export const SCAN_ODDS = { creature: 30, weapon: 13, armor: 27, consumable: 10, material: 10, gold: 10 } as const;
+
+function pickScanOutcome(): keyof typeof SCAN_ODDS {
+  let roll = Math.random() * 100;
+  for (const [k, w] of Object.entries(SCAN_ODDS) as [keyof typeof SCAN_ODDS, number][]) {
+    if ((roll -= w) < 0) return k;
+  }
+  return "gold";
+}
+
+// A fresh random outcome, at SCAN_ODDS.
 // playerLevel: a creature is only ever as rare as that explorer level can
 // find (SCAN_UNLOCK); missing = anything.
 export function rollBarcodeOutcome(playerLevel = Infinity): BarcodeOutcome {
-  const outcomeRoll = Math.floor(Math.random() * 100) + 1;
+  const pick = pickScanOutcome();
 
-  if (outcomeRoll > 80) {
+  if (pick === "gold") {
     return { outcome: "gold", amount: 50 + Math.floor(Math.random() * 101) };
   }
 
-  if (outcomeRoll <= 20) {
+  if (pick === "creature") {
     let rarity = pickRarity("", "random");
     while (!canFind(playerLevel, rarity)) rarity = pickRarity("", "random");
     return { outcome: "creature", rarity, creatureId: pickCreatureId(rarity) };
   }
 
-  const itemCategory = pickItemCategory("", "random");
+  const itemCategory: ItemCategory = pick;
   const rarity = itemCategory === "consumable" ? consumableRarity() : pickRarity("", "random");
   if (itemCategory === "weapon") {
     return { outcome: "item", itemCategory, rarity, itemKey: pickWeaponKey("", "random") };

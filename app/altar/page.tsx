@@ -247,7 +247,8 @@ export default function AltarPage() {
 }
 
 // One find in the window: on a soft glow of its rarity, its name under it.
-// A creature card shows as the card itself, sized to fit the square.
+// A creature card shows as the card itself, sized to fit the square; a real
+// creature as its card with a halo (and no "card" in its name).
 function Find({ d }: { d: Drop }) {
   const l = lookOf({ gear: d });
   const card = (d.dropType === "card" || d.dropType === "creature") ? findCreatureTemplate(d.creatureId, d.name) : undefined;
@@ -255,7 +256,7 @@ function Find({ d }: { d: Drop }) {
     <div title={l.name} style={{ minWidth: 0, textAlign: "center" }}>
       <div style={{ ...TILE, borderRadius: 8, background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)` }}>
         {card && d.dropType !== "reward" ? (
-          <div style={{ width: "71%" }}><CardFace t={card} creatureId={d.creatureId ?? card.id} ability={d.ability} mini /></div>
+          <div style={{ width: "71%" }}><CardFace t={card} creatureId={d.creatureId ?? card.id} ability={d.ability} glow={d.dropType === "creature"} mini /></div>
         ) : l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 30 }}>{l.icon}</span>}
       </div>
       <div style={{ ...NAME, color: l.color }}>{l.name}</div>

@@ -8,7 +8,7 @@ import type { ItemKey } from "./ceilings";
 import { ITEM_CEILINGS } from "./ceilings";
 import type { ArmorKey } from "./armor";
 import { ARMOR_CEILINGS, ARMOR_KEYS, pieceCeilings } from "./armor";
-import type { ItemCategory, Drop } from "../types";
+import type { Drop } from "../types";
 import { isItemDrop } from "../types";
 import { ITEM_KEYS } from "./ceilings";
 import { CREATURE_TEMPLATES, CREATURES_BY_RARITY } from "../creatures/creatureData";
@@ -50,19 +50,6 @@ export function pickRarity(seed: string, rollMode: "random" | "deterministic"): 
     if (r <= cumulative) return rarity;
   }
   return "common";
-}
-
-// ── Item category picking ────────────────────────────────
-export function pickItemCategory(
-  code: string,
-  rollMode: "random" | "deterministic"
-): ItemCategory {
-  // Armour counts twice: it comes in three pieces, so you need more of it.
-  const categories: ItemCategory[] = ["weapon", "armor", "armor", "material", "consumable"];
-  if (rollMode === "deterministic") {
-    return categories[deterministicRoll(`${code}:itemCategory`) % categories.length];
-  }
-  return categories[Math.floor(Math.random() * categories.length)];
 }
 
 // ── Weapon / armor key picking ───────────────────────────

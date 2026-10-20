@@ -29,7 +29,7 @@ export function lookOf(x: SackItem): Look {
   if ("potion" in x) return { name: POTIONS[x.potion].name, sprite: POTION_SPRITES[x.potion], ...by(POTION_RARITY[x.potion]), free: false };
   // A creature card or a pouch of gold, from a treasure chest: no room needed.
   if (x.gear.dropType === "reward") return { name: `${x.gear.amount} gold`, sprite: GOLD_SPRITE, ...by(GOLD_RARITY), free: true };
-  if (x.gear.dropType === "card" || x.gear.dropType === "creature") return { name: `${x.gear.name} card`, icon: "🃏", ...by(x.gear.rarity), free: true };
+  if (x.gear.dropType === "card" || x.gear.dropType === "creature") return { name: x.gear.dropType === "card" ? `${x.gear.name} card` : x.gear.name, icon: "🃏", ...by(x.gear.rarity), free: true };
   const g = x.gear as CreatureOrItemDrop;
   const rc = RARITY_COLORS[g.rarity];
   return { name: g.qty ? `${g.name} ×${g.qty}` : g.name, sprite: itemSprite(g), icon: goodsIcon(g) ?? (g.codexMove ? "📖" : g.scroll ? "📜" : "📦"), color: rc.text, glow: rarityGlow(g.rarity), free: false }; // (materials take a slot now: they come home in your bag)

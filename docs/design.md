@@ -36,8 +36,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
 - ✅ The registry is **local** for now (`codex_creatures_registry_v2`). "Reset player" keeps it,
   to simulate a friend; "Global reset" clears it.
-- ✅ Outcome odds (`rollBarcodeOutcome`): 20% creature, 60% item, 20% gold. Items: weapon, armour,
-  material, consumable.
+- ✅ Outcome odds (`SCAN_ODDS`, 2026-10-20): 30% creature, 13% weapon, 27% armour, 10% consumable,
+  10% material, 10% gold. Labyrinth chests roll the same table. About 1 real creature per 17 scans.
 - ✅ **1 drop per new scan** (`SCAN_DROPS`). Items should stay scarce; gold scans are the
   "dud" consolation.
 - ✅ The altar (layout 2026-10-20): a big **Scan Barcode** button, the Looting/Storage toggle, and a
@@ -48,7 +48,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   bottom as a testing tool.
 - ✅ **Items discovered** counts every kind of item: weapon and armour types, materials, potions and
   codexes (lib/items/discovery.ts). The save remembers kinds you've used up (`found`).
-- ✅ Scanned creatures: 10% are a real creature, 90% a **creature card** (`REAL_CREATURE_CHANCE`).
+- ✅ Scanned creatures: 20% are a real creature, 80% a **creature card** (`REAL_CREATURE_CHANCE`).
+  In the loot window a real creature shows as its card with a halo, named without "card".
 - ✅ Your **explorer level** caps how rare a scanned creature can be (`SCAN_UNLOCK`: rare at
   Lv 2, epic at 6, legendary at 12). A too-rare barcode stays sealed: it doesn't count, and the
   altar shows the level needed.

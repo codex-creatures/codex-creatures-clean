@@ -43,6 +43,7 @@ describe("registry behaviour", () => {
 describe("outcome odds (statistical)", () => {
   const N = 100000;
   const outcomes = { creature: 0, item: 0, gold: 0 };
+  const categories: Record<string, number> = {};
   const rarity: Record<string, number> = {};
   const consumable: Record<string, number> = {}; // potions and codexes
   let rarityTotal = 0;
@@ -53,6 +54,7 @@ describe("outcome odds (statistical)", () => {
   for (let i = 0; i < N; i++) {
     const e = rollBarcodeOutcome();
     outcomes[e.outcome]++;
+    if (e.outcome === "item") categories[e.itemCategory] = (categories[e.itemCategory] ?? 0) + 1;
     if (e.outcome === "gold") continue;
     if (e.outcome === "item" && e.itemCategory === "consumable") { consumable[e.rarity] = (consumable[e.rarity] ?? 0) + 1; continue; }
     rarity[e.rarity] = (rarity[e.rarity] ?? 0) + 1;
@@ -63,10 +65,13 @@ describe("outcome odds (statistical)", () => {
   }
   const pct = (n: number, total: number) => (n / total) * 100;
 
-  it("is 20% creature / 60% item / 20% gold", () => {
-    expect(pct(outcomes.creature, N)).toBeCloseTo(20, 0);
-    expect(pct(outcomes.item, N)).toBeCloseTo(60, 0);
-    expect(pct(outcomes.gold, N)).toBeCloseTo(20, 0);
+  it("is 30% creature, 13% weapon, 27% armour, 10% consumable, 10% material, 10% gold", () => {
+    expect(pct(outcomes.creature, N)).toBeCloseTo(30, 0);
+    expect(pct(outcomes.gold, N)).toBeCloseTo(10, 0);
+    expect(pct(categories.weapon, N)).toBeCloseTo(13, 0);
+    expect(pct(categories.armor, N)).toBeCloseTo(27, 0);
+    expect(pct(categories.consumable, N)).toBeCloseTo(10, 0);
+    expect(pct(categories.material, N)).toBeCloseTo(10, 0);
   });
 
   it("consumables are only Common, Uncommon or Rare, 40:30:20", () => {
