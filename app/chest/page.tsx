@@ -44,12 +44,24 @@ export default function InventoryPage() {
         title={klutzHelping(quest) ? "Klutz's gear and moves" : "Klutz isn't helping you yet"}>Klutz</button>
     </div>
   );
-  // Sell mode, bottom right. The dock stays (empty) on Creatures so nothing moves.
+  // Sell mode, bottom right; while selling, its controls sit beside it (one
+  // row, so the dock never changes height). The dock stays (empty) on
+  // Creatures so nothing moves.
+  const selling = part === "items" && game.sellMode;
+  const picked = game.selectedForSale.size;
   const dock = (
-    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+    <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
+      {selling && <>
+        <button className="dock-tab" onClick={game.selectAllInView} style={{ padding: "0 10px" }}>All</button>
+        <button className="dock-tab" onClick={game.deselectAll} disabled={picked === 0} style={{ padding: "0 10px" }}>None</button>
+        <button className="dock-tab" onClick={() => game.setShowSellConfirm(true)} disabled={picked === 0}
+          style={{ flex: 1, minWidth: 0, color: picked ? "#f5c542" : undefined }}>
+          Sell {picked}{picked > 0 && ` · +${game.sellTotal.toLocaleString()}g`}
+        </button>
+      </>}
       <button className="dock-tab" onClick={game.toggleSellMode} data-active={game.sellMode}
         style={{ visibility: part === "items" ? "visible" : "hidden", color: game.sellMode ? "white" : "#ff8a80", padding: "0 16px" }}>
-        {game.sellMode ? "✕ Cancel sell" : "💰 Sell mode"}
+        {game.sellMode ? "✕" : "💰 Sell mode"}
       </button>
     </div>
   );
@@ -74,6 +86,7 @@ export default function InventoryPage() {
         title={parts}
         tabs={PART_TABS[part]}
         showSell={false}
+        sellBar={false}
         emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
           : game.activeTab === "roster" ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
           : game.activeTab === "cards" ? "No creature cards yet. Collect 3 of one creature to summon it."
@@ -93,7 +106,7 @@ export default function InventoryPage() {
         onTabChange={game.setActiveTab}
         favoriteIds={game.favoriteIds}
         onToggleFavorite={game.toggleFavorite}
-        sellMode={part === "items" && game.sellMode}
+        sellMode={selling}
         selectedForSale={game.selectedForSale}
         onToggleSelectItem={game.toggleSelectItem}
         onSelectAll={game.selectAllInView}

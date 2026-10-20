@@ -58,6 +58,7 @@ type Props = {
   tabs?: GameTabKey[];
   title?: React.ReactNode;
   showSell?: boolean;
+  sellBar?: boolean; // false: the screen shows Select all / Sell selected itself
   emptyText?: string;
   headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
   unavailableItems?: Set<string>; // gear you can't take right now (Klutz has it in the Labyrinth)
@@ -72,7 +73,7 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, emptyText, headerExtra, unavailableItems,
+  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
@@ -165,8 +166,8 @@ export default function InventoryList({
         </div>
       </div>
 
-      {/* Sell toolbar */}
-      {sellMode && (
+      {/* Sell toolbar (unless the screen puts it in its dock, as the Inventory does) */}
+      {sellMode && sellBar && (
         <div style={{ marginTop: 10, padding: "12px 16px", background: "rgba(255,80,80,0.08)", border: "1px solid rgba(255,80,80,0.25)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={onSelectAll} style={smallBtnStyle}>Select All</button>
