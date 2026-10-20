@@ -68,7 +68,7 @@ export const RACES: Race[] = ["beast", "underdweller", "etherial", "undead", "el
 
 export const RACE_INFO: Record<Race, { name: string; color: string; icon: string }> = {
   beast:        { name: "Beast",         color: "#d89a5b", icon: "🐾" },
-  underdweller: { name: "Under-dweller", color: "#b8a77a", icon: "🪨" },
+  underdweller: { name: "Underkin", color: "#b8a77a", icon: "🪨" },
   etherial:     { name: "Etherial",      color: "#a99cff", icon: "🌙" },
   undead:       { name: "Undead",        color: "#9fd3a8", icon: "💀" },
   elvish:       { name: "Elvish",        color: "#7fd16f", icon: "🍃" },
@@ -188,7 +188,7 @@ export const CREATURE_TEMPLATES: CreatureTemplate[] = [
   { id: "bellow_toad",      name: "Bellow Toad",      race: "beast",        rarity: "rare",      baseHp: 102, cls: "melee", proficiency: { atk: 14, rng: 12, mag: 0, agil: 24, mdef: 10, rdef: 3, magdef: 18 }, skills: s("Cripple","Crippling Shot","Slash","Bolt"),         flavour: "Its throat swells like a bellows before it spits. The glands on its back glow when it's angry, and it's always angry." },
   { id: "dire_wolf",        name: "Dire Wolf",        race: "beast",        rarity: "epic",      baseHp: 113, cls: "melee", proficiency: { atk: 42, rng: 4, mag: 0, agil: 22, mdef: 12, rdef: 8, magdef: 10 }, skills: s("Crush","Heavy Blow","Slash","Devastator","Impale"),     flavour: "Three times the size of a normal wolf. Twice as hungry." },
   { id: "ironhide",         name: "Ironhide",         race: "beast",        rarity: "legendary", baseHp: 150, cls: "melee", proficiency: { atk: 52, rng: 6, mag: 0, agil: 10, mdef: 44, rdef: 30, magdef: 37 }, skills: s("Devastator","Crush","Impale","Heavy Blow","Slash","Stone Throw"), flavour: "A war elephant whose trunk was replaced with a double-headed battleaxe." },
-  // UNDER-DWELLER
+  // UNDERKIN
   { id: "cave_bat",         name: "Cave Bat",         race: "underdweller", rarity: "common",    baseHp: 60, cls: "ranged", proficiency: { atk: 4, rng: 14, mag: 0, agil: 16, mdef: 2, rdef: 6, magdef: 4 }, skills: s("Pebble Shot","Bolt","Flick"),                         flavour: "Blindingly fast. Hits and vanishes before you can react." },
   { id: "rust_beetle",      name: "Rust Beetle",      race: "underdweller", rarity: "uncommon",  baseHp: 82, cls: "melee", proficiency: { atk: 10, rng: 3, mag: 0, agil: 3, mdef: 24, rdef: 12, magdef: 18 }, skills: s("Slash","Jab","Flick","Heavy Blow"),                   flavour: "A walking fortress. Slow, but its shell absorbs tremendous punishment." },
   { id: "crystalback",      name: "Crystalback",      race: "underdweller", rarity: "rare",      baseHp: 100, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 8, agil: 4, mdef: 30, rdef: 24, magdef: 30 }, skills: s("Frost Shard","Hex","Jab","Ice Lance"),            flavour: "Its crystalline shell refracts both blade and bolt." },

@@ -2,7 +2,7 @@
 // Creature sprites drawn in code on the fine grid (44×44; see draw.ts).
 // Each race has a look:
 // - Beast: fur and hide, claws, warm natural colours.
-// - Under-dweller: stone, crystal and rust; eyes that glow in the dark.
+// - Underkin: stone, crystal and rust; eyes that glow in the dark.
 // - Etherial: floating, glowing and see-through, with sparkles; no feet.
 // - Undead: bone, rags and rot, with sickly green glowing eyes.
 // - Elvish: leaf greens with gold trim, hoods, bows and blades.
@@ -108,7 +108,7 @@ export const BESTIARY: Record<string, Sprite> = {
     p.line(0, 27, 0, 37, 1, "S").line(13, 27, 13, 37, 1, "S");                // edges
   }),
 
-  // ── Under-dwellers ───────────────────────────────────────────────
+  // ── Underkin ─────────────────────────────────────────────────
   cave_bat: draw((p) => {
     p.poly([[20, 18], [2, 9], [0, 25], [4, 22], [7, 28], [11, 23], [14, 29], [19, 25]], T.purple);  // wing
     p.path([[19, 19], [3, 10]], 1, "q").line(10, 14, 7, 27, 1, "q").line(14, 16, 14, 28, 1, "q");
@@ -400,7 +400,7 @@ export const BESTIARY: Record<string, Sprite> = {
     p.path([[18, 8], [15, 2]], 1, "e").path([[25, 8], [28, 2]], 1, "e");      // antennae
   }),
 
-  forest_slime: draw((p) => {                                                 // would be an Under-dweller
+  forest_slime: draw((p) => {                                                 // would be an Underkin
     p.ellipse(21.5, 33, 15, 9, T.green);                                      // the blob
     p.ellipse(21.5, 27, 11, 9, T.green);
     p.ellipse(15, 24, 3, 2, "N").dot(14, 23, "h");                            // shine
@@ -411,7 +411,7 @@ export const BESTIARY: Record<string, Sprite> = {
     for (const [x, y] of [[11, 33], [31, 31], [27, 38], [14, 38]] as const) p.dot(x, y, "Q");   // glowing specks
   }),
 
-  stone_toad: draw((p) => {                                                   // would be an Under-dweller
+  stone_toad: draw((p) => {                                                   // would be an Underkin
     p.ellipse(9, 38, 6, 3, T.stone).ellipse(34, 38, 6, 3, T.stone);           // feet
     p.ellipse(21.5, 30, 17, 10, T.stone);                                     // lumpy body
     p.ellipse(21.5, 33, 11, 5, ["I", "i", "j"]);                              // pale belly

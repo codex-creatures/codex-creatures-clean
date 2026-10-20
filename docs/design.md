@@ -124,7 +124,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 ## 4. Creatures
 
 - ✅ 25 scannable species (lib/creatures/creatureData.ts), each with a rarity, a **class**
-  (melee / ranged / magic) and a **race** (Beast, Under-dweller, Etherial, Undead, Elvish), plus
+  (melee / ranged / magic) and a **race** (Beast, Underkin, Etherial, Undead, Elvish), plus
   companions (Klutz), boss parts and 6 retired species that are kept out of scans.
 - ✅ **Individual rolls:** each creature's %s are the species' values with a small zero-sum spread
   (`ROLL_SPREAD_*` in creatureRoll.ts). Rarer creatures get bigger spreads. 4 move slots, each with
@@ -190,7 +190,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   attack is lost), Haste/Blink (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
   always precise).
 - ✅ **Race moves:** single-use codexes, learnable only by that race. Pounce (Beast), Rabid Bite
-  (Under-dweller, venom ticks even on the bench), Mirage (Etherial), Corpsify (Undead), Barrage
+  (Underkin, venom ticks even on the bench), Mirage (Etherial), Corpsify (Undead), Barrage
   (Elvish, hits every enemy).
 - ✅ **Move codexes** (decided 2026-10-19): every natural move comes as a codex from scans, each
   teachable only to a creature of that move's class. Up to 20 damage (`BASIC_MOVES`, 15 moves)
