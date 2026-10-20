@@ -412,20 +412,21 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             </div>
           </>
         ))}
+        {/* Swap: just the creatures to pick from, each its picture over its HP. */}
         {open === "swap" && canSwap && over("Swap", (
-          <>
-            <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>
-              Uses your turn: {multi ? "both foes get" : `their ${them.name} gets`} a free hit on the newcomer; your {me.name} gets back half its missing energy.
-            </div>
-            <div style={{ display: "grid", gap: 6 }}>
-              {swapTargets(you).map((i) => (
-                <button key={i} onClick={() => act({ kind: "swap", to: i })} disabled={playing} className="card-btn" style={{ display: "block" }}>
-                  <b>⇄ {you.team[i].name}</b>
-                  <span style={{ display: "block", fontSize: 12, color: MUTED }}>{you.team[i].hp}/{you.team[i].maxHp} HP{showEstimates && <> · {matchupHint(you.team[i], them)}</>}</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {swapTargets(you).map((i) => {
+              const f = you.team[i];
+              const pct = (f.hp / f.maxHp) * 100;
+              return (
+                <button key={i} onClick={() => act({ kind: "swap", to: i })} disabled={playing} className="card-btn"
+                  aria-label={`Swap to ${f.name}`} title={f.name} style={{ flexDirection: "column", alignItems: "stretch", gap: 0 }}>
+                  <span style={{ display: "flex", justifyContent: "center" }}><Token name={f.name} rarity={info.A[i].rarity} creatureId={info.A[i].creatureId} /></span>
+                  <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={pct} color={pct > 50 ? "#22c55e" : pct > 25 ? "#f5c542" : "#ef4444"} />
                 </button>
-              ))}
-            </div>
-          </>
+              );
+            })}
+          </div>
         ))}
       </div>
 
