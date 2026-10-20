@@ -68,8 +68,9 @@ export const VISITOR_STAY = 2;  // runs a visitor stays
 export const VISITOR_PITY = 3;  // after this many misses in a row, someone's sure to call
 
 // Home from a run: whoever's calling stays one run less (and leaves at 0),
-// then, if nobody's here, roll for someone new.
-export function comeHome(t: TavernQuest, rng: () => number = Math.random): TavernQuest {
+// then, if nobody's here, roll for someone new. bindle: you're still on the
+// bindle, so a merchant brings the rugged backpack.
+export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest {
   if (!t.repaired) return t;
   if (t.visitor && (t.stay ?? 0) > 1) return { ...t, stay: (t.stay ?? 0) - 1 };
   const gone: TavernQuest = { ...t, visitor: undefined, stay: undefined, wares: undefined, offers: undefined, bought: undefined };
@@ -79,7 +80,7 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random): Taver
   const r = rng() * (sure ? total : 1);
   const who: Visitor | undefined = r < VISITOR_ODDS.merchant ? "merchant" : r < total ? "librarian" : undefined;
   if (!who) return { ...gone, misses: (t.misses ?? 0) + 1 };
-  const stock = makeRoom(who, rng);
+  const stock = makeRoom(who, rng, Infinity, 1, bindle);
   return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
 }
 

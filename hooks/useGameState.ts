@@ -10,7 +10,7 @@ import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
-import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, codexPrice, type Ware } from "@/lib/dungeon/run";
+import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, codexPrice, onBindle, BACKPACK, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, scrollDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
@@ -324,6 +324,14 @@ export function useGameState(initialTab: TabKey = "all") {
   function buyTavernWare(w: Ware): boolean {
     const t = loadTavern();
     if (t.visitor !== "merchant" || !t.wares?.some((x) => x.key === w.key) || t.bought?.includes(w.key)) return false;
+    if ("backpack" in w) {
+      // The rugged backpack: your bag's bigger from your next run on.
+      const lab = loadDungeon();
+      if (!onBindle(lab.meta) || !spendGold(w.price)) return false;
+      saveDungeon({ ...lab, meta: { ...lab.meta, bagSize: BACKPACK } });
+      setTavern(updateTavern((x) => buyFromVisitor(x, w.key)));
+      return true;
+    }
     if (!spendGold(w.price)) return false;
     addDrop("potion" in w ? potionDrop("", w.potion) : "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : materialDrop(w.material, w.qty));
     setTavern(updateTavern((x) => buyFromVisitor(x, w.key)));

@@ -24,7 +24,7 @@ export default function Home() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);
   const k = klutzStatus(game.klutz, game.klutzFighter.maxHp, now).kind;
-  // The bag by the archway: a bindle until the rugged backpack from your first Cyclops.
+  // The bag by the archway: a bindle until you find the rugged backpack.
   const [backpack, setBackpack] = useState(false);
   useEffect(() => { setBackpack(bagSize(loadDungeon().meta) > BINDLE); }, []);
   // Where Klutz has sent you: the cage for your first creature, then the Pit to

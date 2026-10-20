@@ -51,7 +51,7 @@ import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   hasFight, minibossExtras, codexPrice, wareName, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
-  BACKPACK, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
+  BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
@@ -344,13 +344,13 @@ export default function DungeonPage() {
     const dynamite = wantsStorehouse(loadTavern());
     if (deep) {
       const n = (lab.meta.deepRuns ?? 0) + 1;
-      update({ meta: { ...lab.meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2, dynamite) });
+      update({ meta: { ...lab.meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2, dynamite, onBindle(lab.meta)) });
       return;
     }
     // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
     const quest = wantsClub(game.quest) || wantsThief(game.quest);
     if (quest) game.acceptQuest();
-    const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1, Math.random, 1, dynamite);
+    const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1, Math.random, 1, dynamite, onBindle(lab.meta));
     update({ meta: { ...lab.meta, runs: lab.meta.runs + 1 }, run: r });
   }
 
@@ -379,7 +379,7 @@ export default function DungeonPage() {
       delete loot[id];
     }
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
-    updateTavern(comeHome); // home: a visitor may call at the tavern
+    updateTavern((t) => comeHome(t, Math.random, onBindle(cur.meta))); // home: a visitor may call at the tavern
     battle.clear();
     setNotes([]);
   }
@@ -431,6 +431,14 @@ export default function DungeonPage() {
   // a bag slot; materials go in your pouch.
   function buyWare(w: Ware) {
     const cur = loadDungeon();
+    if ("backpack" in w) {
+      // The rugged backpack, off his cart: more room in your bag from now on.
+      if (!onBindle(cur.meta) || cur.run?.current?.bought?.includes(w.key) || !game.spendGold(w.price)) return;
+      update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
+      setNotes((n) => [...n, `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held ${BINDLE}).`]);
+      updateRun((r) => (r.current ? { ...r, bindle: undefined, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
+      return;
+    }
     const d = "potion" in w ? undefined : "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : materialDrop(w.material, w.qty);
     const slot = d ? needsSlot(cur.meta, d) : true;
     if (cur.run?.current?.bought?.includes(w.key) || (slot && (cur.meta.bag ?? []).length >= bagSize(cur.meta)) || !game.spendGold(w.price)) return;
@@ -544,8 +552,8 @@ export default function DungeonPage() {
     if ("backpack" in item) {
       // The rugged backpack: more room in your bag from now on.
       update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
-      setNotes((n) => [...n, `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held 3).`]);
-      updateRun((r) => (r.current ? { ...r, loot: [...r.loot, "A rugged backpack"], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
+      setNotes((n) => [...n, `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held ${BINDLE}).`]);
+      updateRun((r) => (r.current ? { ...r, bindle: undefined, loot: [...r.loot, "A rugged backpack"], current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
       return;
     }
     const roomless = "gear" in item && !needsSlot(cur.meta, item.gear);
@@ -866,7 +874,7 @@ export default function DungeonPage() {
     if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // A guarded storehouse: its stores are yours too, in the same haul.
     if (room.kind === "storehouse") sack.push(...(room.sack ?? []));
-    // The first time you beat the Cyclops, its chest holds a rugged backpack.
+    // Until you've got a rugged backpack, the Cyclops' chest holds one.
     if (room.boss && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
     const container = room.kind === "boss" && !room.boss ? "strongbox" as const : miniboss || room.kind === "boss" ? "chest" as const : "sack" as const;
     updateRun((x) => markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: false } : x.current }));
@@ -1443,7 +1451,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             A cart piled with odds and ends, and a merchant who smiles too much. &ldquo;One of each, friend. Everything takes a slot in your bag — the timber stacks, mind.&rdquo;
           </p>
-          <MerchantCart key={run.path.length} wares={room.wares ?? []} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
+          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots })} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
           <MerchantBag key={`bag${run.path.length}`} slots={bagSlots} looks={bagLooks} offers={bagOffers} onSell={onSell} />
           {next}
         </>

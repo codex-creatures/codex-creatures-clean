@@ -110,7 +110,7 @@ export default function BagPage() {
           What you carry in the Labyrinth: <b>{slots} slots</b>, one thing each. Gold and creature cards take no space;
           potions, gear, codexes and materials take a slot (materials stack) — including what you find, so choose what&apos;s worth bringing home.
           Packed gear can go on a creature between rooms, and a packed weapon can be swapped in mid-fight (it uses your turn).
-          {slots <= BINDLE && <> It&apos;s only a bindle for now — beat the Cyclops to find a rugged backpack with {BACKPACK} slots.</>}
+          {slots <= BINDLE && <> It&apos;s only a bindle for now — a rugged backpack ({BACKPACK} slots) is on merchants&apos; carts, and in some storehouses.</>}
         </p>
       </div>
 

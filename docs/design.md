@@ -102,8 +102,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   home, like gold. In the Labyrinth a material find is a stack that takes one bag slot and joins
   the tally when you get home.
 - ✅ **Potions** go in the bag. The Chest (Inventory) stores the rest.
-- ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The first Cyclops's chest holds a Rugged
-  Backpack (5, `BACKPACK`). Gear, codexes, potions, tools and material stacks take a slot; gold and
+- ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
+  found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
+  wandering merchant's cart, Labyrinth or tavern, for 1,000 gold (`BACKPACK_PRICE`; it takes one of
+  the cart's 5 slots, so with both scrolls the clairvoyance scroll misses out); and 50% of
+  storehouses (`STOREHOUSE_BACKPACK`). Gear, codexes, potions, tools and material stacks take a slot; gold and
   creature cards don't. Swapping a weapon from the bag mid-fight uses your turn.
 - ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from
   10 to 25 codexes. 📌 Changing (the user, 2026-10-20): it will come only from the tavern

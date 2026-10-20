@@ -9,7 +9,7 @@ import { Coin } from "./GoldCount";
 import { useMemo, useState } from "react";
 import PixelSprite from "./PixelSprite";
 import { ICON, lookOf } from "./ContainerLoot";
-import { POTIONS, priceUp, wareName, type SackItem, type Ware } from "@/lib/dungeon/run";
+import { POTIONS, BACKPACK, BINDLE, priceUp, wareName, type SackItem, type Ware } from "@/lib/dungeon/run";
 import { TOOLS, MATERIALS, materialDrop, toolDrop } from "@/lib/items/materials";
 import { scrollDrop } from "@/lib/drops";
 import { SCROLL_XP } from "@/lib/creatures/levels";
@@ -21,7 +21,8 @@ const lines = (n: number, lineHeight: number): React.CSSProperties => ({
   display: "-webkit-box", WebkitLineClamp: n, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight, height: `${n * lineHeight}em`,
 });
 
-const detailOf = (w: Ware) => ("potion" in w ? `Restores ${POTIONS[w.potion].heal} HP to one creature. In a fight it uses your turn.`
+const detailOf = (w: Ware) => ("backpack" in w ? `Room for ${BACKPACK} things in your bag, from now on (your bindle holds ${BINDLE}).`
+  : "potion" in w ? `Restores ${POTIONS[w.potion].heal} HP to one creature. In a fight it uses your turn.`
   : "scroll" in w ? `${SCROLL_XP} XP for one creature, or Klutz.`
   : "tool" in w ? TOOLS[w.tool].desc : `${MATERIALS[w.material].desc} Takes a slot (it stacks); it's yours once you're home.`);
 
@@ -33,7 +34,7 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
 }) {
   const [picked, setPicked] = useState<string[]>([]);
   // Each ware as the thing it is, for its picture and colour.
-  const looks = useMemo(() => wares.map((w) => lookOf(("potion" in w ? { potion: w.potion }
+  const looks = useMemo(() => wares.map((w) => lookOf(("backpack" in w ? { backpack: true } : "potion" in w ? { potion: w.potion }
     : { gear: "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : materialDrop(w.material, w.qty) }) as SackItem)), [wares]);
   const { chosen, total, short } = priceUp(wares, picked, gold, bagSlots - bagUsed, stacks);
   const focus = wares.find((w) => w.key === picked[picked.length - 1]);

@@ -201,8 +201,10 @@ export const witchPrize = () => pickCreatureId(pickRarity("", "random"));
 
 // ── The battle bag ───────────────────────────────────────────────────
 // Your bag: what you carry in the Labyrinth, one thing per slot (they
-// don't stack), kept between runs. You start with a BINDLE (3 slots); your
-// first Cyclops's chest holds a RUGGED BACKPACK (5).
+// don't stack), kept between runs. You start with a BINDLE (3 slots); a
+// RUGGED BACKPACK (5) is in your first Cyclops's chest, on every wandering
+// merchant's cart (BACKPACK_PRICE) and in STOREHOUSE_BACKPACK of storehouses,
+// until you've got one.
 // A slot holds:
 // - a potion (heals one creature; in a fight it costs your turn);
 // - gear: a weapon or armour piece of yours (packed at home, or swapped
@@ -215,8 +217,11 @@ export const witchPrize = () => pickCreatureId(pickRarity("", "random"));
 // boss, and walk back through to collect it.
 export const BINDLE = 3;
 export const BACKPACK = 5;
+export const BACKPACK_PRICE = 1000;
+export const STOREHOUSE_BACKPACK = 0.5;
 export type BagEntry = PotionKey | `gear:${string}` | `loot:${string}`;
 export const bagSize = (meta: { bagSize?: number }) => meta.bagSize ?? BINDLE;
+export const onBindle = (meta: { bagSize?: number }) => bagSize(meta) < BACKPACK; // the backpack's still to find
 export const bagName = (meta: { bagSize?: number }) => (bagSize(meta) > BINDLE ? "Rugged backpack" : "Bindle");
 export const isPotionEntry = (e: BagEntry): e is PotionKey => e === "potion" || e === "lesser";
 export const gearEntry = (dropId: string): BagEntry => `gear:${dropId}`;
@@ -387,7 +392,8 @@ const STORE_RARITY: [Rarity, number][] = [["common", 50], ["uncommon", 30], ["ra
 // ── The wandering merchant ───────────────────────────────────────────
 // MERCHANT_SLOTS things on the cart, one of each: both potions and a flare;
 // an XP scroll MERCHANT_SCROLL_CHANCE of the time and a clairvoyance scroll
-// MERCHANT_CLAIRVOYANCE of the time; the rest is materials.
+// MERCHANT_CLAIRVOYANCE of the time; the rest is materials. Until you've got
+// the rugged backpack it's on the cart too, first (still MERCHANT_SLOTS in all).
 export const MERCHANT_SLOTS = 5;
 export const MERCHANT_CLAIRVOYANCE = 0.4;
 export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: number }[] = [
@@ -397,9 +403,10 @@ export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: nu
   { material: "essence_stones", qty: 1, price: 150 },
 ];
 export type Ware = { key: string; price: number } & (
-  | { potion: PotionKey } | { scroll: true } | { tool: ToolKey } | { material: MaterialKey; qty: number });
-export function rollWares(rng: Rng = Math.random): Ware[] {
+  | { potion: PotionKey } | { scroll: true } | { tool: ToolKey } | { material: MaterialKey; qty: number } | { backpack: true });
+export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
   const wares: Ware[] = [
+    ...(backpack ? [{ key: "backpack", backpack: true as const, price: BACKPACK_PRICE }] : []),
     { key: "potion", potion: "potion", price: POTIONS.potion.price },
     { key: "lesser", potion: "lesser", price: POTIONS.lesser.price },
     { key: "flare", tool: "flare", price: TOOLS.flare.price },
@@ -411,19 +418,22 @@ export function rollWares(rng: Rng = Math.random): Ware[] {
     const m = mats.splice(Math.floor(rng() * mats.length), 1)[0];
     wares.push({ key: m.material, ...m });
   }
-  return wares;
+  return wares.slice(0, MERCHANT_SLOTS); // (with the backpack and both scrolls, the clairvoyance scroll misses out)
 }
+// What's on a cart for you: not the backpack once you've got one (a cart
+// rolled before you found it elsewhere).
+export const waresFor = (wares: Ware[], meta: { bagSize?: number }) => wares.filter((w) => !("backpack" in w) || onBindle(meta));
 // The things picked off the cart, priced up: their total, the bag slots they
 // need (a material joins a stack you already carry), and what's stopping you
 // buying them all ("gold", "room"), if anything.
 export function priceUp(wares: Ware[], picked: string[], gold: number, bagFree: number, stacks: string[]) {
   const chosen = wares.filter((w) => picked.includes(w.key));
   const total = chosen.reduce((s, w) => s + w.price, 0);
-  const slots = chosen.filter((w) => !("material" in w && stacks.includes(w.material))).length;
+  const slots = chosen.filter((w) => !("backpack" in w) && !("material" in w && stacks.includes(w.material))).length;
   const short: "gold" | "room" | null = total > gold ? "gold" : slots > bagFree ? "room" : null;
   return { chosen, total, slots, short };
 }
-export const wareName = (w: Ware) => ("potion" in w ? POTIONS[w.potion].name : "scroll" in w ? "Tattered XP Scroll"
+export const wareName = (w: Ware) => ("backpack" in w ? "Rugged backpack" : "potion" in w ? POTIONS[w.potion].name : "scroll" in w ? "Tattered XP Scroll"
   : "tool" in w ? TOOLS[w.tool].name : MATERIALS[w.material].name + " ×" + w.qty);
 
 // Selling to the merchant, to make room in your bag. Weapons and armour go
@@ -591,14 +601,15 @@ export function rollEnemyDrops(enemies: Enemy[], rng: Rng = Math.random) {
 }
 
 // What's inside a room, rolled as you walk in. depth: how deep it is (see
-// EARLY_DEPTH); left out = deep.
-export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity, dungeon: DungeonId = 1): Room {
-  const room = rollRoom(kind, rng, depth, dungeon);
+// EARLY_DEPTH); left out = deep. backpack: you're still on the bindle (a
+// merchant has the backpack, and a storehouse may).
+export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity, dungeon: DungeonId = 1, backpack = false): Room {
+  const room = rollRoom(kind, rng, depth, dungeon, backpack);
   if (room.enemies) rollEnemyDrops(room.enemies, rng);
   return room;
 }
 
-function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId): Room {
+function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, backpack: boolean): Room {
   const D = DUNGEONS[dungeon];
   const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
   const level = enemyLevel(dungeon, kind, depth, rng);
@@ -640,7 +651,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId): 
       return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "merchant":
-      return { kind, wares: rollWares(rng), bought: [], done: false };
+      return { kind, wares: rollWares(rng, backpack), bought: [], done: false };
     case "encampment": {
       const variant = pick(ENCAMP_VARIANTS, rng);
       const size = variant === "ambush" ? ENCAMP_AMBUSHERS : randInt(...ENCAMP_SIZE, rng);
@@ -669,6 +680,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId): 
         ...(rng() < STOREHOUSE_FINDS.weapon ? [{ gear: weaponDrop(pick(ITEM_KEYS, rng), pickRarity("", "random")) }] : []),
         ...(rng() < STOREHOUSE_FINDS.flare ? [{ gear: toolDrop("flare") }] : []),
         ...(rng() < STOREHOUSE_FINDS.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
+        ...(backpack && rng() < STOREHOUSE_BACKPACK ? [{ backpack: true as const }] : []),
       ];
       if (rng() >= STOREHOUSE_GUARD || !minibossAllowed(dungeon, depth)) return { kind, sack, done: false };
       const enemies = [foe("miniboss")];
@@ -729,10 +741,12 @@ export type DungeonRun = {
   lit?: string[];              // rooms a flare or a clairvoyance scroll lit up (see knownRooms)
   seen?: string[];             // rooms a clairvoyance scroll looked into
   status: RunStatus;
+  bindle?: boolean;            // you set out on the bindle: merchants and storehouses have the backpack
 };
 
 // dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts: wantsStorehouse).
-export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1, dynamite = false): DungeonRun {
+// bindle: you're still on the bindle (see onBindle).
+export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1, dynamite = false, bindle = false): DungeonRun {
   // The very first run opens in a treasure room; otherwise at an empty entrance.
   const first = runNumber === 1 && dungeon === 1;
   const map = rollMap(first, rng, DUNGEONS[dungeon].spec, dungeon, dynamite);
@@ -743,7 +757,7 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
     path: [map.start],
     cleared: first ? [] : [map.start],
     current: first ? makeRoom("treasure", rng) : null,
-    loot: [], status: "exploring", inside: false,
+    loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}),
   };
 }
 
@@ -781,7 +795,7 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  const room = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run));
+  const room = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run), !!run.bindle);
   return { ...run, path: [...run.path, node.id], current: node.dynamite ? { ...room, dynamite: true } : room, room: run.room + 1 };
 }
 

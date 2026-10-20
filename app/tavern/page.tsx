@@ -23,7 +23,7 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
 import { MATERIALS, MATERIAL_KEYS, countMaterial } from "@/lib/items/materials";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
-import { codexPrice, loadDungeon } from "@/lib/dungeon/run";
+import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
 import { canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -144,7 +144,7 @@ export default function TavernPage() {
             {trade === "buy" ? (
               <>
                 <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;One of each, friend. It all goes in your Inventory.&rdquo;</p>
-                <MerchantCart wares={t.wares ?? []} bought={t.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
+                <MerchantCart wares={waresFor(t.wares ?? [], loadDungeon().meta)} bought={t.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
               </>
             ) : (
               <>
