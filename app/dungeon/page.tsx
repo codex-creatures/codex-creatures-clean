@@ -1769,8 +1769,9 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
   const standing = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0);
   // Drag a weapon or armour piece onto one of your creatures to equip it.
   const wears = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined; return !!w && !!slotOf(w); };
-  const { box: dragBox, ...dnd } = useDragDrop<number>({ onDrop: (i, t) => { if (t?.startsWith("who:") && wears(i)) { onEquip(bag[i], t.slice(4)); setSel(null); } } });
-  const anyGear = bag.some((_, i) => wears(i));
+  const { box: dragBox, ...dnd } = useDragDrop<number>({ onDrop: (i, t) => { if (t?.startsWith("who:") && wears(i) && standing.includes(t.slice(4))) { onEquip(bag[i], t.slice(4)); setSel(null); } } });
+  // Everyone in the party, with their HP (a downed one shows 0%).
+  const party = run.party.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, creatureId: c.creatureId, hp: Math.max(0, run.hp[id] ?? 1) }] : []; });
   const hurt = standing.filter((id) => (run.hp[id] ?? 1) < 1);
   const e = sel !== null ? bag[sel] : undefined;
   const it = e && !isPotionEntry(e) ? itemOf(e) : undefined;
@@ -1793,10 +1794,11 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
       <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
         grab={(i, l) => (wears(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
         selected={sel} onSelect={(i) => { if (dnd.wasDrag()) return; setSel(i); setComparing(false); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
-      {anyGear && standing.length > 0 && (
+      {/* Your creatures and their health: drag gear onto one to equip it. */}
+      {party.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <TeamDropRow team={standing.map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId }))}
-            over={dnd.over} ready={dnd.lifted !== undefined} pulse={tutorialAt >= 0} />
+          <TeamDropRow team={party} over={dnd.over} pulse={tutorialAt >= 0}
+            ready={dnd.lifted === undefined ? false : (c) => standing.includes(c.id)} />
         </div>
       )}
       {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty. Gold and creature cards take no space; gear, codexes, potions and materials take a slot each (materials stack).</p>}
