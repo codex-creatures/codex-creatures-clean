@@ -26,8 +26,9 @@ iOS/Android one day. Right now it's a single-player **browser game with no backe
 2. **Saves stay compatible.** Saves are the user's progress, kept separately on each computer.
    - Don't rename or reshape the storage keys without code that reads the old data:
      `codex_creatures_save_v2` (lib/save.ts), `codex_creatures_registry_v2`
-     (lib/barcodeRegistry.ts), `codex_creatures_battles_v1` (lib/battleHistory.ts) and
-     `codex_creatures_backup_v1` (lib/saveFile.ts).
+     (lib/barcodeRegistry.ts), `codex_creatures_battles_v1` (lib/battleHistory.ts),
+     `codex_creatures_backup_v1` (lib/saveFile.ts), and the save slots `codex_creatures_slots_v1`
+     plus `codex_creatures_slot_<id>` (lib/saveSlots.ts).
    - New save fields must be optional, with a default for old saves.
    - Exported save files must stay importable: bump `SAVE_FILE_VERSION` (lib/saveFile.ts) only
      together with a reader for the older version.
@@ -85,7 +86,8 @@ kill theirs.
 
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home). Others: `dungeon` (the Labyrinth),
   `battle`, `altar` (scanning, the "Soul Altar"), `chest` (Inventory), `bag`, `bookcase`, `cage`,
-  `pool`, `pit`, `klutz`, `crate`, `guide`, `settings` (save export/import/backup).
+  `pool`, `pit`, `klutz`, `crate`, `guide`, `settings` (save export/import/backup), `start`
+  (the title screen: save slots).
   `lab/*` and `simulator` are dev tools (balance sims, room previews) and sit outside the phone
   frame.
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan

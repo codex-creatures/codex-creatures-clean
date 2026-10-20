@@ -354,6 +354,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). Not
   built.
 - 📌 Wandering merchants and weapon dealers as gold sinks. The user will design gold sinks.
+- ✅ **Save slots and the title screen** (2026-10-20, `app/start`, lib/saveSlots.ts): opening the
+  game shows Continue / New Game / Load file; up to 4 named saves per browser (no real login: the
+  user chose this over online accounts). The game saves itself on every change. The slot in play
+  lives in the usual keys; the others are parked as save files.
 - ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
   (~18 a room), and re-scan gold has no cap.
 

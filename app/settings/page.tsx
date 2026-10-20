@@ -9,6 +9,7 @@
 // here saves the game behind your back while you swap saves.
 
 import { Coin } from "@/components/GoldCount";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
@@ -133,6 +134,7 @@ export default function SettingsPage() {
           <button className="pixel-btn" disabled={busy} onClick={() => fileInput.current?.click()}>⬆️ Import save</button>
         </div>
         <input ref={fileInput} type="file" accept=".json,application/json" onChange={picked} style={{ display: "none" }} />
+        <Link href="/start" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 8 }}>🗂️ Switch save / New game</Link>
       </div>
 
       {message && (
