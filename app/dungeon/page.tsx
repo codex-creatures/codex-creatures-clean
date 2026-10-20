@@ -509,7 +509,8 @@ export default function DungeonPage() {
   // ── Flares and clairvoyance scrolls (from the bag) ──────────────
   // A flare lights up where you stand (and shows you the map); a
   // clairvoyance scroll shows you the map to pick a room to look into.
-  const [mapOpen, setMapOpen] = useState<"look" | "pick" | null>(null);
+  // ("view": the Scroll button, just looking at your map again)
+  const [mapOpen, setMapOpen] = useState<"look" | "pick" | "view" | null>(null);
   function useTool(entry: BagEntry) {
     const cur = loadDungeon();
     const it = itemOf(entry, cur.meta);
@@ -1109,7 +1110,7 @@ export default function DungeonPage() {
         </Sheet>
       )}
       {mapOpen && (
-        <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : "🧨 Your map, by flarelight"} onClose={() => setMapOpen(null)}>
+        <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : mapOpen === "view" ? "📜 Your map" : "🧨 Your map, by flarelight"} onClose={() => setMapOpen(null)}>
           {mapOpen === "pick" && <p style={{ fontSize: 13, color: MUTED, margin: "0 0 8px" }}>Tap any room: you&apos;ll see what&apos;s in it, and the rooms around it.</p>}
           <DungeonMapView run={run} onPick={mapOpen === "pick" ? foresee : undefined} />
         </Sheet>
@@ -1132,7 +1133,8 @@ export default function DungeonPage() {
     </>,
     {
       dock: (
-        <div className="dock-tabs">
+        // Two by two: Party and Bag on top, Scroll and Retreat below.
+        <div className="dock-tabs" style={{ gridAutoFlow: "row", gridTemplateColumns: "1fr 1fr" }}>
           <button className="dock-tab" onClick={() => setSheet("roster")} disabled={!!clubTutorial}>
             🐾 Party <span className="count">{fightingTeam(run).length}/{run.party.length}</span>
           </button>
@@ -1140,6 +1142,7 @@ export default function DungeonPage() {
             🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>
+          <button className="dock-tab" onClick={() => { setSheet(null); setMapOpen("view"); }} disabled={!!clubTutorial}>📜 Scroll</button>
           {/* Retreat: tap twice (it ends the run). */}
           <button className="dock-tab" style={{ color: "#ff8a80", background: retreatArmed ? "#6e1f18" : undefined }}
             disabled={battle.match !== null && !battle.match.state.winner}
