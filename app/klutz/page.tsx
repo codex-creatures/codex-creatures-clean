@@ -70,7 +70,7 @@ export default function KlutzPage() {
         <>
           {/* (Open while he's away too, to look: his gear's with him, so no swapping.) */}
           <button className={`pixel-btn${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} style={{ marginTop: 12 }} onClick={() => setGearOpen(true)}>
-            📊 View stats{pointsFree(game.klutz) > 0 && <> · <b>{pointsFree(game.klutz)}</b> points to spend</>}
+            ⚔️ Equip{pointsFree(game.klutz) > 0 && <> · <b>{pointsFree(game.klutz)}</b> points to spend</>}
           </button>
         </>
       )}

@@ -56,7 +56,7 @@ type Props = {
   onGlobalReset?: () => void;
   // Which tabs this screen shows (the chest shows items, the pit creatures).
   tabs?: GameTabKey[];
-  title?: string;
+  title?: React.ReactNode;
   showSell?: boolean;
   emptyText?: string;
   headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
@@ -146,8 +146,11 @@ export default function InventoryList({
   return (
     <div>
       {/* Header */}
-      <div style={{ marginTop: 30, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-        <h2 className="pixel-font" style={{ margin: 0, fontWeight: 600, color: "#f1d9a0" }}>{title}</h2>
+      {/* (A title can be a whole control, like the Inventory's Items / Creatures / Klutz tabs.) */}
+      <div style={{ marginTop: typeof title === "string" ? 30 : 0, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        {typeof title === "string"
+          ? <h2 className="pixel-font" style={{ margin: 0, fontWeight: 600, color: "#f1d9a0" }}>{title}</h2>
+          : <div style={{ flex: 1 }}>{title}</div>}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {headerExtra}
           {showSell && <button onClick={onToggleSellMode} style={{ padding: "8px 16px", borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: "pointer", border: sellMode ? "none" : "1px solid rgba(255,80,80,0.5)", background: sellMode ? "#ff5050" : "transparent", color: sellMode ? "white" : "#ff5050", transition: "all 0.15s" }}>

@@ -1,6 +1,7 @@
 "use client";
 // app/chest/page.tsx — your Inventory (the chest in the Den): everything you
-// own, in three parts you swap between from the dock at the bottom:
+// own, in three parts you swap between from the buttons at the top (Sell
+// mode sits in the dock at the bottom right):
 // - Items: weapons, armour, consumables, codexes (and selling); your gold
 //   and materials sit in a strip at the top;
 // - Creatures: your creatures, your roster, creature cards (as in the Pit);
@@ -34,14 +35,22 @@ export default function InventoryPage() {
     game.setActiveTab(PART_TABS[p][0]);
     if (game.sellMode) game.toggleSellMode();
   }
-  const count = (p: Part) => PART_TABS[p].filter((t) => t !== "roster").reduce((n, t) => n + (game.tabCounts[t] ?? 0), 0);
-
-  const dock = (
+  // The three parts, along the top.
+  const parts = (
     <div className="dock-tabs">
-      <button className="dock-tab" data-active={part === "items"} onClick={() => show("items")}>⚔️ Items <span className="count">{count("items")}</span></button>
-      <button className="dock-tab" data-active={part === "creatures"} onClick={() => show("creatures")}>🐾 Creatures <span className="count">{count("creatures")}</span></button>
+      <button className="dock-tab" data-active={part === "items"} onClick={() => show("items")}>⚔️ Items</button>
+      <button className="dock-tab" data-active={part === "creatures"} onClick={() => show("creatures")}>🐾 Creatures</button>
       <button className="dock-tab" onClick={() => setKlutzOpen(true)} disabled={!klutzHelping(quest)}
-        title={klutzHelping(quest) ? "Klutz's gear and moves" : "Klutz isn't helping you yet"}>👺 Klutz</button>
+        title={klutzHelping(quest) ? "Klutz's gear and moves" : "Klutz isn't helping you yet"}>Klutz</button>
+    </div>
+  );
+  // Sell mode, bottom right. The dock stays (empty) on Creatures so nothing moves.
+  const dock = (
+    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <button className="dock-tab" onClick={game.toggleSellMode} data-active={game.sellMode}
+        style={{ visibility: part === "items" ? "visible" : "hidden", color: game.sellMode ? "white" : "#ff8a80", padding: "0 16px" }}>
+        {game.sellMode ? "✕ Cancel sell" : "💰 Sell mode"}
+      </button>
     </div>
   );
 
@@ -62,9 +71,9 @@ export default function InventoryPage() {
       )}
       {klutzOpen && <KlutzGear game={game} onClose={() => setKlutzOpen(false)} />}
       <InventoryList
-        title={part === "items" ? "Items" : "Creatures"}
+        title={parts}
         tabs={PART_TABS[part]}
-        showSell={part === "items"}
+        showSell={false}
         emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
           : game.activeTab === "roster" ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
           : game.activeTab === "cards" ? "No creature cards yet. Collect 3 of one creature to summon it."
