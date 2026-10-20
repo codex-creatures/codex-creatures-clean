@@ -5,7 +5,7 @@
 // middle (trimmed in its rarity), the number in the top right and bottom left
 // corners, the suit (an attack style) in the other two. Lower on its left,
 // higher on its right, walk away underneath. The next prize lies face down
-// behind it, so its rarity shows round the edge. Guess right and the card
+// behind it, out to the right, striped in its rarity. Guess right and the card
 // sparkles away into your winnings, and the one behind comes forward.
 // The window keeps one shape the whole game: only the words and cards change.
 
@@ -20,8 +20,11 @@ import { CARD_WITCH } from "@/lib/sprites/props";
 import { SUIT_INFO, MAX_CORRECT, type Guess, type WitchCard, type WitchGame } from "@/lib/dungeon/witch";
 import { ILLNESS_ACTIONS, ILLNESS_DAMAGE } from "@/lib/dungeon/run";
 
-const CARD_W = "min(170px, 44cqw)";
-const STEP = 9;           // px the card behind peeks out, up and to the left
+const CARD_W = "min(150px, 40cqw)";
+// The card behind sits like the next card in the card viewer (CardFan): out to
+// the right, tilted so more of it shows at the top, a little smaller and darker.
+const BEHIND = "translate(20%, 4%) rotate(5deg) scale(0.92)";
+const BEHIND_ROOM = "min(30px, 8cqw)"; // the room it takes to the right (20% of the card)
 const PLAIN = "#8a8478";  // a card with no prize on it (the one you see when you walk away)
 const LOCK_MS = 450;      // how long after a guess the buttons ignore taps (the new card turning over)
 const rarityOf = (id?: string) => (id ? CREATURE_BY_ID[id]?.rarity : undefined);
@@ -125,9 +128,9 @@ export default function WitchWindow({ game: w, victim, onGuess, onLeave, onClose
           <button className="pixel-btn" style={{ ...side, visibility: playing ? "visible" : "hidden" }} disabled={w.card.n <= 1} onClick={() => play("lower")}>
             <span style={{ fontSize: 22 }}>⬇️</span>Lower
           </button>
-          <div style={{ position: "relative", width: CARD_W, marginTop: STEP }}>
+          <div style={{ position: "relative", width: CARD_W, marginRight: BEHIND_ROOM }}>
             {/* The next prize, face down behind, its back striped in its rarity colour. */}
-            <div style={{ position: "absolute", inset: 0, transform: `translate(-${STEP}px, -${STEP}px)`, visibility: behind ? "visible" : "hidden",
+            <div style={{ position: "absolute", inset: 0, transform: BEHIND, filter: "brightness(0.8)", visibility: behind ? "visible" : "hidden",
               ...cardTrim(behindColour), background: `repeating-linear-gradient(45deg, ${behindColour}99 0 6px, #1c1e26 6px 12px)` }} />
             <PlayingCard key={`${shown.n}${shown.suit}${w.correct}`} card={shown} prize={prize} className={result === "right" ? "witch-forward" : "witch-flip"} />
             {won && <div key={won.key} className="witch-won" style={{ position: "absolute", inset: 0 }}><PlayingCard card={won.card} prize={won.prize} /></div>}
