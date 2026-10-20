@@ -160,9 +160,9 @@ describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
     expect(bookcaseSize()).toBe(10);
   });
 
-  it("the schematic no longer turns up in the Labyrinth", () => {
+  it("the bookcase schematic no longer turns up in the Labyrinth", () => {
     for (let i = 0; i < 400; i++) {
-      expect(minibossExtras().some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic)).toBe(false);
+      expect(minibossExtras(Math.random, true).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic === "crooked_bookcase")).toBe(false);
       const r = makeRoom("storehouse", Math.random, 8);
       expect((r.sack ?? []).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic)).toBe(false);
     }

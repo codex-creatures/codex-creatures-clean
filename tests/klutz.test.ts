@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, type Fighter } from "../lib/combat/engine";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, type KlutzState } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, recallKlutz, toughening, MAX_ENCOUNTERS, TOUGHER_AFTER_MS, type KlutzState } from "../lib/klutz";
 import { xpToReach } from "../lib/creatures/levels";
 
 // A small seeded random number generator, so expeditions are repeatable.
@@ -14,19 +14,50 @@ const plain = () => buildFighter(KLUTZ);
 const mighty = () => ({ ...buildFighter(KLUTZ, { melee: 400, agility: 300 }, { mDef: 300, rDef: 300, magDef: 300, hp: 2000 }) });
 
 describe("Klutz's expeditions", () => {
-  it("he walks until he meets one creature (20–60 minutes in), fights it and comes home", () => {
+  it("he meets a creature every 20–60 minutes, and hunts on until one beats him, without healing", () => {
     for (let s = 1; s < 40; s++) {
-      const ex = planExpedition(mighty(), t0, seeded(s));
-      expect(ex.encounters).toHaveLength(1);
-      const e = ex.encounters[0];
-      expect(e.won).toBe(true); // a mighty Klutz never loses
-      expect(e.at).toBeGreaterThanOrEqual(t0 + WALK_MIN_MS);
-      expect(e.at).toBeLessThanOrEqual(t0 + WALK_MAX_MS);
-      expect(ex.endsAt).toBe(e.at);
-      // The loot: the creature, then its weapon and an armour piece one tier below it.
-      expect(e.loot[0]).toMatchObject({ dropType: "creature", creatureId: e.creatureId });
-      expect(e.loot.slice(1).every((d) => d.dropType === "item" && (d as { rarity: string }).rarity === e.gearRarity)).toBe(true);
+      const ex = planExpedition(plain(), t0, seeded(s));
+      let from = t0, hp = ex.maxHp;
+      ex.encounters.forEach((e, i) => {
+        expect(e.at - from).toBeGreaterThanOrEqual(WALK_MIN_MS);
+        expect(e.at - from).toBeLessThanOrEqual(WALK_MAX_MS);
+        expect(e.hpAfter).toBeLessThanOrEqual(hp); // he never heals on the way
+        expect(e.won).toBe(i < ex.encounters.length - 1); // every fight a win, bar the last
+        from = e.at; hp = e.hpAfter;
+        // The loot: the creature, then its weapon and an armour piece one tier below it.
+        if (e.won) {
+          expect(e.loot[0]).toMatchObject({ dropType: "creature", creatureId: e.creatureId });
+          expect(e.loot.slice(1).every((d) => d.dropType === "item" && (d as { rarity: string }).rarity === e.gearRarity)).toBe(true);
+        }
+      });
+      expect(ex.endsAt).toBe(from);
     }
+  });
+
+  it("a Klutz nothing can beat comes home after MAX_ENCOUNTERS fights", () => {
+    const ex = planExpedition(mighty(), t0, seeded(5));
+    expect(ex.encounters).toHaveLength(MAX_ENCOUNTERS);
+    expect(ex.encounters.every((e) => e.won)).toBe(true);
+  });
+
+  it("past TOUGHER_AFTER_MS what he meets gets a level tougher every hour", () => {
+    expect(toughening(TOUGHER_AFTER_MS)).toBe(0);
+    expect(toughening(TOUGHER_AFTER_MS + 1)).toBe(1);
+    expect(toughening(TOUGHER_AFTER_MS + 2.5 * 3_600_000)).toBe(3);
+  });
+
+  it("while he's away you can see his HP, and call him back with what he's won so far", () => {
+    const ex = planExpedition(mighty(), t0, seeded(9));
+    const k: KlutzState = { expedition: ex };
+    expect(klutzStatus(k, ex.maxHp, t0 + 1).kind === "away" && klutzStatus(k, ex.maxHp, t0 + 1)).toMatchObject({ hp: ex.maxHp });
+    const third = ex.encounters[2];
+    expect(klutzStatus(k, ex.maxHp, third.at)).toMatchObject({ kind: "away", hp: third.hpAfter });
+    const back = recallKlutz(k, third.at + 1);
+    expect(back.expedition).toMatchObject({ endsAt: third.at + 1, recalled: true });
+    expect(back.expedition!.encounters).toHaveLength(3);
+    const { loot } = collectKlutz(back, third.at + 1);
+    expect(loot.filter((d) => d.dropType === "creature")).toHaveLength(3);
+    expect(recallKlutz(back, third.at + 2)).toBe(back); // already home
   });
 
   it("a loss ends the trip early, and he heals 1 HP every 10 seconds in the pool", () => {
@@ -57,7 +88,7 @@ describe("Klutz's expeditions", () => {
     const k: KlutzState = { expedition: ex };
     expect(collectKlutz(k, t0 + 1000).loot).toEqual([]); // still away
     const first = collectKlutz(k, ex.endsAt);
-    expect(first.loot.length).toBe(3);
+    expect(first.loot.length).toBe(3 * MAX_ENCOUNTERS);
     expect(collectKlutz(first.state, ex.endsAt + 1).loot).toEqual([]);
   });
 
@@ -102,17 +133,24 @@ describe("Klutz's finds", () => {
     expect(Object.keys(common).sort()).toEqual(["common", "uncommon"]);
   });
 
-  it("turn up on about 35% of trips (win or lose) and come home with the loot", () => {
-    let found = 0;
+  it("turn up on about 35% of walks (win or lose) and come home with the loot", () => {
+    let found = 0, walks = 0;
     for (let s = 1; s <= 400; s++) {
       const ex = planExpedition(plain(), t0, seeded(s), [{ slot: "weapon", rarity: "common" }]);
-      if (ex.find) {
-        found++;
-        expect(collectKlutz({ expedition: ex }, ex.endsAt).loot).toContain(ex.find);
+      const loot = collectKlutz({ expedition: ex }, ex.endsAt).loot;
+      for (const e of ex.encounters) {
+        walks++;
+        if (e.find) { found++; expect(loot).toContain(e.find); }
       }
     }
-    expect(Math.abs(found / 400 - FIND_CHANCE)).toBeLessThan(0.08);
-    expect(planExpedition(plain(), t0, seeded(3)).find).toBeUndefined(); // wearing nothing: nothing to find
+    expect(Math.abs(found / walks - FIND_CHANCE)).toBeLessThan(0.05);
+    expect(planExpedition(plain(), t0, seeded(3)).encounters.some((e) => e.find)).toBe(false); // wearing nothing: nothing to find
+  });
+
+  it("an older save's trip (one find for the whole trip) still hands it over", () => {
+    const ex = planExpedition(plain(), t0, seeded(4));
+    const find = rollFind([{ slot: "weapon", rarity: "common" }])!;
+    expect(collectKlutz({ expedition: { ...ex, find } }, ex.endsAt).loot).toContain(find);
   });
 });
 

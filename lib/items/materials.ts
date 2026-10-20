@@ -34,11 +34,19 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
                   desc: "Read it in the Labyrinth: look at your map and pick any room — you see what's in it, and the rooms around it." },
 };
 
-export type SchematicKey = "crooked_bookcase";
+export type SchematicKey = "crooked_bookcase" | "iron_cage";
 export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; desc: string }> = {
   crooked_bookcase: { name: "Crooked Bookcase Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
                       desc: "Plans for a taller, leaning bookcase: it holds 20 codexes instead of 10." },
+  iron_cage:        { name: "Iron Cage Schematic", rarity: "rare", cost: { metal_bars: 10 },
+                      desc: "Plans for a bigger cage: it holds 3 creatures instead of 1." },
 };
+
+// The cage: how many creatures it holds at each level. 1: the cell you start
+// with; 2: built from the Iron Cage Schematic (a mini boss's chest, until
+// you've found one: CAGE_PLAN_CHANCE in lib/dungeon/run.ts).
+export const CAGE_LEVELS = [1, 3];
+export const cageSize = (level = 1) => CAGE_LEVELS[Math.min(CAGE_LEVELS.length, Math.max(1, level)) - 1];
 
 // The bookcase: how many codexes it holds at each level. 1: the broken shelf
 // you start with; 3: the crooked bookcase (BOOKCASE_BUILT), from the tavern's

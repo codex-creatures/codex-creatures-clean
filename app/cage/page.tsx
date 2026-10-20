@@ -1,6 +1,7 @@
 "use client";
 // app/cage/page.tsx
-// The cage in the Den (it holds CAGE_SIZE creatures; upgrades later). A new
+// The cage in the Den (it holds cageSize creatures: 1, or 3 once the iron
+// cage is built). A new
 // player's first creature is waiting in it, and
 // creatures Klutz beats in the Labyrinth end up here. For each one: capture
 // it (it's yours) or release it (gone for good — tap twice). You can't
@@ -20,6 +21,8 @@ import { STATS, type StatKey } from "@/components/CreatureDetailModal";
 import { MoveTile } from "@/components/MoveTile";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop } from "@/lib/types";
+import Help from "@/components/Help";
+import { CAGE_LEVELS, MATERIALS, SCHEMATICS, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -45,6 +48,7 @@ export default function CagePage() {
   return (
     <DenFrame title="Cage" icon="🔒">
       {game.hydrated && <KlutzWhere game={game} now={now} />}
+      {game.hydrated && <CageUpgrade game={game} />}
       {!game.hydrated ? (
         <p style={{ color: MUTED }}>Loading…</p>
       ) : freed ? (
@@ -104,6 +108,44 @@ export default function CagePage() {
         })
       )}
     </DenFrame>
+  );
+}
+
+// How many the cage holds, and building the iron cage once you've found its
+// schematic (a mini boss's chest).
+function CageUpgrade({ game }: { game: ReturnType<typeof useGameState> }) {
+  const plan = game.cage < 2 ? (game.inventory.find((d) => d.dropType === "item" && d.schematic === "iron_cage") as CreatureOrItemDrop | undefined) : undefined;
+  const cost = SCHEMATICS.iron_cage.cost;
+  return (
+    <div className="stone-panel" style={{ marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>
+          {game.cage >= 2 ? "Iron cage" : "Old cell"} · {game.caged.length}/{game.cageSize}
+        </div>
+        <Help title="The cage">
+          <ul>
+            <li>Klutz&apos;s catches wait here. If it&apos;s full, he <b>lets them go</b> (and keeps their gear).</li>
+            <li>The <b>Iron Cage Schematic</b> (sometimes in a <b>mini boss&apos;s chest</b>) builds it up to <b>{CAGE_LEVELS[1]}</b>: {cost.metal_bars} metal bars.</li>
+          </ul>
+        </Help>
+      </div>
+      {plan && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 You have the <b>{plan.name}</b>.</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "6px 0 8px" }}>
+            {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
+              const have = countMaterial(game.materials, k);
+              return (
+                <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
+                  {MATERIALS[k].icon} {have}/{n} {MATERIALS[k].name.toLowerCase()}
+                </span>
+              );
+            })}
+          </div>
+          <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => game.buildSchematic(plan.id)}>🔨 Build it</button>
+        </div>
+      )}
+    </div>
   );
 }
 

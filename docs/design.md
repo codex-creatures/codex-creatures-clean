@@ -340,11 +340,22 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
 - ✅ A clumsy goblin **helper, not a party creature.** He's easily bribed with gold into serving
   you, wanders the Den, and you tap him for /klutz. (lib/klutz.ts)
-- ✅ **Hunts:** he walks 20–60 minutes (🧪 Claude's range), meets one creature (his level −2 to +1)
-  and fights it 1v1.
-  - **Win:** the creature goes to the cage, and he brings home its weapon plus one armour piece.
-  - **Lose:** he heals in the pool (1 HP every 10 s) before he can go out again.
+- ✅ **Hunts** (until beaten, decided 2026-10-20): every 20–60 minutes (🧪 Claude's range) he meets a
+  creature (his level −2 to +1) and fights it 1v1, and he keeps going until one beats him. He
+  doesn't heal between fights. Past 6 hours out, what he meets is a level tougher for every hour
+  past it (🧪). You can see his HP while he's away and **call him back** at any time (he comes home
+  with what he's won so far). A safety stop brings him home after 60 fights. The user's aim: send
+  him off at bedtime and wake up to creatures and gear. Sim (400 trips a level, gear at his rarity):
+  trips last about 2 h on average (2–4 fights, 1–3 wins; 90% are under 3–5 h), so the 6-hour
+  toughening rarely comes into it. **Open:** longer walks would make trips last overnight.
+  - **Each win:** the creature goes to the cage, and its weapon plus one armour piece to his crate.
+  - **Beaten:** he comes home with everything and heals in the pool (1 HP every 10 s) before he can
+    go out again.
   - His gear is locked while he's away.
+- ✅ **The cage** holds 1. The **Iron Cage Schematic** (rare) is in a mini boss's chest 20% of the
+  time until you have one (at home or in your bag) or have built it; with 10 metal bars it builds
+  the iron cage, which holds 3 (`CAGE_LEVELS`, lib/items/materials.ts). Catches that don't fit are
+  let go (he keeps their gear).
 - ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he's outside the
   triangle. Nothing counters him and his moves never do less; a move of his that would counter the
   target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His %s are even (9 each), so his weapon and
@@ -353,7 +364,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   Lv 1–30): 67–72% wins, as before, but about 50% against magic instead of 26%. That lower magic
   number is only because no magic creature is Common (at equal rarity magic is one of his better
   matchups); the user chose to leave the roster as it is (2026-10-20).
-- ✅ **Finds:** 35% of trips bring home gear for a slot he wears. It's **never rarer than his own
+- ✅ **Finds:** 35% of walks (each fight's) bring home gear for a slot he wears. It's **never rarer than his own
   piece** (the same rarity only 5%, rising slightly with his level).
 - ✅ **Levels:** a won hunt gives the KO's XP + 50, and every piece of gear he brings home gives 20
   (a catch's weapon and armour, and a find; 2026-10-20, to make him level faster). A first catch

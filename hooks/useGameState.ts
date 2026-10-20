@@ -12,13 +12,13 @@ import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, codexPrice, onBindle, BACKPACK, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, scrollDrop } from "@/lib/drops";
-import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, recallKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
 import { blast, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
-import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, canAfford, addMaterials, countMaterial, materialDrop, toolDrop, type MaterialKey, type Materials } from "@/lib/items/materials";
+import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, toolDrop, type MaterialKey, type Materials } from "@/lib/items/materials";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -40,7 +40,6 @@ import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox } from "@/lib/items/storage";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
-export const CAGE_SIZE = 1;          // creatures the cage holds (upgrades later)
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
 // keeps them at the altar to open when you like.
 export type ScanMode = "loot" | "store";
@@ -82,6 +81,7 @@ type SaveState = {
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
   player?: Progress;                   // your own level and XP (it decides what you can find when you scan)
   bookcase?: number;                   // the bookcase's level (1: the broken shelf; lib/items/materials.ts)
+  cage?: number;                       // the cage's level (1: holds one; lib/items/materials.ts CAGE_LEVELS)
   materials?: Materials;               // your materials at home: a tally, like gold
   found?: string[];                    // kinds of item you've ever had (lib/items/discovery.ts)
 };
@@ -127,6 +127,7 @@ export function loadSave(): SaveState | null {
     caches: Array.isArray(parsed.caches) ? parsed.caches : [],
     crate: Array.isArray(parsed.crate) ? parsed.crate : [],
     bookcase: typeof parsed.bookcase === "number" ? parsed.bookcase : 1,
+    cage: typeof parsed.cage === "number" ? parsed.cage : 1,
     materials: obj(parsed.materials) as Materials,
     found: Array.isArray(parsed.found) ? parsed.found : [],
   };
@@ -160,6 +161,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [crate, setCrate] = useState<Drop[]>([]);
   const [player, setPlayer] = useState<Progress>({ level: 1, xp: 0 });
   const [bookcase, setBookcase] = useState(1);
+  const [cage, setCage] = useState(1);
   const [materials, setMaterials] = useState<Materials>({});
   const [found, setFound] = useState<string[]>([]);
   // Gear packed in your bag (lib/dungeon/run.ts): it can't be sold.
@@ -198,6 +200,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setCrate(saved.crate ?? []);
       setPlayer(saved.player ?? { level: 1, xp: 0 });
       setBookcase(saved.bookcase ?? 1);
+      setCage(saved.cage ?? 1);
       setMaterials(saved.materials ?? {});
       setFound(saved.found ?? []);
     }
@@ -208,8 +211,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, materials, found });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, materials, found]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, cage, materials, found });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, cage, materials, found]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -365,6 +368,11 @@ export function useGameState(initialTab: TabKey = "all") {
     setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, worn));
   }
 
+  // Call him back from the Labyrinth now, with what he's won so far.
+  function callKlutzBack() {
+    setKlutz((k) => recallKlutz(k));
+  }
+
   // Testing: skip to the end of his expedition, or heal him at once.
   function klutzSkipAhead() {
     setKlutz((k) => {
@@ -383,18 +391,23 @@ export function useGameState(initialTab: TabKey = "all") {
   useEffect(() => { klutzRef.current = klutz; }, [klutz]);
   const cagedRef = useRef(caged);
   useEffect(() => { cagedRef.current = caged; }, [caged]);
+  const cageSizeRef = useRef(cageSize(cage));
+  useEffect(() => { cageSizeRef.current = cageSize(cage); }, [cage]);
   useEffect(() => {
     if (!hydrated) return;
     const check = () => {
       const { state: collected, loot } = collectKlutz(klutzRef.current);
       if (collected === klutzRef.current) return;
-      // The cage only holds CAGE_SIZE: anything that won't fit, he lets go.
-      const room = CAGE_SIZE - cagedRef.current.length;
+      // The cage only holds so many (cageSize): anything that won't fit, he lets go.
+      const size = cageSizeRef.current;
+      const room = size - cagedRef.current.length;
       const caught = loot.filter(isCreatureDrop);
-      const state = caught.length > room && collected.expedition ? { ...collected, expedition: { ...collected.expedition, letGo: true } } : collected;
+      const state = collected.expedition
+        ? { ...collected, expedition: { ...collected.expedition, caged: Math.min(caught.length, Math.max(0, room)), ...(caught.length > room ? { letGo: true } : {}) } }
+        : collected;
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);
-      setCaged((prev) => [...prev, ...caught.slice(0, Math.max(0, CAGE_SIZE - prev.length))]);
+      setCaged((prev) => [...prev, ...caught.slice(0, Math.max(0, size - prev.length))]);
       setCrate((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]); // his gear goes in his crate
     };
     check();
@@ -659,6 +672,11 @@ export function useGameState(initialTab: TabKey = "all") {
     }
   }
 
+  // Mini bosses' chests can hold the Iron Cage Schematic until you've got one
+  // (at home, or in your bag) or built the cage.
+  const hasCagePlan = (d: Drop) => d.dropType === "item" && d.schematic === "iron_cage";
+  const wantsCagePlan = () => cage < 2 && !inventory.some(hasCagePlan) && !Object.values(loadDungeon().meta.loot ?? {}).some(hasCagePlan);
+
   // Build what a schematic shows, if you have the materials: the schematic
   // and the materials are used up. Returns whether it was built.
   // schematicId: one in your storage (an old save's Labyrinth find); without
@@ -672,6 +690,7 @@ export function useGameState(initialTab: TabKey = "all") {
     if (plan) setInventory((prev) => prev.filter((d) => d.id !== schematicId));
     setMaterials((m) => addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n]))));
     if (key === "crooked_bookcase") setBookcase((b) => (b < 2 ? BOOKCASE_BUILT : b));
+    if (key === "iron_cage") setCage((c) => Math.max(c, 2));
     return true;
   }
 
@@ -762,6 +781,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setCrate([]);
     setPlayer({ level: 1, xp: 0 });
     setBookcase(1);
+    setCage(1);
     setMaterials({});
     setFound([]);
     setScanMode(defaultScanMode());
@@ -801,8 +821,8 @@ export function useGameState(initialTab: TabKey = "all") {
     discoveredCreatures, discoveredItems,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
-    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic,
+    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

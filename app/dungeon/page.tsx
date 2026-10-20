@@ -881,8 +881,8 @@ export default function DungeonPage() {
     // A boss's chest (the Cyclops', the Warden's strongbox): gear, codexes and potions as well as its gold.
     if (room.kind === "boss") sack.push(...cyclopsChest());
     const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded);
-    // A mini boss's chest: potions (and now and then a clairvoyance scroll).
-    if (miniboss) sack.push(...minibossExtras());
+    // A mini boss's chest: potions (and now and then a clairvoyance scroll, or the cage schematic).
+    if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan()));
     // Mini boss and boss chests sometimes hold an XP scroll.
     if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // A guarded storehouse: its stores are yours too, in the same haul.

@@ -40,7 +40,7 @@ import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
-import { TOOLS, MATERIALS, materialBundle, toolDrop, type MaterialKey, type ToolKey } from "../items/materials";
+import { TOOLS, MATERIALS, materialBundle, toolDrop, schematicDrop, type MaterialKey, type ToolKey } from "../items/materials";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -372,17 +372,21 @@ export const MERCHANT_SCROLL_CHANCE = 0.2; // a wandering merchant also has an X
 export const SCROLL_PRICE = 200;
 export const MINIBOSS_SCROLL_CHANCE = 0.25; // a beaten mini boss's chest holds an XP scroll
 export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
-// A mini boss's chest: potions instead of the heal it used to give, and now
-// and then a clairvoyance scroll. (The bookcase schematic used to drop here,
+// A mini boss's chest: potions instead of the heal it used to give, now and
+// then a clairvoyance scroll, and the Iron Cage Schematic until you've found
+// it. (The bookcase schematic used to drop here,
 // from bosses and storehouses too; now only the tavern's bounty gives it:
 // lib/tavern.ts.)
 export const MINIBOSS_POTIONS: [number, number] = [1, 2];
 export const MINIBOSS_CLAIRVOYANCE = 0.1;
-export function minibossExtras(rng: Rng = Math.random): SackItem[] {
+export const CAGE_PLAN_CHANCE = 0.2; // …and the Iron Cage Schematic, until you've found one
+// cagePlan: you haven't got the cage schematic yet (nor built the cage).
+export function minibossExtras(rng: Rng = Math.random, cagePlan = false): SackItem[] {
   const potion = (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" });
   return [
     ...Array.from({ length: randInt(...MINIBOSS_POTIONS, rng) }, potion),
     ...(rng() < MINIBOSS_CLAIRVOYANCE ? [{ gear: toolDrop("clairvoyance") }] : []),
+    ...(cagePlan && rng() < CAGE_PLAN_CHANCE ? [{ gear: schematicDrop("iron_cage") }] : []),
   ];
 }
 

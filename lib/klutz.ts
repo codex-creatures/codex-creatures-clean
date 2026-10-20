@@ -2,17 +2,22 @@
 // Klutz, your helper. He isn't one of your creatures: he wanders the Den,
 // and you can send him into the Labyrinth to hunt.
 //
-// On an expedition he walks the Labyrinth until he runs into a wild
-// creature — somewhere between WALK_MIN_MS and WALK_MAX_MS — fights it, and
-// comes home. The creature is rolled like a scan (same rarity odds), wearing
-// gear one rarity lower than itself (commons wear common gear):
+// On an expedition he hunts until something beats him: he walks the
+// Labyrinth until he runs into a wild creature — somewhere between
+// WALK_MIN_MS and WALK_MAX_MS — fights it, and if he wins walks on to the
+// next, with the HP he has left (he doesn't heal on the way). Past
+// TOUGHER_AFTER_MS what he meets gets tougher, so a trip ends sooner or later
+// (send him off at bedtime, see what he's caught in the morning). You can
+// call him back at any time; he comes home with what he's got so far. The
+// creatures are rolled like a scan (same rarity odds), wearing gear one
+// rarity lower than themselves (commons wear common gear):
 // - win: the creature goes in the Den's cage and its gear (the weapon and
-//   one armour piece) goes into your inventory;
+//   one armour piece) goes into his crate;
 // - lose: he's carried back to the pool, where he heals HEAL_MS_PER_HP per
-//   HP. He can only set off again at full health (a win can leave him hurt
-//   too).
+//   HP. He can only set off again at full health (called back, he can be
+//   hurt too).
 //
-// He also has a FIND_CHANCE on every trip (win or lose) to bring back a
+// He also has a FIND_CHANCE on every walk (win or lose) to pick up a
 // piece of gear for a slot he's wearing (any weapon, any helm…). It's never
 // better than his piece there: SAME_RARITY_CHANCE of the same rarity,
 // otherwise a lower one (spread evenly). In Common gear it's a coin flip
@@ -48,8 +53,11 @@ import { rollArmorPiece } from "./items/rollArmorStats";
 import { isCreatureDrop, type Drop } from "./types";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
-export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something
+export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something (each time)
 export const WALK_MAX_MS = 60 * 60 * 1000;
+export const TOUGHER_AFTER_MS = 6 * 60 * 60 * 1000; // out longer than this, what he meets gets tougher:
+export const TOUGHER_LEVELS_PER_HOUR = 1;           // a level for every hour past it (🧪 to tune)
+export const MAX_ENCOUNTERS = 60;                   // a safety stop: after this many fights he comes home
 export const HEAL_MS_PER_HP = 10_000;  // in the pool: 1 HP every 10 seconds
 export const FIND_CHANCE = 0.35;       // each trip: a piece of gear like one he's wearing
 export const SAME_RARITY_CHANCE = 0.05; // …the same rarity as his piece (otherwise lower)
@@ -77,15 +85,18 @@ export type KlutzEncounter = {
   hpAfter: number;       // Klutz's HP after the fight
   xp?: number;           // XP he got for it (a win)
   loot: Drop[];          // won: the creature, then its gear
+  find?: Drop;           // a piece of gear he picked up on the walk there
 };
 
 export type Expedition = {
   letGo?: boolean; // he caught something but the cage was full, so he let it go
+  caged?: number;  // how many of his catches went in the cage (the first ones; the rest he let go)
   startedAt: number;
-  endsAt: number;        // when he meets something (the fight is quick) and heads home
+  endsAt: number;        // when the last fight is over (or you called him back) and he's home
   maxHp: number;
   encounters: KlutzEncounter[];
-  find?: Drop;           // a piece of gear he picked up on the way
+  find?: Drop;           // (older saves' trips: one find for the whole trip)
+  recalled?: boolean;    // you called him back before anything beat him
   collected: boolean;    // its loot has been handed over
 };
 
@@ -98,7 +109,7 @@ export type KlutzState = {
 };
 
 export type KlutzStatus =
-  | { kind: "away"; expedition: Expedition; seen: KlutzEncounter[] }   // in the Labyrinth
+  | { kind: "away"; expedition: Expedition; seen: KlutzEncounter[]; hp: number } // in the Labyrinth (hp: after his last fight)
   | { kind: "healing"; hp: number; maxHp: number; fullAt: number }     // soaking in the pool
   | { kind: "home" };                                                  // wandering the Den
 
@@ -164,26 +175,53 @@ export function huntRarity(rolled: Rarity, level = 1): Rarity {
   return r;
 }
 
-export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = [], level = 1): Expedition {
-  const L = clampLevel(level);
-  const at = Math.round(now + WALK_MIN_MS + rng() * (WALK_MAX_MS - WALK_MIN_MS));
+// How many levels tougher what he meets is, this long into a trip.
+export const toughening = (outFor: number) =>
+  outFor <= TOUGHER_AFTER_MS ? 0 : Math.ceil((outFor - TOUGHER_AFTER_MS) / 3_600_000) * TOUGHER_LEVELS_PER_HOUR;
+
+// One walk and the fight at the end of it, starting on hp.
+function meet(klutz: Fighter, hp: number, from: number, startedAt: number, L: number, worn: WornPiece[], rng: Rng): KlutzEncounter {
+  const at = Math.round(from + WALK_MIN_MS + rng() * (WALK_MAX_MS - WALK_MIN_MS));
   const rarity = huntRarity(rollRarity(rng), L), gearRarity = oneLower(rarity);
   const lo = Math.max(1, L - HUNT_BELOW), hi = clampLevel(L + HUNT_ABOVE);
-  const foeLevel = lo + Math.floor(rng() * (hi - lo + 1));
+  const foeLevel = clampLevel(lo + Math.floor(rng() * (hi - lo + 1)) + toughening(at - startedAt));
   const enemy = makeEnemy(rarity, gearRarity, [], rng, foeLevel);
-  const r = fight(klutz, klutz.maxHp, enemyFighter(enemy));
-  const encounter: KlutzEncounter = {
+  const r = fight(klutz, hp, enemyFighter(enemy));
+  const find = rng() < FIND_CHANCE ? rollFind(worn, rng, L) : undefined;
+  return {
     at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, rounds: r.rounds, hpAfter: r.hpAfter, loot: r.won ? lootFrom(enemy) : [],
     ...(r.won ? { xp: xpForEnemy(foeLevel, rarity) + CAPTURE_XP } : {}),
+    ...(find ? { find } : {}),
   };
-  const find = rng() < FIND_CHANCE ? rollFind(worn, rng, L) : undefined;
-  return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters: [encounter], ...(find ? { find } : {}), collected: false };
+}
+
+export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = [], level = 1): Expedition {
+  const L = clampLevel(level);
+  const encounters: KlutzEncounter[] = [];
+  let hp = klutz.maxHp, at = now;
+  do {
+    const e = meet(klutz, hp, at, now, L, worn, rng);
+    encounters.push(e);
+    hp = e.hpAfter; at = e.at;
+  } while (encounters[encounters.length - 1].won && encounters.length < MAX_ENCOUNTERS);
+  return { startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters, collected: false };
+}
+
+// Call him back early: he comes home now with what he's won so far (fights
+// still ahead of him never happen).
+export function recallKlutz(k: KlutzState, now = Date.now()): KlutzState {
+  const ex = k.expedition;
+  if (!ex || ex.collected || now >= ex.endsAt) return k;
+  return { ...k, expedition: { ...ex, endsAt: now, encounters: ex.encounters.filter((e) => e.at <= now), recalled: true } };
 }
 
 // Where Klutz is right now.
 export function klutzStatus(k: KlutzState, maxHp: number, now = Date.now()): KlutzStatus {
   const ex = k.expedition;
-  if (ex && now < ex.endsAt) return { kind: "away", expedition: ex, seen: ex.encounters.filter((e) => e.at <= now) };
+  if (ex && now < ex.endsAt) {
+    const seen = ex.encounters.filter((e) => e.at <= now);
+    return { kind: "away", expedition: ex, seen, hp: seen.length ? seen[seen.length - 1].hpAfter : ex.maxHp };
+  }
   const hp = currentHp(k, maxHp, now);
   if (hp < maxHp) return { kind: "healing", hp, maxHp, fullAt: (k.hpAt ?? now) + (maxHp - (k.hp ?? maxHp)) * HEAL_MS_PER_HP };
   return { kind: "home" };
@@ -220,7 +258,7 @@ export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzSta
   if (!ex || ex.collected || now < ex.endsAt) return { state: k, loot: [] };
   const last = ex.encounters[ex.encounters.length - 1];
   const hp = last ? last.hpAfter : ex.maxHp;
-  const loot = [...ex.encounters.flatMap((e) => e.loot), ...(ex.find ? [ex.find] : [])];
+  const loot = [...ex.encounters.flatMap((e) => [...e.loot, ...(e.find ? [e.find] : [])]), ...(ex.find ? [ex.find] : [])];
   const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0) + FIND_XP * gearCount(loot);
   const { state, from, to } = klutzGainXp(k, xp);
   return {

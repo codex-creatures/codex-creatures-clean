@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import { rollMap, depths, routeLength, knownRooms, inSight, waysOn, LARGE_FROM, FLARE_RADIUS, SIGHT_RADIUS } from "../lib/dungeon/map";
 import {
   DUNGEONS, makeRoom, hasFight, canMoveOn, startRun, enemyFighter, rollWares, codexPrice, minibossExtras,
-  MERCHANT_SLOTS, ENCAMP_DRUNK_HP, LIBRARY_BOOKS, LARGE_MIX, type DungeonRun,
+  MERCHANT_SLOTS, ENCAMP_DRUNK_HP, LIBRARY_BOOKS, LARGE_MIX, CAGE_PLAN_CHANCE, type DungeonRun,
 } from "../lib/dungeon/run";
+import { SCHEMATICS, cageSize } from "../lib/items/materials";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 
@@ -113,6 +114,18 @@ describe("the merchant and loot", () => {
       expect(n).toBeGreaterThanOrEqual(1);
       expect(n).toBeLessThanOrEqual(2);
     }
+  });
+
+  it("a mini boss's chest holds the Iron Cage Schematic 20% of the time, until you've found it", () => {
+    const plan = (cagePlan: boolean) => minibossExtras(Math.random, cagePlan).some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.schematic === "iron_cage");
+    let n = 0;
+    for (let i = 0; i < 2000; i++) {
+      if (plan(true)) n++;
+      expect(plan(false)).toBe(false);
+    }
+    expect(Math.abs(n / 2000 - CAGE_PLAN_CHANCE)).toBeLessThan(0.03);
+    expect([cageSize(1), cageSize(2), cageSize()]).toEqual([1, 3, 1]);
+    expect(SCHEMATICS.iron_cage.cost).toEqual({ metal_bars: 10 });
   });
 });
 
