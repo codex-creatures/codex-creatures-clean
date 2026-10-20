@@ -355,7 +355,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   matchups); the user chose to leave the roster as it is (2026-10-20).
 - ✅ **Finds:** 35% of trips bring home gear for a slot he wears. It's **never rarer than his own
   piece** (the same rarity only 5%, rising slightly with his level).
-- ✅ **Levels:** only won hunts give XP. A first catch reaches Lv 2; a find gives 20. Scrolls work on
+- ✅ **Levels:** a won hunt gives the KO's XP + 50, and every piece of gear he brings home gives 20
+  (a catch's weapon and armour, and a find; 2026-10-20, to make him level faster). A first catch
+  reaches Lv 2. The crate shows a ❗ in the Den while it holds loot. Scrolls work on
   him, and the user wants that to feel worthwhile ("the closest thing to you").
 - ✅ **A new game starts at Klutz:** he dragged you in out of the Labyrinth and, because you were kind
   to him, he'll help you. He caught an evil creature exploring: you can recruit it. The cage glows

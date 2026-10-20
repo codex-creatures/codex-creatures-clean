@@ -61,7 +61,8 @@ export default function Home() {
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} highlight={highlight}
           rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble}
-          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} upgraded={game.bookcase >= 2} />
+          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} upgraded={game.bookcase >= 2}
+          crateNews={game.hydrated && game.crate.length > 0} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}

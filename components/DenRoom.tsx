@@ -65,7 +65,8 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
 // tavernNews: someone's visiting the tavern (a ❗ at the doorway).
 // upgraded: the crooked bookcase is built.
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean }) {
+// crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean }) {
   const opened = rubble === "open";
   const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
   // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
@@ -336,7 +337,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
-        const news = id === OBJ.tavern && opened && tavernNews;
+        const news = (id === OBJ.tavern && opened && tavernNews) || (id === OBJ.crate && crateNews);
         if (id === OBJ.klutz || (id !== shown && id !== highlight && !news)) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
@@ -358,7 +359,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
               cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
             }}
           >
-            {news && <span className="news-pulse" aria-label="Someone's in the tavern">❗ </span>}
+            {news && <span className="news-pulse" aria-label={id === OBJ.crate ? "Klutz brought loot home" : "Someone's in the tavern"}>❗ </span>}
             {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}
           </button>
         );

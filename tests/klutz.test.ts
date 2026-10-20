@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, type Fighter } from "../lib/combat/engine";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, SAME_RARITY_CHANCE, findRarity, type KlutzState } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, type KlutzState } from "../lib/klutz";
+import { xpToReach } from "../lib/creatures/levels";
 
 // A small seeded random number generator, so expeditions are repeatable.
 function seeded(seed: number) {
@@ -58,6 +59,16 @@ describe("Klutz's expeditions", () => {
     const first = collectKlutz(k, ex.endsAt);
     expect(first.loot.length).toBe(3);
     expect(collectKlutz(first.state, ex.endsAt + 1).loot).toEqual([]);
+  });
+
+  it("gives FIND_XP for every piece of gear he brings home, on top of the fight's XP", () => {
+    for (let s = 1; s <= 60; s++) {
+      const ex = planExpedition(plain(), t0, seeded(s), [{ slot: "weapon", rarity: "common" }]);
+      const { state, loot } = collectKlutz({ expedition: ex }, ex.endsAt);
+      const fights = ex.encounters.reduce((n, e) => n + (e.xp ?? 0), 0);
+      expect(gearCount(loot)).toBe(loot.filter((d) => d.dropType !== "creature").length);
+      expect(xpToReach(state.level ?? 1) + (state.xp ?? 0)).toBe(fights + FIND_XP * gearCount(loot));
+    }
   });
 });
 

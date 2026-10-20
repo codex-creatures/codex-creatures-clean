@@ -21,7 +21,8 @@
 //
 // He levels up like a creature: a catch gives him the XP a creature would
 // get for that KO (xpForEnemy) plus CAPTURE_XP (so a first catch takes him
-// to level 2), a find gives FIND_XP, and XP scrolls work on him too. His
+// to level 2), each piece of gear he brings home (a catch's or a find) gives
+// FIND_XP, and XP scrolls work on him too. His
 // level makes him stronger, and decides what he meets:
 // - wild creatures are around his level (HUNT_BELOW under to HUNT_ABOVE over),
 //   and a catch keeps its level;
@@ -44,7 +45,7 @@ import { ARMOR_KEYS, type ArmorKey, type ArmorSlot } from "./items/armor";
 import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
-import type { Drop } from "./types";
+import { isCreatureDrop, type Drop } from "./types";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something
@@ -58,7 +59,7 @@ export const HUNT_ABOVE = 1;           // …or this many over (and a catch keep
 export const FIND_SAME_PER_LEVEL = 0.01; // each level over 1: this much likelier a same-rarity find
 export const FIND_SAME_MAX = 0.3;
 export const CAPTURE_XP = 50;          // on top of the KO's XP, for bringing a creature home
-export const FIND_XP = 20;             // for bringing home a piece of gear
+export const FIND_XP = 20;             // for each piece of gear he brings home (a catch's or a find)
 
 // What Klutz is wearing, slot by slot (for his finds).
 export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
@@ -207,6 +208,11 @@ export function klutzGainXp(k: KlutzState, gained: number): { state: KlutzState;
   return { state: { ...k, level: p.level, xp: p.xp }, from, to: p.level };
 }
 
+// Every piece of gear he carries home earns FIND_XP: a catch's weapon and
+// armour as well as a find (counted at collection, so trips already under
+// way get it too).
+export const gearCount = (loot: Drop[]) => loot.filter((d) => !isCreatureDrop(d)).length;
+
 // After an expedition ends: his HP when he got back, his XP, and the loot
 // to hand over (once). Returns the new state, the loot and any level-up.
 export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzState; loot: Drop[]; levelUp?: { from: number; to: number } } {
@@ -214,11 +220,12 @@ export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzSta
   if (!ex || ex.collected || now < ex.endsAt) return { state: k, loot: [] };
   const last = ex.encounters[ex.encounters.length - 1];
   const hp = last ? last.hpAfter : ex.maxHp;
-  const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0) + (ex.find ? FIND_XP : 0);
+  const loot = [...ex.encounters.flatMap((e) => e.loot), ...(ex.find ? [ex.find] : [])];
+  const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0) + FIND_XP * gearCount(loot);
   const { state, from, to } = klutzGainXp(k, xp);
   return {
     state: { ...state, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true } },
-    loot: [...ex.encounters.flatMap((e) => e.loot), ...(ex.find ? [ex.find] : [])],
+    loot,
     ...(to > from ? { levelUp: { from, to } } : {}),
   };
 }

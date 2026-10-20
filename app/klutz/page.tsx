@@ -91,7 +91,7 @@ export default function KlutzPage() {
               <HelpSection title="If he wins">
                 <ul>
                   <li>The creature goes in the <b>cage</b> and its gear in <b>his crate</b>.</li>
-                  <li>He gets <b>XP</b>: <b>+{CAPTURE_XP}</b> on top of the fight. Gear he finds gives <b>+{FIND_XP}</b>. <b>XP scrolls</b> work on him too.</li>
+                  <li>He gets <b>XP</b>: <b>+{CAPTURE_XP}</b> on top of the fight. Each piece of gear he brings home gives <b>+{FIND_XP}</b>. <b>XP scrolls</b> work on him too.</li>
                   <li>The cage holds <b>one</b>: if it&apos;s full, he lets his catch go (and keeps its gear).</li>
                 </ul>
               </HelpSection>
