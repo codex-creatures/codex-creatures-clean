@@ -24,7 +24,7 @@ import { useState } from "react";
 import { MATERIALS, MATERIAL_KEYS, countMaterial } from "@/lib/items/materials";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
-import { canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
+import { REPAIR_COST, VISITOR_STAY, canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -58,9 +58,9 @@ export default function TavernPage() {
           <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0" }}>{t.repaired ? "The tavern" : "A tavern, in ruins"}</div>
           <Help title="The tavern">
             <ul>
-              <li>It was hidden behind the rubble. Repair it with <b>5 metal bars, 20 planks and 5 nails</b>.</li>
+              <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
               <li>The <b>wanted poster</b> is for the Cyclops. Once it&apos;s repaired, take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
-              <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for 2 runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
+              <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
             </ul>
           </Help>
         </div>

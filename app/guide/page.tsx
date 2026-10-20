@@ -17,7 +17,7 @@ import {
   raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type DamageType, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
-  AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, PRECISE_CHANCE, PRECISE_IGNORE,
+  AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, NEUTRAL_COUNTER, PRECISE_CHANCE, PRECISE_IGNORE,
   TRIANGLE, calcDamage, type CombatItem, type Fighter,
 } from "@/lib/combat/engine";
 import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, STREAK_PRECISE_STEP, STREAK_START, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
@@ -75,7 +75,8 @@ function Combat() {
     <div>
       <H>The triangle</H>
       <P>Every creature has a <b>class</b> and every attack has a <b>style</b>. A move&apos;s style against the target&apos;s class:
-        strong does <b>{signed(TRIANGLE.strong - 1)}</b> damage, weak does <b>{signed(TRIANGLE.weak - 1)}</b>. Same class: normal damage.</P>
+        strong does <b>{signed(TRIANGLE.strong - 1)}</b> damage, weak does <b>{signed(TRIANGLE.weak - 1)}</b>. Same class: normal damage.
+        Klutz is <b>Balanced</b>, outside the triangle: nothing counters him, and his moves do <b>{signed(NEUTRAL_COUNTER - 1)}</b> against a class they counter.</P>
       <TriangleDiagram />
       <P>Mix your team: a team that is countered three times over loses badly. Swap out of a bad matchup — swapping uses your turn, the
         opponent gets a free hit on the creature coming in, and the one going out recovers {pct(SWAP_ENERGY_RESTORE)} of its missing energy.</P>
@@ -176,7 +177,6 @@ function Calculator() {
   const a = dummy("melee", 100, { atk: attack, ...(affinity ? { affinity: type } : {}) }, {});
   const d = dummy(target, hp, {}, { mdef: defence });
   const dmg = calcDamage(skill, a, d, false).damage;
-  const old = Math.max(1, power + attack - defence);
   const slider = (label: string, v: number, set: (n: number) => void, max: number) => (
     <label style={{ display: "block", fontSize: 13, marginTop: 6 }}>
       {label}: <b>{v}</b>
@@ -206,7 +206,7 @@ function Calculator() {
       </div>
       <div className="pixel-font" style={{ marginTop: 12, fontSize: 22, color: GOLD }}>{dmg} damage</div>
       <div style={{ fontSize: 13, color: MUTED }}>
-        {Math.ceil(hp / dmg)} hits to knock out · the old formula (hit − defence) would have done {old}
+        {Math.ceil(hp / dmg)} hits to knock out
       </div>
     </div>
   );
@@ -349,7 +349,7 @@ function Moves({ seen }: { seen: Set<string> }) {
       <P>Any creature can put these in a slot. Each slot also has a {pct(RARE_MOVE_CHANCE)} chance to be born with one of its own class.</P>
       {LEARNABLE_MOVES.map((m) => row(m, `${CLASS_INFO[m.type].icon} Rolls on ${CLASS_INFO[m.type].name} creatures`))}
       <H>Move codexes</H>
-      <P>Every {CLASS_INFO.melee.name}, {CLASS_INFO.ranged.name} and {CLASS_INFO.magic.name} move above also comes as a codex, from scans: Common for up to {BASIC_CODEX_MAX_DAMAGE} damage, Rare above that. It teaches a creature of that move&apos;s class.</P>
+      <P>Every {CLASS_INFO.melee.name}, {CLASS_INFO.ranged.name} and {CLASS_INFO.magic.name} move above also comes as a codex, from scans: Common for up to {BASIC_CODEX_MAX_DAMAGE} damage, Rare above that. It teaches a creature of that move&apos;s class (Klutz can learn any).</P>
       <H>Race moves (codexes)</H>
       {RACE_MOVES.map((m) => row(m, <>Only {m.race && <RaceTag race={m.race} />} creatures can learn it, from a codex.</>))}
       <H>Boss moves</H>

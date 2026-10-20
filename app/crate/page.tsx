@@ -2,7 +2,7 @@
 // app/crate/page.tsx
 // Klutz's crate, beside the cage: the weapons and armour he brings home from
 // his trips (what his catches were wearing, and anything he picks up on the
-// way). Keep a piece (it goes into your storage) or sell it for gold.
+// way). Keep a piece (it goes into your Inventory) or sell it for gold.
 
 import { Coin } from "@/components/GoldCount";
 import { useState } from "react";
@@ -35,7 +35,7 @@ export default function CratePage() {
       <div className="stone-panel">
         <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
           Whatever <Link href="/klutz" style={{ textDecoration: "underline" }}>Klutz</Link> drags home goes in here: the gear his catches were
-          wearing, and anything he picks up along the way. Keep what you want — it goes into your storage — and sell the rest.
+          wearing, and anything he picks up along the way. Keep what you want — it goes into your Inventory — and sell the rest.
         </p>
       </div>
 

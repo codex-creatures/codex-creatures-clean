@@ -9,8 +9,8 @@ import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
 import DenRoom, { SPOTS } from "@/components/DenRoom";
 import GoldCount from "@/components/GoldCount";
 import { useEffect, useState } from "react";
-import { klutzStatus } from "@/lib/klutz";
-import { klutzHasNews, needsFirstCreature, needsGearUp } from "@/lib/quest";
+import { klutzStatus, pointsFree } from "@/lib/klutz";
+import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { canBlast, tavernVisitor } from "@/lib/tavern";
@@ -59,10 +59,10 @@ export default function Home() {
       <div className="screen-fill">
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
-          klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} highlight={highlight}
+          klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0))} backpack={backpack} highlight={highlight}
           rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble}
           tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} upgraded={game.bookcase >= 2}
-          crateNews={game.hydrated && game.crate.length > 0} />
+          crateNews={game.hydrated && game.crate.length > 0} cageNews={game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}

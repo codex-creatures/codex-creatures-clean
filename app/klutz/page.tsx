@@ -219,7 +219,7 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
         {opening && (
           <CodeCache title="Klutz's armoury box" items={q.box ?? []}
             intro="Ten bundles of rusty weapons and dented armour. Tap one to unwrap it."
-            doneLabel="Put it all in storage"
+            doneLabel="Put it all in your Inventory"
             onDone={() => { setOpening(false); game.handOverBox(); }} />
         )}
       </>,
@@ -227,8 +227,8 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   }
   if (q.stage === "stash") {
     return say(
-      <>&ldquo;There — it&apos;s all in your storage. Go and have a look!&rdquo;</>,
-      <Link href="/chest" className="pixel-btn">🧰 Open your storage</Link>,
+      <>&ldquo;There — it&apos;s all in your Inventory. Go and have a look!&rdquo;</>,
+      <Link href="/chest" className="pixel-btn">🧰 Open your Inventory</Link>,
     );
   }
   if (needsGearUp(q, mine.map((c) => game.equipment[c.id]))) {
@@ -312,7 +312,7 @@ function EncounterRow({ e, ex, seen, kept }: { e: KlutzEncounter; ex: Expedition
         <div style={{ fontSize: 13, lineHeight: 1.4 }}>
           <span style={{ color: MUTED }}>{mins} min in:</span> <span style={{ color: "#ff8a80" }}>Klutz was beaten and limped home.</span>
           <span style={{ display: "block", fontStyle: "italic", color: "#d8d4c8" }}>
-            &ldquo;Something came at me out of the dark — never seen anything like it. Strong. Stronger than anything I know.
+            &ldquo;Something came at me out of the dark — never seen anything like it.
             I didn&apos;t get a proper look… but it&apos;s still down there.&rdquo;
           </span>
         </div>

@@ -1202,7 +1202,7 @@ function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
               <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
               <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
               <li>Some rooms are a <b>mystery</b> until you walk in.</li>
-              <li>Bring up to <b>{PARTY_SIZE} creatures</b>. Once you&apos;ve seen the map you pick the <b>{TEAM_SIZE}</b> that go in — <b>no swapping</b> inside.</li>
+              <li>Bring up to <b>{PARTY_SIZE} creatures</b>. Once you&apos;ve seen the map you pick the <b>{TEAM_SIZE}</b> that go in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
               <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
             </ul>
           </Help>
@@ -1298,7 +1298,7 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
             <li>Rooms you know are marked; the rest are a <b>&ldquo;?&rdquo;</b>.</li>
             <li>Every tunnel leads <b>onward, never back</b>.</li>
             <li>Tap a room next to the entrance to <b>head straight there</b>.</li>
-            <li>Pick the <b>{TEAM_SIZE} creatures</b> that suit your route. The rest wait in the Den: <b>no swapping</b> once you&apos;re inside.</li>
+            <li>Pick the <b>{TEAM_SIZE} creatures</b> that suit your route. The rest wait in the Den: <b>nobody new joins</b> once you&apos;re inside.</li>
           </ul>
         </Help>
       </div>

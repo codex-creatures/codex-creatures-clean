@@ -11,7 +11,7 @@ import DenFrame from "@/components/DenFrame";
 import CodexShelf from "@/components/CodexShelf";
 import Help from "@/components/Help";
 import { useGameState } from "@/hooks/useGameState";
-import { MATERIALS, SCHEMATICS, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
+import { BOOKCASE_BUILT, MATERIALS, SCHEMATICS, bookcaseSize, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
 import { tavernPlan } from "@/lib/tavern";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -40,7 +40,7 @@ export default function BookcasePage() {
             <ul>
               <li>Codexes you bring home go here. If it&apos;s full they <b>stay in your bag</b>.</li>
               <li>Read a codex from a creature&apos;s <b>Moves</b> tab. Race codexes only work on that race.</li>
-              <li>The <b>Crooked Bookcase Schematic</b> (the tavern&apos;s Cyclops bounty) builds it up to <b>20</b>: {SCHEMATICS.crooked_bookcase.cost.planks} planks and {SCHEMATICS.crooked_bookcase.cost.nails} nails.</li>
+              <li>The <b>Crooked Bookcase Schematic</b> (the tavern&apos;s Cyclops bounty) builds it up to <b>{bookcaseSize(BOOKCASE_BUILT)}</b>: {SCHEMATICS.crooked_bookcase.cost.planks} planks and {SCHEMATICS.crooked_bookcase.cost.nails} nails.</li>
             </ul>
           </Help>
         </div>

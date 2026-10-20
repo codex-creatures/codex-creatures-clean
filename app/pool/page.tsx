@@ -7,7 +7,9 @@ import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import { loadOwnedCreatures, type OwnedCreature } from "@/components/BattleScreen";
-import { hoursToFull, loadDungeon, poolLevel, saveDungeon, type DungeonSave } from "@/lib/dungeon/run";
+import { HEAL_AT_HOME, hoursToFull, loadDungeon, poolLevel, saveDungeon, type DungeonSave } from "@/lib/dungeon/run";
+import { useGameState } from "@/hooks/useGameState";
+import { klutzStatus } from "@/lib/klutz";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -20,20 +22,24 @@ function duration(hours: number): string {
 }
 
 export default function PoolPage() {
+  const game = useGameState();
   const [lab, setLab] = useState<DungeonSave | null>(null);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
+  const [now, setNow] = useState(() => Date.now());
 
   // Loading the save lets the pool catch up; then it ticks every minute.
   useEffect(() => {
-    const tick = () => { const s = loadDungeon(); saveDungeon(s); setLab(s); };
+    const tick = () => { const s = loadDungeon(); saveDungeon(s); setLab(s); setNow(Date.now()); };
     tick();
     setOwned(loadOwnedCreatures());
     const timer = window.setInterval(tick, 60_000);
     return () => window.clearInterval(timer);
   }, []);
 
-  if (!lab) return <DenFrame title="Healing Pool" icon="⛲"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+  if (!lab || !game.hydrated) return <DenFrame title="Healing Pool" icon="⛲"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
 
+  // Klutz soaks here too after a hunt (on his own clock: lib/klutz.ts).
+  const klutz = klutzStatus(game.klutz, game.klutzFighter.maxHp, now);
   const level = poolLevel(lab.meta);
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
   const away = new Set(lab.run?.party ?? []);
@@ -47,10 +53,24 @@ export default function PoolPage() {
           {level.desc} Creatures hurt in the Labyrinth soak here and get back
           <b> {Math.round(level.healPerHour * 100)}% of their health an hour</b>. Upgrades to the pool will come later.
         </p>
+        {HEAL_AT_HOME && <p style={{ fontSize: 12, color: "#f5c542", margin: "6px 0 0" }}>🧪 Testing: everyone comes home from the Labyrinth at full health for now.</p>}
       </div>
 
+      {klutz.kind === "healing" && (
+        <div className="stone-panel" style={{ display: "flex", gap: 10, alignItems: "center", padding: 10, marginTop: 14 }}>
+          <PixelSprite sprite={creatureSprite("klutz")} scale={2} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="pixel-font" style={{ color: "#f1d9a0", fontSize: 15 }}>Klutz</div>
+            <div style={{ height: 8, background: "#0e0f14", marginTop: 4 }}>
+              <div style={{ height: "100%", width: `${(klutz.hp / klutz.maxHp) * 100}%`, background: "#22c55e" }} />
+            </div>
+            <div style={{ fontSize: 12, color: MUTED, marginTop: 3 }}>{klutz.hp}/{klutz.maxHp} HP · full in {duration((klutz.fullAt - now) / 3_600_000)}</div>
+          </div>
+        </div>
+      )}
+
       {injured.length === 0 ? (
-        <p style={{ color: MUTED, marginTop: 16 }}>Nobody needs the pool right now. Everyone&apos;s at full health.</p>
+        klutz.kind !== "healing" && <p style={{ color: MUTED, marginTop: 16 }}>Nobody needs the pool right now. Everyone&apos;s at full health.</p>
       ) : (
         <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
           {injured.map((c) => {

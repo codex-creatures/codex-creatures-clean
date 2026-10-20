@@ -17,7 +17,7 @@ import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
-import { BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
+import { BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -39,6 +39,12 @@ export default function AltarPage() {
   const [scannerOn, setScannerOn]   = useState(false);
   const [scanStatus, setScanStatus] = useState("");
   const [startArmed, setStartArmed] = useState(false); // "Start new" asks for a second tap
+  const [resetArmed, setResetArmed] = useState<"player" | "global" | null>(null); // …and so do the resets
+  const armedReset = (which: "player" | "global", run: () => void) => {
+    if (resetArmed !== which) { setResetArmed(which); window.setTimeout(() => setResetArmed(null), 4000); return; }
+    setResetArmed(null);
+    run();
+  };
   const [startedNew, setStartedNew] = useState(false);
   const [shown, setShown]           = useState<Drop[]>([]); // this visit's finds, newest first (Looting)
   const [note, setNote]             = useState<React.ReactNode>(null); // sealed, storage full…
@@ -166,7 +172,7 @@ export default function AltarPage() {
               <ul>
                 <li><b>Looting:</b> it opens straight away. What&apos;s inside goes to your things, and the window shows your latest {WINDOW_COLS * WINDOW_ROWS} finds until you leave the altar.</li>
                 <li><b>Storage:</b> the cache waits in the window to open later.</li>
-                <li>A find with no room in your chest (a box of weapons, armour or consumables at 50) waits as a cache too, until you make room.</li>
+                <li>A find with no room in your Inventory (a box of weapons, armour or consumables at {BOX_CAP}) waits as a cache too, until you make room.</li>
                 <li>The altar holds <b>{CACHE_LIMIT}</b> caches. With {CACHE_LIMIT} waiting, scans fail: open some first.</li>
                 <li>Tap a cache to open it, or open them all.</li>
               </ul>
@@ -237,8 +243,12 @@ export default function AltarPage() {
           style={{ ...dangerBtn, color: startArmed ? "#1a1a1a" : "#f5c542", background: startArmed ? "#f5c542" : "transparent", borderColor: "rgba(245,197,66,0.6)" }}>
           {startArmed ? "Tap again to wipe everything" : "✨ Start new"}
         </button>
-        <button onClick={game.resetAll} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>Reset Player</button>
-        <button onClick={game.globalReset} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>Global Reset</button>
+        <button onClick={() => armedReset("player", game.resetAll)} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>
+          {resetArmed === "player" ? "Tap again to reset" : "Reset Player"}
+        </button>
+        <button onClick={() => armedReset("global", game.globalReset)} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>
+          {resetArmed === "global" ? "Tap again to reset" : "Global Reset"}
+        </button>
       </div>
 
       {/* Typing a barcode in: Repeatable (the real rules) or Random (a fresh roll every time). */}
