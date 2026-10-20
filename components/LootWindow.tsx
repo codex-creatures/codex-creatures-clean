@@ -111,14 +111,14 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const glowBg = (glow?: string) => `radial-gradient(circle, ${glow ?? "rgba(255,255,255,0.05)"} 0%, transparent 62%)`;
 
   return (
-    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 10 }}>
+    <div ref={dragBox} onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 6 }}>
       <div role="dialog" aria-label={name} onClick={(e) => e.stopPropagation()} className="title-bar sheet-up"
-        style={{ width: "100%", maxWidth: 440, maxHeight: "94cqh", overflowY: "auto", overflowX: "hidden", padding: 10, display: "grid", gap: 8, userSelect: "none", WebkitUserSelect: "none" }}>
+        style={{ width: "100%", maxHeight: "97cqh", overflowY: "auto", overflowX: "hidden", padding: 10, display: "grid", gap: 8, userSelect: "none", WebkitUserSelect: "none" }}>
         {/* The chest */}
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <PixelSprite sprite={sprite} scale={1.4} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
-          <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0", flex: 1 }}>{name}</div>
-          <button className="chip" aria-label="Close" onClick={onClose} style={{ minHeight: 34, padding: "2px 12px" }}>✕</button>
+          <PixelSprite sprite={sprite} scale={1.8} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
+          <div className="pixel-font" style={{ fontSize: 21, color: "#f1d9a0", flex: 1 }}>{name}</div>
+          <button className="chip" aria-label="Close" onClick={onClose} style={{ minHeight: 44, padding: "2px 14px" }}>✕</button>
         </div>
         {teach && (
           <div className="tutorial-tip" style={{ fontSize: 13 }}>
@@ -142,7 +142,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
                   ...(seen === i ? { outline: "2px solid #ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : {}) }}>
                   {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 28 }}>{l.icon}</span>}
                 </span>
-                <span style={{ ...NAME, color: l.color }}>{l.name}</span>
+                <span style={{ ...NAME, fontSize: 13, color: l.color }}>{l.name}</span>
               </div>
             );
           })}
@@ -150,7 +150,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 
         {/* Under the chest: the hint, with Take all at the right (it stays put while you look at things). */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: noRoom ? "#ff8a80" : MUTED }}>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 14, color: noRoom ? "#ff8a80" : MUTED }}>
             {noRoom ? `Your ${bagName.toLowerCase()} is full` : `Tap to look · drag onto your bag to take${full ? " (your bag is full)" : ""}`}
           </div>
           <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
@@ -167,7 +167,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         )}
 
         {/* Your bag */}
-        <div className="pixel-font" style={{ fontSize: 14, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
+        <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
         <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(slots, 5)}, 1fr)`, gap: 6, padding: 8 }}>
           {Array.from({ length: slots }, (_, i) => {
             const l = bag[i];
@@ -264,8 +264,8 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
             return (
               <span key={k} style={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "1px 0",
                 background: v >= 30 ? `color-mix(in srgb, ${c} 18%, rgba(0,0,0,0.4))` : "rgba(0,0,0,0.35)", border: `2px solid ${v >= 30 ? c : "#3a3326"}` }}>
-                <span style={{ fontSize: 10, color: MUTED }}>{label[k]}</span>
-                <b style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", color: v >= 30 ? c : v ? "white" : MUTED }}>{v}</b>
+                <span style={{ fontSize: 12, color: MUTED }}>{label[k]}</span>
+                <b style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", color: v >= 30 ? c : v ? "white" : MUTED }}>{v}</b>
               </span>
             );
           })}
@@ -277,12 +277,12 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
     <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gap: 6 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
         <div style={{ minWidth: 0 }}>
-          <b style={{ color: l.color }}>{l.name}</b>
-          {kind && <div style={{ fontSize: 11, color: MUTED, textTransform: "capitalize" }}>{kind}</div>}
+          <b style={{ color: l.color, fontSize: 17 }}>{l.name}</b>
+          {kind && <div style={{ fontSize: 13, color: MUTED, textTransform: "capitalize" }}>{kind}</div>}
         </div>
         {action}
       </div>
-      {body && <div style={{ fontSize: 13 }}>{body}</div>}
+      {body && <div style={{ fontSize: 15 }}>{body}</div>}
     </div>
   );
 }
