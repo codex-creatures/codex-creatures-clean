@@ -63,7 +63,8 @@ function denScene(backpack: boolean, opened: boolean, art: DenArt): DenScene {
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
 // highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
 // rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void }) {
+// tavernNews: someone's visiting the tavern (a ❗ at the doorway).
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean }) {
   const opened = rubble === "open";
   const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
   // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
@@ -334,7 +335,8 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
-        if (id === OBJ.klutz || (id !== shown && id !== highlight)) return null;
+        const news = id === OBJ.tavern && opened && tavernNews;
+        if (id === OBJ.klutz || (id !== shown && id !== highlight && !news)) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
         const spot = spotOf(id);
@@ -343,7 +345,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
           <button
             key={id}
             onClick={() => { if (!dragged.current) activate(id); }}
-            className="pixel-font"
+            className={`pixel-font${news ? " news-glow" : ""}`}
             style={{
               position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`,
               // Near the edges the label leans inwards, so it never runs off a phone screen.
@@ -355,6 +357,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
               cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
             }}
           >
+            {news && <span className="news-pulse" aria-label="Someone's in the tavern">❗ </span>}
             {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}
           </button>
         );

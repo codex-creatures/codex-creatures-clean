@@ -396,7 +396,7 @@ fields optional with defaults.
    built it keeps its 25 slots, and schematics already in a save stay buildable.
 9. **Visitors** (after the repair): on returning home from each run, roll a merchant (12%), a
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
-   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian.
+   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Already built for it: while one is in (`tavern.visitor`), a ❗ shows at the Den's doorway and they stand in the tavern, drawn as in the tunnels (user, 2026-10-20). The roll itself isn't built.
    (The creature trader is left out for now.)
 
 ## 10. UI philosophy (settled; follow it)

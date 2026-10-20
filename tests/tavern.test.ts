@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL } from "../lib/tavern";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -107,6 +107,12 @@ describe("the tavern questline: the rubble and the repair", () => {
     const open = { dynamite: true, blasted: true };
     expect(repair(open, { metal_bars: 5, planks: 19, nails: 5 })).toBeNull();
     expect(repair({ dynamite: true }, { metal_bars: 5, planks: 20, nails: 5 })).toBeNull();
+  });
+
+  it("only has visitors once it's repaired", () => {
+    expect(tavernVisitor({ blasted: true, visitor: "merchant" })).toBeUndefined();
+    expect(tavernVisitor({ blasted: true, repaired: true, visitor: "librarian" })).toBe("librarian");
+    expect(tavernVisitor({ blasted: true, repaired: true })).toBeUndefined();
   });
 
   it("takes the materials exactly once", () => {

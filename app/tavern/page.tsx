@@ -13,7 +13,8 @@ import PixelSprite from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { MATERIALS } from "@/lib/items/materials";
-import { canRepair, repairNeeds } from "@/lib/tavern";
+import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
+import { canRepair, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -31,6 +32,8 @@ export default function TavernPage() {
   }
 
   const needs = repairNeeds(game.materials);
+  // A wanderer calling, standing as they do in the Labyrinth's tunnels.
+  const visitor = tavernVisitor(t);
   return (
     <DenFrame title={t.repaired ? "Tavern" : "Broken tavern"} icon="🍺">
       <div className="stone-panel">
@@ -51,6 +54,11 @@ export default function TavernPage() {
             style={{ position: "absolute", left: "8%", bottom: 6, fontSize: 104, lineHeight: 1, filter: t.repaired ? "none" : "grayscale(0.6) brightness(0.75)" }}>
             {t.repaired ? "🏠" : "🏚️"}
           </div>
+          {visitor && (
+            <div style={{ position: "absolute", left: "50%", bottom: 4, transform: "translateX(-50%)", textAlign: "center" }}>
+              <PixelSprite sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} scale={1.4} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} />
+            </div>
+          )}
           <div style={{ position: "absolute", right: "8%", top: 20, width: 92, padding: "4px 4px 6px", background: "#e8d6a8", border: "2px solid #8a6a3a", boxShadow: "0 3px 0 rgba(0,0,0,0.6)", transform: "rotate(3deg)", textAlign: "center" }}>
             <div className="pixel-font" style={{ fontSize: 13, color: "#7a1e14", letterSpacing: 1 }}>WANTED</div>
             {CREATURE_SPRITES.cyclops && <PixelSprite sprite={CREATURE_SPRITES.cyclops} scale={1.1} style={{ display: "block", margin: "2px auto" }} />}

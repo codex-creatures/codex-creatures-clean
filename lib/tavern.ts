@@ -32,7 +32,13 @@ export type TavernQuest = {
   blasted?: boolean;  // the rubble's blown open: the tavern's room is open
   seen?: boolean;     // you've seen the tavern (and heard Klutz on it)
   repaired?: boolean; // the tavern's been repaired
+  visitor?: Visitor;  // a wanderer calling at the tavern (who comes is rolled in stage 9, not built yet)
 };
+export type Visitor = "merchant" | "librarian";
+
+// Who's in the tavern: only a repaired tavern has visitors. (A ❗ shows at the
+// Den's doorway while someone's there.)
+export const tavernVisitor = (t: TavernQuest): Visitor | undefined => (t.repaired ? t.visitor : undefined);
 
 // What the repair takes.
 export const REPAIR_COST: Materials = { metal_bars: 5, planks: 20, nails: 5 };

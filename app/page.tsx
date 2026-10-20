@@ -13,7 +13,7 @@ import { klutzStatus } from "@/lib/klutz";
 import { klutzHasNews, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
-import { canBlast } from "@/lib/tavern";
+import { canBlast, tavernVisitor } from "@/lib/tavern";
 
 // The places in the dock under the room: your creatures, your things, then help.
 const PLACES = [OBJ.pit, OBJ.altar, OBJ.cage, OBJ.pool, OBJ.klutz, OBJ.chest, OBJ.bag, OBJ.bookcase, OBJ.crate, OBJ.scroll];
@@ -51,7 +51,8 @@ export default function Home() {
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead))} backpack={backpack} highlight={highlight}
-          rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble} />
+          rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble}
+          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}
