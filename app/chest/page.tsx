@@ -1,7 +1,8 @@
 "use client";
 // app/chest/page.tsx — your Inventory (the chest in the Den): everything you
 // own, in three parts you swap between from the dock at the bottom:
-// - Items: weapons, armour, materials, consumables (and selling);
+// - Items: weapons, armour, consumables, codexes (and selling); your gold
+//   and materials sit in a strip at the top;
 // - Creatures: your creatures, your roster, creature cards (as in the Pit);
 // - Codex: the codexes on your bookcase's shelf.
 
@@ -15,7 +16,7 @@ import CodexShelf from "@/components/CodexShelf";
 
 type Part = "items" | "creatures" | "codex";
 const PART_TABS: Record<Exclude<Part, "codex">, TabKey[]> = {
-  items: ["weapons", "armor", "materials", "consumables"],
+  items: ["weapons", "armor", "consumables", "codexes"],
   creatures: ["creatures", "roster", "cards"],
 };
 
@@ -42,7 +43,7 @@ export default function InventoryPage() {
   );
 
   return (
-    <DenFrame title="Inventory" icon="🧰" gold={game.gold} dock={dock}>
+    <DenFrame title="Inventory" icon="🧰" gold={game.gold} materials={game.materials} dock={dock}>
       {game.showSellConfirm && (
         <SellConfirmModal
           items={game.selectedItemsForModal}

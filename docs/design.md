@@ -119,9 +119,12 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   the tally when you get home.
 - ✅ **Potions** go in the bag. The Chest (Inventory) stores the rest.
 - ✅ **Chest boxes** (the user, 2026-10-20, `lib/items/storage.ts`): weapons, armour and consumables each
-  hold 50 (`BOX_CAP`; materials are a tally and don't count). A run's haul still comes home into a
-  full box and can go over, but you can't enter the Labyrinth while any box is at 50 or more.
-  Scanning isn't blocked (open).
+  hold 50 (`BOX_CAP`). Materials (a tally, shown in a strip by your gold at the top of the
+  Inventory) and codexes (their own Inventory tab; the bookcase limits them) don't count. A run's
+  haul still comes home into a full box and can go over, but you can't enter the Labyrinth while
+  any box is at 50 or more. A scan for a full box is kept as a sealed Code Cache at the altar (even
+  in Looting mode), and a cache for a full box won't open until there's room. The altar holds 9
+  caches (`CACHE_LIMIT`): with 9 waiting, every scan says "Scan Failed / Code Cache Full".
 - ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
   found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
   wandering merchant's cart, Labyrinth or tavern, for 1,000 gold (`BACKPACK_PRICE`; it takes one of

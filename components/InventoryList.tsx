@@ -21,7 +21,7 @@ import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFi
 import { BOX_CAP } from "@/lib/items/storage";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
-const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor", "materials", "consumables"]);
+const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor", "materials", "consumables", "codexes"]);
 // Tabs that are a chest box of BOX_CAP (lib/items/storage.ts): shown in red once full.
 const CAPPED_TABS = new Set<GameTabKey>(["weapons", "armor", "consumables"]);
 import { KLUTZ_DROP_ID, type TabKey as GameTabKey, type Loadout, type EquipSlot } from "@/hooks/useGameState";
@@ -63,7 +63,7 @@ type Props = {
   unavailableItems?: Set<string>; // gear you can't take right now (Klutz has it in the Labyrinth)
 };
 
-const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables"];
+const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables", "codexes"];
 const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Roster" };
 
 export default function InventoryList({

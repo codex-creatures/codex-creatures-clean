@@ -37,6 +37,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 
 import { readSave, writeMainSave } from "@/lib/save";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
+import { fitInBoxes, forFullBox } from "@/lib/items/storage";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 export const CAGE_SIZE = 1;          // creatures the cage holds (upgrades later)
@@ -138,7 +139,7 @@ function safeSave(state: SaveState) {
   writeMainSave(state); // (keeps the Labyrinth's part of the save)
 }
 
-export type TabKey = "all" | "roster" | "creatures" | "cards" | "weapons" | "armor" | "materials" | "consumables";
+export type TabKey = "all" | "roster" | "creatures" | "cards" | "weapons" | "armor" | "materials" | "consumables" | "codexes";
 
 export function useGameState(initialTab: TabKey = "all") {
   const [gold, setGold]               = useState(0);
@@ -442,7 +443,8 @@ export function useGameState(initialTab: TabKey = "all") {
   // Materials are a tally (like gold): shown as one stack each, with a stable id.
   const materialsOnly   = useMemo(() => MATERIAL_KEYS.filter((k) => (materials[k] ?? 0) > 0)
     .map((k): Drop => ({ ...materialDrop(k, materials[k]!), id: `material:${k}`, createdAt: "" })), [materials]);
-  const consumablesOnly = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "consumable"), [inventory]);
+  const consumablesOnly = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "consumable" && !d.codexMove), [inventory]);
+  const codexesOnly     = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.codexMove), [inventory]);
   const cardsOnly       = useMemo(() => inventory.filter(isCardDrop), [inventory]);
   // Roster = favourited creatures.
   const rosterOnly      = useMemo(() => creaturesOnly.filter((d) => favoriteIds.has(d.id)), [creaturesOnly, favoriteIds]);
@@ -456,7 +458,8 @@ export function useGameState(initialTab: TabKey = "all") {
     armor:       armorOnly.length,
     materials:   materialsOnly.length,
     consumables: consumablesOnly.length,
-  }), [inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
+    codexes:     codexesOnly.length,
+  }), [inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly, codexesOnly]);
 
   const filteredInventory = useMemo(() => {
     switch (activeTab) {
@@ -467,9 +470,10 @@ export function useGameState(initialTab: TabKey = "all") {
       case "armor":       return armorOnly;
       case "materials":   return materialsOnly;
       case "consumables": return consumablesOnly;
+      case "codexes":     return codexesOnly;
       default:            return [...inventory, ...materialsOnly];
     }
-  }, [activeTab, inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly]);
+  }, [activeTab, inventory, rosterOnly, creaturesOnly, cardsOnly, weaponsOnly, armorOnly, materialsOnly, consumablesOnly, codexesOnly]);
 
   // Your last scans that you still have (sold or summoned ones drop out).
   const recentScans = useMemo(() => {
@@ -549,13 +553,20 @@ export function useGameState(initialTab: TabKey = "all") {
   }
 
   // A drop from scanning a barcode — a Code Cache. Looting: opened at once
-  // (added, and remembered in your recent scans). Storage: kept at the altar.
-  function addScan(drop: Drop) {
+  // (added, and remembered in your recent scans). Storage, or a find for a
+  // full chest box (lib/items/storage.ts): kept at the altar. Returns whether
+  // it was kept. (The altar refuses scans once CACHE_LIMIT are kept; if one
+  // slips past, it goes in over the cap rather than being lost.)
+  function addScan(drop: Drop): boolean {
     setDeathsSinceScan(0);
     setScanTipRead(false);
-    if (scanMode === "store") { setCaches((prev) => (prev.length >= CACHE_LIMIT ? prev : [...prev, drop])); return; }
+    if ((scanMode === "store" || forFullBox(inventory, drop)) && caches.length < CACHE_LIMIT) {
+      setCaches((prev) => [...prev, drop]);
+      return true;
+    }
     addDrop(drop);
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
+    return false;
   }
 
   // Klutz's crate: keep a piece (it joins your storage) or sell it.
@@ -590,10 +601,12 @@ export function useGameState(initialTab: TabKey = "all") {
   }
 
   // Open stored Code Caches (by drop id): what's inside joins your things.
+  // Ones for a full chest box stay shut.
   function openCaches(ids: string[]) {
-    const opened = caches.filter((c) => ids.includes(c.id));
+    const opened = fitInBoxes(inventory, caches.filter((c) => ids.includes(c.id))).fit;
     if (opened.length === 0) return;
-    setCaches((prev) => prev.filter((c) => !ids.includes(c.id)));
+    const gone = new Set(opened.map((d) => d.id));
+    setCaches((prev) => prev.filter((c) => !gone.has(c.id)));
     noteFound(opened);
     depositMaterials(opened);
     setInventory((prev) => [...opened.filter((d) => !(d.dropType === "item" && d.material)), ...prev]);

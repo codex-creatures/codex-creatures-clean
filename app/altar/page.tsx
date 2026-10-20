@@ -17,6 +17,7 @@ import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
+import { BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -48,24 +49,40 @@ export default function AltarPage() {
   const scanHandledRef  = useRef(false);
 
   const storing = game.scanMode === "store";
+  const kept = useRef(new Set<string>()); // this scan's finds kept as Code Caches (Looting, full box)
+  const cacheIds = new Set(game.caches.map((d) => d.id));
+  const boxesFull = (full: CappedBox[]) => <>🧰 Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. Sell some to open {full.length > 1 ? "these" : "it"}.</>;
 
   const { generateDrop } = useDropGeneration({
     rollMode,
     scanCounts: game.scanCounts,
-    onDrop:            game.addScan,
+    onDrop:            (d) => { if (game.addScan(d)) kept.current.add(d.id); },
     onScan:            (drops) => {
-      setNote(null);
-      if (!storing) setShown((s) => [...drops, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS));
+      const opened = drops.filter((d) => !kept.current.has(d.id));
+      // Looting, but a find for a full box: it waits as a Code Cache.
+      setNote(!storing && opened.length < drops.length ? <>📦 No room in your chest: kept as a Code Cache.</> : null);
+      kept.current.clear();
+      if (!storing) setShown((s) => [...opened, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS));
     },
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
     onSealed:          (rarity, need) => setNote(<>🔒 Something <b style={{ color: RARITY_COLORS[rarity]?.text, textTransform: "capitalize" }}>{rarity}</b> stirs in it. Come back at explorer level <b>{need}</b>.</>),
   });
 
-  // Every scan, camera or typed: Storage can't take a tenth cache.
+  // Every scan, camera or typed: with CACHE_LIMIT Code Caches waiting, it fails.
   function scan(code: string) {
-    if (storing && game.caches.length >= CACHE_LIMIT) { setNote(<>📦 Storage is full. Open a cache first.</>); return; }
+    if (game.caches.length >= CACHE_LIMIT) {
+      setNote(<><b style={{ color: "#ff8a80" }}>Scan Failed</b><br />Code Cache Full</>);
+      return;
+    }
     generateDrop(code);
+  }
+
+  // Open Code Caches: only those there's room in your chest for.
+  function open(list: Drop[]) {
+    const { fit, full } = fitInBoxes(game.inventory, list);
+    setNote(full.length ? boxesFull(full) : null);
+    if (fit.length) setOpening(fit);
   }
 
   const isValidBarcode = useMemo(() => /^[0-9]{6,20}$/.test(barcode.trim()), [barcode]);
@@ -111,8 +128,8 @@ export default function AltarPage() {
     };
   }, [scannerOn]);
 
-  // What the window holds: this visit's finds, or the caches in storage.
-  const slots = storing ? game.caches.slice(0, CACHE_LIMIT) : shown;
+  // What the window holds: the caches waiting, then (Looting) this visit's finds.
+  const slots = (storing ? game.caches : [...game.caches, ...shown]).slice(0, WINDOW_COLS * WINDOW_ROWS);
   const rows = slots.length ? WINDOW_ROWS : 1;
 
   return (
@@ -148,7 +165,9 @@ export default function AltarPage() {
             <HelpSection title="Every scan is a Code Cache">
               <ul>
                 <li><b>Looting:</b> it opens straight away. What&apos;s inside goes to your things, and the window shows your latest {WINDOW_COLS * WINDOW_ROWS} finds until you leave the altar.</li>
-                <li><b>Storage:</b> the cache waits in the window to open later. It holds <b>{CACHE_LIMIT}</b>; when it&apos;s full, open some before you scan again.</li>
+                <li><b>Storage:</b> the cache waits in the window to open later.</li>
+                <li>A find with no room in your chest (a box of weapons, armour or consumables at 50) waits as a cache too, until you make room.</li>
+                <li>The altar holds <b>{CACHE_LIMIT}</b> caches. With {CACHE_LIMIT} waiting, scans fail: open some first.</li>
                 <li>Tap a cache to open it, or open them all.</li>
               </ul>
             </HelpSection>
@@ -166,8 +185,8 @@ export default function AltarPage() {
                 <div style={NAME} />
               </div>
             );
-            if (storing) return (
-              <button key={d.id} onClick={() => setOpening([d])} title="Open this Code Cache" aria-label="Open this Code Cache" style={TILE_BTN}>
+            if (cacheIds.has(d.id)) return (
+              <button key={d.id} onClick={() => open([d])} title="Open this Code Cache" aria-label="Open this Code Cache" style={TILE_BTN}>
                 <span className="cache-sealed" style={{ ...TILE, borderRadius: 8, background: "radial-gradient(circle, rgba(143,193,255,0.35) 0%, transparent 62%)" }}>
                   <span className="pixel-font" style={{ fontSize: 30, color: "#8fc1ff", textShadow: "0 0 8px rgba(143,193,255,0.8)" }}>?</span>
                 </span>
@@ -181,18 +200,18 @@ export default function AltarPage() {
         {/* Two lines under the window: a warning, or how full storage is. */}
         <div className="pixel-font" style={{ minHeight: "2.6em", marginTop: 8, fontSize: 14, textAlign: "center", color: "#c9b48a", lineHeight: 1.3,
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          {note ?? (storing ? `📦 ${game.caches.length}/${CACHE_LIMIT} Code Caches stored`
+          {note ?? (storing || game.caches.length ? `📦 ${game.caches.length}/${CACHE_LIMIT} Code Caches stored`
             : shown.length ? "" : "Scan a barcode to see what's inside")}
         </div>
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 4, visibility: storing && game.caches.length > 0 ? "visible" : "hidden" }}>
-          <button className="pixel-btn" onClick={() => setOpening(game.caches.slice(0, CACHE_LIMIT))}>📦 Open all</button>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 4, visibility: game.caches.length > 0 ? "visible" : "hidden" }}>
+          <button className="pixel-btn" onClick={() => open(game.caches.slice(0, CACHE_LIMIT))}>📦 Open all</button>
         </div>
       </div>
 
       {opening && (
         <CodeCache title={opening.length === 1 ? "Code Cache" : "Code Caches"} items={opening} revealAllLabel="Extract all" doneLabel="Take it all"
           intro={opening.length === 1 ? "Tap it to crack it open." : "Tap a cache to crack it open, or extract them all at once."}
-          onDone={() => { game.openCaches(opening.map((d) => d.id)); setOpening(null); setNote(null); }} />
+          onDone={() => { game.openCaches(opening.map((d) => d.id)); setOpening(null); }} />
       )}
 
       {/* Straight to what you've found, without going back through the Den. */}
