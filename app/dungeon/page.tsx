@@ -371,7 +371,6 @@ export default function DungeonPage() {
       const id = lootIdOf(e);
       const x = id ? loot[id] : undefined;
       if (!id || !x) { if (!id) bag.push(e); continue; }
-      if (x.dropType === "item" && x.tool) { bag.push(e); continue; } // flares and clairvoyance scrolls stay packed for next time
       if (x.dropType === "item" && x.codexMove) {
         if (shelf <= 0) { bag.push(e); continue; } // the bookcase is full: it stays in the bag
         shelf--;

@@ -45,7 +45,7 @@ export default function BagPage() {
   const spare = gear.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
   // Potions in storage (from scans) can be packed too: they become bag potions.
   const potions = game.inventory.filter((d) => d.dropType === "item" && d.potion) as CreatureOrItemDrop[];
-  // …and so can flares and clairvoyance scrolls (from the tavern's merchant).
+  // …and so can flares and clairvoyance scrolls (bought at the tavern, or brought home from a run).
   const tools = game.inventory.filter((d) => d.dropType === "item" && d.tool) as CreatureOrItemDrop[];
   const shelfFree = game.bookcaseSize - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
   const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
@@ -60,7 +60,7 @@ export default function BagPage() {
   }
 
   // Pack a flare or clairvoyance scroll from the Inventory: it travels as
-  // found loot does, and stays packed between runs until it's used.
+  // found loot does; one not used comes home to the Inventory.
   function packTool(x: CreatureOrItemDrop) {
     game.removeDrop(x.id);
     save({ ...lab!, meta: { ...lab!.meta, bag: [...bag, lootEntry(x.id)], loot: { ...(lab!.meta.loot ?? {}), [x.id]: x } } });
