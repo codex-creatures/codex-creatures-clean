@@ -533,12 +533,15 @@ fields optional with defaults.
 - **Scale (the block standard, 2026-10-20):** the Den and its rooms draw art 1:1 (one PNG pixel =
   one room pixel), and **1 floor block = 64px across**. Plan a prop's footprint in blocks first; its
   width in pixels follows. The Soul Altar is 2×2 blocks (128px); Klutz is about 1 block wide and 1⅓
-  tall (69×85px) and is the yardstick for doors. The tavern is about 7×3 blocks (387px), its door
-  about 100px. An isometric footprint of a×b blocks is (a+b)×32px wide, so Pro Flash's 256px limit
-  fits a 5×3 footprint; anything bigger needs the enlarge-then-redraw step below, or drawing in parts.
-  - buildings: draft with `create_image_pro_flash` (the altar as the style image), then enlarge it to
-    its block size and redraw with `create_image_pixflux` (init image, strength 200, up to 400px).
-    Its no_background comes back grey: cut that out by flood fill from the edges.
+  tall (69×85px) and is the yardstick for doors. The tavern is 10×5 blocks (510px), its door
+  about 130px. An isometric footprint of a×b blocks is (a+b)×32px wide.
+  - **Buildings must match the room's 2:1 angle** (walls slope 1 down for every 2 across). AI
+    generators draw their own perspective, so: draw a flat-colour block-out in code on the exact grid
+    (doors, windows, poster space where the code expects them), then `edit_image` (up to 512px, ~25
+    generations) on the block-out with an approved sample as the reference image. It keeps the
+    shape and angle and copies the look. It comes out a little gloomy: warm it in code (a gentle
+    saturation and lamp-light lift), and add the light spill as glows in the room.
+  - Don't enlarge a small draft and redraw it with pixflux: it lost the angle and the colours.
 - Hand-drawn detailed sprites in code were tried and scrapped. Don't do it again.
 - Rejected, so don't reopen: the mushroom/ruin room theme, the Mr. Shadows redraws (keep the old
   sprite), and the parchment / MTG / wood-and-brass card styles.
