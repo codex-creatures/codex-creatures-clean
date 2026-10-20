@@ -62,6 +62,9 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
   const step = Math.min(levels, Math.floor(barT / PER_LEVEL));
   const shownLevel = u.from + step;
   const fill = shownLevel >= u.to ? 1 : ease((barT % PER_LEVEL) / PER_LEVEL);
+  // The right end shows the level it's filling towards from the start (dim), lit once reached.
+  const target = Math.min(u.to, shownLevel + 1);
+  const reached = shownLevel >= target;
   // The stats, from the old level's to the new one's.
   const k = ease((t - barEnd - STATS_IN) / COUNT);
   const showStats = t >= barEnd;
@@ -90,7 +93,7 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
             <div style={{ position: "absolute", inset: 0, width: `${fill * 100}%`, background: "linear-gradient(#ffe39a, #d9a23a)" }} />
             <div style={{ position: "absolute", inset: 0, background: "repeating-linear-gradient(90deg, transparent 0 9px, rgba(0,0,0,0.35) 9px 10px)" }} />
           </div>
-          <span key={shownLevel} className={`pixel-font${shownLevel > u.from ? " levelup-bump" : ""}`} style={{ fontSize: 16, color: shownLevel > u.from ? GOLD : MUTED, minWidth: 44, textAlign: "right" }}>Lv {shownLevel}</span>
+          <span key={shownLevel} className={`pixel-font${reached ? " levelup-bump" : ""}`} style={{ fontSize: 16, color: reached ? GOLD : MUTED, minWidth: 44, textAlign: "right" }}>Lv {target}</span>
         </div>
 
         {/* What it gained. */}
