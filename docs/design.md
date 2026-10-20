@@ -290,9 +290,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     shortcut.
   - 🧪 **For testing, everyone comes home at full health** (`HEAL_AT_HOME` in lib/dungeon/run.ts,
     on since 2026-10-19). Set it to `false` to bring the pool back.
-  - ❓ How healing after a death should really work is open. Options the user was given: keep the
-    slow pool (25%/h, about 4 h from knocked out to full), a faster pool (50%/h), a full heal on
-    getting home, or a quick heal to about half then the slow pool.
+  - ✅ Decided (the user, 2026-10-20): healing after death **stays as it is now**, with everyone
+    coming home at full health (`HEAL_AT_HOME`). The other options (slow pool 25%/h, faster pool
+    50%/h, a quick heal to half then the pool) are set aside.
 - 📌 **Re-entry cooldown** as the anti-farming bar, with cooldown potions from barcode merchants
   (or real money later). Not built: today the gold fee is the only bar.
 - ❓ Labyrinth look: a top-down voxel style is the likely long-term direction, not committed.
@@ -407,8 +407,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   game shows Continue / New Game / Load file; up to 4 named saves per browser (no real login: the
   user chose this over online accounts). The game saves itself on every change. The slot in play
   lives in the usual keys; the others are parked as save files.
-- ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
-  (~18 a room), and re-scan gold has no cap.
+- ✅ Sell prices **stay as they are** (the user, 2026-10-20), even though they (epic ~800,
+  legendary ~2,700) dwarf Labyrinth gold (~18 a room) and re-scan gold has no cap.
 
 ### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–8 built, lib/tavern.ts)
 
