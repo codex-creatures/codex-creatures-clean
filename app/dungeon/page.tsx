@@ -937,11 +937,13 @@ export default function DungeonPage() {
 
   if (run.status !== "exploring") {
     return frame(<RunOver run={run} lab={lab} onWalkBack={startWalkBack} onHome={() => {
-      // Knocked out: Klutz dragged you back to the Den.
+      // Knocked out (Klutz dragged you back) or retreated: back to the Den.
       const died = run.status === "dead";
-      if (died) { setLeaving(true); game.noteLabyrinthDeath(); }
+      const toDen = died || run.status === "retreated";
+      if (toDen) setLeaving(true);
+      if (died) game.noteLabyrinthDeath();
       goHome();
-      if (died) router.push("/");
+      if (toDen) router.push("/");
     }} />);
   }
 
