@@ -111,7 +111,8 @@ export function getStatCapForDrop(d: Drop, stat: string): number | null {
 export const TOTAL_CREATURES = CREATURE_TEMPLATES.length;
 export const TOTAL_WEAPONS   = ITEM_KEYS.length;
 export const TOTAL_ARMOR     = Object.keys(ARMOR_CEILINGS).length;
-export const TOTAL_ITEMS     = TOTAL_WEAPONS + TOTAL_ARMOR;
+// Every kind of item there is to discover (weapons, armour, materials, potions, codexes).
+export { TOTAL_DISCOVERABLE_ITEMS as TOTAL_ITEMS } from "./discovery";
 
 // Random creature of the given rarity — returns its stable id.
 export function pickCreatureId(rarity: Rarity): string {

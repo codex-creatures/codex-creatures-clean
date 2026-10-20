@@ -40,8 +40,14 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   material, consumable.
 - ✅ **1 drop per new scan** (`SCAN_DROPS`). Items should stay scarce; gold scans are the
   "dud" consolation.
-- ✅ The altar has a setting: **Looting** opens each Code Cache at once; **Storage** keeps them at
-  the altar to open ten at a time.
+- ✅ The altar (layout 2026-10-20): a big **Scan Barcode** button, the Looting/Storage toggle, and a
+  3×3 loot window (one empty row of 3 until something's in it). **Looting** opens each Code Cache
+  at once: the find goes straight to your things and the window shows this visit's latest 9,
+  cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when
+  full, open some before scanning. Typed barcodes (Repeatable by default, or Random) sit at the
+  bottom as a testing tool.
+- ✅ **Items discovered** counts every kind of item: weapon and armour types, materials, potions and
+  codexes (lib/items/discovery.ts). The save remembers kinds you've used up (`found`).
 - ✅ Scanned creatures: 10% are a real creature, 90% a **creature card** (`REAL_CREATURE_CHANCE`).
 - ✅ Your **explorer level** caps how rare a scanned creature can be (`SCAN_UNLOCK`: rare at
   Lv 2, epic at 6, legendary at 12). A too-rare barcode stays sealed: it doesn't count, and the
