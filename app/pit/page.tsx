@@ -1,24 +1,46 @@
 "use client";
-// app/pit/page.tsx — the Pit: your creatures, their gear and moves. (VS AI is
-// a testing battle against the computer, not a game feature.)
+// app/pit/page.tsx — the Pit: your creatures, their gear and moves. The
+// buttons at the top flip to your items (as in the Inventory; selling stays
+// at the chest). (VS AI is a testing battle against the computer, not a game
+// feature.)
 
+import { useState } from "react";
 import Link from "next/link";
-import { useGameState } from "@/hooks/useGameState";
+import { useGameState, type TabKey } from "@/hooks/useGameState";
 import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import RecentBattles from "@/components/RecentBattles";
 
+type Part = "creatures" | "items";
+const PART_TABS: Record<Part, TabKey[]> = {
+  creatures: ["creatures", "roster", "cards"],
+  items: ["weapons", "armor", "consumables", "codexes"],
+};
+
 export default function PitPage() {
   const game = useGameState("creatures");
+  const [part, setPart] = useState<Part>("creatures");
+
+  function show(p: Part) {
+    setPart(p);
+    game.setActiveTab(PART_TABS[p][0]);
+  }
+  const parts = (
+    <div className="dock-tabs">
+      <button className="dock-tab" data-active={part === "creatures"} onClick={() => show("creatures")}>🐾 Creatures</button>
+      <button className="dock-tab" data-active={part === "items"} onClick={() => show("items")}>⚔️ Items</button>
+    </div>
+  );
 
   return (
     <DenFrame title="The Pit" icon="🐾" gold={game.gold}>
       <div className="stone-panel" style={{ padding: "14px 14px 22px" }}>
       <InventoryList
-        title="Creatures"
-        tabs={["creatures", "roster", "cards"]}
+        title={parts}
+        tabs={PART_TABS[part]}
         showSell={false}
-        emptyText={game.activeTab === "roster"
+        emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
+          : game.activeTab === "roster"
           ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
           : game.activeTab === "cards"
             ? "No creature cards yet. Creature barcodes usually give a card — collect 3 of one creature to summon it."
