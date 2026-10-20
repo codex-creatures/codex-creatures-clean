@@ -23,6 +23,7 @@ import { ILLNESS_ACTIONS, ILLNESS_DAMAGE } from "@/lib/dungeon/run";
 const CARD_W = "min(170px, 44cqw)";
 const STEP = 9;           // px the card behind peeks out, up and to the left
 const PLAIN = "#8a8478";  // a card with no prize on it (the one you see when you walk away)
+const LOCK_MS = 450;      // how long after a guess the buttons ignore taps (the new card turning over)
 const rarityOf = (id?: string) => (id ? CREATURE_BY_ID[id]?.rarity : undefined);
 const colourOf = (id?: string) => { const r = rarityOf(id); return r ? RARITY_COLORS[r].text : PLAIN; };
 
@@ -38,7 +39,7 @@ function PlayingCard({ card, prize, className }: { card: WitchCard; prize?: stri
   );
   return (
     <div className={className} aria-label={`${card.n} of ${s.name}${t ? `, for ${t.name}` : ""}`}
-      style={{ position: "relative", aspectRatio: "5 / 7", containerType: "inline-size", ...cardTrim(rc, !!t) }}>
+      style={{ position: "relative", aspectRatio: "5 / 7", containerType: "inline-size", ...cardTrim(rc) }}>
       <div style={{ position: "absolute", inset: "17cqw 9cqw", ...cardWell(rc) }}>
         {t ? <CreatureArt creatureId={prize} title={t.name} />
           : <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "34cqw" }}>{s.icon}</span>}
@@ -66,7 +67,7 @@ export default function WitchWindow({ game: w, victim, onGuess, onLeave, onClose
     before.current = { correct: w.correct, card: w.card, prize: w.prize };
     if (w.correct <= b.correct) return;
     setWon({ card: b.card, prize: b.prize, key: w.correct });
-    const t = setTimeout(() => setWon(null), 800);
+    const t = setTimeout(() => setWon(null), 600);
     return () => clearTimeout(t);
   }, [w.correct, w.card, w.prize]);
 
@@ -81,6 +82,15 @@ export default function WitchWindow({ game: w, victim, onGuess, onLeave, onClose
     : result === "stick" ? <b>Stick: the same. Again.</b>
     : <>&ldquo;Higher or lower, dearie?&rdquo;</>;
   const winnings = w.won ?? [];
+  // A tap while the last card's still turning is ignored, so a quick second tap
+  // can't play a guess you didn't mean.
+  const lockUntil = useRef(0);
+  const play = (g: Guess) => {
+    if (Date.now() < lockUntil.current) return;
+    lockUntil.current = Date.now() + LOCK_MS;
+    onGuess(g);
+  };
+  const behindColour = colourOf(behind);
   const side: React.CSSProperties = { width: "min(70px, 18cqw)", alignSelf: "stretch", minHeight: 44, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 15, padding: 4 };
 
   return (
@@ -112,17 +122,17 @@ export default function WitchWindow({ game: w, victim, onGuess, onLeave, onClose
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-          <button className="pixel-btn" style={{ ...side, visibility: playing ? "visible" : "hidden" }} disabled={w.card.n <= 1} onClick={() => onGuess("lower")}>
+          <button className="pixel-btn" style={{ ...side, visibility: playing ? "visible" : "hidden" }} disabled={w.card.n <= 1} onClick={() => play("lower")}>
             <span style={{ fontSize: 22 }}>⬇️</span>Lower
           </button>
           <div style={{ position: "relative", width: CARD_W, marginTop: STEP }}>
-            {/* The next prize, face down behind. */}
+            {/* The next prize, face down behind, its back striped in its rarity colour. */}
             <div style={{ position: "absolute", inset: 0, transform: `translate(-${STEP}px, -${STEP}px)`, visibility: behind ? "visible" : "hidden",
-              ...cardTrim(colourOf(behind)), background: "repeating-linear-gradient(45deg, #23262f 0 6px, #1c1e26 6px 12px)" }} />
-            <PlayingCard key={`${shown.n}${shown.suit}${w.correct}`} card={shown} prize={prize} className={won ? "witch-forward" : undefined} />
+              ...cardTrim(behindColour), background: `repeating-linear-gradient(45deg, ${behindColour}99 0 6px, #1c1e26 6px 12px)` }} />
+            <PlayingCard key={`${shown.n}${shown.suit}${w.correct}`} card={shown} prize={prize} className={result === "right" ? "witch-forward" : "witch-flip"} />
             {won && <div key={won.key} className="witch-won" style={{ position: "absolute", inset: 0 }}><PlayingCard card={won.card} prize={won.prize} /></div>}
           </div>
-          <button className="pixel-btn" style={{ ...side, visibility: playing ? "visible" : "hidden" }} disabled={w.card.n >= 11} onClick={() => onGuess("higher")}>
+          <button className="pixel-btn" style={{ ...side, visibility: playing ? "visible" : "hidden" }} disabled={w.card.n >= 11} onClick={() => play("higher")}>
             <span style={{ fontSize: 22 }}>⬆️</span>Higher
           </button>
         </div>
