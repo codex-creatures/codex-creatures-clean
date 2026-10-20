@@ -439,14 +439,21 @@ fields optional with defaults.
    part of the Den you pan over: making the Den's picture bigger would slow it on phones. To revisit
    with the art pass.
    ✅ (2026-10-20) The room is now drawn as the Den's own cave with nothing in it (`createDen({ bare })`:
-   walls, floor and torches; no furniture, pit, pool, archway, cage or rubble), pannable like the
-   Den, with the tavern, poster, head and visitor standing in it as placeholders (`RoomSpot`).
+   walls, floor and torches; no furniture, pit, pool, archway, cage or rubble), with the tavern,
+   poster, head and visitor standing in it as placeholders (`components/TavernRoom.tsx`, `RoomSpot`).
+   ✅ **The room strip** (the user, 2026-10-20): once the rubble's open, the Den and the tavern's room
+   sit **side by side** in one view you drag across (`DenRoom`'s `annex`). Each room is its own
+   picture, so a room added later doesn't slow the others; the tavern's room is only built once
+   it's open. Tapping the passage slides the view over; tapping in the tavern's room opens the
+   tavern's window (`/tavern`: repair, bounty, trading). Meant to grow into more rooms later.
+   📌 Future look (not now): the user's [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png)
+   is the likely long-term style for viewing the base; side by side stays until then.
    🧪 Testing tool: the altar's "🧨 Open the rubble" opens it at once (`forceOpen`), as if the quest
    and dynamite were done.
    📌 **Building the room up, one shippable stage at a time** (the user, 2026-10-20): 1 ✅ the bare
    cave; 2 PixelLab tavern art (broken, repaired), samples first; 3 poster, PAID poster and mounted
-   head art; 4 a sliding walk-through from the Den's passage; 5 maybe one pannable cave (phone
-   performance check first); 6 the tavern's interior (needs design).
+   head art; 4 ✅ a sliding walk-through from the Den's passage; 5 ✅ one strip you drag across
+   (watch phone performance); 6 the tavern's interior (needs design).
 4. ✅ **The tavern (outside only for now)** stands broken in that room, a building against its far
    wall (the sketch), with a Cyclops wanted poster visible from the start. The first time you see
    it, Klutz reacts once (it needs materials; he spots the poster). 🧪 Placeholder art: emoji

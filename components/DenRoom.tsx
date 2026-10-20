@@ -4,6 +4,9 @@
 // space it's given, like a phone game's map: it opens zoomed in on the room;
 // pinch (or the mouse wheel) to zoom, drag to look around. Tap an object to go
 // in. With a mouse, pointing at one shows its name first.
+// Rooms sit side by side in one strip you drag across: the Den, then (once
+// the rubble's blown open) the tavern's room to its right (annex). Each room
+// is its own picture, so adding one doesn't make the others slower to draw.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -50,10 +53,10 @@ function loadDenArt(): Promise<DenArt> {
   return artLoading;
 }
 const scenes = new Map<string, DenScene>();
-function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: DenArt, bare = false): DenScene {
-  const key = `${backpack}|${opened}|${upgraded}|${bare}`;
+function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: DenArt): DenScene {
+  const key = `${backpack}|${opened}|${upgraded}`;
   let s = scenes.get(key);
-  if (!s) scenes.set(key, (s = createDen({ backpack, opened, upgraded, bare, props: art.props, altarFrames: art.altarFrames ?? undefined })));
+  if (!s) scenes.set(key, (s = createDen({ backpack, opened, upgraded, props: art.props, altarFrames: art.altarFrames ?? undefined })));
   return s;
 }
 
@@ -67,10 +70,13 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // upgraded: the crooked bookcase is built.
 // crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
 // cageNews: a creature's waiting in the cage to capture or release (a ❗ on its label).
-// bare: just the cave, with nothing of the Den's in it (the tavern's room);
-// children: what stands in it instead, placed with RoomSpot.
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false, cageNews = false, bare = false, children }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; bare?: boolean; children?: ReactNode }) {
+// annex: what stands in the tavern's room, placed with RoomSpot (shown once
+// the rubble's open). A tap in that room opens the tavern.
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
   const opened = rubble === "open";
+  const rooms = opened ? 2 : 1; // the Den, and the tavern's room once it's open
+  const roomsRef = useRef(rooms);
+  roomsRef.current = rooms;
   const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
   // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
   const [boom, setBoom] = useState(false);
@@ -115,14 +121,14 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   function apply(next: { s: number; x: number; y: number }) {
     const box = viewportRef.current, world = worldRef.current;
     if (!box || !world) return;
-    const vw = box.clientWidth, vh = box.clientHeight, ww = vw, wh = (vw * H) / W;
+    const vw = box.clientWidth, vh = box.clientHeight, ww = vw * roomsRef.current, wh = (vw * H) / W;
     const s = Math.min(limits.current.max, Math.max(limits.current.min, next.s));
     const fit = (pos: number, size: number, port: number) => (size * s <= port ? (port - size * s) / 2 : Math.min(0, Math.max(port - size * s, pos)));
     view.current = { s, x: fit(next.x, ww, vw), y: fit(next.y, wh, vh) };
     world.style.transform = `translate(${view.current.x}px, ${view.current.y}px) scale(${s})`;
     world.style.setProperty("--inv", String(1 / s)); // labels stay the same size
     const c = canvasRef.current;
-    if (c) setCrisp(ww * s * window.devicePixelRatio >= c.width);
+    if (c) setCrisp(vw * s * window.devicePixelRatio >= c.width); // each room's canvas is the viewport's width
   }
   // Zoom to s, keeping the screen point (px, py) where it is.
   function zoomAt(s: number, px: number, py: number) {
@@ -210,7 +216,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   }
   // The furniture art (the room is rebuilt with it once it has loaded).
   const [art, setArt] = useState<DenArt | null>(artCache);
-  const glows = useMemo(() => (art ? denScene(backpack, opened, upgraded, art, bare).glows : []), [art, backpack, opened, upgraded, bare]);
+  const glows = useMemo(() => (art ? denScene(backpack, opened, upgraded, art).glows : []), [art, backpack, opened, upgraded]);
   useEffect(() => {
     if (art) return;
     let live = true;
@@ -221,7 +227,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx || !art) return;
-    const scene = denScene(backpack, opened, upgraded, art, bare);
+    const scene = denScene(backpack, opened, upgraded, art);
     sceneRef.current = scene;
     const start = performance.now();
     let first = true; // (a new canvas or room: draw the whole frame once)
@@ -246,7 +252,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, [backpack, opened, upgraded, art, bare]);
+  }, [backpack, opened, upgraded, art]);
 
   useEffect(() => {
     klutzRef.current = klutz;
@@ -298,8 +304,19 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   function activate(id: ObjId) {
     if (!id) return;
     const spot = spotOf(id);
-    if (spot.href) router.push(spot.href);
+    if (id === OBJ.tavern && opened) showAnnex();
+    else if (spot.href) router.push(spot.href);
     else setNotice(spot);
+  }
+
+  // The passage: slide the view over to the tavern's room.
+  function showAnnex() {
+    const box = viewportRef.current, world = worldRef.current;
+    if (!box || !world) return;
+    const vw = box.clientWidth, vh = box.clientHeight, s = view.current.s;
+    world.style.transition = "transform 0.7s ease-in-out";
+    apply({ s, x: vw / 2 - s * vw * 1.5, y: vh / 2 - s * ((vw * H) / W) * 0.55 });
+    window.setTimeout(() => { world.style.transition = ""; }, 750);
   }
 
   // A tap (not the end of a drag) on an object goes straight in.
@@ -314,14 +331,16 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     <div ref={viewportRef} className={`den-viewport${boom ? " screen-shake" : ""}`}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
       onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHovered(OBJ.none); onUp(e); } }}>
-    <div ref={worldRef} className="den-world" style={{ width: vp?.w ?? "100%", height: vp ? (vp.w * H) / W : undefined, visibility: vp ? "visible" : "hidden" }}>
+    <div ref={worldRef} className="den-world" style={{ width: vp ? vp.w * rooms : "100%", height: vp ? (vp.w * H) / W : undefined, visibility: vp ? "visible" : "hidden" }}>
+    {/* The Den: the first room in the strip (everything in it is placed in its own %). */}
+    <div style={{ position: "absolute", left: 0, top: 0, width: `${100 / rooms}%`, height: "100%" }}>
       <canvas
         ref={canvasRef}
         width={W * RES}
         height={H * RES}
         onClick={(e) => press(objectAt(e))}
         style={{ width: "100%", height: "100%", imageRendering: crisp ? "pixelated" : "auto", cursor: hover ? "pointer" : "grab", display: "block" }}
-        aria-label={bare ? "The tavern's room" : "The Den"}
+        aria-label="The Den"
         role="img"
       />
 
@@ -337,10 +356,8 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         return <div aria-hidden className="den-blast" style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` }} />;
       })()}
 
-      {children}
-
       {/* Labels */}
-      {!bare && (Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
+      {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
         const news = (id === OBJ.tavern && opened && tavernNews) || (id === OBJ.crate && crateNews) || (id === OBJ.cage && cageNews);
         if (id === OBJ.klutz || (id !== shown && id !== highlight && !news)) return null;
@@ -384,6 +401,16 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       </button>
     </div>
 
+    {/* The tavern's room, to the Den's right. */}
+    {opened && (
+      <div onClick={() => { if (!dragged.current) router.push(PASSAGE.href!); }}
+        style={{ position: "absolute", left: "50%", top: 0, width: "50%", height: "100%", cursor: "pointer" }}>
+        <BareRoom crisp={crisp} />
+        {annex}
+      </div>
+    )}
+    </div>
+
       {/* "Coming soon" notice */}
       {notice && (
         <div onClick={() => setNotice(null)} style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}>
@@ -411,5 +438,44 @@ export function RoomSpot({ u, v, z = 0, w, children, style }: { u: number; v: nu
     <div style={{ position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`, width: `${(w / W) * 100}%`, transform: "translate(-50%, -100%)", pointerEvents: "none", ...style }}>
       {children}
     </div>
+  );
+}
+
+// The tavern's room: the Den's cave with nothing in it (lib/den/scene.ts
+// bare), with its torches flickering. Built once, a moment after the Den
+// shows, so the Den isn't kept waiting.
+let bareScene: DenScene | null = null;
+function BareRoom({ crisp }: { crisp: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [scene, setScene] = useState<DenScene | null>(bareScene);
+  useEffect(() => {
+    if (scene) return;
+    const t = window.setTimeout(() => setScene((bareScene ??= createDen({ bare: true }))), 400);
+    return () => window.clearTimeout(t);
+  }, [scene]);
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx || !scene) return;
+    const start = performance.now();
+    let first = true;
+    const draw = () => {
+      const frame = scene.render((performance.now() - start) / 1000, OBJ.none);
+      const dirty = scene.dirty();
+      if (!dirty || first) { ctx.putImageData(frame, 0, 0); first = false; }
+      else for (const [x0, y0, x1, y1] of dirty) ctx.putImageData(frame, 0, 0, x0, y0, x1 - x0, y1 - y0);
+    };
+    draw();
+    const timer = window.setInterval(draw, 1000 / FPS);
+    return () => window.clearInterval(timer);
+  }, [scene]);
+  return (
+    <>
+      <canvas ref={canvasRef} width={W * RES} height={H * RES} aria-label="The tavern's room" role="img"
+        style={{ width: "100%", height: "100%", display: "block", imageRendering: crisp ? "pixelated" : "auto" }} />
+      {scene?.glows.map((g, i) => (
+        <div key={i} aria-hidden className="den-glow"
+          style={{ left: `${(g.x / W) * 100}%`, top: `${(g.y / H) * 100}%`, width: `${(g.r * 2 / W) * 100}%`, aspectRatio: "1", background: `radial-gradient(circle, rgba(${g.color}, 0.32), rgba(${g.color}, 0.1) 45%, transparent 70%)`, animationDelay: `${-((g.seed * 0.37) % 1) * 2}s` }} />
+      ))}
+    </>
   );
 }

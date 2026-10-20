@@ -9,27 +9,24 @@
 // Once it's repaired, a merchant or librarian sometimes calls (rolled on
 // coming home from a run: lib/tavern.ts comeHome), selling what they would
 // in the Labyrinth. The merchant buys from your Inventory too.
-// The room is the Den's cave with nothing in it (DenRoom bare); the tavern,
-// poster and visitors stand in it as placeholders until the PixelLab pass.
+// The room itself is in the Den, to its right (components/TavernRoom.tsx);
+// this is the tavern's window, opened by tapping it there.
 
 import Link from "next/link";
 import MerchantCart from "@/components/MerchantCart";
 import { Coin } from "@/components/GoldCount";
 import { MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
 import DenFrame from "@/components/DenFrame";
-import DenRoom, { RoomSpot } from "@/components/DenRoom";
 import Help from "@/components/Help";
 import PixelSprite from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
 import { MATERIALS, MATERIAL_KEYS, countMaterial } from "@/lib/items/materials";
-import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
 import { REPAIR_COST, VISITOR_STAY, canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
-const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in the room
 
 export default function TavernPage() {
   const game = useGameState();
@@ -53,7 +50,6 @@ export default function TavernPage() {
   const visitor = tavernVisitor(t);
   // The Cyclops: how often you've beaten it, and the run you first did.
   const { clears, firstClearRun } = loadDungeon().meta;
-  const head = CREATURE_SPRITES.cyclops;
   return (
     <DenFrame title={t.repaired ? "Tavern" : "Broken tavern"} icon="🍺">
       <div className="stone-panel">
@@ -68,36 +64,6 @@ export default function TavernPage() {
           </Help>
         </div>
 
-        {/* The room: the Den's cave, bare, behind the rubble (pinch and drag it like the Den).
-            The tavern stands against the far wall, the poster beside it; a visitor
-            stands out front. Placeholders until their art. */}
-        <div style={{ display: "flex", flexDirection: "column", height: "44cqh", marginTop: 10, border: "2px solid #2a2118" }}>
-          <DenRoom bare klutz="away">
-            <RoomSpot u={10} v={0.6} w={150}>
-              {/* The Cyclops Head, mounted over the door, with the run you first beat it on. */}
-              {t.mounted && head && (
-                <div style={{ width: "34%", margin: "0 auto", textAlign: "center", background: "#5a3e22", border: "2px solid #2a1c10", padding: 2 }}>
-                  <PixelSprite sprite={head} title="The Cyclops Head" style={FIT} />
-                  <div className="pixel-font" style={{ fontSize: "2cqw", color: "#f1d9a0" }}>{firstClearRun ? `Run ${firstClearRun}` : "Cyclops"}</div>
-                </div>
-              )}
-              <svg viewBox="0 0 100 100" role="img" aria-label={t.repaired ? "The tavern, repaired" : "The tavern, broken"}
-                style={{ display: "block", width: "100%", filter: t.repaired ? "none" : "grayscale(0.6) brightness(0.75)" }}>
-                <text x="50" y="88" fontSize="92" textAnchor="middle">{t.repaired ? "🏠" : "🏚️"}</text>
-              </svg>
-            </RoomSpot>
-            <RoomSpot u={15.5} v={0.05} z={40} w={64} style={{ padding: "1% 1% 2%", background: "#e8d6a8", border: "2px solid #8a6a3a", boxShadow: "0 3px 0 rgba(0,0,0,0.6)", textAlign: "center" }}>
-              <div className="pixel-font" style={{ fontSize: "2.4cqw", color: "#7a1e14", letterSpacing: 1 }}>WANTED</div>
-              {CREATURE_SPRITES.cyclops && <PixelSprite sprite={CREATURE_SPRITES.cyclops} style={FIT} />}
-              <div className="pixel-font" style={{ fontSize: "2cqw", color: "#3a2a14" }}>{t.mounted ? "PAID" : "The Cyclops"}</div>
-            </RoomSpot>
-            {visitor && (
-              <RoomSpot u={13.5} v={3} w={44}>
-                <PixelSprite sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} style={FIT} />
-              </RoomSpot>
-            )}
-          </DenRoom>
-        </div>
 
         {/* Klutz, the first time you see it. */}
         {!t.seen && (
