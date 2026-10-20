@@ -73,6 +73,7 @@ import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
 import { TOOLS, materialDrop, toolDrop } from "@/lib/items/materials";
+import { BOX_CAP, BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
 
 const GOLD = "#f5c542";
 // Every Labyrinth screen keeps to one phone-sized column (the room picture is
@@ -334,7 +335,7 @@ export default function DungeonPage() {
 
   // ── Starting and ending runs ──────────────────────────────────────
   function begin(party: string[], dungeon: DungeonId = 1) {
-    if (!lab) return;
+    if (!lab || fullBoxes(game.inventory).length > 0) return;
     const deep = dungeon === 2;
     const free = !deep && lab.meta.runs < FREE_RUNS;
     if (!free && !game.spendGold(ENTRY_FEE)) return;
@@ -921,7 +922,7 @@ export default function DungeonPage() {
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
 
   if (!run) {
-    return frame(<Entrance lab={lab} owned={owned} gold={game.gold} onBegin={begin} onHeal={healAll} />);
+    return frame(<Entrance lab={lab} owned={owned} gold={game.gold} full={fullBoxes(game.inventory)} onBegin={begin} onHeal={healAll} />);
   }
 
 
@@ -1161,8 +1162,8 @@ export default function DungeonPage() {
 }
 
 // ── The entrance: choose your party ─────────────────────────────────
-function Entrance({ lab, owned, gold, onBegin, onHeal }: {
-  lab: DungeonSave; owned: OwnedCreature[]; gold: number; onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void;
+function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
+  lab: DungeonSave; owned: OwnedCreature[]; gold: number; full: CappedBox[]; onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void;
 }) {
   const [party, setParty] = useState<string[]>(() =>
     owned.filter((c) => c.roster && (lab.meta.injuries[c.id] ?? 1) > 0).slice(0, PARTY_SIZE).map((c) => c.id));
@@ -1267,9 +1268,12 @@ function Entrance({ lab, owned, gold, onBegin, onHeal }: {
         </div>
       )}
 
-      <button onClick={() => onBegin(party, dungeon)} disabled={party.length === 0 || !canPay} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
+      <button onClick={() => onBegin(party, dungeon)} disabled={party.length === 0 || !canPay || full.length > 0} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
         {dungeon === 2 ? "🕳️ Enter the Deep Labyrinth" : "🌀 Enter the labyrinth"} {free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
       </button>
+      {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
+        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full ({BOX_CAP}). <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
+      </p>}
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
     </>
   );

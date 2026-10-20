@@ -1,6 +1,6 @@
 "use client";
 // components/TileGrid.tsx
-// Creatures, weapons and armour laid out in an inventory panel (.inv-panel):
+// Creatures, weapons, armour, materials and consumables laid out in an inventory panel (.inv-panel):
 // each sprite sits loose inside, on a soft glow of its rarity. Grouped by
 // rarity (rarest first), A–Z within. Tap one to open it (or, in sell mode,
 // to select it).
@@ -106,9 +106,11 @@ function Tile({ d, fav, badge, sell, onClick }: {
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
         {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} cls={tpl.cls} size={10} /></span>}
         {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
+        {/* A stack (materials): how many, in the corner, like a count on a game icon. */}
+        {!badge && d.qty ? <span className="pixel-font" style={{ position: "absolute", bottom: 0, right: 4, fontSize: 16, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>{d.qty}</span> : null}
       </span>
       <span style={{ ...NAME, display: "-webkit-box", color: col.text }}>
-        {d.name}{d.qty ? ` ×${d.qty}` : ""}
+        {d.name}
       </span>
     </button>
   );

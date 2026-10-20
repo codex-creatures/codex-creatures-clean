@@ -160,7 +160,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   sylvaran: [71, 94],
 };
 // Those drawn facing right (the rest face left).
-const FACING_RIGHT = new Set(["leafblade_scout", "dust_sprite", "mr_shadows"]);
+const FACING_RIGHT = new Set(["leafblade_scout"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
 const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "cave_bat", "amber_wasp", "storm_phoenix"]);
 

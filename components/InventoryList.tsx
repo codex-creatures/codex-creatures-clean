@@ -18,9 +18,12 @@ import CardGallery from "./CardGallery";
 import TileGrid, { groupTiles, RARITY_ORDER } from "./TileGrid";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
+import { BOX_CAP } from "@/lib/items/storage";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
-const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor"]);
+const GRID_TABS = new Set<GameTabKey>(["roster", "creatures", "weapons", "armor", "materials", "consumables"]);
+// Tabs that are a chest box of BOX_CAP (lib/items/storage.ts): shown in red once full.
+const CAPPED_TABS = new Set<GameTabKey>(["weapons", "armor", "consumables"]);
 import { KLUTZ_DROP_ID, type TabKey as GameTabKey, type Loadout, type EquipSlot } from "@/hooks/useGameState";
 
 const hasArmor = (l?: Loadout) => !!(l?.helmetId || l?.chestId || l?.legsId);
@@ -186,13 +189,16 @@ export default function InventoryList({
               title={glow ? `You can summon a ${summonable} creature` : undefined}
               style={{ flex: 1, minHeight: 44, padding: "6px 4px", fontSize: 14, cursor: "pointer", border: "none", ["--glow" as string]: glow,
                 borderLeft: i ? "2px solid #2a2d38" : "none", background: on ? "#3a2c16" : "transparent", color: glow ? glow : on ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
-              {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)} <span style={{ opacity: 0.6 }}>{tabCounts[tab] ?? 0}</span>
+              {TAB_LABELS[tab] ?? tab.charAt(0).toUpperCase() + tab.slice(1)}{" "}
+              {CAPPED_TABS.has(tab) && (tabCounts[tab] ?? 0) >= BOX_CAP
+                ? <span style={{ color: "#ff8a80" }} title="Full: sell some to go back into the Labyrinth">{tabCounts[tab]}/{BOX_CAP}</span>
+                : <span style={{ opacity: 0.6 }}>{tabCounts[tab] ?? 0}</span>}
             </button>
           );
         })}
       </div>
 
-      {!sellMode && !creatureTab && activeTab !== "cards" && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap any weapon or armour for its full details.</p>}
+      {!sellMode && !creatureTab && activeTab !== "cards" && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.35 }}>Tap any item for its full details.</p>}
       {sellMode && <p style={{ marginTop: 8, fontSize: 12, opacity: 0.45 }}>★ Favourited and equipped items are protected and cannot be sold.</p>}
 
       {/* Creature cards: a binder of trading cards. */}
