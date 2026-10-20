@@ -36,8 +36,14 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
 - ✅ The registry is **local** for now (`codex_creatures_registry_v2`). "Reset player" keeps it,
   to simulate a friend; "Global reset" clears it.
-- ✅ Outcome odds (`SCAN_ODDS`, 2026-10-20): 30% creature, 13% weapon, 27% armour, 10% consumable,
-  10% material, 10% gold. Labyrinth chests roll the same table. About 1 real creature per 17 scans.
+- 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 27% armour,
+  7% consumable, 6% material, 7% gold. Aim: about 1 legendary creature or card per 250 scans (from
+  explorer level 12); a real creature every 12–13 scans. Players will also hunt legendaries with good
+  rolls, so the chase goes on past the first. Shared barcode lists (once there's a global database)
+  are an open risk: ideas are seasons, limited stock, or the legendary species rolled per player.
+- ✅ Labyrinth chests keep the original table (`CHEST_ODDS`): 20% creature, 12% weapon, 24% armour,
+  12% consumable, 12% material, 20% gold. Creatures found in the Labyrinth always come as cards;
+  only encampment cages hold real creatures.
 - ✅ **1 drop per new scan** (`SCAN_DROPS`). Items should stay scarce; gold scans are the
   "dud" consolation.
 - ✅ The altar (layout 2026-10-20): a big **Scan Barcode** button, the Looting/Storage toggle, and a
@@ -49,7 +55,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Items discovered** counts every kind of item: weapon and armour types, materials, potions and
   codexes (lib/items/discovery.ts). The save remembers kinds you've used up (`found`).
 - ✅ Scanned creatures: 20% are a real creature, 80% a **creature card** (`REAL_CREATURE_CHANCE`).
-  In the loot window a real creature shows as its card with a halo, named without "card".
+  In the loot window a real creature shows as the creature itself (its sprite, its plain name), a
+  card as the card.
 - ✅ Your **explorer level** caps how rare a scanned creature can be (`SCAN_UNLOCK`: rare at
   Lv 2, epic at 6, legendary at 12). A too-rare barcode stays sealed: it doesn't count, and the
   altar shows the level needed.

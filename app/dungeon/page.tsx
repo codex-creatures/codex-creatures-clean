@@ -33,7 +33,7 @@ import CreaturePortrait from "@/components/CreaturePortrait";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { pickCreatureId, pickRarity } from "@/lib/items/gameHelpers";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
-import { rollBarcodeOutcome } from "@/lib/barcodeRegistry";
+import { CHEST_ODDS, rollBarcodeOutcome } from "@/lib/barcodeRegistry";
 import { itemToCombatStats } from "@/lib/combat/loadout";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
@@ -405,7 +405,7 @@ export default function DungeonPage() {
     // Barcode-style drops. (When the barcode merchant outcome arrives, it must be left out here.)
     const drops: Drop[] = [];
     while (drops.length < CHEST_DROPS) {
-      const d = dropFromOutcome(rollBarcodeOutcome());
+      const d = dropFromOutcome(rollBarcodeOutcome(Infinity, CHEST_ODDS));
       if (d) drops.push(d);
     }
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());

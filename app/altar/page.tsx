@@ -14,6 +14,7 @@ import PixelSprite from "@/components/PixelSprite";
 import { ICON, NAME, lookOf } from "@/components/ContainerLoot";
 import { CardFace } from "@/components/CardGallery";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { CreatureArt } from "@/components/CreaturePortrait";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
 
@@ -248,15 +249,17 @@ export default function AltarPage() {
 
 // One find in the window: on a soft glow of its rarity, its name under it.
 // A creature card shows as the card itself, sized to fit the square; a real
-// creature as its card with a halo (and no "card" in its name).
+// creature as the creature, filling the square like any other find.
 function Find({ d }: { d: Drop }) {
   const l = lookOf({ gear: d });
-  const card = (d.dropType === "card" || d.dropType === "creature") ? findCreatureTemplate(d.creatureId, d.name) : undefined;
+  const t = (d.dropType === "card" || d.dropType === "creature") ? findCreatureTemplate(d.creatureId, d.name) : undefined;
   return (
     <div title={l.name} style={{ minWidth: 0, textAlign: "center" }}>
-      <div style={{ ...TILE, borderRadius: 8, background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)` }}>
-        {card && d.dropType !== "reward" ? (
-          <div style={{ width: "71%" }}><CardFace t={card} creatureId={d.creatureId ?? card.id} ability={d.ability} glow={d.dropType === "creature"} mini /></div>
+      <div style={{ ...TILE, position: "relative", borderRadius: 8, background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)` }}>
+        {t && d.dropType === "creature" ? (
+          <CreatureArt creatureId={d.creatureId ?? t.id} title={t.name} />
+        ) : t && d.dropType === "card" ? (
+          <div style={{ width: "71%" }}><CardFace t={t} creatureId={d.creatureId ?? t.id} ability={d.ability} mini /></div>
         ) : l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 30 }}>{l.icon}</span>}
       </div>
       <div style={{ ...NAME, color: l.color }}>{l.name}</div>

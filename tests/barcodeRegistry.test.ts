@@ -4,7 +4,7 @@
 // and a global reset lets barcodes roll again.
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { resolveBarcode, rollBarcodeOutcome, clearRegistry } from "../lib/barcodeRegistry";
+import { resolveBarcode, rollBarcodeOutcome, clearRegistry, CHEST_ODDS } from "../lib/barcodeRegistry";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
@@ -65,13 +65,24 @@ describe("outcome odds (statistical)", () => {
   }
   const pct = (n: number, total: number) => (n / total) * 100;
 
-  it("is 30% creature, 13% weapon, 27% armour, 10% consumable, 10% material, 10% gold", () => {
-    expect(pct(outcomes.creature, N)).toBeCloseTo(30, 0);
-    expect(pct(outcomes.gold, N)).toBeCloseTo(10, 0);
+  it("is 40% creature, 13% weapon, 27% armour, 7% consumable, 6% material, 7% gold", () => {
+    expect(pct(outcomes.creature, N)).toBeCloseTo(40, 0);
+    expect(pct(outcomes.gold, N)).toBeCloseTo(7, 0);
     expect(pct(categories.weapon, N)).toBeCloseTo(13, 0);
     expect(pct(categories.armor, N)).toBeCloseTo(27, 0);
-    expect(pct(categories.consumable, N)).toBeCloseTo(10, 0);
-    expect(pct(categories.material, N)).toBeCloseTo(10, 0);
+    expect(pct(categories.consumable, N)).toBeCloseTo(7, 0);
+    expect(pct(categories.material, N)).toBeCloseTo(6, 0);
+  });
+
+  it("a Labyrinth chest keeps the original table: 20% creature, 12/24/12/12 items, 20% gold", () => {
+    const got: Record<string, number> = {};
+    for (let i = 0; i < N; i++) {
+      const e = rollBarcodeOutcome(Infinity, CHEST_ODDS);
+      const k = e.outcome === "item" ? e.itemCategory : e.outcome;
+      got[k] = (got[k] ?? 0) + 1;
+    }
+    const expected = { creature: 20, weapon: 12, armor: 24, consumable: 12, material: 12, gold: 20 };
+    for (const [k, target] of Object.entries(expected)) expect(pct(got[k], N), k).toBeCloseTo(target, 0);
   });
 
   it("consumables are only Common, Uncommon or Rare, 40:30:20", () => {

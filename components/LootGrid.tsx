@@ -27,15 +27,16 @@ function lookOf(g: GotItem): Look {
   if (d.dropType === "reward") return { name: `${d.amount} gold`, sprite: GOLD_SPRITE, icon: "💰", color: RARITY_COLORS[GOLD_RARITY].text, glow: rarityGlow(GOLD_RARITY) };
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
-  if (x.dropType === "card" || x.dropType === "creature") return { name: `${x.name} card`, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rarityGlow(x.rarity) };
+  if (x.dropType === "card" || x.dropType === "creature") return { name: x.dropType === "card" ? `${x.name} card` : x.name, sprite: creatureSprite(x.creatureId), color: rc.text, glow: rarityGlow(x.rarity) };
   return { name: x.name, sprite: itemSprite(x), icon: goodsIcon(x) ?? (x.codexMove ? "📖" : x.scroll ? "📜" : x.potion ? POTIONS[x.potion].icon : "📦"), color: rc.text, glow: rarityGlow(x.rarity) };
 }
 
-// A creature card in the haul (its template, if we know the creature).
+// A creature card in the haul (its template, if we know the creature). A real
+// creature isn't a card: it shows as a tile with its sprite.
 const cardOf = (g: GotItem) => {
   if ("potion" in g) return null;
   const x = g.drop as CreatureOrItemDrop;
-  if (x.dropType !== "card" && x.dropType !== "creature") return null;
+  if (x.dropType !== "card") return null;
   const t = findCreatureTemplate(x.creatureId, x.name);
   return t ? { x, t } : null;
 };

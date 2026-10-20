@@ -68,21 +68,26 @@ function consumableRarity(): Rarity {
 
 // What a fresh barcode gives, out of 100. Weapons and armour share 40, armour
 // twice as often (it comes in three pieces, so you need more of it).
-export const SCAN_ODDS = { creature: 30, weapon: 13, armor: 27, consumable: 10, material: 10, gold: 10 } as const;
+// 40% creature at 1% legendary: about one legendary per 250 scans.
+export type DropOdds = Record<"creature" | ItemCategory | "gold", number>;
+export const SCAN_ODDS: DropOdds = { creature: 40, weapon: 13, armor: 27, consumable: 7, material: 6, gold: 7 };
+// A Labyrinth chest keeps the original table (its creatures come as cards).
+export const CHEST_ODDS: DropOdds = { creature: 20, weapon: 12, armor: 24, consumable: 12, material: 12, gold: 20 };
 
-function pickScanOutcome(): keyof typeof SCAN_ODDS {
-  let roll = Math.random() * 100;
-  for (const [k, w] of Object.entries(SCAN_ODDS) as [keyof typeof SCAN_ODDS, number][]) {
+function pickOutcome(odds: DropOdds): keyof DropOdds {
+  const entries = Object.entries(odds) as [keyof DropOdds, number][];
+  let roll = Math.random() * entries.reduce((n, [, w]) => n + w, 0);
+  for (const [k, w] of entries) {
     if ((roll -= w) < 0) return k;
   }
   return "gold";
 }
 
-// A fresh random outcome, at SCAN_ODDS.
+// A fresh random outcome, at SCAN_ODDS (or the odds given).
 // playerLevel: a creature is only ever as rare as that explorer level can
 // find (SCAN_UNLOCK); missing = anything.
-export function rollBarcodeOutcome(playerLevel = Infinity): BarcodeOutcome {
-  const pick = pickScanOutcome();
+export function rollBarcodeOutcome(playerLevel = Infinity, odds: DropOdds = SCAN_ODDS): BarcodeOutcome {
+  const pick = pickOutcome(odds);
 
   if (pick === "gold") {
     return { outcome: "gold", amount: 50 + Math.floor(Math.random() * 101) };
