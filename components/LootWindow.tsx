@@ -139,14 +139,17 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           })}
         </div>
 
-        {seen !== null && items[seen] ? (
+        {/* Under the chest: the hint, with Take all at the right (it stays put while you look at things). */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: noRoom ? "#ff8a80" : MUTED }}>
+            {noRoom ? `Your ${bagName.toLowerCase()} is full` : `Tap to look · drag onto your bag to take${full ? " (your bag is full)" : ""}`}
+          </div>
+          <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
+        </div>
+        {seen !== null && items[seen] && (
           <ItemPeek item={items[seen]} action={
             <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
           } />
-        ) : (
-          <div style={{ fontSize: 12, color: noRoom ? "#ff8a80" : MUTED, textAlign: "center" }}>
-            {noRoom ? `Your ${bagName.toLowerCase()} is full` : `Tap to look · drag onto your bag to take${full ? " (your bag is full)" : ""}`}
-          </div>
         )}
 
         {/* Your bag */}
@@ -200,7 +203,6 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         )}
 
         <div className="dock-tabs">
-          <button className="dock-tab" onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
           <button className={`dock-tab${teach?.step === "done" ? " tutorial-pulse" : ""}`} data-active onClick={onClose}>Done</button>
         </div>
       </div>
