@@ -104,9 +104,10 @@ export const cardWell = (rc: string): React.CSSProperties => ({ background: `rad
 // Text scales with the card's width (cqw), so it must sit inside a box with
 // containerType "inline-size". fill: take the parent's height instead of
 // the usual 5:7 shape. big: a larger name and style / race (a card shown on
-// its own, like the fight cards).
-export function CardBody({ t, creatureId, glow, showRarity, fill, big, children }: {
-  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; children?: React.ReactNode;
+// its own, like the fight cards). noName: leave the name off (it's written
+// under the card already), so the sprite gets the room.
+export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, children }: {
+  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; noName?: boolean; children?: React.ReactNode;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
   const race = t.race ? RACE_INFO[t.race] : undefined;
@@ -117,17 +118,26 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, children 
       ...(fill ? { height: "100%" } : { aspectRatio: "5 / 7" }), display: "flex", flexDirection: "column", gap: "3cqw", padding: "5.5cqw",
       ...cardTrim(rc, glow),
     }}>
-      <div style={{ textAlign: "center", padding: "2.5cqw 3cqw" }}>
+      {!noName && <div style={{ textAlign: "center", padding: "2.5cqw 3cqw" }}>
         <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(13px, 9.5cqw, 22px)" : "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>{t.name}</div>
         {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
-      </div>
+      </div>}
       <div style={{ position: "relative", flex: 1, minHeight: 0, ...cardWell(rc) }}>
         <CreatureArt creatureId={creatureId} title={t.name} />
       </div>
-      <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
-        <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
-        {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
-      </div>
+      {noName ? (
+        // Without the name: style over race, each a full-width plaque in bigger
+        // letters (the race plaque keeps its space even when there's no race).
+        <div style={{ display: "flex", flexDirection: "column", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(8px, 12cqw, 16px)", lineHeight: 1.1, whiteSpace: "nowrap" }}>
+          <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
+          <span style={{ ...plaque, color: YELLOW, visibility: race ? "visible" : "hidden" }}>{race?.name ?? "—"}</span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
+          <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
+          {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
+        </div>
+      )}
       {children}
     </div>
   );
@@ -137,9 +147,11 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, children 
 // its ability if the card has one). The Skull Raven is the benchmark. Used
 // in your binder, for cards you've just found, and for the card witch's
 // prize. badge: a corner bubble (how many you hold); footer: a line under the card.
-export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick, label }: {
+// mini: the small card in a loot window, where the name is written under it —
+// no name or role line, just the sprite as big as it'll go over style | race.
+export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick, label, mini }: {
   t: CreatureTemplate; creatureId: string; ability?: string; footer?: React.ReactNode; badge?: string; glow?: boolean;
-  onClick?: () => void; label?: string;
+  onClick?: () => void; label?: string; mini?: boolean;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
   const skill = ability ? ABILITIES[ability as keyof typeof ABILITIES] : undefined;
@@ -148,13 +160,13 @@ export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick,
   return (
     <Tag onClick={onClick} aria-label={label ?? `${t.name} card`}
       style={{ position: "relative", display: "block", width: "100%", padding: 0, border: "none", background: "none", textAlign: "left", cursor: onClick ? "pointer" : "default", containerType: "inline-size" }}>
-      <CardBody t={t} creatureId={creatureId} glow={glow}>
-        <div style={CARD_WELL}>
+      <CardBody t={t} creatureId={creatureId} glow={glow} noName={mini}>
+        {!mini && <div style={CARD_WELL}>
           <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW }}>{roleOf(t)}</div>
           <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: skill ? "#ffcf6e" : "rgba(255,255,255,0.6)", ...clamp2 }}>
             {skill ? `✦ ${skill.name}` : shortFlavour(t.flavour)}
           </div>
-        </div>
+        </div>}
       </CardBody>
 
       {footer && <div style={{ marginTop: 6, fontSize: 11, textAlign: "center", textTransform: "uppercase", letterSpacing: "0.06em", color: "rgba(255,255,255,0.6)" }}>{footer}</div>}

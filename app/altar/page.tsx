@@ -255,7 +255,7 @@ function Find({ d }: { d: Drop }) {
     <div title={l.name} style={{ minWidth: 0, textAlign: "center" }}>
       <div style={{ ...TILE, borderRadius: 8, background: `radial-gradient(circle, ${l.glow} 0%, transparent 62%)` }}>
         {card && d.dropType !== "reward" ? (
-          <div style={{ width: "71%" }}><CardFace t={card} creatureId={d.creatureId ?? card.id} ability={d.ability} /></div>
+          <div style={{ width: "71%" }}><CardFace t={card} creatureId={d.creatureId ?? card.id} ability={d.ability} mini /></div>
         ) : l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 30 }}>{l.icon}</span>}
       </div>
       <div style={{ ...NAME, color: l.color }}>{l.name}</div>
