@@ -31,11 +31,11 @@ describe("the battle bag", () => {
     expect(POTIONS.lesser).toMatchObject({ heal: 50, price: 50 });
   });
 
-  it("stashes: always 3 things — 2 potions, then a potion (25%), gold (50%) or gear (25%)", () => {
+  it("stashes: always 3 things — 2 potions, then a potion (25%), gold (50%) or gear (25%) — besides any flare or clairvoyance scroll", () => {
     const N = 4000;
     let three = 0, gold = 0, gear = 0;
     for (let i = 0; i < N; i++) {
-      const sack = makeRoom("stash").sack!;
+      const sack = makeRoom("stash").sack!.filter((x) => !("gear" in x && "tool" in x.gear)); // (toolFinds.test.ts)
       expect(sack).toHaveLength(3);
       const potions = sack.filter((x) => "potion" in x);
       expect(potions.length === 2 || potions.length === 3).toBe(true);

@@ -250,12 +250,21 @@ export const POTIONS: Record<PotionKey, { name: string; heal: number; price: num
 // - STASH_POTIONS potions (each a Healing Potion STASH_POTION_CHANCE of the
 //   time, else a Lesser one);
 // - the last thing is rolled: STASH_LAST_ROLL — another potion, some gold
-//   (STASH_GOLD), or a weapon or armour piece rolled like a scan.
+//   (STASH_GOLD), or a weapon or armour piece rolled like a scan;
+// - now and then a flare or a clairvoyance scroll as well (STASH_TOOLS).
 export const STASH_ITEMS = 3;
 export const STASH_POTIONS = 2;
 export const STASH_POTION_CHANCE = 0.3;
 export const STASH_LAST_ROLL = { potion: 0.25, gold: 0.5, gear: 0.25 };
 export const STASH_GOLD: [number, number] = [100, 250];
+// The odds of a flare, and of a clairvoyance scroll, on top of what's in a
+// stash or a chest (the user, 2026-10-20).
+export const STASH_TOOLS = { flare: 0.1, clairvoyance: 0.05 };
+export const CHEST_TOOLS = { flare: 0.2, clairvoyance: 0.1 };
+export const toolFinds = (odds: { flare: number; clairvoyance: number }, rng: Rng = Math.random): SackItem[] => [
+  ...(rng() < odds.flare ? [{ gear: toolDrop("flare") }] : []),
+  ...(rng() < odds.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
+];
 // The Cyclops' chest: CYCLOPS_GEAR rolls on the weapon & armour table,
 // CYCLOPS_ITEMS on the item table and CYCLOPS_POTIONS on the potion table,
 // at most CYCLOPS_CHEST_MAX rolls in all (its gold and the backpack come on
@@ -642,6 +651,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
         // Like a scan: any rarity at the usual odds; armour twice as likely as a weapon.
         sack.push({ gear: rollGearPiece(rng) });
       }
+      sack.push(...toolFinds(STASH_TOOLS, rng));
       return { kind, sack, done: false };
     }
     case "miniboss": {

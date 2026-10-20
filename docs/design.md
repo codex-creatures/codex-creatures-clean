@@ -248,7 +248,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     away under it. The next prize lies face down behind it (its rarity shows); a right guess sparkles the card away and
     the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
-  and its surroundings; 200 gold at merchants). Merchants carry 5 wares.
+  and its surroundings; 200 gold at merchants). Merchants carry 5 wares. Also found (the user,
+  2026-10-20): a flare in 10% of stashes and 20% of chests, a clairvoyance scroll in 5% of stashes and
+  10% of chests (`STASH_TOOLS`, `CHEST_TOOLS`), on top of what they already hold.
 - ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room.
   - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
     scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
