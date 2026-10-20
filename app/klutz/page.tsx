@@ -7,15 +7,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
-import CreatureDetailModal, { LevelBar } from "@/components/CreatureDetailModal";
+import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
+import KlutzGear from "@/components/KlutzGear";
 import Help, { HelpSection } from "@/components/Help";
-import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
+import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
 import { klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { canFind, clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
+import type { CreatureOrItemDrop } from "@/lib/types";
 import {
   klutzStatus, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, CAPTURE_XP, FIND_XP, sameRarityChance, HUNT_BELOW, HUNT_ABOVE, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
@@ -40,9 +41,6 @@ export default function KlutzPage() {
   const f = game.klutzFighter;
   const status = klutzStatus(game.klutz, f.maxHp, now);
   const ex = game.klutz.expedition;
-  const items = game.inventory.filter(isItemDrop) as CreatureOrItemDrop[];
-  const weapons = items.filter((d) => d.itemCategory === "weapon"), armors = items.filter((d) => d.itemCategory === "armor");
-  const names = new Map<string, string>([...game.inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]);
   const rc = RARITY_COLORS[KLUTZ.rarity];
   // His gear, moves and hunting only open up once you've got his box back to
   // him, looked through it, and agreed to lend him some.
@@ -150,23 +148,7 @@ export default function KlutzPage() {
         </div>
       )}
 
-      {gearOpen && (
-        <CreatureDetailModal
-          creature={klutzDrop(game.klutz.level, game.klutz.xp)}
-          isFavorite={false}
-          loadout={game.equipment[KLUTZ_DROP_ID]}
-          weapons={weapons}
-          armors={armors}
-          equippedOn={game.equippedOn}
-          creatureNameById={names}
-          onEquip={(slot, itemId) => game.equipItem(KLUTZ_DROP_ID, slot, itemId)}
-          onSetMoves={status.kind === "away" ? undefined : (moves) => game.setMoves(KLUTZ_DROP_ID, moves)}
-          locked={status.kind === "away" ? "He's got his gear with him: swap it when he's home." : undefined}
-          scrolls={game.inventory.filter((d) => d.dropType === "item" && d.scroll) as CreatureOrItemDrop[]}
-          onReadScroll={(scrollId) => game.readScroll(KLUTZ_DROP_ID, scrollId)}
-          onClose={() => setGearOpen(false)}
-        />
-      )}
+      {gearOpen && <KlutzGear game={game} onClose={() => setGearOpen(false)} />}
     </DenFrame>
   );
 }

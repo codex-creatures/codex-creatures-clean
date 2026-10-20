@@ -4,7 +4,7 @@
 // - Items: weapons, armour, consumables, codexes (and selling); your gold
 //   and materials sit in a strip at the top;
 // - Creatures: your creatures, your roster, creature cards (as in the Pit);
-// - Codex: the codexes on your bookcase's shelf.
+// - Klutz: a shortcut to his gear and moves (once he's helping you).
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,10 +12,11 @@ import { useGameState, type TabKey } from "@/hooks/useGameState";
 import DenFrame from "@/components/DenFrame";
 import InventoryList from "@/components/InventoryList";
 import SellConfirmModal from "@/components/SellConfirmModal";
-import CodexShelf from "@/components/CodexShelf";
+import KlutzGear from "@/components/KlutzGear";
+import { klutzHelping } from "@/lib/quest";
 
-type Part = "items" | "creatures" | "codex";
-const PART_TABS: Record<Exclude<Part, "codex">, TabKey[]> = {
+type Part = "items" | "creatures";
+const PART_TABS: Record<Part, TabKey[]> = {
   items: ["weapons", "armor", "consumables", "codexes"],
   creatures: ["creatures", "roster", "cards"],
 };
@@ -23,22 +24,24 @@ const PART_TABS: Record<Exclude<Part, "codex">, TabKey[]> = {
 export default function InventoryPage() {
   const game = useGameState("weapons");
   const [part, setPart] = useState<Part>("items");
+  const [klutzOpen, setKlutzOpen] = useState(false);
   // The first quest: Klutz sent you to look at his old gear. Seen it.
   const { hydrated, quest, questSawStorage } = game;
   useEffect(() => { if (hydrated && quest.stage === "stash") questSawStorage(); }, [hydrated, quest.stage, questSawStorage]);
 
   function show(p: Part) {
     setPart(p);
-    if (p !== "codex") { game.setActiveTab(PART_TABS[p][0]); if (game.sellMode) game.toggleSellMode(); }
+    game.setActiveTab(PART_TABS[p][0]);
+    if (game.sellMode) game.toggleSellMode();
   }
-  const codexCount = game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
-  const count = (p: Exclude<Part, "codex">) => PART_TABS[p].filter((t) => t !== "roster").reduce((n, t) => n + (game.tabCounts[t] ?? 0), 0);
+  const count = (p: Part) => PART_TABS[p].filter((t) => t !== "roster").reduce((n, t) => n + (game.tabCounts[t] ?? 0), 0);
 
   const dock = (
     <div className="dock-tabs">
       <button className="dock-tab" data-active={part === "items"} onClick={() => show("items")}>⚔️ Items <span className="count">{count("items")}</span></button>
       <button className="dock-tab" data-active={part === "creatures"} onClick={() => show("creatures")}>🐾 Creatures <span className="count">{count("creatures")}</span></button>
-      <button className="dock-tab" data-active={part === "codex"} onClick={() => show("codex")}>📖 Codex <span className="count">{codexCount}</span></button>
+      <button className="dock-tab" onClick={() => setKlutzOpen(true)} disabled={!klutzHelping(quest)}
+        title={klutzHelping(quest) ? "Klutz's gear and moves" : "Klutz isn't helping you yet"}>👺 Klutz</button>
     </div>
   );
 
@@ -57,43 +60,40 @@ export default function InventoryPage() {
           Klutz&apos;s old gear is all here. <Link href="/klutz" style={{ textDecoration: "underline", color: "#f1d9a0" }}>Klutz</Link> has something to ask you.
         </div>
       )}
-      {part === "codex" ? (
-        <CodexShelf inventory={game.inventory} size={game.bookcaseSize} teach={{ onLearn: game.learnCodex, onSetMoves: game.setMoves, movesOf: (id) => game.equipment[id]?.moves }} />
-      ) : (
-        <InventoryList
-          title={part === "items" ? "Items" : "Creatures"}
-          tabs={PART_TABS[part]}
-          showSell={part === "items"}
-          emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
-            : game.activeTab === "roster" ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
-            : game.activeTab === "cards" ? "No creature cards yet. Collect 3 of one creature to summon it."
-            : "No creatures yet — visit the Soul Altar."}
-          inventory={game.inventory}
-          filteredInventory={game.filteredInventory}
-          equipment={game.equipment}
-          equippedOn={game.equippedOn}
-          lockedIds={game.lockedIds}
-          onEquip={game.equipItem}
-          onSetMoves={game.setMoves}
-          onLearnCodex={game.learnCodex}
-          onReadScroll={game.readScroll}
-          onSummon={game.summon}
-          tabCounts={game.tabCounts}
-          activeTab={game.activeTab}
-          onTabChange={game.setActiveTab}
-          favoriteIds={game.favoriteIds}
-          onToggleFavorite={game.toggleFavorite}
-          sellMode={part === "items" && game.sellMode}
-          selectedForSale={game.selectedForSale}
-          onToggleSelectItem={game.toggleSelectItem}
-          onSelectAll={game.selectAllInView}
-          onDeselectAll={game.deselectAll}
-          sellTotal={game.sellTotal}
-          onOpenSellConfirm={() => game.setShowSellConfirm(true)}
-          onToggleSellMode={game.toggleSellMode}
-          unavailableItems={game.klutzAwayItems}
+      {klutzOpen && <KlutzGear game={game} onClose={() => setKlutzOpen(false)} />}
+      <InventoryList
+        title={part === "items" ? "Items" : "Creatures"}
+        tabs={PART_TABS[part]}
+        showSell={part === "items"}
+        emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
+          : game.activeTab === "roster" ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
+          : game.activeTab === "cards" ? "No creature cards yet. Collect 3 of one creature to summon it."
+          : "No creatures yet — visit the Soul Altar."}
+        inventory={game.inventory}
+        filteredInventory={game.filteredInventory}
+        equipment={game.equipment}
+        equippedOn={game.equippedOn}
+        lockedIds={game.lockedIds}
+        onEquip={game.equipItem}
+        onSetMoves={game.setMoves}
+        onLearnCodex={game.learnCodex}
+        onReadScroll={game.readScroll}
+        onSummon={game.summon}
+        tabCounts={game.tabCounts}
+        activeTab={game.activeTab}
+        onTabChange={game.setActiveTab}
+        favoriteIds={game.favoriteIds}
+        onToggleFavorite={game.toggleFavorite}
+        sellMode={part === "items" && game.sellMode}
+        selectedForSale={game.selectedForSale}
+        onToggleSelectItem={game.toggleSelectItem}
+        onSelectAll={game.selectAllInView}
+        onDeselectAll={game.deselectAll}
+        sellTotal={game.sellTotal}
+        onOpenSellConfirm={() => game.setShowSellConfirm(true)}
+        onToggleSellMode={game.toggleSellMode}
+        unavailableItems={game.klutzAwayItems}
         />
-      )}
     </DenFrame>
   );
 }
