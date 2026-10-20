@@ -230,6 +230,16 @@ function planks(a: number, z: number, seed: number): RGB {
   return mul(WOOD[(row + seed) % WOOD.length], grain);
 }
 
+// A picture mirrored left to right (art drawn facing the wrong way for its wall).
+export function mirrored(px: Pixels): Pixels {
+  const data = new Uint8ClampedArray(px.data.length);
+  for (let y = 0; y < px.h; y++) for (let x = 0; x < px.w; x++) {
+    const from = (y * px.w + x) * 4, to = (y * px.w + (px.w - 1 - x)) * 4;
+    for (let k = 0; k < 4; k++) data[to + k] = px.data[from + k];
+  }
+  return { w: px.w, h: px.h, data };
+}
+
 // ── The scene ────────────────────────────────────────────────────
 type Light = { u: number; v: number; z: number; color: RGB; power: number; radius: number; seed: number; pulse?: boolean; steady?: boolean };
 
@@ -634,7 +644,8 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
 
   // The shelves on the right wall: codexes, a sack and potions. (They open
   // the codex shelf; a proper bookcase comes with upgrades.)
-  if (props.shelves) stamp(OBJ.bookcase, props.shelves, SHELF.u0, 0, SHELF.u1, 0.4); // the bookcase, standing against the wall
+  // The bookcase, standing against the wall (its art is drawn for the other wall, so it's mirrored).
+  if (props.shelves) stamp(OBJ.bookcase, mirrored(props.shelves), SHELF.u0, 0, SHELF.u1, 0.4);
   else {
     const shelf: Face = (a, b) => (b < 1 ? mul(WOOD[0], 1.15) : WOOD_DARK);
     box(OBJ.bookcase, SHELF.u0, 0, 28, SHELF.u1, 0.4, 31, { top: (a) => planks(a, 2, 0), right: shelf, left: shelf });

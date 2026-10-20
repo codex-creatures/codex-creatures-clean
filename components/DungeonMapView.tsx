@@ -27,6 +27,9 @@ const RED_INK = "#9b2a1d";
 const PAPER = "#e9d6a6";
 const SERIF = "Georgia, 'Times New Roman', serif";
 const VISIBLE_W = 100;      // map units across the window (the scroll is wider: drag to see the rest)
+const PAN_HOLD = 600;       // ms the scroll rests on the lair before panning down to the entrance
+const PAN_MS = 2600;        // ms the pan takes
+const panned = new Set<string>(); // runs whose opening pan has played
 
 // Crossed swords, the battle sign: drawn in a 24×24 box.
 function Swords({ color }: { color: string }) {
@@ -101,14 +104,40 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
   // The window onto the scroll: opens on where you stand; drag to look around.
   const box = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null);
+  const small = !map.h || map.h < 200; // a short scroll (the first quest's) fits the window as it is
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
-    el.scrollLeft = ((here.x - view.x) / view.w) * el.scrollWidth - el.clientWidth / 2;
-    el.scrollTop = ((here.y - view.y) / view.h) * el.scrollHeight - el.clientHeight / 2;
+    const centre = (n: MapNode) => [
+      ((n.x - view.x) / view.w) * el.scrollWidth - el.clientWidth / 2,
+      ((n.y - view.y) / view.h) * el.scrollHeight - el.clientHeight / 2,
+    ];
+    const [toX, toY] = centre(here);
+    // A fresh run: the scroll opens at the lair and pans down to the entrance
+    // (once per run; touching the scroll stops it).
+    const lair = map.nodes[map.boss];
+    if (run.path.length === 1 && !small && lair && !panned.has(run.id)) {
+      panned.add(run.id);
+      const [fromX, fromY] = centre(lair);
+      const t0 = performance.now();
+      let frame = 0;
+      const step = (now: number) => {
+        const k = Math.min(1, Math.max(0, now - t0 - PAN_HOLD) / PAN_MS);
+        const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2; // ease in and out
+        el.scrollLeft = fromX + (toX - fromX) * e;
+        el.scrollTop = fromY + (toY - fromY) * e;
+        if (k < 1) frame = requestAnimationFrame(step);
+      };
+      const stop = () => cancelAnimationFrame(frame);
+      el.addEventListener("pointerdown", stop);
+      el.addEventListener("wheel", stop, { passive: true });
+      frame = requestAnimationFrame(step);
+      return () => { stop(); el.removeEventListener("pointerdown", stop); el.removeEventListener("wheel", stop); };
+    }
+    el.scrollLeft = toX;
+    el.scrollTop = toY;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pos]);
-  const small = !map.h || map.h < 200; // a short scroll (the first quest's) fits the window as it is
 
   const tap = (fn: () => void) => () => { if (!drag.current?.moved) fn(); };
 
