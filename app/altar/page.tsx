@@ -243,6 +243,11 @@ export default function AltarPage() {
           style={{ ...dangerBtn, color: startArmed ? "#1a1a1a" : "#f5c542", background: startArmed ? "#f5c542" : "transparent", borderColor: "rgba(245,197,66,0.6)" }}>
           {startArmed ? "Tap again to wipe everything" : "✨ Start new"}
         </button>
+        {!game.tavern.blasted && (
+          <button onClick={game.openRubbleForTesting} title="Open the rubble in the Den now, as if you'd done Klutz's quest and fetched the dynamite" style={dangerBtn}>
+            🧨 Open the rubble
+          </button>
+        )}
         <button onClick={() => armedReset("player", game.resetAll)} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>
           {resetArmed === "player" ? "Tap again to reset" : "Reset Player"}
         </button>

@@ -119,6 +119,9 @@ export const wantsStorehouse = (t: TavernQuest) => !!t.accepted && !t.dynamite;
 // The rubble can be blown open once you've got the dynamite (and only once).
 export const canBlast = (t: TavernQuest) => !!t.dynamite && !t.blasted;
 export const blast = (t: TavernQuest): TavernQuest => (canBlast(t) ? { ...t, blasted: true } : t);
+// Testing (the altar's testing tools): open the rubble straight away, as if
+// you'd done Klutz's quest and fetched the dynamite.
+export const forceOpen = (t: TavernQuest): TavernQuest => ({ ...t, accepted: true, dynamite: true, blasted: true });
 
 // The repair, material by material: what you have and what it needs.
 export const repairNeeds = (have: Materials) =>

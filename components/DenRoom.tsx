@@ -5,7 +5,7 @@
 // pinch (or the mouse wheel) to zoom, drag to look around. Tap an object to go
 // in. With a mouse, pointing at one shows its name first.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEscape } from "@/hooks/useEscape";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
@@ -50,10 +50,10 @@ function loadDenArt(): Promise<DenArt> {
   return artLoading;
 }
 const scenes = new Map<string, DenScene>();
-function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: DenArt): DenScene {
-  const key = `${backpack}|${opened}|${upgraded}`;
+function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: DenArt, bare = false): DenScene {
+  const key = `${backpack}|${opened}|${upgraded}|${bare}`;
   let s = scenes.get(key);
-  if (!s) scenes.set(key, (s = createDen({ backpack, opened, upgraded, props: art.props, altarFrames: art.altarFrames ?? undefined })));
+  if (!s) scenes.set(key, (s = createDen({ backpack, opened, upgraded, bare, props: art.props, altarFrames: art.altarFrames ?? undefined })));
   return s;
 }
 
@@ -67,7 +67,9 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // upgraded: the crooked bookcase is built.
 // crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
 // cageNews: a creature's waiting in the cage to capture or release (a ❗ on its label).
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false, cageNews = false }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean }) {
+// bare: just the cave, with nothing of the Den's in it (the tavern's room);
+// children: what stands in it instead, placed with RoomSpot.
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false, cageNews = false, bare = false, children }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; bare?: boolean; children?: ReactNode }) {
   const opened = rubble === "open";
   const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
   // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
@@ -208,7 +210,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   }
   // The furniture art (the room is rebuilt with it once it has loaded).
   const [art, setArt] = useState<DenArt | null>(artCache);
-  const glows = useMemo(() => (art ? denScene(backpack, opened, upgraded, art).glows : []), [art, backpack, opened, upgraded]);
+  const glows = useMemo(() => (art ? denScene(backpack, opened, upgraded, art, bare).glows : []), [art, backpack, opened, upgraded, bare]);
   useEffect(() => {
     if (art) return;
     let live = true;
@@ -219,7 +221,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx || !art) return;
-    const scene = denScene(backpack, opened, upgraded, art);
+    const scene = denScene(backpack, opened, upgraded, art, bare);
     sceneRef.current = scene;
     const start = performance.now();
     let first = true; // (a new canvas or room: draw the whole frame once)
@@ -244,7 +246,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, [backpack, opened, upgraded, art]);
+  }, [backpack, opened, upgraded, art, bare]);
 
   useEffect(() => {
     klutzRef.current = klutz;
@@ -319,7 +321,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         height={H * RES}
         onClick={(e) => press(objectAt(e))}
         style={{ width: "100%", height: "100%", imageRendering: crisp ? "pixelated" : "auto", cursor: hover ? "pointer" : "grab", display: "block" }}
-        aria-label="The Den"
+        aria-label={bare ? "The tavern's room" : "The Den"}
         role="img"
       />
 
@@ -335,8 +337,10 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         return <div aria-hidden className="den-blast" style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` }} />;
       })()}
 
+      {children}
+
       {/* Labels */}
-      {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
+      {!bare && (Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
         const news = (id === OBJ.tavern && opened && tavernNews) || (id === OBJ.crate && crateNews) || (id === OBJ.cage && cageNews);
         if (id === OBJ.klutz || (id !== shown && id !== highlight && !news)) return null;
@@ -394,6 +398,18 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Something standing in the room (a DenRoom's children): its foot at the
+// floor spot (u, v), z px up, w layout units wide (so it zooms with the room).
+// Just for show: taps go through it to the room.
+export function RoomSpot({ u, v, z = 0, w, children, style }: { u: number; v: number; z?: number; w: number; children: ReactNode; style?: React.CSSProperties }) {
+  const [x, y] = project(u, v, z);
+  return (
+    <div style={{ position: "absolute", left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%`, width: `${(w / W) * 100}%`, transform: "translate(-50%, -100%)", pointerEvents: "none", ...style }}>
+      {children}
     </div>
   );
 }

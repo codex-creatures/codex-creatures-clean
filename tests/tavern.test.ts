@@ -1,10 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
+import { createDen, OBJ, W, H } from "../lib/den/scene";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -250,5 +251,32 @@ describe("the tavern questline: selling to the merchant", () => {
   it("buys materials one at a time at half his price", () => {
     expect(materialOffer("planks")).toBe(4);
     expect(materialOffer("metal_bars")).toBe(22);
+  });
+});
+
+describe("testing: opening the rubble", () => {
+  it("opens it from any point in the quest, keeping the rest", () => {
+    expect(forceOpen({})).toEqual({ accepted: true, dynamite: true, blasted: true });
+    expect(forceOpen({ seen: true, repaired: true })).toMatchObject({ blasted: true, seen: true, repaired: true });
+    expect(canBlast(forceOpen({}))).toBe(false); // nothing left to blow up
+  });
+});
+
+describe("the tavern's room (the Den's cave, bare)", () => {
+  // Node has no ImageData; the scene only needs its pixels.
+  (globalThis as { ImageData?: unknown }).ImageData ??= class { data: Uint8ClampedArray; constructor(public width: number, public height: number) { this.data = new Uint8ClampedArray(width * height * 4); } };
+  const ids = (bare: boolean) => {
+    const den = createDen({ bare });
+    den.render(0, OBJ.none);
+    const seen = new Set<number>();
+    for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) seen.add(den.idAt(x, y));
+    return seen;
+  };
+  it("has nothing in it to tap: no furniture, pit, pool, archway, cage or rubble", () => {
+    expect([...ids(true)]).toEqual([OBJ.none]);
+  });
+  it("while the Den keeps all of them", () => {
+    const den = ids(false);
+    for (const id of [OBJ.arch, OBJ.altar, OBJ.pit, OBJ.pool, OBJ.cage, OBJ.tavern, OBJ.chest]) expect(den.has(id)).toBe(true);
   });
 });
