@@ -1,8 +1,8 @@
 // hooks/useDropGeneration.ts
 import type { Drop } from "@/lib/types";
-import { resolveBarcode, rollBarcodeOutcome } from "@/lib/barcodeRegistry";
+import { resolveBarcode, rollBarcodeOutcome, scanBarcode } from "@/lib/barcodeRegistry";
 import { dropFromOutcome, goldDrop } from "@/lib/drops";
-import { canFind, SCAN_UNLOCK } from "@/lib/creatures/levels";
+import { SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
 
 // "deterministic" (Repeatable): outcomes come from the barcode registry,
@@ -43,11 +43,12 @@ export function useDropGeneration({
 
     const alreadyScanned = scanCounts[code] ?? 0;
 
-    // ── TOO RARE FOR YOU YET → SEALED ─────────────────────
+    // ── SOMEONE ELSE'S FIND, TOO RARE FOR YOU YET → SEALED ─
+    // (The first ever to scan a barcode gets whatever it rolls.)
     if (rollMode === "deterministic" && alreadyScanned === 0) {
-      const first = resolveBarcode(code);
-      if (first.outcome === "creature" && !canFind(playerLevel, first.rarity)) {
-        onSealed?.(first.rarity, SCAN_UNLOCK[first.rarity]);
+      const { entry, sealed } = scanBarcode(code, playerLevel);
+      if (sealed && entry.outcome === "creature") {
+        onSealed?.(entry.rarity, SCAN_UNLOCK[entry.rarity]);
         return;
       }
     }
@@ -75,7 +76,7 @@ export function useDropGeneration({
     const drops: Drop[] = [];
     for (let i = 0; i < SCAN_DROPS; i++) {
       const key = i === 0 ? code : `${code}:${i + 1}`;
-      const result = rollMode === "deterministic" ? resolveBarcode(key) : rollBarcodeOutcome(playerLevel);
+      const result = rollMode === "deterministic" ? resolveBarcode(key) : rollBarcodeOutcome();
       const drop = dropFromOutcome(result, code);
       if (drop) drops.push(drop);
     }

@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { CREATURE_BY_ID, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
 import { rollCreature } from "../lib/creatures/creatureRoll";
 import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP_SCALE, shareXp, impactsFromLog, addPlayerXp, playerXpToNext, canFind, SCAN_UNLOCK } from "../lib/creatures/levels";
-import { rollBarcodeOutcome } from "../lib/barcodeRegistry";
 import { starterCreature, STARTER_LEVEL } from "../lib/creatures/starter";
 import { buildFighter } from "../lib/combat/loadout";
 import { newWitchGame, guess, walkAway, remaining, drawNext, odds, sitDown, isSeated, DECK, MAX_CORRECT, type WitchGame } from "../lib/dungeon/witch";
@@ -161,12 +160,6 @@ describe("your explorer level", () => {
     expect(canFind(1, "uncommon")).toBe(true);
     expect(canFind(1, SCAN_UNLOCK.legendary > 1 ? "legendary" : "common")).toBe(SCAN_UNLOCK.legendary <= 1);
     expect(canFind(SCAN_UNLOCK.epic, "epic")).toBe(true);
-  });
-  it("scans never roll a creature rarer than you can find", () => {
-    for (let i = 0; i < 2000; i++) {
-      const o = rollBarcodeOutcome(1);
-      if (o.outcome === "creature") expect(canFind(1, o.rarity)).toBe(true);
-    }
   });
   it("your first creature is a Rare at level 3", () => {
     const s = starterCreature() as { rarity: string; level?: number };

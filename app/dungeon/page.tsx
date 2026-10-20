@@ -405,7 +405,7 @@ export default function DungeonPage() {
     // Barcode-style drops. (When the barcode merchant outcome arrives, it must be left out here.)
     const drops: Drop[] = [];
     while (drops.length < CHEST_DROPS) {
-      const d = dropFromOutcome(rollBarcodeOutcome(Infinity, CHEST_ODDS));
+      const d = dropFromOutcome(rollBarcodeOutcome(CHEST_ODDS));
       if (d) drops.push(d);
     }
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());

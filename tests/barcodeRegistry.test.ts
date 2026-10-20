@@ -4,7 +4,8 @@
 // and a global reset lets barcodes roll again.
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { resolveBarcode, rollBarcodeOutcome, clearRegistry, CHEST_ODDS } from "../lib/barcodeRegistry";
+import { resolveBarcode, rollBarcodeOutcome, clearRegistry, scanBarcode, CHEST_ODDS, REGISTRY_KEY } from "../lib/barcodeRegistry";
+import { SCAN_UNLOCK } from "../lib/creatures/levels";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { ITEM_KEYS } from "../lib/items/ceilings";
 import { ARMOR_KEYS } from "../lib/items/armor";
@@ -37,6 +38,29 @@ describe("registry behaviour", () => {
       clearRegistry();
     }
     expect(changed).toBeGreaterThan(40); // occasional identical re-rolls are fine
+  });
+});
+
+describe("your explorer level and barcodes", () => {
+  // A barcode registered as a legendary creature (as if someone else found it).
+  const registerLegendary = (code: string) =>
+    store[REGISTRY_KEY] = JSON.stringify({ [code]: { outcome: "creature", rarity: "legendary", creatureId: "storm_phoenix", registeredAt: "" } });
+
+  it("the first ever to scan a barcode gets whatever it rolls, at any level", () => {
+    let legendary = 0;
+    for (let i = 0; i < 3000; i++) {
+      clearRegistry(); // (keeps the registry small, so this stays quick)
+      const { entry, sealed } = scanBarcode(`9${String(i).padStart(12, "0")}`, 1);
+      expect(sealed).toBe(false);
+      if (entry.outcome === "creature" && entry.rarity === "legendary") legendary++;
+    }
+    expect(legendary).toBeGreaterThan(0); // ~12 expected (40% × 1%)
+  });
+
+  it("someone else's find too rare for you is sealed until your level can find it", () => {
+    registerLegendary("5000112637922");
+    expect(scanBarcode("5000112637922", 1).sealed).toBe(true);
+    expect(scanBarcode("5000112637922", SCAN_UNLOCK.legendary).sealed).toBe(false);
   });
 });
 
@@ -77,7 +101,7 @@ describe("outcome odds (statistical)", () => {
   it("a Labyrinth chest keeps the original table: 20% creature, 12/24/12/12 items, 20% gold", () => {
     const got: Record<string, number> = {};
     for (let i = 0; i < N; i++) {
-      const e = rollBarcodeOutcome(Infinity, CHEST_ODDS);
+      const e = rollBarcodeOutcome(CHEST_ODDS);
       const k = e.outcome === "item" ? e.itemCategory : e.outcome;
       got[k] = (got[k] ?? 0) + 1;
     }

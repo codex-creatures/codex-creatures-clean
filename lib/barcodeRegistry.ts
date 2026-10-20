@@ -83,10 +83,9 @@ function pickOutcome(odds: DropOdds): keyof DropOdds {
   return "gold";
 }
 
-// A fresh random outcome, at SCAN_ODDS (or the odds given).
-// playerLevel: a creature is only ever as rare as that explorer level can
-// find (SCAN_UNLOCK); missing = anything.
-export function rollBarcodeOutcome(playerLevel = Infinity, odds: DropOdds = SCAN_ODDS): BarcodeOutcome {
+// A fresh random outcome, at SCAN_ODDS (or the odds given). Any rarity can
+// come up: your explorer level only limits barcodes someone already found.
+export function rollBarcodeOutcome(odds: DropOdds = SCAN_ODDS): BarcodeOutcome {
   const pick = pickOutcome(odds);
 
   if (pick === "gold") {
@@ -94,8 +93,7 @@ export function rollBarcodeOutcome(playerLevel = Infinity, odds: DropOdds = SCAN
   }
 
   if (pick === "creature") {
-    let rarity = pickRarity("", "random");
-    while (!canFind(playerLevel, rarity)) rarity = pickRarity("", "random");
+    const rarity = pickRarity("", "random");
     return { outcome: "creature", rarity, creatureId: pickCreatureId(rarity) };
   }
 
@@ -120,6 +118,16 @@ export function resolveBarcode(code: string): BarcodeEntry {
   registry[code] = entry;
   saveRegistry(registry);
   return entry;
+}
+
+// Your first scan of a barcode. If nobody had found it before, it's yours
+// whatever it is (being first is its own reward). If it was already
+// registered and holds a creature too rare for your explorer level, it's
+// sealed: you can come back for it once you can find that rarity.
+export function scanBarcode(code: string, playerLevel: number): { entry: BarcodeEntry; sealed: boolean } {
+  const known = code in loadRegistry();
+  const entry = resolveBarcode(code);
+  return { entry, sealed: known && entry.outcome === "creature" && !canFind(playerLevel, entry.rarity) };
 }
 
 // "Global Reset" — every barcode will roll fresh on its next scan.

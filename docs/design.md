@@ -57,9 +57,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ Scanned creatures: 20% are a real creature, 80% a **creature card** (`REAL_CREATURE_CHANCE`).
   In the loot window a real creature shows as the creature itself (its sprite, its plain name), a
   card as the card.
-- ✅ Your **explorer level** caps how rare a scanned creature can be (`SCAN_UNLOCK`: rare at
-  Lv 2, epic at 6, legendary at 12). A too-rare barcode stays sealed: it doesn't count, and the
-  altar shows the level needed.
+- ✅ Your **explorer level** caps how rare a creature you can take from a barcode **someone already
+  found** (`SCAN_UNLOCK`: rare at Lv 2, epic at 6, legendary at 12). That barcode stays sealed: it
+  doesn't count, and the altar shows the level needed. **Being first beats the cap** (2026-10-20):
+  a barcode nobody has scanned rolls at the usual odds and is yours whatever it is
+  (`scanBarcode`). Locally "someone" means any earlier player in this browser's registry.
 - 📌 **Barcode merchant:** 10% of scans, taken from materials and consumables. The planned split
   is creature 20 / weapon 15 / armour 15 / material 10 / consumable 10 / merchant 10 / gold 20.
   Not in the outcome roll yet.
