@@ -106,7 +106,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   Backpack (5, `BACKPACK`). Gear, codexes, potions, tools and material stacks take a slot; gold and
   creature cards don't. Swapping a weapon from the bag mid-fight uses your turn.
 - ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from
-  10 to 25 codexes.
+  10 to 25 codexes. 📌 Changing (the user, 2026-10-20): it will come only from the tavern
+  questline (§9), for 10 planks + 5 nails, holding 20.
 - 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.
 - ❓ Bag upgrades beyond the backpack, a 10-item battle bag, and bags for Klutz have all been
   mentioned, but none is designed.
@@ -346,6 +347,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). Not
   built.
 - 📌 Wandering merchants and weapon dealers as gold sinks. The user will design gold sinks.
+- ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
+  (~18 a room), and re-scan gold has no cap.
 
 ### The tavern questline (📌 the user's spec, 2026-10-20; not built)
 
@@ -353,50 +356,39 @@ Each stage unlocks the next, so every stage can ship on its own and leave the ga
 Placeholder art (existing sprites, simple markers) until a later PixelLab pass. All new save
 fields optional with defaults.
 
-1. **Klutz's quest.** It unlocks once any creature reaches Lv 6 **and** Klutz has been sent
-   hunting at least once (either order). While he's out, it waits until he's home. Then a "!"
-   shows over him; talking to him gives the quest, once.
-2. **Storehouse.** While the quest is active and you haven't got the dynamite, a Labyrinth's
-   Large Room is always a Storehouse (no extra room). The dynamite lies among its crates and
-   barrels. Taking it is permanent: rooms go back to normal and you can't get a second one.
-3. **Rubble.** A pile of rubble on the Den's eastern wall. Using the dynamite on it (once) blows it
-   open with an explosion and leaves a passage to a second room. It isn't a general
-   destructible-walls system.
-4. **The tavern (outside only for now)** stands broken in that room, with a Cyclops wanted poster
-   visible from the start. The first time you see it, Klutz reacts once (it needs materials; he
-   spots the poster).
+1. **Klutz's quest.** It unlocks once any creature reaches Lv 6 **and** Klutz is Lv 2 or more
+   (either order). Only won hunts give him XP and a first catch takes him to Lv 2, so his level
+   is the record of having hunted, and old saves work too. While he's out, the quest waits until
+   he's home. Then a "!" shows over him; talking to him gives the quest, once.
+2. **Storehouse.** Once the quest is accepted and until you have the dynamite, a Labyrinth's
+   Large Room is always a Storehouse, always marked on the scroll from the start (no extra room).
+   In the Deep (2 large rooms) only one is. The first-quest run has no large room. The dynamite
+   lies among its crates and barrels. Taking it is permanent: rooms go back to normal and you
+   can't get a second one. 🧪 Its usual mini-boss guard chance stays (Claude's default; not asked).
+3. **Rubble.** A pile of rubble on the Den's right-hand wall, between the bookcase corner and the
+   merchant (the user's sketch: [ideas/den-second-room.png](ideas/den-second-room.png)). The
+   boarded-up tavern doorway goes. Using the dynamite on it (once) blows it open with an
+   explosion and leaves a passage into a second room behind that wall. **Until then you can't see
+   or pan over the second room at all.** It isn't a general destructible-walls system.
+4. **The tavern (outside only for now)** stands broken in that room, a building against its far
+   wall (the sketch), with a Cyclops wanted poster visible from the start. The first time you see
+   it, Klutz reacts once (it needs materials; he spots the poster).
 5. **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
 6. **Bounty:** the poster offers the Cyclops bounty. If you'd already beaten the Cyclops
    (`meta.clears`), it completes as soon as you open the tavern. Cyclops combat is unchanged.
-7. **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. Mounting
+7. **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
+   the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Mounting
    it on the tavern wall (once) completes the bounty and unlocks the bookcase schematic.
-8. **Bookcase upgrade:** needs that schematic plus 10 planks and 5 nails, and is built separately.
-   It holds **20** codexes and uses the user's upgraded bookcase art (`den/bookcase-2.png`).
+8. **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
+   **only** way to get it: it no longer drops from mini bosses, the Cyclops or storehouses. It costs
+   10 planks and 5 nails, is built separately, holds **20** codexes, and uses the user's upgraded
+   bookcase art (`den/bookcase-2.png`). (It was 20 planks + 10 nails for 25.) A save that already
+   built it keeps its 25 slots, and schematics already in a save stay buildable.
 9. **Visitors** (after the repair): on returning home from each run, roll a merchant (12%), a
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian.
    (The creature trader is left out for now.)
-
-Questions from checking the code (2026-10-20), waiting for the user's answers:
-
-- ❓ **Bookcase clash.** The Crooked Bookcase schematic is already built: it drops at random (mini
-  bosses 5%, the Cyclops 10%, storehouses 4%), costs 20 planks + 10 nails, and gives 25 slots. The
-  spec's upgrade is 20 slots for 10 planks + 5 nails from the tavern. Is it one or the other, or
-  20 then 25? A save that has already built it must keep its 25.
-- ❓ **Where the tavern goes.** The Den already has a boarded-up tavern doorway on its right-hand
-  wall, and the isometric Den has no compass "east". Does the rubble replace that doorway, with
-  the tavern in the room behind it?
-- ❓ **"Klutz has hunted once"** isn't recorded: saves only hold his current trip. A new optional
-  counter fixes it going forward. Old saves would count as hunted if he has any XP or level.
-- ❓ **Quest storehouse details:** should it be marked on the scroll from the start, and can it
-  be guarded? (A storehouse's guard is a mini boss 35% of the time, never before room 7.) In the
-  Deep, which has 2 large rooms, only one becomes the storehouse. The first-quest run has no
-  large room, so it's skipped. If a map ever places no large room, the run is simply normal.
-- ❓ **Trophy:** the decided "trophy showing which run you first won on" (`meta.firstClearRun`):
-  should the mounted Cyclops Head be that trophy?
-- ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
-  (~18 a room), and re-scan gold has no cap.
 
 ## 10. UI philosophy (settled; follow it)
 
