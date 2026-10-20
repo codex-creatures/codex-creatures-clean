@@ -5,7 +5,7 @@
 // (codexes on the bookcase are offered under these, in the creature
 // window). Tap a slot, then tap a move below to swap it in.
 // Reading a codex with all 4 slots full: `teaching` asks you to tap the
-// move it replaces.
+// move it replaces, then Confirm.
 
 import { useState } from "react";
 import { CLASS_INFO, DAMAGE_TYPE_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
@@ -69,6 +69,7 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
   teaching?: { move: string; onPick: (slot: number) => void; onCancel: () => void };
 }) {
   const [editing, setEditing] = useState<number | null>(null);
+  const [forget, setForget] = useState<number | null>(null); // teaching: the slot picked to forget, awaiting Confirm
   const current = resolveMoves(template, moves);
   const options = movesAvailableTo(template, learned, born).filter((m) => !current.some((c) => c.name === m.name));
   const fromCodex = new Set(learned ?? []);
@@ -89,8 +90,21 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
     <div>
       {teaching && (
         <div className="tutorial-tip" style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span>Learning <b>{teaching.move}</b>: tap a move to forget.</span>
-          <button className="chip" onClick={teaching.onCancel}>Cancel</button>
+          {forget === null || !current[forget] ? (
+            <>
+              <span>Learning <b>{teaching.move}</b>: tap a move to forget.</span>
+              <button className="chip" onClick={teaching.onCancel}>Cancel</button>
+            </>
+          ) : (
+            <>
+              {/* Reading the codex uses it up, so the swap waits for a Confirm. */}
+              <span>Forget <b>{current[forget].name}</b> for <b>{teaching.move}</b>?</span>
+              <span style={{ display: "flex", gap: 6 }}>
+                <button className="chip" onClick={() => { const i = forget; setForget(null); teaching.onPick(i); }}>✓ Confirm</button>
+                <button className="chip" onClick={() => setForget(null)}>Back</button>
+              </span>
+            </>
+          )}
         </div>
       )}
       <div style={{ fontSize: 13, color: MUTED, marginBottom: 8, display: teaching ? "none" : undefined }}>
@@ -98,8 +112,8 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
       </div>
       <div className="move-grid">
         {Array.from({ length: MOVE_SLOTS }, (_, i) => current[i]).map((m, i) => m ? (
-          <MoveTile key={i} m={m} slot={i} selected={!teaching && editing === i}
-            onClick={teaching ? () => teaching.onPick(i) : onChange ? () => setEditing(editing === i ? null : i) : undefined} />
+          <MoveTile key={i} m={m} slot={i} selected={teaching ? forget === i : editing === i}
+            onClick={teaching ? () => setForget(forget === i ? null : i) : onChange ? () => setEditing(editing === i ? null : i) : undefined} />
         ) : (
           <button key={i} disabled={!onChange} onClick={() => setEditing(editing === i ? null : i)}
             style={{ padding: 12, borderRadius: 10, border: `2px dashed ${editing === i ? "#ffd66e" : "#2a2d38"}`, background: "transparent", color: MUTED, cursor: "pointer" }}>

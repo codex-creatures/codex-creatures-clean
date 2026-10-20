@@ -33,11 +33,12 @@ export default function CodexShelf({ inventory, size, teach }: { inventory: Drop
   const [teaching, setTeaching] = useState(false);                   // choosing who to teach
   const [forgetting, setForgetting] = useState<string | null>(null); // that creature's slots are full: which move goes
   const [taught, setTaught] = useState<string | null>(null);         // "X learned Y!"
+  const [dropSlot, setDropSlot] = useState<number | null>(null);     // the move picked to forget, awaiting Confirm
   const picked = codexes.find((c) => c.id === pickedId);
   const move = picked?.codexMove;
   const race = move ? MOVE_BY_NAME[move]?.race : undefined;
 
-  const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setTaught(null); };
+  const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setDropSlot(null); setTaught(null); };
   const slotsOf = (x: CreatureOrItemDrop) => {
     const t = findCreatureTemplate(x.creatureId, x.name);
     return t ? resolveMoves(t, teach?.movesOf(x.id) ?? x.moves).map((m) => m.name) : [];
@@ -54,7 +55,7 @@ export default function CodexShelf({ inventory, size, teach }: { inventory: Drop
     teach!.onLearn(x.id, picked!.id);
     teach!.onSetMoves(x.id, moves);
     setTaught(`${x.name} learned ${move}!`);
-    setPickedId(null); setTeaching(false); setForgetting(null);
+    setPickedId(null); setTeaching(false); setForgetting(null); setDropSlot(null);
   };
   const choose = (x: CreatureOrItemDrop) => {
     const slots = slotsOf(x);
@@ -82,7 +83,7 @@ export default function CodexShelf({ inventory, size, teach }: { inventory: Drop
                 <CodexMove move={move!} />
                 <div style={{ display: "flex", gap: 6, visibility: teach ? "visible" : "hidden" }}>
                   <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                    onClick={() => { setTeaching((v) => !v); setForgetting(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>
+                    onClick={() => { setTeaching((v) => !v); setForgetting(null); setDropSlot(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>
                 </div>
               </>
             ) : (
@@ -96,10 +97,17 @@ export default function CodexShelf({ inventory, size, teach }: { inventory: Drop
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>{forgetter.name}&apos;s slots are full: forget which?</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                   {slotsOf(forgetter).map((n, i) => MOVE_BY_NAME[n] && (
-                    <MoveTile key={n} m={MOVE_BY_NAME[n]} onClick={() => { const next = slotsOf(forgetter); next[i] = move!; learn(forgetter, next); }} />
+                    <MoveTile key={n} m={MOVE_BY_NAME[n]} selected={dropSlot === i} onClick={() => setDropSlot(dropSlot === i ? null : i)} />
                   ))}
                 </div>
-                <button className="chip" style={{ marginTop: 8 }} onClick={() => setForgetting(null)}>Back</button>
+                {/* Reading the codex uses it up, so the swap waits for a Confirm. */}
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <button className="chip" style={{ visibility: dropSlot === null ? "hidden" : "visible" }}
+                    onClick={() => { const next = slotsOf(forgetter); next[dropSlot!] = move!; learn(forgetter, next); }}>
+                    ✓ Forget {dropSlot === null ? "" : slotsOf(forgetter)[dropSlot]}
+                  </button>
+                  <button className="chip" onClick={() => { setForgetting(null); setDropSlot(null); }}>Back</button>
+                </div>
               </>
             ) : (
               <>
