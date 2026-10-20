@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan, comeHome, buyFromVisitor, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
-import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize } from "../lib/items/materials";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
+import { potionDrop, scrollDrop } from "../lib/drops";
+import type { Drop } from "../lib/types";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -230,5 +232,23 @@ describe("the tavern questline: visitors", () => {
     expect(once.bought).toEqual([key]);
     expect(buyFromVisitor(once, key)).toBe(once);
     expect(buyFromVisitor({ repaired: true }, key).bought).toBeUndefined();
+  });
+});
+
+describe("the tavern questline: selling to the merchant", () => {
+  const gearValue = () => 300;
+  const sword = { ...toolDrop("flare"), id: "sword", itemCategory: "weapon", tool: undefined, itemKey: "sword", name: "Sword" } as unknown as Drop;
+  it("buys what he'd buy in the Labyrinth, at the same prices", () => {
+    const flare = toolDrop("flare"), potion = potionDrop("", "potion"), scroll = scrollDrop();
+    const sells = tavernSellables([flare, potion, scroll, sword], new Set(), gearValue);
+    expect(sells.map((x) => x.price)).toEqual([Math.floor(TOOLS.flare.price / 2), 50, 100, 300]);
+  });
+  it("won't take what's worn, packed or favourited, nor a schematic", () => {
+    const flare = toolDrop("flare");
+    expect(tavernSellables([flare, sword, schematicDrop("crooked_bookcase")], new Set(["sword"]), gearValue).map((x) => x.drop.id)).toEqual([flare.id]);
+  });
+  it("buys materials one at a time at half his price", () => {
+    expect(materialOffer("planks")).toBe(4);
+    expect(materialOffer("metal_bars")).toBe(22);
   });
 });

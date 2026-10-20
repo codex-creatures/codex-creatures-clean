@@ -3,7 +3,8 @@
 // Your bindle (later a rugged backpack): what you carry into the Labyrinth.
 // Pack spare gear here: a weapon to swap in mid-fight (say, a Pierce weapon
 // for a heavily armoured foe), or armour to change into between rooms.
-// Potions come from merchants and stashes. Whatever you find down there
+// Potions come from merchants and stashes. Potions, flares and clairvoyance
+// scrolls kept in your Inventory can be packed here, and stored back. Whatever you find down there
 // needs a free slot to come home.
 
 import { useEffect, useState } from "react";
@@ -13,7 +14,7 @@ import BagSlots, { slotLook } from "@/components/BagSlots";
 import { GearStatLine } from "@/components/GearCompare";
 import { useGameState } from "@/hooks/useGameState";
 import {
-  loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootIdOf, POTIONS, BINDLE, BACKPACK,
+  loadDungeon, saveDungeon, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, POTIONS, BINDLE, BACKPACK,
   type BagEntry, type DungeonSave,
 } from "@/lib/dungeon/run";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
@@ -21,6 +22,7 @@ import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { potionDrop } from "@/lib/drops";
+import { TOOLS } from "@/lib/items/materials";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -43,6 +45,8 @@ export default function BagPage() {
   const spare = gear.filter((w) => !game.equippedOn.has(w.id) && !packed.has(w.id));
   // Potions in storage (from scans) can be packed too: they become bag potions.
   const potions = game.inventory.filter((d) => d.dropType === "item" && d.potion) as CreatureOrItemDrop[];
+  // …and so can flares and clairvoyance scrolls (from the tavern's merchant).
+  const tools = game.inventory.filter((d) => d.dropType === "item" && d.tool) as CreatureOrItemDrop[];
   const shelfFree = game.bookcaseSize - game.inventory.filter((d) => d.dropType === "item" && d.codexMove).length;
   const save = (next: DungeonSave) => { saveDungeon(next); setLab(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
@@ -53,6 +57,23 @@ export default function BagPage() {
     if (!isPotionEntry(e)) return;
     game.addDrop(potionDrop("", e));
     setBag(bag.filter((_, j) => j !== i));
+  }
+
+  // Pack a flare or clairvoyance scroll from the Inventory: it travels as
+  // found loot does, and stays packed between runs until it's used.
+  function packTool(x: CreatureOrItemDrop) {
+    game.removeDrop(x.id);
+    save({ ...lab!, meta: { ...lab!.meta, bag: [...bag, lootEntry(x.id)], loot: { ...(lab!.meta.loot ?? {}), [x.id]: x } } });
+  }
+  // …and put one back in the Inventory.
+  function storeTool(e: BagEntry) {
+    const id = lootIdOf(e);
+    const x = id ? lab!.meta.loot?.[id] : undefined;
+    if (!id || !x) return;
+    game.addDrop(x);
+    const loot = { ...(lab!.meta.loot ?? {}) };
+    delete loot[id];
+    save({ ...lab!, meta: { ...lab!.meta, bag: bag.filter((b) => b !== e), loot } });
   }
 
   // A codex that came home while the bookcase was full: shelve it once there's room.
@@ -105,11 +126,13 @@ export default function BagPage() {
           <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
             {isPotionEntry(e) ? <span><PotionIcon kind={e} /><b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
               : own ? gearLine(own)
+              : found?.tool ? <span>{TOOLS[found.tool].icon} <b>{found.name}</b></span>
               : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
               : <span style={{ color: MUTED }}>Something you no longer have</span>}
             {(own || (!isPotionEntry(e) && !found)) && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>{own ? "Take out" : "Clear the slot"}</button>}
             {isPotionEntry(e) && !away && <button className="chip" onClick={() => store(sel)}>Store it</button>}
-            {found && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
+            {found?.tool && !away && <button className="chip" onClick={() => storeTool(e)}>Store it</button>}
+            {found && !found.tool && !away && <button className="chip" disabled={shelfFree <= 0} onClick={() => shelve(e)}>Put on the bookcase</button>}
           </div>
         );
       })()}
@@ -123,6 +146,20 @@ export default function BagPage() {
               <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
                 <span><PotionIcon kind={x.potion!} /><b>{POTIONS[x.potion!].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[x.potion!].heal} HP</span></span>
                 <button className="chip" disabled={bag.length >= slots} onClick={() => { game.removeDrop(x.id); setBag([...bag, x.potion!]); }}>Pack it</button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {!away && tools.length > 0 && (
+        <>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Flares and scrolls in your Inventory</div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {tools.map((x) => (
+              <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
+                <span>{TOOLS[x.tool!].icon} <b>{x.name}</b></span>
+                <button className="chip" disabled={bag.length >= slots} onClick={() => packTool(x)}>Pack it</button>
               </div>
             ))}
           </div>

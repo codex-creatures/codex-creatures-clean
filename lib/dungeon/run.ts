@@ -436,6 +436,7 @@ export function merchantOffer(entry: BagEntry, item: Drop | undefined, gearValue
   if (isPotionEntry(entry)) return half(POTIONS[entry].price);
   if (!item || item.dropType !== "item") return 0;
   if (item.itemKey === "klutz_club") return 0;
+  if (item.potion) return half(POTIONS[item.potion].price); // a potion in your Inventory (the tavern)
   if (item.itemCategory === "weapon" || item.itemCategory === "armor") return gearValue(item);
   if (item.material) {
     const m = MERCHANT_MATERIALS.find((x) => x.material === item.material);

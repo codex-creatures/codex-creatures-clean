@@ -10,15 +10,15 @@ import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
-import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootEntry, bagSize, codexPrice, type Ware } from "@/lib/dungeon/run";
+import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, codexPrice, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, scrollDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
-import { blast, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, mountHead, repair, tavernPlan, tavernQuestDue, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { blast, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
-import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, canAfford, addMaterials, materialDrop, toolDrop, type Materials } from "@/lib/items/materials";
+import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, canAfford, addMaterials, countMaterial, materialDrop, toolDrop, type MaterialKey, type Materials } from "@/lib/items/materials";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -318,21 +318,14 @@ export function useGameState(initialTab: TabKey = "all") {
   // The head goes up once you've beaten the Cyclops (the Labyrinth's record).
   const mountCyclopsHead = () => setTavern(updateTavern((t) => mountHead(t, loadDungeon().meta.clears)));
   // Buying from whoever's calling at the tavern, one of each. You're home, so
-  // it goes straight where it lives: potions and scrolls to your Inventory,
-  // materials to your tally; a flare or clairvoyance scroll is packed in your
-  // bag (that's where they're used), so it needs a free slot.
+  // it goes straight where it lives: potions, scrolls, flares and
+  // clairvoyance scrolls to your Inventory (pack them in the bag from there),
+  // materials to your tally.
   function buyTavernWare(w: Ware): boolean {
     const t = loadTavern();
     if (t.visitor !== "merchant" || !t.wares?.some((x) => x.key === w.key) || t.bought?.includes(w.key)) return false;
-    if ("tool" in w) {
-      const lab = loadDungeon();
-      if (lab.run || lab.meta.bag.length >= bagSize(lab.meta) || !spendGold(w.price)) return false;
-      const d = toolDrop(w.tool);
-      saveDungeon({ ...lab, meta: { ...lab.meta, bag: [...lab.meta.bag, lootEntry(d.id)], loot: { ...(lab.meta.loot ?? {}), [d.id]: d } } });
-    } else {
-      if (!spendGold(w.price)) return false;
-      addDrop("potion" in w ? potionDrop("", w.potion) : "scroll" in w ? scrollDrop() : materialDrop(w.material, w.qty));
-    }
+    if (!spendGold(w.price)) return false;
+    addDrop("potion" in w ? potionDrop("", w.potion) : "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : materialDrop(w.material, w.qty));
     setTavern(updateTavern((x) => buyFromVisitor(x, w.key)));
     return true;
   }
@@ -559,6 +552,22 @@ export function useGameState(initialTab: TabKey = "all") {
     setCrate((prev) => prev.filter((d) => !ids.includes(d.id)));
     setGold((gl) => gl + sold.reduce((s, d) => s + crateSellValue(d), 0));
   }
+  // Selling to the tavern's merchant: anything he'll take from your Inventory
+  // (lib/tavern.ts tavernSellables), or materials one at a time.
+  const tavernSells = () => tavernSellables(inventory, lockedIds, crateSellValue);
+  function sellToTavern(id: string): boolean {
+    const offer = loadTavern().visitor === "merchant" && tavernSells().find((x) => x.drop.id === id);
+    if (!offer) return false;
+    removeDrop(id);
+    setGold((g) => g + offer.price);
+    return true;
+  }
+  function sellMaterialToTavern(key: MaterialKey): boolean {
+    if (loadTavern().visitor !== "merchant" || countMaterial(materials, key) < 1) return false;
+    setMaterials((m) => addMaterials(m, { [key]: -1 }));
+    setGold((g) => g + materialOffer(key));
+    return true;
+  }
 
   // Open stored Code Caches (by drop id): what's inside joins your things.
   function openCaches(ids: string[]) {
@@ -748,7 +757,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

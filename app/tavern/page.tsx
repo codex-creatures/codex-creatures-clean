@@ -8,7 +8,7 @@
 // from before), mount it on the wall, and the bookcase schematic is yours.
 // Once it's repaired, a merchant or librarian sometimes calls (rolled on
 // coming home from a run: lib/tavern.ts comeHome), selling what they would
-// in the Labyrinth.
+// in the Labyrinth. The merchant buys from your Inventory too.
 // (Placeholder art until the PixelLab pass.)
 
 import Link from "next/link";
@@ -20,16 +20,21 @@ import Help from "@/components/Help";
 import PixelSprite from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { MATERIALS } from "@/lib/items/materials";
+import { useState } from "react";
+import { MATERIALS, MATERIAL_KEYS, countMaterial } from "@/lib/items/materials";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { codexPrice, loadDungeon } from "@/lib/dungeon/run";
-import { canRepair, canTakeBounty, headToMount, repairNeeds, tavernVisitor } from "@/lib/tavern";
+import { canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
 export default function TavernPage() {
   const game = useGameState();
   const t = game.tavern;
+  // Trading with the merchant: buying or selling, and the thing tapped once
+  // to sell (a second tap sells it).
+  const [trade, setTrade] = useState<"buy" | "sell">("buy");
+  const [armed, setArmed] = useState<string | null>(null);
   if (!game.hydrated) return <DenFrame title="Tavern" icon="🍺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   if (!t.blasted) {
     return (
@@ -55,7 +60,7 @@ export default function TavernPage() {
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>5 metal bars, 20 planks and 5 nails</b>.</li>
               <li>The <b>wanted poster</b> is for the Cyclops. Once it&apos;s repaired, take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
-              <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for 2 runs.</li>
+              <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for 2 runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
             </ul>
           </Help>
         </div>
@@ -130,8 +135,40 @@ export default function TavernPage() {
         {/* Whoever's calling, and what they sell. */}
         {visitor === "merchant" && (
           <div style={{ marginTop: 10 }}>
-            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;One of each, friend. Flares and scrolls of clairvoyance go in your bag.&rdquo;</p>
-            <MerchantCart wares={t.wares ?? []} bought={t.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
+            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+              {(["buy", "sell"] as const).map((m) => (
+                <button key={m} className="chip" onClick={() => { setTrade(m); setArmed(null); }}
+                  style={{ minHeight: 44, flex: 1, background: trade === m ? "#5a3e22" : undefined }}>{m === "buy" ? "Buy" : "Sell"}</button>
+              ))}
+            </div>
+            {trade === "buy" ? (
+              <>
+                <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;One of each, friend. It all goes in your Inventory.&rdquo;</p>
+                <MerchantCart wares={t.wares ?? []} bought={t.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;Let&apos;s see what you&apos;ve got.&rdquo; Tap twice to sell.</p>
+                {/* Your Inventory (not what's worn, packed or favourited), then your materials one at a time. */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "40cqh", overflowY: "auto" }}>
+                  {game.tavernSells().map(({ drop, price }) => (
+                    <button key={drop.id} className="card-btn" style={{ minHeight: 44, justifyContent: "space-between", gap: 8, background: armed === drop.id ? "#6e1f18" : undefined }}
+                      onClick={() => { if (armed !== drop.id) { setArmed(drop.id); return; } setArmed(null); game.sellToTavern(drop.id); }}>
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={drop.name}>{drop.name}</span>
+                      <span className="pixel-font" style={{ color: "#f1d9a0", flexShrink: 0 }}>{armed === drop.id ? "Sell?" : ""} <Coin /> {price}</span>
+                    </button>
+                  ))}
+                  {MATERIAL_KEYS.filter((k) => countMaterial(game.materials, k) > 0).map((k) => (
+                    <button key={k} className="card-btn" style={{ minHeight: 44, justifyContent: "space-between", gap: 8, background: armed === k ? "#6e1f18" : undefined }}
+                      onClick={() => { if (armed !== k) { setArmed(k); return; } game.sellMaterialToTavern(k); }}>
+                      <span style={{ flex: 1 }}>{MATERIALS[k].icon} 1 {MATERIALS[k].name.toLowerCase()} <span style={{ fontSize: 12, color: MUTED }}>(have {countMaterial(game.materials, k)})</span></span>
+                      <span className="pixel-font" style={{ color: "#f1d9a0", flexShrink: 0 }}>{armed === k ? "Sell?" : ""} <Coin /> {materialOffer(k)}</span>
+                    </button>
+                  ))}
+                </div>
+                <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>You have {game.gold} gold.</p>
+              </>
+            )}
           </div>
         )}
         {visitor === "librarian" && (

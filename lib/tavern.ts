@@ -26,12 +26,15 @@
 //    (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
 //    the Labyrinth to sell. The first roll after the repair always brings
 //    someone, and so does the one after VISITOR_PITY misses in a row.
+//    The merchant also buys from your Inventory, at the Labyrinth's prices
+//    (merchantOffer): gear for what the crate pays, the rest at half his.
 //
 // Kept in its own field of the save (lib/save.ts: OWN_FIELDS), as both the
 // Den (Klutz) and the Labyrinth (the dynamite) write it.
 
 import { readSave, writeSaveField } from "./save";
-import { makeRoom, type Ware } from "./dungeon/run";
+import { MERCHANT_BUYBACK, MERCHANT_MATERIALS, lootEntry, makeRoom, merchantOffer, type Ware } from "./dungeon/run";
+import type { CreatureOrItemDrop, Drop } from "./types";
 import { addMaterials, canAfford, countMaterial, type MaterialKey, type Materials } from "./items/materials";
 
 export const QUEST_CREATURE_LEVEL = 6;
@@ -83,6 +86,21 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random): Taver
 // Mark something bought from the visitor (one of each).
 export const buyFromVisitor = (t: TavernQuest, key: string): TavernQuest =>
   (t.visitor && !t.bought?.includes(key) ? { ...t, bought: [...(t.bought ?? []), key] } : t);
+
+// What the merchant will buy from your Inventory, and for how much: not
+// what's worn, packed or favourited (locked), nor what he won't take (Klutz's
+// club, a schematic). Gear goes for gearValue (the crate's price).
+export function tavernSellables(inventory: Drop[], locked: Set<string>, gearValue: (d: Drop) => number): { drop: CreatureOrItemDrop; price: number }[] {
+  return inventory
+    .filter((d): d is CreatureOrItemDrop => d.dropType === "item" && !locked.has(d.id))
+    .map((drop) => ({ drop, price: merchantOffer(lootEntry(drop.id), drop, gearValue) }))
+    .filter((x) => x.price > 0);
+}
+// One of a material from your stores (half his price for one).
+export function materialOffer(key: MaterialKey): number {
+  const m = MERCHANT_MATERIALS.find((x) => x.material === key);
+  return m ? Math.floor((m.price / m.qty) * MERCHANT_BUYBACK) : 0;
+}
 
 // What the repair takes.
 export const REPAIR_COST: Materials = { metal_bars: 5, planks: 20, nails: 5 };
