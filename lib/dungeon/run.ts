@@ -313,6 +313,18 @@ export function nextToTake<T>(items: T[], free: (x: T) => boolean, rank: (x: T) 
 // How rare a thing in a chest is, for "Take all": potions come after Commons.
 export const dropRank = (d?: Drop) => (d && "rarity" in d ? RARITIES.indexOf(d.rarity) : -1);
 export const sackRank = (x: SackItem) => ("gear" in x ? dropRank(x.gear) : -1);
+// A chest holds at most CHEST_SLOTS things: rolled more, the least rare fall
+// out (gold and potions first, then Commons, Uncommons…; a tie, the last one).
+export const CHEST_SLOTS = 5;
+export function capSack(sack: SackItem[], max = CHEST_SLOTS): SackItem[] {
+  const out = [...sack];
+  while (out.length > max) {
+    let worst = 0;
+    out.forEach((x, i) => { if (sackRank(x) <= sackRank(out[worst])) worst = i; });
+    out.splice(worst, 1);
+  }
+  return out;
+}
 
 // Materials found down here are a stack in one bag slot; more of the same
 // material joins it. They only join your tally at home (once you're back).

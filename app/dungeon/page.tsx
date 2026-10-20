@@ -49,7 +49,7 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
+  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   hasFight, minibossExtras, codexPrice, wareName, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, fightingTeam, enemyFighter, gearName, endRun,
@@ -409,7 +409,7 @@ export default function DungeonPage() {
       if (d) drops.push(d);
     }
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
-    const sack: SackItem[] = [...drops.map((d): SackItem => (d.dropType === "reward" ? { gold: d.amount } : { gear: d })), ...toolFinds(CHEST_TOOLS)];
+    const sack = capSack([...drops.map((d): SackItem => (d.dropType === "reward" ? { gold: d.amount } : { gear: d })), ...toolFinds(CHEST_TOOLS)]);
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, sack, opened: true, done: true } } : r));
     setLootOpen(true);
   }
