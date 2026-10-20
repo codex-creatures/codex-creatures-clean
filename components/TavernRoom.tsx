@@ -8,6 +8,7 @@
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot } from "@/components/DenRoom";
 import { RES } from "@/lib/den/scene";
+import { fineWidth } from "@/lib/sprites/art";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { tavernVisitor, type TavernQuest } from "@/lib/tavern";
@@ -24,6 +25,8 @@ const CORNER = { u: 20.5, v: 5.1, x: 336, y: 478 };
 const DOOR = { x: 121, y: 233 };
 // Lamp-light from the open door and the windows (px, radius px).
 const LIGHTS = [{ x: 121, y: 345, r: 80 }, { x: 60, y: 242, r: 30 }, { x: 400, y: 347, r: 34 }];
+// Where a visitor stands: out front, just left of the door.
+const VISITOR_SPOT = { u: 12.4, v: 6.2 };
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 
 // quest: the tavern has a quest step waiting (lib/tavern.ts tavernHasQuest).
@@ -58,8 +61,9 @@ export default function TavernRoom({ tavern: t, quest = false, firstClearRun }: 
           </div>
         )}
       </RoomSpot>
+      {/* A visitor, standing by the door at the same scale as everything else (1:1). */}
       {visitor && (
-        <RoomSpot u={13.6} v={6.4} w={44}>
+        <RoomSpot u={VISITOR_SPOT.u} v={VISITOR_SPOT.v} w={fineWidth(visitor === "merchant" ? MERCHANT : LIBRARIAN) / RES}>
           <PixelSprite sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} style={FIT} />
         </RoomSpot>
       )}

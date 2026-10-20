@@ -84,6 +84,13 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle
   return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
 }
 
+// For testing (the altar): open and repair the tavern, and have who call right
+// now, with their usual stock, staying VISITOR_STAY runs.
+export function callVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
+  const stock = makeRoom(who, rng, Infinity, 1, bindle);
+  return { ...forceOpen(t), seen: true, repaired: true, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
+}
+
 // Mark something bought from the visitor (one of each).
 export const buyFromVisitor = (t: TavernQuest, key: string): TavernQuest =>
   (t.visitor && !t.bought?.includes(key) ? { ...t, bought: [...(t.bought ?? []), key] } : t);

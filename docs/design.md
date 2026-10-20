@@ -455,6 +455,9 @@ fields optional with defaults.
    is the likely long-term style for viewing the base; this layout stays until then.
    🧪 Testing tool: the altar's "🧨 Open the rubble" opens it at once (`forceOpen`), as if the quest
    and dynamite were done.
+   🧪 Testing tool: the altar's "🍺 Call a visitor" (`callVisitor`) opens and repairs the tavern and
+   has the merchant (or, if he's there, the librarian) call now. Visitors stand out front by the
+   door, at 1:1 scale.
    📌 **Building the room up, one shippable stage at a time** (the user, 2026-10-20): 1 ✅ the bare
    cave; 2 ✅ PixelLab tavern art (one picture, greyed while broken); 3 mounted head art (the
    poster was dropped); 4 ✅ a sliding walk-through from the Den's passage; 5 ✅ one strip you drag across

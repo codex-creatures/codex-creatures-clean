@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernHasQuest, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernHasQuest, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -216,6 +216,17 @@ describe("the tavern questline: visitors", () => {
     t = comeHome(t, seq(0.99));
     expect(t.visitor).toBe("librarian"); // 0.99 of the sure range
     expect(t.misses).toBe(0);
+  });
+
+  it("the altar's testing button calls one straight away, opening and repairing the tavern", () => {
+    const m = callVisitor({}, "merchant");
+    expect(tavernVisitor(m)).toBe("merchant");
+    expect(m.blasted && m.repaired).toBe(true);
+    expect(m.wares?.length).toBeGreaterThan(0);
+    expect(m.stay).toBe(VISITOR_STAY);
+    const l = callVisitor(m, "librarian");
+    expect(tavernVisitor(l)).toBe("librarian");
+    expect(l.offers?.length).toBe(3);
   });
 
   it("brings their stock, stays 2 runs, then leaves", () => {

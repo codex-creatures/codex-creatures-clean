@@ -248,6 +248,9 @@ export default function AltarPage() {
             🧨 Open the rubble
           </button>
         )}
+        <button onClick={game.callVisitorForTesting} title="Have the merchant (or, if he's already there, the librarian) call at the tavern now. Opens and repairs the tavern if it isn't yet." style={dangerBtn}>
+          🍺 Call a visitor
+        </button>
         <button onClick={() => armedReset("player", game.resetAll)} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>
           {resetArmed === "player" ? "Tap again to reset" : "Reset Player"}
         </button>
