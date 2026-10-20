@@ -350,7 +350,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His %s are even (9 each), so his weapon and
   the codexes you teach him decide how he fights. He can learn any class's codex, plus his own
   race's (Rabid Bite), and starts with Slash, Heavy Blow, Jab and Stone Throw. Sim (2,000 hunts,
-  Lv 1–30): 67–72% wins, as before, but about 50% against magic instead of 26%.
+  Lv 1–30): 67–72% wins, as before, but about 50% against magic instead of 26%. That lower magic
+  number is only because no magic creature is Common (at equal rarity magic is one of his better
+  matchups); the user chose to leave the roster as it is (2026-10-20).
 - ✅ **Finds:** 35% of trips bring home gear for a slot he wears. It's **never rarer than his own
   piece** (the same rarity only 5%, rising slightly with his level).
 - ✅ **Levels:** only won hunts give XP. A first catch reaches Lv 2; a find gives 20. Scrolls work on
