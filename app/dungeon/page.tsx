@@ -931,7 +931,7 @@ export default function DungeonPage() {
     return frame(
       <WalkBack run={run} lab={lab} itemOf={itemOf}
         onTake={floorTake} onTakeAll={floorTakeAll} onSwap={floorSwap} onPut={floorPut}
-        onHome={() => { setWalking(false); goHome(); }} />,
+        onHome={() => { setLeaving(true); setWalking(false); goHome(); router.push("/"); }} />,
     );
   }
 
