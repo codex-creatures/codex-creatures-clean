@@ -267,8 +267,13 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
     );
   }
-  if (game.tavern.dynamite) {
-    return say(<>&ldquo;Dynamite! Hang on to that. Now, where to put it…&rdquo; <span style={{ color: MUTED }}>(Next update.)</span></>);
+  if (game.tavern.dynamite && !game.tavern.blasted) {
+    return say(<>&ldquo;Dynamite! Take it to the <b>rubble</b> on the Den&apos;s right-hand wall and light it. Stand well back!&rdquo;</>,
+      <Link href="/" className="pixel-btn">🏠 To the Den</Link>);
+  }
+  if (game.tavern.blasted && !game.tavern.repaired) {
+    return say(<>&ldquo;That tavern won&apos;t fix itself. <b>Metal bars, planks and nails</b>, and plenty of them!&rdquo;</>,
+      <Link href="/tavern" className="pixel-btn">🍺 To the tavern</Link>);
   }
   return null;
 }

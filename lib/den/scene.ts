@@ -41,8 +41,9 @@ export type ObjId = (typeof OBJ)[keyof typeof OBJ];
 // - the middle: the Soul Altar, with the Pit and the Healing Pool either side;
 // - the storage corner (right wall, at the back): chest, crates, shelves (the
 //   codex shelf: a bookcase comes with upgrades);
-// - further along the right wall: the merchant, then the tavern, with open
-//   floor in front of it to grow into;
+// - further along the right wall: a doorway choked with rubble (blown open
+//   with Klutz's dynamite, it's the passage to the tavern's room:
+//   lib/tavern.ts), then the merchant, with open floor further on;
 // - the left wall: the archway, the bindle in its corner, the quest board and lectern;
 // - the front left: the cage, with Klutz's crate beside it.
 const AL = { u: 9.5, v: 8.0 };              // Soul Altar (the centrepiece)
@@ -72,7 +73,7 @@ const BOARD_V = 6.6;                         // quest board on the left wall
 const LECTERN = { u: 1.15, v: 7.45 };        // the Bestiary's lectern, in front of the board
 const SHELF = { u0: 4.2, u1: 5.8 };          // the shelves on the right wall (codexes, sacks, potions)
 const MERCHANT_U = 10.2;                     // the merchant's stall (right wall)
-const TAVERN = { a0: 15.6, a1: 18.0, h: 74 }; // tavern opening on the right wall (along u)
+const RUBBLE = { a0: 7.0, a1: 9.2, h: 64 };  // the rubbled doorway on the right wall (along u), between the shelves and the merchant
 
 // Where each object's label sits (floor units + height in px).
 // below = the label hangs under the point instead of above it.
@@ -87,7 +88,7 @@ export const ANCHORS: Record<Exclude<ObjId, 0>, { u: number; v: number; z: numbe
   8: { u: LECTERN.u, v: LECTERN.v, z: 0, below: true }, // the scroll on its lectern
   9: { u: 0, v: (CAGE.v0 + CAGE.v1) / 2, z: CAGE.h + 8 }, // the cell in the wall
   10: { u: POOL.u + 1.2, v: POOL.v + 1.0, z: 0, below: true }, // pool
-  11: { u: (TAVERN.a0 + TAVERN.a1) / 2, v: 0, z: TAVERN.h + 10 }, // tavern
+  11: { u: (RUBBLE.a0 + RUBBLE.a1) / 2, v: 0, z: RUBBLE.h + 10 }, // the rubble (the way to the tavern)
   12: { u: 9.0, v: 3.4, z: 26 },                   // Klutz (he moves: see klutzAt)
   13: { u: (SHELF.u0 + SHELF.u1) / 2, v: 0.2, z: 72 }, // the shelves
   14: { u: CRATE.u1, v: CRATE.v1, z: 0, below: true }, // Klutz's crate (label under it)
@@ -297,7 +298,8 @@ function strollAt(t: number): { u: number; v: number; left: boolean; walking: bo
 // backpack: you've found the rugged backpack (otherwise a bindle by the archway).
 // props: the furniture art that has loaded (see PROP_KEYS).
 // altarFrames: the Soul Altar's animation (its soul fire), once loaded; frame 0 is its still.
-export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFrames?: Pixels[] } = {}): DenScene {
+// opened: the rubble's been blown open (lib/tavern.ts).
+export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFrames?: Pixels[]; opened?: boolean } = {}): DenScene {
   const props = opts.props ?? {};
   const n = FW * FH;
   const albedo = new Float32Array(n * 3);
@@ -401,16 +403,34 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   }
 
   function rightWallFeature(a: number, z: number): { c: RGB; id: number } | null {
-    // The tavern: a tall opening into the dark, framed in timber and
-    // half boarded up — it isn't built yet.
-    const ta = a - TAVERN.a0 * 16, tw = (TAVERN.a1 - TAVERN.a0) * 16;
-    if (ta >= -4 && ta < tw + 4 && z < TAVERN.h + 6) {
-      const inside = ta >= 0 && ta < tw && z < TAVERN.h;
-      if (!inside) return { c: planks(z, ta + 40, 1), id: OBJ.tavern }; // frame
-      const board = [18, 34, 52].some((bz) => z >= bz && z < bz + 6) && Math.abs((ta - tw / 2) / tw) < 0.47 + (z % 7) * 0.003;
-      if (board) return { c: mul(planks(ta, z, 2), 0.85), id: OBJ.tavern };
-      const depth = clamp01(z / 60);
-      return { c: mix(hex("#0d0b0a"), hex("#050404"), depth), id: OBJ.tavern };
+    // The rubble: an old doorway framed in dressed stone, choked with tumbled
+    // boulders (a gap at the top hints at a space behind). Blown open, it's
+    // the dark passage to the tavern's room.
+    const ra = a - RUBBLE.a0 * 16, rw = (RUBBLE.a1 - RUBBLE.a0) * 16;
+    const roff = (ra - rw / 2) / (rw / 2); // −1…1 across the doorway
+    const doorTop = RUBBLE.h - 10 + 10 * Math.sqrt(Math.max(0, 1 - roff * roff));
+    if (ra >= 0 && ra < rw && z < doorTop) {
+      const dark = { c: mix(hex("#0d0b0a"), hex("#040303"), clamp01(z / 60)), id: OBJ.tavern };
+      if (opts.opened) return dark;
+      const heap = RUBBLE.h - 18 - 16 * roff * roff + 8 * (vnoise(a / 5, 3) - 0.5);
+      if (z >= heap) return dark;
+      // Tumbled boulders: rough rounded lumps of all sizes, lit from above.
+      const wz = z + 5 * vnoise(a / 4, 9);
+      const row = Math.floor(wz / 8), off = hash(row, 17) * 11;
+      const wa = a + off + 4 * vnoise(z / 4, row);
+      const size = 5 + hash(Math.floor(wa / 9), row + 18) * 7;
+      const ia = wa % size, iz = wz - row * 8;
+      const round = Math.sin((Math.PI * ia) / size) * Math.sin((Math.PI * iz) / 8);
+      if (round < 0.18) return { c: CRACK, id: OBJ.tavern };
+      const col = Math.floor(wa / size);
+      const c = hash(col, row + 3) < 0.35 ? CAP_STONES[col % 3] : ROCK[Math.floor(hash(col, row) * ROCK.length)];
+      return { c: mul(c, (0.6 + 0.45 * round + (iz > 5 ? 0.12 : 0)) * (0.7 + 0.3 * z / RUBBLE.h)), id: OBJ.tavern };
+    }
+    if (ra >= -5 && ra < rw + 5 && z < doorTop + 6) {
+      const side = ra < 0 || ra >= rw;
+      const block = side ? Math.floor(z / 8) + (ra < 0 ? 40 : 60) : Math.floor(ra / 7) + 80;
+      if (side ? z % 8 < 1 : Math.floor(ra) % 7 === 0) return { c: CRACK, id: OBJ.tavern };
+      return { c: mul(CAP_STONES[block % 3], 0.78 + hash(Math.floor(a), Math.floor(z)) * 0.1), id: OBJ.tavern };
     }
     // Merchant's hanging sign
     const sa = a - (MERCHANT_U + 0.2) * 16, sz = z - 64;
@@ -656,6 +676,15 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
     box(OBJ.bookcase, 5.38, 0.1, 55, 5.56, 0.28, 62, { top: () => hex("#cfc6b0"), right: potion("#4878e0"), left: potion("#4878e0") });
     box(OBJ.bookcase, 4.4, 0.08, 31, 4.62, 0.3, 38, { top: () => hex("#cfc6b0"), right: potion("#48c060"), left: potion("#48c060") });
     box(OBJ.bookcase, 4.9, 0.06, 31, 5.5, 0.34, 35, { top: () => hex("#d8cba8"), right: () => hex("#c2b28c"), left: () => hex("#b5a47e") });
+  }
+
+  // Stones spilled from the rubble onto the floor (blown further out once it's open).
+  const stone: Face = (a, b) => rock(a * 3 + 50, b * 3, 5);
+  for (let k = 0; k < 7; k++) {
+    const side = k % 2 ? RUBBLE.a0 - 0.3 - hash(k, 34) * 1.0 : RUBBLE.a1 + 0.3 + hash(k, 34) * 1.0;
+    const u = opts.opened ? side : RUBBLE.a0 + 0.2 + hash(k, 31) * (RUBBLE.a1 - RUBBLE.a0 - 0.4);
+    const v = 0.15 + hash(k, 32) * (opts.opened ? 1.4 : 0.5), r = 0.1 + hash(k, 33) * 0.12;
+    box(OBJ.tavern, u - r, v - r, 0, u + r, v + r, 3 + r * 22, { top: stone, right: stone, left: stone });
   }
 
   // The quest board, hung on the left wall (code-drawn in leftWallFeature otherwise).

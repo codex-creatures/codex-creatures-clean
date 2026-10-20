@@ -399,6 +399,18 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 }
 .screen-shake { animation: screen-shake 0.5s ease-out; }
 
+/* Klutz's dynamite going off at the Den's rubble: a white-hot flash, then dust. */
+.den-blast {
+  position: absolute; width: 30%; aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%;
+  background: radial-gradient(circle, #fffbe8 0%, #ffd27a 25%, rgba(230, 110, 40, 0.8) 45%, rgba(90, 80, 70, 0.6) 65%, transparent 72%);
+  animation: den-blast 1.4s ease-out forwards;
+}
+@keyframes den-blast {
+  0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
+  20% { transform: translate(-50%, -50%) scale(1); opacity: 1; filter: none; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; filter: grayscale(1) blur(6px); }
+}
+
 /* The card witch's cards. */
 .witch-card {
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;

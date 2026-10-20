@@ -350,7 +350,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ❓ Known imbalance, not acted on: sell prices (epic ~800, legendary ~2,700) dwarf Labyrinth gold
   (~18 a room), and re-scan gold has no cap.
 
-### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–2 built, lib/tavern.ts)
+### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–5 built, lib/tavern.ts)
 
 Each stage unlocks the next, so every stage can ship on its own and leave the game playable.
 Placeholder art (existing sprites, simple markers) until a later PixelLab pass. All new save
@@ -367,15 +367,22 @@ fields optional with defaults.
    can't get a second one. 🧪 Its usual mini-boss guard chance stays (the dynamite waits until the
    guard's beaten). 🧪 The dynamite takes no bag slot and is yours the moment you pick it up, even if
    the run then goes wrong (there's no second one). Both Claude's defaults; not asked.
-3. **Rubble.** A pile of rubble on the Den's right-hand wall, between the bookcase corner and the
+3. ✅ **Rubble.** A pile of rubble on the Den's right-hand wall, between the bookcase corner and the
    merchant (the user's sketch: [ideas/den-second-room.png](ideas/den-second-room.png)). The
    boarded-up tavern doorway goes. Using the dynamite on it (once) blows it open with an
    explosion and leaves a passage into a second room behind that wall. **Until then you can't see
    or pan over the second room at all.** It isn't a general destructible-walls system.
-4. **The tavern (outside only for now)** stands broken in that room, a building against its far
+   🧪 Built as a rubble-choked doorway on the right wall (code-drawn, between the shelves and the
+   merchant; the old boarded tavern opening is gone). Its label says "Rubble"; with the dynamite,
+   tapping it offers "Use the dynamite": a flash and a shake, then it's an open passage.
+   🧪 **For now the second room is its own screen (`/tavern`), reached through the passage**, not
+   part of the Den you pan over: making the Den's picture bigger would slow it on phones. To revisit
+   with the art pass.
+4. ✅ **The tavern (outside only for now)** stands broken in that room, a building against its far
    wall (the sketch), with a Cyclops wanted poster visible from the start. The first time you see
-   it, Klutz reacts once (it needs materials; he spots the poster).
-5. **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
+   it, Klutz reacts once (it needs materials; he spots the poster). 🧪 Placeholder art: emoji
+   building (🏚️ broken, 🏠 repaired) and a parchment poster with the Cyclops sprite.
+5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
 6. **Bounty:** the poster offers the Cyclops bounty. If you'd already beaten the Cyclops
    (`meta.clears`), it completes as soon as you open the tavern. Cyclops combat is unchanged.

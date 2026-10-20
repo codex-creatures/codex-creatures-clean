@@ -28,8 +28,11 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
   [OBJ.klutz]:    { label: "Klutz", href: "/klutz" },
   [OBJ.bookcase]: { label: "Bookcase", href: "/bookcase" },
-  [OBJ.tavern]:   { label: "Tavern", soon: "The tavern isn't built yet. One day travellers, merchants and librarians will gather here." },
+  [OBJ.tavern]:   { label: "Rubble", soon: "An old doorway, choked with rubble. Klutz reckons there's a whole room behind it." },
 };
+// The rubble, once it's blown open: the way to the tavern (lib/tavern.ts).
+const PASSAGE: Spot = { label: "Tavern", href: "/tavern" };
+export type Rubble = "shut" | "dynamite" | "open"; // still shut; shut, and you've the dynamite; blown open
 
 const FPS = 12;
 
@@ -47,10 +50,10 @@ function loadDenArt(): Promise<DenArt> {
   return artLoading;
 }
 const scenes = new Map<string, DenScene>();
-function denScene(backpack: boolean, art: DenArt): DenScene {
-  const key = String(backpack);
+function denScene(backpack: boolean, opened: boolean, art: DenArt): DenScene {
+  const key = `${backpack}|${opened}`;
   let s = scenes.get(key);
-  if (!s) scenes.set(key, (s = createDen({ backpack, props: art.props, altarFrames: art.altarFrames ?? undefined })));
+  if (!s) scenes.set(key, (s = createDen({ backpack, opened, props: art.props, altarFrames: art.altarFrames ?? undefined })));
   return s;
 }
 
@@ -59,7 +62,18 @@ function denScene(backpack: boolean, art: DenArt): DenScene {
 // klutzNews: he has something to tell you (a ❗ on his label).
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
 // highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId }) {
+// rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void }) {
+  const opened = rubble === "open";
+  const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
+  // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
+  const [boom, setBoom] = useState(false);
+  function lightDynamite() {
+    setNotice(null);
+    setBoom(true);
+    window.setTimeout(() => onBlast?.(), 300);
+    window.setTimeout(() => setBoom(false), 1400);
+  }
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const klutzNewsRef = useRef(klutzNews);
   useEffect(() => { klutzNewsRef.current = klutzNews; }, [klutzNews]);
@@ -190,7 +204,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   }
   // The furniture art (the room is rebuilt with it once it has loaded).
   const [art, setArt] = useState<DenArt | null>(artCache);
-  const glows = useMemo(() => (art ? denScene(backpack, art).glows : []), [art, backpack]);
+  const glows = useMemo(() => (art ? denScene(backpack, opened, art).glows : []), [art, backpack, opened]);
   useEffect(() => {
     if (art) return;
     let live = true;
@@ -201,7 +215,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx || !art) return;
-    const scene = denScene(backpack, art);
+    const scene = denScene(backpack, opened, art);
     sceneRef.current = scene;
     const start = performance.now();
     let first = true; // (a new canvas or room: draw the whole frame once)
@@ -226,7 +240,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     draw();
     const timer = window.setInterval(draw, 1000 / FPS);
     return () => window.clearInterval(timer);
-  }, [backpack, art]);
+  }, [backpack, opened, art]);
 
   useEffect(() => {
     klutzRef.current = klutz;
@@ -277,7 +291,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
 
   function activate(id: ObjId) {
     if (!id) return;
-    const spot = SPOTS[id];
+    const spot = spotOf(id);
     if (spot.href) router.push(spot.href);
     else setNotice(spot);
   }
@@ -291,7 +305,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   const shown = hover;
 
   return (
-    <div ref={viewportRef} className="den-viewport"
+    <div ref={viewportRef} className={`den-viewport${boom ? " screen-shake" : ""}`}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
       onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHovered(OBJ.none); onUp(e); } }}>
     <div ref={worldRef} className="den-world" style={{ width: vp?.w ?? "100%", height: vp ? (vp.w * H) / W : undefined, visibility: vp ? "visible" : "hidden" }}>
@@ -311,13 +325,19 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
           style={{ left: `${(g.x / W) * 100}%`, top: `${(g.y / H) * 100}%`, width: `${(g.r * 2 / W) * 100}%`, aspectRatio: "1", background: `radial-gradient(circle, rgba(${g.color}, 0.32), rgba(${g.color}, 0.1) 45%, transparent 70%)`, animationDelay: `${-((g.seed * 0.37) % 1) * 2}s` }} />
       ))}
 
+      {/* The dynamite going off at the rubble. */}
+      {boom && (() => {
+        const a = ANCHORS[OBJ.tavern], [x, y] = project(a.u, a.v, a.z / 2);
+        return <div aria-hidden className="den-blast" style={{ left: `${(x / W) * 100}%`, top: `${(y / H) * 100}%` }} />;
+      })()}
+
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
         if (id === OBJ.klutz || (id !== shown && id !== highlight)) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
-        const spot = SPOTS[id];
+        const spot = spotOf(id);
         const active = hover === id;
         return (
           <button
@@ -360,7 +380,11 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
           <div className="stone-panel" style={{ maxWidth: 320, textAlign: "center" }}>
             <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0", marginBottom: 8 }}>{notice.label}</div>
             <p style={{ fontSize: 14, lineHeight: 1.5, color: "#d8d4c8", margin: 0 }}>{notice.soon}</p>
-            <div className="pixel-font" style={{ fontSize: 12, color: "#8a8a99", marginTop: 12 }}>Coming soon · tap to close</div>
+            {notice === SPOTS[OBJ.tavern]
+              ? rubble === "dynamite"
+                ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={(e) => { e.stopPropagation(); lightDynamite(); }}>🧨 Use the dynamite</button>
+                : <div className="pixel-font" style={{ fontSize: 12, color: "#8a8a99", marginTop: 12 }}>Tap to close</div>
+              : <div className="pixel-font" style={{ fontSize: 12, color: "#8a8a99", marginTop: 12 }}>Coming soon · tap to close</div>}
           </div>
         </div>
       )}

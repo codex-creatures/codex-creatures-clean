@@ -1,0 +1,91 @@
+"use client";
+// app/tavern/page.tsx
+// The tavern's room, behind the Den's rubble once Klutz's dynamite has blown
+// it open (lib/tavern.ts). The tavern stands broken against the far wall, a
+// Cyclops wanted poster already up; the first time you see it Klutz has his
+// say. Repairing it takes REPAIR_COST in materials, once.
+// (Placeholder art until the PixelLab pass; the bounty comes next.)
+
+import Link from "next/link";
+import DenFrame from "@/components/DenFrame";
+import Help from "@/components/Help";
+import PixelSprite from "@/components/PixelSprite";
+import { useGameState } from "@/hooks/useGameState";
+import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
+import { MATERIALS } from "@/lib/items/materials";
+import { canRepair, repairNeeds } from "@/lib/tavern";
+
+const MUTED = "rgba(255,255,255,0.5)";
+
+export default function TavernPage() {
+  const game = useGameState();
+  const t = game.tavern;
+  if (!game.hydrated) return <DenFrame title="Tavern" icon="🍺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+  if (!t.blasted) {
+    return (
+      <DenFrame title="Tavern" icon="🍺">
+        <p style={{ color: MUTED }}>The way&apos;s still blocked with rubble.</p>
+        <Link href="/" className="pixel-btn">← Back to the Den</Link>
+      </DenFrame>
+    );
+  }
+
+  const needs = repairNeeds(game.materials);
+  return (
+    <DenFrame title={t.repaired ? "Tavern" : "Broken tavern"} icon="🍺">
+      <div className="stone-panel">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0" }}>{t.repaired ? "The tavern" : "A tavern, in ruins"}</div>
+          <Help title="The tavern">
+            <ul>
+              <li>It was hidden behind the rubble. Repair it with <b>5 metal bars, 20 planks and 5 nails</b>.</li>
+              <li>The <b>wanted poster</b> is for the Cyclops. Its bounty opens in a coming update.</li>
+              <li>Once it&apos;s repaired, travellers will start to call (coming soon).</li>
+            </ul>
+          </Help>
+        </div>
+
+        {/* The room: the tavern against the far wall, the poster beside its door. */}
+        <div style={{ position: "relative", height: 170, marginTop: 10, background: "linear-gradient(#0b0a09, #241c15 70%, #3a2d20)", border: "2px solid #2a2118", overflow: "hidden" }}>
+          <div aria-label={t.repaired ? "The tavern, repaired" : "The tavern, broken"} role="img"
+            style={{ position: "absolute", left: "8%", bottom: 6, fontSize: 104, lineHeight: 1, filter: t.repaired ? "none" : "grayscale(0.6) brightness(0.75)" }}>
+            {t.repaired ? "🏠" : "🏚️"}
+          </div>
+          <div style={{ position: "absolute", right: "8%", top: 20, width: 92, padding: "4px 4px 6px", background: "#e8d6a8", border: "2px solid #8a6a3a", boxShadow: "0 3px 0 rgba(0,0,0,0.6)", transform: "rotate(3deg)", textAlign: "center" }}>
+            <div className="pixel-font" style={{ fontSize: 13, color: "#7a1e14", letterSpacing: 1 }}>WANTED</div>
+            {CREATURE_SPRITES.cyclops && <PixelSprite sprite={CREATURE_SPRITES.cyclops} scale={1.1} style={{ display: "block", margin: "2px auto" }} />}
+            <div className="pixel-font" style={{ fontSize: 11, color: "#3a2a14" }}>The Cyclops</div>
+          </div>
+        </div>
+
+        {/* Klutz, the first time you see it. */}
+        {!t.seen && (
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 10, background: "#12131a", padding: 8 }}>
+            {CREATURE_SPRITES.klutz && <PixelSprite sprite={CREATURE_SPRITES.klutz} scale={1} />}
+            <div style={{ fontSize: 13, lineHeight: 1.45, color: "#d6f0a8" }}>
+              &ldquo;A tavern! Down here! It&apos;s a wreck… we&apos;ll need <b>metal bars, planks and nails</b> to fix it.
+              And look at that poster — someone wants the <b>Cyclops</b>!&rdquo;
+              <div style={{ marginTop: 6 }}><button className="pixel-btn" onClick={game.seeTavern}>&ldquo;Let&apos;s fix it up.&rdquo;</button></div>
+            </div>
+          </div>
+        )}
+
+        {/* The repair: have / need, then the button. */}
+        {!t.repaired ? (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+              {needs.map(({ key, have, need }) => (
+                <span key={key} className="pixel-font" style={{ fontSize: 13, color: have >= need ? "#5ee08a" : "#ff8a80" }}>
+                  {MATERIALS[key].icon} {have}/{need} {MATERIALS[key].name.toLowerCase()}
+                </span>
+              ))}
+            </div>
+            <button className="pixel-btn" disabled={!canRepair(t, game.materials)} onClick={game.repairTavern}>🔨 Repair the tavern</button>
+          </div>
+        ) : (
+          <div className="pixel-font" style={{ marginTop: 10, fontSize: 13, color: "#5ee08a" }}>Repaired. The bounty and visitors are coming soon.</div>
+        )}
+      </div>
+    </DenFrame>
+  );
+}

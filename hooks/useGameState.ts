@@ -13,7 +13,7 @@ import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf } from "@/lib/dungeon/run";
 import { collectKlutz, klutzGainXp, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
-import { clearTavern, loadTavern, tavernQuestDue, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { blast, clearTavern, loadTavern, repair, tavernQuestDue, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
@@ -302,6 +302,17 @@ export function useGameState(initialTab: TabKey = "all") {
     inventory.filter(isCreatureDrop).map((d) => clampLevel((d as CreatureOrItemDrop).level)), clampLevel(klutz.level),
     !!klutz.expedition && !klutz.expedition.collected);
   const acceptTavernQuest = () => setTavern(updateTavern((t) => ({ ...t, accepted: true })));
+  const blastRubble = () => setTavern(updateTavern(blast));
+  const seeTavern = () => setTavern(updateTavern((t) => ({ ...t, seen: true })));
+  // The repair takes its materials once: the tavern's marked repaired as
+  // they're taken, and a second go finds it already done.
+  function repairTavern(): boolean {
+    const done = repair(loadTavern(), materials);
+    if (!done) return false;
+    setTavern(updateTavern(() => done.tavern));
+    setMaterials(done.materials);
+    return true;
+  }
 
   function sendKlutzOff() {
     // What he's wearing decides what he might find.
@@ -702,7 +713,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, seeTavern, repairTavern, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

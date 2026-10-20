@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL } from "../lib/tavern";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -83,5 +83,36 @@ describe("the tavern questline: the dynamite's storehouse", () => {
       expect(takeDynamite(taken)).toBe(taken);
     }
     expect(guarded).toBeLessThan(30); // (some guarded, at the usual odds; most not)
+  });
+});
+
+describe("the tavern questline: the rubble and the repair", () => {
+  it("the rubble can be blown once, and only with the dynamite", () => {
+    expect(canBlast({ accepted: true })).toBe(false);
+    expect(canBlast({ accepted: true, dynamite: true })).toBe(true);
+    const t = blast({ accepted: true, dynamite: true });
+    expect(t.blasted).toBe(true);
+    expect(canBlast(t)).toBe(false);
+    expect(blast({ accepted: true })).toEqual({ accepted: true }); // no dynamite: nothing happens
+  });
+
+  it("the repair costs 5 metal bars, 20 planks and 5 nails, and shows have/need", () => {
+    expect(REPAIR_COST).toEqual({ metal_bars: 5, planks: 20, nails: 5 });
+    expect(repairNeeds({ planks: 30, nails: 2 })).toEqual([
+      { key: "metal_bars", have: 0, need: 5 }, { key: "planks", have: 30, need: 20 }, { key: "nails", have: 2, need: 5 },
+    ]);
+  });
+
+  it("is blocked while you're short or the room's still shut", () => {
+    const open = { dynamite: true, blasted: true };
+    expect(repair(open, { metal_bars: 5, planks: 19, nails: 5 })).toBeNull();
+    expect(repair({ dynamite: true }, { metal_bars: 5, planks: 20, nails: 5 })).toBeNull();
+  });
+
+  it("takes the materials exactly once", () => {
+    const done = repair({ dynamite: true, blasted: true }, { metal_bars: 6, planks: 20, nails: 9, essence_stones: 2 })!;
+    expect(done.tavern.repaired).toBe(true);
+    expect(done.materials).toEqual({ metal_bars: 1, planks: 0, nails: 4, essence_stones: 2 });
+    expect(repair(done.tavern, { metal_bars: 50, planks: 50, nails: 50 })).toBeNull();
   });
 });
