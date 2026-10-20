@@ -15,6 +15,7 @@ import { useEscape } from "@/hooks/useEscape";
 import { createDen, project, ANCHORS, OBJ, W, H, RES, ANNEX_DX, ANNEX_DY, HAZE, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor, loadArt, loadPixels, loadFrames, type LoadedArt, type Pixels } from "@/lib/sprites/art";
+import { drawnScale } from "@/lib/uiScale";
 
 type Spot = { label: string; href?: string; soon?: string };
 
@@ -132,7 +133,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     world.style.transform = `translate(${view.current.x}px, ${view.current.y}px) scale(${s})`;
     world.style.setProperty("--inv", String(1 / s)); // labels stay the same size
     const c = canvasRef.current;
-    if (c) setCrisp(vw * s * window.devicePixelRatio >= c.width); // each room's canvas is the viewport's width
+    if (c) setCrisp(vw * s * window.devicePixelRatio * drawnScale(box) >= c.width); // each room's canvas is the viewport's width (drawn bigger by Screen size)
   }
   // Zoom to s, keeping the screen point (px, py) where it is.
   function zoomAt(s: number, px: number, py: number) {
@@ -180,19 +181,23 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     if (!box) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const r = box.getBoundingClientRect();
-      zoomAt(view.current.s * Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
+      const r = box.getBoundingClientRect(), k = drawnScale(box);
+      zoomAt(view.current.s * Math.exp(-e.deltaY * 0.0015), (e.clientX - r.left) / k, (e.clientY - r.top) / k);
     };
     box.addEventListener("wheel", onWheel, { passive: false });
     return () => box.removeEventListener("wheel", onWheel);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // One finger (or the mouse) drags; two fingers pinch (and drag).
+  // One finger (or the mouse) drags; two fingers pinch (and drag). Pointer
+  // positions are kept in the viewport's own pixels (Settings → Screen size
+  // draws it scaled).
+  const at = (e: React.PointerEvent) => { const k = drawnScale(viewportRef.current!); return { x: e.clientX / k, y: e.clientY / k }; };
+  const localRect = (el: HTMLElement) => { const r = el.getBoundingClientRect(), k = drawnScale(el); return { left: r.left / k, top: r.top / k }; };
   function startGesture() {
     const box = viewportRef.current;
     if (!box) return;
-    const r = box.getBoundingClientRect();
+    const r = localRect(box);
     const pts = [...pointers.current.values()];
     const mid = pts.length > 1 ? { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 } : pts[0];
     const v = view.current;
@@ -204,14 +209,14 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   function onDown(e: React.PointerEvent) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     if (pointers.current.size === 0) { dragged.current = false; gesture.current = null; }
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    pointers.current.set(e.pointerId, at(e));
     startGesture();
   }
   function onMove(e: React.PointerEvent) {
     if (e.pointerType === "mouse" && pointers.current.size === 0) { setHovered(objectAt(e)); return; }
     if (!pointers.current.has(e.pointerId) || !gesture.current) return;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const r = viewportRef.current!.getBoundingClientRect();
+    pointers.current.set(e.pointerId, at(e));
+    const r = localRect(viewportRef.current!);
     const g = gesture.current;
     const pts = [...pointers.current.values()];
     const mid = pts.length > 1 ? { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 } : pts[0];

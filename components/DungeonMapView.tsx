@@ -19,6 +19,7 @@ import { useId, useLayoutEffect, useRef } from "react";
 import { ROOM_INFO, runPosition, nextRooms, type DungeonRun } from "@/lib/dungeon/run";
 import { MAP_W, MAP_H, SIGHT_RADIUS, litRadius, distance, heading, knownRooms, linkKey, type MapNode } from "@/lib/dungeon/map";
 import type { RoomKind } from "@/lib/dungeon/run";
+import { drawnScale } from "@/lib/uiScale";
 
 const R = 5.6;              // room radius (map units)
 const LARGE_R = R * 1.8;    // a large room's
@@ -152,7 +153,8 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
       onPointerMove={(e) => {
         const d = drag.current;
         if (!d) return;
-        const dx = e.clientX - d.x, dy = e.clientY - d.y;
+        const k = drawnScale(box.current!); // (Settings → Screen size draws it scaled)
+        const dx = (e.clientX - d.x) / k, dy = (e.clientY - d.y) / k;
         if (Math.abs(dx) + Math.abs(dy) > 4) d.moved = true;
         box.current!.scrollLeft = d.left - dx;
         box.current!.scrollTop = d.top - dy;

@@ -28,7 +28,8 @@ iOS/Android one day. Right now it's a single-player **browser game with no backe
      `codex_creatures_save_v2` (lib/save.ts), `codex_creatures_registry_v2`
      (lib/barcodeRegistry.ts), `codex_creatures_battles_v1` (lib/battleHistory.ts),
      `codex_creatures_backup_v1` (lib/saveFile.ts), and the save slots `codex_creatures_slots_v1`
-     plus `codex_creatures_slot_<id>` (lib/saveSlots.ts).
+     plus `codex_creatures_slot_<id>` (lib/saveSlots.ts). Per device, not in saves:
+     `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size).
    - New save fields must be optional, with a default for old saves.
    - Exported save files must stay importable: bump `SAVE_FILE_VERSION` (lib/saveFile.ts) only
      together with a reader for the older version.

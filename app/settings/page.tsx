@@ -3,7 +3,8 @@
 // Settings: your save. Export it to a file (a backup, or to carry to another
 // computer), import one, or go back to the backup made before your last
 // import. The rules (checking a file, the automatic backup, putting things
-// back if writing fails) live in lib/saveFile.ts.
+// back if writing fails) live in lib/saveFile.ts. Also: Screen size (this
+// device only: lib/uiScale.ts).
 //
 // This screen doesn't load the game itself (no useGameState), so nothing
 // here saves the game behind your back while you swap saves.
@@ -18,6 +19,8 @@ import {
   checkSaveFile, exportSave, importSave, readBackup, restoreBackup, saveFileName, summarise,
   type SaveFile, type SaveSummary,
 } from "@/lib/saveFile";
+import { writeUiScale, UI_SCALES, UI_SCALE_EVENT } from "@/lib/uiScale";
+import { useUiScale } from "@/hooks/useUiScale";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const GOOD = "#5ee08a", BAD = "#ff8a80";
@@ -44,6 +47,12 @@ export default function SettingsPage() {
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false); // loading a save: the game restarts with it
   const fileInput = useRef<HTMLInputElement>(null);
+  const scale = useUiScale();
+  function resize(step: number) {
+    const i = Math.min(UI_SCALES.length - 1, Math.max(0, UI_SCALES.indexOf(scale) + step));
+    writeUiScale(window.localStorage, UI_SCALES[i]);
+    window.dispatchEvent(new Event(UI_SCALE_EVENT));
+  }
 
   function refresh() {
     setCurrent(summarise(exportSave(window.localStorage)));
@@ -135,6 +144,24 @@ export default function SettingsPage() {
         </div>
         <input ref={fileInput} type="file" accept=".json,application/json" onChange={picked} style={{ display: "none" }} />
         <Link href="/start" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 8 }}>🗂️ Switch save / New game</Link>
+      </div>
+
+      <div className="stone-panel" style={panel}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>🔍 Screen size</div>
+          <Help title="Screen size">
+            <ul>
+              <li>Makes <b>everything</b> in the game bigger or smaller, if it looks too small (or too big) on this screen.</li>
+              <li>A laptop starts at <b>175%</b>, a phone at <b>100%</b>.</li>
+              <li>It&apos;s for <b>this device only</b>: your phone and laptop each keep their own, and it isn&apos;t in exported saves.</li>
+            </ul>
+          </Help>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, marginTop: 8 }}>
+          <button className="pixel-btn" onClick={() => resize(-1)} disabled={scale <= UI_SCALES[0]}>➖ Smaller</button>
+          <span className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0", minWidth: 64, textAlign: "center" }}>{Math.round(scale * 100)}%</span>
+          <button className="pixel-btn" onClick={() => resize(1)} disabled={scale >= UI_SCALES[UI_SCALES.length - 1]}>➕ Bigger</button>
+        </div>
       </div>
 
       {message && (

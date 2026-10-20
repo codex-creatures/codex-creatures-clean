@@ -496,7 +496,7 @@ fields optional with defaults.
 
 - **Mobile-first**, for iOS/Android later. Touch only: tap targets of 44px or more, no hover-only
   information, safe areas.
-- **One fixed phone-sized screen** (`components/GameScreen.tsx`). On a laptop: no border, full window height, 9:16 wide, centred.
+- **One fixed phone-sized screen** (`components/GameScreen.tsx`). On a laptop: no border, full window height, 9:16 wide, centred. **Screen size** (Settings, `lib/uiScale.ts`, built 2026-10-20): everything inside is laid out smaller and drawn scaled up; per device, a laptop starts at 175% (the user found 175% browser zoom the right size), a phone at 100%.
   - The page never grows or shrinks between areas; long lists scroll inside panels.
   - Actions sit in docks built into the screen, not floating buttons.
   - In battle, the moves fill the bottom ~30% of the screen. Above them, a one-on-one fight's room

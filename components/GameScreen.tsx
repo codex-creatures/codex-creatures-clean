@@ -7,16 +7,25 @@
 // sheets and modals open inside the screen (it's their containing block,
 // and the size for cqw/cqh units). See .game-screen in globals.css.
 // The dev tools (/lab, /simulator) skip it and use the whole window.
+//
+// Screen size (Settings, lib/uiScale.ts): everything inside is laid out on a
+// smaller (or bigger) screen and then drawn scaled up to fill this one, so
+// it all grows together and still fits.
 
 import { usePathname } from "next/navigation";
+import { useUiScale } from "@/hooks/useUiScale";
 
 export default function GameScreen({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const scale = useUiScale();
   if (path.startsWith("/lab") || path.startsWith("/simulator")) return <>{children}</>;
   return (
     <div className="game-shell">
       <div className="game-screen">
-        <div className="screen-body">{children}</div>
+        <div className="screen-scale" style={scale === 1 ? undefined
+          : { width: `calc(100% / ${scale})`, height: `calc(100% / ${scale})`, transform: `scale(${scale})` }}>
+          <div className="screen-body">{children}</div>
+        </div>
       </div>
     </div>
   );

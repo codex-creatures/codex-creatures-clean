@@ -15,9 +15,10 @@ import { useRef, useState } from "react";
 import type { Sprite } from "@/lib/sprites/pixels";
 import PixelSprite from "@/components/PixelSprite";
 import { ICON } from "@/components/ContainerLoot";
+import { drawnScale } from "@/lib/uiScale";
 
 export type DragLook = { sprite?: Sprite; icon?: string };
-export type Dragging<T> = DragLook & { payload: T; x: number; y: number; sx: number; sy: number; ox: number; oy: number; on: boolean };
+export type Dragging<T> = DragLook & { payload: T; x: number; y: number; sx: number; sy: number; ox: number; oy: number; k: number; on: boolean };
 
 // What's under a point (the ghost doesn't catch the pointer).
 export const dropTargetAt = (x: number, y: number) =>
@@ -36,7 +37,7 @@ export function useDragDrop<T>({ onDrop, onTap }: { onDrop: (payload: T, target:
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     live.dragged = false;
     const r = box?.getBoundingClientRect();
-    const d = { payload, ...look, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, ox: r?.left ?? 0, oy: r?.top ?? 0, on: false };
+    const d = { payload, ...look, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, ox: r?.left ?? 0, oy: r?.top ?? 0, k: box ? drawnScale(box) : 1, on: false };
     live.drag = d; setDrag(d);
   };
   const onPointerMove = (e: React.PointerEvent) => {
@@ -59,7 +60,7 @@ export function useDragDrop<T>({ onDrop, onTap }: { onDrop: (payload: T, target:
 
   const ghost = drag?.on ? (
     <div aria-hidden style={{ position: "absolute", left: 0, top: 0, width: 64, height: 64, pointerEvents: "none", zIndex: 300,
-      transform: `translate(${drag.x - drag.ox - 32}px, ${drag.y - drag.oy - 44}px) scale(1.15)`, filter: "drop-shadow(0 6px 6px rgba(0,0,0,0.6))",
+      transform: `translate(${(drag.x - drag.ox) / drag.k - 32}px, ${(drag.y - drag.oy) / drag.k - 44}px) scale(1.15)`, filter: "drop-shadow(0 6px 6px rgba(0,0,0,0.6))",
       display: "flex", alignItems: "center", justifyContent: "center" }}>
       {drag.sprite ? <PixelSprite sprite={drag.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 32 }}>{drag.icon}</span>}
     </div>
