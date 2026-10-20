@@ -345,6 +345,12 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - **Win:** the creature goes to the cage, and he brings home its weapon plus one armour piece.
   - **Lose:** he heals in the pool (1 HP every 10 s) before he can go out again.
   - His gear is locked while he's away.
+- ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he's outside the
+  triangle. Nothing counters him and his moves never do less; a move of his that would counter the
+  target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His %s are even (9 each), so his weapon and
+  the codexes you teach him decide how he fights. He can learn any class's codex, plus his own
+  race's (Rabid Bite), and starts with Slash, Heavy Blow, Jab and Stone Throw. Sim (2,000 hunts,
+  Lv 1–30): 67–72% wins, as before, but about 50% against magic instead of 26%.
 - ✅ **Finds:** 35% of trips bring home gear for a slot he wears. It's **never rarer than his own
   piece** (the same rarity only 5%, rising slightly with his level).
 - ✅ **Levels:** only won hunts give XP. A first catch reaches Lv 2; a find gives 20. Scrolls work on

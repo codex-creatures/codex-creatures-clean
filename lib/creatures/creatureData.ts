@@ -85,6 +85,7 @@ export type CreatureTemplate = {
   skills: Skill[];
   flavour: string;
   companion?: boolean; // story companion: not found by scanning, not in the collection count
+  neutral?: boolean;   // outside the triangle, and can learn any class's codex (Klutz)
   boss?: boolean;      // part of a dungeon boss: never found, never owned
 };
 
@@ -155,7 +156,7 @@ export const RACE_MOVES: Skill[] = [
 export const BASIC_CODEX_MAX_DAMAGE = 20;
 export const BASIC_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage <= BASIC_CODEX_MAX_DAMAGE);
 export const STRONG_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage > BASIC_CODEX_MAX_DAMAGE);
-const classMovesFor = (c: CreatureTemplate): Skill[] => ALL_SKILLS.filter((m) => m.type === c.cls);
+const classMovesFor = (c: CreatureTemplate): Skill[] => ALL_SKILLS.filter((m) => c.neutral || m.type === c.cls);
 
 // Boss-only moves (see lib/creatures/bosses.ts). Never learnable.
 export const BOSS_MOVES: Skill[] = [
@@ -230,10 +231,13 @@ export const RETIRED_CREATURES: CreatureTemplate[] = [
 // Klutz: the dopey goblin who drags you into the Den. He's your helper, not
 // one of your creatures: gear him up and he'll hunt in the Labyrinth for
 // you (lib/klutz.ts). Starts as an Uncommon.
+// He's neutral (outside the triangle, any class's codex) with even %s, so his
+// weapon and the codexes you teach him decide how he fights. He starts as a
+// brawler; other styles come from codexes.
 export const KLUTZ: CreatureTemplate = {
-  id: "klutz", name: "Klutz", race: "underdweller", rarity: "uncommon", baseHp: 80, companion: true, cls: "melee",
-  proficiency: { atk: 18, rng: 10, mag: 0, agil: 8, mdef: 10, rdef: 8, magdef: 9 },
-  skills: s("Slash", "Bolt", "Heavy Blow", "Stone Throw"),
+  id: "klutz", name: "Klutz", race: "underdweller", rarity: "uncommon", baseHp: 80, companion: true, cls: "melee", neutral: true,
+  proficiency: { atk: 9, rng: 9, mag: 9, agil: 9, mdef: 9, rdef: 9, magdef: 9 },
+  skills: s("Slash", "Heavy Blow", "Jab", "Stone Throw"),
   flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. Pay him, gear him, and he'll go hunting for you.",
 };
 
@@ -288,7 +292,7 @@ export function defaultMoveNames(c: CreatureTemplate): string[] {
 
 // Can this creature learn a move from a codex? Learnable moves: anyone.
 // Race moves: only creatures of that race. Basic and strong moves: only
-// creatures of that move's class.
+// creatures of that move's class (a neutral one, Klutz: any class).
 export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
   if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
   return [...raceMovesFor(c), ...classMovesFor(c)].some((m) => m.name === moveName);

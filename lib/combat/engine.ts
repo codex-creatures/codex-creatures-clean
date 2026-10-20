@@ -27,6 +27,7 @@ export type Fighter = {
   energy: number;
   proficiency: CreatureProficiency;
   cls: CombatClass; // primary class (the triangle)
+  neutral?: boolean; // outside the triangle (Klutz): see triangleFor
   skills: Skill[];
   weapon: CombatItem;
   armor: CombatItem;
@@ -106,6 +107,17 @@ export function triangleModifier(moveStyle: CombatClass, targetClass: CombatClas
   return 1;
 }
 
+// A neutral fighter (Klutz, who hunts alone and can't swap out of a bad
+// matchup) is outside the triangle: nothing counters him, and his moves never
+// do less. A move of his that would counter the target still does
+// NEUTRAL_COUNTER, so training him in every style (by his weapon) pays off.
+export const NEUTRAL_COUNTER = 1.25;
+export function triangleFor(moveStyle: CombatClass, attacker: Fighter, defender: Fighter): number {
+  if (attacker.neutral) return BEATS[moveStyle] === defender.cls && !defender.neutral ? NEUTRAL_COUNTER : 1;
+  if (defender.neutral) return 1;
+  return triangleModifier(moveStyle, defender.cls);
+}
+
 // ── Damage types ────────────────────────────────────────
 // mult: the hit after armour; pen: share of armour it ignores;
 // maxHp: arcane moves also take this share of the target's max HP per
@@ -177,7 +189,7 @@ export function calcDamage(
   const atkStance    = stanceDamageDealt(attacker.stance, moveType);
   const defStance    = stanceDamageTaken(defender.stance, moveType);
   const elemental    = elementalModifier(attacker.elemental, defender.elemental);
-  const triangle     = triangleModifier(moveType, defender.cls);
+  const triangle     = triangleFor(moveType, attacker, defender);
 
   // Armour defence counts at ARMOR_DEFENCE_WEIGHT. Penetration and precise
   // hits each ignore a share of what's left.

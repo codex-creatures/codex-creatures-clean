@@ -58,6 +58,7 @@ export function buildFighter(
     stance: "neutral",
     elemental: null,
     ...(armorSet ? { armorSet } : {}),
+    ...(creature.neutral ? { neutral: true } : {}),
   };
 }
 

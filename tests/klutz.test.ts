@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { KLUTZ } from "../lib/creatures/creatureData";
+import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
+import { calcDamage, triangleFor, NEUTRAL_COUNTER, type Fighter } from "../lib/combat/engine";
 import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, SAME_RARITY_CHANCE, findRarity, type KlutzState } from "../lib/klutz";
 
 // A small seeded random number generator, so expeditions are repeatable.
@@ -110,5 +111,38 @@ describe("Klutz's levels", () => {
   it("his first catch (the weakest there is) takes him to level 2", () => {
     expect(xpForEnemy(1, "common") + CAPTURE_XP).toBeGreaterThanOrEqual(xpToNext(1));
     expect(klutzGainXp({}, xpForEnemy(1, "common") + CAPTURE_XP).state.level).toBe(2);
+  });
+});
+
+describe("Klutz is neutral", () => {
+  const foe = (cls: "melee" | "ranged" | "magic") => ({ ...buildFighter(CREATURE_BY_ID.moss_wolf), cls });
+  const hit = (move: string, a: Fighter, d: Fighter) => calcDamage(MOVE_BY_NAME[move], a, d, false).damage;
+
+  it("nothing counters him, and his moves never do less", () => {
+    const k = plain();
+    expect(triangleFor("magic", foe("magic"), k)).toBe(1);
+    expect(triangleFor("melee", k, foe("magic"))).toBe(1);
+    expect(triangleFor("ranged", k, foe("ranged"))).toBe(1);
+  });
+
+  it("a move of his that counters the target does NEUTRAL_COUNTER", () => {
+    const k = plain();
+    expect(triangleFor("ranged", k, foe("magic"))).toBe(NEUTRAL_COUNTER);
+    expect(triangleFor("melee", k, foe("ranged"))).toBe(NEUTRAL_COUNTER);
+    expect(hit("Stone Throw", k, foe("magic"))).toBeGreaterThan(hit("Stone Throw", k, foe("melee")));
+  });
+
+  it("other creatures keep the full triangle", () => {
+    expect(triangleFor("magic", foe("magic"), foe("melee"))).toBe(1.5);
+    expect(triangleFor("melee", foe("melee"), foe("magic"))).toBe(0.5);
+  });
+
+  it("he has even %s, starts with 3 melee moves and Stone Throw, and can learn any class's codex but not other races' moves", () => {
+    expect(new Set(Object.values(KLUTZ.proficiency)).size).toBe(1);
+    expect(defaultMoveNames(KLUTZ)).toEqual(["Slash", "Heavy Blow", "Jab", "Stone Throw"]);
+    for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(true);
+    for (const m of ["Pounce", "Barrage", "Mirage"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
+    expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Firebolt")).toBe(false);
+    expect(resolveMoves(KLUTZ, ["Firebolt", "Bolt"]).map((m) => m.name)).toEqual(["Firebolt", "Bolt"]);
   });
 });
