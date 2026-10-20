@@ -150,9 +150,9 @@ function Piece({ label, item }: { label: string; item?: CreatureOrItemDrop }) {
   return (
     <div style={{ display: "grid", justifyItems: "center", gap: 3, textAlign: "center", minWidth: 0 }}>
       <span className="pixel-font" style={{ fontSize: 11, color: MUTED, textTransform: "uppercase" }}>{label}</span>
-      <span style={{ width: 52, height: 52, display: "flex", alignItems: "center", justifyContent: "center",
+      <span style={{ width: 78, height: 78, display: "flex", alignItems: "center", justifyContent: "center",
         background: rc ? `radial-gradient(circle, ${rc.glow}, #101117 75%)` : "#101117", border: `3px solid ${rc ? rc.border : "#2f3340"}` }}>
-        {sp ? <PixelSprite sprite={sp} scale={2.5} /> : <span style={{ fontSize: 20, color: "#3a3e4b" }}>{item ? "📦" : "∅"}</span>}
+        {sp ? <PixelSprite sprite={sp} scale={3.75} /> : <span style={{ fontSize: 30, color: "#3a3e4b" }}>{item ? "📦" : "∅"}</span>}
       </span>
       <b style={{ fontSize: 12, color: rc ? rc.text : MUTED, overflowWrap: "anywhere" }}>{item ? item.name : "Nothing"}</b>
       {item ? <GearStatLine item={item} /> : <div style={{ fontSize: 12, color: MUTED }}>No stats</div>}

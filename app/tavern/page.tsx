@@ -18,7 +18,7 @@ import { Coin } from "@/components/GoldCount";
 import { MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
-import PixelSprite from "@/components/PixelSprite";
+import PixelSprite, { MaterialIcon } from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
@@ -83,7 +83,7 @@ export default function TavernPage() {
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
               {needs.map(({ key, have, need }) => (
                 <span key={key} className="pixel-font" style={{ fontSize: 13, color: have >= need ? "#5ee08a" : "#ff8a80" }}>
-                  {MATERIALS[key].icon} {have}/{need} {MATERIALS[key].name.toLowerCase()}
+                  <MaterialIcon k={key} /> {have}/{need} {MATERIALS[key].name.toLowerCase()}
                 </span>
               ))}
             </div>
@@ -136,7 +136,7 @@ export default function TavernPage() {
                   {MATERIAL_KEYS.filter((k) => countMaterial(game.materials, k) > 0).map((k) => (
                     <button key={k} className="card-btn" style={{ minHeight: 44, justifyContent: "space-between", gap: 8, background: armed === k ? "#6e1f18" : undefined }}
                       onClick={() => { if (armed !== k) { setArmed(k); return; } game.sellMaterialToTavern(k); }}>
-                      <span style={{ flex: 1 }}>{MATERIALS[k].icon} 1 {MATERIALS[k].name.toLowerCase()} <span style={{ fontSize: 12, color: MUTED }}>(have {countMaterial(game.materials, k)})</span></span>
+                      <span style={{ flex: 1 }}><MaterialIcon k={k} /> 1 {MATERIALS[k].name.toLowerCase()} <span style={{ fontSize: 12, color: MUTED }}>(have {countMaterial(game.materials, k)})</span></span>
                       <span className="pixel-font" style={{ color: "#f1d9a0", flexShrink: 0 }}>{armed === k ? "Sell?" : ""} <Coin /> {materialOffer(k)}</span>
                     </button>
                   ))}

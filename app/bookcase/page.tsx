@@ -11,6 +11,7 @@ import DenFrame from "@/components/DenFrame";
 import CodexShelf from "@/components/CodexShelf";
 import Help from "@/components/Help";
 import { useGameState } from "@/hooks/useGameState";
+import { MaterialIcon } from "@/components/PixelSprite";
 import { BOOKCASE_BUILT, MATERIALS, SCHEMATICS, bookcaseSize, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
 import { tavernPlan } from "@/lib/tavern";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -52,7 +53,7 @@ export default function BookcasePage() {
                 const have = countMaterial(game.materials, k);
                 return (
                   <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
-                    {MATERIALS[k].icon} {have}/{n} {MATERIALS[k].name.toLowerCase()}
+                    <MaterialIcon k={k} /> {have}/{n} {MATERIALS[k].name.toLowerCase()}
                   </span>
                 );
               })}

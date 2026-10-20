@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { klutzStatus } from "@/lib/klutz";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, MaterialIcon } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import ClassBadge from "@/components/ClassBadge";
 import AbilityTag from "@/components/AbilityTag";
@@ -137,7 +137,7 @@ function CageUpgrade({ game }: { game: ReturnType<typeof useGameState> }) {
               const have = countMaterial(game.materials, k);
               return (
                 <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
-                  {MATERIALS[k].icon} {have}/{n} {MATERIALS[k].name.toLowerCase()}
+                  <MaterialIcon k={k} /> {have}/{n} {MATERIALS[k].name.toLowerCase()}
                 </span>
               );
             })}

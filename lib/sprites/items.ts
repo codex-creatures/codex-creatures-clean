@@ -4,6 +4,7 @@
 
 import type { Sprite } from "./pixels";
 import { withArt } from "./art";
+import type { MaterialKey } from "../items/materials";
 import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey } from "../items/armor";
 
@@ -497,6 +498,8 @@ const icon = (file: string): Sprite => withArt(["."], { src: `/sprites/items/${f
 export const GOLD_SPRITE = icon("gold");
 export const POTION_SPRITES: Record<"potion" | "lesser", Sprite> = { potion: icon("potion"), lesser: icon("lesser_potion") };
 export const BACKPACK_SPRITE = icon("backpack");
+// Building materials (essence stones still show as their emoji).
+export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars") };
 // …and the rarity their glow shows in an inventory: gold and the backpack are
 // treasure (legendary); a full potion rare, a lesser one common.
 export const GOLD_RARITY = "legendary" as const;

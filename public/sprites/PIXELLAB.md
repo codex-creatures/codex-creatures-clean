@@ -72,6 +72,9 @@ the PNG here.
 | items/temporal_maul.png | gallery:8adaf146-d462-4c1f-9656-640c8eaa3ee9 |
 | items/thunderhead_crossbow.png | gallery:3db30c0e-b7f1-4570-b0f0-160376389ba5 |
 | items/void_scythe.png | gallery:a9be5a55-fec4-4883-84ab-30058c0d3483 |
+| items/materials/planks.png | gallery:cc2bd7c7-ed6e-5e7c-9c38-ed9d42157cdc |
+| items/materials/nails.png | gallery:77106efa-394b-5c56-8070-516efb2810da |
+| items/materials/metal_bars.png | gallery:290aace3-eeb7-5814-81e4-9b86a415eaf6 |
 | items/weeping_greatbow.png | gallery:b5ff76e0-5df4-4ac2-a924-a694a85e5592 |
 | items/armor/chest_arcane_nullifier.png | gallery:3f9fe357-3b21-4bf9-91d4-36eae197226b |
 | items/armor/chest_arrowward_mantle.png | gallery:95b8f15d-e64f-4a26-93c9-a2dc10e9b3d0 |

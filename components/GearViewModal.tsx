@@ -37,8 +37,8 @@ export default function GearViewModal({ item, slotName, creatures, onSwap, why, 
       <div className="stone-panel" onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 380, maxHeight: "90cqh", overflowY: "auto", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${rc.border}, 0 0 30px ${rc.glow}` }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ width: 96, height: 96, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${rc.glow}, #101117 75%)`, border: `3px solid ${rc.text}` }}>
-            {sprite ? <PixelSprite sprite={sprite} scale={4} /> : <span style={{ fontSize: 36 }}>📦</span>}
+          <div style={{ width: 144, height: 144, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: `radial-gradient(circle, ${rc.glow}, #101117 75%)`, border: `3px solid ${rc.text}` }}>
+            {sprite ? <PixelSprite sprite={sprite} scale={6} /> : <span style={{ fontSize: 54 }}>📦</span>}
           </div>
           <div className="pixel-font" style={{ fontSize: 18, color: rc.text, marginTop: 10 }}>{item.name}</div>
           <div className="pixel-font" style={{ fontSize: 12, color: MUTED, textTransform: "capitalize", marginTop: 2 }}>{item.rarity} {slotName}</div>

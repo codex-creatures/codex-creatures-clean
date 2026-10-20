@@ -7,7 +7,8 @@
 import { useMemo, useState } from "react";
 import { fineGrid, outlined, runs, type Sprite } from "@/lib/sprites/pixels";
 import { artFor } from "@/lib/sprites/art";
-import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES, POTION_SPRITES } from "@/lib/sprites/items";
+import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES, POTION_SPRITES, MATERIAL_SPRITES } from "@/lib/sprites/items";
+import { MATERIALS, type MaterialKey } from "@/lib/items/materials";
 import { CREATURE_SPRITES, EGG } from "@/lib/sprites/creatures";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -45,6 +46,7 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
 // The sprite for a weapon or armour drop (undefined for other items).
 export function itemSprite(item: CreatureOrItemDrop): Sprite | undefined {
   if (item.potion) return POTION_SPRITES[item.potion];
+  if (item.material && MATERIAL_SPRITES[item.material]) return MATERIAL_SPRITES[item.material];
   if (item.itemKey) return WEAPON_SPRITES[item.itemKey];
   if (item.armorKey) {
     // Each piece has its own look: a helmet, a chestpiece, leg armour.
@@ -62,4 +64,10 @@ export const creatureSprite = (creatureId?: string): Sprite => (creatureId && CR
 // is a Healing Potion, the little vial a Lesser one).
 export function PotionIcon({ kind }: { kind: "potion" | "lesser" }) {
   return <PixelSprite sprite={POTION_SPRITES[kind]} scale={1.25} style={{ verticalAlign: "middle", marginRight: 4 }} />;
+}
+
+// A material's picture for a line of text (its emoji if it has no art).
+export function MaterialIcon({ k }: { k: MaterialKey }) {
+  const sp = MATERIAL_SPRITES[k];
+  return sp ? <PixelSprite sprite={sp} scale={1.25} style={{ verticalAlign: "middle", marginRight: 2 }} /> : <>{MATERIALS[k].icon}</>;
 }

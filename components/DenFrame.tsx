@@ -11,6 +11,7 @@
 
 import Link from "next/link";
 import GoldCount from "./GoldCount";
+import { MaterialIcon } from "./PixelSprite";
 import { MATERIALS, MATERIAL_KEYS, type Materials } from "@/lib/items/materials";
 
 export default function DenFrame({
@@ -48,7 +49,7 @@ export default function DenFrame({
           {/* Every material, even at 0, so nothing shifts as counts change. */}
           {MATERIAL_KEYS.map((k) => (
             <span key={k} title={MATERIALS[k].name} style={{ opacity: materials[k] ? 1 : 0.4, whiteSpace: "nowrap" }}>
-              {MATERIALS[k].icon} {materials[k] ?? 0}
+              <MaterialIcon k={k} /> {materials[k] ?? 0}
             </span>
           ))}
         </div>

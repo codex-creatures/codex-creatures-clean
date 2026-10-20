@@ -44,9 +44,9 @@ export default function GearCompare({ item, slotName, creatures, onEquip, equipL
     const sp = it && itemSprite(it);
     return (
       <div style={{ textAlign: "center", minWidth: 0 }}>
-        <div style={{ width: 54, height: 54, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center",
+        <div style={{ width: 81, height: 81, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center",
           background: rc ? `radial-gradient(circle, ${rc.glow}, #101117 75%)` : "#101117", border: `3px solid ${rc ? rc.border : "#2f3340"}` }}>
-          {sp ? <PixelSprite sprite={sp} scale={2.2} /> : <span style={{ color: MUTED, fontSize: 11 }}>{it ? "📦" : "empty"}</span>}
+          {sp ? <PixelSprite sprite={sp} scale={3.3} /> : <span style={{ color: MUTED, fontSize: 11 }}>{it ? "📦" : "empty"}</span>}
         </div>
         <div style={{ fontSize: 11, marginTop: 3, color: rc ? rc.text : MUTED, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it ? it.name : `No ${slotName}`}</div>
       </div>
