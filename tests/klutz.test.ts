@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, type Fighter } from "../lib/combat/engine";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, recallKlutz, toughening, MAX_ENCOUNTERS, TOUGHER_AFTER_MS, type KlutzState } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, recallKlutz, toughening, MAX_ENCOUNTERS, TOUGHER_AFTER_MS, type KlutzState,
+  pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST } from "../lib/klutz";
 import { xpToReach } from "../lib/creatures/levels";
 
 // A small seeded random number generator, so expeditions are repeatable.
@@ -163,6 +164,40 @@ describe("Klutz's levels", () => {
   });
 });
 
+describe("Klutz's skill points", () => {
+  it("he earns POINTS_PER_LEVEL a level over 1 (84 at level 15, about a Rare's total)", () => {
+    expect(pointsEarned(1)).toBe(0);
+    expect(pointsEarned(2)).toBe(POINTS_PER_LEVEL);
+    expect(pointsEarned(15)).toBe(84);
+    expect(pointsFree({ level: 3, points: { atk: 5 } })).toBe(2 * POINTS_PER_LEVEL - 5);
+  });
+
+  it("spending puts them on his %s; you can't overspend, or spend negative or part points", () => {
+    const k: KlutzState = { level: 3 };
+    const spent = spendPoints(k, { atk: 4, agil: 2 });
+    expect(klutzProficiency(spent.points)).toMatchObject({ atk: 4, agil: 2, rng: 0, mag: 0 });
+    expect(pointsFree(spent)).toBe(2 * POINTS_PER_LEVEL - 6);
+    expect(spendPoints(spent, { mag: 99 })).toBe(spent);
+    expect(spendPoints(spent, { mag: -1, atk: 2 })).toBe(spent);
+    expect(spendPoints(spent, { mag: 0.5 })).toBe(spent);
+    expect(klutzProficiency(spendPoints(spent, { atk: 1 }).points).atk).toBe(5);
+  });
+
+  it("the points are his %s in a fight, and a re-spec hands them all back", () => {
+    const k = spendPoints({ level: 5 }, { atk: 20 });
+    const f = buildFighter(KLUTZ, undefined, undefined, undefined, klutzProficiency(k.points), undefined, undefined, 5);
+    expect(f.proficiency.atk).toBe(20);
+    expect(f.proficiency.rng).toBe(0);
+    expect(pointsFree(respecKlutz(k))).toBe(pointsEarned(5));
+    expect(RESPEC_COST).toBe(1000);
+  });
+
+  it("sending him off keeps his points", () => {
+    const k = spendPoints({ level: 3 }, { atk: 3 });
+    expect(sendKlutz(k, plain(), t0, seeded(1)).points).toEqual(k.points);
+  });
+});
+
 describe("Klutz is neutral", () => {
   const foe = (cls: "melee" | "ranged" | "magic") => ({ ...buildFighter(CREATURE_BY_ID.moss_wolf), cls });
   const hit = (move: string, a: Fighter, d: Fighter) => calcDamage(MOVE_BY_NAME[move], a, d, false).damage;
@@ -186,8 +221,9 @@ describe("Klutz is neutral", () => {
     expect(triangleFor("melee", foe("melee"), foe("magic"))).toBe(0.5);
   });
 
-  it("he has even %s, starts with 3 melee moves and Stone Throw, and can learn any class's codex but not other races' moves", () => {
-    expect(new Set(Object.values(KLUTZ.proficiency)).size).toBe(1);
+  it("he's a Rare whose %s start at 0, starts with 3 melee moves and Stone Throw, and can learn any class's codex but not other races' moves", () => {
+    expect(KLUTZ.rarity).toBe("rare");
+    expect(Object.values(KLUTZ.proficiency).every((v) => v === 0)).toBe(true);
     expect(defaultMoveNames(KLUTZ)).toEqual(["Slash", "Heavy Blow", "Jab", "Stone Throw"]);
     for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(true);
     for (const m of ["Pounce", "Barrage", "Mirage"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);

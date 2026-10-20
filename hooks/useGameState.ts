@@ -8,11 +8,11 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, codexPrice, onBindle, BACKPACK, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, scrollDrop } from "@/lib/drops";
-import { collectKlutz, klutzGainXp, recallKlutz, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
 import { blast, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
@@ -25,11 +25,12 @@ import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canA
 // keyed by KLUTZ_DROP_ID) and what the creature window shows for him.
 export const KLUTZ_DROP_ID = "klutz-companion";
 export type LevelUp = { id: string; name: string; from: number; to: number };
-// His level and XP live in KlutzState (lib/klutz.ts); he starts at level 1.
-export function klutzDrop(level = 1, xp = 0): CreatureOrItemDrop {
+// His level, XP and spent % points live in KlutzState (lib/klutz.ts); he starts at level 1.
+export function klutzDrop(level = 1, xp = 0, points?: KlutzState["points"]): CreatureOrItemDrop {
   return {
     id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
     rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour, level, xp,
+    proficiency: klutzProficiency(points),
     createdAt: new Date().toISOString(),
   };
 }
@@ -293,8 +294,8 @@ export function useGameState(initialTab: TabKey = "all") {
     const l = equipment[KLUTZ_DROP_ID];
     const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
     const w = l?.weaponId ? byId.get(l.weaponId) : undefined;
-    return fighterFor(klutzDrop(klutz.level), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
-  }, [equipment, inventory, klutz.level]);
+    return fighterFor(klutzDrop(klutz.level, 0, klutz.points), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
+  }, [equipment, inventory, klutz.level, klutz.points]);
 
   // While Klutz is out, the gear he's wearing goes with him: nobody can take
   // it off him (or put anything on him) until he's back.
@@ -366,6 +367,17 @@ export function useGameState(initialTab: TabKey = "all") {
       return it ? [{ slot, rarity: it.rarity }] : [];
     });
     setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, worn));
+  }
+
+  // Spend % points on him (from his stats window).
+  function spendKlutzPoints(add: Partial<CreatureProficiency>) {
+    setKlutz((k) => spendPoints(k, add));
+  }
+  // A re-spec: all his points back, for RESPEC_COST gold. Returns whether it happened.
+  function respecKlutzPoints(): boolean {
+    if (!klutz.points || Object.values(klutz.points).every((v) => !v) || !spendGold(RESPEC_COST)) return false;
+    setKlutz((k) => respecKlutz(k));
+    return true;
   }
 
   // Call him back from the Labyrinth now, with what he's won so far.
@@ -823,6 +835,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

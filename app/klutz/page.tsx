@@ -18,7 +18,7 @@ import { canFind, clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop, Drop } from "@/lib/types";
 import {
-  klutzStatus, WALK_MIN_MS, WALK_MAX_MS, TOUGHER_AFTER_MS, HEAL_MS_PER_HP, FIND_CHANCE, CAPTURE_XP, FIND_XP, sameRarityChance, HUNT_BELOW, HUNT_ABOVE, type Expedition, type KlutzEncounter,
+  klutzStatus, pointsFree, WALK_MIN_MS, WALK_MAX_MS, TOUGHER_AFTER_MS, HEAL_MS_PER_HP, FIND_CHANCE, CAPTURE_XP, FIND_XP, sameRarityChance, HUNT_BELOW, HUNT_ABOVE, type Expedition, type KlutzEncounter,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -69,8 +69,8 @@ export default function KlutzPage() {
       {helping && (
         <>
           {/* (Open while he's away too, to look: his gear's with him, so no swapping.) */}
-          <button className="pixel-btn" style={{ marginTop: 12 }} onClick={() => setGearOpen(true)}>
-            📊 View stats
+          <button className={`pixel-btn${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} style={{ marginTop: 12 }} onClick={() => setGearOpen(true)}>
+            📊 View stats{pointsFree(game.klutz) > 0 && <> · <b>{pointsFree(game.klutz)}</b> points to spend</>}
           </button>
         </>
       )}

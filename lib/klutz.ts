@@ -51,6 +51,7 @@ import { ITEM_KEYS, type ItemKey } from "./items/ceilings";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { isCreatureDrop, type Drop } from "./types";
+import type { CreatureProficiency } from "./creatures/creatureData";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something (each time)
@@ -68,6 +69,11 @@ export const FIND_SAME_PER_LEVEL = 0.01; // each level over 1: this much likelie
 export const FIND_SAME_MAX = 0.3;
 export const CAPTURE_XP = 50;          // on top of the KO's XP, for bringing a creature home
 export const FIND_XP = 20;             // for each piece of gear he brings home (a catch's or a find)
+// His %s are points you spend: POINTS_PER_LEVEL for each level over 1 (so at
+// level 15 he has 84, about what a Rare creature has there), +1% each.
+// A re-spec hands them all back for RESPEC_COST gold.
+export const POINTS_PER_LEVEL = 6;
+export const RESPEC_COST = 1000;
 
 // What Klutz is wearing, slot by slot (for his finds).
 export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
@@ -106,7 +112,28 @@ export type KlutzState = {
   hp?: number;           // HP when he got back (missing = full)
   hpAt?: number;         // when that was
   expedition?: Expedition;
+  points?: Partial<CreatureProficiency>; // the % points you've spent on him (missing = none)
 };
+
+// ── His points ──
+const PROF_KEYS: (keyof CreatureProficiency)[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef"];
+export const pointsEarned = (level?: number) => (clampLevel(level) - 1) * POINTS_PER_LEVEL;
+export const pointsSpent = (p: Partial<CreatureProficiency> = {}) => PROF_KEYS.reduce((s, k) => s + (p[k] ?? 0), 0);
+export const pointsFree = (k: KlutzState) => Math.max(0, pointsEarned(k.level) - pointsSpent(k.points));
+// His %s: just the points spent (every stat 0 to start with).
+export const klutzProficiency = (p: Partial<CreatureProficiency> = {}): CreatureProficiency =>
+  Object.fromEntries(PROF_KEYS.map((k) => [k, p[k] ?? 0])) as CreatureProficiency;
+
+// Spend points (whole ones, no more than he has free).
+export function spendPoints(k: KlutzState, add: Partial<CreatureProficiency>): KlutzState {
+  const n = pointsSpent(add);
+  if (n <= 0 || n > pointsFree(k) || PROF_KEYS.some((s) => (add[s] ?? 0) < 0 || !Number.isInteger(add[s] ?? 0))) return k;
+  const now = klutzProficiency(k.points);
+  return { ...k, points: Object.fromEntries(PROF_KEYS.map((s) => [s, now[s] + (add[s] ?? 0)])) };
+}
+
+// A re-spec: every point back to spend again (the gold is paid by the caller).
+export const respecKlutz = (k: KlutzState): KlutzState => ({ ...k, points: {} });
 
 export type KlutzStatus =
   | { kind: "away"; expedition: Expedition; seen: KlutzEncounter[]; hp: number } // in the Labyrinth (hp: after his last fight)
@@ -236,7 +263,7 @@ export function currentHp(k: KlutzState, maxHp: number, now = Date.now()): numbe
 // Send him off (only from home, at full health).
 export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: Rng = Math.random, worn: WornPiece[] = []): KlutzState {
   if (klutzStatus(k, klutz.maxHp, now).kind !== "home") return k;
-  return { level: k.level, xp: k.xp, expedition: planExpedition(klutz, now, rng, worn, k.level) };
+  return { level: k.level, xp: k.xp, ...(k.points ? { points: k.points } : {}), expedition: planExpedition(klutz, now, rng, worn, k.level) };
 }
 
 // XP for Klutz (a hunt, or a scroll). Returns the new state and his level before.

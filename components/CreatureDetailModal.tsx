@@ -27,6 +27,7 @@ import Help from "./Help";
 import { ABILITIES } from "@/lib/creatures/abilities";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
+import { Coin } from "./GoldCount";
 
 type Props = {
   creature: CreatureOrItemDrop;
@@ -50,7 +51,10 @@ type Props = {
   position?: { index: number; count: number };
   onPrev?: () => void;
   onNext?: () => void;
+  // Klutz: his %s are points you spend (lib/klutz.ts), shown in place of the gear multipliers.
+  points?: { free: number; onSpend: (add: Partial<Record<ProfKey, number>>) => void; respec: { cost: number; can: boolean; run: () => boolean } };
 };
+type ProfKey = Exclude<StatKey, "hp">;
 
 const MUTED = "rgba(255,255,255,0.45)";
 const GOLD = "#f1d9a0";
@@ -84,8 +88,11 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points,
 }: Props) {
+  // Points tapped onto stats but not yet confirmed (Klutz).
+  const [pending, setPending] = useState<Partial<Record<ProfKey, number>>>({});
+  const pendingTotal = Object.values(pending).reduce((s, n) => s + (n ?? 0), 0);
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
   const worn   = armorPieces(loadout, (id) => armors.find((a) => a.id === id)); // helmet, chest, legs
@@ -125,10 +132,16 @@ export default function CreatureDetailModal({
   };
   const closePicker = () => { setPicking(null); setPreview(undefined); };
 
-  const summary = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[]) => {
+  const summary = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[], cr: CreatureOrItemDrop = creature) => {
     if (!template) return null;
-    const f = fighterFor(creature, template, w?.stats, pieces, loadout?.moves, w?.itemKey);
+    const f = fighterFor(cr, template, w?.stats, pieces, loadout?.moves, w?.itemKey);
     return { f, s: combatSummary(f) };
+  };
+  // Klutz with his unconfirmed points added (to preview them on his stats).
+  const withPending = (): CreatureOrItemDrop => {
+    const p = { ...(creature.proficiency ?? template!.proficiency) };
+    for (const [k, n] of Object.entries(pending) as [ProfKey, number][]) p[k] = (p[k] ?? 0) + n;
+    return { ...creature, proficiency: p };
   };
   const now = summary(weapon, worn);
   const current = picking ? inSlot(picking) : undefined;
@@ -140,7 +153,7 @@ export default function CreatureDetailModal({
     : worn;
   const next = previewing
     ? summary(picking === "weapon" ? preview ?? undefined : weapon, nextPieces)
-    : null;
+    : pendingTotal > 0 ? summary(weapon, worn, withPending()) : null;
   const setNow = wornArmor(worn).set;
   const setNext = wornArmor(nextPieces).set;
   const prof = template ? proficiencyOf(creature, template) : undefined;
@@ -183,8 +196,8 @@ export default function CreatureDetailModal({
           <div style={{ display: "flex", alignContent: "flex-start", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap", height: 52, overflow: "hidden" }}>
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <RaceTag race={template?.race} />
-            <ClassBadge cls={template?.cls} />
-            {template && prof && <TypeTags roles={creatureRoles(prof)} />}
+            <ClassBadge cls={template?.cls} neutral={template?.neutral} />
+            {template && prof && !(template.neutral && creatureRoles(prof)[0] === "Balanced") && <TypeTags roles={creatureRoles(prof)} />}
             {ability && (
               <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#ffe9a8", padding: "1px 6px", border: "2px solid rgba(255,233,168,0.35)", background: "rgba(255,233,168,0.07)" }}>
                 ✦ {ability.name}
@@ -325,14 +338,14 @@ export default function CreatureDetailModal({
 
             {/* Stats */}
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
-              Stats {previewing && <span style={{ fontSize: 12, color: "#ffd66e" }}>· previewing</span>}
+              Stats {(previewing || pendingTotal > 0) && <span style={{ fontSize: 12, color: "#ffd66e" }}>· previewing</span>}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
               {STATS.map((st) => {
                 const total = Math.round(now.s[st.key]);
                 const after = next ? Math.round(next.s[st.key]) : total;
                 const p = st.key === "hp" ? null : now.f.proficiency[st.key];
-                const diff = st.key === "hp" || !base ? 0 : prof![st.key] - base[st.key];
+                const diff = st.key === "hp" || !base || points ? 0 : prof![st.key] - base[st.key];
                 const gear = st.key === "hp" ? `${hpAt(template, level)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear`
                   : `${gearValue(now.f, st.key)} gear × +${p}%`;
                 return <StatRow key={st.key} icon={st.icon} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
@@ -340,8 +353,15 @@ export default function CreatureDetailModal({
             </div>
             {/* The creature's own %s: what each point of gear is multiplied by. */}
             <div className="pixel-font" style={{ fontSize: 14, color: GOLD, margin: "16px 0 8px" }}>
-              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· grow with level; its rolls never change</span>
+              Gear multipliers <span style={{ fontSize: 12, color: MUTED }}>· {points ? "tap a stat to spend a point" : "grow with level; its rolls never change"}</span>
             </div>
+            {points ? (
+              <PointsGrid prof={now.f.proficiency} free={points.free} pending={pending} locked={!!locked}
+                onAdd={(k) => setPending((p) => (pendingTotal < points.free ? { ...p, [k]: (p[k] ?? 0) + 1 } : p))}
+                onConfirm={() => { points.onSpend(pending); setPending({}); }}
+                onCancel={() => setPending({})}
+                respec={points.respec} />
+            ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))", gap: 5 }}>
               {STATS.filter((st) => st.key !== "hp").map((st) => {
                 const k = st.key as Exclude<StatKey, "hp">;
@@ -357,6 +377,7 @@ export default function CreatureDetailModal({
                 );
               })}
             </div>
+            )}
 
             <p style={{ fontSize: 11, color: MUTED, margin: "8px 0 0", lineHeight: 1.4 }}>
               Stats come from gear: each one is the gear&apos;s value boosted by the creature&apos;s % above. With no gear on, only Health has a value.
@@ -374,6 +395,63 @@ export default function CreatureDetailModal({
       </div>
       {dnd.ghost}
     </div>
+  );
+}
+
+// Klutz's %s as points to spend: attacks on top (with the points left in the
+// gap), defences and agility below. Tap a stat to put a point on it, then
+// confirm or cancel; the stats above preview it. The boxes never move.
+const POINT_ROWS: (ProfKey | "free")[] = ["atk", "rng", "mag", "free", "mdef", "rdef", "magdef", "agil"];
+function PointsGrid({ prof, free, pending, locked, onAdd, onConfirm, onCancel, respec }: {
+  prof: Record<ProfKey, number>; free: number; pending: Partial<Record<ProfKey, number>>; locked: boolean;
+  onAdd: (k: ProfKey) => void; onConfirm: () => void; onCancel: () => void;
+  respec: { cost: number; can: boolean; run: () => boolean };
+}) {
+  const [respecArmed, setRespecArmed] = useState(false);
+  const pendingTotal = Object.values(pending).reduce((s, n) => s + (n ?? 0), 0);
+  const left = free - pendingTotal;
+  return (
+    <>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+        {POINT_ROWS.map((k) => {
+          if (k === "free") {
+            return (
+              <div key="free" className={left > 0 && !locked ? "news-glow" : undefined}
+                style={{ textAlign: "center", padding: "6px 2px", background: "#1d1a12", border: `2px solid ${left > 0 ? "#8a6a3a" : "#2a2d38"}` }}>
+                <div style={{ ...NUM, fontSize: 22, color: left > 0 ? GOLD : MUTED, lineHeight: 1.2 }}>{left}</div>
+                <div style={{ fontSize: 11, color: MUTED, lineHeight: 1.3 }}>skill point{left === 1 ? "" : "s"}<br />to spend</div>
+              </div>
+            );
+          }
+          const st = STATS.find((s) => s.key === k)!;
+          const add = pending[k] ?? 0;
+          return (
+            <button key={k} disabled={locked || left <= 0} onClick={() => onAdd(k)}
+              title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${prof[k]}%. Tap to add 1%.`}
+              style={{ textAlign: "center", padding: "6px 2px", minHeight: 44, background: add ? "#1a2416" : "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}`,
+                color: "inherit", cursor: locked || left <= 0 ? "default" : "pointer", font: "inherit" }}>
+              <div style={{ fontSize: 13 }}>{st.icon}</div>
+              <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
+              <div style={{ ...NUM, fontSize: 18, color: st.color }}>+{prof[k] + add}%</div>
+              <div style={{ fontSize: 11, color: "#7CFC9A", visibility: add ? "visible" : "hidden" }}>+{add}</div>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 12px", opacity: pendingTotal ? 1 : 0.4 }} disabled={!pendingTotal} onClick={onConfirm}>Confirm</button>
+        <button className="chip" style={{ opacity: pendingTotal ? 1 : 0.4 }} disabled={!pendingTotal} onClick={onCancel}>Cancel</button>
+        <button className="chip" style={{ marginLeft: "auto", background: respecArmed ? "#6e1f18" : undefined, opacity: respec.can && !locked ? 1 : 0.4 }}
+          disabled={!respec.can || locked}
+          title="Take back every point he's spent, to spend again"
+          onClick={() => {
+            if (!respecArmed) { setRespecArmed(true); window.setTimeout(() => setRespecArmed(false), 4000); return; }
+            setRespecArmed(false);
+            onCancel();
+            respec.run();
+          }}>{respecArmed ? <>Tap again: re-spec for <Coin /> {respec.cost}</> : <>↺ Re-spec · <Coin /> {respec.cost}</>}</button>
+      </div>
+    </>
   );
 }
 

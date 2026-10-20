@@ -230,13 +230,14 @@ export const RETIRED_CREATURES: CreatureTemplate[] = [
 
 // Klutz: the dopey goblin who drags you into the Den. He's your helper, not
 // one of your creatures: gear him up and he'll hunt in the Labyrinth for
-// you (lib/klutz.ts). Starts as an Uncommon.
-// He's neutral (outside the triangle, any class's codex) with even %s, so his
-// weapon and the codexes you teach him decide how he fights. He starts as a
-// brawler; other styles come from codexes.
+// you (lib/klutz.ts). He's a Rare.
+// He's neutral ("Balanced": outside the triangle, any class's codex). His %s
+// start at 0 and are the points you spend on him as he levels (lib/klutz.ts
+// POINTS_PER_LEVEL), so you, his weapon and the codexes you teach him decide
+// how he fights. He starts as a brawler; other styles come from codexes.
 export const KLUTZ: CreatureTemplate = {
-  id: "klutz", name: "Klutz", race: "underdweller", rarity: "uncommon", baseHp: 80, companion: true, cls: "melee", neutral: true,
-  proficiency: { atk: 9, rng: 9, mag: 9, agil: 9, mdef: 9, rdef: 9, magdef: 9 },
+  id: "klutz", name: "Klutz", race: "underdweller", rarity: "rare", baseHp: 80, companion: true, cls: "melee", neutral: true,
+  proficiency: { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0 },
   skills: s("Slash", "Heavy Blow", "Jab", "Stone Throw"),
   flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. Pay him, gear him, and he'll go hunting for you.",
 };

@@ -3,10 +3,21 @@
 // one-line label for a move's style and damage type.
 
 import { CLASS_INFO, DAMAGE_TYPE_INFO, type CombatClass, type Skill } from "@/lib/creatures/creatureData";
+import { NEUTRAL_COUNTER } from "@/lib/combat/engine";
 
 const weakTo = (cls: CombatClass) => (Object.keys(CLASS_INFO) as CombatClass[]).find((k) => CLASS_INFO[k].beats === cls)!;
+const NEUTRAL_GREY = "#a9a9b8";
 
-export default function ClassBadge({ cls }: { cls?: CombatClass }) {
+// neutral: outside the triangle (Klutz), shown as a grey "Balanced".
+export default function ClassBadge({ cls, neutral }: { cls?: CombatClass; neutral?: boolean }) {
+  if (neutral) {
+    return (
+      <span className="pixel-font" title={`Balanced: outside the triangle. Nothing counters him, and a move of his that counters the target does +${Math.round((NEUTRAL_COUNTER - 1) * 100)}%.`}
+        style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: NEUTRAL_GREY, border: `2px solid ${NEUTRAL_GREY}55` }}>
+        ⚖️ Balanced
+      </span>
+    );
+  }
   if (!cls) return null;
   const c = CLASS_INFO[cls];
   return (

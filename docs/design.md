@@ -358,8 +358,13 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   let go (he keeps their gear).
 - ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he's outside the
   triangle. Nothing counters him and his moves never do less; a move of his that would counter the
-  target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His %s are even (9 each), so his weapon and
-  the codexes you teach him decide how he fights. He can learn any class's codex, plus his own
+  target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His class badge reads a grey "⚖️ Balanced".
+  - **Skill points** (decided 2026-10-20, replacing the even 9s): he's a **Rare**, his %s start at 0,
+    and he earns 6 points a level over 1 (84 at Lv 15, about a Rare's total; `POINTS_PER_LEVEL`).
+    In his stats window, tap a stat to add 1% (attacks on the top row beside the points left;
+    defences and agility below), then Confirm or Cancel; the stat bars preview it. A re-spec gives
+    every point back for 1000 gold. Old saves get all their points to spend. His weapon and the
+    codexes you teach him still decide most of how he fights. He can learn any class's codex, plus his own
   race's (Rabid Bite), and starts with Slash, Heavy Blow, Jab and Stone Throw. Sim (2,000 hunts,
   Lv 1–30): 67–72% wins, as before, but about 50% against magic instead of 26%. That lower magic
   number is only because no magic creature is Common (at equal rarity magic is one of his better
