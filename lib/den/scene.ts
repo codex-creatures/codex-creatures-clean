@@ -74,6 +74,18 @@ const LECTERN = { u: 1.15, v: 7.45 };        // the Bestiary's lectern, in front
 const SHELF = { u0: 4.2, u1: 5.8 };          // the shelves on the right wall (codexes, sacks, potions)
 const MERCHANT_U = 10.2;                     // the merchant's stall (right wall)
 const RUBBLE = { a0: 7.0, a1: 9.2, h: 64 };  // the rubbled doorway on the right wall (along u), between the shelves and the merchant
+// How high the doorway is at u (its arch rounds over the top).
+function doorTop(u: number): number {
+  const roff = (u - (RUBBLE.a0 + RUBBLE.a1) / 2) / ((RUBBLE.a1 - RUBBLE.a0) / 2); // −1…1 across it
+  return RUBBLE.h - 10 + 10 * Math.sqrt(Math.max(0, 1 - roff * roff));
+}
+
+// The tavern's room lies straight through the doorway, behind the right wall:
+// the same cave again, PASS floor units of rock (the passage) further back.
+// Its picture sits ANNEX_DX right of and ANNEX_DY above the Den's (layout units).
+const PASS = 1;
+export const ANNEX_DX = (NV + PASS) * TW;
+export const ANNEX_DY = (NV + PASS) * TH;
 
 // Where each object's label sits (floor units + height in px).
 // below = the label hangs under the point instead of above it.
@@ -156,6 +168,10 @@ const IRON_LIGHT  = hex("#5a5e68");
 const GOLD        = hex("#e8b84a");
 const WATER       = hex("#16323a");
 const VOID        = hex("#050609");
+// The dark beyond the walls, painted behind the room's picture: a faint cold
+// haze from y = top down to y = bottom (layout units, in the Den's picture).
+const css = (c: RGB) => `rgb(${c.map((x) => Math.round(x * 255)).join(", ")})`;
+export const HAZE = { top: 120, bottom: 520, from: css(VOID), to: css([VOID[0] + 0.018, VOID[1] + 0.021, VOID[2] + 0.036]) };
 
 // ── Surface textures ─────────────────────────────────────────────
 // Rough cave rock: big irregular blocks with wandering cracks.
@@ -263,6 +279,7 @@ export type DenProps = Partial<Record<PropKey, Pixels>>;
 export type DenScene = {
   render: (t: number, hover: ObjId) => ImageData;
   idAt: (x: number, y: number) => ObjId;
+  solidAt: (x: number, y: number) => boolean; // something drawn there (not the see-through dark or doorway)
   setCaged: (sprite: Sprite | null, art?: Pixels | null) => void; // the creature shown inside the cage (its art once loaded)
   // His drawn art once loaded, else his grid sprite.
   setKlutz: (mode: KlutzMode, sprite: Sprite | null, art?: LoadedArt | null) => void;
@@ -311,6 +328,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   const ids = new Uint8Array(n);
   const emissive = new Uint8Array(n); // 1 = glows (not lit), 2 = glows + pulses
   const shadow = new Float32Array(n).fill(1); // fades the room's far edges into the dark
+  const hole = new Uint8Array(n); // 1 = see-through (the open doorway)
 
   // (fx, fy): a fine pixel.
   function put(fx: number, fy: number, c: RGB, u: number, v: number, z: number, id: number = 0, glow = 0) {
@@ -320,6 +338,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
     pos[i * 3] = u; pos[i * 3 + 1] = v; pos[i * 3 + 2] = z;
     ids[i] = id;
     emissive[i] = glow;
+    hole[i] = 0;
   }
 
   // Inverse projections: which point on a plane does the spot (x, y) show?
@@ -343,7 +362,11 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   const poolD = (u: number, v: number) => bare ? 9 : Math.hypot((u - POOL.u) / POOL.ru, (v - POOL.v) / POOL.rv)
     + (vnoise(u * 2.2, v * 2.2) - 0.5) * 0.25; // < 1 = water
   // The far edges of the floor (and the ends of the walls) sink into the dark.
-  const edgeFade = (u: number, v: number) => clamp01((NU - u) / 2.2) * clamp01((NV - v) / 2.2);
+  // (The tavern's room keeps its floor lit where you look in from the Den's doorway.)
+  const doorView = (u: number) => (bare ? clamp01(Math.min(u - (RUBBLE.a0 - 6), RUBBLE.a1 + 1.5 - u) / 1.5) : 0);
+  const edgeFade = (u: number, v: number) => clamp01((NU - u) / 2.2) * Math.max(clamp01((NV - v) / (bare ? 6 : 2.2)), doorView(u));
+  // The tavern's room: the passage through from the Den's doorway, along its near edge.
+  const inPassage = (u: number, v: number) => bare && u >= RUBBLE.a0 && u < RUBBLE.a1 && v >= NV && v < NV + PASS;
 
   // Wall features (in wall coordinates: a = px along the wall from the back corner).
   function leftWallFeature(a: number, z: number): { c: RGB; id: number } | null {
@@ -406,16 +429,17 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
     return null;
   }
 
-  function rightWallFeature(a: number, z: number): { c: RGB; id: number } | null {
+  function rightWallFeature(a: number, z: number): { c: RGB; id: number; hole?: boolean } | null {
     // The rubble: an old doorway framed in dressed stone, choked with tumbled
     // boulders (a gap at the top hints at a space behind). Blown open, it's
     // the dark passage to the tavern's room.
     const ra = a - RUBBLE.a0 * 16, rw = (RUBBLE.a1 - RUBBLE.a0) * 16;
     const roff = (ra - rw / 2) / (rw / 2); // −1…1 across the doorway
-    const doorTop = RUBBLE.h - 10 + 10 * Math.sqrt(Math.max(0, 1 - roff * roff));
-    if (ra >= 0 && ra < rw && z < doorTop) {
+    const top = doorTop(a / 16);
+    if (ra >= 0 && ra < rw && z < top) {
       const dark = { c: mix(hex("#0d0b0a"), hex("#040303"), clamp01(z / 60)), id: OBJ.tavern };
-      if (opts.opened) return dark;
+      // Open: see-through, onto the tavern's room drawn behind the Den.
+      if (opts.opened) return { ...dark, hole: true };
       const heap = RUBBLE.h - 18 - 16 * roff * roff + 8 * (vnoise(a / 5, 3) - 0.5);
       if (z >= heap) return dark;
       // Tumbled boulders: rough rounded lumps of all sizes, lit from above.
@@ -430,7 +454,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
       const c = hash(col, row + 3) < 0.35 ? CAP_STONES[col % 3] : ROCK[Math.floor(hash(col, row) * ROCK.length)];
       return { c: mul(c, (0.6 + 0.45 * round + (iz > 5 ? 0.12 : 0)) * (0.7 + 0.3 * z / RUBBLE.h)), id: OBJ.tavern };
     }
-    if (ra >= -5 && ra < rw + 5 && z < doorTop + 6) {
+    if (ra >= -5 && ra < rw + 5 && z < top + 6) {
       const side = ra < 0 || ra >= rw;
       const block = side ? Math.floor(z / 8) + (ra < 0 ? 40 : 60) : Math.floor(ra / 7) + 80;
       if (side ? z % 8 < 1 : Math.floor(ra) % 7 === 0) return { c: CRACK, id: OBJ.tavern };
@@ -452,9 +476,17 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   for (let fy = 0; fy < FH; fy++) {
     for (let fx = 0; fx < FW; fx++) {
       const x = spot(fx), y = spot(fy);
+      // The tavern's room: the passage's side wall (the one facing you).
+      if (bare) {
+        const j = onU(x, y, RUBBLE.a0);
+        if (j.v >= NV && j.v < NV + PASS && j.z >= 0 && j.z < doorTop(RUBBLE.a0)) {
+          put(fx, fy, mul(rock(j.v * 16, j.z, 3), 0.8), RUBBLE.a0, j.v, j.z);
+          continue;
+        }
+      }
       // Floor (with the pit and the pool)
       const f = onZ(x, y, 0);
-      if (f.u >= 0 && f.v >= 0 && f.u < NU && f.v < NV) {
+      if (f.u >= 0 && f.v >= 0 && f.u < NU && (f.v < NV || inPassage(f.u, f.v))) {
         const fade = edgeFade(f.u, f.v);
         // The very edge breaks up into darkness.
         if (fade < 0.35 * hash(Math.floor(f.u * 9), Math.floor(f.v * 9))) continue;
@@ -516,7 +548,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         const top = wallTop(rw.u * 16, 1);
         if (rw.z < top) {
           const feat = bare ? null : rightWallFeature(rw.u * 16, rw.z);
-          if (feat) put(fx, fy, feat.c, rw.u, 0.02, rw.z, feat.id);
+          if (feat) { put(fx, fy, feat.c, rw.u, 0.02, rw.z, feat.id); if (feat.hole) hole[fy * FW + fx] = 1; }
           else put(fx, fy, mul(mossy(rock(rw.u * 16, rw.z, 1), rw.u * 16, rw.z, 1, top), 0.84), rw.u, 0, rw.z);
           shadow[fy * FW + fx] = clamp01((NU - rw.u) / 2.2) * clamp01((top - rw.z) / 40);
           continue;
@@ -804,6 +836,8 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
       { u: AL.u, v: AL.v, z: 34, color: hex("#5fe0ff"), power: 0.9, radius: 1.7, seed: 9, pulse: true },
       { u: POOL.u, v: POOL.v, z: 6, color: hex("#3fa0a0"), power: 0.35, radius: 1.8, seed: 11, steady: true },
     ]),
+    // The tavern's room: a little light where the passage comes in, so the doorway looks into it.
+    ...(bare ? [{ u: (RUBBLE.a0 + RUBBLE.a1) / 2 - 1, v: NV - 1.5, z: 40, color: hex("#ff9a44"), power: 0.7, radius: 2.4, seed: 13, steady: true }] : []),
   ];
   const AMBIENT: RGB = [0.13, 0.145, 0.22];
 
@@ -850,13 +884,10 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
   const meanFlick = lights.map((l) => (l.steady ? 1 : l.pulse ? 0.75 : 0.84));
   function shade(i: number, d: Uint8ClampedArray, pulse: number) {
     const o = i * 4;
+    // The dark beyond (and the open doorway) is see-through: the page behind
+    // paints the dark (HAZE), and the tavern's room shows through the doorway.
+    if (Number.isNaN(pos[i * 3]) || hole[i]) { d[o] = d[o + 1] = d[o + 2] = d[o + 3] = 0; return; }
     d[o + 3] = 255;
-    if (Number.isNaN(pos[i * 3])) {
-      // The dark beyond: a faint cold haze low down.
-      const k = clamp01((spot(Math.floor(i / FW)) - 120) / 400) * 0.6;
-      d[o] = (VOID[0] + k * 0.03) * 255; d[o + 1] = (VOID[1] + k * 0.035) * 255; d[o + 2] = (VOID[2] + k * 0.06) * 255;
-      return;
-    }
     const r = albedo[i * 3], g = albedo[i * 3 + 1], bl = albedo[i * 3 + 2];
     if (emissive[i]) {
       const k = emissive[i] === 2 ? pulse : 1;
@@ -954,7 +985,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         const X = x0 + dx, Y = y0 + dy;
         if (X < 0 || Y < 0 || X >= FW || Y >= FH) continue;
         const o = (Y * FW + X) * 4;
-        d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
+        d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255; d[o + 3] = 255;
         if (id) frameIds[Y * FW + X] = id;
         mark(X, Y, id);
       }
@@ -964,7 +995,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
       X = Math.round(X); Y = Math.round(Y);
       if (X < 0 || Y < 0 || X >= FW || Y >= FH) return;
       const o = (Y * FW + X) * 4;
-      d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255;
+      d[o] = col[0] * 255; d[o + 1] = col[1] * 255; d[o + 2] = col[2] * 255; d[o + 3] = 255;
       if (id) frameIds[Y * FW + X] = id;
       mark(X, Y, id);
     };
@@ -1099,7 +1130,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
           if (frameIds[i] === hover) {
             d[o] = Math.min(255, d[o] * 1.35 + 14); d[o + 1] = Math.min(255, d[o + 1] * 1.35 + 12); d[o + 2] = Math.min(255, d[o + 2] * 1.3 + 8);
           } else if (frameIds[i - 1] === hover || frameIds[i + 1] === hover || frameIds[i - FW] === hover || frameIds[i + FW] === hover) {
-            d[o] = 255 * glow; d[o + 1] = 214 * glow; d[o + 2] = 110 * glow;
+            d[o] = 255 * glow; d[o + 1] = 214 * glow; d[o + 2] = 110 * glow; d[o + 3] = 255;
           }
         }
       }
@@ -1129,6 +1160,10 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
       klutzMode = mode;
       klutz = art ? picFromPixels(art.still) : sprite ? picFromGrid(fineGrid(sprite)) : null;
       klutzWalk = art?.walk ? { frames: art.walk.frames.map(picFromPixels), x: art.walk.x, y: art.walk.y } : null;
+    },
+    solidAt: (x, y) => { // layout units
+      const fx = Math.floor(x * RES), fy = Math.floor(y * RES);
+      return fx >= 0 && fy >= 0 && fx < FW && fy < FH && out.data[(fy * FW + fx) * 4 + 3] > 0;
     },
     klutzAt: () => klutzLabel,
   };

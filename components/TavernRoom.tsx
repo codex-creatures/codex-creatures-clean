@@ -1,7 +1,7 @@
 "use client";
 // components/TavernRoom.tsx
-// What stands in the tavern's room, the Den's neighbour in the room strip
-// (DenRoom's annex): the tavern against the far wall, the Cyclops wanted
+// What stands in the tavern's room, through the Den's doorway behind its
+// right wall (DenRoom's annex): the tavern against the far wall, the Cyclops wanted
 // poster beside it, the head over its door once mounted, and whoever's
 // visiting out front. Placeholders until their PixelLab art.
 

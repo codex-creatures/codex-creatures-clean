@@ -4,14 +4,15 @@
 // space it's given, like a phone game's map: it opens zoomed in on the room;
 // pinch (or the mouse wheel) to zoom, drag to look around. Tap an object to go
 // in. With a mouse, pointing at one shows its name first.
-// Rooms sit side by side in one strip you drag across: the Den, then (once
-// the rubble's blown open) the tavern's room to its right (annex). Each room
-// is its own picture, so adding one doesn't make the others slower to draw.
+// Once the rubble's blown open, the tavern's room (annex) lies straight
+// through its doorway, behind the Den's right wall: up and to the right, the
+// Den drawn over it so the wall hides its near side and the doorway looks in.
+// Each room is its own picture, so adding one doesn't make the others slower to draw.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEscape } from "@/hooks/useEscape";
-import { createDen, project, ANCHORS, OBJ, W, H, RES, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
+import { createDen, project, ANCHORS, OBJ, W, H, RES, ANNEX_DX, ANNEX_DY, HAZE, PROP_KEYS, propSrc, ALTAR_ANIM, type DenProps, type DenScene, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor, loadArt, loadPixels, loadFrames, type LoadedArt, type Pixels } from "@/lib/sprites/art";
 
@@ -74,9 +75,11 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // the rubble's open). A tap in that room opens the tavern.
 export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
   const opened = rubble === "open";
-  const rooms = opened ? 2 : 1; // the Den, and the tavern's room once it's open
-  const roomsRef = useRef(rooms);
-  roomsRef.current = rooms;
+  // The whole picture (layout units): the Den, and the tavern's room up and to its right once it's open.
+  const dx = opened ? ANNEX_DX : 0, dy = opened ? ANNEX_DY : 0;
+  const WW = W + dx, HH = H + dy;
+  const layout = useRef({ dy, WW, HH });
+  layout.current = { dy, WW, HH };
   const spotOf = (id: Exclude<ObjId, 0>) => (id === OBJ.tavern && opened ? PASSAGE : SPOTS[id]);
   // The dynamite going off: a flash and a shake, and the room's rebuilt with the way open.
   const [boom, setBoom] = useState(false);
@@ -118,10 +121,11 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
 
   // Keep the room on screen: centred along an axis where it's smaller than
   // the viewport, otherwise no gap at either edge.
+  // (The Den's picture is the viewport's width; the rest is in proportion.)
   function apply(next: { s: number; x: number; y: number }) {
     const box = viewportRef.current, world = worldRef.current;
     if (!box || !world) return;
-    const vw = box.clientWidth, vh = box.clientHeight, ww = vw * roomsRef.current, wh = (vw * H) / W;
+    const vw = box.clientWidth, vh = box.clientHeight, ww = (vw * layout.current.WW) / W, wh = (vw * layout.current.HH) / W;
     const s = Math.min(limits.current.max, Math.max(limits.current.min, next.s));
     const fit = (pos: number, size: number, port: number) => (size * s <= port ? (port - size * s) / 2 : Math.min(0, Math.max(port - size * s, pos)));
     view.current = { s, x: fit(next.x, ww, vw), y: fit(next.y, wh, vh) };
@@ -152,8 +156,8 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       if (first) {
         first = false;
         const s = Math.min(2.6, Math.max(1, cover));
-        // Centred on the room (a little below the middle of the picture).
-        apply({ s, x: vw / 2 - s * vw * 0.5, y: vh / 2 - s * wh * 0.55 });
+        // Centred on the Den (a little below the middle of its picture).
+        apply({ s, x: vw / 2 - s * vw * 0.5, y: vh / 2 - s * (vw * (layout.current.dy + H * 0.55)) / W });
       } else apply(view.current);
     };
     measure();
@@ -161,6 +165,15 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     ro.observe(box);
     return () => ro.disconnect();
   }, []);
+  // When the tavern's room opens, the picture grows upwards: keep the Den where it was.
+  const shownDy = useRef(dy);
+  useLayoutEffect(() => {
+    const box = viewportRef.current, grow = dy - shownDy.current;
+    shownDy.current = dy;
+    if (!box || !grow) return;
+    const v = view.current;
+    apply({ ...v, y: v.y - (v.s * box.clientWidth * grow) / W });
+  }, [dy]);
   // The mouse wheel zooms (it needs a non-passive listener to stop the page scrolling).
   useEffect(() => {
     const box = viewportRef.current;
@@ -239,9 +252,6 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       const dirty = scene.dirty();
       if (!dirty || first) { ctx.putImageData(frame, 0, 0); first = false; }
       else for (const [x0, y0, x1, y1] of dirty) ctx.putImageData(frame, 0, 0, x0, y0, x1 - x0, y1 - y0);
-      // Round the room, the same dark as the picture's corner (no seam when zoomed out).
-      const box = viewportRef.current;
-      if (box && !box.style.background) box.style.background = `rgb(${frame.data[0]}, ${frame.data[1]}, ${frame.data[2]})`;
       // Klutz's label follows him about.
       const el = klutzLabelRef.current, at = scene.klutzAt();
       if (el) {
@@ -309,36 +319,57 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     else setNotice(spot);
   }
 
-  // The passage: slide the view over to the tavern's room.
+  // The passage: slide the view through to the tavern's room.
   function showAnnex() {
     const box = viewportRef.current, world = worldRef.current;
     if (!box || !world) return;
     const vw = box.clientWidth, vh = box.clientHeight, s = view.current.s;
     world.style.transition = "transform 0.7s ease-in-out";
-    apply({ s, x: vw / 2 - s * vw * 1.5, y: vh / 2 - s * ((vw * H) / W) * 0.55 });
+    apply({ s, x: vw / 2 - s * (vw * (ANNEX_DX + W * 0.5)) / W, y: vh / 2 - s * (vw * H * 0.55) / W });
     window.setTimeout(() => { world.style.transition = ""; }, 750);
   }
 
-  // A tap (not the end of a drag) on an object goes straight in.
-  function press(id: ObjId) {
+  // A tap (not the end of a drag) on an object goes straight in. A tap on
+  // the tavern's room, seen past the Den's walls, opens the tavern.
+  function press(id: ObjId, e: React.MouseEvent) {
     if (dragged.current) return;
     setHovered(id);
-    activate(id);
+    if (!id && opened && inAnnex(e)) router.push(PASSAGE.href!);
+    else activate(id);
+  }
+  function inAnnex(e: React.MouseEvent) {
+    const c = canvasRef.current;
+    if (!c) return false;
+    const r = c.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * W, y = ((e.clientY - r.top) / r.height) * H;
+    return x >= ANNEX_DX && y < H - ANNEX_DY && !sceneRef.current?.solidAt(x, y);
   }
   const shown = hover;
 
   return (
-    <div ref={viewportRef} className={`den-viewport${boom ? " screen-shake" : ""}`}
+    <div ref={viewportRef} className={`den-viewport${boom ? " screen-shake" : ""}`} style={{ background: HAZE.from }}
       onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
       onPointerLeave={(e) => { if (e.pointerType === "mouse") { setHovered(OBJ.none); onUp(e); } }}>
-    <div ref={worldRef} className="den-world" style={{ width: vp ? vp.w * rooms : "100%", height: vp ? (vp.w * H) / W : undefined, visibility: vp ? "visible" : "hidden" }}>
-    {/* The Den: the first room in the strip (everything in it is placed in its own %). */}
-    <div style={{ position: "absolute", left: 0, top: 0, width: `${100 / rooms}%`, height: "100%" }}>
+    <div ref={worldRef} className="den-world" style={{
+      width: vp ? (vp.w * WW) / W : "100%", height: vp ? (vp.w * HH) / W : undefined, visibility: vp ? "visible" : "hidden",
+      // The dark beyond the walls (the rooms' pictures are see-through there).
+      background: `linear-gradient(${HAZE.from} ${((dy + HAZE.top) / HH) * 100}%, ${HAZE.to} ${((dy + HAZE.bottom) / HH) * 100}%)`,
+    }}>
+    {/* The tavern's room, behind the Den's right wall (drawn first: the Den goes over it). */}
+    {opened && (
+      <div onClick={() => { if (!dragged.current) router.push(PASSAGE.href!); }}
+        style={{ position: "absolute", left: `${(dx / WW) * 100}%`, top: 0, width: `${(W / WW) * 100}%`, height: `${(H / HH) * 100}%`, cursor: "pointer" }}>
+        <BareRoom crisp={crisp} />
+        {annex}
+      </div>
+    )}
+    {/* The Den (everything in it is placed in its own %). */}
+    <div style={{ position: "absolute", left: 0, top: `${(dy / HH) * 100}%`, width: `${(W / WW) * 100}%`, height: `${(H / HH) * 100}%` }}>
       <canvas
         ref={canvasRef}
         width={W * RES}
         height={H * RES}
-        onClick={(e) => press(objectAt(e))}
+        onClick={(e) => press(objectAt(e), e)}
         style={{ width: "100%", height: "100%", imageRendering: crisp ? "pixelated" : "auto", cursor: hover ? "pointer" : "grab", display: "block" }}
         aria-label="The Den"
         role="img"
@@ -400,15 +431,6 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         {(shown === OBJ.klutz || !klutzNews) && <>{klutzNews ? " " : ""}Klutz{klutz === "pool" ? " 💤" : ""}</>}
       </button>
     </div>
-
-    {/* The tavern's room, to the Den's right. */}
-    {opened && (
-      <div onClick={() => { if (!dragged.current) router.push(PASSAGE.href!); }}
-        style={{ position: "absolute", left: "50%", top: 0, width: "50%", height: "100%", cursor: "pointer" }}>
-        <BareRoom crisp={crisp} />
-        {annex}
-      </div>
-    )}
     </div>
 
       {/* "Coming soon" notice */}
@@ -442,7 +464,7 @@ export function RoomSpot({ u, v, z = 0, w, children, style }: { u: number; v: nu
 }
 
 // The tavern's room: the Den's cave with nothing in it (lib/den/scene.ts
-// bare), with its torches flickering. Built once, a moment after the Den
+// bare) but the passage in from the Den's doorway, with its torches flickering. Built once, a moment after the Den
 // shows, so the Den isn't kept waiting.
 let bareScene: DenScene | null = null;
 function BareRoom({ crisp }: { crisp: boolean }) {

@@ -446,8 +446,13 @@ fields optional with defaults.
    picture, so a room added later doesn't slow the others; the tavern's room is only built once
    it's open. Tapping the passage slides the view over; tapping in the tavern's room opens the
    tavern's window (`/tavern`: repair, bounty, trading). Meant to grow into more rooms later.
+   ✅ **Straight through the doorway** (the user, 2026-10-20): the tavern's room now lies directly
+   behind the Den's right wall, so you drag up and to the right to see it. A wall one floor unit
+   thick (`PASS` in lib/den/scene.ts) separates them; the open doorway is see-through, showing a
+   short lit passage into the room. The Den is drawn over the tavern's room so its wall hides the
+   near side.
    📌 Future look (not now): the user's [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png)
-   is the likely long-term style for viewing the base; side by side stays until then.
+   is the likely long-term style for viewing the base; this layout stays until then.
    🧪 Testing tool: the altar's "🧨 Open the rubble" opens it at once (`forceOpen`), as if the quest
    and dynamite were done.
    📌 **Building the room up, one shippable stage at a time** (the user, 2026-10-20): 1 ✅ the bare

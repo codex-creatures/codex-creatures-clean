@@ -9,7 +9,7 @@
 // Once it's repaired, a merchant or librarian sometimes calls (rolled on
 // coming home from a run: lib/tavern.ts comeHome), selling what they would
 // in the Labyrinth. The merchant buys from your Inventory too.
-// The room itself is in the Den, to its right (components/TavernRoom.tsx);
+// The room itself is in the Den, through its doorway (components/TavernRoom.tsx);
 // this is the tavern's window, opened by tapping it there.
 
 import Link from "next/link";
