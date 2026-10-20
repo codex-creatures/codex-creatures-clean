@@ -14,7 +14,7 @@ import { klutzStatus, pointsFree } from "@/lib/klutz";
 import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
-import { canBlast, tavernVisitor } from "@/lib/tavern";
+import { canBlast, tavernHasQuest, tavernVisitor } from "@/lib/tavern";
 import { STARTED_KEY } from "@/lib/saveSlots";
 import { useRouter } from "next/navigation";
 
@@ -35,10 +35,11 @@ export default function Home() {
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);
   const k = klutzStatus(game.klutz, game.klutzFighter.maxHp, now).kind;
   // The bag by the archway: a bindle until you find the rugged backpack.
-  // (And the run you first beat the Cyclops on, for its head in the tavern.)
+  // (And the Cyclops: how often you've beaten it, and the run you first did, for the tavern.)
   const [backpack, setBackpack] = useState(false);
   const [firstClearRun, setFirstClearRun] = useState<number | undefined>();
-  useEffect(() => { const meta = loadDungeon().meta; setBackpack(bagSize(meta) > BINDLE); setFirstClearRun(meta.firstClearRun); }, []);
+  const [clears, setClears] = useState(0);
+  useEffect(() => { const meta = loadDungeon().meta; setBackpack(bagSize(meta) > BINDLE); setFirstClearRun(meta.firstClearRun); setClears(meta.clears); }, []);
   // Where Klutz has sent you: the cage for your first creature, then the Pit to
   // kit it out; later, with his dynamite, the rubble (lib/tavern.ts).
   const mine = game.inventory.filter((d) => d.dropType === "creature");
@@ -64,9 +65,9 @@ export default function Home() {
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0))} backpack={backpack} highlight={highlight}
           rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble}
-          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} upgraded={game.bookcase >= 2}
+          tavernNews={game.hydrated && (!!tavernVisitor(game.tavern) || tavernHasQuest(game.tavern, clears))} upgraded={game.bookcase >= 2}
           crateNews={game.hydrated && game.crate.length > 0} cageNews={game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage}
-          annex={<TavernRoom tavern={game.tavern} firstClearRun={firstClearRun} />} />
+          annex={<TavernRoom tavern={game.tavern} quest={game.hydrated && tavernHasQuest(game.tavern, clears)} firstClearRun={firstClearRun} />} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}

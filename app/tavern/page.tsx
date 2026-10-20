@@ -1,10 +1,10 @@
 "use client";
 // app/tavern/page.tsx
 // The tavern's room, behind the Den's rubble once Klutz's dynamite has blown
-// it open (lib/tavern.ts). The tavern stands broken against the far wall, a
-// Cyclops wanted poster already up; the first time you see it Klutz has his
-// say. Repairing it takes REPAIR_COST in materials, once. Then the poster's
-// Cyclops bounty: take it, bring the head (any Cyclops win counts, even one
+// it open (lib/tavern.ts). The tavern stands broken against the far wall; the
+// first time you see it Klutz has his say. Repairing it takes REPAIR_COST in
+// materials, once. Then it offers the Cyclops bounty (a ❗ over it in the
+// room while there's a step to do here): take it, bring the head (any Cyclops win counts, even one
 // from before), mount it on the wall, and the bookcase schematic is yours.
 // Once it's repaired, a merchant or librarian sometimes calls (rolled on
 // coming home from a run: lib/tavern.ts comeHome), selling what they would
@@ -58,7 +58,7 @@ export default function TavernPage() {
           <Help title="The tavern">
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
-              <li>The <b>wanted poster</b> is for the Cyclops. Once it&apos;s repaired, take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
+              <li>Once it&apos;s repaired, it has a <b>bounty</b> on the Cyclops (a ❗ over the tavern when there&apos;s something to do here). Take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
               <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
             </ul>
           </Help>
@@ -71,7 +71,7 @@ export default function TavernPage() {
             {CREATURE_SPRITES.klutz && <PixelSprite sprite={CREATURE_SPRITES.klutz} scale={1} />}
             <div style={{ fontSize: 13, lineHeight: 1.45, color: "#d6f0a8" }}>
               &ldquo;A tavern! Down here! It&apos;s a wreck… we&apos;ll need <b>metal bars, planks and nails</b> to fix it.
-              And look at that poster — someone wants the <b>Cyclops</b>!&rdquo;
+              I bet whoever ran it knows a thing or two about the <b>Cyclops</b>!&rdquo;
               <div style={{ marginTop: 6 }}><button className="pixel-btn" onClick={game.seeTavern}>&ldquo;Let&apos;s fix it up.&rdquo;</button></div>
             </div>
           </div>

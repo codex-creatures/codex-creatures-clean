@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernHasQuest, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -141,6 +141,14 @@ describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
     expect(headToMount({ ...repaired, bounty: true }, 0)).toBe(false); // not beaten yet
     expect(headToMount({ ...repaired, bounty: true }, 1)).toBe(true);
     expect(mountHead({ ...repaired, bounty: true }, 0).mounted).toBeUndefined();
+  });
+
+  it("the tavern shows its ❗ while the bounty's on offer or the head's ready to hand in", () => {
+    expect(tavernHasQuest({ blasted: true }, 0)).toBe(false);              // still broken
+    expect(tavernHasQuest(repaired, 0)).toBe(true);                        // bounty on offer
+    expect(tavernHasQuest({ ...repaired, bounty: true }, 0)).toBe(false);  // out hunting the Cyclops
+    expect(tavernHasQuest({ ...repaired, bounty: true }, 1)).toBe(true);   // head to hand in
+    expect(tavernHasQuest({ ...repaired, bounty: true, mounted: true }, 1)).toBe(false); // all done
   });
 
   it("mounting it is once only, and pays the bookcase schematic", () => {

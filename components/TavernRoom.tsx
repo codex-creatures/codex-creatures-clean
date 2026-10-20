@@ -1,9 +1,9 @@
 "use client";
 // components/TavernRoom.tsx
 // What stands in the tavern's room, through the Den's doorway behind its
-// right wall (DenRoom's annex): the tavern in the far right corner, the Cyclops
-// wanted poster on its boarded wall, the head over its door once mounted, and
-// whoever's visiting out front.
+// right wall (DenRoom's annex): the tavern in the far right corner, with a ❗
+// over it when it has a quest step for you (tap it for the tavern's window),
+// the Cyclops Head over its door once mounted, and whoever's visiting out front.
 
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot } from "@/components/DenRoom";
@@ -20,16 +20,17 @@ const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in t
 // on, and where that corner is in the picture.
 const TAVERN = { src: "/sprites/den/tavern.png", w: 510, h: 486 };
 const CORNER = { u: 20.5, v: 5.1, x: 336, y: 478 };
-// Spots on the picture (px): its boarded wall, the top of its door.
-const BOARDS = { x: 240, y: 335 };
+// The top of its door on the picture (px).
 const DOOR = { x: 121, y: 233 };
 // Lamp-light from the open door and the windows (px, radius px).
 const LIGHTS = [{ x: 121, y: 345, r: 80 }, { x: 60, y: 242, r: 30 }, { x: 400, y: 347, r: 34 }];
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 
+// quest: the tavern has a quest step waiting (lib/tavern.ts tavernHasQuest).
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
-export default function TavernRoom({ tavern: t, firstClearRun }: { tavern: TavernQuest; firstClearRun?: number }) {
+export default function TavernRoom({ tavern: t, quest = false, firstClearRun }: { tavern: TavernQuest; quest?: boolean; firstClearRun?: number }) {
   const visitor = tavernVisitor(t);
+  const news = quest || !!visitor;
   const head = CREATURE_SPRITES.cyclops;
   return (
     <>
@@ -42,17 +43,12 @@ export default function TavernRoom({ tavern: t, firstClearRun }: { tavern: Taver
           <div key={i} aria-hidden className="den-glow"
             style={{ left: pct(g.x, TAVERN.w), top: pct(g.y, TAVERN.h), width: pct(g.r * 2, TAVERN.w), aspectRatio: "1", opacity: t.repaired ? 1 : 0.5, background: "radial-gradient(circle, rgba(255, 176, 84, 0.42), rgba(255, 150, 60, 0.14) 45%, transparent 70%)", animationDelay: `${-i * 0.7}s` }} />
         ))}
-        {/* Its name over it, like the Den's places, with a ❗ while someone's visiting. */}
-        <div className={`pixel-font${visitor ? " news-glow" : ""}`}
+        {/* Its name over it, like the Den's places, with a ❗ while there's a quest
+            step or someone's visiting. */}
+        <div className={`pixel-font${news ? " news-glow" : ""}`}
           style={{ position: "absolute", left: "45%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
-          {visitor && <span className="news-pulse" aria-label="Someone's in the tavern">❗ </span>}
+          {news && <span className="news-pulse" aria-label={quest ? "The tavern has a quest for you" : "Someone's in the tavern"}>❗ </span>}
           {t.repaired ? "Tavern" : "Broken tavern"}
-        </div>
-        {/* The wanted poster, pinned to the boarded wall beside the door. */}
-        <div style={{ position: "absolute", left: pct(BOARDS.x, TAVERN.w), top: pct(BOARDS.y, TAVERN.h), width: pct(80, TAVERN.w), translate: "-50% -50%", padding: "1% 1% 3%", background: "#e8d6a8", border: "1px solid #8a6a3a", boxShadow: "0 2px 0 rgba(0,0,0,0.6)", textAlign: "center", rotate: "-2deg" }}>
-          <div className="pixel-font" style={{ fontSize: "1.3cqw", color: "#7a1e14" }}>WANTED</div>
-          {head && <PixelSprite sprite={head} style={FIT} />}
-          <div className="pixel-font" style={{ fontSize: "1cqw", color: "#3a2a14" }}>{t.mounted ? "PAID" : "The Cyclops"}</div>
         </div>
         {/* The Cyclops Head, mounted over the door, with the run you first beat it on. */}
         {t.mounted && head && (

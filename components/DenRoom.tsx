@@ -67,7 +67,7 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
 // highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
 // rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
-// tavernNews: someone's visiting the tavern (a ❗ at the doorway).
+// tavernNews: someone's visiting the tavern, or it has a quest step for you (a ❗ at the doorway).
 // upgraded: the crooked bookcase is built.
 // crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
 // cageNews: a creature's waiting in the cage to capture or release (a ❗ on its label).

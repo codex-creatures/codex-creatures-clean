@@ -440,7 +440,7 @@ fields optional with defaults.
    with the art pass.
    ✅ (2026-10-20) The room is now drawn as the Den's own cave with nothing in it (`createDen({ bare })`:
    walls, floor and torches; no furniture, pit, pool, archway, cage or rubble), with the tavern,
-   poster, head and visitor standing in it as placeholders (`components/TavernRoom.tsx`, `RoomSpot`).
+   head and visitor standing in it (`components/TavernRoom.tsx`, `RoomSpot`).
    ✅ **The room strip** (the user, 2026-10-20): once the rubble's open, the Den and the tavern's room
    sit **side by side** in one view you drag across (`DenRoom`'s `annex`). Each room is its own
    picture, so a room added later doesn't slow the others; the tavern's room is only built once
@@ -456,16 +456,18 @@ fields optional with defaults.
    🧪 Testing tool: the altar's "🧨 Open the rubble" opens it at once (`forceOpen`), as if the quest
    and dynamite were done.
    📌 **Building the room up, one shippable stage at a time** (the user, 2026-10-20): 1 ✅ the bare
-   cave; 2 PixelLab tavern art (broken, repaired), samples first; 3 poster, PAID poster and mounted
-   head art; 4 ✅ a sliding walk-through from the Den's passage; 5 ✅ one strip you drag across
+   cave; 2 ✅ PixelLab tavern art (one picture, greyed while broken); 3 mounted head art (the
+   poster was dropped); 4 ✅ a sliding walk-through from the Den's passage; 5 ✅ one strip you drag across
    (watch phone performance); 6 the tavern's interior (needs design).
 4. ✅ **The tavern (outside only for now)** stands broken in that room, a building against its far
-   wall (the sketch), with a Cyclops wanted poster visible from the start. The first time you see
-   it, Klutz reacts once (it needs materials; he spots the poster). 🧪 Placeholder art: emoji
-   building (🏚️ broken, 🏠 repaired) and a parchment poster with the Cyclops sprite.
+   wall (the sketch). The first time you see it, Klutz reacts once (it needs materials). Art:
+   PixelLab, at the room's angle (§11); greyed until repaired. ✅ (the user, 2026-10-20) **No
+   wanted poster:** instead a ❗ over the tavern while it has a quest step for you (the bounty to
+   take, or the head to hand in: `tavernHasQuest`), also shown at the Den's doorway; tapping the
+   tavern opens its window with the offer.
 5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
-6. ✅ **Bounty:** the poster offers the Cyclops bounty. If you'd already beaten the Cyclops
+6. ✅ **Bounty:** the tavern offers the Cyclops bounty. If you'd already beaten the Cyclops
    (`meta.clears`), it completes as soon as you open the tavern. Cyclops combat is unchanged.
    🧪 Built as a "Take the Cyclops bounty" button once the tavern's repaired; with a win already
    on record, the head is ready to mount straight away.
@@ -474,7 +476,7 @@ fields optional with defaults.
    it on the tavern wall (once) completes the bounty and unlocks the bookcase schematic.
    🧪 The head isn't an item in your storage: it's yours once you've beaten the Cyclops and taken
    the bounty, so it can't be sold, used, lost or doubled. Mounted, it hangs over the tavern door
-   (placeholder: the Cyclops sprite on a plaque marked with the run), and the poster says PAID.
+   (placeholder: the Cyclops sprite on a plaque marked with the run).
    The schematic it pays isn't an item either: the bookcase just offers to build.
 8. ✅ **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
    **only** way to get it: it no longer drops from mini bosses, the Cyclops or storehouses. It costs
@@ -537,7 +539,7 @@ fields optional with defaults.
   about 130px. An isometric footprint of a×b blocks is (a+b)×32px wide.
   - **Buildings must match the room's 2:1 angle** (walls slope 1 down for every 2 across). AI
     generators draw their own perspective, so: draw a flat-colour block-out in code on the exact grid
-    (doors, windows, poster space where the code expects them), then `edit_image` (up to 512px, ~25
+    (doors and windows where the code expects them), then `edit_image` (up to 512px, ~25
     generations) on the block-out with an approved sample as the reference image. It keeps the
     shape and angle and copies the look. It comes out a little gloomy: warm it in code (a gentle
     saturation and lamp-light lift), and add the light spill as glows in the room.
