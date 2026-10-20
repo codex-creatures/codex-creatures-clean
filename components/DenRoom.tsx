@@ -104,6 +104,11 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   const [notice, setNotice] = useState<Spot | null>(null);
   useEscape(notice ? () => setNotice(null) : null);
   const router = useRouter();
+  // Fetch every place's screen ahead of time, so a tap goes straight in
+  // instead of waiting on the network (the dock's links already do this).
+  useEffect(() => {
+    for (const s of [...Object.values(SPOTS), PASSAGE]) if (s.href) router.prefetch(s.href);
+  }, [router]);
   // Crisp pixels when the canvas is shown at full size or bigger; shrunk,
   // smooth scaling (crisp scaling drops pixels unevenly and looks grainy).
   const [crisp, setCrisp] = useState(false);
