@@ -605,7 +605,9 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
   display: flex; flex-direction: column; justify-content: center; padding: 8px;
 }
 .battle-stage > * { flex: none; }
-.battle-dock { height: 31cqh; min-height: 200px; display: flex; flex-direction: column; gap: 6px; }
+.battle-dock { height: 31cqh; min-height: 200px; display: flex; flex-direction: column; gap: 6px; transition: height 0.3s ease-out; }
+/* Once the fight is over the dock grows: the result is what matters now. */
+.battle-dock[data-over="true"] { height: 46cqh; }
 .battle-moves { flex: 1; min-height: 0; display: grid; grid-auto-rows: 1fr; gap: 6px; }
 .battle-moves > * { min-height: 0; }
 .battle-moves .move-glow { height: 100%; }

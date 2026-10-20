@@ -430,18 +430,18 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
       </div>
 
       {/* ── The dock: the bottom of the screen, where you act ── */}
-      <div className="screen-dock battle-dock">
+      <div className="screen-dock battle-dock" data-over={finished}>
         {finished ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 6 }}>
-            <div className="pixel-font" style={{ fontSize: 30, color: match.state.winner === "A" ? "#5ee08a" : match.state.winner === "B" ? FOE : "white" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 10 }}>
+            <div className="pixel-font" style={{ fontSize: 48, color: match.state.winner === "A" ? "#5ee08a" : match.state.winner === "B" ? FOE : "white" }}>
               {match.state.winner === "A" ? "Victory!" : match.state.winner === "B" ? "Defeat" : "Draw"}
             </div>
-            <div style={{ fontSize: 12, color: MUTED }}>
+            <div style={{ fontSize: 14, color: MUTED }}>
               {match.state.winner === "B" && match.state.turnLimit && match.state.round >= match.state.turnLimit && aliveCount(you) > 0 ? "💥 The room collapses on you. " : ""}
               {match.state.round} rounds · {AI_LEVEL_LABELS[match.level]} AI
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 4 }}>{finishedActions}</div>
-            <button className="chip" onClick={() => toggle("log")} style={{ minHeight: 32, padding: "2px 12px", fontSize: 13 }}>📜 Log</button>
+            <button className="chip" onClick={() => toggle("log")} style={{ minHeight: 44, padding: "2px 16px", fontSize: 15 }}>📜 Log</button>
           </div>
         ) : notStarted ? (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
