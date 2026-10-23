@@ -211,7 +211,7 @@ export function calcDamage(
 export const MAX_ENERGY = 100;
 export const ENERGY_REGEN = 30;     // after each attack
 export const PRECISE_CHANCE = 0.05; // chance of a precise hit…
-export const PRECISE_IGNORE = 0.25; // …which ignores 25% of defence
+export const PRECISE_IGNORE = 0.75; // …which ignores 75% of defence (was 25%; the user, 2026-10-24)
 
 // Armour pieces each roll a whole budget, so a full set shows about three
 // times the defence one roll used to; it counts at a third, blocking what it

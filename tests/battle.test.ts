@@ -172,8 +172,8 @@ describe("armour gap (same move, same target)", () => {
       if (e?.type === "attack") ignored.push(e.defenceIgnored);
     }
     rand.mockRestore();
-    // hits 1–5: ordinary precise (25%); from hit 6 each precise opens it further.
-    expect(ignored).toEqual([0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.75, 1, 1]);
+    // hits 1–5: ordinary precise (75%); from hit 6 each precise opens it further.
+    expect(ignored).toEqual([0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 1, 1, 1, 1]);
   });
 
   it("precise chance per use: 5% until the 6th use, then +10% each", () => {

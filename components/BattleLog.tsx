@@ -3,6 +3,7 @@
 
 import { useMemo } from "react";
 import type { BattleEvent, SideKey } from "@/lib/combat/battle";
+import { PRECISE_IGNORE } from "@/lib/combat/engine";
 
 export const YOU = "#4EA1FF";
 export const FOE = "#ff6b6b";
@@ -49,7 +50,7 @@ function LogLine({ e }: { e: BattleEvent }) {
           {e.armorFx && <span style={{ color: "#f1d9a0" }}> · 🛡️ {e.armorFx}</span>}
           {e.pounced && <span style={{ color: "#d89a5b" }}> · pounces on the wounded!</span>}
           {e.venom && <span style={{ color: "#9be15d" }}> · envenomed!</span>}
-          {e.precise && <span style={{ color: e.defenceIgnored > 0.25 ? "#ff9f43" : "#f5c542" }}> · precise hit{e.defenceIgnored > 0.25 ? ` (armour gap: ignores ${Math.round(e.defenceIgnored * 100)}% defence)` : ""}!</span>}
+          {e.precise && <span style={{ color: e.defenceIgnored > PRECISE_IGNORE ? "#ff9f43" : "#f5c542" }}> · precise hit{e.defenceIgnored > PRECISE_IGNORE ? ` (armour gap: ignores ${Math.round(e.defenceIgnored * 100)}% defence)` : ""}!</span>}
           {e.hasted && <span style={{ color: "#7fe0ff" }}> · First Strike!</span>}
           {e.crippled && <span style={{ color: "#c792ea" }}> · crippled!</span>}
           <span style={{ color: MUTED }}> ({e.side === "A" ? "their" : "your"} {e.target}: {e.targetHpAfter} HP left)</span>

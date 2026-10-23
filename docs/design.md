@@ -199,9 +199,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Hard counters are intended:** a counter means much less damage and a reason to swap, not
   invulnerability.
 - ✅ **Energy:** max 100, +30 after each attack. A creature with no affordable move rests (+30).
-- ✅ **Precise hits:** 5% chance, ignoring 25% of defence. **Armour gap:** from the 6th use of the
-  same move in a row, +10% precise chance each use, and each precise hit ignores 25 → 50 → 75 →
-  100% of defence. It resets on a different move or a swap. This is the user's anti-stall design.
+- ✅ **Precise hits:** 5% chance, ignoring 75% of defence (raised from 25% by the user, 2026-10-24). **Armour gap:** from the 6th use of the
+  same move in a row, +10% precise chance each use, and each precise hit in the run ignores a
+  further 25% (`GAP_IGNORE_STEP`): 75 → 100% of defence. It resets on a different move or a swap. This is the user's anti-stall design.
 - ✅ **Stances:** neutral, float, entrench (engine.ts). Float takes −10% from melee and +10% from
   ranged, and deals +10% ranged; Entrench is the mirror image (melee). The stance rules are
   provisional in the original design, and there's no elemental type chart.
