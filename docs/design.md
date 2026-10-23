@@ -547,6 +547,8 @@ fields optional with defaults.
   - Labyrinth rooms have no frame: edge to edge, the floor fading into the screen.
   - On a laptop, Esc closes whatever's open (`hooks/useEscape.ts`); with nothing open it goes back
     a page (`components/EscapeBack.tsx`), except mid-fight in the Labyrinth.
+- **Vibration** (Settings, `lib/haptics.ts`, built 2026-10-24): off by default, per device. When it's on, hits that land buzz briefly, and precise hits and level-ups buzz harder. It only works in browsers that allow vibration (Android, not iPhone), and the switch is hidden elsewhere.
+- **Double tap** (`lib/doubleTap.ts`, built 2026-10-24): a quick second tap on the same thing does its main button. In a creature's Equip picker it equips the piece (or unequips, on ⊘); in the loot window it takes the item.
 - **Few words.** One-line summaries on screen, and depth behind a "?" (`components/Help.tsx`) in
   big, bold, broken-up text. Klutz's lines are short.
 - **The stone card standard:**

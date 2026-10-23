@@ -23,6 +23,7 @@
 import { useState } from "react";
 import { useEscape } from "@/hooks/useEscape";
 import { useDragDrop } from "@/hooks/useDragDrop";
+import { doubleTapper } from "@/lib/doubleTap";
 import PixelSprite from "./PixelSprite";
 import TeamDropRow, { type TeamMember } from "./TeamDropRow";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
@@ -82,11 +83,13 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   useEscape(() => (seen !== null ? setSeen(null) : picked !== null ? setPicked(null) : onClose()));
   if (was !== items && (was.length || items.length)) { setWas(items); setSeen(null); setPicked(null); } // (a fresh [] each render is no change)
 
+  const [doubleTap] = useState(doubleTapper); // a quick second tap on loot takes it
   const { box: dragBox, ...dnd } = useDragDrop<From>({
     onTap: (d) => {
       setTriedAll(false);
       if (d.kind === "loot") {
         if (lookOf(items[d.i]).free) onTake(d.i);
+        else if (doubleTap(`loot:${d.i}`) && !full) { onTake(d.i); setSeen(null); }
         else { setSeen((s) => (s === d.i ? null : d.i)); setPicked(null); }
       } else { setPicked((p) => (p === d.i ? null : d.i)); setSeen(null); }
     },
@@ -151,7 +154,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         {/* Under the chest: the hint, with Take all at the right (it stays put while you look at things). */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0, fontSize: 14, color: noRoom ? "#ff8a80" : MUTED }}>
-            {noRoom ? `Your ${bagName.toLowerCase()} is full` : `Tap to look · drag onto your bag to take${full ? " (your bag is full)" : ""}`}
+            {noRoom ? `Your ${bagName.toLowerCase()} is full` : `Tap to look · double-tap or drag to take${full ? " (your bag is full)" : ""}`}
           </div>
           <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
         </div>

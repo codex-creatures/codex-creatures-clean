@@ -27,6 +27,7 @@ import Help from "./Help";
 import { ABILITIES } from "@/lib/creatures/abilities";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
+import { doubleTapper } from "@/lib/doubleTap";
 import { Coin } from "./GoldCount";
 
 type Props = {
@@ -131,6 +132,14 @@ export default function CreatureDetailModal({
     setPreview(inSlot(slot));
   };
   const closePicker = () => { setPicking(null); setPreview(undefined); };
+  // Tapping a piece previews it; a quick second tap puts it on (null: the Unequip tile).
+  const [doubleTap] = useState(doubleTapper);
+  const tapOption = (opt: CreatureOrItemDrop | null) => {
+    setPreview(opt);
+    if (!doubleTap(opt?.id ?? "none") || !picking) return;
+    if ((opt?.id ?? null) !== (inSlot(picking)?.id ?? null)) onEquip(picking, opt ? opt.id : null);
+    closePicker();
+  };
 
   const summary = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[], cr: CreatureOrItemDrop = creature) => {
     if (!template) return null;
@@ -276,14 +285,14 @@ export default function CreatureDetailModal({
             {picking && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
-                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`}: tap to compare, or drag onto the slot to equip
+                  Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`}: tap to compare, double-tap or drag onto the slot to equip
                 </div>
                 {options.length === 0 ? (
                   <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the labyrinth to find some.</p>
                 ) : (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(62px, 1fr))", gap: 6 }}>
                     {current && (
-                      <Tile selected={preview === null} onClick={() => setPreview(null)} title="Take it off">
+                      <Tile selected={preview === null} onClick={() => tapOption(null)} title="Take it off">
                         <span style={{ fontSize: 22, color: MUTED }}>⊘</span>
                         <span style={{ fontSize: 11, color: MUTED }}>Unequip</span>
                       </Tile>
@@ -297,7 +306,7 @@ export default function CreatureDetailModal({
                         <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} disabled={away}
                           title={away ? `${opt.name} — Klutz has it with him in the Labyrinth` : here ? `${opt.name} (worn now)` : opt.name}
                           grab={away ? undefined : { onPointerDown: dnd.press(opt, { sprite: sp, icon: "📦" }), ...dnd.handlers }}
-                          onClick={() => { if (!dnd.wasDrag()) setPreview(opt); }}>
+                          onClick={() => { if (!dnd.wasDrag()) tapOption(opt); }}>
                           {sp ? <PixelSprite sprite={sp} scale={3} /> : <span style={{ fontSize: 22 }}>?</span>}
                           {here && <Badge color={GOLD}>ON</Badge>}
                           {owner && !here && <Badge color="#f5c542">{away ? "🌀" : "⚑"}</Badge>}
