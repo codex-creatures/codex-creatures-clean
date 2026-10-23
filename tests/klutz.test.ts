@@ -225,8 +225,8 @@ describe("Klutz is neutral", () => {
     expect(KLUTZ.rarity).toBe("rare");
     expect(Object.values(KLUTZ.proficiency).every((v) => v === 0)).toBe(true);
     expect(defaultMoveNames(KLUTZ)).toEqual(["Slash", "Heavy Blow", "Jab", "Stone Throw"]);
-    for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(true);
-    for (const m of ["Pounce", "Barrage", "Mirage"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
+    for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(true);
+    for (const m of ["Pounce", "Barrage", "Mirage", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Firebolt")).toBe(false);
     expect(resolveMoves(KLUTZ, ["Firebolt", "Bolt"]).map((m) => m.name)).toEqual(["Firebolt", "Bolt"]);
   });

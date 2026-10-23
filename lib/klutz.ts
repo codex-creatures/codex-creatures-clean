@@ -113,6 +113,7 @@ export type KlutzState = {
   hpAt?: number;         // when that was
   expedition?: Expedition;
   points?: Partial<CreatureProficiency>; // the % points you've spent on him (missing = none)
+  learned?: string[];    // moves he's learned from codexes (missing = none)
 };
 
 // ── His points ──

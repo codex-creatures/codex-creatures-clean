@@ -293,9 +293,11 @@ export function defaultMoveNames(c: CreatureTemplate): string[] {
 
 // Can this creature learn a move from a codex? Learnable moves: anyone.
 // Race moves: only creatures of that race. Basic and strong moves: only
-// creatures of that move's class (a neutral one, Klutz: any class).
+// creatures of that move's class (a neutral one, Klutz: any class,
+// but no race moves).
 export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
   if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
+  if (c.neutral && RACE_MOVES.some((m) => m.name === moveName)) return false;
   return [...raceMovesFor(c), ...classMovesFor(c)].some((m) => m.name === moveName);
 }
 

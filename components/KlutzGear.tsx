@@ -14,7 +14,7 @@ export default function KlutzGear({ game, onClose }: { game: ReturnType<typeof u
   const names = new Map<string, string>([...game.inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]);
   return (
     <CreatureDetailModal
-      creature={klutzDrop(game.klutz.level, game.klutz.xp, game.klutz.points)}
+      creature={klutzDrop(game.klutz.level, game.klutz.xp, game.klutz.points, game.klutz.learned)}
       points={{
         free: pointsFree(game.klutz), onSpend: game.spendKlutzPoints,
         respec: { cost: RESPEC_COST, can: pointsSpent(game.klutz.points) > 0 && game.gold >= RESPEC_COST, run: game.respecKlutzPoints },
@@ -28,6 +28,8 @@ export default function KlutzGear({ game, onClose }: { game: ReturnType<typeof u
       onEquip={(slot, itemId) => game.equipItem(KLUTZ_DROP_ID, slot, itemId)}
       onSetMoves={away ? undefined : (moves) => game.setMoves(KLUTZ_DROP_ID, moves)}
       locked={away ? "He's got his gear with him: swap it when he's home." : undefined}
+      codexes={items.filter((d) => d.codexMove)}
+      onLearnCodex={away ? undefined : (codexId) => game.learnCodex(KLUTZ_DROP_ID, codexId)}
       scrolls={items.filter((d) => d.scroll)}
       onReadScroll={(scrollId) => game.readScroll(KLUTZ_DROP_ID, scrollId)}
       onClose={onClose}

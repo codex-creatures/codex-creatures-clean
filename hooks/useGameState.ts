@@ -26,11 +26,11 @@ import { SCHEMATICS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canA
 export const KLUTZ_DROP_ID = "klutz-companion";
 export type LevelUp = { id: string; name: string; from: number; to: number };
 // His level, XP and spent % points live in KlutzState (lib/klutz.ts); he starts at level 1.
-export function klutzDrop(level = 1, xp = 0, points?: KlutzState["points"]): CreatureOrItemDrop {
+export function klutzDrop(level = 1, xp = 0, points?: KlutzState["points"], learned?: string[]): CreatureOrItemDrop {
   return {
     id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
     rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour, level, xp,
-    proficiency: klutzProficiency(points),
+    proficiency: klutzProficiency(points), learned,
     createdAt: new Date().toISOString(),
   };
 }
@@ -731,6 +731,7 @@ export function useGameState(initialTab: TabKey = "all") {
     const codex = inventory.find((d) => d.id === codexId) as CreatureOrItemDrop | undefined;
     const move = codex?.codexMove;
     if (!move) return;
+    if (creatureId === KLUTZ_DROP_ID) setKlutz((k) => ({ ...k, learned: [...new Set([...(k.learned ?? []), move])] }));
     setInventory((prev) => prev.filter((d) => d.id !== codexId).map((d) =>
       d.id === creatureId ? { ...d, learned: [...new Set([...((d as CreatureOrItemDrop).learned ?? []), move])] } : d));
   }
