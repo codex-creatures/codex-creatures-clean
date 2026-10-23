@@ -201,7 +201,8 @@ export function calcDamage(
   const afterArmor = raw > 0 ? (raw * raw) / (raw + defenseApplied) : 0;
   const arcane = Math.min(ARCANE_CAP * (defender.hpMult ?? 1), defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
 
-  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle));
+  const preciseMult = precise ? PRECISE_DAMAGE : 1;
+  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * preciseMult));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));
 
   return { damage: finalDmg, braceBlocked, braceFailed };
@@ -211,7 +212,8 @@ export function calcDamage(
 export const MAX_ENERGY = 100;
 export const ENERGY_REGEN = 30;     // after each attack
 export const PRECISE_CHANCE = 0.05; // chance of a precise hit…
-export const PRECISE_IGNORE = 0.75; // …which ignores 75% of defence (was 25%; the user, 2026-10-24)
+export const PRECISE_IGNORE = 0.25; // …which ignores 25% of defence
+export const PRECISE_DAMAGE = 1.75; // …and does 1.75× damage (the user, 2026-10-24)
 
 // Armour pieces each roll a whole budget, so a full set shows about three
 // times the defence one roll used to; it counts at a third, blocking what it

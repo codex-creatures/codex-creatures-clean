@@ -74,12 +74,11 @@ const hasSet = (f: Fighter, key: ArmorKey) => f.armorSet === key;
 // - From the 6th use in a row, each use adds +10% precise-hit chance
 //   (15%, 25%, 35%…).
 // - Each precise hit in that run opens the armour further: precise hits
-//   ignore a further GAP_IGNORE_STEP each: 75% → 100% of defence.
+//   ignore 25% → 50% → 75% → 100% of defence.
 // - The run resets when the attacker uses a different move or passes, or
 //   when either creature swaps out (that's the defender's counterplay).
 export const STREAK_START = 5;
 export const STREAK_PRECISE_STEP = 0.1;
-export const GAP_IGNORE_STEP = 0.25; // extra defence ignored per precise hit in the run
 export const ARMOUR_GAP = { enabled: true }; // switch for balance experiments
 
 export type Streak = { move: string; targetIdx: number; hits: number; cracks: number };
@@ -89,7 +88,7 @@ export function streakEffects(s?: Streak) {
   const gap = ARMOUR_GAP.enabled && !!s && s.hits > STREAK_START;
   return {
     preciseChance: PRECISE_CHANCE + (gap ? STREAK_PRECISE_STEP * (s!.hits - STREAK_START) : 0),
-    ignore: gap ? Math.min(1, PRECISE_IGNORE + GAP_IGNORE_STEP * s!.cracks) : PRECISE_IGNORE,
+    ignore: gap ? Math.min(1, PRECISE_IGNORE * (1 + s!.cracks)) : PRECISE_IGNORE,
     gap,
   };
 }

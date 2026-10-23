@@ -3,7 +3,7 @@ import { ABILITIES, ABILITY_CHANCE, DIVINE_HEALING, KEEN_EYE_BONUS, rollAbility,
 import { CREATURE_TEMPLATES, CREATURE_BY_ID, MOVE_BY_NAME } from "../lib/creatures/creatureData";
 import { makeCreatureDrop, summonFromCards } from "../lib/creatures/summon";
 import { buildFighter } from "../lib/combat/loadout";
-import { calcDamage, DAMAGE_VARIANCE, rollDamage, PRECISE_IGNORE, type Fighter } from "../lib/combat/engine";
+import { calcDamage, DAMAGE_VARIANCE, rollDamage, PRECISE_IGNORE, PRECISE_DAMAGE, type Fighter } from "../lib/combat/engine";
 import { createBattle, resolveRound, type BattleEvent } from "../lib/combat/battle";
 
 afterEach(() => vi.restoreAllMocks());
@@ -73,6 +73,16 @@ describe("damage roll", () => {
     const avg = calcDamage(MOVE_BY_NAME.Slash, a, d, false).damage;
     expect(calcDamage(MOVE_BY_NAME.Slash, a, d, false, PRECISE_IGNORE, 1.05).damage).toBeGreaterThan(avg);
     expect(calcDamage(MOVE_BY_NAME.Slash, a, d, false, PRECISE_IGNORE, 0.95).damage).toBeLessThan(avg);
+  });
+
+  it("a precise hit does 1.75× damage (on top of ignoring some defence)", () => {
+    const a = make(), bare = { ...make(), armor: { ...make().armor, mdef: 0 } };
+    const normal = calcDamage(MOVE_BY_NAME.Slash, a, bare, false).damage;
+    expect(PRECISE_DAMAGE).toBe(1.75);
+    expect(calcDamage(MOVE_BY_NAME.Slash, a, bare, true).damage).toBeCloseTo(normal * PRECISE_DAMAGE, -1);
+    const armoured = make(); // with armour, the defence it ignores adds a little more
+    expect(calcDamage(MOVE_BY_NAME.Slash, a, armoured, true).damage)
+      .toBeGreaterThan(calcDamage(MOVE_BY_NAME.Slash, a, armoured, false).damage * PRECISE_DAMAGE - 1);
   });
 
   it("the same hit doesn't always do the same damage", () => {

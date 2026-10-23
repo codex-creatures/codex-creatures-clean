@@ -172,8 +172,8 @@ describe("armour gap (same move, same target)", () => {
       if (e?.type === "attack") ignored.push(e.defenceIgnored);
     }
     rand.mockRestore();
-    // hits 1–5: ordinary precise (75%); from hit 6 each precise opens it further.
-    expect(ignored).toEqual([0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 1, 1, 1, 1]);
+    // hits 1–5: ordinary precise (25%); from hit 6 each precise opens it further.
+    expect(ignored).toEqual([0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.75, 1, 1]);
   });
 
   it("precise chance per use: 5% until the 6th use, then +10% each", () => {
@@ -211,7 +211,7 @@ describe("resting", () => {
 describe("armour gap ends when its target leaves", () => {
   it("knocking the target out ends the attacker's run (no cracked armour on the replacement)", () => {
     const killer = buildFighter(CREATURE_BY_ID.ironhide, { melee: 40, hp: 600 }, undefined, ["Slash"]);
-    const s = createBattle([killer], [buildFighter(CREATURE_BY_ID.rust_beetle, undefined, { mDef: 90, hp: 300 }), buildFighter(CREATURE_BY_ID.crystalback)]);
+    const s = createBattle([killer], [buildFighter(CREATURE_BY_ID.rust_beetle, undefined, { mDef: 90, hp: 600 }), buildFighter(CREATURE_BY_ID.crystalback)]);
     const rand = vi.spyOn(Math, "random").mockReturnValue(0);
     while (s.needsReplacement.length === 0 && !s.winner) {
       resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });

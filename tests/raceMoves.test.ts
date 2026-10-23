@@ -168,7 +168,9 @@ describe("race moves", () => {
     const archer = fighter("thicket_archer", ["Barrage"]);
     const s = createBattle([archer], [fighter("moss_wolf", ["Jab"]), fighter("cave_bat", ["Flick"])]);
     s.sides.B.partner = 1;
+    const rand = vi.spyOn(Math, "random").mockReturnValue(0.5); // no precise hits or dodges: both live to act
     resolveRound(s, { A: hit("Barrage"), B: hit("Jab") });
+    rand.mockRestore();
     const targets = s.log.filter((e) => e.type === "attack" && e.side === "A").map((e) => e.type === "attack" && e.targetIndex);
     expect(targets.sort()).toEqual([0, 1]);
     expect(MOVE_BY_NAME.Barrage.race).toBe("elvish");

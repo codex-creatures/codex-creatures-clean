@@ -17,7 +17,7 @@ import {
   raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type DamageType, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
-  AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, NEUTRAL_COUNTER, PRECISE_CHANCE, PRECISE_IGNORE,
+  AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, NEUTRAL_COUNTER, PRECISE_CHANCE, PRECISE_DAMAGE, PRECISE_IGNORE,
   TRIANGLE, calcDamage, type CombatItem, type Fighter,
 } from "@/lib/combat/engine";
 import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, STREAK_PRECISE_STEP, STREAK_START, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
@@ -114,7 +114,7 @@ function Combat() {
       <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18, margin: "4px 0" }}>
         <li><b>Agility</b> only decides who strikes first each round — higher goes first.</li>
         <li><b>Energy</b>: everyone starts on {MAX_ENERGY}. Moves cost energy; you get {ENERGY_REGEN} back after each attack. With nothing affordable, a creature rests.</li>
-        <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise and ignore {pct(PRECISE_IGNORE)} of the defence (on top of the damage type).</li>
+        <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise: they do {PRECISE_DAMAGE}× damage and ignore {pct(PRECISE_IGNORE)} of the defence (on top of the damage type).</li>
         <li><b>Armour gap</b>: from the {STREAK_START + 1}th use of the same move on the same target in a row, each use adds {pct(STREAK_PRECISE_STEP)} precise chance, and precise hits in that run crack through more armour. It resets when either side swaps or you change move.</li>
         <li><b>Cripple</b>: for {CRIPPLE_ROUNDS} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent). <b>Haste</b>: double agility this round only, to strike first.</li>
         <li><b>Stances</b>: floating takes +10% from ranged, −10% from melee; entrenched the other way round.</li>

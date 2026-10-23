@@ -14,7 +14,7 @@ import { findCreatureTemplate, type CreatureTemplate, type Skill } from "@/lib/c
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
-import { calcDamage, PRECISE_IGNORE, type CombatItem, type Fighter } from "@/lib/combat/engine";
+import { calcDamage, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
@@ -252,7 +252,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       applyEvent(shown, e);
       setView(shown);
       setFx(e.type === "attack"
-        ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled, gap: e.defenceIgnored > PRECISE_IGNORE,
+        ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled, gap: e.defenceIgnored > 0.25,
             attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
