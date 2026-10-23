@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { useEscape } from "@/hooks/useEscape";
+import { buzz } from "@/lib/haptics";
 import { STATS } from "./CreatureDetailModal";
 import { hpAt, proficiencyAt } from "@/lib/creatures/levels";
 import type { CreatureProficiency, CreatureTemplate } from "@/lib/creatures/creatureData";
@@ -36,6 +37,8 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
   const levels = u ? u.to - u.from : 0;
   const barEnd = INTRO + PER_LEVEL * levels;
   const end = barEnd + STATS_IN + COUNT;
+
+  useEffect(() => { if (u) buzz("levelUp"); }, [n, u]); // each creature's show starts with a buzz (Settings → Vibration)
 
   useEffect(() => {
     if (!u) return;

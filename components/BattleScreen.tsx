@@ -18,6 +18,7 @@ import { calcDamage, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
+import { attackHaptic, buzz } from "@/lib/haptics";
 import { useEscape } from "@/hooks/useEscape";
 import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
@@ -258,6 +259,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
             text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
             color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
+      if (e.type === "attack") buzz(attackHaptic(e)); // (Settings → Vibration; off unless switched on)
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
       if (!alive.current) return;
     }

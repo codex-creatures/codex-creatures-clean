@@ -22,6 +22,7 @@ import {
 } from "@/lib/saveFile";
 import { writeUiScale, UI_SCALES, UI_SCALE_EVENT } from "@/lib/uiScale";
 import { useUiScale } from "@/hooks/useUiScale";
+import { canVibrate, readHaptics, writeHaptics, buzz } from "@/lib/haptics";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const GOOD = "#5ee08a", BAD = "#ff8a80";
@@ -54,6 +55,14 @@ export default function SettingsPage() {
     const i = Math.min(UI_SCALES.length - 1, Math.max(0, UI_SCALES.indexOf(scale) + step));
     writeUiScale(window.localStorage, UI_SCALES[i]);
     window.dispatchEvent(new Event(UI_SCALE_EVENT));
+  }
+
+  // Vibration: null until loaded, and stays null where the browser can't vibrate (the panel's hidden).
+  const [haptics, setHaptics] = useState<boolean | null>(null);
+  useEffect(() => { if (canVibrate()) setHaptics(readHaptics(window.localStorage)); }, []);
+  function toggleHaptics() {
+    setHaptics(writeHaptics(window.localStorage, !haptics));
+    buzz("hit"); // a taste of it, when turned on
   }
 
   function refresh() {
@@ -177,6 +186,24 @@ export default function SettingsPage() {
           <button className="pixel-btn" onClick={() => resize(1)} disabled={scale >= UI_SCALES[UI_SCALES.length - 1]}>➕ Bigger</button>
         </div>
       </div>
+
+      {haptics !== null && (
+        <div className="stone-panel" style={panel}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>📳 Vibration</div>
+            <Help title="Vibration">
+              <ul>
+                <li>A tiny buzz when a hit lands, a bigger one on <b>precise hits</b> and <b>level-ups</b>.</li>
+                <li>Only on phones that allow it (not iPhones).</li>
+                <li>It&apos;s for <b>this device only</b>, and isn&apos;t in exported saves.</li>
+              </ul>
+            </Help>
+          </div>
+          <button className="pixel-btn" onClick={toggleHaptics} style={{ display: "block", width: "100%", marginTop: 8 }}>
+            {haptics ? "📳 On" : "📴 Off"}
+          </button>
+        </div>
+      )}
 
       {message && (
         <div className="stone-panel" role="status" style={{ ...panel, borderColor: message.kind === "good" ? GOOD : BAD }}>
