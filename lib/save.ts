@@ -10,7 +10,7 @@ import { ARMOR_V2, upgradeOldArmorStats } from "./items/armor";
 export const SAVE_KEY = "codex_creatures_save_v2";
 
 // Fields written by something other than useGameState.
-export const OWN_FIELDS = ["labyrinth", "tavern"] as const;
+export const OWN_FIELDS = ["labyrinth", "tavern", "playTime"] as const; // (playTime: lib/playTime.ts)
 
 export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};

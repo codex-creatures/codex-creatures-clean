@@ -14,7 +14,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
-import { lockSaves, unlockSaves } from "@/lib/save";
+import { lockSaves, readSave, unlockSaves } from "@/lib/save";
+import { formatPlayTime, readPlayTime, PLAY_TIME_EVENT } from "@/lib/playTime";
 import {
   checkSaveFile, exportSave, importSave, readBackup, restoreBackup, saveFileName, summarise,
   type SaveFile, type SaveSummary,
@@ -46,6 +47,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<Message | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [busy, setBusy] = useState(false); // loading a save: the game restarts with it
+  const [played, setPlayed] = useState<number | null>(null); // time played, in seconds
   const fileInput = useRef<HTMLInputElement>(null);
   const scale = useUiScale();
   function resize(step: number) {
@@ -58,8 +60,16 @@ export default function SettingsPage() {
     setCurrent(summarise(exportSave(window.localStorage)));
     setBackup(readBackup(window.localStorage));
     setAddress(window.location.host);
+    setPlayed(readPlayTime(readSave()));
   }
   useEffect(refresh, []);
+
+  // Time played, ticking live (components/PlayClock.tsx counts it).
+  useEffect(() => {
+    const live = (e: Event) => setPlayed((e as CustomEvent<number>).detail);
+    window.addEventListener(PLAY_TIME_EVENT, live);
+    return () => window.removeEventListener(PLAY_TIME_EVENT, live);
+  }, []);
 
   function doExport() {
     try {
@@ -127,6 +137,7 @@ export default function SettingsPage() {
               <li>Your game is saved <b>in this browser</b>, for this address{address ? <> (<b>{address}</b>)</> : null}. Another browser, another computer, or another address (the offline copy runs at <b>localhost:8123</b>) has a save of its own.</li>
               <li><b>Export</b> puts your whole game — progress, scanned barcodes and battle history — in one file.</li>
               <li><b>Import</b> that file anywhere to carry on from where you were.</li>
+              <li><b>Time played</b> counts while the game is on screen. It pauses when you switch away, or after 2 minutes without a tap. Each save has its own.</li>
               <li>Clearing your browsing data deletes your save. Export first!</li>
               <li>Before an import, your current save is <b>backed up</b> automatically; <b>Restore backup</b> brings it back.</li>
             </ul>
@@ -134,6 +145,9 @@ export default function SettingsPage() {
         </div>
         <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 8px" }}>
           {current ? <SummaryLine s={current} /> : "…"}
+        </p>
+        <p className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", margin: "0 0 8px" }}>
+          ⏱️ Time played: {played === null ? "…" : formatPlayTime(played)}
         </p>
         <p style={{ fontSize: 12, color: MUTED, margin: "0 0 10px" }}>
           Saved in this browser{address ? ` at ${address}` : ""}. Export it to back it up or play on another computer.
