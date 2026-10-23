@@ -55,7 +55,7 @@ export default function CagePage() {
         <div className="stone-panel" style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><PixelSprite sprite={creatureSprite(freed.creatureId)} scale={4} /></div>
           <div className="pixel-font" style={{ fontSize: 22, color: RARITY_COLORS[freed.rarity].text, marginTop: 8 }}>{freed.name} is yours!</div>
-          <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s in your Creatures and on your roster. Give it some gear in the Pit.</p>
+          <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s in your Creatures. ★ it to put it on your roster, and give it some gear in the Pit.</p>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             {game.quest.stage === "start"
               ? <Link href="/klutz" className="pixel-btn tutorial-pulse">👺 Back to Klutz</Link>

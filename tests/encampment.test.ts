@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, ARCANE_CAP } from "../lib/combat/engine";
-import { createBattle, resolveRound, swapTargets } from "../lib/combat/battle";
-import { MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { createBattle, resolveRound, sendInReplacement, swapTargets } from "../lib/combat/battle";
+import { aiChooseAction, aiChooseReplacement } from "../lib/combat/teamBattle";
+import { MOVE_BY_NAME, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
 
 const f = (id: string) => buildFighter(CREATURE_BY_ID[id]);
 
@@ -15,6 +16,18 @@ describe("encampment fights", () => {
     resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Slash" } });
     const hits = s.log.filter((e) => e.type === "attack" && e.side === "B");
     expect(hits.length).toBe(2);
+  });
+
+  it("in an ambush, the AI never tries to swap to the partner already beside it (that crashed the fight)", () => {
+    const pool = Object.values(CREATURES_BY_RARITY).flat();
+    const team = () => Array.from({ length: 3 }, () => buildFighter(pool[Math.floor(Math.random() * pool.length)]));
+    for (let n = 0; n < 60; n++) {
+      const s = createBattle(team(), team(), {}, undefined, { pairB: true });
+      while (!s.winner) {
+        resolveRound(s, { A: aiChooseAction(s, "A", { canSwap: true }), B: aiChooseAction(s, "B", { canSwap: true }) }); // throws on an invalid swap
+        for (const k of [...s.needsReplacement]) sendInReplacement(s, k, aiChooseReplacement(s, k));
+      }
+    }
   });
 
   it("a rigged room: if they still stand when time's up, you lose", () => {

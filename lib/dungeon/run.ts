@@ -396,7 +396,7 @@ export const ENCAMP_VARIANTS: EncampVariant[] = ["plain", "drunk", "ambush", "ri
 export const ENCAMP_SIZE: [number, number] = [2, 3];
 export const ENCAMP_AMBUSHERS = 2;
 export const ENCAMP_DRUNK_HP = 3;
-export const ENCAMP_FUSE = 10;
+export const ENCAMP_FUSE = 20;
 export const ENCAMP_GOLD: [number, number] = [60, 100];
 export const ENCAMP_CAGES: [number, number] = [1, 3];
 export const CAGE_CREATURE_CHANCE = 0.5;
@@ -466,6 +466,10 @@ export const wareName = (w: Ware) => ("backpack" in w ? "Rugged backpack" : "pot
 // of what he (or a librarian, for a codex) would charge. 0: he won't take it
 // (Klutz's club, a schematic).
 export const MERCHANT_BUYBACK = 0.5;
+// Where you can sell from your bag: the merchant's room, and a librarian's
+// (at the same prices), so you can make room for what they sell.
+export const buysHere = (room: Room | null | undefined) =>
+  !!room && (room.kind === "merchant" || room.kind === "librarian" || (room.kind === "library" && !!room.librarian));
 export function merchantOffer(entry: BagEntry, item: Drop | undefined, gearValue: (d: Drop) => number): number {
   const half = (price: number) => Math.floor(price * MERCHANT_BUYBACK);
   if (isPotionEntry(entry)) return half(POTIONS[entry].price);
@@ -861,7 +865,18 @@ export function leaveRoom(run: DungeonRun): DungeonRun {
 export function setTeam(run: DungeonRun, team: string[]): DungeonRun {
   if (run.battle || run.status !== "exploring") return run;
   const valid = team.filter((id) => run.party.includes(id) && isAlive(run, id)).slice(0, TEAM_SIZE);
-  return { ...run, team: valid };
+  // Anyone knocked out keeps their place (behind the rest, if there's room),
+  // so a healing pool can bring them back into the fight.
+  const downed = run.team.filter((id) => !valid.includes(id) && run.party.includes(id) && !isAlive(run, id));
+  return { ...run, team: [...valid, ...downed].slice(0, TEAM_SIZE) };
+}
+
+// A healing pool restores one creature fully. One that had dropped out of
+// the team (knocked out) rejoins it if there's a free place.
+export function healInPool(run: DungeonRun, id: string): DungeonRun {
+  if (!run.party.includes(id)) return run;
+  const team = run.team.includes(id) || run.team.length >= TEAM_SIZE ? run.team : [...run.team, id];
+  return { ...run, hp: { ...run.hp, [id]: 1 }, team };
 }
 
 // The fighting team, minus anyone knocked out.

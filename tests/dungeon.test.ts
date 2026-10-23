@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { HEAL_AT_HOME } from "../lib/dungeon/run";
 import {
-  ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam,
+  ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam, healInPool,
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun, stepInside, canMoveOn, moveOn,
 } from "../lib/dungeon/run";
 import {
@@ -287,6 +287,18 @@ describe("a labyrinth run", () => {
     expect(setTeam({ ...inRoom, battle: {} }, ["e"]).team).toEqual(["d", "e", "a"]); // not mid-fight
   });
 
+  it("a knocked-out creature keeps its place when the team is reordered, and a healing pool brings it back", () => {
+    let run = stepInside(startRun(party, party.slice(0, 3), {}, 2));
+    run = { ...run, hp: { ...run.hp, b: 0 } };
+    run = setTeam(run, ["c", "a"]); // reordered while b is down
+    expect(fightingTeam(run)).toEqual(["c", "a"]);
+    run = healInPool(run, "b");
+    expect(fightingTeam(run)).toEqual(["c", "a", "b"]);
+    // An older save where it had already dropped out: the pool puts it back.
+    const lost = healInPool({ ...run, team: ["c", "a"], hp: { ...run.hp, b: 0 } }, "b");
+    expect(fightingTeam(lost)).toEqual(["c", "a", "b"]);
+  });
+
   it("only the team steps inside: the rest of the party waits in the Den, so nobody can be swapped in", () => {
     let run = startRun(party, party.slice(0, 3), { b: 0.4 }, 2);
     run = setTeam(run, ["d", "b", "e"]);
@@ -454,7 +466,7 @@ describe("the haul (Loot at the end of a run)", () => {
   });
 });
 
-import { merchantOffer } from "../lib/dungeon/run";
+import { merchantOffer, buysHere, type RoomKind } from "../lib/dungeon/run";
 import { materialDrop, toolDrop } from "../lib/items/materials";
 import { scrollDrop } from "../lib/drops";
 
@@ -476,5 +488,14 @@ describe("selling to the merchant", () => {
   it("won't take Klutz's club, or something that's gone", () => {
     expect(merchantOffer("gear:x", item({ itemCategory: "weapon", itemKey: "klutz_club" }), gearValue)).toBe(0);
     expect(merchantOffer("gear:x", undefined, gearValue)).toBe(0);
+  });
+  it("you can sell from your bag to the merchant or a librarian, nowhere else", () => {
+    const room = (kind: RoomKind, librarian?: boolean) => ({ ...makeRoom(kind), librarian });
+    expect(buysHere(room("merchant"))).toBe(true);
+    expect(buysHere(room("librarian"))).toBe(true);
+    expect(buysHere(room("library", true))).toBe(true);
+    expect(buysHere(room("library", false))).toBe(false);
+    expect(buysHere(room("pool"))).toBe(false);
+    expect(buysHere(null)).toBe(false);
   });
 });

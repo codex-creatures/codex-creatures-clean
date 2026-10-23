@@ -150,7 +150,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   (`CARDS_TO_SUMMON`): **choose** a card to get exactly that creature, or **random** for a fresh
   roll.
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
-  the cage (`starterCreature`, Lv 3). Releasing a creature gives nothing.
+  the cage (`starterCreature`, Lv 3). Releasing a creature gives nothing. A captured creature joins
+  your creatures but not your roster (the user, 2026-10-23), unless the roster is empty (the
+  starter: the Labyrinth's party is picked from the roster).
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
 - 📌 Races have 5 creatures each, across the rarities. The user is designing creatures and classes
@@ -276,14 +278,18 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   10% of chests (`STASH_TOOLS`, `CHEST_TOOLS`), on top of what they already hold. A chest holds at
   most 5 things (`CHEST_SLOTS`, `capSack`): rolled more, the least rare fall out (gold first, then
   Common, Uncommon…).
-- ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room.
+- ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room,
+  or Use it (opens it in your bag: drink, equip…). In the merchant's or a librarian's room, your bag also has a
+  Sell button, at the same prices (`buysHere`; selling to a librarian is Claude's default, 2026-10-23). A codex
+  can't be bought with a full bag (the user, 2026-10-23).
   - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
     scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
     Claude's defaults, added 2026-10-19.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
   retreat (after a "Leave the labyrinth?" check): runs can't be paused.
-- ✅ After a boss clear, the **walk back** gathers what you left behind.
+- ✅ After a boss clear, the **walk back** gathers what you left behind: everything comes home,
+  however full your bag is (the user, 2026-10-23; it used to be only what fit in the bag).
 - ✅ **Healing pool (Den):** heals 25% HP an hour on one global clock, runs included.
   - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,
     and may use it as a monetisation lever later. The instant heal at the entrance is a testing

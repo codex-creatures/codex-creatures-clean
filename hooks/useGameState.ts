@@ -431,14 +431,15 @@ export function useGameState(initialTab: TabKey = "all") {
   }, [hydrated]);
 
   // ── The cage ──────────────────────────────────────────
-  // Free a caged creature: it joins your creatures (and your roster).
-  // Capture: the creature in the cage becomes yours (and joins your roster).
+  // Capture: the creature in the cage becomes yours. It joins your creatures,
+  // not your roster (★ it yourself), unless your roster is empty: a new
+  // game's first creature, which the Labyrinth's party picks from the roster.
   function captureCaged(id: string) {
     const d = caged.find((c) => c.id === id);
     if (!d) return;
     setCaged((prev) => prev.filter((c) => c.id !== id));
     setInventory((prev) => [d, ...prev]);
-    setFavoriteIds((prev) => new Set([...prev, d.id]));
+    setFavoriteIds((prev) => (prev.size === 0 ? new Set([d.id]) : prev));
   }
   // Release: let it go back to the wild. It's gone for good (but stays in the Bestiary).
   function releaseCaged(id: string) {

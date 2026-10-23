@@ -2,8 +2,8 @@
 // components/PartySlots.tsx
 // Your party in the Labyrinth, drawn like the Pit's creature cards: three
 // team slots (the first one leads) and, at the map, two waiting in the Den. Each card has its
-// health bar across the top. Drag a creature onto another creature (or an
-// empty slot) to swap them round.
+// health bar across the top. Tap a creature to make it lead, or drag it onto
+// another creature (or an empty slot) to swap them round.
 
 import { CreatureArt, PORTRAIT_RATIO } from "./CreaturePortrait";
 import { creatureSprite } from "./PixelSprite";
@@ -36,11 +36,21 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
     onTeam(next.slice(0, TEAM_SLOTS).filter((m): m is PartyMember => !!m && m.hp > 0).map((m) => m.id));
   }
 
+  // Tap a creature to make it lead: it moves to the front and the rest keep
+  // their order (from the bench, the last of the team steps out).
+  function lead(i: number) {
+    const m = slots[i];
+    if (i === 0 || !m || m.hp <= 0) return;
+    const next = [m, ...slots.filter((_, j) => j !== i)];
+    onTeam(next.slice(0, TEAM_SLOTS).filter((x): x is PartyMember => !!x && x.hp > 0).map((x) => x.id));
+  }
+
   const { box: dragBox, ...dnd } = useDragDrop<number>({
     onDrop: (from, t) => {
       const to = t?.startsWith("slot:") ? Number(t.slice(5)) : -1;
       if (to >= 0 && to !== from) swap(from, to);
     },
+    onTap: lead,
   });
   const moving = dnd.lifted !== undefined;
 
@@ -95,7 +105,7 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
           </div>
         </>
       )}
-      <p style={{ fontSize: 12, color: MUTED, margin: "8px 0 0" }}>Drag a creature onto another, or an empty slot, to swap them round.</p>
+      <p style={{ fontSize: 12, color: MUTED, margin: "8px 0 0" }}>Tap a creature to make it lead, or drag it to swap places.</p>
       {/* Who you're dragging, under your finger. */}
       {dnd.ghost}
     </div>

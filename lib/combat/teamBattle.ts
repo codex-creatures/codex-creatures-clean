@@ -80,7 +80,7 @@ function bestReplacement(s: BattleSide, them: Fighter, takesFreeHit: boolean): {
   let best: { index: number; adv: number } | null = null;
   for (let i = 0; i < s.team.length; i++) {
     const f = s.team[i];
-    if (i === s.active || f.hp <= 0) continue;
+    if (i === s.active || i === s.partner || f.hp <= 0) continue; // (an ambush partner is already on the field)
     const incoming = takesFreeHit ? { ...f, hp: f.hp - expectedDamage(them, f) } : f;
     if (incoming.hp <= 0) continue;
     const adv = matchupAdvantage(incoming, them);
