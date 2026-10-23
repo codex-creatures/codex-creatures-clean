@@ -398,6 +398,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he's outside the
   triangle. Nothing counters him and his moves never do less; a move of his that would counter the
   target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His class badge reads a grey "⚖️ Balanced".
+- ✅ **Codexes** (2026-10-23): Klutz reads codexes you own from his Equip window → Moves (not while
+  he's away). Any class's moves and the learnable ones, but **no race moves**, not even his own
+  race's. What he's learned is kept in `KlutzState.learned`.
   - **Skill points** (decided 2026-10-20, replacing the even 9s): he's a **Rare**, his %s start at 0,
     and he earns 6 points a level over 1 (84 at Lv 15, about a Rare's total; `POINTS_PER_LEVEL`).
     In his stats window, tap a stat to add 1% (attacks on the top row beside the points left;
