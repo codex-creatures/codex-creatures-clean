@@ -285,6 +285,39 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
     scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
     Claude's defaults, added 2026-10-19.
+- 📌 **The bigger merchant** (all decided by the user, 2026-10-23; not built yet). Applies to the
+  Labyrinth merchant and the tavern merchant alike. The user wants the merchant to keep growing.
+  - **Cart: 10 slots** (now `MERCHANT_SLOTS` 5), filled in this order:
+    1. Always: Healing Potion, Lesser Potion, Flare.
+    2. Rare wares, each rolled on its own: the backpack (until you own it) or, once you do, a
+       **backpack upgrade** 20%; the **weapon storage schematic** 20% and the **armour storage
+       schematic** 20% (each until bought); the **Revival Elixir** 25%; XP scroll 20% and
+       clairvoyance scroll 40% (as now).
+    3. **Gear:** 0–2 weapons or armour pieces, rolled like a scan (normal rarity odds,
+       `RARITY_WEIGHTS`, with **no explorer-level gate**: price is the filter), sold at **2× the
+       crate's sell value**.
+    4. **Materials:** 3–5 stacks, repeats allowed (each bought separately). They fill what's left:
+       the rarer rolls above push materials off. Never more than 10 in all.
+  - **Backpack upgrades:** +1 slot each, from the backpack's 5 up to **8** (3 upgrades), at
+    **1,000 → 1,500 → 2,000** gold. Only once you own the backpack.
+  - **Storage schematics** (two, separate, one-time): weapon box and armour box, each 50 → 75
+    (`BOX_CAP` is shared today; consumables stay at 50). Bought for **2,000 gold**, built at home
+    like the other schematics for **10 planks, 10 nails, 1 essence stone**.
+  - **Revival Elixir:** revives one knocked-out creature to **50% HP**, **between rooms only**
+    (not in battle). Takes a bag slot like a potion. **500 gold** at the merchant (25% of carts);
+    also in **20% of mini-boss chests** and **50% of boss chests**.
+  - **Armour priced like weapons:** an armour piece's sell value stops being a third of a set
+    (`PIECE_VALUE` in sell.ts goes), so armour is worth the same as a weapon of its rarity. The
+    user accepts the knock-on: armour sells for 3× more everywhere (crate, merchant, tavern), so
+    gold from selling gear roughly doubles. If gold starts to feel too easy, tune the 2× mark-up
+    or crate prices, not this.
+  - Rough prices at 2× (estimates from the formula; a typical roll is about half the max): weapons
+    Common ~100, Uncommon ~200, Rare ~500, Epic ~1,500, Legendary ~5,000 (a great roll about
+    double). The user's own save for scale (2026-10-23): Cyclops beaten, backpack, tavern, a team
+    around Lv 8–18, about 5,000 gold.
+  - Build notes: the cart screen needs a grid for 10 wares (like the bag's slots), keeping the
+    fixed-structure rule; ware keys must stay unique with repeated materials; old saves' carts
+    (5 wares) must still load. Run a quick sim of cart prices when building.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
   retreat (after a "Leave the labyrinth?" check): runs can't be paused.
