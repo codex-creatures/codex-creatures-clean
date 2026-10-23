@@ -78,8 +78,8 @@ folder keeps your save.
 
 Your progress is saved automatically **in the browser, for the address you play at**:
 
-- http://localhost:3000 (dev server), http://localhost:8123 (offline copy) and your phone each
-  have **their own, separate save**;
+- http://localhost:3000 (dev server), http://localhost:8123 (offline copy), the Vercel site (https://codex-creatures-clean.vercel.app/) and
+  your phone each have **their own, separate save**;
 - so do different browsers (Chrome vs Edge) and different computers;
 - **clearing your browsing data deletes it.**
 

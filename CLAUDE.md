@@ -10,6 +10,10 @@ A creature-collecting game: scan real barcodes for creatures and loot, then take
 the Labyrinth (a roguelike run of rooms) with turn-based battles. Mobile-first, and headed for
 iOS/Android one day. Right now it's a single-player **browser game with no backend**.
 
+**It's hosted on Vercel** (since 2026-10-23), as a static site: Vercel builds and deploys `main`
+automatically on every push to GitHub. **So a push to `main` is a release:** players get it
+straight away. The address: **https://codex-creatures-clean.vercel.app/**. The game itself still has no server: everything still runs in the browser.
+
 - Next.js 16 (App Router), React 19, TypeScript, Vitest 3. **No other runtime dependency** apart
   from `@zxing/browser` (barcode scanning).
 - Every page is a client component. All state is in the browser's `localStorage`.
@@ -34,7 +38,8 @@ iOS/Android one day. Right now it's a single-player **browser game with no backe
    - Exported save files must stay importable: bump `SAVE_FILE_VERSION` (lib/saveFile.ts) only
      together with a reader for the older version.
    - **Never write saves on the user's real addresses** while testing: http://localhost:3000, the
-     offline copy on :8123, or their phone. Checks that load the game in a browser use a scratch
+     offline copy on :8123, the Vercel site (codex-creatures-clean.vercel.app), or their phone. Each address keeps its own saves
+     (moving progress between them is Settings → Export / Import). Checks that load the game in a browser use a scratch
      port or a temporary clone.
 3. **Don't redesign settled mechanics.** docs/design.md marks each thing as built, decided,
    provisional or open. Change decided numbers (rarity odds, roll budgets, the triangle, XP curves,
@@ -44,6 +49,7 @@ iOS/Android one day. Right now it's a single-player **browser game with no backe
    entry.
 5. **Kept separate from Vouchee.** This repo has nothing to do with the user's Vouchee business
    (its repos, Vercel, Supabase, credentials). Don't reference, copy or touch any of it from here.
+   (This game's own Vercel project is fine to mention; Vouchee's Vercel projects stay off limits.)
 6. **No secrets in the repo.** The PixelLab API key is set up per machine in Claude Code's MCP
    config, never in files. `.env*` is gitignored.
 
@@ -63,7 +69,7 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
   changed for the player, like the existing log. Push with `git push origin main`, then confirm it
   arrived: `git status` should say up to date with `origin/main`, or compare
   `git rev-parse HEAD origin/main`. Don't claim a push worked without checking. Ask before
-  pushing if the user hasn't asked for it.
+  pushing if the user hasn't asked for it: a push also goes live on Vercel.
 - Line endings are set by `.gitattributes`: LF in the repo, CRLF only for `.bat`/`.cmd`. Don't
   mass-convert files.
 - Claude's memory folder is per machine. Anything both computers need goes in this file or in
