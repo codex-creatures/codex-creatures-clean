@@ -779,6 +779,16 @@ export function useGameState(initialTab: TabKey = "all") {
     setSellMode(false);
   }
 
+  // One piece sold from its detail window (the same price as Sell mode).
+  // Favourited, worn or packed pieces aren't for sale.
+  function sellOne(id: string) {
+    const d = inventory.find((x) => x.id === id);
+    if (!d || !isSellableItem(d) || lockedIds.has(id)) return;
+    setGold((g) => g + crateSellValue(d));
+    setInventory((prev) => prev.filter((x) => x.id !== id));
+    setSelectedForSale((prev) => { if (!prev.has(id)) return prev; const n = new Set(prev); n.delete(id); return n; });
+  }
+
   // "New player": wipes this player's progress but keeps the barcode
   // registry — rescanning a known barcode acts like a friend scanning it.
   function resetAll() {
@@ -840,6 +850,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

@@ -52,6 +52,7 @@ type Props = {
   sellTotal: number;
   onOpenSellConfirm: () => void;
   onToggleSellMode: () => void;
+  onSellOne?: (id: string) => void; // sell from an item's detail window
   onResetAll?: () => void;
   onGlobalReset?: () => void;
   // Which tabs this screen shows (the chest shows items, the pit creatures).
@@ -72,7 +73,7 @@ export default function InventoryList({
   tabCounts, activeTab, onTabChange,
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
-  sellTotal, onOpenSellConfirm, onToggleSellMode, onResetAll, onGlobalReset,
+  sellTotal, onOpenSellConfirm, onToggleSellMode, onSellOne, onResetAll, onGlobalReset,
   tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
@@ -358,6 +359,14 @@ export default function InventoryList({
           items={navigableItems}
           currentIndex={detailIndex}
           onNavigate={(idx) => setDetailIndex(idx)}
+          locked={lockedIds.has(navigableItems[detailIndex].id)}
+          // Sold: the window stays open on the next piece (or the one before,
+          // at the end), and closes once there's nothing left.
+          onSell={onSellOne && ((id) => {
+            onSellOne(id);
+            const left = navigableItems.length - 1;
+            setDetailIndex(left > 0 ? Math.min(detailIndex, left - 1) : null);
+          })}
         />
       )}
     </div>

@@ -1,11 +1,13 @@
 "use client";
 // components/ItemDetailModal.tsx
 // One item up close: its stats against the most it could roll, its sell
-// value, and ← → to flick through the rest. Every part has a fixed height
-// (names and notes are clamped to their lines), so flicking between items
-// only changes what's written: nothing moves.
+// value (and a Sell button, asking first), and ← → or a swipe to flick
+// through the rest. Every part has a fixed height (names and notes are
+// clamped to their lines), so flicking between items only changes what's
+// written: nothing moves.
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { isSellableItem } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
@@ -23,7 +25,13 @@ type Props = {
   items: CreatureOrItemDrop[];
   currentIndex: number;
   onNavigate: (index: number) => void;
+  // Selling from here (the Inventory). Without it, only the price shows.
+  onSell?: (id: string) => void;
+  locked?: boolean; // favourited, worn or packed: not for sale
 };
+
+// How far a finger must travel sideways to flick to the next item.
+const SWIPE_PX = 40;
 
 const WEAPON_STATS = [
   { label: "Melee",   key: "melee"   },
@@ -74,6 +82,13 @@ function StatBar({ label, value, cap }: { label: string; value: number; cap: num
   );
 }
 
+const sellBox: React.CSSProperties = {
+  flex: 1, display: "flex", alignItems: "center", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.2)", borderRadius: 10,
+};
+const sellBtn: React.CSSProperties = {
+  borderRadius: 10, border: "1px solid rgba(245,197,66,0.4)", background: "rgba(245,197,66,0.07)", color: "white", fontWeight: 700, fontSize: 15, cursor: "pointer",
+};
+
 function RarityBadge({ rarity }: { rarity: Rarity }) {
   const c = RARITY_COLORS[rarity];
   return (
@@ -83,7 +98,12 @@ function RarityBadge({ rarity }: { rarity: Rarity }) {
   );
 }
 
-export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, onClose, items, currentIndex, onNavigate }: Props) {
+export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, onClose, items, currentIndex, onNavigate, onSell, locked }: Props) {
+  // "Sell for …?" waiting for a yes. Flicking to another item cancels it.
+  const [confirmFor, setConfirmFor] = useState<string | null>(null);
+  const confirming = confirmFor === item.id;
+  const setConfirming = (on: boolean) => setConfirmFor(on ? item.id : null);
+  const touch = useRef<{ x: number; y: number } | null>(null);
   const stats = item.stats ?? {};
   const statDefs = item.itemCategory === "armor" ? ARMOR_STATS : WEAPON_STATS;
   const sellValue = item.itemCategory !== "material"
@@ -105,7 +125,18 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} className="modal-panel" style={{ background: "#0f0f1a", border: `1px solid ${RARITY_COLORS[item.rarity].border}`, boxShadow: `0 0 40px ${RARITY_COLORS[item.rarity].glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, maxHeight: "90cqh", overflowY: "auto", position: "relative" }}>
+      <div onClick={(e) => e.stopPropagation()} className="modal-panel"
+        onTouchStart={(e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
+        onTouchEnd={(e) => {
+          const t = touch.current;
+          touch.current = null;
+          if (!t) return;
+          const dx = e.changedTouches[0].clientX - t.x, dy = e.changedTouches[0].clientY - t.y;
+          // Sideways only (the panel scrolls up and down).
+          if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+          if (dx < 0 && hasNext) onNavigate(currentIndex + 1);
+          if (dx > 0 && hasPrev) onNavigate(currentIndex - 1);
+        }} style={{ background: "#0f0f1a", border: `1px solid ${RARITY_COLORS[item.rarity].border}`, boxShadow: `0 0 40px ${RARITY_COLORS[item.rarity].glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, maxHeight: "90cqh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
@@ -165,10 +196,28 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />
 
         {/* (Kept in place, hidden, for things that don't sell: so nothing below moves.) */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, padding: "10px 14px", background: "rgba(245,197,66,0.07)", border: "1px solid rgba(245,197,66,0.2)", borderRadius: 10,
-          visibility: item.itemCategory !== "material" && item.itemCategory !== "consumable" ? "visible" : "hidden" }}>
-          <span style={{ fontSize: 14, opacity: 0.7 }}>Sell value</span>
-          <span style={{ fontSize: 18, fontWeight: 700, color: "#f5c542" }}>{sellValue.toLocaleString()}g</span>
+        {/* Sell: tap, then Yes. The box is the same height whichever it shows. */}
+        <div style={{ display: "flex", gap: 8, alignItems: "stretch", height: 48, marginBottom: 20,
+          visibility: isSellableItem(item) ? "visible" : "hidden" }}>
+          {!onSell ? (
+            <div style={{ ...sellBox, justifyContent: "space-between", padding: "0 14px" }}>
+              <span style={{ fontSize: 14, opacity: 0.7 }}>Sell value</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#f5c542" }}>{sellValue.toLocaleString()}g</span>
+            </div>
+          ) : confirming ? <>
+            <div style={{ ...sellBox, flex: 2, justifyContent: "center", fontSize: 14, color: "#f5c542", fontWeight: 700 }}>
+              Sell for {sellValue.toLocaleString()}g?
+            </div>
+            <button onClick={() => setConfirming(false)} style={{ ...sellBtn, flex: 1 }}>No</button>
+            <button onClick={() => { setConfirming(false); onSell(item.id); }}
+              style={{ ...sellBtn, flex: 1, background: "#f5c542", color: "#1a1a1a", border: "none" }}>Yes</button>
+          </> : (
+            <button onClick={() => setConfirming(true)} disabled={locked}
+              title={locked ? "Favourited, worn or packed pieces can't be sold" : undefined}
+              style={{ ...sellBtn, flex: 1, opacity: locked ? 0.4 : 1, cursor: locked ? "not-allowed" : "pointer" }}>
+              {locked ? "🔒 Can't sell" : <>Sell · <span style={{ color: "#f5c542" }}>{sellValue.toLocaleString()}g</span></>}
+            </button>
+          )}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

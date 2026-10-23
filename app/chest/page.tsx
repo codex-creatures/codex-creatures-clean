@@ -114,6 +114,7 @@ export default function InventoryPage() {
         sellTotal={game.sellTotal}
         onOpenSellConfirm={() => game.setShowSellConfirm(true)}
         onToggleSellMode={game.toggleSellMode}
+        onSellOne={game.sellOne}
         unavailableItems={game.klutzAwayItems}
         />
     </DenFrame>
