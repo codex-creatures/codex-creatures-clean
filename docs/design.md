@@ -395,8 +395,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
   retreat (after a "Leave the labyrinth?" check): runs can't be paused.
-- ✅ After a boss clear, the **walk back** gathers what you left behind: everything comes home,
-  however full your bag is (the user, 2026-10-23; it used to be only what fit in the bag).
+- ✅ After a boss clear, the **walk back** lets you pick from everything you left behind, but only
+  what fits in your bag; gold and creature cards come home free, the rest stays (the user,
+  2026-10-26: back to how it was; on 2026-10-23 everything came home, but most of it was junk).
 - ✅ **Healing pool (Den):** heals 25% HP an hour on one global clock, runs included.
   - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,
     and may use it as a monetisation lever later. The instant heal at the entrance is a testing
