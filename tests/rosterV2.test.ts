@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { KIT_MOVES, KIT_MOVE_RACE, KIT_NUMBERS, kitFor, kitMoveFor } from "../lib/creatures/raceKitsV2";
-import { ARCHETYPE_INFO, NEW_SPECIES_V2, ROSTER_V2, SPECIES_ARCHETYPE, v2Moves } from "../lib/creatures/rosterV2";
+import { ARCHETYPE_INFO, NEW_SPECIES_V2, ROSTER_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
 import { RACES_V2, SPECIES_RACES } from "../lib/creatures/racesV2";
-import { MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { CREATURE_TEMPLATES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
 import { createBattle, resolveRound, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { raceMultiplier, RACE_EFFECT, MATCH_BONUS } from "../lib/combat/raceChart";
@@ -62,12 +62,30 @@ describe("Combat V2: no damage types", () => {
 });
 
 describe("Combat V2 roster", () => {
-  it("35 creatures: one of each rarity for each race (by first race)", () => {
+  it("35 creatures, one of each rarity per race by first race (the Pale Rider made Undead's Legendary a pair)", () => {
     expect(ROSTER_V2).toHaveLength(35);
     for (const race of RACES_V2) {
       const rs = ROSTER_V2.filter((c) => SPECIES_RACES[c.id][0] === race).map((c) => c.rarity).sort();
-      expect(rs, race).toEqual([...RARITIES].sort());
+      const want = race === "undead" ? [...RARITIES, "legendary"] : race === "pestilence" ? RARITIES.slice(0, 4) : RARITIES;
+      expect(rs, race).toEqual([...want].sort());
     }
+  });
+
+  it("the archetypes are even: 4 each, 3 Snipers", () => {
+    const counts: Record<string, number> = {};
+    for (const c of ROSTER_V2) counts[SPECIES_ARCHETYPE[c.id]] = (counts[SPECIES_ARCHETYPE[c.id]] ?? 0) + 1;
+    for (const a of Object.keys(ARCHETYPE_INFO)) expect(counts[a], a).toBe(a === "sniper" ? 3 : 4);
+  });
+
+  it("a V2 restyle changes the style but keeps the % total, and leaves the live game alone", () => {
+    const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
+    for (const [id, r] of Object.entries(V2_RESTYLE)) {
+      const live = CREATURE_TEMPLATES.find((c) => c.id === id)!;
+      expect(sum(r.proficiency), id).toBe(sum(live.proficiency));
+      expect(v2(id).cls).toBe(r.cls);
+    }
+    expect(CREATURE_TEMPLATES.find((c) => c.id === "the_watcher")!.cls).toBe("ranged");
+    expect(v2("the_watcher").skills.every((m) => m.type === "magic")).toBe(true);
   });
 
   it("every creature has an archetype whose styles include its class", () => {

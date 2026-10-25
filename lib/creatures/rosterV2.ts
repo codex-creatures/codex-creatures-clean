@@ -34,12 +34,12 @@ export const ARCHETYPE_INFO: Record<Archetype, { name: string; styles: CombatCla
 // A draft archetype for every species, by its %s and moves today.
 export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
   moss_wolf: "bruiser", amber_wasp: "skirmisher", bellow_toad: "ranger", dire_wolf: "bruiser", ironhide: "bulwark",
-  cave_bat: "skirmisher", rust_beetle: "bulwark", crystalback: "warden", crystal_golem: "bulwark", hollow_matriarch: "ranger",
-  dust_sprite: "sniper", flicker_wisp: "arcanist", veilstalker: "battlemage", the_watcher: "sniper", void_serpent: "battlemage",
-  rattlebones: "bruiser", shambler: "bulwark", dustwraith: "arcanist", mr_shadows: "battlemage", storm_phoenix: "skirmisher",
+  cave_bat: "skirmisher", rust_beetle: "bulwark", crystalback: "warden", crystal_golem: "warden", hollow_matriarch: "ranger",
+  dust_sprite: "sniper", flicker_wisp: "arcanist", veilstalker: "battlemage", the_watcher: "arcanist", void_serpent: "battlemage",
+  rattlebones: "bruiser", shambler: "bulwark", dustwraith: "spellbow", mr_shadows: "battlemage", storm_phoenix: "skirmisher",
   thicket_archer: "sniper", leafblade_scout: "ranger", aurelius: "ranger", swamp_witch: "arcanist", sylvaran: "sniper",
   // New
-  gleamling: "arcanist", flame_imp: "arcanist", deep_angler: "spellbow", tunnel_wyrm: "bulwark", thunderhead: "spellbow",
+  gleamling: "spellbow", flame_imp: "arcanist", deep_angler: "spellbow", tunnel_wyrm: "warden", thunderhead: "spellbow",
   plague_rat: "bruiser", rotgut_fly: "skirmisher", glob: "bulwark", dreadpox: "warden", pale_rider: "battlemage",
 };
 
@@ -50,7 +50,7 @@ export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
 type NewSpecies = Omit<CreatureTemplate, "skills">;
 export const NEW_SPECIES_V2: NewSpecies[] = [
   // Divine
-  { id: "gleamling",       name: "Gleamling",       rarity: "common",    baseHp: 58,  cls: "magic",  proficiency: { atk: 2, rng: 0, mag: 18, agil: 12, mdef: 2, rdef: 4, magdef: 6 },
+  { id: "gleamling",       name: "Gleamling",       rarity: "common",    baseHp: 58,  cls: "magic",  proficiency: { atk: 2, rng: 6, mag: 12, agil: 12, mdef: 2, rdef: 4, magdef: 6 },
     flavour: "A mote of chapel light with moth wings. Small, bright, and much angrier than it looks." },
   // Geo
   { id: "flame_imp",       name: "Flame Imp",       rarity: "uncommon",  baseHp: 72,  cls: "magic",  proficiency: { atk: 4, rng: 0, mag: 20, agil: 18, mdef: 4, rdef: 6, magdef: 8 },
@@ -60,7 +60,7 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
   // Underkin
   { id: "deep_angler",     name: "Deep Angler",     rarity: "rare",      baseHp: 88,  cls: "ranged", proficiency: { atk: 4, rng: 18, mag: 16, agil: 14, mdef: 8, rdef: 10, magdef: 10 },
     flavour: "A blind cave fish on crooked legs. Follow its glowing lure and you'll never find your way out." },
-  { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "melee",  proficiency: { atk: 26, rng: 0, mag: 0, agil: 6, mdef: 34, rdef: 24, magdef: 24 },
+  { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "magic",  proficiency: { atk: 6, rng: 0, mag: 20, agil: 6, mdef: 34, rdef: 24, magdef: 24 },
     flavour: "Eyeless and armoured in plates of stone. The tunnels it leaves behind are the Labyrinth's oldest." },
   // Pestilence
   { id: "plague_rat",      name: "Plague Rat",      rarity: "common",    baseHp: 60,  cls: "melee",  proficiency: { atk: 14, rng: 0, mag: 0, agil: 16, mdef: 4, rdef: 4, magdef: 4 },
@@ -95,5 +95,21 @@ export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
   return [...new Map([...start, ...rest].map((m) => [m.name, m])).values()];
 }
 
-// The whole V2 roster, with V2 moves in place of today's.
-export const ROSTER_V2: CreatureTemplate[] = [...CREATURE_TEMPLATES, ...NEW_SPECIES_V2].map((c) => ({ ...c, skills: v2Moves(c) }));
+// Today's creatures that fight in another style in V2 (the user and Claude,
+// 2026-10-26, to even out the archetypes). Their main % moves to the new
+// style, so the total stays the same; a new hybrid splits it across both.
+export const V2_RESTYLE: Record<string, Pick<CreatureTemplate, "cls" | "proficiency">> = {
+  // A melee Ranger now: fangs first, webs second (was ranged).
+  hollow_matriarch: { cls: "melee", proficiency: { atk: 40, rng: 24, mag: 0, agil: 30, mdef: 24, rdef: 22, magdef: 23 } },
+  // Magic, not ranged (the user).
+  the_watcher:      { cls: "magic", proficiency: { atk: 10, rng: 0, mag: 42, agil: 12, mdef: 10, rdef: 16, magdef: 20 } },
+  // A Warden: crystal magic, not fists.
+  crystal_golem:    { cls: "magic", proficiency: { atk: 6, rng: 0, mag: 28, agil: 4, mdef: 32, rdef: 20, magdef: 26 } },
+  // A Spellbow: it hurls the dust it's made of.
+  dustwraith:       { cls: "magic", proficiency: { atk: 6, rng: 6, mag: 14, agil: 32, mdef: 4, rdef: 8, magdef: 6 } },
+};
+
+// The whole V2 roster, with V2 styles and moves in place of today's.
+export const ROSTER_V2: CreatureTemplate[] = [...CREATURE_TEMPLATES, ...NEW_SPECIES_V2]
+  .map((c) => ({ ...c, ...V2_RESTYLE[c.id] }))
+  .map((c) => ({ ...c, skills: v2Moves(c) }));

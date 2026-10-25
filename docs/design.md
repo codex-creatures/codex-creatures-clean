@@ -310,10 +310,18 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   (Pestilence + Undead Epic), and Claude's drafts Gleamling, Thunderhead, Deep Angler, Tunnel Wyrm,
   Plague Rat, Rotgut Fly and The Pale Rider. V2-only, so not scannable yet. The
   user will re-race them. Veilstalker moved Undead → Divine so Undead didn't have two Rares.
+- 📌 **The user's race pass** (2026-10-26): Rust Beetle is Underkin only; Hollow Matriarch Underkin +
+  Beast and melee; Flame Imp Geo + Divine; Veilstalker Divine + Underkin; Void Serpent Divine + Beast;
+  The Watcher magic, not ranged; The Pale Rider Undead + Humanoid (so Undead has two Legendaries and
+  Pestilence none; the user is fine with lopsided races). Dust Sprite stays Geo. The rest waits for
+  the user to see sprites. V2-only style changes are `V2_RESTYLE` (lib/creatures/rosterV2.ts): the
+  main % moves to the new style, total unchanged.
+- 📌 The Cave Bat becomes a goblin (pale skin, big eyes, like Klutz but meaner): art and name to come.
 - ❓ **Archetypes** (Claude's draft, `ARCHETYPE_INFO`): Bruiser, Bulwark (melee tank), Sniper,
   Skirmisher, Arcanist, Warden (magic tank), and the hybrids Ranger (melee + ranged), Battlemage
   (melee + magic) and Spellbow (ranged + magic). An archetype decides which style kits a creature
-  draws from, so a hybrid fights in two styles. Spellbows are the thinnest (2).
+  draws from, so a hybrid fights in two styles. Evened out (the user asked, 2026-10-26): 4 of each, 3
+  Snipers. Crystal Golem and Tunnel Wyrm became Wardens, Dustwraith and Gleamling Spellbows.
 - ❓ `MOVE_RACES` gives today's moves draft races for the sims. Race move rules (beyond the kits),
   the UI and the Bestiary are still open.
 - The switch is `setCombatRules` in engine.ts (the live game: `LIVE_RULES`, triangle on, races off). Sims:

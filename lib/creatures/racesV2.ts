@@ -27,16 +27,16 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   ironhide:         ["beast"],
   // Old Underkin
   cave_bat:         ["underkin"],
-  rust_beetle:      ["underkin", "pestilence"], // rust is corrosion
+  rust_beetle:      ["underkin"],
   crystalback:      ["geo", "beast"],
   crystal_golem:    ["geo"],
-  hollow_matriarch: ["underkin"],
+  hollow_matriarch: ["underkin", "beast"],  // a cave spider (the user, 2026-10-26)
   // Old Etherial
   dust_sprite:      ["geo"],                // a wind spirit
   flicker_wisp:     ["divine"],
-  veilstalker:      ["divine"],             // half out of phase (was Undead: that left Undead two Rares)
+  veilstalker:      ["divine", "underkin"], // half out of phase (was Undead: that left Undead two Rares)
   the_watcher:      ["divine"],
-  void_serpent:     ["divine"],
+  void_serpent:     ["divine", "beast"],
   // Old Undead
   rattlebones:      ["undead"],
   shambler:         ["undead", "pestilence"], // rotting
@@ -51,7 +51,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   sylvaran:         ["humanoid"],
   // New in Combat V2 (lib/creatures/rosterV2.ts)
   gleamling:        ["divine"],
-  flame_imp:        ["geo"],
+  flame_imp:        ["geo", "divine"],
   thunderhead:      ["geo"],
   deep_angler:      ["underkin"],
   tunnel_wyrm:      ["underkin", "geo"],    // armoured in stone
@@ -59,7 +59,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   rotgut_fly:       ["pestilence"],
   glob:             ["pestilence"],
   dreadpox:         ["pestilence", "undead"], // the user's: Undead and Pestilence
-  pale_rider:       ["pestilence", "undead"],
+  pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Pestilence has no Legendary)
   // Retired (still owned by some players)
   monkey_mage:      ["beast"],
   mantis_warden:    ["beast"],
