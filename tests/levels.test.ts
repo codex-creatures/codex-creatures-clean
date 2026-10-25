@@ -7,7 +7,7 @@ import { buildFighter } from "../lib/combat/loadout";
 import { newWitchGame, guess, walkAway, remaining, drawNext, odds, sitDown, isSeated, DECK, MAX_CORRECT, type WitchGame } from "../lib/dungeon/witch";
 import { startRun, curse, illnessTick, stabTarget, makeRoom, enemyLevel, ILLNESS_DAMAGE, ILLNESS_ACTIONS, DEEP_ROUTE } from "../lib/dungeon/run";
 import { rollMap, routeLength } from "../lib/dungeon/map";
-import { DUNGEONS } from "../lib/dungeon/run";
+import { DUNGEONS, ABYSS_WARDEN_LEVEL, endRun } from "../lib/dungeon/run";
 
 describe("creature levels", () => {
   it("level 1 is only its rolls; level 15 is the species plus its rolls", () => {
@@ -114,6 +114,34 @@ describe("the Deep Labyrinth", () => {
     expect(boss.enemies).toHaveLength(3);
     expect(CREATURE_BY_ID[boss.enemies![0].creatureId].rarity).toBe("legendary");
     expect(makeRoom("boss", Math.random, 8, 1).boss).toBe("cyclops");
+  });
+  it("the Abyss: the Deep Labyrinth's climb and Warden's pack, with higher levels and rarer gear", () => {
+    const rank = (r: string) => ["common", "uncommon", "rare", "epic", "legendary"].indexOf(r);
+    expect(DUNGEONS[3].spec).toEqual(DUNGEONS[2].spec);
+    for (const [i, [upTo, min, max]] of DUNGEONS[3].levels.entries()) {
+      const [upTo2, min2, max2] = DUNGEONS[2].levels[i];
+      expect([upTo, min > min2, max > max2]).toEqual([upTo2, true, true]);
+    }
+    expect(DUNGEONS[3].maxLevel).toBeGreaterThan(DUNGEONS[2].maxLevel);
+    for (const kind of ["easy", "hard", "camp", "miniboss"] as const) {
+      const [c3, g3] = DUNGEONS[3].foes[0][kind], [c2, g2] = DUNGEONS[2].foes[0][kind];
+      expect(c3).toBe(c2);                         // the same creatures…
+      expect(rank(g3)).toBe(rank(g2) + 1);         // …a rarity up in gear
+    }
+    const den = makeRoom("easy", Math.random, 10, 3);
+    expect(den.enemies!.every((e) => (e.level ?? 0) >= 17)).toBe(true);
+    const boss = makeRoom("boss", Math.random, 15, 3);
+    expect(boss.boss).toBeUndefined();
+    expect(boss.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity)).toEqual(["legendary", "epic", "epic"]);
+    expect(boss.enemies!.map((e) => e.level)).toEqual([ABYSS_WARDEN_LEVEL, ABYSS_WARDEN_LEVEL - 1, ABYSS_WARDEN_LEVEL - 1]);
+    expect(boss.enemies!.map((e) => e.gear[0].rarity)).toEqual(["epic", "rare", "rare"]);
+    expect(makeRoom("boss", Math.random, 15, 2).enemies!.map((e) => e.gear[0].rarity)).toEqual(["rare", "uncommon", "uncommon"]);
+  });
+  it("counts Abyss runs apart from the other two", () => {
+    const run = { ...startRun(["a"], ["a"], {}, 1, Math.random, 3), status: "cleared" as const };
+    expect(run.dungeon).toBe(3);
+    const after = endRun({ meta: { runs: 9, clears: 3, deepClears: 1, injuries: {}, bag: [] }, run }).meta;
+    expect([after.clears, after.deepClears, after.abyssClears]).toEqual([3, 1, 1]);
   });
 });
 

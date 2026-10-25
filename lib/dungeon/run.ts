@@ -60,8 +60,12 @@ export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "che
 // 1: the Labyrinth (the Cyclops at the top). 2: the Deep Labyrinth, open
 // once you've beaten the Cyclops: a longer climb (DEEP_ROUTE rooms to the
 // lair), tougher and higher-level creatures, and the Warden's pack waiting
-// at the top. Enemy levels rise with depth (enemyLevel).
-export type DungeonId = 1 | 2;
+// at the top. 3: the Abyss, open once you've beaten the Warden: the Deep
+// Labyrinth again (the same climb, the same Warden's pack), only with
+// higher-level creatures in rarer gear (the user, 2026-10-26). Enemy levels
+// rise with depth (enemyLevel).
+export type DungeonId = 1 | 2 | 3;
+export const DUNGEON_IDS: DungeonId[] = [1, 2, 3];
 export const DEEP_ROUTE = 15;
 export type DungeonInfo = {
   name: string;
@@ -70,6 +74,7 @@ export type DungeonInfo = {
   levels: LevelBand[]; // how strong its creatures are, by depth (enemyLevel)
   maxLevel: number;    // no creature here (bar the boss) is stronger than this
   goldScale: number;
+  pack?: [warden: Rarity, guards: Rarity]; // the Warden's pack's gear (the deeper dungeons' boss)
 };
 // How rare a room's creatures are (the user, 2026-10-19). Each kind of
 // fight has a creature rarity and a gear rarity, by depth, and each enemy
@@ -91,7 +96,13 @@ export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
        foes: [
          { upTo: Infinity, easy: ["uncommon", "uncommon", STEP_UP], hard: ["epic", "rare", STEP_UP], camp: ["epic", "rare", 0], miniboss: ["rare", "rare", 0.3] },
        ],
-       levels: [[5, 7, 11], [10, 9, 14], [Infinity, 11, 15]], maxLevel: 17, goldScale: 2 },
+       levels: [[5, 7, 11], [10, 9, 14], [Infinity, 11, 15]], maxLevel: 17, goldScale: 2, pack: ["rare", "uncommon"] },
+  // Every fight a level band higher than the Deep Labyrinth, and every piece of gear a rarity up.
+  3: { name: "The Abyss", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 },
+       foes: [
+         { upTo: Infinity, easy: ["uncommon", "rare", STEP_UP], hard: ["epic", "epic", STEP_UP], camp: ["epic", "epic", 0], miniboss: ["rare", "epic", 0.3] },
+       ],
+       levels: [[5, 15, 19], [10, 17, 22], [Infinity, 19, 24]], maxLevel: 26, goldScale: 3, pack: ["epic", "rare"] },
 };
 // The creature and gear rarity for one enemy of this kind at this depth (its step-up rolled).
 export function foeAt(dungeon: DungeonId, kind: "easy" | "hard" | "camp" | "miniboss", depth: number, rng: Rng = Math.random): [Rarity, Rarity] {
@@ -117,9 +128,11 @@ export const MINIBOSS_LEVELS = 3;
 // (A boss's strength is mostly its gear and its tricks; its level trims its HP and %s.)
 export const CYCLOPS_LEVEL = 6;  // the Labyrinth's boss
 export const WARDEN_LEVEL = 16;  // the Deep Labyrinth's boss pack (its guards are a level lower)
+export const ABYSS_WARDEN_LEVEL = 25; // the Abyss's (the same pack, stronger)
+export const bossLevel = (dungeon: DungeonId) => (dungeon === 1 ? CYCLOPS_LEVEL : dungeon === 2 ? WARDEN_LEVEL : ABYSS_WARDEN_LEVEL);
 export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rng: Rng = Math.random): number {
   const D = DUNGEONS[dungeon];
-  if (kind === "boss") return dungeon === 1 ? CYCLOPS_LEVEL : WARDEN_LEVEL;
+  if (kind === "boss") return bossLevel(dungeon);
   const d = Number.isFinite(depth) ? depth : Infinity;
   const [, min, max] = D.levels.find(([upTo]) => d <= upTo) ?? D.levels[D.levels.length - 1];
   const den = dungeon === 1 && d <= FIRST_ROOMS ? weighted(FIRST_ROOM_LEVELS, rng) : min + Math.floor(rng() * (max - min + 1));
@@ -611,10 +624,13 @@ function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
     : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot, pieces: g.armorPieces, armorV: ARMOR_V2 };
 }
 
-// The Deep Labyrinth's boss: the Warden, a Legendary in Rare gear, with two Epic guards in Uncommon gear.
-export function wardenPack(rng: Rng = Math.random): Enemy[] {
-  const warden = makeEnemy("legendary", "rare", [], rng, WARDEN_LEVEL);
-  const guards = [0, 1].map(() => makeEnemy("epic", "uncommon", [warden.creatureId], rng, WARDEN_LEVEL - 1));
+// The deeper dungeons' boss: the Warden, a Legendary, with two Epic guards (the Deep
+// Labyrinth: in Rare and Uncommon gear; the Abyss: Epic and Rare, and higher level).
+export function wardenPack(rng: Rng = Math.random, dungeon: DungeonId = 2): Enemy[] {
+  const [wardenGear, guardGear] = DUNGEONS[dungeon].pack ?? DUNGEONS[2].pack!;
+  const level = bossLevel(dungeon);
+  const warden = makeEnemy("legendary", wardenGear, [], rng, level);
+  const guards = [0, 1].map(() => makeEnemy("epic", guardGear, [warden.creatureId], rng, level - 1));
   return [warden, ...guards];
 }
 
@@ -781,8 +797,8 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     case "boss":
       // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
-      // The Deep Labyrinth: the Warden (a Legendary) and two Epic guards, in Epic gear.
-      return { kind, enemies: wardenPack(rng), level: "hard", gold: gold(BOSS_GOLD), done: false };
+      // The Deep Labyrinth and the Abyss: the Warden (a Legendary) and two Epic guards.
+      return { kind, enemies: wardenPack(rng, dungeon), level: "hard", gold: gold(BOSS_GOLD), done: false };
     case "librarian": {
       // A few different codexes, each for a different race.
       const offers: string[] = [];
@@ -983,6 +999,8 @@ export type DungeonMeta = {
   poolLevel?: number;                // the Den's healing pool (1 = a soggy cave pool)
   deepRuns?: number;                 // the Deep Labyrinth: runs started…
   deepClears?: number;               // …and its Warden beaten
+  abyssRuns?: number;                // the Abyss: runs started…
+  abyssClears?: number;              // …and its Warden beaten
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
 };
 
@@ -1062,6 +1080,9 @@ export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
   const cleared = run.status === "cleared";
   if (dungeonOf(run) === 2) {
     return { meta: { ...save.meta, injuries, deepClears: (save.meta.deepClears ?? 0) + (cleared ? 1 : 0) }, run: null };
+  }
+  if (dungeonOf(run) === 3) {
+    return { meta: { ...save.meta, injuries, abyssClears: (save.meta.abyssClears ?? 0) + (cleared ? 1 : 0) }, run: null };
   }
   return {
     meta: {

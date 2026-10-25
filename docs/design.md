@@ -237,7 +237,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   window; works on Klutz.
   - 🧪 Drop rates: mini-boss chests 25%, boss chests 50%, 20% of merchants at 200 gold. The 25% and
     50% are Claude's numbers.
-- ✅ Enemy levels come in bands by depth (`DUNGEONS[d].levels`). Cyclops Lv 6, Warden Lv 16.
+- ✅ Enemy levels come in bands by depth (`DUNGEONS[d].levels`). Cyclops Lv 6, Warden Lv 16 (Lv 25 in the Abyss).
 - ❓ Cards still show level-15 %s; Pit fights give no XP.
 
 ## 6. Combat
@@ -298,10 +298,14 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
 - ✅ A run is a climb up a **scroll map**: you plan a route and partly see rooms ahead. The first
   step is blind. Rooms can repeat. (lib/dungeon/run.ts, map.ts)
-- ✅ **Two dungeons** (`DUNGEONS`):
+- ✅ **Three dungeons** (`DUNGEONS`):
   - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
   - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies
     up to Lv 17, boss the **Warden's pack** (a Legendary plus 2 Epic guards).
+  - **The Abyss:** opens after your first Warden clear (the user, 2026-10-26). The Deep Labyrinth
+    again (same map, same creature rarities, same Warden's pack) with higher levels (Lv 15–26 by
+    depth, Warden Lv 25) and every piece of enemy gear a rarity up; gold ×3. 🧪 The levels and gold
+    are Claude's numbers.
 - ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`), and reserves swap in
   between rooms.
 - ✅ **Entry:** 50 gold (`ENTRY_FEE`); the first 5 runs are free (`FREE_RUNS`).
