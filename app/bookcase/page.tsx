@@ -5,7 +5,7 @@
 // bounty: lib/tavern.ts) builds it up to 20, with planks and nails
 // (lib/items/materials.ts). Saves that built it before the tavern keep 25.
 // A codex is read from a creature's page (only creatures of its race can
-// learn a race codex).
+// learn a race codex). One you don't want can be thrown out to make room.
 
 import DenFrame from "@/components/DenFrame";
 import CodexShelf from "@/components/CodexShelf";
@@ -41,6 +41,7 @@ export default function BookcasePage() {
             <ul>
               <li>Codexes you bring home go here. If it&apos;s full they <b>stay in your bag</b>.</li>
               <li>Read a codex from a creature&apos;s <b>Moves</b> tab. Race codexes only work on that race.</li>
+              <li>Don&apos;t want one? Tap it, then <b>Throw out</b> to make room. It&apos;s gone for good.</li>
               <li>The <b>Crooked Bookcase Schematic</b> (the tavern&apos;s Cyclops bounty) builds it up to <b>{bookcaseSize(BOOKCASE_BUILT)}</b>: {SCHEMATICS.crooked_bookcase.cost.planks} planks and {SCHEMATICS.crooked_bookcase.cost.nails} nails.</li>
             </ul>
           </Help>
@@ -62,7 +63,7 @@ export default function BookcasePage() {
           </div>
         )}
       </div>
-      <div style={{ marginTop: 14 }}><CodexShelf inventory={game.inventory} size={game.bookcaseSize} teach={{ onLearn: game.learnCodex, onSetMoves: game.setMoves, movesOf: (id) => game.equipment[id]?.moves }} /></div>
+      <div style={{ marginTop: 14 }}><CodexShelf inventory={game.inventory} size={game.bookcaseSize} teach={{ onLearn: game.learnCodex, onSetMoves: game.setMoves, movesOf: (id) => game.equipment[id]?.moves }} onDiscard={game.removeDrop} /></div>
     </DenFrame>
   );
 }

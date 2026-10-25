@@ -6,6 +6,7 @@
 // codex), then the move it teaches (CodexMove). Teach shows your creatures,
 // greyed out where one can't learn it; tap one to teach it (if its move
 // slots are full, you pick a move for it to forget). The codex is used up.
+// Throw out gets rid of one you don't want (after a Yes), to free the shelf.
 // The box on top keeps its size whatever's picked, so nothing moves.
 
 import { useState } from "react";
@@ -26,7 +27,7 @@ const GOLD = "#f1d9a0";
 // creature's current move slots (its loadout's, if set).
 type Teach = { onLearn: (creatureId: string, codexId: string) => void; onSetMoves: (creatureId: string, moves: string[]) => void; movesOf: (creatureId: string) => string[] | undefined };
 
-export default function CodexShelf({ inventory, size, teach }: { inventory: Drop[]; size: number; teach?: Teach }) {
+export default function CodexShelf({ inventory, size, teach, onDiscard }: { inventory: Drop[]; size: number; teach?: Teach; onDiscard?: (codexId: string) => void }) {
   const codexes = sortByRarity(inventory.filter((d) => d.dropType === "item" && d.codexMove) as CreatureOrItemDrop[]);
   const creatures = inventory.filter((d) => d.dropType === "creature") as CreatureOrItemDrop[];
   const [pickedId, setPickedId] = useState<string | null>(null);
@@ -34,11 +35,12 @@ export default function CodexShelf({ inventory, size, teach }: { inventory: Drop
   const [forgetting, setForgetting] = useState<string | null>(null); // that creature's slots are full: which move goes
   const [taught, setTaught] = useState<string | null>(null);         // "X learned Y!"
   const [dropSlot, setDropSlot] = useState<number | null>(null);     // the move picked to forget, awaiting Confirm
+  const [discarding, setDiscarding] = useState(false);               // "Throw it out?" awaiting Yes / No
   const picked = codexes.find((c) => c.id === pickedId);
   const move = picked?.codexMove;
   const race = move ? MOVE_BY_NAME[move]?.race : undefined;
 
-  const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setDropSlot(null); setTaught(null); };
+  const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setDropSlot(null); setTaught(null); setDiscarding(false); };
   const slotsOf = (x: CreatureOrItemDrop) => {
     const t = findCreatureTemplate(x.creatureId, x.name);
     return t ? resolveMoves(t, teach?.movesOf(x.id) ?? x.moves).map((m) => m.name) : [];
@@ -81,9 +83,22 @@ export default function CodexShelf({ inventory, size, teach }: { inventory: Drop
                   {race && <RaceTag race={race} />}
                 </div>
                 <CodexMove move={move!} />
-                <div style={{ display: "flex", gap: 6, visibility: teach ? "visible" : "hidden" }}>
-                  <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                    onClick={() => { setTeaching((v) => !v); setForgetting(null); setDropSlot(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, visibility: teach || onDiscard ? "visible" : "hidden" }}>
+                  {discarding ? (
+                    <>
+                      <span className="pixel-font" style={{ fontSize: 14, color: GOLD }}>Throw it out?</span>
+                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
+                        onClick={() => { const name = picked.name; onDiscard!(picked.id); pick(null); setTaught(`Threw out ${name}.`); }}>Yes</button>
+                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }} onClick={() => setDiscarding(false)}>No</button>
+                    </>
+                  ) : (
+                    <>
+                      {teach && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
+                        onClick={() => { setTeaching((v) => !v); setForgetting(null); setDropSlot(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>}
+                      {onDiscard && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
+                        onClick={() => { setDiscarding(true); setTeaching(false); setForgetting(null); setDropSlot(null); }}>🗑 Throw out</button>}
+                    </>
+                  )}
                 </div>
               </>
             ) : (

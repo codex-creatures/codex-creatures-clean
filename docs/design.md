@@ -145,6 +145,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from
   10 to 25 codexes. 📌 Changing (the user, 2026-10-20): it will come only from the tavern
   questline (§9), for 10 planks + 5 nails, holding 20.
+- ✅ **Throwing out codexes** (2026-10-25): tap a codex on the bookcase, then Throw out and Yes. It
+  is gone for good (no gold), to free the shelf without having to teach it.
 - 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.
 - ❓ A 10-item battle bag and bags for Klutz have been mentioned, but neither is designed.
 
