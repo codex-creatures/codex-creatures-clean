@@ -181,7 +181,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   races with a utility move (Etherial: Mirage; Undead: Corpsify).
 - Creatures and cards from before soul stones get theirs rolled once on load (`soulStoneOf`,
   seeded by the drop's id). Save field `soulStone` on the drop: a key, or `null` for none.
-- Enemies don't have soul stones (yet). Klutz doesn't either.
+- Enemies roll them too, at the same rates (the user, 2026-10-25: `makeEnemy`, and the practice
+  battles), and a creature Klutz catches keeps its stone. In a fight, each creature's stone is
+  written out under it (plain text for now, while they're tested). The first quest's thief and
+  the Cyclops have none, and neither does Klutz.
 - The six (the user's numbers):
   - **Toxic Skin**: hit by a melee attack, 50% to poison the attacker: 5% of its max HP each turn
     for 3–5 turns, on the bench too. A new poisoning replaces the old one with a fresh 3–5 roll.

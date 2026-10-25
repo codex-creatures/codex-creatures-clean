@@ -34,6 +34,7 @@ import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } fr
 import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { YOU, FOE } from "@/components/BattleLog";
+import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import BossStage from "@/components/BossStage";
 import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -623,6 +624,7 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
           </div>
         ))}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
+        {f.soulStone && <SoulStoneLine stone={f.soulStone} />}
         <StreakBadges f={f} />
         {details && side === "A" && !compact && (
           <div style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
@@ -642,6 +644,12 @@ function StanceBadge({ stance }: { stance: Fighter["stance"] }) {
     ? "🪶 Floating — takes +10% damage from ranged attacks and −10% from melee"
     : "⛰️ Entrenched — takes +10% damage from melee attacks and −10% from ranged";
   return <div style={{ fontSize: 11, color: "#8fd3ff", marginTop: 6 }}>{text}</div>;
+}
+
+// Its soul stone, written out (for now: plain text, while they're tested).
+function SoulStoneLine({ stone }: { stone: SoulStoneKey }) {
+  const s = SOUL_STONES[stone];
+  return <div style={{ fontSize: 11, color: "#b9e6ff", marginTop: 6, lineHeight: 1.35 }}>{s.icon} <b>{s.name}</b>: {s.text}</div>;
 }
 
 // A Perfectionist's run: the same move again hits harder.

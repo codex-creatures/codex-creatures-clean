@@ -25,6 +25,7 @@ import { ITEM_META } from "../items/metadata";
 import { ARMOR_META } from "../items/armor";
 import { CREATURES_BY_RARITY, CREATURE_BY_ID, RACE_MOVES, type CreatureProficiency } from "../creatures/creatureData";
 import { rollCreature } from "../creatures/creatureRoll";
+import type { SoulStoneKey } from "../creatures/soulStones";
 import { buildFighter } from "../combat/loadout";
 import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
@@ -554,7 +555,8 @@ export type GearPiece = {
 };
 // level: missing = REF_LEVEL (the species' listed %s).
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
-export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number };
+// soulStone: rolled like anyone's (lib/creatures/soulStones.ts); missing = none (and runs saved before enemies had them).
+export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey };
 
 export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random, level?: number): Enemy {
   const pool = CREATURES_BY_RARITY[rarity].filter((c) => !exclude.includes(c.id));
@@ -562,7 +564,7 @@ export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[],
   const roll = rollCreature(t, rng);
   const g = rollGear(gearRarity, t);
   return {
-    creatureId: t.id, proficiency: roll.proficiency, moves: roll.moves, ...(level ? { level } : {}),
+    creatureId: t.id, proficiency: roll.proficiency, moves: roll.moves, ...(level ? { level } : {}), ...(roll.soulStone ? { soulStone: roll.soulStone } : {}),
     gear: [
       { slot: "weapon", key: g.weaponKey, rarity: gearRarity, stats: g.weapon, drops: false },
       { slot: "armor",  key: g.armorKey,  rarity: gearRarity, stats: g.armor,  drops: false, pieces: g.armorPieces, armorV: ARMOR_V2 },
@@ -609,7 +611,8 @@ export function enemyFighter(e: Enemy): Fighter {
   const t = CREATURE_BY_ID[e.creatureId];
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
-  const f = buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
+  const built = buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
+  const f = e.soulStone ? { ...built, soulStone: e.soulStone } : built;
   if (!e.hpMult) return f;
   const maxHp = Math.round(f.maxHp * e.hpMult);
   return { ...f, maxHp, hp: maxHp, hpMult: e.hpMult };

@@ -13,6 +13,7 @@ import type { Rarity } from "@/lib/items/budgets";
 import { CREATURES_BY_RARITY, CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { buildFighter, combatSummary } from "@/lib/combat/loadout";
+import { rollSoulStone } from "@/lib/creatures/soulStones";
 import type { Fighter } from "@/lib/combat/engine";
 import { AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { rollGear, RARITIES } from "@/lib/balance/simulate";
@@ -49,7 +50,9 @@ function buildOpponents(mine: OwnedCreature[], creatures: OppCreatures, gear: Op
     const w = weaponRarity ? rollGear(weaponRarity, t) : undefined;
     const a = armorRarity  ? rollGear(armorRarity, t)  : undefined;
 
-    fighters.push(buildFighter(t, w?.weapon, a?.armor, undefined, undefined, undefined, undefined, me.fighter.level ?? 1)); // same level as yours
+    const foe = buildFighter(t, w?.weapon, a?.armor, undefined, undefined, undefined, undefined, me.fighter.level ?? 1); // same level as yours
+    const stone = rollSoulStone(t); // (rolled like anyone's)
+    fighters.push(stone ? { ...foe, soulStone: stone } : foe);
     info.push({
       rarity: t.rarity,
       label: creatureTypeLabel(t.proficiency), creatureId: t.id,

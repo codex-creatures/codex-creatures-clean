@@ -9,6 +9,7 @@ import {
 } from "../lib/creatures/soulStones";
 import { makeCreatureDrop, summonFromCards } from "../lib/creatures/summon";
 import { rollCreature } from "../lib/creatures/creatureRoll";
+import { makeEnemy, enemyFighter } from "../lib/dungeon/run";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -52,6 +53,23 @@ describe("who gets a soul stone", () => {
     const t = CREATURE_BY_ID.void_serpent;
     const cards = Array.from({ length: 3 }, () => makeCreatureDrop(t, "card", "", { ...rollCreature(t), soulStone: "trickster" }));
     expect(summonFromCards(cards, cards[1].id).soulStone).toBe("trickster");
+  });
+});
+
+describe("enemies' soul stones", () => {
+  it("enemies roll them at the usual rates, and fight with them", () => {
+    const n = 2000;
+    const legends = Array.from({ length: 200 }, () => makeEnemy("legendary", "common", []));
+    for (const e of legends) {
+      expect(POOLS[e.creatureId]).toContain(e.soulStone);
+      expect(enemyFighter(e).soulStone).toBe(e.soulStone);
+    }
+    const epics = Array.from({ length: n }, () => makeEnemy("epic", "common", []));
+    expect(epics.filter((e) => e.soulStone).length / n).toBeCloseTo(SOUL_STONE_CHANCE.epic!, 1);
+    for (const e of Array.from({ length: 300 }, () => makeEnemy("common", "common", []))) {
+      expect(e.soulStone).toBeUndefined();
+      expect(enemyFighter(e).soulStone).toBeUndefined();
+    }
   });
 });
 

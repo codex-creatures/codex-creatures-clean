@@ -152,7 +152,7 @@ const oneLower = (r: Rarity): Rarity => RARITIES[Math.max(0, RARITIES.indexOf(r)
 // A won encounter's loot: the creature itself, its weapon and one armour piece.
 function lootFrom(e: Enemy): Drop[] {
   const t = CREATURE_BY_ID[e.creatureId];
-  const creature = { ...makeCreatureDrop(t, "creature", "", { proficiency: e.proficiency, moves: e.moves }), level: e.level ?? 1 };
+  const creature = { ...makeCreatureDrop(t, "creature", "", { proficiency: e.proficiency, moves: e.moves, soulStone: e.soulStone ?? null }), level: e.level ?? 1 };
   const gear = e.gear.map((p) => {
     if (p.slot === "weapon") return weaponDrop(p.key as ItemKey, p.rarity, "", p.stats);
     const slot = randomArmorSlot();
