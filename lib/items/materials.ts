@@ -26,21 +26,32 @@ export const MATERIALS: Record<MaterialKey, { name: string; icon: string; rarity
 };
 export const MATERIAL_KEYS = Object.keys(MATERIALS) as MaterialKey[];
 
-export type ToolKey = "flare" | "clairvoyance";
+export type ToolKey = "flare" | "clairvoyance" | "revival";
 export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity; price: number; desc: string }> = {
   flare:        { name: "Flare",               icon: "🧨", rarity: "uncommon", price: 75,
                   desc: "Light it in the Labyrinth: see the rooms around you and look at your map again." },
   clairvoyance: { name: "Clairvoyance Scroll", icon: "🔮", rarity: "epic",     price: 200,
                   desc: "Read it in the Labyrinth: look at your map and pick any room — you see what's in it, and the rooms around it." },
+  // Between rooms only (not in a fight): see REVIVE_HP in lib/dungeon/run.ts.
+  revival:      { name: "Revival Elixir",      icon: "💖", rarity: "epic",     price: 500,
+                  desc: "Between rooms in the Labyrinth: brings a knocked-out creature back with half its HP." },
 };
 
-export type SchematicKey = "crooked_bookcase" | "iron_cage";
+export type SchematicKey = "crooked_bookcase" | "iron_cage" | "weapon_storage" | "armor_storage";
 export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; desc: string }> = {
   crooked_bookcase: { name: "Crooked Bookcase Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
                       desc: "Plans for a taller, leaning bookcase: it holds 20 codexes instead of 10." },
   iron_cage:        { name: "Iron Cage Schematic", rarity: "rare", cost: { metal_bars: 10 },
                       desc: "Plans for a bigger cage: it holds 3 creatures instead of 1." },
+  // The merchant's storage schematics (STORAGE_PLAN_PRICE): each box 50 → 75 (lib/items/storage.ts).
+  weapon_storage:   { name: "Weapon Storage Schematic", rarity: "epic", cost: { planks: 10, nails: 10, essence_stones: 1 },
+                      desc: "Plans for a bigger weapon box: it holds 75 weapons instead of 50." },
+  armor_storage:    { name: "Armour Storage Schematic", rarity: "epic", cost: { planks: 10, nails: 10, essence_stones: 1 },
+                      desc: "Plans for a bigger armour box: it holds 75 pieces instead of 50." },
 };
+// Which box each storage schematic makes bigger.
+export const STORAGE_PLANS = { weapon_storage: "weapon", armor_storage: "armor" } as const;
+export type StoragePlan = keyof typeof STORAGE_PLANS;
 
 // The cage: how many creatures it holds at each level. 1: the cell you start
 // with; 2: built from the Iron Cage Schematic (a mini boss's chest, until

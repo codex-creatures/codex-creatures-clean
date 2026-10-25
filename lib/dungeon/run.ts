@@ -38,9 +38,9 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
 import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop, codexDrop, randomCodexMove, randomLearnableMove } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, scrollDrop, randomCodexMove, randomLearnableMove } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
-import { TOOLS, MATERIALS, materialBundle, toolDrop, schematicDrop, type MaterialKey, type ToolKey } from "../items/materials";
+import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -373,7 +373,7 @@ export const SCROLL_PRICE = 200;
 export const MINIBOSS_SCROLL_CHANCE = 0.25; // a beaten mini boss's chest holds an XP scroll
 export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
 // A mini boss's chest: potions instead of the heal it used to give, now and
-// then a clairvoyance scroll, and the Iron Cage Schematic until you've found
+// then a clairvoyance scroll or a Revival Elixir (MINIBOSS_REVIVAL), and the Iron Cage Schematic until you've found
 // it. (The bookcase schematic used to drop here,
 // from bosses and storehouses too; now only the tavern's bounty gives it:
 // lib/tavern.ts.)
@@ -386,6 +386,7 @@ export function minibossExtras(rng: Rng = Math.random, cagePlan = false): SackIt
   return [
     ...Array.from({ length: randInt(...MINIBOSS_POTIONS, rng) }, potion),
     ...(rng() < MINIBOSS_CLAIRVOYANCE ? [{ gear: toolDrop("clairvoyance") }] : []),
+    ...(rng() < MINIBOSS_REVIVAL ? [{ gear: toolDrop("revival") }] : []),
     ...(cagePlan && rng() < CAGE_PLAN_CHANCE ? [{ gear: schematicDrop("iron_cage") }] : []),
   ];
 }
@@ -415,27 +416,54 @@ export const STOREHOUSE_FINDS = { weapon: 0.15, flare: 0.3, clairvoyance: 0.08 }
 const STORE_RARITY: [Rarity, number][] = [["common", 50], ["uncommon", 30], ["rare", 15], ["epic", 5]];
 
 // ── The wandering merchant ───────────────────────────────────────────
-// MERCHANT_SLOTS things on the cart, one of each: both potions and a flare;
-// an XP scroll MERCHANT_SCROLL_CHANCE of the time and a clairvoyance scroll
-// MERCHANT_CLAIRVOYANCE of the time; the rest is materials. Until you've got
-// the rugged backpack it's on the cart too, first (still MERCHANT_SLOTS in all).
-export const MERCHANT_SLOTS = 5;
+// Up to MERCHANT_SLOTS things on the cart, one of each (the user, 2026-10-23):
+// 1. always both potions and a flare;
+// 2. rare wares, each rolled on its own: the rugged backpack until you've got
+//    it (always), or once you have, a backpack upgrade (BAG_UPGRADE_CHANCE);
+//    each storage schematic (STORAGE_PLAN_CHANCE, until you have it or built
+//    it); a Revival Elixir (REVIVAL_CHANCE); an XP scroll
+//    (MERCHANT_SCROLL_CHANCE) and a clairvoyance scroll (MERCHANT_CLAIRVOYANCE);
+// then materials fill what's left (one stack of each kind).
+// (Gear on the cart, the plan's step 3, isn't in yet.)
+export const MERCHANT_SLOTS = 10;
 export const MERCHANT_CLAIRVOYANCE = 0.4;
+// Backpack upgrades: one more slot each, from the backpack's 5 up to
+// BAG_MAX, at BAG_UPGRADE_PRICES (the first is for a 6th slot).
+export const BAG_MAX = 8;
+export const BAG_UPGRADE_PRICES = [1000, 1500, 2000];
+export const BAG_UPGRADE_CHANCE = 0.2;
+export const bagUpgradePrice = (size: number) => BAG_UPGRADE_PRICES[size - BACKPACK];
+export const STORAGE_PLAN_CHANCE = 0.2;
+export const STORAGE_PLAN_PRICE = 2000;
+export const REVIVAL_CHANCE = 0.25;
+// The Revival Elixir brings a knocked-out creature back with this share of
+// its HP, between rooms. Also in mini-boss and boss chests.
+export const REVIVE_HP = 0.5;
+export const MINIBOSS_REVIVAL = 0.2;
+export const BOSS_REVIVAL = 0.5;
 export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: number }[] = [
   { material: "planks", qty: 5, price: 40 },
   { material: "nails", qty: 5, price: 30 },
   { material: "metal_bars", qty: 2, price: 90 },
   { material: "essence_stones", qty: 1, price: 150 },
 ];
+// bagUp: a backpack upgrade (its price is set by your bag's size when you see it).
 export type Ware = { key: string; price: number } & (
-  | { potion: PotionKey } | { scroll: true } | { tool: ToolKey } | { material: MaterialKey; qty: number } | { backpack: true });
+  | { potion: PotionKey } | { scroll: true } | { tool: ToolKey } | { material: MaterialKey; qty: number } | { backpack: true }
+  | { bagUp: true } | { schematic: StoragePlan });
+// backpack: you're still on the bindle (the backpack's on the cart; once
+// you've got it, an upgrade may be instead).
 export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
   const wares: Ware[] = [
-    ...(backpack ? [{ key: "backpack", backpack: true as const, price: BACKPACK_PRICE }] : []),
+    ...(backpack ? [{ key: "backpack", backpack: true as const, price: BACKPACK_PRICE }] : []), // (first, on the bindle)
     { key: "potion", potion: "potion", price: POTIONS.potion.price },
     { key: "lesser", potion: "lesser", price: POTIONS.lesser.price },
     { key: "flare", tool: "flare", price: TOOLS.flare.price },
   ];
+  if (!backpack && rng() < BAG_UPGRADE_CHANCE) wares.push({ key: "bag_up", bagUp: true, price: BAG_UPGRADE_PRICES[0] });
+  for (const plan of Object.keys(STORAGE_PLANS) as StoragePlan[])
+    if (rng() < STORAGE_PLAN_CHANCE) wares.push({ key: plan, schematic: plan, price: STORAGE_PLAN_PRICE });
+  if (rng() < REVIVAL_CHANCE) wares.push({ key: "revival", tool: "revival", price: TOOLS.revival.price });
   if (rng() < MERCHANT_SCROLL_CHANCE) wares.push({ key: "scroll", scroll: true, price: SCROLL_PRICE });
   if (rng() < MERCHANT_CLAIRVOYANCE) wares.push({ key: "clairvoyance", tool: "clairvoyance", price: TOOLS.clairvoyance.price });
   const mats = [...MERCHANT_MATERIALS];
@@ -443,23 +471,41 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
     const m = mats.splice(Math.floor(rng() * mats.length), 1)[0];
     wares.push({ key: m.material, ...m });
   }
-  return wares.slice(0, MERCHANT_SLOTS); // (with the backpack and both scrolls, the clairvoyance scroll misses out)
+  return wares.slice(0, MERCHANT_SLOTS);
 }
 // What's on a cart for you: not the backpack once you've got one (a cart
-// rolled before you found it elsewhere).
-export const waresFor = (wares: Ware[], meta: { bagSize?: number }) => wares.filter((w) => !("backpack" in w) || onBindle(meta));
+// rolled before you found it elsewhere); an upgrade only while the backpack
+// can grow, priced for your bag's size; not a storage schematic you already
+// have or have built (plans: those).
+export function waresFor(wares: Ware[], meta: { bagSize?: number }, plans: readonly StoragePlan[] = []): Ware[] {
+  const size = bagSize(meta);
+  return wares.flatMap((w): Ware[] => {
+    if ("backpack" in w) return onBindle(meta) ? [w] : [];
+    if ("bagUp" in w) return size >= BACKPACK && size < BAG_MAX ? [{ ...w, price: bagUpgradePrice(size) }] : [];
+    if ("schematic" in w) return plans.includes(w.schematic) ? [] : [w];
+    return [w];
+  });
+}
+// The thing a ware becomes once it's yours (undefined: it isn't a thing —
+// a potion goes in the bag as itself; the backpack and an upgrade make your
+// bag bigger).
+export function wareDrop(w: Ware): Drop | undefined {
+  return "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : "material" in w ? materialDrop(w.material, w.qty)
+    : "schematic" in w ? schematicDrop(w.schematic) : undefined;
+}
 // The things picked off the cart, priced up: their total, the bag slots they
 // need (a material joins a stack you already carry), and what's stopping you
 // buying them all ("gold", "room"), if anything.
 export function priceUp(wares: Ware[], picked: string[], gold: number, bagFree: number, stacks: string[]) {
   const chosen = wares.filter((w) => picked.includes(w.key));
   const total = chosen.reduce((s, w) => s + w.price, 0);
-  const slots = chosen.filter((w) => !("backpack" in w) && !("material" in w && stacks.includes(w.material))).length;
+  const slots = chosen.filter((w) => !("backpack" in w) && !("bagUp" in w) && !("material" in w && stacks.includes(w.material))).length;
   const short: "gold" | "room" | null = total > gold ? "gold" : slots > bagFree ? "room" : null;
   return { chosen, total, slots, short };
 }
-export const wareName = (w: Ware) => ("backpack" in w ? "Rugged backpack" : "potion" in w ? POTIONS[w.potion].name : "scroll" in w ? "Tattered XP Scroll"
-  : "tool" in w ? TOOLS[w.tool].name : MATERIALS[w.material].name + " ×" + w.qty);
+export const wareName = (w: Ware) => ("backpack" in w ? "Rugged backpack" : "bagUp" in w ? "Backpack upgrade" : "potion" in w ? POTIONS[w.potion].name
+  : "scroll" in w ? "Tattered XP Scroll" : "tool" in w ? TOOLS[w.tool].name : "schematic" in w ? SCHEMATICS[w.schematic].name
+  : MATERIALS[w.material].name + " ×" + w.qty);
 
 // Selling to the merchant, to make room in your bag. Weapons and armour go
 // for what the crate at home pays (gearValue); the rest for MERCHANT_BUYBACK

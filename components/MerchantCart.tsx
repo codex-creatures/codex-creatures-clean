@@ -9,9 +9,8 @@ import { Coin } from "./GoldCount";
 import { useMemo, useState } from "react";
 import PixelSprite from "./PixelSprite";
 import { ICON, lookOf } from "./ContainerLoot";
-import { POTIONS, BACKPACK, BINDLE, priceUp, wareName, type SackItem, type Ware } from "@/lib/dungeon/run";
-import { TOOLS, MATERIALS, materialDrop, toolDrop } from "@/lib/items/materials";
-import { scrollDrop } from "@/lib/drops";
+import { POTIONS, BACKPACK, BINDLE, MERCHANT_SLOTS, priceUp, wareName, wareDrop, type SackItem, type Ware } from "@/lib/dungeon/run";
+import { TOOLS, MATERIALS, SCHEMATICS } from "@/lib/items/materials";
 import { SCROLL_XP } from "@/lib/creatures/levels";
 
 const MUTED = "rgba(255,255,255,0.55)";
@@ -22,6 +21,8 @@ const lines = (n: number, lineHeight: number): React.CSSProperties => ({
 });
 
 const detailOf = (w: Ware) => ("backpack" in w ? `Room for ${BACKPACK} things in your bag, from now on (your bindle holds ${BINDLE}).`
+  : "bagUp" in w ? "One more slot in your backpack, from now on."
+  : "schematic" in w ? `${SCHEMATICS[w.schematic].desc} Build it at your Inventory.`
   : "potion" in w ? `Restores ${POTIONS[w.potion].heal} HP to one creature. In a fight it uses your turn.`
   : "scroll" in w ? `${SCROLL_XP} XP for one creature, or Klutz.`
   : "tool" in w ? TOOLS[w.tool].desc : `${MATERIALS[w.material].desc} Takes a slot (it stacks); it's yours once you're home.`);
@@ -34,8 +35,8 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
 }) {
   const [picked, setPicked] = useState<string[]>([]);
   // Each ware as the thing it is, for its picture and colour.
-  const looks = useMemo(() => wares.map((w) => lookOf(("backpack" in w ? { backpack: true } : "potion" in w ? { potion: w.potion }
-    : { gear: "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : materialDrop(w.material, w.qty) }) as SackItem)), [wares]);
+  const looks = useMemo(() => wares.map((w) => lookOf(("backpack" in w || "bagUp" in w ? { backpack: true } : "potion" in w ? { potion: w.potion }
+    : { gear: wareDrop(w)! }) as SackItem)), [wares]);
   const { chosen, total, short } = priceUp(wares, picked, gold, bagSlots - bagUsed, stacks);
   const focus = wares.find((w) => w.key === picked[picked.length - 1]);
   const toggle = (key: string) => setPicked((p) => (p.includes(key) ? p.filter((k) => k !== key) : [...p, key]));
@@ -72,6 +73,13 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
             </button>
           );
         })}
+        {/* Empty spaces keep the cart the same size, however much is on it. */}
+        {Array.from({ length: Math.max(0, MERCHANT_SLOTS - wares.length) }, (_, i) => (
+          <span key={`empty${i}`} aria-hidden>
+            <span className="inv-slot" style={{ aspectRatio: "1", display: "block", opacity: 0.4 }} />
+            <span className="pixel-font" style={{ display: "block", marginTop: 3, fontSize: 11, visibility: "hidden" }}>·</span>
+          </span>
+        ))}
       </div>
 
       <button className="pixel-btn" disabled={!chosen.length || !!short} onClick={buy} style={{ width: "100%" }}>

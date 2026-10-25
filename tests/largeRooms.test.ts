@@ -95,12 +95,14 @@ describe("large rooms", () => {
 });
 
 describe("the merchant and loot", () => {
-  it("a merchant has 5 things: both potions and a flare, sometimes scrolls, the rest materials", () => {
+  it("a merchant has up to 10 things: both potions and a flare, sometimes rare wares and scrolls, then every material", () => {
     let clair = 0;
     for (let i = 0; i < 500; i++) {
       const w = rollWares();
-      expect(w).toHaveLength(MERCHANT_SLOTS);
-      expect(new Set(w.map((x) => x.key)).size).toBe(MERCHANT_SLOTS);
+      expect(w.length).toBeLessThanOrEqual(MERCHANT_SLOTS);
+      expect(new Set(w.map((x) => x.key)).size).toBe(w.length);
+      const others = w.filter((x) => !("material" in x)).length;
+      expect(w.length - others).toBe(Math.min(4, MERCHANT_SLOTS - others)); // materials fill what's left
       expect(w.map((x) => x.key)).toEqual(expect.arrayContaining(["potion", "lesser", "flare"]));
       if (w.some((x) => x.key === "clairvoyance")) clair++;
     }

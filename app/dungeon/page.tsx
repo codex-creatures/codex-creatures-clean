@@ -50,7 +50,7 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
-  hasFight, minibossExtras, codexPrice, wareName, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
+  hasFight, minibossExtras, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
@@ -72,8 +72,8 @@ import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
-import { TOOLS, materialDrop, toolDrop } from "@/lib/items/materials";
-import { BOX_CAP, BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
+import { TOOLS, toolDrop, type StoragePlan } from "@/lib/items/materials";
+import { BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
 
 const GOLD = "#f5c542";
 // Every Labyrinth screen keeps to one phone-sized column (the room picture is
@@ -302,7 +302,7 @@ export default function DungeonPage() {
 
   // ── Starting and ending runs ──────────────────────────────────────
   function begin(party: string[], dungeon: DungeonId = 1) {
-    if (!lab || fullBoxes(game.inventory).length > 0) return;
+    if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
     const deep = dungeon === 2;
     const free = !deep && lab.meta.runs < FREE_RUNS;
     if (!free && !game.spendGold(ENTRY_FEE)) return;
@@ -409,7 +409,16 @@ export default function DungeonPage() {
       updateRun((r) => (r.current ? { ...r, bindle: undefined, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
       return;
     }
-    const d = "potion" in w ? undefined : "scroll" in w ? scrollDrop() : "tool" in w ? toolDrop(w.tool) : materialDrop(w.material, w.qty);
+    if ("bagUp" in w) {
+      // A backpack upgrade: one more slot, from now on.
+      const size = bagSize(cur.meta);
+      if (onBindle(cur.meta) || size >= BAG_MAX || cur.run?.current?.bought?.includes(w.key) || !game.spendGold(w.price)) return;
+      update({ ...cur, meta: { ...cur.meta, bagSize: size + 1 } });
+      setNotes((n) => [...n, `🎒 Your backpack holds ${size + 1} things now.`]);
+      updateRun((r) => (r.current ? { ...r, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
+      return;
+    }
+    const d = wareDrop(w);
     const slot = d ? needsSlot(cur.meta, d) : true;
     if (cur.run?.current?.bought?.includes(w.key) || (slot && (cur.meta.bag ?? []).length >= bagSize(cur.meta)) || !game.spendGold(w.price)) return;
     let got: GotItem;
@@ -482,10 +491,18 @@ export default function DungeonPage() {
   // clairvoyance scroll shows you the map to pick a room to look into.
   // ("view": the Scroll button, just looking at your map again)
   const [mapOpen, setMapOpen] = useState<"look" | "pick" | "view" | null>(null);
-  function useTool(entry: BagEntry) {
+  // A Revival Elixir (who: the knocked-out creature): back up with REVIVE_HP of its HP.
+  function useTool(entry: BagEntry, who?: string) {
     const cur = loadDungeon();
     const it = itemOf(entry, cur.meta);
     if (!cur.run || !it?.tool) return;
+    if (it.tool === "revival") {
+      if (!who || !cur.run.party.includes(who) || (cur.run.hp[who] ?? 1) > 0) return;
+      spendTool(entry);
+      updateRun((r) => ({ ...r, hp: { ...r.hp, [who]: REVIVE_HP } }));
+      setNotes((n) => [...n, `💖 ${byId(who)?.name ?? "Your creature"} is back on its feet.`]);
+      return;
+    }
     if (it.tool === "clairvoyance") { setSheet(null); setMapOpen("pick"); return; }
     spendTool(entry);
     updateRun((r) => ({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }));
@@ -858,6 +875,8 @@ export default function DungeonPage() {
     if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan()));
     // Mini boss and boss chests sometimes hold an XP scroll.
     if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
+    // …and a boss's chest sometimes a Revival Elixir (a mini boss's: minibossExtras).
+    if (room.kind === "boss" && Math.random() < BOSS_REVIVAL) sack.push({ gear: toolDrop("revival") });
     // A guarded storehouse: its stores are yours too, in the same haul.
     if (room.kind === "storehouse") sack.push(...(room.sack ?? []));
     // Until you've got a rugged backpack, the Cyclops' chest holds one.
@@ -895,7 +914,7 @@ export default function DungeonPage() {
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
 
   if (!run) {
-    return frame(<Entrance lab={lab} owned={owned} gold={game.gold} full={fullBoxes(game.inventory)} onBegin={begin} onHeal={healAll} />);
+    return frame(<Entrance lab={lab} owned={owned} gold={game.gold} full={fullBoxes(game.inventory, game.storage)} onBegin={begin} onHeal={healAll} />);
   }
 
 
@@ -1047,7 +1066,7 @@ export default function DungeonPage() {
               ? <RoomScreen
                   run={run} room={run.current} notes={notes} byId={byId}
                   gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite}
+                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite}
                   bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
                   onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
                 />
@@ -1245,7 +1264,7 @@ function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
         {dungeon === 2 ? "🕳️ Enter the Deep Labyrinth" : "🌀 Enter the labyrinth"} {free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
       </button>
       {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
-        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full ({BOX_CAP}). <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
+        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
       </p>}
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
     </>
@@ -1299,7 +1318,8 @@ function AtEntrance({ run }: { run: DungeonRun }) {
   );
 }
 
-function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite }: {
+function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite }: {
+  plans: StoragePlan[]; // storage schematics you have or built (the merchant won't offer them)
   onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void; onDynamite: () => void;
   bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void; onUseBag: (bagIndex: number) => void;
   run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
@@ -1443,7 +1463,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             A cart piled with odds and ends, and a merchant who smiles too much. &ldquo;One of each, friend. Everything takes a slot in your bag — the timber stacks, mind.&rdquo;
           </p>
-          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots })} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
+          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots }, plans)} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
           <MerchantBag key={`bag${run.path.length}`} slots={bagSlots} looks={bagLooks} offers={bagOffers} onSell={onSell} onUse={onUseBag} />
           {next}
         </>
@@ -1661,7 +1681,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
   byId: (id: string) => OwnedCreature | undefined; onDrink: (k: PotionKey, id: string) => void;
   wornIn: (creatureId: string, slot: EquipSlot) => CreatureOrItemDrop | undefined; // what a creature wears in a slot
   onEquip: (e: BagEntry, creatureId: string) => void; onLeave: (e: BagEntry) => void; tutorial?: BagEntry;
-  onTool?: (e: BagEntry) => void; // a flare or a clairvoyance scroll: use it
+  onTool?: (e: BagEntry, who?: string) => void; // a flare, a clairvoyance scroll, or a Revival Elixir (on who): use it
   sell?: { offer: (e: BagEntry) => number; onSell: (bagIndex: number) => void };
   start?: number;
 }) {
@@ -1672,6 +1692,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
   const wears = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined; return !!w && !!slotOf(w); };
   // …or a potion onto a hurt one to heal it.
   const hurt = standing.filter((id) => (run.hp[id] ?? 1) < 1);
+  const downed = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) <= 0); // (a Revival Elixir brings one back)
   const potionAt = (i: number) => { const x = bag[i]; return x && isPotionEntry(x) ? x : undefined; };
   const { box: dragBox, ...dnd } = useDragDrop<number>({ onDrop: (i, t) => {
     const id = t?.startsWith("who:") ? t.slice(4) : undefined;
@@ -1738,7 +1759,9 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
               )}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                 {slot && standing.map((id) => chip(id, `Equip on ${byId(id)!.name}`, done(() => onEquip(e, id)), {}, teaching))}
-                {it.tool && onTool && chip("use", it.tool === "flare" ? "🧨 Light it" : "🔮 Read it", done(() => onTool(e)))}
+                {it.tool && it.tool !== "revival" && onTool && chip("use", it.tool === "flare" ? "🧨 Light it" : "🔮 Read it", done(() => onTool(e)))}
+                {it.tool === "revival" && onTool && downed.map((id) => chip(id, `💖 Revive ${byId(id)!.name}`, done(() => onTool(e, id))))}
+                {it.tool === "revival" && downed.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>Nobody&apos;s knocked out.</span>}
                 {slot && !teaching && !comparing && chip("compare", "⚖️ Compare", () => setComparing(true))}
                 {!teaching && sellChip}
                 {!teaching && chip("leave", "Leave it here", done(() => onLeave(e)), { color: "#ff8a80" })}

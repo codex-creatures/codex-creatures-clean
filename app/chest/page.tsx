@@ -15,12 +15,40 @@ import InventoryList from "@/components/InventoryList";
 import SellConfirmModal from "@/components/SellConfirmModal";
 import KlutzGear from "@/components/KlutzGear";
 import { klutzHelping } from "@/lib/quest";
+import { MaterialIcon } from "@/components/PixelSprite";
+import { MATERIALS, SCHEMATICS, STORAGE_PLANS, canAfford, countMaterial, type MaterialKey, type StoragePlan } from "@/lib/items/materials";
+import { BIG_BOX_CAP, BOX_NAMES } from "@/lib/items/storage";
 
 type Part = "items" | "creatures";
 const PART_TABS: Record<Part, TabKey[]> = {
   items: ["weapons", "armor", "consumables", "codexes"],
   creatures: ["creatures", "roster", "cards"],
 };
+
+// A storage schematic you've got (from the merchant), to build here: the
+// box it's for holds BIG_BOX_CAP from then on. (One at a time: the first.)
+function StorageBuild({ game }: { game: ReturnType<typeof useGameState> }) {
+  const plan = game.inventory.find((d) => d.dropType === "item" && d.schematic && d.schematic in STORAGE_PLANS);
+  if (!plan || plan.dropType !== "item") return null;
+  const key = plan.schematic as StoragePlan;
+  const cost = SCHEMATICS[key].cost;
+  return (
+    <div className="stone-panel" style={{ marginBottom: 10, padding: "8px 10px" }}>
+      <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 <b>{SCHEMATICS[key].name}</b>: your {BOX_NAMES[STORAGE_PLANS[key]]} box holds {BIG_BOX_CAP}.</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
+        {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
+          const have = countMaterial(game.materials, k);
+          return (
+            <span key={k} className="pixel-font" style={{ fontSize: 13, color: have >= n ? "#5ee08a" : "#ff8a80" }}>
+              <MaterialIcon k={k} /> {have}/{n} {MATERIALS[k].name.toLowerCase()}
+            </span>
+          );
+        })}
+        <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => game.buildSchematic(plan.id)} style={{ marginLeft: "auto" }}>🔨 Build it</button>
+      </div>
+    </div>
+  );
+}
 
 export default function InventoryPage() {
   const game = useGameState("weapons");
@@ -82,6 +110,7 @@ export default function InventoryPage() {
         </div>
       )}
       {klutzOpen && <KlutzGear game={game} onClose={() => setKlutzOpen(false)} />}
+      {part === "items" && <StorageBuild game={game} />}
       <InventoryList
         title={parts}
         tabs={PART_TABS[part]}
@@ -116,6 +145,7 @@ export default function InventoryPage() {
         onToggleSellMode={game.toggleSellMode}
         onSellOne={game.sellOne}
         unavailableItems={game.klutzAwayItems}
+        bigBoxes={game.storage}
         />
     </DenFrame>
   );
