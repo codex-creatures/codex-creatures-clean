@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { HEAL_AT_HOME } from "../lib/dungeon/run";
+import { HEAL_AT_HOME, SCROLL_LOOKS, scrollLooksLeft } from "../lib/dungeon/run";
 import {
   ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam, healInPool,
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun, stepInside, canMoveOn, moveOn,
@@ -497,5 +497,15 @@ describe("selling to the merchant", () => {
     expect(buysHere(room("library", false))).toBe(false);
     expect(buysHere(room("pool"))).toBe(false);
     expect(buysHere(null)).toBe(false);
+  });
+});
+
+describe("the Scroll button", () => {
+  it("works SCROLL_LOOKS times a run", () => {
+    expect(SCROLL_LOOKS).toBe(2);
+    expect(scrollLooksLeft({})).toBe(2); // old saves and new runs
+    expect(scrollLooksLeft({ scrollLooks: 1 })).toBe(1);
+    expect(scrollLooksLeft({ scrollLooks: 2 })).toBe(0);
+    expect(scrollLooksLeft({ scrollLooks: 5 })).toBe(0);
   });
 });

@@ -57,6 +57,7 @@ import {
   curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, WARDEN_LEVEL, type DungeonId,
   needsSlot, nextToTake, sackRank, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats,
   dynamiteHere, takeDynamite,
+  SCROLL_LOOKS, scrollLooksLeft,
 } from "@/lib/dungeon/run";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -1137,7 +1138,10 @@ export default function DungeonPage() {
             🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>
-          <button className="dock-tab" onClick={() => { setSheet(null); setMapOpen("view"); }} disabled={!!clubTutorial}>📜 Scroll</button>
+          <button className="dock-tab" onClick={() => { setSheet(null); setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 })); }}
+            disabled={!!clubTutorial || scrollLooksLeft(run) === 0}>
+            📜 Scroll <span className="count">{scrollLooksLeft(run)}/{SCROLL_LOOKS}</span>
+          </button>
           {/* Retreat: tap twice (it ends the run). */}
           <button className="dock-tab" style={{ color: "#ff8a80", background: retreatArmed ? "#6e1f18" : undefined }}
             disabled={battle.match !== null && !battle.match.state.winner}

@@ -334,6 +334,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     right and bottom left, the suit (attack style) top left and bottom right. Lower to its left, higher to its right, walk
     away under it. The next prize lies face down behind it (its rarity shows); a right guess sparkles the card away and
     the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
+- ✅ **The Scroll button** (looking at your map again inside) works 2 times a run (the user, 2026-10-25,
+  `SCROLL_LOOKS`); a flare still shows the map on top.
 - ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares. Also found (the user,
   2026-10-20): a flare in 10% of stashes and 20% of chests, a clairvoyance scroll in 5% of stashes and

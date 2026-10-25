@@ -48,6 +48,10 @@ export const TEAM_SIZE = 3;
 export const ENTRY_FEE = 50;
 export const FREE_RUNS = 5; // your first runs cost nothing
 export const FIRST_TREASURE_GOLD = 50;
+// The Scroll button (looking at your map again) works this many times a run;
+// a flare still shows it on top.
+export const SCROLL_LOOKS = 2;
+export const scrollLooksLeft = (run: { scrollLooks?: number }) => Math.max(0, SCROLL_LOOKS - (run.scrollLooks ?? 0));
 
 export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss"
   | "encampment" | "library" | "storehouse"; // (the large rooms: LARGE_MIX)
@@ -826,6 +830,7 @@ export type DungeonRun = {
   got?: GotItem[];             // everything picked up this run (gold, cards, gear, codexes, potions)
   lit?: string[];              // rooms a flare or a clairvoyance scroll lit up (see knownRooms)
   seen?: string[];             // rooms a clairvoyance scroll looked into
+  scrollLooks?: number;        // times the Scroll button was used (missing = 0; see SCROLL_LOOKS)
   status: RunStatus;
   bindle?: boolean;            // you set out on the bindle: merchants and storehouses have the backpack
 };
