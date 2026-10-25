@@ -8,6 +8,7 @@ import { effectiveStats, type CombatItem, type Fighter } from "./engine";
 import type { ArmorKey } from "../items/armor";
 import { WEAPON_AFFINITY, type ItemKey } from "../items/ceilings";
 import { hpAt, proficiencyAt, REF_LEVEL, clampLevel } from "../creatures/levels";
+import { SPECIES_RACES } from "../creatures/racesV2";
 
 const EMPTY: CombatItem = { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0, hp: 0 };
 
@@ -59,6 +60,7 @@ export function buildFighter(
     elemental: null,
     ...(armorSet ? { armorSet } : {}),
     ...(creature.neutral ? { neutral: true } : {}),
+    ...(SPECIES_RACES[creature.id] ? { races: SPECIES_RACES[creature.id] } : {}),
   };
 }
 

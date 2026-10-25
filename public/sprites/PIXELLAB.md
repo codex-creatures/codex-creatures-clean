@@ -24,6 +24,9 @@ the PNG here.
 | creatures/crystal_golem.png | gallery:39cc6f47-8738-4a8f-8a88-c5e05ee6ad7b |
 | creatures/crystalback.png | gallery:537af213-0666-448e-a72d-cb308fe90489 |
 | creatures/dire_wolf.png | gallery:84c2ddf7-7185-40dd-9d54-9a0f7cecb83d |
+| creatures/dreadpox.png | gallery:72f0d447-6a3d-5c80-8c41-38fa82810610 (raw generation; trimmed + mirrored here) |
+| creatures/flame_imp.png | gallery:e935d6b5-f3df-5889-a93d-4f6bb8758262 (raw generation; trimmed + mirrored here) |
+| creatures/glob.png | gallery:e423893e-fd95-5b08-b974-79be7cbda576 (raw generation; trimmed + mirrored here) |
 | creatures/dust_sprite.png | gallery:edc1b68b-8559-4d7c-89f3-11fc1602d302 |
 | creatures/dustwraith.png | gallery:f09aeb9b-7692-4ff2-b7fc-d311a5d12a1a |
 | creatures/flicker_wisp.png | gallery:175612f3-f343-46fb-a8d3-16501002997e |

@@ -1,6 +1,19 @@
 // lib/combat/engine.ts
 
 import type { CombatClass, CreatureProficiency, DamageType, Skill } from "../creatures/creatureData";
+import type { RaceV2 } from "../creatures/racesV2";
+import { raceMultiplier, type MoveRaceMode } from "./raceChart";
+
+// Which damage rules are in force. The live game: the class triangle.
+// Combat V2 (being simmed): no triangle, races instead (lib/combat/raceChart.ts).
+// Only the sims and tests change this.
+// Combat V2 also drops damage types (the user, 2026-10-26: style and race are
+// enough), so every move hits as PLAIN_DAMAGE. damageTypes: on unless false.
+export type CombatRules = { triangle: boolean; races: MoveRaceMode | null; damageTypes?: boolean };
+export const LIVE_RULES: CombatRules = { triangle: true, races: null };
+let rules: CombatRules = LIVE_RULES;
+export const combatRules = () => rules;
+export const setCombatRules = (r: CombatRules) => { rules = r; };
 
 // Type guard for brace skill
 function isBraceSkill(skill: Skill): boolean {
@@ -39,6 +52,7 @@ export type Fighter = {
   soulStone?: import("../creatures/soulStones").SoulStoneKey; // a passive power it was born with (lib/creatures/soulStones.ts)
   level?: number; // its level (lib/creatures/levels.ts)
   hpMult?: number; // its HP was multiplied (an encampment's potion-drunk foes): arcane's cap grows with it
+  races?: RaceV2[]; // Combat V2 races (lib/creatures/racesV2.ts): only count when the rules' races are on
 };
 
 export type TurnLog = {
@@ -128,6 +142,8 @@ export const DAMAGE_TYPES: Record<DamageType, { mult: number; pen: number; maxHp
   pierce: { mult: 0.95, pen: 0.5,  maxHp: 0 },
   arcane: { mult: 0.9,  pen: 0.2,  maxHp: 0.04 },
 };
+// With damage types off (Combat V2) every move hits like this.
+export const PLAIN_DAMAGE = { mult: 1, pen: 0, maxHp: 0 };
 export const ARCANE_REF_POWER = 25; // a 25-power arcane move takes 4% of max HP
 export const ARCANE_CAP = 15;
 export const AFFINITY_BONUS = 0.15; // weapon affinity matches the move's damage type
@@ -180,16 +196,18 @@ export function calcDamage(
     }
   }
 
-  const dmgType = DAMAGE_TYPES[skill.dmgType ?? "force"];
+  const typed = rules.damageTypes !== false;
+  const dmgType = typed ? DAMAGE_TYPES[skill.dmgType ?? "force"] : PLAIN_DAMAGE;
   const atkKey = ATTACK_STAT[moveType], defKey = DEFENCE_STAT[moveType];
   const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]);
-  const affinity     = attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
+  const affinity     = typed && attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
   const raw          = (skill.damage + effectiveAtk) * roll;
 
   const atkStance    = stanceDamageDealt(attacker.stance, moveType);
   const defStance    = stanceDamageTaken(defender.stance, moveType);
   const elemental    = elementalModifier(attacker.elemental, defender.elemental);
-  const triangle     = triangleFor(moveType, attacker, defender);
+  const triangle     = rules.triangle ? triangleFor(moveType, attacker, defender) : 1;
+  const race         = rules.races ? raceMultiplier(skill, attacker, defender, rules.races) : 1;
 
   // Armour defence counts at ARMOR_DEFENCE_WEIGHT. Penetration and precise
   // hits each ignore a share of what's left.
@@ -202,7 +220,7 @@ export function calcDamage(
   const arcane = Math.min(ARCANE_CAP * (defender.hpMult ?? 1), defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
 
   const preciseMult = precise ? PRECISE_DAMAGE : 1;
-  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * preciseMult));
+  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * race * preciseMult));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));
 
   return { damage: finalDmg, braceBlocked, braceFailed };

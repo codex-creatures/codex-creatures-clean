@@ -1,0 +1,91 @@
+// lib/creatures/racesV2.ts
+// Combat V2 races (being simmed; not in the live game yet). Seven races
+// replace the class triangle: a move's race against the target's race(s)
+// decides how well it lands (the chart and maths: lib/combat/raceChart.ts).
+// Creatures can have one or two races.
+//
+// Everything here is a first draft for the sims: who belongs to which race,
+// and which race each of today's moves counts as.
+
+export type RaceV2 = "undead" | "divine" | "beast" | "underkin" | "geo" | "humanoid" | "pestilence";
+
+export const RACES_V2: RaceV2[] = ["undead", "divine", "beast", "underkin", "geo", "humanoid", "pestilence"];
+
+export const RACE_V2_NAME: Record<RaceV2, string> = {
+  undead: "Undead", divine: "Divine", beast: "Beast", underkin: "Underkin",
+  geo: "Geo", humanoid: "Humanoid", pestilence: "Pestilence",
+};
+
+// Every species' race(s), by what it is and how it looks. Klutz and the
+// boss parts have none for now: they take and deal neutral damage.
+export const SPECIES_RACES: Record<string, RaceV2[]> = {
+  // Old Beast
+  moss_wolf:        ["beast"],
+  amber_wasp:       ["beast"],
+  bellow_toad:      ["beast", "pestilence"], // poison glands, always spitting
+  dire_wolf:        ["beast"],
+  ironhide:         ["beast"],
+  // Old Underkin
+  cave_bat:         ["underkin"],
+  rust_beetle:      ["underkin", "pestilence"], // rust is corrosion
+  crystalback:      ["geo", "beast"],
+  crystal_golem:    ["geo"],
+  hollow_matriarch: ["underkin"],
+  // Old Etherial
+  dust_sprite:      ["geo"],                // a wind spirit
+  flicker_wisp:     ["divine"],
+  veilstalker:      ["divine"],             // half out of phase (was Undead: that left Undead two Rares)
+  the_watcher:      ["divine"],
+  void_serpent:     ["divine"],
+  // Old Undead
+  rattlebones:      ["undead"],
+  shambler:         ["undead", "pestilence"], // rotting
+  dustwraith:       ["undead", "geo"],      // a whirlwind with a grudge
+  mr_shadows:       ["undead"],
+  storm_phoenix:    ["undead", "beast"],    // the Skull Raven
+  // Old Elvish
+  thicket_archer:   ["humanoid"],
+  leafblade_scout:  ["humanoid"],
+  aurelius:         ["humanoid", "beast"],  // a centaur
+  swamp_witch:      ["humanoid", "pestilence"],
+  sylvaran:         ["humanoid"],
+  // New in Combat V2 (lib/creatures/rosterV2.ts)
+  gleamling:        ["divine"],
+  flame_imp:        ["geo"],
+  thunderhead:      ["geo"],
+  deep_angler:      ["underkin"],
+  tunnel_wyrm:      ["underkin", "geo"],    // armoured in stone
+  plague_rat:       ["pestilence", "beast"],
+  rotgut_fly:       ["pestilence"],
+  glob:             ["pestilence"],
+  dreadpox:         ["pestilence", "undead"], // the user's: Undead and Pestilence
+  pale_rider:       ["pestilence", "undead"],
+  // Retired (still owned by some players)
+  monkey_mage:      ["beast"],
+  mantis_warden:    ["beast"],
+  forest_slime:     ["pestilence"],
+  stone_toad:       ["beast", "geo"],
+  thornmaw:         ["geo", "beast"],       // a walking carnivorous plant
+  ironjaw_hound:    ["beast"],
+  ashen_drifter:    ["geo"],
+};
+
+// A draft race for each of today's moves (the "drafted" sim mode). Moves
+// not listed (the bosses') are neutral.
+export const MOVE_RACES: Record<string, RaceV2> = {
+  // Melee
+  "Flick": "humanoid", "Jab": "humanoid", "Slash": "beast", "Hexblade": "undead", "Heavy Blow": "beast",
+  "Impale": "humanoid", "Crush": "geo", "Soul Rend": "undead", "Devastator": "beast",
+  // Ranged
+  "Pebble Shot": "underkin", "Stone Throw": "underkin", "Bolt": "humanoid", "Hex Arrow": "undead",
+  "Piercing Shot": "humanoid", "Boulder Toss": "geo", "Cursed Volley": "undead", "Annihilator": "divine",
+  // Magic
+  "Spark": "geo", "Frost Shard": "geo", "Hex": "pestilence", "Firebolt": "geo", "Ice Lance": "geo",
+  "Fireball": "geo", "Soul Drain": "undead", "Starfall": "divine",
+  // Learnable
+  "Cripple": "beast", "Crippling Shot": "humanoid", "Hobble Hex": "pestilence", "Dash Lash": "beast",
+  "Quick Bolt": "humanoid", "Blink": "divine", "Precise Slice": "humanoid", "Precise Shot": "humanoid",
+  "Seeker Spark": "geo",
+  // Race moves
+  "Pounce": "beast", "Rabid Bite": "pestilence", "Mirage": "divine", "Corpsify": "undead", "Barrage": "humanoid",
+};

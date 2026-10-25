@@ -39,6 +39,7 @@ export type MoveEffect =
   | { kind: "cripple"; chance: number; agilityLoss?: number } // chance to cripple (slow) the target; loss defaults to CRIPPLE_AGILITY_LOSS
   | { kind: "dash"; agilityBonus: number }    // extra agility this round only (to strike first)
   | { kind: "precise"; hitChance: number }    // can miss, but every hit is precise
+  | { kind: "quick" }                         // always strikes first this round (Combat V2 kits)
   // Race moves (from codexes):
   | { kind: "pounce"; lowHpBonus: number }    // acts first this round; extra damage vs a target below half HP
   | { kind: "venom"; tick: number; minRounds: number; maxRounds: number } // share of max HP lost each round, even on the bench
@@ -315,5 +316,6 @@ export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], ow
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
   const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
   const picked = [...new Set(names ?? [])].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
-  return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => MOVE_BY_NAME[n]);
+  // A species' own moves first: Combat V2's kit moves aren't in MOVE_BY_NAME.
+  return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => c.skills.find((m) => m.name === n) ?? MOVE_BY_NAME[n]);
 }

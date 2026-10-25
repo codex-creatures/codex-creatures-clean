@@ -525,6 +525,7 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
     tags.push(myAgil * (1 + fx.agilityBonus) > theirAgil ? "First Strike!" : "too slow to strike first");
   }
   if (fx?.kind === "pounce") tags.push(`strikes first${them.hp < them.maxHp / 2 ? ` · +${Math.round(fx.lowHpBonus * 100)}% vs wounded!` : ""}`);
+  if (fx?.kind === "quick") tags.push("strikes first");
   if (fx?.kind === "venom") tags.push(`venom: −${Math.round(fx.tick * 100)}% HP a round for ${fx.minRounds}–${fx.maxRounds} rounds`);
   if (fx?.kind === "mirage") tags.push(`${Math.round(fx.evade * 100)}% dodge for ${fx.rounds} rounds`);
   if (fx?.kind === "corpsify") tags.push(`rise again with ${Math.round(fx.reviveHp * 100)}% HP if knocked out`);

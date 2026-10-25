@@ -349,7 +349,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   const pounces = (f: Combatant, a: BattleAction) => {
     const sk = a.kind === "attack" ? f.skills.find((s) => s.name === a.skillName) : undefined;
     if (sk?.self && hasStone(f, "trickster")) return 2;
-    return sk?.effect?.kind === "pounce" || quick(f, a) ? 1 : 0;
+    return sk?.effect?.kind === "pounce" || sk?.effect?.kind === "quick" || quick(f, a) ? 1 : 0;
   };
   const attackers = turns
     .map((t) => {

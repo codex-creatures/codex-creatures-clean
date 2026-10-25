@@ -148,6 +148,10 @@ const ART_SIZES: Record<string, [number, number]> = {
   veilstalker: [85, 83],
   the_watcher: [68, 81],
   void_serpent: [110, 96],
+  // Combat V2's new species (lib/creatures/rosterV2.ts).
+  flame_imp: [72, 73],
+  glob: [78, 63],
+  dreadpox: [83, 92],
   rattlebones: [70, 84],
   shambler: [73, 88],
   dustwraith: [84, 86],
