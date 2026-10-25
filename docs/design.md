@@ -319,7 +319,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - 📌 The Cave Bat is now the **Cave Goblin** (the user, 2026-10-26: pale skin, big eyes, like Klutz
   but meaner; PixelLab sample 11). It stands rather than floats. Same id (`cave_bat`), stats and moves,
   so owned ones just change.
-- ❓ **Archetypes** (Claude's draft, `ARCHETYPE_INFO`): Bruiser, Bulwark (melee tank), Sniper,
+- 📌 **Archetypes** (Claude's draft, approved by the user 2026-10-26, `ARCHETYPE_INFO`): Bruiser, Bulwark (melee tank), Sniper,
   Skirmisher, Arcanist, Warden (magic tank), and the hybrids Ranger (melee + ranged), Battlemage
   (melee + magic) and Spellbow (ranged + magic). An archetype decides which style kits a creature
   draws from, so a hybrid fights in two styles. Evened out (the user asked, 2026-10-26): 4 of each, 3
