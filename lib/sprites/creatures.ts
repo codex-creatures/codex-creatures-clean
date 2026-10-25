@@ -138,7 +138,7 @@ const ART_SIZES: Record<string, [number, number]> = {
   bellow_toad: [90, 68],
   dire_wolf: [112, 111],
   ironhide: [122, 87],
-  cave_bat: [58, 50],
+  cave_bat: [60, 63], // the Cave Goblin (was the Cave Bat; the id stays for old saves)
   rust_beetle: [81, 68],
   crystalback: [85, 72],
   crystal_golem: [121, 117],
@@ -166,7 +166,7 @@ const ART_SIZES: Record<string, [number, number]> = {
 // Those drawn facing right (the rest face left).
 const FACING_RIGHT = new Set(["leafblade_scout"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
-const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "cave_bat", "amber_wasp", "storm_phoenix"]);
+const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix"]);
 
 
 // Shown for creatures that don't have their own sprite yet.

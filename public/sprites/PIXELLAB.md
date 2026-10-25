@@ -20,7 +20,7 @@ the PNG here.
 | creatures/aurelius.png | gallery:c29d5316-b647-4268-b754-884ace94a837 |
 | creatures/baby_cyclops.png | gallery:e7451478-247f-4c4e-bec7-754d61156141 |
 | creatures/bellow_toad.png | gallery:2dd08335-9bf9-51b7-bc63-20ddbefcd7e5 (raw generation; trimmed + mirrored here) |
-| creatures/cave_bat.png | gallery:054e1aad-2c7f-4370-8ba2-bae183383893 |
+| creatures/cave_bat.png | gallery:7a5a21a3-4c74-533e-9d12-c6efc97b48ed (the Cave Goblin, sample 11 of 16; raw generation; trimmed + mirrored here. The old Cave Bat: gallery:054e1aad-2c7f-4370-8ba2-bae183383893) |
 | creatures/crystal_golem.png | gallery:39cc6f47-8738-4a8f-8a88-c5e05ee6ad7b |
 | creatures/crystalback.png | gallery:537af213-0666-448e-a72d-cb308fe90489 |
 | creatures/dire_wolf.png | gallery:84c2ddf7-7185-40dd-9d54-9a0f7cecb83d |

@@ -103,8 +103,9 @@ export function loadSave(): SaveState | null {
   // stays on him: it's stored under KLUTZ_DROP_ID).
   const inventory: Drop[] = (Array.isArray(parsed.inventory) ? parsed.inventory : []).filter((d: Drop) => !isKlutz(d));
   const favoriteIds: string[] = (Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : []).filter((id: string) => id !== KLUTZ_DROP_ID);
-  // Creatures and cards show their species' current rarity (some species
-  // changed tier when races arrived).
+  // Creatures and cards show their species' current rarity, name and
+  // description (some species changed tier when races arrived; the Cave Bat
+  // became the Cave Goblin).
   // Soul stones (lib/creatures/soulStones.ts): one from before them gets its
   // roll now (the same one every time: seeded by its id), and the old
   // abilities they replaced are dropped.
@@ -114,7 +115,7 @@ export function loadSave(): SaveState | null {
     if (!isCreatureDrop(d) && !isCardDrop(d)) continue;
     const c = d as CreatureOrItemDrop & { ability?: unknown };
     const t = findCreatureTemplate(c.creatureId, c.name);
-    if (t) c.rarity = t.rarity;
+    if (t) { c.rarity = t.rarity; c.name = t.name; c.desc = t.flavour; }
     c.soulStone = soulStoneOf(c, t);
     delete c.ability;
   }

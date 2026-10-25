@@ -316,7 +316,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   Pestilence none; the user is fine with lopsided races). Dust Sprite stays Geo. The rest waits for
   the user to see sprites. V2-only style changes are `V2_RESTYLE` (lib/creatures/rosterV2.ts): the
   main % moves to the new style, total unchanged.
-- 📌 The Cave Bat becomes a goblin (pale skin, big eyes, like Klutz but meaner): art and name to come.
+- 📌 The Cave Bat is now the **Cave Goblin** (the user, 2026-10-26: pale skin, big eyes, like Klutz
+  but meaner; PixelLab sample 11). It stands rather than floats. Same id (`cave_bat`), stats and moves,
+  so owned ones just change.
 - ❓ **Archetypes** (Claude's draft, `ARCHETYPE_INFO`): Bruiser, Bulwark (melee tank), Sniper,
   Skirmisher, Arcanist, Warden (magic tank), and the hybrids Ranger (melee + ranged), Battlemage
   (melee + magic) and Spellbow (ranged + magic). An archetype decides which style kits a creature
