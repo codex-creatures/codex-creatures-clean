@@ -186,7 +186,12 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - Enemies roll them too, at the same rates (the user, 2026-10-25: `makeEnemy`, and the practice
   battles), and a creature Klutz catches keeps its stone. In a fight, each creature's stone is
   written out under it (plain text for now, while they're tested). The first quest's thief and
-  the Cyclops have none, and neither does Klutz.
+  the Cyclops have none.
+- The starter creature always has one, from its pool (the user, 2026-10-25).
+- **Klutz:** you choose his stone from his Equip window (tap the soul stone slot), and can change
+  it or take it off for free whenever he is home (the user, 2026-10-25). Only the four that do
+  something for him (`KLUTZ_STONES`): no Revitalise (he never swaps out) and no Trickster (no
+  utility move). Saved as `KlutzState.soulStone` (missing = none).
 - The six (the user's numbers):
   - **Toxic Skin**: hit by a melee attack, 50% to poison the attacker: 5% of its max HP each turn
     for 3–5 turns, on the bench too. A new poisoning replaces the old one with a fresh 3–5 roll.

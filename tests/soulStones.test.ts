@@ -178,3 +178,30 @@ describe("soul stones in battle", () => {
     expect(s.log.some((e) => e.type === "effect" && e.kind === "ability")).toBe(true);
   });
 });
+
+import { starterCreature } from "../lib/creatures/starter";
+import { setKlutzStone, KLUTZ_STONES, type KlutzState } from "../lib/klutz";
+describe("the starter's and Klutz's soul stones", () => {
+  it("the starter always has a soul stone from its species pool", () => {
+    for (let i = 0; i < 200; i++) {
+      const s = starterCreature() as { creatureId?: string; soulStone?: string | null };
+      expect(stonesFor(s.creatureId!)).toContain(s.soulStone);
+    }
+  });
+  it("you can give Klutz one of his stones, change it or take it off", () => {
+    let k: KlutzState = {};
+    k = setKlutzStone(k, "perfectionist");
+    expect(k.soulStone).toBe("perfectionist");
+    k = setKlutzStone(k, "toxic_skin");
+    expect(k.soulStone).toBe("toxic_skin");
+    expect(setKlutzStone(k, null).soulStone).toBeUndefined();
+  });
+  it("only stones that do something for him, and not while he's out hunting", () => {
+    expect(KLUTZ_STONES).not.toContain("revitalise");
+    expect(KLUTZ_STONES).not.toContain("trickster");
+    expect(setKlutzStone({}, "revitalise").soulStone).toBeUndefined();
+    const out = { expedition: { endsAt: 2000, collected: false } } as unknown as KlutzState;
+    expect(setKlutzStone(out, "perfectionist", 1000).soulStone).toBeUndefined();
+    expect(setKlutzStone(out, "perfectionist", 3000).soulStone).toBe("perfectionist");
+  });
+});

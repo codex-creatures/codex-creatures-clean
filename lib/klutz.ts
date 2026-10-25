@@ -52,6 +52,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { isCreatureDrop, type Drop } from "./types";
 import type { CreatureProficiency } from "./creatures/creatureData";
+import type { SoulStoneKey } from "./creatures/soulStones";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something (each time)
@@ -114,7 +115,19 @@ export type KlutzState = {
   expedition?: Expedition;
   points?: Partial<CreatureProficiency>; // the % points you've spent on him (missing = none)
   learned?: string[];    // moves he's learned from codexes (missing = none)
+  soulStone?: SoulStoneKey; // the soul stone you've given him (missing = none)
 };
+
+// ── His soul stone (the user, 2026-10-25) ──
+// You choose it from his Equip window, and can change it whenever he's home.
+// Only the ones that do something for him: he hunts alone (so never swaps out:
+// no Revitalise) and has no utility move (no Trickster).
+export const KLUTZ_STONES: SoulStoneKey[] = ["toxic_skin", "haunting_presence", "unstoppable_force", "perfectionist"];
+export function setKlutzStone(k: KlutzState, stone: SoulStoneKey | null, now = Date.now()): KlutzState {
+  if (k.expedition && !k.expedition.collected && now < k.expedition.endsAt) return k; // he's out hunting
+  if (stone && !KLUTZ_STONES.includes(stone)) return k;
+  return { ...k, soulStone: stone ?? undefined };
+}
 
 // ── His points ──
 const PROF_KEYS: (keyof CreatureProficiency)[] = ["atk", "rng", "mag", "agil", "mdef", "rdef", "magdef"];

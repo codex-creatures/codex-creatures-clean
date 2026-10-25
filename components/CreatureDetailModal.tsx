@@ -55,6 +55,8 @@ type Props = {
   onNext?: () => void;
   // Klutz: his %s are points you spend (lib/klutz.ts), shown in place of the gear multipliers.
   points?: { free: number; onSpend: (add: Partial<Record<ProfKey, number>>) => void; respec: { cost: number; can: boolean; run: () => boolean } };
+  // Klutz: you choose his soul stone (lib/klutz.ts). onPick missing: not right now (he's away).
+  soulStones?: { choices: SoulStoneKey[]; onPick?: (stone: SoulStoneKey | null) => void };
 };
 type ProfKey = Exclude<StatKey, "hp">;
 
@@ -90,7 +92,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points, soulStones,
 }: Props) {
   // Points tapped onto stats but not yet confirmed (Klutz).
   const [pending, setPending] = useState<Partial<Record<ProfKey, number>>>({});
@@ -105,6 +107,7 @@ export default function CreatureDetailModal({
 
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
+  const [stonePicking, setStonePicking] = useState(false); // Klutz's soul stone picker
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
@@ -130,6 +133,7 @@ export default function CreatureDetailModal({
     if (locked) return;
     setPicking((p) => (p === slot ? null : slot));
     setPreview(inSlot(slot));
+    setStonePicking(false);
   };
   const closePicker = () => { setPicking(null); setPreview(undefined); };
   // Tapping a piece previews it; a quick second tap puts it on (null: the Unequip tile).
@@ -260,7 +264,8 @@ export default function CreatureDetailModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
-                <SoulSlot stone={creature.soulStone} />
+                <SoulSlot stone={creature.soulStone} active={stonePicking}
+                  onClick={soulStones && !locked ? () => { setStonePicking((p) => !p); setPicking(null); setPreview(undefined); } : undefined} />
               </div>
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -277,6 +282,28 @@ export default function CreatureDetailModal({
 
             <SetLine worn={worn} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow} />
             {locked && <div style={{ marginTop: 6, fontSize: 12, color: MUTED, textAlign: "center" }}>🔒 {locked}</div>}
+
+            {/* Klutz's soul stone picker: tap one to give it to him */}
+            {stonePicking && soulStones && (
+              <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
+                <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Choose his soul stone</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+                  <Tile selected={!creature.soulStone} disabled={!soulStones.onPick} onClick={() => soulStones.onPick?.(null)} title="No soul stone">
+                    <span style={{ fontSize: 22, color: MUTED }}>⊘</span>
+                    <span style={{ fontSize: 11, color: MUTED }}>None</span>
+                  </Tile>
+                  {soulStones.choices.map((k) => (
+                    <Tile key={k} selected={creature.soulStone === k} disabled={!soulStones.onPick} onClick={() => soulStones.onPick?.(k)} title={`${SOUL_STONES[k].name}: ${SOUL_STONES[k].text}`}>
+                      <span style={{ fontSize: 22 }}>{SOUL_STONES[k].icon}</span>
+                    </Tile>
+                  ))}
+                </div>
+                {/* What the chosen one does (fixed lines, so nothing jumps) */}
+                <div style={{ marginTop: 8, minHeight: "4.2em", fontSize: 12, lineHeight: 1.4, color: creature.soulStone ? SOUL_COLOR : MUTED }}>
+                  {creature.soulStone ? <><b>{SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}</> : "None: tap a stone to give it to him. You can change it whenever he's home."}
+                </div>
+              </div>
+            )}
 
             {/* Gear picker */}
             {picking && (
@@ -496,16 +523,19 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 
 // The creature's soul stone, under its weapon: always there (empty for none),
 // so nothing moves flicking between creatures. What it does is behind the "?".
-function SoulSlot({ stone }: { stone?: SoulStoneKey | null }) {
+// onClick: it can be changed (Klutz's): the square is a button.
+function SoulSlot({ stone, onClick, active }: { stone?: SoulStoneKey | null; onClick?: () => void; active?: boolean }) {
   const s = stone ? SOUL_STONES[stone] : undefined;
+  const Box = onClick ? "button" : "span";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
       <span className="pixel-font" style={{ fontSize: 9, lineHeight: 1.2, color: s ? SOUL_COLOR : MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>Soul stone</span>
-      <span title={s ? `${s.name}: ${s.text}` : "No soul stone"} style={{
+      <Box onClick={onClick} title={onClick ? "Choose his soul stone" : s ? `${s.name}: ${s.text}` : "No soul stone"} style={{
+        cursor: onClick ? "pointer" : undefined, padding: 0, ...(active ? { outline: "2px solid #ffd66e" } : {}),
         width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
         background: s ? "radial-gradient(circle, rgba(185,230,255,0.25), #101117 75%)" : "#101117",
         border: `3px solid ${s ? "rgba(185,230,255,0.6)" : "#2f3340"}`, boxShadow: "inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)",
-      }}>{s ? s.icon : <span style={{ fontSize: 18, color: "#3a3e4b" }}>—</span>}</span>
+      }}>{s ? s.icon : <span style={{ fontSize: 18, color: onClick ? MUTED : "#3a3e4b" }}>{onClick ? "+" : "—"}</span>}</Box>
       <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 11, height: 26, color: s ? SOUL_COLOR : MUTED, maxWidth: 110 }}>
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s ? s.name : "None"}</span>
         <span style={{ visibility: s ? "visible" : "hidden" }}><Help title={s ? `Soul stone: ${s.name}` : "Soul stone"}><p>{s?.text}</p></Help></span>

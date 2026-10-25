@@ -8,6 +8,7 @@ import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/bat
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { TUTORIAL_MOVES } from "../lib/quest";
 import { STARTER_LEVEL } from "../lib/creatures/starter";
+import { stonesFor } from "../lib/creatures/soulStones";
 import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
@@ -58,7 +59,9 @@ describe("the first quest: Klutz's box", () => {
   });
   it("your starter wins the guided fight on its own, after Klutz's three lessons", () => {
     for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
-      const s = createBattle([starter(t)], [enemyFighter(thiefRoom().enemies![0])]);
+      // (with each of the soul stones it could be born with: a starter always has one)
+      const stones = stonesFor(t.id);
+      const s = createBattle([{ ...starter(t), soulStone: stones[k % stones.length] }], [enemyFighter(thiefRoom().enemies![0])]);
       const lessons = ["Stone Throw", "Heavy Blow", "Impale"];
       while (!s.winner && s.round < 100) {
         resolveRound(s, { A: s.round < 3 ? { kind: "attack", skillName: lessons[s.round] } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });

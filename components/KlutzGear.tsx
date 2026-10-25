@@ -5,7 +5,7 @@
 
 import CreatureDetailModal from "./CreatureDetailModal";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
-import { klutzStatus, pointsFree, pointsSpent, RESPEC_COST } from "@/lib/klutz";
+import { klutzStatus, KLUTZ_STONES, pointsFree, pointsSpent, RESPEC_COST } from "@/lib/klutz";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 
 export default function KlutzGear({ game, onClose }: { game: ReturnType<typeof useGameState>; onClose: () => void }) {
@@ -14,11 +14,12 @@ export default function KlutzGear({ game, onClose }: { game: ReturnType<typeof u
   const names = new Map<string, string>([...game.inventory.filter(isCreatureDrop).map((c) => [c.id, c.name] as [string, string]), [KLUTZ_DROP_ID, "Klutz"]]);
   return (
     <CreatureDetailModal
-      creature={klutzDrop(game.klutz.level, game.klutz.xp, game.klutz.points, game.klutz.learned)}
+      creature={klutzDrop(game.klutz.level, game.klutz.xp, game.klutz.points, game.klutz.learned, game.klutz.soulStone)}
       points={{
         free: pointsFree(game.klutz), onSpend: game.spendKlutzPoints,
         respec: { cost: RESPEC_COST, can: pointsSpent(game.klutz.points) > 0 && game.gold >= RESPEC_COST, run: game.respecKlutzPoints },
       }}
+      soulStones={{ choices: KLUTZ_STONES, onPick: away ? undefined : game.setKlutzSoulStone }}
       isFavorite={false}
       loadout={game.equipment[KLUTZ_DROP_ID]}
       weapons={items.filter((d) => d.itemCategory === "weapon")}

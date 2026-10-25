@@ -12,7 +12,7 @@ import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, type CreatureProficien
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop } from "@/lib/drops";
-import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, setKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor } from "@/lib/creatures/instance";
@@ -26,11 +26,11 @@ import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize,
 export const KLUTZ_DROP_ID = "klutz-companion";
 export type LevelUp = { id: string; name: string; from: number; to: number };
 // His level, XP and spent % points live in KlutzState (lib/klutz.ts); he starts at level 1.
-export function klutzDrop(level = 1, xp = 0, points?: KlutzState["points"], learned?: string[]): CreatureOrItemDrop {
+export function klutzDrop(level = 1, xp = 0, points?: KlutzState["points"], learned?: string[], soulStone?: KlutzState["soulStone"]): CreatureOrItemDrop {
   return {
     id: KLUTZ_DROP_ID, barcode: "", dropType: "creature", creatureId: KLUTZ.id,
     rarity: KLUTZ.rarity, roll: 0, name: KLUTZ.name, desc: KLUTZ.flavour, level, xp,
-    proficiency: klutzProficiency(points), learned,
+    proficiency: klutzProficiency(points), learned, soulStone: soulStone ?? null,
     createdAt: new Date().toISOString(),
   };
 }
@@ -39,7 +39,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 import { readSave, writeMainSave } from "@/lib/save";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
-import { soulStoneOf } from "@/lib/creatures/soulStones";
+import { soulStoneOf, type SoulStoneKey } from "@/lib/creatures/soulStones";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -307,8 +307,8 @@ export function useGameState(initialTab: TabKey = "all") {
     const l = equipment[KLUTZ_DROP_ID];
     const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
     const w = l?.weaponId ? byId.get(l.weaponId) : undefined;
-    return fighterFor(klutzDrop(klutz.level, 0, klutz.points), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
-  }, [equipment, inventory, klutz.level, klutz.points]);
+    return fighterFor(klutzDrop(klutz.level, 0, klutz.points, undefined, klutz.soulStone), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
+  }, [equipment, inventory, klutz.level, klutz.points, klutz.soulStone]);
 
   // While Klutz is out, the gear he's wearing goes with him: nobody can take
   // it off him (or put anything on him) until he's back.
@@ -403,6 +403,11 @@ export function useGameState(initialTab: TabKey = "all") {
     if (!klutz.points || Object.values(klutz.points).every((v) => !v) || !spendGold(RESPEC_COST)) return false;
     setKlutz((k) => respecKlutz(k));
     return true;
+  }
+
+  // Give him a soul stone (or take it off: null), from his Equip window. Not while he's out.
+  function setKlutzSoulStone(stone: SoulStoneKey | null) {
+    setKlutz((k) => setKlutzStone(k, stone));
   }
 
   // Call him back from the Labyrinth now, with what he's won so far.
@@ -882,6 +887,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, setKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

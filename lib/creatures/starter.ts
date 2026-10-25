@@ -2,11 +2,13 @@
 // A new player's first creature: a random Rare, waiting in the cage. It
 // starts at STARTER_LEVEL, so it can actually win the first fights, and it
 // always knows a quick attack of its class (haste: it can strike first), so
-// early on it can finish off a hurt creature before it hits back.
+// early on it can finish off a hurt creature before it hits back. It always
+// has a soul stone too, one from its species' pool (the user, 2026-10-25).
 
 import type { Drop } from "../types";
 import { CREATURES_BY_RARITY, MOVE_BY_NAME, MOVE_SLOTS, type CombatClass, type CreatureTemplate } from "./creatureData";
 import { makeCreatureDrop } from "./summon";
+import { stonesFor } from "./soulStones";
 
 export const STARTER_LEVEL = 3;
 export const QUICK_ATTACK: Record<CombatClass, string> = { melee: "Dash Lash", ranged: "Quick Bolt", magic: "Blink" };
@@ -26,5 +28,7 @@ export function starterCreature(): Drop {
   const pool = CREATURES_BY_RARITY.rare;
   const t = pool[Math.floor(Math.random() * pool.length)];
   const d = makeCreatureDrop(t, "creature", "");
-  return { ...d, moves: withQuickAttack(t, d.moves ?? []), level: STARTER_LEVEL, xp: 0 };
+  const stones = stonesFor(t.id);
+  const soulStone = d.soulStone ?? (stones.length ? stones[Math.floor(Math.random() * stones.length)] : null);
+  return { ...d, moves: withQuickAttack(t, d.moves ?? []), level: STARTER_LEVEL, xp: 0, soulStone };
 }
