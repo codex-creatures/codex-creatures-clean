@@ -35,7 +35,9 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
      plus `codex_creatures_slot_<id>` (lib/saveSlots.ts). Per device, not in saves:
      `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size) and
      `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration).
-   - New save fields must be optional, with a default for old saves.
+   - New save fields must be optional, with a default for old saves. (Recent ones: `storage`, the
+    chest boxes built bigger; a creature or card's `soulStone`, where missing means "roll it on
+    load" and `null` means none.)
    - Exported save files must stay importable: bump `SAVE_FILE_VERSION` (lib/saveFile.ts) only
      together with a reader for the older version.
    - **Never write saves on the user's real addresses** while testing: http://localhost:3000, the
@@ -81,7 +83,7 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
 | | |
 |---|---|
 | `npm run dev` | dev server, **always port 3000** (`scripts/check-port.mjs` refuses if busy: saves are per address) |
-| `npm test` | Vitest, `tests/*.test.ts` (~170 tests, ~30s) |
+| `npm test` | Vitest, `tests/*.test.ts` (~320 tests; a few minutes on the main PC, where the slow roll/map tests can hit their time limits under load: rerun those alone before suspecting a bug) |
 | `npx tsc --noEmit` | type check |
 | `npm run lint` | ESLint |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
@@ -104,7 +106,7 @@ kill theirs.
   - `combat/`: `engine.ts` (damage, triangle, stances), `battle.ts` (actions, statuses),
     `teamBattle.ts` (3v3, swaps), `thinkingAi.ts`, `bossAi.ts`, `loadout.ts`.
   - `creatures/`: `creatureData.ts` (species, moves), `levels.ts`, `creatureRoll.ts`,
-    `summon.ts`, `bosses.ts`, `starter.ts`, `abilities.ts`.
+    `summon.ts`, `bosses.ts`, `starter.ts`, `soulStones.ts` (soul stones: replaced the old abilities).
   - `dungeon/`: `run.ts` (the run: rooms, mixes, bag, pool, dungeons), `map.ts` (scroll map,
     routes), `chamber.ts` (room drawing), `witch.ts`.
   - `items/`: stat rolling (`rollConfig.ts`, `budgets.ts`, `ceilings.ts`: **the user's most

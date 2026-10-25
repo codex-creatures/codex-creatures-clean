@@ -24,7 +24,8 @@ import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import Help from "./Help";
-import { ABILITIES } from "@/lib/creatures/abilities";
+import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import { SOUL_COLOR } from "./SoulStoneTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
@@ -101,7 +102,6 @@ export default function CreatureDetailModal({
   const weaponKind = weapon?.itemKey && WEAPON_AFFINITY[weapon.itemKey] ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[weapon.itemKey]] : undefined;
   const inSlot = (slot: EquipSlot) => (slot === "weapon" ? weapon : worn[ARMOR_SLOTS.indexOf(slot)]);
   const c = RARITY_COLORS[creature.rarity];
-  const ability = creature.ability ? ABILITIES[creature.ability] : undefined;
 
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
@@ -207,12 +207,6 @@ export default function CreatureDetailModal({
             <RaceTag race={template?.race} />
             <ClassBadge cls={template?.cls} neutral={template?.neutral} />
             {template && prof && !(template.neutral && creatureRoles(prof)[0] === "Balanced") && <TypeTags roles={creatureRoles(prof)} />}
-            {ability && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, color: "#ffe9a8", padding: "1px 6px", border: "2px solid rgba(255,233,168,0.35)", background: "rgba(255,233,168,0.07)" }}>
-                ✦ {ability.name}
-                <Help title={`Ability: ${ability.name}`}><p>{ability.text}</p></Help>
-              </span>
-            )}
           </div>
           {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it. */}
           <h2 className="pixel-font" title={creature.name} style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -264,7 +258,10 @@ export default function CreatureDetailModal({
             {tab === "gear" && <>
             {/* Paper doll: weapon · creature · armour */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
-              <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
+                <SoulSlot stone={creature.soulStone} />
+              </div>
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 {ARMOR_SLOTS.map((slot, i) => (
@@ -493,6 +490,26 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
       </div>
       <div style={{ width: 150, height: 14, marginTop: -6, background: "#3a3f4c", borderTop: `3px solid ${border}`, boxShadow: "inset 0 -3px 0 #23262f, 0 3px 0 rgba(0,0,0,0.5)", borderRadius: "50% / 40%" }} />
       <div style={{ ...NUM, fontSize: 15, color: "#ff8a80", marginTop: 6 }}>❤️ {Math.round(hp)} HP</div>
+    </div>
+  );
+}
+
+// The creature's soul stone, under its weapon: always there (empty for none),
+// so nothing moves flicking between creatures. What it does is behind the "?".
+function SoulSlot({ stone }: { stone?: SoulStoneKey | null }) {
+  const s = stone ? SOUL_STONES[stone] : undefined;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
+      <span className="pixel-font" style={{ fontSize: 9, lineHeight: 1.2, color: s ? SOUL_COLOR : MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>Soul stone</span>
+      <span title={s ? `${s.name}: ${s.text}` : "No soul stone"} style={{
+        width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
+        background: s ? "radial-gradient(circle, rgba(185,230,255,0.25), #101117 75%)" : "#101117",
+        border: `3px solid ${s ? "rgba(185,230,255,0.6)" : "#2f3340"}`, boxShadow: "inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)",
+      }}>{s ? s.icon : <span style={{ fontSize: 18, color: "#3a3e4b" }}>—</span>}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 11, height: 26, color: s ? SOUL_COLOR : MUTED, maxWidth: 110 }}>
+        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s ? s.name : "None"}</span>
+        <span style={{ visibility: s ? "visible" : "hidden" }}><Help title={s ? `Soul stone: ${s.name}` : "Soul stone"}><p>{s?.text}</p></Help></span>
+      </span>
     </div>
   );
 }

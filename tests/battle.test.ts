@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { CREATURE_BY_ID, defaultMoveNames } from "../lib/creatures/creatureData";
 import { effectiveAgil } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
-import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, streakEffects } from "../lib/combat/battle";
+import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS } from "../lib/combat/battle";
 import { aiChooseSkill, runTeamBattle } from "../lib/combat/teamBattle";
 import { creatureTypeLabel } from "../lib/creatures/creatureType";
 
@@ -158,11 +158,11 @@ describe("move slots and learnable moves", () => {
   });
 });
 
-describe("armour gap (same move, same target)", () => {
+describe("runs of the same move (no armour gap any more)", () => {
   const tank = () => buildFighter(CREATURE_BY_ID.crystal_golem, undefined, { mDef: 60, hp: 900 }, ["Jab"]);
   const hitter = () => buildFighter(CREATURE_BY_ID.ironhide, { melee: 40, hp: 900 }, undefined, ["Slash", "Crush"]);
 
-  it("precise chance climbs from the 6th use, and each precise hit opens the armour further", () => {
+  it("a long run doesn't crack armour: every precise hit ignores the usual 25%", () => {
     const s = createBattle([hitter()], [tank()]);
     const ignored: number[] = [];
     const rand = vi.spyOn(Math, "random").mockReturnValue(0); // every roll succeeds → every hit precise
@@ -172,18 +172,10 @@ describe("armour gap (same move, same target)", () => {
       if (e?.type === "attack") ignored.push(e.defenceIgnored);
     }
     rand.mockRestore();
-    // hits 1–5: ordinary precise (25%); from hit 6 each precise opens it further.
-    expect(ignored).toEqual([0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.5, 0.75, 1, 1]);
+    expect(ignored).toEqual(Array(10).fill(0.25));
   });
 
-  it("precise chance per use: 5% until the 6th use, then +10% each", () => {
-    const at = (hits: number) => streakEffects({ move: "Slash", targetIdx: 0, hits, cracks: 0 }).preciseChance;
-    expect(at(5)).toBeCloseTo(0.05);
-    expect(at(6)).toBeCloseTo(0.15);
-    expect(at(8)).toBeCloseTo(0.35);
-  });
-
-  it("the run resets on a different move or when either creature swaps", () => {
+  it("the run resets on a different move or when the attacker swaps, not when the defender does", () => {
     const s = createBattle([hitter(), hitter()], [tank(), tank()]);
     const atk = () => resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });
     atk(); atk(); atk();
@@ -192,8 +184,7 @@ describe("armour gap (same move, same target)", () => {
     expect(activeOf(s.sides.A).streak).toMatchObject({ move: "Crush", hits: 1 });
     atk(); atk();
     resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "swap", to: 1 } }); // defender swaps
-    expect(activeOf(s.sides.A).streak).toMatchObject({ targetIdx: 1, hits: 1 });
-    atk();
+    expect(activeOf(s.sides.A).streak).toMatchObject({ move: "Slash", hits: 3 });
     resolveRound(s, { A: { kind: "swap", to: 1 }, B: { kind: "attack", skillName: "Jab" } }); // attacker swaps
     expect(s.sides.A.team[0].streak).toBeUndefined();
   });
@@ -208,8 +199,8 @@ describe("resting", () => {
   });
 });
 
-describe("armour gap ends when its target leaves", () => {
-  it("knocking the target out ends the attacker's run (no cracked armour on the replacement)", () => {
+describe("a replacement coming in", () => {
+  it("starts with no run of its own", () => {
     const killer = buildFighter(CREATURE_BY_ID.ironhide, { melee: 40, hp: 600 }, undefined, ["Slash"]);
     const s = createBattle([killer], [buildFighter(CREATURE_BY_ID.rust_beetle, undefined, { mDef: 90, hp: 600 }), buildFighter(CREATURE_BY_ID.crystalback)]);
     const rand = vi.spyOn(Math, "random").mockReturnValue(0);
@@ -217,8 +208,7 @@ describe("armour gap ends when its target leaves", () => {
       resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });
     }
     rand.mockRestore();
-    expect(activeOf(s.sides.A).streak!.cracks).toBeGreaterThan(0); // the run had cracked the first creature
     sendInReplacement(s, "B", 1);
-    expect(activeOf(s.sides.A).streak).toBeUndefined();
+    expect(activeOf(s.sides.B).streak).toBeUndefined();
   });
 });

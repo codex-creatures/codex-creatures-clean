@@ -4,7 +4,7 @@
 // action that turns out best on average (Monte Carlo lookahead).
 //
 // It plays those imagined rounds with the real battle engine, so it
-// understands every mechanic automatically (cripple, dash, armour gap, and
+// understands every mechanic automatically (cripple, dash, soul stones, and
 // anything added later) without move-specific rules. Inside its imagined
 // futures both sides play the simple greedy AI from teamBattle.ts.
 //
@@ -81,8 +81,9 @@ function playOn(s: BattleState, rounds: number) {
   }
 }
 
-// Small nudges for near-equal options, as a player would: keep an
-// armour-gap run going, and don't swap for nothing (stops swap ping-pong).
+// Small nudges for near-equal options, as a player would: keep a run of
+// the same move going (a Perfectionist's grows), and don't swap for nothing
+// (stops swap ping-pong).
 const RUN_BONUS = 0.004;   // per hit in the current run (capped)
 const SWAP_PENALTY = 0.01;
 

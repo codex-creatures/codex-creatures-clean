@@ -296,7 +296,7 @@ function Find({ d }: { d: Drop }) {
         {t && d.dropType === "creature" ? (
           <CreatureArt creatureId={d.creatureId ?? t.id} title={t.name} />
         ) : t && d.dropType === "card" ? (
-          <div style={{ width: "71%" }}><CardFace t={t} creatureId={d.creatureId ?? t.id} ability={d.ability} mini /></div>
+          <div style={{ width: "71%" }}><CardFace t={t} creatureId={d.creatureId ?? t.id} soulStone={d.soulStone} mini /></div>
         ) : l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 30 }}>{l.icon}</span>}
       </div>
       <div style={{ ...NAME, color: l.color }}>{l.name}</div>

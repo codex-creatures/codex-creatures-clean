@@ -14,7 +14,7 @@ import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, MaterialIcon } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import ClassBadge from "@/components/ClassBadge";
-import AbilityTag from "@/components/AbilityTag";
+import SoulStoneTag from "@/components/SoulStoneTag";
 import { useGameState } from "@/hooks/useGameState";
 import { findCreatureTemplate, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { STATS, type StatKey } from "@/components/CreatureDetailModal";
@@ -88,7 +88,7 @@ export default function CagePage() {
                 <RaceTag race={t?.race} />
                 <ClassBadge cls={t?.cls} />
               </div>
-              <AbilityTag ability={d.ability} />
+              <SoulStoneTag stone={d.soulStone} />
               <button className="chip" onClick={() => setViewing(viewing === d.id ? null : d.id)} style={{ marginBottom: 8 }}>
                 {viewing === d.id ? "Hide its stats" : "📜 View its stats"}
               </button>

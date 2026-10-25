@@ -125,18 +125,28 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   any box is at 50 or more. A scan for a full box is kept as a sealed Code Cache at the altar (even
   in Looting mode), and a cache for a full box won't open until there's room. The altar holds 9
   caches (`CACHE_LIMIT`): with 9 waiting, every scan says "Scan Failed / Code Cache Full".
+  ✅ **Storage schematics** (2026-10-25): the merchant's Weapon and Armour Storage Schematics
+  (`weapon_storage`, `armor_storage`) build that box up to 75 (`BIG_BOX_CAP`; consumables stay at
+  50). Built from the Inventory (a panel above the list) for 10 planks, 10 nails, 1 essence stone.
+  The save remembers which boxes are built (`storage`, optional, default none).
 - ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
   found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
   wandering merchant's cart, Labyrinth or tavern, for 1,000 gold (`BACKPACK_PRICE`; it takes one of
-  the cart's 5 slots, so with both scrolls the clairvoyance scroll misses out); and 50% of
+  the cart's 10 slots); and 50% of
   storehouses (`STOREHOUSE_BACKPACK`). Gear, codexes, potions, tools and material stacks take a slot; gold and
   creature cards don't. Swapping a weapon from the bag mid-fight uses your turn.
+- ✅ **Backpack upgrades** (2026-10-25): +1 slot each from the backpack's 5 up to 8 (`BAG_MAX`), at
+  1,000 → 1,500 → 2,000 gold (`BAG_UPGRADE_PRICES`), from the merchant once you own the backpack. It
+  works straight away (in the Labyrinth) or from the next run (tavern). Stored as `bagSize`.
+- ✅ **Revival Elixir** (2026-10-25, a tool: `revival`): from the bag between rooms (not in a
+  fight), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
+  the merchant (25% of carts); also in 20% of mini-boss chests (`MINIBOSS_REVIVAL`) and 50% of boss
+  chests (`BOSS_REVIVAL`).
 - ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from
   10 to 25 codexes. 📌 Changing (the user, 2026-10-20): it will come only from the tavern
   questline (§9), for 10 planks + 5 nails, holding 20.
 - 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.
-- ❓ Bag upgrades beyond the backpack, a 10-item battle bag, and bags for Klutz have all been
-  mentioned, but none is designed.
+- ❓ A 10-item battle bag and bags for Klutz have been mentioned, but neither is designed.
 
 ## 4. Creatures
 
@@ -158,8 +168,34 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - 📌 Races have 5 creatures each, across the rarities. The user is designing creatures and classes
   in depth.
 - ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): undefined, and
-  deferred. A **Celestial** race was mentioned as a future race. Per-creature ability pools wait on
-  the user's design. (The Epic 25% / Legendary 50% chances in abilities.ts were Claude's defaults.)
+  deferred. A **Celestial** race was mentioned as a future race.
+
+### Soul stones (✅ the user's spec, 2026-10-25; lib/creatures/soulStones.ts)
+
+- A passive power some creatures are born with, shown under the weapon in the creature window
+  (and on cards). They **replaced the old abilities** (Keen Eye, Divine Healing), which are gone.
+- Only Rare or better, and not guaranteed: Rare 25%, Epic 60%, Legendary 100% (`SOUL_STONE_CHANCE`),
+  cards included. Summoning "choose" keeps the card's stone; "random" rolls a new one.
+- Each Rare+ species has a pool of **at least 2** stones (`POOLS`, picked by Claude to fit each
+  creature; the user may re-sort them), so two of a species can differ. Trickster only goes on
+  races with a utility move (Etherial: Mirage; Undead: Corpsify).
+- Creatures and cards from before soul stones get theirs rolled once on load (`soulStoneOf`,
+  seeded by the drop's id). Save field `soulStone` on the drop: a key, or `null` for none.
+- Enemies don't have soul stones (yet). Klutz doesn't either.
+- The six (the user's numbers):
+  - **Toxic Skin**: hit by a melee attack, 50% to poison the attacker: 5% of its max HP each turn
+    for 3–5 turns, on the bench too. A new poisoning replaces the old one with a fresh 3–5 roll.
+  - **Haunting Presence**: when it enters (start of battle, swap or replacement), 25% that the enemy
+    on the field is "crippled with fear": it loses its next attack and spends no energy. Swaps
+    resolve first, so swapping it in can stop the attack due that same turn.
+  - **Unstoppable Force**: can't be crippled.
+  - **Perfectionist**: each use of the same move in a row does 10% more than the last, compounding
+    (10 → 11 → 12.1, ±5% spread), with no cap. Resets on a different move, a rest, a stumble or
+    fear, an item, or swapping out (the foe swapping doesn't reset it).
+  - **Trickster**: its utility moves (ones used on itself: Mirage, Corpsify) go before everyone,
+    whatever the agility. (Cripple, Haste and Precise are utility *attacks*: not included.)
+  - **Revitalise**: swapped out to the bench, heals 25% of its max HP.
+- 📌 More stones later: the user plans to expand the list.
 - ❓ A slave trader who buys creatures (with the Tavern's encounters): mentioned, not designed.
 
 ## 5. Levels and XP
@@ -199,9 +235,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Hard counters are intended:** a counter means much less damage and a reason to swap, not
   invulnerability.
 - ✅ **Energy:** max 100, +30 after each attack. A creature with no affordable move rests (+30).
-- ✅ **Precise hits:** 5% chance, ignoring 25% of defence, and 1.75× damage (`PRECISE_DAMAGE`, the user, 2026-10-24; a brief try at 75% ignored instead was reverted). **Armour gap:** from the 6th use of the
-  same move in a row, +10% precise chance each use, and each precise hit ignores 25 → 50 → 75 →
-  100% of defence. It resets on a different move or a swap. This is the user's anti-stall design.
+- ✅ **Precise hits:** 5% chance, ignoring 25% of defence, and 1.75× damage (`PRECISE_DAMAGE`, the user, 2026-10-24; a brief try at 75% ignored instead was reverted).
+- **The armour gap was removed** (the user, 2026-10-25): repeating a move no longer raises the
+  precise chance or cracks armour. The Perfectionist soul stone is the only thing that rewards
+  repeating a move now. (Tank-vs-tank stalls can now run to the 100-round draw.)
 - ✅ **Stances:** neutral, float, entrench (engine.ts). Float takes −10% from melee and +10% from
   ranged, and deals +10% ranged; Entrench is the mirror image (melee). The stance rules are
   provisional in the original design, and there's no elemental type chart.
@@ -285,9 +322,15 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
     scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
     Claude's defaults, added 2026-10-19.
-- 📌 **The bigger merchant** (all decided by the user, 2026-10-23; not built yet). Applies to the
-  Labyrinth merchant and the tavern merchant alike. The user wants the merchant to keep growing.
-  - **Cart: 10 slots** (now `MERCHANT_SLOTS` 5), filled in this order:
+- **The bigger merchant** (all decided by the user, 2026-10-23). Applies to the Labyrinth merchant
+  and the tavern merchant alike. The user wants the merchant to keep growing.
+  ✅ **Steps 1 and 2 built (2026-10-25):** the 10-slot cart (`MERCHANT_SLOTS`), the always-wares,
+  and the rare wares (backpack upgrades, both storage schematics, the Revival Elixir, scrolls).
+  Materials (one stack of each kind, as before) fill the slots left. The cart always shows 10
+  spaces (empty ones greyed). A storage schematic you hold or have built isn't shown.
+  📌 **Not built yet:** step 3 (gear on the cart), step 4 as specified (3–5 material stacks with
+  repeats), and armour priced like weapons.
+  - **Cart: 10 slots**, filled in this order:
     1. Always: Healing Potion, Lesser Potion, Flare.
     2. Rare wares, each rolled on its own: the backpack (until you own it) or, once you do, a
        **backpack upgrade** 20%; the **weapon storage schematic** 20% and the **armour storage

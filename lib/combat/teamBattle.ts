@@ -147,7 +147,7 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
   };
 
   // Walled (nothing gets through)? Then hammer the same spot: keep the
-  // current run going with a move that pays for itself, so the armour gap opens.
+  // current run going with a move that pays for itself (it can't run dry).
   if (Math.max(...pool.map((s) => value(s, true))) <= WALLED_DAMAGE) {
     const sustainable = pool.filter((s) => s.energyCost <= ENERGY_REGEN);
     const run = sustainable.find((s) => s.name === me.streak?.move);

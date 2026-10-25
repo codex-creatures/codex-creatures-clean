@@ -16,7 +16,7 @@
 // chance to be a rare (learnable) move instead.
 
 import { LEARNABLE_MOVES, MOVE_SLOTS, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
-import { rollAbility, type AbilityKey } from "./abilities";
+import { rollSoulStone, type SoulStoneKey } from "./soulStones";
 
 export const ROLL_SPREAD_SHARE = 0.04;    // max ± per stat, as a share of the species' total %s
 export const ROLL_SPREAD_MIN = 2;
@@ -65,14 +65,13 @@ export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[]
   return moves.filter(Boolean).sort((a, b) => Number(!own.includes(a)) - Number(!own.includes(b)));
 }
 
-// ability: a rare passive some Epic+ creatures are born with (lib/creatures/abilities.ts).
-export type CreatureRoll = { proficiency: CreatureProficiency; moves: string[]; ability?: AbilityKey };
+// soulStone: the passive power some Rare+ creatures are born with (lib/creatures/soulStones.ts); null: none.
+export type CreatureRoll = { proficiency: CreatureProficiency; moves: string[]; soulStone?: SoulStoneKey | null };
 
 export function rollCreature(c: CreatureTemplate, rng: Rng = Math.random): CreatureRoll {
   const proficiency = rollProficiency(c.proficiency, rng);
   const moves = rollMoves(c, rng);
-  const ability = rollAbility(c, rng);
-  return ability ? { proficiency, moves, ability } : { proficiency, moves };
+  return { proficiency, moves, soulStone: rollSoulStone(c, rng) ?? null };
 }
 
 // How a roll differs from the species: { rng: +2, rdef: -2 } etc. (0s left out).

@@ -36,7 +36,7 @@ export type Fighter = {
   braceActive?: boolean;
   braceConsecutiveCount?: number;
   armorSet?: import("../items/armor").ArmorKey; // wearing a full set: its mechanic applies
-  ability?: import("../creatures/abilities").AbilityKey; // a rare passive it was born with
+  soulStone?: import("../creatures/soulStones").SoulStoneKey; // a passive power it was born with (lib/creatures/soulStones.ts)
   level?: number; // its level (lib/creatures/levels.ts)
   hpMult?: number; // its HP was multiplied (an encampment's potion-drunk foes): arcane's cap grows with it
 };

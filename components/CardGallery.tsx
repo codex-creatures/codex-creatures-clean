@@ -10,7 +10,8 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CLASS_INFO, findCreatureTemplate, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
-import { ABILITIES } from "@/lib/creatures/abilities";
+import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import { SOUL_COLOR } from "./SoulStoneTag";
 import { CreatureArt } from "./CreaturePortrait";
 
 
@@ -46,9 +47,9 @@ export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDr
 function TradingCard({ stack, onOpen }: { stack: Stack; onOpen: () => void }) {
   const { t, cards } = stack;
   const ready = cards.length >= CARDS_TO_SUMMON;
-  const ability = cards.find((c) => c.ability)?.ability;
+  const stone = cards.find((c) => c.soulStone)?.soulStone;
   return (
-    <CardFace t={t} creatureId={cards[0].creatureId ?? t.id} ability={ability} glow={ready} onClick={onOpen}
+    <CardFace t={t} creatureId={cards[0].creatureId ?? t.id} soulStone={stone} glow={ready} onClick={onOpen}
       label={`${t.name} card, ${cards.length} held`}
       badge={`×${cards.length}`}
       footer={<span style={{ color: ready ? "#ffcf6e" : undefined, fontWeight: ready ? 700 : 400 }}>{ready ? "✨ Ready to summon" : `${cards.length}/${CARDS_TO_SUMMON} to summon`}</span>} />
@@ -144,17 +145,17 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
 }
 
 // A creature card's face (CardBody with its role over a line of flavour, or
-// its ability if the card has one). The Skull Raven is the benchmark. Used
+// its soul stone if the card has one). The Skull Raven is the benchmark. Used
 // in your binder, for cards you've just found, and for the card witch's
 // prize. badge: a corner bubble (how many you hold); footer: a line under the card.
 // mini: the small card in a loot window, where the name is written under it —
 // no name or role line, just the sprite as big as it'll go over style | race.
-export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick, label, mini }: {
-  t: CreatureTemplate; creatureId: string; ability?: string; footer?: React.ReactNode; badge?: string; glow?: boolean;
+export function CardFace({ t, creatureId, soulStone, footer, badge, glow, onClick, label, mini }: {
+  t: CreatureTemplate; creatureId: string; soulStone?: SoulStoneKey | null; footer?: React.ReactNode; badge?: string; glow?: boolean;
   onClick?: () => void; label?: string; mini?: boolean;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
-  const skill = ability ? ABILITIES[ability as keyof typeof ABILITIES] : undefined;
+  const stone = soulStone ? SOUL_STONES[soulStone] : undefined;
   const Tag = onClick ? "button" : "div";
 
   return (
@@ -163,8 +164,8 @@ export function CardFace({ t, creatureId, ability, footer, badge, glow, onClick,
       <CardBody t={t} creatureId={creatureId} glow={glow} noName={mini}>
         {!mini && <div style={CARD_WELL}>
           <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW }}>{roleOf(t)}</div>
-          <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: skill ? "#ffcf6e" : "rgba(255,255,255,0.6)", ...clamp2 }}>
-            {skill ? `✦ ${skill.name}` : shortFlavour(t.flavour)}
+          <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: stone ? SOUL_COLOR : "rgba(255,255,255,0.6)", ...clamp2 }}>
+            {stone ? `${stone.icon} ${stone.name}` : shortFlavour(t.flavour)}
           </div>
         </div>}
       </CardBody>

@@ -27,7 +27,7 @@ export type CreatureOrItemDrop = {
   learned?: string[];   // creatures: race moves learned from codexes
   level?: number;       // creatures: level (lib/creatures/levels.ts); missing = 1
   xp?: number;          // …and XP towards the next one
-  ability?: import("./creatures/abilities").AbilityKey; // creatures/cards: a rare passive (Epic+)
+  soulStone?: import("./creatures/soulStones").SoulStoneKey | null; // creatures/cards: its soul stone (Rare+); null: rolled none; missing: not rolled yet (an old save)
   codexMove?: string;   // a codex (consumable item): the move it teaches
   scroll?: "xp";        // an XP scroll (consumable item; SCROLL_XP in lib/creatures/levels.ts)
   potion?: "potion" | "lesser"; // a potion (consumable item; see POTIONS in lib/dungeon/run.ts)

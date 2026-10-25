@@ -46,7 +46,7 @@ export default function CardStack({ piles, faded }: { piles: CardPile[]; faded?:
           );
         })}
         <div style={{ position: "relative" }}>
-          <CardFace t={top.t} creatureId={top.x.creatureId ?? top.t.id} ability={top.x.ability} badge={total > 1 ? `×${total}` : undefined} />
+          <CardFace t={top.t} creatureId={top.x.creatureId ?? top.t.id} soulStone={top.x.soulStone} badge={total > 1 ? `×${total}` : undefined} />
         </div>
       </button>
 
@@ -56,7 +56,7 @@ export default function CardStack({ piles, faded }: { piles: CardPile[]; faded?:
           size={{ width: "min(300px, 78cqw, 47cqh)", height: "min(420px, 109.2cqw, 65.8cqh)" }}
           render={(i) => {
             const p = sorted[i];
-            return <CardFace t={p.t} creatureId={p.x.creatureId ?? p.t.id} ability={p.x.ability} badge={p.n > 1 ? `×${p.n}` : undefined} />;
+            return <CardFace t={p.t} creatureId={p.x.creatureId ?? p.t.id} soulStone={p.x.soulStone} badge={p.n > 1 ? `×${p.n}` : undefined} />;
           }} />
       )}
     </>

@@ -39,6 +39,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 import { readSave, writeMainSave } from "@/lib/save";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
+import { soulStoneOf } from "@/lib/creatures/soulStones";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -104,10 +105,18 @@ export function loadSave(): SaveState | null {
   const favoriteIds: string[] = (Array.isArray(parsed.favoriteIds) ? parsed.favoriteIds : []).filter((id: string) => id !== KLUTZ_DROP_ID);
   // Creatures and cards show their species' current rarity (some species
   // changed tier when races arrived).
-  for (const d of inventory) {
+  // Soul stones (lib/creatures/soulStones.ts): one from before them gets its
+  // roll now (the same one every time: seeded by its id), and the old
+  // abilities they replaced are dropped.
+  const caged: Drop[] = Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()];
+  const caches: Drop[] = Array.isArray(parsed.caches) ? parsed.caches : [];
+  for (const d of [...inventory, ...caged, ...caches]) {
     if (!isCreatureDrop(d) && !isCardDrop(d)) continue;
-    const t = findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name);
-    if (t) (d as CreatureOrItemDrop).rarity = t.rarity;
+    const c = d as CreatureOrItemDrop & { ability?: unknown };
+    const t = findCreatureTemplate(c.creatureId, c.name);
+    if (t) c.rarity = t.rarity;
+    c.soulStone = soulStoneOf(c, t);
+    delete c.ability;
   }
   const obj = (v: unknown) => (v && typeof v === "object" ? v : {});
   return {
@@ -118,7 +127,7 @@ export function loadSave(): SaveState | null {
     equipment:  obj(parsed.equipment) as Record<string, Loadout>,
     recentScans: Array.isArray(parsed.recentScans) ? parsed.recentScans : [],
     // A save from before the cage gets the starter waiting in it once.
-    caged: Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()],
+    caged,
     klutz: obj(parsed.klutz) as KlutzState,
     quest: parsed.quest && typeof parsed.quest === "object" ? (parsed.quest as QuestState) : { ...NEW_QUEST },
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
@@ -126,7 +135,7 @@ export function loadSave(): SaveState | null {
     scanTipRead: parsed.scanTipRead === true,
     player: parsed.player && typeof parsed.player === "object" ? (parsed.player as Progress) : { level: 1, xp: 0 },
     scanMode: parsed.scanMode === "store" || parsed.scanMode === "loot" ? parsed.scanMode : defaultScanMode(),
-    caches: Array.isArray(parsed.caches) ? parsed.caches : [],
+    caches,
     crate: Array.isArray(parsed.crate) ? parsed.crate : [],
     bookcase: typeof parsed.bookcase === "number" ? parsed.bookcase : 1,
     cage: typeof parsed.cage === "number" ? parsed.cage : 1,

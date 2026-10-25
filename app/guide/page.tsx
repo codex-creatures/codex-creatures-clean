@@ -20,8 +20,8 @@ import {
   AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, NEUTRAL_COUNTER, PRECISE_CHANCE, PRECISE_DAMAGE, PRECISE_IGNORE,
   TRIANGLE, calcDamage, type CombatItem, type Fighter,
 } from "@/lib/combat/engine";
-import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, STREAK_PRECISE_STEP, STREAK_START, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
-import { ABILITIES, ABILITY_CHANCE, abilitiesFor } from "@/lib/creatures/abilities";
+import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
+import { SOUL_STONES, SOUL_STONE_CHANCE, stonesFor, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { RARE_MOVE_CHANCE, ROLL_SPREAD_SHARE, ROLL_SPREAD_MIN } from "@/lib/creatures/creatureRoll";
 import { ITEM_CEILINGS, ITEM_KEYS, STAT_KEYS, WEAPON_AFFINITY, type ItemKey } from "@/lib/items/ceilings";
 import { ITEM_META } from "@/lib/items/metadata";
@@ -115,14 +115,19 @@ function Combat() {
         <li><b>Agility</b> only decides who strikes first each round — higher goes first.</li>
         <li><b>Energy</b>: everyone starts on {MAX_ENERGY}. Moves cost energy; you get {ENERGY_REGEN} back after each attack. With nothing affordable, a creature rests.</li>
         <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise: they do {PRECISE_DAMAGE}× damage and ignore {pct(PRECISE_IGNORE)} of the defence (on top of the damage type).</li>
-        <li><b>Armour gap</b>: from the {STREAK_START + 1}th use of the same move on the same target in a row, each use adds {pct(STREAK_PRECISE_STEP)} precise chance, and precise hits in that run crack through more armour. It resets when either side swaps or you change move.</li>
         <li><b>Cripple</b>: for {CRIPPLE_ROUNDS} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent). <b>Haste</b>: double agility this round only, to strike first.</li>
         <li><b>Stances</b>: floating takes +10% from ranged, −10% from melee; entrenched the other way round.</li>
       </ul>
 
       <H>Creature rolls</H>
       <P>Every creature is an individual: its %s are rolled around its species&apos; — each within ±{pct(ROLL_SPREAD_SHARE)} of the species&apos; total %s (at least ±{ROLL_SPREAD_MIN}), so rarer creatures, with more to work with, vary more — each move slot has a {pct(RARE_MOVE_CHANCE)} chance to
-        be a rare learnable move of its class, and Epic ({pct(ABILITY_CHANCE.epic ?? 0)}) and Legendary ({pct(ABILITY_CHANCE.legendary ?? 0)}) creatures can be born with an ability.</P>
+        be a rare learnable move of its class.</P>
+
+      <H>Soul stones</H>
+      <P>Some creatures are born with a soul stone, shown under their weapon: Rare {pct(SOUL_STONE_CHANCE.rare ?? 0)}, Epic {pct(SOUL_STONE_CHANCE.epic ?? 0)}, Legendary always. Cards have them too, and summoning from a card keeps its stone. Each species can get one of a few (see the Bestiary).</P>
+      <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18, margin: "4px 0" }}>
+        {(Object.keys(SOUL_STONES) as SoulStoneKey[]).map((k) => <li key={k}>{SOUL_STONES[k].icon} <b>{SOUL_STONES[k].name}</b>: {SOUL_STONES[k].text}</li>)}
+      </ul>
     </div>
   );
 }
@@ -268,7 +273,7 @@ function UnseenCard({ t }: { t: CreatureTemplate }) {
 
 function CreatureCard({ t }: { t: CreatureTemplate }) {
   const rc = RARITY_COLORS[t.rarity];
-  const abilities = abilitiesFor(t.id);
+  const stones = stonesFor(t.id);
   return (
     <div style={{ ...PANEL, marginTop: 0, borderColor: rc.border }}>
       <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -298,8 +303,8 @@ function CreatureCard({ t }: { t: CreatureTemplate }) {
       {raceMovesFor(t).length > 0 && (
         <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>Codex: {raceMovesFor(t).map((m) => <MoveChip key={m.name} m={m} />)}</div>
       )}
-      {abilities.length > 0 && (
-        <div style={{ fontSize: 12, color: "#ffd98a", marginTop: 6 }}>Can be born with: {abilities.map((a) => ABILITIES[a].name).join(", ")}</div>
+      {stones.length > 0 && (
+        <div style={{ fontSize: 12, color: "#b9e6ff", marginTop: 6 }}>Soul stones ({pct(SOUL_STONE_CHANCE[t.rarity] ?? 0)}): {stones.map((s) => `${SOUL_STONES[s].icon} ${SOUL_STONES[s].name}`).join(", ")}</div>
       )}
     </div>
   );

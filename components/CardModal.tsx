@@ -9,7 +9,7 @@ import { findCreatureTemplate, MOVE_BY_NAME, type CreatureProficiency } from "@/
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { MoveInfo } from "./MoveSlots";
-import AbilityTag from "./AbilityTag";
+import SoulStoneTag from "./SoulStoneTag";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 
@@ -59,7 +59,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <div style={{ fontSize: 40 }}>✨</div>
             <div className="pixel-font" style={{ fontSize: 26, color: c.text }}>{result.name} summoned!</div>
             <p style={{ color: MUTED, fontSize: 13, margin: "6px 0 14px" }}>It&apos;s now in your Creatures — equip it in the Pit.</p>
-            <AbilityTag ability={result.ability} />
+            <SoulStoneTag stone={result.soulStone} />
             <RollTable p={result.proficiency ?? t.proficiency} base={t.proficiency} />
             <Moves names={result.moves ?? []} own={t.skills.map((s) => s.name)} />
             <button className="pixel-btn" style={{ marginTop: 14 }} onClick={onClose}>Done</button>
@@ -75,7 +75,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text }}>{t.name}</h2>
 
             <Section>Creature % on this card</Section>
-            <AbilityTag ability={card.ability} />
+            <SoulStoneTag stone={card.soulStone} />
             <RollTable p={card.proficiency ?? t.proficiency} base={t.proficiency} />
             <Section>Moves on this card</Section>
             <Moves names={card.moves ?? t.skills.map((s) => s.name)} own={t.skills.map((s) => s.name)} />
@@ -100,7 +100,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
                         <span style={{ flex: 1, fontSize: 12 }}>
                           <DiffLine p={k.proficiency ?? t.proficiency} base={t.proficiency} />
                           <span style={{ display: "block", color: "#c9b48a" }}>{(k.moves ?? []).join(" · ")}</span>
-                          {k.ability && <span style={{ display: "block" }}><AbilityTag ability={k.ability} compact /></span>}
+                          {k.soulStone && <span style={{ display: "block" }}><SoulStoneTag stone={k.soulStone} compact /></span>}
                         </span>
                         {on && (
                           <label style={{ fontSize: 11, color: keep === k.id ? "#ffd66e" : MUTED, whiteSpace: "nowrap", cursor: "pointer" }}>

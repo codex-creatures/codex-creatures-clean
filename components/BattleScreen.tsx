@@ -24,7 +24,7 @@ import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf, aliveCount,
-  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, STREAK_START, streakEffects,
+  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, perfectionistBonus,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
@@ -84,7 +84,7 @@ export type Match = {
 // The animation currently playing. Indexes say which creature (team index)
 // when a side has two on the field.
 export type Fx =
-  | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean; gap: boolean;
+  | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean;
       attackerIndex?: number; targetIndex?: number; evaded?: boolean }
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey }
   | { id: number; kind: "effect"; side: SideKey; index: number; text: string; color: string }
@@ -150,6 +150,7 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       target.hp = e.targetHpAfter;
       if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS, loss: e.crippleLoss }];
       if (e.venom) target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), { ...e.venom }];
+      if (e.poisoned) attacker.statuses = [...attacker.statuses.filter((s) => s.id !== "poison"), { ...e.poisoned }];
       break;
     }
     case "effect": {
@@ -252,12 +253,12 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       applyEvent(shown, e);
       setView(shown);
       setFx(e.type === "attack"
-        ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled, gap: e.defenceIgnored > 0.25,
+        ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled,
             attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
-            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" ? "#9be15d" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
+            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       if (e.type === "attack") buzz(attackHaptic(e)); // (Settings → Vibration; off unless switched on)
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
@@ -515,8 +516,8 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   // (No "strong against" hints: the class icons and the triangle are the clue.)
   const tags: string[] = ["Each hit varies ±5%."];
   const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
-  if (run > STREAK_START) tags.push(`run ×${run}: ${Math.round(streakEffects({ ...me.streak!, hits: run }).preciseChance * 100)}% precise`);
-  else if (run > 2) tags.push(`run ×${run} (armour gap from ×${STREAK_START + 1})`);
+  const perfect = perfectionistBonus(me, { move: sk.name, hits: run });
+  if (perfect > 1) tags.push(`Perfectionist: +${Math.round((perfect - 1) * 100)}% (×${run} in a row)`);
   if (fx?.kind === "precise") tags.push(`${Math.round(fx.hitChance * 100)}% to hit · always precise`);
   if (fx?.kind === "cripple") tags.push(`${Math.round(fx.chance * 100)}% to cripple: slower, ${Math.round(CRIPPLE.stumble * 100)}% to lose each attack`);
   if (fx?.kind === "dash") {
@@ -576,12 +577,12 @@ export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: s
     if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex)) {
       anim = fx.missed ? "anim-dodge" : "anim-hit";
       float = fx.missed ? { text: "MISS", color: "#bbb" }
-        : { text: `-${fx.damage}${fx.gap ? " ARMOUR GAP!" : fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.gap ? "#ff9f43" : fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b" };
+        : { text: `-${fx.damage}${fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b" };
     }
     if ((fx.kind === "swap" || fx.kind === "sendIn" || fx.kind === "lineup") && fx.side === side) anim = "anim-swapin";
     if (fx.kind === "faint" && fx.side === side) anim = "anim-faint";
     if (fx.kind === "effect" && fx.side === side && isMe(fx.index)) {
-      anim = fx.text === "RISES AGAIN!" ? "anim-swapin" : fx.text.includes("VENOM") ? "anim-hit" : "";
+      anim = fx.text === "RISES AGAIN!" ? "anim-swapin" : fx.text.includes("VENOM") || fx.text.includes("POISON") ? "anim-hit" : "";
       float = { text: fx.text, color: fx.color };
     }
     if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex) && fx.missed && fx.evaded) float = { text: "MIRAGE!", color: "#c7b8ff" };
@@ -589,7 +590,7 @@ export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: s
   return { anim, float };
 }
 
-function FighterCardBody({ side, f, foe, info, fx, slot, compact, details, anim, float, color, hpPct, cripple, haste }: {
+function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, float, color, hpPct, cripple, haste }: {
   side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number; compact?: boolean; details: boolean;
   anim: string; float: { text: string; color: string } | null; color: string; hpPct: number;
   cripple?: Combatant["statuses"][number]; haste?: Combatant["statuses"][number];
@@ -612,15 +613,17 @@ function FighterCardBody({ side, f, foe, info, fx, slot, compact, details, anim,
         {side === "A" && <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />}
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
         {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
-        {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "corpsify").map((s) => (
-          <div key={s.id} style={{ fontSize: 11, marginTop: 6, color: s.id === "venom" ? "#9be15d" : s.id === "mirage" ? "#c7b8ff" : "#9fd3a8" }}>
+        {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "poison" || s.id === "corpsify" || s.id === "fear").map((s) => (
+          <div key={s.id} style={{ fontSize: 11, marginTop: 6, color: s.id === "venom" || s.id === "poison" ? "#9be15d" : s.id === "mirage" ? "#c7b8ff" : s.id === "fear" ? "#b9e6ff" : "#9fd3a8" }}>
             {s.id === "venom" && <>🧪 Envenomed (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "poison" && <>☣️ Poisoned (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "fear" && <>👻 Struck with fear: loses its next attack</>}
             {s.id === "mirage" && <>✨ Mirage ({Math.round((s.chance ?? 0) * 100)}% to dodge) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
             {s.id === "corpsify" && <>⚰️ Corpsified — rises again if knocked out</>}
           </div>
         ))}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
-        <StreakBadges f={f} foe={foe} slot={slot} />
+        <StreakBadges f={f} />
         {details && side === "A" && !compact && (
           <div style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
             ⚔️ {info.weaponName ?? "no weapon"}<br />🛡️ {info.armorName ?? "no armour"}
@@ -633,8 +636,6 @@ function FighterCardBody({ side, f, foe, info, fx, slot, compact, details, anim,
   );
 }
 
-// The armour-gap run: shown on the attacker ("Focus") and on the creature
-// whose armour is being worn down.
 // Stances change the damage a creature takes (and deals): see engine.ts.
 function StanceBadge({ stance }: { stance: Fighter["stance"] }) {
   const text = stance === "float"
@@ -643,25 +644,15 @@ function StanceBadge({ stance }: { stance: Fighter["stance"] }) {
   return <div style={{ fontSize: 11, color: "#8fd3ff", marginTop: 6 }}>{text}</div>;
 }
 
-function StreakBadges({ f, foe, slot }: { f: Combatant; foe: Combatant; slot: number }) {
-  const mine = f.streak && f.streak.hits >= 2 ? f.streak : null;
-  const theirs = foe.streak && foe.streak.cracks > 0 && foe.streak.targetIdx === slot ? foe.streak : null;
+// A Perfectionist's run: the same move again hits harder.
+function StreakBadges({ f }: { f: Combatant }) {
+  const run = f.streak && f.streak.hits >= 1 ? f.streak : null;
+  if (!run || f.soulStone !== "perfectionist") return null;
+  const next = perfectionistBonus(f, { ...run, hits: run.hits + 1 });
   return (
-    <>
-      {mine && (
-        <div style={{ fontSize: 11, color: "#ffb86b", marginTop: 6 }}>
-          🎯 {mine.move} ×{mine.hits}
-          {mine.hits >= STREAK_START
-            ? ` · next: ${Math.round(streakEffects({ ...mine, hits: mine.hits + 1 }).preciseChance * 100)}% precise`
-            : ` · gap opens after ×${STREAK_START}`}
-        </div>
-      )}
-      {theirs && (
-        <div style={{ fontSize: 11, color: "#ff9f43", marginTop: 4 }}>
-          🛡️ Armour cracked: next precise hit ignores {Math.round(streakEffects(theirs).ignore * 100)}% of defence
-        </div>
-      )}
-    </>
+    <div style={{ fontSize: 11, color: "#b9e6ff", marginTop: 6 }}>
+      🎯 {run.move} ×{run.hits} · next one +{Math.round((next - 1) * 100)}%
+    </div>
   );
 }
 

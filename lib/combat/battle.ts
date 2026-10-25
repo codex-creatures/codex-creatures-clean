@@ -33,7 +33,7 @@ import {
 import type { Skill } from "../creatures/creatureData";
 import { bossActions, bossEndOfRound, bossHiddenAtStart, bossMinHp, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
-import { ABILITIES, DIVINE_HEALING, KEEN_EYE_BONUS } from "../creatures/abilities";
+import { HAUNT_CHANCE, PERFECTIONIST_STEP, REVITALISE_HEAL, SOUL_STONES, TOXIC_SKIN, type SoulStoneKey } from "../creatures/soulStones";
 
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
 export const MAX_ROUNDS = 100;
@@ -69,29 +69,28 @@ export const CORPSIFY_ROUNDS = 2;
 // (Second Wind heals between dungeon fights, so it lives in the dungeon.)
 const hasSet = (f: Fighter, key: ArmorKey) => f.armorSet === key;
 
-// Armour gap: hammering the same creature with the same move finds the gaps
-// in its armour, so stalled fights (tank vs tank) eventually end.
-// - From the 6th use in a row, each use adds +10% precise-hit chance
-//   (15%, 25%, 35%…).
-// - Each precise hit in that run opens the armour further: precise hits
-//   ignore 25% → 50% → 75% → 100% of defence.
-// - The run resets when the attacker uses a different move or passes, or
-//   when either creature swaps out (that's the defender's counterplay).
-export const STREAK_START = 5;
-export const STREAK_PRECISE_STEP = 0.1;
-export const ARMOUR_GAP = { enabled: true }; // switch for balance experiments
+// A run: the same move used again and again in a row (on anyone). It ends
+// when the creature uses a different move, rests, stumbles, uses an item or
+// leaves the field. Only the Perfectionist soul stone cares: each use in the
+// run hits PERFECTIONIST_STEP harder than the last (×1.1, ×1.21…).
+// (The armour gap, which used runs to break stalls, was removed 2026-10-25.)
+export type Streak = { move: string; hits: number };
+export const perfectionistBonus = (f: Fighter, s?: Streak) =>
+  f.soulStone === "perfectionist" && s ? (1 + PERFECTIONIST_STEP) ** (s.hits - 1) : 1;
 
-export type Streak = { move: string; targetIdx: number; hits: number; cracks: number };
-
-// Precise chance and defence ignored for the attacker's current run.
-export function streakEffects(s?: Streak) {
-  const gap = ARMOUR_GAP.enabled && !!s && s.hits > STREAK_START;
-  return {
-    preciseChance: PRECISE_CHANCE + (gap ? STREAK_PRECISE_STEP * (s!.hits - STREAK_START) : 0),
-    ignore: gap ? Math.min(1, PRECISE_IGNORE * (1 + s!.cracks)) : PRECISE_IGNORE,
-    gap,
-  };
-}
+// Soul stones (lib/creatures/soulStones.ts):
+// - Toxic Skin: a melee hit on it may poison the attacker ("poison": ticks
+//   like venom, on the bench too; a new poisoning replaces the old, with a
+//   fresh 3–5 turns).
+// - Haunting Presence: coming in (the start of the fight, a swap or a
+//   replacement), the foe on the field may be struck with fear: it loses its
+//   next attack this round (or next, if this round's attacks are over),
+//   spending no energy.
+// - Unstoppable Force: can't be crippled.
+// - Perfectionist: see above.
+// - Trickster: its utility moves (used on itself) go before everyone.
+// - Revitalise: swapped out, it heals REVITALISE_HEAL of its max HP.
+const hasStone = (f: Fighter, key: SoulStoneKey) => f.soulStone === key;
 
 export type SideKey = "A" | "B";
 
@@ -110,7 +109,8 @@ export type BattleAction =
 // `rounds` counts down at the end of each round; at 0 the status ends.
 // loss: a cripple's agility loss (missing = CRIPPLE_AGILITY_LOSS).
 // gain: a haste's agility gain.
-// chance: a mirage's dodge chance. dmg: a venom's damage per round.
+// chance: a mirage's dodge chance. dmg: a venom's (or poison's) damage per round.
+// fear (Haunting Presence): loses its next attack.
 // hp: corpsify's share of HP to come back with.
 export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number };
 
@@ -135,13 +135,14 @@ export type BattleEvent =
   | { type: "attack"; side: SideKey; attacker: string; target: string; skill: Skill; damage: number; precise: boolean; missed: boolean;
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
       streak: Streak; defenceIgnored: number; // defenceIgnored: share ignored by this hit (0 if not precise)
+      poisoned?: StatusEffect; // Toxic Skin poisoned the attacker
       attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number;
       evaded?: boolean; venom?: StatusEffect; pounced?: boolean;
       armorFx?: string } // an armour set mechanic that kicked in on this hit
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "illness" | "revive" | "item" | "set" | "ability" | "stumble"; damage?: number }
+      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -186,7 +187,7 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partia
     B.partner = null;
     for (const i of bossHiddenAtStart(bossB)) B.team[i].hidden = true;
   } else if (opts.pairB && B.team.length > 1) B.partner = 1;
-  return {
+  const state: BattleState = {
     ...(opts.turnLimit ? { turnLimit: opts.turnLimit } : {}),
     round: 0,
     sides: { A: side("A", teamA), B },
@@ -196,6 +197,24 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partia
     hits: 0,
     minDamageHits: 0,
   };
+  // The first creatures out: a Haunting Presence can strike fear straight away.
+  haunt(state, "A");
+  haunt(state, "B");
+  return state;
+}
+
+// Haunting Presence: side `key`'s creature has just come onto the field. The
+// foe's main creature may be struck with fear until the end of this round
+// (between rounds: through the next one), losing its attack.
+export function haunt(state: BattleState, key: SideKey) {
+  const me = activeOf(state.sides[key]);
+  if (!me || me.hp <= 0 || me.hidden || !hasStone(me, "haunting_presence")) return;
+  const foe = state.sides[other(key)];
+  const target = activeOf(foe);
+  if (!target || target.hp <= 0 || target.hidden || Math.random() >= HAUNT_CHANCE) return;
+  target.statuses = [...target.statuses.filter((s) => s.id !== "fear"), { id: "fear", rounds: 1 }];
+  state.log.push({ type: "effect", side: foe.key, index: foe.active, name: target.name, text: `is crippled with fear (${me.name}'s ${SOUL_STONES.haunting_presence.name})`,
+    hp: target.hp, statuses: target.statuses.map((s) => ({ ...s })), kind: "fear" });
 }
 
 // ── Status effects ─────────────────────────────────────────────────
@@ -266,6 +285,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   state.log.push({ type: "round", round: state.round });
 
   // 1. Swaps resolve first.
+  const cameIn: SideKey[] = []; // (a Haunting Presence strikes once both sides have swapped)
   for (const k of ["A", "B"] as SideKey[]) {
     const a = actions[k];
     if (a.kind !== "swap" || state.sides[k].boss) continue;
@@ -278,14 +298,16 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     s.swaps++;
     s.lastSwapRound = state.round;
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
-    // Divine Healing: swapping out restores some HP.
-    if (leaving.ability === "divine_healing" && leaving.hp > 0 && leaving.hp < leaving.maxHp) {
-      const healed = Math.min(leaving.maxHp - leaving.hp, Math.round(leaving.maxHp * DIVINE_HEALING));
+    cameIn.push(k);
+    // Revitalise: swapping out restores some HP.
+    if (hasStone(leaving, "revitalise") && leaving.hp > 0 && leaving.hp < leaving.maxHp) {
+      const healed = Math.min(leaving.maxHp - leaving.hp, Math.round(leaving.maxHp * REVITALISE_HEAL));
       leaving.hp += healed;
-      state.log.push({ type: "effect", side: k, index: leavingIdx, name: leaving.name, text: `is restored by ${ABILITIES.divine_healing.name} (+${healed} HP)`,
+      state.log.push({ type: "effect", side: k, index: leavingIdx, name: leaving.name, text: `is restored by ${SOUL_STONES.revitalise.name} (+${healed} HP)`,
         hp: leaving.hp, statuses: leaving.statuses.map((x) => ({ ...x })), kind: "ability", damage: healed });
     }
   }
+  for (const k of cameIn) haunt(state, k);
 
   // 1b. Items (from the battle bag) are used before anyone attacks.
   for (const k of ["A", "B"] as SideKey[]) {
@@ -321,10 +343,14 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     else if (actions[k].kind !== "swap" && actions[k].kind !== "item" && actions[k].kind !== "weapon") turns.push({ key: k, index: s.active, action: actions[k] });
     if (!s.boss && s.partner != null && s.team[s.partner].hp > 0) turns.push({ key: k, index: s.partner, action: partnerAction(state, k) });
   }
-  // Pounce (and a Quickscale set's first attack) goes before everyone; otherwise fastest first.
+  // A Trickster's utility move goes first of all; then a pounce (and a
+  // Quickscale set's first attack); otherwise fastest first.
   const quick = (f: Combatant, a: BattleAction) => a.kind === "attack" && hasSet(f, "dragonscale_tunic") && !f.setUsed;
-  const pounces = (f: Combatant, a: BattleAction) =>
-    a.kind === "attack" && (f.skills.find((s) => s.name === a.skillName)?.effect?.kind === "pounce" || quick(f, a)) ? 1 : 0;
+  const pounces = (f: Combatant, a: BattleAction) => {
+    const sk = a.kind === "attack" ? f.skills.find((s) => s.name === a.skillName) : undefined;
+    if (sk?.self && hasStone(f, "trickster")) return 2;
+    return sk?.effect?.kind === "pounce" || quick(f, a) ? 1 : 0;
+  };
   const attackers = turns
     .map((t) => {
       const actor = state.sides[t.key].team[t.index];
@@ -344,6 +370,14 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     if (action.kind !== "attack") continue;
+    // Struck with fear (Haunting Presence): it loses this attack (no energy spent).
+    if (actor.statuses.some((s) => s.id === "fear")) {
+      actor.statuses = actor.statuses.filter((s) => s.id !== "fear");
+      actor.streak = undefined;
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: "is crippled with fear — it can't attack this round",
+        hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "fear" });
+      continue;
+    }
     // Crippled: it may stumble and lose this attack (no energy spent).
     if (isCrippled(actor) && Math.random() < CRIPPLE.stumble) {
       actor.streak = undefined;
@@ -383,13 +417,11 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (chosen === undefined) continue;
     const targets = fx?.kind === "barrage" ? standing : [chosen];
 
-    // Same move on the same creature again? Then the run continues.
+    // The same move again? Then the run continues (for a Perfectionist).
     const prev = actor.streak;
-    const streak: Streak = prev && prev.move === skill.name && prev.targetIdx === chosen
-      ? { ...prev, hits: prev.hits + 1 }
-      : { move: skill.name, targetIdx: chosen, hits: 1, cracks: 0 };
+    const streak: Streak = prev && prev.move === skill.name ? { ...prev, hits: prev.hits + 1 } : { move: skill.name, hits: 1 };
     actor.streak = streak;
-    const gapFx = streakEffects(streak);
+    const perfect = perfectionistBonus(actor, streak);
 
     // Haste only sped up this round's turn order (turnAgility); logged as First Strike! when it went first.
     const hasted = fx?.kind === "dash" && actor === leader ? fx.agilityBonus : undefined;
@@ -403,16 +435,17 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       const evaded = !!mirage && Math.random() < (mirage.chance ?? 0);
       const deflected = !evaded && skill.type === "ranged" && hasSet(target, "arrowward_mantle") && Math.random() < DEFLECT_CHANCE;
       const missed = evaded || deflected || (fx?.kind === "precise" && Math.random() >= fx.hitChance);
-      const armorFx: string[] = []; // armour sets (and abilities) that kicked in
+      const armorFx: string[] = []; // armour sets (and soul stones) that kicked in
       if (quickscale) armorFx.push(`${SET_BONUS.dragonscale_tunic.name}: strikes first`);
       if (deflected) armorFx.push(`${SET_BONUS.arrowward_mantle.name}: their armour turns it aside`);
-      const precise = !missed && (fx?.kind === "precise" || Math.random() < gapFx.preciseChance);
+      const precise = !missed && (fx?.kind === "precise" || Math.random() < PRECISE_CHANCE);
       const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
-      let damage = missed ? 0 : calcDamage(skill, actor, target, precise, gapFx.ignore, rollDamage()).damage;
-      const keenEye = precise && !missed && actor.ability === "keen_eye";
-      if (keenEye) damage = Math.round(damage * (1 + KEEN_EYE_BONUS));
+      let damage = missed ? 0 : calcDamage(skill, actor, target, precise, PRECISE_IGNORE, rollDamage()).damage;
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
-      if (keenEye) armorFx.push(`${ABILITIES.keen_eye.name}: +${Math.round(KEEN_EYE_BONUS * 100)}%`);
+      if (!missed && perfect > 1) {
+        damage = Math.round(damage * perfect);
+        armorFx.push(`${SOUL_STONES.perfectionist.name}: +${Math.round((perfect - 1) * 100)}%`);
+      }
       if (!missed && damage > 0 && hasSet(target, "colossal_shellarmor") && !target.setUsed) {
         target.setUsed = true;
         damage = Math.ceil(damage / 2);
@@ -423,7 +456,6 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         damage = target.hp - 1;
         armorFx.push(`${SET_BONUS.juggernaut_platemail.name}: hangs on with 1 HP`);
       }
-      if (precise && gapFx.gap && targetIdx === chosen) streak.cracks++;
       if (!missed) {
         state.hits++;
         if (damage <= 1) state.minDamageHits++;
@@ -431,8 +463,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       target.hp = Math.max(bossMinHp(state, foeKey, targetIdx), target.hp - damage);
 
       // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
-      const steadfast = fx?.kind === "cripple" && !missed && hasSet(target, "polished_chainbolster");
-      if (steadfast) armorFx.push(`${SET_BONUS.polished_chainbolster.name}: can't be crippled`);
+      const unstoppable = fx?.kind === "cripple" && !missed && hasStone(target, "unstoppable_force");
+      const steadfast = fx?.kind === "cripple" && !missed && (unstoppable || hasSet(target, "polished_chainbolster"));
+      if (steadfast) armorFx.push(`${unstoppable ? SOUL_STONES.unstoppable_force.name : SET_BONUS.polished_chainbolster.name}: can't be crippled`);
       const crippled = fx?.kind === "cripple" && !missed && !steadfast && target.hp > 0 && Math.random() < fx.chance;
       const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
       if (crippled) {
@@ -445,9 +478,17 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         venom = { id: "venom", rounds, dmg: Math.max(1, Math.round(target.maxHp * fx.tick)) };
         target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), venom];
       }
+      // Toxic Skin: a melee hit may poison the attacker (a fresh 3–5 turns, replacing any poison it had).
+      let poisoned: StatusEffect | undefined;
+      if (!missed && skill.type === "melee" && hasStone(target, "toxic_skin") && actor.hp > 0 && Math.random() < TOXIC_SKIN.chance) {
+        const rounds = TOXIC_SKIN.minRounds + Math.floor(Math.random() * (TOXIC_SKIN.maxRounds - TOXIC_SKIN.minRounds + 1));
+        poisoned = { id: "poison", rounds, dmg: Math.max(1, Math.round(actor.maxHp * TOXIC_SKIN.tick)) };
+        actor.statuses = [...actor.statuses.filter((s) => s.id !== "poison"), poisoned];
+        armorFx.push(`${SOUL_STONES.toxic_skin.name}: poisoned for ${rounds} turns`);
+      }
       state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
-        streak: { ...streak }, defenceIgnored: precise ? gapFx.ignore : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted,
-        evaded: evaded || undefined, venom, pounced: pounced || undefined, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
+        streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted,
+        evaded: evaded || undefined, venom, poisoned, pounced: pounced || undefined, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
       if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
 
       // Nullify: some of a magic hit bounces back at the attacker.
@@ -468,13 +509,13 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   //    The witch's illness works the same way (lib/dungeon/run.ts: curse).
   for (const k of ["A", "B"] as SideKey[]) {
     state.sides[k].team.forEach((f, i) => {
-      for (const id of ["venom", "illness"] as const) {
+      for (const id of ["venom", "poison", "illness"] as const) {
         const st = f.statuses.find((s) => s.id === id);
         if (!st || f.hp <= 0 || f.hidden) continue;
         const damage = Math.min(f.hp - bossMinHp(state, k, i), st.dmg ?? 0);
         if (damage <= 0) continue;
         f.hp -= damage;
-        state.log.push({ type: "effect", side: k, index: i, name: f.name, text: id === "venom" ? `takes ${damage} venom damage` : `suffers an illness (${damage} damage)`,
+        state.log.push({ type: "effect", side: k, index: i, name: f.name, text: id === "illness" ? `suffers an illness (${damage} damage)` : `takes ${damage} ${id} damage`,
           hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: id, damage });
         if (f.hp <= 0) knockedOut(state, k, i);
       }
@@ -520,16 +561,13 @@ function knockedOut(state: BattleState, key: SideKey, index: number) {
   state.log.push({ type: "effect", side: key, index, name: f.name, text: `rises again with ${f.hp} HP!`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "revive" });
 }
 
-// A new creature steps in (swap or replacement). Armour-gap runs end on
-// both sides: the creature leaving loses its run, and the opponent's run
-// was against the creature that just left.
+// A new creature steps in (swap or replacement). The one leaving loses its
+// run (a Perfectionist starts again); the newcomer starts fresh.
 export function changeActive(state: BattleState, key: SideKey, index: number) {
   const s = state.sides[key];
   activeOf(s).streak = undefined;
   s.active = index;
   activeOf(s).streak = undefined;
-  const foe = state.sides[other(key)];
-  for (const i of fieldOf(foe)) foe.team[i].streak = undefined;
 }
 
 export function sendInReplacement(state: BattleState, key: SideKey, index: number): BattleState {

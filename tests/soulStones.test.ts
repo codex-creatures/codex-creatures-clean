@@ -1,0 +1,162 @@
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { CREATURE_BY_ID, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
+import { buildFighter } from "../lib/combat/loadout";
+import { createBattle, resolveRound, activeOf, isCrippled, type BattleEvent } from "../lib/combat/battle";
+import type { Fighter } from "../lib/combat/engine";
+import {
+  POOLS, SOUL_STONE_CHANCE, TOXIC_SKIN, REVITALISE_HEAL, PERFECTIONIST_STEP,
+  rollSoulStone, soulStoneOf, stonesFor, type SoulStoneKey,
+} from "../lib/creatures/soulStones";
+import { makeCreatureDrop, summonFromCards } from "../lib/creatures/summon";
+import { rollCreature } from "../lib/creatures/creatureRoll";
+
+afterEach(() => vi.restoreAllMocks());
+
+const with_ = (f: Fighter, soulStone?: SoulStoneKey): Fighter => (soulStone ? { ...f, soulStone } : f);
+const attacks = (log: BattleEvent[], side: "A" | "B") => log.filter((e): e is Extract<BattleEvent, { type: "attack" }> => e.type === "attack" && e.side === side);
+
+describe("who gets a soul stone", () => {
+  it("only Rare or better, every one of those has 2+ to roll from, and nothing else does", () => {
+    for (const r of ["common", "uncommon"] as const) for (const t of CREATURES_BY_RARITY[r]) expect(stonesFor(t.id)).toEqual([]);
+    for (const r of ["rare", "epic", "legendary"] as const) for (const t of CREATURES_BY_RARITY[r]) expect(stonesFor(t.id).length).toBeGreaterThanOrEqual(2);
+    const rarePlus = new Set((["rare", "epic", "legendary"] as const).flatMap((r) => CREATURES_BY_RARITY[r].map((t) => t.id)));
+    for (const id of Object.keys(POOLS)) expect(rarePlus.has(id)).toBe(true);
+  });
+
+  it("Rare 25%, Epic 60%, Legendary always, from the species' pool", () => {
+    const n = 4000;
+    for (const [id, chance] of [["aurelius", SOUL_STONE_CHANCE.rare], ["dire_wolf", SOUL_STONE_CHANCE.epic], ["ironhide", SOUL_STONE_CHANCE.legendary]] as const) {
+      const got = Array.from({ length: n }, () => rollSoulStone(CREATURE_BY_ID[id]));
+      expect(got.filter(Boolean).length / n).toBeCloseTo(chance!, 1);
+      for (const s of got) if (s) expect(POOLS[id]).toContain(s);
+    }
+    expect(SOUL_STONE_CHANCE).toEqual({ rare: 0.25, epic: 0.6, legendary: 1 });
+  });
+
+  it("new creatures and cards are rolled with theirs (null: none)", () => {
+    const d = makeCreatureDrop(CREATURE_BY_ID.sylvaran, "card", "");
+    expect(POOLS.sylvaran).toContain(d.soulStone);
+    expect(makeCreatureDrop(CREATURE_BY_ID[CREATURES_BY_RARITY.common[0].id], "creature", "").soulStone).toBeNull();
+  });
+
+  it("an old creature gets the same roll every time it's loaded, and a rolled one keeps its own", () => {
+    const old = { id: "an-old-creature-id" };
+    const first = soulStoneOf(old, CREATURE_BY_ID.ironhide);
+    expect(first).not.toBeNull(); // (Legendary: always)
+    for (let i = 0; i < 5; i++) expect(soulStoneOf(old, CREATURE_BY_ID.ironhide)).toBe(first);
+    expect(soulStoneOf({ id: "x", soulStone: null }, CREATURE_BY_ID.ironhide)).toBeNull();
+    expect(soulStoneOf({ id: "x", soulStone: "trickster" }, CREATURE_BY_ID.ironhide)).toBe("trickster");
+  });
+
+  it("summoning from a card keeps its stone", () => {
+    const t = CREATURE_BY_ID.void_serpent;
+    const cards = Array.from({ length: 3 }, () => makeCreatureDrop(t, "card", "", { ...rollCreature(t), soulStone: "trickster" }));
+    expect(summonFromCards(cards, cards[1].id).soulStone).toBe("trickster");
+  });
+});
+
+describe("soul stones in battle", () => {
+  const brute = (stone?: SoulStoneKey, agility = 0) => with_(buildFighter(CREATURE_BY_ID.ironhide, { melee: 40, hp: 900, agility }, undefined, ["Slash", "Crush"]), stone);
+  const wall = (stone?: SoulStoneKey, moves = ["Jab"]) => with_(buildFighter(CREATURE_BY_ID.crystal_golem, undefined, { hp: 900 }, moves), stone);
+
+  it("Toxic Skin: a melee hit can poison the attacker for 3–5 turns, ticking on the bench too, and a new one replaces it", () => {
+    const s = createBattle([brute(), brute()], [wall("toxic_skin")]);
+    vi.spyOn(Math, "random").mockReturnValue(0); // every roll succeeds: poisoned for the shortest time (3)
+    resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });
+    const me = activeOf(s.sides.A);
+    const poison = me.statuses.find((x) => x.id === "poison");
+    expect(poison).toMatchObject({ dmg: Math.round(me.maxHp * TOXIC_SKIN.tick) });
+    expect(s.log.some((e) => e.type === "effect" && e.kind === "poison")).toBe(true); // ticked this round
+    // Swapped out, it keeps ticking on the bench.
+    const hp = s.sides.A.team[0].hp;
+    resolveRound(s, { A: { kind: "swap", to: 1 }, B: { kind: "attack", skillName: "Jab" } });
+    expect(s.sides.A.team[0].hp).toBe(hp - poison!.dmg!);
+    vi.restoreAllMocks();
+    // A 5-turn roll on the next hit replaces what's left.
+    vi.spyOn(Math, "random").mockReturnValue(0.4); // 0.4 < 50%, and 3 + floor(0.4 × 3) = 4 turns
+    resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });
+    expect(activeOf(s.sides.A).statuses.find((x) => x.id === "poison")?.rounds).toBe(4 - 1); // (one tick already)
+  });
+
+  it("Toxic Skin ignores ranged and magic hits", () => {
+    const archer = buildFighter(CREATURE_BY_ID.sylvaran, { ranged: 40, hp: 900 }, undefined, ["Piercing Shot"]);
+    const s = createBattle([archer], [wall("toxic_skin")]);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    resolveRound(s, { A: { kind: "attack", skillName: "Piercing Shot" }, B: { kind: "attack", skillName: "Jab" } });
+    expect(activeOf(s.sides.A).statuses.some((x) => x.id === "poison")).toBe(false);
+  });
+
+  it("Haunting Presence: the first creature out can strike fear, and the foe loses its attack (no energy spent)", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const s = createBattle([wall("haunting_presence")], [brute()]);
+    expect(activeOf(s.sides.B).statuses.some((x) => x.id === "fear")).toBe(true);
+    resolveRound(s, { A: { kind: "attack", skillName: "Jab" }, B: { kind: "attack", skillName: "Crush" } });
+    expect(attacks(s.log, "B")).toHaveLength(0);
+    expect(activeOf(s.sides.B).energy).toBe(100);
+    expect(activeOf(s.sides.B).statuses.some((x) => x.id === "fear")).toBe(false); // used up
+  });
+
+  it("Haunting Presence: swapping it in can stop the attack coming that same turn", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.99); // no fear at the start
+    const s = createBattle([wall(), wall("haunting_presence")], [brute()]);
+    expect(activeOf(s.sides.B).statuses).toEqual([]);
+    vi.restoreAllMocks();
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    resolveRound(s, { A: { kind: "swap", to: 1 }, B: { kind: "attack", skillName: "Crush" } });
+    expect(attacks(s.log, "B")).toHaveLength(0);
+    expect(s.log.some((e) => e.type === "effect" && e.kind === "fear")).toBe(true);
+  });
+
+  it("Haunting Presence fails 75% of the time", () => {
+    let feared = 0;
+    for (let i = 0; i < 2000; i++) if (activeOf(createBattle([wall("haunting_presence")], [brute()]).sides.B).statuses.length) feared++;
+    expect(feared / 2000).toBeCloseTo(0.25, 1);
+  });
+
+  it("Unstoppable Force: can't be crippled", () => {
+    const crippler = buildFighter(CREATURE_BY_ID.ironhide, { melee: 40, hp: 900 }, undefined, ["Cripple"]);
+    vi.spyOn(Math, "random").mockReturnValue(0);
+    const plain = createBattle([crippler], [wall()]);
+    resolveRound(plain, { A: { kind: "attack", skillName: "Cripple" }, B: { kind: "attack", skillName: "Jab" } });
+    expect(isCrippled(activeOf(plain.sides.B))).toBe(true);
+    const s = createBattle([crippler], [wall("unstoppable_force")]);
+    resolveRound(s, { A: { kind: "attack", skillName: "Cripple" }, B: { kind: "attack", skillName: "Jab" } });
+    expect(isCrippled(activeOf(s.sides.B))).toBe(false);
+  });
+
+  it("Perfectionist: each use of the same move in a row hits 10% harder, and a new move starts again", () => {
+    vi.spyOn(Math, "random").mockReturnValue(0.5); // no precise hits, no damage spread
+    const run = (stone?: SoulStoneKey) => {
+      const s = createBattle([brute(stone)], [wall()]);
+      for (let i = 0; i < 4; i++) resolveRound(s, { A: { kind: "attack", skillName: "Slash" }, B: { kind: "attack", skillName: "Jab" } });
+      resolveRound(s, { A: { kind: "attack", skillName: "Crush" }, B: { kind: "attack", skillName: "Jab" } });
+      return attacks(s.log, "A").map((e) => e.damage);
+    };
+    const plain = run(), perfect = run("perfectionist");
+    for (let i = 0; i < 4; i++) expect(perfect[i]).toBe(Math.round(plain[i] * (1 + PERFECTIONIST_STEP) ** i));
+    expect(perfect[4]).toBe(plain[4]); // Crush: a new run
+  });
+
+  it("Trickster: its utility move goes before a faster attacker", () => {
+    const slow = with_(buildFighter(CREATURE_BY_ID.void_serpent, { hp: 900, agility: 0 }, undefined, ["Mirage", "Slash"]), "trickster");
+    const fast = brute(undefined, 200);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const s = createBattle([slow], [fast]);
+    resolveRound(s, { A: { kind: "attack", skillName: "Mirage" }, B: { kind: "attack", skillName: "Slash" } });
+    const order = s.log.flatMap((e) => ((e.type === "effect" && e.kind === "self") || e.type === "attack" ? [e.side] : []));
+    expect(order).toEqual(["A", "B"]);
+    // Without the stone, the faster one goes first.
+    const s2 = createBattle([{ ...slow, soulStone: undefined }], [fast]);
+    resolveRound(s2, { A: { kind: "attack", skillName: "Mirage" }, B: { kind: "attack", skillName: "Slash" } });
+    expect(s2.log.flatMap((e) => ((e.type === "effect" && e.kind === "self") || e.type === "attack" ? [e.side] : []))).toEqual(["B", "A"]);
+  });
+
+  it("Revitalise: swapped out to the bench, it heals 25% of its max HP", () => {
+    const healer = wall("revitalise");
+    const s = createBattle([healer, wall()], [wall()]);
+    s.sides.A.team[0].hp = 10;
+    resolveRound(s, { A: { kind: "swap", to: 1 }, B: { kind: "attack", skillName: "Jab" } });
+    expect(s.sides.A.team[0].hp).toBe(10 + Math.round(healer.maxHp * REVITALISE_HEAL));
+    expect(s.log.some((e) => e.type === "effect" && e.kind === "ability")).toBe(true);
+  });
+});
