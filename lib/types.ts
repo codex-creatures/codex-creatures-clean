@@ -29,6 +29,7 @@ export type CreatureOrItemDrop = {
   xp?: number;          // …and XP towards the next one
   soulStone?: import("./creatures/soulStones").SoulStoneKey | null; // creatures/cards: its soul stone (Rare+); null: rolled none; missing: not rolled yet (an old save)
   codexMove?: string;   // a codex (consumable item): the move it teaches
+  stone?: import("./creatures/soulStones").SoulStoneKey; // a loose soul stone (consumable item), to set in a creature
   scroll?: "xp";        // an XP scroll (consumable item; SCROLL_XP in lib/creatures/levels.ts)
   potion?: "potion" | "lesser"; // a potion (consumable item; see POTIONS in lib/dungeon/run.ts)
   // lib/items/materials.ts:

@@ -36,8 +36,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
 - ✅ The registry is **local** for now (`codex_creatures_registry_v2`). "Reset player" keeps it,
   to simulate a friend; "Global reset" clears it.
-- 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 27% armour,
-  7% consumable, 6% material, 7% gold. Aim: about 1 legendary creature or card per 250 scans (from
+- 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 26% armour,
+  7% consumable, 6% material, 7% gold, 1% soul stone (2026-10-25, first scanner only). Aim: about 1 legendary creature or card per 250 scans (from
   explorer level 12); a real creature every 12–13 scans. Players will also hunt legendaries with good
   rolls, so the chase goes on past the first. Shared barcode lists (once there's a global database)
   are an open risk: ideas are seasons, limited stock, or the legendary species rolled per player.
@@ -192,6 +192,21 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   it or take it off for free whenever he is home (the user, 2026-10-25). Only the four that do
   something for him (`KLUTZ_STONES`): no Revitalise (he never swaps out) and no Trickster (no
   utility move). Saved as `KlutzState.soulStone` (missing = none).
+- **Loose soul stones** (the user, 2026-10-25): a stone found on its own, as a consumable item
+  (`stone` on the drop, `soulStoneDrop`), always one particular stone of the six.
+  - Scans: 1% of outcomes (`SCAN_ODDS.soul_stone`, taken from armour: now 26%), **only for the
+    first ever to scan the barcode**; anyone after gets gold (`claimedOutcome`). "First" means
+    first in this browser's registry until there's a global one.
+  - Boss chests: the Cyclops 2% (`CYCLOPS_SOUL_STONE`), the Warden's strongbox 5%
+    (`WARDEN_SOUL_STONE`). Not in ordinary Labyrinth chests (`CHEST_ODDS`).
+  - Set in **any creature** (any rarity, any stone, not just its species pool; not cards) by tapping
+    its soul stone slot: free into an empty slot, 5,000 gold to replace one
+    (`SOUL_STONE_REPLACE_COST`), and the old stone is destroyed (`setStoneIn`).
+  - 📌 Later (the user's plan): 1 in 500 creature drops (real creatures, not cards) a cosmetic
+    variant, only for the first to scan that barcode, for trading. Needs the global registry to
+    mean much.
+- The altar says **"First to find this Code Cache!"** when nobody had scanned the barcode before,
+  and **"You've already looted this Code Cache"** on a rescan (the user, 2026-10-25).
 - The six (the user's numbers):
   - **Toxic Skin**: hit by a melee attack, 50% to poison the attacker: 5% of its max HP each turn
     for 3–5 turns, on the bench too. A new poisoning replaces the old one with a fresh 3–5 roll.

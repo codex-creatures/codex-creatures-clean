@@ -16,6 +16,7 @@
 //   Tools stay in your bag between runs.
 
 import type { Drop, Rarity } from "../types";
+import { SOUL_STONES, type SoulStoneKey } from "../creatures/soulStones";
 
 export type MaterialKey = "planks" | "metal_bars" | "nails" | "essence_stones";
 export const MATERIALS: Record<MaterialKey, { name: string; icon: string; rarity: Rarity; desc: string }> = {
@@ -109,7 +110,7 @@ export function addMaterials(materials: Materials, more: Materials): Materials {
   return out;
 }
 
-// The emoji for a material, tool or schematic (undefined for anything else).
-export function goodsIcon(d: { material?: MaterialKey; tool?: ToolKey; schematic?: SchematicKey }): string | undefined {
-  return d.material ? MATERIALS[d.material].icon : d.tool ? TOOLS[d.tool].icon : d.schematic ? "📐" : undefined;
+// The emoji for a material, tool, schematic or soul stone (undefined for anything else).
+export function goodsIcon(d: { material?: MaterialKey; tool?: ToolKey; schematic?: SchematicKey; stone?: SoulStoneKey }): string | undefined {
+  return d.material ? MATERIALS[d.material].icon : d.tool ? TOOLS[d.tool].icon : d.schematic ? "📐" : d.stone ? SOUL_STONES[d.stone].icon : undefined;
 }

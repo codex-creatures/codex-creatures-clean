@@ -25,7 +25,7 @@ import { ITEM_META } from "../items/metadata";
 import { ARMOR_META } from "../items/armor";
 import { CREATURES_BY_RARITY, CREATURE_BY_ID, RACE_MOVES, type CreatureProficiency } from "../creatures/creatureData";
 import { rollCreature } from "../creatures/creatureRoll";
-import type { SoulStoneKey } from "../creatures/soulStones";
+import { randomSoulStone, type SoulStoneKey } from "../creatures/soulStones";
 import { buildFighter } from "../combat/loadout";
 import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
@@ -39,7 +39,7 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
 import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop, codexDrop, scrollDrop, randomCodexMove, randomLearnableMove } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
@@ -442,6 +442,13 @@ export const REVIVAL_CHANCE = 0.25;
 export const REVIVE_HP = 0.5;
 export const MINIBOSS_REVIVAL = 0.2;
 export const BOSS_REVIVAL = 0.5;
+// A boss's chest sometimes holds a soul stone (the user, 2026-10-25): the
+// Cyclops' CYCLOPS_SOUL_STONE of the time, the Warden's strongbox WARDEN_SOUL_STONE.
+export const CYCLOPS_SOUL_STONE = 0.02;
+export const WARDEN_SOUL_STONE = 0.05;
+export function bossSoulStone(cyclops: boolean, rng: Rng = Math.random): SackItem[] {
+  return rng() < (cyclops ? CYCLOPS_SOUL_STONE : WARDEN_SOUL_STONE) ? [{ gear: soulStoneDrop(randomSoulStone(rng)) }] : [];
+}
 export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: number }[] = [
   { material: "planks", qty: 5, price: 40 },
   { material: "nails", qty: 5, price: 30 },

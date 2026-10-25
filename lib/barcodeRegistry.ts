@@ -21,10 +21,12 @@ import {
   pickCreatureId,
 } from "./items/gameHelpers";
 import { canFind } from "./creatures/levels";
+import { randomSoulStone, type SoulStoneKey } from "./creatures/soulStones";
 import { savesLocked } from "./save";
 
 export type BarcodeOutcome =
   | { outcome: "gold"; amount: number }
+  | { outcome: "soul_stone"; stone: SoulStoneKey } // only for whoever scans it first: later finders get gold (claimedOutcome)
   | { outcome: "creature"; rarity: Rarity; creatureId: string }
   | {
       outcome: "item";
@@ -69,10 +71,12 @@ function consumableRarity(): Rarity {
 // What a fresh barcode gives, out of 100. Weapons and armour share 40, armour
 // twice as often (it comes in three pieces, so you need more of it).
 // 40% creature at 1% legendary: about one legendary per 250 scans.
-export type DropOdds = Record<"creature" | ItemCategory | "gold", number>;
-export const SCAN_ODDS: DropOdds = { creature: 40, weapon: 13, armor: 27, consumable: 7, material: 6, gold: 7 };
+// A soul stone (1%, the user 2026-10-25, taken from armour) only for the
+// first to scan the barcode.
+export type DropOdds = Record<"creature" | ItemCategory | "gold" | "soul_stone", number>;
+export const SCAN_ODDS: DropOdds = { creature: 40, weapon: 13, armor: 26, consumable: 7, material: 6, gold: 7, soul_stone: 1 };
 // A Labyrinth chest keeps the original table (its creatures come as cards).
-export const CHEST_ODDS: DropOdds = { creature: 20, weapon: 12, armor: 24, consumable: 12, material: 12, gold: 20 };
+export const CHEST_ODDS: DropOdds = { creature: 20, weapon: 12, armor: 24, consumable: 12, material: 12, gold: 20, soul_stone: 0 };
 
 function pickOutcome(odds: DropOdds): keyof DropOdds {
   const entries = Object.entries(odds) as [keyof DropOdds, number][];
@@ -83,14 +87,18 @@ function pickOutcome(odds: DropOdds): keyof DropOdds {
   return "gold";
 }
 
+const goldOutcome = (): BarcodeOutcome => ({ outcome: "gold", amount: 50 + Math.floor(Math.random() * 101) });
+
+// A barcode someone else scanned first: its soul stone was theirs, so you get gold.
+export const claimedOutcome = (entry: BarcodeOutcome): BarcodeOutcome => (entry.outcome === "soul_stone" ? goldOutcome() : entry);
+
 // A fresh random outcome, at SCAN_ODDS (or the odds given). Any rarity can
 // come up: your explorer level only limits barcodes someone already found.
 export function rollBarcodeOutcome(odds: DropOdds = SCAN_ODDS): BarcodeOutcome {
   const pick = pickOutcome(odds);
 
-  if (pick === "gold") {
-    return { outcome: "gold", amount: 50 + Math.floor(Math.random() * 101) };
-  }
+  if (pick === "gold") return goldOutcome();
+  if (pick === "soul_stone") return { outcome: "soul_stone", stone: randomSoulStone() };
 
   if (pick === "creature") {
     const rarity = pickRarity("", "random");
@@ -120,14 +128,14 @@ export function resolveBarcode(code: string): BarcodeEntry {
   return entry;
 }
 
-// Your first scan of a barcode. If nobody had found it before, it's yours
+// Your first scan of a barcode (first: nobody had scanned it before you). If nobody had found it before, it's yours
 // whatever it is (being first is its own reward). If it was already
 // registered and holds a creature too rare for your explorer level, it's
 // sealed: you can come back for it once you can find that rarity.
-export function scanBarcode(code: string, playerLevel: number): { entry: BarcodeEntry; sealed: boolean } {
+export function scanBarcode(code: string, playerLevel: number): { entry: BarcodeEntry; sealed: boolean; first: boolean } {
   const known = code in loadRegistry();
   const entry = resolveBarcode(code);
-  return { entry, sealed: known && entry.outcome === "creature" && !canFind(playerLevel, entry.rarity) };
+  return { entry, sealed: known && entry.outcome === "creature" && !canFind(playerLevel, entry.rarity), first: !known };
 }
 
 // "Global Reset" — every barcode will roll fresh on its next scan.

@@ -24,7 +24,7 @@ import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import Help from "./Help";
-import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SOUL_COLOR } from "./SoulStoneTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
@@ -57,6 +57,9 @@ type Props = {
   points?: { free: number; onSpend: (add: Partial<Record<ProfKey, number>>) => void; respec: { cost: number; can: boolean; run: () => boolean } };
   // Klutz: you choose his soul stone (lib/klutz.ts). onPick missing: not right now (he's away).
   soulStones?: { choices: SoulStoneKey[]; onPick?: (stone: SoulStoneKey | null) => void };
+  // Your creatures: the loose soul stones you own, to set in it for good
+  // (free into an empty slot, SOUL_STONE_REPLACE_COST gold to replace one).
+  stones?: { owned: CreatureOrItemDrop[]; gold: number; onSet: (stoneId: string) => void };
 };
 type ProfKey = Exclude<StatKey, "hp">;
 
@@ -92,7 +95,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points, soulStones,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points, soulStones, stones,
 }: Props) {
   // Points tapped onto stats but not yet confirmed (Klutz).
   const [pending, setPending] = useState<Partial<Record<ProfKey, number>>>({});
@@ -107,7 +110,7 @@ export default function CreatureDetailModal({
 
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
-  const [stonePicking, setStonePicking] = useState(false); // Klutz's soul stone picker
+  const [stonePicking, setStonePicking] = useState(false); // the soul stone picker (Klutz's, or your loose stones)
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
@@ -265,7 +268,7 @@ export default function CreatureDetailModal({
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
                 <SoulSlot stone={creature.soulStone} active={stonePicking}
-                  onClick={soulStones && !locked ? () => { setStonePicking((p) => !p); setPicking(null); setPreview(undefined); } : undefined} />
+                  onClick={(soulStones || stones) && !locked ? () => { setStonePicking((p) => !p); setPicking(null); setPreview(undefined); } : undefined} />
               </div>
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -303,6 +306,11 @@ export default function CreatureDetailModal({
                   {creature.soulStone ? <><b>{SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}</> : "None: tap a stone to give it to him. You can change it whenever he's home."}
                 </div>
               </div>
+            )}
+
+            {/* A creature of yours: set one of your loose soul stones in it */}
+            {stonePicking && stones && (
+              <StoneSetter current={creature.soulStone} {...stones} onSet={(id) => { stones.onSet(id); setStonePicking(false); }} />
             )}
 
             {/* Gear picker */}
@@ -530,7 +538,7 @@ function SoulSlot({ stone, onClick, active }: { stone?: SoulStoneKey | null; onC
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
       <span className="pixel-font" style={{ fontSize: 9, lineHeight: 1.2, color: s ? SOUL_COLOR : MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>Soul stone</span>
-      <Box onClick={onClick} title={onClick ? "Choose his soul stone" : s ? `${s.name}: ${s.text}` : "No soul stone"} style={{
+      <Box onClick={onClick} title={onClick ? "Choose a soul stone" : s ? `${s.name}: ${s.text}` : "No soul stone"} style={{
         cursor: onClick ? "pointer" : undefined, padding: 0, ...(active ? { outline: "2px solid #ffd66e" } : {}),
         width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
         background: s ? "radial-gradient(circle, rgba(185,230,255,0.25), #101117 75%)" : "#101117",
@@ -540,6 +548,45 @@ function SoulSlot({ stone, onClick, active }: { stone?: SoulStoneKey | null; onC
         <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s ? s.name : "None"}</span>
         <span style={{ visibility: s ? "visible" : "hidden" }}><Help title={s ? `Soul stone: ${s.name}` : "Soul stone"}><p>{s?.text}</p></Help></span>
       </span>
+    </div>
+  );
+}
+
+// Your loose soul stones, to set one in a creature: tap one to see what it
+// does, then confirm. Free into an empty slot; replacing a stone costs gold
+// and destroys the old one. (Fixed lines, so nothing jumps.)
+function StoneSetter({ current, owned, gold, onSet }: { current?: SoulStoneKey | null; owned: CreatureOrItemDrop[]; gold: number; onSet: (stoneId: string) => void }) {
+  const kinds = SOUL_STONE_KEYS.filter((k) => owned.some((d) => d.stone === k));
+  const [chosen, setChosen] = useState<SoulStoneKey | null>(null);
+  const cost = setStoneCost(current);
+  const stone = chosen && owned.find((d) => d.stone === chosen);
+  const cur = current ? SOUL_STONES[current] : undefined;
+  return (
+    <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
+      <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Set a soul stone</div>
+      {kinds.length === 0 ? (
+        <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You have no soul stones. They turn up in new barcodes and boss chests.</p>
+      ) : <>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
+          {kinds.map((k) => (
+            <Tile key={k} rarity="legendary" selected={chosen === k} onClick={() => setChosen(k)} title={`${SOUL_STONES[k].name}: ${SOUL_STONES[k].text}`}>
+              <span style={{ fontSize: 22 }}>{SOUL_STONES[k].icon}</span>
+              <Badge color={GOLD}>×{owned.filter((d) => d.stone === k).length}</Badge>
+            </Tile>
+          ))}
+        </div>
+        <div style={{ marginTop: 8, height: "4.2em", overflow: "hidden", fontSize: 12, lineHeight: 1.4, color: chosen ? SOUL_COLOR : MUTED }}>
+          {chosen ? <><b>{SOUL_STONES[chosen].name}</b>: {SOUL_STONES[chosen].text}</> : cur ? `Tap a stone to replace ${cur.name}.` : "Tap a stone to set it in this creature."}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <button className="pixel-btn" disabled={!stone || gold < cost} onClick={() => stone && onSet(stone.id)} style={{ fontSize: 13 }}>
+            {cur ? <>Replace · <Coin /> {cost.toLocaleString()}</> : "Set it in"}
+          </button>
+          <span style={{ fontSize: 11, lineHeight: 1.3, color: gold < cost ? "#ff8a80" : MUTED, visibility: cur ? "visible" : "hidden" }}>
+            {gold < cost ? "Not enough gold." : `${cur?.name ?? ""} is destroyed.`}
+          </span>
+        </div>
+      </>}
     </div>
   );
 }

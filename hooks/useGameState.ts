@@ -39,7 +39,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 import { readSave, writeMainSave } from "@/lib/save";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
-import { soulStoneOf, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import { setStoneIn, soulStoneOf, type SoulStoneKey } from "@/lib/creatures/soulStones";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -772,6 +772,16 @@ export function useGameState(initialTab: TabKey = "all") {
       d.id === creatureId ? { ...d, learned: [...new Set([...((d as CreatureOrItemDrop).learned ?? []), move])] } : d));
   }
 
+  // Set a loose soul stone in a creature: free into an empty slot, or
+  // SOUL_STONE_REPLACE_COST gold to replace its stone (the old one is
+  // destroyed). The stone is used up. False if you can't afford it.
+  function setSoulStone(creatureId: string, stoneId: string): boolean {
+    const done = setStoneIn(inventory, creatureId, stoneId, gold);
+    if (!done || !spendGold(done.cost)) return false;
+    setInventory(done.inventory);
+    return true;
+  }
+
   // Three cards of one creature → that creature. keepId = the card to keep
   // ("choose"), or null for a fresh random roll. Returns the new creature.
   function summon(cardIds: string[], keepId: string | null): CreatureOrItemDrop {
@@ -887,6 +897,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, setKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, setKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

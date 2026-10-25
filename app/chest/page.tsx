@@ -129,6 +129,8 @@ export default function InventoryPage() {
         onSetMoves={game.setMoves}
         onLearnCodex={game.learnCodex}
         onReadScroll={game.readScroll}
+        onSetSoulStone={game.setSoulStone}
+        gold={game.gold}
         onSummon={game.summon}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}

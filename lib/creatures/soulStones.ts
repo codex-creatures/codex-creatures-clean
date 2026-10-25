@@ -14,7 +14,7 @@
 //
 // What each one does is in the battle engine (lib/combat/battle.ts).
 
-import type { Rarity } from "../types";
+import type { Drop, Rarity } from "../types";
 import type { CreatureTemplate } from "./creatureData";
 
 export type SoulStoneKey = "toxic_skin" | "haunting_presence" | "unstoppable_force" | "perfectionist" | "trickster" | "revitalise";
@@ -89,4 +89,27 @@ function seeded(text: string): () => number {
 export function soulStoneOf(drop: { id: string; soulStone?: SoulStoneKey | null }, t: CreatureTemplate | undefined): SoulStoneKey | null {
   if (drop.soulStone !== undefined) return drop.soulStone;
   return (t && rollSoulStone(t, seeded(drop.id))) ?? null;
+}
+
+// ── Loose soul stones (the user, 2026-10-25) ────────────────────────────
+// Found on their own: 1% of first-ever scans (SCAN_ODDS) and now and then in
+// a boss's chest (lib/dungeon/run.ts). Each is one particular stone. It goes
+// into any creature, from its window: free into an empty slot; replacing a
+// stone costs SOUL_STONE_REPLACE_COST gold, and the old stone is destroyed.
+export const SOUL_STONE_KEYS = Object.keys(SOUL_STONES) as SoulStoneKey[];
+export const randomSoulStone = (rng: () => number = Math.random): SoulStoneKey => SOUL_STONE_KEYS[Math.floor(rng() * SOUL_STONE_KEYS.length)];
+export const SOUL_STONE_REPLACE_COST = 5000;
+export const setStoneCost = (current?: SoulStoneKey | null) => (current ? SOUL_STONE_REPLACE_COST : 0);
+
+// Set loose stone `stoneId` in creature `creatureId`: the new inventory (the
+// stone used up, any old stone gone) and the gold it costs, or null if it
+// can't be done (no such creature or stone, or not enough gold).
+export function setStoneIn(inventory: Drop[], creatureId: string, stoneId: string, gold: number): { inventory: Drop[]; cost: number } | null {
+  const creature = inventory.find((d) => d.id === creatureId);
+  const stone = inventory.find((d) => d.id === stoneId);
+  const key = stone?.dropType === "item" ? stone.stone : undefined;
+  if (creature?.dropType !== "creature" || !key) return null;
+  const cost = setStoneCost(creature.soulStone);
+  if (gold < cost) return null;
+  return { cost, inventory: inventory.filter((d) => d.id !== stoneId).map((d) => (d.id === creatureId ? { ...d, soulStone: key } : d)) };
 }

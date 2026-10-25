@@ -63,10 +63,14 @@ export default function AltarPage() {
     rollMode,
     scanCounts: game.scanCounts,
     onDrop:            (d) => { if (game.addScan(d)) kept.current.add(d.id); },
-    onScan:            (drops) => {
+    onScan:            (drops, found) => {
       const opened = drops.filter((d) => !kept.current.has(d.id));
+      // The first ever to scan this barcode, or one you've scanned before.
+      const tag = found === "first" ? <b style={{ color: "#ffd66e" }}>✨ First to find this Code Cache!</b>
+        : found === "looted" ? <>You&apos;ve already looted this Code Cache</> : null;
       // Looting, but a find for a full box: it waits as a Code Cache.
-      setNote(!storing && opened.length < drops.length ? <>📦 No room in your chest: kept as a Code Cache.</> : null);
+      const full = !storing && opened.length < drops.length ? <>📦 No room in your chest: kept as a Code Cache.</> : null;
+      setNote(tag && full ? <>{tag}<br />{full}</> : tag ?? full);
       kept.current.clear();
       if (!storing) setShown((s) => [...opened, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS));
     },

@@ -1,6 +1,6 @@
 // hooks/useDropGeneration.ts
 import type { Drop } from "@/lib/types";
-import { resolveBarcode, rollBarcodeOutcome, scanBarcode } from "@/lib/barcodeRegistry";
+import { claimedOutcome, resolveBarcode, rollBarcodeOutcome, scanBarcode } from "@/lib/barcodeRegistry";
 import { dropFromOutcome, goldDrop } from "@/lib/drops";
 import { SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
@@ -22,7 +22,9 @@ type UseDropGenerationArgs = {
   // Reward drops carry their gold amount; the receiver credits it.
   onDrop: (drop: Drop) => void;
   onScanCountUpdate: (code: string, newCount: number) => void;
-  onScan?: (drops: Drop[]) => void; // everything one scan gave
+  // Everything one scan gave. found: "first" (nobody had scanned it before
+  // you) or "looted" (you already had: a rescan), so the altar can say so.
+  onScan?: (drops: Drop[], found?: "first" | "looted") => void;
   playerLevel?: number;              // your explorer level: how rare a creature you can find
   // A barcode whose creature is too rare for you yet: it stays sealed (the
   // scan doesn't count), so you can come back for it at level `need`.
@@ -45,8 +47,10 @@ export function useDropGeneration({
 
     // ── SOMEONE ELSE'S FIND, TOO RARE FOR YOU YET → SEALED ─
     // (The first ever to scan a barcode gets whatever it rolls.)
+    let first = false;
     if (rollMode === "deterministic" && alreadyScanned === 0) {
-      const { entry, sealed } = scanBarcode(code, playerLevel);
+      const { entry, sealed, first: firstEver } = scanBarcode(code, playerLevel);
+      first = firstEver;
       if (sealed && entry.outcome === "creature") {
         onSealed?.(entry.rarity, SCAN_UNLOCK[entry.rarity]);
         return;
@@ -64,7 +68,7 @@ export function useDropGeneration({
       const { min, max } = REWARD_RULES[tier];
       const drop = goldDrop(min + Math.floor(Math.random() * (max - min + 1)), code);
       onDrop(drop);
-      onScan?.([drop]);
+      onScan?.([drop], "looted");
       return;
     }
 
@@ -72,16 +76,17 @@ export function useDropGeneration({
     // Registry: same barcode gives everyone the same outcomes. Creature: the
     // barcode fixes WHICH creature, you usually get a card of it (20%: the
     // creature itself). Items: identity + rarity from the barcode, stats
-    // roll fresh per player.
+    // roll fresh per player. A soul stone is only for the first ever to scan
+    // the barcode: anyone after gets gold.
     const drops: Drop[] = [];
     for (let i = 0; i < SCAN_DROPS; i++) {
       const key = i === 0 ? code : `${code}:${i + 1}`;
-      const result = rollMode === "deterministic" ? resolveBarcode(key) : rollBarcodeOutcome();
+      const result = rollMode === "random" ? rollBarcodeOutcome() : first ? resolveBarcode(key) : claimedOutcome(resolveBarcode(key));
       const drop = dropFromOutcome(result, code);
       if (drop) drops.push(drop);
     }
     drops.forEach(onDrop);
-    onScan?.(drops);
+    onScan?.(drops, first ? "first" : undefined);
   }
 
   return { generateDrop };

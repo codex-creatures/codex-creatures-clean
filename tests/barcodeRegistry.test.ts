@@ -4,7 +4,7 @@
 // and a global reset lets barcodes roll again.
 
 import { describe, it, expect, beforeEach } from "vitest";
-import { resolveBarcode, rollBarcodeOutcome, clearRegistry, scanBarcode, CHEST_ODDS, REGISTRY_KEY } from "../lib/barcodeRegistry";
+import { resolveBarcode, rollBarcodeOutcome, clearRegistry, scanBarcode, claimedOutcome, CHEST_ODDS, REGISTRY_KEY } from "../lib/barcodeRegistry";
 import { SCAN_UNLOCK } from "../lib/creatures/levels";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { ITEM_KEYS } from "../lib/items/ceilings";
@@ -57,6 +57,21 @@ describe("your explorer level and barcodes", () => {
     expect(legendary).toBeGreaterThan(0); // ~12 expected (40% × 1%)
   });
 
+  it("says whether you were the first ever to scan a barcode", () => {
+    expect(scanBarcode("5000112637922", 1).first).toBe(true);
+    expect(scanBarcode("5000112637922", 1).first).toBe(false);
+  });
+
+  it("a soul stone is only for the first to scan it: anyone after gets gold", () => {
+    store[REGISTRY_KEY] = JSON.stringify({ "5000112637922": { outcome: "soul_stone", stone: "toxic_skin", registeredAt: "" } });
+    expect(resolveBarcode("5000112637922")).toMatchObject({ outcome: "soul_stone", stone: "toxic_skin" });
+    const later = claimedOutcome(resolveBarcode("5000112637922"));
+    expect(later.outcome).toBe("gold");
+    // Anything else is the same for everyone.
+    const other = { outcome: "creature", rarity: "common", creatureId: "bellow_toad" } as const;
+    expect(claimedOutcome(other)).toBe(other);
+  });
+
   it("someone else's find too rare for you is sealed until your level can find it", () => {
     registerLegendary("5000112637922");
     expect(scanBarcode("5000112637922", 1).sealed).toBe(true);
@@ -66,7 +81,7 @@ describe("your explorer level and barcodes", () => {
 
 describe("outcome odds (statistical)", () => {
   const N = 100000;
-  const outcomes = { creature: 0, item: 0, gold: 0 };
+  const outcomes = { creature: 0, item: 0, gold: 0, soul_stone: 0 };
   const categories: Record<string, number> = {};
   const rarity: Record<string, number> = {};
   const consumable: Record<string, number> = {}; // potions and codexes
@@ -79,7 +94,7 @@ describe("outcome odds (statistical)", () => {
     const e = rollBarcodeOutcome();
     outcomes[e.outcome]++;
     if (e.outcome === "item") categories[e.itemCategory] = (categories[e.itemCategory] ?? 0) + 1;
-    if (e.outcome === "gold") continue;
+    if (e.outcome === "gold" || e.outcome === "soul_stone") continue;
     if (e.outcome === "item" && e.itemCategory === "consumable") { consumable[e.rarity] = (consumable[e.rarity] ?? 0) + 1; continue; }
     rarity[e.rarity] = (rarity[e.rarity] ?? 0) + 1;
     rarityTotal++;
@@ -89,11 +104,12 @@ describe("outcome odds (statistical)", () => {
   }
   const pct = (n: number, total: number) => (n / total) * 100;
 
-  it("is 40% creature, 13% weapon, 27% armour, 7% consumable, 6% material, 7% gold", () => {
+  it("is 40% creature, 13% weapon, 26% armour, 7% consumable, 6% material, 7% gold, 1% soul stone", () => {
     expect(pct(outcomes.creature, N)).toBeCloseTo(40, 0);
     expect(pct(outcomes.gold, N)).toBeCloseTo(7, 0);
     expect(pct(categories.weapon, N)).toBeCloseTo(13, 0);
-    expect(pct(categories.armor, N)).toBeCloseTo(27, 0);
+    expect(pct(categories.armor, N)).toBeCloseTo(26, 0);
+    expect(pct(outcomes.soul_stone, N)).toBeCloseTo(1, 0);
     expect(pct(categories.consumable, N)).toBeCloseTo(7, 0);
     expect(pct(categories.material, N)).toBeCloseTo(6, 0);
   });
@@ -105,8 +121,8 @@ describe("outcome odds (statistical)", () => {
       const k = e.outcome === "item" ? e.itemCategory : e.outcome;
       got[k] = (got[k] ?? 0) + 1;
     }
-    const expected = { creature: 20, weapon: 12, armor: 24, consumable: 12, material: 12, gold: 20 };
-    for (const [k, target] of Object.entries(expected)) expect(pct(got[k], N), k).toBeCloseTo(target, 0);
+    const expected = { creature: 20, weapon: 12, armor: 24, consumable: 12, material: 12, gold: 20, soul_stone: 0 };
+    for (const [k, target] of Object.entries(expected)) expect(pct(got[k] ?? 0, N), k).toBeCloseTo(target, 0);
   });
 
   it("consumables are only Common, Uncommon or Rare, 40:30:20", () => {

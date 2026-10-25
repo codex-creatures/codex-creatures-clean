@@ -50,7 +50,7 @@ import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
   PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
-  hasFight, minibossExtras, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
+  hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
@@ -877,6 +877,8 @@ export default function DungeonPage() {
     if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // …and a boss's chest sometimes a Revival Elixir (a mini boss's: minibossExtras).
     if (room.kind === "boss" && Math.random() < BOSS_REVIVAL) sack.push({ gear: toolDrop("revival") });
+    // …and now and then a soul stone (the Cyclops 2%, the Warden 5%).
+    if (room.kind === "boss") sack.push(...bossSoulStone(!!room.boss));
     // A guarded storehouse: its stores are yours too, in the same haul.
     if (room.kind === "storehouse") sack.push(...(room.sack ?? []));
     // Until you've got a rugged backpack, the Cyclops' chest holds one.

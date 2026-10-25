@@ -15,6 +15,7 @@ import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
 import { SCROLL_XP } from "./creatures/levels";
 import { materialBundle } from "./items/materials";
+import { SOUL_STONES, SOUL_STONE_REPLACE_COST, type SoulStoneKey } from "./creatures/soulStones";
 
 const now = () => new Date().toISOString();
 
@@ -97,6 +98,16 @@ export function scrollDrop(barcode = ""): Drop {
   };
 }
 
+// A loose soul stone: set it in a creature from its window (lib/creatures/soulStones.ts).
+export function soulStoneDrop(stone: SoulStoneKey, barcode = ""): Drop {
+  const s = SOUL_STONES[stone];
+  return {
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: "legendary", roll: 0,
+    name: `Soul Stone: ${s.name}`, stone,
+    desc: `${s.text} Set it in any creature from its window: free into an empty slot, ${SOUL_STONE_REPLACE_COST.toLocaleString()} gold to replace a stone (the old one is destroyed).`, createdAt: now(),
+  };
+}
+
 function plainItemDrop(itemCategory: ItemCategory, rarity: Rarity, barcode = ""): Drop {
   return { id: crypto.randomUUID(), barcode, dropType: "item", itemCategory, rarity, roll: 0, name: `${rarity} ${itemCategory}`, createdAt: now() };
 }
@@ -104,6 +115,7 @@ function plainItemDrop(itemCategory: ItemCategory, rarity: Rarity, barcode = "")
 // The drop a barcode-style outcome gives this player (null if it can't be made).
 export function dropFromOutcome(result: BarcodeOutcome, barcode = ""): Drop | null {
   if (result.outcome === "gold") return goldDrop(result.amount, barcode);
+  if (result.outcome === "soul_stone") return soulStoneDrop(result.stone, barcode);
   if (result.outcome === "creature") {
     // The outcome fixes WHICH creature; you usually get a card of it.
     const creature = CREATURE_BY_ID[result.creatureId];

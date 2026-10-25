@@ -244,6 +244,9 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
     else if (g.material || g.tool || g.schematic) {
       kind = g.material ? "material" : g.tool ? `${g.rarity} tool` : `${g.rarity} schematic`;
       body = <>{g.desc}</>;
+    } else if (g.stone) {
+      kind = "soul stone";
+      body = <>{g.desc}</>;
     } else if (g.scroll) {
       kind = "xp scroll";
       body = <>{g.desc}</>;

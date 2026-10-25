@@ -205,3 +205,51 @@ describe("the starter's and Klutz's soul stones", () => {
     expect(setKlutzStone(out, "perfectionist", 3000).soulStone).toBe("perfectionist");
   });
 });
+
+import { SOUL_STONE_KEYS, SOUL_STONE_REPLACE_COST, setStoneIn } from "../lib/creatures/soulStones";
+import { soulStoneDrop } from "../lib/drops";
+import { bossSoulStone, CYCLOPS_SOUL_STONE, WARDEN_SOUL_STONE } from "../lib/dungeon/run";
+import type { Drop } from "../lib/types";
+describe("loose soul stones", () => {
+  const creature = (soulStone: SoulStoneKey | null) => ({ ...makeCreatureDrop(CREATURE_BY_ID.bellow_toad, "creature", ""), soulStone }) as Drop;
+
+  it("a found stone is one particular stone", () => {
+    const d = soulStoneDrop("trickster");
+    expect(d).toMatchObject({ dropType: "item", itemCategory: "consumable", stone: "trickster", name: "Soul Stone: Trickster" });
+  });
+
+  it("goes into an empty slot free, on any creature (a Common too), and is used up", () => {
+    const c = creature(null), s = soulStoneDrop("perfectionist");
+    const done = setStoneIn([c, s], c.id, s.id, 0)!;
+    expect(done.cost).toBe(0);
+    expect(done.inventory).toHaveLength(1);
+    expect(done.inventory[0]).toMatchObject({ id: c.id, soulStone: "perfectionist" });
+  });
+
+  it("replacing a stone costs 5,000 gold and the old one is gone", () => {
+    const c = creature("toxic_skin"), s = soulStoneDrop("revitalise");
+    expect(setStoneIn([c, s], c.id, s.id, SOUL_STONE_REPLACE_COST - 1)).toBeNull();
+    const done = setStoneIn([c, s], c.id, s.id, SOUL_STONE_REPLACE_COST)!;
+    expect(done.cost).toBe(5000);
+    expect(done.inventory).toEqual([{ ...c, soulStone: "revitalise" }]);
+  });
+
+  it("only into a creature (not a card), only with a stone", () => {
+    const card = { ...creature(null), dropType: "card" } as Drop, s = soulStoneDrop("trickster");
+    expect(setStoneIn([card, s], card.id, s.id, 1e9)).toBeNull();
+    const c = creature(null);
+    expect(setStoneIn([c, card], c.id, card.id, 1e9)).toBeNull();
+  });
+
+  it("boss chests: the Cyclops 2%, the Warden 5%, any of the six", () => {
+    expect([CYCLOPS_SOUL_STONE, WARDEN_SOUL_STONE]).toEqual([0.02, 0.05]);
+    expect(bossSoulStone(true, () => 0.019)).toHaveLength(1);
+    expect(bossSoulStone(true, () => 0.02)).toHaveLength(0);
+    expect(bossSoulStone(false, () => 0.049)).toHaveLength(1);
+    expect(bossSoulStone(false, () => 0.05)).toHaveLength(0);
+    const seen = new Set<string>();
+    for (let i = 0; i < 600; i++) for (const x of bossSoulStone(false, Math.random)) if ("gear" in x && x.gear.dropType === "item") seen.add(x.gear.stone!);
+    expect(seen.size).toBeGreaterThan(0);
+    expect([...seen].every((k) => SOUL_STONE_KEYS.includes(k as SoulStoneKey))).toBe(true);
+  });
+});
