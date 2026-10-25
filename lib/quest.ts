@@ -60,12 +60,12 @@ export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club
 // The thief: a Baby Cyclops (no gold: beating it gets you the box, and only
 // the box). It's the guided first fight: your creature against it (with
 // TUTORIAL_MOVES, and Klutz's club), while Klutz watches from the side and
-// talks you through the triangle and damage types (TUTORIAL_STEPS in
-// components/BattleScreen.tsx). So it's built to teach:
-// - a melee brute (ranged moves do half: melee beats ranged);
-// - a thick hide (THIEF_HIDE): Force moves bounce off, Pierce goes through,
-//   and magic (which beats melee, and its hide does little against) hurts most;
-// - lots of HP, but only a weak slap, so the lesson has time to land.
+// talks you through races (TUTORIAL_STEPS in components/BattleScreen.tsx).
+// So it's built to teach:
+// - it's Humanoid (lib/creatures/racesV2.ts): an Underkin move is resisted,
+//   a Beast move is effective, the same move otherwise;
+// - a thick hide (THIEF_HIDE) and lots of HP, but only a weak slap, so the
+//   lesson has time to land.
 // (Sim, a Lv 3 Rare with the club: wins every time, about 6 rounds, most
 // often with ~70% HP left — a 1 in 10 comes down to the last fifth.)
 // (On the full-set armour scale: defence counts at a third.)
@@ -79,8 +79,10 @@ export function thiefRoom(): Room {
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
 
-// Your creature's moves in the guided fight (just for that fight): one for each lesson.
-export const TUTORIAL_MOVES = ["Stone Throw", "Heavy Blow", "Impale", "Slash"];
+// Your creature's moves in the guided fight (just for that fight): the two
+// lessons (the same melee move, Underkin then Beast), then Beast moves to
+// finish it with (a heavy one and a quick attack).
+export const TUTORIAL_MOVES = ["Tunnel Rush", "Gore", "Maul", "Lunge"];
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
 // time, otherwise an armour piece).

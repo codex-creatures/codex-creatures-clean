@@ -10,6 +10,7 @@
 //
 // The file is versioned (SAVE_FILE_VERSION): a later game can read older
 // files, and this one refuses a file from a newer game rather than guess.
+// (Except: files from before Combat V2 are refused too, FIRST_READABLE_VERSION.)
 //
 // Importing is careful:
 // 1. the file is checked first (checkSaveFile); a bad file changes nothing;
@@ -23,7 +24,10 @@ import { REGISTRY_KEY } from "./barcodeRegistry";
 import { STORAGE_KEY as BATTLES_KEY } from "./battleHistory";
 
 export const SAVE_FILE_FORMAT = "codex-creatures-save";
-export const SAVE_FILE_VERSION = 1;
+// 2: Combat V2 (2026-10-26). Saves from before it (1) can't be loaded: the
+// user chose a fresh start for everyone (FIRST_READABLE_VERSION).
+export const SAVE_FILE_VERSION = 2;
+export const FIRST_READABLE_VERSION = 2;
 export const BACKUP_KEY = "codex_creatures_backup_v1";
 export const MAX_SAVE_FILE_BYTES = 5_000_000; // far more than any real save
 
@@ -91,6 +95,9 @@ export function checkSaveFile(text: string): CheckResult {
   if (!isObject(parsed) || parsed.format !== SAVE_FILE_FORMAT) return { ok: false, error: "That file isn't a Codex Creatures save." };
   if (typeof parsed.version !== "number" || !Number.isInteger(parsed.version) || parsed.version < 1) {
     return { ok: false, error: "That save file has no version number, so it can't be read safely." };
+  }
+  if (parsed.version < FIRST_READABLE_VERSION) {
+    return { ok: false, error: "That save is from before Combat V2 (races replaced the triangle), so it can't be loaded. Start a new game instead." };
   }
   if (parsed.version > SAVE_FILE_VERSION) {
     return { ok: false, error: `That save was made by a newer version of the game (save format ${parsed.version}). Update the game on this computer first, then import it.` };

@@ -13,6 +13,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
+import { damageTypesOn } from "@/lib/combat/engine";
 import { canLearnFromCodex, DAMAGE_TYPE_INFO, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
@@ -103,8 +104,9 @@ export default function CreatureDetailModal({
   const template = findCreatureTemplate(creature.creatureId, creature.name);
   const weapon = weapons.find((w) => w.id === loadout?.weaponId);
   const worn   = armorPieces(loadout, (id) => armors.find((a) => a.id === id)); // helmet, chest, legs
-  // A weapon's damage type (Force, Pierce or Arcane): its moves of that type hit harder.
-  const weaponKind = weapon?.itemKey && WEAPON_AFFINITY[weapon.itemKey] ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[weapon.itemKey]] : undefined;
+  // A weapon's damage type (Force, Pierce or Arcane): its moves of that type hit
+  // harder. Only under the old rules: Combat V2 has no damage types.
+  const weaponKind = damageTypesOn() && weapon?.itemKey && WEAPON_AFFINITY[weapon.itemKey] ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[weapon.itemKey]] : undefined;
   const inSlot = (slot: EquipSlot) => (slot === "weapon" ? weapon : worn[ARMOR_SLOTS.indexOf(slot)]);
   const c = RARITY_COLORS[creature.rarity];
 
@@ -211,7 +213,7 @@ export default function CreatureDetailModal({
         <div style={{ paddingRight: 28, marginBottom: 12 }}>
           <div style={{ display: "flex", alignContent: "flex-start", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap", height: 52, overflow: "hidden" }}>
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
-            <RaceTag race={template?.race} />
+            <RaceTag race={template?.race} races={template?.races} />
             <ClassBadge cls={template?.cls} neutral={template?.neutral} />
             {template && prof && !(template.neutral && creatureRoles(prof)[0] === "Balanced") && <TypeTags roles={creatureRoles(prof)} />}
           </div>

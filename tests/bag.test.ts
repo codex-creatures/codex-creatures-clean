@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, cyclopsChest, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
 import { createBattle, resolveRound, isValidAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
+// Battle mechanics tests use the older species, with the moves they were written with.
+const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 
 describe("the battle bag", () => {
   it("starts as a 3-slot bindle; the first mini boss's rugged backpack holds 5, one thing per slot", () => {

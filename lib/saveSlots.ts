@@ -17,7 +17,9 @@
 
 import { exportSave, checkSaveFile, SAVE_PARTS, type KeyValueStore, type SaveFile, type SavePart } from "./saveFile";
 
-export const SLOTS_KEY = "codex_creatures_slots_v1";
+// v2: Combat V2 started everyone again; the old slots (codex_creatures_slots_v1,
+// codex_creatures_slot_<id>) stay in the browser, unread.
+export const SLOTS_KEY = "codex_creatures_slots_v2";
 // sessionStorage, for this visit only: a save has been picked on the title
 // screen, so the Den doesn't send you back to it.
 export const STARTED_KEY = "codex_creatures_started";
@@ -29,7 +31,7 @@ export type SlotList = { active: string | null; slots: Slot[] };
 export type SlotResult = { ok: true; list: SlotList } | { ok: false; error: string };
 
 // Where a parked slot's game is kept.
-export const slotKey = (id: string) => `codex_creatures_slot_${id}`;
+export const slotKey = (id: string) => `codex_creatures_slot2_${id}`;
 
 const PARTS = Object.keys(SAVE_PARTS) as SavePart[];
 const hasGame = (store: KeyValueStore) => PARTS.some((p) => store.getItem(SAVE_PARTS[p]) !== null);

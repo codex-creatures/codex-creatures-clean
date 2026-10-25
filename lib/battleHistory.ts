@@ -7,7 +7,7 @@ import type { BattleEvent, SideKey } from "./combat/battle";
 import type { Rarity } from "./items/budgets";
 import { savesLocked } from "./save";
 
-export const STORAGE_KEY = "codex_creatures_battles_v1";
+export const STORAGE_KEY = "codex_creatures_battles_v2"; // v2: started again for Combat V2
 export const MAX_SAVED_BATTLES = 10;
 
 export type BattleMember = {

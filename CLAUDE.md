@@ -29,10 +29,13 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
    PixelLab) are fine.
 2. **Saves stay compatible.** Saves are the user's progress, kept separately on each computer.
    - Don't rename or reshape the storage keys without code that reads the old data:
-     `codex_creatures_save_v2` (lib/save.ts), `codex_creatures_registry_v2`
-     (lib/barcodeRegistry.ts), `codex_creatures_battles_v1` (lib/battleHistory.ts),
-     `codex_creatures_backup_v1` (lib/saveFile.ts), and the save slots `codex_creatures_slots_v1`
-     plus `codex_creatures_slot_<id>` (lib/saveSlots.ts). Per device, not in saves:
+     `codex_creatures_save_v3` (lib/save.ts), `codex_creatures_registry_v3`
+     (lib/barcodeRegistry.ts), `codex_creatures_battles_v2` (lib/battleHistory.ts),
+     `codex_creatures_backup_v1` (lib/saveFile.ts), and the save slots `codex_creatures_slots_v2`
+     plus `codex_creatures_slot2_<id>` (lib/saveSlots.ts). (These moved on 2026-10-26, when the
+     user chose a fresh start for Combat V2: saves from before it are left in the browser, unread,
+     and pre-V2 save files are refused. That was the user's call; don't do it again unasked.)
+     Per device, not in saves:
      `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size) and
      `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration).
    - New save fields must be optional, with a default for old saves. (Recent ones: `storage`, the

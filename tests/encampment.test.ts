@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
+// Battle mechanics tests use the older species, with the moves they were written with.
+const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { buildFighter } from "../lib/combat/loadout";
-import { calcDamage, ARCANE_CAP } from "../lib/combat/engine";
+import { calcDamage, ARCANE_CAP, setCombatRules, LIVE_RULES, TRIANGLE_RULES } from "../lib/combat/engine";
 import { createBattle, resolveRound, sendInReplacement, swapTargets } from "../lib/combat/battle";
 import { aiChooseAction, aiChooseReplacement } from "../lib/combat/teamBattle";
 import { MOVE_BY_NAME, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
@@ -38,7 +40,8 @@ describe("encampment fights", () => {
     expect(s.winner).toBe("B");
   });
 
-  it("arcane's cap grows with a potion-drunk foe's HP", () => {
+  it("arcane's cap grows with a potion-drunk foe's HP (the old rules: Combat V2 has no damage types)", () => {
+    setCombatRules(TRIANGLE_RULES);
     const me = f("dustwraith");
     const fat = { ...f("ironhide") };
     const drunk = { ...fat, maxHp: fat.maxHp * 3, hp: fat.maxHp * 3, hpMult: 3 };
@@ -47,5 +50,6 @@ describe("encampment fights", () => {
     const swollen = calcDamage(sk, me, drunk, false).damage;
     expect(swollen).toBeGreaterThan(plain);
     expect(swollen - plain).toBeGreaterThanOrEqual(ARCANE_CAP); // roughly 2 more caps' worth
+    setCombatRules(LIVE_RULES);
   });
 });

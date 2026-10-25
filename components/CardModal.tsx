@@ -68,7 +68,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
           <>
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
               <span style={{ padding: "2px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: c.text, border: `1px solid ${c.border}` }}>{t.rarity}</span>
-              <RaceTag race={t.race} />
+              <RaceTag race={t.race} races={t.races} />
               <ClassBadge cls={t.cls} />
               <span style={{ fontSize: 12, color: MUTED }}>🃏 Creature card · {creatureTypeLabel(card.proficiency ?? t.proficiency)}</span>
             </div>

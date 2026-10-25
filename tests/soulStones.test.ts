@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { CREATURE_BY_ID, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
+// Battle mechanics tests use the older species, with the moves they were written with.
+const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { buildFighter } from "../lib/combat/loadout";
 import { createBattle, resolveRound, activeOf, isCrippled, type BattleEvent } from "../lib/combat/battle";
 import type { Fighter } from "../lib/combat/engine";

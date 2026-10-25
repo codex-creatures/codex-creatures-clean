@@ -1,18 +1,23 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { BASIC_MOVES, STRONG_MOVES, CREATURE_BY_ID, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+import { BASIC_MOVES, STRONG_MOVES, CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+// Battle mechanics tests use the older species, with the moves they were written with.
+const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { dropFromOutcome } from "../lib/drops";
 
 const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName });
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20 }, { mDef: 5, rDef: 5 }, moves);
 
 describe("what a creature can use and learn", () => {
-  it("only its own (rolled) moves plus what it learned from codexes", () => {
-    const wolf = CREATURE_BY_ID.moss_wolf;
+  it("its own (rolled) moves, the rest of its race kit, and what it learned from codexes", () => {
+    const wolf = LIVE_BY_ID.moss_wolf; // Beast, melee: the Beast melee kit
+    const kit = wolf.skills.map((m) => m.name);
+    expect(kit).toHaveLength(5);
     const names = (own: string[], learned: string[] = []) => movesAvailableTo(wolf, learned, own).map((m) => m.name);
-    expect(names(["Slash", "Jab", "Heavy Blow"])).toEqual(["Slash", "Jab", "Heavy Blow"]);
-    expect(names(["Slash"], [LEARNABLE_MOVES[0].name, "Pounce", "Mirage"])).toEqual(["Slash", LEARNABLE_MOVES[0].name, "Pounce"]);
+    expect(names(kit.slice(0, 2))).toEqual(kit);
+    expect(names([LEARNABLE_MOVES[1].name])).toEqual([LEARNABLE_MOVES[1].name, ...kit]);
+    expect(names([kit[0]], [LEARNABLE_MOVES[0].name, "Pounce", "Mirage"])).toEqual([...kit, LEARNABLE_MOVES[0].name, "Pounce"]);
   });
 
   it("learnable codexes work on anyone; race codexes only on that race", () => {
@@ -50,7 +55,9 @@ describe("what a creature can use and learn", () => {
     expect(canLearnFromCodex(wolf, "Heavy Blow")).toBe(true);
     expect(canLearnFromCodex(wolf, "Ice Lance")).toBe(false);  // magic
     // Once learned, it can go in a slot and is kept there.
-    expect(movesAvailableTo(wolf, ["Heavy Blow", "Ice Lance"], ["Slash"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
+    const usable = movesAvailableTo(wolf, ["Heavy Blow", "Ice Lance"], ["Slash"]).map((m) => m.name);
+    expect(usable).toContain("Heavy Blow");
+    expect(usable).not.toContain("Ice Lance");
     expect(resolveMoves(wolf, ["Slash", "Heavy Blow"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
   });
 
@@ -115,13 +122,13 @@ describe("race moves", () => {
   });
 
   it("Mirage makes attacks shimmer away", () => {
-    const sprite = fighter("dust_sprite", ["Mirage", "Bolt"]);
+    const sprite = fighter("flicker_wisp", ["Mirage", "Spark"]); // Divine
     const wolf = fighter("moss_wolf", ["Slash"]);
     let dodged = 0, swings = 0;
     for (let n = 0; n < 200; n++) {
       const s = createBattle([{ ...sprite, maxHp: 999, hp: 999 }], [wolf]);
       resolveRound(s, { A: hit("Mirage"), B: hit("Slash") });
-      resolveRound(s, { A: hit("Bolt"), B: hit("Slash") });
+      resolveRound(s, { A: hit("Spark"), B: hit("Slash") });
       for (const e of s.log) if (e.type === "attack" && e.side === "B" && s.log.indexOf(e) > s.log.findIndex((x) => x.type === "effect")) {
         swings++;
         if (e.evaded) dodged++;
@@ -173,6 +180,6 @@ describe("race moves", () => {
     rand.mockRestore();
     const targets = s.log.filter((e) => e.type === "attack" && e.side === "A").map((e) => e.type === "attack" && e.targetIndex);
     expect(targets.sort()).toEqual([0, 1]);
-    expect(MOVE_BY_NAME.Barrage.race).toBe("elvish");
+    expect(MOVE_BY_NAME.Barrage.race).toBe("humanoid");
   });
 });

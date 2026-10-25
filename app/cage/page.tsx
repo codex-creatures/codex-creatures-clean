@@ -85,7 +85,7 @@ export default function CagePage() {
               <div className="pixel-font" style={{ fontSize: 22, color: RARITY_COLORS[d.rarity].text, marginTop: 8 }}>{d.name}</div>
               <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 6 }}>
                 <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: RARITY_COLORS[d.rarity].text, border: `2px solid ${RARITY_COLORS[d.rarity].border}` }}>{d.rarity}</span>
-                <RaceTag race={t?.race} />
+                <RaceTag race={t?.race} races={t?.races} />
                 <ClassBadge cls={t?.cls} />
               </div>
               <SoulStoneTag stone={d.soulStone} />

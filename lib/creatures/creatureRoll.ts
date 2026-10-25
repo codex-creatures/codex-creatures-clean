@@ -52,8 +52,9 @@ export function rollProficiency(base: CreatureProficiency, rng: Rng = Math.rando
 }
 
 export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[] {
-  // Species moves in a random order, first MOVE_SLOTS of them.
-  const own = [...c.skills].sort(() => rng() - 0.5).slice(0, MOVE_SLOTS).map((m) => m.name);
+  // Its species' starting moves (Combat V2: the first MOVE_SLOTS of its race
+  // kits; the rest of its kits can be picked into its slots later).
+  const own = c.skills.slice(0, MOVE_SLOTS).map((m) => m.name);
   const fitting = LEARNABLE_MOVES.filter((m) => m.type === c.cls);
   const moves = [...own];
   for (let i = 0; i < MOVE_SLOTS; i++) {

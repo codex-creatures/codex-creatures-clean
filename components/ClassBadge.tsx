@@ -1,18 +1,19 @@
 // components/ClassBadge.tsx
-// A creature's primary class (the combat triangle) as a small chip, plus a
-// one-line label for a move's style and damage type.
+// A creature's primary class (its main fighting style) as a small chip, plus
+// a one-line label for a move's style and race (Combat V2; under the old
+// rules, its damage type).
 
-import { CLASS_INFO, DAMAGE_TYPE_INFO, type CombatClass, type Skill } from "@/lib/creatures/creatureData";
-import { NEUTRAL_COUNTER } from "@/lib/combat/engine";
+import { CLASS_INFO, DAMAGE_TYPE_INFO, RACE_INFO, type CombatClass, type Skill } from "@/lib/creatures/creatureData";
+import { damageTypesOn } from "@/lib/combat/engine";
+import { raceOfMove } from "@/lib/combat/raceChart";
 
-const weakTo = (cls: CombatClass) => (Object.keys(CLASS_INFO) as CombatClass[]).find((k) => CLASS_INFO[k].beats === cls)!;
 const NEUTRAL_GREY = "#a9a9b8";
 
-// neutral: outside the triangle (Klutz), shown as a grey "Balanced".
+// neutral: Klutz, who can learn moves of any style, shown as a grey "Balanced".
 export default function ClassBadge({ cls, neutral }: { cls?: CombatClass; neutral?: boolean }) {
   if (neutral) {
     return (
-      <span className="pixel-font" title={`Balanced: outside the triangle. Nothing counters him, and a move of his that counters the target does +${Math.round((NEUTRAL_COUNTER - 1) * 100)}%.`}
+      <span className="pixel-font" title="Balanced: he can learn moves of any style."
         style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: NEUTRAL_GREY, border: `2px solid ${NEUTRAL_GREY}55` }}>
         ⚖️ Balanced
       </span>
@@ -21,14 +22,23 @@ export default function ClassBadge({ cls, neutral }: { cls?: CombatClass; neutra
   if (!cls) return null;
   const c = CLASS_INFO[cls];
   return (
-    <span className="pixel-font" title={`${c.name} class: strong against ${CLASS_INFO[c.beats].name}, weak to ${CLASS_INFO[weakTo(cls)].name}`}
+    <span className="pixel-font" title={`${c.name}: its main fighting style`}
       style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.color, border: `2px solid ${c.color}55` }}>
       {c.icon} {c.name}
     </span>
   );
 }
 
-// e.g. "🔮 Magic · ✨ Arcane"
+// A move's second tag: its race (Combat V2), or its damage type under the
+// old rules.
+export function moveTag(m: Skill): { icon: string; name: string; color: string } {
+  if (damageTypesOn()) return DAMAGE_TYPE_INFO[m.dmgType];
+  const r = raceOfMove(m);
+  return r ? RACE_INFO[r] : { icon: "◇", name: "No race", color: NEUTRAL_GREY };
+}
+
+// e.g. "🔮 Magic · 💀 Undead"
 export function moveKind(m: Skill): string {
-  return `${CLASS_INFO[m.type].icon} ${CLASS_INFO[m.type].name} · ${DAMAGE_TYPE_INFO[m.dmgType].icon} ${DAMAGE_TYPE_INFO[m.dmgType].name}`;
+  const tag = moveTag(m);
+  return `${CLASS_INFO[m.type].icon} ${CLASS_INFO[m.type].name} · ${tag.icon} ${tag.name}`;
 }

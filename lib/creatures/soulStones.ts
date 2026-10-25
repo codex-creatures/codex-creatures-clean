@@ -38,7 +38,8 @@ export const REVITALISE_HEAL = 0.25;
 export const SOUL_STONE_CHANCE: Partial<Record<Rarity, number>> = { rare: 0.25, epic: 0.6, legendary: 1 };
 
 // The stones each species can have. Trickster only goes where the race has a
-// utility move to use it with (Etherial: Mirage; Undead: Corpsify).
+// utility move to use it with (Divine: Mirage; Undead: Corpsify). The six new
+// Combat V2 species' pools are Claude's drafts (2026-10-26).
 export const POOLS: Record<string, SoulStoneKey[]> = {
   // Rare
   bellow_toad:      ["toxic_skin", "revitalise"],
@@ -46,18 +47,24 @@ export const POOLS: Record<string, SoulStoneKey[]> = {
   veilstalker:      ["haunting_presence", "trickster"],
   dustwraith:       ["haunting_presence", "trickster"],
   aurelius:         ["perfectionist", "revitalise"],
+  deep_angler:      ["haunting_presence", "perfectionist"],
+  glob:             ["toxic_skin", "revitalise"],
   // Epic
   dire_wolf:        ["perfectionist", "unstoppable_force"],
   crystal_golem:    ["unstoppable_force", "revitalise"],
   the_watcher:      ["haunting_presence", "perfectionist", "trickster"],
   mr_shadows:       ["haunting_presence", "trickster"],
   swamp_witch:      ["toxic_skin", "revitalise"],
+  tunnel_wyrm:      ["unstoppable_force", "revitalise"],
+  dreadpox:         ["toxic_skin", "trickster"],
   // Legendary
   ironhide:         ["unstoppable_force", "perfectionist"],
   hollow_matriarch: ["toxic_skin", "haunting_presence", "revitalise"],
   void_serpent:     ["toxic_skin", "trickster", "haunting_presence"],
   storm_phoenix:    ["haunting_presence", "perfectionist", "revitalise"],
   sylvaran:         ["perfectionist", "revitalise"],
+  thunderhead:      ["perfectionist", "unstoppable_force", "haunting_presence"],
+  pale_rider:       ["haunting_presence", "trickster", "perfectionist"],
 };
 
 export const stonesFor = (creatureId: string): SoulStoneKey[] => POOLS[creatureId] ?? [];

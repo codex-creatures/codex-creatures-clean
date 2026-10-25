@@ -2,13 +2,16 @@
 // components/MoveTile.tsx
 // A move as an old, cracked stone tablet (lib/sprites/moveSlab.ts) in its
 // style's stone: red for melee, green for ranged, blue for magic. Behind the
-// name, big and in a darker shade of the stone, is the icon for how it hurts:
-// an impact (Force), an arrowhead (Pierce), a bolt (Arcane). The name is
+// name, big and in a darker shade of the stone, is the icon for how it hurts
+// under the old rules: an impact (Force), an arrowhead (Pierce), a bolt
+// (Arcane); Combat V2 has no damage types, so no icon. The name is
 // large and bold over it. The energy cost sits in a circle in the
 // bottom-right; the (i) flips the tablet to the details.
 
 import { useMemo, useState } from "react";
-import { CLASS_INFO, DAMAGE_TYPE_INFO, type Skill } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, type Skill } from "@/lib/creatures/creatureData";
+import { damageTypesOn } from "@/lib/combat/engine";
+import { moveTag } from "./ClassBadge";
 import { moveSlab, SLAB_W, SLAB_H, SLAB_STONE } from "@/lib/sprites/moveSlab";
 
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
@@ -16,7 +19,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 // The stone, as crisp SVG pixels filling the tile.
 function Slab({ m, faded }: { m: Skill; faded: boolean }) {
   const rects = useMemo(() => {
-    const g = moveSlab(m.name, m.type, m.self ? undefined : m.dmgType);
+    const g = moveSlab(m.name, m.type, m.self || !damageTypesOn() ? undefined : m.dmgType);
     const out: [number, number, number, string][] = [];
     g.forEach((row, y) => {
       for (let x = 0; x < row.length;) {
@@ -47,7 +50,7 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
   onClick?: () => void;
 }) {
   const [info, setInfo] = useState(false);
-  const style = CLASS_INFO[m.type], dtype = DAMAGE_TYPE_INFO[m.dmgType];
+  const style = CLASS_INFO[m.type], dtype = moveTag(m);
   const stone = SLAB_STONE[m.type];
   const active = !!onClick && !disabled;
   return (

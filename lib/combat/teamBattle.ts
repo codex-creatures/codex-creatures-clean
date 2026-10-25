@@ -125,7 +125,7 @@ export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined
   if (usable.length === 0) return undefined;
   const attacks = usable.filter((s) => !s.self);
   const affordable = attacks.length > 0 ? attacks : usable;
-  // Any style: the value below already weighs the triangle and armour.
+  // Any style: the value below already weighs races and armour.
   const pool = affordable;
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);

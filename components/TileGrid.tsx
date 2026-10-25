@@ -12,7 +12,7 @@ import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CreaturePortrait from "./CreaturePortrait";
-import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate, raceNames } from "@/lib/creatures/creatureData";
 import { CreatureMarks, type GroupBy } from "./CreatureMarks";
 import { ICON, NAME } from "./ContainerLoot";
 
@@ -104,7 +104,7 @@ function Tile({ d, fav, badge, sell, onClick }: {
         {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{goodsIcon(d) ?? (d.codexMove ? "📖" : d.scroll ? "📜" : d.potion ? "🧴" : "📦")}</span>}
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
-        {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} cls={tpl.cls} size={10} /></span>}
+        {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} races={tpl.races} cls={tpl.cls} size={10} /></span>}
         {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
         {/* A stack (materials): how many, in the corner, like a count on a game icon. */}
         {!badge && d.qty ? <span className="pixel-font" style={{ position: "absolute", bottom: 0, right: 4, fontSize: 16, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>{d.qty}</span> : null}
@@ -131,7 +131,7 @@ function CreatureCard({ d, fav, badge, onClick }: { d: CreatureOrItemDrop; fav: 
       {tpl && (
         <span className="pixel-font" style={{ fontSize: 12, textAlign: "center" }}>
           <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
-          {tpl.race && <span style={{ color: "#f1d9a0" }}> · {RACE_INFO[tpl.race].name}</span>}
+          {tpl.race && <span style={{ color: "#f1d9a0" }}> · {raceNames(tpl)}</span>}
         </span>
       )}
       {fav && <span style={{ position: "absolute", top: 26, left: 4, fontSize: 15, color: "#f5c542" }}>★</span>}

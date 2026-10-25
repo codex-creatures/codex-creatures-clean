@@ -240,10 +240,10 @@ import { withQuickAttack, QUICK_ATTACK } from "../lib/creatures/starter";
 import { MOVE_BY_NAME as MOVES } from "../lib/creatures/creatureData";
 
 describe("the starter's quick attack", () => {
-  it("every starter knows a quick attack (haste), whatever it rolls", () => {
+  it("every starter knows a quick attack (its race kit's, or haste), whatever it rolls", () => {
     for (let i = 0; i < 300; i++) {
       const s = starterCreature() as { moves?: string[] };
-      expect(s.moves?.some((n) => MOVES[n]?.effect?.kind === "dash")).toBe(true);
+      expect(s.moves?.some((n) => ["dash", "quick"].includes(MOVES[n]?.effect?.kind ?? ""))).toBe(true);
       expect(s.moves?.length).toBeLessThanOrEqual(4);
     }
   });

@@ -1,13 +1,13 @@
 // lib/creatures/rosterV2.ts
-// Combat V2's roster (being simmed; not in the live game yet): 7 races × one
-// creature of each rarity = 35. Today's 25 species plus 10 new ones, all
-// drafts the user will re-race and rebalance.
+// Combat V2's roster (live since 2026-10-26): 7 races × one creature of each
+// rarity = 35. The 25 older species plus 10 new ones; the whole roster is
+// built in creatureData.ts (CREATURE_TEMPLATES) from the pieces here.
 //
 // Every creature has an archetype. The archetype says which style(s) it
 // fights in, so which race kits it draws its moves from: a hybrid (a
 // Battlemage, a Spellbow) gets moves in two styles, and its %s back both.
 
-import { CREATURE_TEMPLATES, type CombatClass, type CreatureTemplate, type Skill } from "./creatureData";
+import type { CombatClass, CreatureTemplate, Skill } from "./creatureData";
 import { SPECIES_RACES } from "./racesV2";
 import { kitFor, kitMoveFor } from "./raceKitsV2";
 
@@ -109,7 +109,3 @@ export const V2_RESTYLE: Record<string, Pick<CreatureTemplate, "cls" | "proficie
   dustwraith:       { cls: "magic", proficiency: { atk: 6, rng: 6, mag: 14, agil: 32, mdef: 4, rdef: 8, magdef: 6 } },
 };
 
-// The whole V2 roster, with V2 styles and moves in place of today's.
-export const ROSTER_V2: CreatureTemplate[] = [...CREATURE_TEMPLATES, ...NEW_SPECIES_V2]
-  .map((c) => ({ ...c, ...V2_RESTYLE[c.id] }))
-  .map((c) => ({ ...c, skills: v2Moves(c) }));

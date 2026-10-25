@@ -6,7 +6,8 @@
 import { useState } from "react";
 import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, type CombatClass, type Race } from "@/lib/creatures/creatureData";
 
-export function CreatureMarks({ race, cls, size = 13 }: { race?: Race; cls?: CombatClass; size?: number }) {
+// races: both of a two-race creature (otherwise race).
+export function CreatureMarks({ race, races, cls, size = 13 }: { race?: Race; races?: Race[]; cls?: CombatClass; size?: number }) {
   const chip = (icon: string, color: string, title: string) => (
     <span title={title} style={{
       width: size + 7, height: size + 7, display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -15,7 +16,7 @@ export function CreatureMarks({ race, cls, size = 13 }: { race?: Race; cls?: Com
   );
   return (
     <span style={{ display: "inline-flex", gap: 2 }}>
-      {race && chip(RACE_INFO[race].icon, RACE_INFO[race].color, `Race: ${RACE_INFO[race].name}`)}
+      {(races?.length ? races : race ? [race] : []).map((r) => <span key={r} style={{ display: "inline-flex" }}>{chip(RACE_INFO[r].icon, RACE_INFO[r].color, `Race: ${RACE_INFO[r].name}`)}</span>)}
       {cls && chip(CLASS_INFO[cls].icon, CLASS_INFO[cls].color, `Class: ${CLASS_INFO[cls].name}`)}
     </span>
   );
@@ -25,8 +26,11 @@ export type GroupBy = "rarity" | "class" | "race";
 export type CreatureFilter = { race: Race | "all"; cls: CombatClass | "all"; groupBy: GroupBy };
 export const NO_FILTER: CreatureFilter = { race: "all", cls: "all", groupBy: "rarity" };
 
-export function matchesFilter(f: CreatureFilter, race?: Race, cls?: CombatClass): boolean {
-  return (f.race === "all" || race === f.race) && (f.cls === "all" || cls === f.cls);
+// race: a creature's races (either one matches), or just one.
+const hasRace = (race: Race | Race[] | undefined, r: Race) => (Array.isArray(race) ? race.includes(r) : race === r);
+
+export function matchesFilter(f: CreatureFilter, race?: Race | Race[], cls?: CombatClass): boolean {
+  return (f.race === "all" || hasRace(race, f.race)) && (f.cls === "all" || cls === f.cls);
 }
 
 // counts: how many creatures each option would show (before the other filter).
@@ -85,8 +89,8 @@ const RARITY_RANK: Record<string, number> = { legendary: 0, epic: 1, rare: 2, un
 const CLASS_RANK: Record<CombatClass, number> = { melee: 0, ranged: 1, magic: 2 };
 
 // Does a creature pass the filter? (name: what the search matches)
-export function passes(f: InventoryFilter, name: string, race?: Race, cls?: CombatClass): boolean {
-  return (f.race === "all" || race === f.race) && (f.cls === "all" || cls === f.cls)
+export function passes(f: InventoryFilter, name: string, race?: Race | Race[], cls?: CombatClass): boolean {
+  return (f.race === "all" || hasRace(race, f.race)) && (f.cls === "all" || cls === f.cls)
     && (!f.query.trim() || name.toLowerCase().includes(f.query.trim().toLowerCase()));
 }
 

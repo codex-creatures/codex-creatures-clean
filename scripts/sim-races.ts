@@ -7,7 +7,7 @@
 // To try other multipliers: RACE_EFFECT=1.3/0.8 npx vite-node scripts/sim-races.ts
 // To run only the V2 rulesets: V2_ONLY=1
 
-import { setCombatRules, LIVE_RULES, type CombatRules } from "../lib/combat/engine";
+import { setCombatRules, TRIANGLE_RULES, type CombatRules } from "../lib/combat/engine";
 import { runTierList, runTeamBattles, rollGear, duel, gearedFighter, type Gear } from "../lib/balance/simulate";
 import { runTeamBattle } from "../lib/combat/teamBattle";
 import { CREATURE_TEMPLATES, type CreatureTemplate } from "../lib/creatures/creatureData";
@@ -22,7 +22,7 @@ if (process.env.RACE_EFFECT) {
 }
 console.log(`Race multipliers: effective ${RACE_EFFECT.strong}, resisted ${RACE_EFFECT.resisted}`);
 const RULESETS: { name: string; rules: CombatRules }[] = [
-  ...(process.env.V2_ONLY ? [] : [{ name: "Live (triangle)", rules: LIVE_RULES }]),
+  ...(process.env.V2_ONLY ? [] : [{ name: "Old (triangle)", rules: TRIANGLE_RULES }]),
   { name: "V2: own race", rules: { triangle: false, races: "own", damageTypes: false } },
   { name: "V2: drafted moves", rules: { triangle: false, races: "drafted", damageTypes: false } },
 ];

@@ -1,11 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, currentAgility, fieldOf, type BattleState } from "../lib/combat/battle";
-import { effectiveAgil, calcDamage } from "../lib/combat/engine";
+import { effectiveAgil, calcDamage, setCombatRules, LIVE_RULES } from "../lib/combat/engine";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { CYCLOPS } from "../lib/combat/bossAi";
 import { cyclopsTeam } from "../lib/creatures/bosses";
 import { buildFighter } from "../lib/combat/loadout";
-import { CREATURE_BY_ID, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+// Battle mechanics tests use the older species, with the moves they were written with.
+const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 
 // A sturdy player creature with plain moves.
 const hero = (hp = 5000) => ({ ...buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, { mDef: 10, rDef: 10, magDef: 10 }, ["Slash", "Heavy Blow", "Crush", "Jab"]), hp, maxHp: hp });
@@ -71,9 +73,12 @@ describe("the Cyclops", () => {
 
   it("the Eye's Float stance: ranged hits it harder than the same melee hit", () => {
     const eye = cyclopsTeam()[CYCLOPS.EYE];
-    const a = buildFighter(CREATURE_BY_ID.void_serpent, { melee: 30, ranged: 30 }, {}); // equal melee and ranged %
-    const flat = { ...eye, armor: { ...eye.armor, mdef: 0, rdef: 0 } };
+    const base = buildFighter(CREATURE_BY_ID.void_serpent, { melee: 30, ranged: 30 }, {});
+    const a = { ...base, proficiency: { ...base.proficiency, atk: 30, rng: 30 } }; // equal melee and ranged %
+    const flat = { ...eye, stance: "float" as const, armor: { ...eye.armor, mdef: 0, rdef: 0 } };
+    setCombatRules({ ...LIVE_RULES, races: null }); // the stance alone: the two moves' races differ
     expect(calcDamage(MOVE_BY_NAME.Bolt, a, flat, false).damage).toBeGreaterThan(calcDamage(MOVE_BY_NAME.Slash, a, flat, false).damage);
+    setCombatRules(LIVE_RULES);
   });
 
   it("Stomp's cripple is the strong one (−50% agility)", () => {

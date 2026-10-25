@@ -30,7 +30,7 @@ export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDr
     stacks.set(t.id, s);
   }
   const all = [...stacks.values()];
-  const shown = sortCreatures(all.filter((s) => passes(filter, s.t.name, s.t.race, s.t.cls)), filter.sort,
+  const shown = sortCreatures(all.filter((s) => passes(filter, s.t.name, s.t.races ?? s.t.race, s.t.cls)), filter.sort,
     (s) => ({ name: s.t.name, rarity: s.t.rarity, race: s.t.race, cls: s.t.cls, createdAt: s.cards.map((c) => c.createdAt).sort().pop() }));
 
   return (
@@ -111,7 +111,9 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
   t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; noName?: boolean; children?: React.ReactNode;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
-  const race = t.race ? RACE_INFO[t.race] : undefined;
+  // Its race(s): two share the plaque, cut short with "…" if they don't fit.
+  const races = t.races ?? (t.race ? [t.race] : []);
+  const race = races.length ? { name: races.map((r) => RACE_INFO[r].name).join(" / ") } : undefined;
   const cls = CLASS_INFO[t.cls];
   const plaque: React.CSSProperties = { flex: 1, textAlign: "center", padding: "2cqw 1cqw", background: "#2e323d", boxShadow: raised("#2e323d"), overflow: "hidden", textOverflow: "ellipsis" };
   return (
@@ -131,12 +133,12 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
         // letters (the race plaque keeps its space even when there's no race).
         <div style={{ display: "flex", flexDirection: "column", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(8px, 12cqw, 16px)", lineHeight: 1.1, whiteSpace: "nowrap" }}>
           <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
-          <span style={{ ...plaque, color: YELLOW, visibility: race ? "visible" : "hidden" }}>{race?.name ?? "—"}</span>
+          <span title={race?.name} style={{ ...plaque, color: YELLOW, visibility: race ? "visible" : "hidden" }}>{race?.name ?? "—"}</span>
         </div>
       ) : (
         <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
           <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
-          {race && <span style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
+          {race && <span title={race.name} style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
         </div>
       )}
       {children}

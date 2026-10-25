@@ -1,8 +1,8 @@
 "use client";
 // app/bag/page.tsx
 // Your bindle (later a rugged backpack): what you carry into the Labyrinth.
-// Pack spare gear here: a weapon to swap in mid-fight (say, a Pierce weapon
-// for a heavily armoured foe), or armour to change into between rooms.
+// Pack spare gear here: a weapon to swap in mid-fight (say, a magic one for a
+// foe with thin magic defence), or armour to change into between rooms.
 // Potions come from merchants and stashes. Potions, flares and clairvoyance
 // scrolls kept in your Inventory can be packed here, and stored back. Whatever you find down there
 // needs a free slot to come home.
@@ -19,6 +19,7 @@ import {
 } from "@/lib/dungeon/run";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
+import { damageTypesOn } from "@/lib/combat/engine";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { potionDrop } from "@/lib/drops";
@@ -88,7 +89,8 @@ export default function BagPage() {
   }
 
   const gearLine = (w: CreatureOrItemDrop) => {
-    const aff = w.itemCategory === "weapon" && w.itemKey ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[w.itemKey]] : undefined;
+    // (A weapon's damage type only counts under the old rules: Combat V2 has none.)
+    const aff = damageTypesOn() && w.itemCategory === "weapon" && w.itemKey ? DAMAGE_TYPE_INFO[WEAPON_AFFINITY[w.itemKey]] : undefined;
     return (
       <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         {itemSprite(w) && <PixelSprite sprite={itemSprite(w)!} scale={2} />}

@@ -15,7 +15,7 @@ import { ARMOR_META, ARMOR_SLOT_INFO, SET_BONUS } from "@/lib/items/armor";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
-import { AFFINITY_BONUS } from "@/lib/combat/engine";
+import { AFFINITY_BONUS, damageTypesOn } from "@/lib/combat/engine";
 
 type Props = {
   item: CreatureOrItemDrop;
@@ -151,7 +151,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
           {/* What it's good for: a weapon's damage type, or an armour piece's set
               bonus. The same height either way (and when there's neither). */}
           <div style={{ marginTop: 10, height: 70 }}>
-            {item.itemCategory === "weapon" && item.itemKey && WEAPON_AFFINITY[item.itemKey] ? (
+            {damageTypesOn() && item.itemCategory === "weapon" && item.itemKey && WEAPON_AFFINITY[item.itemKey] ? (
               <p style={{ margin: 0, fontSize: 13, color: DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].color, ...clamp(3, 1.4) }}>
                 {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].icon} Strong in {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name}: {DAMAGE_TYPE_INFO[WEAPON_AFFINITY[item.itemKey]].name} moves do +{Math.round(AFFINITY_BONUS * 100)}% damage with it.
               </p>

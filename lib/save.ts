@@ -7,7 +7,9 @@
 
 import { ARMOR_V2, upgradeOldArmorStats } from "./items/armor";
 
-export const SAVE_KEY = "codex_creatures_save_v2";
+// v3: Combat V2 (2026-10-26) started everyone again. Saves from before it
+// stay in the browser under the old key (codex_creatures_save_v2), unread.
+export const SAVE_KEY = "codex_creatures_save_v3";
 
 // Fields written by something other than useGameState.
 export const OWN_FIELDS = ["labyrinth", "tavern", "playTime"] as const; // (playTime: lib/playTime.ts)

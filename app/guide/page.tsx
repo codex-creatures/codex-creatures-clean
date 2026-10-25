@@ -13,13 +13,14 @@ import RaceTag from "@/components/RaceTag";
 import ClassBadge, { moveKind } from "@/components/ClassBadge";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
-  ALL_SKILLS, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, RACES, RACE_INFO, RACE_MOVES,
-  raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type DamageType, type Skill,
+  ALL_SKILLS, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
+  raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type Race, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
-  AFFINITY_BONUS, ARCANE_CAP, ARCANE_REF_POWER, BEATS, DAMAGE_TYPES, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, NEUTRAL_COUNTER, PRECISE_CHANCE, PRECISE_DAMAGE, PRECISE_IGNORE,
-  TRIANGLE, calcDamage, type CombatItem, type Fighter,
+  AFFINITY_BONUS, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, PRECISE_CHANCE, PRECISE_DAMAGE, PRECISE_IGNORE,
+  calcDamage, damageTypesOn, type CombatItem, type Fighter,
 } from "@/lib/combat/engine";
+import { MATCH_BONUS, RACE_EFFECT, raceVs } from "@/lib/combat/raceChart";
 import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
 import { SOUL_STONES, SOUL_STONE_CHANCE, SOUL_STONE_REPLACE_COST, stonesFor, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SCAN_ODDS } from "@/lib/barcodeRegistry";
@@ -75,39 +76,21 @@ function P({ children }: { children: React.ReactNode }) {
 function Combat() {
   return (
     <div>
-      <H>The triangle</H>
-      <P>Every creature has a <b>class</b> and every attack has a <b>style</b>. A move&apos;s style against the target&apos;s class:
-        strong does <b>{signed(TRIANGLE.strong - 1)}</b> damage, weak does <b>{signed(TRIANGLE.weak - 1)}</b>. Same class: normal damage.
-        Klutz is <b>Balanced</b>, outside the triangle: nothing counters him, and his moves do <b>{signed(NEUTRAL_COUNTER - 1)}</b> against a class they counter.</P>
-      <TriangleDiagram />
-      <P>Mix your team: a team that is countered three times over loses badly. Swap out of a bad matchup — swapping uses your turn, the
+      <H>Races</H>
+      <P>Every creature has one or two <b>races</b>, and so does every move. A move&apos;s race against the target&apos;s races:
+        effective does <b>{signed(RACE_EFFECT.strong - 1)}</b> damage, resisted <b>{signed(RACE_EFFECT.resisted - 1)}</b>, anything else normal.
+        Against two races both count (a double weakness is ×{(RACE_EFFECT.strong ** 2).toFixed(2)}). A move of one of the attacker&apos;s own races does
+        another <b>{signed(MATCH_BONUS - 1)}</b>.</P>
+      <RaceChart />
+      <P>Mix your team: a team weak to the same race loses badly. Swap out of a bad matchup — swapping uses your turn, the
         opponent gets a free hit on the creature coming in, and the one going out recovers {pct(SWAP_ENERGY_RESTORE)} of its missing energy.</P>
 
       <H>Damage</H>
-      <P>A hit is <b>move power + your attack</b> for that style (your weapon&apos;s stat boosted by the creature&apos;s %). Armour then cuts it as a ratio:</P>
+      <P>A move&apos;s <b>style</b> (melee, ranged or magic) decides which attack and defence it uses. A hit is <b>move power + your attack</b> for
+        that style (your weapon&apos;s stat boosted by the creature&apos;s %). Armour then cuts it as a ratio:</P>
       <div className="pixel-font" style={{ ...PANEL, textAlign: "center", fontSize: 15, color: GOLD }}>damage = hit × hit ÷ (hit + defence)</div>
-      <P>So defence always matters but never stops a hit dead: a hit as big as the armour does half. Then the damage type, weapon affinity and
-        the triangle multiply it. Every hit rolls ±{pct(DAMAGE_VARIANCE)}.</P>
-
-      <H>Damage types</H>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 8 }}>
-        {(Object.keys(DAMAGE_TYPES) as DamageType[]).map((k) => {
-          const d = DAMAGE_TYPES[k], info = DAMAGE_TYPE_INFO[k];
-          return (
-            <div key={k} style={{ ...PANEL, marginTop: 0, borderTop: `3px solid ${info.color}` }}>
-              <div className="pixel-font" style={{ color: info.color, fontSize: 16 }}>{info.icon} {info.name}</div>
-              <div style={{ fontSize: 13, marginTop: 4 }}>Damage {signed(d.mult - 1)}</div>
-              <div style={{ fontSize: 13 }}>Ignores {pct(d.pen)} of armour</div>
-              {d.maxHp > 0 && <div style={{ fontSize: 13 }}>+ {pct(d.maxHp)} of the target&apos;s max HP per {ARCANE_REF_POWER} power (max {ARCANE_CAP} a hit)</div>}
-              <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>
-                {k === "force" ? "Best against light armour." : k === "pierce" ? "Best against heavy armour." : "Best against big HP pools."}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <P>Each weapon is strong in one damage type: moves of that type do <b>{signed(AFFINITY_BONUS)}</b> with it. A warhammer (Force) can still use
-        a Pierce move — it just doesn&apos;t get the bonus.</P>
+      <P>So defence always matters but never stops a hit dead: a hit as big as the armour does half. Then the races multiply it.
+        Every hit rolls ±{pct(DAMAGE_VARIANCE)}.</P>
 
       <H>Try it</H>
       <Calculator />
@@ -116,7 +99,7 @@ function Combat() {
       <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18, margin: "4px 0" }}>
         <li><b>Agility</b> only decides who strikes first each round — higher goes first.</li>
         <li><b>Energy</b>: everyone starts on {MAX_ENERGY}. Moves cost energy; you get {ENERGY_REGEN} back after each attack. With nothing affordable, a creature rests.</li>
-        <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise: they do {PRECISE_DAMAGE}× damage and ignore {pct(PRECISE_IGNORE)} of the defence (on top of the damage type).</li>
+        <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise: they do {PRECISE_DAMAGE}× damage and ignore {pct(PRECISE_IGNORE)} of the defence.</li>
         <li><b>Cripple</b>: for {CRIPPLE_ROUNDS} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent). <b>Haste</b>: double agility this round only, to strike first.</li>
         <li><b>Stances</b>: floating takes +10% from ranged, −10% from melee; entrenched the other way round.</li>
       </ul>
@@ -135,33 +118,31 @@ function Combat() {
   );
 }
 
-function TriangleDiagram() {
-  // Three nodes on a triangle; arrows point from each class to the one it beats.
-  const pos: Record<CombatClass, [number, number]> = { melee: [150, 30], ranged: [262, 200], magic: [38, 200] };
+function RaceChart() {
+  // Rows: the move's race; columns: the target's race. ▲ effective, ▼ resisted.
+  const cell = (m: number) => (m > 1 ? { t: "▲", c: "#7fdc7f" } : m < 1 ? { t: "▼", c: "#ff8a80" } : { t: "·", c: MUTED });
   return (
-    <svg viewBox="0 0 300 240" style={{ width: "100%", maxWidth: 360, display: "block", margin: "8px auto" }} role="img" aria-label="Melee beats ranged, ranged beats magic, magic beats melee">
-      <defs>
-        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0,0 L10,5 L0,10 z" fill={GOLD} />
-        </marker>
-      </defs>
-      {COMBAT_CLASSES.map((c) => {
-        const [x1, y1] = pos[c], [x2, y2] = pos[BEATS[c]];
-        const k = 34 / Math.hypot(x2 - x1, y2 - y1);
-        const ax = x1 + (x2 - x1) * k, ay = y1 + (y2 - y1) * k, bx = x2 - (x2 - x1) * k, by = y2 - (y2 - y1) * k;
-        return <g key={c}>
-          <line x1={ax} y1={ay} x2={bx} y2={by} stroke={GOLD} strokeWidth={2.5} markerEnd="url(#arrow)" />
-          <text x={(x1 + x2) / 2 + (c === "ranged" ? 0 : c === "melee" ? 18 : -18)} y={(y1 + y2) / 2 + (c === "ranged" ? 18 : 0)} fill={GOLD} fontSize={12} textAnchor="middle">beats</text>
-        </g>;
-      })}
-      {COMBAT_CLASSES.map((c) => (
-        <g key={c}>
-          <circle cx={pos[c][0]} cy={pos[c][1]} r={28} fill="#14151c" stroke={CLASS_INFO[c].color} strokeWidth={3} />
-          <text x={pos[c][0]} y={pos[c][1] + 2} fontSize={20} textAnchor="middle">{CLASS_INFO[c].icon}</text>
-          <text x={pos[c][0]} y={pos[c][1] + 20} fontSize={9} fill={CLASS_INFO[c].color} textAnchor="middle">{CLASS_INFO[c].name.toUpperCase()}</text>
-        </g>
-      ))}
-    </svg>
+    <div style={{ overflowX: "auto", marginTop: 8 }}>
+      <table style={{ borderCollapse: "collapse", fontSize: 12, margin: "0 auto" }}>
+        <thead>
+          <tr>
+            <th style={{ padding: 4, color: MUTED, textAlign: "left", fontWeight: 400 }}>move ↓ · target →</th>
+            {RACES.map((r) => <th key={r} title={RACE_INFO[r].name} style={{ padding: 4, fontSize: 16 }}>{RACE_INFO[r].icon}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {RACES.map((a) => (
+            <tr key={a} style={{ borderTop: "1px solid #2a2d38" }}>
+              <th style={{ padding: 4, textAlign: "left", color: RACE_INFO[a].color, whiteSpace: "nowrap" }}>{RACE_INFO[a].icon} {RACE_INFO[a].name}</th>
+              {RACES.map((d) => {
+                const v = cell(raceVs(a, d));
+                return <td key={d} style={{ padding: 4, textAlign: "center", color: v.c, fontSize: 14 }}>{v.t}</td>;
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -177,14 +158,15 @@ function Calculator() {
   const [attack, setAttack] = useState(40);
   const [defence, setDefence] = useState(30);
   const [hp, setHp] = useState(150);
-  const [type, setType] = useState<DamageType>("force");
-  const [affinity, setAffinity] = useState(false);
-  const [rel, setRel] = useState<"strong" | "even" | "weak">("even");
-  const target: CombatClass = rel === "strong" ? "ranged" : rel === "weak" ? "magic" : "melee";
-  const skill: Skill = { name: "Test", damage: power, energyCost: 0, type: "melee", dmgType: type };
-  const a = dummy("melee", 100, { atk: attack, ...(affinity ? { affinity: type } : {}) }, {});
-  const d = dummy(target, hp, {}, { mdef: defence });
+  const [rel, setRel] = useState<"double" | "strong" | "even" | "weak">("even");
+  const [own, setOwn] = useState(false);
+  // A Beast kit move (Gore) against a target its race beats, or not.
+  const target: Race[] = rel === "double" ? ["humanoid", "underkin"] : rel === "strong" ? ["humanoid"] : rel === "weak" ? ["geo"] : ["beast"];
+  const skill: Skill = { ...MOVE_BY_NAME.Gore, damage: power };
+  const a = { ...dummy("melee", 100, { atk: attack }, {}), races: [own ? "beast" : "divine"] as Race[] };
+  const d = { ...dummy("melee", hp, {}, { mdef: defence }), races: target };
   const dmg = calcDamage(skill, a, d, false).damage;
+  const label = { double: `▲▲ Double weakness (×${(RACE_EFFECT.strong ** 2).toFixed(2)})`, strong: `▲ Effective (${signed(RACE_EFFECT.strong - 1)})`, even: "Neutral", weak: `▼ Resisted (${signed(RACE_EFFECT.resisted - 1)})` };
   const slider = (label: string, v: number, set: (n: number) => void, max: number) => (
     <label style={{ display: "block", fontSize: 13, marginTop: 6 }}>
       {label}: <b>{v}</b>
@@ -198,19 +180,10 @@ function Calculator() {
       {slider("Their defence for that style", defence, setDefence, 200)}
       {slider("Their max HP", hp, setHp, 400)}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-        {(Object.keys(DAMAGE_TYPES) as DamageType[]).map((k) => (
-          <button key={k} className="chip" data-active={type === k} onClick={() => setType(k)} style={{ color: DAMAGE_TYPE_INFO[k].color }}>
-            {DAMAGE_TYPE_INFO[k].icon} {DAMAGE_TYPE_INFO[k].name}
-          </button>
+        {(["double", "strong", "even", "weak"] as const).map((k) => (
+          <button key={k} className="chip" data-active={rel === k} onClick={() => setRel(k)}>{label[k]}</button>
         ))}
-        <button className="chip" data-active={affinity} onClick={() => setAffinity(!affinity)}>Weapon affinity {affinity ? "on" : "off"}</button>
-      </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-        {(["strong", "even", "weak"] as const).map((k) => (
-          <button key={k} className="chip" data-active={rel === k} onClick={() => setRel(k)}>
-            {k === "strong" ? `▲ Strong matchup (${signed(TRIANGLE.strong - 1)})` : k === "weak" ? `▼ Weak matchup (${signed(TRIANGLE.weak - 1)})` : "Same class"}
-          </button>
-        ))}
+        <button className="chip" data-active={own} onClick={() => setOwn(!own)}>Its own race {own ? `on (${signed(MATCH_BONUS - 1)})` : "off"}</button>
       </div>
       <div className="pixel-font" style={{ marginTop: 12, fontSize: 22, color: GOLD }}>{dmg} damage</div>
       <div style={{ fontSize: 13, color: MUTED }}>
@@ -229,7 +202,7 @@ function Creatures({ seen }: { seen: Set<string> }) {
   const known = (t: CreatureTemplate) => seen.has(t.id);
   // You only know a creature's race and class once you've seen it.
   const filtering = filter.race !== "all" || filter.cls !== "all";
-  const shown = CREATURE_TEMPLATES.filter((t) => (filtering ? known(t) && matchesFilter(filter, t.race, t.cls) : true));
+  const shown = CREATURE_TEMPLATES.filter((t) => (filtering ? known(t) && matchesFilter(filter, t.races ?? t.race, t.cls) : true));
   const unseen = shown.filter((t) => !known(t)).sort(byRarity);
   const groups: [string, string, string, CreatureTemplate[]][] =
     filter.groupBy === "class" ? [...COMBAT_CLASSES.map((c): [string, string, string, CreatureTemplate[]] => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((t) => known(t) && t.cls === c).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
@@ -241,8 +214,8 @@ function Creatures({ seen }: { seen: Set<string> }) {
       <P>You&apos;ve come across <b>{count} of {CREATURE_TEMPLATES.length}</b> creatures. The rest are shadows until you see one — scan barcodes,
         explore the Labyrinth, or send Klutz hunting.</P>
       <CreatureFilterBar value={filter} onChange={setFilter}
-        raceCount={(r) => CREATURE_TEMPLATES.filter((t) => known(t) && t.race === r && (filter.cls === "all" || t.cls === filter.cls)).length}
-        classCount={(c) => CREATURE_TEMPLATES.filter((t) => known(t) && t.cls === c && (filter.race === "all" || t.race === filter.race)).length} />
+        raceCount={(r) => CREATURE_TEMPLATES.filter((t) => known(t) && (t.races ?? []).includes(r) && (filter.cls === "all" || t.cls === filter.cls)).length}
+        classCount={(c) => CREATURE_TEMPLATES.filter((t) => known(t) && t.cls === c && (filter.race === "all" || (t.races ?? []).includes(filter.race))).length} />
       {groups.map(([key, title, color, list]) => list.length > 0 && (
         <section key={key}>
           <H><span style={{ color, textTransform: "capitalize" }}>{title}</span> <span style={{ color: MUTED, fontSize: 13 }}>· {list.length}</span></H>
@@ -286,7 +259,7 @@ function CreatureCard({ t }: { t: CreatureTemplate }) {
         <div style={{ minWidth: 0 }}>
           <div className="pixel-font" style={{ color: rc.text, fontSize: 16, lineHeight: 1.1 }}>{t.name}</div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
-            <RaceTag race={t.race} /><ClassBadge cls={t.cls} />
+            <RaceTag race={t.race} races={t.races} /><ClassBadge cls={t.cls} />
           </div>
           <div style={{ fontSize: 12, color: MUTED, marginTop: 3, textTransform: "capitalize" }}>{t.rarity} · {t.baseHp} base HP</div>
         </div>
@@ -369,7 +342,7 @@ function Moves({ seen }: { seen: Set<string> }) {
 function CreatureName({ t }: { t: CreatureTemplate }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 3, marginRight: 8, color: RARITY_COLORS[t.rarity].text, whiteSpace: "nowrap" }}>
-      <CreatureMarks race={t.race} cls={t.cls} size={9} /> {t.name}
+      <CreatureMarks race={t.race} races={t.races} cls={t.cls} size={9} /> {t.name}
     </span>
   );
 }
@@ -421,7 +394,7 @@ function Gear() {
                       <div style={{ fontSize: 12, color: MUTED }}>{ITEM_META[k].category}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 12, marginTop: 6, color: aff.color }}>{aff.icon} Strong in {aff.name} ({signed(AFFINITY_BONUS)})</div>
+                  {damageTypesOn() && <div style={{ fontSize: 12, marginTop: 6, color: aff.color }}>{aff.icon} Strong in {aff.name} ({signed(AFFINITY_BONUS)})</div>}
                   <Bars ceil={ITEM_CEILINGS[k].legendary} keys={STAT_KEYS} labels={WEAPON_LABELS} />
                 </div>
               );
@@ -453,7 +426,7 @@ function Races({ seen }: { seen: Set<string> }) {
   const hidden = CREATURE_TEMPLATES.filter((t) => !seen.has(t.id)).length;
   return (
     <div>
-      <P>Every creature has a race and a class. Races decide which codex moves a creature can learn; classes decide the triangle.</P>
+      <P>Every creature has one or two races and a class (its main style). Races decide how hard its moves land and which codex moves it can learn.</P>
       <div style={{ overflowX: "auto", marginTop: 10 }}>
         <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 480, fontSize: 12 }}>
           <thead>
@@ -468,7 +441,7 @@ function Races({ seen }: { seen: Set<string> }) {
                 <th style={{ padding: 6, textAlign: "left", color: RACE_INFO[r].color, whiteSpace: "nowrap", verticalAlign: "top" }}>{RACE_INFO[r].icon} {RACE_INFO[r].name}</th>
                 {COMBAT_CLASSES.map((c) => (
                   <td key={c} style={{ padding: 6, verticalAlign: "top" }}>
-                    {CREATURE_TEMPLATES.filter((t) => seen.has(t.id) && t.race === r && t.cls === c).sort(byRarity).map((t) => (
+                    {CREATURE_TEMPLATES.filter((t) => seen.has(t.id) && (t.races ?? []).includes(r) && t.cls === c).sort(byRarity).map((t) => (
                       <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 4, color: RARITY_COLORS[t.rarity].text }}>
                         <PixelSprite sprite={creatureSprite(t.id)} scale={0.75} /> {t.name}
                       </div>
@@ -486,7 +459,7 @@ function Races({ seen }: { seen: Set<string> }) {
       </div>
       {hidden > 0 && <P>❔ {hidden} more creature{hidden === 1 ? "" : "s"} you haven&apos;t come across yet.</P>}
       <H>Race moves</H>
-      {RACES.map((r) => (
+      {RACES.filter((r) => RACE_MOVES.some((m) => m.race === r)).map((r) => (
         <div key={r} style={{ ...PANEL, marginTop: 6 }}>
           <RaceTag race={r} />{" "}
           {RACE_MOVES.filter((m) => m.race === r).map((m) => (

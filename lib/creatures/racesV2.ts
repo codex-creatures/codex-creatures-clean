@@ -1,5 +1,5 @@
 // lib/creatures/racesV2.ts
-// Combat V2 races (being simmed; not in the live game yet). Seven races
+// Combat V2 races (live since 2026-10-26). Seven races
 // replace the class triangle: a move's race against the target's race(s)
 // decides how well it lands (the chart and maths: lib/combat/raceChart.ts).
 // Creatures can have one or two races.
@@ -17,7 +17,9 @@ export const RACE_V2_NAME: Record<RaceV2, string> = {
 };
 
 // Every species' race(s), by what it is and how it looks. Klutz and the
-// boss parts have none for now: they take and deal neutral damage.
+// boss parts have none for now: they take and deal neutral damage. (Except
+// the Baby Cyclops, the first quest's thief: a giant's whelp, Humanoid, so
+// the guided first fight can teach races.)
 export const SPECIES_RACES: Record<string, RaceV2[]> = {
   // Old Beast
   moss_wolf:        ["beast"],
@@ -60,6 +62,8 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   glob:             ["pestilence"],
   dreadpox:         ["pestilence", "undead"], // the user's: Undead and Pestilence
   pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Pestilence has no Legendary)
+  // The first quest's thief (lib/quest.ts)
+  baby_cyclops:     ["humanoid"],
   // Retired (still owned by some players)
   monkey_mage:      ["beast"],
   mantis_warden:    ["beast"],

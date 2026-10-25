@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from "vitest";
 import { KIT_MOVES, KIT_MOVE_RACE, KIT_NUMBERS, kitFor, kitMoveFor } from "../lib/creatures/raceKitsV2";
-import { ARCHETYPE_INFO, NEW_SPECIES_V2, ROSTER_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
+import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
+import { CREATURE_TEMPLATES as ROSTER_V2 } from "../lib/creatures/creatureData";
 import { RACES_V2, SPECIES_RACES } from "../lib/creatures/racesV2";
-import { CREATURE_TEMPLATES, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { ALL_SKILLS, MOVE_BY_NAME, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
 import { createBattle, resolveRound, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { raceMultiplier, RACE_EFFECT, MATCH_BONUS } from "../lib/combat/raceChart";
-import { calcDamage, LIVE_RULES, setCombatRules } from "../lib/combat/engine";
+import { calcDamage, LIVE_RULES, setCombatRules, TRIANGLE_RULES } from "../lib/combat/engine";
 import { afterEach } from "vitest";
 
 afterEach(() => setCombatRules(LIVE_RULES));
@@ -18,7 +19,8 @@ describe("Combat V2 race kits", () => {
   it("5 moves per race in each style: 105, all new names", () => {
     expect(KIT_MOVES).toHaveLength(105);
     expect(new Set(KIT_MOVES.map((m) => m.name)).size).toBe(105);
-    for (const m of KIT_MOVES) expect(MOVE_BY_NAME[m.name], m.name).toBeUndefined();
+    for (const m of KIT_MOVES) expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
+    expect(new Set([...KIT_MOVES.map((m) => m.name), ...ALL_SKILLS.map((m) => m.name)]).size).toBe(105 + ALL_SKILLS.length);
   });
 
   it("every kit is a 20, 30 and 50 energy move, a quick attack and a precise move", () => {
@@ -55,8 +57,9 @@ describe("Combat V2: no damage types", () => {
     const golem = buildFighter(v2("crystal_golem"), { melee: 30 }, { mDef: 30, rDef: 30, magDef: 30 });
     const as = (dmgType: "force" | "pierce" | "arcane") => ({ name: "Test", damage: 25, energyCost: 50, type: "melee" as const, dmgType });
     const dmg = (t: "force" | "pierce" | "arcane") => { const r = vi.spyOn(Math, "random").mockReturnValue(0.5); const d = calcDamage(as(t), wolf, golem, false).damage; r.mockRestore(); return d; };
-    expect(dmg("force")).not.toBe(dmg("pierce")); // the live game: they differ
-    setCombatRules({ triangle: false, races: null, damageTypes: false });
+    setCombatRules(TRIANGLE_RULES);
+    expect(dmg("force")).not.toBe(dmg("pierce")); // the old rules: they differ
+    setCombatRules(LIVE_RULES);
     expect(new Set([dmg("force"), dmg("pierce"), dmg("arcane")]).size).toBe(1);
   });
 });
@@ -77,14 +80,13 @@ describe("Combat V2 roster", () => {
     for (const a of Object.keys(ARCHETYPE_INFO)) expect(counts[a], a).toBe(a === "sniper" ? 3 : 4);
   });
 
-  it("a V2 restyle changes the style but keeps the % total, and leaves the live game alone", () => {
+  it("a V2 restyle changes the style but keeps the % total", () => {
     const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
     for (const [id, r] of Object.entries(V2_RESTYLE)) {
-      const live = CREATURE_TEMPLATES.find((c) => c.id === id)!;
-      expect(sum(r.proficiency), id).toBe(sum(live.proficiency));
+      expect(sum(r.proficiency), id).toBe(sum(PRE_V2_SPECIES[id].proficiency));
       expect(v2(id).cls).toBe(r.cls);
     }
-    expect(CREATURE_TEMPLATES.find((c) => c.id === "the_watcher")!.cls).toBe("ranged");
+    expect(PRE_V2_SPECIES.the_watcher.cls).toBe("ranged");
     expect(v2("the_watcher").skills.every((m) => m.type === "magic")).toBe(true);
   });
 

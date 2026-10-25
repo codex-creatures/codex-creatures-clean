@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { CREATURE_BY_ID, defaultMoveNames } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, defaultMoveNames } from "../lib/creatures/creatureData";
+// Battle mechanics tests use the older species, with the moves they were written with.
+const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { effectiveAgil } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
 import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS } from "../lib/combat/battle";

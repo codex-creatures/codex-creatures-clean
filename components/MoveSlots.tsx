@@ -8,8 +8,8 @@
 // move it replaces, then Confirm.
 
 import { useState } from "react";
-import { CLASS_INFO, DAMAGE_TYPE_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
-import { moveKind } from "./ClassBadge";
+import { CLASS_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
+import { moveKind, moveTag } from "./ClassBadge";
 import { MoveTile } from "./MoveTile";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -30,7 +30,7 @@ export function MoveInfo({ m }: { m: Skill }) {
 export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
   m: Skill; slot?: number; tag?: { text: string; color: string }; selected?: boolean; dim?: boolean; onClick?: () => void;
 }) {
-  const style = CLASS_INFO[m.type], dtype = DAMAGE_TYPE_INFO[m.dmgType];
+  const style = CLASS_INFO[m.type], dtype = moveTag(m);
   const pill = (text: string, color: string) => (
     <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, border: `1px solid ${color}88`, color, whiteSpace: "nowrap" }}>{text}</span>
   );

@@ -10,11 +10,12 @@ import { ARMOR_META, wornArmor } from "@/lib/items/armor";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { findCreatureTemplate, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, RACE_INFO, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
-import { calcDamage, type CombatItem, type Fighter } from "@/lib/combat/engine";
+import { calcDamage, combatRules, type CombatItem, type Fighter } from "@/lib/combat/engine";
+import { raceOfMove, raceVsAll } from "@/lib/combat/raceChart";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
 import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
+import { TUTORIAL_MOVES } from "@/lib/quest";
 import { REF_LEVEL } from "@/lib/creatures/levels";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { RARITIES } from "@/lib/balance/simulate";
@@ -48,18 +50,15 @@ const faceFoe = (sprite: Sprite, side: "A" | "B") => flipToFace(sprite, side ===
 export const MUTED = "rgba(255,255,255,0.5)";
 
 // The first quest's guided fight (your creature against the thief): Klutz
-// watches from the side and talks you through the triangle and damage
-// types, one move at a time. It opens on a Fight! button (step -1); each
+// watches from the side and talks you through races, one move at a time. It opens on a Fight! button (step -1); each
 // step after that: what he says, and which move you can pick — it glows
 // (null = any, and you can swap and use the bag again).
 export const TUTORIAL_STEPS: { say: string; allow: ((s: Skill) => boolean) | null }[] = [
-  { say: "Right — that's a big melee lump in a thick hide. Let's see what works. Poke it from a distance first: use 🏹 Stone Throw.",
-    allow: (s) => s.type === "ranged" },
-  { say: "Barely a scratch! It's a melee fighter, and melee is strong against ranged — ranged moves only do half. Get in close: use ⚔️ Heavy Blow.",
-    allow: (s) => s.name === "Heavy Blow" },
-  { say: "Better, but not much. Heavy Blow is a 🔨 Force move: it hits hard, but that hide is thick, and Force can't do much against strong defence. Use 🗡️ Impale — Pierce goes straight through armour.",
-    allow: (s) => s.name === "Impale" },
-  { say: "THERE we go! Pierce ignores half its armour. Remember: melee beats ranged, ranged beats magic, magic beats melee. Force for soft targets, Pierce for armoured ones. Now finish it off — your call!",
+  { say: "Right — that's a big lump of a thief in a thick hide. Let's see what works. Hit it with 🪨 Tunnel Rush.",
+    allow: (s) => s.name === TUTORIAL_MOVES[0] },
+  { say: "Barely a scratch! It's a 🛡️ Humanoid, and Humanoids resist 🪨 Underkin moves. 🐾 Beast moves are strong against them: use Gore.",
+    allow: (s) => s.name === TUTORIAL_MOVES[1] },
+  { say: "THERE we go! Same kind of hit, much more damage. Every creature has a race or two, and so does every move: pick moves its races are weak to. Now finish it off — your call!",
     allow: null },
 ];
 const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial < TUTORIAL_STEPS.length && TUTORIAL_STEPS[m.tutorial].allow !== null));
@@ -509,13 +508,25 @@ function matchupHint(mine: Combatant, them: Combatant): string {
   return `hits for ~${best(mine, them)}, takes ~${best(them, mine)}`;
 }
 
+// How this move's race lands on the target's races (Combat V2), in words.
+function raceMatchup(sk: Skill, them: Combatant): string | undefined {
+  const r = combatRules().races && !sk.self ? raceOfMove(sk) : undefined;
+  if (!r || !them.races?.length) return undefined;
+  const m = raceVsAll(r, them.races);
+  const how = m > 1 ? "effective" : m < 1 ? "resisted" : "neutral";
+  return `${RACE_INFO[r].name} vs ${them.races.map((x) => RACE_INFO[x].name).join(" / ")}: ${how}${m !== 1 ? ` (×${m.toFixed(2)})` : ""}`;
+}
+
 // glow: the move Klutz wants you to use (the guided fight).
 function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }: {
   sk: Skill; me: Combatant; them: Combatant; myAgil: number; theirAgil: number; disabled: boolean; glow?: boolean; onClick: () => void;
 }) {
   const fx = sk.effect;
-  // (No "strong against" hints: the class icons and the triangle are the clue.)
+  // (No "strong against" hints on the tile itself: the races are the clue. The
+  // matchup is on its details side, behind the (i).)
   const tags: string[] = ["Each hit varies ±5%."];
+  const vs = raceMatchup(sk, them);
+  if (vs) tags.push(vs);
   const run = me.streak?.move === sk.name ? me.streak.hits + 1 : 1; // this use's place in the run
   const perfect = perfectionistBonus(me, { move: sk.name, hits: run });
   if (perfect > 1) tags.push(`Perfectionist: +${Math.round((perfect - 1) * 100)}% (×${run} in a row)`);

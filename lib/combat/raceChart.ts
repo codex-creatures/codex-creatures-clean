@@ -1,5 +1,5 @@
 // lib/combat/raceChart.ts
-// Combat V2's race chart (being simmed; off in the live game: COMBAT_RULES in
+// Combat V2's race chart (live since 2026-10-26; the switch: LIVE_RULES in
 // engine.ts). Each race is effective against 3 others and weak to 3. Some
 // pairs are effective against each other, and that's intended.
 //
@@ -45,9 +45,13 @@ export type MoveRaceMode = "own" | "drafted";
 
 type Side = { races?: RaceV2[] };
 
+// A move's own race: a race-kit move's, or the draft race of an older move
+// (MOVE_RACES); none for the bosses' moves.
+export const raceOfMove = (skill: { name: string }): RaceV2 | undefined => MOVE_RACES[skill.name] ?? KIT_MOVE_RACE[skill.name];
+
 // The move's race in this matchup, or none.
 export function moveRace(skill: Skill, attacker: Side, defender: Side, mode: MoveRaceMode): RaceV2 | undefined {
-  if (mode === "drafted") return MOVE_RACES[skill.name] ?? KIT_MOVE_RACE[skill.name];
+  if (mode === "drafted") return raceOfMove(skill);
   const own = attacker.races ?? [];
   if (own.length === 0) return undefined;
   return own.reduce((best, r) => (raceVsAll(r, defender.races) > raceVsAll(best, defender.races) ? r : best));

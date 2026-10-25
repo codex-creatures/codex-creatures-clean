@@ -39,7 +39,7 @@ export type BarcodeOutcome =
 
 export type BarcodeEntry = BarcodeOutcome & { registeredAt: string };
 
-export const REGISTRY_KEY = "codex_creatures_registry_v2"; // v2: creatures stored by id
+export const REGISTRY_KEY = "codex_creatures_registry_v3"; // v3: started again for Combat V2 (v2: creatures stored by id)
 
 function loadRegistry(): Record<string, BarcodeEntry> {
   if (typeof window === "undefined") return {};

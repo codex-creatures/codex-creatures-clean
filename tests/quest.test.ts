@@ -48,23 +48,24 @@ describe("the first quest: Klutz's box", () => {
     ...buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, undefined, rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL),
     skills: TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]),
   });
-  it("the guided fight teaches: ranged does least, Force bounces off, Pierce goes through", () => {
+  it("the guided fight teaches races: the same move does far more as a race the thief is weak to", () => {
     const thief = enemyFighter(thiefRoom().enemies![0]);
+    const [resisted, effective] = TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]);
+    expect({ ...resisted, name: "" }).toEqual({ ...effective, name: "" }); // the same move but for its race
     for (const t of CREATURES_BY_RARITY.rare) {
       const me = starter(t);
-      const hit = (name: string) => calcDamage(MOVE_BY_NAME[name], me, thief, false).damage;
-      expect(hit("Stone Throw")).toBeLessThan(hit("Heavy Blow"));
-      expect(hit("Heavy Blow")).toBeLessThan(hit("Impale"));
+      const hit = (m: typeof resisted) => calcDamage(m, me, thief, false).damage;
+      expect(hit(effective), t.id).toBeGreaterThan(hit(resisted) * 1.25);
     }
   });
-  it("your starter wins the guided fight on its own, after Klutz's three lessons", () => {
+  it("your starter wins the guided fight on its own, after Klutz's two lessons", () => {
     for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
       // (with each of the soul stones it could be born with: a starter always has one)
       const stones = stonesFor(t.id);
       const s = createBattle([{ ...starter(t), soulStone: stones[k % stones.length] }], [enemyFighter(thiefRoom().enemies![0])]);
-      const lessons = ["Stone Throw", "Heavy Blow", "Impale"];
+      const lessons = TUTORIAL_MOVES.slice(0, 2);
       while (!s.winner && s.round < 100) {
-        resolveRound(s, { A: s.round < 3 ? { kind: "attack", skillName: lessons[s.round] } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });
+        resolveRound(s, { A: s.round < lessons.length ? { kind: "attack", skillName: lessons[s.round] } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });
         for (const side of [...s.needsReplacement]) sendInReplacement(s, side, chooseAiReplacement(s, side, "easy"));
       }
       expect(s.winner).toBe("A");

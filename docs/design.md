@@ -34,7 +34,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   outcome at random and registers it. Everyone who scans it later gets the same outcome (item kind
   and rarity, or creature species) but their own stat roll. Rescanning a barcode you already own
   gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
-- ✅ The registry is **local** for now (`codex_creatures_registry_v2`). "Reset player" keeps it,
+- ✅ The registry is **local** for now (`codex_creatures_registry_v3`). "Reset player" keeps it,
   to simulate a friend; "Global reset" clears it.
 - 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 26% armour,
   7% consumable, 6% material, 7% gold, 1% soul stone (2026-10-25, first scanner only). Aim: about 1 legendary creature or card per 250 scans (from
@@ -249,14 +249,12 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   its *missing* energy (`SWAP_ENERGY_RESTORE`).
 - ✅ **Agility only decides who strikes first.** This threshold behaviour is intended: players
   judge how much to invest. Don't "fix" it.
-- ✅ **Class triangle:** melee > ranged > magic > melee, at **±50%** (`TRIANGLE`). The user chose
-  it: mixed teams are the point, and an all-countered team should be beaten badly. Melee may stay
-  the weakest class; it'll get a better move pool rather than stat changes.
+- ✅ **Races, not the triangle** (Combat V2, live since 2026-10-26: see below). The old class
+  triangle (melee > ranged > magic, ±50%, `TRIANGLE_RULES`) and damage types (Force / Pierce /
+  Arcane, and weapon affinity) are switched off; their code stays, for the sims.
 - ✅ **Damage:** ratio formula, hit² / (hit + defence), so a bad matchup still chips (the user wants
-  Pokémon-style chip damage, never ~0). Damage types are Force, Pierce (ignores 50% of armour) and
-  Arcane (ignores 20%, plus a % of max HP). The type multiplier applies *after* armour.
-  🧪 The type multipliers (Force ×1.1, Pierce ×0.95, Arcane ×0.9, the Arcane cap) are Claude's
-  tuning.
+  Pokémon-style chip damage, never ~0). A move's style (melee, ranged, magic) picks the attack and
+  defence stats; then the race multipliers apply.
 - ✅ **Hard counters are intended:** a counter means much less damage and a reason to swap, not
   invulnerability.
 - ✅ **Energy:** max 100, +30 after each attack. A creature with no affordable move rests (+30).
@@ -270,9 +268,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Utility moves** (learnable): Cripple (−50% agility for 3 rounds, plus a 25% chance each
   attack is lost), Haste/Blink (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
   always precise).
-- ✅ **Race moves:** single-use codexes, learnable only by that race. Pounce (Beast), Rabid Bite
-  (Underkin, venom ticks even on the bench), Mirage (Etherial), Corpsify (Undead), Barrage
-  (Elvish, hits every enemy).
+- ✅ **Race moves:** single-use codexes, learnable only by that race (either of a creature's two).
+  Pounce (Beast), Rabid Bite (Underkin, venom ticks even on the bench), Mirage (Divine, was
+  Etherial), Corpsify (Undead), Barrage (Humanoid, was Elvish; hits every enemy). Geo and
+  Pestilence have none yet.
 - ✅ **Move codexes** (decided 2026-10-19): every natural move comes as a codex from scans, each
   teachable only to a creature of that move's class. Up to 20 damage (`BASIC_MOVES`, 15 moves)
   they're Common; above that (`STRONG_MOVES`, 10 moves) they're Rare.
@@ -288,7 +287,31 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   gear should beat raw rarity within a band; good play should matter more than it does now.
   Present changes to creature stats or move numbers as options. Don't apply them unasked.
 
-### Combat V2: races replace the triangle (being simmed, not live)
+### Combat V2: races replace the triangle (✅ live since 2026-10-26)
+
+- ✅ **Switched on** (the user, 2026-10-26): "replace everything with the new races, creatures and
+  combat changes", with **new saves for everyone** (it's only the user so far). `LIVE_RULES` is
+  races on ("drafted": each move's own race), triangle off, damage types off. The 35-creature roster
+  is `CREATURE_TEMPLATES` (scannable, in the Labyrinth, with Klutz). The 25 older species as they
+  were are kept as `PRE_V2_SPECIES` for tests of battle mechanics.
+- ✅ **Fresh saves:** the save keys moved (`codex_creatures_save_v3`, `_registry_v3`, `_battles_v2`,
+  `_slots_v2`, `_slot2_<id>`), so every address starts at the title screen with no saves. The old
+  saves stay in the browser under their old keys, unread. Save files from before V2 (version 1)
+  are refused with a message (`FIRST_READABLE_VERSION`).
+- ✅ A creature is born with its species' **4 starting moves** (the first 4 of its kits, no longer
+  shuffled) and can put any of the rest of its race kits in its slots (`movesAvailableTo`).
+- ✅ The **guided first fight** teaches races: the Baby Cyclops thief is Humanoid; Klutz has you use
+  Tunnel Rush (Underkin, resisted) and then Gore (Beast, effective), then lets you finish. The
+  Cyclops and the Warden's pack themselves still have no race (neutral).
+- ✅ **UI:** moves show their race where they showed a damage type; creatures show both races (one
+  chip, "Geo / Beast"); the race filter matches either race. In a fight a move's details (behind the
+  (i)) say how its race lands on the foe; there's still no hint on the tile itself. Weapons no longer
+  show a damage type. The Bestiary's "How fights work" has the race chart and a race calculator.
+- 🧪 Soul stone pools for the six new Rare+ creatures are Claude's drafts (lib/creatures/soulStones.ts).
+- 🧪 Sim of the live roster (2026-10-26, `scripts/sim-races.ts`, "V2: drafted moves"): creature
+  spread within a rarity 3.3 (it was 6.3 with today's 25 and their old moves; the Ironhide is no
+  longer an outlier); the race edge wins 72% of even duels; swapping no longer pays (50%).
+
 
 - 📌 Decided (the user, 2026-10-26): **magic stays** as a third style; the **class triangle goes**,
   replaced by race effectiveness. 7 races: Undead, Divine, Beast, Underkin, Geo (elemental, not
@@ -311,7 +334,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - 📌 **35 creatures**, one of each rarity per race (lib/creatures/rosterV2.ts, `ROSTER_V2`): today's
   25 plus 10 new: the user's Flame Imp (Geo Uncommon), Glob (Pestilence Rare) and Dreadpox
   (Pestilence + Undead Epic), and Claude's drafts Gleamling, Thunderhead, Deep Angler, Tunnel Wyrm,
-  Plague Rat, Rotgut Fly and The Pale Rider. V2-only, so not scannable yet. The
+  Plague Rat, Rotgut Fly and The Pale Rider (art: PixelLab, the user's picks, 2026-10-26). The
   user will re-race them. Veilstalker moved Undead → Divine so Undead didn't have two Rares.
 - 📌 **The user's race pass** (2026-10-26): Rust Beetle is Underkin only; Hollow Matriarch Underkin +
   Beast and melee; Flame Imp Geo + Divine; Veilstalker Divine + Underkin; Void Serpent Divine + Beast;
@@ -327,10 +350,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   (melee + magic) and Spellbow (ranged + magic). An archetype decides which style kits a creature
   draws from, so a hybrid fights in two styles. Evened out (the user asked, 2026-10-26): 4 of each, 3
   Snipers. Crystal Golem and Tunnel Wyrm became Wardens, Dustwraith and Gleamling Spellbows.
-- ❓ `MOVE_RACES` gives today's moves draft races for the sims. Race move rules (beyond the kits),
-  the UI and the Bestiary are still open.
-- The switch is `setCombatRules` in engine.ts (the live game: `LIVE_RULES`, triangle on, races off). Sims:
-  `npx vite-node scripts/sim-races.ts [scale]`.
+- ❓ `MOVE_RACES` gives the older moves (codexes, Klutz's, learnable ones) draft races. Race move
+  rules beyond the kits are still open.
+- The switch is `setCombatRules` in engine.ts (the live game: `LIVE_RULES`; the old rules:
+  `TRIANGLE_RULES`). Sims: `npx vite-node scripts/sim-races.ts [scale]` ("Old (triangle)" there is
+  the old rules on the new roster).
 
 ### Planned
 
@@ -514,9 +538,12 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   time until you have one (at home or in your bag) or have built it; with 10 metal bars it builds
   the iron cage, which holds 3 (`CAGE_LEVELS`, lib/items/materials.ts). Catches that don't fit are
   let go (he keeps their gear).
-- ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he's outside the
-  triangle. Nothing counters him and his moves never do less; a move of his that would counter the
-  target does +25% (`NEUTRAL_COUNTER`, 🧪 to tune). His class badge reads a grey "⚖️ Balanced".
+- ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he was outside the
+  triangle (+25% when a move of his countered, `NEUTRAL_COUNTER`). In Combat V2 he has **no race**,
+  so nothing is effective against him and he gets no matching-race bonus; but his moves (the older
+  ones) have races (`MOVE_RACES`), so they can be effective or resisted like anyone's. ❓ Whether
+  he should get something in place of his old counter bonus is open. His class badge reads a grey
+  "⚖️ Balanced".
 - ✅ **Codexes** (2026-10-23): Klutz reads codexes you own from his Equip window → Moves (not while
   he's away). Any class's moves and the learnable ones, but **no race moves**, not even his own
   race's. What he's learned is kept in `KlutzState.learned`.

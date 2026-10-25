@@ -93,7 +93,7 @@ export default function InventoryList({
   const gridItems = filteredInventory.filter((d) => !isRewardDrop(d)) as CreatureOrItemDrop[];
   // Creatures: one flat grid, filtered and sorted; gear: grouped by rarity.
   const filtered = creatureTab
-    ? sortCreatures(gridItems.filter((d) => !isCreatureDrop(d) || passes(filter, d.name, tplOf(d)?.race, tplOf(d)?.cls)), filter.sort,
+    ? sortCreatures(gridItems.filter((d) => !isCreatureDrop(d) || passes(filter, d.name, tplOf(d)?.races ?? tplOf(d)?.race, tplOf(d)?.cls)), filter.sort,
         (d) => ({ name: d.name, rarity: d.rarity, race: tplOf(d)?.race, cls: tplOf(d)?.cls, createdAt: d.createdAt }))
     : gridItems;
   const groupBy = creatureTab ? "none" as const : "rarity" as const;

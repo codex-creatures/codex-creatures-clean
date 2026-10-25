@@ -1,7 +1,7 @@
 // lib/creatures/starter.ts
 // A new player's first creature: a random Rare, waiting in the cage. It
 // starts at STARTER_LEVEL, so it can actually win the first fights, and it
-// always knows a quick attack of its class (haste: it can strike first), so
+// always knows a quick attack (its race kit's, or its class's haste move), so
 // early on it can finish off a hurt creature before it hits back. It always
 // has a soul stone too, one from its species' pool (the user, 2026-10-25).
 
@@ -16,7 +16,7 @@ export const QUICK_ATTACK: Record<CombatClass, string> = { melee: "Dash Lash", r
 // Its moves with a quick attack in: kept if it rolled one, otherwise it takes
 // the place of its last species move (a rare rolled move stays).
 export function withQuickAttack(t: CreatureTemplate, moves: string[]): string[] {
-  if (moves.some((n) => MOVE_BY_NAME[n]?.effect?.kind === "dash")) return moves;
+  if (moves.some((n) => ["dash", "quick"].includes(MOVE_BY_NAME[n]?.effect?.kind ?? ""))) return moves;
   const quick = QUICK_ATTACK[t.cls];
   if (moves.length < MOVE_SLOTS) return [...moves, quick];
   const own = t.skills.map((s) => s.name);

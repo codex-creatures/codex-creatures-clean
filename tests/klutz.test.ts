@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
-import { calcDamage, triangleFor, NEUTRAL_COUNTER, type Fighter } from "../lib/combat/engine";
+import { calcDamage, triangleFor, NEUTRAL_COUNTER, setCombatRules, LIVE_RULES, TRIANGLE_RULES, type Fighter } from "../lib/combat/engine";
 import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, recallKlutz, toughening, MAX_ENCOUNTERS, TOUGHER_AFTER_MS, type KlutzState,
   pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST } from "../lib/klutz";
 import { xpToReach } from "../lib/creatures/levels";
@@ -198,7 +198,10 @@ describe("Klutz's skill points", () => {
   });
 });
 
-describe("Klutz is neutral", () => {
+// The old rules only: Combat V2 has no triangle to be outside of.
+describe("Klutz is neutral (the old triangle rules)", () => {
+  beforeEach(() => setCombatRules(TRIANGLE_RULES));
+  afterEach(() => setCombatRules(LIVE_RULES));
   const foe = (cls: "melee" | "ranged" | "magic") => ({ ...buildFighter(CREATURE_BY_ID.moss_wolf), cls });
   const hit = (move: string, a: Fighter, d: Fighter) => calcDamage(MOVE_BY_NAME[move], a, d, false).damage;
 

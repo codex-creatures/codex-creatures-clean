@@ -4,16 +4,20 @@ import type { CombatClass, CreatureProficiency, DamageType, Skill } from "../cre
 import type { RaceV2 } from "../creatures/racesV2";
 import { raceMultiplier, type MoveRaceMode } from "./raceChart";
 
-// Which damage rules are in force. The live game: the class triangle.
-// Combat V2 (being simmed): no triangle, races instead (lib/combat/raceChart.ts).
-// Only the sims and tests change this.
+// Which damage rules are in force. The live game is Combat V2 (since
+// 2026-10-26): no class triangle; a move's race against the target's races
+// instead (lib/combat/raceChart.ts; "drafted": each move's own race).
 // Combat V2 also drops damage types (the user, 2026-10-26: style and race are
 // enough), so every move hits as PLAIN_DAMAGE. damageTypes: on unless false.
+// Only the sims and tests change this; TRIANGLE_RULES are the old rules, kept
+// for them.
 export type CombatRules = { triangle: boolean; races: MoveRaceMode | null; damageTypes?: boolean };
-export const LIVE_RULES: CombatRules = { triangle: true, races: null };
+export const LIVE_RULES: CombatRules = { triangle: false, races: "drafted", damageTypes: false };
+export const TRIANGLE_RULES: CombatRules = { triangle: true, races: null };
 let rules: CombatRules = LIVE_RULES;
 export const combatRules = () => rules;
 export const setCombatRules = (r: CombatRules) => { rules = r; };
+export const damageTypesOn = () => rules.damageTypes !== false;
 
 // Type guard for brace skill
 function isBraceSkill(skill: Skill): boolean {

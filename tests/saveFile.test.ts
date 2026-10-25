@@ -24,7 +24,7 @@ const filled = () => memoryStore({
   [SAVE_PARTS.battles]: JSON.stringify(battles),
 });
 const other = { gold: 5, inventory: [], scanCounts: {} };
-const otherFile = () => JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, exportedAt: "2026-10-18T10:00:00.000Z", data: { progress: other, registry: {}, battles: [] } });
+const otherFile = () => JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, exportedAt: "2026-10-18T10:00:00.000Z", data: { progress: other, registry: {}, battles: [] } });
 
 describe("exporting a save", () => {
   it("takes all three parts, versioned, and checks back in as the same thing", () => {
@@ -51,15 +51,16 @@ describe("checking a save file", () => {
   it("turns away anything that isn't a good save, with a reason", () => {
     expect(bad("hello")).toMatch(/valid JSON/);
     expect(bad("[]")).toMatch(/isn't a Codex Creatures save/);
-    expect(bad(JSON.stringify({ format: "something-else", version: 1, data: {} }))).toMatch(/isn't a Codex Creatures save/);
+    expect(bad(JSON.stringify({ format: "something-else", version: SAVE_FILE_VERSION, data: {} }))).toMatch(/isn't a Codex Creatures save/);
     expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, data: {} }))).toMatch(/no version/);
     expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION + 1, data: {} }))).toMatch(/newer version/);
-    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1 }))).toMatch(/missing its data/);
-    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, data: { progress: [], registry: null, battles: null } }))).toMatch(/progress/);
-    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, data: { progress: { inventory: "x" }, registry: null, battles: null } }))).toMatch(/inventory/);
-    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, data: { progress: { gold: "lots" }, registry: null, battles: null } }))).toMatch(/gold/);
-    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, data: { progress: null, registry: [], battles: null } }))).toMatch(/registry/);
-    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, data: { progress: null, registry: null, battles: {} } }))).toMatch(/battle/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: 1, data: { progress: {}, registry: {}, battles: [] } }))).toMatch(/before Combat V2/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION }))).toMatch(/missing its data/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, data: { progress: [], registry: null, battles: null } }))).toMatch(/progress/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, data: { progress: { inventory: "x" }, registry: null, battles: null } }))).toMatch(/inventory/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, data: { progress: { gold: "lots" }, registry: null, battles: null } }))).toMatch(/gold/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, data: { progress: null, registry: [], battles: null } }))).toMatch(/registry/);
+    expect(bad(JSON.stringify({ format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, data: { progress: null, registry: null, battles: {} } }))).toMatch(/battle/);
     expect(bad("x".repeat(5_000_001))).toMatch(/too big/);
   });
 });

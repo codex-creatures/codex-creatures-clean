@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { MATCH_BONUS, RACE_BEATS, RACE_EFFECT, raceMultiplier, raceVs, raceVsAll } from "../lib/combat/raceChart";
 import { RACES_V2, SPECIES_RACES, MOVE_RACES } from "../lib/creatures/racesV2";
-import { calcDamage, LIVE_RULES, setCombatRules, TRIANGLE } from "../lib/combat/engine";
+import { calcDamage, LIVE_RULES, setCombatRules, TRIANGLE, TRIANGLE_RULES } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
 import { ALL_SKILLS, CREATURE_BY_ID, CREATURE_TEMPLATES, LEARNABLE_MOVES, RACE_MOVES } from "../lib/creatures/creatureData";
 
@@ -53,11 +53,22 @@ describe("combat rules switch", () => {
   const wolf = buildFighter(CREATURE_BY_ID.moss_wolf, { melee: 40 }, { mDef: 30, rDef: 30, magDef: 30 });
   const archer = buildFighter(CREATURE_BY_ID.thicket_archer, { ranged: 40 }, { mDef: 30, rDef: 30, magDef: 30 });
 
-  it("the live game still uses the triangle and ignores races", () => {
-    const live = calcDamage(skill("Slash"), wolf, archer, false).damage;
+  it("the old rules use the triangle and ignore races", () => {
+    setCombatRules(TRIANGLE_RULES);
+    const old = calcDamage(skill("Slash"), wolf, archer, false).damage;
     setCombatRules({ triangle: false, races: null });
     const plain = calcDamage(skill("Slash"), wolf, archer, false).damage;
-    expect(live / plain).toBeCloseTo(TRIANGLE.strong, 1); // melee beats ranged
+    expect(old / plain).toBeCloseTo(TRIANGLE.strong, 1); // melee beats ranged
+  });
+
+  it("the live game is Combat V2: each move's own race, no triangle, no damage types", () => {
+    expect(LIVE_RULES).toEqual({ triangle: false, races: "drafted", damageTypes: false });
+    const gore = CREATURE_BY_ID.moss_wolf.skills.find((m) => m.name === "Gore")!; // a Beast kit move
+    const live = calcDamage(gore, wolf, archer, false).damage;
+    setCombatRules({ triangle: false, races: null, damageTypes: false });
+    const plain = calcDamage(gore, wolf, archer, false).damage;
+    // Beast beats Humanoid, plus the match bonus.
+    expect(live / plain).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS, 1);
   });
 
   it("V2 drops the triangle and uses races", () => {

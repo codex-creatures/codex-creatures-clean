@@ -27,7 +27,7 @@ import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CLASS_INFO, CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, raceNames } from "@/lib/creatures/creatureData";
 import { PotionIcon } from "@/components/PixelSprite";
 import CreaturePortrait from "@/components/CreaturePortrait";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
@@ -37,6 +37,7 @@ import { CHEST_ODDS, rollBarcodeOutcome } from "@/lib/barcodeRegistry";
 import { itemToCombatStats } from "@/lib/combat/loadout";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
+import { damageTypesOn } from "@/lib/combat/engine";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
 import { clubRoom, klutzClub, isClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
@@ -189,7 +190,7 @@ export default function DungeonPage() {
       if (!w || w.itemCategory !== "weapon" || !w.itemKey) return [];
       const aff = DAMAGE_TYPE_INFO[WEAPON_AFFINITY[w.itemKey]];
       return [{ key: e, name: w.name, icon: "🗡️", count: 1, weapon: { ...itemToCombatStats(w.stats), affinity: WEAPON_AFFINITY[w.itemKey] },
-        detail: `${aff.icon} ${aff.name} · ${w.rarity}` }];
+        detail: damageTypesOn() ? `${aff.icon} ${aff.name} · ${w.rarity}` : w.rarity }];
     }),
   ];
 
@@ -1615,7 +1616,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
                 <div key={i} style={{ fontSize: 13, padding: "6px 8px", background: "#12131a" }}>
                   <b style={{ color: rarityColor(t.rarity) }}>{t.name}</b>
                   <span className="pixel-font" style={{ color: "#f1d9a0" }}> Lv {e.level ?? 15}</span>
-                  <span style={{ color: MUTED }}> · {t.race ? `${RACE_INFO[t.race].name} · ` : ""}{creatureTypeLabel(e.proficiency)} · {e.gear.length ? e.gear.map(gearName).join(", ") : "no gear"}</span>
+                  <span style={{ color: MUTED }}> · {raceNames(t) ? `${raceNames(t)} · ` : ""}{creatureTypeLabel(e.proficiency)} · {e.gear.length ? e.gear.map(gearName).join(", ") : "no gear"}</span>
                 </div>
               );
             })}
@@ -1638,7 +1639,7 @@ function EncampmentPanel({ room, onCage }: { room: Room; onCage: (i: number) => 
     <div style={{ marginTop: 6 }}>
       {lurking && <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>A camp: bedrolls, a cold cookfire, cages along the wall. Nobody about.</p>}
       {room.variant === "drunk" && !room.done && (
-        <p style={{ fontSize: 13, color: "#c7b8ff", margin: "0 0 8px" }}>🍺 Empty potion bottles everywhere: they&apos;ve <b>×{ENCAMP_DRUNK_HP} HP</b>. Arcane moves bite deeper.</p>
+        <p style={{ fontSize: 13, color: "#c7b8ff", margin: "0 0 8px" }}>🍺 Empty potion bottles everywhere: they&apos;ve <b>×{ENCAMP_DRUNK_HP} HP</b>.{damageTypesOn() ? " Arcane moves bite deeper." : ""}</p>
       )}
       {room.variant === "rigged" && !room.done && (
         <p style={{ fontSize: 13, color: "#ff8a5c", margin: "0 0 8px" }}>🧨 Barrels of blackpowder, fuse lit: win in <b>{ENCAMP_FUSE} rounds</b> or the room comes down on you.</p>

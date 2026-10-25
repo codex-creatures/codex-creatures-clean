@@ -1,5 +1,9 @@
 // lib/creatures/creatureData.ts
 
+import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
+import { KIT_MOVES } from "./raceKitsV2";
+import { NEW_SPECIES_V2, V2_RESTYLE, v2Moves } from "./rosterV2";
+
 export type ElementalType = "inferno" | "aqua" | "naturist" | null;
 
 export type CreatureProficiency = {
@@ -12,9 +16,9 @@ export type CreatureProficiency = {
   magdef: number; // magic defence
 };
 
-// The combat triangle: every creature has a primary class, and every attack
-// move has a style. Melee beats ranged, ranged beats magic, magic beats
-// melee (multipliers in lib/combat/engine.ts).
+// Every creature has a primary class (its main fighting style), and every
+// attack move has a style: which attack and defence stats it uses. (Before
+// Combat V2 these made a triangle; races replaced it.)
 export type CombatClass = "melee" | "ranged" | "magic";
 export const COMBAT_CLASSES: CombatClass[] = ["melee", "ranged", "magic"];
 export const CLASS_INFO: Record<CombatClass, { name: string; icon: string; beats: CombatClass; color: string }> = {
@@ -27,6 +31,8 @@ export const CLASS_INFO: Record<CombatClass, { name: string; icon: string; beats
 // - force:  hits harder, no armour penetration;
 // - pierce: hits softer, ignores a good share of armour;
 // - arcane: in between, plus a slice of the target's max HP.
+// Combat V2 switches damage types off (CombatRules in lib/combat/engine.ts):
+// moves still carry one, but it doesn't count.
 export type DamageType = "force" | "pierce" | "arcane";
 export const DAMAGE_TYPE_INFO: Record<DamageType, { name: string; icon: string; color: string }> = {
   force:  { name: "Force",  icon: "🔨", color: "#ff8a5c" },
@@ -51,7 +57,7 @@ export type Skill = {
   name: string;
   damage: number;
   energyCost: number;
-  type: CombatClass;     // the move's style (the triangle)
+  type: CombatClass;     // the move's style
   dmgType: DamageType;   // how it does damage
   effect?: MoveEffect;
   desc?: string;
@@ -60,33 +66,40 @@ export type Skill = {
   race?: Race;       // a race move: only that race can learn it (from a codex)
 };
 
-// Every creature belongs to a race. Races decide which codexes (race-locked
-// moves) a creature can learn, so a good team mixes races. (The triangle is
-// by class, not race.)
-export type Race = "beast" | "underdweller" | "etherial" | "undead" | "elvish";
+// Every creature has one or two races (Combat V2, lib/creatures/racesV2.ts).
+// A move's race against the target's races decides how well it lands (the
+// race chart, lib/combat/raceChart.ts). Races also decide which codexes
+// (race-locked moves) a creature can learn.
+export type Race = RaceV2;
 
-export const RACES: Race[] = ["beast", "underdweller", "etherial", "undead", "elvish"];
+export const RACES: Race[] = RACES_V2;
+
+// A creature's race names, e.g. "Geo / Beast" ("" for none).
+export const raceNames = (c: Pick<CreatureTemplate, "race" | "races">) => (c.races ?? (c.race ? [c.race] : [])).map((r) => RACE_INFO[r].name).join(" / ");
 
 export const RACE_INFO: Record<Race, { name: string; color: string; icon: string }> = {
-  beast:        { name: "Beast",         color: "#d89a5b", icon: "🐾" },
-  underdweller: { name: "Underkin", color: "#b8a77a", icon: "🪨" },
-  etherial:     { name: "Etherial",      color: "#a99cff", icon: "🌙" },
-  undead:       { name: "Undead",        color: "#9fd3a8", icon: "💀" },
-  elvish:       { name: "Elvish",        color: "#7fd16f", icon: "🍃" },
+  undead:     { name: "Undead",     color: "#9fd3a8", icon: "💀" },
+  divine:     { name: "Divine",     color: "#f3e08a", icon: "✨" },
+  beast:      { name: "Beast",      color: "#d89a5b", icon: "🐾" },
+  underkin:   { name: "Underkin",   color: "#b8a77a", icon: "🪨" },
+  geo:        { name: "Geo",        color: "#ff8a5c", icon: "🔥" },
+  humanoid:   { name: "Humanoid",   color: "#9fd8ff", icon: "🛡️" },
+  pestilence: { name: "Pestilence", color: "#a8c94a", icon: "🦠" },
 };
 
 export type CreatureTemplate = {
   id: string;
   name: string;
-  race?: Race;         // every scannable creature has one (bosses don't)
+  race?: Race;         // its first race: every scannable creature has one (bosses don't)
+  races?: Race[];      // all its races (one or two; lib/creatures/racesV2.ts)
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
   baseHp: number;
-  cls: CombatClass;    // primary class (the triangle)
+  cls: CombatClass;    // primary class: its main style
   proficiency: CreatureProficiency;
   skills: Skill[];
   flavour: string;
   companion?: boolean; // story companion: not found by scanning, not in the collection count
-  neutral?: boolean;   // outside the triangle, and can learn any class's codex (Klutz)
+  neutral?: boolean;   // can learn any class's codex (Klutz)
   boss?: boolean;      // part of a dungeon boss: never found, never owned
 };
 
@@ -141,13 +154,13 @@ export const LEARNABLE_MOVES: Skill[] = [
 export const RACE_MOVES: Skill[] = [
   { name: "Pounce",     damage: 15, energyCost: 50, type: "melee",  dmgType: "force",  race: "beast",        effect: { kind: "pounce", lowHpBonus: 0.5 },
     desc: "Always strikes first this round, whatever its agility. +50% damage if the target is below half HP." },
-  { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "underdweller", effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
+  { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "underkin", effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
     desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench." },
-  { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "etherial",     effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
+  { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
     desc: "Shimmers half out of the world: a 30% chance to dodge each attack for 3 rounds." },
   { name: "Corpsify",   damage: 0,  energyCost: 30, type: "melee",  dmgType: "force",  race: "undead",       effect: { kind: "corpsify", reviveHp: 0.55 }, self: true, cooldown: 3,
     desc: "If it's knocked out before the end of next round, it rises again with 55% HP. 3-round cooldown." },
-  { name: "Barrage",    damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", race: "elvish",       effect: { kind: "barrage" },
+  { name: "Barrage",    damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", race: "humanoid", effect: { kind: "barrage" },
     desc: "A volley that hits every enemy on the field." },
 ];
 
@@ -172,72 +185,93 @@ export const BOSS_MOVES: Skill[] = [
 ];
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
-export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RACE_MOVES, ...BOSS_MOVES].map((m) => [m.name, m]));
+// (With the race kits' moves, lib/creatures/raceKitsV2.ts, the moves creatures are born with.)
+export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RACE_MOVES, ...BOSS_MOVES, ...KIT_MOVES].map((m) => [m.name, m]));
 
-// The race moves a creature of this race could learn.
-export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => m.race && m.race === c.race);
+// The race moves a creature of these races could learn.
+export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => m.race && (c.races ?? (c.race ? [c.race] : [])).includes(m.race));
 
 function s(...names: string[]): Skill[] {
   return names.map(n => ALL_SKILLS.find(sk => sk.name === n)!).filter(Boolean);
 }
 
-// The scannable roster: 5 races × one creature of each rarity. Creatures that
-// moved tier had their %s and HP scaled to fit it.
-export const CREATURE_TEMPLATES: CreatureTemplate[] = [
+// The older 25 species as they were before Combat V2 (5 old races × one of
+// each rarity). Creatures that moved tier had their %s and HP scaled to fit it.
+// Their V2 races, styles and moves are added below (CREATURE_TEMPLATES).
+const OLDER_SPECIES: CreatureTemplate[] = [
   // BEAST
-  { id: "moss_wolf",        name: "Moss Wolf",        race: "beast",        rarity: "common",    baseHp: 65, cls: "melee", proficiency: { atk: 16, rng: 2, mag: 0, agil: 12, mdef: 4, rdef: 2, magdef: 3 }, skills: s("Slash","Jab","Heavy Blow"),                           flavour: "Camouflaged in undergrowth. Pounces before you spot it." },
-  { id: "amber_wasp",       name: "Amber Wasp",       race: "beast",        rarity: "uncommon",  baseHp: 72, cls: "ranged", proficiency: { atk: 10, rng: 12, mag: 0, agil: 22, mdef: 3, rdef: 3, magdef: 3 }, skills: s("Pebble Shot","Bolt","Jab","Stone Throw"),                  flavour: "Glass jaw but lightning fast. Always strikes first." },
-  { id: "bellow_toad",      name: "Bellow Toad",      race: "beast",        rarity: "rare",      baseHp: 102, cls: "melee", proficiency: { atk: 14, rng: 12, mag: 0, agil: 24, mdef: 10, rdef: 3, magdef: 18 }, skills: s("Cripple","Crippling Shot","Slash","Bolt"),         flavour: "Its throat swells like a bellows before it spits. The glands on its back glow when it's angry, and it's always angry." },
-  { id: "dire_wolf",        name: "Dire Wolf",        race: "beast",        rarity: "epic",      baseHp: 113, cls: "melee", proficiency: { atk: 42, rng: 4, mag: 0, agil: 22, mdef: 12, rdef: 8, magdef: 10 }, skills: s("Crush","Heavy Blow","Slash","Devastator","Impale"),     flavour: "Three times the size of a normal wolf. Twice as hungry." },
-  { id: "ironhide",         name: "Ironhide",         race: "beast",        rarity: "legendary", baseHp: 150, cls: "melee", proficiency: { atk: 52, rng: 6, mag: 0, agil: 10, mdef: 44, rdef: 30, magdef: 37 }, skills: s("Devastator","Crush","Impale","Heavy Blow","Slash","Stone Throw"), flavour: "A war elephant whose trunk was replaced with a double-headed battleaxe." },
+  { id: "moss_wolf",        name: "Moss Wolf",        rarity: "common",    baseHp: 65, cls: "melee", proficiency: { atk: 16, rng: 2, mag: 0, agil: 12, mdef: 4, rdef: 2, magdef: 3 }, skills: s("Slash","Jab","Heavy Blow"),                           flavour: "Camouflaged in undergrowth. Pounces before you spot it." },
+  { id: "amber_wasp",       name: "Amber Wasp",       rarity: "uncommon",  baseHp: 72, cls: "ranged", proficiency: { atk: 10, rng: 12, mag: 0, agil: 22, mdef: 3, rdef: 3, magdef: 3 }, skills: s("Pebble Shot","Bolt","Jab","Stone Throw"),                  flavour: "Glass jaw but lightning fast. Always strikes first." },
+  { id: "bellow_toad",      name: "Bellow Toad",      rarity: "rare",      baseHp: 102, cls: "melee", proficiency: { atk: 14, rng: 12, mag: 0, agil: 24, mdef: 10, rdef: 3, magdef: 18 }, skills: s("Cripple","Crippling Shot","Slash","Bolt"),         flavour: "Its throat swells like a bellows before it spits. The glands on its back glow when it's angry, and it's always angry." },
+  { id: "dire_wolf",        name: "Dire Wolf",        rarity: "epic",      baseHp: 113, cls: "melee", proficiency: { atk: 42, rng: 4, mag: 0, agil: 22, mdef: 12, rdef: 8, magdef: 10 }, skills: s("Crush","Heavy Blow","Slash","Devastator","Impale"),     flavour: "Three times the size of a normal wolf. Twice as hungry." },
+  { id: "ironhide",         name: "Ironhide",         rarity: "legendary", baseHp: 150, cls: "melee", proficiency: { atk: 52, rng: 6, mag: 0, agil: 10, mdef: 44, rdef: 30, magdef: 37 }, skills: s("Devastator","Crush","Impale","Heavy Blow","Slash","Stone Throw"), flavour: "A war elephant whose trunk was replaced with a double-headed battleaxe." },
   // UNDERKIN
-  { id: "cave_bat",         name: "Cave Goblin",      race: "underdweller", rarity: "common",    baseHp: 60, cls: "ranged", proficiency: { atk: 4, rng: 14, mag: 0, agil: 16, mdef: 2, rdef: 6, magdef: 4 }, skills: s("Pebble Shot","Bolt","Flick"),                         flavour: "Pale as a cave fish and twice as mean. It sees you long before you see it, and it's already picked out a rock." },
-  { id: "rust_beetle",      name: "Rust Beetle",      race: "underdweller", rarity: "uncommon",  baseHp: 82, cls: "melee", proficiency: { atk: 10, rng: 3, mag: 0, agil: 3, mdef: 24, rdef: 12, magdef: 18 }, skills: s("Slash","Jab","Flick","Heavy Blow"),                   flavour: "A walking fortress. Slow, but its shell absorbs tremendous punishment." },
-  { id: "crystalback",      name: "Crystalback",      race: "underdweller", rarity: "rare",      baseHp: 100, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 8, agil: 4, mdef: 30, rdef: 24, magdef: 30 }, skills: s("Frost Shard","Hex","Jab","Ice Lance"),            flavour: "Its crystalline shell refracts both blade and bolt." },
-  { id: "crystal_golem",    name: "Crystal Golem",    race: "underdweller", rarity: "epic",      baseHp: 133, cls: "melee", proficiency: { atk: 28, rng: 6, mag: 0, agil: 4, mdef: 32, rdef: 20, magdef: 26 }, skills: s("Devastator","Crush","Heavy Blow","Jab"),               flavour: "Slow enough to dodge. Strong enough that it doesn't matter." },
-  { id: "hollow_matriarch", name: "Hollow Matriarch", race: "underdweller", rarity: "legendary", baseHp: 140, cls: "ranged", proficiency: { atk: 24, rng: 40, mag: 0, agil: 30, mdef: 24, rdef: 22, magdef: 23 }, skills: s("Piercing Shot","Cursed Volley","Crush","Bolt","Annihilator","Heavy Blow"), flavour: "A cave-spider queen the size of a cart. The tunnels go quiet before she arrives; every thread in the dark leads back to her." },
+  { id: "cave_bat",         name: "Cave Goblin",      rarity: "common",    baseHp: 60, cls: "ranged", proficiency: { atk: 4, rng: 14, mag: 0, agil: 16, mdef: 2, rdef: 6, magdef: 4 }, skills: s("Pebble Shot","Bolt","Flick"),                         flavour: "Pale as a cave fish and twice as mean. It sees you long before you see it, and it's already picked out a rock." },
+  { id: "rust_beetle",      name: "Rust Beetle",      rarity: "uncommon",  baseHp: 82, cls: "melee", proficiency: { atk: 10, rng: 3, mag: 0, agil: 3, mdef: 24, rdef: 12, magdef: 18 }, skills: s("Slash","Jab","Flick","Heavy Blow"),                   flavour: "A walking fortress. Slow, but its shell absorbs tremendous punishment." },
+  { id: "crystalback",      name: "Crystalback",      rarity: "rare",      baseHp: 100, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 8, agil: 4, mdef: 30, rdef: 24, magdef: 30 }, skills: s("Frost Shard","Hex","Jab","Ice Lance"),            flavour: "Its crystalline shell refracts both blade and bolt." },
+  { id: "crystal_golem",    name: "Crystal Golem",    rarity: "epic",      baseHp: 133, cls: "melee", proficiency: { atk: 28, rng: 6, mag: 0, agil: 4, mdef: 32, rdef: 20, magdef: 26 }, skills: s("Devastator","Crush","Heavy Blow","Jab"),               flavour: "Slow enough to dodge. Strong enough that it doesn't matter." },
+  { id: "hollow_matriarch", name: "Hollow Matriarch", rarity: "legendary", baseHp: 140, cls: "ranged", proficiency: { atk: 24, rng: 40, mag: 0, agil: 30, mdef: 24, rdef: 22, magdef: 23 }, skills: s("Piercing Shot","Cursed Volley","Crush","Bolt","Annihilator","Heavy Blow"), flavour: "A cave-spider queen the size of a cart. The tunnels go quiet before she arrives; every thread in the dark leads back to her." },
   // ETHERIAL
-  { id: "dust_sprite",      name: "Dust Sprite",      race: "etherial",     rarity: "common",    baseHp: 58, cls: "ranged", proficiency: { atk: 2, rng: 18, mag: 0, agil: 10, mdef: 2, rdef: 4, magdef: 6 }, skills: s("Pebble Shot","Stone Throw","Bolt"),                   flavour: "A tiny wind spirit. Barely visible. Surprisingly annoying." },
-  { id: "flicker_wisp",     name: "Flicker Wisp",     race: "etherial",     rarity: "uncommon",  baseHp: 72, cls: "magic", proficiency: { atk: 4, rng: 0, mag: 20, agil: 16, mdef: 4, rdef: 6, magdef: 8 }, skills: s("Hex","Spark","Frost Shard","Firebolt"),            flavour: "A lantern-light that bobs just out of reach. Follow it and you're lost; fight it and you miss." },
-  { id: "veilstalker",      name: "Veilstalker",      race: "etherial",     rarity: "rare",      baseHp: 85, cls: "melee", proficiency: { atk: 20, rng: 0, mag: 16, agil: 20, mdef: 6, rdef: 6, magdef: 8 }, skills: s("Slash","Hexblade","Heavy Blow","Hex"),           flavour: "Exists partially out of phase. Attacks from angles that shouldn't exist." },
-  { id: "the_watcher",      name: "The Watcher",      race: "etherial",     rarity: "epic",      baseHp: 103, cls: "ranged", proficiency: { atk: 10, rng: 42, mag: 0, agil: 12, mdef: 10, rdef: 16, magdef: 20 }, skills: s("Piercing Shot","Hex Arrow","Annihilator","Bolt","Cursed Volley"),   flavour: "A Cthulhu-like eye that floats in silence. When it opens fully, something breaks." },
-  { id: "void_serpent",     name: "Void Serpent",     race: "etherial",     rarity: "legendary", baseHp: 143, cls: "magic", proficiency: { atk: 34, rng: 0, mag: 38, agil: 28, mdef: 20, rdef: 20, magdef: 24 }, skills: s("Starfall","Soul Drain","Hex","Devastator","Crush","Slash"), flavour: "It doesn't come from somewhere. It comes from the absence of somewhere." },
+  { id: "dust_sprite",      name: "Dust Sprite",      rarity: "common",    baseHp: 58, cls: "ranged", proficiency: { atk: 2, rng: 18, mag: 0, agil: 10, mdef: 2, rdef: 4, magdef: 6 }, skills: s("Pebble Shot","Stone Throw","Bolt"),                   flavour: "A tiny wind spirit. Barely visible. Surprisingly annoying." },
+  { id: "flicker_wisp",     name: "Flicker Wisp",     rarity: "uncommon",  baseHp: 72, cls: "magic", proficiency: { atk: 4, rng: 0, mag: 20, agil: 16, mdef: 4, rdef: 6, magdef: 8 }, skills: s("Hex","Spark","Frost Shard","Firebolt"),            flavour: "A lantern-light that bobs just out of reach. Follow it and you're lost; fight it and you miss." },
+  { id: "veilstalker",      name: "Veilstalker",      rarity: "rare",      baseHp: 85, cls: "melee", proficiency: { atk: 20, rng: 0, mag: 16, agil: 20, mdef: 6, rdef: 6, magdef: 8 }, skills: s("Slash","Hexblade","Heavy Blow","Hex"),           flavour: "Exists partially out of phase. Attacks from angles that shouldn't exist." },
+  { id: "the_watcher",      name: "The Watcher",      rarity: "epic",      baseHp: 103, cls: "ranged", proficiency: { atk: 10, rng: 42, mag: 0, agil: 12, mdef: 10, rdef: 16, magdef: 20 }, skills: s("Piercing Shot","Hex Arrow","Annihilator","Bolt","Cursed Volley"),   flavour: "A Cthulhu-like eye that floats in silence. When it opens fully, something breaks." },
+  { id: "void_serpent",     name: "Void Serpent",     rarity: "legendary", baseHp: 143, cls: "magic", proficiency: { atk: 34, rng: 0, mag: 38, agil: 28, mdef: 20, rdef: 20, magdef: 24 }, skills: s("Starfall","Soul Drain","Hex","Devastator","Crush","Slash"), flavour: "It doesn't come from somewhere. It comes from the absence of somewhere." },
   // UNDEAD
-  { id: "rattlebones",      name: "Rattlebones",      race: "undead",       rarity: "common",    baseHp: 62, cls: "melee", proficiency: { atk: 16, rng: 4, mag: 0, agil: 8, mdef: 8, rdef: 4, magdef: 6 }, skills: s("Slash","Jab","Flick"),                               flavour: "A skeleton that never got the message. It rattles when it laughs, and it laughs when it hits." },
-  { id: "shambler",         name: "Shambler",         race: "undead",       rarity: "uncommon",  baseHp: 84, cls: "melee", proficiency: { atk: 18, rng: 2, mag: 0, agil: 4, mdef: 16, rdef: 10, magdef: 13 }, skills: s("Heavy Blow","Slash","Jab","Flick"),                   flavour: "Slow, stubborn and missing an arm. It's been missing that arm for centuries and hasn't slowed down." },
-  { id: "dustwraith",       name: "Dustwraith",       race: "undead",       rarity: "rare",      baseHp: 83, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 20, agil: 32, mdef: 4, rdef: 8, magdef: 6 }, skills: s("Hex","Spark","Frost Shard","Ice Lance"),         flavour: "A whirlwind given intent. You cannot hit what you cannot catch." },
-  { id: "mr_shadows",       name: "Mr. Shadows",      race: "undead",       rarity: "epic",      baseHp: 113, cls: "magic", proficiency: { atk: 14, rng: 0, mag: 24, agil: 16, mdef: 18, rdef: 14, magdef: 16 }, skills: s("Hex","Soul Drain","Hexblade","Starfall","Slash"),   flavour: "A worn teddy bear sits innocently. Behind it, a demonic shadow stretches across the wall." },
-  { id: "storm_phoenix",    name: "Skull Raven",      race: "undead",       rarity: "legendary", baseHp: 133, cls: "ranged", proficiency: { atk: 20, rng: 48, mag: 0, agil: 44, mdef: 14, rdef: 24, magdef: 19 }, skills: s("Annihilator","Piercing Shot","Bolt","Devastator","Flick","Stone Throw"), flavour: "A corpse ravaging scavenger." },
+  { id: "rattlebones",      name: "Rattlebones",      rarity: "common",    baseHp: 62, cls: "melee", proficiency: { atk: 16, rng: 4, mag: 0, agil: 8, mdef: 8, rdef: 4, magdef: 6 }, skills: s("Slash","Jab","Flick"),                               flavour: "A skeleton that never got the message. It rattles when it laughs, and it laughs when it hits." },
+  { id: "shambler",         name: "Shambler",         rarity: "uncommon",  baseHp: 84, cls: "melee", proficiency: { atk: 18, rng: 2, mag: 0, agil: 4, mdef: 16, rdef: 10, magdef: 13 }, skills: s("Heavy Blow","Slash","Jab","Flick"),                   flavour: "Slow, stubborn and missing an arm. It's been missing that arm for centuries and hasn't slowed down." },
+  { id: "dustwraith",       name: "Dustwraith",       rarity: "rare",      baseHp: 83, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 20, agil: 32, mdef: 4, rdef: 8, magdef: 6 }, skills: s("Hex","Spark","Frost Shard","Ice Lance"),         flavour: "A whirlwind given intent. You cannot hit what you cannot catch." },
+  { id: "mr_shadows",       name: "Mr. Shadows",      rarity: "epic",      baseHp: 113, cls: "magic", proficiency: { atk: 14, rng: 0, mag: 24, agil: 16, mdef: 18, rdef: 14, magdef: 16 }, skills: s("Hex","Soul Drain","Hexblade","Starfall","Slash"),   flavour: "A worn teddy bear sits innocently. Behind it, a demonic shadow stretches across the wall." },
+  { id: "storm_phoenix",    name: "Skull Raven",      rarity: "legendary", baseHp: 133, cls: "ranged", proficiency: { atk: 20, rng: 48, mag: 0, agil: 44, mdef: 14, rdef: 24, magdef: 19 }, skills: s("Annihilator","Piercing Shot","Bolt","Devastator","Flick","Stone Throw"), flavour: "A corpse ravaging scavenger." },
   // ELVISH
-  { id: "thicket_archer",   name: "Thicket Archer",   race: "elvish",       rarity: "common",    baseHp: 60, cls: "ranged", proficiency: { atk: 4, rng: 20, mag: 0, agil: 10, mdef: 2, rdef: 4, magdef: 3 }, skills: s("Pebble Shot","Stone Throw","Bolt"),                   flavour: "Small, green-cloaked, and never where the arrow came from." },
-  { id: "leafblade_scout",  name: "Leafblade Scout",  race: "elvish",       rarity: "uncommon",  baseHp: 74, cls: "melee", proficiency: { atk: 16, rng: 12, mag: 0, agil: 14, mdef: 4, rdef: 4, magdef: 4 }, skills: s("Slash","Bolt","Jab","Stone Throw"),                   flavour: "Runs the canopy paths with a blade in one hand and a bow on its back." },
-  { id: "aurelius",         name: "Aurelius",         race: "elvish",       rarity: "rare",      baseHp: 95, cls: "ranged", proficiency: { atk: 12, rng: 22, mag: 0, agil: 14, mdef: 16, rdef: 6, magdef: 11 }, skills: s("Bolt","Piercing Shot","Heavy Blow","Stone Throw"),             flavour: "Half man, half horse, all warrior. Carries the weight of myth." },
-  { id: "swamp_witch",      name: "Swamp Witch",      race: "elvish",       rarity: "epic",      baseHp: 105, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 46, agil: 14, mdef: 8, rdef: 14, magdef: 11 }, skills: s("Hex","Ice Lance","Starfall","Frost Shard","Spark"), flavour: "Never seen in the open. Attacks from fog and distance." },
-  { id: "sylvaran",         name: "Sylvaran, the Last Archer", race: "elvish", rarity: "legendary", baseHp: 135, cls: "ranged", proficiency: { atk: 14, rng: 52, mag: 0, agil: 34, mdef: 16, rdef: 24, magdef: 20 }, skills: s("Annihilator","Piercing Shot","Bolt","Slash","Stone Throw","Pebble Shot"), flavour: "The last of the old archers. They say Sylvaran has never missed — only chosen not to hit." },
+  { id: "thicket_archer",   name: "Thicket Archer",   rarity: "common",    baseHp: 60, cls: "ranged", proficiency: { atk: 4, rng: 20, mag: 0, agil: 10, mdef: 2, rdef: 4, magdef: 3 }, skills: s("Pebble Shot","Stone Throw","Bolt"),                   flavour: "Small, green-cloaked, and never where the arrow came from." },
+  { id: "leafblade_scout",  name: "Leafblade Scout",  rarity: "uncommon",  baseHp: 74, cls: "melee", proficiency: { atk: 16, rng: 12, mag: 0, agil: 14, mdef: 4, rdef: 4, magdef: 4 }, skills: s("Slash","Bolt","Jab","Stone Throw"),                   flavour: "Runs the canopy paths with a blade in one hand and a bow on its back." },
+  { id: "aurelius",         name: "Aurelius",         rarity: "rare",      baseHp: 95, cls: "ranged", proficiency: { atk: 12, rng: 22, mag: 0, agil: 14, mdef: 16, rdef: 6, magdef: 11 }, skills: s("Bolt","Piercing Shot","Heavy Blow","Stone Throw"),             flavour: "Half man, half horse, all warrior. Carries the weight of myth." },
+  { id: "swamp_witch",      name: "Swamp Witch",      rarity: "epic",      baseHp: 105, cls: "magic", proficiency: { atk: 6, rng: 0, mag: 46, agil: 14, mdef: 8, rdef: 14, magdef: 11 }, skills: s("Hex","Ice Lance","Starfall","Frost Shard","Spark"), flavour: "Never seen in the open. Attacks from fog and distance." },
+  { id: "sylvaran",         name: "Sylvaran, the Last Archer", rarity: "legendary", baseHp: 135, cls: "ranged", proficiency: { atk: 14, rng: 52, mag: 0, agil: 34, mdef: 16, rdef: 24, magdef: 20 }, skills: s("Annihilator","Piercing Shot","Bolt","Slash","Stone Throw","Pebble Shot"), flavour: "The last of the old archers. They say Sylvaran has never missed — only chosen not to hit." },
 ];
+
+// The scannable roster (Combat V2, live since 2026-10-26): 7 races × one of
+// each rarity = 35, the older species plus the new ones
+// (lib/creatures/rosterV2.ts), each with its races, its V2 style and its
+// race-kit moves (the first 4 are the ones it starts with).
+const withRaces = (c: CreatureTemplate): CreatureTemplate => {
+  const races = SPECIES_RACES[c.id];
+  return races ? { ...c, race: races[0], races } : c;
+};
+export const CREATURE_TEMPLATES: CreatureTemplate[] = [...OLDER_SPECIES, ...NEW_SPECIES_V2.map((c) => ({ ...c, skills: [] }))]
+  .map((c) => ({ ...c, ...V2_RESTYLE[c.id] }))
+  .map((c) => withRaces({ ...c, skills: v2Moves(c) }));
 
 // Creatures that no longer turn up from scans (they didn't fit a race).
 // Any you already own stay yours and keep working.
-export const RETIRED_CREATURES: CreatureTemplate[] = [
+export const RETIRED_CREATURES: CreatureTemplate[] = ([
   // (Replaced by the Bellow Toad as the Rare beast, 2026-10-18.)
-  { id: "monkey_mage",      name: "Monkey Mage",      race: "beast",        rarity: "rare",      baseHp: 88, cls: "magic", proficiency: { atk: 12, rng: 0, mag: 18, agil: 30, mdef: 6, rdef: 4, magdef: 6 }, skills: s("Firebolt","Hex","Slash","Fireball"),                  flavour: "Stole a wizard's hat and staff, and kept practising until the spells started working. Never stops chattering, never stops casting." },
+  { id: "monkey_mage",      name: "Monkey Mage",      rarity: "rare",      baseHp: 88, cls: "magic", proficiency: { atk: 12, rng: 0, mag: 18, agil: 30, mdef: 6, rdef: 4, magdef: 6 }, skills: s("Firebolt","Hex","Slash","Fireball"),                  flavour: "Stole a wizard's hat and staff, and kept practising until the spells started working. Never stops chattering, never stops casting." },
   { id: "mantis_warden",  name: "Mantis Warden",  rarity: "common",    baseHp: 65, cls: "melee", proficiency: { atk: 18, rng: 2, mag: 0, agil: 6, mdef: 12, rdef: 4, magdef: 8 }, skills: s("Slash","Heavy Blow","Flick"),                         flavour: "One arm a serrated blade, the other a chitinous buckler. It waits." },
   { id: "forest_slime",   name: "Forest Slime",    rarity: "common",    baseHp: 68, cls: "melee", proficiency: { atk: 6, rng: 6, mag: 0, agil: 6, mdef: 6, rdef: 8, magdef: 7 }, skills: s("Jab","Stone Throw","Flick"),                         flavour: "Unremarkable in every way. Somehow always survives." },
   { id: "stone_toad",     name: "Stone Toad",      rarity: "common",    baseHp: 73, cls: "melee", proficiency: { atk: 6, rng: 4, mag: 0, agil: 2, mdef: 14, rdef: 10, magdef: 12 }, skills: s("Slash","Stone Throw","Jab"),                         flavour: "Squat, lumpy, impossibly durable. Outlasts everything." },
   { id: "thornmaw",       name: "Thornmaw",        rarity: "uncommon",  baseHp: 78, cls: "melee", proficiency: { atk: 22, rng: 4, mag: 0, agil: 6, mdef: 8, rdef: 4, magdef: 6 }, skills: s("Heavy Blow","Crush","Slash","Jab"),                   flavour: "A carnivorous plant that learned to walk. Its bite leaves thorns behind." },
   { id: "ironjaw_hound",  name: "Ironjaw Hound",   rarity: "uncommon",  baseHp: 75, cls: "melee", proficiency: { atk: 26, rng: 2, mag: 0, agil: 14, mdef: 6, rdef: 2, magdef: 4 }, skills: s("Crush","Heavy Blow","Slash","Flick"),                 flavour: "Built for the hunt. Its jaw can crush stone." },
   { id: "ashen_drifter",  name: "Ashen Drifter",   rarity: "rare",      baseHp: 88, cls: "ranged", proficiency: { atk: 8, rng: 32, mag: 0, agil: 16, mdef: 6, rdef: 12, magdef: 9 }, skills: s("Bolt","Piercing Shot","Stone Throw","Annihilator"),   flavour: "Orbiting rocks wrapped in smoke. Cold and quiet." },
-];
+] as CreatureTemplate[]).map(withRaces);
+
+// The older species as they were before Combat V2, with their old styles and
+// moves (retired ones too), by id: for the sims of the old rules, and tests of
+// battle mechanics written with those moves.
+export const PRE_V2_SPECIES: Record<string, CreatureTemplate> = Object.fromEntries(
+  [...OLDER_SPECIES.map(withRaces), ...RETIRED_CREATURES].map((c) => [c.id, c]),
+);
 
 // Klutz: the dopey goblin who drags you into the Den. He's your helper, not
 // one of your creatures: gear him up and he'll hunt in the Labyrinth for
 // you (lib/klutz.ts). He's a Rare.
-// He's neutral ("Balanced": outside the triangle, any class's codex). His %s
+// He's neutral ("Balanced": any class's codex; no races, so he deals and takes neutral damage). His %s
 // start at 0 and are the points you spend on him as he levels (lib/klutz.ts
 // POINTS_PER_LEVEL), so you, his weapon and the codexes you teach him decide
 // how he fights. He starts as a brawler; other styles come from codexes.
 export const KLUTZ: CreatureTemplate = {
-  id: "klutz", name: "Klutz", race: "underdweller", rarity: "rare", baseHp: 80, companion: true, cls: "melee", neutral: true,
+  id: "klutz", name: "Klutz", race: "underkin", rarity: "rare", baseHp: 80, companion: true, cls: "melee", neutral: true,
   proficiency: { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0 },
   skills: s("Slash", "Heavy Blow", "Jab", "Stone Throw"),
   flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. Pay him, gear him, and he'll go hunting for you.",
@@ -303,10 +337,11 @@ export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolea
 }
 
 // The moves a creature can put in its slots: the ones it was born with (its
-// rolled moves; the species' first 4 if it has none saved) plus any it has
-// learned from codexes.
+// rolled moves; the species' first 4 if it has none saved), the rest of its
+// species' moves (Combat V2: its whole race kits), and any it has learned
+// from codexes.
 export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], own?: string[]): Skill[] {
-  const names = [...new Set([...(own?.length ? own : defaultMoveNames(c)), ...learned.filter((n) => canLearnFromCodex(c, n))])];
+  const names = [...new Set([...(own?.length ? own : defaultMoveNames(c)), ...c.skills.map((m) => m.name), ...learned.filter((n) => canLearnFromCodex(c, n))])];
   return names.map((n) => MOVE_BY_NAME[n]).filter(Boolean);
 }
 

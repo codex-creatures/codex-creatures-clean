@@ -93,11 +93,13 @@ describe("Klutz", () => {
 });
 
 describe("races", () => {
-  it("every race has exactly one creature of each rarity", () => {
+  it("35 creatures, 7 of each rarity, each with one or two races", () => {
     expect(CREATURE_TEMPLATES).toHaveLength(RACES.length * 5);
-    for (const race of RACES) {
-      const mine = CREATURE_TEMPLATES.filter((c) => c.race === race).map((c) => c.rarity).sort();
-      expect(mine).toEqual(["common", "epic", "legendary", "rare", "uncommon"]);
+    for (const r of ["common", "uncommon", "rare", "epic", "legendary"]) expect(CREATURE_TEMPLATES.filter((c) => c.rarity === r)).toHaveLength(RACES.length);
+    for (const c of CREATURE_TEMPLATES) {
+      expect(c.races?.length, c.id).toBeGreaterThanOrEqual(1);
+      expect(c.races!.length, c.id).toBeLessThanOrEqual(2);
+      expect(c.race, c.id).toBe(c.races![0]);
     }
   });
 
