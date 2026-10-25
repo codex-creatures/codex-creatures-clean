@@ -152,6 +152,13 @@ const ART_SIZES: Record<string, [number, number]> = {
   flame_imp: [72, 73],
   glob: [78, 63],
   dreadpox: [83, 92],
+  gleamling: [52, 58],
+  plague_rat: [64, 59],
+  rotgut_fly: [62, 62],
+  deep_angler: [75, 71],
+  tunnel_wyrm: [107, 108],
+  thunderhead: [107, 106],
+  pale_rider: [105, 123],
   rattlebones: [70, 84],
   shambler: [73, 88],
   dustwraith: [84, 86],
@@ -166,7 +173,7 @@ const ART_SIZES: Record<string, [number, number]> = {
 // Those drawn facing right (the rest face left).
 const FACING_RIGHT = new Set(["leafblade_scout"]);
 // Those that float rather than stand: drawn hanging in the air, bobbing.
-const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix"]);
+const FLOATERS = new Set(["flicker_wisp", "dust_sprite", "the_watcher", "dustwraith", "amber_wasp", "storm_phoenix", "gleamling", "rotgut_fly"]);
 
 
 // Shown for creatures that don't have their own sprite yet.

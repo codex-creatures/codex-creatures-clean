@@ -14,7 +14,7 @@ import type { Skill } from "../creatures/creatureData";
 import { MOVE_RACES, type RaceV2 } from "../creatures/racesV2";
 import { KIT_MOVE_RACE } from "../creatures/raceKitsV2";
 
-export const RACE_EFFECT = { strong: 1.4, resisted: 0.75 }; // the user's option C, 2026-10-26
+export const RACE_EFFECT = { strong: 1.25, resisted: 0.8 }; // the user's option B for playtesting, 2026-10-26 (was 1.4 / 0.75)
 export const MATCH_BONUS = 1.15;
 
 export const RACE_BEATS: Record<RaceV2, RaceV2[]> = {

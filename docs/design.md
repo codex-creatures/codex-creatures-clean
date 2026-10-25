@@ -295,7 +295,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   just stone), Humanoid, Pestilence. Creatures have 1 or 2 races. Every current creature is kept
   and re-raced (`SPECIES_RACES`, lib/creatures/racesV2.ts; the user's example: Crystalback is
   Geo/Beast; the rest is Claude's draft).
-- 📌 Multipliers **1.4× effective / 0.75× resisted** (option C, `RACE_EFFECT`); dual races multiply.
+- 🧪 Multipliers **1.25× effective / 0.8× resisted** (`RACE_EFFECT`); dual races multiply. The user
+  picked these for playtesting (2026-10-26) over the first choice, 1.4× / 0.75×: in the sims the race
+  edge drops from 74% to 68% of even duels, and gear a rarity better can make up for a bad matchup.
+  Sims also showed swapping matters less in V2 than today (the swapping side wins 49%, not 56%).
   The chart (`RACE_BEATS`, lib/combat/raceChart.ts) is Claude's rebalance of the user's first
   draft: each race beats 3 and is weak to 3, with 4 mutual pairs.
 - 🧪 Matching-race bonus 1.15× (`MATCH_BONUS`), once.

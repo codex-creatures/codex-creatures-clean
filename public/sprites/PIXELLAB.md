@@ -27,6 +27,13 @@ the PNG here.
 | creatures/dreadpox.png | gallery:72f0d447-6a3d-5c80-8c41-38fa82810610 (raw generation; trimmed + mirrored here) |
 | creatures/flame_imp.png | gallery:e935d6b5-f3df-5889-a93d-4f6bb8758262 (raw generation; trimmed + mirrored here) |
 | creatures/glob.png | gallery:e423893e-fd95-5b08-b974-79be7cbda576 (raw generation; trimmed + mirrored here) |
+| creatures/gleamling.png | gallery:e677034e-9f2c-4c89-ba55-117a51c50eee (raw generation; trimmed + mirrored here) |
+| creatures/plague_rat.png | gallery:5b422641-093d-4ce6-a738-293427afdebc (raw generation; trimmed + mirrored here) |
+| creatures/rotgut_fly.png | gallery:3c6195d0-db24-4a67-9f83-4e6c05c09d0d (raw generation; trimmed + mirrored here) |
+| creatures/deep_angler.png | gallery:aa6e8bcd-c214-4545-8890-8c9f9b18fcb7 (raw generation; trimmed + mirrored here) |
+| creatures/tunnel_wyrm.png | gallery:6b352516-6423-470d-8f0c-1b50394f10a9 (raw generation; trimmed + mirrored here) |
+| creatures/thunderhead.png | gallery:7903642a-e4f1-49e8-892f-9f8df1cbc2cb (raw generation; trimmed + mirrored here) |
+| creatures/pale_rider.png | gallery:88bc5a9c-e3b2-4440-aac3-3811721fb379 (raw generation; trimmed + mirrored here) |
 | creatures/dust_sprite.png | gallery:edc1b68b-8559-4d7c-89f3-11fc1602d302 |
 | creatures/dustwraith.png | gallery:f09aeb9b-7692-4ff2-b7fc-d311a5d12a1a |
 | creatures/flicker_wisp.png | gallery:175612f3-f343-46fb-a8d3-16501002997e |
