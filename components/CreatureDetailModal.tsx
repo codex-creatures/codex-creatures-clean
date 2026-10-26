@@ -286,7 +286,8 @@ export default function CreatureDetailModal({
             )}
 
             <SetLine worn={worn} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow} />
-            {locked && <div style={{ marginTop: 6, fontSize: 12, color: MUTED, textAlign: "center" }}>🔒 {locked}</div>}
+            {/* The lock line keeps its space when unlocked, so nothing under it moves between creatures. */}
+            <div title={locked || undefined} style={{ marginTop: 6, height: 17, fontSize: 12, color: MUTED, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", visibility: locked ? "visible" : "hidden" }}>🔒 {locked || "-"}</div>
 
             {/* Klutz's soul stone picker: tap one to give it to him */}
             {stonePicking && soulStones && (
@@ -352,24 +353,32 @@ export default function CreatureDetailModal({
 
                 {/* The picked item, and the confirm bar (always there, so nothing jumps) */}
                 {options.length > 0 && (
-                  <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", minHeight: 72 }}>
-                    <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-                      {preview === undefined ? (
-                        <div style={{ color: MUTED, fontSize: 13 }}>Nothing in this slot yet — tap one to see what it would do.</div>
-                      ) : preview ? (
+                  // A fixed frame: four lines (name, stats over two, set, owner), each
+                  // kept when empty, and the buttons beside them, never wrapping under.
+                  <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
+                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateRows: "20px 2.8em 16px 16px", fontSize: 12, lineHeight: 1.4 }}>
+                      {preview ? (
                         <>
-                          <div style={{ fontWeight: 700, color: rarityColor(preview.rarity) }}>
+                          <div title={preview.name} style={{ fontSize: 14, fontWeight: 700, color: rarityColor(preview.rarity), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {preview.name}{isCurrent && <span style={{ fontSize: 11, color: GOLD, fontWeight: 400 }}> · worn now</span>}
                           </div>
-                          <StatLine stats={preview.stats} labels={picking === "weapon" ? WEAPON_STAT_LABELS : ARMOR_STAT_LABELS} />
-                          {preview.armorKey && <div style={{ fontSize: 11, color: MUTED }}>Set: {ARMOR_META[preview.armorKey].name} — {SET_BONUS[preview.armorKey].name}</div>}
-                          {previewOwner && <div style={{ fontSize: 11, color: "#f5c542" }}>Worn by {previewOwner} — equipping takes it from them.</div>}
+                          <div style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                            <StatLine stats={preview.stats} labels={picking === "weapon" ? WEAPON_STAT_LABELS : ARMOR_STAT_LABELS} />
+                          </div>
+                          <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", visibility: preview.armorKey ? "visible" : "hidden" }}>
+                            {preview.armorKey ? `Set: ${ARMOR_META[preview.armorKey].name} — ${SET_BONUS[preview.armorKey].name}` : "-"}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#f5c542", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", visibility: previewOwner ? "visible" : "hidden" }}>
+                            {previewOwner ? `Worn by ${previewOwner} — equipping takes it from them.` : "-"}
+                          </div>
                         </>
                       ) : (
-                        <div style={{ color: MUTED, fontSize: 13 }}>Leave the {slotName} slot empty.</div>
+                        <div style={{ gridRow: "1 / -1", alignSelf: "center", color: MUTED, fontSize: 13 }}>
+                          {preview === undefined ? "Nothing in this slot yet — tap one to see what it would do." : `Leave the ${slotName} slot empty.`}
+                        </div>
                       )}
                     </div>
-                    <div style={{ display: "flex", gap: 6 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
                       <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 12px", opacity: preview === undefined || isCurrent ? 0.4 : 1 }}
                         disabled={preview === undefined || isCurrent} onClick={confirm}>{preview === null ? "Unequip" : "Equip"}</button>
                       <button className="chip" onClick={closePicker}>Cancel</button>

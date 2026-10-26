@@ -53,7 +53,7 @@ describe("the first quest: Klutz's box", () => {
   it("the guided fight teaches races: the same move does far more as a race the thief is weak to", () => {
     const thief = enemyFighter(thiefRoom().enemies![0]);
     const [resisted, effective] = TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]);
-    expect({ ...resisted, name: "" }).toEqual({ ...effective, name: "" }); // the same move but for its race
+    expect({ ...resisted, name: "", desc: "" }).toEqual({ ...effective, name: "", desc: "" }); // the same move but for its race (and the note saying so)
     for (const t of CREATURES_BY_RARITY.rare) {
       const me = starter(t);
       const hit = (m: typeof resisted) => calcDamage(m, me, thief, false).damage;

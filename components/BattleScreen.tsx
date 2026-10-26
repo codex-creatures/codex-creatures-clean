@@ -87,9 +87,9 @@ export type Match = {
 // when a side has two on the field.
 export type Fx =
   | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean;
-      attackerIndex?: number; targetIndex?: number; evaded?: boolean; landed?: Landed }
+      attackerIndex?: number; targetIndex?: number; evaded?: boolean; landed?: Landed; caption: string }
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey }
-  | { id: number; kind: "effect"; side: SideKey; index: number; text: string; color: string }
+  | { id: number; kind: "effect"; side: SideKey; index: number; text: string; color: string; caption?: string }
   | { id: number; kind: "lineup"; side: SideKey; text?: string };
 
 export function rarityColor(r?: Rarity) {
@@ -256,10 +256,11 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       setView(shown);
       setFx(e.type === "attack"
         ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled,
-            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded,
+            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded, caption: `${e.side === "B" ? "Foe's " : ""}${e.attacker} used ${e.skill.name}`,
             landed: raceLanding(e.skill, shown.sides[e.side === "A" ? "B" : "A"].team[e.targetIndex ?? shown.sides[e.side === "A" ? "B" : "A"].active]) }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
+            ...(e.kind === "self" ? { caption: `${e.side === "B" ? "Foe's " : ""}${e.name} used ${e.text.split(" — ")[0].replace(/^uses /, "")}` } : {}),
             text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
             color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
@@ -336,8 +337,13 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const act = (a: Parameters<typeof onAct>[0]) => { setOpen(null); onAct(a); };
   const canSwap = swapTargets(you).length > 0 && !locked;
   const bagCount = bag.reduce((n, it) => n + it.count, 0);
-  const resting = affordableSkills(me).length === 0;
   const cols = me.skills.length > 4 ? 3 : 2;
+  // There's no Rest button: every set of moves keeps one it can always afford
+  // (isSteadyMove). Should a creature still find nothing affordable, it rests by itself.
+  const stuck = affordableSkills(me).length === 0 && !playing && !finished && !mustReplace && !notStarted;
+  useEffect(() => { if (stuck) onAct({ kind: "pass" }); }, [stuck]); // eslint-disable-line react-hooks/exhaustive-deps
+  // What's happening now, in words ("Moss Wolf used Gore"), while a round plays out.
+  const caption = playing && fx && "caption" in fx ? fx.caption : undefined;
 
   // A panel opened over the stage, from the dock.
   const over = (title: string, body: React.ReactNode) => (
@@ -473,13 +479,20 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           </>
         ) : (
           <>
-            {/* Energy, thin, across the top of the dock. */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, opacity: playing ? 0.6 : 1 }}>
-              <span className="pixel-font" style={{ fontSize: 12, color: "#9cc8ff", whiteSpace: "nowrap" }}>⚡ {Math.round(me.energy)}</span>
-              <div style={{ flex: 1, height: 7, background: "#0d0e12", border: "1px solid #000" }}>
-                <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, me.energy))}%`, background: "#4EA1FF", transition: "width 0.45s ease-out" }} />
-              </div>
-              {multi && <span style={{ fontSize: 11, color: "#ffd66e", whiteSpace: "nowrap" }}>🎯 {them.name}</span>}
+            {/* Energy, thin, across the top of the dock. While a round plays
+                out, the same line says who used what. (A fixed height either way.) */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, height: 20 }}>
+              {caption ? (
+                <span className="pixel-font" title={caption} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 14, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{caption}</span>
+              ) : (
+                <>
+                  <span className="pixel-font" style={{ fontSize: 12, color: "#9cc8ff", whiteSpace: "nowrap", opacity: playing ? 0.6 : 1 }}>⚡ {Math.round(me.energy)}</span>
+                  <div style={{ flex: 1, height: 7, background: "#0d0e12", border: "1px solid #000", opacity: playing ? 0.6 : 1 }}>
+                    <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, me.energy))}%`, background: "#4EA1FF", transition: "width 0.45s ease-out" }} />
+                  </div>
+                  {multi && <span style={{ fontSize: 11, color: "#ffd66e", whiteSpace: "nowrap", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis" }}>🎯 {them.name}</span>}
+                </>
+              )}
             </div>
             <div className="battle-moves" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, opacity: playing ? 0.6 : 1 }}>
               {me.skills.map((sk) => (
@@ -489,7 +502,6 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
               ))}
             </div>
             <div className="dock-tabs">
-              {resting && <button className="dock-tab" data-active onClick={() => act({ kind: "pass" })} disabled={playing}>💤 Rest</button>}
               <button className="dock-tab" data-active={open === "swap"} disabled={!canSwap} onClick={() => toggle("swap")}>⇄ Swap</button>
               {onUseItem && <button className="dock-tab" data-active={open === "bag"} disabled={bag.length === 0 || locked} onClick={() => toggle("bag")}>🎒 Bag{bagCount ? <span className="count">{bagCount}</span> : null}</button>}
               <button className="dock-tab" data-active={open === "log"} onClick={() => toggle("log")}>📜 Log</button>
@@ -837,7 +849,8 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
   const icons = [
     f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
     f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
-    f.statuses.some((s) => s.id === "corpsify") && "⚰️",
+    f.statuses.some((s) => s.id === "corpsify") && "⚰️", f.statuses.some((s) => s.id === "poison") && "☣️",
+    f.statuses.some((s) => s.id === "fear") && "👻",
   ].filter(Boolean).join(" ");
   return (
     <>

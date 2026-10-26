@@ -12,10 +12,10 @@
 // E.g. a Common (~40 total): ±2, up to 4 points moved. A Legendary (~200):
 // ±8, up to 16.
 //
-// Starting moves: the species' own (3 in Combat V2); each has a small chance
-// to be a rare (learnable) move instead. The empty fourth slot stays empty.
+// Starting moves: the species' own (3 in Combat V2), and a small chance
+// (RARE_MOVE_CHANCE) of a rare learnable move in the empty fourth slot.
 
-import { LEARNABLE_MOVES, defaultMoveNames, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
+import { LEARNABLE_MOVES, MOVE_SLOTS, defaultMoveNames, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
 import { rollSoulStone, type SoulStoneKey } from "./soulStones";
 
 export const ROLL_SPREAD_SHARE = 0.04;    // max ± per stat, as a share of the species' total %s
@@ -55,15 +55,11 @@ export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[]
   // Its species' starting moves (Combat V2: the first 3 of its race kits;
   // the rest of its kits come from codexes).
   const own = defaultMoveNames(c);
-  const fitting = LEARNABLE_MOVES.filter((m) => m.type === c.cls);
-  const moves = [...own];
-  for (let i = 0; i < own.length; i++) {
-    if (rng() >= RARE_MOVE_CHANCE) continue;
-    const options = fitting.filter((m) => !moves.includes(m.name));
-    if (options.length > 0) moves[i] = pick(options, rng).name; // fills an empty slot too
-  }
-  // Keep species moves first, then rare ones (only for display order).
-  return moves.filter(Boolean).sort((a, b) => Number(!own.includes(a)) - Number(!own.includes(b)));
+  // A rare move fills the empty slot, never replacing a starting move (the
+  // user, 2026-10-26). Older species (all 4 slots full) have no room for one.
+  if (own.length >= MOVE_SLOTS || rng() >= RARE_MOVE_CHANCE) return own;
+  const options = LEARNABLE_MOVES.filter((m) => m.type === c.cls && !own.includes(m.name));
+  return options.length > 0 ? [...own, pick(options, rng).name] : own;
 }
 
 // soulStone: the passive power some Rare+ creatures are born with (lib/creatures/soulStones.ts); null: none.

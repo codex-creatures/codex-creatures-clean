@@ -6,7 +6,6 @@ import {
 } from "../lib/dungeon/run";
 import { SCHEMATICS, cageSize } from "../lib/items/materials";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
-import { buildFighter } from "../lib/combat/loadout";
 
 const LARGE = LARGE_MIX.map(([k]) => k);
 
@@ -29,7 +28,7 @@ describe("large rooms", () => {
     }
   });
 
-  it("encampments: Rares (×3 HP when drunk), 1–3 cages; an ambush is two, hidden until a cage is opened", () => {
+  it("encampments: Rares, 1–3 cages; an ambush is two, hidden until a cage is opened; no more drunk ones", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 200; i++) {
       const r = makeRoom("encampment", Math.random, 8);
@@ -42,15 +41,14 @@ describe("large rooms", () => {
         expect(hasFight(r)).toBe(false);
         expect(hasFight({ ...r, sprung: true })).toBe(true);
       } else expect(hasFight(r)).toBe(true);
-      if (r.variant === "drunk") {
-        const e = r.enemies![0];
-        const plain = buildFighter(CREATURE_BY_ID[e.creatureId]);
-        expect(enemyFighter(e).maxHp).toBeGreaterThan(enemyFighter({ ...e, hpMult: undefined }).maxHp * (ENCAMP_DRUNK_HP - 0.1));
-        expect(enemyFighter(e).hpMult).toBe(ENCAMP_DRUNK_HP);
-        expect(plain.hpMult).toBeUndefined();
-      }
+      expect(r.enemies!.every((e) => e.hpMult === undefined)).toBe(true);
     }
-    expect(seen.size).toBe(4);
+    expect([...seen].sort()).toEqual(["ambush", "plain", "rigged"]);
+  });
+  it("a drunk encampment saved mid-run still plays: its foes have ×3 HP", () => {
+    const e = { ...makeRoom("encampment", Math.random, 8).enemies![0], hpMult: ENCAMP_DRUNK_HP };
+    expect(enemyFighter(e).maxHp).toBeGreaterThan(enemyFighter({ ...e, hpMult: undefined }).maxHp * (ENCAMP_DRUNK_HP - 0.1));
+    expect(enemyFighter(e).hpMult).toBe(ENCAMP_DRUNK_HP);
   });
 
   it("libraries: codexes to find, or a librarian with 5 books", () => {

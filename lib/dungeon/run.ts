@@ -23,7 +23,9 @@ import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META, wornArmor } from "../items/armor";
-import { CREATURES_BY_RARITY, CREATURE_BY_ID, RACE_MOVES, type CreatureProficiency } from "../creatures/creatureData";
+import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_SLOTS, RACE_MOVES, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
+import { BALANCED_MOVES, NEUTRAL_QUICK_MOVES, kitMoveFor } from "../creatures/raceKitsV2";
+import { SPECIES_RACES } from "../creatures/racesV2";
 import { rollCreature } from "../creatures/creatureRoll";
 import { randomSoulStone, type SoulStoneKey } from "../creatures/soulStones";
 import { buildFighter } from "../combat/loadout";
@@ -161,12 +163,13 @@ export const ROOM_MIX: [RoomKind, number][] = [
 // The large rooms (lib/dungeon/map.ts: placeLarge): a run has one in the
 // Labyrinth, two in the Deep Labyrinth. Mini objectives off the main route.
 // - Encampment: 2–3 Rares (Epics in the Deep) and 1–3 cages, each of which
-//   may hold a creature you can take home. One of four kinds
-//   (ENCAMP_VARIANTS, equally likely): plain; drunk (they've been at the
-//   potions: ENCAMP_DRUNK_HP × HP — arcane moves are the answer); ambush (it
+//   may hold a creature you can take home. One of three kinds
+//   (ENCAMP_VARIANTS, equally likely): plain; ambush (it
 //   looks empty, until you open a cage: two jump you at once); rigged
 //   (barrels of blackpowder: beat them in ENCAMP_FUSE rounds or the room
-//   comes down on you, and the run is over).
+//   comes down on you, and the run is over). (The drunk kind, foes on
+//   ENCAMP_DRUNK_HP × HP, was taken out on 2026-10-26: without damage types
+//   nothing answered it. A run saved with one still plays it.)
 // - Library: LIBRARY_FIND of the time 1–3 codexes lying about; otherwise a
 //   wandering librarian with LIBRARY_BOOKS books for sale.
 // - Storehouse: materials mostly, some potions, now and then a weapon, a
@@ -411,7 +414,7 @@ export function minibossExtras(rng: Rng = Math.random, cagePlan = false): SackIt
 
 // ── The large rooms ─────────────────────────────────────────────────
 export type EncampVariant = "plain" | "drunk" | "ambush" | "rigged";
-export const ENCAMP_VARIANTS: EncampVariant[] = ["plain", "drunk", "ambush", "rigged"];
+export const ENCAMP_VARIANTS: EncampVariant[] = ["plain", "ambush", "rigged"];
 export const ENCAMP_SIZE: [number, number] = [2, 3];
 export const ENCAMP_AMBUSHERS = 2;
 export const ENCAMP_DRUNK_HP = 3;
@@ -613,13 +616,38 @@ export function lightenGear(e: Enemy, depth: number, rng: Rng = Math.random): En
 // gentle: its hits never knock anyone out (the guided first fight's thief).
 export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey; gentle?: boolean };
 
+// Enemies learn more of their race kits as they level (the user, 2026-10-26:
+// the moveset scales with level), so deeper foes don't all fight with the
+// same three starting moves. 🧪 The levels are Claude's draft:
+// - ENEMY_MOVE_LEVELS.heavy: its empty fourth slot gets its race's heavy move
+//   (its first race, its main style);
+// - .light: its Neutral light move gives way to another move from its kits;
+// - .quick: so does its Neutral priority move.
+// It always keeps its race's 30-energy move, so it never has to rest.
+export const ENEMY_MOVE_LEVELS = { heavy: 5, light: 12, quick: 20 };
+export function enemyMoves(t: CreatureTemplate, moves: string[], level: number, rng: Rng = Math.random): string[] {
+  const race = SPECIES_RACES[t.id]?.[0];
+  if (!race) return moves; // the older species (tests) and bosses
+  const out = [...moves];
+  const kit = () => t.skills.map((m) => m.name).filter((n) => !out.includes(n) && n !== BALANCED_MOVES[t.cls].name && n !== NEUTRAL_QUICK_MOVES[t.cls].name);
+  const swap = (name: string) => {
+    const i = out.indexOf(name), options = kit();
+    if (i >= 0 && options.length) out[i] = pick(options, rng);
+  };
+  const heavy = kitMoveFor(race, t.cls, "heavy").name;
+  if (level >= ENEMY_MOVE_LEVELS.heavy && out.length < MOVE_SLOTS && !out.includes(heavy)) out.push(heavy);
+  if (level >= ENEMY_MOVE_LEVELS.light) swap(BALANCED_MOVES[t.cls].name);
+  if (level >= ENEMY_MOVE_LEVELS.quick) swap(NEUTRAL_QUICK_MOVES[t.cls].name);
+  return out;
+}
+
 export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random, level?: number): Enemy {
   const pool = CREATURES_BY_RARITY[rarity].filter((c) => !exclude.includes(c.id));
   const t = pick(pool.length > 0 ? pool : CREATURES_BY_RARITY[rarity], rng);
   const roll = rollCreature(t, rng);
   const g = rollGear(gearRarity, t);
   return {
-    creatureId: t.id, proficiency: roll.proficiency, moves: roll.moves, ...(level ? { level } : {}), ...(roll.soulStone ? { soulStone: roll.soulStone } : {}),
+    creatureId: t.id, proficiency: roll.proficiency, moves: enemyMoves(t, roll.moves, level ?? REF_LEVEL, rng), ...(level ? { level } : {}), ...(roll.soulStone ? { soulStone: roll.soulStone } : {}),
     gear: [
       { slot: "weapon", key: g.weaponKey, rarity: gearRarity, stats: g.weapon, drops: false },
       { slot: "armor",  key: g.armorKey,  rarity: gearRarity, stats: g.armor,  drops: false, pieces: g.armorPieces, armorV: ARMOR_V2 },

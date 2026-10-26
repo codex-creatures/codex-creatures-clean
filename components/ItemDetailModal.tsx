@@ -125,7 +125,9 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} className="modal-panel"
+      {/* A fixed frame (the stone panel, like the creature window): the same
+          size for every item, so flicking through them changes only what's inside. */}
+      <div onClick={(e) => e.stopPropagation()} className="modal-panel stone-panel"
         onTouchStart={(e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }}
         onTouchEnd={(e) => {
           const t = touch.current;
@@ -136,7 +138,7 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
           if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
           if (dx < 0 && hasNext) onNavigate(currentIndex + 1);
           if (dx > 0 && hasPrev) onNavigate(currentIndex - 1);
-        }} style={{ background: "#0f0f1a", border: `1px solid ${RARITY_COLORS[item.rarity].border}`, boxShadow: `0 0 40px ${RARITY_COLORS[item.rarity].glow}`, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440, maxHeight: "90cqh", overflowY: "auto", position: "relative" }}>
+        }} style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${RARITY_COLORS[item.rarity].border}, 0 0 40px ${RARITY_COLORS[item.rarity].glow}`, padding: 20, width: "100%", maxWidth: 440, height: "92cqh", boxSizing: "border-box", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", color: "rgba(255,255,255,0.4)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
 
@@ -226,8 +228,9 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
           </button>
         </div>
 
-        {items.length > 1 && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        {/* Kept in place (hidden) with only one item, so nothing above it moves. */}
+        {(
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)", visibility: items.length > 1 ? "visible" : "hidden" }}>
             <button onClick={() => hasPrev && onNavigate(currentIndex - 1)} disabled={!hasPrev} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: hasPrev ? "white" : "rgba(255,255,255,0.2)", cursor: hasPrev ? "pointer" : "not-allowed", fontSize: 18, lineHeight: 1 }}>←</button>
             <span style={{ fontSize: 12, opacity: 0.4 }}>{currentIndex + 1} / {items.length}</span>
             <button onClick={() => hasNext && onNavigate(currentIndex + 1)} disabled={!hasNext} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: hasNext ? "white" : "rgba(255,255,255,0.2)", cursor: hasNext ? "pointer" : "not-allowed", fontSize: 18, lineHeight: 1 }}>→</button>

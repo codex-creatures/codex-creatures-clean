@@ -2,7 +2,7 @@
 
 This is the agreed design, with how far each part has got. It's gathered from the design decisions
 made with Claude through October 2026, and the built numbers were checked against the code on
-2026-10-19. **The code is the truth for numbers:** if this file and a constant disagree, trust the
+2026-10-26 (after Combat V2 and the audit that followed it). **The code is the truth for numbers:** if this file and a constant disagree, trust the
 code and fix this file. Constants are named in `code font` so you can grep for them.
 
 **Status tags**
@@ -14,6 +14,24 @@ code and fix this file. Constants are named in `code font` so you can grep for t
 - ❓ **Open**: the user hasn't decided. Ask; don't pick.
 
 Ideas the user floated but never confirmed are listed as ❓, not as decisions.
+
+## Where things stand (2026-10-26)
+
+- **Live:** Combat V2 (7 races, 35 creatures, race kits, codexes for the rest of a creature's kit),
+  soul stones, the Labyrinth / Deep Labyrinth / Abyss, Klutz and his hunts, the tavern questline
+  (stages 1–9), save slots, Vercel hosting.
+- **Just changed (the audit, 2026-10-26):** Klutz shows no race; Rabid Bite is for Beast, Underkin
+  and Toxic; codexes say who can read them; every move has a description; enemies' moves scale with
+  level; a rare move fills the empty 4th slot; drunk encampments are gone; no more resting (every
+  set keeps a move of 30 energy or less); a fight's dock says who used what; fixed-size text boxes
+  on cards, move tablets, the loot window, the item window and the gear picker.
+- **Next (📌, decided, not built):** the merchant's gear wares and armour priced like weapons (§7),
+  the barcode merchant (§2), the onboarding scan gate (§2), the re-entry cooldown (§7), the
+  Cyclops's Meditate heal (§7), more soul stones and effects (§4, §6), the tavern's interior (§9),
+  Klutz's kidnap plan (§8).
+- **Open (❓, the user's call):** what Klutz gets in place of his old counter bonus; agility doing
+  more; race-move rules beyond the kits; shared barcode lists once there's a global registry;
+  longer Klutz walks; a creature trader.
 
 ---
 
@@ -110,7 +128,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     KO at every rarity, against 4.9–5.9 before). ⅕ would keep fights as they were.
 - ✅ Full-set bonuses (all 3 pieces) are effects, not stats (`SET_BONUS` in lib/items/armor.ts):
   Hard Shell, Quickscale, Nullify, Deflect, Steadfast, Unstoppable, Second Wind.
-- ✅ Weapons have a damage-type affinity (+15% when the move's type matches: `AFFINITY_BONUS`).
+- Weapons have a damage-type affinity (+15% when the move's type matches: `AFFINITY_BONUS`), but only
+  under the old rules: Combat V2 has no damage types, so it's off (and not shown).
 
 ### Materials, consumables, bags
 
@@ -152,12 +171,15 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
 ## 4. Creatures
 
-- ✅ 25 scannable species (lib/creatures/creatureData.ts), each with a rarity, a **class**
-  (melee / ranged / magic) and a **race** (Beast, Underkin, Etherial, Undead, Elvish), plus
-  companions (Klutz), boss parts and 6 retired species that are kept out of scans.
+- ✅ 35 scannable species (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts):
+  7 races × one of each rarity. Each has a rarity, a main **style** (`cls`: melee / ranged / magic),
+  an **archetype** (which style kits it draws from, §6) and **one or two races** (Undead, Divine,
+  Beast, Underkin, Geo, Humanoid, Toxic). Plus Klutz (no race), the boss parts, and 7 retired
+  species kept out of scans.
 - ✅ **Individual rolls:** each creature's %s are the species' values with a small zero-sum spread
-  (`ROLL_SPREAD_*` in creatureRoll.ts). Rarer creatures get bigger spreads. 4 move slots, each with
-  a 10% chance of a rare move.
+  (`ROLL_SPREAD_*` in creatureRoll.ts). Rarer creatures get bigger spreads. 4 move slots: it's
+  born with its 3 starting moves (§6), and a 10% chance (`RARE_MOVE_CHANCE`) of a rare learnable
+  move of its style in the empty fourth (the user, 2026-10-26: never in place of a starting move).
 - ✅ **Cards:** a card shows one specific rolled creature. Summon with 3 cards of a species
   (`CARDS_TO_SUMMON`): **choose** a card to get exactly that creature, or **random** for a fresh
   roll.
@@ -167,10 +189,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   starter: the Labyrinth's party is picked from the roster).
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
-- 📌 Races have 5 creatures each, across the rarities. The user is designing creatures and classes
-  in depth.
-- ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): undefined, and
-  deferred. A **Celestial** race was mentioned as a future race.
+- ✅ Races have 5 creatures each, one per rarity (a dual-race creature counts under its first race).
+- ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
+  by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
 
 ### Soul stones (✅ the user's spec, 2026-10-25; lib/creatures/soulStones.ts)
 
@@ -180,7 +201,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   cards included. Summoning "choose" keeps the card's stone; "random" rolls a new one.
 - Each Rare+ species has a pool of **at least 2** stones (`POOLS`, picked by Claude to fit each
   creature; the user may re-sort them), so two of a species can differ. Trickster only goes on
-  races with a utility move (Etherial: Mirage; Undead: Corpsify).
+  races with a utility move (Divine: Mirage; Undead: Corpsify).
 - Creatures and cards from before soul stones get theirs rolled once on load (`soulStoneOf`,
   seeded by the drop's id). Save field `soulStone` on the drop: a key, or `null` for none.
 - Enemies roll them too, at the same rates (the user, 2026-10-25: `makeEnemy`, and the practice
@@ -210,7 +231,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - The six (the user's numbers):
   - **Toxic Skin**: hit by a melee attack, 50% to poison the attacker: 5% of its max HP each turn
     for 3–5 turns, on the bench too. A new poisoning replaces the old one with a fresh 3–5 roll.
-  - **Haunting Presence**: when it enters (start of battle, swap or replacement), 25% that the enemy
+  - **Haunting Presence**: when it enters (the start of the fight or a swap; not when sent in
+    after a knockout, which the user confirmed is right, 2026-10-26), 25% that the enemy
     on the field is "crippled with fear": it loses its next attack and spends no energy. Swaps
     resolve first, so swapping it in can stop the attack due that same turn.
   - **Unstoppable Force**: can't be crippled.
@@ -257,7 +279,14 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   defence stats; then the race multipliers apply.
 - ✅ **Hard counters are intended:** a counter means much less damage and a reason to swap, not
   invulnerability.
-- ✅ **Energy:** max 100, +30 after each attack. A creature with no affordable move rests (+30).
+- ✅ **Energy:** max 100, +30 after each attack, so energy never falls below 30 once it has attacked.
+- ✅ **No resting** (the user, 2026-10-26): every set of moves keeps at least one **steady move**
+  (30 energy or less, no cooldown: `isSteadyMove`, `STEADY_MAX_ENERGY`), so a creature can always
+  attack. The Moves tab and the codex "forget which?" won't give up the last one; a set saved
+  without one gets its first steady move back in the last slot (`resolveMoves`). The Rest button
+  is gone (the engine's "pass" stays as a safety net: with nothing affordable, a creature rests by itself).
+- ✅ **Who used what:** while a round plays out, the line above the moves says "Moss Wolf used
+  Gore" ("Foe's …" for theirs) in place of the energy bar.
 - ✅ **Precise hits:** 5% chance, ignoring 25% of defence, and 1.75× damage (`PRECISE_DAMAGE`, the user, 2026-10-24; a brief try at 75% ignored instead was reverted).
 - **The armour gap was removed** (the user, 2026-10-25): repeating a move no longer raises the
   precise chance or cracks armour. The Perfectionist soul stone is the only thing that rewards
@@ -269,11 +298,14 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   attack is lost), Haste/Quickcast (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
   always precise).
 - ✅ **Race moves:** single-use codexes, learnable only by that race (either of a creature's two).
-  Pounce (Beast), Rabid Bite (Underkin, venom ticks even on the bench), Mirage (Divine, was
-  Etherial), Corpsify (Undead), Barrage (Humanoid, was Elvish; hits every enemy). Geo and
-  Toxic have none yet.
-- ✅ **Move codexes** (decided 2026-10-19): every natural move comes as a codex from scans, each
-  teachable only to a creature of that move's class. Up to 20 damage (`BASIC_MOVES`, 15 moves)
+  Pounce (Beast), Rabid Bite (Beast, Underkin and Toxic can learn it: the user, 2026-10-26,
+  `learnRaces`; it hits as Toxic; venom ticks even on the bench), Mirage (Divine), Corpsify
+  (Undead), Barrage (Humanoid; hits every enemy). Geo has none yet.
+- ✅ **Move codexes** (decided 2026-10-19): every older move comes as a codex from scans, each
+  teachable only to a creature of that move's style (race-kit codexes: below). Every codex says
+  who can read it ("Underkin melee only", `codexLearners`) at the librarian, in the loot window
+  and on the bookcase, and every move has a description (one without its own says how its race
+  lands: `raceNote`). Up to 20 damage (`BASIC_MOVES`, 15 moves)
   they're Common; above that (`STRONG_MOVES`, 10 moves) they're Rare.
 - ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a basic
   codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex. Rare
@@ -282,6 +314,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In, Meditate), once
   a planned Cyclops reward.
 - ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.
+- ✅ **Enemies' moves scale with level** (the user, 2026-10-26; `enemyMoves`, `ENEMY_MOVE_LEVELS`
+  in lib/dungeon/run.ts). From Lv 5 its empty fourth slot holds its race's heavy move; from Lv 12
+  its Neutral light move becomes another move from its kits; from Lv 20 its Neutral priority move
+  does too. It always keeps its race's 30-energy move. 🧪 The levels are Claude's draft. A creature
+  Klutz catches keeps the moves it fought with.
 - 🧪 Balance in general: the user tunes from sims (the balance lab is at /lab and /simulator). Their
   goals: rarity raises the ceiling but a Legendary must not always win; well-fitted, well-rolled
   gear should beat raw rarity within a band; good play should matter more than it does now.
@@ -432,7 +469,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
   scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.
 - ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you
-  keep, in 4 variants: plain, drunk, ambush, rigged), Library (codexes to find, or a librarian
+  keep, in 3 variants: plain, ambush, rigged. The drunk one, foes on ×3 HP, was removed by the user
+  on 2026-10-26: nothing answered it once damage types went), Library (codexes to find, or a librarian
   selling) and Storehouse (mostly materials, sometimes guarded by a mini boss).
   - 🧪 Content visible 50%, storehouse guard 35%, equal variant odds, and a rigged timeout ending
     the run (loot kept) are Claude's defaults.
@@ -583,8 +621,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   triangle (+25% when a move of his countered, `NEUTRAL_COUNTER`). In Combat V2 he has **no race**,
   so nothing is effective against him and he gets no matching-race bonus; but his moves (the older
   ones) have races (`MOVE_RACES`), so they can be effective or resisted like anyone's. ❓ Whether
-  he should get something in place of his old counter bonus is open. His class badge reads a grey
-  "⚖️ Balanced".
+  he should get something in place of his old counter bonus is open. His badge reads a grey
+  "⚖️ Neutral", and he shows no race (the user, 2026-10-26).
 - ✅ **Codexes** (2026-10-23): Klutz reads codexes you own from his Equip window → Moves (not while
   he's away). Any class's moves and the learnable ones, but **no race moves**, not even his own
   race's. What he's learned is kept in `KlutzState.learned`.
@@ -593,8 +631,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     In his stats window, tap a stat to add 1% (attacks on the top row beside the points left;
     defences and agility below), then Confirm or Cancel; the stat bars preview it. A re-spec gives
     every point back for 1000 gold. Old saves get all their points to spend. His weapon and the
-    codexes you teach him still decide most of how he fights. He can learn any class's codex, plus his own
-  race's (Rabid Bite), and starts with Slash, Heavy Blow, Jab and Stone Throw. Sim (2,000 hunts,
+    codexes you teach him still decide most of how he fights. He can learn any style's codex (no race moves, no
+  race-kit moves), and starts with Slash, Heavy Blow, Jab and Stone Throw. (The sim below is from
+  before Combat V2.) Sim (2,000 hunts,
   Lv 1–30): 67–72% wins, as before, but about 50% against magic instead of 26%. That lower magic
   number is only because no magic creature is Common (at equal rarity magic is one of his better
   matchups); the user chose to leave the roster as it is (2026-10-20).
@@ -742,11 +781,21 @@ fields optional with defaults.
   - #23262f stone with pixel bevels and a thin rarity-coloured trim;
   - the pixel font in yellow #f1d9a0, and sunken wells for text;
   - `.inv-panel` for anything holding loot or creatures;
-  - Ranged is green #6fdc6f everywhere.
+  - Colour carries **race** (`RACE_INFO`: Beast green, Humanoid blue…; Neutral slate grey); the
+    three styles share one neutral cream, so they don't clash.
 - **Fixed structure, text fits it** (the user, 2026-10-19: "the text around the box should move as
   that is the variable, not the constant"). Windows are a standard frame of fixed boxes; flicking
   through items or creatures changes only the contents. Varying text gets a fixed number of lines
   (clamped), and absent parts keep their space. This is what makes the game feel polished.
+  - **Text budgets** (lib/uiText.ts, checked by tests/uiText.test.ts): a card's name gets two lines
+    of at most 14 letters (`CARD_NAME_LINE`), a move tablet's two lines of 12 (`MOVE_NAME_LINE`).
+    New creature and move names must fit: write them shorter rather than growing the box.
+  - Built this way (2026-10-26): cards (the name box is always two lines tall), move tablets (name
+    box plus one tag/note line, kept when empty), the item window (one fixed size; the ←/→ row
+    kept), the creature window's gear picker (four fixed lines; the 🔒 line kept), librarian rows
+    (two-line descriptions), the battle dock (no Rest tab; the energy line doubles as "X used Y"),
+    and the loot window (one fixed "closer look" box for whatever you tap, chest or bag, its buttons
+    in one row that scrolls sideways; the chest's rows never shrink while it's open).
 - One tap on a Den object goes in (no name-first double tap).
 
 ## 11. Art and PixelLab

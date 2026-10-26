@@ -1,8 +1,9 @@
 // lib/creatures/creatureData.ts
 
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
-import { KIT_MOVES, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
+import { KIT_MOVES, KIT_MOVE_RACE, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
 import { NEW_SPECIES_V2, V2_RESTYLE, v2Moves } from "./rosterV2";
+import { RACE_BEATS, raceOfMove } from "../combat/raceChart";
 
 export type ElementalType = "inferno" | "aqua" | "naturist" | null;
 
@@ -63,7 +64,8 @@ export type Skill = {
   desc?: string;
   self?: boolean;    // a utility move used on yourself: no target, no damage
   cooldown?: number; // rounds before it can be used again
-  race?: Race;       // a race move: only that race can learn it (from a codex)
+  race?: Race;       // a race move: its race (only that race can learn it, from a codex, unless learnRaces says otherwise)
+  learnRaces?: Race[]; // a race move several races can learn (Rabid Bite)
 };
 
 // Every creature has one or two races (Combat V2, lib/creatures/racesV2.ts).
@@ -157,7 +159,7 @@ export const LEARNABLE_MOVES: Skill[] = [
 export const RACE_MOVES: Skill[] = [
   { name: "Pounce",     damage: 15, energyCost: 50, type: "melee",  dmgType: "force",  race: "beast",        effect: { kind: "pounce", lowHpBonus: 0.5 },
     desc: "Always strikes first this round, whatever its agility. +50% damage if the target is below half HP." },
-  { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "underkin", effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
+  { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "toxic", learnRaces: ["beast", "underkin", "toxic"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
     desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench." },
   { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
     desc: "Shimmers half out of the world: a 30% chance to dodge each attack for 3 rounds." },
@@ -197,8 +199,35 @@ export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MO
 // (A retired kit light move, still in some saves, finds its Balanced move.)
 for (const [old, now] of Object.entries(RETIRED_KIT_MOVES)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
 
+// Every attack move says how its race lands (the race chart,
+// lib/combat/raceChart.ts), so moves without a note of their own (the race
+// kits' plain hits, the older moves) read like the rest. Bosses' moves don't need one.
+const andList = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
+export function raceNote(r?: Race): string {
+  if (!r) return "No race: it lands the same on everyone.";
+  const name = (x: Race) => RACE_INFO[x].name;
+  const resistedBy = RACES.filter((d) => RACE_BEATS[d].includes(r) && !RACE_BEATS[r].includes(d));
+  return `Strong against ${andList(RACE_BEATS[r].map(name))}.${resistedBy.length ? ` Resisted by ${andList(resistedBy.map(name))}.` : ""}`;
+}
+const BOSS_MOVE_NAMES = new Set(BOSS_MOVES.map((m) => m.name));
+for (const m of Object.values(MOVE_BY_NAME)) if (!m.desc && !m.self && !BOSS_MOVE_NAMES.has(m.name)) m.desc = raceNote(raceOfMove(m));
+
+// Who can read a codex of this move, in a few words ("Underkin melee only"),
+// in its race's colour (grey: any creature).
+export function codexLearners(moveName: string): { text: string; color: string } {
+  const m = MOVE_BY_NAME[moveName];
+  const races = m ? learnRacesOf(m) : [];
+  if (races.length) return { text: `${races.map((r) => RACE_INFO[r].name).join(" / ")} only`, color: RACE_INFO[races[0]].color };
+  const kit = KIT_MOVE_RACE[moveName];
+  if (kit && m) return { text: `${RACE_INFO[kit].name} ${CLASS_INFO[m.type].name.toLowerCase()} only`, color: RACE_INFO[kit].color };
+  if (m && ALL_SKILLS.some((x) => x.name === moveName)) return { text: `${CLASS_INFO[m.type].name} only`, color: CLASS_INFO[m.type].color };
+  return { text: "any creature", color: "rgba(255,255,255,0.5)" };
+}
+
 // The race moves a creature of these races could learn.
-export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => m.race && (c.races ?? (c.race ? [c.race] : [])).includes(m.race));
+export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => learnRacesOf(m).some((r) => (c.races ?? (c.race ? [c.race] : [])).includes(r)));
+// The races that can learn a race move (most: just its own).
+export const learnRacesOf = (m: Skill): Race[] => m.learnRaces ?? (m.race ? [m.race] : []);
 
 function s(...names: string[]): Skill[] {
   return names.map(n => ALL_SKILLS.find(sk => sk.name === n)!).filter(Boolean);
@@ -243,7 +272,7 @@ const OLDER_SPECIES: CreatureTemplate[] = [
 // The scannable roster (Combat V2, live since 2026-10-26): 7 races × one of
 // each rarity = 35, the older species plus the new ones
 // (lib/creatures/rosterV2.ts), each with its races, its V2 style and its
-// race-kit moves (the first 4 are the ones it starts with).
+// race-kit moves (the first 3 are the ones it starts with: STARTING_MOVES).
 const withRaces = (c: CreatureTemplate): CreatureTemplate => {
   const races = SPECIES_RACES[c.id];
   return races ? { ...c, race: races[0], races } : c;
@@ -280,7 +309,7 @@ export const PRE_V2_SPECIES: Record<string, CreatureTemplate> = Object.fromEntri
 // POINTS_PER_LEVEL), so you, his weapon and the codexes you teach him decide
 // how he fights. He starts as a brawler; other styles come from codexes.
 export const KLUTZ: CreatureTemplate = {
-  id: "klutz", name: "Klutz", race: "underkin", rarity: "rare", baseHp: 80, companion: true, cls: "melee", neutral: true,
+  id: "klutz", name: "Klutz", rarity: "rare", baseHp: 80, companion: true, cls: "melee", neutral: true,
   proficiency: { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0 },
   skills: s("Slash", "Heavy Blow", "Jab", "Stone Throw"),
   flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. Pay him, gear him, and he'll go hunting for you.",
@@ -380,5 +409,18 @@ export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
   const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
   const picked = [...new Set((names ?? []).map(currentMoveName))].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   // A species' own moves first: Combat V2's kit moves aren't in MOVE_BY_NAME.
-  return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => c.skills.find((m) => m.name === n) ?? MOVE_BY_NAME[n]);
+  const moves = (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => c.skills.find((m) => m.name === n) ?? MOVE_BY_NAME[n]);
+  // There's no resting, so every set keeps a steady move. One without (a
+  // set saved before the rule) gets its first steady move in the last slot.
+  if (hasSteadyMove(moves)) return moves;
+  const steady = [...c.skills, ...ALL_SKILLS].find(isSteadyMove);
+  if (!steady) return moves;
+  return moves.length < MOVE_SLOTS ? [...moves, steady] : [...moves.slice(0, -1), steady];
 }
+
+// A steady move costs at most STEADY_MAX_ENERGY, so it's always affordable
+// (energy never drops below ENERGY_REGEN after an attack) and a creature never
+// has to rest. Every set of moves keeps one (the user, 2026-10-26: no resting).
+export const STEADY_MAX_ENERGY = 30;
+export const isSteadyMove = (m: Skill) => m.energyCost <= STEADY_MAX_ENERGY && !m.cooldown && !m.self;
+export const hasSteadyMove = (moves: Skill[]) => moves.some(isSteadyMove);

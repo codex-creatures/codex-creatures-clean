@@ -122,7 +122,12 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
       ...cardTrim(rc, glow),
     }}>
       {!noName && <div style={{ textAlign: "center", padding: "2.5cqw 3cqw" }}>
-        <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(13px, 9.5cqw, 22px)" : "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, color: YELLOW, textShadow: "1px 1px 0 #000", ...clamp2 }}>{t.name}</div>
+        {/* Always two lines tall (a one-line name sits in the middle), so every
+            card's picture is the same size. Names fit two lines: CARD_NAME_LINE (lib/uiText.ts). */}
+        <div title={t.name} style={{ fontFamily: PIXEL, fontSize: big ? "clamp(13px, 9.5cqw, 22px)" : "clamp(9px, 7.5cqw, 15px)", lineHeight: 1.15, height: "2.3em",
+          display: "flex", alignItems: "center", justifyContent: "center", color: YELLOW, textShadow: "1px 1px 0 #000" }}>
+          <span style={clamp2}>{t.name}</span>
+        </div>
         {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
       </div>}
       <div style={{ position: "relative", flex: 1, minHeight: 0, ...cardWell(rc) }}>
@@ -163,7 +168,7 @@ export function CardFace({ t, creatureId, soulStone, footer, badge, glow, onClic
       style={{ position: "relative", display: "block", width: "100%", padding: 0, border: "none", background: "none", textAlign: "left", cursor: onClick ? "pointer" : "default", containerType: "inline-size" }}>
       <CardBody t={t} creatureId={creatureId} glow={glow} noName={mini}>
         {!mini && <div style={CARD_WELL}>
-          <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW }}>{roleOf(t)}</div>
+          <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{roleOf(t)}</div>
           <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: stone ? SOUL_COLOR : "rgba(255,255,255,0.6)", ...clamp2 }}>
             {stone ? `${stone.icon} ${stone.name}` : shortFlavour(t.flavour)}
           </div>

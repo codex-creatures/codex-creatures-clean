@@ -33,7 +33,7 @@ import { GEAR_STATS } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import CodexMove from "./CodexMove";
-import { MOVE_BY_NAME, RACE_INFO } from "@/lib/creatures/creatureData";
+import { codexLearners } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
@@ -77,6 +77,10 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   const [seen, setSeen] = useState<number | null>(null);     // a loot item tapped (to see it before taking it)
   const [was, setWas] = useState(items); // things moved: the indexes are stale
   const [triedAll, setTriedAll] = useState(false); // Take all was tapped (and nothing else since)
+  // The chest's rows of 5: as many as it opened with (or has grown to), never
+  // fewer, so taking things never pulls everything below it up.
+  const [openRows] = useState(() => Math.max(1, Math.ceil(items.length / 5)));
+  const cells = Math.max(openRows, Math.ceil(items.length / 5)) * 5;
   // Take all left things behind for want of room: say so.
   const noRoom = triedAll && full && items.some((x) => !lookOf(x).free);
   // Esc puts away a closer look first, then closes the window.
@@ -131,8 +135,14 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           </div>
         )}
         <div data-drop="loot" className="inv-panel"
-          style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, minHeight: 72, outline: over === "loot" ? "2px solid #ffd66e" : undefined }}>
-          {items.length === 0 && <div style={{ gridColumn: "1 / -1", alignSelf: "center", textAlign: "center", fontSize: 13, color: MUTED }}>Empty</div>}
+          style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 4, outline: over === "loot" ? "2px solid #ffd66e" : undefined }}>
+          {items.length === 0 && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: MUTED }}>Empty</div>}
+          {Array.from({ length: cells - items.length }, (_, k) => (
+            // Empty places keep the grid's shape (shown after the things in it).
+            <div key={`empty${k}`} aria-hidden style={{ order: 1, visibility: "hidden" }}>
+              <span style={{ display: "block", aspectRatio: "1" }} /><span style={{ ...NAME, fontSize: 13 }}>-</span>
+            </div>
+          ))}
           {items.map((x, i) => {
             const l = lookOf(x);
             const blocked = full && !l.free;
@@ -158,16 +168,30 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           </div>
           <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
         </div>
-        {seen !== null && items[seen] && (
-          <ItemPeek item={items[seen]} action={
-            <span style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {onDrinkLoot && sackPotion(items[seen]) && party.filter(hurt).map((c) => (
-                <button key={c.id} className="chip" onClick={() => { onDrinkLoot(seen, c.id); setSeen(null); }}>Give {c.name}</button>
+        {/* A closer look: one fixed box, always here, for whatever you tapped in
+            the chest or in your bag (nothing tapped: a hint). Only what's inside changes. */}
+        {seen !== null && items[seen] ? (
+          <ItemPeek item={items[seen]} action={<>
+            {onDrinkLoot && sackPotion(items[seen]) && party.filter(hurt).map((c) => (
+              <button key={c.id} className="chip" onClick={() => { onDrinkLoot(seen, c.id); setSeen(null); }}>Give {c.name}</button>
+            ))}
+            <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
+          </>} />
+        ) : picked !== null && bag[picked] ? (() => {
+          const l = bag[picked];
+          const teaching = teach?.step === "equip" && teach.i === picked;
+          return (
+            <ItemPeek item={l.peek} look={l} action={<>
+              {onEquip && wearable(l) && party.map((c) => (
+                <button key={c.id} className={`chip${teaching ? " tutorial-pulse" : ""}`} onClick={() => { onEquip(picked, c.id); setPicked(null); }}>Equip on {c.name}</button>
               ))}
-              <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
-            </span>
-          } />
-        )}
+              {onDrink && potionOf(l) && party.filter(hurt).map((c) => (
+                <button key={c.id} className="chip" onClick={() => { onDrink(picked, c.id); setPicked(null); }}>Give {c.name}</button>
+              ))}
+              {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
+            </>} />
+          );
+        })() : <ItemPeek />}
 
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
@@ -192,27 +216,6 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             );
           })}
         </div>
-        {picked !== null && bag[picked] && (() => {
-          const l = bag[picked];
-          const teaching = teach?.step === "equip" && teach.i === picked;
-          const put = (
-            <span style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {onEquip && wearable(l) && party.map((c) => (
-                <button key={c.id} className={`chip${teaching ? " tutorial-pulse" : ""}`} onClick={() => { onEquip(picked, c.id); setPicked(null); }}>Equip on {c.name}</button>
-              ))}
-              {onDrink && potionOf(l) && party.filter(hurt).map((c) => (
-                <button key={c.id} className="chip" onClick={() => { onDrink(picked, c.id); setPicked(null); }}>Give {c.name}</button>
-              ))}
-              {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
-            </span>
-          );
-          return l.peek ? <ItemPeek item={l.peek} action={put} /> : (
-            <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-              <b style={{ color: l.color, minWidth: 0 }}>{l.name}</b>{put}
-            </div>
-          );
-        })()}
-
         {/* Your creatures: drop a weapon or armour piece on one to equip it, or a potion to heal it. */}
         {(onEquip || onDrink || onDrinkLoot) && (
           <TeamDropRow team={party} over={over} pulse={teach?.step === "equip"}
@@ -231,28 +234,33 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   );
 }
 
-// A closer look at one thing: what it is and its stats, with a button.
-function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode }) {
-  const l = lookOf(item);
+// A closer look at one thing: what it is and its stats, with its buttons.
+// A fixed frame (PEEK_BODY tall), whatever it shows: a name line and a kind
+// line, beside one row of buttons (it scrolls sideways if there are many);
+// then the body, cut to fit. With nothing to show, a hint in the same box.
+const PEEK_BODY = 84;
+const textBody = (t?: string) => <div style={{ fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={t}>{t}</div>;
+function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
+  const l = look ?? (item ? lookOf(item) : undefined);
   let kind = "", body: React.ReactNode = null;
-  if ("potion" in item) { kind = "potion"; body = <>Heals one creature {POTIONS[item.potion].heal} HP</>; }
+  if (!item) { /* (just its name: a bag slot with no closer look) */ }
+  else if ("potion" in item) { kind = "potion"; body = textBody(`Heals one creature ${POTIONS[item.potion].heal} HP`); }
   else if ("gear" in item) {
     const g = item.gear as CreatureOrItemDrop;
     // Only weapons and armour have stats: a potion found as an item (left on a
     // floor, say) says what it heals.
-    if (g.potion) { kind = "potion"; body = <>Heals one creature {POTIONS[g.potion].heal} HP</>; }
+    if (g.potion) { kind = "potion"; body = textBody(`Heals one creature ${POTIONS[g.potion].heal} HP`); }
     else if (g.material || g.tool || g.schematic) {
       kind = g.material ? "material" : g.tool ? `${g.rarity} tool` : `${g.rarity} schematic`;
-      body = <>{g.desc}</>;
+      body = textBody(g.desc);
     } else if (g.stone) {
       kind = "soul stone";
-      body = <>{g.desc}</>;
+      body = textBody(g.desc);
     } else if (g.scroll) {
       kind = "xp scroll";
-      body = <>{g.desc}</>;
+      body = textBody(g.desc);
     } else if (g.codexMove) {
-      const race = MOVE_BY_NAME[g.codexMove]?.race;
-      kind = `${g.rarity} ${race ? `${RACE_INFO[race].name} ` : ""}codex`;
+      kind = `${g.rarity} codex · ${codexLearners(g.codexMove).text}`;
       body = <CodexMove move={g.codexMove} />;
     } else {
       kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;
@@ -280,15 +288,19 @@ function ItemPeek({ item, action }: { item: SackItem; action: React.ReactNode })
     }
   }
   return (
-    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gap: 6 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 0 }}>
-          <b style={{ color: l.color, fontSize: 17 }}>{l.name}</b>
-          {kind && <div style={{ fontSize: 13, color: MUTED, textTransform: "capitalize" }}>{kind}</div>}
+    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `44px ${PEEK_BODY}px`, gap: 6 }}>
+      {!l ? (
+        <div style={{ gridRow: "1 / -1", alignSelf: "center", textAlign: "center", fontSize: 14, color: MUTED }}>Tap something to take a closer look.</div>
+      ) : <>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
+            <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
+            <div title={kind} style={{ fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
+          </div>
+          <div style={{ display: "flex", gap: 6, maxWidth: "62%", overflowX: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>{action}</div>
         </div>
-        {action}
-      </div>
-      {body && <div style={{ fontSize: 15 }}>{body}</div>}
+        <div style={{ fontSize: 15, minHeight: 0, overflow: "hidden" }}>{body}</div>
+      </>}
     </div>
   );
 }

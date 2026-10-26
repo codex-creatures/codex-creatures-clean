@@ -11,10 +11,10 @@
 
 import { useState } from "react";
 import CodexMove from "./CodexMove";
-import RaceTag from "./RaceTag";
 import { MoveTile } from "./MoveTile";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
-import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, findCreatureTemplate, resolveMoves } from "@/lib/creatures/creatureData";
+import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, codexLearners, findCreatureTemplate, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
+import { KIT_MOVE_RACE } from "@/lib/creatures/raceKitsV2";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
 import { NAME } from "./ContainerLoot";
@@ -38,7 +38,8 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
   const [discarding, setDiscarding] = useState(false);               // "Throw it out?" awaiting Yes / No
   const picked = codexes.find((c) => c.id === pickedId);
   const move = picked?.codexMove;
-  const race = move ? MOVE_BY_NAME[move]?.race : undefined;
+  const raceLocked = !!move && !!MOVE_BY_NAME[move] && learnRacesOf(MOVE_BY_NAME[move]).length > 0;
+  const learners = move ? codexLearners(move) : undefined;
 
   const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setDropSlot(null); setTaught(null); setDiscarding(false); };
   const slotsOf = (x: CreatureOrItemDrop) => {
@@ -49,7 +50,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
   const why = (x: CreatureOrItemDrop) => {
     const t = findCreatureTemplate(x.creatureId, x.name);
     if (!t || !move) return "Can't learn it";
-    if (!canLearnFromCodex(t, move)) return race ? "Wrong race" : "Can't learn it";
+    if (!canLearnFromCodex(t, move)) return raceLocked ? "Wrong race" : KIT_MOVE_RACE[move] ? "Not its kit" : "Wrong style";
     if (x.learned?.includes(move) || slotsOf(x).includes(move)) return "Knows it";
     return undefined;
   };
@@ -80,7 +81,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 }}>{picked.name}</span>
-                  {race && <RaceTag race={race} />}
+                  {learners && <span className="pixel-font" style={{ flexShrink: 0, fontSize: 12, textTransform: "uppercase", whiteSpace: "nowrap", color: learners.color, border: `2px solid ${learners.color}55`, padding: "1px 8px" }}>{learners.text}</span>}
                 </div>
                 <CodexMove move={move!} />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, visibility: teach || onDiscard ? "visible" : "hidden" }}>
@@ -111,9 +112,15 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
               <>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>{forgetter.name}&apos;s slots are full: forget which?</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {slotsOf(forgetter).map((n, i) => MOVE_BY_NAME[n] && (
-                    <MoveTile key={n} m={MOVE_BY_NAME[n]} selected={dropSlot === i} onClick={() => setDropSlot(dropSlot === i ? null : i)} />
-                  ))}
+                  {slotsOf(forgetter).map((n, i, all) => {
+                    // It must keep a move it can always afford (no resting).
+                    const keeps = hasSteadyMove(all.map((x, j) => MOVE_BY_NAME[j === i ? move! : x]).filter(Boolean));
+                    return MOVE_BY_NAME[n] && (
+                      <MoveTile key={n} m={MOVE_BY_NAME[n]} selected={dropSlot === i} disabled={!keeps}
+                        note={keeps ? undefined : { text: `its last ≤${STEADY_MAX_ENERGY}⚡ move`, color: "#ff8a80" }}
+                        onClick={() => setDropSlot(dropSlot === i ? null : i)} />
+                    );
+                  })}
                 </div>
                 {/* Reading the codex uses it up, so the swap waits for a Confirm. */}
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>

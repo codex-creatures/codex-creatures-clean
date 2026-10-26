@@ -7,7 +7,7 @@
 // - effective (the move's race beats it): RACE_EFFECT.strong
 // - resisted (the defender's race beats the move's race, and not both ways): RACE_EFFECT.resisted
 // - otherwise neutral.
-// Against two races the two multiply (1.4 × 1.4 = 1.96 for a double weakness).
+// Against two races the two multiply (1.25 × 1.25 ≈ 1.56 for a double weakness).
 // A move of one of the attacker's own races gets MATCH_BONUS, once.
 
 import type { Skill } from "../creatures/creatureData";

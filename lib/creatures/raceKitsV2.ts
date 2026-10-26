@@ -1,5 +1,5 @@
 // lib/creatures/raceKitsV2.ts
-// Combat V2 race moves (being simmed; not in the live game yet). Every race
+// Combat V2 race moves (live since 2026-10-26). Every race
 // has a kit of 5 moves in each style (melee, ranged, magic): 7 × 3 × 5 = 105.
 // A creature draws from the kits of its race(s) in its archetype's style(s)
 // (lib/creatures/rosterV2.ts). More moves go on top of these later.

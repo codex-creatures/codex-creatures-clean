@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, RETIRED_CREATURES } from "../lib/creatures/creatureData";
-import { rollProficiency, rollMoves, rollSpread } from "../lib/creatures/creatureRoll";
+import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, RETIRED_CREATURES, defaultMoveNames } from "../lib/creatures/creatureData";
+import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
 import { CREATURE_SPRITES } from "../lib/sprites/creatures";
@@ -29,22 +29,21 @@ describe("creature % rolls", () => {
     }
   });
 
-  it("starting moves: up to 4 distinct moves, from the species or the rare (learnable) list", () => {
+  it("starting moves: its 3, and now and then a rare (learnable) move in the empty 4th slot, never in place of one", () => {
     const rare = new Set(LEARNABLE_MOVES.map((m) => m.name));
     let rareSeen = 0;
     for (const c of CREATURE_TEMPLATES) {
-      const own = new Set(c.skills.map((s) => s.name));
       for (let i = 0; i < 200; i++) {
         const moves = rollMoves(c);
+        expect(moves.slice(0, 3)).toEqual(defaultMoveNames(c));
         expect(moves.length).toBeLessThanOrEqual(MOVE_SLOTS);
         expect(new Set(moves).size).toBe(moves.length);
-        for (const m of moves) expect(own.has(m) || rare.has(m)).toBe(true);
-        if (moves.some((m) => rare.has(m))) rareSeen++;
+        if (moves.length === MOVE_SLOTS) { expect(rare.has(moves[3])).toBe(true); rareSeen++; }
       }
     }
     const share = rareSeen / (CREATURE_TEMPLATES.length * 200);
-    expect(share).toBeGreaterThan(0.2); // ~1 - 0.9^4 ≈ 34%
-    expect(share).toBeLessThan(0.5);
+    expect(share).toBeGreaterThan(RARE_MOVE_CHANCE - 0.03);
+    expect(share).toBeLessThan(RARE_MOVE_CHANCE + 0.03);
   });
 });
 

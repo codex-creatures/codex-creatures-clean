@@ -28,7 +28,7 @@ import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, raceNames } from "@/lib/creatures/creatureData";
+import { codexLearners, CREATURE_BY_ID, MOVE_BY_NAME, raceNames } from "@/lib/creatures/creatureData";
 import { PotionIcon } from "@/components/PixelSprite";
 import CreaturePortrait from "@/components/CreaturePortrait";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
@@ -1545,8 +1545,9 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
                   style={{ opacity: off ? 0.5 : 1 }}>
                   <span style={{ flex: 1 }}>
                     <b style={{ color: "#c7b8ff" }}>📖 Codex: {name}</b>
-                    <span style={{ fontSize: 12, color: move?.race ? RACE_INFO[move.race].color : MUTED }}> · {move?.race ? `${RACE_INFO[move.race].name} only` : "any creature"}</span>
-                    <span style={{ display: "block", fontSize: 12, color: MUTED }}>{move?.desc}</span>
+                    <span style={{ fontSize: 12, color: codexLearners(name).color }}> · {codexLearners(name).text}</span>
+                    {/* Two lines whatever the move, so every row is the same height. */}
+                    <span title={move?.desc} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, height: "2.7em", fontSize: 12, color: MUTED }}>{move?.desc}</span>
                   </span>
                   <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "bought" : <><Coin /> {price}</>}</span>
                 </button>

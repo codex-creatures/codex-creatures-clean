@@ -10,7 +10,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { ITEM_META } from "./items/metadata";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, ARMOR_V2, pieceName } from "./items/armor";
-import { BASIC_MOVES, STRONG_MOVES, CLASS_INFO, CREATURE_BY_ID, KIT_BASIC_CODEXES, KIT_STRONG_CODEXES, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_INFO, RACE_MOVES, type Skill } from "./creatures/creatureData";
+import { BASIC_MOVES, STRONG_MOVES, CLASS_INFO, CREATURE_BY_ID, KIT_BASIC_CODEXES, KIT_STRONG_CODEXES, LEARNABLE_MOVES, MOVE_BY_NAME, learnRacesOf, RACE_INFO, RACE_MOVES, type Skill } from "./creatures/creatureData";
 import { KIT_MOVE_RACE, KIT_RACE_MOVES } from "./creatures/raceKitsV2";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
@@ -59,7 +59,8 @@ export function codexDrop(moveName: string, barcode = ""): Drop {
   const kitRace = KIT_MOVE_RACE[moveName];
   const basic = BASIC_MOVES.some((m) => m.name === moveName) || KIT_BASIC_CODEXES.some((m) => m.name === moveName);
   const strong = STRONG_MOVES.some((m) => m.name === moveName) || KIT_STRONG_CODEXES.some((m) => m.name === moveName);
-  const who = move?.race ? `one ${RACE_INFO[move.race].name} creature`
+  const learners = move ? learnRacesOf(move) : [];
+  const who = learners.length ? `one ${learners.map((r) => RACE_INFO[r].name).join(", ").replace(/, ([^,]*)$/, " or $1")} creature`
     : kitRace && move ? `one ${RACE_INFO[kitRace].name} ${CLASS_INFO[move.type].name} creature`
     : (basic || strong) && move ? `one ${CLASS_INFO[move.type].name} creature` : "any one creature";
   return {

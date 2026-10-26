@@ -8,7 +8,7 @@
 // move it replaces, then Confirm.
 
 import { useState } from "react";
-import { CLASS_INFO, MOVE_SLOTS, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, MOVE_BY_NAME, MOVE_SLOTS, STEADY_MAX_ENERGY, hasSteadyMove, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
 import { moveKind, moveTag } from "./ClassBadge";
 import { MoveTile } from "./MoveTile";
 
@@ -70,7 +70,10 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const [forget, setForget] = useState<number | null>(null); // teaching: the slot picked to forget, awaiting Confirm
+  const [warn, setWarn] = useState(false); // tried to give up its last steady move
   const current = resolveMoves(template, moves);
+  // Would putting this move in this slot leave the set without a steady move (STEADY_MAX_ENERGY)?
+  const breaks = (slot: number, m?: Skill) => !!m && !hasSteadyMove(current.map((c, i) => (i === slot ? m : c)));
   const options = movesAvailableTo(template, learned, born).filter((m) => !current.some((c) => c.name === m.name));
   const fromCodex = new Set(learned ?? []);
   const groups: [string, Skill[], { text: string; color: string } | undefined][] = [
@@ -80,6 +83,8 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
 
   function choose(name: string) {
     if (editing === null) return;
+    if (breaks(editing, options.find((m) => m.name === name))) { setWarn(true); return; }
+    setWarn(false);
     const next = current.map((m) => m.name);
     next[editing] = name;
     onChange?.(next);
@@ -107,13 +112,15 @@ export default function MoveSlots({ template, moves, born, learned, onChange, te
           )}
         </div>
       )}
-      <div style={{ fontSize: 13, color: MUTED, marginBottom: 8, display: teaching ? "none" : undefined }}>
-        {onChange ? (editing === null ? "Tap one of your moves to swap it out." : `Now pick a move below to put in slot ${editing + 1}.`) : "Its moves in battle."}
+      <div style={{ fontSize: 13, color: MUTED, marginBottom: 8, display: teaching && !warn ? "none" : undefined }}>
+        {warn ? <span style={{ color: "#ff8a80" }}>Keep one move of {STEADY_MAX_ENERGY}⚡ or less: it always has one it can afford.</span>
+          : onChange ? (editing === null ? "Tap one of your moves to swap it out." : `Now pick a move below to put in slot ${editing + 1}.`) : "Its moves in battle."}
       </div>
       <div className="move-grid">
         {Array.from({ length: MOVE_SLOTS }, (_, i) => current[i]).map((m, i) => m ? (
           <MoveTile key={i} m={m} slot={i} selected={teaching ? forget === i : editing === i}
-            onClick={teaching ? () => setForget(forget === i ? null : i) : onChange ? () => setEditing(editing === i ? null : i) : undefined} />
+            onClick={teaching ? () => { const no = breaks(i, MOVE_BY_NAME[teaching.move]); setWarn(no); if (!no) setForget(forget === i ? null : i); }
+              : onChange ? () => { setWarn(false); setEditing(editing === i ? null : i); } : undefined} />
         ) : (
           <button key={i} disabled={!onChange} onClick={() => setEditing(editing === i ? null : i)}
             style={{ padding: 12, borderRadius: 10, border: `2px dashed ${editing === i ? "#ffd66e" : "#2a2d38"}`, background: "transparent", color: MUTED, cursor: "pointer" }}>

@@ -79,16 +79,25 @@ export function MoveTile({ m, note, extra = [], selected, disabled, dim, tag, fi
         }}>i</button>
 
       {!info ? (
-        // The name: large and bold, pale stone edged with the dark of the cut.
+        // A fixed frame: the name in a box two lines tall (a one-line name sits
+        // in its middle; names are kept short enough for two lines:
+        // MOVE_NAME_LINE), and under it one line for a tag or note, kept when
+        // empty. So no tablet's name moves whatever it says. (lib/uiText.ts)
         <div style={{ position: "absolute", inset: "0 24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-          <div className="pixel-font" style={{
-            fontSize: fill ? "clamp(13px, 4.6cqw, 20px)" : "clamp(18px, 5.4cqw, 23px)", lineHeight: 1.05, color: "#fbf1dc", letterSpacing: "0.03em",
+          <div className="pixel-font" title={m.name} style={{
+            fontSize: fill ? "clamp(12px, 4.2cqw, 19px)" : "clamp(16px, 5cqw, 22px)", lineHeight: 1.05, height: "2.1em", width: "100%",
+            display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", overflowWrap: "anywhere",
+            color: "#fbf1dc", letterSpacing: "0.03em",
             textShadow: `1px 0 0 #fbf1dc, 2px 0 0 ${stone.cut}, -1px 0 0 ${stone.cut}, 0 -1px 0 ${stone.cut}, 1px -1px 0 ${stone.cut}, 0 2px 0 ${stone.cut}, 1px 2px 0 ${stone.cut}, 0 3px 0 rgba(0,0,0,0.35)`,
           }}>
-            {m.name}
+            <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{m.name}</span>
           </div>
-          {tag && <div style={{ fontSize: 10, color: tag.color, textShadow: "0 1px 0 #000" }}>{tag.text}</div>}
-          {note && <div style={{ fontSize: 11, marginTop: 2, color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "0 5px" }}>{note.text}</div>}
+          {/* The tag or note line: one line, always there. */}
+          <div style={{ height: 15, maxWidth: "100%", fontSize: 11, lineHeight: "15px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2,
+            visibility: note || tag ? "visible" : "hidden", textShadow: "0 1px 0 #000",
+            ...(note ? { color: "#ffe1d8", background: "rgba(0,0,0,0.45)", padding: "0 5px" } : { color: tag?.color }) }}>
+            {note?.text ?? tag?.text ?? "-"}
+          </div>
         </div>
       ) : (
         <div style={{ position: "absolute", inset: "6px 30px 6px 8px", overflowY: "auto", fontSize: 11, lineHeight: 1.4, color: "#eee4cc", textShadow: "0 1px 0 #000" }}>

@@ -86,7 +86,7 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
 | | |
 |---|---|
 | `npm run dev` | dev server, **always port 3000** (`scripts/check-port.mjs` refuses if busy: saves are per address) |
-| `npm test` | Vitest, `tests/*.test.ts` (~320 tests; a few minutes on the main PC, where the slow roll/map tests can hit their time limits under load: rerun those alone before suspecting a bug) |
+| `npm test` | Vitest, `tests/*.test.ts` (~370 tests; a few minutes on the main PC, where the slow roll/map tests can hit their time limits under load: rerun those alone before suspecting a bug) |
 | `npx tsc --noEmit` | type check |
 | `npm run lint` | ESLint |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
