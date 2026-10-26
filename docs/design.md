@@ -304,8 +304,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Move codexes** (decided 2026-10-19): every older move comes as a codex from scans, each
   teachable only to a creature of that move's style (race-kit codexes: below). Every codex says
   who can read it ("Underkin melee only", `codexLearners`) at the librarian, in the loot window
-  and on the bookcase, and every move has a description (one without its own says how its race
-  lands: `raceNote`). Up to 20 damage (`BASIC_MOVES`, 15 moves)
+  and on the bookcase, and every move has a description (one without its own just says "A plain melee
+  hit.": the user, 2026-10-27, doesn't want moves spelling out what they're strong against; the
+  race chart is for that). Up to 20 damage (`BASIC_MOVES`, 15 moves)
   they're Common; above that (`STRONG_MOVES`, 10 moves) they're Rare.
 - ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a basic
   codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex. Rare

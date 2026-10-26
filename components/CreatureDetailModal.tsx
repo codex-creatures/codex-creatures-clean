@@ -24,7 +24,6 @@ import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type Ar
 import MoveSlots from "./MoveSlots";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
-import Help from "./Help";
 import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SOUL_COLOR } from "./SoulStoneTag";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
@@ -113,6 +112,7 @@ export default function CreatureDetailModal({
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
   const [stonePicking, setStonePicking] = useState(false); // the soul stone picker (Klutz's, or your loose stones)
+  const canSetStone = !!(soulStones || stones) && !locked; // else tapping the stone just says what it does
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
@@ -269,8 +269,8 @@ export default function CreatureDetailModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
-                <SoulSlot stone={creature.soulStone} active={stonePicking}
-                  onClick={(soulStones || stones) && !locked ? () => { setStonePicking((p) => !p); setPicking(null); setPreview(undefined); } : undefined} />
+                <SoulSlot stone={creature.soulStone} active={stonePicking} changeable={canSetStone}
+                  onClick={canSetStone || creature.soulStone ? () => { setStonePicking((p) => !p); setPicking(null); setPreview(undefined); } : undefined} />
               </div>
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -289,8 +289,15 @@ export default function CreatureDetailModal({
             {/* The lock line keeps its space when unlocked, so nothing under it moves between creatures. */}
             <div title={locked || undefined} style={{ marginTop: 6, height: 17, fontSize: 12, color: MUTED, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", visibility: locked ? "visible" : "hidden" }}>🔒 {locked || "-"}</div>
 
+            {/* A stone that can't be changed here: tapping it just says what it does */}
+            {stonePicking && !canSetStone && creature.soulStone && (
+              <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a", fontSize: 12, lineHeight: 1.4, color: SOUL_COLOR }}>
+                <b>{SOUL_STONES[creature.soulStone].icon} {SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}
+              </div>
+            )}
+
             {/* Klutz's soul stone picker: tap one to give it to him */}
-            {stonePicking && soulStones && (
+            {stonePicking && canSetStone && soulStones && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Choose his soul stone</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
@@ -312,7 +319,7 @@ export default function CreatureDetailModal({
             )}
 
             {/* A creature of yours: set one of your loose soul stones in it */}
-            {stonePicking && stones && (
+            {stonePicking && canSetStone && stones && (
               <StoneSetter current={creature.soulStone} {...stones} onSet={(id) => { stones.onSet(id); setStonePicking(false); }} />
             )}
 
@@ -541,23 +548,22 @@ function Pedestal({ creature, glow, border, hp }: { creature: CreatureOrItemDrop
 }
 
 // The creature's soul stone, under its weapon: always there (empty for none),
-// so nothing moves flicking between creatures. What it does is behind the "?".
-// onClick: it can be changed (Klutz's): the square is a button.
-function SoulSlot({ stone, onClick, active }: { stone?: SoulStoneKey | null; onClick?: () => void; active?: boolean }) {
+// so nothing moves flicking between creatures. Tapping it says what it does
+// (or opens the picker, when it can be changed). The name gets two lines.
+function SoulSlot({ stone, onClick, active, changeable }: { stone?: SoulStoneKey | null; onClick?: () => void; active?: boolean; changeable?: boolean }) {
   const s = stone ? SOUL_STONES[stone] : undefined;
   const Box = onClick ? "button" : "span";
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 0 }}>
       <span className="pixel-font" style={{ fontSize: 9, lineHeight: 1.2, color: s ? SOUL_COLOR : MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center" }}>Soul stone</span>
-      <Box onClick={onClick} title={onClick ? "Choose a soul stone" : s ? `${s.name}: ${s.text}` : "No soul stone"} style={{
+      <Box onClick={onClick} title={s ? `${s.name}: ${s.text}` : changeable ? "Choose a soul stone" : "No soul stone"} style={{
         cursor: onClick ? "pointer" : undefined, padding: 0, ...(active ? { outline: "2px solid #ffd66e" } : {}),
         width: 60, height: 60, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26,
         background: s ? "radial-gradient(circle, rgba(185,230,255,0.25), #101117 75%)" : "#101117",
         border: `3px solid ${s ? "rgba(185,230,255,0.6)" : "#2f3340"}`, boxShadow: "inset 2px 2px 0 rgba(255,255,255,0.06), 0 3px 0 rgba(0,0,0,0.5)",
-      }}>{s ? s.icon : <span style={{ fontSize: 18, color: onClick ? MUTED : "#3a3e4b" }}>{onClick ? "+" : "—"}</span>}</Box>
-      <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 11, height: 26, color: s ? SOUL_COLOR : MUTED, maxWidth: 110 }}>
-        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s ? s.name : "None"}</span>
-        <span style={{ visibility: s ? "visible" : "hidden" }}><Help title={s ? `Soul stone: ${s.name}` : "Soul stone"}><p>{s?.text}</p></Help></span>
+      }}>{s ? s.icon : <span style={{ fontSize: 18, color: changeable ? MUTED : "#3a3e4b" }}>{changeable ? "+" : "—"}</span>}</Box>
+      <span title={s?.name} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 11, lineHeight: 1.2, height: "2.4em", maxWidth: 110, textAlign: "center", color: s ? SOUL_COLOR : MUTED }}>
+        {s ? s.name : "None"}
       </span>
     </div>
   );
@@ -576,7 +582,10 @@ function StoneSetter({ current, owned, gold, onSet }: { current?: SoulStoneKey |
     <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
       <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Set a soul stone</div>
       {kinds.length === 0 ? (
-        <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You have no soul stones. They turn up in new barcodes and boss chests.</p>
+        <>
+          {cur && <p style={{ fontSize: 12, lineHeight: 1.4, color: SOUL_COLOR, margin: "0 0 6px" }}><b>{cur.name}</b>: {cur.text}</p>}
+          <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You have no {cur ? "spare " : ""}soul stones. They turn up in new barcodes and boss chests.</p>
+        </>
       ) : <>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
           {kinds.map((k) => (
@@ -586,8 +595,8 @@ function StoneSetter({ current, owned, gold, onSet }: { current?: SoulStoneKey |
             </Tile>
           ))}
         </div>
-        <div style={{ marginTop: 8, height: "4.2em", overflow: "hidden", fontSize: 12, lineHeight: 1.4, color: chosen ? SOUL_COLOR : MUTED }}>
-          {chosen ? <><b>{SOUL_STONES[chosen].name}</b>: {SOUL_STONES[chosen].text}</> : cur ? `Tap a stone to replace ${cur.name}.` : "Tap a stone to set it in this creature."}
+        <div style={{ marginTop: 8, height: "4.2em", overflow: "hidden", fontSize: 12, lineHeight: 1.4, color: chosen || cur ? SOUL_COLOR : MUTED }}>
+          {chosen ? <><b>{SOUL_STONES[chosen].name}</b>: {SOUL_STONES[chosen].text}</> : cur ? <><b>{cur.name}</b>: {cur.text}</> : "Tap a stone to set it in this creature."}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           <button className="pixel-btn" disabled={!stone || gold < cost} onClick={() => stone && onSet(stone.id)} style={{ fontSize: 13 }}>

@@ -36,8 +36,9 @@ describe("codexes say who can read them", () => {
   it("every move but the bosses' has a description", () => {
     const boss = new Set(BOSS_MOVES.map((m) => m.name));
     for (const m of Object.values(MOVE_BY_NAME)) if (!boss.has(m.name)) expect(m.desc, m.name).toBeTruthy();
-    expect(MOVE_BY_NAME.Gore.desc).toMatch(/^Strong against/);
-    expect(MOVE_BY_NAME.Strike.desc).toMatch(/^No race/);
+    // Plain hits don't spell out what they're strong against: that's for the player to learn.
+    expect(MOVE_BY_NAME.Gore.desc).toBe("A plain melee hit.");
+    for (const m of Object.values(MOVE_BY_NAME)) expect(m.desc ?? "", m.name).not.toMatch(/strong against|resisted by/i);
   });
 });
 

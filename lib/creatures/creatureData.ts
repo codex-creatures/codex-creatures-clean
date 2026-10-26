@@ -3,7 +3,6 @@
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
 import { KIT_MOVES, KIT_MOVE_RACE, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
 import { NEW_SPECIES_V2, V2_RESTYLE, v2Moves } from "./rosterV2";
-import { RACE_BEATS, raceOfMove } from "../combat/raceChart";
 
 export type ElementalType = "inferno" | "aqua" | "naturist" | null;
 
@@ -199,18 +198,12 @@ export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MO
 // (A retired kit light move, still in some saves, finds its Balanced move.)
 for (const [old, now] of Object.entries(RETIRED_KIT_MOVES)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
 
-// Every attack move says how its race lands (the race chart,
-// lib/combat/raceChart.ts), so moves without a note of their own (the race
-// kits' plain hits, the older moves) read like the rest. Bosses' moves don't need one.
-const andList = (names: string[]) => (names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
-export function raceNote(r?: Race): string {
-  if (!r) return "No race: it lands the same on everyone.";
-  const name = (x: Race) => RACE_INFO[x].name;
-  const resistedBy = RACES.filter((d) => RACE_BEATS[d].includes(r) && !RACE_BEATS[r].includes(d));
-  return `Strong against ${andList(RACE_BEATS[r].map(name))}.${resistedBy.length ? ` Resisted by ${andList(resistedBy.map(name))}.` : ""}`;
-}
+// Moves without a note of their own (the race kits' plain hits, the older
+// moves) get a plain one so they read like the rest. It never says what the
+// race is strong against: working that out is the player's job (the race
+// chart is there for it). Bosses' moves don't need one.
 const BOSS_MOVE_NAMES = new Set(BOSS_MOVES.map((m) => m.name));
-for (const m of Object.values(MOVE_BY_NAME)) if (!m.desc && !m.self && !BOSS_MOVE_NAMES.has(m.name)) m.desc = raceNote(raceOfMove(m));
+for (const m of Object.values(MOVE_BY_NAME)) if (!m.desc && !m.self && !BOSS_MOVE_NAMES.has(m.name)) m.desc = `A plain ${CLASS_INFO[m.type].name.toLowerCase()} hit.`;
 
 // Who can read a codex of this move, in a few words ("Underkin melee only"),
 // in its race's colour (grey: any creature).
