@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { slowIt } from "./slow";
 import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, RETIRED_CREATURES, defaultMoveNames } from "../lib/creatures/creatureData";
 import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
@@ -16,7 +17,7 @@ describe("creature % rolls", () => {
     expect(spread("monkey_mage")).toBeGreaterThan(spread("moss_wolf"));
   });
 
-  it("keep the same total, stay within the spread for the species, and never go negative", () => {
+  slowIt("keep the same total, stay within the spread for the species, and never go negative", () => {
     for (const c of CREATURE_TEMPLATES) {
       for (let i = 0; i < 300; i++) {
         const p = rollProficiency(c.proficiency);

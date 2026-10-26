@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:all": "vitest run --mode full",
     "build:offline": "node offline/build.js"
   },
   "dependencies": {

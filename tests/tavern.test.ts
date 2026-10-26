@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
 import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernHasQuest, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
@@ -36,7 +37,7 @@ describe("the tavern questline: Klutz's quest", () => {
 });
 
 describe("the tavern questline: the dynamite's storehouse", () => {
-  it("is the large room (one of the Deep's two), always marked on the scroll", () => {
+  slowIt("is the large room (one of the Deep's two), always marked on the scroll", () => {
     for (const d of [1, 2] as const) {
       for (let i = 0; i < 40; i++) {
         const map = rollMap(false, Math.random, DUNGEONS[d].spec, d, true);
@@ -51,7 +52,7 @@ describe("the tavern questline: the dynamite's storehouse", () => {
     }
   });
 
-  it("isn't there without the quest", () => {
+  slowIt("isn't there without the quest", () => {
     for (let i = 0; i < 40; i++) {
       const map = rollMap(false, Math.random, DUNGEONS[1].spec, 1);
       expect(Object.values(map.nodes).some((n) => n.dynamite)).toBe(false);
@@ -294,7 +295,7 @@ describe("the tavern's room (the Den's cave, bare)", () => {
   it("has nothing in it to tap: no furniture, pit, pool, archway, cage or rubble", () => {
     expect([...ids(true)]).toEqual([OBJ.none]);
   });
-  it("while the Den keeps all of them", () => {
+  slowIt("while the Den keeps all of them", () => {
     const den = ids(false);
     for (const id of [OBJ.arch, OBJ.altar, OBJ.pit, OBJ.pool, OBJ.cage, OBJ.tavern, OBJ.chest]) expect(den.has(id)).toBe(true);
   });

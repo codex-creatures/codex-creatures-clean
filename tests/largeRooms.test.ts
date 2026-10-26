@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { slowIt } from "./slow";
 import { rollMap, depths, routeLength, knownRooms, inSight, waysOn, LARGE_FROM, FLARE_RADIUS, SIGHT_RADIUS } from "../lib/dungeon/map";
 import {
   DUNGEONS, makeRoom, hasFight, canMoveOn, startRun, enemyFighter, rollWares, codexPrice, minibossExtras,
@@ -10,7 +11,7 @@ import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
 const LARGE = LARGE_MIX.map(([k]) => k);
 
 describe("large rooms", () => {
-  it("the Labyrinth has one, the Deep Labyrinth two (of different kinds), well inside", () => {
+  slowIt("the Labyrinth has one, the Deep Labyrinth two (of different kinds), well inside", () => {
     for (const d of [1, 2] as const) {
       for (let i = 0; i < 40; i++) {
         const map = rollMap(false, Math.random, DUNGEONS[d].spec);

@@ -60,7 +60,7 @@ Or from a terminal:
 | Develop and play | `npm run dev` | http://localhost:3000 |
 | On your phone (same Wi-Fi) | `npm run dev` | http://&lt;this PC's IP&gt;:3000 (the terminal shows it under "Network") |
 | A standalone copy (no Node needed to play) | `npm run build:offline` | http://localhost:8123 |
-| Tests | `npm test` | — |
+| Tests | `npm test` (quick) or `npm run test:all` (everything, a few minutes) | — |
 
 **Port 3000 is fixed on purpose.** The browser keeps your save *per address*, so if the game
 moved to port 3001 it would look like an empty save. If 3000 is busy, `npm run dev` stops with a

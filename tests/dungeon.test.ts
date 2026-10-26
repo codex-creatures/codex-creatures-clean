@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { slowIt } from "./slow";
 import { HEAL_AT_HOME, SCROLL_LOOKS, scrollLooksLeft } from "../lib/dungeon/run";
 import { lightenGear, makeEnemy, type Enemy, type DungeonId } from "../lib/dungeon/run";
 import type { ArmorSlot } from "../lib/items/armor";
@@ -132,7 +133,7 @@ describe("dungeon rooms", () => {
 });
 
 describe("the labyrinth map", () => {
-  it("about ${ROOM_COUNT} rooms, all joined up, with the lair ${MIN_ROUTE}–${MAX_ROUTE} rooms away", () => {
+  slowIt("about ${ROOM_COUNT} rooms, all joined up, with the lair ${MIN_ROUTE}–${MAX_ROUTE} rooms away", () => {
     for (let i = 0; i < 300; i++) {
       const map = rollMap(i % 4 === 0);
       const ids = Object.keys(map.nodes);
@@ -150,7 +151,7 @@ describe("the labyrinth map", () => {
     }
   });
 
-  it("never a dead end: every room has a way on, and corridors only lead onward", () => {
+  slowIt("never a dead end: every room has a way on, and corridors only lead onward", () => {
     let choices = 0, rooms = 0;
     for (let i = 0; i < 300; i++) {
       const map = rollMap(false);
@@ -167,7 +168,7 @@ describe("the labyrinth map", () => {
     expect(choices / rooms).toBeGreaterThan(0.3); // plenty of branches
   });
 
-  it("the scroll marks real corridors from the start, both rooms past the 2nd, never two touching one room", () => {
+  slowIt("the scroll marks real corridors from the start, both rooms past the 2nd, never two touching one room", () => {
     for (let i = 0; i < 200; i++) {
       const map = rollMap(false);
       const depth = depths(map);
@@ -183,7 +184,7 @@ describe("the labyrinth map", () => {
     }
   });
 
-  it(`about ${MYSTERY_CHANCE * 100}% of rooms are mysteries — never the entrance or the lair`, () => {
+  slowIt(`about ${MYSTERY_CHANCE * 100}% of rooms are mysteries — never the entrance or the lair`, () => {
     let rooms = 0, mysteries = 0;
     for (let i = 0; i < 300; i++) {
       const map = rollMap(i % 5 === 0);
@@ -196,7 +197,7 @@ describe("the labyrinth map", () => {
     expect(Math.abs(mysteries / rooms - MYSTERY_CHANCE)).toBeLessThan(0.03);
   });
 
-  it("librarians, mini bosses and decks of cards only ever hide behind a '?'", () => {
+  slowIt("librarians, mini bosses and decks of cards only ever hide behind a '?'", () => {
     for (let i = 0; i < 150; i++) {
       for (const n of Object.values(rollMap(false).nodes)) {
         if (["librarian", "miniboss", "cards"].includes(n.kind)) expect(n.mystery).toBe(true);
@@ -204,7 +205,7 @@ describe("the labyrinth map", () => {
     }
   });
 
-  it("the scroll: a few rooms marked from the start; nearby rooms revealed, but never a mystery until you walk in", () => {
+  slowIt("the scroll: a few rooms marked from the start; nearby rooms revealed, but never a mystery until you walk in", () => {
     for (let i = 0; i < 100; i++) {
       const map = rollMap(false);
       const nodes = Object.values(map.nodes);
@@ -240,7 +241,7 @@ describe("a labyrinth run", () => {
     expect(later.cleared).toEqual([later.map.start]);
   });
 
-  it("walks corridor by corridor to the lair, and beating the boss clears it", () => {
+  slowIt("walks corridor by corridor to the lair, and beating the boss clears it", () => {
     for (let i = 0; i < 100; i++) {
       const run = walkToLair(startRun(party, party.slice(0, 3), {}, 1 + (i % 2)));
       expect(run.status).toBe("cleared");
@@ -261,7 +262,7 @@ describe("a labyrinth run", () => {
     expect(nextRooms(inside)).toEqual([]);
   });
 
-  it("no going back, and no dead ends: any wander ends at the lair", () => {
+  slowIt("no going back, and no dead ends: any wander ends at the lair", () => {
     const lengths = new Set<number>();
     for (let i = 0; i < 300; i++) {
       let run = startRun(party, party.slice(0, 3), {}, 2);
@@ -344,7 +345,7 @@ describe("a labyrinth run", () => {
     expect(s.sides.B.team[0].hp).toBe(f.maxHp);
   });
 
-  it("the map comes first; then you move room to room through the tunnels", () => {
+  slowIt("the map comes first; then you move room to room through the tunnels", () => {
     for (let i = 0; i < 50; i++) {
       let run = startRun(["a"], ["a"], {}, 2);
       expect(run.inside).toBe(false);
@@ -379,7 +380,7 @@ import { MINIBOSS_FROM, FIRST_ROOMS, FIRST_ROOM_DENS, enemyLevel as levelAt, mak
 import { rollMap as mapOf, depths as depthsOf } from "../lib/dungeon/map";
 
 describe("the Labyrinth's gentle start", () => {
-  it(`no mini boss before room ${MINIBOSS_FROM}; the first ${FIRST_ROOMS} rooms are ~${FIRST_ROOM_DENS * 100}% creature dens and never a fight that isn't one`, () => {
+  slowIt(`no mini boss before room ${MINIBOSS_FROM}; the first ${FIRST_ROOMS} rooms are ~${FIRST_ROOM_DENS * 100}% creature dens and never a fight that isn't one`, () => {
     let first = 0, dens = 0;
     for (let i = 0; i < 200; i++) {
       const map = mapOf(false);

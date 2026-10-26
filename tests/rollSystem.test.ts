@@ -57,23 +57,24 @@ describe("item definitions are valid", () => {
 
 describe("weapon roll invariants", () => {
   it(`hold for every weapon × rarity (${ROLLS_PER_COMBO} rolls each)`, () => {
+    // Plain checks and one expect at the end: an expect() per stat per roll (300k of them)
+    // made this the suite's slowest test.
+    const bad: string[] = [];
     for (const k of ITEM_KEYS) {
       const primaries = PRIMARY_STATS_BY_ITEMKEY[k];
       for (const r of RARITIES) {
         const ceilings = ITEM_CEILINGS[k][r];
         for (let i = 0; i < ROLLS_PER_COMBO; i++) {
           const { stats } = rollItemStats(k, r);
-          const label = `${k} ${r} ${JSON.stringify(stats)}`;
-          expect(STAT_KEYS.reduce((s, st) => s + stats[st], 0), label).toBe(RARITY_BUDGETS[r]);
-          for (const st of STAT_KEYS) {
-            expect(stats[st], label).toBeGreaterThanOrEqual(0);
-            expect(stats[st], label).toBeLessThanOrEqual(ceilings[st]);
-            expect(Number.isInteger(stats[st]), label).toBe(true);
-          }
-          for (const p of primaries) expect(stats[p], label).toBeGreaterThanOrEqual(1);
+          const broken =
+            STAT_KEYS.reduce((s, st) => s + stats[st], 0) !== RARITY_BUDGETS[r] ||
+            STAT_KEYS.some((st) => stats[st] < 0 || stats[st] > ceilings[st] || !Number.isInteger(stats[st])) ||
+            primaries.some((p) => stats[p] < 1);
+          if (broken) bad.push(`${k} ${r} ${JSON.stringify(stats)}`);
         }
       }
     }
+    expect(bad.slice(0, 5)).toEqual([]);
   }, 60_000);
 
   it("non-primary stats are allowed to roll 0", () => {
@@ -89,22 +90,22 @@ describe("weapon roll invariants", () => {
 
 describe("armour roll invariants", () => {
   it(`hold for every armour × rarity (${ROLLS_PER_COMBO} rolls each)`, () => {
+    const bad: string[] = [];
     for (const k of ARMOR_KEYS) {
       const primaries = ARMOR_PRIMARY_STATS[k];
       for (const r of RARITIES) {
         const ceilings = ARMOR_CEILINGS[k][r];
         for (let i = 0; i < ROLLS_PER_COMBO; i++) {
           const { stats } = rollArmorStats(k, r);
-          const label = `${k} ${r} ${JSON.stringify(stats)}`;
-          expect(ARMOR_STAT_KEYS.reduce((s, st) => s + stats[st], 0), label).toBe(RARITY_BUDGETS[r]);
-          for (const st of ARMOR_STAT_KEYS) {
-            expect(stats[st], label).toBeGreaterThanOrEqual(0);
-            expect(stats[st], label).toBeLessThanOrEqual(ceilings[st]);
-          }
-          for (const p of primaries) expect(stats[p], label).toBeGreaterThanOrEqual(1);
+          const broken =
+            ARMOR_STAT_KEYS.reduce((s, st) => s + stats[st], 0) !== RARITY_BUDGETS[r] ||
+            ARMOR_STAT_KEYS.some((st) => stats[st] < 0 || stats[st] > ceilings[st]) ||
+            primaries.some((p) => stats[p] < 1);
+          if (broken) bad.push(`${k} ${r} ${JSON.stringify(stats)}`);
         }
       }
     }
+    expect(bad.slice(0, 5)).toEqual([]);
   }, 60_000);
 });
 

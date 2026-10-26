@@ -1,7 +1,9 @@
 # Codex Creatures: notes for Claude Code
 
 Read this first, on either computer. The game design, and what's built vs only planned, is in
-**[docs/design.md](docs/design.md)**: read the relevant section before changing game logic.
+**[docs/design.md](docs/design.md)**: read the relevant section before changing game logic. It describes the game
+as it is now: update a decision in place rather than adding a dated round of changes, and put
+long history in docs/history.md (which you don't need to read for normal work).
 Setup, running and the two-computer routine for the human are in [README.md](README.md).
 
 ## What this is
@@ -86,7 +88,8 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
 | | |
 |---|---|
 | `npm run dev` | dev server, **always port 3000** (`scripts/check-port.mjs` refuses if busy: saves are per address) |
-| `npm test` | Vitest, `tests/*.test.ts` (~370 tests; a few minutes on the main PC, where the slow roll/map tests can hit their time limits under load: rerun those alone before suspecting a bug) |
+| `npm test` | Vitest, `tests/*.test.ts`, quick (~15s): skips the slow map sweeps (`slowIt`, tests/slow.ts). Use it while working |
+| `npm run test:all` | every test (~370), 2–5 min. Run once before each commit or push |
 | `npx tsc --noEmit` | type check |
 | `npm run lint` | ESLint |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
@@ -128,7 +131,8 @@ kill theirs.
 - **Match the surrounding code:** short helpers, comments that explain *why* in plain English,
   tuning numbers as named `export const`s at the top of the module (e.g. `ROOM_MIX`, `FREE_RUNS`).
 - **Game rules go in `lib/` with a test.** Changes to the rules need a test or a sim result. Run
-  `npm test` and `npx tsc --noEmit` before committing.
+  `npm run test:all` and `npx tsc --noEmit` before committing. Mark a new test `slowIt` only if it
+  takes seconds (and check it isn't just thousands of `expect` calls: collect failures, expect once).
 - **UI follows the user's settled standards** (details in docs/design.md → UI):
   - Everything fits inside the one fixed phone-sized screen (`GameScreen`). Use `cqw`/`cqh`, not
     `vw`/`vh`. Long lists scroll inside a panel; the page never grows. Actions sit in docks, not
@@ -146,7 +150,9 @@ kill theirs.
   full rollout. When the user supplies their own art, restyle it and keep their design.
 - **Reports to the user:** plain English, short, with specific questions. Say what changed, which
   tests passed, and whether it's pushed. The user's on a usage budget: keep sessions to one task,
-  and end a finished task with a reminder to `/clear`.
+  and end a finished task with a reminder to `/clear`. A long list of changes is fine when the user
+  is stepping away: work through it unattended (quick tests as you go, `test:all` once at the end),
+  then report each change for them to review.
 - **No browser checks** unless you can say why tests can't cover it, and the user agrees first.
   They cost about 6x a plain request (69% of all usage, Oct 2026). Rely on tests; the user
   looks in the game and sends a screenshot if something's off.
