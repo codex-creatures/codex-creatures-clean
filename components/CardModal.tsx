@@ -11,7 +11,6 @@ import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { MoveInfo } from "./MoveSlots";
 import SoulStoneTag from "./SoulStoneTag";
 import RaceTag from "./RaceTag";
-import ClassBadge from "./ClassBadge";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"], ["mdef", "Melee Def"], ["rdef", "Ranged Def"], ["magdef", "Magic Def"]];
@@ -69,7 +68,6 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
               <span style={{ padding: "2px 10px", fontSize: 12, fontWeight: 700, textTransform: "uppercase", color: c.text, border: `1px solid ${c.border}` }}>{t.rarity}</span>
               <RaceTag race={t.race} races={t.races} />
-              <ClassBadge cls={t.cls} />
               <span style={{ fontSize: 12, color: MUTED }}>🃏 Creature card · {creatureTypeLabel(card.proficiency ?? t.proficiency)}</span>
             </div>
             <h2 className="pixel-font" style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text }}>{t.name}</h2>

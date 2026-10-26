@@ -34,8 +34,8 @@ describe("race chart", () => {
   });
 
   it("the match bonus applies once; own mode picks the better of two races", () => {
-    const toad = { races: SPECIES_RACES.bellow_toad }; // beast + pestilence
-    // vs Divine: Pestilence lands effective, Beast neutral.
+    const toad = { races: SPECIES_RACES.bellow_toad }; // beast + toxic
+    // vs Divine: Toxic lands effective, Beast neutral.
     expect(raceMultiplier(skill("Slash"), toad, { races: ["divine"] }, "own")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
     // Drafted: Slash is a Beast move (matches, neutral on Divine).
     expect(raceMultiplier(skill("Slash"), toad, { races: ["divine"] }, "drafted")).toBeCloseTo(MATCH_BONUS);

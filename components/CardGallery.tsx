@@ -101,20 +101,20 @@ export const cardWell = (rc: string): React.CSSProperties => ({ background: `rad
 // The card itself, shared by every creature card: dark stone with a thin
 // bevelled trim in the rarity colour; the name (and, with showRarity, its
 // rarity under it); the sprite on a faded rarity glow (filling the box, 5%
-// clear each side); attack style | race; then children at the bottom.
+// clear each side); its race(s), a square each in the race's colour (one
+// race: one wide square); then children at the bottom.
 // Text scales with the card's width (cqw), so it must sit inside a box with
 // containerType "inline-size". fill: take the parent's height instead of
-// the usual 5:7 shape. big: a larger name and style / race (a card shown on
+// the usual 5:7 shape. big: a larger name and races (a card shown on
 // its own, like the fight cards). noName: leave the name off (it's written
 // under the card already), so the sprite gets the room.
 export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, children }: {
   t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; noName?: boolean; children?: React.ReactNode;
 }) {
   const rc = RARITY_COLORS[t.rarity].text;
-  // Its race(s): two share the plaque, cut short with "…" if they don't fit.
+  // Its race(s), a plaque each (none, like a boss part: its style instead).
   const races = t.races ?? (t.race ? [t.race] : []);
-  const race = races.length ? { name: races.map((r) => RACE_INFO[r].name).join(" / ") } : undefined;
-  const cls = CLASS_INFO[t.cls];
+  const plaques = races.length ? races.map((r) => RACE_INFO[r]) : [CLASS_INFO[t.cls]];
   const plaque: React.CSSProperties = { flex: 1, textAlign: "center", padding: "2cqw 1cqw", background: "#2e323d", boxShadow: raised("#2e323d"), overflow: "hidden", textOverflow: "ellipsis" };
   return (
     <div style={{
@@ -129,16 +129,14 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
         <CreatureArt creatureId={creatureId} title={t.name} />
       </div>
       {noName ? (
-        // Without the name: style over race, each a full-width plaque in bigger
-        // letters (the race plaque keeps its space even when there's no race).
+        // Without the name: one race over the other, each a full-width plaque
+        // in bigger letters (the second keeps its space when there's one race).
         <div style={{ display: "flex", flexDirection: "column", gap: "3cqw", fontFamily: PIXEL, fontSize: "clamp(8px, 12cqw, 16px)", lineHeight: 1.1, whiteSpace: "nowrap" }}>
-          <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
-          <span title={race?.name} style={{ ...plaque, color: YELLOW, visibility: race ? "visible" : "hidden" }}>{race?.name ?? "—"}</span>
+          {[0, 1].map((i) => <span key={i} title={plaques[i]?.name} style={{ ...plaque, color: plaques[i]?.color, visibility: plaques[i] ? "visible" : "hidden" }}>{plaques[i]?.name ?? "—"}</span>)}
         </div>
       ) : (
         <div style={{ display: "flex", gap: "3cqw", fontFamily: PIXEL, fontSize: big ? "clamp(10px, 7cqw, 16px)" : "clamp(7px, 5.6cqw, 11px)", whiteSpace: "nowrap" }}>
-          <span style={{ ...plaque, color: cls.color }}>{cls.name}</span>
-          {race && <span title={race.name} style={{ ...plaque, color: YELLOW }}>{race.name}</span>}
+          {plaques.map((p) => <span key={p.name} title={p.name} style={{ ...plaque, color: p.color }}>{p.name}</span>)}
         </div>
       )}
       {children}
@@ -151,7 +149,7 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
 // in your binder, for cards you've just found, and for the card witch's
 // prize. badge: a corner bubble (how many you hold); footer: a line under the card.
 // mini: the small card in a loot window, where the name is written under it —
-// no name or role line, just the sprite as big as it'll go over style | race.
+// no name or role line, just the sprite as big as it'll go over its races.
 export function CardFace({ t, creatureId, soulStone, footer, badge, glow, onClick, label, mini }: {
   t: CreatureTemplate; creatureId: string; soulStone?: SoulStoneKey | null; footer?: React.ReactNode; badge?: string; glow?: boolean;
   onClick?: () => void; label?: string; mini?: boolean;

@@ -1,7 +1,7 @@
 // lib/creatures/creatureData.ts
 
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
-import { KIT_MOVES } from "./raceKitsV2";
+import { KIT_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
 import { NEW_SPECIES_V2, V2_RESTYLE, v2Moves } from "./rosterV2";
 
 export type ElementalType = "inferno" | "aqua" | "naturist" | null;
@@ -22,9 +22,9 @@ export type CreatureProficiency = {
 export type CombatClass = "melee" | "ranged" | "magic";
 export const COMBAT_CLASSES: CombatClass[] = ["melee", "ranged", "magic"];
 export const CLASS_INFO: Record<CombatClass, { name: string; icon: string; beats: CombatClass; color: string }> = {
-  melee:  { name: "Melee",  icon: "⚔️", beats: "ranged", color: "#ff9f43" },
-  ranged: { name: "Ranged", icon: "🏹", beats: "magic",  color: "#6fdc6f" },
-  magic:  { name: "Magic",  icon: "🔮", beats: "melee",  color: "#c08cff" },
+  melee:  { name: "Melee",  icon: "⚔️", beats: "ranged", color: "#eadfc6" },
+  ranged: { name: "Ranged", icon: "🏹", beats: "magic",  color: "#eadfc6" },
+  magic:  { name: "Magic",  icon: "🔮", beats: "melee",  color: "#eadfc6" },
 };
 
 // How a move does its damage (tuning in lib/combat/engine.ts):
@@ -77,15 +77,18 @@ export const RACES: Race[] = RACES_V2;
 // A creature's race names, e.g. "Geo / Beast" ("" for none).
 export const raceNames = (c: Pick<CreatureTemplate, "race" | "races">) => (c.races ?? (c.race ? [c.race] : [])).map((r) => RACE_INFO[r].name).join(" / ");
 
+// Each race's colour (the user, 2026-10-26): on chips, cards and move tablets.
 export const RACE_INFO: Record<Race, { name: string; color: string; icon: string }> = {
-  undead:     { name: "Undead",     color: "#9fd3a8", icon: "💀" },
-  divine:     { name: "Divine",     color: "#f3e08a", icon: "✨" },
-  beast:      { name: "Beast",      color: "#d89a5b", icon: "🐾" },
-  underkin:   { name: "Underkin",   color: "#b8a77a", icon: "🪨" },
-  geo:        { name: "Geo",        color: "#ff8a5c", icon: "🔥" },
-  humanoid:   { name: "Humanoid",   color: "#9fd8ff", icon: "🛡️" },
-  pestilence: { name: "Pestilence", color: "#a8c94a", icon: "🦠" },
+  undead:   { name: "Undead",   color: "#c9c5b8", icon: "💀" }, // bone grey
+  divine:   { name: "Divine",   color: "#f3dc8a", icon: "✨" }, // light gold
+  beast:    { name: "Beast",    color: "#6fdc6f", icon: "🐾" }, // green
+  underkin: { name: "Underkin", color: "#c08a55", icon: "🪨" }, // brown
+  geo:      { name: "Geo",      color: "#ff6b5c", icon: "🔥" }, // red
+  humanoid: { name: "Humanoid", color: "#6fb0ff", icon: "🛡️" }, // blue
+  toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠" }, // purple
 };
+// A move with no race (the Balanced moves, lib/creatures/raceKitsV2.ts): neutral against everyone.
+export const BALANCED_INFO = { name: "Balanced", color: "#8e929c", icon: "⚖️" }; // slate grey
 
 export type CreatureTemplate = {
   id: string;
@@ -187,6 +190,8 @@ export const BOSS_MOVES: Skill[] = [
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
 // (With the race kits' moves, lib/creatures/raceKitsV2.ts, the moves creatures are born with.)
 export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RACE_MOVES, ...BOSS_MOVES, ...KIT_MOVES].map((m) => [m.name, m]));
+// (A retired kit light move, still in some saves, finds its Balanced move.)
+for (const [old, now] of Object.entries(RETIRED_KIT_MOVES)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
 
 // The race moves a creature of these races could learn.
 export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => m.race && (c.races ?? (c.race ? [c.race] : [])).includes(m.race));
@@ -326,6 +331,10 @@ export function defaultMoveNames(c: CreatureTemplate): string[] {
   return c.skills.slice(0, MOVE_SLOTS).map((m) => m.name);
 }
 
+// A saved move's name today: a retired kit light move is now its style's
+// Balanced move (lib/creatures/raceKitsV2.ts).
+export const currentMoveName = (name: string) => RETIRED_KIT_MOVES[name] ?? name;
+
 // Can this creature learn a move from a codex? Learnable moves: anyone.
 // Race moves: only creatures of that race. Basic and strong moves: only
 // creatures of that move's class (a neutral one, Klutz: any class,
@@ -341,7 +350,7 @@ export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolea
 // species' moves (Combat V2: its whole race kits), and any it has learned
 // from codexes.
 export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], own?: string[]): Skill[] {
-  const names = [...new Set([...(own?.length ? own : defaultMoveNames(c)), ...c.skills.map((m) => m.name), ...learned.filter((n) => canLearnFromCodex(c, n))])];
+  const names = [...new Set([...(own?.length ? own.map(currentMoveName) : defaultMoveNames(c)), ...c.skills.map((m) => m.name), ...learned.filter((n) => canLearnFromCodex(c, n))])];
   return names.map((n) => MOVE_BY_NAME[n]).filter(Boolean);
 }
 
@@ -350,7 +359,7 @@ export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], ow
 // codex moves are only offered once learned, so a saved one is trusted here.)
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
   const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
-  const picked = [...new Set(names ?? [])].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
+  const picked = [...new Set((names ?? []).map(currentMoveName))].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   // A species' own moves first: Combat V2's kit moves aren't in MOVE_BY_NAME.
   return (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => c.skills.find((m) => m.name === n) ?? MOVE_BY_NAME[n]);
 }

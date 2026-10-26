@@ -13,7 +13,6 @@ import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, MaterialIcon } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
-import ClassBadge from "@/components/ClassBadge";
 import SoulStoneTag from "@/components/SoulStoneTag";
 import { useGameState } from "@/hooks/useGameState";
 import { findCreatureTemplate, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
@@ -86,7 +85,6 @@ export default function CagePage() {
               <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginTop: 6 }}>
                 <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: RARITY_COLORS[d.rarity].text, border: `2px solid ${RARITY_COLORS[d.rarity].border}` }}>{d.rarity}</span>
                 <RaceTag race={t?.race} races={t?.races} />
-                <ClassBadge cls={t?.cls} />
               </div>
               <SoulStoneTag stone={d.soulStone} />
               <button className="chip" onClick={() => setViewing(viewing === d.id ? null : d.id)} style={{ marginBottom: 8 }}>

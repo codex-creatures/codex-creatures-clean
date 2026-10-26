@@ -3,7 +3,7 @@
 // a one-line label for a move's style and race (Combat V2; under the old
 // rules, its damage type).
 
-import { CLASS_INFO, DAMAGE_TYPE_INFO, RACE_INFO, type CombatClass, type Skill } from "@/lib/creatures/creatureData";
+import { BALANCED_INFO, CLASS_INFO, DAMAGE_TYPE_INFO, RACE_INFO, type CombatClass, type Skill } from "@/lib/creatures/creatureData";
 import { damageTypesOn } from "@/lib/combat/engine";
 import { raceOfMove } from "@/lib/combat/raceChart";
 
@@ -29,12 +29,12 @@ export default function ClassBadge({ cls, neutral }: { cls?: CombatClass; neutra
   );
 }
 
-// A move's second tag: its race (Combat V2), or its damage type under the
-// old rules.
+// A move's second tag: its race (Combat V2; none: Balanced), or its damage
+// type under the old rules.
 export function moveTag(m: Skill): { icon: string; name: string; color: string } {
   if (damageTypesOn()) return DAMAGE_TYPE_INFO[m.dmgType];
   const r = raceOfMove(m);
-  return r ? RACE_INFO[r] : { icon: "◇", name: "No race", color: NEUTRAL_GREY };
+  return r ? RACE_INFO[r] : BALANCED_INFO;
 }
 
 // e.g. "🔮 Magic · 💀 Undead"

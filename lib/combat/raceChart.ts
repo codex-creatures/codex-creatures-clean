@@ -18,13 +18,13 @@ export const RACE_EFFECT = { strong: 1.25, resisted: 0.8 }; // the user's option
 export const MATCH_BONUS = 1.15;
 
 export const RACE_BEATS: Record<RaceV2, RaceV2[]> = {
-  undead:     ["geo", "pestilence", "humanoid"],
-  divine:     ["undead", "pestilence", "underkin"],
+  undead:     ["geo", "toxic", "humanoid"],
+  divine:     ["undead", "toxic", "underkin"],
   beast:      ["underkin", "humanoid", "undead"],
-  underkin:   ["pestilence", "geo", "divine"],
+  underkin:   ["toxic", "geo", "divine"],
   geo:        ["beast", "divine", "undead"],
   humanoid:   ["geo", "underkin", "beast"],
-  pestilence: ["beast", "humanoid", "divine"],
+  toxic:      ["beast", "humanoid", "divine"],
 };
 
 // One move race against one defending race.

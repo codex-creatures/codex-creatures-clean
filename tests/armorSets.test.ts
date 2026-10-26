@@ -63,7 +63,7 @@ describe("armour pieces", () => {
     const armour = e.gear.find((p) => p.slot === "armor")!;
     expect(armour.armorV).toBe(ARMOR_V2);
     for (const k of ARMOR_STAT_KEYS) {
-      expect(ARMOR_SLOTS.reduce((s, slot) => s + (armour.pieces![slot][k] ?? 0), 0)).toBe(armour.stats[k] ?? 0);
+      expect(ARMOR_SLOTS.reduce((s, slot) => s + (armour.pieces![slot]![k] ?? 0), 0)).toBe(armour.stats[k] ?? 0);
     }
     for (const slot of ARMOR_SLOTS) expect(droppedPieceStats(armour, slot)).toEqual(armour.pieces![slot]);
   });

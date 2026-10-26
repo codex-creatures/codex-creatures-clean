@@ -22,7 +22,7 @@ import type { Drop, Rarity } from "../types";
 import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
-import { ARMOR_META } from "../items/armor";
+import { ARMOR_META, wornArmor } from "../items/armor";
 import { CREATURES_BY_RARITY, CREATURE_BY_ID, RACE_MOVES, type CreatureProficiency } from "../creatures/creatureData";
 import { rollCreature } from "../creatures/creatureRoll";
 import { randomSoulStone, type SoulStoneKey } from "../creatures/soulStones";
@@ -569,14 +569,43 @@ const randInt = (min: number, max: number, rng: Rng) => min + Math.floor(rng() *
 const pick = <T,>(arr: readonly T[], rng: Rng) => arr[Math.floor(rng() * arr.length)];
 
 // ── Enemies ──────────────────────────────────────────────────────────
-// Armour is a whole set: stats is what it adds up to, pieces the helmet,
-// chest and legs it wears (one of those is what drops).
+// Armour is a set: stats is what it adds up to, pieces the helmet, chest
+// and legs it wears (one of those is what drops). Some wear only part of a
+// set (LIGHT_GEAR).
 // dropSlot: a dropping armour set, which piece of it drops (missing = one at random, as old saves had).
 // armorV: ARMOR_V2 = on the full-roll scale (older saves are upgraded on load, lib/save.ts).
 export type GearPiece = {
   slot: "weapon" | "armor"; key: string; rarity: Rarity; stats: Record<string, number>; drops: boolean; dropSlot?: ArmorSlot;
-  pieces?: Record<ArmorSlot, Record<string, number>>; armorV?: number;
+  pieces?: Partial<Record<ArmorSlot, Record<string, number>>>; armorV?: number;
 };
+
+// The Labyrinth's first rooms send out lighter-armed creatures (the user,
+// 2026-10-26): up to room 3 no weapon, up to room 7 a weapon; both with only
+// 1–2 pieces of their armour. Mini bosses and the Cyclops are armed as ever.
+export const LIGHT_GEAR: { upTo: number; weapon: boolean; armorPieces: [number, number] }[] = [
+  { upTo: 3, weapon: false, armorPieces: [1, 2] },
+  { upTo: 7, weapon: true,  armorPieces: [1, 2] },
+];
+
+// An armour set cut down to some of its pieces, its stats summed again.
+function wornPieces(p: GearPiece, slots: ArmorSlot[]): GearPiece {
+  const pieces = Object.fromEntries(slots.flatMap((s) => (p.pieces?.[s] ? [[s, p.pieces[s]]] : []))) as GearPiece["pieces"];
+  return { ...p, pieces, stats: wornArmor(Object.values(pieces!).map((stats) => ({ stats }))).stats };
+}
+const piecesOf = (p: GearPiece): ArmorSlot[] => (p.pieces ? ARMOR_SLOTS.filter((s) => p.pieces![s]) : ARMOR_SLOTS);
+
+// An enemy's gear at this depth of the Labyrinth (LIGHT_GEAR; deeper: as rolled).
+export function lightenGear(e: Enemy, depth: number, rng: Rng = Math.random): Enemy {
+  const band = LIGHT_GEAR.find((b) => depth <= b.upTo);
+  if (!band) return e;
+  const gear = e.gear.flatMap((p): GearPiece[] => {
+    if (p.slot === "weapon") return band.weapon ? [p] : [];
+    const slots = [...piecesOf(p)];
+    for (let i = slots.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [slots[i], slots[j]] = [slots[j], slots[i]]; }
+    return [wornPieces(p, slots.slice(0, randInt(...band.armorPieces, rng)))];
+  });
+  return { ...e, gear };
+}
 // level: missing = REF_LEVEL (the species' listed %s).
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
 // soulStone: rolled like anyone's (lib/creatures/soulStones.ts); missing = none (and runs saved before enemies had them).
@@ -602,13 +631,12 @@ export function droppedPieceStats(p: GearPiece, slot: ArmorSlot): Record<string,
   return p.pieces?.[slot] ?? rollArmorPiece(p.key as ArmorKey, p.rarity);
 }
 
-// Which of an enemy's 4 items could drop: its weapon, helmet, chest or legs,
-// each 1 in 4. The gear index, and for armour which piece of the set.
+// Which of an enemy's items could drop: its weapon or one of the armour
+// pieces it wears, all equally likely. The gear index, and for armour which
+// piece of the set.
 function pickDropItem(e: Enemy, rng: Rng): { i: number; dropSlot?: ArmorSlot } {
-  const n = Math.floor(rng() * (1 + ARMOR_SLOTS.length));
-  const want = n === 0 ? "weapon" : "armor";
-  const i = Math.max(0, e.gear.findIndex((p) => p.slot === want));
-  return e.gear[i].slot === "armor" ? { i, dropSlot: ARMOR_SLOTS[Math.max(0, n - 1)] } : { i };
+  const items = e.gear.flatMap((p, i) => (p.slot === "weapon" ? [{ i }] : piecesOf(p).map((dropSlot) => ({ i, dropSlot }))));
+  return items[Math.floor(rng() * items.length)];
 }
 
 // Re-rolls a piece one rarity tier higher and marks it as loot.
@@ -621,7 +649,7 @@ function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
   const g = rollGear(rarity, t);
   e.gear[i] = old.slot === "weapon"
     ? { slot: "weapon", key: g.weaponKey, rarity, stats: g.weapon, drops: true }
-    : { slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot, pieces: g.armorPieces, armorV: ARMOR_V2 };
+    : wornPieces({ slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot, pieces: g.armorPieces, armorV: ARMOR_V2 }, piecesOf(old));
 }
 
 // The deeper dungeons' boss: the Warden, a Legendary, with two Epic guards (the Deep
@@ -644,6 +672,9 @@ export function enemyFighter(e: Enemy): Fighter {
   const maxHp = Math.round(f.maxHp * e.hpMult);
   return { ...f, maxHp, hp: maxHp, hpMult: e.hpMult };
 }
+
+// An enemy's weapon or armour (some go without).
+export const gearOf = (e: Enemy, slot: GearPiece["slot"]) => e.gear.find((p) => p.slot === slot);
 
 export function gearName(p: GearPiece): string {
   const name = p.slot === "weapon" ? ITEM_META[p.key as ItemKey]?.name : ARMOR_META[p.key as ArmorKey]?.name;
@@ -719,8 +750,11 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
   const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
   const level = enemyLevel(dungeon, kind, depth, rng);
   // One enemy of this kind, at this depth (foeAt), not the same species as those in `others`.
-  const foe = (k: "easy" | "hard" | "camp" | "miniboss", others: Enemy[] = []) =>
-    makeEnemy(...foeAt(dungeon, k, depth, rng), others.map((e) => e.creatureId), rng, level);
+  // (Lighter-armed early in the Labyrinth, bar mini bosses: LIGHT_GEAR.)
+  const foe = (k: "easy" | "hard" | "camp" | "miniboss", others: Enemy[] = []) => {
+    const e = makeEnemy(...foeAt(dungeon, k, depth, rng), others.map((e) => e.creatureId), rng, level);
+    return dungeon === 1 && k !== "miniboss" ? lightenGear(e, depth, rng) : e;
+  };
   switch (kind) {
     case "treasure":
       return { kind, gold: FIRST_TREASURE_GOLD, done: false };

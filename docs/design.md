@@ -271,7 +271,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Race moves:** single-use codexes, learnable only by that race (either of a creature's two).
   Pounce (Beast), Rabid Bite (Underkin, venom ticks even on the bench), Mirage (Divine, was
   Etherial), Corpsify (Undead), Barrage (Humanoid, was Elvish; hits every enemy). Geo and
-  Pestilence have none yet.
+  Toxic have none yet.
 - ✅ **Move codexes** (decided 2026-10-19): every natural move comes as a codex from scans, each
   teachable only to a creature of that move's class. Up to 20 damage (`BASIC_MOVES`, 15 moves)
   they're Common; above that (`STRONG_MOVES`, 10 moves) they're Rare.
@@ -307,6 +307,27 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   chip, "Geo / Beast"); the race filter matches either race. In a fight a move's details (behind the
   (i)) say how its race lands on the foe; there's still no hint on the tile itself. Weapons no longer
   show a damage type. The Bestiary's "How fights work" has the race chart and a race calculator.
+- ✅ **The user's changes after first play** (2026-10-26):
+  - Pestilence is renamed **Toxic** (id `toxic` too; races aren't stored in saves).
+  - **Race colours** (`RACE_INFO`): Undead bone grey, Divine light gold, Beast green, Underkin
+    brown, Geo red, Humanoid blue, Toxic purple; **Balanced** (no race) slate grey
+    (`BALANCED_INFO`). Move tablets are cut in their race's stone, with a big icon for the style
+    behind the name (impact: melee, arrow: ranged, bolt: magic; the old damage-type shapes). Style
+    colours are now one neutral cream, so they don't clash with the races.
+  - **Balanced moves:** each style's 20-energy light move is now one shared move with no race
+    (Strike, Shot, Zap: `BALANCED_MOVES`; names are Claude's), neutral against everyone. The old
+    light kit names are retired (`RETIRED_KIT_MOVES`: a creature that knew one has its Balanced
+    move instead). The kits are now 7 × 3 × 4 race moves + 3 Balanced = 87.
+  - **Starting moves**, every creature, all in its main style: Balanced 20, its race's 30, a fourth
+    (a second race's 30; else a hybrid's 30 in its second style; else its race's 50), and its
+    race's quick (priority) move.
+  - The **Deep Angler** is a melee Battlemage, not a ranged Spellbow (its ranged % moved to melee),
+    so the archetypes are no longer even: 5 Battlemages, 3 Spellbows. The Deep Angler, Rotgut Fly
+    and Dust Sprite PNGs are mirrored.
+  - **Cards** show the race(s) in the two squares under the sprite, in the race colours (one race:
+    one wide square); the style is no longer on cards. Creature windows and fight name plates show
+    races instead of the style.
+  - A **race chart button** (▲▼) in the fight dock on Labyrinth (Cyclops) runs.
 - 🧪 Soul stone pools for the six new Rare+ creatures are Claude's drafts (lib/creatures/soulStones.ts).
 - 🧪 Sim of the live roster (2026-10-26, `scripts/sim-races.ts`, "V2: drafted moves"): creature
   spread within a rarity 3.3 (it was 6.3 with today's 25 and their old moves; the Ironhide is no
@@ -315,7 +336,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
 - 📌 Decided (the user, 2026-10-26): **magic stays** as a third style; the **class triangle goes**,
   replaced by race effectiveness. 7 races: Undead, Divine, Beast, Underkin, Geo (elemental, not
-  just stone), Humanoid, Pestilence. Creatures have 1 or 2 races. Every current creature is kept
+  just stone), Humanoid, Toxic. Creatures have 1 or 2 races. Every current creature is kept
   and re-raced (`SPECIES_RACES`, lib/creatures/racesV2.ts; the user's example: Crystalback is
   Geo/Beast; the rest is Claude's draft).
 - 🧪 Multipliers **1.25× effective / 0.8× resisted** (`RACE_EFFECT`); dual races multiply. The user
@@ -325,21 +346,21 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   The chart (`RACE_BEATS`, lib/combat/raceChart.ts) is Claude's rebalance of the user's first
   draft: each race beats 3 and is weak to 3, with 4 mutual pairs.
 - 🧪 Matching-race bonus 1.15× (`MATCH_BONUS`), once.
-- 📌 **Race kits** (the user, 2026-10-26; lib/creatures/raceKitsV2.ts): every race has 5 moves in
-  each style (7 × 3 × 5 = 105): a 20, 30 and 50 energy move (10/15/25 damage), a **quick attack**
+- 📌 **Race kits** (the user, 2026-10-26; lib/creatures/raceKitsV2.ts; the light move is now
+  Balanced, see above): every race has 5 moves in each style (7 × 3 × 5 = 105): a 20, 30 and 50 energy move (10/15/25 damage), a **quick attack**
   (20 energy, 8 damage, always strikes first) and a **precise** move (30 energy, 15 damage, 70% to
   hit, always precise). The user will add more moves on top. 🧪 The names are Claude's drafts.
 - 📌 **No damage types in V2** (the user, 2026-10-26): Force / Pierce / Arcane go; a move is just its
   style and its race. The switch is `damageTypes: false` in `CombatRules` (engine.ts).
 - 📌 **35 creatures**, one of each rarity per race (lib/creatures/rosterV2.ts, `ROSTER_V2`): today's
-  25 plus 10 new: the user's Flame Imp (Geo Uncommon), Glob (Pestilence Rare) and Dreadpox
-  (Pestilence + Undead Epic), and Claude's drafts Gleamling, Thunderhead, Deep Angler, Tunnel Wyrm,
+  25 plus 10 new: the user's Flame Imp (Geo Uncommon), Glob (Toxic Rare) and Dreadpox
+  (Toxic + Undead Epic), and Claude's drafts Gleamling, Thunderhead, Deep Angler, Tunnel Wyrm,
   Plague Rat, Rotgut Fly and The Pale Rider (art: PixelLab, the user's picks, 2026-10-26). The
   user will re-race them. Veilstalker moved Undead → Divine so Undead didn't have two Rares.
 - 📌 **The user's race pass** (2026-10-26): Rust Beetle is Underkin only; Hollow Matriarch Underkin +
   Beast and melee; Flame Imp Geo + Divine; Veilstalker Divine + Underkin; Void Serpent Divine + Beast;
   The Watcher magic, not ranged; The Pale Rider Undead + Humanoid (so Undead has two Legendaries and
-  Pestilence none; the user is fine with lopsided races). Dust Sprite stays Geo. The rest waits for
+  Toxic none; the user is fine with lopsided races). Dust Sprite stays Geo. The rest waits for
   the user to see sprites. V2-only style changes are `V2_RESTYLE` (lib/creatures/rosterV2.ts): the
   main % moves to the new style, total unchanged.
 - 📌 The Cave Bat is now the **Cave Goblin** (the user, 2026-10-26: pale skin, big eyes, like Klutz
@@ -388,6 +409,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   without scanned gear): no mini boss (nor a guarded storehouse) before room 7 (`MINIBOSS_FROM`);
   the first 2 rooms are creature dens 90% of the time (`FIRST_ROOM_DENS`, otherwise a room with
   no fight), their creatures Lv 1 60% / Lv 2 25% / Lv 3 15% (`FIRST_ROOM_LEVELS`).
+  Lighter-armed foes (the user, 2026-10-26, `LIGHT_GEAR`): rooms 1–3 no weapon and only 1–2 of
+  their 3 armour pieces; rooms 4–7 a weapon and 1–2 armour pieces; deeper as rolled. Mini bosses
+  and the Cyclops are armed as ever. The piece that drops is always one they wore.
 - ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
   scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.
 - ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you

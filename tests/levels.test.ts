@@ -249,7 +249,8 @@ describe("the starter's quick attack", () => {
   });
   it("takes the last species move's place, of its own class; one it rolled is kept", () => {
     const t = CREATURES_BY_RARITY.rare[0];
-    const own = t.skills.map((s) => s.name).slice(0, 4);
+    // (Species now start with their quick move, so take four of its moves without one.)
+    const own = t.skills.filter((s) => !["dash", "quick"].includes(s.effect?.kind ?? "")).map((s) => s.name).slice(0, 4);
     const out = withQuickAttack(t, own);
     expect(out).toContain(QUICK_ATTACK[t.cls]);
     expect(MOVES[QUICK_ATTACK[t.cls]].type).toBe(t.cls);

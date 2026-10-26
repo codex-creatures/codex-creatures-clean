@@ -23,11 +23,12 @@ import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
 import LootGrid from "@/components/LootGrid";
 import GearCompare, { GearStatLine } from "@/components/GearCompare";
+import { RaceNames } from "@/components/RaceTag";
 import PartySlots, { type PartyMember } from "@/components/PartySlots";
 import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CLASS_INFO, CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, raceNames } from "@/lib/creatures/creatureData";
+import { CREATURE_BY_ID, MOVE_BY_NAME, RACE_INFO, raceNames } from "@/lib/creatures/creatureData";
 import { PotionIcon } from "@/components/PixelSprite";
 import CreaturePortrait from "@/components/CreaturePortrait";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
@@ -55,7 +56,7 @@ import {
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
-  curse, illnessTick, dungeonOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, bossLevel, DUNGEON_IDS, type DungeonId,
+  curse, illnessTick, dungeonOf, gearOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, bossLevel, DUNGEON_IDS, type DungeonId,
   needsSlot, nextToTake, dropRank, sackRank, isRareFind, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats,
   dynamiteHere, takeDynamite,
   SCROLL_LOOKS, scrollLooksLeft,
@@ -816,8 +817,8 @@ export default function DungeonPage() {
       : room.enemies!.map((e) => ({
           rarity: CREATURE_BY_ID[e.creatureId].rarity,
           label: creatureTypeLabel(e.proficiency), creatureId: e.creatureId,
-          weaponName: e.gear[0] ? gearName(e.gear[0]) : undefined,
-          armorName: e.gear[1] ? gearName(e.gear[1]) : undefined,
+          weaponName: gearOf(e, "weapon") && gearName(gearOf(e, "weapon")!),
+          armorName: gearOf(e, "armor") && gearName(gearOf(e, "armor")!),
         }));
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     if (room.enemies) game.markSeen(room.enemies.map((e) => e.creatureId));
@@ -972,6 +973,7 @@ export default function DungeonPage() {
         <BattleView
           battle={battle}
           showEstimates={lab.meta.clears === 0}
+          raceChart={dungeonOf(run) === 1}
           bag={bagForBattle(lab.meta.bag ?? [])}
           onUseItem={useFromBag}
           finishedActions={over && (
@@ -1284,7 +1286,6 @@ function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
           {owned.map((c) => {
             const slot = party.indexOf(c.id);
             const hp = lab.meta.injuries[c.id] ?? 1;
-            const cls = CLASS_INFO[c.template.cls];
             const picked = slot >= 0;
             const fights = picked;
             return (
@@ -1300,7 +1301,7 @@ function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
                   <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name}
                 </span>
                 <CreaturePortrait creatureId={c.creatureId} title={c.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
-                <span className="pixel-font" style={{ fontSize: 11, color: cls.color }}>{cls.name}</span>
+                <span className="pixel-font" style={{ fontSize: 11 }}><RaceNames races={c.template.races} /></span>
                 {hp < 1 && (
                   <span style={{ width: "80%", height: 4, background: "#1a0e0e", border: "1px solid #000" }}>
                     <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#5ee08a" : hp > 0.25 ? "#f5c542" : "#ff6b5e" }} />

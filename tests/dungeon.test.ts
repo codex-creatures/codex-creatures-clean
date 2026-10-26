@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { HEAL_AT_HOME, SCROLL_LOOKS, scrollLooksLeft } from "../lib/dungeon/run";
+import { lightenGear, makeEnemy, type Enemy, type DungeonId } from "../lib/dungeon/run";
+import type { ArmorSlot } from "../lib/items/armor";
 import {
   ROOM_MIX, MYSTERY_MIX, rollRoomKind, isFight, makeRoom, startRun, enterRoom, leaveRoom, setTeam, healInPool,
   fightingTeam, endRun, enemyFighter, nextRooms, runPosition, type DungeonSave, type DungeonRun, stepInside, canMoveOn, moveOn,
@@ -507,5 +509,44 @@ describe("the Scroll button", () => {
     expect(scrollLooksLeft({ scrollLooks: 1 })).toBe(1);
     expect(scrollLooksLeft({ scrollLooks: 2 })).toBe(0);
     expect(scrollLooksLeft({ scrollLooks: 5 })).toBe(0);
+  });
+});
+
+describe("lighter-armed creatures early in the Labyrinth (LIGHT_GEAR)", () => {
+  const armour = (e: Enemy) => e.gear.find((p) => p.slot === "armor");
+  const weapon = (e: Enemy) => e.gear.find((p) => p.slot === "weapon");
+  const fights = (depth: number, dungeon: DungeonId = 1) =>
+    Array.from({ length: 60 }, () => makeRoom(Math.random() < 0.5 ? "easy" : "hard", Math.random, depth, dungeon)).flatMap((r) => r.enemies ?? []);
+
+  it("rooms 1–3: no weapon and 1–2 armour pieces, summed right", () => {
+    for (const e of fights(3)) {
+      expect(weapon(e)).toBeUndefined();
+      const a = armour(e)!, slots = Object.keys(a.pieces!);
+      expect(slots.length).toBeGreaterThanOrEqual(1);
+      expect(slots.length).toBeLessThanOrEqual(2);
+      for (const [k, v] of Object.entries(a.stats)) expect(v).toBe(slots.reduce((s, sl) => s + (a.pieces![sl as ArmorSlot]![k] ?? 0), 0));
+      if (a.drops && a.dropSlot) expect(slots).toContain(a.dropSlot);
+    }
+  });
+
+  it("rooms 4–7: a weapon and 1–2 armour pieces; deeper and the Deep Labyrinth: everything", () => {
+    for (const e of fights(7)) {
+      expect(weapon(e)).toBeDefined();
+      expect(Object.keys(armour(e)!.pieces!).length).toBeLessThanOrEqual(2);
+    }
+    for (const e of [...fights(8), ...fights(2, 2)]) {
+      expect(weapon(e)).toBeDefined();
+      expect(Object.keys(armour(e)!.pieces!)).toHaveLength(3);
+    }
+  });
+
+  it("mini bosses are armed as ever", () => {
+    const deep = makeEnemy("rare", "rare", []);
+    expect(lightenGear(deep, 8)).toBe(deep);
+    for (let i = 0; i < 20; i++) {
+      const e = makeRoom("miniboss", Math.random, 7).enemies![0];
+      expect(weapon(e)).toBeDefined();
+      expect(Object.keys(armour(e)!.pieces!)).toHaveLength(3);
+    }
   });
 });

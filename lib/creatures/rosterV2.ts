@@ -39,7 +39,7 @@ export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
   rattlebones: "bruiser", shambler: "bulwark", dustwraith: "spellbow", mr_shadows: "battlemage", storm_phoenix: "skirmisher",
   thicket_archer: "sniper", leafblade_scout: "ranger", aurelius: "ranger", swamp_witch: "arcanist", sylvaran: "sniper",
   // New
-  gleamling: "spellbow", flame_imp: "arcanist", deep_angler: "spellbow", tunnel_wyrm: "warden", thunderhead: "spellbow",
+  gleamling: "spellbow", flame_imp: "arcanist", deep_angler: "battlemage", tunnel_wyrm: "warden", thunderhead: "spellbow",
   plague_rat: "bruiser", rotgut_fly: "skirmisher", glob: "bulwark", dreadpox: "warden", pale_rider: "battlemage",
 };
 
@@ -58,11 +58,12 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
   { id: "thunderhead",     name: "Thunderhead",     rarity: "legendary", baseHp: 138, cls: "ranged", proficiency: { atk: 8, rng: 38, mag: 36, agil: 26, mdef: 16, rdef: 22, magdef: 24 },
     flavour: "A storm that learned to walk. Hail falls from its shoulders, and lightning answers when it points." },
   // Underkin
-  { id: "deep_angler",     name: "Deep Angler",     rarity: "rare",      baseHp: 88,  cls: "ranged", proficiency: { atk: 4, rng: 18, mag: 16, agil: 14, mdef: 8, rdef: 10, magdef: 10 },
+  { id: "deep_angler",     name: "Deep Angler",     rarity: "rare",      baseHp: 88,  cls: "melee",  proficiency: { atk: 22, rng: 0, mag: 16, agil: 14, mdef: 8, rdef: 10, magdef: 10 },
+    // (Melee, not ranged: nothing about it shoots. The user, 2026-10-26.)
     flavour: "A blind cave fish on crooked legs. Follow its glowing lure and you'll never find your way out." },
   { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "magic",  proficiency: { atk: 6, rng: 0, mag: 20, agil: 6, mdef: 34, rdef: 24, magdef: 24 },
     flavour: "Eyeless and armoured in plates of stone. The tunnels it leaves behind are the Labyrinth's oldest." },
-  // Pestilence
+  // Toxic
   { id: "plague_rat",      name: "Plague Rat",      rarity: "common",    baseHp: 60,  cls: "melee",  proficiency: { atk: 14, rng: 0, mag: 0, agil: 16, mdef: 4, rdef: 4, magdef: 4 },
     flavour: "Mangy, yellow-toothed and never alone for long." },
   { id: "rotgut_fly",      name: "Rotgut Fly",      rarity: "uncommon",  baseHp: 72,  cls: "ranged", proficiency: { atk: 4, rng: 18, mag: 0, agil: 20, mdef: 4, rdef: 6, magdef: 6 },
@@ -75,11 +76,11 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
     flavour: "A rider on a rotting horse, scythe in one hand and a plague in the other. Where it rides, nothing grows." },
 ];
 
-// A creature's V2 moves. The first 4 are its starting moves:
-// - one style: its race's medium, heavy, light and quick moves;
-// - a hybrid: medium and heavy in its main style, medium in its second, quick;
-// - a second race swaps its own medium in for the light move (or, for a
-//   hybrid, for the quick one).
+// A creature's V2 moves. The first 4 are its starting moves (the user,
+// 2026-10-26), all in its main style: the Balanced light move, its race's
+// medium move, a fourth, and its race's quick (priority) move. The fourth:
+// a second race's medium move; else, for a hybrid, its race's medium move
+// in its second style; else its race's heavy move.
 // The rest of its kits follow, so they can be picked into slots.
 export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
   const [r1, r2] = SPECIES_RACES[c.id] ?? [];
@@ -87,10 +88,8 @@ export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
   const styles = ARCHETYPE_INFO[SPECIES_ARCHETYPE[c.id] ?? "bruiser"].styles;
   const main = c.cls;
   const second = styles.find((s) => s !== main);
-  const start: Skill[] = second
-    ? [kitMoveFor(r1, main, "medium"), kitMoveFor(r1, main, "heavy"), kitMoveFor(r1, second, "medium"), kitMoveFor(r1, main, "quick")]
-    : [kitMoveFor(r1, main, "medium"), kitMoveFor(r1, main, "heavy"), kitMoveFor(r1, main, "light"), kitMoveFor(r1, main, "quick")];
-  if (r2) start[second ? 3 : 2] = kitMoveFor(r2, main, "medium");
+  const fourth = r2 ? kitMoveFor(r2, main, "medium") : second ? kitMoveFor(r1, second, "medium") : kitMoveFor(r1, main, "heavy");
+  const start: Skill[] = [kitMoveFor(r1, main, "light"), kitMoveFor(r1, main, "medium"), fourth, kitMoveFor(r1, main, "quick")];
   const rest = [r1, r2].filter(Boolean).flatMap((r) => [main, ...(second ? [second] : [])].flatMap((s) => kitFor(r!, s)));
   return [...new Map([...start, ...rest].map((m) => [m.name, m])).values()];
 }

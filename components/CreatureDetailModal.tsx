@@ -214,7 +214,7 @@ export default function CreatureDetailModal({
           <div style={{ display: "flex", alignContent: "flex-start", alignItems: "center", gap: 6, marginBottom: 6, flexWrap: "wrap", height: 52, overflow: "hidden" }}>
             <span className="pixel-font" style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: c.text, border: `2px solid ${c.border}`, background: c.glow }}>{creature.rarity}</span>
             <RaceTag race={template?.race} races={template?.races} />
-            <ClassBadge cls={template?.cls} neutral={template?.neutral} />
+            {template?.neutral && <ClassBadge neutral />}
             {template && prof && !(template.neutral && creatureRoles(prof)[0] === "Balanced") && <TypeTags roles={creatureRoles(prof)} />}
           </div>
           {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it. */}

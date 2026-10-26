@@ -6,6 +6,8 @@
 //
 // The 5 slots are the same shape in every kit (the user, 2026-10-26); only
 // the names change. V2 has no damage types: a move is its style and its race.
+// Except the light slot: that's a Balanced move (no race, neutral against
+// everyone), the same one in every kit of a style (the user, 2026-10-26).
 
 import type { CombatClass, Skill } from "./creatureData";
 import type { RaceV2 } from "./racesV2";
@@ -25,7 +27,16 @@ export const KIT_NUMBERS: Record<KitSlot, { damage: number; energyCost: number }
 };
 export const KIT_PRECISE_HIT = 0.7;
 
-// Names, in KIT_SLOTS order: light, medium, heavy, quick, precise.
+// The Balanced moves: each style's light move, with no race.
+export const BALANCED_MOVES: Record<CombatClass, Skill> = {
+  melee:  { name: "Strike", ...KIT_NUMBERS.light, type: "melee",  dmgType: "force" },
+  ranged: { name: "Shot",   ...KIT_NUMBERS.light, type: "ranged", dmgType: "force" },
+  magic:  { name: "Zap",    ...KIT_NUMBERS.light, type: "magic",  dmgType: "force" },
+};
+
+// Names, in KIT_SLOTS order: light, medium, heavy, quick, precise. (The light
+// names are retired: the Balanced moves took their place. RETIRED_KIT_MOVES
+// turns a creature that still knows one over to its Balanced move.)
 type Names = [string, string, string, string, string];
 export const KIT_NAMES: Record<RaceV2, Record<CombatClass, Names>> = {
   beast: {
@@ -58,7 +69,7 @@ export const KIT_NAMES: Record<RaceV2, Record<CombatClass, Names>> = {
     ranged: ["Arrow", "Crossbow Bolt", "Longbow Volley", "Snap Shot", "Aimed Shot"],
     magic:  ["Magic Missile", "Arcane Bolt", "Mana Blast", "Cantrip", "True Strike"],
   },
-  pestilence: {
+  toxic: {
     melee:  ["Festering Bite", "Rot Claw", "Plague Smash", "Gnaw", "Infect"],
     ranged: ["Bile Spit", "Blight Spray", "Swarm Burst", "Gnat Swarm", "Plague Dart"],
     magic:  ["Miasma", "Wither", "Contagion", "Fever Touch", "Blight Mark"],
@@ -72,14 +83,16 @@ function kitMove(race: RaceV2, style: CombatClass, slot: KitSlot): Skill {
   // dmgType is required on every move, but Combat V2 turns damage types off
   // (CombatRules.damageTypes in engine.ts), so it never counts.
   const base = { name: KIT_NAMES[race][style][i], ...KIT_NUMBERS[slot], type: style, dmgType: "force" as const };
+  if (slot === "light") return BALANCED_MOVES[style];
   if (slot === "quick") return { ...base, effect: { kind: "quick" }, desc: "Always strikes first this round, whatever its agility." };
   if (slot === "precise") return { ...base, effect: { kind: "precise", hitChance: KIT_PRECISE_HIT }, desc: "70% chance to hit, but every hit is a precise hit." };
   return base;
 }
 
-// Every kit move, and each one's race (for the race chart).
-export const KIT_MOVES: Skill[] = [];
+// Every kit move, and each one's race (for the race chart; none for the Balanced moves).
+export const KIT_MOVES: Skill[] = Object.values(BALANCED_MOVES);
 export const KIT_MOVE_RACE: Record<string, RaceV2> = {};
+export const RETIRED_KIT_MOVES: Record<string, string> = {};
 const KITS = {} as Record<RaceV2, Record<CombatClass, Record<KitSlot, Skill>>>;
 for (const race of Object.keys(KIT_NAMES) as RaceV2[]) {
   KITS[race] = {} as Record<CombatClass, Record<KitSlot, Skill>>;
@@ -88,6 +101,7 @@ for (const race of Object.keys(KIT_NAMES) as RaceV2[]) {
     for (const slot of KIT_SLOTS) {
       const m = kitMove(race, style, slot);
       KITS[race][style][slot] = m;
+      if (slot === "light") { RETIRED_KIT_MOVES[KIT_NAMES[race][style][0]] = m.name; continue; }
       KIT_MOVES.push(m);
       KIT_MOVE_RACE[m.name] = race;
     }

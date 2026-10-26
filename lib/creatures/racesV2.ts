@@ -7,13 +7,13 @@
 // Everything here is a first draft for the sims: who belongs to which race,
 // and which race each of today's moves counts as.
 
-export type RaceV2 = "undead" | "divine" | "beast" | "underkin" | "geo" | "humanoid" | "pestilence";
+export type RaceV2 = "undead" | "divine" | "beast" | "underkin" | "geo" | "humanoid" | "toxic";
 
-export const RACES_V2: RaceV2[] = ["undead", "divine", "beast", "underkin", "geo", "humanoid", "pestilence"];
+export const RACES_V2: RaceV2[] = ["undead", "divine", "beast", "underkin", "geo", "humanoid", "toxic"];
 
 export const RACE_V2_NAME: Record<RaceV2, string> = {
   undead: "Undead", divine: "Divine", beast: "Beast", underkin: "Underkin",
-  geo: "Geo", humanoid: "Humanoid", pestilence: "Pestilence",
+  geo: "Geo", humanoid: "Humanoid", toxic: "Toxic",
 };
 
 // Every species' race(s), by what it is and how it looks. Klutz and the
@@ -24,7 +24,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   // Old Beast
   moss_wolf:        ["beast"],
   amber_wasp:       ["beast"],
-  bellow_toad:      ["beast", "pestilence"], // poison glands, always spitting
+  bellow_toad:      ["beast", "toxic"], // poison glands, always spitting
   dire_wolf:        ["beast"],
   ironhide:         ["beast"],
   // Old Underkin
@@ -41,7 +41,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   void_serpent:     ["divine", "beast"],
   // Old Undead
   rattlebones:      ["undead"],
-  shambler:         ["undead", "pestilence"], // rotting
+  shambler:         ["undead", "toxic"], // rotting
   dustwraith:       ["undead", "geo"],      // a whirlwind with a grudge
   mr_shadows:       ["undead"],
   storm_phoenix:    ["undead", "beast"],    // the Skull Raven
@@ -49,7 +49,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   thicket_archer:   ["humanoid"],
   leafblade_scout:  ["humanoid"],
   aurelius:         ["humanoid", "beast"],  // a centaur
-  swamp_witch:      ["humanoid", "pestilence"],
+  swamp_witch:      ["humanoid", "toxic"],
   sylvaran:         ["humanoid"],
   // New in Combat V2 (lib/creatures/rosterV2.ts)
   gleamling:        ["divine"],
@@ -57,17 +57,17 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   thunderhead:      ["geo"],
   deep_angler:      ["underkin"],
   tunnel_wyrm:      ["underkin", "geo"],    // armoured in stone
-  plague_rat:       ["pestilence", "beast"],
-  rotgut_fly:       ["pestilence"],
-  glob:             ["pestilence"],
-  dreadpox:         ["pestilence", "undead"], // the user's: Undead and Pestilence
-  pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Pestilence has no Legendary)
+  plague_rat:       ["toxic", "beast"],
+  rotgut_fly:       ["toxic"],
+  glob:             ["toxic"],
+  dreadpox:         ["toxic", "undead"], // the user's: Undead and Toxic
+  pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Toxic has no Legendary)
   // The first quest's thief (lib/quest.ts)
   baby_cyclops:     ["humanoid"],
   // Retired (still owned by some players)
   monkey_mage:      ["beast"],
   mantis_warden:    ["beast"],
-  forest_slime:     ["pestilence"],
+  forest_slime:     ["toxic"],
   stone_toad:       ["beast", "geo"],
   thornmaw:         ["geo", "beast"],       // a walking carnivorous plant
   ironjaw_hound:    ["beast"],
@@ -84,12 +84,12 @@ export const MOVE_RACES: Record<string, RaceV2> = {
   "Pebble Shot": "underkin", "Stone Throw": "underkin", "Bolt": "humanoid", "Hex Arrow": "undead",
   "Piercing Shot": "humanoid", "Boulder Toss": "geo", "Cursed Volley": "undead", "Annihilator": "divine",
   // Magic
-  "Spark": "geo", "Frost Shard": "geo", "Hex": "pestilence", "Firebolt": "geo", "Ice Lance": "geo",
+  "Spark": "geo", "Frost Shard": "geo", "Hex": "toxic", "Firebolt": "geo", "Ice Lance": "geo",
   "Fireball": "geo", "Soul Drain": "undead", "Starfall": "divine",
   // Learnable
-  "Cripple": "beast", "Crippling Shot": "humanoid", "Hobble Hex": "pestilence", "Dash Lash": "beast",
+  "Cripple": "beast", "Crippling Shot": "humanoid", "Hobble Hex": "toxic", "Dash Lash": "beast",
   "Quick Bolt": "humanoid", "Blink": "divine", "Precise Slice": "humanoid", "Precise Shot": "humanoid",
   "Seeker Spark": "geo",
   // Race moves
-  "Pounce": "beast", "Rabid Bite": "pestilence", "Mirage": "divine", "Corpsify": "undead", "Barrage": "humanoid",
+  "Pounce": "beast", "Rabid Bite": "toxic", "Mirage": "divine", "Corpsify": "undead", "Barrage": "humanoid",
 };

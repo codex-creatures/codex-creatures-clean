@@ -10,6 +10,7 @@ import DenFrame from "@/components/DenFrame";
 import { useGameState } from "@/hooks/useGameState";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
+import RaceChart from "@/components/RaceChart";
 import ClassBadge, { moveKind } from "@/components/ClassBadge";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
@@ -20,7 +21,7 @@ import {
   AFFINITY_BONUS, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, PRECISE_CHANCE, PRECISE_DAMAGE, PRECISE_IGNORE,
   calcDamage, damageTypesOn, type CombatItem, type Fighter,
 } from "@/lib/combat/engine";
-import { MATCH_BONUS, RACE_EFFECT, raceVs } from "@/lib/combat/raceChart";
+import { MATCH_BONUS, RACE_EFFECT } from "@/lib/combat/raceChart";
 import { CRIPPLE, CRIPPLE_AGILITY_LOSS, CRIPPLE_ROUNDS, SWAP_ENERGY_RESTORE } from "@/lib/combat/battle";
 import { SOUL_STONES, SOUL_STONE_CHANCE, SOUL_STONE_REPLACE_COST, stonesFor, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SCAN_ODDS } from "@/lib/barcodeRegistry";
@@ -114,34 +115,6 @@ function Combat() {
       <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18, margin: "4px 0" }}>
         {(Object.keys(SOUL_STONES) as SoulStoneKey[]).map((k) => <li key={k}>{SOUL_STONES[k].icon} <b>{SOUL_STONES[k].name}</b>: {SOUL_STONES[k].text}</li>)}
       </ul>
-    </div>
-  );
-}
-
-function RaceChart() {
-  // Rows: the move's race; columns: the target's race. ▲ effective, ▼ resisted.
-  const cell = (m: number) => (m > 1 ? { t: "▲", c: "#7fdc7f" } : m < 1 ? { t: "▼", c: "#ff8a80" } : { t: "·", c: MUTED });
-  return (
-    <div style={{ overflowX: "auto", marginTop: 8 }}>
-      <table style={{ borderCollapse: "collapse", fontSize: 12, margin: "0 auto" }}>
-        <thead>
-          <tr>
-            <th style={{ padding: 4, color: MUTED, textAlign: "left", fontWeight: 400 }}>move ↓ · target →</th>
-            {RACES.map((r) => <th key={r} title={RACE_INFO[r].name} style={{ padding: 4, fontSize: 16 }}>{RACE_INFO[r].icon}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {RACES.map((a) => (
-            <tr key={a} style={{ borderTop: "1px solid #2a2d38" }}>
-              <th style={{ padding: 4, textAlign: "left", color: RACE_INFO[a].color, whiteSpace: "nowrap" }}>{RACE_INFO[a].icon} {RACE_INFO[a].name}</th>
-              {RACES.map((d) => {
-                const v = cell(raceVs(a, d));
-                return <td key={d} style={{ padding: 4, textAlign: "center", color: v.c, fontSize: 14 }}>{v.t}</td>;
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

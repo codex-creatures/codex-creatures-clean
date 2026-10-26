@@ -19,6 +19,8 @@ import { raceOfMove, raceVsAll } from "@/lib/combat/raceChart";
 import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
+import { RaceNames } from "./RaceTag";
+import RaceChart from "./RaceChart";
 import { attackHaptic, buzz } from "@/lib/haptics";
 import { useEscape } from "@/hooks/useEscape";
 import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
@@ -296,13 +298,14 @@ export type BagItem = { key: string; name: string; icon: string; potion?: "potio
 
 // showEstimates: the "hits for ~X, takes ~Y" swap hints (until your first
 // Cyclops; after that you're on your own).
-export function BattleView({ battle, finishedActions, bag = [], onUseItem, showEstimates = true }: {
+// raceChart: a dock button for the race chart (Labyrinth runs, while you learn the races).
+export function BattleView({ battle, finishedActions, bag = [], onUseItem, showEstimates = true, raceChart }: {
   battle: ReturnType<typeof usePlayableBattle>; finishedActions: React.ReactNode;
-  bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void; showEstimates?: boolean;
+  bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void; showEstimates?: boolean; raceChart?: boolean;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
-  // What's opened over the stage (from the dock's tabs): the bag, a swap, the log, details.
-  const [open, setOpen] = useState<"bag" | "swap" | "log" | "details" | null>(null);
+  // What's opened over the stage (from the dock's tabs): the bag, a swap, the log, details, the race chart.
+  const [open, setOpen] = useState<"bag" | "swap" | "log" | "details" | "races" | null>(null);
   const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
   useEscape(open ? () => setOpen(null) : null);
   const match = battle.match!;
@@ -397,6 +400,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           </>
         ))}
         {open === "log" && over("Battle log", <BattleLog log={match.state.log} />)}
+        {open === "races" && over("Race chart", <RaceChart />)}
         {open === "bag" && bag.length > 0 && onUseItem && over("Battle Bag", (
           <>
             <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>Uses your turn, on your {me.name}.</div>
@@ -488,6 +492,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
               <button className="dock-tab" data-active={open === "swap"} disabled={!canSwap} onClick={() => toggle("swap")}>⇄ Swap</button>
               {onUseItem && <button className="dock-tab" data-active={open === "bag"} disabled={bag.length === 0 || locked} onClick={() => toggle("bag")}>🎒 Bag{bagCount ? <span className="count">{bagCount}</span> : null}</button>}
               <button className="dock-tab" data-active={open === "log"} onClick={() => toggle("log")}>📜 Log</button>
+              {raceChart && <button className="dock-tab" data-active={open === "races"} onClick={() => toggle("races")} aria-label="Race chart">▲▼</button>}
               <button className="dock-tab" data-active={open === "details"} onClick={() => toggle("details")} aria-label="Details">ⓘ</button>
             </div>
           </>
@@ -616,9 +621,9 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
             <div className="pixel-font" style={{ fontSize: "clamp(14px, 4cqw, 17px)", lineHeight: 1.1, overflowWrap: "anywhere" }}>
-              <LevelTag level={f.level} /> <span style={{ color: rarityColor(info.rarity) }}>{f.name}</span> <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon}</span>
+              <LevelTag level={f.level} /> <span style={{ color: rarityColor(info.rarity) }}>{f.name}</span> <RaceNames races={f.races} icons />
             </div>
-            <div style={{ fontSize: 11, color: MUTED }}><span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>{details && side === "A" && <> · {info.label}</>}</div>
+            <div style={{ fontSize: 11, color: MUTED }}>{f.races?.length ? <RaceNames races={f.races} /> : <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>}{details && side === "A" && <> · {info.label}</>}</div>
           </div>
         </div>
         {/* Opponents: just a health bar that goes down (no numbers, no energy). */}
@@ -813,7 +818,7 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
       <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
         <LevelTag level={f.level} />
         <span style={{ color: mi ? rarityColor(mi.rarity) : "#fff", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{f.name}</span>
-        <span style={{ color: CLASS_INFO[f.cls].color }} title={CLASS_INFO[f.cls].name}>{CLASS_INFO[f.cls].icon}</span>
+        <RaceNames races={f.races} icons />
       </div>
       <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />
