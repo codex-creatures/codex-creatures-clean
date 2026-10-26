@@ -46,7 +46,7 @@ export const CRIPPLE_AGILITY_LOSS = 0.5;
 export const CRIPPLE_ROUNDS = 3;
 export const CRIPPLE = { stumble: 0.25 }; // chance a crippled creature loses its attack (no energy spent)
 
-// Haste (from Dash Lash / Quick Bolt / Blink): extra agility for this
+// Haste (from Dash Lash / Quick Bolt / Quickcast): extra agility for this
 // round's turn order only, so it can strike first. Nothing carries over.
 
 // Race moves (numbers on the moves themselves, in creatureData.ts):
@@ -451,6 +451,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         damage = Math.ceil(damage / 2);
         armorFx.push(`${SET_BONUS.colossal_shellarmor.name} halves it`);
       }
+      if (actor.gentle && damage >= target.hp) damage = Math.max(0, target.hp - 1);
       if (damage >= target.hp && target.hp > 1 && hasSet(target, "juggernaut_platemail") && !target.setUsed) {
         target.setUsed = true;
         damage = target.hp - 1;

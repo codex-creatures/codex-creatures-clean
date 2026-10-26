@@ -8,14 +8,14 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, setKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
-import { fighterFor } from "@/lib/creatures/instance";
+import { fighterFor, upgradeMoveSet } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
 import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
@@ -99,6 +99,7 @@ export function loadSave(): SaveState | null {
   try {
     parsed = readSave();
   } catch {}
+  const obj = (v: unknown) => (v && typeof v === "object" ? v : {});
   // Klutz used to be one of your creatures; older saves drop him (his gear
   // stays on him: it's stored under KLUTZ_DROP_ID).
   const inventory: Drop[] = (Array.isArray(parsed.inventory) ? parsed.inventory : []).filter((d: Drop) => !isKlutz(d));
@@ -108,7 +109,9 @@ export function loadSave(): SaveState | null {
   // became the Cave Goblin).
   // Soul stones (lib/creatures/soulStones.ts): one from before them gets its
   // roll now (the same one every time: seeded by its id), and the old
-  // abilities they replaced are dropped.
+  // abilities they replaced are dropped. One from before the 3 starting
+  // moves goes back to them (upgradeMoveSet), its move slots cleared.
+  const equipment = obj(parsed.equipment) as Record<string, Loadout>;
   const caged: Drop[] = Array.isArray(parsed.caged) ? parsed.caged : [starterCreature()];
   const caches: Drop[] = Array.isArray(parsed.caches) ? parsed.caches : [];
   for (const d of [...inventory, ...caged, ...caches]) {
@@ -118,18 +121,29 @@ export function loadSave(): SaveState | null {
     if (t) { c.rarity = t.rarity; c.name = t.name; c.desc = t.flavour; }
     c.soulStone = soulStoneOf(c, t);
     delete c.ability;
+    if (upgradeMoveSet(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
+    if (c.learned) c.learned = c.learned.map(renamedMove);
   }
-  const obj = (v: unknown) => (v && typeof v === "object" ? v : {});
+  // Codexes of a renamed move (RENAMED_MOVES) carry its new name.
+  for (const d of [...inventory, ...caches, ...(Array.isArray(parsed.crate) ? parsed.crate as Drop[] : [])]) {
+    const x = d as CreatureOrItemDrop;
+    if (x.codexMove && renamedMove(x.codexMove) !== x.codexMove) Object.assign(x, codexDrop(renamedMove(x.codexMove), x.barcode), { id: x.id, createdAt: x.createdAt });
+  }
+  // Klutz can't use the new Blink, so his old one is Quickcast too.
+  const klutz = obj(parsed.klutz) as KlutzState;
+  if (klutz.learned) klutz.learned = klutz.learned.map(renamedMove);
+  const kl = equipment[KLUTZ_DROP_ID];
+  if (kl?.moves) equipment[KLUTZ_DROP_ID] = { ...kl, moves: kl.moves.map(renamedMove) };
   return {
     gold:       typeof parsed.gold === "number" ? parsed.gold : 0,
     inventory,
     scanCounts: obj(parsed.scanCounts) as Record<string, number>,
     favoriteIds,
-    equipment:  obj(parsed.equipment) as Record<string, Loadout>,
+    equipment,
     recentScans: Array.isArray(parsed.recentScans) ? parsed.recentScans : [],
     // A save from before the cage gets the starter waiting in it once.
     caged,
-    klutz: obj(parsed.klutz) as KlutzState,
+    klutz,
     quest: parsed.quest && typeof parsed.quest === "object" ? (parsed.quest as QuestState) : { ...NEW_QUEST },
     seen: Array.isArray(parsed.seen) ? parsed.seen : [],
     deathsSinceScan: typeof parsed.deathsSinceScan === "number" ? parsed.deathsSinceScan : 0,
@@ -142,7 +156,7 @@ export function loadSave(): SaveState | null {
     cage: typeof parsed.cage === "number" ? parsed.cage : 1,
     materials: obj(parsed.materials) as Materials,
     storage: Array.isArray(parsed.storage) ? parsed.storage : [],
-    found: Array.isArray(parsed.found) ? parsed.found : [],
+    found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),
   };
 }
 

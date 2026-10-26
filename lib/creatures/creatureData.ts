@@ -1,7 +1,7 @@
 // lib/creatures/creatureData.ts
 
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
-import { KIT_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
+import { KIT_MOVES, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
 import { NEW_SPECIES_V2, V2_RESTYLE, v2Moves } from "./rosterV2";
 
 export type ElementalType = "inferno" | "aqua" | "naturist" | null;
@@ -88,7 +88,7 @@ export const RACE_INFO: Record<Race, { name: string; color: string; icon: string
   toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠" }, // purple
 };
 // A move with no race (the Balanced moves, lib/creatures/raceKitsV2.ts): neutral against everyone.
-export const BALANCED_INFO = { name: "Balanced", color: "#8e929c", icon: "⚖️" }; // slate grey
+export const BALANCED_INFO = { name: "Neutral", color: "#8e929c", icon: "⚖️" }; // slate grey
 
 export type CreatureTemplate = {
   id: string;
@@ -145,7 +145,7 @@ export const LEARNABLE_MOVES: Skill[] = [
   { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
   { name: "Dash Lash",      damage: 15, energyCost: 60, type: "melee",  dmgType: "pierce", effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
   { name: "Quick Bolt",     damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
-  { name: "Blink",          damage: 15, energyCost: 60, type: "magic",  dmgType: "force",  effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
+  { name: "Quickcast",      damage: 15, energyCost: 60, type: "magic",  dmgType: "force",  effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
   { name: "Precise Slice",  damage: 15, energyCost: 30, type: "melee",  dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
   { name: "Precise Shot",   damage: 15, energyCost: 30, type: "ranged", dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
   { name: "Seeker Spark",   damage: 15, energyCost: 30, type: "magic",  dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
@@ -173,6 +173,10 @@ export const RACE_MOVES: Skill[] = [
 export const BASIC_CODEX_MAX_DAMAGE = 20;
 export const BASIC_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage <= BASIC_CODEX_MAX_DAMAGE);
 export const STRONG_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage > BASIC_CODEX_MAX_DAMAGE);
+// Combat V2's race-kit moves come as codexes too (the user, 2026-10-26): from
+// scans by the same split (light ones Common, heavy ones Rare), and from librarians.
+export const KIT_BASIC_CODEXES: Skill[] = KIT_RACE_MOVES.filter((m) => m.damage <= BASIC_CODEX_MAX_DAMAGE);
+export const KIT_STRONG_CODEXES: Skill[] = KIT_RACE_MOVES.filter((m) => m.damage > BASIC_CODEX_MAX_DAMAGE);
 const classMovesFor = (c: CreatureTemplate): Skill[] => ALL_SKILLS.filter((m) => c.neutral || m.type === c.cls);
 
 // Boss-only moves (see lib/creatures/bosses.ts). Never learnable.
@@ -327,30 +331,45 @@ export const CREATURES_BY_RARITY: Record<string, CreatureTemplate[]> = {
 // learnable ones. Until changed, it uses the first 4 of its own.
 export const MOVE_SLOTS = 4;
 
+// Combat V2 creatures start with 3 moves; a codex fills the fourth slot
+// (the user, 2026-10-26). Klutz and the old species (PRE_V2_SPECIES, for
+// tests) still start with 4. A race-kit creature: its third move is Neutral priority.
+export const STARTING_MOVES = 3;
+const NEUTRAL_QUICK_NAMES = new Set(Object.values(NEUTRAL_QUICK_MOVES).map((m) => m.name));
+export const startingMoveCount = (c: CreatureTemplate) => (NEUTRAL_QUICK_NAMES.has(c.skills[STARTING_MOVES - 1]?.name) ? STARTING_MOVES : MOVE_SLOTS);
 export function defaultMoveNames(c: CreatureTemplate): string[] {
-  return c.skills.slice(0, MOVE_SLOTS).map((m) => m.name);
+  return c.skills.slice(0, startingMoveCount(c)).map((m) => m.name);
 }
 
 // A saved move's name today: a retired kit light move is now its style's
 // Balanced move (lib/creatures/raceKitsV2.ts).
 export const currentMoveName = (name: string) => RETIRED_KIT_MOVES[name] ?? name;
 
+// Moves that were renamed after a new move took the name (the user,
+// 2026-10-26: Blink is now the Neutral priority magic move; the older haste
+// spell is Quickcast). Only for codexes, moves learned from codexes and the
+// discovery list: the new Blink never comes as a codex, so a Blink there is
+// always the old one.
+export const RENAMED_MOVES: Record<string, string> = { Blink: "Quickcast" };
+export const renamedMove = (name: string) => RENAMED_MOVES[name] ?? name;
+
 // Can this creature learn a move from a codex? Learnable moves: anyone.
-// Race moves: only creatures of that race. Basic and strong moves: only
+// Race moves: only creatures of that race. Race-kit moves: those in its own
+// kits (its races, in its styles). Basic and strong moves: only
 // creatures of that move's class (a neutral one, Klutz: any class,
 // but no race moves).
 export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
   if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
   if (c.neutral && RACE_MOVES.some((m) => m.name === moveName)) return false;
-  return [...raceMovesFor(c), ...classMovesFor(c)].some((m) => m.name === moveName);
+  return [...raceMovesFor(c), ...classMovesFor(c), ...c.skills].some((m) => m.name === moveName);
 }
 
 // The moves a creature can put in its slots: the ones it was born with (its
-// rolled moves; the species' first 4 if it has none saved), the rest of its
-// species' moves (Combat V2: its whole race kits), and any it has learned
-// from codexes.
+// rolled moves; its species' starting moves if it has none saved) and any it
+// has learned from codexes. (The rest of its race kits need codexes too: the
+// user, 2026-10-26.)
 export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], own?: string[]): Skill[] {
-  const names = [...new Set([...(own?.length ? own.map(currentMoveName) : defaultMoveNames(c)), ...c.skills.map((m) => m.name), ...learned.filter((n) => canLearnFromCodex(c, n))])];
+  const names = [...new Set([...(own?.length ? own.map(currentMoveName) : defaultMoveNames(c)), ...learned.filter((n) => canLearnFromCodex(c, n))])];
   return names.map((n) => MOVE_BY_NAME[n]).filter(Boolean);
 }
 

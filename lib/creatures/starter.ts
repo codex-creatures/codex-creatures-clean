@@ -11,7 +11,7 @@ import { makeCreatureDrop } from "./summon";
 import { stonesFor } from "./soulStones";
 
 export const STARTER_LEVEL = 3;
-export const QUICK_ATTACK: Record<CombatClass, string> = { melee: "Dash Lash", ranged: "Quick Bolt", magic: "Blink" };
+export const QUICK_ATTACK: Record<CombatClass, string> = { melee: "Dash Lash", ranged: "Quick Bolt", magic: "Quickcast" };
 
 // Its moves with a quick attack in: kept if it rolled one, otherwise it takes
 // the place of its last species move (a rare rolled move stays).

@@ -12,10 +12,10 @@
 // E.g. a Common (~40 total): ±2, up to 4 points moved. A Legendary (~200):
 // ±8, up to 16.
 //
-// Starting moves: picked from the species' own moves; each slot has a small
-// chance to be a rare (learnable) move instead.
+// Starting moves: the species' own (3 in Combat V2); each has a small chance
+// to be a rare (learnable) move instead. The empty fourth slot stays empty.
 
-import { LEARNABLE_MOVES, MOVE_SLOTS, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
+import { LEARNABLE_MOVES, defaultMoveNames, type CreatureProficiency, type CreatureTemplate } from "./creatureData";
 import { rollSoulStone, type SoulStoneKey } from "./soulStones";
 
 export const ROLL_SPREAD_SHARE = 0.04;    // max ± per stat, as a share of the species' total %s
@@ -52,12 +52,12 @@ export function rollProficiency(base: CreatureProficiency, rng: Rng = Math.rando
 }
 
 export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[] {
-  // Its species' starting moves (Combat V2: the first MOVE_SLOTS of its race
-  // kits; the rest of its kits can be picked into its slots later).
-  const own = c.skills.slice(0, MOVE_SLOTS).map((m) => m.name);
+  // Its species' starting moves (Combat V2: the first 3 of its race kits;
+  // the rest of its kits come from codexes).
+  const own = defaultMoveNames(c);
   const fitting = LEARNABLE_MOVES.filter((m) => m.type === c.cls);
   const moves = [...own];
-  for (let i = 0; i < MOVE_SLOTS; i++) {
+  for (let i = 0; i < own.length; i++) {
     if (rng() >= RARE_MOVE_CHANCE) continue;
     const options = fitting.filter((m) => !moves.includes(m.name));
     if (options.length > 0) moves[i] = pick(options, rng).name; // fills an empty slot too

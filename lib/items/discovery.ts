@@ -10,6 +10,7 @@ import { ITEM_KEYS } from "./ceilings";
 import { ARMOR_KEYS } from "./armor";
 import { MATERIAL_KEYS, type Materials } from "./materials";
 import { BASIC_MOVES, STRONG_MOVES, LEARNABLE_MOVES, RACE_MOVES } from "../creatures/creatureData";
+import { KIT_RACE_MOVES } from "../creatures/raceKitsV2";
 
 const POTION_KINDS = ["lesser", "potion"] as const;
 
@@ -19,7 +20,7 @@ export const DISCOVERABLE_ITEMS: ReadonlySet<string> = new Set([
   ...ARMOR_KEYS.map((k) => `a:${k}`),
   ...MATERIAL_KEYS.map((k) => `m:${k}`),
   ...POTION_KINDS.map((k) => `p:${k}`),
-  ...[...BASIC_MOVES, ...STRONG_MOVES, ...LEARNABLE_MOVES, ...RACE_MOVES].map((m) => `c:${m.name}`),
+  ...[...BASIC_MOVES, ...STRONG_MOVES, ...LEARNABLE_MOVES, ...RACE_MOVES, ...KIT_RACE_MOVES].map((m) => `c:${m.name}`),
 ]);
 export const TOTAL_DISCOVERABLE_ITEMS = DISCOVERABLE_ITEMS.size;
 

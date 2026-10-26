@@ -266,7 +266,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   ranged, and deals +10% ranged; Entrench is the mirror image (melee). The stance rules are
   provisional in the original design, and there's no elemental type chart.
 - ✅ **Utility moves** (learnable): Cripple (−50% agility for 3 rounds, plus a 25% chance each
-  attack is lost), Haste/Blink (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
+  attack is lost), Haste/Quickcast (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
   always precise).
 - ✅ **Race moves:** single-use codexes, learnable only by that race (either of a creature's two).
   Pounce (Beast), Rabid Bite (Underkin, venom ticks even on the bench), Mirage (Divine, was
@@ -298,8 +298,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   `_slots_v2`, `_slot2_<id>`), so every address starts at the title screen with no saves. The old
   saves stay in the browser under their old keys, unread. Save files from before V2 (version 1)
   are refused with a message (`FIRST_READABLE_VERSION`).
-- ✅ A creature is born with its species' **4 starting moves** (the first 4 of its kits, no longer
-  shuffled) and can put any of the rest of its race kits in its slots (`movesAvailableTo`).
+- ✅ A creature is born with its species' **3 starting moves** (`STARTING_MOVES`, the first 3 of its
+  kits). Its fourth slot stays empty until it reads a codex, and the rest of its race kits need
+  codexes too (`movesAvailableTo`: born moves + learned). Klutz still starts with 4.
 - ✅ The **guided first fight** teaches races: the Baby Cyclops thief is Humanoid; Klutz has you use
   Tunnel Rush (Underkin, resisted) and then Gore (Beast, effective), then lets you finish. The
   Cyclops and the Warden's pack themselves still have no race (neutral).
@@ -318,9 +319,25 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     (Strike, Shot, Zap: `BALANCED_MOVES`; names are Claude's), neutral against everyone. The old
     light kit names are retired (`RETIRED_KIT_MOVES`: a creature that knew one has its Balanced
     move instead). The kits are now 7 × 3 × 4 race moves + 3 Balanced = 87.
-  - **Starting moves**, every creature, all in its main style: Balanced 20, its race's 30, a fourth
-    (a second race's 30; else a hybrid's 30 in its second style; else its race's 50), and its
-    race's quick (priority) move.
+  - ~~Starting moves: Balanced 20, race 30, a fourth, and the race's quick move.~~ Replaced, below.
+- ✅ **The user's second round of changes** (2026-10-26):
+  - **Balanced is now called Neutral** on screen (moves with no race, and Klutz's badge). In code
+    it's still `BALANCED_MOVES` / `BALANCED_INFO`.
+  - **Neutral priority moves** (`NEUTRAL_QUICK_MOVES`): Rush, Quickshot and Blink (the older haste
+    spell called Blink is now **Quickcast**; saves are moved over), 15 damage for 50 energy, always first. Two priority moves in
+    one round: the faster goes first (as before).
+  - **Starting moves**, every V2 creature, all in its main style: Neutral 20 (Strike/Shot/Zap), its
+    race's 30, and the Neutral priority move. That's 3; the fourth slot needs a codex.
+  - **Race-kit codexes** (the 84 race moves of the kits, `KIT_RACE_MOVES`): only a creature with
+    the move in its kits can read one (its race, in its style). From scans by the usual split
+    (up to 20 damage Common, heavier Rare: `KIT_BASIC_CODEXES`/`KIT_STRONG_CODEXES`), and from
+    librarians, chests and the Cyclops alongside the older race codexes (`RACE_CODEX_MOVES`).
+    🧪 A librarian's kit codex costs 200 (`LEARNABLE_CODEX_PRICE`; Claude's draft).
+  - **Saves:** creatures and cards from before this go back to their starting 3 once on load
+    (`upgradeMoveSet`, `moveSet` = 2; their chosen slots cleared, codex-learned moves kept). The
+    user chose this over keeping their 4.
+  - **Fights:** a hit's popup says **EFFECTIVE!** or **RESISTED** under the damage when its race
+    lands that way. Name plates: level and name, then the races spelled out, then the health bar.
   - The **Deep Angler** is a melee Battlemage, not a ranged Spellbow (its ranged % moved to melee),
     so the archetypes are no longer even: 5 Battlemages, 3 Spellbows. The Deep Angler, Rotgut Fly
     and Dust Sprite PNGs are mirrored.
@@ -409,8 +426,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   without scanned gear): no mini boss (nor a guarded storehouse) before room 7 (`MINIBOSS_FROM`);
   the first 2 rooms are creature dens 90% of the time (`FIRST_ROOM_DENS`, otherwise a room with
   no fight), their creatures Lv 1 60% / Lv 2 25% / Lv 3 15% (`FIRST_ROOM_LEVELS`).
-  Lighter-armed foes (the user, 2026-10-26, `LIGHT_GEAR`): rooms 1–3 no weapon and only 1–2 of
-  their 3 armour pieces; rooms 4–7 a weapon and 1–2 armour pieces; deeper as rolled. Mini bosses
+  Lighter-armed foes (the user, 2026-10-26, `LIGHT_GEAR`): rooms 1–3 no weapon but all 3 armour
+  pieces (they were 1–2 pieces and too easy to one-shot: the user, later on 2026-10-26); rooms 4–7 a weapon and 1–2 armour pieces; deeper as rolled. Mini bosses
   and the Cyclops are armed as ever. The piece that drops is always one they wore.
 - ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
   scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.

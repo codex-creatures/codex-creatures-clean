@@ -29,7 +29,7 @@
 import type { Drop } from "./types";
 import type { Rarity } from "./items/budgets";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "./items/ceilings";
-import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "./items/armor";
+import { ARMOR_KEYS, ARMOR_SLOTS } from "./items/armor";
 import { weaponDrop, armorDrop } from "./drops";
 import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
@@ -64,17 +64,18 @@ export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club
 // So it's built to teach:
 // - it's Humanoid (lib/creatures/racesV2.ts): an Underkin move is resisted,
 //   a Beast move is effective, the same move otherwise;
-// - a thick hide (THIEF_HIDE) and lots of HP, but only a weak slap, so the
-//   lesson has time to land.
-// (Sim, a Lv 3 Rare with the club: wins every time, about 6 rounds, most
-// often with ~70% HP left — a 1 in 10 comes down to the last fifth.)
-// (On the full-set armour scale: defence counts at a third.)
-export const THIEF_HIDE = { mDef: 120, rDef: 90, magDef: 12, agility: 12 };
+// - no weapon or armour, but lots of HP (THIEF_HP_MULT) and only a weak
+//   slap, so the lesson has time to land;
+// - it can't knock your creature out (gentle: its slap leaves 1 HP), so you
+//   always win (the user, 2026-10-26: a close one now and then had a Lv 3
+//   starter down to 1% HP).
+// (Sim, a Lv 3 Rare with the club: about 5–6 rounds; never a loss.)
 export const THIEF_LEVEL = 8;
+export const THIEF_HP_MULT = 2;
 export function thiefRoom(): Room {
   const thief: Enemy = {
     creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"], level: THIEF_LEVEL,
-    gear: [{ slot: "armor", key: "Thick hide", rarity: "rare", stats: { ...THIEF_HIDE }, drops: false, armorV: ARMOR_V2 }],
+    gear: [], hpMult: THIEF_HP_MULT, gentle: true,
   };
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }

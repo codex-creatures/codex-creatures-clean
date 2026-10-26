@@ -9,7 +9,7 @@
 
 import type { CombatClass, CreatureTemplate, Skill } from "./creatureData";
 import { SPECIES_RACES } from "./racesV2";
-import { kitFor, kitMoveFor } from "./raceKitsV2";
+import { kitFor, kitMoveFor, NEUTRAL_QUICK_MOVES } from "./raceKitsV2";
 
 export type Archetype =
   | "bruiser" | "bulwark"       // melee
@@ -76,20 +76,18 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
     flavour: "A rider on a rotting horse, scythe in one hand and a plague in the other. Where it rides, nothing grows." },
 ];
 
-// A creature's V2 moves. The first 4 are its starting moves (the user,
-// 2026-10-26), all in its main style: the Balanced light move, its race's
-// medium move, a fourth, and its race's quick (priority) move. The fourth:
-// a second race's medium move; else, for a hybrid, its race's medium move
-// in its second style; else its race's heavy move.
-// The rest of its kits follow, so they can be picked into slots.
+// A creature's V2 moves. The first 3 are its starting moves (the user,
+// 2026-10-26), all in its main style: the Neutral light move (20 energy), its
+// race's medium move (30) and the Neutral priority move (50). Its fourth slot
+// stays empty until it reads a codex.
+// The rest of its kits follow: those it can learn from codexes.
 export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
   const [r1, r2] = SPECIES_RACES[c.id] ?? [];
   if (!r1) return [];
   const styles = ARCHETYPE_INFO[SPECIES_ARCHETYPE[c.id] ?? "bruiser"].styles;
   const main = c.cls;
   const second = styles.find((s) => s !== main);
-  const fourth = r2 ? kitMoveFor(r2, main, "medium") : second ? kitMoveFor(r1, second, "medium") : kitMoveFor(r1, main, "heavy");
-  const start: Skill[] = [kitMoveFor(r1, main, "light"), kitMoveFor(r1, main, "medium"), fourth, kitMoveFor(r1, main, "quick")];
+  const start: Skill[] = [kitMoveFor(r1, main, "light"), kitMoveFor(r1, main, "medium"), NEUTRAL_QUICK_MOVES[main]];
   const rest = [r1, r2].filter(Boolean).flatMap((r) => [main, ...(second ? [second] : [])].flatMap((s) => kitFor(r!, s)));
   return [...new Map([...start, ...rest].map((m) => [m.name, m])).values()];
 }

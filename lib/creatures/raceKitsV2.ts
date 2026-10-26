@@ -34,6 +34,17 @@ export const BALANCED_MOVES: Record<CombatClass, Skill> = {
   magic:  { name: "Zap",    ...KIT_NUMBERS.light, type: "magic",  dmgType: "force" },
 };
 
+// The Neutral priority moves (the user, 2026-10-26): no race, always first,
+// and dear for it. Every creature starts with its main style's one. (Names:
+// the user's; the older haste spell that was called Blink is now Quickcast.)
+export const NEUTRAL_QUICK_NUMBERS = { damage: 15, energyCost: 50 };
+const quickDesc = "Always strikes first this round, whatever its agility (two of these: the faster goes first).";
+export const NEUTRAL_QUICK_MOVES: Record<CombatClass, Skill> = {
+  melee:  { name: "Rush",      ...NEUTRAL_QUICK_NUMBERS, type: "melee",  dmgType: "force", effect: { kind: "quick" }, desc: quickDesc },
+  ranged: { name: "Quickshot", ...NEUTRAL_QUICK_NUMBERS, type: "ranged", dmgType: "force", effect: { kind: "quick" }, desc: quickDesc },
+  magic:  { name: "Blink",     ...NEUTRAL_QUICK_NUMBERS, type: "magic",  dmgType: "force", effect: { kind: "quick" }, desc: quickDesc },
+};
+
 // Names, in KIT_SLOTS order: light, medium, heavy, quick, precise. (The light
 // names are retired: the Balanced moves took their place. RETIRED_KIT_MOVES
 // turns a creature that still knows one over to its Balanced move.)
@@ -89,8 +100,8 @@ function kitMove(race: RaceV2, style: CombatClass, slot: KitSlot): Skill {
   return base;
 }
 
-// Every kit move, and each one's race (for the race chart; none for the Balanced moves).
-export const KIT_MOVES: Skill[] = Object.values(BALANCED_MOVES);
+// Every kit move, and each one's race (for the race chart; none for the Neutral moves).
+export const KIT_MOVES: Skill[] = [...Object.values(BALANCED_MOVES), ...Object.values(NEUTRAL_QUICK_MOVES)];
 export const KIT_MOVE_RACE: Record<string, RaceV2> = {};
 export const RETIRED_KIT_MOVES: Record<string, string> = {};
 const KITS = {} as Record<RaceV2, Record<CombatClass, Record<KitSlot, Skill>>>;
@@ -107,6 +118,10 @@ for (const race of Object.keys(KIT_NAMES) as RaceV2[]) {
     }
   }
 }
+
+// The kit moves with a race: the ones that come as codexes (librarians and
+// scans). Everyone starts with the Neutral ones.
+export const KIT_RACE_MOVES: Skill[] = KIT_MOVES.filter((m) => KIT_MOVE_RACE[m.name]);
 
 export const kitMoveFor = (race: RaceV2, style: CombatClass, slot: KitSlot): Skill => KITS[race][style][slot];
 export const kitFor = (race: RaceV2, style: CombatClass): Skill[] => KIT_SLOTS.map((s) => KITS[race][style][s]);

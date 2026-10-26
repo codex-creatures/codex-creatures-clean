@@ -13,7 +13,7 @@ import { CYCLOPS } from "@/lib/combat/bossAi";
 import { CYCLOPS_PARTS } from "@/lib/creatures/bosses";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import type { Fx, MemberInfo } from "./BattleScreen";
-import { FighterLabel, fighterFx } from "./BattleScreen";
+import { FighterLabel, FloatText, fighterFx } from "./BattleScreen";
 
 type Scene = "split" | "eye" | null;
 
@@ -77,7 +77,7 @@ export default function BossStage({ side, fx, you, infos }: { side: BattleSide; 
               style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
               {/* Its name and health float above it, like any foe's. */}
               <FighterLabel f={t[i]} side={side.key} mi={infos?.[i]} />
-              {float(i) && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float(i)!.color, top: 0 }}>{float(i)!.text}</div>}
+              {float(i) && <FloatText key={`f${fx!.id}`} float={float(i)!} top={0} />}
               <div key={reaction(i) ? `r-${fx!.id}` : "r"} className={dead ? "boss-dead" : reaction(i)} style={{ marginTop: 4 }}>
                 <div className={dead ? "" : idle}>
                   <PixelSprite sprite={creatureSprite(id)} scale={SCALE[id] ?? 3}

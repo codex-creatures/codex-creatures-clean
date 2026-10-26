@@ -39,7 +39,7 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
 import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, RACE_CODEX_MOVES } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
@@ -424,7 +424,7 @@ export type Cage = { creatureId?: string; opened?: boolean };
 export const LIBRARY_FIND = 0.75;
 export const LIBRARY_CODEXES: [number, number] = [1, 3];
 export const LIBRARY_BOOKS = 5;
-export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read (race codexes: CODEX_PRICE)
+export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read, or a race-kit move's (Claude's draft, 2026-10-26; older race codexes: CODEX_PRICE)
 export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
 export const STOREHOUSE_GUARD = 0.35;
 export const STOREHOUSE_MATERIALS: [number, number] = [3, 5];
@@ -580,10 +580,11 @@ export type GearPiece = {
 };
 
 // The Labyrinth's first rooms send out lighter-armed creatures (the user,
-// 2026-10-26): up to room 3 no weapon, up to room 7 a weapon; both with only
-// 1–2 pieces of their armour. Mini bosses and the Cyclops are armed as ever.
+// 2026-10-26): up to room 3 no weapon but all their armour (1–2 pieces was
+// too easy to one-shot), up to room 7 a weapon and only 1–2 pieces of
+// armour. Mini bosses and the Cyclops are armed as ever.
 export const LIGHT_GEAR: { upTo: number; weapon: boolean; armorPieces: [number, number] }[] = [
-  { upTo: 3, weapon: false, armorPieces: [1, 2] },
+  { upTo: 3, weapon: false, armorPieces: [ARMOR_SLOTS.length, ARMOR_SLOTS.length] },
   { upTo: 7, weapon: true,  armorPieces: [1, 2] },
 ];
 
@@ -609,7 +610,8 @@ export function lightenGear(e: Enemy, depth: number, rng: Rng = Math.random): En
 // level: missing = REF_LEVEL (the species' listed %s).
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
 // soulStone: rolled like anyone's (lib/creatures/soulStones.ts); missing = none (and runs saved before enemies had them).
-export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey };
+// gentle: its hits never knock anyone out (the guided first fight's thief).
+export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey; gentle?: boolean };
 
 export function makeEnemy(rarity: Rarity, gearRarity: Rarity, exclude: string[], rng: Rng = Math.random, level?: number): Enemy {
   const pool = CREATURES_BY_RARITY[rarity].filter((c) => !exclude.includes(c.id));
@@ -667,7 +669,7 @@ export function enemyFighter(e: Enemy): Fighter {
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
   const built = buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
-  const f = e.soulStone ? { ...built, soulStone: e.soulStone } : built;
+  const f = { ...built, ...(e.soulStone ? { soulStone: e.soulStone } : {}), ...(e.gentle ? { gentle: true } : {}) };
   if (!e.hpMult) return f;
   const maxHp = Math.round(f.maxHp * e.hpMult);
   return { ...f, maxHp, hp: maxHp, hpMult: e.hpMult };
@@ -808,7 +810,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
           ({ gear: codexDrop(rng() < CYCLOPS_RACE_CODEX ? randomCodexMove() : randomLearnableMove()) }));
         return { kind, sack, done: false };
       }
-      const books = [...RACE_MOVES, ...LEARNABLE_MOVES].map((m) => m.name);
+      const books = [...RACE_CODEX_MOVES, ...LEARNABLE_MOVES].map((m) => m.name);
       const offers: string[] = [];
       while (offers.length < Math.min(LIBRARY_BOOKS, books.length)) offers.push(books.splice(Math.floor(rng() * books.length), 1)[0]);
       return { kind, librarian: true, offers, bought: [], done: false };
@@ -836,8 +838,8 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     case "librarian": {
       // A few different codexes, each for a different race.
       const offers: string[] = [];
-      while (offers.length < Math.min(LIBRARIAN_OFFERS, RACE_MOVES.length)) {
-        const m = pick(RACE_MOVES, rng).name;
+      while (offers.length < Math.min(LIBRARIAN_OFFERS, RACE_CODEX_MOVES.length)) {
+        const m = pick(RACE_CODEX_MOVES, rng).name;
         if (!offers.includes(m)) offers.push(m);
       }
       return { kind, offers, bought: [], done: false };

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { BALANCED_MOVES, KIT_MOVES, KIT_MOVE_RACE, KIT_NUMBERS, kitFor, kitMoveFor } from "../lib/creatures/raceKitsV2";
+import { BALANCED_MOVES, KIT_MOVES, KIT_MOVE_RACE, KIT_NUMBERS, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, kitFor, kitMoveFor } from "../lib/creatures/raceKitsV2";
+import { rollMoves } from "../lib/creatures/creatureRoll";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
 import { CREATURE_TEMPLATES as ROSTER_V2 } from "../lib/creatures/creatureData";
 import { RACES_V2, SPECIES_RACES } from "../lib/creatures/racesV2";
-import { ALL_SKILLS, MOVE_BY_NAME, PRE_V2_SPECIES, resolveMoves } from "../lib/creatures/creatureData";
+import { ALL_SKILLS, LEARNABLE_MOVES, MOVE_BY_NAME, PRE_V2_SPECIES, STARTING_MOVES, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { createBattle, resolveRound, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { raceMultiplier, raceOfMove, RACE_EFFECT, MATCH_BONUS } from "../lib/combat/raceChart";
@@ -16,11 +17,22 @@ const RARITIES = ["common", "uncommon", "rare", "epic", "legendary"];
 const v2 = (id: string) => ROSTER_V2.find((c) => c.id === id)!;
 
 describe("Combat V2 race kits", () => {
-  it("4 race moves per race in each style, plus a Balanced move per style: 87, all new names", () => {
-    expect(KIT_MOVES).toHaveLength(7 * 3 * 4 + 3);
-    expect(new Set(KIT_MOVES.map((m) => m.name)).size).toBe(87);
+  it("4 race moves per race in each style, plus 2 Neutral moves per style: 90, all new names", () => {
+    expect(KIT_MOVES).toHaveLength(7 * 3 * 4 + 6);
+    expect(new Set(KIT_MOVES.map((m) => m.name)).size).toBe(90);
     for (const m of KIT_MOVES) expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
-    expect(new Set([...KIT_MOVES.map((m) => m.name), ...ALL_SKILLS.map((m) => m.name)]).size).toBe(87 + ALL_SKILLS.length);
+    expect(new Set([...KIT_MOVES.map((m) => m.name), ...ALL_SKILLS.map((m) => m.name), ...LEARNABLE_MOVES.map((m) => m.name)]).size)
+      .toBe(90 + ALL_SKILLS.length + LEARNABLE_MOVES.length);
+    expect(KIT_RACE_MOVES).toHaveLength(7 * 3 * 4);
+  });
+
+  it("the Neutral priority moves: no race, 15 damage for 50 energy, always first", () => {
+    for (const m of Object.values(NEUTRAL_QUICK_MOVES)) {
+      expect([m.damage, m.energyCost, m.effect?.kind]).toEqual([15, 50, "quick"]);
+      expect(KIT_MOVE_RACE[m.name]).toBeUndefined();
+      expect(raceOfMove(m)).toBeUndefined();
+    }
+    expect(Object.values(NEUTRAL_QUICK_MOVES).map((m) => m.name)).toEqual(["Rush", "Quickshot", "Blink"]);
   });
 
   it("the light move is Balanced: the same in every kit of a style, with no race", () => {
@@ -113,15 +125,16 @@ describe("Combat V2 roster", () => {
     }
   });
 
-  it("starting moves: Balanced 20, race 30, a fourth, and the quick move; a hybrid starts with both styles", () => {
-    const wolf = v2Moves(v2("moss_wolf")).slice(0, 4);
-    expect(wolf.map((m) => m.name)).toEqual(["Strike", "Gore", "Maul", "Lunge"]);
-    expect(wolf.map((m) => m.energyCost)).toEqual([20, 30, 50, 20]);
-    const angler = v2Moves(v2("deep_angler")).slice(0, 4); // Underkin Battlemage: melee, no ranged
-    expect(angler.map((m) => m.name)).toEqual(["Strike", "Tunnel Rush", "Deep Dark", "Ambush"]);
-    // A second race puts one of its moves in the starting four.
-    const toad = v2Moves(v2("bellow_toad")).slice(0, 4); // Beast + Toxic Ranger
-    expect(toad.some((m) => KIT_MOVE_RACE[m.name] === "toxic")).toBe(true);
+  it("starting moves: Neutral 20, race 30 and the Neutral priority move, all in its main style; the fourth slot is empty", () => {
+    const wolf = v2Moves(v2("moss_wolf")).slice(0, STARTING_MOVES);
+    expect(wolf.map((m) => m.name)).toEqual(["Strike", "Gore", "Rush"]);
+    expect(wolf.map((m) => m.energyCost)).toEqual([20, 30, 50]);
+    const angler = v2Moves(v2("deep_angler")).slice(0, STARTING_MOVES); // Underkin Battlemage: melee
+    expect(angler.map((m) => m.name)).toEqual(["Strike", "Tunnel Rush", "Rush"]);
+    for (const t of ROSTER_V2) {
+      expect(defaultMoveNames(t), t.id).toHaveLength(3);
+      expect(rollMoves(t, () => 0.99), t.id).toEqual(defaultMoveNames(t)); // no rare move: still 3
+    }
   });
 
   it("the new species' %s sit within today's range for their rarity", () => {

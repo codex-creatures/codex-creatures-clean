@@ -14,7 +14,7 @@ import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { damageTypesOn } from "@/lib/combat/engine";
-import { canLearnFromCodex, DAMAGE_TYPE_INFO, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
+import { canLearnFromCodex, DAMAGE_TYPE_INFO, defaultMoveNames, findCreatureTemplate, MOVE_BY_NAME, MOVE_SLOTS, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { combatSummary } from "@/lib/combat/loadout";
 import { fighterFor, proficiencyOf } from "@/lib/creatures/instance";
 import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL, SCROLL_XP } from "@/lib/creatures/levels";
@@ -251,7 +251,7 @@ export default function CreatureDetailModal({
                     onCancel: () => setTeaching(null),
                   } : undefined} />
                 {!teaching && (
-                  <CodexShelf template={template} known={[...(creature.moves ?? template.skills.slice(0, 4).map((s) => s.name)), ...(creature.learned ?? [])]} codexes={codexes}
+                  <CodexShelf template={template} known={[...(creature.moves ?? defaultMoveNames(template)), ...(creature.learned ?? [])]} codexes={codexes}
                     onLearn={onLearnCodex && ((codexId) => {
                       // The new move goes straight into a slot: a free one, or one you choose to forget.
                       const codex = codexes.find((c) => c.id === codexId);

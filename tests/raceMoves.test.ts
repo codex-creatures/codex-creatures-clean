@@ -4,20 +4,35 @@ import { buildFighter } from "../lib/combat/loadout";
 import { BASIC_MOVES, STRONG_MOVES, CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
-import { dropFromOutcome } from "../lib/drops";
+import { codexDrop, dropFromOutcome, RACE_CODEX_MOVES } from "../lib/drops";
+import { upgradeMoveSet } from "../lib/creatures/instance";
+import { makeCreatureDrop } from "../lib/creatures/summon";
+import { KLUTZ, renamedMove } from "../lib/creatures/creatureData";
+import type { CreatureOrItemDrop } from "../lib/types";
 
 const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName });
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20 }, { mDef: 5, rDef: 5 }, moves);
 
 describe("what a creature can use and learn", () => {
-  it("its own (rolled) moves, the rest of its race kit, and what it learned from codexes", () => {
+  it("its own (rolled) moves and what it learned from codexes: the rest of its race kit needs codexes", () => {
     const wolf = LIVE_BY_ID.moss_wolf; // Beast, melee: the Beast melee kit
-    const kit = wolf.skills.map((m) => m.name);
-    expect(kit).toHaveLength(5);
     const names = (own: string[], learned: string[] = []) => movesAvailableTo(wolf, learned, own).map((m) => m.name);
-    expect(names(kit.slice(0, 2))).toEqual(kit);
-    expect(names([LEARNABLE_MOVES[1].name])).toEqual([LEARNABLE_MOVES[1].name, ...kit]);
-    expect(names([kit[0]], [LEARNABLE_MOVES[0].name, "Pounce", "Mirage"])).toEqual([...kit, LEARNABLE_MOVES[0].name, "Pounce"]);
+    expect(names([])).toEqual(["Strike", "Gore", "Rush"]);
+    expect(names([LEARNABLE_MOVES[1].name])).toEqual([LEARNABLE_MOVES[1].name]);
+    // Its kit's Maul and a learnable move, once learned; Pounce (Beast) too; Mirage isn't Beast.
+    expect(names(["Strike", "Gore", "Rush"], ["Maul", LEARNABLE_MOVES[0].name, "Pounce", "Mirage"]))
+      .toEqual(["Strike", "Gore", "Rush", "Maul", LEARNABLE_MOVES[0].name, "Pounce"]);
+  });
+
+  it("race-kit codexes: only a creature with that move in its kits (its race, in its style)", () => {
+    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Maul")).toBe(true);        // Beast melee
+    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Tunnel Rush")).toBe(false); // Underkin
+    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Horn Hurl")).toBe(false);   // Beast, but ranged
+    const maul = codexDrop("Maul") as CreatureOrItemDrop, lunge = codexDrop("Lunge") as CreatureOrItemDrop;
+    expect([maul.rarity, lunge.rarity]).toEqual(["rare", "common"]);            // heavy: Rare; light: Common
+    expect(maul.desc).toContain("one Beast Melee creature");
+    expect(RACE_CODEX_MOVES.map((m) => m.name)).toEqual(expect.arrayContaining(["Pounce", "Maul", "Lunge", "Gore"]));
+    expect(RACE_CODEX_MOVES.map((m) => m.name)).not.toContain("Strike");
   });
 
   it("learnable codexes work on anyone; race codexes only on that race", () => {
@@ -181,5 +196,35 @@ describe("race moves", () => {
     const targets = s.log.filter((e) => e.type === "attack" && e.side === "A").map((e) => e.type === "attack" && e.targetIndex);
     expect(targets.sort()).toEqual([0, 1]);
     expect(MOVE_BY_NAME.Barrage.race).toBe("humanoid");
+  });
+});
+
+describe("saves from before the 3 starting moves", () => {
+  it("a creature goes back to its starting 3 once, keeping what it learned", () => {
+    const t = LIVE_BY_ID.moss_wolf;
+    const c = { id: "x", dropType: "creature", creatureId: t.id, moves: ["Strike", "Gore", "Maul", "Lunge"], learned: ["Pounce"] } as CreatureOrItemDrop;
+    expect(upgradeMoveSet(c, t)).toBe(true);
+    expect(c.moves).toEqual(["Strike", "Gore", "Rush"]);
+    expect(c.learned).toEqual(["Pounce"]);
+    c.moves = ["Strike", "Gore", "Rush", "Pounce"];
+    expect(upgradeMoveSet(c, t)).toBe(false); // only once
+    expect(c.moves).toHaveLength(4);
+  });
+
+  it("new creatures are already on it; Klutz and the old species are left alone", () => {
+    const fresh = makeCreatureDrop(LIVE_BY_ID.moss_wolf, "creature", "");
+    expect(upgradeMoveSet(fresh, LIVE_BY_ID.moss_wolf)).toBe(false);
+    const klutz = { id: "k", dropType: "creature", moves: ["Slash"] } as CreatureOrItemDrop;
+    expect(upgradeMoveSet(klutz, KLUTZ)).toBe(false);
+  });
+});
+
+describe("renamed moves", () => {
+  it("the old Blink is Quickcast; Blink is now the Neutral priority magic move", () => {
+    expect(renamedMove("Blink")).toBe("Quickcast");
+    expect(renamedMove("Gore")).toBe("Gore");
+    expect(MOVE_BY_NAME.Quickcast.effect?.kind).toBe("dash");
+    expect(MOVE_BY_NAME.Blink.effect?.kind).toBe("quick");
+    expect(RACE_CODEX_MOVES.map((m) => m.name)).not.toContain("Blink"); // so a Blink codex is always the old one
   });
 });

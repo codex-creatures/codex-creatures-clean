@@ -9,13 +9,13 @@ import { raceOfMove } from "@/lib/combat/raceChart";
 
 const NEUTRAL_GREY = "#a9a9b8";
 
-// neutral: Klutz, who can learn moves of any style, shown as a grey "Balanced".
+// neutral: Klutz, who can learn moves of any style, shown as a grey "Neutral".
 export default function ClassBadge({ cls, neutral }: { cls?: CombatClass; neutral?: boolean }) {
   if (neutral) {
     return (
-      <span className="pixel-font" title="Balanced: he can learn moves of any style."
+      <span className="pixel-font" title="Neutral: he can learn moves of any style."
         style={{ padding: "1px 8px", fontSize: 12, textTransform: "uppercase", color: NEUTRAL_GREY, border: `2px solid ${NEUTRAL_GREY}55` }}>
-        ⚖️ Balanced
+        ⚖️ Neutral
       </span>
     );
   }

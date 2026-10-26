@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { findCreatureTemplate, MOVE_BY_NAME, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { defaultMoveNames, findCreatureTemplate, MOVE_BY_NAME, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { MoveInfo } from "./MoveSlots";
@@ -76,7 +76,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <SoulStoneTag stone={card.soulStone} />
             <RollTable p={card.proficiency ?? t.proficiency} base={t.proficiency} />
             <Section>Moves on this card</Section>
-            <Moves names={card.moves ?? t.skills.map((s) => s.name)} own={t.skills.map((s) => s.name)} />
+            <Moves names={card.moves ?? defaultMoveNames(t)} own={t.skills.map((s) => s.name)} />
 
             <Section>Summon</Section>
             {!canSummon ? (

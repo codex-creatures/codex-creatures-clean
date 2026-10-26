@@ -518,12 +518,11 @@ describe("lighter-armed creatures early in the Labyrinth (LIGHT_GEAR)", () => {
   const fights = (depth: number, dungeon: DungeonId = 1) =>
     Array.from({ length: 60 }, () => makeRoom(Math.random() < 0.5 ? "easy" : "hard", Math.random, depth, dungeon)).flatMap((r) => r.enemies ?? []);
 
-  it("rooms 1–3: no weapon and 1–2 armour pieces, summed right", () => {
+  it("rooms 1–3: no weapon but all their armour, summed right", () => {
     for (const e of fights(3)) {
       expect(weapon(e)).toBeUndefined();
       const a = armour(e)!, slots = Object.keys(a.pieces!);
-      expect(slots.length).toBeGreaterThanOrEqual(1);
-      expect(slots.length).toBeLessThanOrEqual(2);
+      expect(slots).toHaveLength(3);
       for (const [k, v] of Object.entries(a.stats)) expect(v).toBe(slots.reduce((s, sl) => s + (a.pieces![sl as ArmorSlot]![k] ?? 0), 0));
       if (a.drops && a.dropSlot) expect(slots).toContain(a.dropSlot);
     }

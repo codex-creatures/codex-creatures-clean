@@ -56,7 +56,7 @@ export const MUTED = "rgba(255,255,255,0.5)";
 // step after that: what he says, and which move you can pick — it glows
 // (null = any, and you can swap and use the bag again).
 export const TUTORIAL_STEPS: { say: string; allow: ((s: Skill) => boolean) | null }[] = [
-  { say: "Right — that's a big lump of a thief in a thick hide. Let's see what works. Hit it with 🪨 Tunnel Rush.",
+  { say: "Right — that's a big lump of a thief. Let's see what works. Hit it with 🪨 Tunnel Rush.",
     allow: (s) => s.name === TUTORIAL_MOVES[0] },
   { say: "Barely a scratch! It's a 🛡️ Humanoid, and Humanoids resist 🪨 Underkin moves. 🐾 Beast moves are strong against them: use Gore.",
     allow: (s) => s.name === TUTORIAL_MOVES[1] },
@@ -87,7 +87,7 @@ export type Match = {
 // when a side has two on the field.
 export type Fx =
   | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean;
-      attackerIndex?: number; targetIndex?: number; evaded?: boolean }
+      attackerIndex?: number; targetIndex?: number; evaded?: boolean; landed?: Landed }
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey }
   | { id: number; kind: "effect"; side: SideKey; index: number; text: string; color: string }
   | { id: number; kind: "lineup"; side: SideKey; text?: string };
@@ -256,7 +256,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       setView(shown);
       setFx(e.type === "attack"
         ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled,
-            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded }
+            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded,
+            landed: raceLanding(e.skill, shown.sides[e.side === "A" ? "B" : "A"].team[e.targetIndex ?? shown.sides[e.side === "A" ? "B" : "A"].active]) }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
             text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
@@ -513,12 +514,21 @@ function matchupHint(mine: Combatant, them: Combatant): string {
   return `hits for ~${best(mine, them)}, takes ~${best(them, mine)}`;
 }
 
-// How this move's race lands on the target's races (Combat V2), in words.
+// How this move's race lands on the target's races (Combat V2): undefined
+// when neutral (or races are off, or the target has none).
+type Landed = "effective" | "resisted";
+function raceLanding(sk: Skill, them?: Combatant): Landed | undefined {
+  const r = combatRules().races && !sk.self ? raceOfMove(sk) : undefined;
+  const m = r && them?.races?.length ? raceVsAll(r, them.races) : 1;
+  return m > 1 ? "effective" : m < 1 ? "resisted" : undefined;
+}
+
+// The same, in words, for a move's details.
 function raceMatchup(sk: Skill, them: Combatant): string | undefined {
   const r = combatRules().races && !sk.self ? raceOfMove(sk) : undefined;
   if (!r || !them.races?.length) return undefined;
   const m = raceVsAll(r, them.races);
-  const how = m > 1 ? "effective" : m < 1 ? "resisted" : "neutral";
+  const how = raceLanding(sk, them) ?? "neutral";
   return `${RACE_INFO[r].name} vs ${them.races.map((x) => RACE_INFO[x].name).join(" / ")}: ${how}${m !== 1 ? ` (×${m.toFixed(2)})` : ""}`;
 }
 
@@ -585,17 +595,33 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
     color={color} hpPct={hpPct} cripple={cripple} haste={haste} />;
 }
 
+// Floating text over a creature: a hit's damage, with how its race landed on a smaller line under it.
+type Float = { text: string; color: string; sub?: { text: string; color: string } };
+const LANDED_TEXT: Record<Landed, { text: string; color: string }> = {
+  effective: { text: "EFFECTIVE!", color: "#ff9a3c" },
+  resisted:  { text: "RESISTED",   color: "#a8b0b8" },
+};
+export function FloatText({ float, top }: { float: Float; top?: number }) {
+  return (
+    <div className="float-text pixel-font" style={{ color: float.color, top, textAlign: "center" }}>
+      {float.text}
+      {float.sub && <div style={{ fontSize: "0.6em", color: float.sub.color }}>{float.sub.text}</div>}
+    </div>
+  );
+}
+
 // Which animation a creature plays for the current step, and any floating text.
-export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: string; float: { text: string; color: string } | null } {
+export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: string; float: Float | null } {
   const isMe = (i?: number) => i === undefined || i === slot;
   let anim = "";
-  let float: { text: string; color: string } | null = null;
+  let float: Float | null = null;
   if (fx) {
     if (fx.kind === "attack" && fx.side === side && isMe(fx.attackerIndex)) anim = side === "A" ? "anim-lunge-right" : "anim-lunge-left";
     if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex)) {
       anim = fx.missed ? "anim-dodge" : "anim-hit";
       float = fx.missed ? { text: "MISS", color: "#bbb" }
-        : { text: `-${fx.damage}${fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b" };
+        : { text: `-${fx.damage}${fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b",
+            sub: fx.landed && LANDED_TEXT[fx.landed] };
     }
     if ((fx.kind === "swap" || fx.kind === "sendIn" || fx.kind === "lineup") && fx.side === side) anim = "anim-swapin";
     if (fx.kind === "faint" && fx.side === side) anim = "anim-faint";
@@ -650,7 +676,7 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
         )}
         {details && side === "A" && <StatsLine stats={combatSummary(f)} />}
       </div>
-      {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color }}>{float.text}</div>}
+      {float && <FloatText key={`f${fx!.id}`} float={float} />}
     </div>
   );
 }
@@ -804,7 +830,7 @@ const stageWidth = (sprite: Sprite) => {
   return `${Math.min(100, ((fineWidth(sprite) * fit) / CW / FIGHTER_W) * 100)}%`;
 };
 
-// A fighter's floating label: level, name and class, a small health bar
+// A fighter's floating label: level and name, its races, a small health bar
 // (yours shows HP, theirs a percentage only) and any statuses.
 export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?: MemberInfo }) {
   const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
@@ -818,7 +844,10 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
       <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>
         <LevelTag level={f.level} />
         <span style={{ color: mi ? rarityColor(mi.rarity) : "#fff", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{f.name}</span>
-        <RaceNames races={f.races} icons />
+      </div>
+      {/* Races spelled out under the name (until they get their own icons); the line keeps its space when there are none. */}
+      <div style={{ fontSize: 11, textShadow: "0 1px 0 #000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%", visibility: f.races?.length ? "visible" : "hidden" }}>
+        {f.races?.length ? <RaceNames races={f.races} /> : " "}
       </div>
       <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
         <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />
@@ -854,7 +883,7 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
           {floats
             ? <div className="float-shadow" style={{ width: "60%", height: 8, margin: "34px auto 0" }} />
             : <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />}
-          {float && <div key={`f${fx!.id}`} className="float-text pixel-font" style={{ color: float.color, top: 0 }}>{float.text}</div>}
+          {float && <FloatText key={`f${fx!.id}`} float={float} top={0} />}
         </div>
       </div>
     );

@@ -10,9 +10,10 @@
 // The three cards are used up either way.
 
 import type { CreatureOrItemDrop } from "../types";
-import { findCreatureTemplate, type CreatureTemplate } from "./creatureData";
+import { defaultMoveNames, findCreatureTemplate, type CreatureTemplate } from "./creatureData";
 import { rollCreature, type CreatureRoll } from "./creatureRoll";
 import { soulStoneOf } from "./soulStones";
+import { MOVE_SET } from "./instance";
 
 export const REAL_CREATURE_CHANCE = 0.2;
 export const CARDS_TO_SUMMON = 3;
@@ -34,6 +35,7 @@ export function makeCreatureDrop(
     desc: t.flavour,
     proficiency: roll.proficiency,
     moves: roll.moves,
+    moveSet: MOVE_SET,
     soulStone: roll.soulStone ?? null,
     createdAt: new Date().toISOString(),
   };
@@ -58,7 +60,7 @@ export function summonFromCards(cards: CreatureOrItemDrop[], keepId: string | nu
   if (!keep) throw new Error("The chosen card isn't one of the three");
   return makeCreatureDrop(t, "creature", keep.barcode, {
     proficiency: keep.proficiency ?? t.proficiency,
-    moves: keep.moves ?? t.skills.map((s) => s.name),
+    moves: keep.moves ?? defaultMoveNames(t),
     soulStone: soulStoneOf(keep, t),
   });
 }

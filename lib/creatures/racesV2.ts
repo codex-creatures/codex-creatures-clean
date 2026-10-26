@@ -88,7 +88,7 @@ export const MOVE_RACES: Record<string, RaceV2> = {
   "Fireball": "geo", "Soul Drain": "undead", "Starfall": "divine",
   // Learnable
   "Cripple": "beast", "Crippling Shot": "humanoid", "Hobble Hex": "toxic", "Dash Lash": "beast",
-  "Quick Bolt": "humanoid", "Blink": "divine", "Precise Slice": "humanoid", "Precise Shot": "humanoid",
+  "Quick Bolt": "humanoid", "Quickcast": "divine", "Precise Slice": "humanoid", "Precise Shot": "humanoid",
   "Seeker Spark": "geo",
   // Race moves
   "Pounce": "beast", "Rabid Bite": "toxic", "Mirage": "divine", "Corpsify": "undead", "Barrage": "humanoid",

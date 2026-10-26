@@ -56,6 +56,7 @@ export type Fighter = {
   soulStone?: import("../creatures/soulStones").SoulStoneKey; // a passive power it was born with (lib/creatures/soulStones.ts)
   level?: number; // its level (lib/creatures/levels.ts)
   hpMult?: number; // its HP was multiplied (an encampment's potion-drunk foes): arcane's cap grows with it
+  gentle?: boolean; // its hits never knock anyone out (they leave 1 HP): the guided first fight's thief
   races?: RaceV2[]; // Combat V2 races (lib/creatures/racesV2.ts): only count when the rules' races are on
 };
 

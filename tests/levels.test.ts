@@ -255,6 +255,6 @@ describe("the starter's quick attack", () => {
     expect(out).toContain(QUICK_ATTACK[t.cls]);
     expect(MOVES[QUICK_ATTACK[t.cls]].type).toBe(t.cls);
     expect(out.slice(0, own.length - 1)).toEqual(own.slice(0, own.length - 1));
-    expect(withQuickAttack(t, [...own.slice(0, 3), "Blink"])).toEqual([...own.slice(0, 3), "Blink"]);
+    expect(withQuickAttack(t, [...own.slice(0, 3), "Quickcast"])).toEqual([...own.slice(0, 3), "Quickcast"]);
   });
 });

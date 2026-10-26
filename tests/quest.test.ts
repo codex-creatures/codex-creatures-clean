@@ -8,6 +8,7 @@ import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/bat
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { TUTORIAL_MOVES } from "../lib/quest";
 import { STARTER_LEVEL } from "../lib/creatures/starter";
+import { THIEF_HP_MULT } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
 import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
@@ -40,7 +41,8 @@ describe("the first quest: Klutz's box", () => {
     expect(room.gold).toBe(0);
     expect(room.enemies).toHaveLength(1);
     expect(room.enemies![0]).toMatchObject({ creatureId: "baby_cyclops" });
-    expect(room.enemies![0].gear).toEqual([expect.objectContaining({ slot: "armor", drops: false })]);
+    // No weapon or armour, but double HP, and it can't knock you out.
+    expect(room.enemies![0]).toMatchObject({ gear: [], hpMult: THIEF_HP_MULT, gentle: true });
   });
 
   // Your starter (a Lv 3 Rare with Klutz's club and the lesson moves), on its own.
@@ -71,6 +73,17 @@ describe("the first quest: Klutz's box", () => {
       expect(s.winner).toBe("A");
       expect(s.round).toBeGreaterThan(3);
     }
+  });
+
+  it("the thief's slap never knocks your creature out: it always leaves 1 HP", () => {
+    const me = { ...starter(), hp: 1 };
+    const s = createBattle([me], [enemyFighter(thiefRoom().enemies![0])]);
+    for (let i = 0; i < 20; i++) {
+      s.sides.A.team[0].energy = 0; // too tired to attack: it rests
+      resolveRound(s, { A: { kind: "pass" }, B: { kind: "attack", skillName: "Backhand" } });
+    }
+    expect(s.winner).toBeFalsy();
+    expect(s.sides.A.team[0].hp).toBe(1);
   });
 
   it("the box holds 10 pieces of Common or Uncommon gear, about 20% Uncommon", () => {
