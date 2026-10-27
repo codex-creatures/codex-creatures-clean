@@ -674,6 +674,16 @@ export default function DungeonPage() {
     updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) } }));
   }
   // …or one straight out of the open chest or sack, without it going in your bag.
+  // Gear dragged from the sack straight onto a creature: into the bag, then
+  // the usual "equip it?" (cancel and it just stays in your bag).
+  function equipFromSack(index: number, id: string) {
+    const item = loadDungeon().run?.current?.sack?.[index];
+    if (!item || !("gear" in item)) return;
+    takeFromSack(index);
+    const dropId = item.gear.id;
+    const e = loadDungeon().meta.bag.find((x) => lootIdOf(x) === dropId || gearIdOf(x) === dropId);
+    if (e) askEquip(e, id);
+  }
   function drinkFromSack(index: number, id: string) {
     const c = byId(id);
     const r0 = loadDungeon().run;
@@ -1100,7 +1110,7 @@ export default function DungeonPage() {
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
                 party={standingTeam} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
                 onDrink={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e && isPotionEntry(e)) drink(e, id); }}
-                onDrinkLoot={drinkFromSack}
+                onDrinkLoot={drinkFromSack} onEquipLoot={equipFromSack}
                 teach={teach} putLabel={c.quest === "club" ? "Drop it" : undefined}
                 onClose={() => setLootOpen(false)} />
             );

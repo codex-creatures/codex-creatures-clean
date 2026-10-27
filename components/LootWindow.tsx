@@ -13,6 +13,7 @@
 //   pick who. A potion goes on a hurt creature the same way, to heal it.
 // - A potion in the chest can go straight onto a hurt creature too (drag it,
 //   or tap it and Give): no need to make room in your bag for it first.
+// - So can gear (if there's room in your bag: it's taken, then equipped).
 // - teach: Klutz's Club, the first loot you pick up, walks you through
 //   all of this (take it, then equip it).
 // Take all grabs what takes no room, then the rarest things first, and says
@@ -44,10 +45,11 @@ type From = { kind: "loot" | "bag"; i: number };
 // The club tutorial's step: take it (item i of the loot), equip it (bag slot i), or done.
 export type LootTeach = { step: "take" | "equip" | "done"; i: number };
 // Can it go on a creature? (a weapon, or an armour piece)
-export const wearable = (l?: SlotLook) => {
-  const g = l?.peek && "gear" in l.peek ? (l.peek.gear as CreatureOrItemDrop) : undefined;
+const wearableItem = (x?: SackItem) => {
+  const g = x && "gear" in x ? (x.gear as CreatureOrItemDrop) : undefined;
   return !!g && (g.itemCategory === "weapon" || (g.itemCategory === "armor" && !!g.armorSlot));
 };
+export const wearable = (l?: SlotLook) => wearableItem(l?.peek);
 // Is it a potion? (in the bag a potion is just its kind: see slotLook)
 const potionOf = (l?: SlotLook) => (l?.peek && "potion" in l.peek ? l.peek.potion : undefined);
 // Is this thing in the chest a potion? (loose, or one found as an item)
@@ -55,7 +57,7 @@ const sackPotion = (x?: SackItem) => (!x ? undefined : "potion" in x ? x.potion 
 // Can a potion help them? (not at full health)
 const hurt = (c: TeamMember) => (c.hp ?? 0) < 1;
 
-export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, onDrinkLoot, teach, putLabel = "Put in the chest" }: {
+export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, onDrinkLoot, onEquipLoot, teach, putLabel = "Put in the chest" }: {
   name: string; sprite: Sprite;
   items: SackItem[];
   bag: SlotLook[];          // what's in each filled slot, in order
@@ -69,6 +71,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   onEquip?: (bagIndex: number, creatureId: string) => void; // (asks first: see EquipPreview)
   onDrink?: (bagIndex: number, creatureId: string) => void; // a potion from the bag, on a hurt creature
   onDrinkLoot?: (lootIndex: number, creatureId: string) => void; // a potion straight from the chest (no bag slot needed)
+  onEquipLoot?: (lootIndex: number, creatureId: string) => void; // gear straight from the chest (into the bag, then asks)
   teach?: LootTeach;
   putLabel?: string;                                     // "Put in the chest", "Drop it"…
 }) {
@@ -100,6 +103,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     onDrop: (d, t) => {
       setTriedAll(false);
       if (d.kind === "loot" && t?.startsWith("bag:")) onSwap(d.i, Number(t.slice(4)));
+      else if (d.kind === "loot" && t?.startsWith("who:") && onEquipLoot && !full && wearableItem(items[d.i])) { onEquipLoot(d.i, t.slice(4)); setSeen(null); }
       else if (d.kind === "loot" && t?.startsWith("who:") && onDrinkLoot && sackPotion(items[d.i])) {
         const c = party.find((m) => m.id === t.slice(4));
         if (c && hurt(c)) { onDrinkLoot(d.i, c.id); setSeen(null); }
@@ -129,7 +133,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         </div>
         {teach && (
           <div className="tutorial-tip" style={{ fontSize: 13 }}>
-            {teach.step === "take" ? <><b>Looting.</b> Drag Klutz&apos;s Club down into your bag, or tap it, then Take. <span className="tutorial-arrow">👇</span></>
+            {teach.step === "take" ? <><b>Looting.</b> Drag Klutz&apos;s Club onto a creature, or into your bag. <span className="tutorial-arrow">👇</span></>
               : teach.step === "equip" ? <><b>Equipping.</b> Now drag it from your bag onto a creature, or tap it and pick who. <span className="tutorial-arrow">👇</span></>
               : <><b>That&apos;s it.</b> Gear you find down here works the same way. Tap Done.</>}
           </div>
@@ -168,8 +172,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           </div>
           <button className="dock-tab" style={{ flex: "none", minHeight: 44, padding: "4px 12px" }} onClick={() => { onTakeAll(); setTriedAll(true); }} disabled={items.length === 0}>Take all</button>
         </div>
-        {/* A closer look: one fixed box, always here, for whatever you tapped in
-            the chest or in your bag (nothing tapped: a hint). Only what's inside changes. */}
+        {/* A closer look: one fixed box for whatever you tapped in the chest or
+            in your bag. Nothing tapped: no box (the hint above says to tap), so it all fits. */}
         {seen !== null && items[seen] ? (
           <ItemPeek item={items[seen]} action={<>
             {onDrinkLoot && sackPotion(items[seen]) && party.filter(hurt).map((c) => (
@@ -191,7 +195,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
               {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
             </>} />
           );
-        })() : <ItemPeek />}
+        })() : null}
 
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
@@ -219,7 +223,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         {/* Your creatures: drop a weapon or armour piece on one to equip it, or a potion to heal it. */}
         {(onEquip || onDrink || onDrinkLoot) && (
           <TeamDropRow team={party} over={over} pulse={teach?.step === "equip"}
-            ready={dnd.lifted?.kind === "loot" ? !!onDrinkLoot && !!sackPotion(items[dnd.lifted.i]) && hurt
+            ready={dnd.lifted?.kind === "loot" ? (!!onEquipLoot && !full && wearableItem(items[dnd.lifted.i])) || (!!onDrinkLoot && !!sackPotion(items[dnd.lifted.i]) && hurt)
               : dnd.lifted?.kind !== "bag" ? false : wearable(bag[dnd.lifted.i]) || (!!onDrink && !!potionOf(bag[dnd.lifted.i]) && hurt)} />
         )}
 
@@ -237,11 +241,11 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 // A closer look at one thing: what it is and its stats, with its buttons.
 // A fixed frame (PEEK_BODY tall), whatever it shows: a name line and a kind
 // line, beside one row of buttons (it scrolls sideways if there are many);
-// then the body, cut to fit. With nothing to show, a hint in the same box.
+// then the body, cut to fit.
 const PEEK_BODY = 84;
 const textBody = (t?: string) => <div style={{ fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={t}>{t}</div>;
 function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
-  const l = look ?? (item ? lookOf(item) : undefined);
+  const l = look ?? lookOf(item!);
   let kind = "", body: React.ReactNode = null;
   if (!item) { /* (just its name: a bag slot with no closer look) */ }
   else if ("potion" in item) { kind = "potion"; body = textBody(`Heals one creature ${POTIONS[item.potion].heal} HP`); }
@@ -289,18 +293,14 @@ function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; ac
   }
   return (
     <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `44px ${PEEK_BODY}px`, gap: 6 }}>
-      {!l ? (
-        <div style={{ gridRow: "1 / -1", alignSelf: "center", textAlign: "center", fontSize: 14, color: MUTED }}>Tap something to take a closer look.</div>
-      ) : <>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-            <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
-            <div title={kind} style={{ fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
-          </div>
-          <div style={{ display: "flex", gap: 6, maxWidth: "62%", overflowX: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>{action}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
+          <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
+          <div title={kind} style={{ fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
         </div>
-        <div style={{ fontSize: 15, minHeight: 0, overflow: "hidden" }}>{body}</div>
-      </>}
+        <div style={{ display: "flex", gap: 6, maxWidth: "62%", overflowX: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>{action}</div>
+      </div>
+      <div style={{ fontSize: 15, minHeight: 0, overflow: "hidden" }}>{body}</div>
     </div>
   );
 }

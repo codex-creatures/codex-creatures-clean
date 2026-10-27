@@ -618,7 +618,8 @@ How it came about, round by round: history.md.
   equip window explains where stats come from (gear × the creature's %).
   Before he borrows any gear, you have to put some armour from the box on your creature (the Pit
   glows; `needsGearUp`).
-- ✅ **Equipping:** gear can be dragged onto a creature (loot windows and the bag in the Labyrinth)
+- ✅ **Equipping:** gear can be dragged onto a creature (loot windows, straight from the chest if
+  the bag has room, and the bag in the Labyrinth)
   or onto its slot (the creature window). In the Labyrinth, equipping opens a compare window first:
   the slot's old piece vs the new one, each stat's change, and your party along the top marked ▲/▼
   so you can see who it helps.
@@ -742,7 +743,9 @@ fields optional with defaults.
     kept), the creature window's gear picker (four fixed lines; the 🔒 line kept), librarian rows
     (two-line descriptions), the battle dock (no Rest tab; the energy line doubles as "X used Y"),
     and the loot window (one fixed "closer look" box for whatever you tap, chest or bag, its buttons
-    in one row that scrolls sideways; the chest's rows never shrink while it's open).
+    in one row that scrolls sideways; the chest's rows never shrink while it's open). With nothing
+    tapped the box is gone and the one-line hint under the chest does the job, so the window fits
+    without scrolling (the user's call: the bag moves down when you tap something).
 - One tap on a Den object goes in (no name-first double tap).
 
 ## 11. Art and PixelLab
