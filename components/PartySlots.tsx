@@ -1,7 +1,8 @@
 "use client";
 // components/PartySlots.tsx
 // Your party in the Labyrinth, drawn like the Pit's creature cards: three
-// team slots (the first one leads) and, at the map, two waiting in the Den. Each card has its
+// team slots (five in the Abyss: size; the first one leads) and, at the map,
+// the rest of the party waiting in the Den. Each card has its
 // health bar across the top. Tap a creature to make it lead, or drag it onto
 // another creature (or an empty slot) to swap them round.
 
@@ -14,26 +15,27 @@ import type { Rarity } from "@/lib/items/budgets";
 const MUTED = "rgba(255,255,255,0.5)";
 const HOT = "#ffd66e";
 export const TEAM_SLOTS = 3;
-export const BENCH_SLOTS = 2;
+export const PARTY_SLOTS = 5;
 
 export type PartyMember = { id: string; name: string; rarity: Rarity; creatureId?: string; maxHp: number; hp: number }; // hp: share 0–1
 
-export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }: {
+export default function PartySlots({ size = TEAM_SLOTS, team, bench, benchLabel = "Bench", onTeam }: {
+  size?: number;         // how many fight (TEAM_SLOTS; the Abyss's 5)
   team: PartyMember[];   // fighting, in order
   bench?: PartyMember[]; // the rest of the party (none: just the team, to change who leads)
   benchLabel?: string;
   onTeam: (ids: string[]) => void;
 }) {
   const slots: (PartyMember | null)[] = [
-    ...Array.from({ length: TEAM_SLOTS }, (_, i) => team[i] ?? null),
-    ...(bench ? Array.from({ length: BENCH_SLOTS }, (_, i) => bench[i] ?? null) : []),
+    ...Array.from({ length: size }, (_, i) => team[i] ?? null),
+    ...(bench ? Array.from({ length: Math.max(0, PARTY_SLOTS - size) }, (_, i) => bench[i] ?? null) : []),
   ];
 
   function swap(a: number, b: number) {
     const next = [...slots];
     [next[a], next[b]] = [next[b], next[a]];
     // Only creatures still standing can fight.
-    onTeam(next.slice(0, TEAM_SLOTS).filter((m): m is PartyMember => !!m && m.hp > 0).map((m) => m.id));
+    onTeam(next.slice(0, size).filter((m): m is PartyMember => !!m && m.hp > 0).map((m) => m.id));
   }
 
   // Tap a creature to make it lead: it moves to the front and the rest keep
@@ -42,7 +44,7 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
     const m = slots[i];
     if (i === 0 || !m || m.hp <= 0) return;
     const next = [m, ...slots.filter((_, j) => j !== i)];
-    onTeam(next.slice(0, TEAM_SLOTS).filter((x): x is PartyMember => !!x && x.hp > 0).map((x) => x.id));
+    onTeam(next.slice(0, size).filter((x): x is PartyMember => !!x && x.hp > 0).map((x) => x.id));
   }
 
   const { box: dragBox, ...dnd } = useDragDrop<number>({
@@ -59,7 +61,7 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
     const hot = dnd.over === `slot:${i}` && dnd.lifted !== i;
     if (!m) {
       return (
-        <div key={i} data-drop={`slot:${i}`} aria-label={`Empty ${i < TEAM_SLOTS ? "team" : "bench"} slot`}
+        <div key={i} data-drop={`slot:${i}`} aria-label={`Empty ${i < size ? "team" : "bench"} slot`}
           style={{ aspectRatio: PORTRAIT_RATIO, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#101117", border: `3px dashed ${hot ? HOT : moving ? "#8a6a3a" : "#2a2d38"}`, borderRadius: 10, color: MUTED, fontSize: 12 }}>
           {moving ? "Move here" : "Empty"}
         </div>
@@ -91,17 +93,19 @@ export default function PartySlots({ team, bench, benchLabel = "Bench", onTeam }
     );
   };
 
+  // The team in one row, however many (smaller cards for five).
+  const cols = `repeat(${Math.max(size, TEAM_SLOTS)}, minmax(0, 120px))`;
   return (
     <div ref={dragBox} style={{ position: "relative", userSelect: "none", WebkitUserSelect: "none" }}>
       <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", margin: "14px 0 6px" }}>Team</div>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS}, minmax(0, 120px))`, gap: 10 }}>
-        {slots.slice(0, TEAM_SLOTS).map((m, i) => card(m, i))}
+      <div style={{ display: "grid", gridTemplateColumns: cols, gap: 10 }}>
+        {slots.slice(0, size).map((m, i) => card(m, i))}
       </div>
       {bench && (
         <>
           <div className="pixel-font" style={{ fontSize: 13, color: MUTED, margin: "12px 0 6px" }}>{benchLabel}</div>
-          <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS}, minmax(0, 120px))`, gap: 10 }}>
-            {slots.slice(TEAM_SLOTS).map((m, i) => card(m, TEAM_SLOTS + i))}
+          <div style={{ display: "grid", gridTemplateColumns: cols, gap: 10 }}>
+            {slots.slice(size).map((m, i) => card(m, size + i))}
           </div>
         </>
       )}

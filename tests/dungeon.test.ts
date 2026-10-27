@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
-import { HEAL_AT_HOME, SCROLL_LOOKS, scrollLooksLeft } from "../lib/dungeon/run";
+import { HEAL_AT_HOME, SCROLL_LOOKS, scrollLooksLeft, teamSize, ABYSS_SQUADS } from "../lib/dungeon/run";
 import { lightenGear, makeEnemy, type Enemy, type DungeonId } from "../lib/dungeon/run";
 import type { ArmorSlot } from "../lib/items/armor";
 import {
@@ -310,6 +310,33 @@ describe("a labyrinth run", () => {
     expect(run.hp).toEqual({ d: 1, b: 0.4, e: 1 });
     expect(setTeam(run, ["a", "d"]).team).toEqual(["d"]);    // a stayed home
     expect(setTeam(run, ["e", "d", "b"]).team).toEqual(["e", "d", "b"]); // who leads can still change
+  });
+
+  it("the Abyss is fought 5 against 5: the whole party goes in, and foes come in bigger numbers", () => {
+    expect(teamSize({ dungeon: 3 })).toBe(5);
+    expect(teamSize({ dungeon: 2 })).toBe(3);
+    expect(teamSize({})).toBe(3);
+    const run = setTeam(startRun(party, party, {}, 2, Math.random, 3), party);
+    expect(run.team).toEqual(party);
+    expect(setTeam(startRun(party, party.slice(0, 3), {}, 2, Math.random, 2), party).team).toEqual(["a", "b", "c"]);
+
+    const sizes = (kind: Parameters<typeof makeRoom>[0], depth: number, dungeon: DungeonId) => {
+      const seen = new Set<number>();
+      for (let i = 0; i < 200; i++) {
+        const enemies = makeRoom(kind, Math.random, depth, dungeon).enemies!;
+        seen.add(enemies.length);
+        expect(new Set(enemies.map((e) => e.creatureId)).size).toBe(enemies.length); // never two the same
+      }
+      return [...seen].sort();
+    };
+    expect(sizes("easy", 1, 3)).toEqual(ABYSS_SQUADS.first.filter((n, i, a) => a.indexOf(n) === i));
+    expect(sizes("easy", 10, 3)).toEqual([3, 4, 5]);
+    expect(sizes("easy", 10, 2)).toEqual([2, 3]); // the Deep Labyrinth as before
+    expect(sizes("hard", 10, 3)).toEqual([ABYSS_SQUADS.hard]);
+    expect(sizes("miniboss", 10, 3)).toEqual([ABYSS_SQUADS.miniboss]);
+    expect(sizes("hard", 10, 2)).toEqual([1]);
+    expect(sizes("boss", 15, 3)).toEqual([1 + ABYSS_SQUADS.guards]);
+    expect(sizes("boss", 15, 2)).toEqual([3]);
   });
 
   it.runIf(HEAL_AT_HOME)("with the testing shortcut on, every run ends with everyone healed", () => {

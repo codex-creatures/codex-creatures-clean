@@ -450,8 +450,14 @@ How it came about, round by round: history.md.
     again (same map, same creature rarities, same Warden's pack) with higher levels (Lv 15–26 by
     depth, Warden Lv 25) and every piece of enemy gear a rarity up; gold ×3. 🧪 The levels and gold
     are Claude's numbers.
-- ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`), and reserves swap in
-  between rooms.
+    - **Fought 5 against 5** (the user, 2026-10-27): your whole party of 5 goes in, and foes come in
+      matching numbers (`ABYSS_SQUADS`, `squadsOf`): dens 2 in the first 2 rooms, 2–3 to depth 4, 3–5
+      deeper; brutes and mini bosses (and a storehouse's guard) come in pairs; encampments 3–5 (an
+      ambush 3) with a 30-round fuse; the Warden has 4 guards. No two foes in a fight are the same
+      species. 🧪 The counts are Claude's, about 5/3 of the usual.
+- ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`; all 5 in the Abyss: `teamSize`),
+  chosen at the map; the rest wait in the Den.
+- 📌 **PvP** (not built): the user thinks 5v5 is the right size for it (2026-10-27).
 - ✅ **Entry:** 50 gold (`ENTRY_FEE`); the first 5 runs are free (`FREE_RUNS`).
 - ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,
   stash 10, merchant 5, card witch 5.

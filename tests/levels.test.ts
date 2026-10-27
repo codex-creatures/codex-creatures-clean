@@ -132,9 +132,9 @@ describe("the Deep Labyrinth", () => {
     expect(den.enemies!.every((e) => (e.level ?? 0) >= 17)).toBe(true);
     const boss = makeRoom("boss", Math.random, 15, 3);
     expect(boss.boss).toBeUndefined();
-    expect(boss.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity)).toEqual(["legendary", "epic", "epic"]);
-    expect(boss.enemies!.map((e) => e.level)).toEqual([ABYSS_WARDEN_LEVEL, ABYSS_WARDEN_LEVEL - 1, ABYSS_WARDEN_LEVEL - 1]);
-    expect(boss.enemies!.map((e) => e.gear[0].rarity)).toEqual(["epic", "rare", "rare"]);
+    expect(boss.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity)).toEqual(["legendary", "epic", "epic", "epic", "epic"]); // (4 guards: 5v5)
+    expect(boss.enemies!.map((e) => e.level)).toEqual([ABYSS_WARDEN_LEVEL, ...Array(4).fill(ABYSS_WARDEN_LEVEL - 1)]);
+    expect(boss.enemies!.map((e) => e.gear[0].rarity)).toEqual(["epic", "rare", "rare", "rare", "rare"]);
     expect(makeRoom("boss", Math.random, 15, 2).enemies!.map((e) => e.gear[0].rarity)).toEqual(["rare", "uncommon", "uncommon"]);
   });
   it("counts Abyss runs apart from the other two", () => {

@@ -4,7 +4,7 @@
 // - Entering costs ENTRY_FEE gold; your very first run is free, and its first
 //   room is a treasure with FIRST_TREASURE_GOLD in it.
 // - You bring a party of up to PARTY_SIZE creatures (at least 1) to the
-//   entrance. Looking at the map, you pick the TEAM_SIZE that go in; the
+//   entrance. Looking at the map, you pick the teamSize that go in; the
 //   rest wait in the Den. Once inside there's no swapping (only who leads).
 // - HP carries over from room to room (energy is full at each fight).
 // - The dungeon is a labyrinth (lib/dungeon/map.ts): rooms joined by
@@ -471,6 +471,32 @@ export const ENCAMP_FUSE = 20;
 export const ENCAMP_GOLD: [number, number] = [60, 100];
 export const ENCAMP_CAGES: [number, number] = [1, 3];
 export const CAGE_CREATURE_CHANCE = 0.5;
+
+// ── How many fight ──────────────────────────────────────────────────
+// Your team, and the creatures you face in each kind of fight. The Abyss,
+// the last dungeon, is fought 5 against 5 (the user, 2026-10-27: 5v5 is the
+// level PvP should be), and its foes come in matching numbers, about 5/3 of
+// the usual. 🧪 The Abyss's counts are Claude's numbers.
+// first: dens in the first FIRST_ROOMS rooms; early: up to EARLY_DEPTH;
+// deep: beyond. hard: lurking brutes. miniboss: mini bosses (and a
+// storehouse's guard). camp/ambush: an encampment's foes (an ambush's
+// fixed number). guards: the Warden's. fuse: a rigged encampment's rounds.
+export type Squads = {
+  team: number; first: [number, number]; early: [number, number]; deep: [number, number];
+  hard: number; miniboss: number; camp: [number, number]; ambush: number; guards: number; fuse: number;
+};
+export const SQUADS: Squads = {
+  team: TEAM_SIZE, first: [1, 1], early: EASY_SIZE_EARLY, deep: EASY_SIZE_DEEP,
+  hard: 1, miniboss: 1, camp: ENCAMP_SIZE, ambush: ENCAMP_AMBUSHERS, guards: 2, fuse: ENCAMP_FUSE,
+};
+export const ABYSS_TEAM = 5;
+export const ABYSS_SQUADS: Squads = {
+  team: ABYSS_TEAM, first: [2, 2], early: [2, 3], deep: [3, 5],
+  hard: 2, miniboss: 2, camp: [3, 5], ambush: 3, guards: 4, fuse: 30,
+};
+export const squadsOf = (dungeon: DungeonId): Squads => (dungeon === 3 ? ABYSS_SQUADS : SQUADS);
+// How many of your party go in and fight (the rest wait in the Den).
+export const teamSize = (run: { dungeon?: DungeonId }) => squadsOf(dungeonOf(run)).team;
 // A cage in an encampment: maybe a creature (rolled like a scan), until you open it.
 // level: the creature's level (missing = 1).
 export type Cage = { creatureId?: string; level?: number; opened?: boolean };
@@ -733,14 +759,17 @@ function upgradeAndDrop(enemies: Enemy[], rng: Rng) {
     : wornPieces({ slot: "armor", key: g.armorKey, rarity, stats: g.armor, drops: true, dropSlot, pieces: g.armorPieces, armorV: ARMOR_V2 }, piecesOf(old));
 }
 
-// The deeper dungeons' boss: the Warden, a Legendary, with two Epic guards (the Deep
-// Labyrinth: in Rare and Uncommon gear; the Abyss: Epic and Rare, and higher level).
+// The deeper dungeons' boss: the Warden, a Legendary, with Epic guards (the Deep
+// Labyrinth: two, in Rare and Uncommon gear; the Abyss: four (squadsOf), in Epic and
+// Rare, and higher level).
 export function wardenPack(rng: Rng = Math.random, dungeon: DungeonId = 2): Enemy[] {
   const [wardenGear, guardGear] = DUNGEONS[dungeon].pack ?? DUNGEONS[2].pack!;
   const level = bossLevel(dungeon);
   const warden = makeEnemy("legendary", wardenGear, [], rng, level);
-  const guards = [0, 1].map(() => makeEnemy("epic", guardGear, [warden.creatureId], rng, level - 1));
-  return [warden, ...guards];
+  // (No two the same species.)
+  const pack = [warden];
+  for (let i = 0; i < squadsOf(dungeon).guards; i++) pack.push(makeEnemy("epic", guardGear, pack.map((e) => e.creatureId), rng, level - 1));
+  return pack;
 }
 
 export function enemyFighter(e: Enemy): Fighter {
@@ -830,26 +859,33 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
   const D = DUNGEONS[dungeon];
   const gold = (range: [number, number]) => Math.round(randInt(...range, rng) * D.goldScale);
   const level = enemyLevel(dungeon, kind, depth, rng);
+  const N = squadsOf(dungeon);
   // One enemy of this kind, at this depth (foeAt), not the same species as those in `others`.
   // (Lighter-armed early in the Labyrinth, bar mini bosses: LIGHT_GEAR.)
   const foe = (k: "easy" | "hard" | "camp" | "miniboss", others: Enemy[] = []) => {
     const e = makeEnemy(...foeAt(dungeon, k, depth, rng), others.map((e) => e.creatureId), rng, level);
     return dungeon <= 1 && k !== "miniboss" && !(dungeon === 0 && k === "camp") ? lightenGear(e, depth, rng) : e;
   };
+  // n of them, no two the same species.
+  const foes = (k: "easy" | "hard" | "camp" | "miniboss", n: number) => {
+    const enemies: Enemy[] = [];
+    for (let i = 0; i < n; i++) enemies.push(foe(k, enemies));
+    return enemies;
+  };
   switch (kind) {
     case "treasure":
       return { kind, gold: FIRST_TREASURE_GOLD, done: false };
     case "easy": {
-      // 1–3 creatures (by depth): Commons in Common gear (Uncommons in the Deep Labyrinth).
-      const size = depth <= FIRST_ROOMS ? 1 : randInt(...(depth <= EARLY_DEPTH || dungeon === 0 ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
-      const enemies: Enemy[] = [];
-      for (let i = 0; i < size; i++) enemies.push(foe("easy", enemies));
+      // 1–3 creatures (by depth; more in the Abyss: squadsOf): Commons in Common gear (Uncommons deeper).
+      const [lo, hi] = depth <= FIRST_ROOMS ? N.first : depth <= EARLY_DEPTH || dungeon === 0 ? N.early : N.deep;
+      const size = lo === hi ? lo : randInt(lo, hi, rng);
+      const enemies = foes("easy", size);
       if (rng() < UPGRADE_CHANCE) upgradeAndDrop(enemies, rng);
       return { kind, enemies, level: dungeon <= 1 ? "easy" : "normal", gold: gold(EASY_GOLD), done: false };
     }
     case "hard": {
-      // A single brute: Uncommon early on, then a Rare in Rare gear (an Epic in the Deep Labyrinth).
-      const enemies = [foe("hard")];
+      // A single brute (two in the Abyss): Uncommon early on, then a Rare in Rare gear (an Epic in the Deep Labyrinth).
+      const enemies = foes("hard", N.hard);
       return { kind, enemies, level: "normal", gold: gold(HARD_GOLD), done: false };
     }
     case "stash": {
@@ -866,9 +902,9 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       return { kind, sack, done: false };
     }
     case "miniboss": {
-      // One tough creature: a Rare in Rare gear, played by the Hard AI.
+      // One tough creature (two in the Abyss): a Rare in Rare gear, played by the Hard AI.
       // Beat it and you can heal or revive one of your party.
-      const enemies = [foe("miniboss")];
+      const enemies = foes("miniboss", N.miniboss);
       return { kind, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "merchant":
@@ -880,9 +916,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
         return { kind, variant: "plain", enemies: [chief], cages: [], level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
       }
       const variant = pick(ENCAMP_VARIANTS, rng);
-      const size = variant === "ambush" ? ENCAMP_AMBUSHERS : randInt(...ENCAMP_SIZE, rng);
-      const enemies: Enemy[] = [];
-      for (let i = 0; i < size; i++) enemies.push(foe("camp", enemies));
+      const enemies = foes("camp", variant === "ambush" ? N.ambush : randInt(...N.camp, rng));
       if (variant === "drunk") for (const e of enemies) e.hpMult = ENCAMP_DRUNK_HP;
       const cages: Cage[] = Array.from({ length: randInt(...ENCAMP_CAGES, rng) }, () =>
         (rng() < CAGE_CREATURE_CHANCE ? { creatureId: pickCreatureId(pickRarity("", "random")) } : {}));
@@ -909,7 +943,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
         ...(backpack && rng() < STOREHOUSE_BACKPACK ? [{ backpack: true as const }] : []),
       ];
       if (rng() >= STOREHOUSE_GUARD || !minibossAllowed(dungeon, depth)) return { kind, sack, done: false };
-      const enemies = [foe("miniboss")];
+      const enemies = foes("miniboss", N.miniboss);
       return { kind, guarded: true, sack, enemies, level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
     }
     case "witch":
@@ -917,7 +951,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     case "boss":
       // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
-      // The Deep Labyrinth and the Abyss: the Warden (a Legendary) and two Epic guards.
+      // The Deep Labyrinth and the Abyss: the Warden (a Legendary) and his Epic guards.
       return { kind, enemies: wardenPack(rng, dungeon), level: "hard", gold: gold(BOSS_GOLD), done: false };
     case "librarian": {
       // A few different codexes, each for a different race.
@@ -951,7 +985,7 @@ export type DungeonRun = {
   runNumber: number;           // 1 = your first ever run
   startedAt: string;
   party: string[];             // creature drop ids (1 to PARTY_SIZE)
-  team: string[];              // the ones that fight (up to TEAM_SIZE)
+  team: string[];              // the ones that fight (up to teamSize)
   hp: Record<string, number>;  // share of max HP left, 0–1 (0 = knocked out)
   room: number;                // rooms explored so far (each new room you walk into)
   map: DungeonMap;
@@ -1067,18 +1101,18 @@ export function leaveRoom(run: DungeonRun): DungeonRun {
 // fight. Order matters: the first one leads.
 export function setTeam(run: DungeonRun, team: string[]): DungeonRun {
   if (run.battle || run.status !== "exploring") return run;
-  const valid = team.filter((id) => run.party.includes(id) && isAlive(run, id)).slice(0, TEAM_SIZE);
+  const valid = team.filter((id) => run.party.includes(id) && isAlive(run, id)).slice(0, teamSize(run));
   // Anyone knocked out keeps their place (behind the rest, if there's room),
   // so a healing pool can bring them back into the fight.
   const downed = run.team.filter((id) => !valid.includes(id) && run.party.includes(id) && !isAlive(run, id));
-  return { ...run, team: [...valid, ...downed].slice(0, TEAM_SIZE) };
+  return { ...run, team: [...valid, ...downed].slice(0, teamSize(run)) };
 }
 
 // A healing pool restores one creature fully. One that had dropped out of
 // the team (knocked out) rejoins it if there's a free place.
 export function healInPool(run: DungeonRun, id: string): DungeonRun {
   if (!run.party.includes(id)) return run;
-  const team = run.team.includes(id) || run.team.length >= TEAM_SIZE ? run.team : [...run.team, id];
+  const team = run.team.includes(id) || run.team.length >= teamSize(run) ? run.team : [...run.team, id];
   return { ...run, hp: { ...run.hp, [id]: 1 }, team };
 }
 

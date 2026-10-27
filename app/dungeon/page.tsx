@@ -51,8 +51,8 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  PARTY_SIZE, TEAM_SIZE, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
-  hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_FUSE, ENCAMP_DRUNK_HP, type Ware,
+  PARTY_SIZE, squadsOf, teamSize, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
+  hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
@@ -348,7 +348,7 @@ export default function DungeonPage() {
     const free = dungeon === 0 || (!deep && lab.meta.runs < FREE_RUNS);
     if (!free && !game.spendGold(ENTRY_FEE)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
-    const team = party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0);
+    const team = party.slice(0, squadsOf(dungeon).team).filter((id) => hp[id] > 0);
     // Klutz's dynamite quest: the large room is its storehouse (lib/tavern.ts).
     const dynamite = wantsStorehouse(loadTavern());
     if (dungeon === 0) {
@@ -853,7 +853,7 @@ export default function DungeonPage() {
         illness: sick >= 0 ? { index: sick, rounds: r.illness!.left } : undefined,
         tutorial,
         pair: room.kind === "encampment" && room.variant === "ambush",
-        turnLimit: room.kind === "encampment" && room.variant === "rigged" ? ENCAMP_FUSE : undefined,
+        turnLimit: room.kind === "encampment" && room.variant === "rigged" ? squadsOf(dungeonOf(r)).fuse : undefined,
       },
     );
   }
@@ -1283,7 +1283,7 @@ function Entrance({ lab, owned, gold, full, quest, scans, onBegin, onHeal }: {
               <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
               <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
               <li>Some rooms are a <b>mystery</b> until you walk in.</li>
-              <li>Bring up to <b>{PARTY_SIZE} creatures</b>. Once you&apos;ve seen the map you pick the <b>{TEAM_SIZE}</b> that go in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
+              <li>Bring up to <b>{PARTY_SIZE} creatures</b>. Once you&apos;ve seen the map you pick the <b>{squadsOf(dungeon).team}</b> that go in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
               <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
             </ul>
           </Help>
@@ -1303,7 +1303,7 @@ function Entrance({ lab, owned, gold, full, quest, scans, onBegin, onHeal }: {
 
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
         <SectionTitle>Your party ({party.length}/{PARTY_SIZE})</SectionTitle>
-        <span style={{ fontSize: 12, color: MUTED }}>{TEAM_SIZE} go in — you choose at the map</span>
+        <span style={{ fontSize: 12, color: MUTED }}>{squadsOf(dungeon).team} go in — you choose at the map</span>
       </div>
       {owned.length < PARTY_SIZE && (
         <p style={{ color: MUTED, fontSize: 13, margin: "0 0 8px" }}>
@@ -1378,7 +1378,7 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
             <li>Rooms you know are marked; the rest are a <b>&ldquo;?&rdquo;</b>.</li>
             <li>Every tunnel leads <b>onward, never back</b>.</li>
             <li>Tap a room next to the entrance to <b>head straight there</b>.</li>
-            <li>Pick the <b>{TEAM_SIZE} creatures</b> that suit your route. The rest wait in the Den: <b>nobody new joins</b> once you&apos;re inside.</li>
+            <li>Pick the <b>{teamSize(run)} creatures</b> that suit your route. The rest wait in the Den: <b>nobody new joins</b> once you&apos;re inside.</li>
           </ul>
         </Help>
       </div>
@@ -1386,7 +1386,7 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
         {run.map.quest ? "Just a short way in — it went this way." : "Remember the way to the lair: it's too dark to read inside."}
       </p>
       <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />
-      {run.party.length > TEAM_SIZE && <Party run={run} byId={byId} onTeam={onTeam} bench="Waits in the Den" />}
+      {run.party.length > teamSize(run) && <Party run={run} byId={byId} onTeam={onTeam} bench="Waits in the Den" />}
       <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
         🔥 Put the map away and step inside
       </button>
@@ -1617,7 +1617,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
       {room.dynamite === false && <p style={{ fontSize: 13, color: "#7CFC9A", margin: "8px 0 0" }}>🧨 Klutz&apos;s dynamite is yours.</p>}
 
       {room.kind === "encampment" && (
-        <EncampmentPanel room={room} onCage={onCage} />
+        <EncampmentPanel room={room} fuse={squadsOf(dungeonOf(run)).fuse} onCage={onCage} />
       )}
 
       {hasFight(room) && room.done && fightLoot}
@@ -1665,7 +1665,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
 }
 
 // An encampment: what sort it is, and its cages.
-function EncampmentPanel({ room, onCage }: { room: Room; onCage: (i: number) => void }) {
+function EncampmentPanel({ room, fuse, onCage }: { room: Room; fuse: number; onCage: (i: number) => void }) {
   const lurking = room.variant === "ambush" && !room.sprung;
   const locked = hasFight(room) && !room.done; // beat them first
   return (
@@ -1675,7 +1675,7 @@ function EncampmentPanel({ room, onCage }: { room: Room; onCage: (i: number) => 
         <p style={{ fontSize: 13, color: "#c7b8ff", margin: "0 0 8px" }}>🍺 Empty potion bottles everywhere: they&apos;ve <b>×{ENCAMP_DRUNK_HP} HP</b>.{damageTypesOn() ? " Arcane moves bite deeper." : ""}</p>
       )}
       {room.variant === "rigged" && !room.done && (
-        <p style={{ fontSize: 13, color: "#ff8a5c", margin: "0 0 8px" }}>🧨 Barrels of blackpowder, fuse lit: win in <b>{ENCAMP_FUSE} rounds</b> or the room comes down on you.</p>
+        <p style={{ fontSize: 13, color: "#ff8a5c", margin: "0 0 8px" }}>🧨 Barrels of blackpowder, fuse lit: win in <b>{fuse} rounds</b> or the room comes down on you.</p>
       )}
       <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", marginBottom: 6 }}>Cages {locked && <span style={{ color: MUTED }}>· beat them first</span>}</div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1706,7 +1706,7 @@ function Party({ run, byId, onTeam, bench }: { run: DungeonRun; byId: (id: strin
   const team = fightingTeam(run);
   return (
     <>
-      <PartySlots team={team.flatMap(member)} bench={bench ? run.party.filter((id) => !team.includes(id)).flatMap(member) : undefined} benchLabel={bench} onTeam={onTeam} />
+      <PartySlots size={teamSize(run)} team={team.flatMap(member)} bench={bench ? run.party.filter((id) => !team.includes(id)).flatMap(member) : undefined} benchLabel={bench} onTeam={onTeam} />
       {bench && team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: "6px 0 0" }}>Pick someone to go in.</p>}
     </>
   );
