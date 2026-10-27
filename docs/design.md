@@ -424,10 +424,13 @@ How it came about, round by round: history.md.
   step is blind. Rooms can repeat. (lib/dungeon/run.ts, map.ts)
 - ✅ **Four dungeons** (`DUNGEONS`):
   - **The Encampment** (dungeon 0; the user, 2026-10-27): a new player's first labyrinth, after
-    Klutz's box. 5 rooms you walk into (`CAMP_ROUTE`): rooms 1–4 are creature dens, or a stash
-    half the time (`CAMP_STASH`), never two stashes in a row; no mysteries. Its first rooms ease you
-    in like the Labyrinth's (below). Room 5 is the camp: its **chief**, an Uncommon in Common gear,
-    Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest. Beaten the first time, it guards
+    Klutz's box. 7 rooms you walk into (`CAMP_ROUTE`, the user, 2026-10-27: it should be a struggle
+    to reach the chief without finding potions or some luck): rooms 1–6 are creature dens (1–2
+    creatures however deep), or a stash 30% of the time (`CAMP_STASH`, 🧪 Claude's number), never
+    two stashes in a row; no mysteries. Every map has at least one stash, and stashes are always
+    marked on the scroll, even on the blind first step. Its first rooms ease you in like the
+    Labyrinth's (below). Room 7 is the camp: its **chief**, an Uncommon in Common gear,
+    Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
     2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
     has, so you've a team of 3 for the Labyrinth. After that, one cage with a creature in it 20% of
     the time (`CAMP_REPEAT_CHANCE`). Always free.
@@ -435,9 +438,10 @@ How it came about, round by round: history.md.
       `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
       entrance shows it locked.
     - Sims (`scripts/sim-encampment.ts`: a lone Rare starter in the best of Klutz's box, spamming
-      its race move, no scans or pickups): first win median run 3–4, 59% by run 4, 13% not by run
-      12 (levelling is slow, so a bad starter or box can stall; Dustwraith and Crystalback suffer
-      most). Then, with the two cage creatures in the box's leftovers, 87% of runs get through the
+      its race move, no scans or pickups, heading for a stash): 27% of runs reach the chief, 13% win
+      on run 1, 25% by run 4, 50% not by run 12 (Dustwraith, Veilstalker and Crystalback worst). Real
+      play does far better: the user beat the 5-room version on run 1 twice, where this player won
+      22% of the time. (Older, 5 rooms:) Then, with the two cage creatures in the box's leftovers, 87% of runs get through the
       Labyrinth's rooms 1–5 (a brute beats you 16% of the time, the chief ~70%); ungeared, 66%.
   - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
   - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rollMap, routeLength, isAhead, waysOn } from "../lib/dungeon/map";
+import { rollMap, routeLength, isAhead, waysOn, knownRooms } from "../lib/dungeon/map";
 import {
   DUNGEONS, CAMP_ROUTE, CAMP_CHIEF_LEVEL, CAMP_CAGES, CAMP_CAGE_LEVELS, CAMP_REPEAT_CHANCE, LABYRINTH_SCANS,
   makeRoom, campCages, campRoomKind, labyrinthOpen, startRun, enterRoom, leaveRoom, endRun,
@@ -25,6 +25,24 @@ describe("the Encampment (the first labyrinth)", () => {
       }
     }
     expect(wrong).toEqual([]);
+  });
+
+  it("always has a stash, and every stash is on the scroll from the first (blind) step", () => {
+    const wrong: string[] = [];
+    for (let n = 0; n < 60; n++) {
+      const map = rollMap(false, Math.random, DUNGEONS[0].spec, 0);
+      const stashes = Object.values(map.nodes).filter((x) => x.kind === "stash");
+      if (stashes.length === 0) wrong.push("no stash");
+      const known = knownRooms(map, [map.start]);
+      for (const x of stashes) if (!known.has(x.id)) wrong.push(`hidden stash ${x.id}`);
+    }
+    expect(wrong).toEqual([]);
+  });
+
+  it("its dens never hold more than 2 creatures, however deep", () => {
+    const sizes = new Set<number>();
+    for (let n = 0; n < 60; n++) sizes.add(makeRoom("easy", Math.random, 3 + (n % 6), 0).enemies!.length);
+    expect([...sizes].sort()).toEqual([1, 2]);
   });
 
   it("a stash is never next after a stash", () => {

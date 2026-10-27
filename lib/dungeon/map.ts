@@ -63,6 +63,7 @@ export type MapNode = {
   links: string[];   // corridors to these rooms
   mystery?: boolean; // stays "?" until you walk in
   known?: boolean;   // marked on your scroll from the start
+  pinned?: boolean;  // …and shown even on the blind first step (the Encampment's stashes)
   large?: boolean;   // a large room (drawn bigger on the scroll)
   dynamite?: boolean; // the storehouse with Klutz's dynamite in it (lib/tavern.ts)
 };
@@ -216,6 +217,8 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
       else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
     }
   }
+  // The Encampment always has a stash, and its stashes are always on the scroll.
+  if (dungeon === 0) campStashes(map, rng);
   // A few rooms are marked on the scroll from the start (never mysteries).
   const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery);
   for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
@@ -236,6 +239,17 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   map.knownLinks = knownLinks;
   placeLarge(map, spec.large, rng, dynamite);
   return map;
+}
+
+// The Encampment: at least one stash (if none came up, a den turned into one),
+// and every stash marked on the scroll, even on the first step.
+function campStashes(map: DungeonMap, rng: Rng) {
+  const nodes = Object.values(map.nodes);
+  if (!nodes.some((n) => n.kind === "stash")) {
+    const dens = nodes.filter((n) => n.id !== map.start && n.id !== map.boss);
+    dens[Math.floor(rng() * dens.length)].kind = "stash";
+  }
+  for (const n of nodes) if (n.kind === "stash") Object.assign(n, { known: true, pinned: true });
 }
 
 // Turn a few rooms into large ones: well inside the labyrinth (not the
@@ -315,7 +329,7 @@ export function knownRooms(map: DungeonMap, path: string[], lit: string[] = [], 
   for (const n of Object.values(map.nodes)) if (n.known) known.add(n.id);
   for (const at of visited) for (const id of inSight(map, at)) if (!map.nodes[id].mystery) known.add(id);
   // Your first step is blind: the rooms off the entrance are all "?" (unless a flare lights them).
-  if (path.length <= 1) for (const n of waysOn(map, map.start)) if (!seen.includes(n.id)) known.delete(n.id);
+  if (path.length <= 1) for (const n of waysOn(map, map.start)) if (!seen.includes(n.id) && !n.pinned) known.delete(n.id);
   for (const at of lit) for (const id of inSight(map, at, litRadius(at, seen))) if (!map.nodes[id].mystery) known.add(id);
   return known;
 }

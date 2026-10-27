@@ -90,8 +90,8 @@ export const STEP_UP = 0.2;
 export type Foe = [creature: Rarity, gear: Rarity, stepUp: number];
 export type FoeBand = { upTo: number; easy: Foe; hard: Foe; camp: Foe; miniboss: Foe };
 export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
-  // Rooms 1–4 are dens and stashes (campRoomKind), the camp's chief at the top.
-  0: { name: "The Encampment", spec: { h: 170, rooms: 11, minRoute: 5, maxRoute: 5, large: 0 },
+  // Rooms 1–6 are dens and stashes (campRoomKind), the camp's chief at the top.
+  0: { name: "The Encampment", spec: { h: 240, rooms: 15, minRoute: 7, maxRoute: 7, large: 0 },
        foes: [{ upTo: Infinity, easy: ["common", "common", 0], hard: ["common", "common", 0], camp: ["uncommon", "common", 0], miniboss: ["uncommon", "common", 0] }],
        levels: [[Infinity, 1, 4]], maxLevel: 5, goldScale: 1 },
   1: { name: "The Labyrinth", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 },
@@ -161,15 +161,19 @@ export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon > 
 
 // The Encampment (dungeon 0; the user, 2026-10-27). Sims: scripts/sim-encampment.ts.
 // - Its first rooms ease you in like the Labyrinth's (FIRST_ROOMS, FIRST_ROOM_LEVELS, LIGHT_GEAR).
-// - Rooms 1–4 are creature dens, or a stash CAMP_STASH of the time, never two stashes in a row.
-// - At the top, the camp's chief: an Uncommon in Common gear, Lv CAMP_CHIEF_LEVEL. (Sim: a lone
-//   starter in Klutz's gear, spamming its race move, first wins on run 4 or so: 55% by run 4.)
+// - Rooms 1–6 are creature dens (1–2 creatures however deep: EASY_SIZE_EARLY), or a stash
+//   CAMP_STASH of the time, never two stashes in a row.
+//   Every map has at least one stash, and stashes are always marked on the scroll (even on the
+//   blind first step), so finding potions is a choice of route. It should be a struggle to reach
+//   the chief without them (the user, 2026-10-27).
+// - At the top, the camp's chief: an Uncommon in Common gear, Lv CAMP_CHIEF_LEVEL. Its chest is a
+//   mini boss's, bar the Iron Cage Schematic (that's for the Labyrinth's mini bosses).
 // - Beaten the first time, it guards CAMP_CAGES cages, each a Common or Uncommon (even odds) at
 //   Lv CAMP_CAGE_LEVELS, of no race your party has, so you've a team of 3. After that, one cage
 //   with a creature in it CAMP_REPEAT_CHANCE of the time.
 // - The Labyrinth opens once you've beaten it, or scanned LABYRINTH_SCANS barcodes.
-export const CAMP_ROUTE = 5;
-export const CAMP_STASH = 0.5;
+export const CAMP_ROUTE = 7;
+export const CAMP_STASH = 0.3;
 export const CAMP_CHIEF_LEVEL = 5;
 export const CAMP_CAGES = 2;
 export const CAMP_CAGE_LEVELS: [number, number] = [2, 4];
@@ -837,7 +841,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       return { kind, gold: FIRST_TREASURE_GOLD, done: false };
     case "easy": {
       // 1–3 creatures (by depth): Commons in Common gear (Uncommons in the Deep Labyrinth).
-      const size = depth <= FIRST_ROOMS ? 1 : randInt(...(depth <= EARLY_DEPTH ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
+      const size = depth <= FIRST_ROOMS ? 1 : randInt(...(depth <= EARLY_DEPTH || dungeon === 0 ? EASY_SIZE_EARLY : EASY_SIZE_DEEP), rng);
       const enemies: Enemy[] = [];
       for (let i = 0; i < size; i++) enemies.push(foe("easy", enemies));
       if (rng() < UPGRADE_CHANCE) upgradeAndDrop(enemies, rng);
