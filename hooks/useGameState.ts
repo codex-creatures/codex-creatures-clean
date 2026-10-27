@@ -15,7 +15,7 @@ import { codexDrop, potionDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, setKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
-import { fighterFor, upgradeMoveSet } from "@/lib/creatures/instance";
+import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
 import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
@@ -122,12 +122,14 @@ export function loadSave(): SaveState | null {
     c.soulStone = soulStoneOf(c, t);
     delete c.ability;
     if (upgradeMoveSet(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
+    if (upgradeStyle(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
     if (c.learned) c.learned = c.learned.map(renamedMove);
   }
-  // Codexes of a renamed move (RENAMED_MOVES) carry its new name.
+  // Codexes of a renamed move (RENAMED_MOVES) carry its new name, and an old
+  // Impale codex (that move was retired, 2026-10-27) is the new Impale's.
   for (const d of [...inventory, ...caches, ...(Array.isArray(parsed.crate) ? parsed.crate as Drop[] : [])]) {
     const x = d as CreatureOrItemDrop;
-    if (x.codexMove && renamedMove(x.codexMove) !== x.codexMove) Object.assign(x, codexDrop(renamedMove(x.codexMove), x.barcode), { id: x.id, createdAt: x.createdAt });
+    if (x.codexMove && (renamedMove(x.codexMove) !== x.codexMove || (x.codexMove === "Impale" && x.rarity !== "epic"))) Object.assign(x, codexDrop(renamedMove(x.codexMove), x.barcode), { id: x.id, createdAt: x.createdAt });
   }
   // Klutz can't use the new Blink, so his old one is Quickcast too.
   const klutz = obj(parsed.klutz) as KlutzState;

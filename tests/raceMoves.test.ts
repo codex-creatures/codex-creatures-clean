@@ -77,7 +77,7 @@ describe("what a creature can use and learn", () => {
   });
 
   it("strong codexes: the rest of the natural moves, also for creatures of that class", () => {
-    expect(STRONG_MOVES).toHaveLength(10);
+    expect(STRONG_MOVES).toHaveLength(9); // (the old melee Impale was retired, 2026-10-27)
     expect(STRONG_MOVES.every((m) => m.damage > 20)).toBe(true);
     const wolf = CREATURE_BY_ID.moss_wolf; // melee
     expect(canLearnFromCodex(wolf, "Devastator")).toBe(true);

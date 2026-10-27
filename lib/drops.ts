@@ -10,7 +10,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { ITEM_META } from "./items/metadata";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, ARMOR_V2, pieceName } from "./items/armor";
-import { BASIC_MOVES, STRONG_MOVES, CLASS_INFO, CREATURE_BY_ID, KIT_BASIC_CODEXES, KIT_STRONG_CODEXES, LEARNABLE_MOVES, MOVE_BY_NAME, learnRacesOf, RACE_INFO, RACE_MOVES, type Skill } from "./creatures/creatureData";
+import { BASIC_MOVES, STRONG_MOVES, CLASS_INFO, CREATURE_BY_ID, KIT_BASIC_CODEXES, KIT_STRONG_CODEXES, LEARNABLE_MOVES, MOVE_BY_NAME, learnRacesOf, RACE_INFO, RACE_MOVES, SPECIAL_MOVES, type Skill } from "./creatures/creatureData";
 import { KIT_MOVE_RACE, KIT_RACE_MOVES } from "./creatures/raceKitsV2";
 import { creatureOrCard } from "./creatures/summon";
 import type { BarcodeOutcome } from "./barcodeRegistry";
@@ -54,30 +54,38 @@ export function armorDrop(armorKey: ArmorKey, rarity: Rarity, barcode = "", stat
 // moves (Common codexes) and strong moves (Rare codexes), both from scans, to
 // a creature of the move's class. Race-kit moves (Combat V2: Common if
 // light, Rare if heavy) to a creature with that move in its kits: its race, in its style.
+// Special moves (SPECIAL_MOVES): their own rarity, to the species listed.
 export function codexDrop(moveName: string, barcode = ""): Drop {
   const move = MOVE_BY_NAME[moveName];
   const kitRace = KIT_MOVE_RACE[moveName];
   const basic = BASIC_MOVES.some((m) => m.name === moveName) || KIT_BASIC_CODEXES.some((m) => m.name === moveName);
   const strong = STRONG_MOVES.some((m) => m.name === moveName) || KIT_STRONG_CODEXES.some((m) => m.name === moveName);
   const learners = move ? learnRacesOf(move) : [];
-  const who = learners.length ? `one ${learners.map((r) => RACE_INFO[r].name).join(", ").replace(/, ([^,]*)$/, " or $1")} creature`
+  const species = move?.learners?.map((id) => CREATURE_BY_ID[id]?.name).filter(Boolean) ?? [];
+  const who = species.length ? `one of: ${species.join(", ")}`
+    : move?.codexRarity ? "any one creature"
+    : learners.length ? `one ${learners.map((r) => RACE_INFO[r].name).join(", ").replace(/, ([^,]*)$/, " or $1")} creature`
     : kitRace && move ? `one ${RACE_INFO[kitRace].name} ${CLASS_INFO[move.type].name} creature`
     : (basic || strong) && move ? `one ${CLASS_INFO[move.type].name} creature` : "any one creature";
   return {
-    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: move?.race ? "epic" : basic ? "common" : strong ? "rare" : "uncommon", roll: 0,
+    id: crypto.randomUUID(), barcode, dropType: "item", itemCategory: "consumable", rarity: move?.codexRarity ?? (move?.race ? "epic" : basic ? "common" : strong ? "rare" : "uncommon"), roll: 0,
     name: `Codex: ${moveName}`, codexMove: moveName,
     desc: `Teaches ${moveName} to ${who}, then crumbles to dust. ${move?.desc ?? ""}`, createdAt: now(),
   };
 }
 
-// Race codexes (librarians, chests, the Cyclops): the older race moves and the race kits'.
-export const RACE_CODEX_MOVES: Skill[] = [...RACE_MOVES, ...KIT_RACE_MOVES];
+// Race codexes (librarians, chests, the Cyclops): the older race moves, the race kits' and the special moves.
+export const RACE_CODEX_MOVES: Skill[] = [...RACE_MOVES, ...KIT_RACE_MOVES, ...SPECIAL_MOVES];
+// Special moves also come from scans, by their codex rarity (an Epic one, Impale, only from the Labyrinth).
+const specialCodexes = (r: Skill["codexRarity"]) => SPECIAL_MOVES.filter((m) => m.codexRarity === r);
 export const randomCodexMove = () => RACE_CODEX_MOVES[Math.floor(Math.random() * RACE_CODEX_MOVES.length)].name;
 export const randomLearnableMove = () => LEARNABLE_MOVES[Math.floor(Math.random() * LEARNABLE_MOVES.length)].name;
-const SCAN_BASIC_CODEXES = [...BASIC_MOVES, ...KIT_BASIC_CODEXES];
-const SCAN_STRONG_CODEXES = [...STRONG_MOVES, ...KIT_STRONG_CODEXES];
+const SCAN_BASIC_CODEXES = [...BASIC_MOVES, ...KIT_BASIC_CODEXES, ...specialCodexes("common")];
+const SCAN_STRONG_CODEXES = [...STRONG_MOVES, ...KIT_STRONG_CODEXES, ...specialCodexes("rare")];
+const SCAN_UNCOMMON_CODEXES = [...LEARNABLE_MOVES, ...specialCodexes("uncommon")];
 export const randomBasicMove = () => SCAN_BASIC_CODEXES[Math.floor(Math.random() * SCAN_BASIC_CODEXES.length)].name;
 export const randomStrongMove = () => SCAN_STRONG_CODEXES[Math.floor(Math.random() * SCAN_STRONG_CODEXES.length)].name;
+export const randomUncommonMove = () => SCAN_UNCOMMON_CODEXES[Math.floor(Math.random() * SCAN_UNCOMMON_CODEXES.length)].name;
 
 // A Common consumable from a scan is a basic codex this often, otherwise a
 // Lesser Potion; a Rare one is a strong codex this often, otherwise a Healing Potion.
@@ -137,7 +145,7 @@ export function dropFromOutcome(result: BarcodeOutcome, barcode = ""): Drop | nu
   if (itemCategory === "consumable") {
     if (rarity === "common") return Math.random() < BASIC_CODEX_SHARE ? codexDrop(randomBasicMove(), barcode) : potionDrop(barcode);
     if (rarity === "rare") return Math.random() < STRONG_CODEX_SHARE ? codexDrop(randomStrongMove(), barcode) : potionDrop(barcode, "potion");
-    return codexDrop(randomLearnableMove(), barcode);
+    return codexDrop(randomUncommonMove(), barcode);
   }
   if (itemCategory === "weapon") return itemKey ? weaponDrop(itemKey, rarity, barcode) : null;
   if (itemCategory === "armor") return armorKey ? armorDrop(armorKey, rarity, barcode, undefined, armorSlot) : null;

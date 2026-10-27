@@ -23,7 +23,7 @@ export const RACE_V2_NAME: Record<RaceV2, string> = {
 export const SPECIES_RACES: Record<string, RaceV2[]> = {
   // Old Beast
   moss_wolf:        ["beast"],
-  amber_wasp:       ["beast"],
+  amber_wasp:       ["beast", "toxic"], // a venomous sting (the user, 2026-10-27)
   bellow_toad:      ["beast", "toxic"], // poison glands, always spitting
   dire_wolf:        ["beast"],
   ironhide:         ["beast"],
@@ -79,7 +79,7 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
 export const MOVE_RACES: Record<string, RaceV2> = {
   // Melee
   "Flick": "humanoid", "Jab": "humanoid", "Slash": "beast", "Hexblade": "undead", "Heavy Blow": "beast",
-  "Impale": "humanoid", "Crush": "geo", "Soul Rend": "undead", "Devastator": "beast",
+  "Crush": "geo", "Soul Rend": "undead", "Devastator": "beast",
   // Ranged
   "Pebble Shot": "underkin", "Stone Throw": "underkin", "Bolt": "humanoid", "Hex Arrow": "undead",
   "Piercing Shot": "humanoid", "Boulder Toss": "geo", "Cursed Volley": "undead", "Annihilator": "divine",

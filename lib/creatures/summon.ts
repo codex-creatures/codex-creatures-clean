@@ -13,7 +13,7 @@ import type { CreatureOrItemDrop } from "../types";
 import { defaultMoveNames, findCreatureTemplate, type CreatureTemplate } from "./creatureData";
 import { rollCreature, type CreatureRoll } from "./creatureRoll";
 import { soulStoneOf } from "./soulStones";
-import { MOVE_SET } from "./instance";
+import { MOVE_SET, STYLE_SET } from "./instance";
 
 export const REAL_CREATURE_CHANCE = 0.2;
 export const CARDS_TO_SUMMON = 3;
@@ -36,6 +36,7 @@ export function makeCreatureDrop(
     proficiency: roll.proficiency,
     moves: roll.moves,
     moveSet: MOVE_SET,
+    styleSet: STYLE_SET,
     soulStone: roll.soulStone ?? null,
     createdAt: new Date().toISOString(),
   };

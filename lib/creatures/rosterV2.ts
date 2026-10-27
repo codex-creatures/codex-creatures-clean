@@ -33,13 +33,13 @@ export const ARCHETYPE_INFO: Record<Archetype, { name: string; styles: CombatCla
 
 // A draft archetype for every species, by its %s and moves today.
 export const SPECIES_ARCHETYPE: Record<string, Archetype> = {
-  moss_wolf: "bruiser", amber_wasp: "skirmisher", bellow_toad: "ranger", dire_wolf: "bruiser", ironhide: "bulwark",
-  cave_bat: "skirmisher", rust_beetle: "bulwark", crystalback: "warden", crystal_golem: "warden", hollow_matriarch: "ranger",
-  dust_sprite: "sniper", flicker_wisp: "arcanist", veilstalker: "battlemage", the_watcher: "arcanist", void_serpent: "battlemage",
+  moss_wolf: "bruiser", amber_wasp: "bruiser", bellow_toad: "ranger", dire_wolf: "bruiser", ironhide: "bulwark",
+  cave_bat: "bruiser", rust_beetle: "bulwark", crystalback: "warden", crystal_golem: "battlemage", hollow_matriarch: "ranger",
+  dust_sprite: "arcanist", flicker_wisp: "arcanist", veilstalker: "battlemage", the_watcher: "arcanist", void_serpent: "battlemage",
   rattlebones: "bruiser", shambler: "bulwark", dustwraith: "spellbow", mr_shadows: "battlemage", storm_phoenix: "skirmisher",
   thicket_archer: "sniper", leafblade_scout: "ranger", aurelius: "ranger", swamp_witch: "arcanist", sylvaran: "sniper",
   // New
-  gleamling: "spellbow", flame_imp: "arcanist", deep_angler: "battlemage", tunnel_wyrm: "warden", thunderhead: "spellbow",
+  gleamling: "spellbow", flame_imp: "arcanist", deep_angler: "battlemage", tunnel_wyrm: "bulwark", thunderhead: "battlemage",
   plague_rat: "bruiser", rotgut_fly: "skirmisher", glob: "bulwark", dreadpox: "warden", pale_rider: "battlemage",
 };
 
@@ -55,13 +55,13 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
   // Geo
   { id: "flame_imp",       name: "Flame Imp",       rarity: "uncommon",  baseHp: 72,  cls: "magic",  proficiency: { atk: 4, rng: 0, mag: 20, agil: 18, mdef: 4, rdef: 6, magdef: 8 },
     flavour: "A little devil of red flame with something colder burning inside. Its trident wand spits blue fire." },
-  { id: "thunderhead",     name: "Thunderhead",     rarity: "legendary", baseHp: 138, cls: "ranged", proficiency: { atk: 8, rng: 38, mag: 36, agil: 26, mdef: 16, rdef: 22, magdef: 24 },
+  { id: "thunderhead",     name: "Thunderhead",     rarity: "legendary", baseHp: 138, cls: "magic",  proficiency: { atk: 38, rng: 0, mag: 44, agil: 26, mdef: 16, rdef: 22, magdef: 24 },
     flavour: "A storm that learned to walk. Hail falls from its shoulders, and lightning answers when it points." },
   // Underkin
   { id: "deep_angler",     name: "Deep Angler",     rarity: "rare",      baseHp: 88,  cls: "melee",  proficiency: { atk: 22, rng: 0, mag: 16, agil: 14, mdef: 8, rdef: 10, magdef: 10 },
     // (Melee, not ranged: nothing about it shoots. The user, 2026-10-26.)
     flavour: "A blind cave fish on crooked legs. Follow its glowing lure and you'll never find your way out." },
-  { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "magic",  proficiency: { atk: 6, rng: 0, mag: 20, agil: 6, mdef: 34, rdef: 24, magdef: 24 },
+  { id: "tunnel_wyrm",     name: "Tunnel Wyrm",     rarity: "epic",      baseHp: 130, cls: "melee",  proficiency: { atk: 26, rng: 0, mag: 0, agil: 6, mdef: 34, rdef: 24, magdef: 24 },
     flavour: "Eyeless and armoured in plates of stone. The tunnels it leaves behind are the Labyrinth's oldest." },
   // Toxic
   { id: "plague_rat",      name: "Plague Rat",      rarity: "common",    baseHp: 60,  cls: "melee",  proficiency: { atk: 14, rng: 0, mag: 0, agil: 16, mdef: 4, rdef: 4, magdef: 4 },
@@ -95,13 +95,25 @@ export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
 // Today's creatures that fight in another style in V2 (the user and Claude,
 // 2026-10-26, to even out the archetypes). Their main % moves to the new
 // style, so the total stays the same; a new hybrid splits it across both.
+// Species whose style the user changed on 2026-10-27 (the Cave Goblin, Amber
+// Wasp, Dust Sprite, Crystal Golem, Tunnel Wyrm and Thunderhead; Tunnel Wyrm's
+// and Thunderhead's are in NEW_SPECIES_V2 above). The ones players already own
+// are moved over once when the save loads (upgradeStyle, lib/creatures/instance.ts).
+// Their attack %s add up to the same as before.
+export const RESTYLED_SPECIES = ["cave_bat", "amber_wasp", "dust_sprite", "crystal_golem", "tunnel_wyrm", "thunderhead"];
+
 export const V2_RESTYLE: Record<string, Pick<CreatureTemplate, "cls" | "proficiency">> = {
   // A melee Ranger now: fangs first, webs second (was ranged).
   hollow_matriarch: { cls: "melee", proficiency: { atk: 40, rng: 24, mag: 0, agil: 30, mdef: 24, rdef: 22, magdef: 23 } },
   // Magic, not ranged (the user).
   the_watcher:      { cls: "magic", proficiency: { atk: 10, rng: 0, mag: 42, agil: 12, mdef: 10, rdef: 16, magdef: 20 } },
-  // A Warden: crystal magic, not fists.
-  crystal_golem:    { cls: "magic", proficiency: { atk: 6, rng: 0, mag: 28, agil: 4, mdef: 32, rdef: 20, magdef: 26 } },
+  // A Battlemage: fists first, crystal magic second (the user, 2026-10-27; was a magic Warden).
+  crystal_golem:    { cls: "melee", proficiency: { atk: 20, rng: 0, mag: 14, agil: 4, mdef: 32, rdef: 20, magdef: 26 } },
+  // Melee, not ranged (the user, 2026-10-27).
+  cave_bat:         { cls: "melee", proficiency: { atk: 18, rng: 0, mag: 0, agil: 16, mdef: 2, rdef: 6, magdef: 4 } },
+  amber_wasp:       { cls: "melee", proficiency: { atk: 22, rng: 0, mag: 0, agil: 22, mdef: 3, rdef: 3, magdef: 3 } },
+  // Magic, not ranged (the user, 2026-10-27).
+  dust_sprite:      { cls: "magic", proficiency: { atk: 2, rng: 0, mag: 18, agil: 10, mdef: 2, rdef: 4, magdef: 6 } },
   // A Spellbow: it hurls the dust it's made of.
   dustwraith:       { cls: "magic", proficiency: { atk: 6, rng: 6, mag: 14, agil: 32, mdef: 4, rdef: 8, magdef: 6 } },
 };

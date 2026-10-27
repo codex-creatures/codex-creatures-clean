@@ -101,10 +101,11 @@ describe("Combat V2 roster", () => {
   });
 
   // (Even at 4 each, 3 Snipers, until the Deep Angler became a melee Battlemage, 2026-10-26.)
-  it("the archetypes are near even: 4 each, 3 Snipers and Spellbows, 5 Battlemages", () => {
+  // (Near even at first; the user's restyles of 2026-10-27 moved six creatures towards melee and magic.)
+  it("the archetypes: every one is used", () => {
     const counts: Record<string, number> = {};
     for (const c of ROSTER_V2) counts[SPECIES_ARCHETYPE[c.id]] = (counts[SPECIES_ARCHETYPE[c.id]] ?? 0) + 1;
-    for (const a of Object.keys(ARCHETYPE_INFO)) expect(counts[a], a).toBe(a === "sniper" || a === "spellbow" ? 3 : a === "battlemage" ? 5 : 4);
+    expect(counts).toEqual({ bruiser: 6, bulwark: 5, sniper: 2, skirmisher: 2, arcanist: 5, warden: 2, ranger: 4, battlemage: 7, spellbow: 2 });
   });
 
   it("a V2 restyle changes the style but keeps the % total", () => {

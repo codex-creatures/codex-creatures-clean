@@ -58,6 +58,18 @@ export const CRIPPLE = { stumble: 0.25 }; // chance a crippled creature loses it
 // - Pounce: acts before everyone else this round.
 export const CORPSIFY_ROUNDS = 2;
 
+// Special moves (numbers on the moves, in creatureData.ts SPECIAL_MOVES):
+// - Seal (Dark Seal, Impale, Pin Down): the target can't swap out for a few
+//   rounds ("seal"). It's on the creature, so it holds even if the attacker
+//   swaps. A knocked-out creature is still replaced.
+// - Meditate: extra energy back, on top of the usual.
+// - Healing Blessing: next round, after swaps and before anyone attacks,
+//   whoever is on the blesser's side of the field heals.
+// - Corrosive Soak: the target's defences drop (defenceCut) until it leaves
+//   the field. A new soak replaces the old: it doesn't stack.
+export const SOAK_ROUNDS = MAX_ROUNDS + 1; // (it ends when the creature leaves the field, not with time)
+export const isSealed = (f: Combatant) => f.statuses.some((s) => s.id === "seal");
+
 // Armour set mechanics (a full helmet + chest + legs of one armour; see
 // SET_BONUS in lib/items/armor.ts). The once-a-fight ones mark setUsed.
 // - Hard Shell: the first hit it takes is halved.
@@ -112,6 +124,7 @@ export type BattleAction =
 // chance: a mirage's dodge chance. dmg: a venom's (or poison's) damage per round.
 // fear (Haunting Presence): loses its next attack.
 // hp: corpsify's share of HP to come back with.
+// seal: can't swap out. soak: loss = its share of defences lost.
 export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number };
 
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
@@ -127,6 +140,7 @@ export type BattleSide = {
   swaps: number;
   lastSwapRound: number;
   boss?: BossState;        // set when this side is a scripted boss
+  blessing?: { round: number; heal: number; by: string }; // Healing Blessing: heals whoever is on the field in that round
 };
 
 export type BattleEvent =
@@ -138,11 +152,12 @@ export type BattleEvent =
       poisoned?: StatusEffect; // Toxic Skin poisoned the attacker
       attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number;
       evaded?: boolean; venom?: StatusEffect; pounced?: boolean;
+      sealed?: number; soaked?: number; // rounds it can't swap out; share of defences it lost
       armorFx?: string } // an armour set mechanic that kicked in on this hit
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear"; damage?: number }
+      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -240,9 +255,9 @@ export function affordableSkills(f: Combatant): Skill[] {
   return f.skills.filter((s) => s.energyCost <= f.energy && (f.cooldowns?.[s.name] ?? 0) <= 0);
 }
 
-// Bench creatures this side could swap to. (Future: fear blocks this.)
+// Bench creatures this side could swap to (none while its creature is sealed).
 export function swapTargets(s: BattleSide): number[] {
-  if (s.boss) return [];
+  if (s.boss || (activeOf(s) && isSealed(activeOf(s)))) return [];
   return s.team.map((f, i) => i).filter((i) => i !== s.active && i !== s.partner && s.team[i].hp > 0);
 }
 
@@ -308,6 +323,20 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     }
   }
   for (const k of cameIn) haunt(state, k);
+
+  // 1a. A Healing Blessing from last round heals whoever is on the field now.
+  for (const k of ["A", "B"] as SideKey[]) {
+    const s = state.sides[k];
+    const b = s.blessing;
+    if (!b || b.round > state.round) continue;
+    s.blessing = undefined;
+    const me = activeOf(s);
+    if (b.round < state.round || me.hp <= 0) continue;
+    const healed = Math.min(me.maxHp - me.hp, Math.round(me.maxHp * b.heal));
+    me.hp += healed;
+    state.log.push({ type: "effect", side: k, index: s.active, name: me.name, text: `is healed by ${b.by}'s Healing Blessing (+${healed} HP)`,
+      hp: me.hp, statuses: me.statuses.map((x) => ({ ...x })), kind: "heal", damage: healed });
+  }
 
   // 1b. Items (from the battle bag) are used before anyone attacks.
   for (const k of ["A", "B"] as SideKey[]) {
@@ -404,6 +433,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         actor.statuses = [...actor.statuses.filter((s) => s.id !== "corpsify"), { id: "corpsify", rounds: CORPSIFY_ROUNDS, hp: fx.reviveHp }];
         text += ` — if it falls before the end of next round, it rises again`;
       }
+      if (fx?.kind === "meditate") {
+        const gained = Math.min(MAX_ENERGY - actor.energy, fx.energy);
+        actor.energy += gained;
+        text += ` — +${gained} energy`;
+      }
+      if (fx?.kind === "blessing") {
+        state.sides[key].blessing = { round: state.round + 1, heal: fx.heal, by: actor.name };
+        text += ` — next round, whoever is on the field heals ${Math.round(fx.heal * 100)}% HP`;
+      }
       state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
       continue;
     }
@@ -457,7 +495,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         damage = target.hp - 1;
         armorFx.push(`${SET_BONUS.juggernaut_platemail.name}: hangs on with 1 HP`);
       }
-      if (!missed) {
+      if (!missed && skill.damage > 0) {
         state.hits++;
         if (damage <= 1) state.minDamageHits++;
       }
@@ -479,6 +517,18 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         venom = { id: "venom", rounds, dmg: Math.max(1, Math.round(target.maxHp * fx.tick)) };
         target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), venom];
       }
+      // Seal: the target can't swap out for the next few rounds (+1: it ticks at the end of this one).
+      let sealed: number | undefined;
+      if (fx?.kind === "seal" && !missed && target.hp > 0 && Math.random() < fx.chance) {
+        sealed = fx.rounds + (fx.extraChance && Math.random() < fx.extraChance ? 1 : 0);
+        target.statuses = [...target.statuses.filter((s) => s.id !== "seal"), { id: "seal", rounds: sealed + 1 }];
+      }
+      // Soak: defences down until it leaves the field (a new one replaces the old).
+      const soaked = fx?.kind === "soak" && !missed && target.hp > 0 ? fx.cut : undefined;
+      if (soaked) {
+        target.defenceCut = soaked;
+        target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: soaked }];
+      }
       // Toxic Skin: a melee hit may poison the attacker (a fresh 3–5 turns, replacing any poison it had).
       let poisoned: StatusEffect | undefined;
       if (!missed && skill.type === "melee" && hasStone(target, "toxic_skin") && actor.hp > 0 && Math.random() < TOXIC_SKIN.chance) {
@@ -489,7 +539,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
       state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
         streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted,
-        evaded: evaded || undefined, venom, poisoned, pounced: pounced || undefined, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
+        evaded: evaded || undefined, venom, poisoned, pounced: pounced || undefined, sealed, soaked, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
       if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
 
       // Nullify: some of a magic hit bounces back at the attacker.
@@ -563,10 +613,13 @@ function knockedOut(state: BattleState, key: SideKey, index: number) {
 }
 
 // A new creature steps in (swap or replacement). The one leaving loses its
-// run (a Perfectionist starts again); the newcomer starts fresh.
+// run (a Perfectionist starts again) and any soak; the newcomer starts fresh.
 export function changeActive(state: BattleState, key: SideKey, index: number) {
   const s = state.sides[key];
-  activeOf(s).streak = undefined;
+  const leaving = activeOf(s);
+  leaving.streak = undefined;
+  leaving.defenceCut = undefined;
+  leaving.statuses = leaving.statuses.filter((st) => st.id !== "soak");
   s.active = index;
   activeOf(s).streak = undefined;
 }
@@ -607,6 +660,7 @@ export function cloneBattle(state: BattleState): BattleState {
     ...s,
     team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })), streak: f.streak && { ...f.streak }, cooldowns: f.cooldowns && { ...f.cooldowns } })),
     boss: s.boss && { ...s.boss },
+    blessing: s.blessing && { ...s.blessing },
   });
   return {
     ...state,

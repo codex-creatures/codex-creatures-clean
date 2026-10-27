@@ -14,7 +14,7 @@ import RaceChart from "@/components/RaceChart";
 import ClassBadge, { moveKind } from "@/components/ClassBadge";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
-  ALL_SKILLS, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
+  ALL_SKILLS, SPECIAL_MOVES, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
   STEADY_MAX_ENERGY, learnRacesOf, raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type Race, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
@@ -314,6 +314,14 @@ function Moves({ seen }: { seen: Set<string> }) {
       <P>Every {CLASS_INFO.melee.name}, {CLASS_INFO.ranged.name} and {CLASS_INFO.magic.name} move above also comes as a codex, from scans: Common for up to {BASIC_CODEX_MAX_DAMAGE} damage, Rare above that. It teaches a creature of that move&apos;s class (Klutz can learn any).</P>
       <H>Race moves (codexes)</H>
       {RACE_MOVES.map((m) => row(m, <>Only <RaceTag races={learnRacesOf(m)} /> creatures can learn it, from a codex.</>))}
+      <H>Special moves (codexes)</H>
+      {SPECIAL_MOVES.map((m) => {
+        // (Creatures you haven't seen stay a number, as above.)
+        const who = CREATURE_TEMPLATES.filter((t) => m.learners?.includes(t.id));
+        const met = who.filter((t) => seen.has(t.id)), hidden = who.length - met.length;
+        return row(m, !m.learners ? `${m.codexRarity} codex. Any creature can learn it.`
+          : <>{m.codexRarity} codex. Learned by {met.map((t) => <CreatureName key={t.id} t={t} />)}{hidden > 0 && <span>{met.length ? "and " : ""}{hidden} creature{hidden === 1 ? "" : "s"} you haven&apos;t seen</span>}</>);
+      })}
       <H>Boss moves</H>
       {BOSS_MOVES.map((m) => row(m, "The Cyclops only."))}
     </div>

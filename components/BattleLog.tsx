@@ -45,21 +45,23 @@ function LogLine({ e }: { e: BattleEvent }) {
       return (
         <div>
           <Who side={e.side} name={e.attacker} /> uses {e.skill.name}{" "}
-          {e.missed ? <span style={{ color: MUTED }}>→ {e.evaded ? "it shimmers away (mirage)!" : e.armorFx?.includes("turns it aside") ? "deflected!" : "misses!"}</span> : <>→ <b>{e.damage}</b> dmg</>}
+          {e.missed ? <span style={{ color: MUTED }}>→ {e.evaded ? "it shimmers away (mirage)!" : e.armorFx?.includes("turns it aside") ? "deflected!" : "misses!"}</span> : e.skill.damage > 0 ? <>→ <b>{e.damage}</b> dmg</> : null}
           {e.armorFx && <span style={{ color: "#f1d9a0" }}> · 🛡️ {e.armorFx}</span>}
           {e.pounced && <span style={{ color: "#d89a5b" }}> · pounces on the wounded!</span>}
           {e.venom && <span style={{ color: "#9be15d" }}> · envenomed!</span>}
           {e.precise && <span style={{ color: "#f5c542" }}> · precise hit!</span>}
           {e.hasted && <span style={{ color: "#7fe0ff" }}> · First Strike!</span>}
           {e.crippled && <span style={{ color: "#c792ea" }}> · crippled!</span>}
+          {e.sealed && <span style={{ color: "#c9c5b8" }}> · can&apos;t swap out for {e.sealed} rounds!</span>}
+          {e.soaked && <span style={{ color: "#b98cf0" }}> · defences −{Math.round(e.soaked * 100)}%!</span>}
           <span style={{ color: MUTED }}> ({e.side === "A" ? "their" : "your"} {e.target}: {e.targetHpAfter} HP left)</span>
         </div>
       );
     case "pass":
       return <div><Who side={e.side} name={e.name} /> is out of energy and rests (+30⚡).</div>;
     case "effect":
-      return <div style={{ color: e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "set" ? "#f1d9a0" : e.kind === "ability" ? "#b9e6ff" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }}>
-        {e.kind === "venom" ? "☠️ " : e.kind === "poison" ? "☣️ " : e.kind === "fear" ? "👻 " : e.kind === "revive" ? "⚰️ " : e.kind === "item" ? "🧪 " : e.kind === "set" ? "🛡️ " : e.kind === "ability" ? "💚 " : e.kind === "stumble" ? "🦵 " : "✨ "}<Who side={e.side} name={e.name} /> {e.text} <span style={{ color: MUTED }}>({e.hp} HP)</span>
+      return <div style={{ color: e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "set" ? "#f1d9a0" : e.kind === "ability" ? "#b9e6ff" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }}>
+        {e.kind === "venom" ? "☠️ " : e.kind === "poison" ? "☣️ " : e.kind === "fear" ? "👻 " : e.kind === "revive" ? "⚰️ " : e.kind === "item" ? "🧪 " : e.kind === "heal" ? "💚 " : e.kind === "set" ? "🛡️ " : e.kind === "ability" ? "💚 " : e.kind === "stumble" ? "🦵 " : "✨ "}<Who side={e.side} name={e.name} /> {e.text} <span style={{ color: MUTED }}>({e.hp} HP)</span>
       </div>;
     case "faint":
       return <div>💀 <Who side={e.side} name={e.name} /> fainted!</div>;

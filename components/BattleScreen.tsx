@@ -27,7 +27,7 @@ import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf, aliveCount,
-  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, perfectionistBonus,
+  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, SOAK_ROUNDS, perfectionistBonus,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
 import type { BossKind } from "@/lib/combat/bossAi";
@@ -152,6 +152,8 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       target.hp = e.targetHpAfter;
       if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS, loss: e.crippleLoss }];
       if (e.venom) target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), { ...e.venom }];
+      if (e.sealed) target.statuses = [...target.statuses.filter((s) => s.id !== "seal"), { id: "seal", rounds: e.sealed }];
+      if (e.soaked) target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: e.soaked }];
       if (e.poisoned) attacker.statuses = [...attacker.statuses.filter((s) => s.id !== "poison"), { ...e.poisoned }];
       break;
     }
@@ -261,8 +263,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
             ...(e.kind === "self" ? { caption: `${e.side === "B" ? "Foe's " : ""}${e.name} used ${e.text.split(" — ")[0].replace(/^uses /, "")}` } : {}),
-            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
+            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       if (e.type === "attack") buzz(attackHaptic(e)); // (Settings → Vibration; off unless switched on)
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
@@ -568,6 +570,10 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   if (fx?.kind === "mirage") tags.push(`${Math.round(fx.evade * 100)}% dodge for ${fx.rounds} rounds`);
   if (fx?.kind === "corpsify") tags.push(`rise again with ${Math.round(fx.reviveHp * 100)}% HP if knocked out`);
   if (fx?.kind === "barrage") tags.push("hits every enemy on the field");
+  if (fx?.kind === "seal") tags.push(`${fx.chance < 1 ? `${Math.round(fx.chance * 100)}% chance: ` : ""}no swapping out for ${fx.rounds}${fx.extraChance ? `–${fx.rounds + 1}` : ""} rounds`);
+  if (fx?.kind === "meditate") tags.push(`+${fx.energy} energy`);
+  if (fx?.kind === "blessing") tags.push(`next round: heals ${Math.round(fx.heal * 100)}% HP`);
+  if (fx?.kind === "soak") tags.push(`defences −${Math.round(fx.cut * 100)}% until it swaps out`);
   const cooling = me.cooldowns?.[sk.name] ?? 0;
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
@@ -669,13 +675,15 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
         {side === "A" && <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />}
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
         {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
-        {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "poison" || s.id === "corpsify" || s.id === "fear").map((s) => (
+        {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "poison" || s.id === "corpsify" || s.id === "fear" || s.id === "seal" || s.id === "soak").map((s) => (
           <div key={s.id} style={{ fontSize: 11, marginTop: 6, color: s.id === "venom" || s.id === "poison" ? "#9be15d" : s.id === "mirage" ? "#c7b8ff" : s.id === "fear" ? "#b9e6ff" : "#9fd3a8" }}>
             {s.id === "venom" && <>🧪 Envenomed (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
             {s.id === "poison" && <>☣️ Poisoned (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
             {s.id === "fear" && <>👻 Struck with fear: loses its next attack</>}
             {s.id === "mirage" && <>✨ Mirage ({Math.round((s.chance ?? 0) * 100)}% to dodge) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
             {s.id === "corpsify" && <>⚰️ Corpsified — rises again if knocked out</>}
+            {s.id === "seal" && <>⛓️ Sealed: can&apos;t swap out · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "soak" && <>🫧 Soaked (−{Math.round((s.loss ?? 0) * 100)}% defences) until it swaps out</>}
           </div>
         ))}
         {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
@@ -850,7 +858,8 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
     f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
     f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
     f.statuses.some((s) => s.id === "corpsify") && "⚰️", f.statuses.some((s) => s.id === "poison") && "☣️",
-    f.statuses.some((s) => s.id === "fear") && "👻",
+    f.statuses.some((s) => s.id === "fear") && "👻", f.statuses.some((s) => s.id === "seal") && "⛓️",
+    f.statuses.some((s) => s.id === "soak") && "🫧",
   ].filter(Boolean).join(" ");
   return (
     <>

@@ -23,7 +23,7 @@ import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META, wornArmor } from "../items/armor";
-import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_SLOTS, RACE_MOVES, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
+import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
 import { BALANCED_MOVES, NEUTRAL_QUICK_MOVES, kitMoveFor } from "../creatures/raceKitsV2";
 import { SPECIES_RACES } from "../creatures/racesV2";
 import { rollCreature } from "../creatures/creatureRoll";
@@ -474,7 +474,8 @@ export const LIBRARY_FIND = 0.75;
 export const LIBRARY_CODEXES: [number, number] = [1, 3];
 export const LIBRARY_BOOKS = 5;
 export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read, or a race-kit move's (Claude's draft, 2026-10-26; older race codexes: CODEX_PRICE)
-export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
+// (Impale, the Epic special move, costs what the older race codexes do.)
+export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) || MOVE_BY_NAME[move]?.codexRarity === "epic" ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
 export const STOREHOUSE_GUARD = 0.35;
 export const STOREHOUSE_MATERIALS: [number, number] = [3, 5];
 export const STOREHOUSE_POTIONS: [number, number] = [1, 2];

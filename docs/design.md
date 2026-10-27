@@ -299,19 +299,44 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   Pounce (Beast), Rabid Bite (Beast, Underkin and Toxic can learn it: the user, 2026-10-26,
   `learnRaces`; it hits as Toxic; venom ticks even on the bench), Mirage (Divine), Corpsify
   (Undead), Barrage (Humanoid; hits every enemy). Geo has none yet.
+- ✅ **Special moves** (the user's, 2026-10-27; `SPECIAL_MOVES` in creatureData.ts). Each has its
+  own codex rarity and a list of the species that can learn it (`learners`; not race-locked:
+  the list is the user's pick). Their codexes come from librarians, chests, library rooms and the
+  Cyclops (with the race codexes), and from scans at their rarity (Common / Uncommon / Rare pools;
+  the Epic one only from the Labyrinth; a librarian charges 500 for it, 200 for the rest).
+  - **Dark Seal** (Undead, magic, Rare): 5 damage, 50 energy, 5-round cooldown. The target can't
+    swap out for 3 rounds, even if you swap. Dreadpox, Swamp Witch, Mr. Shadows, Flame Imp,
+    Dustwraith, Thunderhead.
+  - **Meditate** (Neutral, utility, Common): 0 energy, 3-round cooldown, +30 energy on top of the
+    usual 30. Anyone, Klutz too.
+  - **Healing Blessing** (Divine, utility, Uncommon): 40 energy, 3-round cooldown. Next round,
+    after swaps and before attacks, whoever is on your side of the field heals 60% of its max HP.
+    Thunderhead, Crystal Golem, Veilstalker, Flicker Wisp, Sylvaran.
+  - **Corrosive Soak** (Toxic, utility, Rare): 40 energy, no damage. The target's three defences
+    drop by 30% of their full value until it leaves the field; no stacking (the user's pick of
+    energy, duration and stacking). Bellow Toad, Rotgut Fly, Plague Rat, Glob, Deep Angler,
+    Dreadpox, Void Serpent, Hollow Matriarch.
+  - **Impale** (Underkin, ranged, Epic): 25 damage, 80 energy; 60% chance the target can't swap
+    out for 2 rounds. Deep Angler, Aurelius, Crystal Golem, Skull Raven, Sylvaran, The Pale Rider.
+    The old melee Impale (a Rare scan codex) is retired: an old codex of it is now this one, and a
+    creature that learned it keeps it only if it's on this list.
+  - **Pin Down** (Humanoid, ranged, Rare): 10 damage, 60 energy, 5-round cooldown; the target
+    can't swap out for 2 rounds, and 30% of the time a third. Thicket Archer, Aurelius, Skull
+    Raven, Sylvaran, Hollow Matriarch, Rotgut Fly.
+  - A sealed creature still gets replaced when it's knocked out: a seal only stops swaps.
 - ✅ **Move codexes** (decided 2026-10-19): every older move comes as a codex from scans, each
   teachable only to a creature of that move's style (race-kit codexes: below). Every codex says
   who can read it ("Underkin melee only", `codexLearners`) at the librarian, in the loot window
   and on the bookcase, and every move has a description (one without its own just says "A plain melee
   hit.": the user, 2026-10-27, doesn't want moves spelling out what they're strong against; the
   race chart is for that). Up to 20 damage (`BASIC_MOVES`, 15 moves)
-  they're Common; above that (`STRONG_MOVES`, 10 moves) they're Rare.
+  they're Common; above that (`STRONG_MOVES`, 9 moves) they're Rare.
 - ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a basic
   codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex. Rare
   is a strong codex or a Healing Potion, half each (`STRONG_CODEX_SHARE`). The Healing Potion is
   Rare everywhere now (it was Uncommon).
-- Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In, Meditate), once
-  a planned Cyclops reward.
+- Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In), once a planned
+  Cyclops reward. (Meditate is now a special move.)
 - ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.
 - ✅ **Enemies' moves scale with level** (the user, 2026-10-26; `enemyMoves`, `ENEMY_MOVE_LEVELS`
   in lib/dungeon/run.ts). From Lv 5 its empty fourth slot holds its race's heavy move; from Lv 12
@@ -346,10 +371,19 @@ How it came about, round by round: history.md.
   are `V2_RESTYLE` (main % moved to the new style, total unchanged). The Cave Bat is now the **Cave
   Goblin** (same id `cave_bat`). The Deep Angler is a melee Battlemage. The Deep Angler, Rotgut Fly
   and Dust Sprite PNGs are mirrored.
+- ✅ **The user's restyles (2026-10-27,** `RESTYLED_SPECIES`**):** Cave Goblin melee (Bruiser), Dust
+  Sprite magic (Arcanist), Amber Wasp melee (Bruiser) and Beast / Toxic, Crystal Golem melee +
+  magic (Battlemage), Tunnel Wyrm melee (Bulwark), Thunderhead magic + melee (Battlemage). 🧪 Their
+  new %s are Claude's: each one's attack %s add up to the same as before, moved to the new style
+  (hybrids split; Crystal Golem atk 20 / mag 14, Thunderhead mag 44 / atk 38). Ones players already
+  own move over once on load (`upgradeStyle`, `styleSet`): defence and agility rolls stay, the
+  roll's attack gain or loss goes on the new main style, and they go back to their new starting
+  moves (codex moves of the old style no longer fit).
 - ✅ **Archetypes** (`ARCHETYPE_INFO`, Claude's draft, approved): Bruiser, Bulwark (melee tank),
   Sniper, Skirmisher, Arcanist, Warden (magic tank), and hybrids Ranger (melee + ranged), Battlemage
   (melee + magic), Spellbow (ranged + magic). An archetype decides which style kits a creature draws
-  from. 4 of most, 3 Snipers, 5 Battlemages, 3 Spellbows.
+  from. Since the restyles: 6 Bruisers, 5 Bulwarks, 5 Arcanists, 7 Battlemages, 4 Rangers, and 2
+  each of Sniper, Skirmisher, Warden and Spellbow.
 - ✅ **Race kits** (lib/creatures/raceKitsV2.ts): per race and style, a 30 and a 50 energy move
   (15/25 damage), a quick attack (20 energy, 8 damage, always first) and a precise move (30 energy,
   15 damage, 70% to hit, always precise): 84 race moves (`KIT_RACE_MOVES`). Each style's 20-energy

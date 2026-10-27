@@ -51,7 +51,12 @@ export type MoveEffect =
   | { kind: "venom"; tick: number; minRounds: number; maxRounds: number } // share of max HP lost each round, even on the bench
   | { kind: "mirage"; evade: number; rounds: number } // self: chance to dodge each attack
   | { kind: "corpsify"; reviveHp: number }    // self: knocked out before the end of next round → back with this share of HP
-  | { kind: "barrage" };                      // hits every enemy on the field
+  | { kind: "barrage" }                       // hits every enemy on the field
+  // Special moves (SPECIAL_MOVES):
+  | { kind: "seal"; rounds: number; chance: number; extraChance?: number } // the target can't swap out for some rounds (extraChance: one round more)
+  | { kind: "meditate"; energy: number }      // self: extra energy back
+  | { kind: "blessing"; heal: number }        // self: next round, whoever is on the field heals this share of max HP
+  | { kind: "soak"; cut: number };            // the target's defences drop by this share until it leaves the field
 
 export type Skill = {
   name: string;
@@ -65,6 +70,8 @@ export type Skill = {
   cooldown?: number; // rounds before it can be used again
   race?: Race;       // a race move: its race (only that race can learn it, from a codex, unless learnRaces says otherwise)
   learnRaces?: Race[]; // a race move several races can learn (Rabid Bite)
+  learners?: string[]; // a special move only these species can learn (missing: anyone)
+  codexRarity?: "common" | "uncommon" | "rare" | "epic"; // a special move's codex rarity
 };
 
 // Every creature has one or two races (Combat V2, lib/creatures/racesV2.ts).
@@ -114,7 +121,6 @@ export const ALL_SKILLS: Skill[] = [
   { name: "Slash",         damage: 15, energyCost: 30, type: "melee",  dmgType: "pierce" },
   { name: "Hexblade",      damage: 15, energyCost: 30, type: "melee",  dmgType: "arcane" },
   { name: "Heavy Blow",    damage: 20, energyCost: 40, type: "melee",  dmgType: "force"  },
-  { name: "Impale",        damage: 25, energyCost: 50, type: "melee",  dmgType: "pierce" },
   { name: "Crush",         damage: 25, energyCost: 50, type: "melee",  dmgType: "force"  },
   { name: "Soul Rend",     damage: 25, energyCost: 50, type: "melee",  dmgType: "arcane" },
   { name: "Devastator",    damage: 40, energyCost: 80, type: "melee",  dmgType: "force"  },
@@ -168,6 +174,40 @@ export const RACE_MOVES: Skill[] = [
     desc: "A volley that hits every enemy on the field." },
 ];
 
+// Special moves (the user, 2026-10-27): each comes as a codex of its own
+// rarity, and only the species listed can read it (Meditate: anyone). Not
+// race-locked: the list is the user's pick. (The old melee Impale was
+// retired for the new one: an old Impale codex is now this one.)
+export const SPECIAL_MOVES: Skill[] = [
+  { name: "Dark Seal", damage: 5, energyCost: 50, type: "magic", dmgType: "force", race: "undead", codexRarity: "rare", cooldown: 5,
+    effect: { kind: "seal", rounds: 3, chance: 1 },
+    learners: ["dreadpox", "swamp_witch", "mr_shadows", "flame_imp", "dustwraith", "thunderhead"],
+    desc: "The target can't swap out for 3 rounds, even if you swap. 5-round cooldown." },
+  { name: "Meditate", damage: 0, energyCost: 0, type: "magic", dmgType: "force", codexRarity: "common", cooldown: 3, self: true,
+    effect: { kind: "meditate", energy: 30 },
+    desc: "Restores 30 extra energy. 3-round cooldown." },
+  { name: "Healing Blessing", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "divine", codexRarity: "uncommon", cooldown: 3, self: true,
+    effect: { kind: "blessing", heal: 0.6 },
+    learners: ["thunderhead", "crystal_golem", "veilstalker", "flicker_wisp", "sylvaran"],
+    desc: "Next round, whoever you have on the field heals 60% of its max HP before anyone attacks (stay, or swap in someone hurt). 3-round cooldown." },
+  { name: "Corrosive Soak", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "toxic", codexRarity: "rare",
+    effect: { kind: "soak", cut: 0.3 },
+    learners: ["bellow_toad", "rotgut_fly", "plague_rat", "glob", "deep_angler", "dreadpox", "void_serpent", "hollow_matriarch"],
+    desc: "The target's melee, ranged and magic defences drop by 30% until it leaves the field. Doesn't stack." },
+  { name: "Impale", damage: 25, energyCost: 80, type: "ranged", dmgType: "force", race: "underkin", codexRarity: "epic",
+    effect: { kind: "seal", rounds: 2, chance: 0.6 },
+    learners: ["deep_angler", "aurelius", "crystal_golem", "storm_phoenix", "sylvaran", "pale_rider"],
+    desc: "60% chance the target can't swap out for 2 rounds." },
+  { name: "Pin Down", damage: 10, energyCost: 60, type: "ranged", dmgType: "force", race: "humanoid", codexRarity: "rare", cooldown: 5,
+    effect: { kind: "seal", rounds: 2, chance: 1, extraChance: 0.3 },
+    learners: ["thicket_archer", "aurelius", "storm_phoenix", "sylvaran", "hollow_matriarch", "rotgut_fly"],
+    desc: "The target can't swap out for 2 rounds (30% chance of a third). 5-round cooldown." },
+];
+const SPECIAL_MOVE_NAMES = new Set(SPECIAL_MOVES.map((m) => m.name));
+export const isSpecialMove = (name: string) => SPECIAL_MOVE_NAMES.has(name);
+// Can this species read a special move's codex?
+const canLearnSpecial = (c: CreatureTemplate, m: Skill) => !m.learners || m.learners.includes(c.id);
+
 // Every move creatures are born with also comes as a codex (from scans), which
 // teaches it to a creature of the move's own class. Basic moves (up to this
 // much damage) are Common codexes; the stronger ones are Rare.
@@ -194,7 +234,7 @@ export const BOSS_MOVES: Skill[] = [
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
 // (With the race kits' moves, lib/creatures/raceKitsV2.ts, the moves creatures are born with.)
-export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RACE_MOVES, ...BOSS_MOVES, ...KIT_MOVES].map((m) => [m.name, m]));
+export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RACE_MOVES, ...BOSS_MOVES, ...KIT_MOVES, ...SPECIAL_MOVES].map((m) => [m.name, m]));
 // (A retired kit light move, still in some saves, finds its Balanced move.)
 for (const [old, now] of Object.entries(RETIRED_KIT_MOVES)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
 
@@ -209,6 +249,7 @@ for (const m of Object.values(MOVE_BY_NAME)) if (!m.desc && !m.self && !BOSS_MOV
 // in its race's colour (grey: any creature).
 export function codexLearners(moveName: string): { text: string; color: string } {
   const m = MOVE_BY_NAME[moveName];
+  if (m?.learners) return { text: `${m.learners.length} creatures only`, color: m.race ? RACE_INFO[m.race].color : BALANCED_INFO.color };
   const races = m ? learnRacesOf(m) : [];
   if (races.length) return { text: `${races.map((r) => RACE_INFO[r].name).join(" / ")} only`, color: RACE_INFO[races[0]].color };
   const kit = KIT_MOVE_RACE[moveName];
@@ -381,6 +422,7 @@ export const renamedMove = (name: string) => RENAMED_MOVES[name] ?? name;
 // creatures of that move's class (a neutral one, Klutz: any class,
 // but no race moves).
 export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
+  if (isSpecialMove(moveName)) return canLearnSpecial(c, MOVE_BY_NAME[moveName]);
   if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
   if (c.neutral && RACE_MOVES.some((m) => m.name === moveName)) return false;
   return [...raceMovesFor(c), ...classMovesFor(c), ...c.skills].some((m) => m.name === moveName);
@@ -399,7 +441,7 @@ export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], ow
 // dropped; an empty selection falls back to the defaults. (Race and class
 // codex moves are only offered once learned, so a saved one is trusted here.)
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
-  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES].map((m) => m.name));
+  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES, ...SPECIAL_MOVES.filter((m) => canLearnSpecial(c, m))].map((m) => m.name));
   const picked = [...new Set((names ?? []).map(currentMoveName))].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   // A species' own moves first: Combat V2's kit moves aren't in MOVE_BY_NAME.
   const moves = (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => c.skills.find((m) => m.name === n) ?? MOVE_BY_NAME[n]);

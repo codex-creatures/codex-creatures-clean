@@ -13,7 +13,7 @@ import { useState } from "react";
 import CodexMove from "./CodexMove";
 import { MoveTile } from "./MoveTile";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
-import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, codexLearners, findCreatureTemplate, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
+import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, codexLearners, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
 import { KIT_MOVE_RACE } from "@/lib/creatures/raceKitsV2";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
@@ -50,7 +50,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
   const why = (x: CreatureOrItemDrop) => {
     const t = findCreatureTemplate(x.creatureId, x.name);
     if (!t || !move) return "Can't learn it";
-    if (!canLearnFromCodex(t, move)) return raceLocked ? "Wrong race" : KIT_MOVE_RACE[move] ? "Not its kit" : "Wrong style";
+    if (!canLearnFromCodex(t, move)) return isSpecialMove(move) ? "Not on its list" : raceLocked ? "Wrong race" : KIT_MOVE_RACE[move] ? "Not its kit" : "Wrong style";
     if (x.learned?.includes(move) || slotsOf(x).includes(move)) return "Knows it";
     return undefined;
   };

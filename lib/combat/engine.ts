@@ -58,6 +58,7 @@ export type Fighter = {
   hpMult?: number; // its HP was multiplied (an encampment's potion-drunk foes): arcane's cap grows with it
   gentle?: boolean; // its hits never knock anyone out (they leave 1 HP): the guided first fight's thief
   races?: RaceV2[]; // Combat V2 races (lib/creatures/racesV2.ts): only count when the rules' races are on
+  defenceCut?: number; // share of its defences lost (Corrosive Soak), until it leaves the field
 };
 
 export type TurnLog = {
@@ -167,9 +168,9 @@ export function effectiveStats(f: Fighter) {
     rng:    withProf(f.weapon.rng,  f.proficiency.rng),
     mag:    withProf(f.weapon.mag ?? 0, f.proficiency.mag),
     agil:   withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil),
-    mdef:   withProf(f.armor.mdef,  f.proficiency.mdef),
-    rdef:   withProf(f.armor.rdef,  f.proficiency.rdef),
-    magdef: withProf(f.armor.magdef ?? 0, f.proficiency.magdef),
+    mdef:   withProf(f.armor.mdef,  f.proficiency.mdef) * (1 - (f.defenceCut ?? 0)),
+    rdef:   withProf(f.armor.rdef,  f.proficiency.rdef) * (1 - (f.defenceCut ?? 0)),
+    magdef: withProf(f.armor.magdef ?? 0, f.proficiency.magdef) * (1 - (f.defenceCut ?? 0)),
   };
 }
 
@@ -183,7 +184,8 @@ export function calcDamage(
   preciseIgnore = PRECISE_IGNORE, // share of defence a precise hit ignores
   roll = 1,
 ): { damage: number; braceBlocked: boolean; braceFailed: boolean } {
-  if (isBraceSkill(skill)) {
+  // A move with no damage (Corrosive Soak, the utility moves) does none.
+  if (isBraceSkill(skill) || skill.damage <= 0) {
     return { damage: 0, braceBlocked: false, braceFailed: false };
   }
 
@@ -216,7 +218,7 @@ export function calcDamage(
 
   // Armour defence counts at ARMOR_DEFENCE_WEIGHT. Penetration and precise
   // hits each ignore a share of what's left.
-  const effectiveDef   = withProf(defender.armor[defKey] ?? 0, defender.proficiency[defKey]) * ARMOR_DEFENCE_WEIGHT;
+  const effectiveDef   = withProf(defender.armor[defKey] ?? 0, defender.proficiency[defKey]) * ARMOR_DEFENCE_WEIGHT * (1 - (defender.defenceCut ?? 0));
   const defenseApplied = effectiveDef * (1 - dmgType.pen) * (precise ? 1 - preciseIgnore : 1);
 
   // Attack against defence as a ratio: defence always cuts damage, but a hit
