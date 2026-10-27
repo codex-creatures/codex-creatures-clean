@@ -49,7 +49,11 @@ const TABS: [Tab, string][] = [["combat", "⚔️ How fights work"], ["creatures
 export default function GuidePage() {
   const [tab, setTab] = useState<Tab>("combat");
   const game = useGameState();
-  const seen = game.seenIds;
+  // Reveal all: for reference while designing (shows every creature as seen;
+  // only on this screen, nothing is saved).
+  const [reveal, setReveal] = useState(false);
+  const all = useMemo(() => new Set(CREATURE_TEMPLATES.map((t) => t.id)), []);
+  const seen = reveal ? all : game.seenIds;
   return (
     <DenFrame title="Bestiary & Rules" icon="📜">
       <p style={{ color: MUTED, fontSize: 13, margin: "0 0 10px" }}>
@@ -57,6 +61,7 @@ export default function GuidePage() {
       </p>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {TABS.map(([k, label]) => <button key={k} className="chip" data-active={tab === k} onClick={() => setTab(k)}>{label}</button>)}
+        <button className="chip" data-active={reveal} onClick={() => setReveal((v) => !v)} title="Show every creature, as if you'd seen them all (not saved)">👁️ Reveal all</button>
       </div>
       {tab === "combat" && <Combat />}
       {tab === "creatures" && <Creatures seen={seen} />}

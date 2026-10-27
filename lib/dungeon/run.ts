@@ -59,6 +59,9 @@ export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "che
   | "encampment" | "library" | "storehouse"; // (the large rooms: LARGE_MIX)
 
 // ── The dungeons ─────────────────────────────────────────────────────
+// 0: the Encampment, a new player's first labyrinth (the user, 2026-10-27):
+// CAMP_ROUTE rooms to the top, where a camp's chief guards the cages (see
+// campCages). The Labyrinth opens once you've beaten it (labyrinthOpen).
 // 1: the Labyrinth (the Cyclops at the top). 2: the Deep Labyrinth, open
 // once you've beaten the Cyclops: a longer climb (DEEP_ROUTE rooms to the
 // lair), tougher and higher-level creatures, and the Warden's pack waiting
@@ -66,8 +69,8 @@ export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "che
 // Labyrinth again (the same climb, the same Warden's pack), only with
 // higher-level creatures in rarer gear (the user, 2026-10-26). Enemy levels
 // rise with depth (enemyLevel).
-export type DungeonId = 1 | 2 | 3;
-export const DUNGEON_IDS: DungeonId[] = [1, 2, 3];
+export type DungeonId = 0 | 1 | 2 | 3;
+export const DUNGEON_IDS: DungeonId[] = [0, 1, 2, 3];
 export const DEEP_ROUTE = 15;
 export type DungeonInfo = {
   name: string;
@@ -87,6 +90,10 @@ export const STEP_UP = 0.2;
 export type Foe = [creature: Rarity, gear: Rarity, stepUp: number];
 export type FoeBand = { upTo: number; easy: Foe; hard: Foe; camp: Foe; miniboss: Foe };
 export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
+  // Rooms 1–4 are dens and stashes (campRoomKind), the camp's chief at the top.
+  0: { name: "The Encampment", spec: { h: 170, rooms: 11, minRoute: 5, maxRoute: 5, large: 0 },
+       foes: [{ upTo: Infinity, easy: ["common", "common", 0], hard: ["common", "common", 0], camp: ["uncommon", "common", 0], miniboss: ["uncommon", "common", 0] }],
+       levels: [[Infinity, 1, 4]], maxLevel: 5, goldScale: 1 },
   1: { name: "The Labyrinth", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 },
        foes: [
          { upTo: 3,        easy: ["common", "common", 0],       hard: ["uncommon", "uncommon", STEP_UP], camp: ["uncommon", "uncommon", 0], miniboss: ["rare", "rare", 0] },
@@ -137,7 +144,7 @@ export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rn
   if (kind === "boss") return bossLevel(dungeon);
   const d = Number.isFinite(depth) ? depth : Infinity;
   const [, min, max] = D.levels.find(([upTo]) => d <= upTo) ?? D.levels[D.levels.length - 1];
-  const den = dungeon === 1 && d <= FIRST_ROOMS ? weighted(FIRST_ROOM_LEVELS, rng) : min + Math.floor(rng() * (max - min + 1));
+  const den = dungeon <= 1 && d <= FIRST_ROOMS ? weighted(FIRST_ROOM_LEVELS, rng) : min + Math.floor(rng() * (max - min + 1));
   const bump = kind === "hard" ? HARD_LEVELS : kind === "miniboss" || kind === "storehouse" ? MINIBOSS_LEVELS : 0;
   return Math.min(D.maxLevel, den + bump);
 }
@@ -150,7 +157,45 @@ export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rn
 export const MINIBOSS_FROM = 7;
 export const FIRST_ROOM_DENS = 0.9;
 export const FIRST_ROOM_LEVELS: [number, number][] = [[1, 60], [2, 25], [3, 15]];
-export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon !== 1 || depth >= MINIBOSS_FROM;
+export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon > 1 || depth >= MINIBOSS_FROM;
+
+// The Encampment (dungeon 0; the user, 2026-10-27). Sims: scripts/sim-encampment.ts.
+// - Its first rooms ease you in like the Labyrinth's (FIRST_ROOMS, FIRST_ROOM_LEVELS, LIGHT_GEAR).
+// - Rooms 1–4 are creature dens, or a stash CAMP_STASH of the time, never two stashes in a row.
+// - At the top, the camp's chief: an Uncommon in Common gear, Lv CAMP_CHIEF_LEVEL. (Sim: a lone
+//   starter in Klutz's gear, spamming its race move, first wins on run 4 or so: 55% by run 4.)
+// - Beaten the first time, it guards CAMP_CAGES cages, each a Common or Uncommon (even odds) at
+//   Lv CAMP_CAGE_LEVELS, of no race your party has, so you've a team of 3. After that, one cage
+//   with a creature in it CAMP_REPEAT_CHANCE of the time.
+// - The Labyrinth opens once you've beaten it, or scanned LABYRINTH_SCANS barcodes.
+export const CAMP_ROUTE = 5;
+export const CAMP_STASH = 0.5;
+export const CAMP_CHIEF_LEVEL = 5;
+export const CAMP_CAGES = 2;
+export const CAMP_CAGE_LEVELS: [number, number] = [2, 4];
+export const CAMP_REPEAT_CHANCE = 0.2;
+export const LABYRINTH_SCANS = 25;
+// (Anyone who'd already beaten the Cyclops keeps the way in.)
+export const labyrinthOpen = (meta: DungeonMeta, scans: number) =>
+  (meta.campClears ?? 0) > 0 || meta.clears > 0 || scans >= LABYRINTH_SCANS;
+// A room on the way up: no two stashes in a row (lastStash: the room before was one).
+export const campRoomKind = (lastStash: boolean, rng: Rng = Math.random): RoomKind => (!lastStash && rng() < CAMP_STASH ? "stash" : "easy");
+
+// The chief's cages (rolled as the run starts). first: you've never beaten it. avoid: your party's races.
+export function campCages(first: boolean, avoid: readonly string[], rng: Rng = Math.random): Cage[] {
+  if (!first) return [rng() < CAMP_REPEAT_CHANCE ? campCreature(avoid, [], rng) : {}];
+  const cages: Cage[] = [];
+  for (let i = 0; i < CAMP_CAGES; i++) cages.push(campCreature(avoid, cages.flatMap((c) => (c.creatureId ? [c.creatureId] : [])), rng));
+  return cages;
+}
+function campCreature(avoid: readonly string[], taken: string[], rng: Rng): Cage {
+  const rarity: Rarity = rng() < 0.5 ? "common" : "uncommon";
+  const fits = (t: CreatureTemplate) => !t.boss && !taken.includes(t.id) && !(SPECIES_RACES[t.id] ?? []).some((r) => avoid.includes(r));
+  // (Should every race be taken, any creature of the rarity.)
+  const pool = CREATURES_BY_RARITY[rarity].filter(fits);
+  const t = pick(pool.length > 0 ? pool : CREATURES_BY_RARITY[rarity], rng);
+  return { creatureId: t.id, level: randInt(...CAMP_CAGE_LEVELS, rng) };
+}
 
 // How often each kind of room appears on the map (every row but the boss's), in %.
 export const ROOM_MIX: [RoomKind, number][] = [
@@ -423,7 +468,8 @@ export const ENCAMP_GOLD: [number, number] = [60, 100];
 export const ENCAMP_CAGES: [number, number] = [1, 3];
 export const CAGE_CREATURE_CHANCE = 0.5;
 // A cage in an encampment: maybe a creature (rolled like a scan), until you open it.
-export type Cage = { creatureId?: string; opened?: boolean };
+// level: the creature's level (missing = 1).
+export type Cage = { creatureId?: string; level?: number; opened?: boolean };
 export const LIBRARY_FIND = 0.75;
 export const LIBRARY_CODEXES: [number, number] = [1, 3];
 export const LIBRARY_BOOKS = 5;
@@ -783,7 +829,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
   // (Lighter-armed early in the Labyrinth, bar mini bosses: LIGHT_GEAR.)
   const foe = (k: "easy" | "hard" | "camp" | "miniboss", others: Enemy[] = []) => {
     const e = makeEnemy(...foeAt(dungeon, k, depth, rng), others.map((e) => e.creatureId), rng, level);
-    return dungeon === 1 && k !== "miniboss" ? lightenGear(e, depth, rng) : e;
+    return dungeon <= 1 && k !== "miniboss" && !(dungeon === 0 && k === "camp") ? lightenGear(e, depth, rng) : e;
   };
   switch (kind) {
     case "treasure":
@@ -794,7 +840,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       const enemies: Enemy[] = [];
       for (let i = 0; i < size; i++) enemies.push(foe("easy", enemies));
       if (rng() < UPGRADE_CHANCE) upgradeAndDrop(enemies, rng);
-      return { kind, enemies, level: dungeon === 1 ? "easy" : "normal", gold: gold(EASY_GOLD), done: false };
+      return { kind, enemies, level: dungeon <= 1 ? "easy" : "normal", gold: gold(EASY_GOLD), done: false };
     }
     case "hard": {
       // A single brute: Uncommon early on, then a Rare in Rare gear (an Epic in the Deep Labyrinth).
@@ -823,6 +869,11 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     case "merchant":
       return { kind, wares: rollWares(rng, backpack), bought: [], done: false };
     case "encampment": {
+      // The Encampment's top room: its chief, alone, guarding the cages (put in as you walk in: enterRoom).
+      if (dungeon === 0) {
+        const chief = makeEnemy(...foeAt(0, "camp", depth, rng), [], rng, CAMP_CHIEF_LEVEL);
+        return { kind, variant: "plain", enemies: [chief], cages: [], level: "hard", gold: gold(MINIBOSS_GOLD), done: false };
+      }
       const variant = pick(ENCAMP_VARIANTS, rng);
       const size = variant === "ambush" ? ENCAMP_AMBUSHERS : randInt(...ENCAMP_SIZE, rng);
       const enemies: Enemy[] = [];
@@ -913,11 +964,16 @@ export type DungeonRun = {
   scrollLooks?: number;        // times the Scroll button was used (missing = 0; see SCROLL_LOOKS)
   status: RunStatus;
   bindle?: boolean;            // you set out on the bindle: merchants and storehouses have the backpack
+  campCages?: Cage[];          // the Encampment: its chief's cages (campCages)
 };
+
+// The room at the top: the boss's lair, or the Encampment's camp. Finishing it ends the run, cleared.
+export const atTheTop = (run: DungeonRun) => run.current?.kind === "boss" || (dungeonOf(run) === 0 && run.current?.kind === "encampment");
 
 // dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts: wantsStorehouse).
 // bindle: you're still on the bindle (see onBindle).
-export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1, dynamite = false, bindle = false): DungeonRun {
+// cages: the Encampment's (campCages).
+export function startRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, rng: Rng = Math.random, dungeon: DungeonId = 1, dynamite = false, bindle = false, cages?: Cage[]): DungeonRun {
   // The very first run opens in a treasure room; otherwise at an empty entrance.
   const first = runNumber === 1 && dungeon === 1;
   const map = rollMap(first, rng, DUNGEONS[dungeon].spec, dungeon, dynamite);
@@ -928,7 +984,7 @@ export function startRun(party: string[], team: string[], hp: Record<string, num
     path: [map.start],
     cleared: first ? [] : [map.start],
     current: first ? makeRoom("treasure", rng) : null,
-    loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}),
+    loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}), ...(cages ? { campCages: cages } : {}),
   };
 }
 
@@ -966,7 +1022,8 @@ export function enterRoom(run: DungeonRun, nodeId: string, rng: Rng = Math.rando
   if (run.status !== "exploring") return run;
   const node = nextRooms(run).find((n) => n.id === nodeId);
   if (!node) return run;
-  const room = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run), !!run.bindle);
+  const rolled = makeRoom(node.kind, rng, routeLength(run.map, node.id), dungeonOf(run), !!run.bindle);
+  const room = dungeonOf(run) === 0 && node.id === run.map.boss ? { ...rolled, cages: run.campCages ?? [] } : rolled;
   return { ...run, path: [...run.path, node.id], current: node.dynamite ? { ...room, dynamite: true } : room, room: run.room + 1 };
 }
 
@@ -988,7 +1045,7 @@ export const canMoveOn = (run: DungeonRun) =>
 
 // Take a tunnel: finish this room and walk into the next.
 export function moveOn(run: DungeonRun, nodeId: string, rng: Rng = Math.random): DungeonRun {
-  if (!canMoveOn(run) || run.current?.kind === "boss") return run;
+  if (!canMoveOn(run) || atTheTop(run)) return run;
   const next = enterRoom(leaveRoom(run), nodeId, rng);
   return next.path.length > run.path.length ? next : run;
 }
@@ -996,7 +1053,7 @@ export function moveOn(run: DungeonRun, nodeId: string, rng: Rng = Math.random):
 // The current room is finished: it's cleared, and you choose where to go.
 export function leaveRoom(run: DungeonRun): DungeonRun {
   if (!run.current) return run;
-  if (run.current.kind === "boss") return { ...run, current: { ...run.current, done: true }, status: "cleared", battle: undefined };
+  if (atTheTop(run)) return { ...run, current: { ...run.current, done: true }, status: "cleared", battle: undefined };
   return { ...run, current: null, battle: undefined, cleared: [...new Set([...run.cleared, runPosition(run)])] };
 }
 
@@ -1066,6 +1123,8 @@ export type DungeonMeta = {
   abyssRuns?: number;                // the Abyss: runs started…
   abyssClears?: number;              // …and its Warden beaten
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
+  campRuns?: number;                 // the Encampment: runs started…
+  campClears?: number;               // …and its chief beaten
 };
 
 // ── The healing pool (in the Den) ──────────────────────────────────
@@ -1142,6 +1201,9 @@ export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
     else delete injuries[id];
   }
   const cleared = run.status === "cleared";
+  if (dungeonOf(run) === 0) {
+    return { meta: { ...save.meta, injuries, campClears: (save.meta.campClears ?? 0) + (cleared ? 1 : 0) }, run: null };
+  }
   if (dungeonOf(run) === 2) {
     return { meta: { ...save.meta, injuries, deepClears: (save.meta.deepClears ?? 0) + (cleared ? 1 : 0) }, run: null };
   }

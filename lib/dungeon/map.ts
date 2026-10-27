@@ -33,7 +33,7 @@
 //   your torch (see knownRooms: lit and seen). A flare burns brighter than
 //   a torch: it lights FLARE_RADIUS round you, so you see a few rooms on.
 
-import { MYSTERY_MIX, ROOM_MIX, LARGE_MIX, rollRoomKind, minibossAllowed, FIRST_ROOMS, FIRST_ROOM_DENS, type RoomKind, type DungeonId } from "./run";
+import { MYSTERY_MIX, ROOM_MIX, LARGE_MIX, rollRoomKind, minibossAllowed, campRoomKind, FIRST_ROOMS, FIRST_ROOM_DENS, type RoomKind, type DungeonId } from "./run";
 
 export const MAP_W = 140;
 export const MAP_H = 500;
@@ -196,9 +196,17 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   // The Labyrinth's gentle start (MINIBOSS_FROM, FIRST_ROOM_DENS in run.ts):
   // its first rooms are nearly all creature dens, and no mini boss lurks early.
   const roomDepth = depths(map);
-  for (const n of Object.values(map.nodes)) {
+  // (From the bottom up: each of the Encampment's rooms looks at the ones behind it.)
+  const bottomUp = dungeon === 0 ? Object.values(map.nodes).sort((a, b) => b.y - a.y) : Object.values(map.nodes);
+  for (const n of bottomUp) {
     const d = roomDepth.get(n.id) ?? Infinity;
-    if (n.id === map.boss) n.kind = "boss";
+    // The Encampment (dungeon 0): dens and stashes, never two stashes in a row, the camp at the top.
+    if (dungeon === 0 && n.id === map.boss) Object.assign(n, { kind: "encampment", large: true });
+    else if (n.id === map.boss) n.kind = "boss";
+    else if (dungeon === 0 && n.id !== map.start) {
+      const behind = n.links.filter((l) => isAhead(map.nodes[l], n)).map((l) => map.nodes[l]);
+      n.kind = campRoomKind(behind.some((b) => b.kind === "stash"), rng);
+    }
     else if (n.id === map.start) n.kind = firstRun ? "treasure" : "entrance";
     else {
       const mystery = rng() < MYSTERY_CHANCE;

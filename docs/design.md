@@ -388,7 +388,23 @@ How it came about, round by round: history.md.
 
 - ✅ A run is a climb up a **scroll map**: you plan a route and partly see rooms ahead. The first
   step is blind. Rooms can repeat. (lib/dungeon/run.ts, map.ts)
-- ✅ **Three dungeons** (`DUNGEONS`):
+- ✅ **Four dungeons** (`DUNGEONS`):
+  - **The Encampment** (dungeon 0; the user, 2026-10-27): a new player's first labyrinth, after
+    Klutz's box. 5 rooms you walk into (`CAMP_ROUTE`): rooms 1–4 are creature dens, or a stash
+    half the time (`CAMP_STASH`), never two stashes in a row; no mysteries. Its first rooms ease you
+    in like the Labyrinth's (below). Room 5 is the camp: its **chief**, an Uncommon in Common gear,
+    Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest. Beaten the first time, it guards
+    2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
+    has, so you've a team of 3 for the Labyrinth. After that, one cage with a creature in it 20% of
+    the time (`CAMP_REPEAT_CHANCE`). Always free.
+    - The **Labyrinth opens** once you've beaten it, or scanned 25 barcodes (`LABYRINTH_SCANS`,
+      `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
+      entrance shows it locked.
+    - Sims (`scripts/sim-encampment.ts`: a lone Rare starter in the best of Klutz's box, spamming
+      its race move, no scans or pickups): first win median run 3–4, 59% by run 4, 13% not by run
+      12 (levelling is slow, so a bad starter or box can stall; Dustwraith and Crystalback suffer
+      most). Then, with the two cage creatures in the box's leftovers, 87% of runs get through the
+      Labyrinth's rooms 1–5 (a brute beats you 16% of the time, the chief ~70%); ungeared, 66%.
   - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
   - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies
     up to Lv 17, boss the **Warden's pack** (a Legendary plus 2 Epic guards).
@@ -406,7 +422,7 @@ How it came about, round by round: history.md.
     high reward. Don't soften them.
 - ✅ **Dens scale with depth** (the user's fix after progression sims): the first 2 rooms hold 1
   creature, up to depth 4 hold 1–2, deeper hold 2–3.
-- ✅ **Gentle start, the Cyclops' Labyrinth only** (the user, 2026-10-19, as the game felt too hard
+- ✅ **Gentle start, the Encampment's and the Cyclops' Labyrinth's** (the user, 2026-10-19, as the game felt too hard
   without scanned gear): no mini boss (nor a guarded storehouse) before room 7 (`MINIBOSS_FROM`);
   the first 2 rooms are creature dens 90% of the time (`FIRST_ROOM_DENS`, otherwise a room with
   no fight), their creatures Lv 1 60% / Lv 2 25% / Lv 3 15% (`FIRST_ROOM_LEVELS`).

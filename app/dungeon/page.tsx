@@ -57,6 +57,7 @@ import {
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, gearOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, CYCLOPS_LEVEL, bossLevel, DUNGEON_IDS, type DungeonId,
+  campCages, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE,
   needsSlot, nextToTake, dropRank, sackRank, isRareFind, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats,
   dynamiteHere, takeDynamite,
   SCROLL_LOOKS, scrollLooksLeft,
@@ -82,7 +83,7 @@ const GOLD = "#f5c542";
 // Every Labyrinth screen keeps to one phone-sized column (the room picture is
 // 518px; with the page's padding), so nothing jumps about from room to room.
 const COLUMN = 552;
-const DUNGEON_ICONS: Record<DungeonId, string> = { 1: "🌀", 2: "🕳️", 3: "🌑" };
+const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑" };
 
 function combatLine(f: Parameters<typeof combatSummary>[0]): string {
   const s = combatSummary(f);
@@ -342,13 +343,22 @@ export default function DungeonPage() {
   // ── Starting and ending runs ──────────────────────────────────────
   function begin(party: string[], dungeon: DungeonId = 1) {
     if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
-    const deep = dungeon !== 1;
-    const free = !deep && lab.meta.runs < FREE_RUNS;
+    const deep = dungeon > 1;
+    // (The Encampment is always free.)
+    const free = dungeon === 0 || (!deep && lab.meta.runs < FREE_RUNS);
     if (!free && !game.spendGold(ENTRY_FEE)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
     const team = party.slice(0, TEAM_SIZE).filter((id) => hp[id] > 0);
     // Klutz's dynamite quest: the large room is its storehouse (lib/tavern.ts).
     const dynamite = wantsStorehouse(loadTavern());
+    if (dungeon === 0) {
+      const n = (lab.meta.campRuns ?? 0) + 1;
+      // Its chief's cages: two creatures of races your party hasn't got, the first time.
+      const races = party.flatMap((id) => byId(id)?.template.races ?? []);
+      const cages = campCages((lab.meta.campClears ?? 0) === 0, races);
+      update({ meta: { ...lab.meta, campRuns: n }, run: startRun(party, team, hp, n, Math.random, 0, false, onBindle(lab.meta), cages) });
+      return;
+    }
     if (dungeon === 3) {
       const n = (lab.meta.abyssRuns ?? 0) + 1;
       update({ meta: { ...lab.meta, abyssRuns: n }, run: startRun(party, team, hp, n, Math.random, 3, dynamite, onBindle(lab.meta)) });
@@ -520,7 +530,7 @@ export default function DungeonPage() {
     }
     if (hasFight(room) && !room.done) return; // beat them first
     const t = cage.creatureId ? CREATURE_BY_ID[cage.creatureId] : undefined;
-    const creature = t ? makeCreatureDrop(t, "creature", "") : undefined;
+    const creature = t ? { ...makeCreatureDrop(t, "creature", ""), ...(cage.level ? { level: cage.level, xp: 0 } : {}) } : undefined;
     if (creature) game.addDrop(creature);
     if (creature) setNotes((n) => [...n, `🔓 A ${t!.name} creeps out of the cage — it's yours!`]);
     else setNotes((n) => [...n, "🔓 The cage is empty."]);
@@ -914,7 +924,7 @@ export default function DungeonPage() {
     const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
     // A boss's chest (the Cyclops', the Warden's strongbox): gear, codexes and potions as well as its gold.
     if (room.kind === "boss") sack.push(...cyclopsChest());
-    const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded);
+    const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded) || (dungeonOf(r) === 0 && room.kind === "encampment");
     // A mini boss's chest: potions (and now and then a clairvoyance scroll, or the cage schematic).
     if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan()));
     // Mini boss and boss chests sometimes hold an XP scroll.
@@ -939,7 +949,7 @@ export default function DungeonPage() {
 
   // fill: the content gets the whole screen (a battle); dock: built into the bottom of the screen.
   const frame = (children: React.ReactNode, opts: { fill?: boolean; dock?: React.ReactNode } = {}) => (
-    <DenFrame title={run?.dungeon ? DUNGEONS[run.dungeon].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}
+    <DenFrame title={run ? DUNGEONS[dungeonOf(run)].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}
       backLocked={denLocked ? (battle.match && !battle.match.state.winner ? "Not mid-fight" : "Deal with this room first") : undefined}
       onBack={!run || leaving ? undefined : run.status === "dead" || run.status === "retreated" ? leaveRun : () => setLeaveAsk(true)}>
       <Shaker shake={shake} fill={opts.fill}>{children}</Shaker>
@@ -960,7 +970,7 @@ export default function DungeonPage() {
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
 
   if (!run) {
-    return frame(<Entrance lab={lab} owned={owned} gold={game.gold} full={fullBoxes(game.inventory, game.storage)} onBegin={begin} onHeal={healAll} />);
+    return frame(<Entrance lab={lab} owned={owned} gold={game.gold} full={fullBoxes(game.inventory, game.storage)} quest={wantsClub(game.quest) || wantsThief(game.quest)} scans={game.totalScans} onBegin={begin} onHeal={healAll} />);
   }
 
 
@@ -973,7 +983,7 @@ export default function DungeonPage() {
         <BattleView
           battle={battle}
           showEstimates={lab.meta.clears === 0}
-          raceChart={dungeonOf(run) === 1}
+          raceChart={dungeonOf(run) <= 1}
           bag={bagForBattle(lab.meta.bag ?? [])}
           onUseItem={useFromBag}
           finishedActions={over && (
@@ -1212,17 +1222,22 @@ export default function DungeonPage() {
 }
 
 // ── The entrance: choose your party ─────────────────────────────────
-function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
-  lab: DungeonSave; owned: OwnedCreature[]; gold: number; full: CappedBox[]; onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void;
+// quest: Klutz's box is still to fetch (the quest's short run, in the Labyrinth). scans: barcodes scanned.
+function Entrance({ lab, owned, gold, full, quest, scans, onBegin, onHeal }: {
+  lab: DungeonSave; owned: OwnedCreature[]; gold: number; full: CappedBox[]; quest: boolean; scans: number; onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void;
 }) {
   const [party, setParty] = useState<string[]>(() =>
     owned.filter((c) => c.roster && (lab.meta.injuries[c.id] ?? 1) > 0).slice(0, PARTY_SIZE).map((c) => c.id));
   // The Deep Labyrinth opens once you've beaten the Cyclops.
   const deepOpen = lab.meta.clears > 0;
-  // …and the Abyss once you've beaten the Warden.
-  const open = DUNGEON_IDS.filter((d) => d === 1 || (d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0));
-  const [dungeon, setDungeon] = useState<DungeonId>(1);
-  const free = dungeon === 1 && lab.meta.runs < FREE_RUNS;
+  // The Labyrinth opens once you've beaten the Encampment (or scanned plenty: labyrinthOpen);
+  // until then it's shown, locked. The Abyss opens once you've beaten the Warden.
+  const labOpen = labyrinthOpen(lab.meta, scans);
+  const open = DUNGEON_IDS.filter((d) => d <= 1 || (d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0));
+  const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
+  // (The quest's run is in the Labyrinth.)
+  const dungeon: DungeonId = quest ? 1 : picked === 1 && !labOpen ? 0 : picked;
+  const free = dungeon === 0 || (dungeon === 1 && lab.meta.runs < FREE_RUNS);
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
   const canPay = free || gold >= ENTRY_FEE;
 
@@ -1232,14 +1247,17 @@ function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
 
   return (
     <>
-      {deepOpen && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      {!quest && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
           {open.map((d) => (
-            <button key={d} className="card-btn" onClick={() => setDungeon(d)}
-              style={{ flex: 1, display: "block", textAlign: "center", borderColor: dungeon === d ? "#f1d9a0" : undefined, background: dungeon === d ? "rgba(241,217,160,0.1)" : undefined }}>
-              <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
+            <button key={d} className="card-btn" onClick={() => setDungeon(d)} disabled={d === 1 && !labOpen}
+              title={d === 1 && !labOpen ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : undefined}
+              style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: d === 1 && !labOpen ? 0.5 : 1, borderColor: dungeon === d ? "#f1d9a0" : undefined, background: dungeon === d ? "rgba(241,217,160,0.1)" : undefined }}>
+              <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 && !labOpen ? "🔒" : DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
               <span style={{ display: "block", fontSize: 12, color: MUTED }}>
-                {d === 1 ? `The Cyclops · creatures Lv 1–${DUNGEONS[1].maxLevel}` : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel} · the Warden`}
+                {d === 0 ? `${CAMP_ROUTE} rooms · its chief, Lv ${DUNGEONS[0].maxLevel} · free${lab.meta.campClears ? ` · beaten ${lab.meta.campClears}×` : ""}`
+                  : d === 1 ? (labOpen ? `The Cyclops · creatures Lv 1–${DUNGEONS[1].maxLevel}` : "Beat the Encampment first")
+                  : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel} · the Warden`}
                 {d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : d === 3 ? ` · beaten ${lab.meta.abyssClears ?? 0}×` : ""}
               </span>
             </button>
@@ -1320,7 +1338,7 @@ function Entrance({ lab, owned, gold, full, onBegin, onHeal }: {
       )}
 
       <button onClick={() => onBegin(party, dungeon)} disabled={party.length === 0 || !canPay || full.length > 0} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        {dungeon === 1 ? "🌀 Enter the labyrinth" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
+        {dungeon === 1 ? "🌀 Enter the labyrinth" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {dungeon === 0 ? "(free)" : free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
       </button>
       {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
         Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
@@ -1403,7 +1421,8 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
   const clubShut = room.quest === "club" && !!room.sack && !room.opened;
   const clubLeft = room.quest === "club" && !!room.opened && (room.sack ?? []).some((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
   const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
-  const next = room.kind === "boss" ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
+  const top = room.kind === "boss" || (dungeonOf(run) === 0 && room.kind === "encampment");
+  const next = top ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
     : room.quest === "thief" ? (room.boxTaken ? (
       <div style={{ marginTop: 12 }}>
         <p style={{ fontSize: 14, color: "#f1d9a0", fontStyle: "italic", margin: "0 0 10px" }}>
@@ -1591,7 +1610,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
       )}
 
       {hasFight(room) && room.done && fightLoot}
-      {hasFight(room) && (room.done ? (room.kind === "encampment" ? onward : next) : (
+      {hasFight(room) && (room.done ? (room.kind === "encampment" && !top ? onward : next) : (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 10px" }}>
             {room.quest === "thief" && "There it is: a Baby Cyclops, hunched over a battered box, picking through Klutz's weapons. Klutz ducks behind you: “Oi! That's mine! Go on — you fight, I'll tell you what to do.”"}
@@ -1600,7 +1619,8 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
             {room.kind === "miniboss" && "Something big has made this room its lair. One creature — but a Rare one, well armed, and it fights smart. Its chest is worth it."}
             {room.kind === "storehouse" && "Crates and barrels to the rafters — and something big has made its lair among them. Beat it and the stores are yours."}
             {room.kind === "encampment" && room.variant === "ambush" && "They were hiding behind the cages! Two of them come at you at once."}
-            {room.kind === "encampment" && room.variant !== "ambush" && "A camp: bedrolls, a cookfire, cages along the wall — and the creatures who live here."}
+            {room.kind === "encampment" && top && "The camp at the top: bedrolls, a cookfire, cages along the wall — and its chief, who doesn't want visitors. Beat it, and the cages are yours to open."}
+            {room.kind === "encampment" && !top && room.variant !== "ambush" && "A camp: bedrolls, a cookfire, cages along the wall — and the creatures who live here."}
             {room.kind === "boss" && !room.boss && `The Warden of the Deep waits at the top of the climb, with two guards at its side. A Legendary and two Epics, all Lv ${bossLevel(run.dungeon ?? 2) - 1}+ — and they fight smart.`}
             {room.boss && "A Cyclops fills the chamber — a mountain of muscle with one huge, rolling eye. It's a melee brute: tough to hurt up close (magic hits it hardest), and its Stomp can cripple you badly (swapping out shakes it off… eventually). Something tells you this won't be the whole fight."}
             {!room.boss && <> They play like the {AI_LEVEL_LABELS[room.level ?? "normal"]} AI.</>}
@@ -1684,7 +1704,9 @@ function Party({ run, byId, onTeam, bench }: { run: DungeonRun; byId: (id: strin
 function RunOver({ run, lab, onHome, onWalkBack }: { run: DungeonRun; lab: DungeonSave; onHome: () => void; onWalkBack: () => void }) {
   const floor: FloorItem[] = [...(run.floor ?? []), ...(run.pending ?? []).map((x) => ({ room: "", drop: x }))];
   const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
-  const text = run.status === "cleared" && run.dungeon && run.dungeon !== 1
+  const text = run.status === "cleared" && run.dungeon === 0
+    ? `The chief goes down, and the camp is yours. You beat the Encampment on run ${run.runNumber}!${lab.meta.campClears ? "" : " The Labyrinth's way in is open now."}`
+    : run.status === "cleared" && run.dungeon && run.dungeon !== 1
     ? `The Warden falls, and the deep goes quiet. You beat ${DUNGEONS[run.dungeon].name.replace("The", "the")} on run ${run.runNumber}!`
     : run.status === "cleared"
     ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`
@@ -1713,7 +1735,7 @@ function RunOver({ run, lab, onHome, onWalkBack }: { run: DungeonRun; lab: Dunge
       {run.status === "cleared" ? (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
-            With the {run.dungeon && run.dungeon !== 1 ? "Warden" : "Cyclops"} gone, the way back is safe{floor.length > 0 ? ` — and the ${floor.length} thing${floor.length === 1 ? "" : "s"} you left behind are yours to take, as much as you can carry` : ""}.
+            With the {run.dungeon === 0 ? "chief" : run.dungeon && run.dungeon !== 1 ? "Warden" : "Cyclops"} gone, the way back is safe{floor.length > 0 ? ` — and the ${floor.length} thing${floor.length === 1 ? "" : "s"} you left behind are yours to take, as much as you can carry` : ""}.
           </p>
           <button className="pixel-btn" onClick={onWalkBack}>🚶 Walk back through</button>
         </>
