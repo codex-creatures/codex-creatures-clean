@@ -48,9 +48,10 @@ type Props = {
   onOpen: (d: CreatureOrItemDrop) => void;
   groupBy?: GroupBy | "none"; // "none": one grid, in the order given
   large?: boolean;            // big creature cards (the Pit)
+  picked?: string | null;     // the one tapped for a closer look (components/ItemPicker)
 };
 
-export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large }: Props) {
+export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked }: Props) {
   return (
     <div>
       {groupBy === "none" && (
@@ -58,7 +59,7 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
           {items.map((d) => large && d.dropType !== "item" ? (
             <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} />
           ) : (
-            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)}
+            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id}
               sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
           ))}
         </div>
@@ -72,7 +73,7 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 10 }}>
                 {group.map((d) => (
-                  <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)}
+                  <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id}
                     sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
                 ))}
               </div>
@@ -84,8 +85,8 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
   );
 }
 
-function Tile({ d, fav, badge, sell, onClick }: {
-  d: CreatureOrItemDrop; fav: boolean; badge?: string; sell?: { can: boolean; on: boolean }; onClick: () => void;
+function Tile({ d, fav, badge, sell, picked, onClick }: {
+  d: CreatureOrItemDrop; fav: boolean; badge?: string; sell?: { can: boolean; on: boolean }; picked?: boolean; onClick: () => void;
 }) {
   const col = RARITY_COLORS[d.rarity];
   const sprite = d.dropType === "item" ? itemSprite(d) : creatureSprite(d.creatureId);
@@ -99,7 +100,7 @@ function Tile({ d, fav, badge, sell, onClick }: {
       <span style={{
         position: "relative", aspectRatio: "1", width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
         background: `radial-gradient(circle, ${rarityGlow(d.rarity)} 0%, transparent 62%)`, borderRadius: 8,
-        boxShadow: sell?.on ? "inset 0 0 0 2px #f5c542, 0 0 12px rgba(245,197,66,0.5)" : undefined,
+        boxShadow: sell?.on || picked ?"inset 0 0 0 2px #f5c542, 0 0 12px rgba(245,197,66,0.5)" : undefined,
       }}>
         {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{goodsIcon(d) ?? (d.codexMove ? "📖" : d.scroll ? "📜" : d.potion ? "🧴" : "📦")}</span>}
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}

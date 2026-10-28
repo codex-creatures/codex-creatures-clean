@@ -274,7 +274,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 // then the body, cut to fit.
 const PEEK_BODY = 84;
 const textBody = (t?: string) => <div style={{ fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={t}>{t}</div>;
-function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
+export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
   const l = look ?? lookOf(item!);
   let kind = "", body: React.ReactNode = null;
   if (!item) { /* (just its name: a bag slot with no closer look) */ }

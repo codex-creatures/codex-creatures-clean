@@ -22,7 +22,9 @@ import PixelSprite, { MaterialIcon } from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
-import { MATERIALS, MATERIAL_KEYS, countMaterial } from "@/lib/items/materials";
+import { MATERIALS, MATERIAL_KEYS, countMaterial, materialDrop } from "@/lib/items/materials";
+import ItemPicker, { type PickerTab } from "@/components/ItemPicker";
+import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
 import { REPAIR_COST, VISITOR_STAY, canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
@@ -123,24 +125,8 @@ export default function TavernPage() {
               </>
             ) : (
               <>
-                <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;Let&apos;s see what you&apos;ve got.&rdquo; Tap twice to sell.</p>
-                {/* Your Inventory (not what's worn, packed or favourited), then your materials one at a time. */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "40cqh", overflowY: "auto" }}>
-                  {game.tavernSells().map(({ drop, price }) => (
-                    <button key={drop.id} className="card-btn" style={{ minHeight: 44, justifyContent: "space-between", gap: 8, background: armed === drop.id ? "#6e1f18" : undefined }}
-                      onClick={() => { if (armed !== drop.id) { setArmed(drop.id); return; } setArmed(null); game.sellToTavern(drop.id); }}>
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={drop.name}>{drop.name}</span>
-                      <span className="pixel-font" style={{ color: "#f1d9a0", flexShrink: 0 }}>{armed === drop.id ? "Sell?" : ""} <Coin /> {price}</span>
-                    </button>
-                  ))}
-                  {MATERIAL_KEYS.filter((k) => countMaterial(game.materials, k) > 0).map((k) => (
-                    <button key={k} className="card-btn" style={{ minHeight: 44, justifyContent: "space-between", gap: 8, background: armed === k ? "#6e1f18" : undefined }}
-                      onClick={() => { if (armed !== k) { setArmed(k); return; } game.sellMaterialToTavern(k); }}>
-                      <span style={{ flex: 1 }}><MaterialIcon k={k} /> 1 {MATERIALS[k].name.toLowerCase()} <span style={{ fontSize: 12, color: MUTED }}>(have {countMaterial(game.materials, k)})</span></span>
-                      <span className="pixel-font" style={{ color: "#f1d9a0", flexShrink: 0 }}>{armed === k ? "Sell?" : ""} <Coin /> {materialOffer(k)}</span>
-                    </button>
-                  ))}
-                </div>
+                <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;Let&apos;s see what you&apos;ve got.&rdquo;</p>
+                <TavernSell game={game} armed={armed} setArmed={setArmed} />
                 <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>You have {game.gold} gold.</p>
               </>
             )}
@@ -171,5 +157,44 @@ export default function TavernPage() {
         )}
       </div>
     </DenFrame>
+  );
+}
+
+// Selling to the merchant: your Inventory (not what's worn, packed or
+// favourited) laid out as in the chest, by category; tap a thing to see it,
+// then Sell (twice: the second tap sells). Materials go one at a time.
+function TavernSell({ game, armed, setArmed }: { game: ReturnType<typeof useGameState>; armed: string | null; setArmed: (id: string | null) => void }) {
+  const offers = game.tavernSells();
+  const price = new Map(offers.map((x) => [x.drop.id, x.price]));
+  const of = (f: (d: CreatureOrItemDrop) => boolean) => offers.map((x) => x.drop).filter(f);
+  const kind = (d: CreatureOrItemDrop) => d.itemCategory === "weapon" ? "weapons" : d.itemCategory === "armor" ? "armor" : d.codexMove ? "codexes" : "other";
+  // Materials are a tally: one stack each, with a stable id.
+  const materials = MATERIAL_KEYS.filter((k) => countMaterial(game.materials, k) > 0)
+    .map((k) => ({ ...materialDrop(k, countMaterial(game.materials, k)), id: `material:${k}` }) as CreatureOrItemDrop);
+  const tabs: PickerTab[] = [
+    { key: "weapons", label: "Weapons", items: of((d) => kind(d) === "weapons") },
+    { key: "armor", label: "Armour", items: of((d) => kind(d) === "armor") },
+    { key: "other", label: "Items", items: of((d) => kind(d) === "other") },
+    { key: "codexes", label: "Codexes", items: of((d) => kind(d) === "codexes") },
+    { key: "materials", label: "Materials", items: materials },
+  ];
+  return (
+    <ItemPicker tabs={tabs} emptyText="Nothing of this kind he'd buy."
+      badge={(d) => (price.has(d.id) ? `🪙 ${price.get(d.id)}` : undefined)}
+      action={(d) => {
+        const mat = d.material;
+        const gold = mat ? materialOffer(mat) : price.get(d.id) ?? 0;
+        const on = armed === d.id;
+        return (
+          <button className="chip" style={{ minHeight: 44, background: on ? "#6e1f18" : undefined }}
+            onClick={() => {
+              if (!on) { setArmed(d.id); return; }
+              if (mat) game.sellMaterialToTavern(mat);
+              else { setArmed(null); game.sellToTavern(d.id); }
+            }}>
+            {on ? "Sell?" : mat ? "Sell 1" : "Sell"} <Coin /> {gold}
+          </button>
+        );
+      }} />
   );
 }

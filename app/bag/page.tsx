@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { itemSprite, PotionIcon } from "@/components/PixelSprite";
 import BagSlots, { slotLook } from "@/components/BagSlots";
+import ItemPicker from "@/components/ItemPicker";
 import { GearStatLine } from "@/components/GearCompare";
 import { useGameState } from "@/hooks/useGameState";
 import {
@@ -140,49 +141,24 @@ export default function BagPage() {
       })()}
       {away && <p style={{ fontSize: 12, color: MUTED }}>You&apos;re in the middle of a Labyrinth run — repack when you&apos;re home.</p>}
 
-      {!away && potions.length > 0 && (
-        <>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Potions in your Inventory</div>
-          <div style={{ display: "grid", gap: 6 }}>
-            {potions.map((x) => (
-              <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-                <span><PotionIcon kind={x.potion!} /><b>{POTIONS[x.potion!].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[x.potion!].heal} HP</span></span>
-                <button className="chip" disabled={bag.length >= slots} onClick={() => { game.removeDrop(x.id); setBag([...bag, x.potion!]); }}>Pack it</button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {!away && tools.length > 0 && (
-        <>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Flares and scrolls in your Inventory</div>
-          <div style={{ display: "grid", gap: 6 }}>
-            {tools.map((x) => (
-              <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-                <span>{TOOLS[x.tool!].icon} <b>{x.name}</b></span>
-                <button className="chip" disabled={bag.length >= slots} onClick={() => packTool(x)}>Pack it</button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
+      {/* What you can pack from your Inventory, laid out as in the chest: tap
+          a thing to see it, then Pack it. (Gear on a creature isn't here.) */}
       {!away && (
         <>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Spare gear</div>
-          {spare.length === 0 ? (
-            <p style={{ fontSize: 13, color: MUTED }}>No spare gear — everything you own is on a creature (or already packed).</p>
-          ) : (
-            <div style={{ display: "grid", gap: 6 }}>
-              {spare.map((w) => (
-                <div key={w.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8 }}>
-                  {gearLine(w)}
-                  <button className="chip" disabled={bag.length >= slots} onClick={() => setBag([...bag, gearEntry(w.id)])}>Pack it</button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Pack from your Inventory</div>
+          <ItemPicker emptyText="Nothing of this kind to pack (gear on a creature isn't here)."
+            tabs={[
+              { key: "weapons", label: "Weapons", items: spare.filter((w) => w.itemCategory === "weapon") },
+              { key: "armor", label: "Armour", items: spare.filter((w) => w.itemCategory === "armor") },
+              { key: "potions", label: "Potions", items: potions },
+              { key: "tools", label: "Tools", items: tools },
+            ]}
+            action={(x) => (
+              <button className="chip" style={{ minHeight: 44 }} disabled={bag.length >= slots}
+                onClick={() => x.potion ? (game.removeDrop(x.id), setBag([...bag, x.potion])) : x.tool ? packTool(x) : setBag([...bag, gearEntry(x.id)])}>
+                {bag.length >= slots ? "Bag full" : "Pack it"}
+              </button>
+            )} />
         </>
       )}
     </DenFrame>
