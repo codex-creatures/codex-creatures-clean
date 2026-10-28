@@ -233,7 +233,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - **Haunting Presence**: when it enters (the start of the fight or a swap; not when sent in
     after a knockout, which the user confirmed is right, 2026-10-26), 25% that the enemy
     on the field is "crippled with fear": it loses its next attack and spends no energy. Swaps
-    resolve first, so swapping it in can stop the attack due that same turn.
+    resolve first, so swapping it in can stop the attack due that same turn. The fear is hidden
+    (no status icon, no log line) until the creature tries to attack and loses it.
   - **Unstoppable Force**: can't be crippled.
   - **Perfectionist**: each use of the same move in a row does 10% more than the last, compounding
     (10 → 11 → 12.1, ±5% spread), with no cap. Resets on a different move, a rest, a stumble or
@@ -629,9 +630,13 @@ How it came about, round by round: history.md.
   equip window explains where stats come from (gear × the creature's %).
   Before he borrows any gear, you have to put some armour from the box on your creature (the Pit
   glows; `needsGearUp`).
-- ✅ **Equipping:** gear can be dragged onto a creature (loot windows, straight from the chest if
-  the bag has room, and the bag in the Labyrinth)
-  or onto its slot (the creature window). In the Labyrinth, equipping opens a compare window first:
+- ✅ **Equipping:** gear can be dragged onto a creature (loot windows, and the bag in the Labyrinth)
+  or onto its slot (the creature window). Dragged straight from a chest, it opens the compare
+  window with nothing moved (bag full or not); equipped, what it replaces goes in the bag, or into
+  the chest if the bag is full.
+  In loot windows and the Labyrinth bag, an XP scroll can be dragged onto any party creature to read
+  it, and a Revival Elixir onto a knocked-out one (the party row shows the knocked out at 0%). A
+  flare or clairvoyance scroll can be used straight from a chest (tap it: Light it / Read it). In the Labyrinth, equipping opens a compare window first:
   the slot's old piece vs the new one, each stat's change, and your party along the top marked ▲/▼
   so you can see who it helps.
 - 📌 **Kidnap plan** (after the first Cyclops kill): hunts can end with Klutz kidnapped, rescued
@@ -757,6 +762,10 @@ fields optional with defaults.
     in one row that scrolls sideways; the chest's rows never shrink while it's open). With nothing
     tapped the box is gone and the one-line hint under the chest does the job, so the window fits
     without scrolling (the user's call: the bag moves down when you tap something).
+  - Bags (2026-10-28): every view draws all `BAG_MAX` (8) slots in rows of 4 (`BAG_COLS`), the
+    ones you haven't unlocked yet greyed out with a 🔒, so bindle and backpack share one layout.
+  - The creature window's set line follows the armour slot you tap (that piece's set and how
+    many of it you wear), instead of always the set you wear most of.
 - One tap on a Den object goes in (no name-first double tap).
 
 ## 11. Art and PixelLab

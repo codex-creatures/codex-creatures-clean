@@ -124,7 +124,7 @@ describe("soul stones in battle", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     resolveRound(s, { A: { kind: "swap", to: 1 }, B: { kind: "attack", skillName: "Crush" } });
     expect(attacks(s.log, "B")).toHaveLength(0);
-    expect(s.log.some((e) => e.type === "effect" && e.kind === "fear")).toBe(true);
+    expect(s.log.filter((e) => e.type === "effect" && e.kind === "fear")).toHaveLength(1); // only when it bites, not when struck
   });
 
   it("Haunting Presence fails 75% of the time", () => {

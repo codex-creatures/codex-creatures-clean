@@ -13,7 +13,12 @@
 //   pick who. A potion goes on a hurt creature the same way, to heal it.
 // - A potion in the chest can go straight onto a hurt creature too (drag it,
 //   or tap it and Give): no need to make room in your bag for it first.
-// - So can gear (if there's room in your bag: it's taken, then equipped).
+// - So can gear: you see how it compares first, and nothing moves unless you
+//   equip it (it goes straight on; what it replaces goes in your bag, or the
+//   chest if your bag is full).
+// - An XP scroll (in the chest or your bag) can be dragged onto any creature to
+//   read it on them; a Revival Elixir onto a knocked-out one. A flare or a
+//   clairvoyance scroll is used where it is: tap it, then Light it / Read it.
 // - teach: Klutz's Club, the first loot you pick up, walks you through
 //   all of this (take it, then equip it).
 // Take all grabs what takes no room, then the rarest things first, and says
@@ -28,8 +33,8 @@ import { doubleTapper } from "@/lib/doubleTap";
 import PixelSprite from "./PixelSprite";
 import TeamDropRow, { type TeamMember } from "./TeamDropRow";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
-import { StackCount, type SlotLook } from "./BagSlots";
-import { POTIONS, type SackItem } from "@/lib/dungeon/run";
+import { BAG_COLS, LockedSlot, StackCount, type SlotLook } from "./BagSlots";
+import { BAG_MAX, POTIONS, type SackItem } from "@/lib/dungeon/run";
 import { GEAR_STATS } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
@@ -44,20 +49,29 @@ const STAT_GRID = ["melee", "ranged", "magic", "agility", "mDef", "rDef", "magDe
 type From = { kind: "loot" | "bag"; i: number };
 // The club tutorial's step: take it (item i of the loot), equip it (bag slot i), or done.
 export type LootTeach = { step: "take" | "equip" | "done"; i: number };
-// Can it go on a creature? (a weapon, or an armour piece)
-const wearableItem = (x?: SackItem) => {
-  const g = x && "gear" in x ? (x.gear as CreatureOrItemDrop) : undefined;
-  return !!g && (g.itemCategory === "weapon" || (g.itemCategory === "armor" && !!g.armorSlot));
+// What a thing is for, here: gear to wear, a potion, an XP scroll, a Revival
+// Elixir, or a tool used where it is (a flare, a clairvoyance scroll).
+type Use = "gear" | "potion" | "scroll" | "revival" | "tool";
+const purposeOf = (x?: SackItem): Use | undefined => {
+  if (!x) return undefined;
+  if ("potion" in x) return "potion";
+  if (!("gear" in x)) return undefined;
+  const g = x.gear as CreatureOrItemDrop;
+  if (g.potion) return "potion";
+  if (g.itemCategory === "weapon" || (g.itemCategory === "armor" && g.armorSlot)) return "gear";
+  if (g.scroll) return "scroll";
+  if (g.tool === "revival") return "revival";
+  return g.tool ? "tool" : undefined;
 };
-export const wearable = (l?: SlotLook) => wearableItem(l?.peek);
-// Is it a potion? (in the bag a potion is just its kind: see slotLook)
-const potionOf = (l?: SlotLook) => (l?.peek && "potion" in l.peek ? l.peek.potion : undefined);
-// Is this thing in the chest a potion? (loose, or one found as an item)
-const sackPotion = (x?: SackItem) => (!x ? undefined : "potion" in x ? x.potion : "gear" in x ? (x.gear as CreatureOrItemDrop).potion : undefined);
-// Can a potion help them? (not at full health)
-const hurt = (c: TeamMember) => (c.hp ?? 0) < 1;
+const standing = (c: TeamMember) => (c.hp ?? 1) > 0;
+// Can a potion help them? (standing, but not at full health)
+const hurt = (c: TeamMember) => standing(c) && (c.hp ?? 0) < 1;
+// Who it can go on: gear on anyone standing, a potion on the hurt, an XP
+// scroll on anyone, a Revival Elixir on the knocked out.
+const takes = (u: Use | undefined, c: TeamMember) =>
+  u === "gear" ? standing(c) : u === "potion" ? hurt(c) : u === "scroll" ? true : u === "revival" ? !standing(c) : false;
 
-export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, onDrinkLoot, onEquipLoot, teach, putLabel = "Put in the chest" }: {
+export default function LootWindow({ name, sprite, items, bag, slots, bagName, onTake, onTakeAll, onSwap, onPutBack, onClose, party = [], onEquip, onDrink, onDrinkLoot, onEquipLoot, onGive, onUseTool, teach, putLabel = "Put in the chest" }: {
   name: string; sprite: Sprite;
   items: SackItem[];
   bag: SlotLook[];          // what's in each filled slot, in order
@@ -67,11 +81,13 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
   onSwap: (lootIndex: number, bagIndex: number) => void; // into that slot (swapping if it's full)
   onPutBack: (bagIndex: number) => void;                 // from the bag into the chest
   onClose: () => void;
-  party?: TeamMember[];                                  // your creatures still standing: drop gear on them
+  party?: TeamMember[];                                  // your creatures (hp 0: knocked out): drop things on them
   onEquip?: (bagIndex: number, creatureId: string) => void; // (asks first: see EquipPreview)
   onDrink?: (bagIndex: number, creatureId: string) => void; // a potion from the bag, on a hurt creature
   onDrinkLoot?: (lootIndex: number, creatureId: string) => void; // a potion straight from the chest (no bag slot needed)
-  onEquipLoot?: (lootIndex: number, creatureId: string) => void; // gear straight from the chest (into the bag, then asks)
+  onEquipLoot?: (lootIndex: number, creatureId: string) => void; // gear straight from the chest (asks first)
+  onGive?: (from: "loot" | "bag", i: number, creatureId: string) => void; // an XP scroll or a Revival Elixir, on a creature
+  onUseTool?: (from: "loot" | "bag", i: number) => void;  // a flare or a clairvoyance scroll
   teach?: LootTeach;
   putLabel?: string;                                     // "Put in the chest", "Drop it"…
 }) {
@@ -102,22 +118,40 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     },
     onDrop: (d, t) => {
       setTriedAll(false);
-      if (d.kind === "loot" && t?.startsWith("bag:")) onSwap(d.i, Number(t.slice(4)));
-      else if (d.kind === "loot" && t?.startsWith("who:") && onEquipLoot && !full && wearableItem(items[d.i])) { onEquipLoot(d.i, t.slice(4)); setSeen(null); }
-      else if (d.kind === "loot" && t?.startsWith("who:") && onDrinkLoot && sackPotion(items[d.i])) {
-        const c = party.find((m) => m.id === t.slice(4));
-        if (c && hurt(c)) { onDrinkLoot(d.i, c.id); setSeen(null); }
-      }
-      else if (d.kind === "bag" && t === "loot") { onPutBack(d.i); setPicked(null); }
-      else if (d.kind === "bag" && t?.startsWith("who:") && onEquip && wearable(bag[d.i])) { onEquip(d.i, t.slice(4)); setPicked(null); }
-      else if (d.kind === "bag" && t?.startsWith("who:") && onDrink && potionOf(bag[d.i])) {
-        const c = party.find((m) => m.id === t.slice(4));
-        if (c && hurt(c)) { onDrink(d.i, c.id); setPicked(null); }
-      }
+      if (d.kind === "loot" && t?.startsWith("bag:")) { onSwap(d.i, Number(t.slice(4))); return; }
+      if (d.kind === "bag" && t === "loot") { onPutBack(d.i); setPicked(null); return; }
+      const c = t?.startsWith("who:") ? party.find((m) => m.id === t.slice(4)) : undefined;
+      const u = purposeOf(thing(d));
+      const fn = giver(d.kind, u);
+      if (c && fn && takes(u, c)) { fn(d.i, c.id); setSeen(null); setPicked(null); }
     },
   });
   const { over, press, handlers } = dnd;
   const lifted = (kind: From["kind"], i: number) => dnd.lifted?.kind === kind && dnd.lifted.i === i;
+  const thing = (d: From) => (d.kind === "loot" ? items[d.i] : bag[d.i]?.peek);
+  // How to give it to a creature, from the chest or from your bag (none: it can't be).
+  const giver = (from: From["kind"], u?: Use): ((i: number, creatureId: string) => void) | undefined =>
+    u === "gear" ? (from === "loot" ? onEquipLoot : onEquip)
+    : u === "potion" ? (from === "loot" ? onDrinkLoot : onDrink)
+    : (u === "scroll" || u === "revival") && onGive ? (i, id) => onGive(from, i, id)
+    : undefined;
+  // Its buttons for using it here: one per creature it can go on, or just
+  // Light it / Read it (a flare, a clairvoyance scroll).
+  const actionChips = (from: From["kind"], i: number, pulse = false) => {
+    const x = thing({ kind: from, i });
+    const u = purposeOf(x);
+    const done = () => { setSeen(null); setPicked(null); };
+    if (u === "tool") {
+      const flare = !!x && "gear" in x && (x.gear as CreatureOrItemDrop).tool === "flare";
+      return onUseTool && <button className="chip" onClick={() => { onUseTool(from, i); done(); }}>{flare ? "🧨 Light it" : "🔮 Read it"}</button>;
+    }
+    const fn = giver(from, u);
+    if (!fn || (from === "loot" && u === "gear")) return null; // (gear in the chest: drag it onto someone to compare)
+    const verb = u === "gear" ? "Equip on" : u === "potion" ? "Give" : u === "scroll" ? "Read on" : "Revive";
+    return party.filter((c) => takes(u, c)).map((c) => (
+      <button key={c.id} className={`chip${pulse ? " tutorial-pulse" : ""}`} onClick={() => { fn(i, c.id); done(); }}>{verb} {c.name}</button>
+    ));
+  };
 
   const glowBg = (glow?: string) => `radial-gradient(circle, ${glow ?? "rgba(255,255,255,0.05)"} 0%, transparent 62%)`;
 
@@ -176,9 +210,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             in your bag. Nothing tapped: no box (the hint above says to tap), so it all fits. */}
         {seen !== null && items[seen] ? (
           <ItemPeek item={items[seen]} action={<>
-            {onDrinkLoot && sackPotion(items[seen]) && party.filter(hurt).map((c) => (
-              <button key={c.id} className="chip" onClick={() => { onDrinkLoot(seen, c.id); setSeen(null); }}>Give {c.name}</button>
-            ))}
+            {actionChips("loot", seen)}
             <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
           </>} />
         ) : picked !== null && bag[picked] ? (() => {
@@ -186,12 +218,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           const teaching = teach?.step === "equip" && teach.i === picked;
           return (
             <ItemPeek item={l.peek} look={l} action={<>
-              {onEquip && wearable(l) && party.map((c) => (
-                <button key={c.id} className={`chip${teaching ? " tutorial-pulse" : ""}`} onClick={() => { onEquip(picked, c.id); setPicked(null); }}>Equip on {c.name}</button>
-              ))}
-              {onDrink && potionOf(l) && party.filter(hurt).map((c) => (
-                <button key={c.id} className="chip" onClick={() => { onDrink(picked, c.id); setPicked(null); }}>Give {c.name}</button>
-              ))}
+              {actionChips("bag", picked, teaching)}
               {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
             </>} />
           );
@@ -199,8 +226,10 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 
         {/* Your bag */}
         <div className="pixel-font" style={{ fontSize: 17, color: full ? "#ff8a80" : "#c9b48a" }}>🎒 {bagName} {bag.length}/{slots}</div>
-        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(slots, 5)}, 1fr)`, gap: 6, padding: 8 }}>
-          {Array.from({ length: slots }, (_, i) => {
+        {/* Every bag the same shape (BAG_MAX slots, the ones you haven't got locked: see BagSlots). */}
+        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, minmax(0, 60px))`, justifyContent: "center", gap: 6, padding: 8 }}>
+          {Array.from({ length: Math.max(slots, BAG_MAX) }, (_, i) => {
+            if (i >= slots) return <LockedSlot key={i} style={{ aspectRatio: "1" }} />;
             const l = bag[i];
             const up = lifted("bag", i);
             const hot = over === `bag:${i}`;
@@ -220,12 +249,13 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
             );
           })}
         </div>
-        {/* Your creatures: drop a weapon or armour piece on one to equip it, or a potion to heal it. */}
-        {(onEquip || onDrink || onDrinkLoot) && (
-          <TeamDropRow team={party} over={over} pulse={teach?.step === "equip"}
-            ready={dnd.lifted?.kind === "loot" ? (!!onEquipLoot && !full && wearableItem(items[dnd.lifted.i])) || (!!onDrinkLoot && !!sackPotion(items[dnd.lifted.i]) && hurt)
-              : dnd.lifted?.kind !== "bag" ? false : wearable(bag[dnd.lifted.i]) || (!!onDrink && !!potionOf(bag[dnd.lifted.i]) && hurt)} />
-        )}
+        {/* Your creatures: drop gear, a potion, an XP scroll or a Revival Elixir on one. */}
+        {(onEquip || onDrink || onDrinkLoot || onGive) && (() => {
+          const d = dnd.lifted;
+          const u = d && purposeOf(thing(d));
+          return <TeamDropRow team={party} over={over} pulse={teach?.step === "equip"}
+            ready={d && giver(d.kind, u) ? (c) => takes(u, c) : false} />;
+        })()}
 
         <div className="dock-tabs">
           <button className={`dock-tab${teach?.step === "done" ? " tutorial-pulse" : ""}`} data-active onClick={onClose}>Done</button>

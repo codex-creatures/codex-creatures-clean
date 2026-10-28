@@ -285,7 +285,8 @@ export default function CreatureDetailModal({
                 scroll={onReadScroll && scrolls.length > 0 ? { count: scrolls.length, read: () => onReadScroll(scrolls[0].id) } : undefined} />
             )}
 
-            <SetLine worn={worn} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow} />
+            <SetLine worn={nextPieces} now={setNow} next={previewing && picking !== "weapon" ? setNext : setNow}
+              focus={picking && picking !== "weapon" ? (preview === undefined ? current : preview ?? undefined)?.armorKey : undefined} />
             {/* The lock line keeps its space when unlocked, so nothing under it moves between creatures. */}
             <div title={locked || undefined} style={{ marginTop: 6, height: 17, fontSize: 12, color: MUTED, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", visibility: locked ? "visible" : "hidden" }}>🔒 {locked || "-"}</div>
 
@@ -662,7 +663,9 @@ export function LevelBar({ level, xp, scroll }: { level: number; xp: number; scr
 
 // The armour set: its mechanic if all three pieces match, or how close you are.
 // next: the set with the previewed piece in (same as now when not previewing).
-function SetLine({ worn, now, next }: { worn: (CreatureOrItemDrop | undefined)[]; now?: ArmorKey; next?: ArmorKey }) {
+// focus: the set of the piece in the slot you tapped (or are previewing there):
+// how close that one is, rather than whichever set has the most pieces on.
+function SetLine({ worn, now, next, focus }: { worn: (CreatureOrItemDrop | undefined)[]; now?: ArmorKey; next?: ArmorKey; focus?: ArmorKey }) {
   const box = (children: React.ReactNode, lit: boolean) => (
     <div style={{ marginTop: 8, padding: "7px 10px", fontSize: 12, lineHeight: 1.4, background: lit ? "rgba(255,214,110,0.08)" : "#12131a",
       border: `2px solid ${lit ? "#8a6a3a" : "#2a2d38"}`, color: lit ? "#f1d9a0" : MUTED, height: "calc(3 * 1.4em + 18px)", overflow: "hidden", boxSizing: "border-box" }}>{children}</div>
@@ -678,7 +681,7 @@ function SetLine({ worn, now, next }: { worn: (CreatureOrItemDrop | undefined)[]
   // Closest set: the armour you have the most pieces of.
   const counts = new Map<ArmorKey, number>();
   for (const p of worn) if (p?.armorKey) counts.set(p.armorKey, (counts.get(p.armorKey) ?? 0) + 1);
-  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const best = focus && counts.has(focus) ? [focus, counts.get(focus)!] as const : [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
   if (!best) return box(<>Wear a helmet, chest and legs from the same armour to unlock its set bonus.</>, false);
   return box(<><b>{ARMOR_META[best[0]].name} {best[1]}/3</b> — the full set gives {SET_BONUS[best[0]].name}: {SET_BONUS[best[0]].text}</>, false);
 }

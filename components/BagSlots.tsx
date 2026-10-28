@@ -5,6 +5,9 @@
 // drawn as its sprite on a soft glow of its rarity. Tap a slot to see
 // what's in it and what you can do with it. grab: makes a slot draggable
 // (the props for it, from hooks/useDragDrop).
+// Every bag is drawn the same: BAG_MAX slots in rows of BAG_COLS, the ones
+// you haven't unlocked yet locked, so the bindle and the biggest backpack
+// share one layout and you can see what an upgrade adds.
 
 import { goodsIcon } from "@/lib/items/materials";
 import PixelSprite from "./PixelSprite";
@@ -12,11 +15,12 @@ import { itemSprite } from "./PixelSprite";
 import { POTION_SPRITES, POTION_RARITY } from "@/lib/sprites/items";
 import { ICON } from "./ContainerLoot";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
-import { isPotionEntry, POTIONS, type BagEntry, type SackItem } from "@/lib/dungeon/run";
+import { BAG_MAX, isPotionEntry, POTIONS, type BagEntry, type SackItem } from "@/lib/dungeon/run";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const MUTED = "rgba(255,255,255,0.5)";
+export const BAG_COLS = 4;
 
 export type SlotLook = { name: string; sprite?: Sprite; icon?: string; color: string; glow?: string; peek?: SackItem; count?: number }; // peek: what it is, for a closer look (ItemPeek); count: a stack (materials)
 
@@ -39,8 +43,9 @@ export default function BagSlots({ slots, looks, selected, onSelect, pulse, size
   grab?: (i: number, look: SlotLook) => React.HTMLAttributes<HTMLElement>;
 }) {
   return (
-    <div className="inv-panel" style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: 10 }}>
-      {Array.from({ length: slots }, (_, i) => {
+    <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, ${size}px)`, gap: 8, padding: 10, justifyContent: "center" }}>
+      {Array.from({ length: Math.max(slots, BAG_MAX) }, (_, i) => {
+        if (i >= slots) return <LockedSlot key={i} style={{ width: size, height: size }} />;
         const l = looks[i] ?? null;
         const active = selected === i && !!l;
         return (
@@ -58,6 +63,16 @@ export default function BagSlots({ slots, looks, selected, onSelect, pulse, size
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// A slot your bag hasn't got yet (a backpack, or an upgrade, adds it).
+export function LockedSlot({ style }: { style?: React.CSSProperties }) {
+  return (
+    <div className="inv-slot" aria-label="Locked slot" title="Locked: a bigger backpack opens it"
+      style={{ display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.35, background: "repeating-linear-gradient(45deg, rgba(0,0,0,0.45) 0 6px, rgba(0,0,0,0.25) 6px 12px)", ...style }}>
+      <span style={{ fontSize: 16, filter: "grayscale(1)" }}>🔒</span>
     </div>
   );
 }

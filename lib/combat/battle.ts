@@ -220,7 +220,9 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partia
 
 // Haunting Presence: side `key`'s creature has just come onto the field. The
 // foe's main creature may be struck with fear until the end of this round
-// (between rounds: through the next one), losing its attack.
+// (between rounds: through the next one), losing its attack. It's silent: no
+// log line, and the screen doesn't show it, until the creature tries to attack
+// (seeing it up front would make it too easy to play around).
 export function haunt(state: BattleState, key: SideKey) {
   const me = activeOf(state.sides[key]);
   if (!me || me.hp <= 0 || me.hidden || !hasStone(me, "haunting_presence")) return;
@@ -228,8 +230,6 @@ export function haunt(state: BattleState, key: SideKey) {
   const target = activeOf(foe);
   if (!target || target.hp <= 0 || target.hidden || Math.random() >= HAUNT_CHANCE) return;
   target.statuses = [...target.statuses.filter((s) => s.id !== "fear"), { id: "fear", rounds: 1 }];
-  state.log.push({ type: "effect", side: foe.key, index: foe.active, name: target.name, text: `is crippled with fear (${me.name}'s ${SOUL_STONES.haunting_presence.name})`,
-    hp: target.hp, statuses: target.statuses.map((s) => ({ ...s })), kind: "fear" });
 }
 
 // ── Status effects ─────────────────────────────────────────────────
@@ -403,7 +403,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (actor.statuses.some((s) => s.id === "fear")) {
       actor.statuses = actor.statuses.filter((s) => s.id !== "fear");
       actor.streak = undefined;
-      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: "is crippled with fear — it can't attack this round",
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `is crippled with fear (${SOUL_STONES.haunting_presence.name}) — it can't attack this round`,
         hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "fear" });
       continue;
     }

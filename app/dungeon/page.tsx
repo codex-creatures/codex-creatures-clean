@@ -44,7 +44,7 @@ import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, ran
 import { clubRoom, klutzClub, isClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, isSeated, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import WitchWindow from "@/components/WitchWindow";
-import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog } from "@/lib/creatures/levels";
+import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
@@ -115,7 +115,8 @@ export default function DungeonPage() {
   // A weapon or armour piece you just found, opened up (to compare and swap).
   const [viewGear, setViewGear] = useState<CreatureOrItemDrop | null>(null);
   // Gear about to go on a creature: compare first (EquipPreview), then equip.
-  const [equipAsk, setEquipAsk] = useState<{ entry: BagEntry; creatureId: string } | null>(null);
+  // From your bag (entry), or still in the open chest (sackId: its drop id).
+  const [equipAsk, setEquipAsk] = useState<{ entry?: BagEntry; sackId?: string; creatureId: string } | null>(null);
   const askEquip = (entry: BagEntry, creatureId: string) => setEquipAsk({ entry, creatureId });
   // The roster or the bag, open over the screen (see Sheet).
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
@@ -546,7 +547,7 @@ export default function DungeonPage() {
   // ("view": the Scroll button, just looking at your map again)
   const [mapOpen, setMapOpen] = useState<"look" | "pick" | "view" | null>(null);
   // A Revival Elixir (who: the knocked-out creature): back up with REVIVE_HP of its HP.
-  function useTool(entry: BagEntry, who?: string) {
+  function applyTool(entry: BagEntry, who?: string) {
     const cur = loadDungeon();
     const it = itemOf(entry, cur.meta);
     if (!cur.run || !it?.tool) return;
@@ -557,7 +558,7 @@ export default function DungeonPage() {
       setNotes((n) => [...n, `💖 ${byId(who)?.name ?? "Your creature"} is back on its feet.`]);
       return;
     }
-    if (it.tool === "clairvoyance") { setSheet(null); setMapOpen("pick"); return; }
+    if (it.tool === "clairvoyance") { setSeer(null); setSheet(null); setMapOpen("pick"); return; }
     spendTool(entry);
     updateRun((r) => ({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }));
     setSheet(null);
@@ -571,12 +572,16 @@ export default function DungeonPage() {
     const i = cur.meta.bag.indexOf(entry);
     update({ meta: { ...cur.meta, loot, bag: i < 0 ? cur.meta.bag : [...cur.meta.bag.slice(0, i), ...cur.meta.bag.slice(i + 1)] }, run: cur.run && id ? { ...cur.run, got: usedUp(cur.run.got, { dropId: id }) } : cur.run });
   }
+  // A clairvoyance scroll read straight out of the open chest (its drop id):
+  // that one's used up when you pick a room, not one in your bag.
+  const [seer, setSeer] = useState<string | null>(null);
   // The clairvoyance scroll: you picked a room.
   function foresee(nodeId: string) {
     const cur = loadDungeon();
+    const sackAt = seer ? (cur.run?.current?.sack ?? []).findIndex((x) => "gear" in x && x.gear.id === seer) : -1;
     const entry = (cur.meta.bag ?? []).find((e) => itemOf(e, cur.meta)?.tool === "clairvoyance");
-    if (!cur.run || !entry) return;
-    spendTool(entry);
+    if (!cur.run || (sackAt < 0 && !entry)) return;
+    if (sackAt >= 0) { setSeer(null); takeOutOfSack(sackAt); } else spendTool(entry!);
     updateRun((r) => ({ ...r, lit: [...new Set([...(r.lit ?? []), nodeId])], seen: [...new Set([...(r.seen ?? []), nodeId])] }));
     setMapOpen("look");
   }
@@ -674,15 +679,85 @@ export default function DungeonPage() {
     updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) } }));
   }
   // …or one straight out of the open chest or sack, without it going in your bag.
-  // Gear dragged from the sack straight onto a creature: into the bag, then
-  // the usual "equip it?" (cancel and it just stays in your bag).
+  // Gear dragged from the sack straight onto a creature: the usual "equip
+  // it?", to compare (cancel and it's still in the chest).
   function equipFromSack(index: number, id: string) {
     const item = loadDungeon().run?.current?.sack?.[index];
-    if (!item || !("gear" in item)) return;
-    takeFromSack(index);
-    const dropId = item.gear.id;
-    const e = loadDungeon().meta.bag.find((x) => lootIdOf(x) === dropId || gearIdOf(x) === dropId);
-    if (e) askEquip(e, id);
+    if (item && "gear" in item) setEquipAsk({ sackId: item.gear.id, creatureId: id });
+  }
+  // …and equipped: it goes straight on, and what it replaces goes in your bag
+  // (or into the chest, if your bag's full).
+  function equipStraightFromSack(dropId: string, creatureId: string) {
+    const cur = loadDungeon();
+    const sack = cur.run?.current?.sack ?? [];
+    const index = sack.findIndex((x) => "gear" in x && x.gear.id === dropId);
+    const it = index >= 0 ? (sack[index] as { gear: Drop }).gear as CreatureOrItemDrop : undefined;
+    const slot = it && slotOf(it);
+    if (!cur.run?.current || !it || !slot) return;
+    game.addDrop(it);
+    const oldId = game.equipment[creatureId]?.[SLOT_FIELD[slot]];
+    const old = oldId ? itemsById.get(oldId) : undefined;
+    const intoBag = !!old && cur.meta.bag.length < bagSize(cur.meta);
+    const intoChest = !!old && !intoBag;
+    if (intoChest) game.removeDrop(old.id); // (your own gear: it's down here now, as with putInSack)
+    const rest = sack.filter((_, i) => i !== index);
+    const got = (cur.run.got ?? []).filter((g) => !(intoChest && "drop" in g && g.drop.id === old!.id));
+    update({
+      meta: intoBag ? { ...cur.meta, bag: [...cur.meta.bag, gearEntry(old!.id)] } : cur.meta,
+      run: { ...cur.run, loot: [...cur.run.loot, dropLabel(it)], got: [...got, { drop: it }],
+        current: { ...cur.run.current, sack: intoChest ? [...rest, { gear: old! }] : rest } },
+    });
+    game.equipItem(creatureId, slot, it.id);
+    if (isClub(it)) game.questFoundClub();
+  }
+  // Something used up straight out of the open chest.
+  const takeOutOfSack = (index: number) =>
+    updateRun((r) => (r.current ? { ...r, current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
+  // The thing at i: in your bag, or in the open chest.
+  function thingAt(from: "loot" | "bag", i: number): CreatureOrItemDrop | undefined {
+    const cur = loadDungeon();
+    if (from === "bag") { const e = cur.meta.bag[i]; return e && !isPotionEntry(e) ? itemOf(e, cur.meta) : undefined; }
+    const x = cur.run?.current?.sack?.[i];
+    return x && "gear" in x ? (x.gear as CreatureOrItemDrop) : undefined;
+  }
+  // An XP scroll read on a creature (SCROLL_XP), or a Revival Elixir on a
+  // knocked-out one: from your bag, or straight out of the chest.
+  function giveFrom(from: "loot" | "bag", i: number, id: string) {
+    const it = thingAt(from, i);
+    const r0 = loadDungeon().run;
+    if (!it || !r0?.party.includes(id)) return;
+    if (it.tool === "revival") {
+      if (from === "bag") { applyTool(loadDungeon().meta.bag[i], id); return; }
+      if ((r0.hp[id] ?? 1) > 0) return;
+      takeOutOfSack(i);
+      updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: REVIVE_HP } }));
+      setNotes((n) => [...n, `💖 ${byId(id)?.name ?? "Your creature"} is back on its feet.`]);
+      return;
+    }
+    if (!it.scroll) return;
+    if (from === "bag") {
+      const e = loadDungeon().meta.bag[i];
+      if (gearIdOf(e)) game.removeDrop(it.id); // (one of yours, packed at home)
+      spendTool(e);
+    } else takeOutOfSack(i);
+    const ups = game.gainXp({ [id]: SCROLL_XP });
+    setNotes((n) => [...n, `📜 ${byId(id)?.name ?? "Your creature"} +${SCROLL_XP} XP`, ...ups.map((u) => `⬆️ ${u.name} reached level ${u.to}!`)]);
+    setLevelUps(ups.flatMap((u) => {
+      const c = byId(u.id);
+      const drop = game.inventory.find((d) => d.id === u.id) as CreatureOrItemDrop | undefined;
+      return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency }] : [];
+    }));
+  }
+  // A flare or a clairvoyance scroll, used from your bag or straight out of the chest.
+  function toolFrom(from: "loot" | "bag", i: number) {
+    const it = thingAt(from, i);
+    if (!it?.tool || it.tool === "revival") return;
+    setLootOpen(false);
+    if (from === "bag") { applyTool(loadDungeon().meta.bag[i]); return; }
+    if (it.tool === "clairvoyance") { setSeer(it.id); setMapOpen("pick"); return; }
+    takeOutOfSack(i);
+    updateRun((r) => ({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }));
+    setMapOpen("look");
   }
   function drinkFromSack(index: number, id: string) {
     const c = byId(id);
@@ -1036,6 +1111,9 @@ export default function DungeonPage() {
   // Your creatures still standing: gear from the bag can be dragged onto them.
   const standingTeam = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) > 0)
     .map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId, hp: run.hp[id] ?? 1 }));
+  // Everyone, the knocked out at 0 (a Revival Elixir or an XP scroll can go on them).
+  const wholeParty = run.party.filter((id) => byId(id))
+    .map((id) => ({ id, name: byId(id)!.name, creatureId: byId(id)!.creatureId, hp: Math.max(0, run.hp[id] ?? 1) }));
   // The thief's room: once it's beaten, the way on is home (with the box).
   const boxRoom = run.current?.quest === "thief" && run.current.done;
   // A fight waiting here: the Fight! button sits on the room, and tapping the
@@ -1067,7 +1145,8 @@ export default function DungeonPage() {
   const partyView = <Party run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))} />;
   const bagView = (
     <Bag run={run} bag={lab.meta.bag ?? []} slots={bagSize(lab.meta)} name={bagName(lab.meta)} itemOf={itemOf} slotOf={slotOf}
-      byId={byId} onDrink={drink} onEquip={askEquip} onLeave={leaveOnFloor} tutorial={clubTutorial} onTool={useTool}
+      byId={byId} onDrink={drink} onEquip={askEquip} onLeave={leaveOnFloor} tutorial={clubTutorial} onTool={applyTool}
+      onRead={(e, id) => { const i = loadDungeon().meta.bag.indexOf(e); if (i >= 0) giveFrom("bag", i, id); }}
       sell={buysHere(run.current) ? { offer: (e) => offerFor(e), onSell: sellToMerchant } : undefined} start={bagStart}
       wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
   );
@@ -1109,15 +1188,16 @@ export default function DungeonPage() {
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
-                party={standingTeam} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
+                party={wholeParty} onEquip={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e) askEquip(e, id); }}
                 onDrink={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e && isPotionEntry(e)) drink(e, id); }}
-                onDrinkLoot={drinkFromSack} onEquipLoot={equipFromSack}
+                onDrinkLoot={drinkFromSack} onEquipLoot={equipFromSack} onGive={giveFrom} onUseTool={toolFrom}
                 teach={teach} putLabel={c.quest === "club" ? "Drop it" : undefined}
                 onClose={() => setLootOpen(false)} />
             );
           })()}
           {equipAsk && (() => {
-            const it = itemOf(equipAsk.entry);
+            const fromSack = (run.current?.sack ?? []).find((x) => "gear" in x && x.gear.id === equipAsk.sackId);
+            const it = equipAsk.entry ? itemOf(equipAsk.entry) : fromSack && "gear" in fromSack ? (fromSack.gear as CreatureOrItemDrop) : undefined;
             const slot = it && slotOf(it);
             if (!it || !slot) return null;
             const team = standingTeam.flatMap(({ id }) => {
@@ -1128,7 +1208,7 @@ export default function DungeonPage() {
               <EquipPreview team={team} start={equipAsk.creatureId} find={(id) => itemsById.get(id)} item={it} slot={slot}
                 teach={isClub(it) && run.current?.quest === "club"}
                 onCancel={() => setEquipAsk(null)}
-                onConfirm={(id) => { equipFromBag(equipAsk.entry, id); setEquipAsk(null); }} />
+                onConfirm={(id) => { if (equipAsk.entry) equipFromBag(equipAsk.entry, id); else equipStraightFromSack(it.id, id); setEquipAsk(null); }} />
             );
           })()}
           {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
@@ -1850,13 +1930,14 @@ function bagItems(bag: PotionKey[]): BagItem[] {
 // tutorial: the entry to walk the player through equipping (Klutz's Club).
 // sell: in a room where someone buys (buysHere), what they'd pay for each
 // thing, and selling it. start: the slot to open with (from the merchant's Use).
-function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onEquip, onLeave, onTool, tutorial, sell, start }: {
+function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onEquip, onLeave, onTool, onRead, tutorial, sell, start }: {
   run: DungeonRun; bag: BagEntry[]; slots: number; name: string;
   itemOf: (e: BagEntry) => CreatureOrItemDrop | undefined; slotOf: (it: CreatureOrItemDrop) => EquipSlot | null;
   byId: (id: string) => OwnedCreature | undefined; onDrink: (k: PotionKey, id: string) => void;
   wornIn: (creatureId: string, slot: EquipSlot) => CreatureOrItemDrop | undefined; // what a creature wears in a slot
   onEquip: (e: BagEntry, creatureId: string) => void; onLeave: (e: BagEntry) => void; tutorial?: BagEntry;
   onTool?: (e: BagEntry, who?: string) => void; // a flare, a clairvoyance scroll, or a Revival Elixir (on who): use it
+  onRead?: (e: BagEntry, who: string) => void;  // an XP scroll, read on who
   sell?: { offer: (e: BagEntry) => number; onSell: (bagIndex: number) => void };
   start?: number;
 }) {
@@ -1869,11 +1950,20 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
   const hurt = standing.filter((id) => (run.hp[id] ?? 1) < 1);
   const downed = run.party.filter((id) => byId(id) && (run.hp[id] ?? 1) <= 0); // (a Revival Elixir brings one back)
   const potionAt = (i: number) => { const x = bag[i]; return x && isPotionEntry(x) ? x : undefined; };
+  // …an XP scroll onto anyone, or a Revival Elixir onto a knocked-out one.
+  const usedOn = (i: number) => { const x = bag[i]; const w = x && !isPotionEntry(x) ? itemOf(x) : undefined;
+    return w?.scroll && onRead ? "scroll" : w?.tool === "revival" && onTool ? "revival" : undefined; };
+  // Who what's at i can go on.
+  const goesOn = (i: number) => (wears(i) ? standing : potionAt(i) ? hurt : usedOn(i) === "revival" ? downed : usedOn(i) === "scroll" ? run.party : []);
   const { box: dragBox, ...dnd } = useDragDrop<number>({ onDrop: (i, t) => {
     const id = t?.startsWith("who:") ? t.slice(4) : undefined;
     const p = potionAt(i);
-    if (id && wears(i) && standing.includes(id)) { onEquip(bag[i], id); setSel(null); }
-    else if (id && p && hurt.includes(id)) { onDrink(p, id); setSel(null); }
+    if (!id || !goesOn(i).includes(id)) return;
+    if (wears(i)) onEquip(bag[i], id);
+    else if (p) onDrink(p, id);
+    else if (usedOn(i) === "revival") onTool?.(bag[i], id);
+    else onRead?.(bag[i], id);
+    setSel(null);
   } });
   // Everyone in the party, with their HP (a downed one shows 0%).
   const party = run.party.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, creatureId: c.creatureId, hp: Math.max(0, run.hp[id] ?? 1) }] : []; });
@@ -1898,13 +1988,13 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
         </div>
       )}
       <BagSlots slots={slots} looks={bag.map((x) => slotLook(x, isPotionEntry(x) ? undefined : itemOf(x)))}
-        grab={(i, l) => (wears(i) || potionAt(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
+        grab={(i, l) => (wears(i) || potionAt(i) || usedOn(i) ? { onPointerDown: dnd.press(i, l), ...dnd.handlers } : {})}
         selected={sel} onSelect={(i) => { if (dnd.wasDrag()) return; setSel(i); setComparing(false); }} pulse={tutorialAt >= 0 && sel !== tutorialAt ? tutorialAt : undefined} />
       {/* Your creatures and their health: drag gear onto one to equip it, or a potion to heal it. */}
       {party.length > 0 && (
         <div style={{ marginTop: 8 }}>
           <TeamDropRow team={party} over={dnd.over} pulse={tutorialAt >= 0}
-            ready={dnd.lifted === undefined ? false : potionAt(dnd.lifted) ? (c) => hurt.includes(c.id) : (c) => standing.includes(c.id)} />
+            ready={dnd.lifted === undefined ? false : (c) => goesOn(dnd.lifted!).includes(c.id)} />
         </div>
       )}
       {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty. Gold and creature cards take no space; gear, codexes, potions and materials take a slot each (materials stack).</p>}
@@ -1937,6 +2027,7 @@ function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornIn, onDrink, onE
                 {it.tool && it.tool !== "revival" && onTool && chip("use", it.tool === "flare" ? "🧨 Light it" : "🔮 Read it", done(() => onTool(e)))}
                 {it.tool === "revival" && onTool && downed.map((id) => chip(id, `💖 Revive ${byId(id)!.name}`, done(() => onTool(e, id))))}
                 {it.tool === "revival" && downed.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>Nobody&apos;s knocked out.</span>}
+                {it.scroll && onRead && run.party.filter((id) => byId(id)).map((id) => chip(id, `📜 Read on ${byId(id)!.name}`, done(() => onRead(e, id))))}
                 {slot && !teaching && !comparing && chip("compare", "⚖️ Compare", () => setComparing(true))}
                 {!teaching && sellChip}
                 {!teaching && chip("leave", "Leave it here", done(() => onLeave(e)), { color: "#ff8a80" })}
