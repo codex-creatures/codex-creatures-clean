@@ -153,8 +153,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   the cart's 10 slots); and 50% of
   storehouses (`STOREHOUSE_BACKPACK`). Gear, codexes, potions, tools and material stacks take a slot; gold and
   creature cards don't. Swapping a weapon from the bag mid-fight uses your turn.
-- ✅ **Backpack upgrades** (2026-10-25): +1 slot each from the backpack's 5 up to 8 (`BAG_MAX`), at
-  1,000 → 1,500 → 2,000 gold (`BAG_UPGRADE_PRICES`), from the merchant once you own the backpack. It
+- ✅ **Backpack upgrades** (2026-10-25): +1 slot each from the backpack's 5 up to 10 (`BAG_MAX`), at
+  1,000 → 1,500 → 2,000 → 2,500 → 3,000 gold (`BAG_UPGRADE_PRICES`), from the merchant once you own the backpack. It
   works straight away (in the Labyrinth) or from the next run (tavern). Stored as `bagSize`.
 - ✅ **Revival Elixir** (2026-10-25, a tool: `revival`): from the bag between rooms (not in a
   fight), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
@@ -762,7 +762,7 @@ fields optional with defaults.
     in one row that scrolls sideways; the chest's rows never shrink while it's open). With nothing
     tapped the box is gone and the one-line hint under the chest does the job, so the window fits
     without scrolling (the user's call: the bag moves down when you tap something).
-  - Bags (2026-10-28): every view draws all `BAG_MAX` (8) slots in rows of 4 (`BAG_COLS`), the
+  - Bags (2026-10-28): every view draws all `BAG_MAX` (10) slots in rows of 5 (`BAG_COLS`), the
     ones you haven't unlocked yet greyed out with a 🔒, so bindle and backpack share one layout.
   - The creature window's set line follows the armour slot you tap (that piece's set and how
     many of it you wear), instead of always the set you wear most of.

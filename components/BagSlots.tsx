@@ -20,7 +20,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
 const MUTED = "rgba(255,255,255,0.5)";
-export const BAG_COLS = 4;
+export const BAG_COLS = 5;
 
 export type SlotLook = { name: string; sprite?: Sprite; icon?: string; color: string; glow?: string; peek?: SackItem; count?: number }; // peek: what it is, for a closer look (ItemPeek); count: a stack (materials)
 
@@ -43,9 +43,9 @@ export default function BagSlots({ slots, looks, selected, onSelect, pulse, size
   grab?: (i: number, look: SlotLook) => React.HTMLAttributes<HTMLElement>;
 }) {
   return (
-    <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, ${size}px)`, gap: 8, padding: 10, justifyContent: "center" }}>
+    <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${BAG_COLS}, minmax(0, ${size}px))`, gap: 8, padding: 10, justifyContent: "center" }}>
       {Array.from({ length: Math.max(slots, BAG_MAX) }, (_, i) => {
-        if (i >= slots) return <LockedSlot key={i} style={{ width: size, height: size }} />;
+        if (i >= slots) return <LockedSlot key={i} style={{ width: "100%", aspectRatio: "1" }} />;
         const l = looks[i] ?? null;
         const active = selected === i && !!l;
         return (
@@ -54,7 +54,7 @@ export default function BagSlots({ slots, looks, selected, onSelect, pulse, size
             title={l ? l.name : "Empty"} aria-label={l ? l.name : `Empty slot ${i + 1}`} aria-pressed={active}
             {...(l && grab ? grab(i, l) : {})}
             style={{ ...(l && grab ? { touchAction: "none" } : {}),
-              position: "relative", width: size, height: size, padding: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: l ? "pointer" : "default",
+              position: "relative", width: "100%", aspectRatio: "1", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: l ? "pointer" : "default",
               ...(l ? { background: `radial-gradient(circle, ${l.glow ?? "rgba(255,255,255,0.05)"} 0%, rgba(0,0,0,0.35) 65%)` } : {}),
               ...(active ? { borderColor: "#ffd66e", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.6), 0 0 12px rgba(255,214,110,0.5)" } : {}),
             }}>

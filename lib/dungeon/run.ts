@@ -527,8 +527,8 @@ export const MERCHANT_SLOTS = 10;
 export const MERCHANT_CLAIRVOYANCE = 0.4;
 // Backpack upgrades: one more slot each, from the backpack's 5 up to
 // BAG_MAX, at BAG_UPGRADE_PRICES (the first is for a 6th slot).
-export const BAG_MAX = 8;
-export const BAG_UPGRADE_PRICES = [1000, 1500, 2000];
+export const BAG_MAX = 10;
+export const BAG_UPGRADE_PRICES = [1000, 1500, 2000, 2500, 3000];
 export const BAG_UPGRADE_CHANCE = 0.2;
 export const bagUpgradePrice = (size: number) => BAG_UPGRADE_PRICES[size - BACKPACK];
 export const STORAGE_PLAN_CHANCE = 0.2;

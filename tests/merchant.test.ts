@@ -59,7 +59,7 @@ describe("what the cart shows you", () => {
     expect(waresFor([up], { bagSize: 7 })[0].price).toBe(2000);
     expect(waresFor([up], { bagSize: BAG_MAX })).toEqual([]);
     expect(waresFor([up], {})).toEqual([]); // the bindle
-    expect(BAG_UPGRADE_PRICES.map((_, i) => bagUpgradePrice(BACKPACK + i))).toEqual([1000, 1500, 2000]);
+    expect(BAG_UPGRADE_PRICES.map((_, i) => bagUpgradePrice(BACKPACK + i))).toEqual([1000, 1500, 2000, 2500, 3000]);
   });
 
   it("a storage schematic you have (or built) isn't offered", () => {
