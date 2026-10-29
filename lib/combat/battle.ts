@@ -7,7 +7,8 @@
 // Rules (confirmed by design):
 // - One active creature per side, and each round both sides pick ONE action.
 //   (Bosses can have a second creature on the field, its "partner"; then you
-//   choose which of the two to attack. A boss side is played by bossAi.ts.
+//   choose which of the two to attack; the Hydra has all three heads out.
+//   A boss side is played by bossAi.ts.
 //   An ordinary side can have a partner too — an ambush, two on one — and
 //   the partner simply uses its hardest-hitting move: partnerAction.)
 // - A fight can have a turn limit (a room rigged to blow): if side B still
@@ -31,7 +32,7 @@ import {
   type CombatItem,
 } from "./engine";
 import type { Skill } from "../creatures/creatureData";
-import { bossActions, bossEndOfRound, bossHiddenAtStart, bossMinHp, type BossKind, type BossState } from "./bossAi";
+import { bossActions, bossCloudOnEntry, bossEndOfRound, bossMinHp, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
 import { HAUNT_CHANCE, PERFECTIONIST_STEP, REVITALISE_HEAL, SOUL_STONES, TOXIC_SKIN, type SoulStoneKey } from "../creatures/soulStones";
 
@@ -137,6 +138,7 @@ export type BattleSide = {
   team: Combatant[];
   active: number;
   partner?: number | null; // a second creature on the field (bosses, or an ambush)
+  field?: number[];        // a boss with more than two on the field (the Hydra's heads, down or not)
   swaps: number;
   lastSwapRound: number;
   boss?: BossState;        // set when this side is a scripted boss
@@ -157,7 +159,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal"; damage?: number }
+      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal" | "poisoned" | "regrow"; damage?: number }
   // A boss changes who's on the field (new phase), or a partner takes over.
   | { type: "lineup"; side: SideKey; active: number; partner: number | null; reveal?: number[]; gone?: number[]; text?: string }
   | { type: "pass"; side: SideKey; name: string }
@@ -181,8 +183,8 @@ export type BattleState = {
 
 export const other = (k: SideKey): SideKey => (k === "A" ? "B" : "A");
 export const activeOf = (s: BattleSide) => s.team[s.active];
-// Team indexes of the creatures on the field (one, or two for some bosses).
-export const fieldOf = (s: BattleSide): number[] => (s.partner != null ? [s.active, s.partner] : [s.active]);
+// Team indexes of the creatures on the field (one, or two or three for some bosses).
+export const fieldOf = (s: BattleSide): number[] => s.field ?? (s.partner != null ? [s.active, s.partner] : [s.active]);
 export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).length;
 
 // startHp: creatures that start hurt (e.g. HP carried between dungeon
@@ -197,11 +199,8 @@ export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partia
   const side = (key: SideKey, team: Fighter[]): BattleSide =>
     ({ key, team: fresh(team, startHp[key]), active: 0, swaps: 0, lastSwapRound: -99 });
   const B = side("B", teamB);
-  if (bossB) {
-    B.boss = { kind: bossB, phase: 1 };
-    B.partner = null;
-    for (const i of bossHiddenAtStart(bossB)) B.team[i].hidden = true;
-  } else if (opts.pairB && B.team.length > 1) B.partner = 1;
+  if (bossB) bossSetup(B, bossB);
+  else if (opts.pairB && B.team.length > 1) B.partner = 1;
   const state: BattleState = {
     ...(opts.turnLimit ? { turnLimit: opts.turnLimit } : {}),
     round: 0,
@@ -313,6 +312,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     s.swaps++;
     s.lastSwapRound = state.round;
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
+    state.log.push(...bossCloudOnEntry(state, k, a.to, state.round)); // into the Hydra's poison cloud?
     cameIn.push(k);
     // Revitalise: swapping out restores some HP.
     if (hasStone(leaving, "revitalise") && leaving.hp > 0 && leaving.hp < leaving.maxHp) {
@@ -442,7 +442,10 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         state.sides[key].blessing = { round: state.round + 1, heal: fx.heal, by: actor.name };
         text += ` — next round, whoever is on the field heals ${Math.round(fx.heal * 100)}% HP`;
       }
+      const bossMove = state.sides[key].boss ? bossSelfMove(state, key, skill.name) : undefined; // the Hydra's breath
+      text += bossMove?.text ?? "";
       state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
+      state.log.push(...(bossMove?.events ?? []));
       continue;
     }
 
@@ -631,6 +634,7 @@ export function sendInReplacement(state: BattleState, key: SideKey, index: numbe
   changeActive(state, key, index);
   state.needsReplacement = state.needsReplacement.filter((k) => k !== key);
   state.log.push({ type: "sendIn", side: key, name: activeOf(s).name, index });
+  state.log.push(...bossCloudOnEntry(state, key, index, state.round + 1)); // it fights next round: into the Hydra's poison cloud?
   return state;
 }
 
@@ -659,7 +663,8 @@ export function cloneBattle(state: BattleState): BattleState {
   const side = (s: BattleSide): BattleSide => ({
     ...s,
     team: s.team.map((f) => ({ ...f, statuses: f.statuses.map((st) => ({ ...st })), streak: f.streak && { ...f.streak }, cooldowns: f.cooldowns && { ...f.cooldowns } })),
-    boss: s.boss && { ...s.boss },
+    boss: s.boss && { ...s.boss, ...(s.boss.down ? { down: [...s.boss.down] } : {}) },
+    ...(s.field ? { field: [...s.field] } : {}),
     blessing: s.blessing && { ...s.blessing },
   });
   return {

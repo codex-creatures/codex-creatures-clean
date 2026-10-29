@@ -59,6 +59,7 @@ export type Fighter = {
   gentle?: boolean; // its hits never knock anyone out (they leave 1 HP): the guided first fight's thief
   races?: RaceV2[]; // Combat V2 races (lib/creatures/racesV2.ts): only count when the rules' races are on
   defenceCut?: number; // share of its defences lost (Corrosive Soak), until it leaves the field
+  weakTo?: CombatClass; // a boss part's weak spot: moves of this style hit it WEAK_SPOT harder (the Hydra's heads)
 };
 
 export type TurnLog = {
@@ -119,6 +120,9 @@ function withProf(stat: number, profPct: number): number {
 // Melee beats ranged, ranged beats magic, magic beats melee. A move's style
 // against the target's primary class.
 export const TRIANGLE = { strong: 1.5, weak: 0.5 }; // +50% / −50% damage
+// A boss part's weak spot (Fighter.weakTo): the old triangle's +50%, with no
+// resisted side (the user, 2026-10-30: the Hydra's heads).
+export const WEAK_SPOT = TRIANGLE.strong;
 export const BEATS: Record<CombatClass, CombatClass> = { melee: "ranged", ranged: "magic", magic: "melee" };
 
 export function triangleModifier(moveStyle: CombatClass, targetClass: CombatClass): number {
@@ -215,6 +219,7 @@ export function calcDamage(
   const elemental    = elementalModifier(attacker.elemental, defender.elemental);
   const triangle     = rules.triangle ? triangleFor(moveType, attacker, defender) : 1;
   const race         = rules.races ? raceMultiplier(skill, attacker, defender, rules.races) : 1;
+  const weakSpot     = defender.weakTo === moveType ? WEAK_SPOT : 1;
 
   // Armour defence counts at ARMOR_DEFENCE_WEIGHT. Penetration and precise
   // hits each ignore a share of what's left.
@@ -227,7 +232,7 @@ export function calcDamage(
   const arcane = Math.min(ARCANE_CAP * (defender.hpMult ?? 1), defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
 
   const preciseMult = precise ? PRECISE_DAMAGE : 1;
-  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * race * preciseMult));
+  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * race * weakSpot * preciseMult));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));
 
   return { damage: finalDmg, braceBlocked, braceFailed };

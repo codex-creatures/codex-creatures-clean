@@ -30,7 +30,7 @@ import {
   CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, SOAK_ROUNDS, perfectionistBonus,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
-import type { BossKind } from "@/lib/combat/bossAi";
+import { cloudLeft, type BossKind } from "@/lib/combat/bossAi";
 import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
 import { TUTORIAL_MOVES } from "@/lib/quest";
 import { REF_LEVEL } from "@/lib/creatures/levels";
@@ -87,7 +87,8 @@ export type Match = {
 // when a side has two on the field.
 export type Fx =
   | { id: number; kind: "attack"; side: SideKey; damage: number; precise: boolean; missed: boolean; crippled: boolean;
-      attackerIndex?: number; targetIndex?: number; evaded?: boolean; landed?: Landed; caption: string }
+      attackerIndex?: number; targetIndex?: number; evaded?: boolean; landed?: Landed;
+      caption: string; move: string; style: Skill["type"] } // caption: who used it ("Foe's Moss Wolf used"); move: what, in its style's colour
   | { id: number; kind: "swap" | "sendIn" | "faint"; side: SideKey }
   | { id: number; kind: "effect"; side: SideKey; index: number; text: string; color: string; caption?: string }
   | { id: number; kind: "lineup"; side: SideKey; text?: string };
@@ -258,13 +259,14 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       setView(shown);
       setFx(e.type === "attack"
         ? { id: ++n, kind: "attack", side: e.side, damage: e.damage, precise: e.precise, missed: e.missed, crippled: e.crippled,
-            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded, caption: `${e.side === "B" ? "Foe's " : ""}${e.attacker} used ${e.skill.name}`,
-            landed: raceLanding(e.skill, shown.sides[e.side === "A" ? "B" : "A"].team[e.targetIndex ?? shown.sides[e.side === "A" ? "B" : "A"].active]) }
+            attackerIndex: e.attackerIndex, targetIndex: e.targetIndex, evaded: e.evaded, caption: `${e.side === "B" ? "Foe's " : ""}${e.attacker} used`,
+            move: e.skill.name, style: e.skill.type,
+            landed: hitLanding(e.skill, shown.sides[e.side === "A" ? "B" : "A"].team[e.targetIndex ?? shown.sides[e.side === "A" ? "B" : "A"].active]) }
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
             ...(e.kind === "self" ? { caption: `${e.side === "B" ? "Foe's " : ""}${e.name} used ${e.text.split(" — ")[0].replace(/^uses /, "")}` } : {}),
-            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
+            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : e.kind === "poisoned" ? "POISONED!" : e.kind === "regrow" ? "GROWS BACK!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" || e.kind === "poisoned" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" || e.kind === "regrow" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       if (e.type === "attack") buzz(attackHaptic(e)); // (Settings → Vibration; off unless switched on)
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
@@ -346,6 +348,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   useEffect(() => { if (stuck) onAct({ kind: "pass" }); }, [stuck]); // eslint-disable-line react-hooks/exhaustive-deps
   // What's happening now, in words ("Moss Wolf used Gore"), while a round plays out.
   const caption = playing && fx && "caption" in fx ? fx.caption : undefined;
+  const captionMove = playing && fx?.kind === "attack" ? fx : undefined; // the move, in its style's colour
 
   // A panel opened over the stage, from the dock.
   const over = (title: string, body: React.ReactNode) => (
@@ -379,7 +382,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             🧨 {Math.max(0, state.turnLimit - state.round)} round{state.turnLimit - state.round === 1 ? "" : "s"} until the room blows
           </div>
         )}
-        {foe.boss && <BossStage side={foe} fx={fx} infos={info.B}
+        {foe.boss && <BossStage side={foe} fx={fx} infos={info.B} target={target} onTarget={!playing ? setTargetPick : undefined} cloud={cloudLeft(state, "B")}
           you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
 
         {/* The fight, staged in a dungeon room (two enemies use the arena). */}
@@ -485,7 +488,9 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
                 out, the same line says who used what. (A fixed height either way.) */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, height: 20 }}>
               {caption ? (
-                <span className="pixel-font" title={caption} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 14, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{caption}</span>
+                <span className="pixel-font" title={captionMove ? `${caption} ${captionMove.move}` : caption} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 14, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {caption}{captionMove && <> <span style={{ color: STYLE_COLOR[captionMove.style] }}>{captionMove.move}</span></>}
+                </span>
               ) : (
                 <>
                   <span className="pixel-font" style={{ fontSize: 12, color: "#9cc8ff", whiteSpace: "nowrap", opacity: playing ? 0.6 : 1 }}>⚡ {Math.round(me.energy)}</span>
@@ -530,7 +535,11 @@ function matchupHint(mine: Combatant, them: Combatant): string {
 
 // How this move's race lands on the target's races (Combat V2): undefined
 // when neutral (or races are off, or the target has none).
-type Landed = "effective" | "resisted";
+type Landed = "effective" | "resisted" | "weak";
+// How a hit lands: on a boss part's weak spot, or how its race lands.
+function hitLanding(sk: Skill, them?: Combatant): Landed | undefined {
+  return them?.weakTo && them.weakTo === sk.type ? "weak" : raceLanding(sk, them);
+}
 function raceLanding(sk: Skill, them?: Combatant): Landed | undefined {
   const r = combatRules().races && !sk.self ? raceOfMove(sk) : undefined;
   const m = r && them?.races?.length ? raceVsAll(r, them.races) : 1;
@@ -613,12 +622,17 @@ function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: 
     color={color} hpPct={hpPct} cripple={cripple} haste={haste} />;
 }
 
-// Floating text over a creature: a hit's damage, with how its race landed on a smaller line under it.
+// Floating text over a creature: a hit's damage, in its style's colour, with
+// how it landed (its race, or a boss's weak spot) on a smaller line under it.
 type Float = { text: string; color: string; sub?: { text: string; color: string } };
 const LANDED_TEXT: Record<Landed, { text: string; color: string }> = {
   effective: { text: "EFFECTIVE!", color: "#ff9a3c" },
   resisted:  { text: "RESISTED",   color: "#a8b0b8" },
+  weak:      { text: "WEAK SPOT!", color: "#ff9a3c" },
 };
+// Each attack style's colour in a fight (the user, 2026-10-30): a move's name
+// as it's used, and the damage it does.
+export const STYLE_COLOR: Record<Skill["type"], string> = { melee: "#ff6b5e", ranged: "#6ee07a", magic: "#6fb4ff" };
 export function FloatText({ float, top }: { float: Float; top?: number }) {
   return (
     <div className="float-text pixel-font" style={{ color: float.color, top, textAlign: "center" }}>
@@ -638,7 +652,7 @@ export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: s
     if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex)) {
       anim = fx.missed ? "anim-dodge" : "anim-hit";
       float = fx.missed ? { text: "MISS", color: "#bbb" }
-        : { text: `-${fx.damage}${fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : "#ff7a6b",
+        : { text: `-${fx.damage}${fx.precise ? " PRECISE!" : ""}${fx.crippled ? " CRIPPLED!" : ""}`, color: fx.precise ? "#ffd84a" : fx.crippled ? "#d7a6ff" : STYLE_COLOR[fx.style],
             sub: fx.landed && LANDED_TEXT[fx.landed] };
     }
     if ((fx.kind === "swap" || fx.kind === "sendIn" || fx.kind === "lineup") && fx.side === side) anim = "anim-swapin";

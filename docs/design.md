@@ -217,7 +217,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - Scans: 1% of outcomes (`SCAN_ODDS.soul_stone`, taken from armour: now 26%), **only for the
     first ever to scan the barcode**; anyone after gets gold (`claimedOutcome`). "First" means
     first in this browser's registry until there's a global one.
-  - Boss chests: the Cyclops 2% (`CYCLOPS_SOUL_STONE`), the Warden's strongbox 5%
+  - Boss chests: the Cyclops 2% (`CYCLOPS_SOUL_STONE`), the strongbox (the Hydra's, the Warden's) 5%
     (`WARDEN_SOUL_STONE`). Not in ordinary Labyrinth chests (`CHEST_ODDS`).
   - Set in **any creature** (any rarity, any stone, not just its species pool; not cards) by tapping
     its soul stone slot: free into an empty slot, 5,000 gold to replace one
@@ -259,7 +259,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   window; works on Klutz.
   - 🧪 Drop rates: mini-boss chests 25%, boss chests 50%, 20% of merchants at 200 gold. The 25% and
     50% are Claude's numbers.
-- ✅ Enemy levels come in bands by depth (`DUNGEONS[d].levels`). Cyclops Lv 6, Warden Lv 16 (Lv 25 in the Abyss).
+- ✅ Enemy levels come in bands by depth (`DUNGEONS[d].levels`). Cyclops Lv 6, Hydra Lv 16, Warden Lv 25 (the Abyss).
 - ❓ Cards still show level-15 %s; Pit fights give no XP.
 
 ## 6. Combat
@@ -401,12 +401,17 @@ How it came about, round by round: history.md.
   Rare), and librarians, chests and the Cyclops alongside the older race codexes
   (`RACE_CODEX_MOVES`). 🧪 A librarian's kit codex costs 200 (`LEARNABLE_CODEX_PRICE`).
 - ✅ **Guided first fight** teaches races: the Baby Cyclops thief is Humanoid; Klutz has you use
-  Tunnel Rush (resisted), then Gore (effective). The Cyclops and the Warden's pack have no race.
+  Tunnel Rush (resisted), then Gore (effective). Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
 - ✅ **UI:** moves show their race; tablets are cut in their race's stone with a big style icon
   (impact / arrow / bolt). Cards show race squares under the sprite (not the style); creature
   windows and name plates show races spelled out. A hit says **EFFECTIVE!** or **RESISTED**. A move's
   (i) says how its race lands; no hint on the tile. The Bestiary's "How fights work" has the race
   chart and a calculator; Labyrinth fights have a race chart button (▲▼).
+- ✅ **Style colours in a fight** (the user, 2026-10-30; `STYLE_COLOR` in components/BattleScreen.tsx):
+  as a move is used, its name in the dock's line ("Foe's Moss Wolf used Gore") and the damage it
+  does are in its style's colour: red melee, green ranged, blue magic (a precise or crippling hit's
+  number keeps its own colour). Under the damage: EFFECTIVE! / RESISTED for its race, WEAK SPOT! for a
+  boss's weak spot.
 - 🧪 Soul stone pools for the six new Rare+ creatures are Claude's drafts.
 - 🧪 Sim of the live roster (2026-10-26): spread within a rarity 3.3 (was 6.3); the race edge wins
   72% of even duels; swapping no longer pays (50%).
@@ -446,10 +451,11 @@ How it came about, round by round: history.md.
       Labyrinth's rooms 1–5 (a brute beats you 16% of the time, the chief ~70%); ungeared, 66%.
   - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
   - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies
-    up to Lv 17, boss the **Warden's pack** (a Legendary plus 2 Epic guards).
-  - **The Abyss:** opens after your first Warden clear (the user, 2026-10-26). The Deep Labyrinth
-    again (same map, same creature rarities, same Warden's pack) with higher levels (Lv 15–26 by
-    depth, Warden Lv 25) and every piece of enemy gear a rarity up; gold ×3. 🧪 The levels and gold
+    up to Lv 17, boss the **Hydra** (below; it replaced the Warden's pack here, the user, 2026-10-30).
+  - **The Abyss:** opens after your first Deep Labyrinth clear (the user, 2026-10-26). The Deep Labyrinth
+    again (same map, same creature rarities) with higher levels (Lv 15–26 by depth) and every piece
+    of enemy gear a rarity up; gold ×3. Its boss is the **Warden's pack** (a Legendary plus Epic
+    guards, Warden Lv 25; the user kept it here when the Hydra took the Deep Labyrinth). 🧪 The levels and gold
     are Claude's numbers.
     - **Fought 5 against 5** (the user, 2026-10-27): your whole party of 5 goes in, and foes come in
       matching numbers (`ABYSS_SQUADS`, `squadsOf`): dens 2 in the first 2 rooms, 2–3 to depth 4, 3–5
@@ -552,8 +558,33 @@ How it came about, round by round: history.md.
      fast, strong melee.
   3. Then **the Eye** leaves the skull: ranged, in Float stance, with very high melee defence.
   - It's meant to take a few attempts (sims: a median of about 12–13 runs to the first kill).
+- ✅ **The Hydra** (the Deep Labyrinth's boss; the user's spec, 2026-10-30; `HYDRA` in
+  lib/combat/bossAi.ts, `HYDRA_PARTS` in lib/creatures/bosses.ts). Lv 16, no race.
+  - **Three heads, all on the field**, left to right: the Fang Head (melee), the Spitter Head
+    (ranged), the Hex Head (magic). You tap a head to aim at it (the Cyclops's hands work the same
+    way). ✅ **Weak spots, no resistances** (the user, 2026-10-30): every head has the same defences,
+    and each takes **1.5×** from the style that beat its own in the old triangle (`weakTo`,
+    `WEAK_SPOT` in lib/combat/engine.ts): the Fang Head from magic, the Spitter Head from melee,
+    the Hex Head from ranged.
+  - **One head acts a round**, always left to right, starting from a random head; a head that's
+    down is skipped.
+  - **Toxic Breath:** once, in a random round from 3 to 5, the head whose turn it is breathes
+    instead. The cloud hangs for 3 rounds: your creature on the field, and every creature that
+    comes in while it hangs (a swap or a replacement), is poisoned for **2.5% of max HP a round for
+    20 rounds** (50% in all). A creature that's already poisoned isn't poisoned again. Once a cloud
+    has cleared, each turn has a 20% chance of another breath.
+  - **Heads grow back** 5 rounds after one goes down; another head going down starts the count
+    again. One head grows back with 75% HP, two with 50% each. All three down at once kills it.
+  - 🧪 Its numbers (head HP, attack, defences, the moves' damage) are Claude's, set against the
+    Warden's pack by sim (`scripts/sim-hydra.ts`, 200 fights: an Epic and two Rares, Lv 16, in Rare gear,
+    full health, no potions, the Normal AI): the party beats the Hydra 56% of the time, the Warden's pack
+    40%; 17–18 rounds. (With resistances as well, before the user dropped them: 29%.)
+    Then the user had every head's HP raised 25% (longer fights, so the poison does more): 📌 not
+    re-simmed yet.
+  - 📌 Art: the heads borrow the Void Serpent's art, tinted apart, until PixelLab art is made
+    (samples first, for the user's approval).
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
-  Warden drops a strongbox.
+  Hydra and the Warden drop a strongbox.
 - 📌 Also decided as Cyclops rewards, **not built** (the game says "next update"): building the
   **Tavern** (now via the tavern questline in §9, not gold), and a **trophy** showing which run you won on (that run is already
   recorded: `meta.firstClearRun`).

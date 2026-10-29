@@ -205,3 +205,7 @@ for (const [id, [w, h]] of Object.entries(ART_SIZES)) {
 
 // The first quest's thief (PixelLab art; no grid of its own, so the egg is its fallback).
 CREATURE_SPRITES.baby_cyclops = withArt([...EGG], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83 });
+
+// 🧪 The Hydra's heads (the Deep Labyrinth's boss) borrow the Void Serpent's art
+// (BossStage tints them apart) until they have PixelLab art of their own.
+for (const id of ["hydra_fang", "hydra_spitter", "hydra_hex"]) CREATURE_SPRITES[id] = CREATURE_SPRITES.void_serpent;

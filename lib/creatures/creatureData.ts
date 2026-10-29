@@ -230,6 +230,16 @@ export const BOSS_MOVES: Skill[] = [
   { name: "Crushing Grip", damage: 25, energyCost: 50, type: "melee", dmgType: "force"  },
   { name: "Laser",         damage: 15, energyCost: 30, type: "magic", dmgType: "pierce" },
   { name: "Searing Beam",  damage: 25, energyCost: 50, type: "magic", dmgType: "arcane" },
+  // The Hydra (the Deep Labyrinth's boss): a quick and a heavy move for each
+  // head, and the breath any head can use (lib/combat/bossAi.ts HYDRA).
+  { name: "Snap",          damage: 12, energyCost: 25, type: "melee",  dmgType: "pierce" },
+  { name: "Rending Bite",  damage: 22, energyCost: 45, type: "melee",  dmgType: "pierce" },
+  { name: "Acid Spit",     damage: 12, energyCost: 25, type: "ranged", dmgType: "pierce" },
+  { name: "Acid Torrent",  damage: 22, energyCost: 45, type: "ranged", dmgType: "force"  },
+  { name: "Hex Bolt",      damage: 12, energyCost: 25, type: "magic",  dmgType: "arcane" },
+  { name: "Withering Curse", damage: 22, energyCost: 45, type: "magic", dmgType: "arcane" },
+  { name: "Toxic Breath",  damage: 0,  energyCost: 0,  type: "magic",  dmgType: "arcane", self: true,
+    desc: "A poison cloud for 3 rounds: your creature on the field, and any that come in while it hangs there, are poisoned (2.5% of max HP a round, for 20 rounds). It doesn't poison a creature that's already poisoned." },
 ];
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
@@ -365,6 +375,16 @@ export const BOSS_PARTS: CreatureTemplate[] = [
   { id: "cyclops_eye", name: "The Eye", rarity: "legendary", baseHp: 150, boss: true, cls: "magic", proficiency: NO_PROF,
     skills: bossMoves("Laser", "Searing Beam"),
     flavour: "Free of the skull at last, it floats — and it is furious." },
+  // The Hydra (the Deep Labyrinth's boss): three heads, each its own fighter, left to right.
+  { id: "hydra_fang", name: "Fang Head", rarity: "legendary", baseHp: 250, boss: true, cls: "melee", proficiency: NO_PROF,
+    skills: bossMoves("Snap", "Rending Bite", "Toxic Breath"),
+    flavour: "The left head. All teeth, and it never lets go." },
+  { id: "hydra_spitter", name: "Spitter Head", rarity: "legendary", baseHp: 225, boss: true, cls: "ranged", proficiency: NO_PROF,
+    skills: bossMoves("Acid Spit", "Acid Torrent", "Toxic Breath"),
+    flavour: "The middle head. Its spit eats through stone." },
+  { id: "hydra_hex", name: "Hex Head", rarity: "legendary", baseHp: 225, boss: true, cls: "magic", proficiency: NO_PROF,
+    skills: bossMoves("Hex Bolt", "Withering Curse", "Toxic Breath"),
+    flavour: "The right head. Its eyes glow, and its whispers hurt." },
   // The first quest's thief (lib/quest.ts): the guided first fight.
   { id: "baby_cyclops", name: "Baby Cyclops", rarity: "rare", baseHp: 76, boss: true, cls: "melee", proficiency: NO_PROF,
     skills: bossMoves("Backhand", "Club Smash"),

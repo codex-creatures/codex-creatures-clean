@@ -64,10 +64,10 @@ export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "che
 // campCages). The Labyrinth opens once you've beaten it (labyrinthOpen).
 // 1: the Labyrinth (the Cyclops at the top). 2: the Deep Labyrinth, open
 // once you've beaten the Cyclops: a longer climb (DEEP_ROUTE rooms to the
-// lair), tougher and higher-level creatures, and the Warden's pack waiting
-// at the top. 3: the Abyss, open once you've beaten the Warden: the Deep
-// Labyrinth again (the same climb, the same Warden's pack), only with
-// higher-level creatures in rarer gear (the user, 2026-10-26). Enemy levels
+// lair), tougher and higher-level creatures, and the Hydra waiting at the
+// top (the Warden's pack until 2026-10-30). 3: the Abyss, open once you've
+// beaten the Deep Labyrinth: the same climb with the Warden's pack at the
+// top, and higher-level creatures in rarer gear (the user, 2026-10-26). Enemy levels
 // rise with depth (enemyLevel).
 export type DungeonId = 0 | 1 | 2 | 3;
 export const DUNGEON_IDS: DungeonId[] = [0, 1, 2, 3];
@@ -136,7 +136,7 @@ export const HARD_LEVELS = 2;
 export const MINIBOSS_LEVELS = 3;
 // (A boss's strength is mostly its gear and its tricks; its level trims its HP and %s.)
 export const CYCLOPS_LEVEL = 6;  // the Labyrinth's boss
-export const WARDEN_LEVEL = 16;  // the Deep Labyrinth's boss pack (its guards are a level lower)
+export const WARDEN_LEVEL = 16;  // the Deep Labyrinth's boss, the Hydra (the Warden's pack's level when it was the boss here)
 export const ABYSS_WARDEN_LEVEL = 25; // the Abyss's (the same pack, stronger)
 export const bossLevel = (dungeon: DungeonId) => (dungeon === 1 ? CYCLOPS_LEVEL : dungeon === 2 ? WARDEN_LEVEL : ABYSS_WARDEN_LEVEL);
 export function enemyLevel(dungeon: DungeonId, kind: RoomKind, depth: number, rng: Rng = Math.random): number {
@@ -540,7 +540,7 @@ export const REVIVE_HP = 0.5;
 export const MINIBOSS_REVIVAL = 0.2;
 export const BOSS_REVIVAL = 0.5;
 // A boss's chest sometimes holds a soul stone (the user, 2026-10-25): the
-// Cyclops' CYCLOPS_SOUL_STONE of the time, the Warden's strongbox WARDEN_SOUL_STONE.
+// Cyclops' CYCLOPS_SOUL_STONE of the time, the strongbox (the Hydra's, the Warden's) WARDEN_SOUL_STONE.
 export const CYCLOPS_SOUL_STONE = 0.02;
 export const WARDEN_SOUL_STONE = 0.05;
 export function bossSoulStone(cyclops: boolean, rng: Rng = Math.random): SackItem[] {
@@ -810,7 +810,7 @@ export type Room = {
   dynamite?: boolean;  // …Klutz's dynamite is among its crates, still to take (lib/tavern.ts)
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
-  container?: "sack" | "chest" | "strongbox"; // a beaten fight's loot: a sack (ordinary fights), a rickety chest (mini bosses, the Cyclops) or the Warden's strongbox
+  container?: "sack" | "chest" | "strongbox"; // a beaten fight's loot: a sack (ordinary fights), a rickety chest (mini bosses, the Cyclops) or a strongbox (the Hydra, the Warden)
   quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
   witch?: WitchGame;   // the card witch's game (lib/dungeon/witch.ts)
@@ -949,9 +949,10 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     case "witch":
       return { kind, witch: newWitchGame(rng, witchPrize), done: false };
     case "boss":
-      // Dungeon 1: the Cyclops (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
+      // Dungeon 1: the Cyclops; the Deep Labyrinth: the Hydra (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
-      // The Deep Labyrinth and the Abyss: the Warden (a Legendary) and his Epic guards.
+      if (dungeon === 2) return { kind, boss: "hydra", gold: gold(BOSS_GOLD), done: false };
+      // The Abyss: the Warden (a Legendary) and his Epic guards.
       return { kind, enemies: wardenPack(rng, dungeon), level: "hard", gold: gold(BOSS_GOLD), done: false };
     case "librarian": {
       // A few different codexes, each for a different race.

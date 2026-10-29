@@ -105,17 +105,16 @@ describe("the Deep Labyrinth", () => {
   it(`is ${DEEP_ROUTE} rooms from the entrance to the lair`, () => {
     for (let i = 0; i < 10; i++) expect(routeLength(rollMap(false, Math.random, DUNGEONS[2].spec))).toBe(DEEP_ROUTE);
   });
-  it("has higher-level, rarer creatures than the Labyrinth, and the Warden's pack at the top", () => {
+  it("has higher-level, rarer creatures than the Labyrinth, and the Hydra at the top", () => {
     expect(enemyLevel(2, "easy", 1)).toBeGreaterThan(enemyLevel(1, "easy", 1));
     const den = makeRoom("easy", Math.random, 10, 2);
     expect(den.enemies!.every((e) => (e.level ?? 0) >= 9)).toBe(true); // rooms 6–10: Lv 9+
     const boss = makeRoom("boss", Math.random, 15, 2);
-    expect(boss.boss).toBeUndefined();
-    expect(boss.enemies).toHaveLength(3);
-    expect(CREATURE_BY_ID[boss.enemies![0].creatureId].rarity).toBe("legendary");
+    expect(boss.boss).toBe("hydra");
+    expect(boss.enemies).toBeUndefined();
     expect(makeRoom("boss", Math.random, 8, 1).boss).toBe("cyclops");
   });
-  it("the Abyss: the Deep Labyrinth's climb and Warden's pack, with higher levels and rarer gear", () => {
+  it("the Abyss: the Deep Labyrinth's climb with higher levels and rarer gear, and the Warden's pack at the top", () => {
     const rank = (r: string) => ["common", "uncommon", "rare", "epic", "legendary"].indexOf(r);
     expect(DUNGEONS[3].spec).toEqual(DUNGEONS[2].spec);
     for (const [i, [upTo, min, max]] of DUNGEONS[3].levels.entries()) {
@@ -135,7 +134,6 @@ describe("the Deep Labyrinth", () => {
     expect(boss.enemies!.map((e) => CREATURE_BY_ID[e.creatureId].rarity)).toEqual(["legendary", "epic", "epic", "epic", "epic"]); // (4 guards: 5v5)
     expect(boss.enemies!.map((e) => e.level)).toEqual([ABYSS_WARDEN_LEVEL, ...Array(4).fill(ABYSS_WARDEN_LEVEL - 1)]);
     expect(boss.enemies!.map((e) => e.gear[0].rarity)).toEqual(["epic", "rare", "rare", "rare", "rare"]);
-    expect(makeRoom("boss", Math.random, 15, 2).enemies!.map((e) => e.gear[0].rarity)).toEqual(["rare", "uncommon", "uncommon"]);
   });
   it("counts Abyss runs apart from the other two", () => {
     const run = { ...startRun(["a"], ["a"], {}, 1, Math.random, 3), status: "cleared" as const };

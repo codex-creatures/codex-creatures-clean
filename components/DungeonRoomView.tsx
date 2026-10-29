@@ -219,7 +219,7 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
 
   // (An ambush that hasn't sprung yet looks like an empty camp.)
   if (hasFight(room)) {
-    // Beaten: what it leaves behind — the Warden's strongbox, a rickety chest (bosses) or a sack.
+    // Beaten: what it leaves behind — a strongbox (the Hydra, the Warden), a rickety chest (bosses) or a sack.
     if (room.done) {
       if (room.container === "strongbox") return prop(room.opened ? STRONGBOX_OPEN : STRONGBOX, room.opened ? "The strongbox, opened" : "Open the strongbox");
       if (room.container === "chest") return prop(room.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST, room.opened ? "Its chest, opened" : "Loot the chest");
@@ -227,7 +227,7 @@ function RoomContents({ run, size, view, onObject, onEnemies, lift }: { run: Dun
       return null;
     }
     if (room.boss) {
-      const boss = creatureSprite("cyclops");
+      const boss = creatureSprite(room.boss === "hydra" ? "hydra_fang" : "cyclops");
       return (
         <div style={at}>
           <div className="boss-breathe" style={{ width: share(boss, BOSS_TALL), filter: "drop-shadow(0 0 10px rgba(255,59,42,0.7)) drop-shadow(0 4px 0 rgba(0,0,0,0.7))" }}>{draw(boss)}</div>

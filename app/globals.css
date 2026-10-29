@@ -235,6 +235,12 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 }
 .boss-flash { position: absolute; inset: 0; background: #fff3e0; animation: boss-flash 0.9s ease-out forwards; pointer-events: none; z-index: 2; }
 @keyframes boss-flash { from { opacity: 0.9; } to { opacity: 0; } }
+/* The Hydra's poison cloud, hanging over the lair, and how long it has left. */
+.boss-cloud { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(ellipse at 55% 75%, rgba(120,210,60,0.32), transparent 70%); animation: boss-cloud 2.8s ease-in-out infinite alternate; }
+@keyframes boss-cloud { from { opacity: 0.6; transform: translateX(-6px); } to { opacity: 1; transform: translateX(6px); } }
+.boss-cloud-tag { position: absolute; left: 6px; top: 6px; z-index: 3; padding: 2px 6px; font-size: 12px; color: #9be15d;
+  background: rgba(10,8,8,0.82); border: 1px solid #9be15d; white-space: nowrap; }
 .boss-clue {
   position: absolute; left: 10px; right: 10px; top: 10px; z-index: 3; padding: 6px 10px; text-align: center;
   font-size: 15px; line-height: 1.35; color: #ffd66e; background: rgba(10,8,8,0.82); border: 2px solid #ffd66e;

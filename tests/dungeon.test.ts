@@ -336,7 +336,7 @@ describe("a labyrinth run", () => {
     expect(sizes("miniboss", 10, 3)).toEqual([ABYSS_SQUADS.miniboss]);
     expect(sizes("hard", 10, 2)).toEqual([1]);
     expect(sizes("boss", 15, 3)).toEqual([1 + ABYSS_SQUADS.guards]);
-    expect(sizes("boss", 15, 2)).toEqual([3]);
+    expect(makeRoom("boss", Math.random, 15, 2).boss).toBe("hydra"); // (the Deep Labyrinth's boss)
   });
 
   it.runIf(HEAL_AT_HOME)("with the testing shortcut on, every run ends with everyone healed", () => {
