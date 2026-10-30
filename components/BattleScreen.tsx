@@ -44,6 +44,7 @@ import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
+import Glyph from "./Glyph";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
 // Most art faces left, so yours is mirrored; art drawn facing right is the other way round.
@@ -687,12 +688,12 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
         {/* Opponents: just a health bar that goes down (no numbers, no energy). */}
         <Bar label="HP" value={side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.max(0, Math.ceil(hpPct))}%`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
         {side === "A" && <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />}
-        {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}>🐌 Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
+        {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}><Glyph icon="🐌" art="status_cripple" /> Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
         {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
         {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "poison" || s.id === "corpsify" || s.id === "seal" || s.id === "soak").map((s) => (
           <div key={s.id} style={{ fontSize: 11, marginTop: 6, color: s.id === "venom" || s.id === "poison" ? "#9be15d" : s.id === "mirage" ? "#c7b8ff" : "#9fd3a8" }}>
-            {s.id === "venom" && <>🧪 Envenomed (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
-            {s.id === "poison" && <>☣️ Poisoned (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "venom" && <><Glyph icon="🧪" art="status_poison" /> Envenomed (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
+            {s.id === "poison" && <><Glyph icon="☣️" art="status_poison" /> Poisoned (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
             {s.id === "mirage" && <>✨ Mirage ({Math.round((s.chance ?? 0) * 100)}% to dodge) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
             {s.id === "corpsify" && <>⚰️ Corpsified — rises again if knocked out</>}
             {s.id === "seal" && <>⛓️ Sealed: can&apos;t swap out · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
@@ -867,13 +868,17 @@ const stageWidth = (sprite: Sprite) => {
 // (yours shows HP, theirs a percentage only) and any statuses.
 export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?: MemberInfo }) {
   const hpPct = Math.max(0, (f.hp / f.maxHp) * 100);
-  const icons = [
-    f.statuses.some((s) => s.id === "cripple") && "🐌", f.statuses.some((s) => s.id === "haste") && "⚡",
-    f.statuses.some((s) => s.id === "venom") && "🧪", f.statuses.some((s) => s.id === "mirage") && "✨",
-    f.statuses.some((s) => s.id === "corpsify") && "⚰️", f.statuses.some((s) => s.id === "poison") && "☣️",
-    f.statuses.some((s) => s.id === "seal") && "⛓️", // (fear stays hidden until it strikes)
-    f.statuses.some((s) => s.id === "soak") && "🫧",
-  ].filter(Boolean).join(" ");
+  // Venom (Rabid Bite) and poison share the poison icon, shown once.
+  const has = (...ids: string[]) => f.statuses.some((s) => ids.includes(s.id));
+  const marks: [boolean, React.ReactNode][] = [
+    [has("cripple"), <Glyph key="cripple" icon="🐌" art="status_cripple" />], [has("haste"), "⚡"],
+    [has("venom", "poison"), <Glyph key="poison" icon="☣️" art="status_poison" />], [has("mirage"), "✨"],
+    [has("corpsify"), "⚰️"],
+    [has("seal"), "⛓️"], // (fear stays hidden until it strikes)
+    [has("soak"), "🫧"],
+  ];
+  const shown = marks.filter(([on]) => on).map(([, m]) => m);
+  const icons = shown.length ? <>{shown.map((m, i) => <span key={i}>{i > 0 && " "}{m}</span>)}</> : null;
   return (
     <>
       <div className="pixel-font" style={{ display: "flex", alignItems: "baseline", gap: 5, maxWidth: "100%", fontSize: "clamp(10px, 2.4cqw, 13px)", textShadow: "0 2px 0 #000", whiteSpace: "nowrap" }}>

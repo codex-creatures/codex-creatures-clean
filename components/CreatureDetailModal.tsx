@@ -30,6 +30,7 @@ import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
 import { Coin } from "./GoldCount";
+import Glyph from "./Glyph";
 
 type Props = {
   creature: CreatureOrItemDrop;
@@ -82,12 +83,13 @@ const lines = (n: number, lineHeight: number): React.CSSProperties => ({
 
 // Each stat's bar is full at about the best a creature reaches with Legendary gear.
 export type StatKey = "hp" | "atk" | "rng" | "mag" | "agil" | "mdef" | "rdef" | "magdef";
-export const STATS: { key: StatKey; icon: string; label: string; max: number; color: string }[] = [
-  { key: "hp",   icon: "❤️", label: "Health",     max: 350, color: "#e0524a" },
-  { key: "atk",  icon: "⚔️", label: "Melee",      max: 180, color: "#ff9f43" },
+// art: its PixelLab icon (public/sprites/icons); the rest keep their emoji until theirs is picked.
+export const STATS: { key: StatKey; icon: string; art?: string; label: string; max: number; color: string }[] = [
+  { key: "hp",   icon: "❤️", art: "stat_hp",   label: "Health",     max: 350, color: "#e0524a" },
+  { key: "atk",  icon: "⚔️", art: "stat_atk",  label: "Melee",      max: 180, color: "#ff9f43" },
   { key: "rng",  icon: "🏹", label: "Ranged",     max: 180, color: "#6fdc6f" },
-  { key: "mag",  icon: "🔮", label: "Magic",      max: 180, color: "#c08cff" },
-  { key: "agil", icon: "💨", label: "Agility",    max: 240, color: "#5ee0c0" },
+  { key: "mag",  icon: "🔮", art: "stat_mag",  label: "Magic",      max: 180, color: "#c08cff" },
+  { key: "agil", icon: "💨", art: "stat_agil", label: "Agility",    max: 240, color: "#5ee0c0" },
   { key: "mdef", icon: "🛡️", label: "Melee Def",  max: 160, color: "#7aa7ff" },
   { key: "rdef", icon: "🔰", label: "Ranged Def", max: 160, color: "#8fd0ff" },
   { key: "magdef", icon: "🧿", label: "Magic Def", max: 160, color: "#e0a8ff" },
@@ -418,7 +420,7 @@ export default function CreatureDetailModal({
                 const diff = st.key === "hp" || !base || points ? 0 : prof![st.key] - base[st.key];
                 const gear = st.key === "hp" ? `${hpAt(template, level)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear`
                   : `${gearValue(now.f, st.key)} gear × +${p}%`;
-                return <StatRow key={st.key} icon={st.icon} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
+                return <StatRow key={st.key} icon={<Glyph icon={st.icon} art={st.art} />} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
               })}
             </div>
             {/* The creature's own %s: what each point of gear is multiplied by. */}
@@ -439,7 +441,7 @@ export default function CreatureDetailModal({
                 return (
                   <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level 30: ${proficiencyAt(template, prof, MAX_LEVEL)[k]}%)`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
-                    <div style={{ fontSize: 13 }}>{st.icon}</div>
+                    <div style={{ fontSize: 13 }}><Glyph icon={st.icon} art={st.art} /></div>
                     <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
                     <div style={{ ...NUM, fontSize: 18, color: st.color }}>{now.f.proficiency[k] >= 0 ? "+" : ""}{now.f.proficiency[k]}%</div>
                     <div style={{ fontSize: 11, color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d} roll` : d < 0 ? `${d} roll` : "standard"}</div>
@@ -500,7 +502,7 @@ function PointsGrid({ prof, free, pending, locked, onAdd, onConfirm, onCancel, r
               title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${prof[k]}%. Tap to add 1%.`}
               style={{ textAlign: "center", padding: "6px 2px", minHeight: 44, background: add ? "#1a2416" : "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}`,
                 color: "inherit", cursor: locked || left <= 0 ? "default" : "pointer", font: "inherit" }}>
-              <div style={{ fontSize: 13 }}>{st.icon}</div>
+              <div style={{ fontSize: 13 }}><Glyph icon={st.icon} art={st.art} /></div>
               <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>
               <div style={{ ...NUM, fontSize: 18, color: st.color }}>+{prof[k] + add}%</div>
               <div style={{ fontSize: 11, color: "#7CFC9A", visibility: add ? "visible" : "hidden" }}>+{add}</div>
@@ -724,7 +726,7 @@ function Badge({ children, color }: { children: React.ReactNode; color: string }
 // One stat: icon, name, a chunky bar (with the previewed change), the total.
 // compact: smaller, for narrow windows (EquipPreview).
 export function StatRow({ icon, label, color, max, total, after, detail, diff, compact }: {
-  icon: string; label: string; color: string; max: number; total: number; after: number; detail: string; diff: number; compact?: boolean;
+  icon: React.ReactNode; label: string; color: string; max: number; total: number; after: number; detail: string; diff: number; compact?: boolean;
 }) {
   const pct = (v: number) => Math.min(100, (v / max) * 100);
   const change = after - total;
@@ -767,7 +769,7 @@ function ItemStats({ item, worn, keys }: { item: CreatureOrItemDrop; worn?: Crea
         const v = val(item, k), d = compare ? v - val(worn, k) : 0;
         return (
           <div key={k} title={`${st.label} ${v}`} style={{ display: "grid", justifyItems: "center", alignContent: "center", background: "#101117", border: "2px solid #2a2d38", borderTop: `3px solid ${v ? st.color : "#2a2d38"}`, lineHeight: 1.1, minWidth: 0 }}>
-            <span style={{ fontSize: 11, opacity: v ? 1 : 0.35 }}>{st.icon}</span>
+            <span style={{ fontSize: 11, opacity: v ? 1 : 0.35 }}><Glyph icon={st.icon} art={st.art} /></span>
             <span style={{ ...NUM, fontSize: 14, color: v ? st.color : MUTED }}>{v}</span>
             <span style={{ ...NUM, fontSize: 10, color: d > 0 ? "#7CFC9A" : "#ff8a80", visibility: d ? "visible" : "hidden" }}>{d > 0 ? `▲${d}` : d < 0 ? `▼${-d}` : "-"}</span>
           </div>

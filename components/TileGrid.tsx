@@ -15,6 +15,7 @@ import CreaturePortrait from "./CreaturePortrait";
 import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate, raceNames } from "@/lib/creatures/creatureData";
 import { CreatureMarks, type GroupBy } from "./CreatureMarks";
 import { ICON, NAME } from "./ContainerLoot";
+import { RaceIcon } from "./Glyph";
 
 export const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const MUTED = "rgba(255,255,255,0.45)";
@@ -27,13 +28,13 @@ export function sortByRarity<T extends { rarity: Rarity; name: string }>(list: T
 const templateOf = (d: CreatureOrItemDrop) => (d.dropType === "item" ? undefined : findCreatureTemplate(d.creatureId, d.name));
 
 // The sections a grid shows, in order: [key, title, colour, items].
-export function groupTiles(items: CreatureOrItemDrop[], by: GroupBy = "rarity"): [string, string, string, CreatureOrItemDrop[]][] {
+export function groupTiles(items: CreatureOrItemDrop[], by: GroupBy = "rarity"): [string, React.ReactNode, string, CreatureOrItemDrop[]][] {
   const sorted = sortByRarity(items);
   if (by === "class") {
     return COMBAT_CLASSES.map((c) => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, sorted.filter((d) => templateOf(d)?.cls === c)]);
   }
   if (by === "race") {
-    return RACES.map((r) => [r, `${RACE_INFO[r].icon} ${RACE_INFO[r].name}`, RACE_INFO[r].color, sorted.filter((d) => templateOf(d)?.race === r)]);
+    return RACES.map((r) => [r, <><RaceIcon r={r} /> {RACE_INFO[r].name}</>, RACE_INFO[r].color, sorted.filter((d) => templateOf(d)?.race === r)]);
   }
   return RARITY_ORDER.map((r) => [r, r, RARITY_COLORS[r].text, sorted.filter((d) => d.rarity === r)]);
 }

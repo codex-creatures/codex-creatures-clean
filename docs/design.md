@@ -502,7 +502,7 @@ How it came about, round by round: history.md.
     the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
 - ✅ **The Scroll button** (looking at your map again inside) works 2 times a run (the user, 2026-10-25,
   `SCROLL_LOOKS`); a flare still shows the map on top.
-- ✅ **Tools:** flare (re-view the map and light around you, twice as far as your torch), clairvoyance scroll (reveal any room
+- ✅ **Tools:** Torch (id `flare`: it was the Flare until 2026-10-30, and old saves are renamed on load; re-view the map and light around you, twice as far as your own light), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares. Also found (the user,
   2026-10-20): a flare in 10% of stashes and 20% of chests, a clairvoyance scroll in 5% of stashes and
   10% of chests (`STASH_TOOLS`, `CHEST_TOOLS`), on top of what they already hold. A chest holds at
@@ -517,7 +517,7 @@ How it came about, round by round: history.md.
     Claude's defaults, added 2026-10-19.
 - **The bigger merchant** (the user, 2026-10-23; the Labyrinth's and the tavern's alike; the user
   wants him to keep growing). ✅ Built: the 10-slot cart (`MERCHANT_SLOTS`, always 10 spaces shown):
-  always a Healing Potion, Lesser Potion and Flare; rare wares rolled one by one (backpack or, once
+  always a Healing Potion, Lesser Potion and Torch; rare wares rolled one by one (backpack or, once
   owned, a backpack upgrade 20%; each storage schematic 20% until bought; Revival Elixir 25%; XP
   scroll 20%; clairvoyance scroll 40%); materials fill the rest.
   📌 **Not built yet:**

@@ -11,7 +11,8 @@ import { useGameState } from "@/hooks/useGameState";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import RaceChart from "@/components/RaceChart";
-import ClassBadge, { moveKind } from "@/components/ClassBadge";
+import ClassBadge, { MoveKind, moveKind } from "@/components/ClassBadge";
+import Glyph, { RaceIcon } from "@/components/Glyph";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
   ALL_SKILLS, SPECIAL_MOVES, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
@@ -175,7 +176,9 @@ function Calculator() {
 }
 
 // ── Creatures ─────────────────────────────────────────────────────
-const PROF_LABELS: [keyof CreatureProficiency, string][] = [["atk", "⚔️ Melee"], ["rng", "🏹 Ranged"], ["mag", "🔮 Magic"], ["agil", "💨 Agility"], ["mdef", "🛡️ M.Def"], ["rdef", "🔰 R.Def"], ["magdef", "🧿 Mg.Def"]];
+// A stat's label with its icon (art where it has some).
+const stat = (icon: string, text: string, art?: string) => <><Glyph icon={icon} art={art} /> {text}</>;
+const PROF_LABELS: [keyof CreatureProficiency, React.ReactNode][] = [["atk", stat("⚔️", "Melee", "stat_atk")], ["rng", stat("🏹", "Ranged")], ["mag", stat("🔮", "Magic", "stat_mag")], ["agil", stat("💨", "Agility", "stat_agil")], ["mdef", stat("🛡️", "M.Def")], ["rdef", stat("🔰", "R.Def")], ["magdef", stat("🧿", "Mg.Def")]];
 const byRarity = (a: CreatureTemplate, b: CreatureTemplate) => RARITIES.indexOf(b.rarity) - RARITIES.indexOf(a.rarity) || a.name.localeCompare(b.name);
 
 function Creatures({ seen }: { seen: Set<string> }) {
@@ -185,9 +188,9 @@ function Creatures({ seen }: { seen: Set<string> }) {
   const filtering = filter.race !== "all" || filter.cls !== "all";
   const shown = CREATURE_TEMPLATES.filter((t) => (filtering ? known(t) && matchesFilter(filter, t.races ?? t.race, t.cls) : true));
   const unseen = shown.filter((t) => !known(t)).sort(byRarity);
-  const groups: [string, string, string, CreatureTemplate[]][] =
-    filter.groupBy === "class" ? [...COMBAT_CLASSES.map((c): [string, string, string, CreatureTemplate[]] => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((t) => known(t) && t.cls === c).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
-    : filter.groupBy === "race" ? [...RACES.map((r): [string, string, string, CreatureTemplate[]] => [r, `${RACE_INFO[r].icon} ${RACE_INFO[r].name}`, RACE_INFO[r].color, shown.filter((t) => known(t) && t.race === r).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
+  const groups: [string, React.ReactNode, string, CreatureTemplate[]][] =
+    filter.groupBy === "class" ? [...COMBAT_CLASSES.map((c): [string, React.ReactNode, string, CreatureTemplate[]] => [c, `${CLASS_INFO[c].icon} ${CLASS_INFO[c].name}`, CLASS_INFO[c].color, shown.filter((t) => known(t) && t.cls === c).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
+    : filter.groupBy === "race" ? [...RACES.map((r): [string, React.ReactNode, string, CreatureTemplate[]] => [r, <><RaceIcon r={r} /> {RACE_INFO[r].name}</>, RACE_INFO[r].color, shown.filter((t) => known(t) && t.race === r).sort(byRarity)]), ["unseen", "❔ Not seen yet", MUTED, unseen]]
     : [...RARITIES].reverse().map((r) => [r, r, RARITY_COLORS[r].text, shown.filter((t) => t.rarity === r).sort(byRarity)]);
   const count = CREATURE_TEMPLATES.filter(known).length;
   return (
@@ -287,7 +290,7 @@ function Moves({ seen }: { seen: Set<string> }) {
     <div key={m.name} style={{ ...PANEL, marginTop: 6, padding: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <b style={{ color: m.effect ? "#ffd98a" : "white" }}>{m.name}</b>
-        <span style={{ fontSize: 12, color: MUTED }}>{m.self ? "utility" : `${moveKind(m)} · ${m.damage} power`} · {m.energyCost}⚡</span>
+        <span style={{ fontSize: 12, color: MUTED }}>{m.self ? "utility" : <><MoveKind m={m} /> · {m.damage} power</>} · {m.energyCost}⚡</span>
       </div>
       {m.desc && <div style={{ fontSize: 12, color: "#c9b48a", marginTop: 2 }}>{m.desc}</div>}
       <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{who}</div>
@@ -337,7 +340,7 @@ function CreatureName({ t }: { t: CreatureTemplate }) {
 }
 
 // ── Gear ──────────────────────────────────────────────────────────
-function Bars({ ceil, keys, labels }: { ceil: Record<string, number>; keys: readonly string[]; labels: Record<string, string> }) {
+function Bars({ ceil, keys, labels }: { ceil: Record<string, number>; keys: readonly string[]; labels: Record<string, React.ReactNode> }) {
   const max = Math.max(...keys.map((k) => ceil[k]));
   return (
     <div style={{ marginTop: 6 }}>
@@ -353,8 +356,8 @@ function Bars({ ceil, keys, labels }: { ceil: Record<string, number>; keys: read
     </div>
   );
 }
-const WEAPON_LABELS: Record<string, string> = { melee: "⚔️ Melee", ranged: "🏹 Ranged", magic: "🔮 Magic", agility: "💨 Agility", hp: "❤️ HP" };
-const ARMOR_LABELS: Record<string, string> = { mDef: "🛡️ M.Def", rDef: "🔰 R.Def", magDef: "🧿 Mg.Def", agility: "💨 Agility", hp: "❤️ HP" };
+const WEAPON_LABELS: Record<string, React.ReactNode> = { melee: stat("⚔️", "Melee", "stat_atk"), ranged: stat("🏹", "Ranged"), magic: stat("🔮", "Magic", "stat_mag"), agility: stat("💨", "Agility", "stat_agil"), hp: stat("❤️", "HP", "stat_hp") };
+const ARMOR_LABELS: Record<string, React.ReactNode> = { mDef: stat("🛡️", "M.Def"), rDef: stat("🔰", "R.Def"), magDef: stat("🧿", "Mg.Def"), agility: stat("💨", "Agility", "stat_agil"), hp: stat("❤️", "HP", "stat_hp") };
 
 function weaponGroup(k: ItemKey): string {
   const p = PRIMARY_STATS_BY_ITEMKEY[k];
@@ -427,7 +430,7 @@ function Races({ seen }: { seen: Set<string> }) {
           <tbody>
             {RACES.map((r) => (
               <tr key={r} style={{ borderTop: "1px solid #2a2d38" }}>
-                <th style={{ padding: 6, textAlign: "left", color: RACE_INFO[r].color, whiteSpace: "nowrap", verticalAlign: "top" }}>{RACE_INFO[r].icon} {RACE_INFO[r].name}</th>
+                <th style={{ padding: 6, textAlign: "left", color: RACE_INFO[r].color, whiteSpace: "nowrap", verticalAlign: "top" }}><RaceIcon r={r} /> {RACE_INFO[r].name}</th>
                 {COMBAT_CLASSES.map((c) => (
                   <td key={c} style={{ padding: 6, verticalAlign: "top" }}>
                     {CREATURE_TEMPLATES.filter((t) => seen.has(t.id) && (t.races ?? []).includes(r) && t.cls === c).sort(byRarity).map((t) => (
@@ -452,7 +455,7 @@ function Races({ seen }: { seen: Set<string> }) {
         <div key={r} style={{ ...PANEL, marginTop: 6 }}>
           <RaceTag race={r} />{" "}
           {RACE_MOVES.filter((m) => learnRacesOf(m).includes(r)).map((m) => (
-            <span key={m.name} style={{ fontSize: 13 }}> <b>{m.name}</b> <span style={{ color: MUTED }}>({m.self ? "utility" : moveKind(m)})</span> — {m.desc}</span>
+            <span key={m.name} style={{ fontSize: 13 }}> <b>{m.name}</b> <span style={{ color: MUTED }}>({m.self ? "utility" : <MoveKind m={m} />})</span> — {m.desc}</span>
           ))}
         </div>
       ))}

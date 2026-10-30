@@ -86,17 +86,19 @@ export const RACES: Race[] = RACES_V2;
 export const raceNames = (c: Pick<CreatureTemplate, "race" | "races">) => (c.races ?? (c.race ? [c.race] : [])).map((r) => RACE_INFO[r].name).join(" / ");
 
 // Each race's colour (the user, 2026-10-26): on chips, cards and move tablets.
-export const RACE_INFO: Record<Race, { name: string; color: string; icon: string }> = {
-  undead:   { name: "Undead",   color: "#c9c5b8", icon: "💀" }, // bone grey
-  divine:   { name: "Divine",   color: "#f3dc8a", icon: "✨" }, // light gold
-  beast:    { name: "Beast",    color: "#6fdc6f", icon: "🐾" }, // green
-  underkin: { name: "Underkin", color: "#c08a55", icon: "🪨" }, // brown
-  geo:      { name: "Geo",      color: "#ff6b5c", icon: "🔥" }, // red
-  humanoid: { name: "Humanoid", color: "#6fb0ff", icon: "🛡️" }, // blue
-  toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠" }, // purple
+// art: its PixelLab icon (public/sprites/icons, drawn by components/Glyph.tsx);
+// the emoji stays for plain text (tooltips) and for races still waiting on art.
+export const RACE_INFO: Record<Race, { name: string; color: string; icon: string; art?: string }> = {
+  undead:   { name: "Undead",   color: "#c9c5b8", icon: "💀", art: "race_undead" },   // bone grey
+  divine:   { name: "Divine",   color: "#f3dc8a", icon: "✨", art: "race_divine" },   // light gold
+  beast:    { name: "Beast",    color: "#6fdc6f", icon: "🐾", art: "race_beast" },    // green
+  underkin: { name: "Underkin", color: "#c08a55", icon: "🪨" },                       // brown
+  geo:      { name: "Geo",      color: "#ff6b5c", icon: "🔥", art: "race_geo" },      // red
+  humanoid: { name: "Humanoid", color: "#6fb0ff", icon: "🛡️", art: "race_humanoid" }, // blue
+  toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠" },                       // purple
 };
 // A move with no race (the Balanced moves, lib/creatures/raceKitsV2.ts): neutral against everyone.
-export const BALANCED_INFO = { name: "Neutral", color: "#8e929c", icon: "⚖️" }; // slate grey
+export const BALANCED_INFO: { name: string; color: string; icon: string; art?: string } = { name: "Neutral", color: "#8e929c", icon: "⚖️", art: "neutral" }; // slate grey
 
 export type CreatureTemplate = {
   id: string;

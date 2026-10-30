@@ -85,6 +85,25 @@ the PNG here.
 | items/materials/planks.png | gallery:cc2bd7c7-ed6e-5e7c-9c38-ed9d42157cdc |
 | items/materials/nails.png | gallery:77106efa-394b-5c56-8070-516efb2810da |
 | items/materials/metal_bars.png | gallery:290aace3-eeb7-5814-81e4-9b86a415eaf6 |
+| icons/stat_hp.png | gallery:c1a3fb1d-d4f7-5af3-bdf1-46e9056b6e0c (raw generation) |
+| icons/stat_atk.png | gallery:42cf644c-dd0e-5ea3-9170-0e90de16a123 (raw generation) |
+| icons/stat_mag.png | gallery:92986e76-7cea-5997-9b20-4db0c44f9d37 (raw generation) |
+| icons/stat_agil.png | gallery:e779c541-6df4-5891-8f95-21a680977548 (raw generation) |
+| icons/race_undead.png | gallery:670a08ae-16d6-555a-a000-a8d2985b53e6 (raw generation) |
+| icons/race_divine.png | gallery:96176052-6271-5c57-98b9-d741ae82c47a (raw generation) |
+| icons/race_beast.png | gallery:7a6ec297-fb7c-5708-82e0-241ae1efef1f (raw generation) |
+| icons/race_geo.png | gallery:e2b834cf-5874-5b94-9a19-84c62ffc4fab (raw generation) |
+| icons/race_humanoid.png | gallery:27143d20-b0a3-552a-a7f7-e15f7b1f88bb (raw generation) |
+| icons/neutral.png | gallery:a870bc05-533f-5cec-b287-b5313fa31da7 (raw generation) |
+| icons/status_cripple.png | gallery:b4ec072f-c2fc-5211-a612-1ce1cb287823 (raw generation) |
+| icons/status_poison.png | gallery:10bf5126-af65-5542-8f1d-2dd52281669e (raw generation) |
+| items/materials/essence_stones.png | gallery:22ccee17-61ab-51c2-80c3-af84130cc1d8 (raw generation) |
+| items/tools/flare.png | gallery:2379ccba-f7ac-5b96-8240-47e59573144d (raw generation) |
+| items/tools/clairvoyance.png | gallery:e9f3a64f-46f4-5c92-9728-e90ad2d2b4e7 (raw generation) |
+| items/tools/revival.png | gallery:adf990a7-3261-543f-a6fb-8e44c6def47c (raw generation) |
+| items/codex.png | gallery:8902cc6d-8084-5b37-b0a8-36ce0765d35a (raw generation) |
+| items/xp_scroll.png | gallery:9ea8c346-c1f8-5d2e-b56f-8029b2d6db61 (raw generation) |
+| items/schematic.png | gallery:2f688333-4c9c-563d-be82-bd8986cad691 (raw generation) |
 | items/weeping_greatbow.png | gallery:b5ff76e0-5df4-4ac2-a924-a694a85e5592 |
 | items/armor/chest_arcane_nullifier.png | gallery:3f9fe357-3b21-4bf9-91d4-36eae197226b |
 | items/armor/chest_arrowward_mantle.png | gallery:95b8f15d-e64f-4a26-93c9-a2dc10e9b3d0 |

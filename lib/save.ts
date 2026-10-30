@@ -6,6 +6,7 @@
 // own part and writes it back, so they never overwrite each other.
 
 import { ARMOR_V2, upgradeOldArmorStats } from "./items/armor";
+import { TOOLS, type ToolKey } from "./items/materials";
 
 // v3: Combat V2 (2026-10-26) started everyone again. Saves from before it
 // stay in the browser under the old key (codex_creatures_save_v2), unread.
@@ -18,7 +19,7 @@ export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? upgradeOldArmor(parsed) : {};
+    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(parsed)) : {};
   } catch {
     return {};
   }
@@ -38,6 +39,22 @@ export function upgradeOldArmor<T>(save: T): T {
       o.stats = upgradeOldArmorStats(o.stats as Record<string, number>);
       o.armorV = ARMOR_V2;
     }
+    for (const k in o) walk(o[k]);
+  };
+  walk(save);
+  return save;
+}
+
+// A tool keeps the name and description it had when it dropped, so a renamed
+// tool (the Flare became the Torch, 2026-10-30) is brought up to date on load,
+// wherever it is in the save (the chest, the Labyrinth's bag, a loot window).
+export function refreshToolNames<T>(save: T): T {
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (!v || typeof v !== "object") return;
+    const o = v as Record<string, unknown>;
+    const t = typeof o.tool === "string" && o.dropType === "item" ? TOOLS[o.tool as ToolKey] : undefined;
+    if (t) { o.name = t.name; o.desc = t.desc; }
     for (const k in o) walk(o[k]);
   };
   walk(save);

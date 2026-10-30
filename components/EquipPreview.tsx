@@ -9,6 +9,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import PixelSprite, { itemSprite } from "./PixelSprite";
+import Glyph from "./Glyph";
 import CreaturePortrait from "./CreaturePortrait";
 import { GearStatLine } from "./GearCompare";
 import { STATS, StatRow, gearValue, type StatKey } from "./CreatureDetailModal";
@@ -127,7 +128,7 @@ export default function EquipPreview({ team, start, find, item, slot, teach, onC
             {changed.map((st) => {
               const detail = st.key === "hp" ? `${hpAt(r.template!, level)} at Lv ${level} + ${next.f.weapon.hp + next.f.armor.hp} gear`
                 : `${gearValue(next.f, st.key)} gear × ${pct(next.f.proficiency[st.key])}`;
-              return <StatRow key={st.key} icon={st.icon} label={st.label} color={st.color} max={st.max} compact
+              return <StatRow key={st.key} icon={<Glyph icon={st.icon} art={st.art} />} label={st.label} color={st.color} max={st.max} compact
                 total={Math.round(now.s[st.key])} after={Math.round(next.s[st.key])} detail={detail} diff={0} />;
             })}
           </div>

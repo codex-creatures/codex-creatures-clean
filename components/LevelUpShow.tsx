@@ -12,6 +12,7 @@ import PixelSprite, { creatureSprite } from "./PixelSprite";
 import { useEscape } from "@/hooks/useEscape";
 import { buzz } from "@/lib/haptics";
 import { STATS } from "./CreatureDetailModal";
+import Glyph from "./Glyph";
 import { hpAt, proficiencyAt } from "@/lib/creatures/levels";
 import type { CreatureProficiency, CreatureTemplate } from "@/lib/creatures/creatureData";
 
@@ -107,7 +108,7 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
               const gain = r.b - r.a;
               return (
                 <div key={r.key} style={{ display: "grid", gridTemplateColumns: "22px 1fr auto 52px", alignItems: "center", gap: 6, fontSize: 14 }}>
-                  <span style={{ textAlign: "center" }}>{r.icon}</span>
+                  <span style={{ textAlign: "center" }}><Glyph icon={r.icon} art={r.art} /></span>
                   <span>{r.label}</span>
                   <span style={{ ...NUM, fontSize: 16, color: k >= 1 && gain > 0 ? GREEN : "white" }}>{r.now}{pct}</span>
                   <span style={{ ...NUM, fontSize: 13, color: GREEN, textAlign: "right", opacity: gain > 0 ? Math.min(1, k * 2) : 0 }}>+{gain}{pct}</span>

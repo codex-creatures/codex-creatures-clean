@@ -9,7 +9,8 @@
 
 import { useState } from "react";
 import { CLASS_INFO, MOVE_BY_NAME, MOVE_SLOTS, STEADY_MAX_ENERGY, hasSteadyMove, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
-import { moveKind, moveTag } from "./ClassBadge";
+import { MoveKind, moveTag } from "./ClassBadge";
+import Glyph from "./Glyph";
 import { MoveTile } from "./MoveTile";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -20,7 +21,7 @@ export function MoveInfo({ m }: { m: Skill }) {
   return (
     <>
       <span style={{ fontWeight: 600, color: m.effect ? "#ffd98a" : "white" }}>{m.name}</span>
-      <span style={{ fontSize: 12, color: MUTED }}> · {m.self ? "utility" : `${moveKind(m)} · ${m.damage} dmg`} · {m.energyCost}⚡</span>
+      <span style={{ fontSize: 12, color: MUTED }}> · {m.self ? "utility" : <><MoveKind m={m} /> · {m.damage} dmg</>} · {m.energyCost}⚡</span>
       {m.desc && <span style={{ display: "block", fontSize: 11, color: "#c9b48a", marginTop: 2 }}>{m.desc}</span>}
     </>
   );
@@ -31,7 +32,7 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
   m: Skill; slot?: number; tag?: { text: string; color: string }; selected?: boolean; dim?: boolean; onClick?: () => void;
 }) {
   const style = CLASS_INFO[m.type], dtype = moveTag(m);
-  const pill = (text: string, color: string) => (
+  const pill = (text: React.ReactNode, color: string) => (
     <span style={{ fontSize: 12, padding: "2px 8px", borderRadius: 999, border: `1px solid ${color}88`, color, whiteSpace: "nowrap" }}>{text}</span>
   );
   return (
@@ -48,7 +49,7 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
         {tag && <span style={{ marginLeft: "auto", fontSize: 11, color: tag.color }}>{tag.text}</span>}
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-        {m.self ? pill("Utility", "#c7b8ff") : <>{pill(`${style.icon} ${style.name}`, style.color)}{pill(`${dtype.icon} ${dtype.name}`, dtype.color)}</>}
+        {m.self ? pill("Utility", "#c7b8ff") : <>{pill(`${style.icon} ${style.name}`, style.color)}{pill(<><Glyph icon={dtype.icon} art={dtype.art} /> {dtype.name}</>, dtype.color)}</>}
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
         {!m.self && <span style={{ fontSize: 13, color: MUTED }}>Damage <span style={{ ...NUM, fontSize: 17, color: "#ff9f7a" }}>{m.damage}</span></span>}

@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { itemSprite, PotionIcon } from "@/components/PixelSprite";
+import { CODEX_SPRITE } from "@/lib/sprites/items";
 import BagSlots, { slotLook } from "@/components/BagSlots";
 import ItemPicker from "@/components/ItemPicker";
 import { GearStatLine } from "@/components/GearCompare";
@@ -24,7 +25,6 @@ import { damageTypesOn } from "@/lib/combat/engine";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { potionDrop } from "@/lib/drops";
-import { TOOLS } from "@/lib/items/materials";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -129,8 +129,8 @@ export default function BagPage() {
           <div className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
             {isPotionEntry(e) ? <span><PotionIcon kind={e} /><b>{POTIONS[e].name}</b> <span style={{ fontSize: 12, color: MUTED }}>+{POTIONS[e].heal} HP</span></span>
               : own ? gearLine(own)
-              : found?.tool ? <span>{TOOLS[found.tool].icon} <b>{found.name}</b></span>
-              : found ? <span>📖 <b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
+              : found?.tool ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><PixelSprite sprite={itemSprite(found)!} scale={1.25} /><b>{found.name}</b></span>
+              : found ? <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><PixelSprite sprite={CODEX_SPRITE} scale={1.25} /><b>{found.name}</b> <span style={{ fontSize: 12, color: MUTED }}>— the bookcase was full</span></span>
               : <span style={{ color: MUTED }}>Something you no longer have</span>}
             {(own || (!isPotionEntry(e) && !found)) && !away && <button className="chip" onClick={() => setBag(bag.filter((x) => x !== e))}>{own ? "Take out" : "Clear the slot"}</button>}
             {isPotionEntry(e) && !away && <button className="chip" onClick={() => store(sel)}>Store it</button>}

@@ -4,6 +4,7 @@
 
 import { RACES, RACE_INFO } from "@/lib/creatures/creatureData";
 import { raceVs } from "@/lib/combat/raceChart";
+import { RaceIcon } from "./Glyph";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -16,13 +17,13 @@ export default function RaceChart() {
         <thead>
           <tr>
             <th style={{ padding: 4, color: MUTED, textAlign: "left", fontWeight: 400 }}>move ↓ · target →</th>
-            {RACES.map((r) => <th key={r} title={RACE_INFO[r].name} style={{ padding: 4, fontSize: 16 }}>{RACE_INFO[r].icon}</th>)}
+            {RACES.map((r) => <th key={r} title={RACE_INFO[r].name} style={{ padding: 4, fontSize: 16 }}><RaceIcon r={r} /></th>)}
           </tr>
         </thead>
         <tbody>
           {RACES.map((a) => (
             <tr key={a} style={{ borderTop: "1px solid #2a2d38" }}>
-              <th style={{ padding: 4, textAlign: "left", color: RACE_INFO[a].color, whiteSpace: "nowrap" }}>{RACE_INFO[a].icon} {RACE_INFO[a].name}</th>
+              <th style={{ padding: 4, textAlign: "left", color: RACE_INFO[a].color, whiteSpace: "nowrap" }}><RaceIcon r={a} /> {RACE_INFO[a].name}</th>
               {RACES.map((d) => {
                 const v = cell(raceVs(a, d));
                 return <td key={d} style={{ padding: 4, textAlign: "center", color: v.c, fontSize: 14 }}>{v.t}</td>;

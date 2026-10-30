@@ -9,8 +9,9 @@
 // - A schematic is a plan for something you can build at home (the crooked
 //   bookcase: BUILDS). Building it uses up the schematic and its materials.
 // - Tools are used in the Labyrinth, from your bag:
-//   - a flare lights up the dark around you (twice the torch's radius) and lets you
-//     look at your map scroll again;
+//   - a Torch (id: flare; it was a Flare until 2026-10-30) lights up the dark
+//     around you (twice your own light's radius) and lets you look at your map
+//     scroll again;
 //   - a clairvoyance scroll lets you look at the map and pick any room: you
 //     see what's in it (even a mystery) and the rooms around it.
 //   Tools stay in your bag between runs.
@@ -29,7 +30,7 @@ export const MATERIAL_KEYS = Object.keys(MATERIALS) as MaterialKey[];
 
 export type ToolKey = "flare" | "clairvoyance" | "revival";
 export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity; price: number; desc: string }> = {
-  flare:        { name: "Flare",               icon: "🧨", rarity: "uncommon", price: 75,
+  flare:        { name: "Torch",               icon: "🧨", rarity: "uncommon", price: 75,
                   desc: "Light it in the Labyrinth: see the rooms around you and look at your map again." },
   clairvoyance: { name: "Clairvoyance Scroll", icon: "🔮", rarity: "epic",     price: 200,
                   desc: "Read it in the Labyrinth: look at your map and pick any room — you see what's in it, and the rooms around it." },

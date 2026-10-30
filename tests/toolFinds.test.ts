@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { makeRoom, toolFinds, capSack, STASH_TOOLS, CHEST_TOOLS, CHEST_SLOTS, type SackItem } from "../lib/dungeon/run";
+import { TOOLS, toolDrop } from "../lib/items/materials";
+import { refreshToolNames } from "../lib/save";
 
 const tool = (x: SackItem) => ("gear" in x && "tool" in x.gear ? x.gear.tool : undefined);
 const share = (sacks: SackItem[][], t: string) => sacks.filter((s) => s.some((x) => tool(x) === t)).length / sacks.length;
@@ -30,5 +32,18 @@ describe("a chest holds at most 5 things", () => {
     expect(kept).toHaveLength(CHEST_SLOTS);
     expect(kept.map((x) => ("gear" in x ? (x.gear as { rarity: string }).rarity : "gold"))).toEqual(["rare", "uncommon", "epic", "legendary", "uncommon"]);
     expect(capSack(kept.slice(0, 3))).toHaveLength(3);
+  });
+});
+
+// The Flare became the Torch (2026-10-30): saves keep old names, so they are refreshed on load.
+describe("renamed tools in old saves", () => {
+  it("take the current name and description, wherever they are", () => {
+    const old = { ...toolDrop("flare"), name: "Flare", desc: "old words" };
+    const save = { chest: [old], labyrinth: { bag: [{ ...old }] }, other: { name: "Flare" } };
+    refreshToolNames(save);
+    expect(save.chest[0].name).toBe("Torch");
+    expect(save.chest[0].desc).toBe(TOOLS.flare.desc);
+    expect(save.labyrinth.bag[0].name).toBe("Torch");
+    expect(save.other.name).toBe("Flare"); // (not a tool: left alone)
   });
 });

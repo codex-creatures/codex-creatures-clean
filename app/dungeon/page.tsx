@@ -1259,7 +1259,7 @@ export default function DungeonPage() {
         </Sheet>
       )}
       {mapOpen && (
-        <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : mapOpen === "view" ? "📜 Your map" : "🧨 Your map, by flarelight"} onClose={() => setMapOpen(null)}>
+        <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : mapOpen === "view" ? "📜 Your map" : "🧨 Your map, by torchlight"} onClose={() => setMapOpen(null)}>
           {mapOpen === "pick" && <p style={{ fontSize: 13, color: MUTED, margin: "0 0 8px" }}>Tap any room: you&apos;ll see what&apos;s in it, and the rooms around it.</p>}
           <DungeonMapView run={run} onPick={mapOpen === "pick" ? foresee : undefined} />
         </Sheet>

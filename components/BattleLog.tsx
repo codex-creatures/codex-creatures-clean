@@ -3,6 +3,7 @@
 
 import { useMemo } from "react";
 import type { BattleEvent, SideKey } from "@/lib/combat/battle";
+import Glyph from "./Glyph";
 
 export const YOU = "#4EA1FF";
 export const FOE = "#ff6b6b";
@@ -61,7 +62,7 @@ function LogLine({ e }: { e: BattleEvent }) {
       return <div><Who side={e.side} name={e.name} /> is out of energy and rests (+30⚡).</div>;
     case "effect":
       return <div style={{ color: e.kind === "venom" || e.kind === "poison" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "set" ? "#f1d9a0" : e.kind === "ability" ? "#b9e6ff" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }}>
-        {e.kind === "venom" ? "☠️ " : e.kind === "poison" ? "☣️ " : e.kind === "fear" ? "👻 " : e.kind === "revive" ? "⚰️ " : e.kind === "item" ? "🧪 " : e.kind === "heal" ? "💚 " : e.kind === "set" ? "🛡️ " : e.kind === "ability" ? "💚 " : e.kind === "stumble" ? "🦵 " : "✨ "}<Who side={e.side} name={e.name} /> {e.text} <span style={{ color: MUTED }}>({e.hp} HP)</span>
+        {e.kind === "venom" || e.kind === "poison" ? <><Glyph icon="☣️" art="status_poison" /> </> : e.kind === "fear" ? "👻 " : e.kind === "revive" ? "⚰️ " : e.kind === "item" ? "🧪 " : e.kind === "heal" ? "💚 " : e.kind === "set" ? "🛡️ " : e.kind === "ability" ? "💚 " : e.kind === "stumble" ? "🦵 " : "✨ "}<Who side={e.side} name={e.name} /> {e.text} <span style={{ color: MUTED }}>({e.hp} HP)</span>
       </div>;
     case "faint":
       return <div>💀 <Who side={e.side} name={e.name} /> fainted!</div>;

@@ -3,12 +3,13 @@
 // A creature's race and class as two small symbols (for tiles and cards),
 // and the filter bar for creature lists: by race, by class, and how to group.
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { RaceIcon } from "./Glyph";
 import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, type CombatClass, type Race } from "@/lib/creatures/creatureData";
 
 // races: both of a two-race creature (otherwise race).
 export function CreatureMarks({ race, races, cls, size = 13 }: { race?: Race; races?: Race[]; cls?: CombatClass; size?: number }) {
-  const chip = (icon: string, color: string, title: string) => (
+  const chip = (icon: ReactNode, color: string, title: string) => (
     <span title={title} style={{
       width: size + 7, height: size + 7, display: "inline-flex", alignItems: "center", justifyContent: "center",
       fontSize: size, lineHeight: 1, background: "rgba(10,10,14,0.85)", border: `2px solid ${color}`,
@@ -16,7 +17,7 @@ export function CreatureMarks({ race, races, cls, size = 13 }: { race?: Race; ra
   );
   return (
     <span style={{ display: "inline-flex", gap: 2 }}>
-      {(races?.length ? races : race ? [race] : []).map((r) => <span key={r} style={{ display: "inline-flex" }}>{chip(RACE_INFO[r].icon, RACE_INFO[r].color, `Race: ${RACE_INFO[r].name}`)}</span>)}
+      {(races?.length ? races : race ? [race] : []).map((r) => <span key={r} style={{ display: "inline-flex" }}>{chip(<RaceIcon r={r} size="1.15em" />, RACE_INFO[r].color, `Race: ${RACE_INFO[r].name}`)}</span>)}
       {cls && chip(CLASS_INFO[cls].icon, CLASS_INFO[cls].color, `Class: ${CLASS_INFO[cls].name}`)}
     </span>
   );
@@ -49,7 +50,7 @@ export function CreatureFilterBar({ value, onChange, raceCount, classCount, show
         {RACES.map((r) => (
           <button key={r} className="chip" data-active={value.race === r} onClick={() => set({ race: value.race === r ? "all" : r })}
             title={RACE_INFO[r].name} style={{ color: RACE_INFO[r].color }}>
-            {RACE_INFO[r].icon} {RACE_INFO[r].name}{raceCount ? ` (${raceCount(r)})` : ""}
+            <RaceIcon r={r} /> {RACE_INFO[r].name}{raceCount ? ` (${raceCount(r)})` : ""}
           </button>
         ))}
       </div>
@@ -119,7 +120,7 @@ export function CreatureToolbar({ value, onChange, shown, total, noun = "creatur
     width: 44, height: 44, fontSize: 20, display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
     background: on ? "rgba(245,197,66,0.16)" : "#14151c", border: `2px solid ${on ? color : "#2a2d38"}`, borderRadius: 8,
   });
-  const removable = (label: string, color: string, clear: () => void) => (
+  const removable = (label: ReactNode, color: string, clear: () => void) => (
     <button onClick={clear} className="chip" style={{ color, padding: "4px 10px", minHeight: 0 }} title="Remove filter">{label} ✕</button>
   );
   return (
@@ -147,7 +148,7 @@ export function CreatureToolbar({ value, onChange, shown, total, noun = "creatur
             {RACES.map((r) => (
               <button key={r} title={RACE_INFO[r].name} aria-label={RACE_INFO[r].name} aria-pressed={value.race === r}
                 onClick={() => set({ race: value.race === r ? "all" : r })} style={iconBtn(value.race === r, RACE_INFO[r].color)}>
-                {RACE_INFO[r].icon}
+                <RaceIcon r={r} />
               </button>
             ))}
           </div>
@@ -166,7 +167,7 @@ export function CreatureToolbar({ value, onChange, shown, total, noun = "creatur
 
       {(active > 0 || value.query.trim()) && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
-          {value.race !== "all" && removable(`${RACE_INFO[value.race].icon} ${RACE_INFO[value.race].name}`, RACE_INFO[value.race].color, () => set({ race: "all" }))}
+          {value.race !== "all" && removable(<><RaceIcon r={value.race} /> {RACE_INFO[value.race].name}</>, RACE_INFO[value.race].color, () => set({ race: "all" }))}
           {value.cls !== "all" && removable(`${CLASS_INFO[value.cls].icon} ${CLASS_INFO[value.cls].name}`, CLASS_INFO[value.cls].color, () => set({ cls: "all" }))}
           <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>{shown} of {total}</span>
         </div>
