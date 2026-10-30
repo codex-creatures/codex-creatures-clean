@@ -787,7 +787,7 @@ fields optional with defaults.
     New creature and move names must fit: write them shorter rather than growing the box.
   - Built this way (2026-10-26): cards (the name box is always two lines tall), move tablets (name
     box plus one tag/note line, kept when empty), the item window (one fixed size; the ←/→ row
-    kept), the creature window's gear picker (four fixed lines; the 🔒 line kept), librarian rows
+    kept), the creature window's gear picker (a 3×3 grid that scrolls inside itself past 9 pieces, so the Equip button and the stat list below stay put; under it the picked piece's name, five fixed stat boxes in the Stats list's icons and colours with ▲/▼ against what's worn, set and owner lines; no Cancel: tap off the picker to close it; the 🔒 line kept), librarian rows
     (two-line descriptions), the battle dock (no Rest tab; the energy line doubles as "X used Y"),
     and the loot window (one fixed "closer look" box for whatever you tap, chest or bag, its buttons
     in one row that scrolls sideways; the chest's rows never shrink while it's open). With nothing

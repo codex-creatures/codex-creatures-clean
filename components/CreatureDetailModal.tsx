@@ -8,7 +8,7 @@
 // Tap a slot to browse your gear: tapping an item previews the change on
 // every stat before you equip it; dragging it onto its slot equips it.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -67,8 +67,12 @@ const MUTED = "rgba(255,255,255,0.45)";
 const GOLD = "#f1d9a0";
 const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 
-const WEAPON_STAT_LABELS: [string, string][] = [["melee", "Atk"], ["ranged", "Rng"], ["magic", "Mag"], ["agility", "Agi"], ["hp", "HP"]];
-const ARMOR_STAT_LABELS:  [string, string][] = [["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"], ["agility", "Agi"], ["hp", "HP"]];
+// The stats a weapon or armour piece can roll, in a fixed order, as the
+// creature stat each one feeds (so they share its icon and colour).
+const WEAPON_STATS: [string, StatKey][] = [["melee", "atk"], ["ranged", "rng"], ["magic", "mag"], ["agility", "agil"], ["hp", "hp"]];
+const ARMOR_STATS:  [string, StatKey][] = [["mDef", "mdef"], ["rDef", "rdef"], ["magDef", "magdef"], ["agility", "agil"], ["hp", "hp"]];
+// The gear picker shows 3 rows of 3; more than that scrolls inside it.
+const PICKER_COLS = 3, PICKER_ROW = 58, PICKER_GAP = 6;
 
 // Text cut to a number of lines (with …) in a box always that tall: the
 // window's boxes stay put whatever the words.
@@ -116,6 +120,7 @@ export default function CreatureDetailModal({
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
+  const pickerRef = useRef<HTMLDivElement>(null); // tapping anywhere else in the window closes the picker
   // Gear dragged from the picker onto its slot goes straight on (a tap only previews it).
   const { box: dragBox, ...dnd } = useDragDrop<CreatureOrItemDrop>({ onDrop: (opt, t) => {
     if (!picking || t !== `slot:${picking}` || locked) return;
@@ -182,6 +187,7 @@ export default function CreatureDetailModal({
   const slotName = picking === "weapon" ? "weapon" : picking ? ARMOR_SLOT_INFO[picking].name.toLowerCase() : "";
   const sorted = [...options].sort((a, b) =>
     RARITY_ORDER.indexOf(b.rarity) - RARITY_ORDER.indexOf(a.rarity) || a.name.localeCompare(b.name));
+  const tooMany = sorted.length + (current ? 1 : 0) > PICKER_COLS * 3; // (the Unequip tile counts)
   const previewOwner = preview && equippedOn.get(preview.id) !== creature.id ? creatureNameById.get(equippedOn.get(preview.id) ?? "") : undefined;
 
   function confirm() {
@@ -199,7 +205,12 @@ export default function CreatureDetailModal({
           {d === "prev" ? "‹" : "›"}
         </button>
       ))}
-      <div onClick={(e) => e.stopPropagation()} className="modal-panel stone-panel"
+      <div onClick={(e) => {
+        e.stopPropagation();
+        // Tapping off the gear picker closes it (the slots open and switch it themselves).
+        const t = e.target as HTMLElement;
+        if (picking && !pickerRef.current?.contains(t) && !t.closest("[data-drop^='slot:']")) closePicker();
+      }} className="modal-panel stone-panel"
         style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, height: "92cqh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
@@ -326,16 +337,20 @@ export default function CreatureDetailModal({
 
             {/* Gear picker */}
             {picking && (
-              <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
+              <div ref={pickerRef} style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
                   Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`}: tap to compare, double-tap or drag onto the slot to equip
                 </div>
                 {options.length === 0 ? (
                   <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the labyrinth to find some.</p>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(62px, 1fr))", gap: 6 }}>
+                  // Always 3 rows tall, so the item's stats and the Equip button sit in the same place
+                  // whatever you own; with more than 9 you scroll inside the grid (a swipe up or down
+                  // scrolls it then, rather than dragging; double-tap or Equip still put it on).
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${PICKER_COLS}, 1fr)`, gridAutoRows: PICKER_ROW, gap: PICKER_GAP,
+                    height: 3 * PICKER_ROW + 2 * PICKER_GAP, overflowY: "auto", overscrollBehavior: "contain", alignContent: "start" }}>
                     {current && (
-                      <Tile selected={preview === null} onClick={() => tapOption(null)} title="Take it off">
+                      <Tile selected={preview === null} onClick={() => tapOption(null)} title="Take it off" scrolls={tooMany}>
                         <span style={{ fontSize: 22, color: MUTED }}>⊘</span>
                         <span style={{ fontSize: 11, color: MUTED }}>Unequip</span>
                       </Tile>
@@ -346,7 +361,7 @@ export default function CreatureDetailModal({
                       const sp = itemSprite(opt);
                       const away = unavailable?.has(opt.id);
                       return (
-                        <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} disabled={away}
+                        <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} disabled={away} scrolls={tooMany}
                           title={away ? `${opt.name} — Klutz has it with him in the Labyrinth` : here ? `${opt.name} (worn now)` : opt.name}
                           grab={away ? undefined : { onPointerDown: dnd.press(opt, { sprite: sp, icon: "📦" }), ...dnd.handlers }}
                           onClick={() => { if (!dnd.wasDrag()) tapOption(opt); }}>
@@ -361,18 +376,16 @@ export default function CreatureDetailModal({
 
                 {/* The picked item, and the confirm bar (always there, so nothing jumps) */}
                 {options.length > 0 && (
-                  // A fixed frame: four lines (name, stats over two, set, owner), each
-                  // kept when empty, and the buttons beside them, never wrapping under.
+                  // A fixed frame: name, the stat boxes, set, owner, each kept when
+                  // empty, and the button beside them, never wrapping under.
                   <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
-                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateRows: "20px 2.8em 16px 16px", fontSize: 12, lineHeight: 1.4 }}>
+                    <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateRows: "20px 50px 16px 16px", rowGap: 2, fontSize: 12, lineHeight: 1.4 }}>
                       {preview ? (
                         <>
                           <div title={preview.name} style={{ fontSize: 14, fontWeight: 700, color: rarityColor(preview.rarity), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                             {preview.name}{isCurrent && <span style={{ fontSize: 11, color: GOLD, fontWeight: 400 }}> · worn now</span>}
                           </div>
-                          <div style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                            <StatLine stats={preview.stats} labels={picking === "weapon" ? WEAPON_STAT_LABELS : ARMOR_STAT_LABELS} />
-                          </div>
+                          <ItemStats item={preview} worn={current} keys={picking === "weapon" ? WEAPON_STATS : ARMOR_STATS} />
                           <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", visibility: preview.armorKey ? "visible" : "hidden" }}>
                             {preview.armorKey ? `Set: ${ARMOR_META[preview.armorKey].name} — ${SET_BONUS[preview.armorKey].name}` : "-"}
                           </div>
@@ -386,11 +399,8 @@ export default function CreatureDetailModal({
                         </div>
                       )}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
-                      <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 12px", opacity: preview === undefined || isCurrent ? 0.4 : 1 }}
-                        disabled={preview === undefined || isCurrent} onClick={confirm}>{preview === null ? "Unequip" : "Equip"}</button>
-                      <button className="chip" onClick={closePicker}>Cancel</button>
-                    </div>
+                    <button className="pixel-btn" style={{ flexShrink: 0, minHeight: 44, fontSize: 14, padding: "6px 12px", opacity: preview === undefined || isCurrent ? 0.4 : 1 }}
+                      disabled={preview === undefined || isCurrent} onClick={confirm}>{preview === null ? "Unequip" : "Equip"}</button>
                   </div>
                 )}
               </div>
@@ -686,16 +696,17 @@ function SetLine({ worn, now, next, focus }: { worn: (CreatureOrItemDrop | undef
   return box(<><b>{ARMOR_META[best[0]].name} {best[1]}/3</b> — the full set gives {SET_BONUS[best[0]].name}: {SET_BONUS[best[0]].text}</>, false);
 }
 
-function Tile({ children, rarity, selected, title, onClick, disabled, grab }: {
+function Tile({ children, rarity, selected, title, onClick, disabled, grab, scrolls }: {
   children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void; disabled?: boolean;
   grab?: React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
+  scrolls?: boolean; // in the gear picker (rows of a set height); true once it scrolls, so an up/down swipe scrolls it
 }) {
   const col = rarity ? RARITY_COLORS[rarity] : undefined;
   return (
     <button onClick={onClick} title={title} aria-pressed={selected} disabled={disabled} {...grab}
       style={{
-        opacity: disabled ? 0.35 : 1, ...(grab ? { touchAction: "none" } : {}),
-        position: "relative", aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+        opacity: disabled ? 0.35 : 1, ...(grab ? { touchAction: scrolls ? "pan-y" : "none" } : {}),
+        position: "relative", ...(scrolls === undefined ? { aspectRatio: "1" } : {}), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
         background: col ? `radial-gradient(circle, ${col.glow}, #101117 75%)` : "#101117",
         border: `2px solid ${selected ? "#ffd66e" : col ? col.border : "#2f3340"}`,
         boxShadow: selected ? "0 0 10px rgba(255,214,110,0.55)" : "0 2px 0 rgba(0,0,0,0.5)",
@@ -743,11 +754,26 @@ export function StatRow({ icon, label, color, max, total, after, detail, diff, c
   );
 }
 
-function StatLine({ stats, labels }: { stats?: Record<string, number>; labels: [string, string][] }) {
+// A piece's stats as five fixed boxes (the same five for every weapon, and for
+// every armour piece), with the Stats list's icons and colours. Under each, how
+// it compares with what's worn in that slot now.
+function ItemStats({ item, worn, keys }: { item: CreatureOrItemDrop; worn?: CreatureOrItemDrop; keys: [string, StatKey][] }) {
+  const val = (it: CreatureOrItemDrop | undefined, k: string) => (it?.stats as Record<string, number> | undefined)?.[k] ?? 0;
+  const compare = worn && worn.id !== item.id;
   return (
-    <span style={{ fontSize: 12, color: MUTED, fontVariantNumeric: "tabular-nums" }}>
-      {labels.map(([k, l]) => `${l} ${stats?.[k] ?? 0}`).join(" · ")}
-    </span>
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${keys.length}, 1fr)`, gap: 3 }}>
+      {keys.map(([k, key]) => {
+        const st = STATS.find((s) => s.key === key)!;
+        const v = val(item, k), d = compare ? v - val(worn, k) : 0;
+        return (
+          <div key={k} title={`${st.label} ${v}`} style={{ display: "grid", justifyItems: "center", alignContent: "center", background: "#101117", border: "2px solid #2a2d38", borderTop: `3px solid ${v ? st.color : "#2a2d38"}`, lineHeight: 1.1, minWidth: 0 }}>
+            <span style={{ fontSize: 11, opacity: v ? 1 : 0.35 }}>{st.icon}</span>
+            <span style={{ ...NUM, fontSize: 14, color: v ? st.color : MUTED }}>{v}</span>
+            <span style={{ ...NUM, fontSize: 10, color: d > 0 ? "#7CFC9A" : "#ff8a80", visibility: d ? "visible" : "hidden" }}>{d > 0 ? `▲${d}` : d < 0 ? `▼${-d}` : "-"}</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
