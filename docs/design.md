@@ -579,8 +579,8 @@ How it came about, round by round: history.md.
     Warden's pack by sim (`scripts/sim-hydra.ts`, 200 fights: an Epic and two Rares, Lv 16, in Rare gear,
     full health, no potions, the Normal AI): the party beats the Hydra 56% of the time, the Warden's pack
     40%; 17–18 rounds. (With resistances as well, before the user dropped them: 29%.)
-    Then the user had every head's HP raised 25% (longer fights, so the poison does more): 📌 not
-    re-simmed yet.
+    Then the user had every head's HP raised 25% (longer fights, so the poison does more): the
+    party now beats the Hydra 23% of the time (the Warden's pack 38%), in about 20 rounds (150 fights).
   - 📌 Art: the heads borrow the Void Serpent's art, tinted apart, until PixelLab art is made
     (samples first, for the user's approval).
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
