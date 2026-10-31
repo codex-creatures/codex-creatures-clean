@@ -18,7 +18,8 @@ import { CreatureArt } from "@/components/CreaturePortrait";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
 import { BOX_CAP, BIG_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
-import { onlineConfig } from "@/lib/online/client";
+import { onlineClient, onlineConfig } from "@/lib/online/client";
+import { testingToolsAllowed } from "@/lib/online/admin";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -32,7 +33,8 @@ const TILE_BTN: React.CSSProperties = { display: "block", minWidth: 0, padding: 
 // latest finds until you leave. Storage: the cache waits in the window (up
 // to nine) for you to open later. A new barcode scanned with the global
 // registry out of reach waits sealed (🔒), and becomes an ordinary cache once
-// back online. Typing a barcode in is a testing tool, at the bottom.
+// back online. Typing a barcode in is a testing tool, at the bottom (online,
+// only for the owner's account: lib/online/admin.ts).
 export default function AltarPage() {
   const game = useGameState();
 
@@ -51,6 +53,8 @@ export default function AltarPage() {
   const [shown, setShown]           = useState<Drop[]>([]); // this visit's finds, newest first (Looting)
   const [note, setNote]             = useState<React.ReactNode>(null); // sealed, storage full…
   const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened
+  const [tools, setTools]           = useState(false); // the testing tools, once we know they're allowed
+  useEffect(() => { testingToolsAllowed(onlineClient(), window.localStorage).then(setTools); }, []);
 
   const videoRef        = useRef<HTMLVideoElement | null>(null);
   const scanControlsRef = useRef<{ stop: () => void } | null>(null);
@@ -289,6 +293,7 @@ export default function AltarPage() {
         </Link>
       </div>
 
+      {tools && <>
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools · <Link href="/settings" style={{ color: "inherit", textDecoration: "underline" }}>export your save first</Link></span>
         <button onClick={() => {
@@ -341,6 +346,7 @@ export default function AltarPage() {
           <button onClick={() => scan(barcode.trim())} disabled={!isValidBarcode} className="pixel-btn">🔮 Generate Drop</button>
         </div>
       </div>
+      </>}
 
     </DenFrame>
   );

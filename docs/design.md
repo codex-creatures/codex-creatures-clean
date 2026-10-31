@@ -72,7 +72,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   at once: the find goes straight to your things and the window shows this visit's latest 9,
   cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when
   full, open some before scanning. Typed barcodes (Repeatable by default, or Random) sit at the
-  bottom as a testing tool.
+  bottom as a testing tool. ✅ (the user, 2026-10-31) Online, the altar's testing tools (typed
+  barcodes, Random, Start new, the resets, rubble and visitor) show only for the owner's account
+  (`ADMIN_IDS`, lib/online/admin.ts); a copy without online keeps them. This hides them in the
+  game only: the server can't tell a typed barcode from a scanned one.
 - ✅ **Items discovered** counts every kind of item: weapon and armour types, materials, potions and
   codexes (lib/items/discovery.ts). The save remembers kinds you've used up (`found`).
 - ✅ Scanned creatures: 20% are a real creature, 80% a **creature card** (`REAL_CREATURE_CHANCE`).
