@@ -878,6 +878,7 @@ account, kept entirely apart from Vouchee.
     or both run it from a shared seed. Claude to propose.
   - **Cheating:** saves can be edited in the browser, so teams and scores can be faked. Accepted
     for playtesting with friends; server checks come later.
-  - **Saves and slots:** how cloud saves fit the 4 local save slots, and what happens when two
-    devices disagree.
+  - **Saves and slots:** what happens when two devices disagree (Claude suggests: newest wins,
+    the other copy kept as a backup). Decided (📌 the user, 2026-10-31): only the save slot being
+    played syncs to the cloud, not all 4.
   - Shared barcode lists (§2) become a real risk once the registry is global.
