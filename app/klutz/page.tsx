@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { startTour } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
 import { LevelBar } from "@/components/CreatureDetailModal";
@@ -65,6 +66,10 @@ export default function KlutzPage() {
 
       <QuestTalk game={game} />
       <ScanTip game={game} />
+      {/* His tour of the Den (lib/tour.ts), again: once the box is open and he's offered it. */}
+      {(game.quest.stage === "lend" || game.quest.stage === "done") && (
+        <button className="chip" style={{ marginTop: 12 }} onClick={startTour}>🗺️ Show me round again</button>
+      )}
 
       {helping && (
         <>
@@ -229,7 +234,7 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
     return say(
       <>&ldquo;There — it&apos;s all in your Inventory. Want me to show you round?&rdquo;</>,
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Link href="/chest" className="pixel-btn tutorial-pulse">🧰 Show me</Link>
+        <button className="pixel-btn tutorial-pulse" onClick={startTour}>🗺️ Show me round</button>
         <button className="pixel-btn" onClick={game.questSkipTutorial}>Skip the tutorial</button>
       </div>,
     );

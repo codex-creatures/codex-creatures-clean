@@ -13,7 +13,7 @@ import { TOOLS, type ToolKey } from "./items/materials";
 export const SAVE_KEY = "codex_creatures_save_v3";
 
 // Fields written by something other than useGameState.
-export const OWN_FIELDS = ["labyrinth", "tavern", "playTime"] as const; // (playTime: lib/playTime.ts)
+export const OWN_FIELDS = ["labyrinth", "tavern", "playTime", "tour"] as const; // (playTime: lib/playTime.ts; tour: lib/tour.ts)
 
 export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};

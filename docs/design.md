@@ -689,8 +689,16 @@ How it came about, round by round: history.md.
   Before he borrows any gear, you have to put some armour from the box on your creature
   (`needsGearUp`). Each step glows (the user, 2026-10-31): the Pit in the Den, the Creatures tab, your
   creature, the armour slots you have armour for, a piece in the picker, Equip, then "Back to Klutz".
-  Once the box is opened, Klutz offers "Show me" or "Skip the tutorial" (the user, 2026-11-01):
+  Once the box is opened, Klutz offers "Show me round" or "Skip the tutorial" (the user, 2026-11-01):
   skipping goes straight to him hunting for you (`skipTutorial`).
+- ✅ **Klutz's tour** (lib/tour.ts, components/TourOverlay.tsx; the user, 2026-11-01): "Show me round"
+  walks you through the Den. Each step dims the screen but one thing (a place's label in the Den, or a
+  `data-tour` mark on a screen) with a line from Klutz; a tap anywhere goes on, into a place after
+  it's been lit up in the Den. Altar, Pit, bag and Klutz are entered; cage, crate, pool, bookcase,
+  board, Bestiary and the Labyrinth are explained from the Den. It ends in the Inventory with the
+  box's gear and how to equip it, then the quest carries on (armour on, then "Deal"). The aim: a new
+  player understands ~70% of the game. Skip tour any time; it resumes where you left it (its own
+  save field, `tour`); "Show me round again" on Klutz's page.
 - ✅ **Equipping:** gear can be dragged onto a creature (loot windows, and the bag in the Labyrinth)
   or onto its slot (the creature window). Dragged straight from a chest, it opens the compare
   window with nothing moved (bag full or not); equipped, what it replaces goes in the bag, or into

@@ -409,7 +409,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         const active = hover === id;
         return (
           <button
-            key={id}
+            key={id} data-tour={`den-${id}`}
             onClick={() => { if (!dragged.current) activate(id); }}
             className={`pixel-font${news ? " news-glow" : ""}`}
             style={{
@@ -429,7 +429,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
         );
       })}
 
-      <button ref={klutzLabelRef} onClick={() => { if (!dragged.current) activate(OBJ.klutz); }}
+      <button ref={klutzLabelRef} data-tour={`den-${OBJ.klutz}`} onClick={() => { if (!dragged.current) activate(OBJ.klutz); }}
         onPointerEnter={() => setHovered(OBJ.klutz)} onPointerLeave={() => setHovered(OBJ.none)}
         className={`pixel-font${klutzNews ? " news-glow" : ""}`}
         style={{

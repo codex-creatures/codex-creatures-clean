@@ -15,6 +15,8 @@ import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/l
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { canBlast, tavernHasQuest, tavernVisitor } from "@/lib/tavern";
+import { useTour } from "@/hooks/useTour";
+import { tourDenTarget } from "@/lib/tour";
 
 // The places in the dock under the room: your creatures, your things, then help.
 const PLACES = [OBJ.pit, OBJ.altar, OBJ.cage, OBJ.pool, OBJ.klutz, OBJ.chest, OBJ.bag, OBJ.bookcase, OBJ.crate, OBJ.scroll];
@@ -34,7 +36,9 @@ export default function Home() {
   // Where Klutz has sent you: the cage for your first creature, then the Pit to
   // kit it out; later, with his dynamite, the rubble (lib/tavern.ts).
   const mine = game.inventory.filter((d) => d.dropType === "creature");
+  const tourAt = tourDenTarget(useTour()); // (Klutz's tour, showing you a place)
   const highlight = !game.hydrated ? undefined
+    : tourAt !== undefined ? tourAt
     : needsFirstCreature(game.quest, mine.length > 0) && game.caged.length > 0 ? OBJ.cage
     : needsGearUp(game.quest, mine.map((c) => game.equipment[c.id])) ? OBJ.pit
     : canBlast(game.tavern) ? OBJ.tavern : undefined;
@@ -62,7 +66,7 @@ export default function Home() {
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}
-      <nav className="screen-dock" style={{ display: "grid", gap: 6 }}>
+      <nav className="screen-dock" data-tour="dock" style={{ display: "grid", gap: 6 }}>
         <Link href="/dungeon" className="pixel-btn" style={{ display: "block", textAlign: "center", fontSize: 18, padding: "8px 0" }}>
           🌀 Enter the Labyrinth
         </Link>

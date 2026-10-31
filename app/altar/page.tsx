@@ -195,7 +195,7 @@ export default function AltarPage() {
   return (
     <DenFrame title="Soul Altar" icon="🔮" gold={game.gold}>
 
-      <div style={{ marginBottom: 16, maxWidth: 520 }}>
+      <div data-tour="altar-progress" style={{ marginBottom: 16, maxWidth: 520 }}>
         <ProgressBar label="Creatures discovered" current={game.discoveredCreatures} total={TOTAL_CREATURES} pct={creaturePct} color="rgba(78,161,255,0.9)" />
         <ProgressBar label="Items discovered" current={game.discoveredItems} total={TOTAL_ITEMS} pct={itemPct} color="rgba(255,204,77,0.9)" />
         <div className="pixel-font" style={{ fontSize: 14, color: "#c9b48a", marginTop: 4 }}>📊 Total scans: <b style={{ color: "#f1d9a0" }}>{game.totalScans.toLocaleString()}</b></div>
@@ -210,14 +210,14 @@ export default function AltarPage() {
       )}
 
       <div style={{ maxWidth: 520 }}>
-        <button className="scan-btn pixel-font" data-on={scannerOn}
+        <button className="scan-btn pixel-font" data-tour="scan" data-on={scannerOn}
           onClick={() => { scanHandledRef.current = false; if (!scannerOn) setScanStatus("Starting camera..."); setScannerOn((s) => !s); }}>
           {scannerOn ? "✖ Stop scanning" : "🔮 Scan Barcode"}
         </button>
         {scannerOn && <div style={{ fontSize: 13, opacity: 0.6, marginTop: 6, textAlign: "center" }}>{scanStatus}</div>}
         {scannerOn && <video ref={videoRef} muted playsInline style={{ marginTop: 8, width: "100%", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)" }} />}
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
+        <div data-tour="scan-mode" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
           {([["loot", "🎁 Looting"], ["store", "📦 Storage"]] as const).map(([mode, label]) => (
             <button key={mode} className="chip" data-active={game.scanMode === mode} onClick={() => { game.setScanMode(mode); setNote(null); }} style={{ flex: 1 }}>{label}</button>
           ))}
@@ -237,7 +237,7 @@ export default function AltarPage() {
 
         {/* The loot window: laid out like your Inventory (each find loose on its
             rarity glow, its name under it), 3 wide, one row while empty. */}
-        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(${WINDOW_COLS}, minmax(0, 1fr))`, gap: 10, marginTop: 14 }}>
+        <div className="inv-panel" data-tour="altar-window" style={{ display: "grid", gridTemplateColumns: `repeat(${WINDOW_COLS}, minmax(0, 1fr))`, gap: 10, marginTop: 14 }}>
           {Array.from({ length: rows * WINDOW_COLS }, (_, i) => {
             const d = slots[i];
             if (!d) return (

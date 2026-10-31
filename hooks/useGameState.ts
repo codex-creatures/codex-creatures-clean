@@ -14,6 +14,7 @@ import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, 
 import { codexDrop, potionDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
+import { endTour } from "@/lib/tour";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
@@ -876,6 +877,7 @@ export function useGameState(initialTab: TabKey = "all") {
     clearDungeon();
     clearTavern();
     clearPlayTime();
+    endTour();
     setTavern({});
     setInventory([]);
     setGold(0);

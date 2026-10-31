@@ -192,7 +192,7 @@ export default function InventoryList({
       )}
 
       {/* Tabs: one segmented control. */}
-      <div role="tablist" style={{ marginTop: 14, display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117" }}>
+      <div role="tablist" data-tour="tabs" style={{ marginTop: 14, display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117" }}>
         {tabs.map((tab, i) => {
           const on = activeTab === tab;
           const glow = tab === "cards" && summonable ? RARITY_COLORS[summonable].text : undefined;
@@ -235,7 +235,7 @@ export default function InventoryList({
 
       {/* Creatures and gear: sprite squares. */}
       {asGrid && shown.length > 0 && (
-        <TileGrid
+        <div data-tour="grid"><TileGrid
           groupBy={groupBy}
           large={creatureTab}
           pulse={guideGearUp && creatureTab ? creatureList[0]?.id : undefined}
@@ -250,7 +250,7 @@ export default function InventoryList({
           sellable={(d) => isSellableItem(d) && !lockedIds.has(d.id)}
           selected={selectedForSale}
           onOpen={handleRowClick}
-        />
+        /></div>
       )}
 
       {/* Item rows */}

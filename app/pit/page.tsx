@@ -31,7 +31,7 @@ export default function PitPage() {
   const gearUp = needsGearUp(game.quest, loadouts);
   const backToKlutz = game.quest.stage === "lend" && !gearUp;
   const parts = (
-    <div className="dock-tabs">
+    <div className="dock-tabs" data-tour="parts">
       <button className={`dock-tab${gearUp && part !== "creatures" ? " tutorial-pulse" : ""}`} data-active={part === "creatures"} onClick={() => show("creatures")}>🐾 Creatures</button>
       <button className="dock-tab" data-active={part === "items"} onClick={() => show("items")}>⚔️ Items</button>
     </div>

@@ -87,7 +87,7 @@ export default function InventoryPage() {
           Sell {picked}{picked > 0 && ` · +${game.sellTotal.toLocaleString()}g`}
         </button>
       </>}
-      <button className="dock-tab" onClick={game.toggleSellMode} data-active={game.sellMode}
+      <button className="dock-tab" data-tour="sell" onClick={game.toggleSellMode} data-active={game.sellMode}
         style={{ visibility: part === "items" ? "visible" : "hidden", color: game.sellMode ? "white" : "#ff8a80", padding: "0 16px" }}>
         {game.sellMode ? "✕" : "💰 Sell mode"}
       </button>
