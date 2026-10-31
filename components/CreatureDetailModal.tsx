@@ -56,10 +56,8 @@ type Props = {
   onNext?: () => void;
   // Klutz: his %s are points you spend (lib/klutz.ts), shown in place of the gear multipliers.
   points?: { free: number; onSpend: (add: Partial<Record<ProfKey, number>>) => void; respec: { cost: number; can: boolean; run: () => boolean } };
-  // Klutz: you choose his soul stone (lib/klutz.ts). onPick missing: not right now (he's away).
-  soulStones?: { choices: SoulStoneKey[]; onPick?: (stone: SoulStoneKey | null) => void };
-  // Your creatures: the loose soul stones you own, to set in it for good
-  // (free into an empty slot, SOUL_STONE_REPLACE_COST gold to replace one).
+  // Your creatures (and Klutz): the loose soul stones you own that can go in it, to set
+  // in it for good (free into an empty slot, SOUL_STONE_REPLACE_COST gold to replace one).
   stones?: { owned: CreatureOrItemDrop[]; gold: number; onSet: (stoneId: string) => void };
 };
 type ProfKey = Exclude<StatKey, "hp">;
@@ -101,7 +99,7 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points, soulStones, stones,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points, stones,
 }: Props) {
   // Points tapped onto stats but not yet confirmed (Klutz).
   const [pending, setPending] = useState<Partial<Record<ProfKey, number>>>({});
@@ -117,8 +115,8 @@ export default function CreatureDetailModal({
 
   // The slot being browsed, and the item picked to preview (null = take it off).
   const [picking, setPicking] = useState<EquipSlot | null>(null);
-  const [stonePicking, setStonePicking] = useState(false); // the soul stone picker (Klutz's, or your loose stones)
-  const canSetStone = !!(soulStones || stones) && !locked; // else tapping the stone just says what it does
+  const [stonePicking, setStonePicking] = useState(false); // the soul stone picker (your loose stones)
+  const canSetStone = !!stones && !locked; // else tapping the stone just says what it does
   const [preview, setPreview] = useState<CreatureOrItemDrop | null | undefined>(undefined);
   const [tab, setTab] = useState<"gear" | "moves">("gear");
   const [teaching, setTeaching] = useState<CreatureOrItemDrop | null>(null); // a codex being read, waiting for a move to forget
@@ -307,28 +305,6 @@ export default function CreatureDetailModal({
             {stonePicking && !canSetStone && creature.soulStone && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a", fontSize: 12, lineHeight: 1.4, color: SOUL_COLOR }}>
                 <b>{SOUL_STONES[creature.soulStone].icon} {SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}
-              </div>
-            )}
-
-            {/* Klutz's soul stone picker: tap one to give it to him */}
-            {stonePicking && canSetStone && soulStones && (
-              <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a" }}>
-                <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>Choose his soul stone</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
-                  <Tile selected={!creature.soulStone} disabled={!soulStones.onPick} onClick={() => soulStones.onPick?.(null)} title="No soul stone">
-                    <span style={{ fontSize: 22, color: MUTED }}>⊘</span>
-                    <span style={{ fontSize: 11, color: MUTED }}>None</span>
-                  </Tile>
-                  {soulStones.choices.map((k) => (
-                    <Tile key={k} selected={creature.soulStone === k} disabled={!soulStones.onPick} onClick={() => soulStones.onPick?.(k)} title={`${SOUL_STONES[k].name}: ${SOUL_STONES[k].text}`}>
-                      <span style={{ fontSize: 22 }}>{SOUL_STONES[k].icon}</span>
-                    </Tile>
-                  ))}
-                </div>
-                {/* What the chosen one does (fixed lines, so nothing jumps) */}
-                <div style={{ marginTop: 8, minHeight: "4.2em", fontSize: 12, lineHeight: 1.4, color: creature.soulStone ? SOUL_COLOR : MUTED }}>
-                  {creature.soulStone ? <><b>{SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}</> : "None: tap a stone to give it to him. You can change it whenever he's home."}
-                </div>
               </div>
             )}
 

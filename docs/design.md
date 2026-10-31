@@ -214,8 +214,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   written out under it (plain text for now, while they're tested). The first quest's thief and
   the Cyclops have none.
 - The starter creature always has one, from its pool (the user, 2026-10-25).
-- **Klutz:** you choose his stone from his Equip window (tap the soul stone slot), and can change
-  it or take it off for free whenever he is home (the user, 2026-10-25). Only the four that do
+- **Klutz:** he can't just pick one: you give him one of your loose soul stones from his Equip
+  window (tap the soul stone slot), on the same terms as a creature (free into an empty slot,
+  5,000 gold to replace his, the old one destroyed), and only while he's home (the user,
+  2026-10-31; before that you chose his stone for free, and a stone he got then he keeps). Only the four that do
   something for him (`KLUTZ_STONES`): no Revitalise (he never swaps out) and no Trickster (no
   utility move). Saved as `KlutzState.soulStone` (missing = none).
 - **Loose soul stones** (the user, 2026-10-25): a stone found on its own, as a consumable item

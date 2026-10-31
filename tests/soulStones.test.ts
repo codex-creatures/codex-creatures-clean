@@ -182,7 +182,7 @@ describe("soul stones in battle", () => {
 });
 
 import { starterCreature } from "../lib/creatures/starter";
-import { setKlutzStone, KLUTZ_STONES, type KlutzState } from "../lib/klutz";
+import { giveKlutzStone, KLUTZ_STONES, type KlutzState } from "../lib/klutz";
 describe("the starter's and Klutz's soul stones", () => {
   it("the starter always has a soul stone from its species pool", () => {
     for (let i = 0; i < 200; i++) {
@@ -190,21 +190,30 @@ describe("the starter's and Klutz's soul stones", () => {
       expect(stonesFor(s.creatureId!)).toContain(s.soulStone);
     }
   });
-  it("you can give Klutz one of his stones, change it or take it off", () => {
-    let k: KlutzState = {};
-    k = setKlutzStone(k, "perfectionist");
-    expect(k.soulStone).toBe("perfectionist");
-    k = setKlutzStone(k, "toxic_skin");
-    expect(k.soulStone).toBe("toxic_skin");
-    expect(setKlutzStone(k, null).soulStone).toBeUndefined();
+  it("Klutz gets a stone only by being given one of your loose stones, like a creature", () => {
+    const a = soulStoneDrop("perfectionist"), b = soulStoneDrop("toxic_skin");
+    let inv: Drop[] = [a, b];
+    const first = giveKlutzStone({}, inv, a.id, 0)!;
+    expect(first.cost).toBe(0); // free into an empty slot
+    expect(first.klutz.soulStone).toBe("perfectionist");
+    expect(first.inventory.map((d) => d.id)).toEqual([b.id]); // the stone is used up
+    inv = first.inventory;
+    expect(giveKlutzStone(first.klutz, inv, b.id, SOUL_STONE_REPLACE_COST - 1)).toBeNull(); // replacing costs gold
+    const second = giveKlutzStone(first.klutz, inv, b.id, SOUL_STONE_REPLACE_COST)!;
+    expect(second.cost).toBe(SOUL_STONE_REPLACE_COST);
+    expect(second.klutz.soulStone).toBe("toxic_skin");
+    expect(second.inventory).toEqual([]);
+    expect(giveKlutzStone({}, [], "nothing", 0)).toBeNull(); // no stone, no stone
   });
   it("only stones that do something for him, and not while he's out hunting", () => {
     expect(KLUTZ_STONES).not.toContain("revitalise");
     expect(KLUTZ_STONES).not.toContain("trickster");
-    expect(setKlutzStone({}, "revitalise").soulStone).toBeUndefined();
+    const r = soulStoneDrop("revitalise");
+    expect(giveKlutzStone({}, [r], r.id, 0)).toBeNull();
+    const p = soulStoneDrop("perfectionist");
     const out = { expedition: { endsAt: 2000, collected: false } } as unknown as KlutzState;
-    expect(setKlutzStone(out, "perfectionist", 1000).soulStone).toBeUndefined();
-    expect(setKlutzStone(out, "perfectionist", 3000).soulStone).toBe("perfectionist");
+    expect(giveKlutzStone(out, [p], p.id, 0, 1000)).toBeNull();
+    expect(giveKlutzStone(out, [p], p.id, 0, 3000)?.klutz.soulStone).toBe("perfectionist");
   });
 });
 

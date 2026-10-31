@@ -12,7 +12,7 @@ import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, renamedMove, type Crea
 import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop } from "@/lib/drops";
-import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, setKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
@@ -39,7 +39,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 import { readSave, writeMainSave } from "@/lib/save";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
-import { setStoneIn, soulStoneOf, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -426,9 +426,14 @@ export function useGameState(initialTab: TabKey = "all") {
     return true;
   }
 
-  // Give him a soul stone (or take it off: null), from his Equip window. Not while he's out.
-  function setKlutzSoulStone(stone: SoulStoneKey | null) {
-    setKlutz((k) => setKlutzStone(k, stone));
+  // Give him one of your loose soul stones, from his Equip window (lib/klutz.ts
+  // giveKlutzStone: as for a creature). False if he can't take it or you can't afford it.
+  function giveKlutzSoulStone(stoneId: string): boolean {
+    const done = giveKlutzStone(klutz, inventory, stoneId, gold);
+    if (!done || !spendGold(done.cost)) return false;
+    setInventory(done.inventory);
+    setKlutz(done.klutz);
+    return true;
   }
 
   // Call him back from the Labyrinth now, with what he's won so far.
@@ -925,6 +930,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, setKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

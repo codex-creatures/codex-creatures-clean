@@ -1,7 +1,8 @@
 "use client";
 // components/KlutzGear.tsx — Klutz's gear and moves window, opened from his
 // page and from the Inventory's dock. While he's away hunting you can look,
-// but his gear's with him, so no swapping.
+// but his gear's with him, so no swapping. His soul stone is one you give him
+// from your loose stones (only the ones that work for him: lib/klutz.ts).
 
 import CreatureDetailModal from "./CreatureDetailModal";
 import { useGameState, klutzDrop, KLUTZ_DROP_ID } from "@/hooks/useGameState";
@@ -19,7 +20,7 @@ export default function KlutzGear({ game, onClose }: { game: ReturnType<typeof u
         free: pointsFree(game.klutz), onSpend: game.spendKlutzPoints,
         respec: { cost: RESPEC_COST, can: pointsSpent(game.klutz.points) > 0 && game.gold >= RESPEC_COST, run: game.respecKlutzPoints },
       }}
-      soulStones={{ choices: KLUTZ_STONES, onPick: away ? undefined : game.setKlutzSoulStone }}
+      stones={{ owned: items.filter((d) => d.stone && KLUTZ_STONES.includes(d.stone)), gold: game.gold, onSet: game.giveKlutzSoulStone }}
       isFavorite={false}
       loadout={game.equipment[KLUTZ_DROP_ID]}
       weapons={items.filter((d) => d.itemCategory === "weapon")}

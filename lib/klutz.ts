@@ -52,7 +52,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { isCreatureDrop, type Drop } from "./types";
 import type { CreatureProficiency } from "./creatures/creatureData";
-import type { SoulStoneKey } from "./creatures/soulStones";
+import { setStoneCost, type SoulStoneKey } from "./creatures/soulStones";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 export const WALK_MIN_MS = 20 * 60 * 1000; // how long he walks before he meets something (each time)
@@ -118,15 +118,22 @@ export type KlutzState = {
   soulStone?: SoulStoneKey; // the soul stone you've given him (missing = none)
 };
 
-// ── His soul stone (the user, 2026-10-25) ──
-// You choose it from his Equip window, and can change it whenever he's home.
-// Only the ones that do something for him: he hunts alone (so never swaps out:
-// no Revitalise) and has no utility move (no Trickster).
+// ── His soul stone (the user, 2026-10-25; given, not chosen: 2026-10-31) ──
+// You give him one of your loose soul stones from his Equip window, on the
+// same terms as your creatures: free into an empty slot, SOUL_STONE_REPLACE_COST
+// gold to replace his (the old one is destroyed), and the stone is used up.
+// Not while he's out hunting. Only the ones that do something for him: he hunts
+// alone (so never swaps out: no Revitalise) and has no utility move (no Trickster).
+// A stone he got back when you could pick one for free, he keeps.
 export const KLUTZ_STONES: SoulStoneKey[] = ["toxic_skin", "haunting_presence", "unstoppable_force", "perfectionist"];
-export function setKlutzStone(k: KlutzState, stone: SoulStoneKey | null, now = Date.now()): KlutzState {
-  if (k.expedition && !k.expedition.collected && now < k.expedition.endsAt) return k; // he's out hunting
-  if (stone && !KLUTZ_STONES.includes(stone)) return k;
-  return { ...k, soulStone: stone ?? undefined };
+export function giveKlutzStone(k: KlutzState, inventory: Drop[], stoneId: string, gold: number, now = Date.now()): { klutz: KlutzState; inventory: Drop[]; cost: number } | null {
+  if (k.expedition && !k.expedition.collected && now < k.expedition.endsAt) return null; // he's out hunting
+  const stone = inventory.find((d) => d.id === stoneId);
+  const key = stone?.dropType === "item" ? stone.stone : undefined;
+  if (!key || !KLUTZ_STONES.includes(key)) return null;
+  const cost = setStoneCost(k.soulStone);
+  if (gold < cost) return null;
+  return { cost, klutz: { ...k, soulStone: key }, inventory: inventory.filter((d) => d.id !== stoneId) };
 }
 
 // ── His points ──
