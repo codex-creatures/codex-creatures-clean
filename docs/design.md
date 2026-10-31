@@ -870,6 +870,19 @@ account, kept entirely apart from Vouchee.
     whichever browser opens it (the "implicit" flow: phone mail apps often use their own browser).
   - Later, for the iPhone App Store: Apple requires Sign in with Apple alongside Google.
 - 📌 **Cloud saves:** the save syncs to the player's account, so it follows them between devices.
+  Decided (the user, 2026-10-31; not built yet):
+  - **One online slot per account:** the slot being played when the player first signs in on a
+    device becomes that device's online slot. The other slots stay on the device only.
+  - **What syncs:** the game save plus battle history. Not the local barcode registry: that
+    becomes the global registry (step 2).
+  - **The cloud wins:** signing in on a device whose online slot differs from the account's cloud
+    save loads the cloud save, with no question asked. The device's copy is kept as the backup
+    (Settings → Restore backup), so nothing is lost for good. An account with no cloud save yet
+    uploads the device's slot.
+  - Playing signed in uploads the online slot a few seconds after each change and on leaving the
+    page; with no connection it waits and uploads once back online.
+  - The user's own game starts fresh with cloud saves (only one game existed, the user's), so no
+    old-save migration is needed.
 - 📌 **Global registry:** the first scan of a barcode anywhere is rolled **on the server** and
   stored, and everyone after gets that outcome (their own stat roll, as now). This makes "being
   first" (the explorer-level cap, soul stones) work between players. It starts **empty** (a fresh
@@ -892,7 +905,5 @@ account, kept entirely apart from Vouchee.
     or both run it from a shared seed. Claude to propose.
   - **Cheating:** saves can be edited in the browser, so teams and scores can be faked. Accepted
     for playtesting with friends; server checks come later.
-  - **Saves and slots:** what happens when two devices disagree (Claude suggests: newest wins,
-    the other copy kept as a backup). Decided (📌 the user, 2026-10-31): only the save slot being
-    played syncs to the cloud, not all 4.
+  - **Saves and slots:** settled, see Cloud saves above (one online slot; the cloud wins).
   - Shared barcode lists (§2) become a real risk once the registry is global.
