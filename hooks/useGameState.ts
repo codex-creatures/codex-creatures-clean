@@ -5,7 +5,7 @@ import { ARMOR_SLOTS, type ArmorSlot } from "@/lib/items/armor";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
-import { getStatCapForDrop } from "@/lib/items/gameHelpers";
+import { discoveredSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
@@ -562,18 +562,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const totalScans = useMemo(() => Object.values(scanCounts).reduce((n, c) => n + c, 0), [scanCounts]);
 
   // ── Discovery progress ────────────────────────────────
-  const discoveredCreatures = useMemo(
-    // Creatures and cards both count as discovered; companions (Klutz) and
-    // retired species don't.
-    // Older saves stored names instead of ids.
-    () => new Set(
-      inventory.filter((d) => isCreatureDrop(d) || isCardDrop(d))
-        .map((d) => findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name))
-        .filter((t) => t && CREATURE_TEMPLATES.includes(t))
-        .map((t) => t!.id)
-    ).size,
-    [inventory]
-  );
+  const discoveredCreatures = useMemo(() => discoveredSpecies(inventory).size, [inventory]);
   const discoveredItems = useMemo(
     // Every kind of item (lib/items/discovery.ts), used-up ones included.
     () => discoveredItemKeys(found, inventory, materials).size,

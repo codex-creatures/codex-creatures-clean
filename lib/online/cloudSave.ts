@@ -29,6 +29,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { checkSaveFile, exportSave, importSave, type KeyValueStore, type SaveFile } from "../saveFile";
 import { newSlot, readSlots, switchSlot } from "../saveSlots";
+import { leaderboardStats } from "../leaderboard";
 
 export const CLOUD_KEY = "codex_creatures_cloud_v1";
 // The account last signed in on this device (cleared on signing out), so it
@@ -164,12 +165,13 @@ export async function uploadCloud(client: SupabaseClient, userId: string, file: 
   Promise<{ ok: true; revision: number } | { ok: false; conflict: boolean }> {
   try {
     const save = cloudFile(file);
+    const stats = leaderboardStats(file.data.progress); // (the leaderboards' numbers go up with it)
     if (known === 0) {
-      const { data, error } = await timeout(client.from(CLOUD_TABLE).insert({ user_id: userId, save }).select("revision").single());
+      const { data, error } = await timeout(client.from(CLOUD_TABLE).insert({ user_id: userId, save, stats }).select("revision").single());
       if (error) return { ok: false, conflict: (error as { code?: string }).code === "23505" };
       return { ok: true, revision: (data as { revision: number }).revision };
     }
-    const { data, error } = await timeout(client.from(CLOUD_TABLE).update({ save }).eq("user_id", userId).eq("revision", known).select("revision"));
+    const { data, error } = await timeout(client.from(CLOUD_TABLE).update({ save, stats }).eq("user_id", userId).eq("revision", known).select("revision"));
     if (error) return { ok: false, conflict: false };
     const rows = (data ?? []) as { revision: number }[];
     return rows.length ? { ok: true, revision: rows[0].revision } : { ok: false, conflict: true };

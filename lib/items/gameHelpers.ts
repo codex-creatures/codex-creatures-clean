@@ -9,9 +9,9 @@ import { ITEM_CEILINGS } from "./ceilings";
 import type { ArmorKey } from "./armor";
 import { ARMOR_CEILINGS, ARMOR_KEYS, pieceCeilings } from "./armor";
 import type { Drop } from "../types";
-import { isItemDrop } from "../types";
+import { isItemDrop, isCardDrop, isCreatureDrop, type CreatureOrItemDrop } from "../types";
 import { ITEM_KEYS } from "./ceilings";
-import { CREATURE_TEMPLATES, CREATURES_BY_RARITY } from "../creatures/creatureData";
+import { CREATURE_TEMPLATES, CREATURES_BY_RARITY, findCreatureTemplate } from "../creatures/creatureData";
 
 // ── Rarity colours ───────────────────────────────────────
 export const RARITY_COLORS: Record<Rarity, { text: string; border: string; glow: string }> = {
@@ -96,6 +96,17 @@ export function getStatCapForDrop(d: Drop, stat: string): number | null {
 
 // ── Creatures (roster lives in lib/creatures/creatureData.ts) ──
 export const TOTAL_CREATURES = CREATURE_TEMPLATES.length;
+// The species you have ("Creatures discovered"): creatures and cards both
+// count; companions (Klutz) and retired species don't. Older saves stored
+// names instead of ids.
+export function discoveredSpecies(inventory: Drop[]): Set<string> {
+  return new Set(
+    inventory.filter((d) => isCreatureDrop(d) || isCardDrop(d))
+      .map((d) => findCreatureTemplate((d as CreatureOrItemDrop).creatureId, (d as CreatureOrItemDrop).name))
+      .filter((t) => t && CREATURE_TEMPLATES.includes(t))
+      .map((t) => t!.id)
+  );
+}
 export const TOTAL_WEAPONS   = ITEM_KEYS.length;
 export const TOTAL_ARMOR     = Object.keys(ARMOR_CEILINGS).length;
 // Every kind of item there is to discover (weapons, armour, materials, potions, codexes).

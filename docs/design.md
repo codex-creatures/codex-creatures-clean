@@ -929,8 +929,17 @@ account, kept entirely apart from Vouchee.
   and the altar's Random testing mode still roll on the device and register nothing.
   - Not hardened: a player could script calls to farm fresh barcodes. Accepted for playtesting
     (see Cheating below).
-- 📌 **Leaderboards**, with resets run by the user (seasons). Boards: % of creature species
-  captured; total runs for each dungeon; wins for each dungeon (a win is beating its final boss). PvP boards come later.
+- ✅ **Leaderboards**, at the Den's quest board (`/board`; daily quests will join them there).
+  Boards: % of creature species you have (the altar's "Creatures discovered": creatures and
+  cards, species you no longer have don't count); runs started in each dungeon; wins in each
+  dungeon (a win is beating its final boss). PvP boards come later. Signed-in players only; top
+  50 shown, plus your own rank; only named players with more than 0 are listed, ties share a rank.
+  - The game works out each player's numbers (`leaderboardStats`, lib/leaderboard.ts) and they go
+    up with the cloud save, in `cloud_saves.stats`. The server's `leaderboard(board)` ranks them
+    (supabase/migrations …_leaderboards.sql). Like the rest, not hardened against a scripted cheat.
+  - **Seasons** (resets run by the user): `select public.start_season();` in the Supabase SQL
+    editor. It notes everyone's numbers then, and runs and wins count from there. 🧪 Species
+    don't reset (Claude's call: they're your collection; the user may want otherwise).
 - 📌 **PvP: live, each player controlling their own team.** Two formats:
   - **3v3:** creatures and items up to Rare, creatures up to Lv 15.
   - **5v5:** up to Legendary, creatures up to Lv 25.
@@ -941,7 +950,7 @@ account, kept entirely apart from Vouchee.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
   online/offline start (done, but email login waits for a domain); 2) global registry and sealed
-  caches (done), leaderboards; 3) live PvP.
+  caches (done), leaderboards (done); 3) live PvP.
 - Known kinks to solve, not decided:
   - **Live battles need both browsers to agree.** Combat rolls dice in many places
     (`Math.random`). Either one player's browser runs the fight and sends each turn to the other,

@@ -2,8 +2,7 @@
 // app/privacy/page.tsx
 // The privacy policy: Google needs a link to one before anyone outside the
 // test-user list can sign in with Google (docs/design.md §12). Keep it in
-// step with what the game really stores: update it when cloud saves,
-// leaderboards or PvP go live.
+// step with what the game really stores: update it when PvP goes live.
 
 import Link from "next/link";
 
@@ -33,7 +32,8 @@ export default function PrivacyPage() {
           <p style={p}>Google tells the game your email address, your Google account name and profile picture, and an ID for your account. The game also keeps the player name you pick. Sign-in is handled by Supabase, the service that stores this.</p>
           <p style={p}>Your save (your game and your recent battles) is kept online with Supabase, so it follows you to other devices. Only you can see it.</p>
           <p style={p}>When you scan a barcode, its number is sent to the game&apos;s online registry, which keeps what each barcode holds so every player finds the same thing. The registry keeps the barcode number and what it holds, not who scanned it.</p>
-          <p style={p}>Coming soon, and only for players who sign in: leaderboards and battles, where other players see your player name (never your email).</p>
+          <p style={p}>Leaderboards: your player name (never your email) and a few numbers from your save (how many creature species you have, and your runs and wins in each dungeon) are shown to other signed-in players, ranked.</p>
+          <p style={p}>Coming soon: battles against other players, where they see your player name (never your email).</p>
 
           <h2 className="pixel-font" style={h}>What it doesn&apos;t do</h2>
           <p style={p}>No ads, no tracking or analytics, and nothing is sold or shared with anyone else. The game only asks Google for your basic profile and email: it can&apos;t see your Gmail, contacts or anything else.</p>

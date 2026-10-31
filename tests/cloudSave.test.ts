@@ -14,7 +14,7 @@ function memoryStore(): KeyValueStore & { map: Map<string, string> } {
 
 // A stand-in for the cloud_saves table, counting revisions like the real
 // one's trigger, and storing the save with its keys reordered (as jsonb does).
-type Row = { save: unknown; revision: number };
+type Row = { save: unknown; revision: number; stats?: unknown };
 function fakeCloud(opts: { offline?: boolean } = {}) {
   const rows = new Map<string, Row>();
   const shuffle = (v: unknown): unknown => {
@@ -34,17 +34,17 @@ function fakeCloud(opts: { offline?: boolean } = {}) {
           },
         }),
       }),
-      insert: (row: { user_id: string; save: unknown }) => ({
+      insert: (row: { user_id: string; save: unknown; stats?: unknown }) => ({
         select: () => ({
           single: async () => {
             if (opts.offline) fail();
             if (rows.has(row.user_id)) return { data: null, error: { code: "23505" } };
-            rows.set(row.user_id, { save: shuffle(JSON.parse(JSON.stringify(row.save))), revision: 1 });
+            rows.set(row.user_id, { save: shuffle(JSON.parse(JSON.stringify(row.save))), revision: 1, stats: row.stats });
             return { data: { revision: 1 }, error: null };
           },
         }),
       }),
-      update: (patch: { save: unknown }) => ({
+      update: (patch: { save: unknown; stats?: unknown }) => ({
         eq: (_c: string, id: string) => ({
           eq: (_c2: string, known: number) => ({
             select: async () => {
@@ -52,6 +52,7 @@ function fakeCloud(opts: { offline?: boolean } = {}) {
               const r = rows.get(id);
               if (!r || r.revision !== known) return { data: [], error: null };
               r.save = shuffle(JSON.parse(JSON.stringify(patch.save)));
+              r.stats = patch.stats;
               r.revision += 1;
               return { data: [{ revision: r.revision }], error: null };
             },
@@ -87,6 +88,13 @@ describe("cloud saves: signing in", () => {
     expect((rows.get(U)!.save as SaveFile).data.registry).toBeNull();
     expect(cloudLink(s, U)).toMatchObject({ slot: "1", revision: 1, dirty: false });
     expect(readLastAccount(s)).toBe(U);
+  });
+
+  it("the leaderboards' numbers go up with the save", async () => {
+    const s = device(50), { client, rows } = fakeCloud();
+    s.setItem(SAVE_PARTS.progress, JSON.stringify(game(50, { labyrinth: { meta: { runs: 4, clears: 1, injuries: {}, bag: [] } } })));
+    await syncAtStart(s, client, U);
+    expect(rows.get(U)!.stats).toMatchObject({ species: 0, runs: { 1: 4 }, wins: { 1: 1 } });
   });
 
   it("the cloud wins on a new device: its game is loaded, the device's kept as the backup, the registry kept", async () => {

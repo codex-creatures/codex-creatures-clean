@@ -24,7 +24,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.chest]:    { label: "Inventory", href: "/chest" },
   [OBJ.altar]:    { label: "Soul Altar", href: "/altar" },
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from your Inventory for now." },
-  [OBJ.quests]:   { label: "Quest Board", soon: "Daily quests (and the utility moves they reward) are coming." },
+  [OBJ.quests]:   { label: "Quest Board", href: "/board" }, // (the leaderboards; daily quests will join them)
   [OBJ.bag]:      { label: "Battle Bag", href: "/bag" },
   [OBJ.arch]:     { label: "The Labyrinth", href: "/dungeon" },
   [OBJ.scroll]:   { label: "Bestiary & Rules", href: "/guide" },

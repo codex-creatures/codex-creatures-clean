@@ -115,7 +115,7 @@ kill theirs.
 
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home). Others: `dungeon` (the Labyrinth),
   `battle`, `altar` (scanning, the "Soul Altar"), `chest` (Inventory), `bag`, `bookcase`, `cage`,
-  `pool`, `pit`, `klutz`, `crate`, `guide`, `settings` (save export/import/backup), `start`
+  `pool`, `pit`, `klutz`, `crate`, `guide`, `board` (the quest board: leaderboards), `settings` (save export/import/backup), `start`
   (the title screen: sign-in and your save online, components/OnlineStart.tsx; save slots in a
   copy without online, components/LocalStart.tsx), `privacy` (the privacy policy Google sign-in needs:
   update it whenever online features change what's stored).
