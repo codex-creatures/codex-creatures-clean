@@ -115,6 +115,33 @@ const KLUTZ_SPEED = 0.55;  // floor units a second
 const KLUTZ_PAUSE = 2.5;   // seconds at each stop
 export type KlutzMode = "home" | "pool" | "away";
 
+// The frame's changed patches, joined where they're close: each patch is a
+// separate copy to the screen, and phones (Safari most of all) pay far more
+// per copy than per pixel. ~100 patches a frame (an ember each) made the Den
+// lag on an iPhone; joined, it's a handful. Two join if the box around both
+// is no bigger than the two plus MERGE_SLACK fine pixels.
+export const MERGE_SLACK = 64 * 64;
+export function mergeRects(rects: [number, number, number, number][]): [number, number, number, number][] {
+  const area = (r: [number, number, number, number]) => (r[2] - r[0]) * (r[3] - r[1]);
+  let out = rects.map((r) => [...r] as [number, number, number, number]);
+  for (let joined = true; joined;) {
+    joined = false;
+    const next: [number, number, number, number][] = [];
+    for (const r of out) {
+      const k = next.findIndex((m) => {
+        const u: [number, number, number, number] = [Math.min(m[0], r[0]), Math.min(m[1], r[1]), Math.max(m[2], r[2]), Math.max(m[3], r[3])];
+        return area(u) <= area(m) + area(r) + MERGE_SLACK;
+      });
+      if (k < 0) { next.push(r); continue; }
+      const m = next[k];
+      next[k] = [Math.min(m[0], r[0]), Math.min(m[1], r[1]), Math.max(m[2], r[2]), Math.max(m[3], r[3])];
+      joined = true;
+    }
+    out = next;
+  }
+  return out;
+}
+
 export function project(u: number, v: number, z: number): [number, number] {
   return [CX + (u - v) * TW, Y0 + (u + v) * TH - z];
 }
@@ -1135,7 +1162,7 @@ export function createDen(opts: { backpack?: boolean; props?: DenProps; altarFra
         }
       }
     }
-    dirty = full ? null : [...painted, ...rects];
+    dirty = full ? null : mergeRects([...painted, ...rects]);
     painted = rects;
     return out;
   }

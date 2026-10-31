@@ -6,7 +6,7 @@ import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisi
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
-import { createDen, OBJ, W, H } from "../lib/den/scene";
+import { createDen, mergeRects, OBJ, W, H } from "../lib/den/scene";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -298,5 +298,27 @@ describe("the tavern's room (the Den's cave, bare)", () => {
   slowIt("while the Den keeps all of them", () => {
     const den = ids(false);
     for (const id of [OBJ.arch, OBJ.altar, OBJ.pit, OBJ.pool, OBJ.cage, OBJ.tavern, OBJ.chest]) expect(den.has(id)).toBe(true);
+  });
+});
+
+describe("drawing the Den: changed patches go to the screen in a few copies", () => {
+  (globalThis as { ImageData?: unknown }).ImageData ??= class { data: Uint8ClampedArray; constructor(public width: number, public height: number) { this.data = new Uint8ClampedArray(width * height * 4); } };
+  type Rect = [number, number, number, number];
+  const covers = (big: Rect[], r: Rect) => big.some((b) => b[0] <= r[0] && b[1] <= r[1] && b[2] >= r[2] && b[3] >= r[3]);
+  it("joins patches that are close, keeps far ones apart, and loses none", () => {
+    const rects: Rect[] = [[0, 0, 2, 2], [3, 1, 5, 3], [1, 4, 3, 6], [900, 900, 902, 902], [904, 899, 906, 901]];
+    const m = mergeRects(rects);
+    expect(m.length).toBe(2);
+    expect(rects.every((r) => covers(m, r))).toBe(true);
+  });
+  it("leaves a big patch alone rather than join it across the room", () => {
+    expect(mergeRects([[0, 0, 300, 300], [1000, 1000, 1300, 1300]]).length).toBe(2);
+  });
+  it("a frame of the Den (embers and all) is a handful of copies, not one per ember", () => {
+    const den = createDen({});
+    den.render(0, OBJ.none);
+    let most = 0;
+    for (let f = 1; f <= 36; f++) { den.render(f / 12, OBJ.none); most = Math.max(most, den.dirty()?.length ?? 0); }
+    expect(most).toBeLessThanOrEqual(20);
   });
 });

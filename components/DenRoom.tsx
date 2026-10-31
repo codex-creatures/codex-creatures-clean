@@ -257,6 +257,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     scene.setCaged(cagedRef.current ? CREATURE_SPRITES[cagedRef.current] ?? null : null, cagedArt.current);
     scene.setKlutz(klutzRef.current, CREATURE_SPRITES.klutz ?? null, klutzPixels.current);
     const draw = () => {
+      if (document.hidden) return; // (no drawing while the game's out of sight)
       const frame = scene.render((performance.now() - start) / 1000, hoverRef.current);
       // Only the patches that changed go to the screen (the whole frame the first time).
       const dirty = scene.dirty();
@@ -491,6 +492,7 @@ function BareRoom({ crisp }: { crisp: boolean }) {
     const start = performance.now();
     let first = true;
     const draw = () => {
+      if (document.hidden) return;
       const frame = scene.render((performance.now() - start) / 1000, OBJ.none);
       const dirty = scene.dirty();
       if (!dirty || first) { ctx.putImageData(frame, 0, 0); first = false; }
