@@ -1,6 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { exportSave, SAVE_PARTS, type KeyValueStore } from "../lib/saveFile";
-import { readSlots, switchSlot, newSlot, renameSlot, deleteSlot, slotGame, slotKey, SLOTS_KEY, MAX_SLOTS } from "../lib/saveSlots";
+import { readSlots, switchSlot, newSlot, renameSlot, deleteSlot, slotGame, slotKey, needsTitle, SLOTS_KEY, MAX_SLOTS } from "../lib/saveSlots";
+
+describe("the title screen first", () => {
+  it("sends a new visit there from any game page, not just the Den", () => {
+    for (const p of ["/", "/altar", "/dungeon", "/settings", "/board"]) expect(needsTitle(p, false)).toBe(true);
+  });
+  it("leaves the title screen, privacy page and dev tools alone", () => {
+    for (const p of ["/start", "/privacy", "/lab", "/lab/rooms", "/simulator"]) expect(needsTitle(p, false)).toBe(false);
+    expect(needsTitle("/starter", false)).toBe(true); // (only whole path parts match)
+  });
+  it("doesn't send you back once a save is picked", () => {
+    expect(needsTitle("/altar", true)).toBe(false);
+  });
+});
 
 // A stand-in for the browser's localStorage. failOn: setItem throws for that key (out of space).
 function memoryStore(init: Record<string, string> = {}, failOn?: string): KeyValueStore & { map: Map<string, string> } {

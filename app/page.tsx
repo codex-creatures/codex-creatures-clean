@@ -15,21 +15,12 @@ import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/l
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { canBlast, tavernHasQuest, tavernVisitor } from "@/lib/tavern";
-import { STARTED_KEY } from "@/lib/saveSlots";
-import { useRouter } from "next/navigation";
 
 // The places in the dock under the room: your creatures, your things, then help.
 const PLACES = [OBJ.pit, OBJ.altar, OBJ.cage, OBJ.pool, OBJ.klutz, OBJ.chest, OBJ.bag, OBJ.bookcase, OBJ.crate, OBJ.scroll];
 
 export default function Home() {
   const game = useGameState();
-  // Opening the game: the title screen first, to pick a save (app/start).
-  const router = useRouter();
-  useEffect(() => {
-    let started = true;
-    try { started = window.sessionStorage.getItem(STARTED_KEY) !== null; } catch {}
-    if (!started) router.replace("/start");
-  }, [router]);
   // Klutz comes and goes with the clock.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 5000); return () => window.clearInterval(t); }, []);

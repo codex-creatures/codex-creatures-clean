@@ -23,6 +23,14 @@ export const SLOTS_KEY = "codex_creatures_slots_v2";
 // sessionStorage, for this visit only: a save has been picked on the title
 // screen, so the Den doesn't send you back to it.
 export const STARTED_KEY = "codex_creatures_started";
+
+// Opening the game on any page (a phone's home-screen icon can keep the page
+// it was added from) goes to the title screen first, once per visit. Except
+// the title screen itself, the privacy page it links to, and the dev tools.
+const NO_TITLE = ["/start", "/privacy", "/lab", "/simulator"];
+export function needsTitle(path: string, started: boolean): boolean {
+  return !started && !NO_TITLE.some((p) => path === p || path.startsWith(p + "/"));
+}
 export const MAX_SLOTS = 4; // (each is a whole save; browsers allow ~5 MB in all)
 export const MAX_NAME = 16;
 
