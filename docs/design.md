@@ -489,7 +489,7 @@ How it came about, round by round: history.md.
       bosses as pairs, and the party at 5 (so no bench in the Abyss), 2026-10-27.
 - ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`; all 5 in the Abyss: `teamSize`),
   chosen at the map; the rest wait in the Den.
-- 📌 **PvP** (not built): live, two players with their own teams. A 3v3 and a 5v5 format. See §12.
+- ✅ **PvP** (built 2026-11-01, waiting for its first two-player test): live duels with a friend, from the quest board. See §12.
 - ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
 - ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,
   stash 10, merchant 5, card witch 5.
@@ -964,21 +964,48 @@ account, kept entirely apart from Vouchee.
   - **Seasons** (resets run by the user): `select public.start_season();` in the Supabase SQL
     editor. It notes everyone's numbers then, and runs, wins, time and scans count from there. 🧪 Species
     don't reset (Claude's call: they're your collection; the user may want otherwise).
-- 📌 **PvP: live, each player controlling their own team.** Two formats:
-  - **3v3:** creatures and items up to Rare, creatures up to Lv 15.
-  - **5v5:** up to Legendary, creatures up to Lv 25.
+- 📌 **PvP: live, each player controlling their own team.** ✅ Built (2026-11-01) as **duels with
+  a friend**; not yet tried by two real players. Rules in lib/pvp (tests/duel.test.ts), the screen
+  app/duel, the connection lib/online/duelChannel.ts. Three formats (`PVP_FORMATS`):
+  - **3v3 · Rare · Lv 15:** creatures and items up to Rare.
+  - **5v5 · Rare · Lv 15** (the user, 2026-11-01: closer to what they can field while testing).
+  - **5v5 · Legendary · Lv 25.**
   - **Every creature fights at the format's level** (the user, 2026-10-31): above it, its stats
     are scaled down to that level; below it, scaled up. So 3v3 is always Lv 15 and 5v5 Lv 25,
     and the creature's real level is untouched. Scaling up is fine because levelling isn't the
     only edge: gear and each creature's stat rolls still reward finding and optimising.
+  - **The screen** (the user, 2026-11-01; `ineligibleReason`): a creature above the format's
+    rarity can't be picked, and nor can one wearing a weapon or armour piece above it (a Rare
+    creature with an Epic sword). Moves learned from codexes are fine. Unfit creatures show
+    greyed with the reason.
+  - **Friends** (the user, 2026-11-01): every row on a leaderboard has ➕ to add that player to
+    your friend list (one-sided, like following: the `friends` table, `my_friends()`). 👥 on the
+    board shows the list, with 🟢 for who's in the game now (Realtime presence, "lobby"), ✕ to
+    remove, and ⚔️ Duel for those who are on. Duel shows the formats, with how many of your
+    creatures fit each (a format you can't fill is greyed).
+  - **Invites:** the challenge pops up wherever the friend is in the game
+    (components/DuelInbox.tsx), with Accept / No. It lapses after 60 s (`INVITE_SECONDS`).
+  - **The steps** (the user, 2026-11-01): pick your team (**20 s**, `PICK_SECONDS`; time out and
+    the ones you'd tapped, then the first that fit, are picked for you) → **the lead room**, a
+    dungeon room with their team at the back and yours at the front, where you tap who goes
+    out first (20 s, 🧪 Claude's number) → the battle on the usual battle screen.
+  - 🧪 Claude's defaults, agreed by the user 2026-11-01: **30 s a move** (`TURN_SECONDS`; then a
+    steady move is made for you; 20 s to send in a replacement); **no potions or battle bag**,
+    gear only; **no rewards and no effect on the save** (no XP, gold or injuries; the duel goes
+    in your battle history); **leaving loses**, and so does being gone 30 s (`GONE_SECONDS`).
+  - **How the two browsers agree** (Claude's answer to the kink below): whoever sent the invite
+    is the host and their browser runs the fight with the usual rules; the other player's
+    choices go to it and each round's result comes back (the guest's copy is mirrored so both
+    see themselves on the left). Lost messages are sent again. Only Supabase Realtime is used:
+    no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
+  - Later: PvP leaderboards; challenging players who aren't friends; formats with a bench.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
   online/offline start (done, but email login waits for a domain); 2) global registry and sealed
-  caches (done), leaderboards (done); 3) live PvP.
+  caches (done), leaderboards (done); 3) live PvP (built, 2026-11-01).
 - Known kinks to solve, not decided:
-  - **Live battles need both browsers to agree.** Combat rolls dice in many places
-    (`Math.random`). Either one player's browser runs the fight and sends each turn to the other,
-    or both run it from a shared seed. Claude to propose.
+  - **Live battles need both browsers to agree.** Solved: the host's browser runs the fight
+    (see PvP above).
   - **Cheating:** saves can be edited in the browser, so teams and scores can be faked. Accepted
     for playtesting with friends; server checks come later.
   - **Saves and slots:** settled, see Cloud saves above (one online slot; the cloud wins).

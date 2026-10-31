@@ -17,6 +17,7 @@ import { useEffect, useState } from "react";
 import { useUiScale } from "@/hooks/useUiScale";
 import PlayClock from "@/components/PlayClock";
 import CloudSync from "@/components/CloudSync";
+import DuelInbox from "@/components/DuelInbox";
 import TourOverlay from "@/components/TourOverlay";
 import { needsTitle, STARTED_KEY } from "@/lib/saveSlots";
 
@@ -46,6 +47,7 @@ export default function GameScreen({ children }: { children: React.ReactNode }) 
           <div className="screen-body">{show ? children : null}</div>
           <PlayClock />
           <CloudSync />
+          {show && <DuelInbox />}
           {show && path !== "/start" && <TourOverlay />}
         </div>
       </div>

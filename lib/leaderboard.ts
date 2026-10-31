@@ -76,7 +76,8 @@ export function boardValue(kind: BoardKind, value: number): string {
 
 // ── What the server sends ─────────────────────────────────────────────
 export const BOARD_TOP = 50; // players listed on a board (the server's limit too)
-export type BoardRow = { rank: number; name: string; value: number; me: boolean };
+// id: the player's account (for adding them as a friend; boards from before it have none).
+export type BoardRow = { rank: number; name: string; value: number; me: boolean; id?: string };
 export type Board = { season: number; startedAt: string; top: BoardRow[]; me: { rank: number; value: number } | null };
 
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
@@ -89,7 +90,7 @@ export function parseBoard(data: unknown): Board | null {
   for (const r of o.top.slice(0, BOARD_TOP)) {
     const x = r as Record<string, unknown> | null;
     if (!x || !isNum(x.rank) || !isNum(x.value) || typeof x.name !== "string") return null;
-    top.push({ rank: x.rank, name: x.name, value: x.value, me: x.me === true });
+    top.push({ rank: x.rank, name: x.name, value: x.value, me: x.me === true, ...(typeof x.id === "string" ? { id: x.id } : {}) });
   }
   const m = o.me as Record<string, unknown> | null | undefined;
   const me = m && isNum(m.rank) && isNum(m.value) ? { rank: m.rank, value: m.value } : null;

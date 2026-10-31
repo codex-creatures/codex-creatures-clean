@@ -115,7 +115,7 @@ kill theirs.
 
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home). Others: `dungeon` (the Labyrinth),
   `battle`, `altar` (scanning, the "Soul Altar"), `chest` (Inventory), `bag`, `bookcase`, `cage`,
-  `pool`, `pit`, `klutz`, `crate`, `guide`, `board` (the quest board: leaderboards), `settings` (save export/import/backup), `start`
+  `pool`, `pit`, `klutz`, `crate`, `guide`, `board` (the quest board: leaderboards and friends), `duel` (a live duel with a friend), `settings` (save export/import/backup), `start`
   (the title screen: sign-in and your save online, components/OnlineStart.tsx; save slots in a
   copy without online, components/LocalStart.tsx), `privacy` (the privacy policy Google sign-in needs:
   update it whenever online features change what's stored).
@@ -133,7 +133,7 @@ kill theirs.
   - `items/`: stat rolling (`rollConfig.ts`, `budgets.ts`, `ceilings.ts`: **the user's most
     carefully balanced system**), armour, `materials.ts`.
   - `barcodeRegistry.ts` (the roll rules, and the local registry used without online), `scanning.ts`
-    (opening a scanned barcode), `online/registry.ts` (the global registry), `drops.ts`, `klutz.ts`, `quest.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`.
+    (opening a scanned barcode), `online/registry.ts` (the global registry), `drops.ts`, `pvp/` (duels: `formats.ts`, `duel.ts`, the match machine), `online/friends.ts` and `online/duelChannel.ts` (Realtime), `klutz.ts`, `quest.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`.
   - `sprites/`: art registry (`art.ts` `withArt`, `creatures.ts` `ART_SIZES`, `items.ts`, `props.ts`).
 - `components/`: `GameScreen.tsx` (the fixed phone screen and trim), `DenFrame` (header + scroll +
   dock), `BattleScreen`, `BossStage`, `CardGallery` (`CardFace`, the card standard), `LootWindow`,

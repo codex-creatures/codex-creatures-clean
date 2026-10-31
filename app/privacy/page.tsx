@@ -2,12 +2,12 @@
 // app/privacy/page.tsx
 // The privacy policy: Google needs a link to one before anyone outside the
 // test-user list can sign in with Google (docs/design.md §12). Keep it in
-// step with what the game really stores: update it when PvP goes live.
+// step with what the game really stores (friends and duels: 1 November 2026).
 
 import Link from "next/link";
 
 const CONTACT_EMAIL = "adamjbell95@gmail.com";
-const UPDATED = "31 October 2026";
+const UPDATED = "1 November 2026";
 
 const h = { fontSize: 16, color: "#f1d9a0", margin: "14px 0 4px" } as const;
 const p = { fontSize: 14, lineHeight: 1.45, margin: "0 0 8px", color: "#d8d4c8" } as const;
@@ -33,7 +33,9 @@ export default function PrivacyPage() {
           <p style={p}>Your save (your game and your recent battles) is kept online with Supabase, so it follows you to other devices. Only you can see it.</p>
           <p style={p}>When you scan a barcode, its number is sent to the game&apos;s online registry, which keeps what each barcode holds so every player finds the same thing. The registry keeps the barcode number and what it holds, not who scanned it.</p>
           <p style={p}>Leaderboards: your player name (never your email) and a few numbers from your save (how many creature species you have, your runs and wins in each dungeon, your time played and how many barcodes you've scanned) are shown to other signed-in players, ranked.</p>
-          <p style={p}>Coming soon: battles against other players, where they see your player name (never your email).</p>
+          <p style={p}>Friends: you can add players from the leaderboards to your friend list (kept with Supabase; only you see it). To make that work, the leaderboards also carry each player&apos;s account ID, a random code that says nothing about you.</p>
+          <p style={p}>While you&apos;re playing signed in, other signed-in players can see that you&apos;re on (a green dot on their friend list).</p>
+          <p style={p}>Duels: a friend can invite you to a live battle. During one, the other player sees your player name and the team you fight with (its creatures, gear and moves). The battle goes in each player&apos;s own battle history; nothing else about it is kept online.</p>
 
           <h2 className="pixel-font" style={h}>What it doesn&apos;t do</h2>
           <p style={p}>No ads, no tracking or analytics, and nothing is sold or shared with anyone else. The game only asks Google for your basic profile and email: it can&apos;t see your Gmail, contacts or anything else.</p>

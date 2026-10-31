@@ -79,9 +79,10 @@ const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's pha
 // What the screen shows about each team member (gear names etc.).
 // creatureId: for its sprite (fights saved before sprites show initials).
 export type MemberInfo = { rarity: Rarity; label: string; weaponName?: string; armorName?: string; creatureId?: string };
+// gear: everything it wears (weapon and armour pieces), for the duel formats' rarity screen.
 export type OwnedCreature = MemberInfo & {
   id: string; name: string; template: CreatureTemplate; roster: boolean;
-  weaponRarity?: Rarity; armorRarity?: Rarity; fighter: Fighter;
+  weaponRarity?: Rarity; armorRarity?: Rarity; fighter: Fighter; gear: { name: string; rarity: Rarity }[];
 };
 
 export type Match = {
@@ -91,6 +92,7 @@ export type Match = {
   level: AiLevel;                     // how well the opponent plays
   title?: string;                     // e.g. "Dungeon room 3", shown in the history
   tutorial?: number;                  // the guided first fight: which step you're on (tutorialSteps; -1 = not started)
+  opponent?: string;                  // a duel: the other player's name (no AI)
 };
 
 // The animation currently playing. Indexes say which creature (team index)
@@ -110,8 +112,9 @@ export function rarityColor(r?: Rarity) {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Your creatures as they fight: gear, moves and rolled %s from the save.
-// Roster (★) first, then rarest.
-export function loadOwnedCreatures(): OwnedCreature[] {
+// Roster (★) first, then rarest. atLevel: build them at that level instead
+// of their own (a duel's format level: lib/pvp/formats.ts).
+export function loadOwnedCreatures(atLevel?: number): OwnedCreature[] {
   const save = loadSave();
   const inv = save?.inventory ?? [];
   const favs = new Set(save?.favoriteIds ?? []);
@@ -134,7 +137,8 @@ export function loadOwnedCreatures(): OwnedCreature[] {
       weaponName: w?.name,
       armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
-      fighter: fighterFor(d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
+      fighter: fighterFor(atLevel ? { ...d, level: atLevel } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
+      gear: [w, ...worn].filter((g): g is CreatureOrItemDrop => !!g).map((g) => ({ name: g.name, rarity: g.rarity })),
     });
   }
   return list.sort((x, y) =>
@@ -188,7 +192,7 @@ function applyEvent(view: BattleState, e: BattleEvent) {
   }
 }
 
-function historyMembers(m: Match, k: SideKey): BattleMember[] {
+export function historyMembers(m: Match, k: SideKey): BattleMember[] {
   return m.teams[k].map((f, i) => {
     const s = combatSummary(f);
     return {
@@ -204,15 +208,22 @@ function historyMembers(m: Match, k: SideKey): BattleMember[] {
 // onUpdate is called with every settled state (after each round and each
 // replacement), so a screen can save a battle in progress.
 export function usePlayableBattle(onUpdate?: (m: Match) => void) {
-  const [match, setMatchState] = useState<Match | null>(null);
+  const [match, setMatchStateRaw] = useState<Match | null>(null);
   const [view, setView] = useState<BattleState | null>(null); // on-screen copy while a round plays
   const [fx, setFx] = useState<Fx | null>(null);
   const alive = useRef(true);
+  // The latest settled match, and the rounds waiting to be shown (show(): a duel's rounds come from the host).
+  const latest = useRef<Match | null>(null);
+  const queue = useRef<Promise<void>>(Promise.resolve());
   useEffect(() => {
     alive.current = true;
     return () => { alive.current = false; };
   }, []);
 
+  function setMatchState(m: Match | null) {
+    latest.current = m;
+    setMatchStateRaw(m);
+  }
   function setMatch(m: Match | null) {
     setMatchState(m);
     if (m) onUpdate?.(m);
@@ -257,8 +268,23 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
       });
     }
     onUpdate?.(done); // saved straight away, so leaving mid-replay doesn't undo the round
+    await playOut(before, done);
+  }
 
-    // Play the round's events one at a time.
+  // A new state worked out elsewhere (a duel's host): played out after
+  // anything still showing, like a round against the AI.
+  function show(next: BattleState) {
+    queue.current = queue.current.then(() => {
+      const m = latest.current;
+      if (!m || !alive.current) return;
+      if (next.log.length < m.state.log.length) { setMatchState({ ...m, state: next }); return; } // (a fresh copy: nothing to replay)
+      return playOut(m.state, { ...m, state: next });
+    });
+  }
+
+  // Play the events between two states one at a time, then settle on the second.
+  async function playOut(before: BattleState, done: Match) {
+    const after = done.state;
     let shown = cloneBattle(before);
     setView(shown);
     let n = 0;
@@ -300,7 +326,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     if (match?.tutorial === -1) setMatch({ ...match, tutorial: 0 });
   }
 
-  return { match, view, fx, start, resume, act, replace, beginTutorial, clear: () => setMatchState(null) };
+  return { match, view, fx, start, resume, act, replace, beginTutorial, show, clear: () => setMatchState(null) };
 }
 
 // ── Battle screen ─────────────────────────────────────────────────
@@ -315,9 +341,12 @@ export type BagItem = { key: string; name: string; icon: string; potion?: "potio
 // showEstimates: the "hits for ~X, takes ~Y" swap hints (until your first
 // Cyclops; after that you're on your own).
 // raceChart: a dock button for the race chart (Labyrinth runs, while you learn the races).
-export function BattleView({ battle, finishedActions, bag = [], onUseItem, showEstimates = true, raceChart }: {
+// A duel: waiting (your choice is in, the other player's isn't), and clock
+// (seconds left to choose, shown at the end of the energy line).
+export function BattleView({ battle, finishedActions, bag = [], onUseItem, showEstimates = true, raceChart, waiting, clock }: {
   battle: ReturnType<typeof usePlayableBattle>; finishedActions: React.ReactNode;
   bag?: BagItem[]; onUseItem?: (key: string, activeIndex: number) => void; showEstimates?: boolean; raceChart?: boolean;
+  waiting?: boolean; clock?: number;
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
   // What's opened over the stage (from the dock's tabs): the bag, a swap, the log, details, the race chart.
@@ -326,7 +355,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   useEscape(open ? () => setOpen(null) : null);
   const match = battle.match!;
   const { info } = match;
-  const playing = battle.view !== null;
+  const replaying = battle.view !== null;
+  const playing = replaying || !!waiting; // (moves and swaps are off either way)
   const fx = battle.fx;
   const onAct = battle.act, onReplace = battle.replace;
   const state = battle.view ?? match.state;
@@ -339,6 +369,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const them = foe.team[target];
   const finished = !playing && match.state.winner;
   const mustReplace = !playing && match.state.needsReplacement.includes("A");
+  const rival = match.opponent ?? "the other player";
+  const waitText = waiting && !replaying ? `Waiting for ${rival}…` : undefined;
   const phaseText = fx?.kind === "lineup" ? fx.text : undefined;
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
@@ -358,8 +390,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const stuck = affordableSkills(me).length === 0 && !playing && !finished && !mustReplace && !notStarted;
   useEffect(() => { if (stuck) onAct({ kind: "pass" }); }, [stuck]); // eslint-disable-line react-hooks/exhaustive-deps
   // What's happening now, in words ("Moss Wolf used Gore"), while a round plays out.
-  const caption = playing && fx && "caption" in fx ? fx.caption : undefined;
-  const captionMove = playing && fx?.kind === "attack" ? fx : undefined; // the move, in its style's colour
+  const caption = (replaying && fx && "caption" in fx ? fx.caption : undefined) ?? waitText;
+  const captionMove = replaying && fx?.kind === "attack" ? fx : undefined; // the move, in its style's colour
 
   // A panel opened over the stage, from the dock.
   const over = (title: string, body: React.ReactNode) => (
@@ -469,7 +501,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             </div>
             <div style={{ fontSize: 14, color: MUTED }}>
               {match.state.winner === "B" && match.state.turnLimit && match.state.round >= match.state.turnLimit && aliveCount(you) > 0 ? "💥 The room collapses on you. " : ""}
-              {match.state.round} rounds · {AI_LEVEL_LABELS[match.level]} AI
+              {match.state.round} rounds · {match.opponent ? `vs ${match.opponent}` : `${AI_LEVEL_LABELS[match.level]} AI`}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 4 }}>{finishedActions}</div>
             <button className="chip" onClick={() => toggle("log")} style={{ minHeight: 44, padding: "2px 16px", fontSize: 15 }}>📜 Log</button>
@@ -511,6 +543,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
                   {multi && <span style={{ fontSize: 11, color: "#ffd66e", whiteSpace: "nowrap", maxWidth: "40%", overflow: "hidden", textOverflow: "ellipsis" }}>🎯 {them.name}</span>}
                 </>
               )}
+              {clock !== undefined && <DuelClock seconds={clock} />}
             </div>
             <div className="battle-moves" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, opacity: playing ? 0.6 : 1 }}>
               {me.skills.map((sk) => (
@@ -531,6 +564,12 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
       </div>
     </div>
   );
+}
+
+// A duel's time left to choose (red near the end).
+export function DuelClock({ seconds }: { seconds: number }) {
+  const s = Math.max(0, Math.ceil(seconds));
+  return <span className="pixel-font" style={{ fontSize: 13, color: s <= 5 ? "#ff8a80" : "#f1d9a0", whiteSpace: "nowrap", minWidth: "3.2em", textAlign: "right", fontVariantNumeric: "tabular-nums" }}>⏱ {s}s</span>;
 }
 
 // Damage a move would do (a precise move's damage when it lands).
