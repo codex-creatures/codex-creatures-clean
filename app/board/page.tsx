@@ -1,17 +1,17 @@
 "use client";
 // app/board/page.tsx
 // The quest board in the Den. For now it holds the leaderboards
-// (lib/leaderboard.ts): species collected, and runs and wins in each dungeon,
+// (lib/leaderboard.ts): species collected, runs and wins in each dungeon, and time played,
 // ranked against every player online. Daily quests will join them here.
 // Fixed frame: the board buttons sit in the dock, the dungeon buttons keep
-// their place (hidden on Species), and the list scrolls inside its panel.
+// their place (hidden on the boards that aren't per dungeon), and the list scrolls inside its panel.
 
 import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { fetchBoard } from "@/lib/online/leaderboard";
-import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
+import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
 import { DUNGEON_IDS, type DungeonId } from "@/lib/dungeon/run";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -45,7 +45,7 @@ export default function QuestBoardPage() {
   }, [key, ask]);
 
   const board = view.status === "ok" ? view.board : null;
-  const title = kind === "species" ? "Species collected" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
+  const title = kind === "species" ? "Species collected" : kind === "time" ? "Time played" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
 
   const dock = (
     <div className="dock-tabs">
@@ -70,14 +70,15 @@ export default function QuestBoardPage() {
               <li>Every player online, ranked. Your numbers go up with your online save, a few seconds after you play.</li>
               <li><b>🐾 Species:</b> how many of the creature species you have (as <b>Creatures discovered</b> at the altar).</li>
               <li><b>🏃 Runs:</b> runs started in that dungeon. <b>👑 Wins:</b> its final boss beaten.</li>
-              <li><b>Seasons:</b> when a new one starts, runs and wins count again from 0. Species stay.</li>
+              <li><b>⏳ Time:</b> time played (as in Settings: idle time doesn&apos;t count).</li>
+              <li><b>Seasons:</b> when a new one starts, runs, wins and time count again from 0. Species stay.</li>
               <li>Top {BOARD_TOP} are shown. Only players with a name and more than 0 are listed.</li>
             </ul>
           </Help>
         </div>
 
-        {/* The dungeon buttons keep their space on Species, so nothing moves. */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: kind === "species" ? "hidden" : "visible" }}>
+        {/* The dungeon buttons keep their space on the other boards, so nothing moves. */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: perDungeon(kind) ? "visible" : "hidden" }}>
           {DUNGEON_IDS.map((d) => (
             <button key={d} className="chip" data-active={dungeon === d} onClick={() => setDungeon(d)} title={dungeonName(d)}
               style={{ minHeight: 44, justifyContent: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
