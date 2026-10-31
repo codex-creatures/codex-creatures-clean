@@ -152,7 +152,7 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       attacker.energy = e.attackerEnergyAfter;
       attacker.streak = { ...e.streak };
       target.hp = e.targetHpAfter;
-      if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS, loss: e.crippleLoss }];
+      if (e.crippled) target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: e.crippleRounds ?? CRIPPLE_ROUNDS, loss: e.crippleLoss }];
       if (e.venom) target.statuses = [...target.statuses.filter((s) => s.id !== "venom"), { ...e.venom }];
       if (e.sealed) target.statuses = [...target.statuses.filter((s) => s.id !== "seal"), { id: "seal", rounds: e.sealed }];
       if (e.soaked) target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: e.soaked }];

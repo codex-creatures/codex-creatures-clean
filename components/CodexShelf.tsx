@@ -13,7 +13,7 @@ import { useState } from "react";
 import CodexMove from "./CodexMove";
 import { MoveTile } from "./MoveTile";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
-import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, codexLearners, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
+import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
 import { KIT_MOVE_RACE } from "@/lib/creatures/raceKitsV2";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
@@ -39,7 +39,6 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
   const picked = codexes.find((c) => c.id === pickedId);
   const move = picked?.codexMove;
   const raceLocked = !!move && !!MOVE_BY_NAME[move] && learnRacesOf(MOVE_BY_NAME[move]).length > 0;
-  const learners = move ? codexLearners(move) : undefined;
 
   const pick = (id: string | null) => { setPickedId(id); setTeaching(false); setForgetting(null); setDropSlot(null); setTaught(null); setDiscarding(false); };
   const slotsOf = (x: CreatureOrItemDrop) => {
@@ -81,7 +80,6 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                   <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 }}>{picked.name}</span>
-                  {learners && <span className="pixel-font" style={{ flexShrink: 0, fontSize: 12, textTransform: "uppercase", whiteSpace: "nowrap", color: learners.color, border: `2px solid ${learners.color}55`, padding: "1px 8px" }}>{learners.text}</span>}
                 </div>
                 <CodexMove move={move!} />
                 <div style={{ display: "flex", alignItems: "center", gap: 6, visibility: teach || onDiscard ? "visible" : "hidden" }}>

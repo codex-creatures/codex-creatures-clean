@@ -37,8 +37,33 @@ describe("what a creature can use and learn", () => {
 
   it("learnable codexes work on anyone; race codexes only on that race", () => {
     expect(canLearnFromCodex(CREATURE_BY_ID.cave_bat, LEARNABLE_MOVES[0].name)).toBe(true);
-    expect(canLearnFromCodex(CREATURE_BY_ID.cave_bat, "Pounce")).toBe(false);
+    expect(canLearnFromCodex(CREATURE_BY_ID.cave_bat, "Mirage")).toBe(false);
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Pounce")).toBe(true);
+  });
+
+  it("race moves: their race plus the species the user named, minus any left out", () => {
+    const can = (id: string, m: string) => canLearnFromCodex(CREATURE_BY_ID[id], m);
+    for (const id of ["void_serpent", "deep_angler", "veilstalker", "cave_bat", "moss_wolf"]) expect(can(id, "Pounce")).toBe(true);
+    for (const id of ["ironhide", "tunnel_wyrm", "rust_beetle"]) expect(can(id, "Pounce")).toBe(false);
+    for (const id of ["flicker_wisp", "dust_sprite", "dustwraith", "swamp_witch", "mr_shadows", "dreadpox", "thunderhead", "pale_rider", "storm_phoenix"]) expect(can(id, "Mirage")).toBe(true);
+    for (const id of ["rattlebones", "hollow_matriarch", "dreadpox", "plague_rat"]) expect(can(id, "Corpsify")).toBe(true);
+    for (const id of ["rotgut_fly", "leafblade_scout", "aurelius", "the_watcher", "thunderhead", "sylvaran", "storm_phoenix", "hollow_matriarch"]) expect(can(id, "Barrage")).toBe(true);
+    for (const id of ["dust_sprite", "tunnel_wyrm", "swamp_witch", "mr_shadows", "thunderhead", "ironhide"]) expect(can(id, "Erupt")).toBe(true);
+    expect(can("moss_wolf", "Erupt")).toBe(false);
+    expect(can("moss_wolf", "Mirage")).toBe(false);
+  });
+
+  it("Erupt: 25 magic damage, 70 energy, a 25% chance to cripple for 3-5 rounds", () => {
+    expect(MOVE_BY_NAME.Erupt).toMatchObject({ damage: 25, energyCost: 70, type: "magic", race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 } });
+    // Its cripple lasts 3 to 5 rounds after this one (+1: it ticks at the end of this round).
+    const lengths = new Set<number>();
+    for (let i = 0; i < 300; i++) {
+      const st = createBattle([fighter("thunderhead", ["Erupt"])], [fighter("moss_wolf", ["Slash"])]);
+      resolveRound(st, { A: hit("Erupt"), B: hit("Slash") });
+      const c = st.sides.B.team[0].statuses.find((x) => x.id === "cripple");
+      if (c) lengths.add(c.rounds);
+    }
+    expect([...lengths].sort()).toEqual([3, 4, 5]);
   });
 
   it("consumables: Common a Lesser Potion or basic codex, Uncommon a learnable codex, Rare a Healing Potion or strong codex", () => {
@@ -88,7 +113,7 @@ describe("what a creature can use and learn", () => {
 
 describe("race moves", () => {
   it("each race has one, and only creatures of that race can learn it", () => {
-    expect(new Set(RACE_MOVES.map((m) => m.race)).size).toBe(5);
+    expect(new Set(RACE_MOVES.map((m) => m.race)).size).toBe(6);
     const wolf = CREATURE_BY_ID.moss_wolf; // beast
     expect(movesAvailableTo(wolf).map((m) => m.name)).not.toContain("Pounce"); // not until learned
     expect(movesAvailableTo(wolf, ["Pounce", "Mirage"]).map((m) => m.name)).toContain("Pounce");
@@ -97,12 +122,12 @@ describe("race moves", () => {
   });
 
   it("Pounce strikes first even when slower, and hits the wounded harder", () => {
-    const slow = fighter("ironhide", ["Pounce", "Slash"]);      // agility 10%
+    const slow = fighter("crystalback", ["Pounce", "Slash"]);   // agility 4%
     const fast = fighter("monkey_mage", ["Slash", "Bolt"]);      // agility 30%
     const s = createBattle([slow], [fast]);
     resolveRound(s, { A: hit("Pounce"), B: hit("Slash") });
     const attacks = s.log.filter((e) => e.type === "attack");
-    expect(attacks[0].type === "attack" && attacks[0].attacker).toBe("Ironhide");
+    expect(attacks[0].type === "attack" && attacks[0].attacker).toBe("Crystalback");
 
     // Same hit on a healthy and a wounded target (no precise hits; the same damage roll).
     const fixed = vi.spyOn(Math, "random").mockReturnValue(0.5);

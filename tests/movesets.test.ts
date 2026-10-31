@@ -27,7 +27,8 @@ describe("Klutz and race moves", () => {
 describe("codexes say who can read them", () => {
   it("race moves, race-kit moves, class moves and learnable ones", () => {
     expect(codexLearners("Rabid Bite").text).toBe("Beast / Underkin / Toxic only");
-    expect(codexLearners("Pounce").text).toBe("Beast only");
+    expect(codexLearners("Pounce").text).toBe("Beast + 4 more");
+    expect(codexLearners("Erupt").text).toBe("Geo + 3 more");
     expect(codexLearners("Tunnel Rush").text).toBe("Underkin melee only");
     expect(codexLearners("Slash").text).toBe("Melee only");
     expect(codexLearners("Cripple").text).toBe("any creature");

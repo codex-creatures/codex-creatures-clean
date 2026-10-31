@@ -64,7 +64,7 @@ export function codexDrop(moveName: string, barcode = ""): Drop {
   const species = move?.learners?.map((id) => CREATURE_BY_ID[id]?.name).filter(Boolean) ?? [];
   const who = species.length ? `one of: ${species.join(", ")}`
     : move?.codexRarity ? "any one creature"
-    : learners.length ? `one ${learners.map((r) => RACE_INFO[r].name).join(", ").replace(/, ([^,]*)$/, " or $1")} creature`
+    : learners.length ? "one creature"   // (who: the label on the codex, and greyed-out creatures)
     : kitRace && move ? `one ${RACE_INFO[kitRace].name} ${CLASS_INFO[move.type].name} creature`
     : (basic || strong) && move ? `one ${CLASS_INFO[move.type].name} creature` : "any one creature";
   return {

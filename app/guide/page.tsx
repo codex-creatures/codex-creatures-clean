@@ -316,7 +316,7 @@ function Moves({ seen }: { seen: Set<string> }) {
       <H>Move codexes</H>
       <P>Every {CLASS_INFO.melee.name}, {CLASS_INFO.ranged.name} and {CLASS_INFO.magic.name} move above also comes as a codex, from scans: Common for up to {BASIC_CODEX_MAX_DAMAGE} damage, Rare above that. It teaches a creature of that move&apos;s class (Klutz can learn any).</P>
       <H>Race moves (codexes)</H>
-      {RACE_MOVES.map((m) => row(m, <>Only <RaceTag races={learnRacesOf(m)} /> creatures can learn it, from a codex.</>))}
+      {RACE_MOVES.map((m) => row(m, <>Only <RaceTag races={learnRacesOf(m)} /> creatures{m.alsoLearners?.length ? ` (and ${m.alsoLearners.length} others)` : ""} can learn it, from a codex.</>))}
       <H>Special moves (codexes)</H>
       {SPECIAL_MOVES.map((m) => {
         // (Creatures you haven't seen stay a number, as above.)

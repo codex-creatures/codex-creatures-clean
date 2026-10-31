@@ -42,7 +42,7 @@ export const DAMAGE_TYPE_INFO: Record<DamageType, { name: string; icon: string; 
 
 // Extra behaviour on top of damage (tuning numbers live in lib/combat/battle.ts).
 export type MoveEffect =
-  | { kind: "cripple"; chance: number; agilityLoss?: number } // chance to cripple (slow) the target; loss defaults to CRIPPLE_AGILITY_LOSS
+  | { kind: "cripple"; chance: number; agilityLoss?: number; minRounds?: number; maxRounds?: number } // chance to cripple (slow) the target; loss defaults to CRIPPLE_AGILITY_LOSS, rounds to CRIPPLE_ROUNDS
   | { kind: "dash"; agilityBonus: number }    // extra agility this round only (to strike first)
   | { kind: "precise"; hitChance: number }    // can miss, but every hit is precise
   | { kind: "quick" }                         // always strikes first this round (Combat V2 kits)
@@ -71,6 +71,8 @@ export type Skill = {
   race?: Race;       // a race move: its race (only that race can learn it, from a codex, unless learnRaces says otherwise)
   learnRaces?: Race[]; // a race move several races can learn (Rabid Bite)
   learners?: string[]; // a special move only these species can learn (missing: anyone)
+  alsoLearners?: string[]; // a race move these species can learn too, whatever their race
+  notLearners?: string[];  // a race move these species can't learn, though of its race (Ironhide: Pounce)
   codexRarity?: "common" | "uncommon" | "rare" | "epic"; // a special move's codex rarity
 };
 
@@ -165,15 +167,24 @@ export const LEARNABLE_MOVES: Skill[] = [
 // can learn it. Tuning lives here and in lib/combat/battle.ts.
 export const RACE_MOVES: Skill[] = [
   { name: "Pounce",     damage: 15, energyCost: 50, type: "melee",  dmgType: "force",  race: "beast",        effect: { kind: "pounce", lowHpBonus: 0.5 },
+    // The user, 2026-10-31: these non-Beasts can learn it too, and Ironhide can't.
+    alsoLearners: ["void_serpent", "deep_angler", "veilstalker", "cave_bat"], notLearners: ["ironhide"],
     desc: "Always strikes first this round, whatever its agility. +50% damage if the target is below half HP." },
   { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "toxic", learnRaces: ["beast", "underkin", "toxic"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
     desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench." },
   { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
+    alsoLearners: ["dust_sprite", "dustwraith", "swamp_witch", "mr_shadows", "dreadpox", "thunderhead", "pale_rider", "storm_phoenix"],
     desc: "Shimmers half out of the world: a 30% chance to dodge each attack for 3 rounds." },
   { name: "Corpsify",   damage: 0,  energyCost: 30, type: "melee",  dmgType: "force",  race: "undead",       effect: { kind: "corpsify", reviveHp: 0.55 }, self: true, cooldown: 3,
+    alsoLearners: ["hollow_matriarch", "plague_rat"],
     desc: "If it's knocked out before the end of next round, it rises again with 55% HP. 3-round cooldown." },
   { name: "Barrage",    damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", race: "humanoid", effect: { kind: "barrage" },
+    alsoLearners: ["rotgut_fly", "the_watcher", "thunderhead", "storm_phoenix", "hollow_matriarch"],
     desc: "A volley that hits every enemy on the field." },
+  // Geo's race move (the user, 2026-10-31).
+  { name: "Erupt",      damage: 25, energyCost: 70, type: "magic",  dmgType: "force",  race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 },
+    alsoLearners: ["swamp_witch", "mr_shadows", "ironhide"],
+    desc: "25% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
 ];
 
 // Special moves (the user, 2026-10-27): each comes as a codex of its own
@@ -263,15 +274,17 @@ export function codexLearners(moveName: string): { text: string; color: string }
   const m = MOVE_BY_NAME[moveName];
   if (m?.learners) return { text: `${m.learners.length} creatures only`, color: m.race ? RACE_INFO[m.race].color : BALANCED_INFO.color };
   const races = m ? learnRacesOf(m) : [];
-  if (races.length) return { text: `${races.map((r) => RACE_INFO[r].name).join(" / ")} only`, color: RACE_INFO[races[0]].color };
+  const also = m?.alsoLearners?.length ? ` + ${m.alsoLearners.length} more` : " only";
+  if (races.length) return { text: `${races.map((r) => RACE_INFO[r].name).join(" / ")}${also}`, color: RACE_INFO[races[0]].color };
   const kit = KIT_MOVE_RACE[moveName];
   if (kit && m) return { text: `${RACE_INFO[kit].name} ${CLASS_INFO[m.type].name.toLowerCase()} only`, color: RACE_INFO[kit].color };
   if (m && ALL_SKILLS.some((x) => x.name === moveName)) return { text: `${CLASS_INFO[m.type].name} only`, color: CLASS_INFO[m.type].color };
   return { text: "any creature", color: "rgba(255,255,255,0.5)" };
 }
 
-// The race moves a creature of these races could learn.
-export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => learnRacesOf(m).some((r) => (c.races ?? (c.race ? [c.race] : [])).includes(r)));
+// The race moves a creature of these races (or named on the move) could learn.
+export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => !m.notLearners?.includes(c.id) &&
+  (m.alsoLearners?.includes(c.id) || learnRacesOf(m).some((r) => (c.races ?? (c.race ? [c.race] : [])).includes(r))));
 // The races that can learn a race move (most: just its own).
 export const learnRacesOf = (m: Skill): Race[] => m.learnRaces ?? (m.race ? [m.race] : []);
 

@@ -296,10 +296,19 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Utility moves** (learnable): Cripple (−50% agility for 3 rounds, plus a 25% chance each
   attack is lost), Haste/Quickcast (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
   always precise).
-- ✅ **Race moves:** single-use codexes, learnable only by that race (either of a creature's two).
-  Pounce (Beast), Rabid Bite (Beast, Underkin and Toxic can learn it: the user, 2026-10-26,
-  `learnRaces`; it hits as Toxic; venom ticks even on the bench), Mirage (Divine), Corpsify
-  (Undead), Barrage (Humanoid; hits every enemy). Geo has none yet.
+- ✅ **Race moves:** single-use codexes, learnable by that race (either of a creature's two), plus
+  the species the user named (`alsoLearners`), minus any left out (`notLearners`) (the user,
+  2026-10-31). The codex window no longer says who can learn it: tapping one greys out the rest.
+  - Pounce (Beast; also Void Serpent, Deep Angler, Veilstalker, Cave Goblin; not Ironhide).
+  - Rabid Bite (Beast, Underkin and Toxic: `learnRaces`; it hits as Toxic; venom ticks even on
+    the bench).
+  - Mirage (Divine; also Dust Sprite, Dustwraith, Swamp Witch, Mr. Shadows, Dreadpox, Thunderhead,
+    Pale Rider, Skull Raven).
+  - Corpsify (Undead; also Hollow Matriarch, Plague Rat; Dreadpox is already Undead).
+  - Barrage (Humanoid, hits every enemy; also Rotgut Fly, The Watcher, Thunderhead, Skull Raven,
+    Hollow Matriarch; Leafblade Scout, Aurelius and Sylvaran are already Humanoid).
+  - Erupt (Geo; also Swamp Witch, Mr. Shadows, Ironhide): magic, 25 damage, 70 energy, a 25%
+    chance to cripple for 3–5 rounds.
 - ✅ **Special moves** (the user's, 2026-10-27; `SPECIAL_MOVES` in creatureData.ts). Each has its
   own codex rarity and a list of the species that can learn it (`learners`; not race-locked:
   the list is the user's pick). Their codexes come from librarians, chests, library rooms and the

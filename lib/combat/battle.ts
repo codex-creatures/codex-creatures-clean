@@ -45,6 +45,9 @@ export const MAX_ROUNDS = 100;
 // doesn't stack. It keeps counting down while the creature is on the bench.
 export const CRIPPLE_AGILITY_LOSS = 0.5;
 export const CRIPPLE_ROUNDS = 3;
+// How long a cripple lasts: CRIPPLE_ROUNDS, or a roll in the move's own range (Erupt: 3–5).
+const crippleRounds = (fx: { minRounds?: number; maxRounds?: number }) =>
+  fx.minRounds && fx.maxRounds ? fx.minRounds + Math.floor(Math.random() * (fx.maxRounds - fx.minRounds + 1)) : CRIPPLE_ROUNDS;
 export const CRIPPLE = { stumble: 0.25 }; // chance a crippled creature loses its attack (no energy spent)
 
 // Haste (from Dash Lash / Quick Bolt / Quickcast): extra agility for this
@@ -152,7 +155,7 @@ export type BattleEvent =
       crippled: boolean; targetHpAfter: number; attackerEnergyAfter: number;
       streak: Streak; defenceIgnored: number; // defenceIgnored: share ignored by this hit (0 if not precise)
       poisoned?: StatusEffect; // Toxic Skin poisoned the attacker
-      attackerIndex?: number; targetIndex?: number; crippleLoss?: number; hasted?: number;
+      attackerIndex?: number; targetIndex?: number; crippleLoss?: number; crippleRounds?: number; hasted?: number;
       evaded?: boolean; venom?: StatusEffect; pounced?: boolean;
       sealed?: number; soaked?: number; // rounds it can't swap out; share of defences it lost
       armorFx?: string } // an armour set mechanic that kicked in on this hit
@@ -510,8 +513,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       if (steadfast) armorFx.push(`${unstoppable ? SOUL_STONES.unstoppable_force.name : SET_BONUS.polished_chainbolster.name}: can't be crippled`);
       const crippled = fx?.kind === "cripple" && !missed && !steadfast && target.hp > 0 && Math.random() < fx.chance;
       const crippleLoss = fx?.kind === "cripple" ? fx.agilityLoss : undefined;
-      if (crippled) {
-        target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: CRIPPLE_ROUNDS + 1, loss: crippleLoss }];
+      const crippledFor = crippled && fx?.kind === "cripple" ? crippleRounds(fx) : undefined;
+      if (crippledFor) {
+        target.statuses = [...target.statuses.filter((s) => s.id !== "cripple"), { id: "cripple", rounds: crippledFor + 1, loss: crippleLoss }];
       }
       // Venom ticks at the end of this round and the next few (3–5 ticks in all).
       let venom: StatusEffect | undefined;
@@ -541,7 +545,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         armorFx.push(`${SOUL_STONES.toxic_skin.name}: poisoned for ${rounds} turns`);
       }
       state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
-        streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, hasted,
+        streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, crippleRounds: crippledFor, hasted,
         evaded: evaded || undefined, venom, poisoned, pounced: pounced || undefined, sealed, soaked, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
       if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
 

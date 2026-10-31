@@ -91,5 +91,5 @@ export const MOVE_RACES: Record<string, RaceV2> = {
   "Quick Bolt": "humanoid", "Quickcast": "divine", "Precise Slice": "humanoid", "Precise Shot": "humanoid",
   "Seeker Spark": "geo",
   // Race moves
-  "Pounce": "beast", "Rabid Bite": "toxic", "Mirage": "divine", "Corpsify": "undead", "Barrage": "humanoid",
+  "Pounce": "beast", "Rabid Bite": "toxic", "Mirage": "divine", "Corpsify": "undead", "Barrage": "humanoid", "Erupt": "geo",
 };
