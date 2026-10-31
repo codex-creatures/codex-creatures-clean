@@ -20,6 +20,7 @@ import type { Rarity } from "@/lib/types";
 import { BOX_CAP, BIG_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { testingToolsAllowed } from "@/lib/online/admin";
+import { backupSave } from "@/lib/saveFile";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -293,12 +294,14 @@ export default function AltarPage() {
         </Link>
       </div>
 
-      {tools && <>
+      {/* Starting over is for everyone (your save is kept as the backup); the
+          rest are testing tools, online only for the owner's account. */}
       <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools · <Link href="/settings" style={{ color: "inherit", textDecoration: "underline" }}>export your save first</Link></span>
+        <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>{tools ? "Testing tools · " : ""}<Link href="/settings" style={{ color: "inherit", textDecoration: "underline" }}>{tools ? "export your save first" : "Undo with Settings → Restore backup"}</Link></span>
         <button onClick={() => {
           if (!startArmed) { setStartArmed(true); window.setTimeout(() => setStartArmed(false), 4000); return; }
           setStartArmed(false);
+          backupSave(window.localStorage);
           game.startNew();
           setShown([]);
           setStartedNew(true);
@@ -307,6 +310,7 @@ export default function AltarPage() {
           style={{ ...dangerBtn, color: startArmed ? "#1a1a1a" : "#f5c542", background: startArmed ? "#f5c542" : "transparent", borderColor: "rgba(245,197,66,0.6)" }}>
           {startArmed ? "Tap again to wipe everything" : "✨ Start new"}
         </button>
+        {tools && <>
         {!game.tavern.blasted && (
           <button onClick={game.openRubbleForTesting} title="Open the rubble in the Den now, as if you'd done Klutz's quest and fetched the dynamite" style={dangerBtn}>
             🧨 Open the rubble
@@ -324,7 +328,10 @@ export default function AltarPage() {
             {resetArmed === "global" ? "Tap again to reset" : "Global Reset"}
           </button>
         )}
+        </>}
       </div>
+
+      {tools && <>
 
       {/* Typing a barcode in: Repeatable (the real rules) or Random (a fresh roll every time). */}
       <div style={{ marginTop: 14, maxWidth: 520 }}>

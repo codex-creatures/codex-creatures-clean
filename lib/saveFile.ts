@@ -202,6 +202,17 @@ export function readBackup(store: KeyValueStore): SaveFile | null {
   }
 }
 
+// Keep the save as it is now as the backup (before starting a new game), so
+// Restore backup can bring it back. False if it couldn't be written.
+export function backupSave(store: KeyValueStore, now = new Date()): boolean {
+  try {
+    store.setItem(BACKUP_KEY, JSON.stringify(exportSave(store, now)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Go back to the backup. The save it replaces becomes the backup, so this
 // can be undone the same way.
 export function restoreBackup(store: KeyValueStore, now = new Date()): ImportResult {

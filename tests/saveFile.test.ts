@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  exportSave, checkSaveFile, importSave, readBackup, restoreBackup, saveFileName,
+  exportSave, checkSaveFile, importSave, readBackup, restoreBackup, saveFileName, backupSave,
   SAVE_FILE_FORMAT, SAVE_FILE_VERSION, SAVE_PARTS, BACKUP_KEY, type KeyValueStore,
 } from "../lib/saveFile";
 
@@ -85,6 +85,15 @@ describe("importing a save", () => {
     expect(restoreBackup(store).ok).toBe(true);
     expect(JSON.parse(store.getItem(SAVE_PARTS.progress)!)).toEqual(progress);
     expect(readBackup(store)!.data.progress).toEqual(other); // (the save it replaced)
+  });
+
+  it("starting a new game keeps the old one as the backup, to restore", () => {
+    const store = filled();
+    expect(backupSave(store)).toBe(true);
+    for (const key of Object.values(SAVE_PARTS)) store.removeItem(key); // (the new game)
+    expect(restoreBackup(store).ok).toBe(true);
+    expect(exportSave(store).data).toEqual({ progress, registry, battles });
+    expect(backupSave(memoryStore({}, BACKUP_KEY))).toBe(false);
   });
 
   it("an invalid file is caught before anything is touched", () => {

@@ -1,6 +1,6 @@
 // lib/online/admin.ts
-// Who gets the testing tools (the altar's typed barcodes, Random rolls, resets,
-// Start new, rubble and visitor). Online, only the game's owner: a typed
+// Who gets the testing tools (the altar's typed barcodes, Random rolls, the
+// resets, rubble and visitor; Start new is everyone's). Online, only the game's owner: a typed
 // barcode reaches the global registry like a scan, so other players could
 // claim "first to find" on numbers they never held. A copy without online
 // (the offline Windows copy, a build with no config) is its owner's own, so
