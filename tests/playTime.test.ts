@@ -1,6 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { countedMs, formatPlayTime, readPlayTime, IDLE_LIMIT_MS, MAX_TICK_MS, PLAY_TIME_FIELD } from "../lib/playTime";
-import { OWN_FIELDS } from "../lib/save";
+import { clearPlayTime, countedMs, formatPlayTime, readPlayTime, IDLE_LIMIT_MS, MAX_TICK_MS, PLAY_TIME_FIELD } from "../lib/playTime";
+import { OWN_FIELDS, readSave, writeSaveField } from "../lib/save";
+
+// Minimal in-memory stand-in for the browser's localStorage.
+const store: Record<string, string> = {};
+(globalThis as unknown as { window: unknown }).window = {
+  localStorage: {
+    getItem: (k: string) => store[k] ?? null,
+    setItem: (k: string, v: string) => { store[k] = v; },
+    removeItem: (k: string) => { delete store[k]; },
+  },
+};
 
 describe("time played", () => {
   it("counts while the game is on screen and you're active", () => {
@@ -28,6 +38,14 @@ describe("time played", () => {
 
   it("is kept when the main game state is saved", () => {
     expect(OWN_FIELDS).toContain(PLAY_TIME_FIELD);
+  });
+
+  it("goes back to 0 for a new game, leaving the rest of the save", () => {
+    writeSaveField(PLAY_TIME_FIELD, 19_625);
+    writeSaveField("gold", 40);
+    clearPlayTime();
+    expect(readPlayTime(readSave())).toBe(0);
+    expect(readSave().gold).toBe(40);
   });
 
   it("reads as seconds, minutes, then hours", () => {

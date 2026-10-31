@@ -37,6 +37,7 @@ export function klutzDrop(level = 1, xp = 0, points?: KlutzState["points"], lear
 const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 
 import { readSave, writeMainSave } from "@/lib/save";
+import { clearPlayTime } from "@/lib/playTime";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
 import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
@@ -872,6 +873,7 @@ export function useGameState(initialTab: TabKey = "all") {
   function resetAll() {
     clearDungeon();
     clearTavern();
+    clearPlayTime();
     setTavern({});
     setInventory([]);
     setGold(0);

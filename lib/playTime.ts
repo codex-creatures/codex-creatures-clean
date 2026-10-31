@@ -4,6 +4,8 @@
 // each slot keeps its own and it travels in exported files. Counted by
 // components/PlayClock.tsx; shown in Settings.
 
+import { writeSaveField } from "./save";
+
 export const PLAY_TIME_FIELD = "playTime"; // whole seconds (missing in old saves: 0)
 export const PLAY_TIME_EVENT = "codex-play-time"; // the clock's live total, for Settings
 
@@ -24,6 +26,11 @@ export function countedMs(elapsedMs: number, sinceInputMs: number, visible: bool
 export function readPlayTime(save: Record<string, unknown>): number {
   const v = save[PLAY_TIME_FIELD];
   return typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+}
+
+// Back to 0 for a new game (so the time leaderboard starts over too).
+export function clearPlayTime() {
+  writeSaveField(PLAY_TIME_FIELD, undefined);
 }
 
 // 45s · 12m 05s · 3h 07m 05s
