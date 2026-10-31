@@ -3,7 +3,8 @@
 // The title screen's sign-in box (docs/design.md §12): Google (or, once it's
 // switched on, an email link), then a name. One fixed row, plus a form under
 // it while signing in or naming. The rules live in lib/online/account.ts;
-// this only shows them.
+// this only shows them. The title screen hears who signs in (onAccount), to
+// sync their cloud save, and says how that went in the second line (note).
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -19,7 +20,7 @@ const MUTED = "rgba(255,255,255,0.55)", BAD = "#ff8a80", GOOD = "#5ee08a";
 const one = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
 const field = { fontSize: 16, padding: 8, minHeight: 44, background: "#1a1610", color: "#f1d9a0", border: "2px solid #5a3e1e", borderRadius: 4, minWidth: 0 } as const;
 
-export default function AccountPanel() {
+export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Account) => void; note?: string }) {
   const [account, setAccount] = useState<Account>({ status: "loading" });
   const [form, setForm] = useState<"email" | "sent" | null>(null);
   const [email, setEmail] = useState("");
@@ -39,6 +40,8 @@ export default function AccountPanel() {
     const { data } = client.auth.onAuthStateChange(() => { window.setTimeout(refresh, 0); });
     return () => { live = false; data.subscription.unsubscribe(); };
   }, []);
+
+  useEffect(() => { onAccount?.(account); }, [account, onAccount]);
 
   // Tidy the sign-in's leftovers (#access_token=…, ?error=…) out of the address.
   useEffect(() => {
@@ -88,7 +91,7 @@ export default function AccountPanel() {
   const s = account.status;
   const needsName = s === "in" && !account.name;
   const label = s === "in" ? (account.name ?? "Signed in") : s === "out" ? "Not signed in" : s === "off" ? "Offline" : "…";
-  const sub = s === "in" ? account.email : s === "out" ? "Sign in to play online" : s === "off" ? "Online isn't in this copy of the game" : "";
+  const sub = s === "in" ? (note || account.email) : s === "out" ? "Sign in to play online" : s === "off" ? "Online isn't in this copy of the game" : "";
 
   return (
     <div className="stone-panel" style={{ display: "grid", gap: 8, padding: 8 }}>
@@ -103,7 +106,8 @@ export default function AccountPanel() {
               ? <li>Sign in with your <b>Google account</b> or your <b>email</b> (we send a link: tap it on the device you want to play on). No password.</li>
               : <li>Sign in with your <b>Google account</b>. No new password.</li>}
             <li>Your <b>name</b> is what other players will see.</li>
-            <li>Online features (cloud saves, the global registry, PvP) are on their way. Your game plays the same either way.</li>
+            <li>Signed in, one of your saves (☁️) is kept <b>online</b> and follows you to any device you sign in on. The newest online save always wins; the copy it replaces stays as the backup (⚙️ Settings).</li>
+            <li>The global registry and PvP are on their way. Your game plays the same either way.</li>
             <li>What&apos;s kept about you: <Link href="/privacy">Privacy</Link>.</li>
           </ul>
         </Help>

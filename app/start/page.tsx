@@ -6,11 +6,17 @@
 // picks one, then restarts the game with it.
 //
 // Like Settings, this screen doesn't load the game (no useGameState), so
-// nothing saves the old game over a slot while you switch.
+// nothing saves the old game over a slot while you switch. That also makes it
+// the place where a signed-in player's cloud save is synced (syncAtStart in
+// lib/online/cloudSave.ts), before any game is loaded.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import AccountPanel from "@/components/AccountPanel";
+import { CLOUD_RETURN_KEY } from "@/components/CloudSync";
+import type { Account } from "@/lib/online/account";
+import { onlineClient } from "@/lib/online/client";
+import { syncAtStart } from "@/lib/online/cloudSave";
 import Help from "@/components/Help";
 import { Coin } from "@/components/GoldCount";
 import { checkSaveFile, summarise } from "@/lib/saveFile";
@@ -20,7 +26,7 @@ import {
 } from "@/lib/saveSlots";
 
 
-const MUTED = "rgba(255,255,255,0.55)", BAD = "#ff8a80";
+const MUTED = "rgba(255,255,255,0.55)", BAD = "#ff8a80", GOOD = "#5ee08a";
 const one = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as const;
 
 function ago(iso: string) {
@@ -38,9 +44,37 @@ export default function StartPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Cloud saves: the online slot, the sync in progress, and what happened.
+  const [cloudSlot, setCloudSlot] = useState<string | null>(null);
+  const [cloudNote, setCloudNote] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [notice, setNotice] = useState("");
+  const synced = useRef<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setList(readSlots(window.localStorage)); setReady(true); }, []);
+
+  const onAccount = useCallback((a: Account) => {
+    const client = onlineClient();
+    if (a.status !== "in" || !client) { if (a.status === "out") { synced.current = null; setCloudSlot(null); setCloudNote(""); } return; }
+    if (synced.current === a.id) return;
+    synced.current = a.id;
+    let returned = false;
+    try { returned = window.sessionStorage.getItem(CLOUD_RETURN_KEY) !== null; window.sessionStorage.removeItem(CLOUD_RETURN_KEY); } catch {}
+    setSyncing(true); setCloudNote("☁️ Checking your online save…");
+    syncAtStart(window.localStorage, client, a.id).then((r) => {
+      const l = readSlots(window.localStorage);
+      setList(l); setSyncing(false);
+      if (r.kind === "failed") { setCloudNote("☁️ Not synced"); setError(r.error); return; }
+      if (r.kind === "none") { setCloudSlot(null); setCloudNote("☁️ Start a game to save it online"); return; }
+      setCloudSlot(r.slot);
+      setCloudNote(`☁️ ${l.slots.find((s) => s.id === r.slot)?.name ?? "A save"} is saved online`);
+      if (r.kind === "loaded") {
+        setNotice((returned ? "You played on another device, so your online save was loaded." : "Your online save was loaded.")
+          + (r.backedUp ? " This device's copy is kept as the backup (⚙️ Settings)." : ""));
+      }
+    });
+  }, []);
 
   // Into the Den with the slot that's now in play.
   function play() {
@@ -55,11 +89,11 @@ export default function StartPage() {
     if (thenPlay) play();
   }
   function pick(id: string) {
-    if (busy) return;
+    if (busy || syncing) return;
     if (id === list.active) { play(); return; }
     done(switchSlot(window.localStorage, id), true);
   }
-  function ask(a: Asking, startName = "") { setAsking(a); setName(startName); setError(""); }
+  function ask(a: Asking, startName = "") { setAsking(a); setName(startName); setError(""); setNotice(""); }
 
   async function picked(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -83,6 +117,7 @@ export default function StartPage() {
           <ul>
             <li>The game saves by itself, all the time. There&apos;s no save button.</li>
             <li>Saves live <b>in this browser on this device</b>. Another phone or browser has its own.</li>
+            <li>Signed in, the ☁️ save is also kept <b>online</b> and follows you to other devices.</li>
             <li>Keep up to {MAX_SLOTS} games here: tap one to play it.</li>
             <li><b>Load file</b> starts a new slot from a save you exported (⚙️ Settings → Export).</li>
             <li>Clearing your browsing data deletes your saves. Export to keep a copy.</li>
@@ -91,7 +126,7 @@ export default function StartPage() {
       </header>
 
       <div className="screen-scroll" style={{ display: "grid", alignContent: "start", gap: 8 }}>
-        <AccountPanel />
+        <AccountPanel onAccount={onAccount} note={cloudNote} />
         {ready && list.slots.length === 0 && (
           <p style={{ fontSize: 14, color: MUTED, margin: "4px 0", textAlign: "center" }}>No saves yet. Start a new game!</p>
         )}
@@ -102,7 +137,7 @@ export default function StartPage() {
           return (
             <div key={s.id} className="stone-panel" style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: 6, padding: 8, borderColor: here ? "#f5c542" : undefined }}>
               <button onClick={() => pick(s.id)} disabled={busy} style={{ background: "none", border: "none", padding: 0, textAlign: "left", color: "inherit", cursor: "pointer", minHeight: 44, minWidth: 0 }}>
-                <div className="pixel-font" style={{ ...one, fontSize: 16, color: "#f1d9a0" }}>{here ? "▶ " : ""}{s.name}</div>
+                <div className="pixel-font" style={{ ...one, fontSize: 16, color: "#f1d9a0" }}>{here ? "▶ " : ""}{s.id === cloudSlot ? "☁️ " : ""}{s.name}</div>
                 <div style={{ ...one, fontSize: 12, color: MUTED }}>
                   {sum && !sum.empty ? <><Coin /> {sum.gold} · 🐾 {sum.creatures} · {ago(s.lastPlayed)}</> : <>New game · {ago(s.lastPlayed)}</>}
                 </div>
@@ -134,16 +169,17 @@ export default function StartPage() {
           </div>
         )}
 
+        {notice && !error && <div className="stone-panel" role="status" style={{ borderColor: GOOD, color: GOOD, fontSize: 14 }}>☁️ {notice}</div>}
         {error && <div className="stone-panel" role="status" style={{ borderColor: BAD, color: BAD, fontSize: 14 }}>⚠️ {error}</div>}
       </div>
 
       <nav className="screen-dock" style={{ display: "grid", gap: 6 }}>
-        <button className="pixel-btn" disabled={!active || busy} onClick={() => active && pick(active.id)} style={{ ...one, fontSize: 18, padding: "8px 0", visibility: ready && !active ? "hidden" : undefined }}>
+        <button className="pixel-btn" disabled={!active || busy || syncing} onClick={() => active && pick(active.id)} style={{ ...one, fontSize: 18, padding: "8px 0", visibility: ready && !active ? "hidden" : undefined }}>
           ▶ Continue{active ? `: ${active.name}` : ""}
         </button>
         <div className="dock-tabs">
-          <button className="dock-tab" disabled={full || busy} title={full ? `${MAX_SLOTS} saves at most: delete one first` : undefined} onClick={() => ask({ kind: "new" })}>✨ New Game</button>
-          <button className="dock-tab" disabled={full || busy} onClick={() => fileInput.current?.click()}>📂 Load file</button>
+          <button className="dock-tab" disabled={full || busy || syncing} title={full ? `${MAX_SLOTS} saves at most: delete one first` : undefined} onClick={() => ask({ kind: "new" })}>✨ New Game</button>
+          <button className="dock-tab" disabled={full || busy || syncing} onClick={() => fileInput.current?.click()}>📂 Load file</button>
         </div>
         <input ref={fileInput} type="file" accept=".json,application/json" onChange={picked} style={{ display: "none" }} />
       </nav>

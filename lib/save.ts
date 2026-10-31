@@ -69,10 +69,22 @@ export const lockSaves = () => { locked = true; };
 export const unlockSaves = () => { locked = false; }; // (a load that failed: nothing changed)
 export const savesLocked = () => locked;
 
+// Told whenever the game is saved (the save or the battle history), so cloud
+// saves (components/CloudSync.tsx) know there is something new to upload.
+const listeners = new Set<() => void>();
+export function onSaveWritten(fn: () => void): () => void {
+  listeners.add(fn);
+  return () => { listeners.delete(fn); };
+}
+export function notifySaveWritten() {
+  for (const fn of listeners) { try { fn(); } catch {} }
+}
+
 function write(save: Record<string, unknown>) {
   if (locked) return;
   try {
     window.localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    notifySaveWritten();
   } catch {}
 }
 

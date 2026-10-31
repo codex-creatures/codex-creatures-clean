@@ -15,6 +15,7 @@
 import { usePathname } from "next/navigation";
 import { useUiScale } from "@/hooks/useUiScale";
 import PlayClock from "@/components/PlayClock";
+import CloudSync from "@/components/CloudSync";
 
 export default function GameScreen({ children }: { children: React.ReactNode }) {
   const path = usePathname();
@@ -27,6 +28,7 @@ export default function GameScreen({ children }: { children: React.ReactNode }) 
           : { width: `calc(100% / ${scale})`, height: `calc(100% / ${scale})`, transform: `scale(${scale})` }}>
           <div className="screen-body">{children}</div>
           <PlayClock />
+          <CloudSync />
         </div>
       </div>
     </div>

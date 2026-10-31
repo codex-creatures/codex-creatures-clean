@@ -5,7 +5,7 @@
 
 import type { BattleEvent, SideKey } from "./combat/battle";
 import type { Rarity } from "./items/budgets";
-import { savesLocked } from "./save";
+import { notifySaveWritten, savesLocked } from "./save";
 
 export const STORAGE_KEY = "codex_creatures_battles_v2"; // v2: started again for Combat V2
 export const MAX_SAVED_BATTLES = 10;
@@ -51,5 +51,6 @@ export function saveBattle(record: BattleRecord) {
   try {
     const all = [record, ...loadBattles()].slice(0, MAX_SAVED_BATTLES);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    notifySaveWritten();
   } catch {}
 }

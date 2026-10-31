@@ -48,7 +48,8 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
      Per device, not in saves:
      `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size) and
      `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration) and
-     `codex_creatures_auth_v1` (lib/online/client.ts, the Supabase sign-in).
+     `codex_creatures_auth_v1` (lib/online/client.ts, the Supabase sign-in) and
+     `codex_creatures_cloud_v1` (lib/online/cloudSave.ts, which slot is each account's online one).
    - New save fields must be optional, with a default for old saves. (Recent ones: `storage`, the
     chest boxes built bigger; a creature or card's `soulStone`, where missing means "roll it on
     load" and `null` means none.)

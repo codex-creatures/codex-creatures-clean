@@ -235,12 +235,12 @@ export default function SettingsPage() {
         {backup ? (
           <>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0" }}>
-              From {when(backup.exportedAt)}, before your last import or restore:<br /><SummaryLine s={summarise(backup)} />
+              From {when(backup.exportedAt)}, before your last import, restore or online save loaded:<br /><SummaryLine s={summarise(backup)} />
             </p>
             <button className="pixel-btn" disabled={busy} onClick={() => { setMessage(null); setPending({ kind: "restore", summary: summarise(backup) }); }}>↩️ Restore backup</button>
           </>
         ) : (
-          <p style={{ fontSize: 13, color: MUTED, margin: "6px 0 0" }}>No backup yet. One is made automatically whenever you import a save.</p>
+          <p style={{ fontSize: 13, color: MUTED, margin: "6px 0 0" }}>No backup yet. One is made automatically whenever you import a save, or your online save replaces this one.</p>
         )}
       </div>
     </DenFrame>
