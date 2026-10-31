@@ -22,6 +22,8 @@ import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
 import MoveSlots from "./MoveSlots";
+import { MoveTile } from "./MoveTile";
+import CodexMove from "./CodexMove";
 import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@/lib/creatures/soulStones";
@@ -31,6 +33,8 @@ import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
 import { Coin } from "./GoldCount";
 import Glyph from "./Glyph";
+
+const CODEX_TAG = { text: "codex", color: "#c7b8ff" };
 
 type Props = {
   creature: CreatureOrItemDrop;
@@ -796,10 +800,13 @@ export function TypeTags({ roles }: { roles: string[] }) {
 
 // Codexes on your bookcase this creature could read (one per move): any
 // learnable move, or its own race's move — if it doesn't know it already.
-// Reading uses the codex up.
+// They're shown as the move tablets they teach; tapping one shows the move in
+// full (CodexMove: style, race, power, cooldown, what it does) in a fixed
+// panel above them, with Read. Reading uses the codex up.
 function CodexShelf({ template, known, codexes, onLearn }: {
   template: CreatureTemplate; known: string[]; codexes: CreatureOrItemDrop[]; onLearn?: (codexId: string) => void;
 }) {
+  const [pickedId, setPickedId] = useState<string | null>(null);
   const seen = new Set<string>();
   const readable = codexes.filter((c) => {
     const mv = c.codexMove!;
@@ -807,6 +814,8 @@ function CodexShelf({ template, known, codexes, onLearn }: {
     seen.add(mv);
     return true;
   });
+  const picked = readable.find((c) => c.id === pickedId);
+  const btn: React.CSSProperties = { fontSize: 14, padding: "6px 14px", minHeight: 44 };
   return (
     <div style={{ marginTop: 16 }}>
       <div className="pixel-font" style={{ fontSize: 14, color: "#f1d9a0", marginBottom: 8 }}>On your bookcase</div>
@@ -815,21 +824,29 @@ function CodexShelf({ template, known, codexes, onLearn }: {
           📖 No codexes it could read. Codexes teach new moves — find them by scanning and exploring the Labyrinth.
         </div>
       ) : (
-        <div style={{ display: "grid", gap: 6 }}>
-          {readable.map((c) => {
-            const mv = MOVE_BY_NAME[c.codexMove!];
-            return (
-              <button key={c.id} className="card-btn" disabled={!onLearn} onClick={() => onLearn?.(c.id)} style={{ borderColor: "#a99cff" }}>
-                <span>
-                  <b style={{ color: "#c7b8ff" }}>📖 Read {c.name}</b>
-                  <span style={{ display: "block", fontSize: 12, color: MUTED }}>
-                    {mv ? `${mv.self ? "Utility" : `${mv.type} · ${mv.damage} dmg`} · ${mv.energyCost} energy. ` : ""}Learns {c.codexMove} into a move slot; the codex crumbles to dust.
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <>
+          {/* A fixed panel (same height picked or not), so the tablets below never move. */}
+          <div className="stone-panel" style={{ padding: 10, marginBottom: 10, height: 176, boxSizing: "border-box", display: "grid", gridTemplateRows: "auto 1fr auto", gap: 8 }}>
+            {picked ? (
+              <>
+                <span className="pixel-font" title={picked.name} style={{ fontSize: 16, color: RARITY_COLORS[picked.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{picked.name}</span>
+                <CodexMove move={picked.codexMove!} />
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="pixel-btn" style={btn} disabled={!onLearn} onClick={() => { setPickedId(null); onLearn?.(picked.id); }}>📖 Read</button>
+                  <button className="pixel-btn" style={btn} onClick={() => setPickedId(null)}>Back</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ gridRow: "1 / -1", alignSelf: "center", textAlign: "center", fontSize: 13, color: MUTED }}>Tap a codex to see its move. Reading one crumbles it to dust.</div>
+            )}
+          </div>
+          <div className="move-grid">
+            {readable.map((c) => {
+              const mv = MOVE_BY_NAME[c.codexMove!];
+              return mv && <MoveTile key={c.id} m={mv} tag={CODEX_TAG} selected={c.id === pickedId} onClick={() => setPickedId(c.id === pickedId ? null : c.id)} />;
+            })}
+          </div>
+        </>
       )}
     </div>
   );
