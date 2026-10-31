@@ -51,7 +51,7 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import {
-  PARTY_SIZE, squadsOf, teamSize, ENTRY_FEE, FREE_RUNS, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
+  PARTY_SIZE, squadsOf, teamSize, entryFee, freeRunsLeft, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
@@ -345,9 +345,9 @@ export default function DungeonPage() {
   function begin(party: string[], dungeon: DungeonId = 1) {
     if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
     const deep = dungeon > 1;
-    // (The Encampment is always free.)
-    const free = dungeon === 0 || (!deep && lab.meta.runs < FREE_RUNS);
-    if (!free && !game.spendGold(ENTRY_FEE)) return;
+    const quest = dungeon === 1 && (wantsClub(game.quest) || wantsThief(game.quest));
+    const fee = entryFee(dungeon, lab.meta, quest);
+    if (fee > 0 && !game.spendGold(fee)) return;
     const hp = Object.fromEntries(party.map((id) => [id, lab.meta.injuries[id] ?? 1]));
     const team = party.slice(0, squadsOf(dungeon).team).filter((id) => hp[id] > 0);
     // Klutz's dynamite quest: the large room is its storehouse (lib/tavern.ts).
@@ -371,7 +371,6 @@ export default function DungeonPage() {
       return;
     }
     // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
-    const quest = wantsClub(game.quest) || wantsThief(game.quest);
     if (quest) game.acceptQuest();
     const r = quest ? startQuestRun(party, team, hp, lab.meta.runs + 1) : startRun(party, team, hp, lab.meta.runs + 1, Math.random, 1, dynamite, onBindle(lab.meta));
     update({ meta: { ...lab.meta, runs: lab.meta.runs + 1 }, run: r });
@@ -1328,9 +1327,10 @@ function Entrance({ lab, owned, gold, full, quest, scans, onBegin, onHeal }: {
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
   // (The quest's run is in the Labyrinth.)
   const dungeon: DungeonId = quest ? 1 : picked === 1 && !labOpen ? 0 : picked;
-  const free = dungeon === 0 || (dungeon === 1 && lab.meta.runs < FREE_RUNS);
+  const fee = entryFee(dungeon, lab.meta, quest);
+  const freeLeft = dungeon === 0 ? freeRunsLeft(lab.meta) : 0;
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
-  const canPay = free || gold >= ENTRY_FEE;
+  const canPay = gold >= fee;
 
   function toggle(id: string) {
     setParty((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < PARTY_SIZE ? [...p, id] : p));
@@ -1429,12 +1429,12 @@ function Entrance({ lab, owned, gold, full, quest, scans, onBegin, onHeal }: {
       )}
 
       <button onClick={() => onBegin(party, dungeon)} disabled={party.length === 0 || !canPay || full.length > 0} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        {dungeon === 1 ? "🌀 Enter the labyrinth" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {dungeon === 0 ? "(free)" : free ? `(free · ${FREE_RUNS - lab.meta.runs} free run${FREE_RUNS - lab.meta.runs === 1 ? "" : "s"} left)` : `(${ENTRY_FEE} gold)`}
+        {dungeon === 1 ? "🌀 Enter the labyrinth" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
       </button>
       {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
         Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
       </p>}
-      {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {ENTRY_FEE} gold — you have {gold}.</p>}
+      {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {fee} gold — you have {gold}.</p>}
     </>
   );
 }

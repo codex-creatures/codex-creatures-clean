@@ -577,3 +577,21 @@ describe("lighter-armed creatures early in the Labyrinth (LIGHT_GEAR)", () => {
     }
   });
 });
+
+import { entryFee, freeRunsLeft, FREE_RUNS, ENTRY_FEES } from "../lib/dungeon/run";
+
+describe("entry fees", () => {
+  const meta = (campRuns?: number) => ({ runs: 0, clears: 0, injuries: {}, bag: [], campRuns });
+  it("gives the Encampment's first runs free, then charges it", () => {
+    expect(entryFee(0, meta())).toBe(0);
+    expect(entryFee(0, meta(FREE_RUNS - 1))).toBe(0);
+    expect(freeRunsLeft(meta(FREE_RUNS - 1))).toBe(1);
+    expect(entryFee(0, meta(FREE_RUNS))).toBe(ENTRY_FEES[0]);
+    expect(freeRunsLeft(meta(FREE_RUNS + 3))).toBe(0);
+  });
+  it("charges every other dungeon from the first run, except Klutz's quest run", () => {
+    for (const d of [1, 2, 3] as const) expect(entryFee(d, meta())).toBe(ENTRY_FEES[d]);
+    expect(entryFee(1, meta(), true)).toBe(0);
+    expect(ENTRY_FEES).toEqual({ 0: 50, 1: 100, 2: 200, 3: 500 });
+  });
+});

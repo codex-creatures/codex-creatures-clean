@@ -448,7 +448,7 @@ How it came about, round by round: history.md.
     Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
     2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
     has, so you've a team of 3 for the Labyrinth. After that, one cage with a creature in it 20% of
-    the time (`CAMP_REPEAT_CHANCE`). Always free.
+    the time (`CAMP_REPEAT_CHANCE`). The first 10 runs are free (`FREE_RUNS`), then 50 gold.
     - The **Labyrinth opens** once you've beaten it, or scanned 25 barcodes (`LABYRINTH_SCANS`,
       `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
       entrance shows it locked.
@@ -475,7 +475,7 @@ How it came about, round by round: history.md.
 - ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`; all 5 in the Abyss: `teamSize`),
   chosen at the map; the rest wait in the Den.
 - 📌 **PvP** (not built): the user thinks 5v5 is the right size for it (2026-10-27).
-- ✅ **Entry:** 50 gold (`ENTRY_FEE`); the first 5 runs are free (`FREE_RUNS`).
+- ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
 - ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,
   stash 10, merchant 5, card witch 5.
   - **Mystery "?" rooms** (`MYSTERY_MIX`) are a gamble: 45% a mini boss, some good wanderers

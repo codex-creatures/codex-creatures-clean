@@ -1,7 +1,7 @@
 // lib/dungeon/run.ts
 // Dungeon runs (dungeon 1). The rules, kept separate from the screen:
 //
-// - Entering costs ENTRY_FEE gold; your very first run is free, and its first
+// - Entering costs gold (entryFee); your very first run's first
 //   room is a treasure with FIRST_TREASURE_GOLD in it.
 // - You bring a party of up to PARTY_SIZE creatures (at least 1) to the
 //   entrance. Looking at the map, you pick the teamSize that go in; the
@@ -47,8 +47,16 @@ import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDr
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
-export const ENTRY_FEE = 50;
-export const FREE_RUNS = 5; // your first runs cost nothing
+// Entry fees by dungeon, a gold sink that grows with the loot (the user,
+// 2026-10-31): the Encampment, the Labyrinth (Cyclops), the Deep Labyrinth
+// (Hydra), the Abyss. Only the Encampment has free runs.
+export const ENTRY_FEES: Record<DungeonId, number> = { 0: 50, 1: 100, 2: 200, 3: 500 };
+export const FREE_RUNS = 10; // your first Encampment runs cost nothing
+export const freeRunsLeft = (meta: DungeonMeta) => Math.max(0, FREE_RUNS - (meta.campRuns ?? 0));
+// What entering costs now: nothing while the Encampment's free runs last, or
+// for Klutz's quest run (a short tutorial run in the Labyrinth).
+export const entryFee = (dungeon: DungeonId, meta: DungeonMeta, quest = false) =>
+  quest || (dungeon === 0 && freeRunsLeft(meta) > 0) ? 0 : ENTRY_FEES[dungeon];
 export const FIRST_TREASURE_GOLD = 50;
 // The Scroll button (looking at your map again) works this many times a run;
 // a flare still shows it on top.
