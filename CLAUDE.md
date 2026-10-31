@@ -10,25 +10,32 @@ Setup, running and the two-computer routine for the human are in [README.md](REA
 
 A creature-collecting game: scan real barcodes for creatures and loot, then take a team of 3 into
 the Labyrinth (a roguelike run of rooms) with turn-based battles. Mobile-first, and headed for
-iOS/Android one day. Right now it's a single-player **browser game with no backend**.
+iOS/Android one day. Right now it's a single-player **browser game with no backend**, about to
+gain one (Supabase, docs/design.md §12).
 
 **It's hosted on Vercel** (since 2026-10-23), as a static site: Vercel builds and deploys `main`
 automatically on every push to GitHub. **So a push to `main` is a release:** players get it
 straight away. The address: **https://codex-creatures-clean.vercel.app/**. The game itself still has no server: everything still runs in the browser.
 
 - Next.js 16 (App Router), React 19, TypeScript, Vitest 3. **No other runtime dependency** apart
-  from `@zxing/browser` (barcode scanning).
+  from `@zxing/browser` (barcode scanning), and `@supabase/supabase-js` once the online work
+  starts.
 - Every page is a client component. All state is in the browser's `localStorage`.
-- There's no server, API, database, account, analytics or secret key, and nothing should need one.
+- Server logic lives only in the game's own Supabase project (e.g. the registry roll), kept
+  in the repo so it can be rebuilt. No analytics. Supabase's public (anon) key may go in the client
+  build. Its service key never goes in the repo or the client.
 
 ## Hard rules
 
-1. **Fully offline.** The game, `npm run dev`, `npm test`, `npm run build` and
-   `npm run build:offline` must keep working with no internet. That means no CDN scripts, no
-   `next/font/google` (fonts are local in `app/fonts/`), no remote images, and no runtime API
-   calls. Art lives in `public/sprites/`. Ask the user before adding anything that needs the internet
-   to play: cloud saves, auth, external APIs, remote databases. Dev-time services (GitHub, Claude,
-   PixelLab) are fine.
+1. **Plays offline; online features are extra.** Going online is decided (2026-10-31; the plan
+   is in docs/design.md §12: Supabase for email-link login, cloud saves, the global registry,
+   leaderboards and live PvP). The rest of the game must still work in offline mode: offline
+   scans wait as sealed caches, and trading and PvP are off. `npm run dev`, `npm test`,
+   `npm run build` and `npm run build:offline` must keep working with no internet, so keep all
+   Supabase calls behind one module that tests can do without. Still no CDN scripts, no
+   `next/font/google` (fonts are local in `app/fonts/`) and no remote images. Art lives in
+   `public/sprites/`. Ask the user before adding any online service beyond the game's own
+   Supabase project. Dev-time services (GitHub, Claude, PixelLab) are fine.
 2. **Saves stay compatible.** Saves are the user's progress, kept separately on each computer.
    - Don't rename or reshape the storage keys without code that reads the old data:
      `codex_creatures_save_v3` (lib/save.ts), `codex_creatures_registry_v3`

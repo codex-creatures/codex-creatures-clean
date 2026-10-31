@@ -28,6 +28,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   the barcode merchant (§2), the onboarding scan gate (§2), the re-entry cooldown (§7), the
   Cyclops's Meditate heal (§7), more soul stones and effects (§4, §6), the tavern's interior (§9),
   Klutz's kidnap plan (§8).
+- **Going online (📌, 2026-10-31):** accounts, cloud saves, the global registry, leaderboards and
+  live PvP, over about 3 weeks (§12).
 - **Open (❓, the user's call):** what Klutz gets in place of his old counter bonus; agility doing
   more; race-move rules beyond the kits; shared barcode lists once there's a global registry;
   longer Klutz walks; a creature trader.
@@ -86,10 +88,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   real barcode, then Klutz drags you out of the labyrinth. Don't "fix" this for convenience. Edge
   cases still need solving: manual entry, no camera, app-store review. Not built: a new game starts
   at the Den.
-- 📌 **Future online version:** a real global registry, which needs a server; sealed offline scans
-  in an "Offline Scanner Sack" that open when back online, still counting against scan limits.
-  ❓ This conflicts with today's offline-only rule, so it needs the user's go-ahead before any
-  work starts.
+- 📌 **Global registry** (the user, 2026-10-31): the online registry replaces the local one, and
+  offline scans wait as sealed Code Caches. See §12.
 - ⏸ **Scanner / camera work is parked.** It's fragile, and better scanning plus fake-scan detection
   is a future project. Test with manual barcode entry.
 
@@ -474,7 +474,7 @@ How it came about, round by round: history.md.
       bosses as pairs, and the party at 5 (so no bench in the Abyss), 2026-10-27.
 - ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`; all 5 in the Abyss: `teamSize`),
   chosen at the map; the rest wait in the Den.
-- 📌 **PvP** (not built): the user thinks 5v5 is the right size for it (2026-10-27).
+- 📌 **PvP** (not built): live, two players with their own teams. A 3v3 and a 5v5 format. See §12.
 - ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
 - ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,
   stash 10, merchant 5, card witch 5.
@@ -840,3 +840,40 @@ fields optional with defaults.
 - Hand-drawn detailed sprites in code were tried and scrapped. Don't do it again.
 - Rejected, so don't reopen: the mushroom/ruin room theme, the Mr. Shadows redraws (keep the old
   sprite), and the parchment / MTG / wood-and-brass card styles.
+
+## 12. Online (📌 the user, 2026-10-31; not built)
+
+The user is building online infrastructure now, so later design keeps it in mind. This is for
+playtesting with friends, not yet hardened. Backend: **Supabase**, as its own project on its own
+account, kept entirely apart from Vouchee.
+
+- 📌 **Online first, offline mode as a fallback.** The game starts normally and tries to connect.
+  With no connection it says so: online features aren't available. The player taps **Offline
+  mode** and plays the rest of the game as normal. Offline:
+  - Scans are kept as **sealed Code Caches** that open only once back online (each needs the
+    global registry to find out what it holds). They still count against scan limits.
+  - No trading and no PvP.
+  - Everything else (the Den, the Labyrinth, Klutz, inventory) works as now.
+- 📌 **Accounts:** log in with an email link (no password). The player picks a name.
+- 📌 **Cloud saves:** the save syncs to the player's account, so it follows them between devices.
+- 📌 **Global registry:** the first scan of a barcode anywhere is rolled **on the server** and
+  stored, and everyone after gets that outcome (their own stat roll, as now). This makes "being
+  first" (the explorer-level cap, soul stones) work between players. It starts **empty** (a fresh
+  start, not a copy of any local registry). No global resets planned for now.
+- 📌 **Leaderboards**, with resets run by the user (seasons). ❓ Which boards.
+- 📌 **PvP: live, each player controlling their own team.** Two formats:
+  - **3v3:** creatures and items up to Rare, creatures up to Lv 15.
+  - **5v5:** up to Legendary, creatures up to Lv 25.
+  - ❓ Is a creature above the level cap kept out, or fought at the cap?
+  - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
+- 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
+  online/offline start; 2) global registry and sealed caches, leaderboards; 3) live PvP.
+- Known kinks to solve, not decided:
+  - **Live battles need both browsers to agree.** Combat rolls dice in many places
+    (`Math.random`). Either one player's browser runs the fight and sends each turn to the other,
+    or both run it from a shared seed. Claude to propose.
+  - **Cheating:** saves can be edited in the browser, so teams and scores can be faked. Accepted
+    for playtesting with friends; server checks come later.
+  - **Saves and slots:** how cloud saves fit the 4 local save slots, and what happens when two
+    devices disagree.
+  - Shared barcode lists (§2) become a real risk once the registry is global.
