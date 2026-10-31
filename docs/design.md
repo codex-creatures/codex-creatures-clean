@@ -860,11 +860,14 @@ account, kept entirely apart from Vouchee.
   stored, and everyone after gets that outcome (their own stat roll, as now). This makes "being
   first" (the explorer-level cap, soul stones) work between players. It starts **empty** (a fresh
   start, not a copy of any local registry). No global resets planned for now.
-- 📌 **Leaderboards**, with resets run by the user (seasons). ❓ Which boards.
+- 📌 **Leaderboards**, with resets run by the user (seasons). Boards: % of creature species
+  captured; total runs for each dungeon; wins for each dungeon (a win is beating its boss).
 - 📌 **PvP: live, each player controlling their own team.** Two formats:
   - **3v3:** creatures and items up to Rare, creatures up to Lv 15.
   - **5v5:** up to Legendary, creatures up to Lv 25.
-  - ❓ Is a creature above the level cap kept out, or fought at the cap?
+  - **Every creature fights at the format's level** (the user, 2026-10-31): above it, its stats
+    are scaled down to that level; below it, scaled up. So 3v3 is always Lv 15 and 5v5 Lv 25,
+    and the creature's real level is untouched.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
   online/offline start; 2) global registry and sealed caches, leaderboards; 3) live PvP.
