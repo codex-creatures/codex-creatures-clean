@@ -31,7 +31,7 @@ export default function PrivacyPage() {
 
           <h2 className="pixel-font" style={h}>When you sign in with Google</h2>
           <p style={p}>Google tells the game your email address, your Google account name and profile picture, and an ID for your account. The game also keeps the player name you pick. Sign-in is handled by Supabase, the service that stores this.</p>
-          <p style={p}>While you are signed in, one of your saves (your game and your recent battles) is kept online with Supabase, so it follows you to other devices. Only you can see it.</p>
+          <p style={p}>Your save (your game and your recent battles) is kept online with Supabase, so it follows you to other devices. Only you can see it.</p>
           <p style={p}>Coming soon, and only for players who sign in: barcodes scanned shared with all players; leaderboards and battles, where other players see your player name (never your email).</p>
 
           <h2 className="pixel-font" style={h}>What it doesn&apos;t do</h2>

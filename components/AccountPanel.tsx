@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 
 import Help from "@/components/Help";
 import { onlineClient } from "@/lib/online/client";
+import { forgetLastAccount } from "@/lib/online/cloudSave";
 import {
   readAccount, returnProblem, saveName, sendLoginLink, signInWithGoogle, signOut,
   EMAIL_LOGIN, MAX_PLAYER_NAME, type Account,
@@ -80,6 +81,7 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
     if (!client || busy) return;
     setBusy(true);
     await signOut(client);
+    forgetLastAccount(window.localStorage); // (no playing offline as them now)
     setBusy(false);
     setAccount({ status: "out" }); setForm(null); setError("");
   }
@@ -89,9 +91,9 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
   }
 
   const s = account.status;
-  const needsName = s === "in" && !account.name;
+  const needsName = s === "in" && !account.name && !account.offline;
   const label = s === "in" ? (account.name ?? "Signed in") : s === "out" ? "Not signed in" : s === "off" ? "Offline" : "…";
-  const sub = s === "in" ? (note || account.email) : s === "out" ? "Sign in to play online" : s === "off" ? "Online isn't in this copy of the game" : "";
+  const sub = s === "in" ? (note || account.email) : s === "out" ? (note || "Sign in to play") : s === "off" ? "Online isn't in this copy of the game" : "";
 
   return (
     <div className="stone-panel" style={{ display: "grid", gap: 8, padding: 8 }}>
@@ -106,7 +108,8 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
               ? <li>Sign in with your <b>Google account</b> or your <b>email</b> (we send a link: tap it on the device you want to play on). No password.</li>
               : <li>Sign in with your <b>Google account</b>. No new password.</li>}
             <li>Your <b>name</b> is what other players will see.</li>
-            <li>Signed in, one of your saves (☁️) is kept <b>online</b> and follows you to any device you sign in on. The newest online save always wins; the copy it replaces stays as the backup (⚙️ Settings).</li>
+            <li>Your game is saved to your <b>account</b>, so it&apos;s there on any device you sign in on. The newest save always wins; the copy it replaces stays as the backup (⚙️ Settings).</li>
+            <li>No internet? A device you&apos;ve played on before can play <b>offline</b>. It might be behind another device, and once you&apos;re back online the newer save wins.</li>
             <li>The global registry and PvP are on their way. Your game plays the same either way.</li>
             <li>What&apos;s kept about you: <Link href="/privacy">Privacy</Link>.</li>
           </ul>

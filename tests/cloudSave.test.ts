@@ -3,7 +3,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { exportSave, readBackup, SAVE_PARTS, type KeyValueStore, type SaveFile } from "../lib/saveFile";
 import { newSlot, readSlots, slotGame } from "../lib/saveSlots";
 import {
-  cloudLink, cloudMovedOn, markPlayed, sameGame, syncAtStart, uploadPlaying, ONLINE_SLOT_NAME,
+  cloudLink, cloudMovedOn, forgetLastAccount, markPlayed, offlineSave, readLastAccount, sameGame, syncAtStart, uploadPlaying,
+  ONLINE_SLOT_NAME,
 } from "../lib/online/cloudSave";
 
 function memoryStore(): KeyValueStore & { map: Map<string, string> } {
@@ -84,7 +85,8 @@ describe("cloud saves: signing in", () => {
     expect(r).toEqual({ kind: "uploaded", slot: "1" });
     expect(cloudGold(rows)).toBe(50);
     expect((rows.get(U)!.save as SaveFile).data.registry).toBeNull();
-    expect(cloudLink(s, U)).toEqual({ slot: "1", revision: 1, dirty: false });
+    expect(cloudLink(s, U)).toMatchObject({ slot: "1", revision: 1, dirty: false });
+    expect(readLastAccount(s)).toBe(U);
   });
 
   it("the cloud wins on a new device: its game is loaded, the device's kept as the backup, the registry kept", async () => {
@@ -110,10 +112,25 @@ describe("cloud saves: signing in", () => {
     expect(goldOf(exportSave(fresh))).toBe(50);
   });
 
-  it("nothing anywhere: nothing happens", async () => {
-    const { client, rows } = fakeCloud();
-    expect(await syncAtStart(memoryStore(), client, U)).toEqual({ kind: "none" });
-    expect(rows.size).toBe(0);
+  it("a brand-new account on an empty device: a new game, saved online straight away", async () => {
+    const s = memoryStore(), { client, rows } = fakeCloud();
+    expect(await syncAtStart(s, client, U)).toEqual({ kind: "uploaded", slot: "1" });
+    expect(readSlots(s).slots.map((x) => x.name)).toEqual([ONLINE_SLOT_NAME]);
+    expect(rows.get(U)!.revision).toBe(1);
+  });
+
+  it("a second account on the same device gets its own save, not the first one's", async () => {
+    const s = device(50), { client, rows } = fakeCloud();
+    await syncAtStart(s, client, U);
+    const r = await syncAtStart(s, client, "user-2");
+    expect(r.kind).toBe("uploaded");
+    expect(readSlots(s).active).not.toBe("1");
+    expect(goldOf(slotGame(s, readSlots(s), "1"))).toBe(50);
+    expect(((rows.get("user-2")!.save as SaveFile).data.progress)).toBeNull();
+    // Back to the first account: its save is put in play again.
+    expect((await syncAtStart(s, client, U)).kind).toBe("same");
+    expect(readSlots(s).active).toBe("1");
+    expect(goldOf(exportSave(s))).toBe(50);
   });
 
   it("play on this device since: it goes up; untouched: nothing changes", async () => {
@@ -149,7 +166,7 @@ describe("cloud saves: signing in", () => {
     expect(sameGame(exportSave(s), exportSave(twin))).toBe(true);
   });
 
-  it("a parked online slot gets the cloud save; the slot in play is untouched", async () => {
+  it("the account's save is put in play, with the cloud save loaded into it; other slots untouched", async () => {
     const a = device(50), { client } = fakeCloud();
     await syncAtStart(a, client, U);
     const b = device(10);
@@ -158,9 +175,10 @@ describe("cloud saves: signing in", () => {
     setGold(a, 80); markPlayed(a);
     await uploadPlaying(a, client, U);
     expect((await syncAtStart(b, client, U)).kind).toBe("loaded");
-    expect(goldOf(exportSave(b))).toBe(5); // (still playing "Other")
-    expect(goldOf(slotGame(b, readSlots(b), "1"))).toBe(80);
+    expect(readSlots(b).active).toBe("1");
+    expect(goldOf(exportSave(b))).toBe(80);
     expect(goldOf(readBackup(b))).toBe(50);
+    expect(goldOf(slotGame(b, readSlots(b), "2"))).toBe(5);
   });
 
   it("offline: says so and changes nothing", async () => {
@@ -170,6 +188,41 @@ describe("cloud saves: signing in", () => {
     expect(rows.size).toBe(0);
     expect(goldOf(exportSave(s))).toBe(50);
     expect(cloudLink(s, U)).toBeNull();
+  });
+});
+
+describe("cloud saves: offline", () => {
+  it("a device that has synced can play its own copy, and says when it last synced", async () => {
+    const s = device(50), { client } = fakeCloud();
+    await syncAtStart(s, client, U);
+    newSlot(s, "Other");
+    const off = offlineSave(s);
+    expect(off?.slot).toBe("1");
+    expect(off?.syncedAt).toBeTruthy();
+    expect(readSlots(s).active).toBe("1");
+    expect(goldOf(exportSave(s))).toBe(50);
+  });
+
+  it("a device that has never synced has nothing to play offline", () => {
+    const s = device(50);
+    expect(offlineSave(s)).toBeNull();
+    expect(offlineSave(s, U)).toBeNull();
+  });
+
+  it("after signing out, there's no playing offline as that account", async () => {
+    const s = device(50), { client } = fakeCloud();
+    await syncAtStart(s, client, U);
+    forgetLastAccount(s);
+    expect(offlineSave(s)).toBeNull();
+  });
+
+  it("offline play goes up once back online, if nothing newer is there", async () => {
+    const s = device(50), { client, rows } = fakeCloud();
+    await syncAtStart(s, client, U);
+    offlineSave(s);
+    setGold(s, 75); markPlayed(s);
+    expect((await syncAtStart(s, client, U)).kind).toBe("uploaded");
+    expect(cloudGold(rows)).toBe(75);
   });
 });
 

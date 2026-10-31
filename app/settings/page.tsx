@@ -15,6 +15,8 @@ import { useEffect, useRef, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
 import { lockSaves, readSave, unlockSaves } from "@/lib/save";
+import { markPlayed } from "@/lib/online/cloudSave";
+import { onlineConfig } from "@/lib/online/client";
 import { formatPlayTime, readPlayTime, PLAY_TIME_EVENT } from "@/lib/playTime";
 import {
   checkSaveFile, exportSave, importSave, readBackup, restoreBackup, saveFileName, summarise,
@@ -127,6 +129,7 @@ export default function SettingsPage() {
       setMessage({ kind: "bad", text: r.error });
       return;
     }
+    markPlayed(window.localStorage); // (signed in, the loaded save goes up as your account's save)
     setBusy(true);
     setPending(null);
     setMessage({ kind: "good", text: pending.kind === "import"
@@ -166,7 +169,7 @@ export default function SettingsPage() {
           <button className="pixel-btn" disabled={busy} onClick={() => fileInput.current?.click()}>⬆️ Import save</button>
         </div>
         <input ref={fileInput} type="file" accept=".json,application/json" onChange={picked} style={{ display: "none" }} />
-        <Link href="/start" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 8 }}>🗂️ Switch save / New game</Link>
+        <Link href="/start" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 8 }}>{onlineConfig.ok ? "🌐 Title screen" : "🗂️ Switch save / New game"}</Link>
       </div>
 
       <div className="stone-panel" style={panel}>

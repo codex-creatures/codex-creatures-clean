@@ -872,9 +872,18 @@ account, kept entirely apart from Vouchee.
 - 📌 **Cloud saves:** the save syncs to the player's account, so it follows them between devices.
   Decided (the user, 2026-10-31). ✅ Built: lib/online/cloudSave.ts (rules, tests/cloudSave.test.ts),
   the `cloud_saves` table (supabase/migrations), synced on the title screen (app/start) and
-  uploaded while playing by components/CloudSync.tsx. The online slot shows ☁️ on the title screen.
-  - **One online slot per account:** the slot being played when the player first signs in on a
-    device becomes that device's online slot. The other slots stay on the device only.
+  uploaded while playing by components/CloudSync.tsx.
+  - 📌 **Sign in to play, one save per account** (the user, 2026-10-31): online, the title screen
+    (components/OnlineStart.tsx) asks you to sign in, then loads your account's save: no save
+    slots to pick, so there is always a cloud save. Sharing a device: sign out, and the other
+    player signs in. Underneath, each account's save is still a slot on the device (the one in
+    play when an account first signs in there, unless another account has it; otherwise a new
+    "Online" slot). Slots from before stay stored but hidden. A copy without online (the offline
+    Windows build) keeps the old slot screen (components/LocalStart.tsx).
+  - 📌 **Offline** (the user, 2026-10-31): a device that has synced for the account before (and
+    hasn't signed out) may **Play offline**, with a warning: it shows when it last synced, that
+    progress from another device may be missing, and that the newer save wins once back online
+    (this copy kept as the backup). A device that has never synced needs the internet once.
   - **What syncs:** the game save plus battle history. Not the local barcode registry: that
     becomes the global registry (step 2).
   - **The cloud wins:** signing in on a device whose online slot differs from the account's cloud
@@ -888,8 +897,8 @@ account, kept entirely apart from Vouchee.
     the revision it last matched. The cloud on a newer revision wins (even over this device's own
     unsent play); otherwise this device's play goes up. An upload only writes over the revision
     it last saw, so if another device saved meanwhile, the game goes back to the title screen,
-    which loads the newer save. A device with no saves at all gets the cloud save as a new slot
-    ("Online"). Each slot keeps its own barcode registry.
+    which loads the newer save. Each slot keeps its own barcode registry.
+  - The player name must be picked before playing (not asked again while offline).
   - The user's own game starts fresh with cloud saves (only one game existed, the user's), so no
     old-save migration is needed.
 - 📌 **Global registry:** the first scan of a barcode anywhere is rolled **on the server** and

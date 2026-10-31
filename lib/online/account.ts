@@ -20,7 +20,7 @@ export const EMAIL_LOGIN = false;
 // Who's signed in. "off" means this build can't go online at all.
 export type Account =
   | { status: "off" | "loading" | "out" }
-  | { status: "in"; id: string; email: string; name: string | null };
+  | { status: "in"; id: string; email: string; name: string | null; offline?: boolean }; // (offline: the name couldn't be checked)
 
 export type Result = { ok: true } | { ok: false; error: string };
 
@@ -94,12 +94,13 @@ export async function readAccount(client: SupabaseClient): Promise<Account> {
   const { data } = await client.auth.getSession();
   const user = data.session?.user;
   if (!user) return { status: "out" };
-  let name: string | null = null;
+  let name: string | null = null, offline = false;
   try {
-    const { data: row } = await client.from("profiles").select("name").eq("id", user.id).maybeSingle();
+    const { data: row, error } = await client.from("profiles").select("name").eq("id", user.id).maybeSingle();
     name = (row as { name?: string } | null)?.name ?? null;
-  } catch {} // (no name yet is fine: they'll be asked again)
-  return { status: "in", id: user.id, email: user.email ?? "", name };
+    offline = !!error;
+  } catch { offline = true; } // (no connection: they aren't asked for a name they may already have)
+  return { status: "in", id: user.id, email: user.email ?? "", name, ...(offline ? { offline } : {}) };
 }
 
 export async function saveName(client: SupabaseClient, id: string, raw: string): Promise<Result & { name?: string }> {

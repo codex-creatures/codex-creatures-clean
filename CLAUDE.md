@@ -49,7 +49,8 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
      `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size) and
      `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration) and
      `codex_creatures_auth_v1` (lib/online/client.ts, the Supabase sign-in) and
-     `codex_creatures_cloud_v1` (lib/online/cloudSave.ts, which slot is each account's online one).
+     `codex_creatures_cloud_v1` and `codex_creatures_cloud_last_v1` (lib/online/cloudSave.ts:
+     which slot holds each account's save, and the account that may play offline).
    - New save fields must be optional, with a default for old saves. (Recent ones: `storage`, the
     chest boxes built bigger; a creature or card's `soulStone`, where missing means "roll it on
     load" and `null` means none.)
@@ -114,7 +115,8 @@ kill theirs.
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home). Others: `dungeon` (the Labyrinth),
   `battle`, `altar` (scanning, the "Soul Altar"), `chest` (Inventory), `bag`, `bookcase`, `cage`,
   `pool`, `pit`, `klutz`, `crate`, `guide`, `settings` (save export/import/backup), `start`
-  (the title screen: save slots, sign-in), `privacy` (the privacy policy Google sign-in needs:
+  (the title screen: sign-in and your save online, components/OnlineStart.tsx; save slots in a
+  copy without online, components/LocalStart.tsx), `privacy` (the privacy policy Google sign-in needs:
   update it whenever online features change what's stored).
   `lab/*` and `simulator` are dev tools (balance sims, room previews) and sit outside the phone
   frame.
