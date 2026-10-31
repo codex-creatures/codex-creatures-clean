@@ -5,6 +5,7 @@
 // it while signing in or naming. The rules live in lib/online/account.ts;
 // this only shows them.
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import Help from "@/components/Help";
@@ -103,6 +104,7 @@ export default function AccountPanel() {
               : <li>Sign in with your <b>Google account</b>. No new password.</li>}
             <li>Your <b>name</b> is what other players will see.</li>
             <li>Online features (cloud saves, the global registry, PvP) are on their way. Your game plays the same either way.</li>
+            <li>What&apos;s kept about you: <Link href="/privacy">Privacy</Link>.</li>
           </ul>
         </Help>
         {s === "in" ? (

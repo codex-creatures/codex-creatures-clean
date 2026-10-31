@@ -113,7 +113,8 @@ kill theirs.
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home). Others: `dungeon` (the Labyrinth),
   `battle`, `altar` (scanning, the "Soul Altar"), `chest` (Inventory), `bag`, `bookcase`, `cage`,
   `pool`, `pit`, `klutz`, `crate`, `guide`, `settings` (save export/import/backup), `start`
-  (the title screen: save slots).
+  (the title screen: save slots, sign-in), `privacy` (the privacy policy Google sign-in needs:
+  update it whenever online features change what's stored).
   `lab/*` and `simulator` are dev tools (balance sims, room previews) and sit outside the phone
   frame.
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan

@@ -858,9 +858,10 @@ account, kept entirely apart from Vouchee.
   name. ✅ Built: the title screen's 🌐 box (components/AccountPanel.tsx, rules in
   lib/online/account.ts). Signing in returns to `/start`. Names are 1–16 letters and need not be
   unique. Signing out signs out only this device. ✅ Set up and working (2026-10-31): Google Cloud
-  project `codex-creatures`, client "Codex Creatures web". It's in **Testing mode**: only the
-  test users listed on its Audience page can sign in (up to 100; add each playtester's Gmail).
-  Publishing needs a homepage and a privacy-policy page, so it waits for the game's own domain.
+  project `codex-creatures`, client "Codex Creatures web". 📌 Anyone with a Google account may
+  sign in (the user, 2026-10-31: players share the game freely), so the Google app is published
+  rather than kept to a test-user list. Google needs the privacy page for that: `/privacy`
+  (app/privacy/page.tsx), which must be kept in step with what's really stored.
   Google blocks sign-in inside apps' built-in browsers (e.g. Cursor's): use Chrome or Safari. To
   set it up again from scratch: `npm run setup:google` (scripts/setup-google-login.mjs).
   - **Email links** (no password) are built too but hidden (`EMAIL_LOGIN` in account.ts): Supabase's
