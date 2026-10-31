@@ -98,7 +98,7 @@ export const STEP_UP = 0.2;
 export type Foe = [creature: Rarity, gear: Rarity, stepUp: number];
 export type FoeBand = { upTo: number; easy: Foe; hard: Foe; camp: Foe; miniboss: Foe };
 export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
-  // Rooms 1–6 are dens and stashes (campRoomKind), the camp's chief at the top.
+  // Rooms 1–6 are dens and stashes (campRoomKind) and one chest, the camp's chief at the top.
   0: { name: "The Encampment", spec: { h: 240, rooms: 15, minRoute: 7, maxRoute: 7, large: 0 },
        foes: [{ upTo: Infinity, easy: ["common", "common", 0], hard: ["common", "common", 0], camp: ["uncommon", "common", 0], miniboss: ["uncommon", "common", 0] }],
        levels: [[Infinity, 1, 4]], maxLevel: 5, goldScale: 1 },
@@ -171,8 +171,8 @@ export const minibossAllowed = (dungeon: DungeonId, depth: number) => dungeon > 
 // - Its first rooms ease you in like the Labyrinth's (FIRST_ROOMS, FIRST_ROOM_LEVELS, LIGHT_GEAR).
 // - Rooms 1–6 are creature dens (1–2 creatures however deep: EASY_SIZE_EARLY), or a stash
 //   CAMP_STASH of the time, never two stashes in a row.
-//   Every map has at least one stash, and stashes are always marked on the scroll (even on the
-//   blind first step), so finding potions is a choice of route. It should be a struggle to reach
+//   Every map has one chest (a den turned into it) and at least one stash, all always marked on
+//   the scroll (even on the blind first step), so finding potions and loot is a choice of route. It should be a struggle to reach
 //   the chief without them (the user, 2026-10-27).
 // - At the top, the camp's chief: an Uncommon in Common gear, Lv CAMP_CHIEF_LEVEL. Its chest is a
 //   mini boss's, bar the Iron Cage Schematic (that's for the Labyrinth's mini bosses).

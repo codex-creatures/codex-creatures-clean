@@ -21,7 +21,7 @@ import { MAP_W, MAP_H, SIGHT_RADIUS, litRadius, distance, heading, knownRooms, l
 import type { RoomKind } from "@/lib/dungeon/run";
 import { drawnScale } from "@/lib/uiScale";
 import { artFor } from "@/lib/sprites/art";
-import { BURLAP_SACK } from "@/lib/sprites/props";
+import { BURLAP_SACK, TREASURE_CHEST } from "@/lib/sprites/props";
 
 const R = 5.6;              // room radius (map units)
 const LARGE_R = R * 1.8;    // a large room's
@@ -52,8 +52,9 @@ const SWORDS: Partial<Record<RoomKind, { ink: string; light: string }>> = {
   hard: { ink: "#9b2a1d", light: "#ff8a80" },
 };
 
-// Rooms marked with their art instead of an emoji: a stash is a loot sack, not a 💰.
-const ROOM_ART: Partial<Record<RoomKind, string>> = { stash: artFor(BURLAP_SACK)?.src ?? "" };
+// Rooms marked with their art instead of an emoji: a stash is a loot sack, not a 💰,
+// and a chest a treasure chest, not a 🧰.
+const ROOM_ART: Partial<Record<RoomKind, string>> = { stash: artFor(BURLAP_SACK)?.src ?? "", chest: artFor(TREASURE_CHEST)?.src ?? "" };
 
 // A room's mark, for the room's own heading (the art if it has some).
 export function RoomIcon({ kind, icon }: { kind: RoomKind; icon: string }) {

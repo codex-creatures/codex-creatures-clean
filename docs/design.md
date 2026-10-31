@@ -453,8 +453,9 @@ How it came about, round by round: history.md.
     Klutz's box. 7 rooms you walk into (`CAMP_ROUTE`, the user, 2026-10-27: it should be a struggle
     to reach the chief without finding potions or some luck): rooms 1–6 are creature dens (1–2
     creatures however deep), or a stash 30% of the time (`CAMP_STASH`, 🧪 Claude's number), never
-    two stashes in a row; no mysteries. Every map has at least one stash, and stashes are always
-    marked on the scroll, even on the blind first step. Its first rooms ease you in like the
+    two stashes in a row; no mysteries. Every map also has one chest (a den turned into it; the
+    user, 2026-11-01) and at least one stash, and they're always marked on the scroll, even on the
+    blind first step. Its first rooms ease you in like the
     Labyrinth's (below). Room 7 is the camp: its **chief**, an Uncommon in Common gear,
     Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
     2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
@@ -523,7 +524,8 @@ How it came about, round by round: history.md.
 - ✅ **The Scroll button** (looking at your map again inside) works 2 times a run (the user, 2026-10-25,
   `SCROLL_LOOKS`), and not while the map's first look at the entrance is open; a flare still shows
   the map on top. Every scroll (the Encampment's shorter one too) fits the window, with no
-  close-up drag view. On the scroll, a stash is marked with a loot sack.
+  close-up drag view. On the scroll, a stash is marked with a loot sack and a chest with a
+  treasure chest (their art, also in the room's title).
 - ✅ **Tools:** Torch (id `flare`: it was the Flare until 2026-10-30, and old saves are renamed on load; re-view the map and light around you, twice as far as your own light), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares. Also found (the user,
   2026-10-20): a flare in 10% of stashes and 20% of chests, a clairvoyance scroll in 5% of stashes and

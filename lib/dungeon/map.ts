@@ -63,7 +63,7 @@ export type MapNode = {
   links: string[];   // corridors to these rooms
   mystery?: boolean; // stays "?" until you walk in
   known?: boolean;   // marked on your scroll from the start
-  pinned?: boolean;  // …and shown even on the blind first step (the Encampment's stashes)
+  pinned?: boolean;  // …and shown even on the blind first step (the Encampment's chest and stashes)
   large?: boolean;   // a large room (drawn bigger on the scroll)
   dynamite?: boolean; // the storehouse with Klutz's dynamite in it (lib/tavern.ts)
 };
@@ -217,7 +217,7 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
       else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
     }
   }
-  // The Encampment always has a stash, and its stashes are always on the scroll.
+  // The Encampment always has a chest and a stash, all marked on the scroll.
   if (dungeon === 0) campStashes(map, rng);
   // A few rooms are marked on the scroll from the start (never mysteries).
   const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery);
@@ -241,15 +241,16 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   return map;
 }
 
-// The Encampment: at least one stash (if none came up, a den turned into one),
-// and every stash marked on the scroll, even on the first step.
+// The Encampment: one chest (a den turned into it; the user, 2026-11-01), at
+// least one stash (if none came up, another den turned into one), and every
+// chest and stash marked on the scroll, even on the first step.
 function campStashes(map: DungeonMap, rng: Rng) {
   const nodes = Object.values(map.nodes);
-  if (!nodes.some((n) => n.kind === "stash")) {
-    const dens = nodes.filter((n) => n.id !== map.start && n.id !== map.boss);
-    dens[Math.floor(rng() * dens.length)].kind = "stash";
-  }
-  for (const n of nodes) if (n.kind === "stash") Object.assign(n, { known: true, pinned: true });
+  const dens = () => nodes.filter((n) => n.kind === "easy" && n.id !== map.start && n.id !== map.boss);
+  const turn = (kind: RoomKind) => { const d = dens(); d[Math.floor(rng() * d.length)].kind = kind; };
+  turn("chest");
+  if (!nodes.some((n) => n.kind === "stash")) turn("stash");
+  for (const n of nodes) if (n.kind === "stash" || n.kind === "chest") Object.assign(n, { known: true, pinned: true });
 }
 
 // Turn a few rooms into large ones: well inside the labyrinth (not the
