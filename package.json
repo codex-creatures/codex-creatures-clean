@@ -16,6 +16,7 @@
     "build:offline": "node offline/build.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "@zxing/browser": "^0.1.5",
     "next": "16.1.6",
     "react": "19.2.3",
