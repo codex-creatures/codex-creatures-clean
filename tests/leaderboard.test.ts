@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { boardKey, boardValue, leaderboardStats, parseBoard, speciesPct } from "../lib/leaderboard";
+import { boardKey, boardValue, leaderboardStats, parseBoard } from "../lib/leaderboard";
 import { fetchBoard } from "../lib/online/leaderboard";
 import { TOTAL_CREATURES } from "../lib/items/gameHelpers";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
@@ -13,19 +13,21 @@ describe("leaderboard stats from a save", () => {
       inventory: [species(0), species(0, "card"), species(1, "card"), { id: "w", dropType: "item", itemKey: "void_scythe" }],
       labyrinth: { meta: { runs: 7, clears: 2, campRuns: 3, campClears: 3, deepRuns: 1, injuries: {}, bag: [] } },
       playTime: 4000,
+      scanCounts: { "5000112637922": 3, "0123456789012": 1 },
     };
     expect(leaderboardStats(progress)).toEqual({
       species: 2,
       runs: { 0: 3, 1: 7, 2: 1, 3: 0 },
       wins: { 0: 3, 1: 2, 2: 0, 3: 0 },
       playTime: 4000,
+      scans: 4,
     });
   });
 
   it("gives zeros for an empty or odd save", () => {
-    const zero = { species: 0, runs: { 0: 0, 1: 0, 2: 0, 3: 0 }, wins: { 0: 0, 1: 0, 2: 0, 3: 0 }, playTime: 0 };
+    const zero = { species: 0, runs: { 0: 0, 1: 0, 2: 0, 3: 0 }, wins: { 0: 0, 1: 0, 2: 0, 3: 0 }, playTime: 0, scans: 0 };
     expect(leaderboardStats(null)).toEqual(zero);
-    expect(leaderboardStats({ inventory: "x", labyrinth: { meta: { runs: -4, clears: "9", deepRuns: NaN } }, playTime: -5 })).toEqual(zero);
+    expect(leaderboardStats({ inventory: "x", labyrinth: { meta: { runs: -4, clears: "9", deepRuns: NaN } }, playTime: -5, scanCounts: { a: -2, b: "7" } })).toEqual(zero);
   });
 });
 
@@ -35,11 +37,12 @@ describe("boards", () => {
     expect(boardKey("runs", 0)).toBe("runs:0");
     expect(boardKey("wins", 3)).toBe("wins:3");
     expect(boardKey("time", 1)).toBe("time");
+    expect(boardKey("scans", 1)).toBe("scans");
   });
 
-  it("shows species as a share of every species", () => {
-    expect(speciesPct(TOTAL_CREATURES)).toBe(100);
-    expect(boardValue("species", 0)).toBe("0%");
+  it("shows species out of every species, and the counts as numbers", () => {
+    expect(boardValue("species", 12)).toBe(`12/${TOTAL_CREATURES}`);
+    expect(boardValue("scans", 250)).toBe("250");
     expect(boardValue("runs", 12)).toBe("12");
     expect(boardValue("time", 45 * 60 + 30)).toBe("45m");
     expect(boardValue("time", 12 * 3600 + 5 * 60)).toBe("12h 05m");

@@ -932,16 +932,16 @@ account, kept entirely apart from Vouchee.
   - Not hardened: a player could script calls to farm fresh barcodes. Accepted for playtesting
     (see Cheating below).
 - ✅ **Leaderboards**, at the Den's quest board (`/board`; daily quests will join them there).
-  Boards: % of creature species you have (the altar's "Creatures discovered": creatures and
+  Boards: creature species you have, shown as 12/120 (the altar's "Creatures discovered": creatures and
   cards, species you no longer have don't count); runs started in each dungeon; wins in each
   dungeon (a win is beating its final boss); time played (as Settings counts it, idle time left
-  out). PvP boards come later. Signed-in players only; top
+  out); barcodes scanned (rescans count too). Starting a new game resets them all. PvP boards come later. Signed-in players only; top
   50 shown, plus your own rank; only named players with more than 0 are listed, ties share a rank.
   - The game works out each player's numbers (`leaderboardStats`, lib/leaderboard.ts) and they go
     up with the cloud save, in `cloud_saves.stats`. The server's `leaderboard(board)` ranks them
     (supabase/migrations …_leaderboards.sql). Like the rest, not hardened against a scripted cheat.
   - **Seasons** (resets run by the user): `select public.start_season();` in the Supabase SQL
-    editor. It notes everyone's numbers then, and runs, wins and time count from there. 🧪 Species
+    editor. It notes everyone's numbers then, and runs, wins, time and scans count from there. 🧪 Species
     don't reset (Claude's call: they're your collection; the user may want otherwise).
 - 📌 **PvP: live, each player controlling their own team.** Two formats:
   - **3v3:** creatures and items up to Rare, creatures up to Lv 15.

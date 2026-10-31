@@ -45,12 +45,15 @@ export default function QuestBoardPage() {
   }, [key, ask]);
 
   const board = view.status === "ok" ? view.board : null;
-  const title = kind === "species" ? "Species collected" : kind === "time" ? "Time played" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
+  const title = kind === "species" ? "Species collected" : kind === "time" ? "Time played" : kind === "scans" ? "Barcodes scanned" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
 
   const dock = (
     <div className="dock-tabs">
       {BOARD_KINDS.map((k) => (
-        <button key={k} className="dock-tab" data-active={kind === k} onClick={() => setKind(k)}>{BOARD_INFO[k].icon} {BOARD_INFO[k].name}</button>
+        <button key={k} className="dock-tab" data-active={kind === k} onClick={() => setKind(k)}
+          style={{ flexDirection: "column", gap: 0, fontSize: 12, lineHeight: 1.2 }}>{/* (icon over name: five fit across a phone) */}
+          <span>{BOARD_INFO[k].icon}</span><span>{BOARD_INFO[k].name}</span>
+        </button>
       ))}
     </div>
   );
@@ -71,7 +74,8 @@ export default function QuestBoardPage() {
               <li><b>🐾 Species:</b> how many of the creature species you have (as <b>Creatures discovered</b> at the altar).</li>
               <li><b>🏃 Runs:</b> runs started in that dungeon. <b>👑 Wins:</b> its final boss beaten.</li>
               <li><b>⏳ Time:</b> time played (as in Settings: idle time doesn&apos;t count).</li>
-              <li><b>Seasons:</b> when a new one starts, runs, wins and time count again from 0. Species stay.</li>
+              <li><b>📷 Scans:</b> barcodes scanned (scanning one again counts too).</li>
+              <li><b>Seasons:</b> when a new one starts, runs, wins, time and scans count again from 0. Species stay.</li>
               <li>Top {BOARD_TOP} are shown. Only players with a name and more than 0 are listed.</li>
             </ul>
           </Help>
