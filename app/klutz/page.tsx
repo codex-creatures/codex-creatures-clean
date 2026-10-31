@@ -227,8 +227,11 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   }
   if (q.stage === "stash") {
     return say(
-      <>&ldquo;There — it&apos;s all in your Inventory. Go and have a look!&rdquo;</>,
-      <Link href="/chest" className="pixel-btn tutorial-pulse">🧰 Open your Inventory</Link>,
+      <>&ldquo;There — it&apos;s all in your Inventory. Want me to show you round?&rdquo;</>,
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Link href="/chest" className="pixel-btn tutorial-pulse">🧰 Show me</Link>
+        <button className="pixel-btn" onClick={game.questSkipTutorial}>Skip the tutorial</button>
+      </div>,
     );
   }
   if (needsGearUp(q, mine.map((c) => game.equipment[c.id]))) {

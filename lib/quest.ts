@@ -121,5 +121,8 @@ export const needsFirstCreature = (q: QuestState, ownsCreature: boolean) => q.st
 type Worn = { helmetId?: string; chestId?: string; legsId?: string };
 export const wearsArmour = (l?: Worn) => !!(l?.helmetId || l?.chestId || l?.legsId);
 export const needsGearUp = (q: QuestState, loadouts: (Worn | undefined)[]) => q.stage === "lend" && !loadouts.some(wearsArmour);
+// Once the box is open, you can skip the rest of the walk-through (looking in
+// your Inventory, kitting out your creature): straight to Klutz hunting for you.
+export const skipTutorial = (q: QuestState): QuestState => (q.stage === "stash" || q.stage === "lend" ? { ...q, stage: "done" } : q);
 // Klutz will borrow your gear and hunt for you.
 export const klutzHelping = (q: QuestState) => q.stage === "done";

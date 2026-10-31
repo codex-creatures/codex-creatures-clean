@@ -9,7 +9,7 @@ import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { STARTER_LEVEL, withQuickAttack } from "../lib/creatures/starter";
 import { THIEF_HP_MULT, thiefRace, effectiveOn } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
-import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, skipTutorial, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "../lib/items/ceilings";
@@ -143,6 +143,12 @@ describe("the first quest: Klutz's box", () => {
     expect(needsGearUp({ stage: "lend" }, [{ weaponId: "club" } as { chestId?: string }])).toBe(true);
     expect(needsGearUp({ stage: "lend" }, [{}, { legsId: "x" }])).toBe(false);
     expect(needsGearUp({ stage: "stash" }, [])).toBe(false);
+  });
+
+  it("the walk-through after the box can be skipped, but nothing before it", () => {
+    expect(skipTutorial({ stage: "stash", clubFound: true })).toEqual({ stage: "done", clubFound: true });
+    expect(skipTutorial({ stage: "lend" }).stage).toBe("done");
+    for (const stage of ["start", "hunt", "boxFound", "done"] as const) expect(skipTutorial({ stage }).stage).toBe(stage);
   });
 
   it("goes club → thief → back to Klutz", () => {

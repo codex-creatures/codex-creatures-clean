@@ -13,7 +13,7 @@ import { summonFromCards } from "@/lib/creatures/summon";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
-import { NEW_QUEST, klutzHelping, type QuestState } from "@/lib/quest";
+import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
@@ -322,6 +322,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const questSawStorage = () => setQuest((q) => (q.stage === "stash" ? { ...q, stage: "lend" } : q));
   // …and you've agreed to lend him gear: he'll hunt for you.
   const questLend = () => setQuest((q) => (q.stage === "lend" ? { ...q, stage: "done" } : q));
+  // …or skipped the walk-through altogether.
+  const questSkipTutorial = () => setQuest(skipTutorial);
 
   // ── Klutz ─────────────────────────────────────────────
   // What he fights as: his template with the gear and moves set on him.
@@ -932,6 +934,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

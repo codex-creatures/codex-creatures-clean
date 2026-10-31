@@ -25,8 +25,10 @@ export default function TeamDropRow({ team, over, ready, pulse }: { team: TeamMe
               ...(hot ? { borderColor: "#ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : lit || pulse ? { borderColor: "#c9a24a" } : {}) }}>
             <span style={{ width: "100%", maxWidth: 56 }}><CreaturePortrait creatureId={c.creatureId} title={c.name} /></span>
             <span style={{ ...NAME, color: "#f1d9a0" }}>{c.name}</span>
-            {pct !== undefined && (
-              <span style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: pct >= 100 ? "#8fd18f" : pct > 40 ? "#ffd66e" : "#ff8a80" }}>❤ {pct}%</span>
+            {/* Knocked out: a skull instead of the heart. */}
+            {pct !== undefined && (c.hp! <= 0
+              ? <span style={{ fontSize: 11, color: "#9a948a" }}>💀 0%</span>
+              : <span style={{ fontSize: 11, fontVariantNumeric: "tabular-nums", color: pct >= 100 ? "#8fd18f" : pct > 40 ? "#ffd66e" : "#ff8a80" }}>❤ {Math.max(1, pct)}%</span>
             )}
           </div>
         );

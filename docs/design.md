@@ -460,7 +460,10 @@ How it came about, round by round: history.md.
     Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
     2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
     has, so you've a team of 3 for the Labyrinth. After that, one cage with a creature in it 20% of
-    the time (`CAMP_REPEAT_CHANCE`). The first 10 runs are free (`FREE_RUNS`), then 50 gold.
+    the time (`CAMP_REPEAT_CHANCE`). Opening a cage plays a short show (`CageReveal`): it rattles,
+    then out pops the creature in its rarity's glow. Beating any labyrinth's boss opens with a
+    celebration (`Triumph`: gold falling, your team cheering, rooms/finds/run number) before the
+    run's summary (the user, 2026-11-01). The first 10 runs are free (`FREE_RUNS`), then 50 gold.
     - The **Labyrinth opens** once you've beaten it, or scanned 25 barcodes (`LABYRINTH_SCANS`,
       `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
       entrance shows it locked.
@@ -686,6 +689,8 @@ How it came about, round by round: history.md.
   Before he borrows any gear, you have to put some armour from the box on your creature
   (`needsGearUp`). Each step glows (the user, 2026-10-31): the Pit in the Den, the Creatures tab, your
   creature, the armour slots you have armour for, a piece in the picker, Equip, then "Back to Klutz".
+  Once the box is opened, Klutz offers "Show me" or "Skip the tutorial" (the user, 2026-11-01):
+  skipping goes straight to him hunting for you (`skipTutorial`).
 - ✅ **Equipping:** gear can be dragged onto a creature (loot windows, and the bag in the Labyrinth)
   or onto its slot (the creature window). Dragged straight from a chest, it opens the compare
   window with nothing moved (bag full or not); equipped, what it replaces goes in the bag, or into

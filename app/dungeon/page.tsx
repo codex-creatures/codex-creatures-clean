@@ -20,6 +20,8 @@ import TeamDropRow from "@/components/TeamDropRow";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
 import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
+import CageReveal, { type CageFind } from "@/components/CageReveal";
+import Triumph from "@/components/Triumph";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
 import LootGrid from "@/components/LootGrid";
 import GearCompare, { GearStatLine } from "@/components/GearCompare";
@@ -107,6 +109,8 @@ export default function DungeonPage() {
   const [notes, setNotes] = useState<string[]>([]);
   // Creatures that just levelled up: their show plays over the room (LevelUpShow).
   const [levelUps, setLevelUps] = useState<LevelUpInfo[]>([]);
+  // A cage just opened: what came out of it, shown over the room (CageReveal; null: it was empty).
+  const [cageShow, setCageShow] = useState<CageFind | undefined>(undefined);
   // Leaving for the Den: keep showing what's on screen until the Den loads
   // (otherwise the entrance flashes up for a moment on the way out).
   const [leaving, setLeaving] = useState(false);          // anything else that just happened (e.g. Second Wind)
@@ -534,6 +538,7 @@ export default function DungeonPage() {
     if (creature) game.addDrop(creature);
     if (creature) setNotes((n) => [...n, `🔓 A ${t!.name} creeps out of the cage — it's yours!`]);
     else setNotes((n) => [...n, "🔓 The cage is empty."]);
+    setCageShow(t && creature ? { name: t.name, creatureId: t.id, rarity: t.rarity, level: (creature as CreatureOrItemDrop).level ?? 1 } : null);
     updateRun((r) => (r.current ? {
       ...r, loot: [...r.loot, ...(creature ? [creature.name] : [])], got: [...(r.got ?? []), ...(creature ? [{ drop: creature }] : [])],
       current: { ...r.current, cages: (r.current.cages ?? []).map((c, j) => (j === i ? { ...c, opened: true } : c)) },
@@ -1091,7 +1096,8 @@ export default function DungeonPage() {
   }
 
   if (run.status !== "exploring") {
-    return frame(<RunOver run={run} lab={lab} onWalkBack={startWalkBack} onHome={() => {
+    const cheering = fightingTeam(run).flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, creatureId: c.creatureId }] : []; });
+    return frame(<RunOver run={run} lab={lab} team={cheering} onWalkBack={startWalkBack} onHome={() => {
       // Knocked out (Klutz dragged you back) or retreated: back to the Den.
       const died = run.status === "dead";
       const toDen = died || run.status === "retreated";
@@ -1211,6 +1217,7 @@ export default function DungeonPage() {
             );
           })()}
           {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
+          {cageShow !== undefined && <CageReveal find={cageShow} onDone={() => setCageShow(undefined)} />}
           {showCards && <EncounterCards creatureIds={enemyIds} races={(run.current!.enemies ?? []).map((e) => e.races)} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
@@ -1793,7 +1800,9 @@ function Party({ run, byId, onTeam, bench }: { run: DungeonRun; byId: (id: strin
   );
 }
 
-function RunOver({ run, lab, onHome, onWalkBack }: { run: DungeonRun; lab: DungeonSave; onHome: () => void; onWalkBack: () => void }) {
+function RunOver({ run, lab, team, onHome, onWalkBack }: { run: DungeonRun; lab: DungeonSave; team: { id: string; name: string; creatureId?: string }[]; onHome: () => void; onWalkBack: () => void }) {
+  // The boss beaten: a celebration first (Triumph), then this summary.
+  const [cheer, setCheer] = useState(run.status === "cleared");
   const floor: FloorItem[] = [...(run.floor ?? []), ...(run.pending ?? []).map((x) => ({ room: "", drop: x }))];
   const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
   const text = run.status === "cleared" && run.dungeon === 0
@@ -1807,8 +1816,13 @@ function RunOver({ run, lab, onHome, onWalkBack }: { run: DungeonRun; lab: Dunge
       : run.loot.includes("Klutz's box")
         ? "You head back to the Den with Klutz's box under your arm. He'll be thrilled — go and find him."
         : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;
+  const beaten = run.dungeon === 0 ? "The Encampment is yours!" : run.dungeon === 2 ? "The Hydra falls!" : run.dungeon === 3 ? "The Warden falls!" : "The Cyclops falls!";
   return (
     <div className="stone-panel" style={{ textAlign: "center" }}>
+      {cheer && (
+        <Triumph title={beaten} line={text} team={team} onDone={() => setCheer(false)}
+          stats={[{ label: "rooms", value: String(run.room) }, { label: "finds", value: String((run.got ?? []).length) }, { label: "run", value: `#${run.runNumber}` }]} />
+      )}
       <div className="pixel-font" style={{ fontSize: 26, color: run.status === "cleared" ? "#5ee08a" : run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>
       <p style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.5 }}>{text}</p>
       <div style={{ textAlign: "left" }}>

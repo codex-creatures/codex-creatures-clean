@@ -660,3 +660,23 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 @keyframes levelup-bump { 0% { transform: scale(1.6); color: #fff; } 100% { transform: scale(1); } }
 .levelup-stats { animation: swapin 0.35s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .levelup-pop, .levelup-title, .levelup-hop, .levelup-bump, .levelup-stats { animation: none; } }
+
+/* Opening an Encampment cage (components/CageReveal.tsx). */
+.cage-rattle { display: inline-block; animation: cage-rattle 0.18s steps(2) infinite; }
+@keyframes cage-rattle { 0% { transform: translateX(-4px) rotate(-6deg); } 100% { transform: translateX(4px) rotate(6deg); } }
+.cage-burst { animation: cage-burst 0.6s ease-out both; }
+@keyframes cage-burst { from { opacity: 1; transform: scale(0.3); } to { opacity: 0.7; transform: scale(1.15); } }
+.cage-out { animation: cage-out 0.55s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes cage-out { from { opacity: 0; transform: scale(0.2) translateY(30px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .cage-rattle, .cage-burst, .cage-out { animation: none; } }
+
+/* A labyrinth beaten (components/Triumph.tsx). */
+.triumph-spark { position: absolute; top: -12px; animation: triumph-fall linear infinite both; pointer-events: none; }
+@keyframes triumph-fall { from { transform: translateY(0) rotate(0); opacity: 1; } to { transform: translateY(105cqh) rotate(540deg); opacity: 0.8; } }
+.triumph-banner { animation: swapin 0.4s ease-out both; }
+.triumph-title { animation: triumph-stamp 0.55s cubic-bezier(.2,1.6,.4,1) 0.2s both, levelup-glow 1.2s ease-in-out 0.8s infinite alternate; }
+@keyframes triumph-stamp { from { opacity: 0; transform: scale(2.4); } to { opacity: 1; transform: none; } }
+.triumph-line { animation: swapin 0.4s ease-out 0.55s both; }
+.triumph-cheer { animation: swapin 0.35s ease-out both, levelup-hop 0.7s ease-in-out 1.2s infinite; }
+.triumph-stats { animation: swapin 0.4s ease-out 1s both; }
+@media (prefers-reduced-motion: reduce) { .triumph-spark { display: none; } .triumph-banner, .triumph-title, .triumph-line, .triumph-cheer, .triumph-stats { animation: none; } }
