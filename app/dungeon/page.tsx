@@ -41,7 +41,7 @@ import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import { damageTypesOn } from "@/lib/combat/engine";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
-import { clubRoom, klutzClub, isClub, thiefRoom, rollBox, wantsClub, wantsThief, TUTORIAL_MOVES } from "@/lib/quest";
+import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, isSeated, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import WitchWindow from "@/components/WitchWindow";
 import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, SCROLL_XP } from "@/lib/creatures/levels";
@@ -70,7 +70,7 @@ import {
 } from "@/components/BattleScreen";
 import { combatSummary } from "@/lib/combat/loadout";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
-import DungeonMapView from "@/components/DungeonMapView";
+import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
@@ -812,7 +812,8 @@ export default function DungeonPage() {
       n = tick.run;
       hurt = tick.hurt;
       if (!r.map.quest) return n;
-      if (nodeId === "thief") return { ...n, current: thiefRoom() };
+      // (Its race: one your first creature's moves are effective against.)
+      if (nodeId === "thief") return { ...n, current: thiefRoom(thiefRace(byId(fightingTeam(n)[0])?.fighter.skills ?? [])) };
       return { ...n, current: club ? clubRoom() : { kind: "treasure", gold: 0, done: true } };
     });
     if (hurt) {
@@ -900,10 +901,9 @@ export default function DungeonPage() {
     const room = r.current!;
     const own = fightingTeam(r).filter((id) => byId(id));
     const mine = own.map((id) => byId(id)!);
-    // The thief: Klutz talks you through it from the side; your first
-    // creature gets one move for each of his lessons (for this fight only).
+    // The thief: Klutz talks you through it from the side.
     const tutorial = room.quest === "thief";
-    const fighters = mine.map((c, i) => (tutorial && i === 0 ? { ...c.fighter, skills: TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]) } : c.fighter));
+    const fighters = mine.map((c) => c.fighter);
     const ids = own;
     const sick = r.illness ? ids.indexOf(r.illness.id) : -1;
     const info: MemberInfo[] = room.boss
@@ -1211,7 +1211,7 @@ export default function DungeonPage() {
             );
           })()}
           {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
-          {showCards && <EncounterCards creatureIds={enemyIds} onClose={() => setCardsOpen(false)}
+          {showCards && <EncounterCards creatureIds={enemyIds} races={(run.current!.enemies ?? []).map((e) => e.races)} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
           {canMoveOn(run) && fightingTeam(run).length === 0 && (
             <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Nobody in your team can still fight.</p>
@@ -1291,7 +1291,7 @@ export default function DungeonPage() {
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>
           <button className="dock-tab" onClick={() => { setSheet(null); setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 })); }}
-            disabled={!!clubTutorial || scrollLooksLeft(run) === 0}>
+            disabled={!!clubTutorial || !run.inside /* (the map's already open at the entrance) */ || scrollLooksLeft(run) === 0}>
             📜 Scroll <span className="count">{scrollLooksLeft(run)}/{SCROLL_LOOKS}</span>
           </button>
           {/* Retreat: tap twice (it ends the run). */}
@@ -1532,7 +1532,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
 
   return (
     <div className="stone-panel">
-      <div className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>{info.icon} {info.name}</div>
+      <div className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}><RoomIcon kind={room.kind} icon={info.icon} /> {info.name}</div>
 
       {notes.map((n) => <div key={n} style={{ fontSize: 13, color: "#f1d9a0", marginTop: 4 }}>{n}</div>)}
 

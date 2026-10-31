@@ -2,7 +2,7 @@
 // components/InventoryList.tsx
 
 import { Coin } from "./GoldCount";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
@@ -66,6 +66,7 @@ type Props = {
   headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
   unavailableItems?: Set<string>; // gear you can't take right now (Klutz has it in the Labyrinth)
   bigBoxes?: readonly CappedBox[]; // chest boxes built bigger (the storage schematics)
+  guideGearUp?: boolean; // Klutz wants armour on a creature (lib/quest.ts needsGearUp): glow the way to it
 };
 
 const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables", "codexes"];
@@ -77,10 +78,12 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onSellOne, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [],
+  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
+  // How far down the creature window is scrolled: flicking to the next creature stays there.
+  const creatureScroll = useRef(0);
   // Keep the card itself (not just its id): after summoning it's gone from
   // the inventory, but the window stays open to show what was summoned.
   const [openCard, setOpenCard] = useState<CreatureOrItemDrop | null>(null);
@@ -139,6 +142,7 @@ export default function InventoryList({
       return;
     }
     if (isCreatureDrop(d)) {
+      creatureScroll.current = 0; // (opened from the list: from the top)
       setOpenCreatureId(d.id);
       return;
     }
@@ -193,7 +197,8 @@ export default function InventoryList({
           const on = activeTab === tab;
           const glow = tab === "cards" && summonable ? RARITY_COLORS[summonable].text : undefined;
           return (
-            <button key={tab} role="tab" aria-selected={on} onClick={() => onTabChange(tab)} className={`pixel-font${glow ? " tab-glow" : ""}`}
+            <button key={tab} role="tab" aria-selected={on} onClick={() => onTabChange(tab)}
+              className={`pixel-font${glow ? " tab-glow" : ""}${guideGearUp && !creatureTab && tab === "creatures" ? " tutorial-pulse" : ""}`}
               title={glow ? `You can summon a ${summonable} creature` : undefined}
               style={{ flex: 1, minHeight: 44, padding: "6px 4px", fontSize: 14, cursor: "pointer", border: "none", ["--glow" as string]: glow,
                 borderLeft: i ? "2px solid #2a2d38" : "none", background: on ? "#3a2c16" : "transparent", color: glow ? glow : on ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
@@ -222,11 +227,18 @@ export default function InventoryList({
         <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No creatures match those filters.</p>
       )}
 
+      {guideGearUp && creatureTab && creatureList.length > 0 && (
+        <div className="tutorial-tip" style={{ marginTop: 12 }}>
+          <span className="tutorial-arrow">👇</span> Tap your creature to put some armour on it.
+        </div>
+      )}
+
       {/* Creatures and gear: sprite squares. */}
       {asGrid && shown.length > 0 && (
         <TileGrid
           groupBy={groupBy}
           large={creatureTab}
+          pulse={guideGearUp && creatureTab ? creatureList[0]?.id : undefined}
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}
           badge={(d) => {
@@ -323,6 +335,8 @@ export default function InventoryList({
           position={creatureIndex >= 0 ? { index: creatureIndex, count: creatureList.length } : undefined}
           onPrev={() => stepCreature(-1)}
           onNext={() => stepCreature(1)}
+          scrollMemo={creatureScroll}
+          teachArmour={guideGearUp}
           isFavorite={favoriteIds.has(openCreature.id)}
           onToggleFavorite={onToggleFavorite}
           loadout={equipment[openCreature.id]}

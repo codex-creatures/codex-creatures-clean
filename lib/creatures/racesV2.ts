@@ -19,7 +19,8 @@ export const RACE_V2_NAME: Record<RaceV2, string> = {
 // Every species' race(s), by what it is and how it looks. Klutz and the
 // boss parts have none for now: they take and deal neutral damage. (Except
 // the Baby Cyclops, the first quest's thief: a giant's whelp, Humanoid, so
-// the guided first fight can teach races.)
+// the guided first fight can teach races. In that fight it takes a race your
+// creature's moves beat instead: thiefRace in lib/quest.ts.)
 export const SPECIES_RACES: Record<string, RaceV2[]> = {
   // Old Beast
   moss_wolf:        ["beast"],

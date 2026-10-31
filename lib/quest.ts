@@ -13,7 +13,8 @@
 //                old club on the floor, dropped by the fleeing thief (picked
 //                up like any loot: a tutorial in the loot window walks you
 //                through taking it and equipping it, by tap or by drag), then
-//                one on to the thief itself (a guided fight: Klutz coaches you).
+//                one on to the thief itself (a guided fight: Klutz coaches you
+//                to use a move it's weak to, and shows you the race chart).
 // 3. "boxFound": you beat it (no gold: the box is the prize), it drops the
 //                box, you pick it up and head home.
 // 4. "stash":    you open the box at Klutz's (like a Code Cache); its gear
@@ -35,6 +36,8 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import type { Enemy, Room } from "./dungeon/run";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
+import { RACES_V2, type RaceV2 } from "./creatures/racesV2";
+import { raceOfMove, raceVsAll } from "./combat/raceChart";
 
 export type QuestStage = "start" | "hunt" | "boxFound" | "stash" | "lend" | "done";
 export type QuestState = {
@@ -58,32 +61,40 @@ export const clubRoom = (): Room => ({ kind: "treasure", quest: "club", sack: [{
 export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club";
 
 // The thief: a Baby Cyclops (no gold: beating it gets you the box, and only
-// the box). It's the guided first fight: your creature against it (with
-// TUTORIAL_MOVES, and Klutz's club), while Klutz watches from the side and
-// talks you through races (TUTORIAL_STEPS in components/BattleScreen.tsx).
-// So it's built to teach:
-// - it's Humanoid (lib/creatures/racesV2.ts): an Underkin move is resisted,
-//   a Beast move is effective, the same move otherwise;
+// the box). It's the guided first fight: your creature against it, with its
+// own moves (and Klutz's club), while Klutz watches from the side and talks
+// you through races (tutorialSteps in components/BattleScreen.tsx). So it's
+// built to teach:
+// - its race is one your creature's moves are effective against (thiefRace;
+//   the user, 2026-10-31), so Klutz can have you hit it with one of them;
 // - no weapon or armour, but lots of HP (THIEF_HP_MULT) and only a weak
 //   slap, so the lesson has time to land;
 // - it can't knock your creature out (gentle: its slap leaves 1 HP), so you
 //   always win (the user, 2026-10-26: a close one now and then had a Lv 3
 //   starter down to 1% HP).
-// (Sim, a Lv 3 Rare with the club: about 5–6 rounds; never a loss.)
+// (Sim, a Lv 3 Rare with the club and its own moves: 3–8 rounds, about 6; never a loss.)
 export const THIEF_LEVEL = 8;
 export const THIEF_HP_MULT = 2;
-export function thiefRoom(): Room {
+export function thiefRoom(race: RaceV2 = "humanoid"): Room {
   const thief: Enemy = {
     creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"], level: THIEF_LEVEL,
-    gear: [], hpMult: THIEF_HP_MULT, gentle: true,
+    gear: [], hpMult: THIEF_HP_MULT, gentle: true, races: [race],
   };
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
 
-// Your creature's moves in the guided fight (just for that fight): the two
-// lessons (the same melee move, Underkin then Beast), then Beast moves to
-// finish it with (a heavy one and a quick attack).
-export const TUTORIAL_MOVES = ["Tunnel Rush", "Gore", "Maul", "Lunge"];
+// Does this move's race land well on these races?
+export const effectiveOn = (move: { name: string }, races: readonly RaceV2[]) => {
+  const r = raceOfMove(move);
+  return !!r && raceVsAll(r, [...races]) > 1;
+};
+
+// The thief's race: one of the races your creature's moves are effective
+// against (picked at random). With no race moves at all, Humanoid.
+export function thiefRace(moves: readonly { name: string }[], rng: Rng = Math.random): RaceV2 {
+  const weak = RACES_V2.filter((r) => moves.some((m) => effectiveOn(m, [r])));
+  return weak.length ? pick(weak, rng) : "humanoid";
+}
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
 // time, otherwise an armour piece).

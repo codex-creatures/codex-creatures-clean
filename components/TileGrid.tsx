@@ -50,15 +50,16 @@ type Props = {
   groupBy?: GroupBy | "none"; // "none": one grid, in the order given
   large?: boolean;            // big creature cards (the Pit)
   picked?: string | null;     // the one tapped for a closer look (components/ItemPicker)
+  pulse?: string;             // a creature card the tutorial wants you to tap (it glows)
 };
 
-export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked }: Props) {
+export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse }: Props) {
   return (
     <div>
       {groupBy === "none" && (
         <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${large ? 132 : 84}px, 1fr))`, gap: large ? 16 : 10, marginTop: 14 }}>
           {items.map((d) => large && d.dropType !== "item" ? (
-            <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} />
+            <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
           ) : (
             <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id}
               sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
@@ -120,12 +121,12 @@ function Tile({ d, fav, badge, sell, picked, onClick }: {
 
 // A creature in your collection: "Lv 3 Rust Beetle" on top, the creature
 // itself below (just the sprite, no frame), then its attack style and race.
-function CreatureCard({ d, fav, badge, onClick }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; onClick: () => void }) {
+function CreatureCard({ d, fav, badge, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; onClick: () => void; glow?: boolean }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
   return (
-    <button onClick={onClick} title={d.name}
-      style={{ position: "relative", background: "none", border: "none", padding: "4px 2px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+    <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
+      style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "4px 2px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
       <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 14, color: col.text, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
         <span style={{ color: "#f1d9a0" }}>Lv {d.level ?? 1}</span> {d.name}
       </span>

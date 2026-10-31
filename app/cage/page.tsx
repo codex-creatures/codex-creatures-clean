@@ -18,6 +18,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { findCreatureTemplate, resolveMoves, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { STATS, type StatKey } from "@/components/CreatureDetailModal";
 import { MoveTile } from "@/components/MoveTile";
+import Glyph from "@/components/Glyph";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import Help from "@/components/Help";
@@ -172,7 +173,7 @@ function CagedStats({ d, t }: { d: CreatureOrItemDrop; t: CreatureTemplate }) {
   const moves = resolveMoves(t, d.moves);
   return (
     <div style={{ textAlign: "left", background: "#15161d", border: "2px solid #0e0f14", padding: 10, margin: "0 0 10px" }}>
-      <div style={{ fontSize: 14, marginBottom: 8 }}>❤️ <b>{t.baseHp}</b> <span style={{ color: MUTED }}>health, before armour</span></div>
+      <div style={{ fontSize: 14, marginBottom: 8 }}><Glyph icon="❤️" art="stat_hp" /> <b>{t.baseHp}</b> <span style={{ color: MUTED }}>health, before armour</span></div>
       <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", marginBottom: 6 }}>Gear multipliers</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(70px, 1fr))", gap: 5 }}>
         {STATS.filter((st) => st.key !== "hp").map((st) => {
@@ -180,7 +181,7 @@ function CagedStats({ d, t }: { d: CreatureOrItemDrop; t: CreatureTemplate }) {
           const diff = (prof[k] ?? 0) - (t.proficiency[k] ?? 0);
           return (
             <div key={k} style={{ textAlign: "center", padding: "5px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
-              <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.icon} {st.label}</div>
+              <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><Glyph icon={st.icon} art={st.art} /> {st.label}</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: st.color }}>+{prof[k]}%</div>
               <div style={{ fontSize: 10, color: diff > 0 ? "#7CFC9A" : diff < 0 ? "#ff8a80" : MUTED }}>{diff > 0 ? `+${diff} roll` : diff < 0 ? `${diff} roll` : "standard"}</div>
             </div>

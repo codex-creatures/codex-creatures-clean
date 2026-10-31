@@ -32,7 +32,7 @@ import {
 } from "@/lib/combat/battle";
 import { cloudLeft, type BossKind } from "@/lib/combat/bossAi";
 import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
-import { TUTORIAL_MOVES } from "@/lib/quest";
+import { effectiveOn } from "@/lib/quest";
 import { REF_LEVEL } from "@/lib/creatures/levels";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { RARITIES } from "@/lib/balance/simulate";
@@ -53,18 +53,27 @@ const faceFoe = (sprite: Sprite, side: "A" | "B") => flipToFace(sprite, side ===
 export const MUTED = "rgba(255,255,255,0.5)";
 
 // The first quest's guided fight (your creature against the thief): Klutz
-// watches from the side and talks you through races, one move at a time. It opens on a Fight! button (step -1); each
-// step after that: what he says, and which move you can pick — it glows
-// (null = any, and you can swap and use the bag again).
-export const TUTORIAL_STEPS: { say: string; allow: ((s: Skill) => boolean) | null }[] = [
-  { say: "Right — that's a big lump of a thief. Let's see what works. Hit it with 🪨 Tunnel Rush.",
-    allow: (s) => s.name === TUTORIAL_MOVES[0] },
-  { say: "Barely a scratch! It's a 🛡️ Humanoid, and Humanoids resist 🪨 Underkin moves. 🐾 Beast moves are strong against them: use Gore.",
-    allow: (s) => s.name === TUTORIAL_MOVES[1] },
-  { say: "THERE we go! Same kind of hit, much more damage. Every creature has a race or two, and so does every move: pick moves its races are weak to. Now finish it off — your call!",
-    allow: null },
-];
-const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial < TUTORIAL_STEPS.length && TUTORIAL_STEPS[m.tutorial].allow !== null));
+// watches from the side and talks you through races. It opens on a Fight! button (step -1); each
+// step after that: what he says, and which moves you can pick — they glow
+// (null = any, and you can swap and use the bag again). chart: the race
+// chart's button glows. The thief's race is one your creature's moves beat
+// (thiefRace, lib/quest.ts), so the first step always has a move to glow.
+type TutorialStep = { say: string; allow: ((s: Skill) => boolean) | null; chart?: boolean };
+export function tutorialSteps(me: Combatant, them: Combatant): TutorialStep[] {
+  const races = them.races ?? [];
+  const theirs = races.map((r) => RACE_INFO[r].name).join(" / ");
+  const good = me.skills.find((s) => effectiveOn(s, races));
+  const goodRace = good && raceOfMove(good);
+  return [
+    { say: good && goodRace
+        ? `Right: that thief's a ${theirs}, and ${RACE_INFO[goodRace].name} moves are effective against ${theirs}s. Your ${me.name} knows one: hit it with ${good.name}!`
+        : "Right: that's a big lump of a thief. Hit it!",
+      allow: good ? (s) => effectiveOn(s, races) : null },
+    { say: `${good ? "EFFECTIVE! " : ""}Every creature has a race or two, and so does every move: pick moves its races are weak to. Not sure what beats what? Tap ▲▼ below for the race chart. Now finish it off — your call!`,
+      allow: null, chart: true },
+  ];
+}
+const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial === 0 && tutorialSteps(activeOf(m.state.sides.A), activeOf(m.state.sides.B))[0].allow !== null));
 const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
 
 // What the screen shows about each team member (gear names etc.).
@@ -81,7 +90,7 @@ export type Match = {
   teams: Record<SideKey, Fighter[]>;  // for rematches and the history
   level: AiLevel;                     // how well the opponent plays
   title?: string;                     // e.g. "Dungeon room 3", shown in the history
-  tutorial?: number;                  // the guided first fight: which step you're on (TUTORIAL_STEPS; -1 = not started)
+  tutorial?: number;                  // the guided first fight: which step you're on (tutorialSteps; -1 = not started)
 };
 
 // The animation currently playing. Indexes say which creature (team index)
@@ -212,7 +221,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
   // startHp: your creatures' HP if they start hurt.
   // boss: the opponent is that dungeon boss (played by its script).
   // illness: one of your creatures is sick (the witch's curse) for this many rounds.
-  // tutorial: the first quest's guided fight (see TUTORIAL_STEPS).
+  // tutorial: the first quest's guided fight (see tutorialSteps).
   // pair: their first two are both on the field (an ambush). turnLimit: the
   // room blows after this many rounds (see BattleState.turnLimit).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
@@ -334,7 +343,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
   // The guided fight: Klutz's tip, and which moves you can pick right now.
-  const tip = match.tutorial !== undefined && match.tutorial >= 0 && match.tutorial < TUTORIAL_STEPS.length && you.active === 0 ? TUTORIAL_STEPS[match.tutorial] : undefined;
+  const steps = match.tutorial !== undefined ? tutorialSteps(me, them) : [];
+  const tip = match.tutorial !== undefined && match.tutorial >= 0 && match.tutorial < steps.length && you.active === 0 ? steps[match.tutorial] : undefined;
   const notStarted = match.tutorial === -1;
   const locked = tutorialLocked(match) && you.active === 0;
   // The witch's illness biting: the screen shakes.
@@ -513,7 +523,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
               <button className="dock-tab" data-active={open === "swap"} disabled={!canSwap} onClick={() => toggle("swap")}>⇄ Swap</button>
               {onUseItem && <button className="dock-tab" data-active={open === "bag"} disabled={bag.length === 0 || locked} onClick={() => toggle("bag")}>🎒 Bag{bagCount ? <span className="count">{bagCount}</span> : null}</button>}
               <button className="dock-tab" data-active={open === "log"} onClick={() => toggle("log")}>📜 Log</button>
-              {raceChart && <button className="dock-tab" data-active={open === "races"} onClick={() => toggle("races")} aria-label="Race chart">▲▼</button>}
+              {raceChart && <button className={`dock-tab${tip?.chart && open !== "races" ? " tutorial-pulse" : ""}`} data-active={open === "races"} onClick={() => toggle("races")} aria-label="Race chart">▲▼</button>}
               <button className="dock-tab" data-active={open === "details"} onClick={() => toggle("details")} aria-label="Details">ⓘ</button>
             </div>
           </>

@@ -25,7 +25,7 @@ import { ITEM_META } from "../items/metadata";
 import { ARMOR_META, wornArmor } from "../items/armor";
 import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
 import { BALANCED_MOVES, NEUTRAL_QUICK_MOVES, kitMoveFor } from "../creatures/raceKitsV2";
-import { SPECIES_RACES } from "../creatures/racesV2";
+import { SPECIES_RACES, type RaceV2 } from "../creatures/racesV2";
 import { rollCreature } from "../creatures/creatureRoll";
 import { randomSoulStone, type SoulStoneKey } from "../creatures/soulStones";
 import { buildFighter } from "../combat/loadout";
@@ -699,7 +699,7 @@ export function lightenGear(e: Enemy, depth: number, rng: Rng = Math.random): En
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
 // soulStone: rolled like anyone's (lib/creatures/soulStones.ts); missing = none (and runs saved before enemies had them).
 // gentle: its hits never knock anyone out (the guided first fight's thief).
-export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey; gentle?: boolean };
+export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey; gentle?: boolean; races?: RaceV2[] /* in place of its species' (the first quest's thief) */ };
 
 // Enemies learn more of their race kits as they level (the user, 2026-10-26:
 // the moveset scales with level), so deeper foes don't all fight with the
@@ -785,7 +785,7 @@ export function enemyFighter(e: Enemy): Fighter {
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
   const built = buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
-  const f = { ...built, ...(e.soulStone ? { soulStone: e.soulStone } : {}), ...(e.gentle ? { gentle: true } : {}) };
+  const f = { ...built, ...(e.soulStone ? { soulStone: e.soulStone } : {}), ...(e.gentle ? { gentle: true } : {}), ...(e.races ? { races: e.races } : {}) };
   if (!e.hpMult) return f;
   const maxHp = Math.round(f.maxHp * e.hpMult);
   return { ...f, maxHp, hp: maxHp, hpMult: e.hpMult };

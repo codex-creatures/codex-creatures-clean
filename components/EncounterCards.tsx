@@ -10,20 +10,22 @@
 import { useEffect, useRef, useState } from "react";
 import { CLASS_INFO, findCreatureTemplate, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { CardBody, CARD_WELL, CARD_YELLOW } from "./CardGallery";
+import type { RaceV2 } from "@/lib/creatures/racesV2";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const ATTACKS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"]];
 const DEFENCES: [keyof CreatureProficiency, string][] = [["mdef", "Melee def"], ["rdef", "Ranged def"], ["magdef", "Magic def"]];
 
 // onFight: start the fight (missing when nobody on your team can fight).
-export default function EncounterCards({ creatureIds, onClose, onFight }: { creatureIds: string[]; onClose: () => void; onFight?: () => void }) {
+// races: a foe's races, when they aren't its species' (the first quest's thief).
+export default function EncounterCards({ creatureIds, races, onClose, onFight }: { creatureIds: string[]; races?: (RaceV2[] | undefined)[]; onClose: () => void; onFight?: () => void }) {
   const n = creatureIds.length;
   return (
     <CardFan count={n} label="The creatures you're about to fight" onClose={onClose}
       title={n === 1 ? "A creature blocks the way" : `${n} creatures block the way`}
       size={{ width: "min(300px, 78cqw, 44cqh)", height: "min(440px, 114cqw, 64.5cqh)" }}
       action={onFight && { label: "⚔️ Fight", onClick: onFight }}
-      render={(i) => <Card creatureId={creatureIds[i]} />} />
+      render={(i) => <Card creatureId={creatureIds[i]} races={races?.[i]} />} />
   );
 }
 
@@ -97,9 +99,10 @@ export function CardFan({ count: n, title, label, size, render, onClose, action 
 // A fight card: the creature card (CardBody) with its rarity under the name,
 // and its base stats below: attack %s and agility on the left, HP and the
 // defence %s on the right. Bigger name and style / race than a small card.
-function Card({ creatureId }: { creatureId: string }) {
-  const t = findCreatureTemplate(creatureId);
-  if (!t) return null;
+function Card({ creatureId, races }: { creatureId: string; races?: RaceV2[] }) {
+  const species = findCreatureTemplate(creatureId);
+  if (!species) return null;
+  const t = races ? { ...species, race: races[0], races } : species;
   const p = t.proficiency;
   const own = t.cls === "melee" ? "atk" : t.cls === "ranged" ? "rng" : "mag";
   const row = (label: string, value: string, color?: string) => (

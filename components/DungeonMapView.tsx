@@ -20,6 +20,8 @@ import { ROOM_INFO, runPosition, nextRooms, type DungeonRun } from "@/lib/dungeo
 import { MAP_W, MAP_H, SIGHT_RADIUS, litRadius, distance, heading, knownRooms, linkKey, type MapNode } from "@/lib/dungeon/map";
 import type { RoomKind } from "@/lib/dungeon/run";
 import { drawnScale } from "@/lib/uiScale";
+import { artFor } from "@/lib/sprites/art";
+import { BURLAP_SACK } from "@/lib/sprites/props";
 
 const R = 5.6;              // room radius (map units)
 const LARGE_R = R * 1.8;    // a large room's
@@ -49,6 +51,17 @@ const SWORDS: Partial<Record<RoomKind, { ink: string; light: string }>> = {
   easy: { ink: "#4a2f17", light: "#e9d6a6" },
   hard: { ink: "#9b2a1d", light: "#ff8a80" },
 };
+
+// Rooms marked with their art instead of an emoji: a stash is a loot sack, not a 💰.
+const ROOM_ART: Partial<Record<RoomKind, string>> = { stash: artFor(BURLAP_SACK)?.src ?? "" };
+
+// A room's mark, for the room's own heading (the art if it has some).
+export function RoomIcon({ kind, icon }: { kind: RoomKind; icon: string }) {
+  const src = ROOM_ART[kind];
+  if (!src) return <>{icon}</>;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" style={{ height: "1.1em", verticalAlign: "-0.15em", imageRendering: "pixelated" }} />;
+}
 
 const knownOf = (run: DungeonRun) => knownRooms(run.map, run.path, run.lit, run.seen);
 
@@ -105,7 +118,9 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
   // The window onto the scroll: opens on where you stand; drag to look around.
   const box = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null);
-  const small = !map.h || map.h < 200; // a short scroll (the first quest's) fits the window as it is
+  // Every scroll up to a full Labyrinth's fits the window as it is (the Encampment's
+  // shorter one too: the close-up, drag-to-look view was too zoomed in on the phone).
+  const small = (map.h ?? MAP_H) <= MAP_H;
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -266,6 +281,8 @@ export default function DungeonMapView({ run, onEnter, onPick }: { run: DungeonR
                 {(boss || n.large) && <circle cx={n.x} cy={n.y} r={r + 1.6} fill="none" stroke={boss ? RED_INK : INK} strokeWidth={0.4} strokeDasharray={n.large ? "1.2 1" : undefined} />}
                 {isKnown && sw ? (
                   <g transform={`translate(${n.x - 5} ${n.y - 5}) scale(0.42)`} opacity={been ? 0.45 : 1}><Swords color={sw.ink} /></g>
+                ) : isKnown && ROOM_ART[n.kind] ? (
+                  <image href={ROOM_ART[n.kind]} x={n.x - 4.2 * k} y={n.y - 4.2 * k} width={8.4 * k} height={8.4 * k} opacity={been ? 0.45 : 1} style={{ imageRendering: "pixelated" }} />
                 ) : isKnown ? (
                   <text x={n.x} y={n.y + 0.4} textAnchor="middle" dominantBaseline="middle" fontSize={(boss ? 7 : 5.4) * k} opacity={been ? 0.45 : 1}>{look.icon}</text>
                 ) : (

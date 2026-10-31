@@ -417,8 +417,11 @@ How it came about, round by round: history.md.
   born + learned). From scans by the usual split (`KIT_BASIC_CODEXES` Common / `KIT_STRONG_CODEXES`
   Rare), and librarians, chests and the Cyclops alongside the older race codexes
   (`RACE_CODEX_MOVES`). 🧪 A librarian's kit codex costs 200 (`LEARNABLE_CODEX_PRICE`).
-- ✅ **Guided first fight** teaches races: the Baby Cyclops thief is Humanoid; Klutz has you use
-  Tunnel Rush (resisted), then Gore (effective). Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
+- ✅ **Guided first fight** teaches races (the user, 2026-10-31): your creature fights with its own
+  moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`; Humanoid
+  if it has no race moves). Klutz names its race and has you hit it with that move (it glows), then
+  points you to the ▲▼ race chart (it glows) and lets you finish it. Sim: 3–8 rounds (about 6), never a loss.
+  Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
 - ✅ **UI:** moves show their race; tablets are cut in their race's stone with a big style icon
   (impact / arrow / bolt). Cards show race squares under the sprite (not the style); creature
   windows and name plates show races spelled out. A hit says **EFFECTIVE!** or **RESISTED**. A move's
@@ -518,7 +521,9 @@ How it came about, round by round: history.md.
     away under it. The next prize lies face down behind it (its rarity shows); a right guess sparkles the card away and
     the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
 - ✅ **The Scroll button** (looking at your map again inside) works 2 times a run (the user, 2026-10-25,
-  `SCROLL_LOOKS`); a flare still shows the map on top.
+  `SCROLL_LOOKS`), and not while the map's first look at the entrance is open; a flare still shows
+  the map on top. Every scroll (the Encampment's shorter one too) fits the window, with no
+  close-up drag view. On the scroll, a stash is marked with a loot sack.
 - ✅ **Tools:** Torch (id `flare`: it was the Flare until 2026-10-30, and old saves are renamed on load; re-view the map and light around you, twice as far as your own light), clairvoyance scroll (reveal any room
   and its surroundings; 200 gold at merchants). Merchants carry 5 wares. Also found (the user,
   2026-10-20): a flare in 10% of stashes and 20% of chests, a clairvoyance scroll in 5% of stashes and
@@ -676,8 +681,9 @@ How it came about, round by round: history.md.
   On the way, Klutz's Club lies on the floor and is picked up through the loot window: a tutorial
   there teaches taking it into the bag and equipping it (tap, or drag onto a creature), and the
   equip window explains where stats come from (gear × the creature's %).
-  Before he borrows any gear, you have to put some armour from the box on your creature (the Pit
-  glows; `needsGearUp`).
+  Before he borrows any gear, you have to put some armour from the box on your creature
+  (`needsGearUp`). Each step glows (the user, 2026-10-31): the Pit in the Den, the Creatures tab, your
+  creature, the armour slots you have armour for, a piece in the picker, Equip, then "Back to Klutz".
 - ✅ **Equipping:** gear can be dragged onto a creature (loot windows, and the bag in the Labyrinth)
   or onto its slot (the creature window). Dragged straight from a chest, it opens the compare
   window with nothing moved (bag full or not); equipped, what it replaces goes in the bag, or into

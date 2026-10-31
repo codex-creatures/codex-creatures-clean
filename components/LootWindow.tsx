@@ -35,7 +35,7 @@ import TeamDropRow, { type TeamMember } from "./TeamDropRow";
 import { ICON, NAME, lookOf } from "./ContainerLoot";
 import { BAG_COLS, LockedSlot, StackCount, type SlotLook } from "./BagSlots";
 import { BAG_MAX, POTIONS, type SackItem } from "@/lib/dungeon/run";
-import { GEAR_STATS } from "./GearCompare";
+import { GEAR_STATS, GearStatIcon } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import CodexMove from "./CodexMove";
@@ -312,7 +312,7 @@ export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotL
             return (
               <span key={k} style={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", padding: "1px 0",
                 background: v >= 30 ? `color-mix(in srgb, ${c} 18%, rgba(0,0,0,0.4))` : "rgba(0,0,0,0.35)", border: `2px solid ${v >= 30 ? c : "#3a3326"}` }}>
-                <span style={{ fontSize: 12, color: MUTED }}>{label[k]}</span>
+                <span style={{ fontSize: 12, color: MUTED, whiteSpace: "nowrap" }}><GearStatIcon stat={k} /> {label[k]}</span>
                 <b style={{ fontSize: 16, fontVariantNumeric: "tabular-nums", color: v >= 30 ? c : v ? "white" : MUTED }}>{v}</b>
               </span>
             );

@@ -8,6 +8,8 @@ import { useState } from "react";
 import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { CreatureOrItemDrop } from "@/lib/types";
+import Glyph from "./Glyph";
+import { STATS, type StatKey } from "./CreatureDetailModal";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
@@ -16,6 +18,12 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 export const GEAR_STATS: [string, string][] = [
   ["melee", "Atk"], ["ranged", "Rng"], ["magic", "Mag"], ["agility", "Agi"], ["hp", "HP"], ["mDef", "MDef"], ["rDef", "RDef"], ["magDef", "MgDef"],
 ];
+// A gear stat's icon: the creature window's (STATS), so the new art shows here too.
+const GEAR_STAT_KEYS: Record<string, StatKey> = { melee: "atk", ranged: "rng", magic: "mag", agility: "agil", hp: "hp", mDef: "mdef", rDef: "rdef", magDef: "magdef" };
+export function GearStatIcon({ stat: k }: { stat: string }) {
+  const st = STATS.find((s) => s.key === GEAR_STAT_KEYS[k]);
+  return st ? <Glyph icon={st.icon} art={st.art} title={st.label} size="1.1em" /> : null;
+}
 const stat = (it: CreatureOrItemDrop | undefined, k: string) => (it?.stats as Record<string, number> | undefined)?.[k] ?? 0;
 
 // "Atk 14 · Agi 6"
@@ -77,7 +85,7 @@ export default function GearCompare({ item, slotName, creatures, onEquip, equipL
           const a = stat(worn, k), b = stat(item, k), d = b - a;
           return (
             <div key={k} style={{ display: "grid", gridTemplateColumns: "56px 1fr 1fr 56px", alignItems: "center", fontSize: 13 }}>
-              <span style={{ color: MUTED }}>{label}</span>
+              <span style={{ color: MUTED, whiteSpace: "nowrap" }}><GearStatIcon stat={k} /> {label}</span>
               <span style={{ ...NUM, textAlign: "center" }}>{a}</span>
               <span style={{ ...NUM, textAlign: "center" }}>{b}</span>
               <span style={{ ...NUM, textAlign: "right", color: d > 0 ? "#7CFC9A" : d < 0 ? "#ff8a80" : MUTED }}>{d > 0 ? `+${d}` : d < 0 ? `${d}` : "="}</span>

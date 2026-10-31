@@ -2,13 +2,12 @@ import { describe, it, expect } from "vitest";
 import { enemyFighter } from "../lib/dungeon/run";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
-import { CREATURES_BY_RARITY, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { CREATURES_BY_RARITY, defaultMoveNames } from "../lib/creatures/creatureData";
 import { rollCreature } from "../lib/creatures/creatureRoll";
 import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/battle";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
-import { TUTORIAL_MOVES } from "../lib/quest";
-import { STARTER_LEVEL } from "../lib/creatures/starter";
-import { THIEF_HP_MULT } from "../lib/quest";
+import { STARTER_LEVEL, withQuickAttack } from "../lib/creatures/starter";
+import { THIEF_HP_MULT, thiefRace, effectiveOn } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
 import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
@@ -45,33 +44,42 @@ describe("the first quest: Klutz's box", () => {
     expect(room.enemies![0]).toMatchObject({ gear: [], hpMult: THIEF_HP_MULT, gentle: true });
   });
 
-  // Your starter (a Lv 3 Rare with Klutz's club and the lesson moves), on its own.
-  const starter = (t = CREATURES_BY_RARITY.rare[0]) => ({
-    ...buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, undefined, rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL),
-    skills: TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]),
-  });
-  it("the guided fight teaches races: the same move does far more as a race the thief is weak to", () => {
-    const thief = enemyFighter(thiefRoom().enemies![0]);
-    const [resisted, effective] = TUTORIAL_MOVES.map((n) => MOVE_BY_NAME[n]);
-    expect({ ...resisted, name: "", desc: "" }).toEqual({ ...effective, name: "", desc: "" }); // the same move but for its race (and the note saying so)
-    for (const t of CREATURES_BY_RARITY.rare) {
+  // Your starter (a Lv 3 Rare with Klutz's club and its own starting moves), on its own.
+  const starter = (t = CREATURES_BY_RARITY.rare[0]) =>
+    buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, withQuickAttack(t, defaultMoveNames(t)), rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL);
+  const thiefFor = (me: ReturnType<typeof starter>) => enemyFighter(thiefRoom(thiefRace(me.skills)).enemies![0]);
+
+  it("the thief's race is one your starter's moves are effective against, and they hit it harder", () => {
+    const wrong: string[] = [];
+    for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
       const me = starter(t);
-      const hit = (m: typeof resisted) => calcDamage(m, me, thief, false).damage;
-      expect(hit(effective), t.id).toBeGreaterThan(hit(resisted) * 1.25);
+      const thief = thiefFor(me);
+      const good = me.skills.find((s) => effectiveOn(s, thief.races ?? []));
+      if (!good) { wrong.push(`${t.id}: nothing effective on ${thief.races}`); continue; }
+      // (the same hit on a thief with no race)
+      const plain = calcDamage(good, me, { ...thief, races: [] }, false).damage;
+      if (calcDamage(good, me, thief, false).damage <= plain) wrong.push(`${t.id}: ${good.name} not stronger`);
     }
+    expect(wrong).toEqual([]);
   });
-  it("your starter wins the guided fight on its own, after Klutz's two lessons", () => {
+  it("with no race moves at all, the thief is Humanoid", () => {
+    expect(thiefRace([{ name: "Strike" }])).toBe("humanoid");
+    expect(enemyFighter(thiefRoom().enemies![0]).races).toEqual(["humanoid"]);
+  });
+  it("your starter wins the guided fight on its own, after Klutz's lesson (an effective move)", () => {
     for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
       // (with each of the soul stones it could be born with: a starter always has one)
       const stones = stonesFor(t.id);
-      const s = createBattle([{ ...starter(t), soulStone: stones[k % stones.length] }], [enemyFighter(thiefRoom().enemies![0])]);
-      const lessons = TUTORIAL_MOVES.slice(0, 2);
+      const me = { ...starter(t), soulStone: stones[k % stones.length] };
+      const thief = thiefFor(me);
+      const s = createBattle([me], [thief]);
+      const lesson = me.skills.find((m) => effectiveOn(m, thief.races ?? []))!.name;
       while (!s.winner && s.round < 100) {
-        resolveRound(s, { A: s.round < lessons.length ? { kind: "attack", skillName: lessons[s.round] } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });
+        resolveRound(s, { A: s.round === 0 ? { kind: "attack", skillName: lesson } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });
         for (const side of [...s.needsReplacement]) sendInReplacement(s, side, chooseAiReplacement(s, side, "easy"));
       }
-      expect(s.winner).toBe("A");
-      expect(s.round).toBeGreaterThan(3);
+      expect(s.winner, t.id).toBe("A");
+      expect(s.round).toBeGreaterThan(2); // (time for both of Klutz's tips: the lesson, then the race chart)
     }
   });
 

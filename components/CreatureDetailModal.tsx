@@ -8,7 +8,7 @@
 // Tap a slot to browse your gear: tapping an item previews the change on
 // every stat before you equip it; dragging it onto its slot equips it.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Rarity } from "@/lib/items/budgets";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -54,6 +54,8 @@ type Props = {
   position?: { index: number; count: number };
   onPrev?: () => void;
   onNext?: () => void;
+  scrollMemo?: { current: number }; // how far down the window is: kept when flicking to the next creature
+  teachArmour?: boolean; // Klutz wants armour on a creature (lib/quest.ts needsGearUp): glow the way through
   // Klutz: his %s are points you spend (lib/klutz.ts), shown in place of the gear multipliers.
   points?: { free: number; onSpend: (add: Partial<Record<ProfKey, number>>) => void; respec: { cost: number; can: boolean; run: () => boolean } };
   // Your creatures (and Klutz): the loose soul stones you own that can go in it, to set
@@ -99,8 +101,14 @@ const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe
 
 export default function CreatureDetailModal({
   creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
-  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, unavailable, locked, points, stones,
+  equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, scrollMemo, teachArmour, unavailable, locked, points, stones,
 }: Props) {
+  // Flicked here from another creature: open as far down as that one was.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (scrollMemo && panelRef.current) panelRef.current.scrollTop = scrollMemo.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Points tapped onto stats but not yet confirmed (Klutz).
   const [pending, setPending] = useState<Partial<Record<ProfKey, number>>>({});
   const pendingTotal = Object.values(pending).reduce((s, n) => s + (n ?? 0), 0);
@@ -190,6 +198,12 @@ export default function CreatureDetailModal({
   const tooMany = sorted.length + (current ? 1 : 0) > PICKER_COLS * 3; // (the Unequip tile counts)
   const previewOwner = preview && equippedOn.get(preview.id) !== creature.id ? creatureNameById.get(equippedOn.get(preview.id) ?? "") : undefined;
 
+  // Klutz's lesson: armour slot → a piece → Equip, each glowing in turn (only slots you've armour for).
+  const teach = teachArmour && !locked && !!template;
+  const armourFor = (slot: EquipSlot) => armors.some((a) => (a.armorSlot ?? "chest") === slot && !unavailable?.has(a.id));
+  const teachSlot = (slot: EquipSlot) => teach && slot !== "weapon" && !picking && armourFor(slot);
+  const teachPicker = teach && !!picking && picking !== "weapon";
+
   function confirm() {
     if (!picking || preview === undefined || isCurrent) return;
     onEquip(picking, preview ? preview.id : null);
@@ -210,7 +224,8 @@ export default function CreatureDetailModal({
         // Tapping off the gear picker closes it (the slots open and switch it themselves).
         const t = e.target as HTMLElement;
         if (picking && !pickerRef.current?.contains(t) && !t.closest("[data-drop^='slot:']")) closePicker();
-      }} className="modal-panel stone-panel"
+      }} className="modal-panel stone-panel" ref={panelRef}
+        onScroll={scrollMemo ? (e) => { scrollMemo.current = e.currentTarget.scrollTop; } : undefined}
         style={{ borderColor: "#12131a", boxShadow: `inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 0 0 2px ${c.border}, 0 0 40px ${c.glow}`, padding: 18, width: "100%", maxWidth: 520, height: "92cqh", overflowY: "auto", position: "relative" }}>
 
         <button onClick={onClose} aria-label="Close" style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: "rgba(255,255,255,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }}>✕</button>
@@ -241,7 +256,7 @@ export default function CreatureDetailModal({
             {/* Tabs: gear & stats, or moves */}
             <div role="tablist" style={{ display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117", marginBottom: 12 }}>
               {([["gear", "🛡️ Gear & stats"], ["moves", "⚔️ Moves"]] as const).map(([k, label], i) => (
-                <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setTab(k); closePicker(); }} className="pixel-font"
+                <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setTab(k); closePicker(); }} className={`pixel-font${teach && k === "gear" && tab !== "gear" ? " tutorial-pulse" : ""}`}
                   style={{ flex: 1, minHeight: 44, fontSize: 15, cursor: "pointer", border: "none", borderLeft: i ? "2px solid #2a2d38" : "none",
                     background: tab === k ? "#3a2c16" : "transparent", color: tab === k ? "#ffe9a8" : "rgba(255,255,255,0.6)" }}>
                   {label}
@@ -276,6 +291,11 @@ export default function CreatureDetailModal({
             )}
 
             {tab === "gear" && <>
+            {teach && !picking && (
+              <div className="tutorial-tip" style={{ marginBottom: 8 }}>
+                <span className="tutorial-arrow">👇</span> Tap a glowing <b>armour slot</b> to put some of Klutz&apos;s armour on.
+              </div>
+            )}
             {/* Paper doll: weapon · creature · armour */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
@@ -286,7 +306,7 @@ export default function CreatureDetailModal({
               <Pedestal creature={creature} glow={c.glow} border={c.border} hp={next?.s.hp ?? now.s.hp} />
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 {ARMOR_SLOTS.map((slot, i) => (
-                  <Slot key={slot} label={ARMOR_SLOT_INFO[slot].name} slot={slot} item={worn[i]} active={picking === slot} hot={dnd.over === `slot:${slot}`} onClick={() => openSlot(slot)} small />
+                  <Slot key={slot} label={ARMOR_SLOT_INFO[slot].name} slot={slot} item={worn[i]} active={picking === slot} hot={dnd.over === `slot:${slot}`} onClick={() => openSlot(slot)} small glow={teachSlot(slot)} />
                 ))}
               </div>
             </div>
@@ -319,6 +339,13 @@ export default function CreatureDetailModal({
                 <div className="pixel-font" style={{ fontSize: 14, color: GOLD, marginBottom: 8 }}>
                   Choose {picking === "weapon" ? "a weapon" : `a ${slotName}`}: tap to compare, double-tap or drag onto the slot to equip
                 </div>
+                {teachPicker && options.length > 0 && (
+                  <div className="tutorial-tip" style={{ marginBottom: 8 }}>
+                    {preview && !isCurrent
+                      ? <><span className="tutorial-arrow">👇</span> Now tap <b>Equip</b> to put it on.</>
+                      : <><span className="tutorial-arrow">👇</span> Tap a piece to see what it does.</>}
+                  </div>
+                )}
                 {options.length === 0 ? (
                   <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>You don&apos;t own a {slotName} piece yet. Scan barcodes or explore the labyrinth to find some.</p>
                 ) : (
@@ -340,6 +367,7 @@ export default function CreatureDetailModal({
                       const away = unavailable?.has(opt.id);
                       return (
                         <Tile key={opt.id} rarity={opt.rarity} selected={preview?.id === opt.id} disabled={away} scrolls={tooMany}
+                          glow={teachPicker && !away && !preview}
                           title={away ? `${opt.name} — Klutz has it with him in the Labyrinth` : here ? `${opt.name} (worn now)` : opt.name}
                           grab={away ? undefined : { onPointerDown: dnd.press(opt, { sprite: sp, icon: "📦" }), ...dnd.handlers }}
                           onClick={() => { if (!dnd.wasDrag()) tapOption(opt); }}>
@@ -377,7 +405,7 @@ export default function CreatureDetailModal({
                         </div>
                       )}
                     </div>
-                    <button className="pixel-btn" style={{ flexShrink: 0, minHeight: 44, fontSize: 14, padding: "6px 12px", opacity: preview === undefined || isCurrent ? 0.4 : 1 }}
+                    <button className={`pixel-btn${teachPicker && preview && !isCurrent ? " tutorial-pulse" : ""}`} style={{ flexShrink: 0, minHeight: 44, fontSize: 14, padding: "6px 12px", opacity: preview === undefined || isCurrent ? 0.4 : 1 }}
                       disabled={preview === undefined || isCurrent} onClick={confirm}>{preview === null ? "Unequip" : "Equip"}</button>
                   </div>
                 )}
@@ -602,7 +630,8 @@ function StoneSetter({ current, owned, gold, onSet }: { current?: SoulStoneKey |
 
 // An equipment slot: a framed square with the item's sprite.
 // slot: its name as a drop target (data-drop="slot:<slot>"); hot: gear's being dragged over it.
-function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { label: string; labelColor?: string; slot: EquipSlot; item?: CreatureOrItemDrop; active: boolean; hot?: boolean; onClick: () => void; small?: boolean }) {
+// glow: the tutorial wants you to tap it.
+function Slot({ label, labelColor, slot, item, active, hot, onClick, small, glow }: { label: string; labelColor?: string; slot: EquipSlot; item?: CreatureOrItemDrop; active: boolean; hot?: boolean; onClick: () => void; small?: boolean; glow?: boolean }) {
   const col = item ? RARITY_COLORS[item.rarity] : undefined;
   const sp = item && itemSprite(item);
   const size = small ? 60 : 72;
@@ -610,7 +639,7 @@ function Slot({ label, labelColor, slot, item, active, hot, onClick, small }: { 
     <button onClick={onClick} data-drop={`slot:${slot}`} title={item ? `${item.name} — tap to change` : `Equip ${label.toLowerCase()}`}
       style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "white", minWidth: 0 }}>
       <span className="pixel-font" style={{ fontSize: small ? 9 : 11, color: labelColor ?? MUTED, textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "center", ...(small ? { lineHeight: 1.2 } : { ...lines(2, 1.2), display: "flex", alignItems: "flex-end", justifyContent: "center" }) }}>{label}</span>
-      <span style={{
+      <span className={glow ? "tutorial-pulse" : undefined} style={{
         width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center",
         background: item ? `radial-gradient(circle, ${col!.glow}, #101117 75%)` : "#101117",
         border: `3px solid ${active || hot ? "#ffd66e" : col ? col.border : "#2f3340"}`,
@@ -674,14 +703,14 @@ function SetLine({ worn, now, next, focus }: { worn: (CreatureOrItemDrop | undef
   return box(<><b>{ARMOR_META[best[0]].name} {best[1]}/3</b> — the full set gives {SET_BONUS[best[0]].name}: {SET_BONUS[best[0]].text}</>, false);
 }
 
-function Tile({ children, rarity, selected, title, onClick, disabled, grab, scrolls }: {
-  children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void; disabled?: boolean;
+function Tile({ children, rarity, selected, title, onClick, disabled, grab, scrolls, glow }: {
+  children: React.ReactNode; rarity?: Rarity; selected?: boolean; title?: string; onClick: () => void; disabled?: boolean; glow?: boolean;
   grab?: React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
   scrolls?: boolean; // in the gear picker (rows of a set height); true once it scrolls, so an up/down swipe scrolls it
 }) {
   const col = rarity ? RARITY_COLORS[rarity] : undefined;
   return (
-    <button onClick={onClick} title={title} aria-pressed={selected} disabled={disabled} {...grab}
+    <button onClick={onClick} title={title} aria-pressed={selected} disabled={disabled} {...grab} className={glow ? "tutorial-pulse" : undefined}
       style={{
         opacity: disabled ? 0.35 : 1, ...(grab ? { touchAction: scrolls ? "pan-y" : "none" } : {}),
         position: "relative", ...(scrolls === undefined ? { aspectRatio: "1" } : {}), display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
