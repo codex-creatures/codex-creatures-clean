@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:all": "vitest run --mode full",
     "build:offline": "node offline/build.js",
-    "setup:google": "node scripts/setup-google-login.mjs"
+    "setup:google": "node scripts/setup-google-login.mjs",
+    "registry:rules": "node scripts/registry-rules.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

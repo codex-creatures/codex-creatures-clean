@@ -79,6 +79,7 @@ type SaveState = {
   deathsSinceScan?: number;            // Labyrinth runs lost in a row without scanning a barcode
   scanMode?: ScanMode;                 // Looting or Storage
   caches?: Drop[];                     // Code Caches waiting at the altar (Storage mode): what each holds
+  sealed?: string[];                   // barcodes scanned with the global registry out of reach: sealed Code Caches, opened once online
   crate?: Drop[];                      // Klutz's crate: gear he brought home, to keep or sell
   scanTipRead?: boolean;               // …and you've heard Klutz's tip about it
   player?: Progress;                   // your own level and XP (it decides what you can find when you scan)
@@ -153,6 +154,7 @@ export function loadSave(): SaveState | null {
     player: parsed.player && typeof parsed.player === "object" ? (parsed.player as Progress) : { level: 1, xp: 0 },
     scanMode: parsed.scanMode === "store" || parsed.scanMode === "loot" ? parsed.scanMode : defaultScanMode(),
     caches,
+    sealed: Array.isArray(parsed.sealed) ? parsed.sealed.filter((c: unknown) => typeof c === "string") : [],
     crate: Array.isArray(parsed.crate) ? parsed.crate : [],
     bookcase: typeof parsed.bookcase === "number" ? parsed.bookcase : 1,
     cage: typeof parsed.cage === "number" ? parsed.cage : 1,
@@ -187,6 +189,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [scanTipRead, setScanTipRead] = useState(false);
   const [scanMode, setScanMode] = useState<ScanMode>("loot");
   const [caches, setCaches] = useState<Drop[]>([]);
+  const [sealed, setSealed] = useState<string[]>([]);
   const [crate, setCrate] = useState<Drop[]>([]);
   const [player, setPlayer] = useState<Progress>({ level: 1, xp: 0 });
   const [bookcase, setBookcase] = useState(1);
@@ -227,6 +230,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setScanTipRead(saved.scanTipRead ?? false);
       setScanMode(saved.scanMode ?? "loot");
       setCaches(saved.caches ?? []);
+      setSealed(saved.sealed ?? []);
       setCrate(saved.crate ?? []);
       setPlayer(saved.player ?? { level: 1, xp: 0 });
       setBookcase(saved.bookcase ?? 1);
@@ -242,8 +246,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, cage, storage, materials, found });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, crate, player, bookcase, cage, storage, materials, found]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -633,13 +637,30 @@ export function useGameState(initialTab: TabKey = "all") {
   function addScan(drop: Drop): boolean {
     setDeathsSinceScan(0);
     setScanTipRead(false);
-    if ((scanMode === "store" || forFullBox(inventory, drop, storage)) && caches.length < CACHE_LIMIT) {
+    if ((scanMode === "store" || forFullBox(inventory, drop, storage)) && caches.length + sealed.length < CACHE_LIMIT) {
       setCaches((prev) => [...prev, drop]);
       return true;
     }
     addDrop(drop);
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
     return false;
+  }
+
+  // A new barcode scanned with the global registry out of reach: a sealed
+  // Code Cache, opened once back online (it takes one of the altar's spaces).
+  function sealScan(code: string) {
+    setDeathsSinceScan(0);
+    setScanTipRead(false);
+    setSealed((prev) => (prev.includes(code) ? prev : [...prev, code]));
+  }
+  // …and once the registry has answered: what's inside becomes an ordinary
+  // Code Cache, and the scan counts. null: someone else's find too rare for
+  // you yet, so it's gone (scan it again once your level can find it).
+  function unsealScan(code: string, drops: Drop[] | null) {
+    setSealed((prev) => prev.filter((c) => c !== code));
+    if (!drops) return;
+    setScanCounts((prev) => ({ ...prev, [code]: (prev[code] ?? 0) + 1 }));
+    setCaches((prev) => [...prev, ...drops]);
   }
 
   // Klutz's crate: keep a piece (it joins your storage) or sell it.
@@ -868,6 +889,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setDeathsSinceScan(0);
     setScanTipRead(false);
     setCaches([]);
+    setSealed([]);
     setCrate([]);
     setPlayer({ level: 1, xp: 0 });
     setBookcase(1);
@@ -903,7 +925,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

@@ -103,6 +103,7 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
 | `npm run test:all` | every test (~370), 2–5 min. Run once before each commit or push |
 | `npx tsc --noEmit` | type check |
 | `npm run lint` | ESLint |
+| `npm run registry:rules` | after changing scan odds, rarity weights, species, weapon/armour kinds or soul stones: writes a migration with the global registry's new rules (then apply it to Supabase). A test fails until it's done |
 | `npm run setup:google` | one-off: sets up Google sign-in (the user runs it in their own terminal: it asks for secrets) |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
 | `Start Game.bat` / `Update.bat` | the user's double-click launchers (`scripts/game-status.mjs`, `open-when-ready.mjs`, `update.mjs`) |
@@ -131,7 +132,8 @@ kill theirs.
     routes), `chamber.ts` (room drawing), `witch.ts`.
   - `items/`: stat rolling (`rollConfig.ts`, `budgets.ts`, `ceilings.ts`: **the user's most
     carefully balanced system**), armour, `materials.ts`.
-  - `barcodeRegistry.ts`, `drops.ts`, `klutz.ts`, `quest.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`.
+  - `barcodeRegistry.ts` (the roll rules, and the local registry used without online), `scanning.ts`
+    (opening a scanned barcode), `online/registry.ts` (the global registry), `drops.ts`, `klutz.ts`, `quest.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`.
   - `sprites/`: art registry (`art.ts` `withArt`, `creatures.ts` `ART_SIZES`, `items.ts`, `props.ts`).
 - `components/`: `GameScreen.tsx` (the fixed phone screen and trim), `DenFrame` (header + scroll +
   dock), `BattleScreen`, `BossStage`, `CardGallery` (`CardFace`, the card standard), `LootWindow`,

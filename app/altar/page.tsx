@@ -18,6 +18,7 @@ import { CreatureArt } from "@/components/CreaturePortrait";
 import { playerXpToNext, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import type { Rarity } from "@/lib/types";
 import { BOX_CAP, BIG_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
+import { onlineConfig } from "@/lib/online/client";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -29,8 +30,9 @@ const TILE_BTN: React.CSSProperties = { display: "block", minWidth: 0, padding: 
 // The Soul Altar: scan a barcode for a Code Cache. Looting: it opens at once,
 // what's inside goes straight to your things, and the window shows your
 // latest finds until you leave. Storage: the cache waits in the window (up
-// to nine) for you to open later. Typing a barcode in is a testing tool, at
-// the bottom.
+// to nine) for you to open later. A new barcode scanned with the global
+// registry out of reach waits sealed (🔒), and becomes an ordinary cache once
+// back online. Typing a barcode in is a testing tool, at the bottom.
 export default function AltarPage() {
   const game = useGameState();
 
@@ -59,7 +61,7 @@ export default function AltarPage() {
   const cacheIds = new Set(game.caches.map((d) => d.id));
   const boxesFull = (full: CappedBox[]) => <>🧰 Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. Sell some to open {full.length > 1 ? "these" : "it"}.</>;
 
-  const { generateDrop } = useDropGeneration({
+  const { generateDrop, openSealed } = useDropGeneration({
     rollMode,
     scanCounts: game.scanCounts,
     onDrop:            (d) => { if (game.addScan(d)) kept.current.add(d.id); },
@@ -76,17 +78,58 @@ export default function AltarPage() {
     },
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
+    onOffline:         (code) => { game.sealScan(code); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
     onSealed:          (rarity, need) => setNote(<>🔒 Something <b style={{ color: RARITY_COLORS[rarity]?.text, textTransform: "capitalize" }}>{rarity}</b> stirs in it. Come back at explorer level <b>{need}</b>.</>),
   });
 
-  // Every scan, camera or typed: with CACHE_LIMIT Code Caches waiting, it fails.
-  function scan(code: string) {
-    if (game.caches.length >= CACHE_LIMIT) {
+  // Every scan, camera or typed: with CACHE_LIMIT Code Caches waiting
+  // (sealed ones too), it fails. One at a time: the registry may take a moment.
+  const cacheCount = game.caches.length + game.sealed.length;
+  const scanning = useRef(false);
+  async function scan(code: string) {
+    if (scanning.current) return;
+    if (cacheCount >= CACHE_LIMIT) {
       setNote(<><b style={{ color: "#ff8a80" }}>Scan Failed</b><br />Code Cache Full</>);
       return;
     }
-    generateDrop(code);
+    if (game.sealed.includes(code)) {
+      setNote(<>🔒 That barcode is already waiting as a sealed Code Cache.</>);
+      return;
+    }
+    scanning.current = true;
+    try { await generateDrop(code); } finally { scanning.current = false; }
   }
+
+  // Sealed Code Caches (scanned offline): once the registry answers, each
+  // becomes an ordinary cache. Tried on arriving and on coming back online.
+  // (One pass at a time: asking twice could open a cache twice.)
+  const unsealing = useRef(false);
+  const sealedKey = game.sealed.join(",");
+  useEffect(() => {
+    if (!game.hydrated || !game.sealed.length) return;
+    const tryOpen = async () => {
+      if (unsealing.current) return;
+      unsealing.current = true;
+      let opened = 0;
+      for (const code of game.sealed) {
+        const r = await openSealed(code);
+        if (!r) break;
+        if (r.kind === "too_rare") {
+          game.unsealScan(code, null);
+          setNote(<>🔒 A sealed cache held something <b style={{ color: RARITY_COLORS[r.rarity]?.text, textTransform: "capitalize" }}>{r.rarity}</b>. Scan it again at explorer level <b>{r.need}</b>.</>);
+        } else {
+          game.unsealScan(code, r.drops);
+          opened++;
+        }
+      }
+      if (opened) setNote(<>🔓 Back online: {opened === 1 ? "a sealed cache is" : `${opened} sealed caches are`} ready to open.</>);
+      unsealing.current = false;
+    };
+    tryOpen();
+    window.addEventListener("online", tryOpen);
+    return () => window.removeEventListener("online", tryOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game.hydrated, sealedKey]);
 
   // Open Code Caches: only those there's room in your chest for.
   function open(list: Drop[]) {
@@ -138,8 +181,10 @@ export default function AltarPage() {
     };
   }, [scannerOn]);
 
-  // What the window holds: the caches waiting, then (Looting) this visit's finds.
-  const slots = (storing ? game.caches : [...game.caches, ...shown]).slice(0, WINDOW_COLS * WINDOW_ROWS);
+  // What the window holds: the caches waiting, the sealed ones, then
+  // (Looting) this visit's finds.
+  const sealedTiles = game.sealed.map((code) => ({ sealedCode: code }));
+  const slots = [...game.caches, ...sealedTiles, ...(storing ? [] : shown)].slice(0, WINDOW_COLS * WINDOW_ROWS);
   const rows = slots.length ? WINDOW_ROWS : 1;
 
   return (
@@ -155,7 +200,7 @@ export default function AltarPage() {
       {startedNew && (
         <div className="stone-panel" style={{ marginBottom: 10, borderColor: "#c9a24a" }}>
           <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>✨ A fresh start</div>
-          <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>Everything&apos;s wiped, every barcode included. Scan your first one below — then head back to the Den: there&apos;s something rattling in the cage.</p>
+          <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>Everything&apos;s wiped, {onlineConfig.ok ? "your scanned barcodes" : "every barcode"} included. Scan your first one below — then head back to the Den: there&apos;s something rattling in the cage.</p>
         </div>
       )}
 
@@ -178,6 +223,7 @@ export default function AltarPage() {
                 <li><b>Storage:</b> the cache waits in the window to open later.</li>
                 <li>A find with no room in your Inventory (a box of weapons, armour or consumables at {BOX_CAP}, or {BIG_BOX_CAP} once built bigger) waits as a cache too, until you make room.</li>
                 <li>The altar holds <b>{CACHE_LIMIT}</b> caches. With {CACHE_LIMIT} waiting, scans fail: open some first.</li>
+                {onlineConfig.ok && <li>No connection? A barcode new to you waits <b>sealed</b> 🔒 (it takes a space), and opens once you&apos;re back online: what every barcode holds is kept online, the same for every player.</li>}
                 <li>Tap a cache to open it, or open them all.</li>
               </ul>
             </HelpSection>
@@ -195,6 +241,15 @@ export default function AltarPage() {
                 <div style={NAME} />
               </div>
             );
+            if ("sealedCode" in d) return (
+              <button key={`sealed-${d.sealedCode}`} onClick={() => setNote(<>🔒 A sealed Code Cache: it opens once you&apos;re online.</>)}
+                title="Scanned offline: it opens once you're online" aria-label="Sealed Code Cache" style={TILE_BTN}>
+                <span style={{ ...TILE, borderRadius: 8, background: "radial-gradient(circle, rgba(160,160,170,0.25) 0%, transparent 62%)" }}>
+                  <span style={{ fontSize: 30, filter: "grayscale(0.4)" }}>🔒</span>
+                </span>
+                <span style={{ ...NAME, color: "#a8a8b4" }}>Sealed</span>
+              </button>
+            );
             if (cacheIds.has(d.id)) return (
               <button key={d.id} onClick={() => open([d])} title="Open this Code Cache" aria-label="Open this Code Cache" style={TILE_BTN}>
                 <span className="cache-sealed" style={{ ...TILE, borderRadius: 8, background: "radial-gradient(circle, rgba(143,193,255,0.35) 0%, transparent 62%)" }}>
@@ -210,7 +265,7 @@ export default function AltarPage() {
         {/* Two lines under the window: a warning, or how full storage is. */}
         <div className="pixel-font" style={{ minHeight: "2.6em", marginTop: 8, fontSize: 14, textAlign: "center", color: "#c9b48a", lineHeight: 1.3,
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-          {note ?? (storing || game.caches.length ? `📦 ${game.caches.length}/${CACHE_LIMIT} Code Caches stored`
+          {note ?? (storing || cacheCount ? `📦 ${cacheCount}/${CACHE_LIMIT} Code Caches stored`
             : shown.length ? "" : "Scan a barcode to see what's inside")}
         </div>
         <div style={{ display: "flex", justifyContent: "center", marginTop: 4, visibility: game.caches.length > 0 ? "visible" : "hidden" }}>
@@ -258,9 +313,12 @@ export default function AltarPage() {
         <button onClick={() => armedReset("player", game.resetAll)} title="Wipe your progress (inventory, gold, labyrinth) but keep registered barcodes — test as a new player" style={dangerBtn}>
           {resetArmed === "player" ? "Tap again to reset" : "Reset Player"}
         </button>
-        <button onClick={() => armedReset("global", game.globalReset)} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>
-          {resetArmed === "global" ? "Tap again to reset" : "Global Reset"}
-        </button>
+        {/* (Online, the registry is everyone's: it can't be reset from here.) */}
+        {!onlineConfig.ok && (
+          <button onClick={() => armedReset("global", game.globalReset)} title="Wipe the barcode registry — every barcode rolls fresh on its next scan. Inventory is kept." style={dangerBtn}>
+            {resetArmed === "global" ? "Tap again to reset" : "Global Reset"}
+          </button>
+        )}
       </div>
 
       {/* Typing a barcode in: Repeatable (the real rules) or Random (a fresh roll every time). */}

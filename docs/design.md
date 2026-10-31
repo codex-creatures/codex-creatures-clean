@@ -53,8 +53,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   outcome at random and registers it. Everyone who scans it later gets the same outcome (item kind
   and rarity, or creature species) but their own stat roll. Rescanning a barcode you already own
   gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
-- ✅ The registry is **local** for now (`codex_creatures_registry_v3`). "Reset player" keeps it,
-  to simulate a friend; "Global reset" clears it.
+- ✅ Online builds use the **global registry** (§12): everyone shares one. A copy without online
+  (the offline Windows build, tests, a dev build with no Supabase keys) keeps a **local** one
+  (`codex_creatures_registry_v3`): "Reset player" keeps it, to simulate a friend; "Global reset"
+  (shown only there) clears it.
 - 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 26% armour,
   7% consumable, 6% material, 7% gold, 1% soul stone (2026-10-25, first scanner only). Aim: about 1 legendary creature or card per 250 scans (from
   explorer level 12); a real creature every 12–13 scans. Players will also hunt legendaries with good
@@ -80,7 +82,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   found** (`SCAN_UNLOCK`: rare at Lv 2, epic at 6, legendary at 12). That barcode stays sealed: it
   doesn't count, and the altar shows the level needed. **Being first beats the cap** (2026-10-20):
   a barcode nobody has scanned rolls at the usual odds and is yours whatever it is
-  (`scanBarcode`). Locally "someone" means any earlier player in this browser's registry.
+  (`tooRare`). Online "someone" means any player; locally, any earlier player in this browser.
 - 📌 **Barcode merchant:** 10% of scans, taken from materials and consumables. The planned split
   is creature 20 / weapon 15 / armour 15 / material 10 / consumable 10 / merchant 10 / gold 20.
   Not in the outcome roll yet.
@@ -88,7 +90,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   real barcode, then Klutz drags you out of the labyrinth. Don't "fix" this for convenience. Edge
   cases still need solving: manual entry, no camera, app-store review. Not built: a new game starts
   at the Den.
-- 📌 **Global registry** (the user, 2026-10-31): the online registry replaces the local one, and
+- ✅ **Global registry** (the user, 2026-10-31): the online registry replaces the local one, and
   offline scans wait as sealed Code Caches. See §12.
 - ⏸ **Scanner / camera work is parked.** It's fragile, and better scanning plus fake-scan detection
   is a future project. Test with manual barcode entry.
@@ -215,8 +217,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - **Loose soul stones** (the user, 2026-10-25): a stone found on its own, as a consumable item
   (`stone` on the drop, `soulStoneDrop`), always one particular stone of the six.
   - Scans: 1% of outcomes (`SCAN_ODDS.soul_stone`, taken from armour: now 26%), **only for the
-    first ever to scan the barcode**; anyone after gets gold (`claimedOutcome`). "First" means
-    first in this browser's registry until there's a global one.
+    first ever to scan the barcode**; anyone after gets gold (`claimedOutcome`). Online, "first"
+    means first of all players (the global registry, §12).
   - Boss chests: the Cyclops 2% (`CYCLOPS_SOUL_STONE`), the strongbox (the Hydra's, the Warden's) 5%
     (`WARDEN_SOUL_STONE`). Not in ordinary Labyrinth chests (`CHEST_ODDS`).
   - Set in **any creature** (any rarity, any stone, not just its species pool; not cards) by tapping
@@ -841,7 +843,7 @@ fields optional with defaults.
 - Rejected, so don't reopen: the mushroom/ruin room theme, the Mr. Shadows redraws (keep the old
   sprite), and the parchment / MTG / wood-and-brass card styles.
 
-## 12. Online (📌 the user, 2026-10-31; not built)
+## 12. Online (📌 the user, 2026-10-31; accounts, cloud saves and the global registry built)
 
 The user is building online infrastructure now, so later design keeps it in mind. This is for
 playtesting with friends, not yet hardened. Backend: **Supabase**, as its own project on its own
@@ -852,6 +854,12 @@ account, kept entirely apart from Vouchee.
   mode** and plays the rest of the game as normal. Offline:
   - Scans are kept as **sealed Code Caches** that open only once back online (each needs the
     global registry to find out what it holds). They still count against scan limits.
+    ✅ Built: a barcode new to you, scanned with the registry out of reach (offline, signed out,
+    or no answer in 8 s), waits in the altar window as 🔒 Sealed (save field `sealed`, barcode
+    numbers; optional, default none). It takes one of the 9 cache spaces. Rescans of barcodes you
+    already have still give gold offline. On visiting the altar, or coming back online, each is
+    asked again and becomes an ordinary Code Cache, and the scan counts then. One that turns out
+    too rare for your explorer level is dropped, with a note (scan it again later).
   - No trading and no PvP.
   - Everything else (the Den, the Labyrinth, Klutz, inventory) works as now.
 - 📌 **Accounts:** for now, **Sign in with Google** (the user, 2026-10-31); the player then picks a
@@ -884,8 +892,8 @@ account, kept entirely apart from Vouchee.
     hasn't signed out) may **Play offline**, with a warning: it shows when it last synced, that
     progress from another device may be missing, and that the newer save wins once back online
     (this copy kept as the backup). A device that has never synced needs the internet once.
-  - **What syncs:** the game save plus battle history. Not the local barcode registry: that
-    becomes the global registry (step 2).
+  - **What syncs:** the game save plus battle history. Not the local barcode registry (online
+    builds use the global one instead).
   - **The cloud wins:** signing in on a device whose online slot differs from the account's cloud
     save loads the cloud save, with no question asked. The device's copy is kept as the backup
     (Settings → Restore backup), so nothing is lost for good. An account with no cloud save yet
@@ -897,7 +905,7 @@ account, kept entirely apart from Vouchee.
     the revision it last matched. The cloud on a newer revision wins (even over this device's own
     unsent play); otherwise this device's play goes up. An upload only writes over the revision
     it last saw, so if another device saved meanwhile, the game goes back to the title screen,
-    which loads the newer save. Each slot keeps its own barcode registry.
+    which loads the newer save. (The local barcode registry, unused online, stays per slot.)
   - The player name must be picked before playing (not asked again while offline).
   - The user's own game starts fresh with cloud saves (only one game existed, the user's), so no
     old-save migration is needed.
@@ -905,6 +913,18 @@ account, kept entirely apart from Vouchee.
   stored, and everyone after gets that outcome (their own stat roll, as now). This makes "being
   first" (the explorer-level cap, soul stones) work between players. It starts **empty** (a fresh
   start, not a copy of any local registry). No global resets planned for now.
+  ✅ Built (2026-10-31): the `barcode_registry` table and the database function `scan_barcode`
+  (supabase/migrations), asked by lib/online/registry.ts. Only signed-in players may call it, and
+  nobody reads the table directly. It stores the barcode number and its outcome, **not who scanned
+  it**. The server rolls from `registry_rules`, a copy of `REGISTRY_RULES` (lib/barcodeRegistry.ts:
+  `SCAN_ODDS`, `RARITY_WEIGHTS`, the species of each rarity, weapon and armour kinds, soul stones,
+  gold 50–150). Its `registry_roll` takes the same steps as `rollFromRules`. **After changing any
+  of those** (a new species, item or soul stone, new odds), run `npm run registry:rules` and
+  apply the migration it writes. tests/registryRules.test.ts fails until the copy matches.
+  Until it's applied, the server keeps rolling from the old copy. Labyrinth chests (`CHEST_ODDS`)
+  and the altar's Random testing mode still roll on the device and register nothing.
+  - Not hardened: a player could script calls to farm fresh barcodes. Accepted for playtesting
+    (see Cheating below).
 - 📌 **Leaderboards**, with resets run by the user (seasons). Boards: % of creature species
   captured; total runs for each dungeon; wins for each dungeon (a win is beating its final boss). PvP boards come later.
 - 📌 **PvP: live, each player controlling their own team.** Two formats:
@@ -916,7 +936,8 @@ account, kept entirely apart from Vouchee.
     only edge: gear and each creature's stat rolls still reward finding and optimising.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
-  online/offline start; 2) global registry and sealed caches, leaderboards; 3) live PvP.
+  online/offline start (done, but email login waits for a domain); 2) global registry and sealed
+  caches (done), leaderboards; 3) live PvP.
 - Known kinks to solve, not decided:
   - **Live battles need both browsers to agree.** Combat rolls dice in many places
     (`Math.random`). Either one player's browser runs the fight and sends each turn to the other,

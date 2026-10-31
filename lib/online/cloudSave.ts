@@ -21,7 +21,7 @@
 //   copy, warned it may be behind another device. It goes up once back online
 //   (or, if another device saved meanwhile, the cloud wins as above).
 // - What syncs: the save and the battle history. Not the barcode registry
-//   (that's to become the global registry), so a slot keeps its own.
+//   (online builds use the global one: lib/online/registry.ts), so a slot keeps its own.
 //
 // Everything takes the store and the client as arguments, so tests can hand
 // in stand-ins and nothing needs the internet.
