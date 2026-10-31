@@ -854,7 +854,20 @@ account, kept entirely apart from Vouchee.
     global registry to find out what it holds). They still count against scan limits.
   - No trading and no PvP.
   - Everything else (the Den, the Labyrinth, Klutz, inventory) works as now.
-- 📌 **Accounts:** log in with an email link (no password). The player picks a name.
+- 📌 **Accounts:** for now, **Sign in with Google** (the user, 2026-10-31); the player then picks a
+  name. ✅ Built: the title screen's 🌐 box (components/AccountPanel.tsx, rules in
+  lib/online/account.ts). Signing in returns to `/start`. Names are 1–16 letters and need not be
+  unique. Signing out signs out only this device. ✅ Set up and working (2026-10-31): Google Cloud
+  project `codex-creatures`, client "Codex Creatures web". It's in **Testing mode**: only the
+  test users listed on its Audience page can sign in (up to 100; add each playtester's Gmail).
+  Publishing needs a homepage and a privacy-policy page, so it waits for the game's own domain.
+  Google blocks sign-in inside apps' built-in browsers (e.g. Cursor's): use Chrome or Safari. To
+  set it up again from scratch: `npm run setup:google` (scripts/setup-google-login.mjs).
+  - **Email links** (no password) are built too but hidden (`EMAIL_LOGIN` in account.ts): Supabase's
+    own mailer only reaches the project's team. To switch them on: a domain for the game, then
+    **Resend** (approved by the user, 2026-10-31) in Supabase's SMTP settings. The link signs in
+    whichever browser opens it (the "implicit" flow: phone mail apps often use their own browser).
+  - Later, for the iPhone App Store: Apple requires Sign in with Apple alongside Google.
 - 📌 **Cloud saves:** the save syncs to the player's account, so it follows them between devices.
 - 📌 **Global registry:** the first scan of a barcode anywhere is rolled **on the server** and
   stored, and everyone after gets that outcome (their own stat roll, as now). This makes "being

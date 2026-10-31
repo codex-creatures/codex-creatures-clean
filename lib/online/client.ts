@@ -13,11 +13,25 @@ export const onlineConfig: OnlineConfig = readOnlineConfig(
   process.env.NEXT_PUBLIC_SUPABASE_KEY,
 );
 
+export const AUTH_STORAGE_KEY = "codex_creatures_auth_v1";
+
 let client: SupabaseClient | null = null;
 
 // The Supabase client, made on first use; null when online isn't available.
 export function onlineClient(): SupabaseClient | null {
   if (!onlineConfig.ok) return null;
-  client ??= createClient(onlineConfig.url, onlineConfig.key);
+  client ??= createClient(onlineConfig.url, onlineConfig.key, {
+    auth: {
+      // Kept per device, alongside the game's other keys (never in save files).
+      storageKey: AUTH_STORAGE_KEY,
+      // The email link carries the sign-in itself, so it still works when the
+      // phone's mail app opens it in a different browser from the one that
+      // asked (that browser is the one signed in). "pkce" would refuse it.
+      flowType: "implicit",
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
   return client;
 }

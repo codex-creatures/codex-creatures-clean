@@ -35,7 +35,8 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
    Supabase calls behind one module that tests can do without. Still no CDN scripts, no
    `next/font/google` (fonts are local in `app/fonts/`) and no remote images. Art lives in
    `public/sprites/`. Ask the user before adding any online service beyond the game's own
-   Supabase project. Dev-time services (GitHub, Claude, PixelLab) are fine.
+   Supabase project, Google sign-in (in use, 2026-10-31) and Resend (approved 2026-10-31 for
+   sign-in emails once the game has a domain; set up in Supabase's SMTP settings, not in code). Dev-time services (GitHub, Claude, PixelLab) are fine.
 2. **Saves stay compatible.** Saves are the user's progress, kept separately on each computer.
    - Don't rename or reshape the storage keys without code that reads the old data:
      `codex_creatures_save_v3` (lib/save.ts), `codex_creatures_registry_v3`
@@ -46,7 +47,8 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
      and pre-V2 save files are refused. That was the user's call; don't do it again unasked.)
      Per device, not in saves:
      `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size) and
-     `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration).
+     `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration) and
+     `codex_creatures_auth_v1` (lib/online/client.ts, the Supabase sign-in).
    - New save fields must be optional, with a default for old saves. (Recent ones: `storage`, the
     chest boxes built bigger; a creature or card's `soulStone`, where missing means "roll it on
     load" and `null` means none.)
@@ -99,6 +101,7 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
 | `npm run test:all` | every test (~370), 2–5 min. Run once before each commit or push |
 | `npx tsc --noEmit` | type check |
 | `npm run lint` | ESLint |
+| `npm run setup:google` | one-off: sets up Google sign-in (the user runs it in their own terminal: it asks for secrets) |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
 | `Start Game.bat` / `Update.bat` | the user's double-click launchers (`scripts/game-status.mjs`, `open-when-ready.mjs`, `update.mjs`) |
 

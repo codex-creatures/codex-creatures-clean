@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import AccountPanel from "@/components/AccountPanel";
 import Help from "@/components/Help";
 import { Coin } from "@/components/GoldCount";
 import { checkSaveFile, summarise } from "@/lib/saveFile";
@@ -90,6 +91,7 @@ export default function StartPage() {
       </header>
 
       <div className="screen-scroll" style={{ display: "grid", alignContent: "start", gap: 8 }}>
+        <AccountPanel />
         {ready && list.slots.length === 0 && (
           <p style={{ fontSize: 14, color: MUTED, margin: "4px 0", textAlign: "center" }}>No saves yet. Start a new game!</p>
         )}
