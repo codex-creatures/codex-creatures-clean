@@ -3,9 +3,9 @@
 //
 // - Entering costs gold (entryFee); your very first run's first
 //   room is a treasure with FIRST_TREASURE_GOLD in it.
-// - You bring a party of up to PARTY_SIZE creatures (at least 1) to the
-//   entrance. Looking at the map, you pick the teamSize that go in; the
-//   rest wait in the Den. Once inside there's no swapping (only who leads).
+// - At the entrance you pick who goes in: up to teamSize creatures (at
+//   least 1), freely or from a saved team (lib/teams.ts; a team holds up to
+//   PARTY_SIZE). Once inside there's no swapping (only who leads).
 // - HP carries over from room to room (energy is full at each fight).
 // - The dungeon is a labyrinth (lib/dungeon/map.ts): rooms joined by
 //   corridors, the entrance at the bottom and the boss's lair at the top.
@@ -1174,7 +1174,6 @@ export type DungeonMeta = {
   campRuns?: number;                 // the Encampment: runs started…
   campClears?: number;               // …and its chief beaten
   teamPick?: number;                 // the entrance: the team last picked (lib/teams.ts; missing = free pick)
-  lastParty?: string[];              // …and the party last picked freely
 };
 
 // ── The healing pool (in the Den) ──────────────────────────────────

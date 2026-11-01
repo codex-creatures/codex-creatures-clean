@@ -464,8 +464,8 @@ How it came about, round by round: history.md.
 ## 7. The Labyrinth
 
 - ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, then two tabs. **Party**: Free pick
-  (the default; tap any of your creatures, up to `PARTY_SIZE`; it starts on the party you last
-  picked freely) or one of **3 teams** (`TEAM_SLOTS`, lib/teams.ts: saved line-ups, up to a full
+  (the default; it starts empty every time: tap the creatures that go in, up to the dungeon's team
+  size) or one of **3 teams** (`TEAM_SLOTS`, lib/teams.ts: saved line-ups, up to a full
   party each; a creature can be in several). With a team picked, tapping creatures adds them to it or
   takes them out, saved at once; the screen remembers the last choice. A creature's window has
   **Add to team** (the first time, that makes Team 1; then it opens Team 1–3). Teams replaced the ★
@@ -513,8 +513,10 @@ How it came about, round by round: history.md.
       ambush 3) with a 30-round fuse; the Warden has 4 guards. No two foes in a fight are the same
       species. 🧪 The counts are Claude's, about 5/3 of the usual. The user kept brutes and mini
       bosses as pairs, and the party at 5 (so no bench in the Abyss), 2026-10-27.
-- ✅ **Party:** up to 5 creatures (`PARTY_SIZE`). 3 fight (`TEAM_SIZE`; all 5 in the Abyss: `teamSize`),
-  chosen at the map; the rest wait in the Den.
+- ✅ **Party** (the user, 2026-11-02): the creatures that go in are picked at the entrance: 3
+  (`TEAM_SIZE`; 5 in the Abyss: `teamSize`). A team holds up to 5 (`PARTY_SIZE`); a bigger team
+  than the dungeon takes sends its first ones. No bench and no picking at the map (it shows the team,
+  to change who leads). Entering with nobody picked asks you to pick.
 - ✅ **PvP** (built 2026-11-01, waiting for its first two-player test): live duels with a friend, from the quest board. See §12.
 - ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
 - ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,

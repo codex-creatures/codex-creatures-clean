@@ -348,10 +348,9 @@ export default function DungeonPage() {
   }, [inRun]);
 
   // ── Starting and ending runs ──────────────────────────────────────
-  // freePick: the party was picked freely (not a team): remembered for next time.
-  function begin(party: string[], dungeon: DungeonId = 1, freePick = false) {
+  function begin(party: string[], dungeon: DungeonId = 1) {
     if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
-    const meta = freePick ? { ...lab.meta, lastParty: party } : lab.meta;
+    const meta = lab.meta;
     const deep = dungeon > 1;
     const quest = dungeon === 1 && (wantsClub(game.quest) || wantsThief(game.quest));
     const fee = entryFee(dungeon, lab.meta, quest);
@@ -1327,15 +1326,16 @@ export default function DungeonPage() {
 // Two tabs: the party (picked freely, or one of your teams: lib/teams.ts) and the bag to pack.
 function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSave }: {
   lab: DungeonSave; owned: OwnedCreature[]; game: ReturnType<typeof useGameState>; full: CappedBox[]; quest: boolean; scans: number;
-  onBegin: (party: string[], dungeon: DungeonId, freePick: boolean) => void; onHeal: () => void; onSave: (next: DungeonSave) => void;
+  onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void; onSave: (next: DungeonSave) => void;
 }) {
   const gold = game.gold;
   const healthy = (id: string) => (lab.meta.injuries[id] ?? 1) > 0;
   const ownedIds = new Set(owned.map((c) => c.id));
-  // Free pick starts on the party you last picked freely (or, before that, the old ★ roster).
-  const [free, setFree] = useState<string[]>(() =>
-    (lab.meta.lastParty ?? owned.filter((c) => c.roster).map((c) => c.id)).filter((id) => ownedIds.has(id) && healthy(id)).slice(0, PARTY_SIZE));
+  // Free pick starts empty every time: you choose who goes in.
+  const [free, setFree] = useState<string[]>([]);
   const [tab, setTab] = useState<"party" | "bag">("party");
+  // Tapped Enter with nobody picked: say so (until someone is).
+  const [askPick, setAskPick] = useState(false);
   // null: free pick (the default); else the team in use (remembered for next time).
   const pick = lab.meta.teamPick !== undefined && lab.meta.teamPick < TEAM_SLOTS ? lab.meta.teamPick : null;
   const choose = (p: number | null) => {
@@ -1344,9 +1344,6 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
     onSave({ ...lab, meta });
   };
   const team = pick === null ? null : teamMembers(game.teams, pick, ownedIds);
-  // Who's numbered on the grid (a team's knocked-out creatures too), and who goes in.
-  const listed = team ?? free;
-  const party = listed.filter(healthy);
   // The Deep Labyrinth opens once you've beaten the Cyclops.
   const deepOpen = lab.meta.clears > 0;
   // The Labyrinth opens once you've beaten the Encampment (or scanned plenty: labyrinthOpen);
@@ -1356,6 +1353,11 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
   // (The quest's run is in the Labyrinth.)
   const dungeon: DungeonId = quest ? 1 : picked === 1 && !labOpen ? 0 : picked;
+  // Who goes in: the dungeon's team size (3; 5 in the Abyss), picked here. A
+  // bigger team sends its first ones (the rest are shown waiting).
+  const cap = squadsOf(dungeon).team;
+  const listed = team ?? free; // who's numbered on the grid (a team's knocked-out creatures too)
+  const party = listed.filter(healthy).slice(0, cap);
   const fee = entryFee(dungeon, lab.meta, quest);
   const freeLeft = dungeon === 0 ? freeRunsLeft(lab.meta) : 0;
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
@@ -1365,7 +1367,11 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
   // Tapping a creature: in or out of the party (free pick), or of the team (saved straight away).
   function toggle(id: string) {
     if (pick !== null) { game.toggleTeam(pick, id); return; }
-    setFree((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < PARTY_SIZE ? [...p, id] : p));
+    setFree((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < cap ? [...p, id] : p));
+  }
+  function enter() {
+    if (party.length === 0) { setAskPick(true); setTab("party"); return; }
+    onBegin(party, dungeon);
   }
 
   return (
@@ -1395,8 +1401,8 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
               <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
               <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
               <li>Some rooms are a <b>mystery</b> until you walk in.</li>
-              <li>Bring up to <b>{PARTY_SIZE} creatures</b>. Once you&apos;ve seen the map you pick the <b>{squadsOf(dungeon).team}</b> that go in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
-              <li><b>Free pick</b>: choose from all your creatures. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window).</li>
+              <li>Take <b>{cap} creatures</b> in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
+              <li><b>Free pick</b>: choose from all your creatures each time. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window). A team of more than {cap} sends its first {cap}.</li>
               <li>Pack your <b>bag</b> here too: spare gear, potions and tools.</li>
               <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
             </ul>
@@ -1417,7 +1423,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
 
       {/* Party or bag: two tabs, the same size whichever is open. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
-        <button className="chip" data-active={tab === "party"} onClick={() => setTab("party")} style={{ minHeight: 44, textTransform: "none" }}>🐾 Party {party.length}/{PARTY_SIZE}</button>
+        <button className="chip" data-active={tab === "party"} onClick={() => setTab("party")} style={{ minHeight: 44, textTransform: "none" }}>🐾 Party {party.length}/{cap}</button>
         <button className="chip" data-active={tab === "bag"} onClick={() => setTab("bag")} style={{ minHeight: 44, textTransform: "none" }}>🎒 {bagName(lab.meta)} {bag.length}/{bagSize(lab.meta)}</button>
       </div>
 
@@ -1436,9 +1442,9 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
         </div>
 
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-          <SectionTitle>{pick === null ? "Your party" : `Team ${pick + 1}`} ({listed.length}/{PARTY_SIZE})</SectionTitle>
-          <span style={{ fontSize: 12, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
-            {pick === null ? `${squadsOf(dungeon).team} go in — you choose at the map` : "Tap to add or take out"}
+          <SectionTitle>{pick === null ? "Your party" : `Team ${pick + 1}`} ({pick === null ? `${listed.length}/${cap}` : `${listed.length}/${PARTY_SIZE}`})</SectionTitle>
+          <span style={{ fontSize: 12, color: askPick && party.length === 0 ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
+            {askPick && party.length === 0 ? "Pick who goes in" : pick === null ? `Tap up to ${cap}` : "Tap to add or take out"}
           </span>
         </div>
         {owned.length < PARTY_SIZE && (
@@ -1453,6 +1459,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
               const hp = lab.meta.injuries[c.id] ?? 1;
               const picked = slot >= 0;
               const out = hp <= 0;
+              const waits = picked && !out && !party.includes(c.id); // in the team, past the first {cap}
               // A knocked-out creature can still leave a team, but can't join anything.
               const locked = out && !(pick !== null && picked);
               const what = pick === null ? "party" : "team";
@@ -1462,7 +1469,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
                   style={{
                     position: "relative", minWidth: 0, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                     background: picked ? "rgba(241,217,160,0.1)" : "none", border: "none", borderRadius: 8,
-                    boxShadow: picked ? `inset 0 0 0 2px ${out ? "#6b6350" : "#f1d9a0"}` : undefined,
+                    boxShadow: picked ? `inset 0 0 0 2px ${out || waits ? "#6b6350" : "#f1d9a0"}` : undefined,
                     color: "white", cursor: locked ? "default" : "pointer", opacity: out ? 0.35 : 1,
                   }}>
                   <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 12, color: rarityColor(c.rarity), textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
@@ -1476,7 +1483,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
                     </span>
                   )}
                   {picked && (
-                    <span className="pixel-font" style={{ position: "absolute", top: 20, left: 4, minWidth: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, borderRadius: 10, background: out ? "#6b6350" : "#f1d9a0", color: "#1a140c" }}>
+                    <span className="pixel-font" style={{ position: "absolute", top: 20, left: 4, minWidth: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, borderRadius: 10, background: out || waits ? "#6b6350" : "#f1d9a0", color: "#1a140c" }}>
                       {slot + 1}
                     </span>
                   )}
@@ -1487,13 +1494,14 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
         )}
       </>}
 
-      <button onClick={() => onBegin(party, dungeon, pick === null)} disabled={party.length === 0 || !canPay || full.length > 0} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
+      <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
         {dungeon === 1 ? "🌀 Enter the labyrinth" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
       </button>
       {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
         Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
       </p>}
       {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {fee} gold — you have {gold}.</p>}
+      {askPick && party.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature to take in{pick === null ? "" : ` (Team ${pick + 1} has nobody who can go)`}.</p>}
     </>
   );
 }
@@ -1517,7 +1525,6 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
             <li>Rooms you know are marked; the rest are a <b>&ldquo;?&rdquo;</b>.</li>
             <li>Every tunnel leads <b>onward, never back</b>.</li>
             <li>Tap a room next to the entrance to <b>head straight there</b>.</li>
-            <li>Pick the <b>{teamSize(run)} creatures</b> that suit your route. The rest wait in the Den: <b>nobody new joins</b> once you&apos;re inside.</li>
           </ul>
         </Help>
       </div>
@@ -1525,7 +1532,7 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
         {run.map.quest ? "Just a short way in — it went this way." : "Remember the way to the lair: it's too dark to read inside."}
       </p>
       <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />
-      {run.party.length > teamSize(run) && <Party run={run} byId={byId} onTeam={onTeam} bench="Waits in the Den" />}
+      <div style={{ marginTop: 12 }}><Party run={run} byId={byId} onTeam={onTeam} /></div>
       <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
         🔥 Put the map away and step inside
       </button>
@@ -1838,7 +1845,7 @@ function EncampmentPanel({ room, fuse, onCage }: { room: Room; fuse: number; onC
 
 // Your party: three in the team (the first one leads), two on the bench.
 // bench: at the map, the rest of the party (under this label); inside, just the team.
-function Party({ run, byId, onTeam, bench }: { run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void; bench?: string }) {
+function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void }) {
   const member = (id: string): PartyMember[] => {
     const c = byId(id);
     return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp, hp: run.hp[id] ?? 1 }] : [];
@@ -1846,8 +1853,7 @@ function Party({ run, byId, onTeam, bench }: { run: DungeonRun; byId: (id: strin
   const team = fightingTeam(run);
   return (
     <>
-      <PartySlots size={teamSize(run)} team={team.flatMap(member)} bench={bench ? run.party.filter((id) => !team.includes(id)).flatMap(member) : undefined} benchLabel={bench} onTeam={onTeam} />
-      {bench && team.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", margin: "6px 0 0" }}>Pick someone to go in.</p>}
+      <PartySlots size={teamSize(run)} team={team.flatMap(member)} onTeam={onTeam} />
     </>
   );
 }
