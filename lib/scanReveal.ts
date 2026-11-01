@@ -1,15 +1,38 @@
 // lib/scanReveal.ts
 // The unveiling when a Code Cache opens at the altar (components/ScanReveal.tsx):
-// the cache shakes, cracks open in a flash of its find's rarity, and the find
-// pops out with its buttons. Rarer finds shake a beat longer and open bigger.
+// the cache rattles up the rarities one stage at a time (white, then green,
+// blue, purple, and for a legendary a held breath and gold) until it reaches
+// its find's, then cracks open in a flash of that colour and the find pops
+// out with its buttons. Rarer finds rattle longer and open bigger.
 
 import type { Drop } from "./types";
 import type { Rarity } from "./items/budgets";
 import { lootEntry, merchantOffer } from "./dungeon/run";
 
-// How long the cache shakes before it cracks, by what's inside (ms).
-export const SHAKE_MS: Record<Rarity, number> = { common: 900, uncommon: 1000, rare: 1300, epic: 1600, legendary: 2000 };
+// The rarities in the order the cache climbs through them.
+export const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+// How long each stage of the rattle lasts (ms): a common find rattles once,
+// an uncommon one rattles that and then green, and so on up.
+export const STAGE_MS: Record<Rarity, number> = { common: 800, uncommon: 550, rare: 550, epic: 550, legendary: 650 };
+// Before turning gold the cache goes still for a moment, as if it's done.
+export const LEGENDARY_PAUSE_MS = 450;
 export const GOLD_SHAKE_MS = 750;
+
+// One stage of the rattle: which colour it's in, when it starts and how long
+// it lasts (ms). "pause" is the held breath before gold.
+export type ShakeStage = { rarity: Rarity; at: number; ms: number; pause?: boolean };
+export function shakeStages(d: Drop): ShakeStage[] {
+  if (d.dropType === "reward") return [{ rarity: "common", at: 0, ms: GOLD_SHAKE_MS }];
+  const top = Math.max(0, RARITY_ORDER.indexOf(d.rarity));
+  const stages: ShakeStage[] = [];
+  let at = 0;
+  for (const rarity of RARITY_ORDER.slice(0, top + 1)) {
+    if (rarity === "legendary") { stages.push({ rarity: "epic", at, ms: LEGENDARY_PAUSE_MS, pause: true }); at += LEGENDARY_PAUSE_MS; }
+    stages.push({ rarity, at, ms: STAGE_MS[rarity] });
+    at += STAGE_MS[rarity];
+  }
+  return stages;
+}
 
 // 1st, 2nd, 3rd, 4th… 11th, 12th, 13th… 21st.
 export function ordinal(n: number): string {
@@ -26,10 +49,10 @@ export function findLine(found: "first" | "looted" | undefined, place?: number):
 }
 
 // How big the crack is: a puff of light; light rays (rare); rays, falling gold
-// and a jolt (epic and legendary).
-export type RevealTier = "puff" | "rays" | "shower";
+// and a jolt (epic); a big golden explosion on top of all that (legendary).
+export type RevealTier = "puff" | "rays" | "shower" | "explosion";
 export function revealTier(rarity: Rarity | undefined): RevealTier {
-  return rarity === "epic" || rarity === "legendary" ? "shower" : rarity === "rare" ? "rays" : "puff";
+  return rarity === "legendary" ? "explosion" : rarity === "epic" ? "shower" : rarity === "rare" ? "rays" : "puff";
 }
 
 // What a find sells for at the altar: the merchant's price (lib/dungeon/run.ts
@@ -50,6 +73,8 @@ export function revealChoice(d: Drop, price: number): RevealChoice {
   return price > 0 ? "sell" : "keep";
 }
 
+// The whole rattle, start to crack (ms).
 export function shakeMs(d: Drop): number {
-  return d.dropType === "reward" ? GOLD_SHAKE_MS : SHAKE_MS[d.rarity] ?? SHAKE_MS.common;
+  const last = shakeStages(d).at(-1)!;
+  return last.at + last.ms;
 }

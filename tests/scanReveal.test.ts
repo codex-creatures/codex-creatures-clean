@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { GOLD_SHAKE_MS, SHAKE_MS, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs } from "../lib/scanReveal";
+import { GOLD_SHAKE_MS, LEGENDARY_PAUSE_MS, RARITY_ORDER, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs, shakeStages } from "../lib/scanReveal";
 import { POTIONS, SCROLL_PRICE, codexPrice } from "../lib/dungeon/run";
 import { TOOLS } from "../lib/items/materials";
 import type { Drop } from "../lib/types";
@@ -31,18 +31,29 @@ describe("the altar's unveiling", () => {
     expect(findPrice(drop({ dropType: "card" }), gear)).toBe(0);
   });
 
-  it("rarer finds shake longer and open bigger", () => {
-    const order = ["common", "uncommon", "rare", "epic", "legendary"] as const;
-    for (let i = 1; i < order.length; i++) expect(SHAKE_MS[order[i]]).toBeGreaterThan(SHAKE_MS[order[i - 1]]);
+  it("the cache rattles up through every rarity to its find's, so rarer finds rattle longer and open bigger", () => {
+    const item = (rarity: string) => drop({ dropType: "item", rarity });
+    RARITY_ORDER.forEach((r, i) => {
+      const stages = shakeStages(item(r)).filter(st => !st.pause);
+      expect(stages.map(st => st.rarity)).toEqual(RARITY_ORDER.slice(0, i + 1));
+      if (i > 0) expect(shakeMs(item(r))).toBeGreaterThan(shakeMs(item(RARITY_ORDER[i - 1])));
+    });
+    // Each stage starts as the one before ends.
+    const all = shakeStages(item("legendary"));
+    for (let i = 1; i < all.length; i++) expect(all[i].at).toBe(all[i - 1].at + all[i - 1].ms);
+    // A legendary holds still after the epic stage, then turns gold.
+    expect(all.at(-2)).toMatchObject({ pause: true, ms: LEGENDARY_PAUSE_MS });
+    expect(all.at(-1)!.rarity).toBe("legendary");
     expect(revealTier("common")).toBe("puff");
     expect(revealTier("rare")).toBe("rays");
-    expect(revealTier("legendary")).toBe("shower");
+    expect(revealTier("epic")).toBe("shower");
+    expect(revealTier("legendary")).toBe("explosion");
     expect(shakeMs(drop({ dropType: "reward", amount: 5 }))).toBe(GOLD_SHAKE_MS);
-    expect(shakeMs(drop({ dropType: "item", rarity: "epic" }))).toBe(SHAKE_MS.epic);
   });
 
   it("the whole show stays short", () => {
-    expect(Math.max(...Object.values(SHAKE_MS))).toBeLessThanOrEqual(2000);
+    expect(shakeMs(drop({ dropType: "item", rarity: "common" }))).toBeLessThanOrEqual(1000);
+    expect(shakeMs(drop({ dropType: "item", rarity: "legendary" }))).toBeLessThanOrEqual(4000);
   });
 
   it("says whether you were first to find it, or how many found it before you", () => {

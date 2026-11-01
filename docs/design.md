@@ -74,8 +74,10 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   full, open some before scanning. ✅ (the user, 2026-11-01) **The unveiling** (lib/scanReveal.ts,
   components/ScanReveal.tsx): every Looting scan, and tapping one stored cache, plays a short show
   on its own dark screen (nothing behind shows through)
-  (the cache shakes 0.9–2s by rarity, gold 0.75s, cracks in a flash of its rarity; rare adds light rays, epic
-  and legendary falling gold and a jolt; tap to skip), then the find with its stats and
+  (the cache rattles up the rarities one stage at a time, harder each time: white 0.8s, then green,
+  blue and purple 0.55s each, stopping at its find's; a legendary goes still for 0.45s after purple, then
+  rattles gold 0.65s (`shakeStages`, about 3.5s in all; gold coins 0.75s). It cracks in a flash of that colour;
+  rare adds light rays, epic falling gold and a jolt, legendary a big golden explosion on top; tap to skip), then the find with its stats and
   **Keep / Sell** (at the merchant's price: gear for what the Inventory pays; potions, codexes,
   scrolls and tools for half what they cost), **Keep / Release** (a creature or card), **Keep**
   (materials, which go straight to your tally, and what has no price), or just "+N gold" (tap on).

@@ -661,24 +661,30 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 @keyframes cage-out { from { opacity: 0; transform: scale(0.2) translateY(30px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .cage-rattle, .cage-burst, .cage-out { animation: none; } }
 
-/* A Code Cache opening at the altar (components/ScanReveal.tsx): it shakes
-   harder and harder, then a flash, light rays (rare and up) and a jolt (epic, legendary). */
-.reveal-shake { display: inline-block; animation: reveal-shake linear both; }
-@keyframes reveal-shake {
-  0% { transform: none; } 10% { transform: translateX(-2px) rotate(-2deg); } 20% { transform: translateX(2px) rotate(2deg); }
-  30% { transform: translateX(-3px) rotate(-4deg); } 40% { transform: translateX(3px) rotate(4deg); }
-  50% { transform: translateX(-5px) rotate(-6deg) scale(1.03); } 60% { transform: translateX(5px) rotate(6deg) scale(1.05); }
-  70% { transform: translateX(-7px) rotate(-9deg) scale(1.08); } 80% { transform: translateX(7px) rotate(9deg) scale(1.1); }
-  90% { transform: translateX(-9px) rotate(-12deg) scale(1.14); } 100% { transform: translateX(0) scale(1.2); filter: brightness(2); }
-}
+/* A Code Cache opening at the altar (components/ScanReveal.tsx): it rattles up
+   the rarities (each stage harder, set by --rx/--rr, and starting with a flare),
+   holds still before gold, then a flash, light rays (rare and up), a jolt (epic)
+   and a golden explosion (legendary). */
+.reveal-rattle { display: inline-block; animation: reveal-rattle steps(2) infinite; }
+@keyframes reveal-rattle { 0% { transform: translateX(calc(var(--rx) * -1)) rotate(calc(var(--rr) * -1)); } 100% { transform: translateX(var(--rx)) rotate(var(--rr)); } }
+.reveal-still { display: inline-block; animation: reveal-still 0.45s ease-in both; }
+@keyframes reveal-still { from { transform: none; filter: none; } to { transform: scale(0.94); filter: brightness(0.7); } }
+.reveal-step { animation: reveal-step 0.3s ease-out both; }
+@keyframes reveal-step { from { transform: scale(1.35); filter: brightness(2.2); } to { transform: none; filter: none; } }
 .reveal-flash { animation: reveal-flash 0.45s ease-out both; }
 @keyframes reveal-flash { from { opacity: 0.75; } to { opacity: 0; } }
+.reveal-flash-big { animation: reveal-flash-big 0.9s ease-out both; }
+@keyframes reveal-flash-big { 0% { opacity: 1; } 25% { opacity: 0.85; } 100% { opacity: 0; } }
+.reveal-boom { animation: reveal-boom 0.8s ease-out both; pointer-events: none; }
+@keyframes reveal-boom { from { opacity: 1; transform: scale(0.2); } to { opacity: 0; transform: scale(3.2); } }
 .reveal-rays { animation: reveal-rays-in 0.5s ease-out both, reveal-spin 9s linear infinite; }
 @keyframes reveal-rays-in { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
 @keyframes reveal-spin { to { rotate: 360deg; } }
 .reveal-jolt { animation: reveal-jolt 0.4s ease-out; }
 @keyframes reveal-jolt { 0%, 100% { transform: none; } 20% { transform: translate(-6px, 4px); } 40% { transform: translate(6px, -4px); } 60% { transform: translate(-4px, 2px); } 80% { transform: translate(3px, -1px); } }
-@media (prefers-reduced-motion: reduce) { .reveal-shake, .reveal-flash, .reveal-rays, .reveal-jolt { animation: none; } .reveal-flash { opacity: 0; } }
+.reveal-jolt-big { animation: reveal-jolt-big 0.6s ease-out; }
+@keyframes reveal-jolt-big { 0%, 100% { transform: none; } 15% { transform: translate(-12px, 8px); } 30% { transform: translate(11px, -8px); } 45% { transform: translate(-8px, 5px); } 60% { transform: translate(6px, -4px); } 80% { transform: translate(-3px, 2px); } }
+@media (prefers-reduced-motion: reduce) { .reveal-rattle, .reveal-still, .reveal-step, .reveal-flash, .reveal-flash-big, .reveal-boom, .reveal-rays, .reveal-jolt, .reveal-jolt-big { animation: none; } .reveal-flash, .reveal-flash-big, .reveal-boom { opacity: 0; } }
 
 /* A labyrinth beaten (components/Triumph.tsx). */
 .triumph-spark { position: absolute; top: -12px; animation: triumph-fall linear infinite both; pointer-events: none; }
