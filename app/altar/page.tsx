@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, useMemo, useEffect } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
 import { useGameState, CACHE_LIMIT } from "@/hooks/useGameState";
 import { useDropGeneration } from "@/hooks/useDropGeneration";
 import { TOTAL_CREATURES, TOTAL_ITEMS, RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -9,6 +8,7 @@ import type { Drop } from "@/lib/types";
 import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import CodeCache from "@/components/CodeCache";
+import BarcodeScanner from "@/components/BarcodeScanner";
 import Help, { HelpSection } from "@/components/Help";
 import PixelSprite from "@/components/PixelSprite";
 import { ICON, NAME, lookOf } from "@/components/ContainerLoot";
@@ -42,7 +42,6 @@ export default function AltarPage() {
   const [barcode, setBarcode]       = useState("");
   const [rollMode, setRollMode]     = useState<"random" | "deterministic">("deterministic");
   const [scannerOn, setScannerOn]   = useState(false);
-  const [scanStatus, setScanStatus] = useState("");
   const [startArmed, setStartArmed] = useState(false); // "Start new" asks for a second tap
   const [resetArmed, setResetArmed] = useState<"player" | "global" | null>(null); // …and so do the resets
   const armedReset = (which: "player" | "global", run: () => void) => {
@@ -56,10 +55,6 @@ export default function AltarPage() {
   const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened
   const [tools, setTools]           = useState(false); // the testing tools, once we know they're allowed
   useEffect(() => { testingToolsAllowed(onlineClient(), window.localStorage).then(setTools); }, []);
-
-  const videoRef        = useRef<HTMLVideoElement | null>(null);
-  const scanControlsRef = useRef<{ stop: () => void } | null>(null);
-  const scanHandledRef  = useRef(false);
 
   const storing = game.scanMode === "store";
   const kept = useRef(new Set<string>()); // this scan's finds kept as Code Caches (Looting, full box)
@@ -147,44 +142,12 @@ export default function AltarPage() {
   const creaturePct = TOTAL_CREATURES === 0 ? 0 : Math.round((game.discoveredCreatures / TOTAL_CREATURES) * 100);
   const itemPct     = Math.round((game.discoveredItems / TOTAL_ITEMS) * 100);
 
-  useEffect(() => {
-    if (!scannerOn || !videoRef.current) return;
-    const reader = new BrowserMultiFormatReader();
-    setScanStatus("Starting camera...");
-    let stopped = false;
-    (async () => {
-      try {
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
-          videoRef.current!,
-          (result: any) => {
-            if (!result || stopped || scanHandledRef.current) return;
-            scanHandledRef.current = true;
-            const digits = result.getText().replace(/\D/g, "");
-            if (digits.length >= 6 && digits.length <= 20) {
-              setScanStatus(`Scanned: ${digits}`);
-              setBarcode(digits);
-              controls.stop();
-              setScannerOn(false);
-              setTimeout(() => scan(digits), 0);
-            } else {
-              scanHandledRef.current = false;
-            }
-          }
-        );
-        scanControlsRef.current = controls;
-        setScanStatus("Point camera at barcode...");
-      } catch {
-        setScanStatus("Camera error (check permissions).");
-        setScannerOn(false);
-      }
-    })();
-    return () => {
-      stopped = true;
-      scanControlsRef.current?.stop();
-      scanControlsRef.current = null;
-    };
-  }, [scannerOn]);
+  // The camera read a barcode: stop it and scan.
+  function onCameraCode(digits: string) {
+    setBarcode(digits);
+    setScannerOn(false);
+    scan(digits);
+  }
 
   // What the window holds: the caches waiting, the sealed ones, then
   // (Looting) this visit's finds.
@@ -211,11 +174,10 @@ export default function AltarPage() {
 
       <div style={{ maxWidth: 520 }}>
         <button className="scan-btn pixel-font" data-tour="scan" data-on={scannerOn}
-          onClick={() => { scanHandledRef.current = false; if (!scannerOn) setScanStatus("Starting camera..."); setScannerOn((s) => !s); }}>
+          onClick={() => setScannerOn((s) => !s)}>
           {scannerOn ? "✖ Stop scanning" : "🔮 Scan Barcode"}
         </button>
-        {scannerOn && <div style={{ fontSize: 13, opacity: 0.6, marginTop: 6, textAlign: "center" }}>{scanStatus}</div>}
-        {scannerOn && <video ref={videoRef} muted playsInline style={{ marginTop: 8, width: "100%", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)" }} />}
+        {scannerOn && <BarcodeScanner onCode={onCameraCode} />}
 
         <div data-tour="scan-mode" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>
           {([["loot", "🎁 Looting"], ["store", "📦 Storage"]] as const).map(([mode, label]) => (

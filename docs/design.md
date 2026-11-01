@@ -96,8 +96,13 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   at the Den.
 - ✅ **Global registry** (the user, 2026-10-31): the online registry replaces the local one, and
   offline scans wait as sealed Code Caches. See §12.
-- ⏸ **Scanner / camera work is parked.** It's fragile, and better scanning plus fake-scan detection
-  is a future project. Test with manual barcode entry.
+- ✅ **The camera** (2026-11-01, for Samsungs that never read a code and phones without a close-up
+  lens): opens the main back lens (Android: the lowest "camera2 N, facing back") at 1080p with
+  continuous focus, reads shop-type 1D barcodes (no QR) with the browser's own BarcodeDetector where
+  there is one (Android Chrome), else ZXing with try-harder. Under the picture: 🔍 zoom 1×/2×/3×
+  (the lens's own zoom where it has one, else cropping), 📷 next camera, 🔦 torch where there is one.
+  The last lens and zoom are kept per device. Fake-scan detection is still a future project.
+  Test with manual barcode entry.
 
 ## 3. Items
 

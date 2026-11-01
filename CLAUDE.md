@@ -48,6 +48,7 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
      Per device, not in saves:
      `codex_creatures_ui_scale_v1` (lib/uiScale.ts, Settings → Screen size) and
      `codex_creatures_haptics_v1` (lib/haptics.ts, Settings → Vibration) and
+     `codex_creatures_camera_v1` (lib/scanner.ts, the altar camera's last lens and zoom) and
      `codex_creatures_auth_v1` (lib/online/client.ts, the Supabase sign-in) and
      `codex_creatures_cloud_v1` and `codex_creatures_cloud_last_v1` (lib/online/cloudSave.ts:
      which slot holds each account's save, and the account that may play offline).
@@ -64,8 +65,8 @@ straight away. The address: **https://codex-creatures-clean.vercel.app/**. The g
    provisional or open. Change decided numbers (rarity odds, roll budgets, the triangle, XP curves,
    creature stats) only when the user asks, and present balance findings as options. Never present
    brainstorming as decided.
-4. **Leave the scanner alone.** Camera/scanner work is parked; it's fragile. Test with manual barcode
-   entry.
+4. **Leave the scanner alone unless asked.** The camera (components/BarcodeScanner.tsx, rules in
+   lib/scanner.ts) is fragile and only testable on real phones. Test with manual barcode entry.
 5. **Kept separate from Vouchee.** This repo has nothing to do with the user's Vouchee business
    (its repos, Vercel, Supabase, credentials). Don't reference, copy or touch any of it from here.
    (This game's own Vercel project is fine to mention; Vouchee's Vercel projects stay off limits.)
