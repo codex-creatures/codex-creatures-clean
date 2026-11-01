@@ -22,7 +22,6 @@ import { revealChoice, revealTier, shakeMs } from "@/lib/scanReveal";
 import type { Drop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.6)";
-const REVEAL_PEEK_BODY = 100; // room for armour's two rows of stats
 const SPARKS = 28;
 const SPARK_COLORS = ["#ffd66e", "#f1d9a0", "#fff4c2"];
 // Where each spark falls from, how fast and when: a fixed scatter, the same every time.
@@ -108,7 +107,7 @@ export default function ScanReveal({ drop, line, sellValue, onKeep, onSell, onRe
             : t ? <div className="stone-panel" style={{ padding: "10px 12px", fontSize: 14, color: MUTED, textTransform: "capitalize" }}>
                 {drop.dropType !== "reward" && drop.rarity} {drop.dropType === "card" ? "creature card" : "creature"}{t.race ? ` · ${t.race}` : ""}
               </div>
-            : drop.dropType === "item" && <ItemPeek item={{ gear: drop }} bodyHeight={REVEAL_PEEK_BODY} />}
+            : drop.dropType === "item" && <ItemPeek item={{ gear: drop }} />}
         </div>
 
         <div style={{ display: "flex", gap: 10, width: "100%", visibility: open && choice !== "gold" ? "visible" : "hidden" }}>
