@@ -58,7 +58,7 @@ import {
   PARTY_SIZE, squadsOf, teamSize, entryFee, freeRunsLeft, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
-  startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
+  startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, atTheTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, gearOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, DUNGEON_IDS, type DungeonId,
   campCages, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE,
@@ -262,24 +262,28 @@ export default function DungeonPage() {
   const leavePending = (r: DungeonRun): DungeonRun =>
     r.pending?.length ? { ...r, floor: [...(r.floor ?? []), ...r.pending.map((x) => ({ room: here(r), drop: x }))], pending: [] } : r;
 
-  // ── The walk back (the boss is beaten) ──────────────────────────
-  // Everything you left on the floors (and anything that was waiting for
-  // room) is yours to take now — but only as much as your bag holds (the
-  // user, 2026-10-26: most of what's left is junk you don't want). Gold and
-  // creature cards are picked up on the way; the rest you sort into your bag.
-  const [walking, setWalking] = useState(false);
-  function startWalkBack() {
+  // ── The haul (the boss is beaten) ───────────────────────────────
+  // One screen: the boss's chest, then everything you left on the floors (and
+  // anything that was waiting for room), yours to take — but only as much as
+  // your bag holds (the user, 2026-10-26: most of what's left is junk you
+  // don't want; 2026-11-02: one looting screen, then home). Heading home picks
+  // up whatever takes no room (gold, creature cards) on the way out.
+  const [cheered, setCheered] = useState(false);          // the celebration's been seen
+  const [haulOpen, setHaulOpen] = useState<"boss" | "floor" | null>(null);
+  function sweepFree() {
     const cur = loadDungeon();
     if (!cur.run || cur.run.status !== "cleared") return;
+    const roomless = (d: Drop) => d.dropType === "reward" || d.dropType === "card" || d.dropType === "creature";
     const all: FloorItem[] = [...(cur.run.floor ?? []), ...(cur.run.pending ?? []).map((x) => ({ room: "", drop: x }))];
-    const free = all.filter((f) => f.drop && (f.drop.dropType === "reward" || f.drop.dropType === "card" || f.drop.dropType === "creature"));
-    for (const f of free) {
-      const d = f.drop!;
+    const sack = cur.run.current?.sack ?? [];
+    const free = [...all.flatMap((f) => (f.drop && roomless(f.drop) ? [f.drop] : [])),
+      ...sack.flatMap((x) => ("gold" in x ? [goldOnly(x.gold)] : "gear" in x && roomless(x.gear) ? [x.gear] : []))];
+    for (const d of free) {
       if (d.dropType === "reward") game.addGold(d.amount);
       else game.addDrop({ ...d, dropType: "card" } as Drop);
     }
-    update({ ...cur, run: { ...cur.run, floor: all.filter((f) => !free.includes(f)), pending: [], got: [...(cur.run.got ?? []), ...free.map((f) => ({ drop: f.drop! }))] } });
-    setWalking(true);
+    const current = cur.run.current && { ...cur.run.current, sack: sack.filter((x) => !("gold" in x) && !("gear" in x && roomless(x.gear))) };
+    update({ ...cur, run: { ...cur.run, current, floor: all.filter((f) => !(f.drop && roomless(f.drop))), pending: [], got: [...(cur.run.got ?? []), ...free.map((drop) => ({ drop }))] } });
   }
   // A thing on the floor: what it is (a potion as a stored-potion drop, for the bag).
   const floorDrop = (f: FloorItem): Drop => f.drop ?? potionDrop("", f.potion!);
@@ -392,6 +396,7 @@ export default function DungeonPage() {
   }
 
   function goHome() {
+    sweepFree();
     const cur = loadDungeon();
     let shelf = game.bookcaseSize - game.inventory.filter((x) => x.dropType === "item" && x.codexMove).length;
     const loot = { ...(cur.meta.loot ?? {}) };
@@ -668,7 +673,7 @@ export default function DungeonPage() {
     }
   }
   // Whatever you leave in a sack or chest you opened stays on the floor (to
-  // pick up on the walk back once the boss is beaten). One you never opened
+  // pick up in the haul once the boss is beaten). One you never opened
   // keeps what's in it: loot only ever comes out of an opened chest or sack.
   const leaveSack = (r: DungeonRun): DungeonRun => {
     const sack = (r.current?.opened ? r.current.sack : undefined) ?? [];
@@ -787,12 +792,12 @@ export default function DungeonPage() {
     setDeckShow(drops);
   }
 
-  // The boss is beaten: the run is over.
+  // The boss is beaten: the run is over. (A save from before the haul
+  // screen can still be standing in the boss's room: its chest comes along.)
   function nextRoom() {
     setLootOpen(false);
-    setNotes([]);
     battle.clear();
-    updateRun((r) => leaveRoom(leaveSack(r)));
+    updateRun((r) => leaveRoom(leavePending(r.current ? { ...r, current: { ...r.current, opened: true } } : r)));
   }
 
   // Down a tunnel into the next room. Leaving rare (or better) things behind
@@ -1031,8 +1036,16 @@ export default function DungeonPage() {
     // Until you've got a rugged backpack, the Cyclops' chest holds one.
     if (room.boss === "cyclops" && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
     const container = room.kind === "boss" && room.boss !== "cyclops" ? "strongbox" as const : miniboss || room.kind === "boss" ? "chest" as const : "sack" as const;
-    updateRun((x) => markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: false } : x.current }));
+    // At the top, the run's over: straight to the haul, its chest already open.
+    const top = atTheTop(r);
+    updateRun((x) => {
+      const done = markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: top } : x.current });
+      return top ? leaveRoom(leavePending(done)) : done;
+    });
     setNotes([...xpNotes, ...winds]);
+    // The rugged backpack (the Cyclops' first chest) goes straight on: more room to sort the haul.
+    const pack = top ? sack.findIndex((x) => "backpack" in x) : -1;
+    if (pack >= 0) takeFromSack(pack);
   }
 
   // ── Screens ───────────────────────────────────────────────────────
@@ -1090,17 +1103,40 @@ export default function DungeonPage() {
     );
   }
 
-  if (run.status === "cleared" && walking) {
+  if (run.status === "cleared") {
+    const cheering = fightingTeam(run).flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, creatureId: c.creatureId }] : []; });
+    const bag = lab.meta.bag ?? [];
+    const bagLooks = bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)));
+    const c = run.current;
+    const home = () => { setLeaving(true); goHome(); router.push("/"); };
+    const haul = (
+      <Haul run={run} lab={lab} itemOf={itemOf} notes={notes} onOpen={setHaulOpen} onCage={openCage} onHome={home} />
+    );
     return frame(
-      <WalkBack run={run} lab={lab} itemOf={itemOf}
-        onTake={floorTake} onTakeAll={floorTakeAll} onSwap={floorSwap} onPut={floorPut}
-        onHome={() => { setLeaving(true); setWalking(false); goHome(); router.push("/"); }} />,
+      <>
+        {!cheered ? (
+          <Triumph title={beatenTitle(run)} line={clearedLine(run, lab)} team={cheering} onDone={() => setCheered(true)}
+            stats={[{ label: "rooms", value: String(run.room) }, { label: "finds", value: String((run.got ?? []).length) }, { label: "run", value: `#${run.runNumber}` }]} />
+        ) : levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
+        {cageShow !== undefined && <CageReveal find={cageShow} onDone={() => setCageShow(undefined)} />}
+        {haul}
+        {haulOpen === "boss" && c && (
+          <LootWindow name={chestName(c)} sprite={c.container === "strongbox" ? STRONGBOX_OPEN : RICKETY_CHEST_OPEN}
+            items={c.sack ?? []} bag={bagLooks} slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
+            onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack} onClose={() => setHaulOpen(null)} />
+        )}
+        {haulOpen === "floor" && (
+          <LootWindow name="Left on the floors" sprite={TREASURE_PILE}
+            items={(run.floor ?? []).map((f): SackItem => (f.drop ? { gear: f.drop } : { potion: f.potion! }))}
+            bag={bagLooks} slots={bagSize(lab.meta)} bagName={bagName(lab.meta)} putLabel="Leave it here"
+            onTake={floorTake} onTakeAll={floorTakeAll} onSwap={floorSwap} onPutBack={floorPut} onClose={() => setHaulOpen(null)} />
+        )}
+      </>,
     );
   }
 
   if (run.status !== "exploring") {
-    const cheering = fightingTeam(run).flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, creatureId: c.creatureId }] : []; });
-    return frame(<RunOver run={run} lab={lab} team={cheering} onWalkBack={startWalkBack} onHome={() => {
+    return frame(<RunOver run={run} lab={lab} onHome={() => {
       // Knocked out (Klutz dragged you back) or retreated: back to the Den.
       const died = run.status === "dead";
       const toDen = died || run.status === "retreated";
@@ -1258,7 +1294,7 @@ export default function DungeonPage() {
       {nudge && (
         <Sheet title="Leave these behind?" onClose={() => setNudge(null)}>
           <p style={{ fontSize: 14, color: "#d8d4c8", margin: "0 0 8px" }}>
-            {nudge.items.length === 1 ? "Something rare is" : "Some rare things are"} still here. Once you move on, {nudge.items.length === 1 ? "it stays" : "they stay"} on the floor — unless you beat the boss and walk back for {nudge.items.length === 1 ? "it" : "them"}.
+            {nudge.items.length === 1 ? "Something rare is" : "Some rare things are"} still here. Once you move on, {nudge.items.length === 1 ? "it stays" : "they stay"} on the floor — unless you beat the boss and come back for {nudge.items.length === 1 ? "it" : "them"}.
           </p>
           <LootGrid items={nudge.items.map((drop) => ({ drop }))} />
           <div className="dock-tabs" style={{ marginTop: 10 }}>
@@ -1858,140 +1894,115 @@ function Party({ run, byId, onTeam }: { run: DungeonRun; byId: (id: string) => O
   );
 }
 
-function RunOver({ run, lab, team, onHome, onWalkBack }: { run: DungeonRun; lab: DungeonSave; team: { id: string; name: string; creatureId?: string }[]; onHome: () => void; onWalkBack: () => void }) {
-  // The boss beaten: a celebration first (Triumph), then this summary.
-  const [cheer, setCheer] = useState(run.status === "cleared");
-  const floor: FloorItem[] = [...(run.floor ?? []), ...(run.pending ?? []).map((x) => ({ room: "", drop: x }))];
-  const title = run.status === "cleared" ? "The labyrinth is beaten!" : run.status === "dead" ? "Everything goes dark…" : "You slip back out";
-  const text = run.status === "cleared" && run.dungeon === 0
+// The boss beaten: its name in the celebration's banner, and a line about the clear.
+function beatenTitle(run: DungeonRun) {
+  return run.dungeon === 0 ? "The Encampment is yours!" : run.dungeon === 2 ? "The Hydra falls!" : run.dungeon === 3 ? "The Warden falls!" : "The Cyclops falls!";
+}
+function clearedLine(run: DungeonRun, lab: DungeonSave) {
+  return run.dungeon === 0
     ? `The chief goes down, and the camp is yours. You beat the Encampment on run ${run.runNumber}!${lab.meta.campClears ? "" : " The Labyrinth's way in is open now."}`
-    : run.status === "cleared" && run.dungeon && run.dungeon !== 1
+    : run.dungeon && run.dungeon !== 1
     ? `${run.dungeon === 2 ? "The last head falls" : "The Warden falls"}, and the deep goes quiet. You beat ${DUNGEONS[run.dungeon].name.replace("The", "the")} on run ${run.runNumber}!`
-    : run.status === "cleared"
-    ? `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`
-    : run.status === "dead"
-      ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. ${freeHealing(lab.meta) ? "He's patched your creatures up, good as new." : "Your creatures are hurt — rest them at the healing pool."}`
-      : run.loot.includes("Klutz's box")
-        ? "You head back to the Den with Klutz's box under your arm. He'll be thrilled — go and find him."
-        : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;
-  const beaten = run.dungeon === 0 ? "The Encampment is yours!" : run.dungeon === 2 ? "The Hydra falls!" : run.dungeon === 3 ? "The Warden falls!" : "The Cyclops falls!";
+    : `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`;
+}
+const chestName = (room: Room) => (room.container === "strongbox" ? "The strongbox" : room.kind === "encampment" ? "The chief's chest" : "The Cyclops' chest");
+
+// A run that ended without a clear: knocked out, or slipped back out.
+function RunOver({ run, lab, onHome }: { run: DungeonRun; lab: DungeonSave; onHome: () => void }) {
+  const floor: FloorItem[] = [...(run.floor ?? []), ...(run.pending ?? []).map((x) => ({ room: "", drop: x }))];
+  const title = run.status === "dead" ? "Everything goes dark…" : "You slip back out";
+  const text = run.status === "dead"
+    ? `…and you wake up in the Den, Klutz standing over you looking pleased with himself. He dragged you out after ${run.room} room${run.room === 1 ? "" : "s"}. ${freeHealing(lab.meta) ? "He's patched your creatures up, good as new." : "Your creatures are hurt — rest them at the healing pool."}`
+    : run.loot.includes("Klutz's box")
+      ? "You head back to the Den with Klutz's box under your arm. He'll be thrilled — go and find him."
+      : `You find your way back out, ${run.room} room${run.room === 1 ? "" : "s"} explored.`;
   return (
     <div className="stone-panel" style={{ textAlign: "center" }}>
-      {cheer && (
-        <Triumph title={beaten} line={text} team={team} onDone={() => setCheer(false)}
-          stats={[{ label: "rooms", value: String(run.room) }, { label: "finds", value: String((run.got ?? []).length) }, { label: "run", value: `#${run.runNumber}` }]} />
-      )}
-      <div className="pixel-font" style={{ fontSize: 26, color: run.status === "cleared" ? "#5ee08a" : run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>
+      <div className="pixel-font" style={{ fontSize: 26, color: run.status === "dead" ? "#ff8a80" : "#f1d9a0" }}>{title}</div>
       <p style={{ fontSize: 14, color: "#d8d4c8", lineHeight: 1.5 }}>{text}</p>
       <div style={{ textAlign: "left" }}>
         <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", margin: "4px 0 8px" }}>Loot</div>
         <LootGrid items={run.got ?? []} grouped />
         {floor.length > 0 && (
           <>
-            <div className="pixel-font" style={{ fontSize: 15, color: run.status === "cleared" ? "#f1d9a0" : "#ff8a80", margin: "16px 0 8px" }}>
-              Left behind{run.status === "cleared" ? "" : " (lost)"}
-            </div>
+            <div className="pixel-font" style={{ fontSize: 15, color: "#ff8a80", margin: "16px 0 8px" }}>Left behind (lost)</div>
             <LootGrid items={floor.map((f) => (f.drop ? { drop: f.drop } : { potion: f.potion! }))} faded grouped />
           </>
         )}
       </div>
       <div style={{ height: 14 }} />
-      {run.status === "cleared" ? (
-        <>
-          <p style={{ fontSize: 13, color: "#d8d4c8" }}>
-            With the {run.dungeon === 0 ? "chief" : run.dungeon === 2 ? "Hydra" : run.dungeon === 3 ? "Warden" : "Cyclops"} gone, the way back is safe{floor.length > 0 ? ` — and the ${floor.length} thing${floor.length === 1 ? "" : "s"} you left behind are yours to take, as much as you can carry` : ""}.
-          </p>
-          <button className="pixel-btn" onClick={onWalkBack}>🚶 Walk back through</button>
-        </>
-      ) : (
-        <button className="pixel-btn" onClick={onHome}>Continue</button>
-      )}
+      <button className="pixel-btn" onClick={onHome}>Continue</button>
     </div>
   );
 }
 
-// The walk back, once the boss is beaten: a summary of your loot — what you
-// chose to carry, and what you left on the floors (yours to take now) — and
-// your storage (just your bag for now), each with how much room is left.
-// Open a container to sort it: take things off the floor, put things down
-// to make room. Whatever's still on the floor when you head home is lost.
-function WalkBack({ run, lab, itemOf, onTake, onTakeAll, onSwap, onPut, onHome }: {
-  run: DungeonRun; lab: DungeonSave; itemOf: (e: BagEntry) => CreatureOrItemDrop | undefined;
-  onTake: (i: number) => void; onTakeAll: () => void; onSwap: (i: number, bagIndex: number) => void; onPut: (bagIndex: number) => void; onHome: () => void;
+// The haul, once the boss is beaten (the user, 2026-11-02: one looting
+// screen, then home): your bag's free space, the boss's chest (and the
+// Encampment's cages), then everything you left on the floors. Open either
+// to sort it into your bag. Whatever's left when you head home stays here,
+// except gold and creature cards, which come along free.
+function Haul({ run, lab, itemOf, notes, onOpen, onCage, onHome }: {
+  run: DungeonRun; lab: DungeonSave; itemOf: (e: BagEntry) => CreatureOrItemDrop | undefined; notes: string[];
+  onOpen: (which: "boss" | "floor") => void; onCage: (i: number) => void; onHome: () => void;
 }) {
-  const [open, setOpen] = useState<string | null>(null); // a container, opened to sort
-  const [sure, setSure] = useState(false);               // heading home, leaving rare things behind
+  const [sure, setSure] = useState(false); // heading home, leaving rare things behind
+  const room = run.current;
+  const sack = room?.sack ?? [];
   const floor = run.floor ?? [];
   const bag = lab.meta.bag ?? [];
-  const carried: GotItem[] = bag.flatMap((e): GotItem[] => (isPotionEntry(e) ? [{ potion: e }] : itemOf(e) ? [{ drop: itemOf(e)! }] : []));
+  const slots = bagSize(lab.meta);
+  const fromSack: GotItem[] = sack.flatMap((x): GotItem[] => ("gold" in x ? [{ drop: { id: "", barcode: "", dropType: "reward", rewardKind: "resource", amount: x.gold, createdAt: "" } as Drop }] : "potion" in x ? [{ potion: x.potion }] : "gear" in x ? [{ drop: x.gear }] : []));
   const left: GotItem[] = floor.map((f) => (f.drop ? { drop: f.drop } : { potion: f.potion! }));
-  const rareLeft = floor.filter((f) => f.drop && isRareFind(f.drop)).length;
-  // Your storage. (One container for now: more will come.)
-  const containers = [{ key: "bag", name: bagName(lab.meta), slots: bagSize(lab.meta), entries: bag }];
-  const panel = (title: string, body: React.ReactNode, hint?: string) => (
-    <div className="stone-panel" style={{ marginTop: 10 }}>
-      <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>{title}</div>
-      {hint && <div style={{ fontSize: 12, color: MUTED, margin: "2px 0 6px" }}>{hint}</div>}
-      {body}
+  const rareLeft = [...sack.flatMap((x) => ("gear" in x ? [x.gear] : [])), ...floor.flatMap((f) => (f.drop ? [f.drop] : []))].filter(isRareFind).length;
+  const heading = (title: string, count: number, which: "boss" | "floor") => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+      <span className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>{title}</span>
+      <button className="chip" disabled={count === 0} style={{ visibility: count === 0 ? "hidden" : "visible" }} onClick={() => onOpen(which)}>Sort ({count})</button>
     </div>
   );
-  const c = containers.find((x) => x.key === open);
   return (
     <>
       <div className="stone-panel" style={{ textAlign: "center" }}>
-        <div className="pixel-font" style={{ fontSize: 22, color: "#5ee08a" }}>🚶 The walk back</div>
-        <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 0", lineHeight: 1.5 }}>
-          The halls are quiet now. Here&apos;s what you chose to carry, and what you left behind — take what you can fit.
-        </p>
+        <div className="pixel-font" style={{ fontSize: 22, color: "#5ee08a" }}>{beatenTitle(run)}</div>
+        {notes.map((n, i) => <div key={i} style={{ fontSize: 12, color: "#d8d4c8", marginTop: 4 }}>{n}</div>)}
       </div>
 
-      {panel("Available loot", (
-        <>
-          <div style={{ fontSize: 12, color: MUTED, margin: "6px 0 4px" }}>Carrying</div>
-          {carried.length > 0 ? <LootGrid items={carried} /> : <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Nothing in your {bagName(lab.meta).toLowerCase()}.</p>}
-          <div style={{ fontSize: 12, color: MUTED, margin: "12px 0 4px" }}>Left on the floors — yours to take</div>
-          {left.length > 0 ? <LootGrid items={left} /> : <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Nothing left behind.</p>}
-        </>
-      ))}
-
-      {panel("Your storage", (
-        <div style={{ display: "grid", gap: 8 }}>
-          {containers.map((x) => (
-            <div key={x.key} className="card-btn" style={{ cursor: "default", flexDirection: "column", alignItems: "stretch", gap: 6 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <b className="pixel-font" style={{ color: x.entries.length >= x.slots ? "#ff8a80" : "#f1d9a0" }}>🎒 {x.name} · {x.slots - x.entries.length} free</b>
-                <button className="chip" onClick={() => setOpen(x.key)}>Open</button>
-              </div>
-              <BagSlots slots={x.slots} looks={x.entries.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} selected={null} onSelect={() => setOpen(x.key)} size={44} />
-            </div>
-          ))}
+      <div className="stone-panel" style={{ marginTop: 10 }}>
+        <div className="pixel-font" style={{ fontSize: 15, color: bag.length >= slots ? "#ff8a80" : "#f1d9a0", marginBottom: 6 }}>
+          🎒 {bagName(lab.meta)} · {slots - bag.length} free
         </div>
-      ), "Open one to take things off the floor, or put something down to make room.")}
+        <BagSlots slots={slots} looks={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} selected={null}
+          onSelect={() => onOpen(sack.length > 0 || floor.length === 0 ? "boss" : "floor")} size={44} />
+      </div>
+
+      <div className="stone-panel" style={{ marginTop: 10 }}>
+        {heading(room ? chestName(room) : "The chest", sack.length, "boss")}
+        {fromSack.length > 0 ? <LootGrid items={fromSack} grouped /> : <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Empty now.</p>}
+        {room?.cages?.length ? <EncampmentPanel room={room} fuse={0} onCage={onCage} /> : null}
+      </div>
+
+      <div className="stone-panel" style={{ marginTop: 10 }}>
+        {heading("Left on the floors", floor.length, "floor")}
+        {left.length > 0 ? <LootGrid items={left} grouped /> : <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Nothing left behind.</p>}
+      </div>
 
       <div style={{ marginTop: 14 }}>
         {sure ? (
           <div className="stone-panel" style={{ borderColor: "#ff8a80" }}>
-            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>{rareLeft} rare thing{rareLeft === 1 ? " is" : "s are"} still on the floor. Leave {rareLeft === 1 ? "it" : "them"} for good?</p>
+            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>{rareLeft} rare thing{rareLeft === 1 ? " is" : "s are"} still here. Leave {rareLeft === 1 ? "it" : "them"} for good?</p>
             <div className="dock-tabs">
               <button className="dock-tab" onClick={() => setSure(false)}>Keep sorting</button>
-              <button className="dock-tab" style={{ color: "#ff8a80" }} onClick={onHome}>Head home</button>
+              <button className="dock-tab" style={{ color: "#ff8a80" }} onClick={onHome}>Return to Den</button>
             </div>
           </div>
         ) : (
-          <button className="pixel-btn" style={{ width: "100%" }} onClick={() => (rareLeft > 0 ? setSure(true) : onHome())}>🏠 Head home{floor.length > 0 ? " (the rest stays here)" : ""}</button>
+          <button className="pixel-btn" style={{ width: "100%" }} onClick={() => (rareLeft > 0 ? setSure(true) : onHome())}>🏠 Return to Den</button>
         )}
       </div>
-
-      {c && (
-        <LootWindow name="Left on the floors" sprite={TREASURE_PILE}
-          items={floor.map((f): SackItem => (f.drop ? { gear: f.drop } : { potion: f.potion! }))}
-          bag={c.entries.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
-          slots={c.slots} bagName={c.name} putLabel="Leave it here"
-          onTake={onTake} onTakeAll={onTakeAll} onSwap={onSwap} onPutBack={onPut} onClose={() => setOpen(null)} />
-      )}
     </>
   );
 }
+
 // The potions in the bag, one entry per kind (for the battle screen).
 function bagItems(bag: PotionKey[]): BagItem[] {
   return (Object.keys(POTIONS) as PotionKey[])

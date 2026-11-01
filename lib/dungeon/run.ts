@@ -292,7 +292,7 @@ export const witchPrize = () => pickCreatureId(pickRarity("", "random"));
 //   you: it goes into storage (codexes onto the bookcase) when the run ends.
 // Gold and creature cards take no space. When you're full you choose what
 // to leave on the floor; what's left there is lost — unless you beat the
-// boss, and walk back through to collect it.
+// boss, and collect it in the haul.
 export const BINDLE = 3;
 export const BACKPACK = 5;
 export const BACKPACK_PRICE = 1000;
@@ -307,7 +307,7 @@ export const gearIdOf = (e: BagEntry): string | undefined => (e.startsWith("gear
 export const lootEntry = (dropId: string): BagEntry => `loot:${dropId}`;
 export const lootIdOf = (e: BagEntry): string | undefined => (e.startsWith("loot:") ? e.slice(5) : undefined);
 
-// Something left on a room's floor (by name, for the walk back).
+// Something left on a room's floor (by name, for the haul).
 export type FloorItem = { room: string; potion?: PotionKey; drop?: Drop };
 // Something you picked up this run (for the haul at the end).
 export type GotItem = { potion: PotionKey } | { drop: Drop };

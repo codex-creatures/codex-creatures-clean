@@ -63,7 +63,8 @@ export type MapNode = {
   links: string[];   // corridors to these rooms
   mystery?: boolean; // stays "?" until you walk in
   known?: boolean;   // marked on your scroll from the start
-  pinned?: boolean;  // …and shown even on the blind first step (the Encampment's chest and stashes)
+  pinned?: boolean;  // …and shown even on the blind first step (the Encampment's stashes)
+  hidden?: boolean;  // never shown till you walk in, even in sight (the Encampment's chest and unmarked stashes)
   large?: boolean;   // a large room (drawn bigger on the scroll)
   dynamite?: boolean; // the storehouse with Klutz's dynamite in it (lib/tavern.ts)
 };
@@ -217,10 +218,12 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
       else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
     }
   }
-  // The Encampment always has a chest and a stash, all marked on the scroll.
+  // The Encampment always has a chest (never marked) and a stash (marked).
   if (dungeon === 0) campStashes(map, rng);
-  // A few rooms are marked on the scroll from the start (never mysteries).
-  const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery);
+  // A few rooms are marked on the scroll from the start (never mysteries,
+  // nor the Encampment's chest and stashes: campStashes marks those).
+  const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery
+    && !(dungeon === 0 && (n.kind === "chest" || n.kind === "stash")));
   for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
   // …and a few corridors deeper in.
   const depth = depths(map);
@@ -242,15 +245,21 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
 }
 
 // The Encampment: one chest (a den turned into it; the user, 2026-11-01), at
-// least one stash (if none came up, another den turned into one), and every
-// chest and stash marked on the scroll, even on the first step.
+// least one stash (if none came up, another den turned into one). Up to
+// CAMP_STASH_MARKS stashes are marked on the scroll, even on the first step;
+// the chest never is, nor any other stash (the user, 2026-11-02): they're
+// finds, hidden till you walk in, even in sight.
+export const CAMP_STASH_MARKS = 2;
 function campStashes(map: DungeonMap, rng: Rng) {
   const nodes = Object.values(map.nodes);
   const dens = () => nodes.filter((n) => n.kind === "easy" && n.id !== map.start && n.id !== map.boss);
   const turn = (kind: RoomKind) => { const d = dens(); d[Math.floor(rng() * d.length)].kind = kind; };
   turn("chest");
   if (!nodes.some((n) => n.kind === "stash")) turn("stash");
-  for (const n of nodes) if (n.kind === "stash" || n.kind === "chest") Object.assign(n, { known: true, pinned: true });
+  const stashes = nodes.filter((n) => n.kind === "stash");
+  while (stashes.length > CAMP_STASH_MARKS) stashes.splice(Math.floor(rng() * stashes.length), 1)[0].hidden = true;
+  for (const n of stashes) Object.assign(n, { known: true, pinned: true });
+  for (const n of nodes) if (n.kind === "chest") n.hidden = true;
 }
 
 // Turn a few rooms into large ones: well inside the labyrinth (not the
@@ -332,6 +341,7 @@ export function knownRooms(map: DungeonMap, path: string[], lit: string[] = [], 
   // Your first step is blind: the rooms off the entrance are all "?" (unless a flare lights them).
   if (path.length <= 1) for (const n of waysOn(map, map.start)) if (!seen.includes(n.id) && !n.pinned) known.delete(n.id);
   for (const at of lit) for (const id of inSight(map, at, litRadius(at, seen))) if (!map.nodes[id].mystery) known.add(id);
+  for (const n of Object.values(map.nodes)) if (n.hidden && !visited.has(n.id) && !seen.includes(n.id)) known.delete(n.id);
   return known;
 }
 

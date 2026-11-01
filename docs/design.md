@@ -480,8 +480,9 @@ How it came about, round by round: history.md.
     to reach the chief without finding potions or some luck): rooms 1–6 are creature dens (1–2
     creatures however deep), or a stash 30% of the time (`CAMP_STASH`, 🧪 Claude's number), never
     two stashes in a row; no mysteries. Every map also has one chest (a den turned into it; the
-    user, 2026-11-01) and at least one stash, and they're always marked on the scroll, even on the
-    blind first step. Its first rooms ease you in like the
+    user, 2026-11-01), never marked on the scroll (the user, 2026-11-02: it's a find), and at least
+    one stash. Up to 2 stashes are marked on the scroll (`CAMP_STASH_MARKS`), even on the blind
+    first step; the chest and any other stash stay hidden (even in torch sight) till you walk in. Its first rooms ease you in like the
     Labyrinth's (below). Room 7 is the camp: its **chief**, an Uncommon in Common gear,
     Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
     2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
@@ -489,7 +490,7 @@ How it came about, round by round: history.md.
     the time (`CAMP_REPEAT_CHANCE`). Opening a cage plays a short show (`CageReveal`): it rattles,
     then out pops the creature in its rarity's glow. Beating any labyrinth's boss opens with a
     celebration (`Triumph`: gold falling, your team cheering, rooms/finds/run number) before the
-    run's summary (the user, 2026-11-01). The first 10 runs are free (`FREE_RUNS`), then 50 gold.
+    haul (below; the user, 2026-11-01). The first 10 runs are free (`FREE_RUNS`), then 50 gold.
     - The **Labyrinth opens** once you've beaten it, or scanned 25 barcodes (`LABYRINTH_SCANS`,
       `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
       entrance shows it locked.
@@ -589,9 +590,13 @@ How it came about, round by round: history.md.
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
   retreat (after a "Leave the labyrinth?" check): runs can't be paused.
-- ✅ After a boss clear, the **walk back** lets you pick from everything you left behind, but only
-  what fits in your bag; gold and creature cards come home free, the rest stays (the user,
-  2026-10-26: back to how it was; on 2026-10-23 everything came home, but most of it was junk).
+- ✅ After a boss clear, **the haul** (the user, 2026-11-02: one looting screen, then home; it
+  replaced the boss room's chest, the summary and the walk back): your bag's free space, then the
+  boss's chest (and the Encampment's cages), then everything you left on the floors. "Sort" opens
+  either one to take things into your bag or put things down; then **Return to Den** (a check
+  first if anything rare is left). Only what fits in your bag comes home; gold and creature cards
+  come free, the rest stays (the user, 2026-10-26: on 2026-10-23 everything came home, but most of
+  it was junk). The Cyclops' first rugged backpack goes on straight away.
 - ✅ **Healing pool (Den):** heals 25% HP an hour on one global clock, runs included.
   - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,
     and may use it as a monetisation lever later. The instant heal at the entrance is a testing

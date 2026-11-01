@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rollMap, routeLength, isAhead, waysOn, knownRooms } from "../lib/dungeon/map";
+import { rollMap, routeLength, isAhead, waysOn, knownRooms, CAMP_STASH_MARKS } from "../lib/dungeon/map";
 import {
   DUNGEONS, CAMP_ROUTE, CAMP_CHIEF_LEVEL, CAMP_CAGES, CAMP_CAGE_LEVELS, CAMP_REPEAT_CHANCE, LABYRINTH_SCANS,
   makeRoom, campCages, campRoomKind, labyrinthOpen, startRun, enterRoom, leaveRoom, endRun,
@@ -27,7 +27,7 @@ describe("the Encampment (the first labyrinth)", () => {
     expect(wrong).toEqual([]);
   });
 
-  it("always has one chest and a stash, all on the scroll from the first (blind) step", () => {
+  it("always has one chest (never on the scroll) and a stash, with up to CAMP_STASH_MARKS stashes on the scroll from the first (blind) step", () => {
     const wrong: string[] = [];
     for (let n = 0; n < 60; n++) {
       const map = rollMap(false, Math.random, DUNGEONS[0].spec, 0);
@@ -36,7 +36,10 @@ describe("the Encampment (the first labyrinth)", () => {
       if (stashes.length === 0) wrong.push("no stash");
       if (chests.length !== 1) wrong.push(`${chests.length} chests`);
       const known = knownRooms(map, [map.start]);
-      for (const x of [...stashes, ...chests]) if (!known.has(x.id)) wrong.push(`hidden ${x.kind} ${x.id}`);
+      for (const x of chests) if (known.has(x.id) || x.known) wrong.push(`marked chest ${x.id}`);
+      const marked = stashes.filter((x) => known.has(x.id));
+      for (const x of stashes) if (!x.pinned && known.has(x.id)) wrong.push(`unmarked stash shown ${x.id}`);
+      if (marked.length !== Math.min(stashes.length, CAMP_STASH_MARKS)) wrong.push(`${marked.length} of ${stashes.length} stashes marked`);
     }
     expect(wrong).toEqual([]);
   });
