@@ -71,7 +71,14 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   3×3 loot window (one empty row of 3 until something's in it). **Looting** opens each Code Cache
   at once: the find goes straight to your things and the window shows this visit's latest 9,
   cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when
-  full, open some before scanning. Typed barcodes (Repeatable by default, or Random) sit at the
+  full, open some before scanning. ✅ (the user, 2026-11-01) **The unveiling** (lib/scanReveal.ts,
+  components/ScanReveal.tsx): every Looting scan, and tapping one stored cache, plays a short show
+  (the cache shakes 0.5–1.3s by rarity, cracks in a flash of its rarity; rare adds light rays, epic
+  and legendary falling gold and a jolt; tap to skip), then the find with its stats and
+  **Keep / Sell** (at the merchant's price: gear for what the Inventory pays; potions, codexes,
+  scrolls and tools for half what they cost), **Keep / Release** (a creature or card), **Keep**
+  (materials, which go straight to your tally, and what has no price), or just "+N gold" (tap on). "Open all" opens stored caches
+  together, with no show. Typed barcodes (Repeatable by default, or Random) sit at the
   bottom as a testing tool. ✅ (the user, 2026-10-31) Online, the altar's testing tools (typed
   barcodes, Random, the resets, rubble and visitor) show only for the owner's account
   (`ADMIN_IDS`, lib/online/admin.ts); a copy without online keeps them. This hides them in the

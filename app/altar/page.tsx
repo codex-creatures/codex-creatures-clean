@@ -9,6 +9,7 @@ import Link from "next/link";
 import DenFrame from "@/components/DenFrame";
 import CodeCache from "@/components/CodeCache";
 import BarcodeScanner from "@/components/BarcodeScanner";
+import ScanReveal from "@/components/ScanReveal";
 import Help, { HelpSection } from "@/components/Help";
 import PixelSprite from "@/components/PixelSprite";
 import { ICON, NAME, lookOf } from "@/components/ContainerLoot";
@@ -52,7 +53,8 @@ export default function AltarPage() {
   const [startedNew, setStartedNew] = useState(false);
   const [shown, setShown]           = useState<Drop[]>([]); // this visit's finds, newest first (Looting)
   const [note, setNote]             = useState<React.ReactNode>(null); // sealed, storage full…
-  const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened
+  const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened (Open all)
+  const [revealing, setRevealing]   = useState<Drop[]>([]); // finds being unveiled, one at a time
   const [tools, setTools]           = useState(false); // the testing tools, once we know they're allowed
   useEffect(() => { testingToolsAllowed(onlineClient(), window.localStorage).then(setTools); }, []);
 
@@ -74,7 +76,10 @@ export default function AltarPage() {
       const full = !storing && opened.length < drops.length ? <>📦 No room in your chest: kept as a Code Cache.</> : null;
       setNote(tag && full ? <>{tag}<br />{full}</> : tag ?? full);
       kept.current.clear();
-      if (!storing) setShown((s) => [...opened, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS));
+      if (!storing) {
+        setShown((s) => [...opened, ...s].slice(0, WINDOW_COLS * WINDOW_ROWS));
+        setRevealing((r) => [...r, ...opened]);
+      }
     },
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
@@ -131,11 +136,20 @@ export default function AltarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.hydrated, sealedKey]);
 
-  // Open Code Caches: only those there's room in your chest for.
+  // Open Code Caches: only those there's room in your chest for. One cache
+  // is unveiled (ScanReveal); several open together, with no show.
   function open(list: Drop[]) {
     const { fit, full } = fitInBoxes(game.inventory, list, game.storage);
     setNote(full.length ? boxesFull(full) : null);
-    if (fit.length) setOpening(fit);
+    if (list.length === 1 && fit.length === 1) { game.openCaches([fit[0].id]); setRevealing([fit[0]]); }
+    else if (fit.length) setOpening(fit);
+  }
+
+  // The find being unveiled: keep it, or sell or release it (gone from the window too).
+  const unveiled = revealing[0];
+  function doneRevealing(letGo?: (id: string) => void) {
+    if (letGo && unveiled) { letGo(unveiled.id); setShown((s) => s.filter((d) => d.id !== unveiled.id)); }
+    setRevealing((r) => r.slice(1));
   }
 
   const isValidBarcode = useMemo(() => /^[0-9]{6,20}$/.test(barcode.trim()), [barcode]);
@@ -239,6 +253,11 @@ export default function AltarPage() {
           <button className="pixel-btn" onClick={() => open(game.caches.slice(0, CACHE_LIMIT))}>📦 Open all</button>
         </div>
       </div>
+
+      {unveiled && (
+        <ScanReveal key={unveiled.id} drop={unveiled} sellValue={game.findValue(unveiled)}
+          onKeep={() => doneRevealing()} onSell={() => doneRevealing(game.sellFind)} onRelease={() => doneRevealing(game.removeDrop)} />
+      )}
 
       {opening && (
         <CodeCache title={opening.length === 1 ? "Code Cache" : "Code Caches"} items={opening} revealAllLabel="Extract all" doneLabel="Take it all"

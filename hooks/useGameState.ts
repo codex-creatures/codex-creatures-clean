@@ -10,6 +10,7 @@ import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
+import { findPrice } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
@@ -863,6 +864,16 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // One piece sold from its detail window (the same price as Sell mode).
   // Favourited, worn or packed pieces aren't for sale.
+  // Selling a find as it's unveiled at the altar (lib/scanReveal.ts findPrice).
+  const findValue = (d: Drop) => findPrice(d, crateSellValue);
+  function sellFind(id: string) {
+    const d = inventory.find((x) => x.id === id);
+    const price = d && !lockedIds.has(id) ? findValue(d) : 0;
+    if (!price) return;
+    removeDrop(id);
+    setGold((g) => g + price);
+  }
+
   function sellOne(id: string) {
     const d = inventory.find((x) => x.id === id);
     if (!d || !isSellableItem(d) || lockedIds.has(id)) return;
@@ -936,6 +947,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }
