@@ -4,7 +4,7 @@
 // the step-by-step replay of each round, and the battle log. Used by the
 // Fight Pit (app/battle) and the dungeon (app/dungeon).
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { loadSave, armorPieces } from "@/hooks/useGameState";
 import { ARMOR_META, wornArmor } from "@/lib/items/armor";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
@@ -691,6 +691,26 @@ export function FloatText({ float, top }: { float: Float; top?: number }) {
     </div>
   );
 }
+// How long floating text stays up (.float-text in globals.css). Longer than a
+// step, so it stays after the battle has moved on to the next thing.
+const FLOAT_MS = 1900;
+// A creature's floating text, kept on screen for FLOAT_MS after its step
+// (a newer one on the same creature replaces it). id: the step's fx id.
+export function LingeringFloat({ float, id, top }: { float: Float | null; id?: number; top?: number }) {
+  const key = float && id !== undefined ? `${id}:${float.text}` : null;
+  const [last, setLast] = useState<string | null>(null);
+  const [shown, setShown] = useState<{ float: Float; n: number } | null>(null);
+  if (key !== last) {
+    setLast(key);
+    if (float && key) setShown({ float, n: (shown?.n ?? 0) + 1 });
+  }
+  useEffect(() => {
+    if (!shown) return;
+    const t = setTimeout(() => setShown((s) => (s === shown ? null : s)), FLOAT_MS);
+    return () => clearTimeout(t);
+  }, [shown]);
+  return shown ? <FloatText key={shown.n} float={shown.float} top={top} /> : null;
+}
 
 // Which animation a creature plays for the current step, and any floating text.
 export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: string; float: Float | null } {
@@ -721,9 +741,19 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
   anim: string; float: { text: string; color: string } | null; color: string; hpPct: number;
   cripple?: Combatant["statuses"][number]; haste?: Combatant["statuses"][number];
 }) {
+  // Each step replays the card's animation without rebuilding the card (that
+  // would snap its HP bar down instead of letting it drain).
+  const card = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = card.current;
+    if (!el) return;
+    el.style.animation = "none";
+    void el.offsetWidth; // (a reflow, so the animation starts again)
+    el.style.animation = "";
+  }, [fx?.id, slot]);
   return (
     <div style={{ position: "relative" }}>
-      <div key={`${fx?.id ?? 0}-${slot}`} className={`fighter-card ${anim}`} style={{ borderColor: `${color}88`, opacity: f.hp <= 0 ? 0.4 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
+      <div ref={card} className={`fighter-card ${anim}`} style={{ borderColor: `${color}88`, opacity: f.hp <= 0 ? 0.4 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <Token name={f.name} rarity={info.rarity} creatureId={info.creatureId} />
           <div style={{ minWidth: 0 }}>
@@ -735,7 +765,7 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
           </div>
         </div>
         {/* Opponents: just a health bar that goes down (no numbers, no energy). */}
-        <Bar label="HP" value={side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.max(0, Math.ceil(hpPct))}%`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
+        <Bar label="HP" value={side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.max(0, Math.ceil(hpPct))}%`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} trail />
         {side === "A" && <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />}
         {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}><Glyph icon="🐌" art="status_cripple" /> Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
         {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
@@ -759,7 +789,7 @@ function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, floa
         )}
         {details && side === "A" && <StatsLine stats={combatSummary(f)} />}
       </div>
-      {float && <FloatText key={`f${fx!.id}`} float={float} />}
+      <LingeringFloat float={float} id={fx?.id} />
     </div>
   );
 }
@@ -816,14 +846,16 @@ export function StatsLine({ stats }: { stats: ReturnType<typeof combatSummary> }
   );
 }
 
-export function Bar({ label, value, pct, color }: { label: string; value: string; pct: number; color: string }) {
+// trail: an HP bar, which drains with a pale strip behind it (HpFill).
+export function Bar({ label, value, pct, color, trail }: { label: string; value: string; pct: number; color: string; trail?: boolean }) {
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: MUTED, marginBottom: 2 }}>
         <span>{label}</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{value}</span>
       </div>
-      <div style={{ height: 8, background: "#0d0e12", border: "1px solid #000" }}>
-        <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, pct))}%`, background: color, transition: "width 0.45s ease-out" }} />
+      <div style={{ height: 8, background: "#0d0e12", border: "1px solid #000", position: "relative" }}>
+        {trail ? <HpFill pct={pct} color={color} />
+          : <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, pct))}%`, background: color, transition: "width 0.45s ease-out" }} />}
       </div>
     </div>
   );
@@ -939,11 +971,23 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
         {f.races?.length ? <RaceNames races={f.races} /> : " "}
       </div>
       <div style={{ width: "70%", minWidth: 70, height: 7, marginTop: 3, background: "rgba(0,0,0,0.75)", border: "1px solid #000", position: "relative" }}>
-        <div style={{ position: "absolute", inset: 0, width: `${hpPct}%`, background: hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444", transition: "width 0.35s" }} />
+        <HpFill pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} />
       </div>
       <div style={{ fontSize: 11, color: "#d8d4c8", textShadow: "0 1px 0 #000", marginTop: 1, fontVariantNumeric: "tabular-nums" }}>
         {side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.ceil(hpPct)}%`}{icons && <span style={{ marginLeft: 4 }}>{icons}</span>}
       </div>
+    </>
+  );
+}
+
+// The inside of a health bar (in a position: relative box): the HP left, and
+// behind it the pale strip of HP just lost, draining a moment later.
+function HpFill({ pct, color }: { pct: number; color: string }) {
+  const w = `${Math.max(0, Math.min(100, pct))}%`;
+  return (
+    <>
+      <div className="hp-trail" style={{ width: w }} />
+      <div className="hp-fill" style={{ width: w, background: color }} />
     </>
   );
 }
@@ -962,17 +1006,20 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
       <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
         display: "flex", flexDirection: "column", alignItems: "center", width: `${FIGHTER_W * 100}%`, ...at }}>
         <FighterLabel f={f} side={side} mi={mi} />
-        <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite) } : {}), opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
-          {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
-          <div className={floats ? "float-bob" : undefined}>
-            {sprite
-              ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : { width: "100%", height: "auto" }) }} />
-              : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
+        {/* (The floating text sits outside the part rebuilt each step, so it can outlast the step.) */}
+        <div style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite) } : {}) }}>
+          <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
+            {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
+            <div className={floats ? "float-bob" : undefined}>
+              {sprite
+                ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : { width: "100%", height: "auto" }) }} />
+                : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
+            </div>
+            {floats
+              ? <div className="float-shadow" style={{ width: "60%", height: 8, margin: "34px auto 0" }} />
+              : <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />}
           </div>
-          {floats
-            ? <div className="float-shadow" style={{ width: "60%", height: 8, margin: "34px auto 0" }} />
-            : <div style={{ width: "80%", height: 8, margin: "-4px auto 0", background: "radial-gradient(ellipse, rgba(0,0,0,0.6), transparent 70%)" }} />}
-          {float && <FloatText key={`f${fx!.id}`} float={float} top={0} />}
+          <LingeringFloat float={float} id={fx?.id} top={0} />
         </div>
       </div>
     );

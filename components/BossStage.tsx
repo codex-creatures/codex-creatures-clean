@@ -17,7 +17,7 @@ import { CYCLOPS } from "@/lib/combat/bossAi";
 import { BOSS_PARTS_OF } from "@/lib/creatures/bosses";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
 import type { Fx, MemberInfo } from "./BattleScreen";
-import { FighterLabel, FloatText, fighterFx } from "./BattleScreen";
+import { FighterLabel, LingeringFloat, fighterFx } from "./BattleScreen";
 
 type Scene = "split" | "eye" | null;
 
@@ -99,7 +99,7 @@ export default function BossStage({ side, fx, you, infos, target, onTarget, clou
               <div className="pixel-font" style={{ fontSize: 11, height: 14, color: dead ? "#ff8a8a" : "#ffd66e", visibility: aimed || (dead && side.boss?.regrow) ? "visible" : "hidden" }}>
                 {dead ? `🩸 ${side.boss?.regrow ?? ""}` : "🎯"}
               </div>
-              {float(i) && <FloatText key={`f${fx!.id}`} float={float(i)!} top={0} />}
+              <LingeringFloat float={float(i)} id={fx?.id} top={0} />
               <div key={reaction(i) ? `r-${fx!.id}` : "r"} className={dead ? "boss-dead" : reaction(i)} style={{ marginTop: 4 }}>
                 <div className={dead ? "" : idle} style={aimed ? { filter: "drop-shadow(0 0 6px #ffd66e)" } : undefined}>
                   <PixelSprite sprite={creatureSprite(id)} scale={SCALE[id] ?? 3}

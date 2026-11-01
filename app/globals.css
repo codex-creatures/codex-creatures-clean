@@ -157,13 +157,20 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .float-text {
   position: absolute; left: 50%; top: 30%; z-index: 5; pointer-events: none;
   font-size: 22px; white-space: nowrap; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
-  animation: float-up 0.95s ease-out forwards;
+  animation: float-up 1.9s ease-out forwards; /* FLOAT_MS in components/BattleScreen.tsx */
 }
+/* Pops in, holds still long enough to read, then drifts up and fades. */
 @keyframes float-up {
   0%   { opacity: 0; transform: translate(-50%, 10px) scale(0.7); }
-  15%  { opacity: 1; transform: translate(-50%, 0) scale(1.25); }
+  8%   { opacity: 1; transform: translate(-50%, 0) scale(1.25); }
+  16%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  60%  { opacity: 1; transform: translate(-50%, -10px) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -46px) scale(1); }
 }
+/* A health bar losing HP: the bar slides down, and a pale strip shows the
+   chunk just lost before draining after it (HpFill). */
+.hp-fill  { position: absolute; top: 0; bottom: 0; left: 0; transition: width 0.6s ease-out; }
+.hp-trail { position: absolute; top: 0; bottom: 0; left: 0; background: #fff1c2; transition: width 0.9s ease-in 0.55s; }
 
 /* ── Boss stage (components/BossStage.tsx) ── */
 .boss-stage {
@@ -251,6 +258,7 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 @media (prefers-reduced-motion: reduce) {
   .anim-lunge-right, .anim-lunge-left, .anim-hit, .anim-dodge, .anim-swapin { animation: none; }
   .float-text { animation-duration: 0.01s; }
+  .hp-fill, .hp-trail { transition: none; }
   .boss-breathe, .boss-scuttle, .boss-float, .boss-torch, .boss-attack, .boss-hit, .boss-dodge,
   .boss-burst-left, .boss-burst-right, .boss-eye-rise, .boss-flash { animation: none; }
   .boss-collapse { animation: none; opacity: 0; }
