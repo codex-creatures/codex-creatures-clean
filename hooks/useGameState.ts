@@ -5,7 +5,7 @@ import { ARMOR_SLOTS, type ArmorSlot } from "@/lib/items/armor";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
-import { discoveredSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
+import { ownedSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
@@ -16,7 +16,8 @@ import { codexDrop, potionDrop } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
-import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { clearDaily, countDaily } from "@/lib/daily";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { starterCreature } from "@/lib/creatures/starter";
@@ -92,6 +93,7 @@ type SaveState = {
   materials?: Materials;               // your materials at home: a tally, like gold
   storage?: CappedBox[];               // chest boxes built bigger (the merchant's storage schematics; lib/items/storage.ts)
   found?: string[];                    // kinds of item you've ever had (lib/items/discovery.ts)
+  owned?: string[];                    // creature species you've ever owned, let go or not (ownedSpecies)
   teams?: string[][];                  // the Labyrinth's saved line-ups (lib/teams.ts)
 };
 
@@ -166,6 +168,7 @@ export function loadSave(): SaveState | null {
     materials: obj(parsed.materials) as Materials,
     storage: Array.isArray(parsed.storage) ? parsed.storage : [],
     teams: readTeams(parsed.teams),
+    owned: Array.isArray(parsed.owned) ? parsed.owned.filter((c: unknown) => typeof c === "string") : [],
     found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),
   };
 }
@@ -203,6 +206,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [storage, setStorage] = useState<CappedBox[]>([]);
   const [materials, setMaterials] = useState<Materials>({});
   const [found, setFound] = useState<string[]>([]);
+  const [owned, setOwned] = useState<string[]>([]);
   const [teams, setTeams] = useState<Teams>(() => readTeams(undefined));
   // Gear packed in your bag (lib/dungeon/run.ts): it can't be sold.
   const [packedIds, setPackedIds] = useState<Set<string>>(new Set());
@@ -245,6 +249,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setStorage(saved.storage ?? []);
       setMaterials(saved.materials ?? {});
       setFound(saved.found ?? []);
+      setOwned(saved.owned ?? []);
       setTeams(readTeams(saved.teams));
     }
     setTavern(loadTavern());
@@ -254,8 +259,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, teams });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, teams]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -375,6 +380,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const takeBounty = () => setTavern(updateTavern((t) => (canTakeBounty(t) ? { ...t, bounty: true } : t)));
   // The head goes up once you've beaten the Cyclops (the Labyrinth's record).
   const mountCyclopsHead = () => setTavern(updateTavern((t) => mountHead(t, loadDungeon().meta.clears)));
+  // The daily quest's merchant (lib/daily.ts): he calls at the tavern now.
+  const merchantVisits = () => setTavern(updateTavern((t) => merchantCalls(t, Math.random, onBindle(loadDungeon().meta))));
   // Buying from whoever's calling at the tavern, one of each. You're home, so
   // it goes straight where it lives: potions, scrolls, flares and
   // clairvoyance scrolls to your Inventory (pack them in the bag from there),
@@ -584,12 +591,14 @@ export function useGameState(initialTab: TabKey = "all") {
   const totalScans = useMemo(() => Object.values(scanCounts).reduce((n, c) => n + c, 0), [scanCounts]);
 
   // ── Discovery progress ────────────────────────────────
-  const discoveredCreatures = useMemo(() => discoveredSpecies(inventory).size, [inventory]);
-  const discoveredItems = useMemo(
-    // Every kind of item (lib/items/discovery.ts), used-up ones included.
-    () => discoveredItemKeys(found, inventory, materials).size,
-    [found, inventory, materials]
-  );
+  // Every species you've owned: a new one is remembered as soon as it's in
+  // your things, so letting it go later doesn't take it off the count.
+  const speciesOwned = useMemo(() => ownedSpecies(owned, inventory), [owned, inventory]);
+  if (hydrated && [...speciesOwned].some((id) => !owned.includes(id))) setOwned([...speciesOwned]);
+  const discoveredCreatures = speciesOwned.size;
+  // Every kind of item (lib/items/discovery.ts), used-up ones included.
+  const itemKinds = useMemo(() => discoveredItemKeys(found, inventory, materials), [found, inventory, materials]);
+  const discoveredItems = itemKinds.size;
   // Remember the kinds of item in these drops, for "Items discovered".
   function noteFound(drops: Drop[]) {
     const keys = drops.map(itemDiscoveryKey).filter((k): k is string => !!k);
@@ -686,7 +695,9 @@ export function useGameState(initialTab: TabKey = "all") {
   function sellFromCrate(ids: string[]) {
     const sold = crate.filter((d) => ids.includes(d.id));
     setCrate((prev) => prev.filter((d) => !ids.includes(d.id)));
-    setGold((gl) => gl + sold.reduce((s, d) => s + crateSellValue(d), 0));
+    const price = sold.reduce((s, d) => s + crateSellValue(d), 0);
+    setGold((gl) => gl + price);
+    countDaily("sell", price);
   }
   // Selling to the tavern's merchant: anything he'll take from your Inventory
   // (lib/tavern.ts tavernSellables), or materials one at a time.
@@ -696,12 +707,14 @@ export function useGameState(initialTab: TabKey = "all") {
     if (!offer) return false;
     removeDrop(id);
     setGold((g) => g + offer.price);
+    countDaily("sell", offer.price);
     return true;
   }
   function sellMaterialToTavern(key: MaterialKey): boolean {
     if (loadTavern().visitor !== "merchant" || countMaterial(materials, key) < 1) return false;
     setMaterials((m) => addMaterials(m, { [key]: -1 }));
     setGold((g) => g + materialOffer(key));
+    countDaily("sell", materialOffer(key));
     return true;
   }
 
@@ -873,6 +886,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   function confirmSell() {
     setGold((g) => g + sellTotal);
+    countDaily("sell", sellTotal);
     setInventory((prev) => prev.filter((d) => !selectedForSale.has(d.id)));
     setSelectedForSale(new Set());
     setShowSellConfirm(false);
@@ -889,12 +903,14 @@ export function useGameState(initialTab: TabKey = "all") {
     if (!price) return;
     removeDrop(id);
     setGold((g) => g + price);
+    countDaily("sell", price);
   }
 
   function sellOne(id: string) {
     const d = inventory.find((x) => x.id === id);
     if (!d || !isSellableItem(d) || lockedIds.has(id)) return;
     setGold((g) => g + crateSellValue(d));
+    countDaily("sell", crateSellValue(d));
     setInventory((prev) => prev.filter((x) => x.id !== id));
     setSelectedForSale((prev) => { if (!prev.has(id)) return prev; const n = new Set(prev); n.delete(id); return n; });
   }
@@ -904,6 +920,7 @@ export function useGameState(initialTab: TabKey = "all") {
   function resetAll() {
     clearDungeon();
     clearTavern();
+    clearDaily();
     clearPlayTime();
     endTour();
     setTavern({});
@@ -925,6 +942,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setStorage([]);
     setMaterials({});
     setFound([]);
+    setOwned([]);
     setScanMode(defaultScanMode());
     setPackedIds(new Set());
     setEquipment({});
@@ -953,13 +971,13 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, merchantVisits, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
     filteredInventory, tabCounts, equippedOn, lockedIds,
     weaponsOnly, armorOnly,
-    discoveredCreatures, discoveredItems,
+    discoveredCreatures, discoveredItems, speciesOwned, itemKinds,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,

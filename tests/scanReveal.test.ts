@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { GOLD_SHAKE_MS, LEGENDARY_PAUSE_MS, RARITY_ORDER, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs, shakeStages } from "../lib/scanReveal";
+import { GOLD_SHAKE_MS, LEGENDARY_PAUSE_MS, RARITY_ORDER, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs, shakeStages, newFinds } from "../lib/scanReveal";
+import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { POTIONS, SCROLL_PRICE, codexPrice } from "../lib/dungeon/run";
 import { TOOLS } from "../lib/items/materials";
 import type { Drop } from "../lib/types";
@@ -64,5 +65,22 @@ describe("the altar's unveiling", () => {
     expect(findLine(undefined, 3)).toBe("You're the 3rd to find this Code Cache");
     expect(findLine("looted")).toContain("already looted");
     expect(findLine(undefined)).toBeNull(); // a copy without online: nobody to count
+  });
+});
+
+describe("new finds", () => {
+  const [a, b] = CREATURE_TEMPLATES;
+  const mon = (id: string, t: { id: string; name: string }, dropType = "creature") => drop({ id, dropType, creatureId: t.id, name: t.name });
+  const planks = (id: string) => drop({ id, dropType: "item", material: "planks" });
+  const none = new Set<string>();
+
+  it("a species you've never owned, or a kind of item you've never had, is new", () => {
+    const got = newFinds([mon("x", a), mon("y", b, "card"), planks("z"), drop({ id: "g", dropType: "reward", amount: 5 })], new Set([b.id]), none);
+    expect([...got]).toEqual([["x", "creature"], ["z", "item"]]);
+    expect(newFinds([planks("z")], none, new Set(["m:planks"])).size).toBe(0);
+  });
+
+  it("of two of the same new kind at once, only the first is new", () => {
+    expect([...newFinds([mon("x", a), mon("y", a), planks("p"), planks("q")], none, none).keys()]).toEqual(["x", "p"]);
   });
 });

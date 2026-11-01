@@ -84,8 +84,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   Under the find's name, who got there first (`findLine`; the user, 2026-11-01, a treasure hunt for
   barcodes nobody has scanned): "✨ First to find this Code Cache!", online "You're the 3rd to find
   this Code Cache", or "You've already looted this Code Cache" on a rescan. In Storage it shows under
-  the window instead. "Open all" opens stored caches
-  together, with no show. Typed barcodes (Repeatable by default, or Random) sit at the
+  the window instead. ✅ (the user, 2026-11-02) **New finds:** the first of a kind you've had gets a
+  "✨ New creature!" or "✨ New item!" tag over it as it opens (`newFinds`): a species you don't
+  have (as "Creatures discovered" counts it, so one you've let go of is new again) or a kind of item
+  never had ("Items discovered"). Of two of the same new kind at once, only the first. "Open all" opens stored caches
+  together, with no show (each new find tagged NEW once revealed). Typed barcodes (Repeatable by default, or Random) sit at the
   bottom as a testing tool. ✅ (the user, 2026-10-31) Online, the altar's testing tools (typed
   barcodes, Random, the resets, rubble and visitor) show only for the owner's account
   (`ADMIN_IDS`, lib/online/admin.ts); a copy without online keeps them. This hides them in the
@@ -793,7 +796,7 @@ fields optional with defaults.
    own picture, built only once open, so later rooms don't slow the others (watch phone
    performance). The tavern's room is the Den's cave with nothing in it (`createDen({ bare })`), with
    the tavern, head and visitor standing in it (`components/TavernRoom.tsx`); tapping there opens
-   `/tavern` (repair, bounty, trading). Meant to grow into more rooms.
+   `/tavern` (repair, trading). Meant to grow into more rooms.
    📌 Still to come: mounted head art, and the tavern's interior (needs design). The user's
    [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png) is the likely long-term
    look for the base.
@@ -802,18 +805,17 @@ fields optional with defaults.
 4. ✅ **The tavern (outside only for now)** stands broken in that room, a building against its far
    wall (the sketch). The first time you see it, Klutz reacts once (it needs materials). Art:
    PixelLab, at the room's angle (§11); greyed until repaired. ✅ (the user, 2026-10-20) **No
-   wanted poster:** instead a ❗ over the tavern while it has a quest step for you (the bounty to
-   take, or the head to hand in: `tavernHasQuest`), also shown at the Den's doorway; tapping the
-   tavern opens its window with the offer.
+   wanted poster.** ✅ (the user, 2026-11-02) The bounty lives on the **quest board's Quests tab**
+   (`/board`), not in the tavern: a ❗ on the board in the Den while it has a step for you (the
+   bounty to take, or the head to hand in: `bountyHasStep`). The tavern's ❗ is for visitors only.
 5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
-6. ✅ **Bounty:** the tavern offers the Cyclops bounty. If you'd already beaten the Cyclops
-   (`meta.clears`), it completes as soon as you open the tavern. Cyclops combat is unchanged.
-   🧪 Built as a "Take the Cyclops bounty" button once the tavern's repaired; with a win already
-   on record, the head is ready to mount straight away.
+6. ✅ **Bounty:** repairing the tavern puts the Cyclops bounty up on the quest board
+   (`bountyStep`: offer, hunt, head, paid). Cyclops combat is unchanged. 🧪 A "Take the bounty"
+   button; with a win already on record (`meta.clears`), the head is ready to hand in straight away.
 7. ✅ **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
-   the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Mounting
-   it on the tavern wall (once) completes the bounty and unlocks the bookcase schematic.
+   the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Handing it
+   in at the board (once) mounts it on the tavern wall, completes the bounty and unlocks the bookcase schematic.
    🧪 The head isn't an item in your storage: it's yours once you've beaten the Cyclops and taken
    the bounty, so it can't be sold, used, lost or doubled. Mounted, it hangs over the tavern door
    (placeholder: the Cyclops sprite on a plaque marked with the run).
@@ -828,6 +830,28 @@ fields optional with defaults.
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still merchant or librarian at 12:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and they stand in the tavern. They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
+
+### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)
+
+On the quest board's Quests tab, above the Cyclops bounty. **One a day, the same for everyone**
+(picked from the date), new at **local midnight**. Only what you do that day counts; finish it,
+then claim the reward once. A ❗ on the board in the Den while one's ready to claim. Plays offline.
+
+| Quest | Reward |
+|---|---|
+| Scan 5 new barcodes | 500 gold |
+| Beat the Cyclops | Klutz's box (10 pieces) at Rare or better |
+| Beat the Encampment twice | a creature, Rare at most |
+| Beat the Hydra | 3 Rare or Epic weapons or armour |
+| Sell 300 gold's worth of items | the travelling merchant calls at the tavern |
+
+🧪 Claude's readings, not asked: "5 item scans" counts new barcodes (a Code Cache, sealed or not;
+a rescan's gold doesn't). Rarities are rolled at the usual odds (`RARITY_WEIGHTS`) and then held
+to the limits (`rollRarity`), so the box is mostly Rare. The box keeps Klutz's 10 pieces
+(`BOX_ROLLS`), a weapon a third of the time. Sales count at home (Inventory, altar, crate,
+tavern, materials) and to the Labyrinth's merchant. The merchant replaces whoever's at the tavern
+for 2 runs, and can't be claimed until the tavern's repaired (progress still counts). A reward
+with no room in your chest waits until there is. The Hydra counts only in the Deep Labyrinth.
 
 ## 10. UI philosophy (settled; follow it)
 
@@ -989,9 +1013,10 @@ account, kept entirely apart from Vouchee.
   and the altar's Random testing mode still roll on the device and register nothing.
   - Not hardened: a player could script calls to farm fresh barcodes. Accepted for playtesting
     (see Cheating below).
-- ✅ **Leaderboards**, at the Den's quest board (`/board`; daily quests will join them there).
-  Boards: creature species you have, shown as 12/120 (the altar's "Creatures discovered": creatures and
-  cards, species you no longer have don't count); runs started in each dungeon; wins in each
+- ✅ **Leaderboards**, the quest board's second tab (`/board`; the first is Quests, §9).
+  Boards: creature species you've owned, shown as 12/120 (the altar's "Creatures discovered": creatures and
+  cards; ✅ the user, 2026-11-02: one you've let go of still counts, kept in the save's `owned`,
+  `ownedSpecies`; older saves start from what they hold); runs started in each dungeon; wins in each
   dungeon (a win is beating its final boss); time played (as Settings counts it, idle time left
   out); barcodes scanned (rescans count too). Starting a new game resets them all. PvP boards come later. Signed-in players only; top
   50 shown, plus your own rank; only named players with more than 0 are listed, ties share a rank.

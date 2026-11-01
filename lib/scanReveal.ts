@@ -8,6 +8,8 @@
 import type { Drop } from "./types";
 import type { Rarity } from "./items/budgets";
 import { lootEntry, merchantOffer } from "./dungeon/run";
+import { itemDiscoveryKey } from "./items/discovery";
+import { CREATURE_TEMPLATES, findCreatureTemplate } from "./creatures/creatureData";
 
 // The rarities in the order the cache climbs through them.
 export const RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
@@ -77,4 +79,29 @@ export function revealChoice(d: Drop, price: number): RevealChoice {
 export function shakeMs(d: Drop): number {
   const last = shakeStages(d).at(-1)!;
   return last.at + last.ms;
+}
+
+// Which of these finds are new to you (a "New creature!" or "New item!" as it
+// opens): a species you've never owned (owned: "Creatures discovered",
+// lib/items/gameHelpers.ts ownedSpecies), or a kind of item you've never had
+// (had: "Items discovered"). Of two of the same new kind in one go, only the
+// first is new. Gold and the rest never are.
+export type NewFind = "creature" | "item";
+export function newFinds(drops: Drop[], owned: ReadonlySet<string>, had: ReadonlySet<string>): Map<string, NewFind> {
+  const species = new Set(owned), items = new Set(had);
+  const out = new Map<string, NewFind>();
+  for (const d of drops) {
+    if (d.dropType === "creature" || d.dropType === "card") {
+      const t = findCreatureTemplate(d.creatureId, d.name);
+      if (!t || !CREATURE_TEMPLATES.includes(t) || species.has(t.id)) continue;
+      species.add(t.id);
+      out.set(d.id, "creature");
+    } else {
+      const k = itemDiscoveryKey(d);
+      if (!k || items.has(k)) continue;
+      items.add(k);
+      out.set(d.id, "item");
+    }
+  }
+  return out;
 }

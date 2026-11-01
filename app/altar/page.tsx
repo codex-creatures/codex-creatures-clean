@@ -22,7 +22,8 @@ import { BOX_CAP, BIG_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/l
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { testingToolsAllowed } from "@/lib/online/admin";
 import { backupSave } from "@/lib/saveFile";
-import { findLine } from "@/lib/scanReveal";
+import { findLine, newFinds, type NewFind } from "@/lib/scanReveal";
+import { countDaily } from "@/lib/daily";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -62,6 +63,8 @@ export default function AltarPage() {
   const storing = game.scanMode === "store";
   const kept = useRef(new Set<string>()); // this scan's finds kept as Code Caches (Looting, full box)
   const [lines, setLines]           = useState<Record<string, string>>({}); // finds to be unveiled: who got there first (findLine)
+  const [fresh, setFresh]           = useState<Map<string, NewFind>>(new Map()); // finds new to you, worked out before they join your things
+  const noteNew = (drops: Drop[]) => { const m = newFinds(drops, game.speciesOwned, game.itemKinds); setFresh((f) => new Map([...f, ...m])); };
   const cacheIds = new Set(game.caches.map((d) => d.id));
   const boxesFull = (full: CappedBox[]) => <>🧰 Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. Sell some to open {full.length > 1 ? "these" : "it"}.</>;
 
@@ -71,6 +74,8 @@ export default function AltarPage() {
     onDrop:            (d) => { if (game.addScan(d)) kept.current.add(d.id); },
     onScan:            (drops, found, place) => {
       const opened = drops.filter((d) => !kept.current.has(d.id));
+      noteNew(opened); // (game is still as it was before this scan)
+      if (found !== "looted") countDaily("scan"); // a new barcode (the daily quest: lib/daily.ts)
       // The first ever to scan this barcode, how many found it before you, or
       // one you've scanned before: in the unveiling (Looting), else under the window.
       const line = findLine(found, place);
@@ -88,7 +93,7 @@ export default function AltarPage() {
     },
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
-    onOffline:         (code) => { game.sealScan(code); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
+    onOffline:         (code) => { game.sealScan(code); countDaily("scan"); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
     onSealed:          (rarity, need) => setNote(<>🔒 Something <b style={{ color: RARITY_COLORS[rarity]?.text, textTransform: "capitalize" }}>{rarity}</b> stirs in it. Come back at explorer level <b>{need}</b>.</>),
   });
 
@@ -146,6 +151,7 @@ export default function AltarPage() {
   function open(list: Drop[]) {
     const { fit, full } = fitInBoxes(game.inventory, list, game.storage);
     setNote(full.length ? boxesFull(full) : null);
+    if (fit.length) noteNew(fit);
     if (list.length === 1 && fit.length === 1) { game.openCaches([fit[0].id]); setRevealing([fit[0]]); }
     else if (fit.length) setOpening(fit);
   }
@@ -260,12 +266,12 @@ export default function AltarPage() {
       </div>
 
       {unveiled && (
-        <ScanReveal key={unveiled.id} drop={unveiled} line={lines[unveiled.id]} sellValue={game.findValue(unveiled)}
+        <ScanReveal key={unveiled.id} drop={unveiled} line={lines[unveiled.id]} isNew={fresh.get(unveiled.id)} sellValue={game.findValue(unveiled)}
           onKeep={() => doneRevealing()} onSell={() => doneRevealing(game.sellFind)} onRelease={() => doneRevealing(game.removeDrop)} />
       )}
 
       {opening && (
-        <CodeCache title={opening.length === 1 ? "Code Cache" : "Code Caches"} items={opening} revealAllLabel="Extract all" doneLabel="Take it all"
+        <CodeCache title={opening.length === 1 ? "Code Cache" : "Code Caches"} items={opening} fresh={fresh} revealAllLabel="Extract all" doneLabel="Take it all"
           intro={opening.length === 1 ? "Tap it to crack it open." : "Tap a cache to crack it open, or extract them all at once."}
           onDone={() => { game.openCaches(opening.map((d) => d.id)); setOpening(null); }} />
       )}

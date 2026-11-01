@@ -15,12 +15,13 @@
 // 4. The tavern stands there broken. The first time you see it Klutz has
 //    something to say (once).
 // 5. The repair: REPAIR_COST in materials, taken once, and it's restored.
-// 6. The bounty: take it at the tavern (its ❗: tavernHasQuest). The Cyclops's
-//    head is yours once you've beaten it (before or after taking the bounty: lib/dungeon/run.ts
+// 6. The bounty: on the quest board's Quests tab once the tavern's repaired
+//    (a ❗ at the board: bountyHasStep). The Cyclops's head is yours once
+//    you've beaten it (before or after taking the bounty: lib/dungeon/run.ts
 //    meta.clears), so it can't be lost, sold or doubled.
-// 7. Mount the head on the tavern wall (once): the bounty's paid with the
-//    Crooked Bookcase Schematic, the only way to get it (built at the
-//    bookcase).
+// 7. Hand the head in at the board (once): it goes up on the tavern wall and
+//    the bounty's paid with the Crooked Bookcase Schematic, the only way to
+//    get it (built at the bookcase).
 // 8. Visitors. Once it's repaired, each time you come home from a run there's
 //    a chance a travelling merchant or a wandering librarian calls
 //    (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
@@ -82,6 +83,14 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle
   if (!who) return { ...gone, misses: (t.misses ?? 0) + 1 };
   const stock = makeRoom(who, rng, Infinity, 1, bindle);
   return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
+}
+
+// A daily quest's reward (lib/daily.ts): the merchant calls at the repaired
+// tavern now, in place of whoever's there, for VISITOR_STAY runs.
+export function merchantCalls(t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest {
+  if (!t.repaired) return t;
+  const stock = makeRoom("merchant", rng, Infinity, 1, bindle);
+  return { ...t, visitor: "merchant", stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
 }
 
 // For testing (the altar): open and repair the tavern, and have who call right
@@ -147,8 +156,14 @@ export const canTakeBounty = (t: TavernQuest) => !!t.repaired && !t.bounty;
 // The head's waiting to go up on the wall.
 export const headToMount = (t: TavernQuest, clears: number) => !!t.bounty && clears > 0 && !t.mounted;
 export const mountHead = (t: TavernQuest, clears: number): TavernQuest => (headToMount(t, clears) ? { ...t, mounted: true } : t);
-// The tavern has a quest step waiting (its ❗): the bounty to take, or the head to hand in.
-export const tavernHasQuest = (t: TavernQuest, clears: number) => canTakeBounty(t) || headToMount(t, clears);
+// Where the bounty's at, for the quest board: not up yet (the tavern's still
+// broken), on offer, taken (go and beat the Cyclops), the head to hand in, or paid.
+export type BountyStep = "closed" | "offer" | "hunt" | "head" | "paid";
+export function bountyStep(t: TavernQuest, clears: number): BountyStep {
+  return !t.repaired ? "closed" : canTakeBounty(t) ? "offer" : t.mounted ? "paid" : headToMount(t, clears) ? "head" : "hunt";
+}
+// The bounty has a step waiting (a ❗ at the quest board): the bounty to take, or the head to hand in.
+export const bountyHasStep = (t: TavernQuest, clears: number) => canTakeBounty(t) || headToMount(t, clears);
 // The bounty's reward: the bookcase schematic, to build while the bookcase is
 // still the broken shelf (level 1).
 export const tavernPlan = (t: TavernQuest, bookcaseLevel: number) => !!t.mounted && bookcaseLevel < 2;

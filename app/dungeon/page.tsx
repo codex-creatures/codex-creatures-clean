@@ -66,6 +66,7 @@ import {
   dynamiteHere, takeDynamite,
   SCROLL_LOOKS, scrollLooksLeft,
 } from "@/lib/dungeon/run";
+import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
 import {
@@ -412,6 +413,7 @@ export default function DungeonPage() {
       game.addDrop(x);
       delete loot[id];
     }
+    if (cur.run?.status === "cleared") countDaily(`win:${dungeonOf(cur.run)}`); // (the daily quest: lib/daily.ts)
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     updateTavern((t) => comeHome(t, Math.random, onBindle(cur.meta))); // home: a visitor may call at the tavern
     battle.clear();
@@ -522,6 +524,7 @@ export default function DungeonPage() {
       got = usedUp(got, { dropId: it.id });
     }
     game.addGold(price);
+    countDaily("sell", price);
     update({ meta: { ...cur.meta, bag: cur.meta.bag.filter((_, i) => i !== bagIndex), loot }, run: { ...cur.run, got } });
   }
 

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, tavernHasQuest, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -145,11 +145,11 @@ describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
   });
 
   it("the tavern shows its ❗ while the bounty's on offer or the head's ready to hand in", () => {
-    expect(tavernHasQuest({ blasted: true }, 0)).toBe(false);              // still broken
-    expect(tavernHasQuest(repaired, 0)).toBe(true);                        // bounty on offer
-    expect(tavernHasQuest({ ...repaired, bounty: true }, 0)).toBe(false);  // out hunting the Cyclops
-    expect(tavernHasQuest({ ...repaired, bounty: true }, 1)).toBe(true);   // head to hand in
-    expect(tavernHasQuest({ ...repaired, bounty: true, mounted: true }, 1)).toBe(false); // all done
+    expect(bountyHasStep({ blasted: true }, 0)).toBe(false);              // still broken
+    expect(bountyHasStep(repaired, 0)).toBe(true);                        // bounty on offer
+    expect(bountyHasStep({ ...repaired, bounty: true }, 0)).toBe(false);  // out hunting the Cyclops
+    expect(bountyHasStep({ ...repaired, bounty: true }, 1)).toBe(true);   // head to hand in
+    expect(bountyHasStep({ ...repaired, bounty: true, mounted: true }, 1)).toBe(false); // all done
   });
 
   it("mounting it is once only, and pays the bookcase schematic", () => {
@@ -320,5 +320,16 @@ describe("drawing the Den: changed patches go to the screen in a few copies", ()
     let most = 0;
     for (let f = 1; f <= 36; f++) { den.render(f / 12, OBJ.none); most = Math.max(most, den.dirty()?.length ?? 0); }
     expect(most).toBeLessThanOrEqual(20);
+  });
+});
+
+describe("the bounty on the quest board", () => {
+  it("goes up with the repair, then hunt, head and paid", () => {
+    const repaired: TavernQuest = { blasted: true, repaired: true };
+    expect(bountyStep({ blasted: true }, 1)).toBe("closed");
+    expect(bountyStep(repaired, 1)).toBe("offer");
+    expect(bountyStep({ ...repaired, bounty: true }, 0)).toBe("hunt");
+    expect(bountyStep({ ...repaired, bounty: true }, 1)).toBe("head");
+    expect(bountyStep({ ...repaired, bounty: true, mounted: true }, 1)).toBe("paid");
   });
 });

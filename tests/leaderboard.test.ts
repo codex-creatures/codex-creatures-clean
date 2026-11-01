@@ -24,6 +24,11 @@ describe("leaderboard stats from a save", () => {
     });
   });
 
+  it("counts species you've owned and let go, as the save remembers them", () => {
+    const progress = { inventory: [species(0)], owned: [CREATURE_TEMPLATES[0].id, CREATURE_TEMPLATES[2].id, "not_a_creature", 7] };
+    expect(leaderboardStats(progress).species).toBe(2);
+  });
+
   it("gives zeros for an empty or odd save", () => {
     const zero = { species: 0, runs: { 0: 0, 1: 0, 2: 0, 3: 0 }, wins: { 0: 0, 1: 0, 2: 0, 3: 0 }, playTime: 0, scans: 0 };
     expect(leaderboardStats(null)).toEqual(zero);

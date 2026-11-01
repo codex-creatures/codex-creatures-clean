@@ -107,6 +107,16 @@ export function discoveredSpecies(inventory: Drop[]): Set<string> {
       .map((t) => t!.id)
   );
 }
+// Every species you've owned (as a creature or a card), even ones you've let
+// go since: what the save remembers (owned) plus what you have now (so older
+// saves count what's already in them). "Creatures discovered" and the
+// species leaderboard.
+export function ownedSpecies(owned: unknown, inventory: Drop[]): Set<string> {
+  const out = discoveredSpecies(inventory);
+  if (Array.isArray(owned)) for (const id of owned) if (typeof id === "string" && CREATURE_IDS.has(id)) out.add(id);
+  return out;
+}
+const CREATURE_IDS = new Set(CREATURE_TEMPLATES.map((t) => t.id));
 export const TOTAL_WEAPONS   = ITEM_KEYS.length;
 export const TOTAL_ARMOR     = Object.keys(ARMOR_CEILINGS).length;
 // Every kind of item there is to discover (weapons, armour, materials, potions, codexes).

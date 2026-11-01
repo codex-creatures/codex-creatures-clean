@@ -51,7 +51,7 @@ export const TOUR: TourStep[] = [
 
   { path: "/", target: den(OBJ.pool), say: "The healing pool. Hurt creatures rest up in here." },
   { path: "/", target: den(OBJ.bookcase), say: "The bookcase holds codexes. Read one on a creature to teach it a new move." },
-  { path: "/", target: den(OBJ.quests), say: "The quest board: see how you rank against other players." },
+  { path: "/", target: den(OBJ.quests), say: "The quest board: quests to take on, and how you rank against other players." },
   { path: "/", target: den(OBJ.scroll), say: "The Bestiary & Rules: every creature you've met, and how fights work. Stuck? Look there, or tap any ? for help." },
 
   // The Labyrinth

@@ -2,8 +2,7 @@
 // components/TavernRoom.tsx
 // What stands in the tavern's room, through the Den's doorway behind its
 // right wall (DenRoom's annex): the tavern in the far right corner, with a ❗
-// over it when it has a quest step for you (tap it for the tavern's window),
-// the Cyclops Head over its door once mounted, and whoever's visiting out front.
+// over it while someone's visiting (tap it for the tavern's window), the Cyclops Head over its door once mounted, and whoever's visiting out front.
 
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot } from "@/components/DenRoom";
@@ -29,11 +28,10 @@ const LIGHTS = [{ x: 121, y: 345, r: 80 }, { x: 60, y: 242, r: 30 }, { x: 400, y
 const VISITOR_SPOT = { u: 12.4, v: 6.2 };
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 
-// quest: the tavern has a quest step waiting (lib/tavern.ts tavernHasQuest).
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
-export default function TavernRoom({ tavern: t, quest = false, firstClearRun }: { tavern: TavernQuest; quest?: boolean; firstClearRun?: number }) {
+export default function TavernRoom({ tavern: t, firstClearRun }: { tavern: TavernQuest; firstClearRun?: number }) {
   const visitor = tavernVisitor(t);
-  const news = quest || !!visitor;
+  const news = !!visitor;
   const head = CREATURE_SPRITES.cyclops;
   return (
     <>
@@ -46,11 +44,10 @@ export default function TavernRoom({ tavern: t, quest = false, firstClearRun }: 
           <div key={i} aria-hidden className="den-glow"
             style={{ left: pct(g.x, TAVERN.w), top: pct(g.y, TAVERN.h), width: pct(g.r * 2, TAVERN.w), aspectRatio: "1", opacity: t.repaired ? 1 : 0.5, background: "radial-gradient(circle, rgba(255, 176, 84, 0.42), rgba(255, 150, 60, 0.14) 45%, transparent 70%)", animationDelay: `${-i * 0.7}s` }} />
         ))}
-        {/* Its name over it, like the Den's places, with a ❗ while there's a quest
-            step or someone's visiting. */}
+        {/* Its name over it, like the Den's places, with a ❗ while someone's visiting. */}
         <div className={`pixel-font${news ? " news-glow" : ""}`}
           style={{ position: "absolute", left: "45%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
-          {news && <span className="news-pulse" aria-label={quest ? "The tavern has a quest for you" : "Someone's in the tavern"}>❗ </span>}
+          {news && <span className="news-pulse" aria-label="Someone's in the tavern">❗ </span>}
           {t.repaired ? "Tavern" : "Broken tavern"}
         </div>
         {/* The Cyclops Head, mounted over the door, with the run you first beat it on. */}

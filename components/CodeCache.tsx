@@ -12,6 +12,7 @@ import PixelSprite, { itemSprite, creatureSprite } from "./PixelSprite";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { goodsIcon } from "@/lib/items/materials";
 import type { CreatureOrItemDrop, Drop } from "@/lib/types";
+import type { NewFind } from "@/lib/scanReveal";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const COLUMNS = 5;
@@ -25,10 +26,11 @@ function look(d: Drop) {
   return { sprite, icon: goodsIcon(x) ?? (x.codexMove ? "📖" : x.scroll ? "📜" : x.dropType === "card" ? "🃏" : "📦"), name: x.name, color: rc.text, glow: rc.border, rarity: x.rarity };
 }
 
-export default function CodeCache({ title, intro, items, revealAllLabel = "Reveal all", doneLabel, onDone }: {
+export default function CodeCache({ title, intro, items, fresh, revealAllLabel = "Reveal all", doneLabel, onDone }: {
   title: string;
   intro?: React.ReactNode;
   items: Drop[];
+  fresh?: Map<string, NewFind>; // finds new to you (lib/scanReveal.ts newFinds): tagged NEW once opened
   revealAllLabel?: string;   // "Extract all" for scans
   doneLabel: string;
   onDone: () => void;
@@ -60,10 +62,11 @@ export default function CodeCache({ title, intro, items, revealAllLabel = "Revea
             const l = look(d);
             return open[i] ? (
               <button key={i} className="cache-open" onClick={() => setLast(i)} title={l.name} aria-label={l.name}
-                style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: 2, cursor: "pointer",
+                style={{ position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: 2, cursor: "pointer",
                   background: "#15161d", border: `3px solid ${l.color}`, boxShadow: `0 0 10px ${l.glow}, inset 0 0 12px ${l.glow}`,
                   outline: last === i ? "2px solid #ffd66e" : "none", outlineOffset: 1 }}>
                 {l.sprite ? <PixelSprite sprite={l.sprite} scale={2} /> : <span style={{ fontSize: 22 }}>{l.icon}</span>}
+                {fresh?.has(d.id) && <span className="pixel-font" aria-label="New" style={{ position: "absolute", top: 2, right: 2, padding: "0 3px", fontSize: 10, lineHeight: "14px", color: "#1a1206", background: "#ffd66e" }}>NEW</span>}
               </button>
             ) : (
               <button key={i} className="cache-sealed" onClick={() => reveal(i)} aria-label={`Reveal item ${i + 1}`}
@@ -81,6 +84,7 @@ export default function CodeCache({ title, intro, items, revealAllLabel = "Revea
             <>
               <b style={{ color: shown.color }}>{shown.name}</b>
               {shown.rarity && <span style={{ color: MUTED, textTransform: "capitalize" }}> · {shown.rarity}</span>}
+              {last !== null && fresh?.has(items[last].id) && <b style={{ color: "#ffd66e" }}> · ✨ New {fresh.get(items[last].id)}!</b>}
             </>
           ) : <span style={{ color: MUTED }}>Tap a slot to see what&apos;s inside.</span>}
         </div>

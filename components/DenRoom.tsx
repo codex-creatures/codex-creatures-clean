@@ -24,7 +24,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.chest]:    { label: "Inventory", href: "/chest" },
   [OBJ.altar]:    { label: "Soul Altar", href: "/altar" },
   [OBJ.merchant]: { label: "Merchant", soon: "Buying, rerolls and upgrades are coming. Sell items from your Inventory for now." },
-  [OBJ.quests]:   { label: "Quest Board", href: "/board" }, // (the leaderboards; daily quests will join them)
+  [OBJ.quests]:   { label: "Quest Board", href: "/board" }, // (quests and the leaderboards)
   [OBJ.bag]:      { label: "Battle Bag", href: "/bag" },
   [OBJ.arch]:     { label: "The Labyrinth", href: "/dungeon" },
   [OBJ.scroll]:   { label: "Bestiary & Rules", href: "/guide" },
@@ -68,13 +68,14 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // backpack: you've found the rugged backpack (otherwise it's a bindle).
 // highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
 // rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
-// tavernNews: someone's visiting the tavern, or it has a quest step for you (a ❗ at the doorway).
+// tavernNews: someone's visiting the tavern (a ❗ at the doorway). boardNews: a quest
+// step waiting at the quest board (lib/tavern.ts bountyHasStep).
 // upgraded: the crooked bookcase is built.
 // crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
 // cageNews: a creature's waiting in the cage to capture or release (a ❗ on its label).
 // annex: what stands in the tavern's room, placed with RoomSpot (shown once
 // the rubble's open). A tap in that room opens the tavern.
-export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
+export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, boardNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; boardNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
   const opened = rubble === "open";
   // The whole picture (layout units): the Den, and the tavern's room up and to its right once it's open.
   const dx = opened ? ANNEX_DX : 0, dy = opened ? ANNEX_DY : 0;
@@ -401,7 +402,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
       {/* Labels */}
       {(Object.keys(SPOTS) as unknown as Exclude<ObjId, 0>[]).map((key) => {
         const id = Number(key) as Exclude<ObjId, 0>;
-        const news = (id === OBJ.tavern && opened && tavernNews) || (id === OBJ.crate && crateNews) || (id === OBJ.cage && cageNews);
+        const news = (id === OBJ.tavern && opened && tavernNews) || (id === OBJ.crate && crateNews) || (id === OBJ.cage && cageNews) || (id === OBJ.quests && boardNews);
         if (id === OBJ.klutz || (id !== shown && id !== highlight && !news)) return null;
         const a = ANCHORS[id];
         const [x, y] = project(a.u, a.v, a.z);
@@ -423,7 +424,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
               cursor: "pointer", boxShadow: "0 2px 0 rgba(0,0,0,0.6)",
             }}
           >
-            {news && <span className="news-pulse" aria-label={id === OBJ.crate ? "Klutz brought loot home" : id === OBJ.cage ? "A creature's in the cage" : "Someone's in the tavern"}>❗ </span>}
+            {news && <span className="news-pulse" aria-label={id === OBJ.crate ? "Klutz brought loot home" : id === OBJ.cage ? "A creature's in the cage" : id === OBJ.quests ? "A quest is waiting" : "Someone's in the tavern"}>❗ </span>}
             {id === OBJ.bag ? (backpack ? "Rugged Backpack" : "Bindle") : spot.label}{spot.soon ? " 🔒" : ""}
           </button>
         );

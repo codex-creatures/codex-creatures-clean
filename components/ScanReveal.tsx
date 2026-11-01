@@ -20,7 +20,7 @@ import { useEscape } from "@/hooks/useEscape";
 import { buzz } from "@/lib/haptics";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
-import { revealChoice, revealTier, shakeMs, shakeStages } from "@/lib/scanReveal";
+import { revealChoice, revealTier, shakeMs, shakeStages, type NewFind } from "@/lib/scanReveal";
 import type { Drop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.6)";
@@ -39,9 +39,10 @@ const SPARK_LIST = Array.from({ length: BIG_SPARKS }, (_, i) => ({
   size: 4 + Math.floor(scatter(i, 4) * 3) * 2, color: SPARK_COLORS[i % SPARK_COLORS.length],
 }));
 
-export default function ScanReveal({ drop, line, sellValue, onKeep, onSell, onRelease }: {
+export default function ScanReveal({ drop, line, isNew, sellValue, onKeep, onSell, onRelease }: {
   drop: Drop;
   line?: string | null;   // who got here first (lib/scanReveal.ts findLine)
+  isNew?: NewFind;        // the first of its kind you've had (lib/scanReveal.ts newFinds)
   sellValue: number;      // what it sells for (0: it can't be sold)
   onKeep: () => void;     // also how gold closes
   onSell: () => void;
@@ -104,6 +105,9 @@ export default function ScanReveal({ drop, line, sellValue, onKeep, onSell, onRe
               {tier !== "puff" && <div aria-hidden className="reveal-rays" style={{ position: "absolute", width: 300, height: 300, left: "50%", top: "50%", margin: "-150px 0 0 -150px",
                 background: `repeating-conic-gradient(${glow}55 0deg 10deg, transparent 10deg 30deg)`, maskImage: "radial-gradient(circle, #000 20%, transparent 68%)", WebkitMaskImage: "radial-gradient(circle, #000 20%, transparent 68%)" }} />}
               <div aria-hidden className="cage-burst" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle, ${glow}99 0%, transparent 60%)` }} />
+              {/* New to you: a tag pinned to the stage's top, so nothing below moves. */}
+              {isNew && <div className="pixel-font levelup-title" style={{ position: "absolute", top: 0, left: "50%", zIndex: 1, translate: "-50% 0", whiteSpace: "nowrap", padding: "3px 10px", fontSize: 15,
+                color: "#1a1206", background: "#ffd66e", border: "2px solid #fff2c4", boxShadow: "0 0 14px #ffcc4d" }}>✨ New {isNew}!</div>}
               <div className="cage-out" style={{ position: "relative", width: 150, height: 170, display: "flex", alignItems: "center", justifyContent: "center", filter: `drop-shadow(0 0 14px ${glow})` }}>
                 {t && drop.dropType === "card" ? <div style={{ width: 120 }}><CardFace t={t} creatureId={creatureId ?? t.id} soulStone={drop.soulStone} mini /></div>
                   : t ? <div style={{ position: "relative", width: 150, height: 150 }}><CreatureArt creatureId={creatureId ?? t.id} title={t.name} /></div>

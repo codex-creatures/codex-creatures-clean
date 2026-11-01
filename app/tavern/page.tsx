@@ -3,9 +3,8 @@
 // The tavern's room, behind the Den's rubble once Klutz's dynamite has blown
 // it open (lib/tavern.ts). The tavern stands broken against the far wall; the
 // first time you see it Klutz has his say. Repairing it takes REPAIR_COST in
-// materials, once. Then it offers the Cyclops bounty (a ❗ over it in the
-// room while there's a step to do here): take it, bring the head (any Cyclops win counts, even one
-// from before), mount it on the wall, and the bookcase schematic is yours.
+// materials, once. That puts the Cyclops bounty on the quest board
+// (app/board); once paid, the head hangs over the door.
 // Once it's repaired, a merchant or librarian sometimes calls (rolled on
 // coming home from a run: lib/tavern.ts comeHome), selling what they would
 // in the Labyrinth. The merchant buys from your Inventory too.
@@ -26,7 +25,7 @@ import { MATERIALS, MATERIAL_KEYS, countMaterial, materialDrop } from "@/lib/ite
 import ItemPicker, { type PickerTab } from "@/components/ItemPicker";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
-import { REPAIR_COST, VISITOR_STAY, canRepair, canTakeBounty, headToMount, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
+import { REPAIR_COST, VISITOR_STAY, canRepair, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -50,8 +49,6 @@ export default function TavernPage() {
   const needs = repairNeeds(game.materials);
   // A wanderer calling, standing as they do in the Labyrinth's tunnels.
   const visitor = tavernVisitor(t);
-  // The Cyclops: how often you've beaten it, and the run you first did.
-  const { clears, firstClearRun } = loadDungeon().meta;
   return (
     <DenFrame title={t.repaired ? "Tavern" : "Broken tavern"} icon="🍺">
       <div className="stone-panel">
@@ -60,7 +57,7 @@ export default function TavernPage() {
           <Help title="The tavern">
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
-              <li>Once it&apos;s repaired, it has a <b>bounty</b> on the Cyclops (a ❗ over the tavern when there&apos;s something to do here). Take the bounty, beat the Cyclops (a win from before counts) and <b>mount its head</b> on the wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
+              <li>Repairing it puts a <b>bounty</b> on the Cyclops up on the <b>quest board</b>.</li>
               <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
             </ul>
           </Help>
@@ -80,7 +77,7 @@ export default function TavernPage() {
         )}
 
         {/* The repair: have / need, then the button. */}
-        {!t.repaired ? (
+        {!t.repaired && (
           <div style={{ marginTop: 10 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
               {needs.map(({ key, have, need }) => (
@@ -91,23 +88,9 @@ export default function TavernPage() {
             </div>
             <button className="pixel-btn" disabled={!canRepair(t, game.materials)} onClick={game.repairTavern}>🔨 Repair the tavern</button>
           </div>
-        ) : (
-          // The bounty, step by step.
-          <div style={{ marginTop: 10, minHeight: 64 }}>
-            {canTakeBounty(t) ? (
-              <button className="pixel-btn" onClick={game.takeBounty}>📜 Take the Cyclops bounty</button>
-            ) : headToMount(t, clears) ? (
-              <>
-                <div style={{ fontSize: 13, color: "#d8d4c8", marginBottom: 6 }}>🗿 You have the <b>Cyclops Head</b>{firstClearRun ? ` (run ${firstClearRun})` : ""}.</div>
-                <button className="pixel-btn" onClick={game.mountCyclopsHead}>🔨 Mount it on the wall</button>
-              </>
-            ) : t.mounted ? (
-              <div style={{ fontSize: 13, color: "#5ee08a" }}>Bounty paid: the <b>Crooked Bookcase Schematic</b>. {game.bookcase < 2 ? "Build it at the bookcase." : ""}</div>
-            ) : (
-              <div style={{ fontSize: 13, color: "#d8d4c8" }}>📜 Bounty taken. Beat the <b>Cyclops</b> and bring back its head.</div>
-            )}
-          </div>
         )}
+
+        {t.repaired && !visitor && <p style={{ fontSize: 13, color: MUTED, margin: "10px 0 0" }}>Nobody&apos;s in. Travellers call when you&apos;re back from a run.</p>}
 
         {/* Whoever's calling, and what they sell. */}
         {visitor === "merchant" && (
