@@ -21,7 +21,6 @@ export default function KlutzGear({ game, onClose }: { game: ReturnType<typeof u
         respec: { cost: RESPEC_COST, can: pointsSpent(game.klutz.points) > 0 && game.gold >= RESPEC_COST, run: game.respecKlutzPoints },
       }}
       stones={{ owned: items.filter((d) => d.stone && KLUTZ_STONES.includes(d.stone)), gold: game.gold, onSet: game.giveKlutzSoulStone }}
-      isFavorite={false}
       loadout={game.equipment[KLUTZ_DROP_ID]}
       weapons={items.filter((d) => d.itemCategory === "weapon")}
       armors={items.filter((d) => d.itemCategory === "armor")}

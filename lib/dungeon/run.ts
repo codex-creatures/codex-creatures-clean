@@ -1173,6 +1173,8 @@ export type DungeonMeta = {
   soakedAt?: string;                 // when the pool last healed the injured (ISO time)
   campRuns?: number;                 // the Encampment: runs started…
   campClears?: number;               // …and its chief beaten
+  teamPick?: number;                 // the entrance: the team last picked (lib/teams.ts; missing = free pick)
+  lastParty?: string[];              // …and the party last picked freely
 };
 
 // ── The healing pool (in the Den) ──────────────────────────────────

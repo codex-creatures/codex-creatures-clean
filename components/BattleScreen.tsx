@@ -38,6 +38,7 @@ import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
+import { hasTeams, readTeams } from "@/lib/teams";
 import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
@@ -110,12 +111,14 @@ export function rarityColor(r?: Rarity) {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // Your creatures as they fight: gear, moves and rolled %s from the save.
-// Roster (★) first, then rarest. atLevel: build them at that level instead
+// Roster first (creatures in a team; until you've made a team, the old ★
+// roster), then rarest. atLevel: build them at that level instead
 // of their own (a duel's format level: lib/pvp/formats.ts).
 export function loadOwnedCreatures(atLevel?: number): OwnedCreature[] {
   const save = loadSave();
   const inv = save?.inventory ?? [];
-  const favs = new Set(save?.favoriteIds ?? []);
+  const teams = readTeams(save?.teams);
+  const favs = new Set(hasTeams(teams) ? teams.flat() : save?.favoriteIds ?? []);
   const equipment = save?.equipment ?? {};
   const items = new Map(inv.filter(isItemDrop).map((d) => [d.id, d as CreatureOrItemDrop]));
 

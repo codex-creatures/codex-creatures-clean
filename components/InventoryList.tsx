@@ -6,6 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
+import type { Teams } from "@/lib/teams";
 import { RARITY_COLORS, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { computeSellGold } from "@/lib/items/economy/sell";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
@@ -46,6 +47,8 @@ type Props = {
   onTabChange: (tab: GameTabKey) => void;
   favoriteIds: Set<string>;
   onToggleFavorite: (id: string) => void;
+  teams?: Teams;                                        // the Labyrinth's teams: a creature's window can add it to one
+  onToggleTeam?: (team: number, creatureId: string) => void;
   sellMode: boolean;
   selectedForSale: Set<string>;
   onToggleSelectItem: (id: string) => void;
@@ -70,12 +73,12 @@ type Props = {
 };
 
 const TABS: GameTabKey[] = ["all", "roster", "creatures", "weapons", "armor", "materials", "consumables", "codexes"];
-const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Roster" };
+const TAB_LABELS: Partial<Record<GameTabKey, string>> = { roster: "★ Teams" };
 
 export default function InventoryList({
   inventory, filteredInventory, equipment, equippedOn, lockedIds, onEquip, onSetMoves, onLearnCodex, onReadScroll, onSetSoulStone, gold = 0, onSummon,
   tabCounts, activeTab, onTabChange,
-  favoriteIds, onToggleFavorite, sellMode, selectedForSale,
+  favoriteIds, onToggleFavorite, teams, onToggleTeam, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onSellOne, onResetAll, onGlobalReset,
   tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp,
@@ -295,7 +298,7 @@ export default function InventoryList({
                       {isCard ? "🃏 " : ""}{isItem ? (d as CreatureOrItemDrop).name ?? (d as any).itemKey ?? "Unknown" : (d as CreatureOrItemDrop).name}{isCard ? " card" : ""}
                     </span>
                   )}
-                  {!sellMode && (isItem || isCreature) && (
+                  {!sellMode && isItem && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onToggleFavorite(d.id); }}
                       title={isFav ? "Unfavorite" : "Favourite"}
@@ -337,8 +340,7 @@ export default function InventoryList({
           onNext={() => stepCreature(1)}
           scrollMemo={creatureScroll}
           teachArmour={guideGearUp}
-          isFavorite={favoriteIds.has(openCreature.id)}
-          onToggleFavorite={onToggleFavorite}
+          teams={teams && onToggleTeam ? { teams, onToggle: (team) => onToggleTeam(team, openCreature.id) } : undefined}
           loadout={equipment[openCreature.id]}
           weapons={allWeapons}
           armors={allArmors}

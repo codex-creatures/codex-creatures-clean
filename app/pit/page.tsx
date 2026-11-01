@@ -52,7 +52,7 @@ export default function PitPage() {
         showSell={false}
         emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
           : game.activeTab === "roster"
-          ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
+          ? "No creatures in a team yet — open one and tap Add to team."
           : game.activeTab === "cards"
             ? "No creature cards yet. Creature barcodes usually give a card — collect 3 of one creature to summon it."
             : "No creatures yet — visit the Soul Altar."}
@@ -73,6 +73,8 @@ export default function PitPage() {
         onTabChange={game.setActiveTab}
         favoriteIds={game.favoriteIds}
         onToggleFavorite={game.toggleFavorite}
+        teams={game.teams}
+        onToggleTeam={game.toggleTeam}
         sellMode={false}
         selectedForSale={game.selectedForSale}
         onToggleSelectItem={game.toggleSelectItem}

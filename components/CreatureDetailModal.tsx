@@ -21,6 +21,8 @@ import { clampLevel, hpAt, proficiencyAt, xpToNext, MAX_LEVEL, SCROLL_XP } from 
 import { creatureRoles, ROLE_HINT } from "@/lib/creatures/creatureType";
 import { armorPieces, type EquipSlot, type Loadout } from "@/hooks/useGameState";
 import { ARMOR_META, ARMOR_SLOTS, ARMOR_SLOT_INFO, SET_BONUS, wornArmor, type ArmorKey } from "@/lib/items/armor";
+import { hasTeams, teamFull, teamsWith, type Teams } from "@/lib/teams";
+import { PARTY_SIZE } from "@/lib/dungeon/run";
 import MoveSlots from "./MoveSlots";
 import { MoveTile } from "./MoveTile";
 import CodexMove from "./CodexMove";
@@ -38,8 +40,7 @@ const CODEX_TAG = { text: "codex", color: "#c7b8ff" };
 
 type Props = {
   creature: CreatureOrItemDrop;
-  isFavorite: boolean;
-  onToggleFavorite?: (id: string) => void; // missing: no roster button (e.g. Klutz)
+  teams?: { teams: Teams; onToggle: (team: number) => void }; // the Labyrinth's teams (missing: no team button, e.g. Klutz)
   loadout?: Loadout;
   weapons: CreatureOrItemDrop[];
   armors: CreatureOrItemDrop[];
@@ -104,7 +105,7 @@ const rarityColor = (r: Rarity) => RARITY_COLORS[r]?.text ?? "white";
 const NUM: React.CSSProperties = { fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif", fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
 export default function CreatureDetailModal({
-  creature, isFavorite, onToggleFavorite, loadout, weapons, armors,
+  creature, teams, loadout, weapons, armors,
   equippedOn, creatureNameById, onEquip, onSetMoves, codexes = [], onLearnCodex, scrolls = [], onReadScroll, onClose, position, onPrev, onNext, scrollMemo, teachArmour, unavailable, locked, points, stones,
 }: Props) {
   // Flicked here from another creature: open as far down as that one was.
@@ -466,12 +467,7 @@ export default function CreatureDetailModal({
           </>
         )}
 
-        {onToggleFavorite && (
-          <button onClick={() => onToggleFavorite(creature.id)} className="chip" data-active={isFavorite}
-            style={{ marginTop: 16, width: "100%", padding: "9px 0", textTransform: "none" }}>
-            {isFavorite ? "★ In your roster" : "☆ Add to roster"}
-          </button>
-        )}
+        {teams && <TeamButton id={creature.id} {...teams} />}
       </div>
       {dnd.ghost}
     </div>
@@ -847,6 +843,35 @@ function CodexShelf({ template, known, codexes, onLearn }: {
             })}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+// "Add to team": the first time, that makes Team 1; after that it opens the
+// three teams to put the creature in or take it out of (lib/teams.ts).
+function TeamButton({ id, teams, onToggle }: { id: string; teams: Teams; onToggle: (team: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const inTeams = teamsWith(teams, id);
+  const first = !hasTeams(teams);
+  return (
+    <div style={{ marginTop: 16 }}>
+      <button onClick={() => (first ? onToggle(0) : setOpen((o) => !o))} className="chip" data-active={inTeams.length > 0} aria-expanded={first ? undefined : open}
+        style={{ width: "100%", minHeight: 44, padding: "9px 0", textTransform: "none" }}>
+        {inTeams.length ? `In ${inTeams.map((i) => `Team ${i + 1}`).join(", ")}` : "+ Add to team"}
+      </button>
+      {open && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 6 }}>
+          {teams.map((t, i) => {
+            const on = t.includes(id);
+            return (
+              <button key={i} className="chip" data-active={on} disabled={!on && teamFull(teams, i)} onClick={() => onToggle(i)}
+                style={{ minHeight: 44, textTransform: "none" }}>
+                {on ? "✓ " : ""}Team {i + 1} <span style={{ opacity: 0.7 }}>{t.length}/{PARTY_SIZE}</span>
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );

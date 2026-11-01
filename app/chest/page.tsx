@@ -137,6 +137,8 @@ export default function InventoryPage() {
         onTabChange={game.setActiveTab}
         favoriteIds={game.favoriteIds}
         onToggleFavorite={game.toggleFavorite}
+        teams={game.teams}
+        onToggleTeam={game.toggleTeam}
         sellMode={selling}
         selectedForSale={game.selectedForSale}
         onToggleSelectItem={game.toggleSelectItem}

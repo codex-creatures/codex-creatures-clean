@@ -207,8 +207,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   roll.
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
   the cage (`starterCreature`, Lv 3). Releasing a creature gives nothing. A captured creature joins
-  your creatures but not your roster (the user, 2026-10-23), unless the roster is empty (the
-  starter: the Labyrinth's party is picked from the roster).
+  your creatures (the starter is also the first free pick at the Labyrinth's entrance).
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
 - ✅ Races have 5 creatures each, one per rarity (a dual-race creature counts under its first race).
@@ -464,6 +463,15 @@ How it came about, round by round: history.md.
 
 ## 7. The Labyrinth
 
+- ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, then two tabs. **Party**: Free pick
+  (the default; tap any of your creatures, up to `PARTY_SIZE`; it starts on the party you last
+  picked freely) or one of **3 teams** (`TEAM_SLOTS`, lib/teams.ts: saved line-ups, up to a full
+  party each; a creature can be in several). With a team picked, tapping creatures adds them to it or
+  takes them out, saved at once; the screen remembers the last choice. A creature's window has
+  **Add to team** (the first time, that makes Team 1; then it opens Team 1–3). Teams replaced the ★
+  roster (the Inventory's ★ tab now lists creatures in a team; a team creature can't be sold).
+  **Bag**: the bindle or backpack, packed there as in the Den's Bindle (components/BagPacker.tsx),
+  fresh each run (teams don't remember a bag).
 - ✅ A run is a climb up a **scroll map**: you plan a route and partly see rooms ahead. The first
   step is blind. Rooms can repeat. (lib/dungeon/run.ts, map.ts)
 - ✅ **Four dungeons** (`DUNGEONS`):

@@ -142,7 +142,7 @@ function Setup({
     <>
       <SectionTitle>Your team — pick {TEAM_SIZE} ({picked.length}/{TEAM_SIZE})</SectionTitle>
       <p style={{ fontSize: 12, color: MUTED, margin: "0 0 10px" }}>
-        Number 1 goes in first. Each creature fights with the gear and moves set on it in the Pit. ★ = roster.
+        Number 1 goes in first. Each creature fights with the gear and moves set on it in the Pit. ★ = in a team.
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {owned.map((c) => {

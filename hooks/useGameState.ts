@@ -43,6 +43,7 @@ import { clearPlayTime } from "@/lib/playTime";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
 import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
+import { readTeams, toggleInTeam, type Teams } from "@/lib/teams";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -91,6 +92,7 @@ type SaveState = {
   materials?: Materials;               // your materials at home: a tally, like gold
   storage?: CappedBox[];               // chest boxes built bigger (the merchant's storage schematics; lib/items/storage.ts)
   found?: string[];                    // kinds of item you've ever had (lib/items/discovery.ts)
+  teams?: string[][];                  // the Labyrinth's saved line-ups (lib/teams.ts)
 };
 
 // A new player's first creature (a Lv 3 Rare): lib/creatures/starter.ts.
@@ -163,6 +165,7 @@ export function loadSave(): SaveState | null {
     cage: typeof parsed.cage === "number" ? parsed.cage : 1,
     materials: obj(parsed.materials) as Materials,
     storage: Array.isArray(parsed.storage) ? parsed.storage : [],
+    teams: readTeams(parsed.teams),
     found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),
   };
 }
@@ -200,6 +203,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [storage, setStorage] = useState<CappedBox[]>([]);
   const [materials, setMaterials] = useState<Materials>({});
   const [found, setFound] = useState<string[]>([]);
+  const [teams, setTeams] = useState<Teams>(() => readTeams(undefined));
   // Gear packed in your bag (lib/dungeon/run.ts): it can't be sold.
   const [packedIds, setPackedIds] = useState<Set<string>>(new Set());
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
@@ -241,6 +245,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setStorage(saved.storage ?? []);
       setMaterials(saved.materials ?? {});
       setFound(saved.found ?? []);
+      setTeams(readTeams(saved.teams));
     }
     setTavern(loadTavern());
     setPackedIds(packedGear());
@@ -249,8 +254,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, teams });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, teams]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -517,10 +522,17 @@ export function useGameState(initialTab: TabKey = "all") {
     return map;
   }, [equipment]);
 
-  // Items that can't be sold: favourited, equipped or packed in your bag.
+  // Creatures in a team (teams replaced the ★ roster; a creature's old star no longer shows).
+  const teamIds = useMemo(() => new Set(teams.flat()), [teams]);
+  // What shows a ★: favourited items, and creatures in a team.
+  const shownFavorites = useMemo(() => {
+    const creatures = new Set(inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature").map((d) => d.id));
+    return new Set([...[...favoriteIds].filter((id) => !creatures.has(id)), ...teamIds]);
+  }, [favoriteIds, teamIds, inventory]);
+  // Items that can't be sold: favourited, equipped, packed in your bag, or a creature in a team.
   const lockedIds = useMemo(
-    () => new Set([...favoriteIds, ...equippedOn.keys(), ...packedIds]),
-    [favoriteIds, equippedOn, packedIds]
+    () => new Set([...shownFavorites, ...equippedOn.keys(), ...packedIds]),
+    [shownFavorites, equippedOn, packedIds]
   );
 
   // ── Inventory filters ─────────────────────────────────
@@ -533,8 +545,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const consumablesOnly = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.itemCategory === "consumable" && !d.codexMove), [inventory]);
   const codexesOnly     = useMemo(() => inventory.filter((d) => isItemDrop(d) && d.codexMove), [inventory]);
   const cardsOnly       = useMemo(() => inventory.filter(isCardDrop), [inventory]);
-  // Roster = favourited creatures.
-  const rosterOnly      = useMemo(() => creaturesOnly.filter((d) => favoriteIds.has(d.id)), [creaturesOnly, favoriteIds]);
+  // The "roster" tab: creatures in a team.
+  const rosterOnly      = useMemo(() => creaturesOnly.filter((d) => teamIds.has(d.id)), [creaturesOnly, teamIds]);
 
   const tabCounts = useMemo(() => ({
     all:         inventory.length + materialsOnly.length,
@@ -720,6 +732,11 @@ export function useGameState(initialTab: TabKey = "all") {
 
   function updateScanCount(code: string, count: number) {
     setScanCounts((prev) => ({ ...prev, [code]: count }));
+  }
+
+  // Put a creature in a team, or take it out (lib/teams.ts).
+  function toggleTeam(team: number, id: string) {
+    setTeams((prev) => toggleInTeam(prev, team, id));
   }
 
   function toggleFavorite(id: string) {
@@ -936,7 +953,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
