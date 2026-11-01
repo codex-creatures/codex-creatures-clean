@@ -105,7 +105,7 @@ describe("Meditate and Healing Blessing", () => {
     expect(s.sides.A.team[0].energy).toBe(100);
     expect(() => resolveRound(s, { A: attack("Meditate"), B: attack("Strike") })).toThrow();
   });
-  it("Healing Blessing heals whoever is on the field next round, before attacks", () => {
+  it("Healing Blessing heals whoever is on the field next round, after the attacks", () => {
     const blesser = big(fighter("flicker_wisp", ["Healing Blessing", "Zap"]));
     const hurt = big(fighter("moss_wolf", ["Strike"]));
     const s = createBattle([blesser, hurt], [big(fighter("moss_wolf", ["Strike"]))], { A: [999, 100] });
@@ -116,8 +116,8 @@ describe("Meditate and Healing Blessing", () => {
     const events = s.log.slice(start);
     const heal = events.findIndex((e) => e.type === "effect" && e.kind === "heal");
     const hit = events.findIndex((e) => e.type === "attack");
-    expect(heal).toBeGreaterThan(-1);
-    expect(heal).toBeLessThan(hit);
+    expect(hit).toBeGreaterThan(-1);
+    expect(heal).toBeGreaterThan(hit);
     expect(events[heal]).toMatchObject({ damage: Math.round(999 * 0.6), index: 1 });
     // One round only.
     const hp = s.sides.A.team[1].hp;

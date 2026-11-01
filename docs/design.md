@@ -73,6 +73,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when
   full, open some before scanning. ✅ (the user, 2026-11-01) **The unveiling** (lib/scanReveal.ts,
   components/ScanReveal.tsx): every Looting scan, and tapping one stored cache, plays a short show
+  on its own dark screen (nothing behind shows through)
   (the cache shakes 0.9–2s by rarity, gold 0.75s, cracks in a flash of its rarity; rare adds light rays, epic
   and legendary falling gold and a jolt; tap to skip), then the find with its stats and
   **Keep / Sell** (at the merchant's price: gear for what the Inventory pays; potions, codexes,
@@ -344,7 +345,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   - **Meditate** (Neutral, utility, Common): 0 energy, 3-round cooldown, +30 energy on top of the
     usual 30. Anyone, Klutz too.
   - **Healing Blessing** (Divine, utility, Uncommon): 40 energy, 3-round cooldown. Next round,
-    after swaps and before attacks, whoever is on your side of the field heals 60% of its max HP.
+    after both sides have attacked (the user, 2026-11-01: it mends the hit just taken), whoever is
+    on your side of the field heals 60% of its max HP, if it's still standing.
     Thunderhead, Crystal Golem, Veilstalker, Flicker Wisp, Sylvaran.
   - **Corrosive Soak** (Toxic, utility, Rare): 40 energy, no damage. The target's three defences
     drop by 30% of their full value until it leaves the field; no stacking (the user's pick of
@@ -524,7 +526,8 @@ How it came about, round by round: history.md.
 - ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
   scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.
 - ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you
-  keep, in 3 variants: plain, ambush, rigged. The drunk one, foes on ×3 HP, was removed by the user
+  keep, in 3 variants: plain, ambush, rigged. The ambush pair stand side by side in the battle room,
+  drawn like the Cyclops's hands (tap the one to hit), not as cards. The drunk one, foes on ×3 HP, was removed by the user
   on 2026-10-26: nothing answered it once damage types went), Library (codexes to find, or a librarian
   selling) and Storehouse (mostly materials, sometimes guarded by a mini boss).
   - 🧪 Content visible 50%, storehouse guard 35%, equal variant odds, and a rigged timeout ending

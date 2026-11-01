@@ -67,8 +67,8 @@ export const CORPSIFY_ROUNDS = 2;
 //   rounds ("seal"). It's on the creature, so it holds even if the attacker
 //   swaps. A knocked-out creature is still replaced.
 // - Meditate: extra energy back, on top of the usual.
-// - Healing Blessing: next round, after swaps and before anyone attacks,
-//   whoever is on the blesser's side of the field heals.
+// - Healing Blessing: next round, after everyone has attacked, whoever is
+//   on the blesser's side of the field heals (if it's still standing).
 // - Corrosive Soak: the target's defences drop (defenceCut) until it leaves
 //   the field. A new soak replaces the old: it doesn't stack.
 export const SOAK_ROUNDS = MAX_ROUNDS + 1; // (it ends when the creature leaves the field, not with time)
@@ -327,20 +327,6 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   }
   for (const k of cameIn) haunt(state, k);
 
-  // 1a. A Healing Blessing from last round heals whoever is on the field now.
-  for (const k of ["A", "B"] as SideKey[]) {
-    const s = state.sides[k];
-    const b = s.blessing;
-    if (!b || b.round > state.round) continue;
-    s.blessing = undefined;
-    const me = activeOf(s);
-    if (b.round < state.round || me.hp <= 0) continue;
-    const healed = Math.min(me.maxHp - me.hp, Math.round(me.maxHp * b.heal));
-    me.hp += healed;
-    state.log.push({ type: "effect", side: k, index: s.active, name: me.name, text: `is healed by ${b.by}'s Healing Blessing (+${healed} HP)`,
-      hp: me.hp, statuses: me.statuses.map((x) => ({ ...x })), kind: "heal", damage: healed });
-  }
-
   // 1b. Items (from the battle bag) are used before anyone attacks.
   for (const k of ["A", "B"] as SideKey[]) {
     const a = actions[k];
@@ -443,7 +429,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
       if (fx?.kind === "blessing") {
         state.sides[key].blessing = { round: state.round + 1, heal: fx.heal, by: actor.name };
-        text += ` — next round, whoever is on the field heals ${Math.round(fx.heal * 100)}% HP`;
+        text += ` — next round, after the attacks, whoever is on the field heals ${Math.round(fx.heal * 100)}% HP`;
       }
       const bossMove = state.sides[key].boss ? bossSelfMove(state, key, skill.name) : undefined; // the Hydra's breath
       text += bossMove?.text ?? "";
@@ -560,6 +546,21 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         }
       }
     }
+  }
+
+  // 2a. A Healing Blessing from last round heals whoever is on the field
+  //     now, once this round's attacks are done (so it mends the hit just taken).
+  for (const k of ["A", "B"] as SideKey[]) {
+    const s = state.sides[k];
+    const b = s.blessing;
+    if (!b || b.round > state.round) continue;
+    s.blessing = undefined;
+    const me = activeOf(s);
+    if (b.round < state.round || me.hp <= 0) continue;
+    const healed = Math.min(me.maxHp - me.hp, Math.round(me.maxHp * b.heal));
+    me.hp += healed;
+    state.log.push({ type: "effect", side: k, index: s.active, name: me.name, text: `is healed by ${b.by}'s Healing Blessing (+${healed} HP)`,
+      hp: me.hp, statuses: me.statuses.map((x) => ({ ...x })), kind: "heal", damage: healed });
   }
 
   // 3. End of round: venom bites (field and bench), then status effects

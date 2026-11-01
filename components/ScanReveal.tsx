@@ -62,7 +62,7 @@ export default function ScanReveal({ drop, line, sellValue, onKeep, onSell, onRe
   const stop = (f: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); f(); };
 
   return (
-    <div onClick={tap} style={{ position: "fixed", inset: 0, zIndex: 260, background: "rgba(4,5,9,0.88)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "14cqh 12px 12px", overflow: "hidden" }}>
+    <div onClick={tap} style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 30%, #141826 0%, #040509 70%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "14cqh 12px 12px", overflow: "hidden" }}>
       {open && tier === "shower" && SPARK_LIST.map((s, i) => (
         <span key={i} aria-hidden className="triumph-spark"
           style={{ left: `${s.left}%`, width: s.size, height: s.size, background: s.color, animationDelay: `${s.delay}s`, animationDuration: `${s.dur}s`, animationIterationCount: 1 }} />

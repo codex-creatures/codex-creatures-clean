@@ -55,7 +55,7 @@ export type MoveEffect =
   // Special moves (SPECIAL_MOVES):
   | { kind: "seal"; rounds: number; chance: number; extraChance?: number } // the target can't swap out for some rounds (extraChance: one round more)
   | { kind: "meditate"; energy: number }      // self: extra energy back
-  | { kind: "blessing"; heal: number }        // self: next round, whoever is on the field heals this share of max HP
+  | { kind: "blessing"; heal: number }        // self: next round, after the attacks, whoever is on the field heals this share of max HP
   | { kind: "soak"; cut: number };            // the target's defences drop by this share until it leaves the field
 
 export type Skill = {
@@ -202,7 +202,7 @@ export const SPECIAL_MOVES: Skill[] = [
   { name: "Healing Blessing", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "divine", codexRarity: "uncommon", cooldown: 3, self: true,
     effect: { kind: "blessing", heal: 0.6 },
     learners: ["thunderhead", "crystal_golem", "veilstalker", "flicker_wisp", "sylvaran"],
-    desc: "Next round, whoever you have on the field heals 60% of its max HP before anyone attacks (stay, or swap in someone hurt). 3-round cooldown." },
+    desc: "Next round, once everyone has attacked, whoever you have on the field heals 60% of its max HP (stay, or swap in someone hurt). 3-round cooldown." },
   { name: "Corrosive Soak", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "toxic", codexRarity: "rare",
     effect: { kind: "soak", cut: 0.3 },
     learners: ["bellow_toad", "rotgut_fly", "plague_rat", "glob", "deep_angler", "dreadpox", "void_serpent", "hollow_matriarch"],

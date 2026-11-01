@@ -4,7 +4,7 @@
 // the step-by-step replay of each round, and the battle log. Used by the
 // Fight Pit (app/battle) and the dungeon (app/dungeon).
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { loadSave, armorPieces } from "@/hooks/useGameState";
 import { ARMOR_META, wornArmor } from "@/lib/items/armor";
 import { isCreatureDrop, isItemDrop, type CreatureOrItemDrop } from "@/lib/types";
@@ -16,7 +16,6 @@ import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, combatRules, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { raceOfMove, raceVsAll } from "@/lib/combat/raceChart";
-import { CLASS_INFO } from "@/lib/creatures/creatureData";
 import { CRIPPLE } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
 import { RaceNames } from "./RaceTag";
@@ -27,7 +26,7 @@ import { createChamber, CW, CH } from "@/lib/dungeon/chamber";
 import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf, aliveCount,
-  CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS, SOAK_ROUNDS, perfectionistBonus,
+  CRIPPLE_ROUNDS, SOAK_ROUNDS, perfectionistBonus,
   type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
 } from "@/lib/combat/battle";
 import { cloudLeft, type BossKind } from "@/lib/combat/bossAi";
@@ -37,8 +36,7 @@ import { REF_LEVEL } from "@/lib/creatures/levels";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { RARITIES } from "@/lib/balance/simulate";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
-import BattleLog, { YOU, FOE } from "@/components/BattleLog";
-import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
+import BattleLog, { FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
 import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -404,8 +402,8 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
     </div>
   );
 
-  // One-on-one in a room: the room fills the whole stage, banners float over it.
-  const roomStage = !foe.boss && !multi;
+  // In a room (one foe, or an ambush's two): the room fills the whole stage, banners float over it.
+  const roomStage = !foe.boss;
 
   return (
     <div className={`battle-layout${ill ? " screen-shake" : ""}`}>
@@ -428,24 +426,11 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
         {foe.boss && <BossStage side={foe} fx={fx} infos={info.B} target={target} onTarget={!playing ? setTargetPick : undefined} cloud={cloudLeft(state, "B")}
           you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
 
-        {/* The fight, staged in a dungeon room (two enemies use the arena). */}
-        {foe.boss ? null : !multi ? (
-          <Stage me={me} mySlot={you.active} myInfo={info.A[you.active]} them={them} theirSlot={target} theirInfo={info.B[target]} fx={fx} />
-        ) : (
-          <div className="arena">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "start" }}>
-              <FighterCard side="A" f={me} foe={them} info={info.A[you.active]} fx={fx} slot={you.active} details={open === "details"} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {fieldOf(foe).map((i) => (
-                  <div key={i} onClick={!playing ? () => setTargetPick(i) : undefined}
-                    style={{ cursor: !playing ? "pointer" : undefined, outline: i === target ? "2px solid #ffd66e" : undefined, outlineOffset: 2 }}>
-                    {i === target && <div className="pixel-font" style={{ fontSize: 11, color: "#ffd66e", marginBottom: 2 }}>🎯 Target</div>}
-                    <FighterCard side="B" f={foe.team[i]} foe={me} info={info.B[i]} fx={fx} slot={i} compact details={open === "details"} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* The fight, staged in a dungeon room. Two foes (an ambush) stand side by side: tap the one to hit, like the boss's hands. */}
+        {!foe.boss && (
+          <Stage me={me} mySlot={you.active} myInfo={info.A[you.active]} fx={fx}
+            foes={multi ? fieldOf(foe) : [target]} theirInfo={info.B} foeTeam={foe.team}
+            target={multi ? target : undefined} onTarget={multi && !playing ? setTargetPick : undefined} />
         )}
 
         {open === "details" && over(me.name, (
@@ -659,19 +644,6 @@ function KlutzSays({ say }: { say: string }) {
   );
 }
 
-// compact: a smaller card, when two share a column.
-function FighterCard({ side, f, foe, info, fx, slot, compact, details = true }: {
-  side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number; compact?: boolean; details?: boolean;
-}) {
-  const color = side === "A" ? YOU : FOE;
-  const hpPct = (f.hp / f.maxHp) * 100;
-  const cripple = f.statuses.find((s) => s.id === "cripple");
-  const haste = f.statuses.find((s) => s.id === "haste");
-  const { anim, float } = fighterFx(side, slot, fx);
-  return <FighterCardBody side={side} f={f} foe={foe} info={info} fx={fx} slot={slot} compact={compact} details={details} anim={anim} float={float}
-    color={color} hpPct={hpPct} cripple={cripple} haste={haste} />;
-}
-
 // Floating text over a creature: a hit's damage, in its style's colour, with
 // how it landed (its race, or a boss's weak spot) on a smaller line under it.
 type Float = { text: string; color: string; sub?: { text: string; color: string } };
@@ -734,90 +706,6 @@ export function fighterFx(side: SideKey, slot: number, fx: Fx | null): { anim: s
     if (fx.kind === "attack" && fx.side !== side && isMe(fx.targetIndex) && fx.missed && fx.evaded) float = { text: "MIRAGE!", color: "#c7b8ff" };
   }
   return { anim, float };
-}
-
-function FighterCardBody({ side, f, info, fx, slot, compact, details, anim, float, color, hpPct, cripple, haste }: {
-  side: SideKey; f: Combatant; foe: Combatant; info: MemberInfo; fx: Fx | null; slot: number; compact?: boolean; details: boolean;
-  anim: string; float: { text: string; color: string } | null; color: string; hpPct: number;
-  cripple?: Combatant["statuses"][number]; haste?: Combatant["statuses"][number];
-}) {
-  // Each step replays the card's animation without rebuilding the card (that
-  // would snap its HP bar down instead of letting it drain).
-  const card = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    const el = card.current;
-    if (!el) return;
-    el.style.animation = "none";
-    void el.offsetWidth; // (a reflow, so the animation starts again)
-    el.style.animation = "";
-  }, [fx?.id, slot]);
-  return (
-    <div style={{ position: "relative" }}>
-      <div ref={card} className={`fighter-card ${anim}`} style={{ borderColor: `${color}88`, opacity: f.hp <= 0 ? 0.4 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Token name={f.name} rarity={info.rarity} creatureId={info.creatureId} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{side === "A" ? "You" : "Opponent"}</div>
-            <div className="pixel-font" style={{ fontSize: "clamp(14px, 4cqw, 17px)", lineHeight: 1.1, overflowWrap: "anywhere" }}>
-              <LevelTag level={f.level} /> <span style={{ color: rarityColor(info.rarity) }}>{f.name}</span> <RaceNames races={f.races} icons />
-            </div>
-            <div style={{ fontSize: 11, color: MUTED }}>{f.races?.length ? <RaceNames races={f.races} /> : <span style={{ color: CLASS_INFO[f.cls].color }}>{CLASS_INFO[f.cls].icon} {CLASS_INFO[f.cls].name}</span>}{details && side === "A" && <> · {info.label}</>}</div>
-          </div>
-        </div>
-        {/* Opponents: just a health bar that goes down (no numbers, no energy). */}
-        <Bar label="HP" value={side === "A" ? `${f.hp}/${f.maxHp}` : `${Math.max(0, Math.ceil(hpPct))}%`} pct={hpPct} color={hpPct > 50 ? "#22c55e" : hpPct > 25 ? "#f5c542" : "#ef4444"} trail />
-        {side === "A" && <Bar label="Energy" value={`${Math.round(f.energy)}`} pct={f.energy} color="#4EA1FF" />}
-        {cripple && <div style={{ fontSize: 11, color: "#d7a6ff", marginTop: 6 }}><Glyph icon="🐌" art="status_cripple" /> Crippled (−{Math.round((cripple.loss ?? CRIPPLE_AGILITY_LOSS) * 100)}% agility) · {cripple.rounds} round{cripple.rounds === 1 ? "" : "s"} left</div>}
-        {haste && <div style={{ fontSize: 11, color: "#7fe0ff", marginTop: 6 }}>⚡ Hasted (+{Math.round((haste.gain ?? 0) * 100)}% agility) · {haste.rounds} round{haste.rounds === 1 ? "" : "s"} left</div>}
-        {f.statuses.filter((s) => s.id === "mirage" || s.id === "venom" || s.id === "poison" || s.id === "corpsify" || s.id === "seal" || s.id === "soak").map((s) => (
-          <div key={s.id} style={{ fontSize: 11, marginTop: 6, color: s.id === "venom" || s.id === "poison" ? "#9be15d" : s.id === "mirage" ? "#c7b8ff" : "#9fd3a8" }}>
-            {s.id === "venom" && <><Glyph icon="🧪" art="status_poison" /> Envenomed (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
-            {s.id === "poison" && <><Glyph icon="☣️" art="status_poison" /> Poisoned (−{s.dmg} HP a round) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
-            {s.id === "mirage" && <>✨ Mirage ({Math.round((s.chance ?? 0) * 100)}% to dodge) · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
-            {s.id === "corpsify" && <>⚰️ Corpsified — rises again if knocked out</>}
-            {s.id === "seal" && <>⛓️ Sealed: can&apos;t swap out · {s.rounds} round{s.rounds === 1 ? "" : "s"} left</>}
-            {s.id === "soak" && <>🫧 Soaked (−{Math.round((s.loss ?? 0) * 100)}% defences) until it swaps out</>}
-          </div>
-        ))}
-        {f.stance !== "neutral" && <StanceBadge stance={f.stance} />}
-        {f.soulStone && <SoulStoneLine stone={f.soulStone} />}
-        <StreakBadges f={f} />
-        {details && side === "A" && !compact && (
-          <div style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.4 }}>
-            ⚔️ {info.weaponName ?? "no weapon"}<br />🛡️ {info.armorName ?? "no armour"}
-          </div>
-        )}
-        {details && side === "A" && <StatsLine stats={combatSummary(f)} />}
-      </div>
-      <LingeringFloat float={float} id={fx?.id} />
-    </div>
-  );
-}
-
-// Stances change the damage a creature takes (and deals): see engine.ts.
-function StanceBadge({ stance }: { stance: Fighter["stance"] }) {
-  const text = stance === "float"
-    ? "🪶 Floating — takes +10% damage from ranged attacks and −10% from melee"
-    : "⛰️ Entrenched — takes +10% damage from melee attacks and −10% from ranged";
-  return <div style={{ fontSize: 11, color: "#8fd3ff", marginTop: 6 }}>{text}</div>;
-}
-
-// Its soul stone, written out (for now: plain text, while they're tested).
-function SoulStoneLine({ stone }: { stone: SoulStoneKey }) {
-  const s = SOUL_STONES[stone];
-  return <div style={{ fontSize: 11, color: "#b9e6ff", marginTop: 6, lineHeight: 1.35 }}>{s.icon} <b>{s.name}</b>: {s.text}</div>;
-}
-
-// A Perfectionist's run: the same move again hits harder.
-function StreakBadges({ f }: { f: Combatant }) {
-  const run = f.streak && f.streak.hits >= 1 ? f.streak : null;
-  if (!run || f.soulStone !== "perfectionist") return null;
-  const next = perfectionistBonus(f, { ...run, hits: run.hits + 1 });
-  return (
-    <div style={{ fontSize: 11, color: "#b9e6ff", marginTop: 6 }}>
-      🎯 {run.move} ×{run.hits} · next one +{Math.round((next - 1) * 100)}%
-    </div>
-  );
 }
 
 // A creature's portrait in a rarity frame: its sprite, or its initials if
@@ -889,8 +777,11 @@ export function Chips<T extends string>({ value, onChange, options }: { value: T
 // The room fills the whole stage: the usual picture sits in the middle (the
 // fighters stand on it, where they always have) and the ceiling and floor
 // carry on above and below it, as far as the stage goes.
-function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
-  me: Combatant; mySlot: number; myInfo: MemberInfo; them: Combatant; theirSlot: number; theirInfo: MemberInfo; fx: Fx | null;
+// foes: the foe slots standing in the room (two in an ambush). target /
+// onTarget: with two, the one you're aiming at, and tapping the other.
+function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTarget }: {
+  me: Combatant; mySlot: number; myInfo: MemberInfo; foes: number[]; foeTeam: Combatant[]; theirInfo: MemberInfo[]; fx: Fx | null;
+  target?: number; onTarget?: (index: number) => void;
 }) {
   const boxRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -927,7 +818,13 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
         style={{ position: "absolute", left: 0, width: "100%", top: picTop - ext * unit, height: picH + 2 * ext * unit, imageRendering: "pixelated", display: "block" }} />
       <div style={{ position: "absolute", left: 0, width: "100%", top: picTop, height: picH }}>
         <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} />
-        <Fighter f={them} side="B" slot={theirSlot} mi={theirInfo} fx={fx} />
+        {foes.length === 1
+          ? <Fighter f={foeTeam[foes[0]]} side="B" slot={foes[0]} mi={theirInfo[foes[0]]} fx={fx} />
+          : foes.map((i, n) => {
+            const up = foeTeam[i].hp > 0;
+            return <Fighter key={i} f={foeTeam[i]} side="B" slot={i} mi={theirInfo[i]} fx={fx} maxW={PAIR_W}
+              at={{ left: PAIR_AT[n] ?? "73%", width: "28%" }} aimed={up && i === target} onTap={up && onTarget ? () => onTarget(i) : undefined} />;
+          })}
       </div>
     </div>
   );
@@ -937,6 +834,9 @@ function Stage({ me, mySlot, myInfo, them, theirSlot, theirInfo, fx }: {
 // pixels, but never taller than STAGE_TALL of it (the big art, Aurelius or
 // the Void Serpent, would fill the room). FIGHTER_W: its column's share.
 const STAGE_SCALE = 2.2;
+// An ambush's two foes: where each stands, and how wide its sprite may be.
+const PAIR_AT = ["61%", "86%"];
+const PAIR_W = "22cqw";
 const STAGE_EXTEND_STEP = 8;
 const STAGE_TALL = 0.4;
 const FIGHTER_W = 0.4;
@@ -995,22 +895,26 @@ function HpFill({ pct, color }: { pct: number; color: string }) {
 // One fighter standing on the stage: its floating label over its sprite,
 // reacting to this step. `at` places it (by default your side left of
 // centre, theirs right); `maxW` caps the sprite's width (the boss's lair is
-// crowded).
-export function Fighter({ f, side, slot, mi, fx, at, maxW }: {
+// crowded). aimed / onTap: one of two foes, aimed at or tapped to aim at
+// (aimed given at all keeps a line for the 🎯 over its label).
+export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap }: {
   f: Combatant; side: SideKey; slot: number; mi: MemberInfo; fx: Fx | null; at?: React.CSSProperties; maxW?: string;
+  aimed?: boolean; onTap?: () => void;
 }) {
     const { anim, float } = fighterFx(side, slot, fx);
     const sprite = mi.creatureId ? CREATURE_SPRITES[mi.creatureId] : undefined;
     const floats = !!sprite && !!artFor(sprite)?.floats && f.hp > 0;
     return (
-      <div style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
-        display: "flex", flexDirection: "column", alignItems: "center", width: `${FIGHTER_W * 100}%`, ...at }}>
+      <div onClick={onTap} role={onTap ? "button" : undefined} aria-label={onTap ? `Aim at the ${f.name}` : undefined}
+        style={{ position: "absolute", bottom: "13%", left: side === "A" ? "27%" : "73%", transform: "translateX(-50%)",
+        display: "flex", flexDirection: "column", alignItems: "center", width: `${FIGHTER_W * 100}%`, minWidth: 44, cursor: onTap ? "pointer" : undefined, ...at }}>
+        {aimed !== undefined && <div className="pixel-font" style={{ fontSize: 11, height: 14, color: "#ffd66e", visibility: aimed ? "visible" : "hidden" }}>🎯</div>}
         <FighterLabel f={f} side={side} mi={mi} />
         {/* (The floating text sits outside the part rebuilt each step, so it can outlast the step.) */}
         <div style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite) } : {}) }}>
           <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
             {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
-            <div className={floats ? "float-bob" : undefined}>
+            <div className={floats ? "float-bob" : undefined} style={aimed ? { filter: "drop-shadow(0 0 6px #ffd66e)" } : undefined}>
               {sprite
                 ? <PixelSprite sprite={sprite} scale={3.6} title={f.name} style={{ ...(faceFoe(sprite, side) ? { transform: "scaleX(-1)" } : {}), ...(maxW ? { maxWidth: maxW, height: "auto" } : { width: "100%", height: "auto" }) }} />
                 : <Token name={f.name} rarity={mi.rarity} creatureId={mi.creatureId} />}
