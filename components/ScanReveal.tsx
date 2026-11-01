@@ -22,6 +22,7 @@ import { revealChoice, revealTier, shakeMs } from "@/lib/scanReveal";
 import type { Drop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.6)";
+const REVEAL_PEEK_BODY = 100; // room for armour's two rows of stats
 const SPARKS = 28;
 const SPARK_COLORS = ["#ffd66e", "#f1d9a0", "#fff4c2"];
 // Where each spark falls from, how fast and when: a fixed scatter, the same every time.
@@ -31,8 +32,9 @@ const SPARK_LIST = Array.from({ length: SPARKS }, (_, i) => ({
   size: 4 + Math.floor(scatter(i, 4) * 3) * 2, color: SPARK_COLORS[i % SPARK_COLORS.length],
 }));
 
-export default function ScanReveal({ drop, sellValue, onKeep, onSell, onRelease }: {
+export default function ScanReveal({ drop, line, sellValue, onKeep, onSell, onRelease }: {
   drop: Drop;
+  line?: string | null;   // who got here first (lib/scanReveal.ts findLine)
   sellValue: number;      // what it sells for (0: it can't be sold)
   onKeep: () => void;     // also how gold closes
   onSell: () => void;
@@ -96,13 +98,17 @@ export default function ScanReveal({ drop, sellValue, onKeep, onSell, onRelease 
           {!open ? "The cache stirs…" : choice === "gold" ? `+${drop.dropType === "reward" ? drop.amount : 0} gold!` : `${look.name}!`}
         </div>
 
+        {/* Who got here first: one line, its space kept when there's nothing to say. */}
+        <div className={open ? "levelup-stats" : undefined} style={{ fontSize: 14, minHeight: 18, lineHeight: "18px", maxWidth: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+          color: line?.startsWith("✨") ? "#ffd66e" : MUTED, fontWeight: line?.startsWith("✨") ? 700 : 400, visibility: open && line ? "visible" : "hidden" }}>{line ?? "-"}</div>
+
         {/* What it is: gear and other things as in your bag, a creature or card by its rarity. Space kept while shaking. */}
-        <div style={{ width: "100%", minHeight: 140, visibility: open ? "visible" : "hidden" }} className={open ? "levelup-stats" : undefined}>
+        <div style={{ width: "100%", minHeight: 170, visibility: open ? "visible" : "hidden" }} className={open ? "levelup-stats" : undefined}>
           {choice === "gold" ? <div style={{ fontSize: 14, color: MUTED, paddingTop: 8 }}>Tap to carry on</div>
             : t ? <div className="stone-panel" style={{ padding: "10px 12px", fontSize: 14, color: MUTED, textTransform: "capitalize" }}>
                 {drop.dropType !== "reward" && drop.rarity} {drop.dropType === "card" ? "creature card" : "creature"}{t.race ? ` · ${t.race}` : ""}
               </div>
-            : drop.dropType === "item" && <ItemPeek item={{ gear: drop }} />}
+            : drop.dropType === "item" && <ItemPeek item={{ gear: drop }} bodyHeight={REVEAL_PEEK_BODY} />}
         </div>
 
         <div style={{ display: "flex", gap: 10, width: "100%", visibility: open && choice !== "gold" ? "visible" : "hidden" }}>

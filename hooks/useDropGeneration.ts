@@ -37,7 +37,8 @@ type UseDropGenerationArgs = {
   onScanCountUpdate: (code: string, newCount: number) => void;
   // Everything one scan gave. found: "first" (nobody had scanned it before
   // you) or "looted" (you already had: a rescan), so the altar can say so.
-  onScan?: (drops: Drop[], found?: "first" | "looted") => void;
+  // place: how many players have found it, you included (online only).
+  onScan?: (drops: Drop[], found?: "first" | "looted", place?: number) => void;
   playerLevel?: number;              // your explorer level: how rare a creature you can find
   // A barcode whose creature is too rare for you yet: it stays sealed (the
   // scan doesn't count), so you can come back for it at level `need`.
@@ -99,7 +100,7 @@ export function useDropGeneration({
     }
     onScanCountUpdate(code, 1);
     opened.drops.forEach(onDrop);
-    onScan?.(opened.drops, opened.first ? "first" : undefined);
+    onScan?.(opened.drops, opened.first ? "first" : undefined, opened.place);
   }
 
   // A barcode scanned offline, now asked again. null: still out of reach.

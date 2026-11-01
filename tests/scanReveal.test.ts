@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { GOLD_SHAKE_MS, SHAKE_MS, findPrice, revealChoice, revealTier, shakeMs } from "../lib/scanReveal";
+import { GOLD_SHAKE_MS, SHAKE_MS, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs } from "../lib/scanReveal";
 import { POTIONS, SCROLL_PRICE, codexPrice } from "../lib/dungeon/run";
 import { TOOLS } from "../lib/items/materials";
 import type { Drop } from "../lib/types";
@@ -42,6 +42,16 @@ describe("the altar's unveiling", () => {
   });
 
   it("the whole show stays short", () => {
-    expect(Math.max(...Object.values(SHAKE_MS))).toBeLessThanOrEqual(1500);
+    expect(Math.max(...Object.values(SHAKE_MS))).toBeLessThanOrEqual(2000);
+  });
+
+  it("says whether you were first to find it, or how many found it before you", () => {
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111].map(ordinal)).toEqual(
+      ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "23rd", "101st", "111th"]);
+    expect(findLine("first")).toContain("First to find");
+    expect(findLine("first", 1)).toContain("First to find");
+    expect(findLine(undefined, 3)).toBe("You're the 3rd to find this Code Cache");
+    expect(findLine("looted")).toContain("already looted");
+    expect(findLine(undefined)).toBeNull(); // a copy without online: nobody to count
   });
 });

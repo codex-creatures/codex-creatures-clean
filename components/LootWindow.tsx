@@ -271,10 +271,11 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 // A closer look at one thing: what it is and its stats, with its buttons.
 // A fixed frame (PEEK_BODY tall), whatever it shows: a name line and a kind
 // line, beside one row of buttons (it scrolls sideways if there are many);
-// then the body, cut to fit.
+// then the body, cut to fit. bodyHeight: a window with room to spare can
+// give the body more (the altar's unveiling shows armour's two rows of stats whole).
 const PEEK_BODY = 84;
 const textBody = (t?: string) => <div style={{ fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={t}>{t}</div>;
-export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
+export function ItemPeek({ item, look, action, bodyHeight = PEEK_BODY }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode; bodyHeight?: number }) {
   const l = look ?? lookOf(item!);
   let kind = "", body: React.ReactNode = null;
   if (!item) { /* (just its name: a bag slot with no closer look) */ }
@@ -322,7 +323,7 @@ export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotL
     }
   }
   return (
-    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `44px ${PEEK_BODY}px`, gap: 6 }}>
+    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `44px ${bodyHeight}px`, gap: 6 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
           <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>

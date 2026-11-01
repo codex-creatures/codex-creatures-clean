@@ -73,11 +73,15 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when
   full, open some before scanning. ✅ (the user, 2026-11-01) **The unveiling** (lib/scanReveal.ts,
   components/ScanReveal.tsx): every Looting scan, and tapping one stored cache, plays a short show
-  (the cache shakes 0.5–1.3s by rarity, cracks in a flash of its rarity; rare adds light rays, epic
+  (the cache shakes 0.9–2s by rarity, gold 0.75s, cracks in a flash of its rarity; rare adds light rays, epic
   and legendary falling gold and a jolt; tap to skip), then the find with its stats and
   **Keep / Sell** (at the merchant's price: gear for what the Inventory pays; potions, codexes,
   scrolls and tools for half what they cost), **Keep / Release** (a creature or card), **Keep**
-  (materials, which go straight to your tally, and what has no price), or just "+N gold" (tap on). "Open all" opens stored caches
+  (materials, which go straight to your tally, and what has no price), or just "+N gold" (tap on).
+  Under the find's name, who got there first (`findLine`; the user, 2026-11-01, a treasure hunt for
+  barcodes nobody has scanned): "✨ First to find this Code Cache!", online "You're the 3rd to find
+  this Code Cache", or "You've already looted this Code Cache" on a rescan. In Storage it shows under
+  the window instead. "Open all" opens stored caches
   together, with no show. Typed barcodes (Repeatable by default, or Random) sit at the
   bottom as a testing tool. ✅ (the user, 2026-10-31) Online, the altar's testing tools (typed
   barcodes, Random, the resets, rubble and visitor) show only for the owner's account
@@ -954,8 +958,9 @@ account, kept entirely apart from Vouchee.
   start, not a copy of any local registry). No global resets planned for now.
   ✅ Built (2026-10-31): the `barcode_registry` table and the database function `scan_barcode`
   (supabase/migrations), asked by lib/online/registry.ts. Only signed-in players may call it, and
-  nobody reads the table directly. It stores the barcode number and its outcome, **not who scanned
-  it**. The server rolls from `registry_rules`, a copy of `REGISTRY_RULES` (lib/barcodeRegistry.ts:
+  nobody reads the table directly. It stores the barcode number and its outcome, and in `barcode_finders` (2026-11-01) which players
+  found it and when, one row each, so `scan_barcode` can answer `place` (you're the Nth to find it;
+  asking again never counts twice). Players only ever see their own place. The server rolls from `registry_rules`, a copy of `REGISTRY_RULES` (lib/barcodeRegistry.ts:
   `SCAN_ODDS`, `RARITY_WEIGHTS`, the species of each rarity, weapon and armour kinds, soul stones,
   gold 50–150). Its `registry_roll` takes the same steps as `rollFromRules`. **After changing any
   of those** (a new species, item or soul stone, new odds), run `npm run registry:rules` and

@@ -40,7 +40,9 @@ export type BarcodeOutcome =
 export type BarcodeEntry = BarcodeOutcome & { registeredAt: string };
 
 // A barcode looked up: what it holds, and whether this scan was the first ever.
-export type Lookup = { entry: BarcodeEntry; first: boolean };
+// place: how many players had found it, you included (the global registry
+// only; 1 for the first).
+export type Lookup = { entry: BarcodeEntry; first: boolean; place?: number };
 
 export const REGISTRY_KEY = "codex_creatures_registry_v3"; // v3: started again for Combat V2 (v2: creatures stored by id)
 

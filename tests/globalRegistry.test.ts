@@ -43,6 +43,15 @@ describe("the server's answer", () => {
     const ok = await lookupOnline(stub({ data: { entry: { outcome: "gold", amount: 70 }, first: true, registeredAt: "t" } }), "123456");
     expect(ok).toEqual({ entry: { outcome: "gold", amount: 70, registeredAt: "t" }, first: true });
   });
+
+  it("carries how many players have found the barcode, when the server says", () => {
+    const gold = { outcome: "gold", amount: 70 };
+    expect(parseLookup({ entry: gold, first: false, place: 3 })?.place).toBe(3);
+    expect(parseLookup({ entry: gold, first: false })?.place).toBeUndefined(); // an older server
+    expect(parseLookup({ entry: gold, first: false, place: "3" })?.place).toBeUndefined();
+    const r = openBarcode("123456", [{ ...look({ outcome: "gold", amount: 70 }, false), place: 4 }], 1);
+    expect(r).toMatchObject({ kind: "found", first: false, place: 4 });
+  });
 });
 
 describe("opening a barcode", () => {

@@ -29,7 +29,7 @@ const isText = (x: unknown) => typeof x === "string" && x.length > 0;
 // for it is simply skipped, as with the local registry.)
 export function parseLookup(data: unknown): Lookup | null {
   if (!data || typeof data !== "object") return null;
-  const { entry, first, registeredAt } = data as Record<string, unknown>;
+  const { entry, first, registeredAt, place } = data as Record<string, unknown>;
   if (typeof first !== "boolean" || !entry || typeof entry !== "object") return null;
   const e = entry as Record<string, unknown>;
   const ok =
@@ -41,7 +41,9 @@ export function parseLookup(data: unknown): Lookup | null {
       && (e.itemCategory !== "armor" || (isText(e.armorKey) && isText(e.armorSlot))) :
     false;
   if (!ok) return null;
-  return { entry: { ...(e as BarcodeEntry), registeredAt: typeof registeredAt === "string" ? registeredAt : "" }, first };
+  const found: Lookup = { entry: { ...(e as BarcodeEntry), registeredAt: typeof registeredAt === "string" ? registeredAt : "" }, first };
+  if (typeof place === "number" && Number.isInteger(place) && place > 0) found.place = place;
+  return found;
 }
 
 // Ask the global registry about a barcode (registering it if it's new).

@@ -22,6 +22,7 @@ import { BOX_CAP, BIG_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/l
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { testingToolsAllowed } from "@/lib/online/admin";
 import { backupSave } from "@/lib/saveFile";
+import { findLine } from "@/lib/scanReveal";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -60,6 +61,7 @@ export default function AltarPage() {
 
   const storing = game.scanMode === "store";
   const kept = useRef(new Set<string>()); // this scan's finds kept as Code Caches (Looting, full box)
+  const [lines, setLines]           = useState<Record<string, string>>({}); // finds to be unveiled: who got there first (findLine)
   const cacheIds = new Set(game.caches.map((d) => d.id));
   const boxesFull = (full: CappedBox[]) => <>🧰 Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. Sell some to open {full.length > 1 ? "these" : "it"}.</>;
 
@@ -67,11 +69,14 @@ export default function AltarPage() {
     rollMode,
     scanCounts: game.scanCounts,
     onDrop:            (d) => { if (game.addScan(d)) kept.current.add(d.id); },
-    onScan:            (drops, found) => {
+    onScan:            (drops, found, place) => {
       const opened = drops.filter((d) => !kept.current.has(d.id));
-      // The first ever to scan this barcode, or one you've scanned before.
-      const tag = found === "first" ? <b style={{ color: "#ffd66e" }}>✨ First to find this Code Cache!</b>
-        : found === "looted" ? <>You&apos;ve already looted this Code Cache</> : null;
+      // The first ever to scan this barcode, how many found it before you, or
+      // one you've scanned before: in the unveiling (Looting), else under the window.
+      const line = findLine(found, place);
+      const unveiling = !storing && opened.length > 0;
+      if (line && unveiling) setLines((m) => ({ ...m, [opened[0].id]: line }));
+      const tag = !line || unveiling ? null : line.startsWith("✨") ? <b style={{ color: "#ffd66e" }}>{line}</b> : <>{line}</>;
       // Looting, but a find for a full box: it waits as a Code Cache.
       const full = !storing && opened.length < drops.length ? <>📦 No room in your chest: kept as a Code Cache.</> : null;
       setNote(tag && full ? <>{tag}<br />{full}</> : tag ?? full);
@@ -255,7 +260,7 @@ export default function AltarPage() {
       </div>
 
       {unveiled && (
-        <ScanReveal key={unveiled.id} drop={unveiled} sellValue={game.findValue(unveiled)}
+        <ScanReveal key={unveiled.id} drop={unveiled} line={lines[unveiled.id]} sellValue={game.findValue(unveiled)}
           onKeep={() => doneRevealing()} onSell={() => doneRevealing(game.sellFind)} onRelease={() => doneRevealing(game.removeDrop)} />
       )}
 

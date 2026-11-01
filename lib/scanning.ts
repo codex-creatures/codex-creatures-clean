@@ -18,8 +18,9 @@ export type Opened =
   // Someone else's find, too rare for your explorer level: it stays sealed
   // (the scan doesn't count), so you can come back for it at level `need`.
   | { kind: "too_rare"; rarity: Rarity; need: number }
-  // What's inside. first: nobody had scanned the barcode before you.
-  | { kind: "found"; drops: Drop[]; first: boolean };
+  // What's inside. first: nobody had scanned the barcode before you. place:
+  // how many players have found it, you included (online only).
+  | { kind: "found"; drops: Drop[]; first: boolean; place?: number };
 
 // found: the registry's answer for each of scanKeys(code). Creature: the
 // barcode fixes WHICH creature, you usually get a card of it. Items: identity
@@ -33,5 +34,5 @@ export function openBarcode(code: string, found: Lookup[], playerLevel: number):
   const drops = found
     .map(({ entry, first }) => dropFromOutcome(first ? entry : claimedOutcome(entry), code))
     .filter((d): d is Drop => d !== null);
-  return { kind: "found", drops, first: main.first };
+  return { kind: "found", drops, first: main.first, ...(main.place ? { place: main.place } : {}) };
 }
