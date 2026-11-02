@@ -582,6 +582,10 @@ How it came about, round by round: history.md.
   always a Healing Potion, Lesser Potion and Torch; rare wares rolled one by one (backpack or, once
   owned, a backpack upgrade 20%; each storage schematic 20% until bought; Revival Elixir 25%; XP
   scroll 20%; clairvoyance scroll 40%); materials fill the rest.
+  🧪 **Tavern material prices** (the user, 2026-11-02: at the Labyrinth's prices you'd buy the lot
+  every time; 500 for an essence stone is the benchmark): planks ×5 150, nails ×5 100, metal bars
+  ×2 300, essence stone 500 (`TAVERN_MATERIAL_PRICES`, lib/tavern.ts; Labyrinth 40 / 30 / 90 / 150,
+  unchanged). He buys materials back at half the Labyrinth's price at both.
   📌 **Not built yet:**
   - **Gear on the cart:** 0–2 weapons or armour pieces, rolled like a scan (`RARITY_WEIGHTS`, **no
     explorer-level gate**: price is the filter), at **2× the crate's sell value** (rough prices:

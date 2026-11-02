@@ -25,7 +25,7 @@
 // 8. Visitors. Once it's repaired, each time you come home from a run there's
 //    a chance a travelling merchant or a wandering librarian calls
 //    (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
-//    the Labyrinth to sell. The first roll after the repair always brings
+//    the Labyrinth to sell (materials dearer: TAVERN_MATERIAL_PRICES). The first roll after the repair always brings
 //    someone, and so does the one after VISITOR_PITY misses in a row.
 //    The merchant also buys from your Inventory, at the Labyrinth's prices
 //    (merchantOffer): gear for what the crate pays, the rest at half his.
@@ -82,22 +82,36 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle
   const who: Visitor | undefined = r < VISITOR_ODDS.merchant ? "merchant" : r < total ? "librarian" : undefined;
   if (!who) return { ...gone, misses: (t.misses ?? 0) + 1 };
   const stock = makeRoom(who, rng, Infinity, 1, bindle);
-  return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
+  return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
 }
+
+// At the tavern the merchant charges more for materials than in the Labyrinth
+// (the user, 2026-11-02: at the old prices you'd just buy the lot every
+// time; 500 for an essence stone is the benchmark). A stack's price, by
+// material; he still buys yours back at half his Labyrinth price
+// (materialOffer), so there's nothing to gain buying in one and selling in the other.
+export const TAVERN_MATERIAL_PRICES: Record<MaterialKey, number> = {
+  planks: 150,        // ×5 (Labyrinth 40)
+  nails: 100,         // ×5 (Labyrinth 30)
+  metal_bars: 300,    // ×2 (Labyrinth 90)
+  essence_stones: 500, // ×1 (Labyrinth 150)
+};
+export const tavernWares = (wares: Ware[] | undefined): Ware[] | undefined =>
+  wares?.map((w) => ("material" in w ? { ...w, price: TAVERN_MATERIAL_PRICES[w.material] ?? w.price } : w));
 
 // A daily quest's reward (lib/daily.ts): the merchant calls at the repaired
 // tavern now, in place of whoever's there, for VISITOR_STAY runs.
 export function merchantCalls(t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest {
   if (!t.repaired) return t;
   const stock = makeRoom("merchant", rng, Infinity, 1, bindle);
-  return { ...t, visitor: "merchant", stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
+  return { ...t, visitor: "merchant", stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
 }
 
 // For testing (the altar): open and repair the tavern, and have who call right
 // now, with their usual stock, staying VISITOR_STAY runs.
 export function callVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
   const stock = makeRoom(who, rng, Infinity, 1, bindle);
-  return { ...forceOpen(t), seen: true, repaired: true, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: stock.wares, offers: stock.offers, bought: [] };
+  return { ...forceOpen(t), seen: true, repaired: true, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
 }
 
 // Mark something bought from the visitor (one of each).

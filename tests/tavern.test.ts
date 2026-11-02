@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
-import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, MERCHANT_MATERIALS, type DungeonRun } from "../lib/dungeon/run";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, TAVERN_MATERIAL_PRICES, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -253,6 +253,22 @@ describe("the tavern questline: visitors", () => {
     expect(once.bought).toEqual([key]);
     expect(buyFromVisitor(once, key)).toBe(once);
     expect(buyFromVisitor({ repaired: true }, key).bought).toBeUndefined();
+  });
+
+  it("charges more for materials than the Labyrinth's merchant, and buys them back at the Labyrinth's half", () => {
+    expect(TAVERN_MATERIAL_PRICES.essence_stones).toBe(500);
+    for (const m of MERCHANT_MATERIALS) expect(TAVERN_MATERIAL_PRICES[m.material]).toBeGreaterThan(m.price);
+    const labyrinth = makeRoom("merchant", () => 0.99, Infinity, 1, false).wares!; // no rare wares: materials fill the cart
+    const tavern = tavernWares(labyrinth)!;
+    expect(tavern.filter((w) => "material" in w).length).toBe(MERCHANT_MATERIALS.length);
+    for (const w of tavern) {
+      const before = labyrinth.find((x) => x.key === w.key)!;
+      expect(w.price).toBe("material" in w ? TAVERN_MATERIAL_PRICES[w.material] : before.price);
+    }
+    // Every way a merchant calls brings the tavern's prices.
+    for (const t of [callVisitor({}, "merchant"), comeHome({ repaired: true }, seq(0.1)), merchantCalls({ repaired: true })])
+      for (const w of t.wares!) if ("material" in w) expect(w.price).toBe(TAVERN_MATERIAL_PRICES[w.material]);
+    expect(materialOffer("essence_stones")).toBe(75);
   });
 });
 
