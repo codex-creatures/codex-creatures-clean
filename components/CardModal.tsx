@@ -11,6 +11,7 @@ import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { MoveInfo } from "./MoveSlots";
 import SoulStoneTag from "./SoulStoneTag";
 import RaceTag from "./RaceTag";
+import SummonShow from "./SummonShow";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", "Ranged"], ["mag", "Magic"], ["agil", "Agility"], ["mdef", "Melee Def"], ["rdef", "Ranged Def"], ["magdef", "Magic Def"]];
@@ -27,6 +28,8 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
   const [picked, setPicked] = useState<string[]>(() => [card.id, ...sameKind.filter((c) => c.id !== card.id).map((c) => c.id)].slice(0, CARDS_TO_SUMMON));
   const [keep, setKeep] = useState<string>(card.id);
   const [result, setResult] = useState<CreatureOrItemDrop | null>(null);
+  // The cards that went in, while the summoning plays (SummonShow); then the result's shown.
+  const [used, setUsed] = useState<CreatureOrItemDrop[] | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); onClose(); } }; // (preventDefault: don't also go back a page)
@@ -45,9 +48,11 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
 
   function summon(mode: "choose" | "random") {
     const keepId = mode === "choose" ? (picked.includes(keep) ? keep : picked[0]) : null;
+    setUsed(sameKind.filter((k) => picked.includes(k.id))); // (before they're gone from the inventory)
     setResult(onSummon(picked, keepId));
   }
 
+  if (result && used) return <SummonShow t={t} cards={used} result={result} onDone={() => setUsed(null)} />;
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} className="modal-panel" style={{ background: "#191b22", border: `3px solid ${c.border}`, boxShadow: `0 0 40px ${c.glow}`, padding: 20, width: "100%", maxWidth: 480, maxHeight: "90cqh", overflowY: "auto", position: "relative" }}>

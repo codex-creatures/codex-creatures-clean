@@ -81,6 +81,21 @@ export function shakeMs(d: Drop): number {
   return last.at + last.ms;
 }
 
+// Summoning from 3 cards (components/SummonShow.tsx): the cards are set on the
+// altar (SUMMON_PLACE_MS), whirl up into a whirlwind that gathers in white
+// for SUMMON_GATHER_MS more, then climbs the rarities like a cache (same
+// stages, same colours) to the creature's own and bursts into it.
+export const SUMMON_PLACE_MS = 1000;
+export const SUMMON_GATHER_MS = 700;
+export function summonStages(d: Drop): ShakeStage[] {
+  return shakeStages(d).map((s, i) => ({ ...s, at: s.at + SUMMON_PLACE_MS + (i > 0 ? SUMMON_GATHER_MS : 0), ms: s.ms + (i === 0 ? SUMMON_GATHER_MS : 0) }));
+}
+// The whole show, cards down to the burst (ms).
+export function summonMs(d: Drop): number {
+  const last = summonStages(d).at(-1)!;
+  return last.at + last.ms;
+}
+
 // Which of these finds are new to you (a "New creature!" or "New item!" as it
 // opens): a species you've never owned (owned: "Creatures discovered",
 // lib/items/gameHelpers.ts ownedSpecies), or a kind of item you've never had

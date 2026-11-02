@@ -74,12 +74,13 @@ describe("what a creature can use and learn", () => {
     random.mockReturnValue(0);    // under it: a codex
     const basic = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
     const strong = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "rare" });
+    // (Pinned too: an Uncommon codex can also be a special one, past the learnable moves.)
+    const codex = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "uncommon" });
     random.mockRestore();
     expect(healing && "potion" in healing && healing.potion).toBe("potion");
     expect(healing && "rarity" in healing && healing.rarity).toBe("rare");
     expect(strong && "codexMove" in strong && STRONG_MOVES.some((m) => m.name === strong.codexMove)).toBe(true);
     expect(strong && "rarity" in strong && strong.rarity).toBe("rare");
-    const codex = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "uncommon" });
     expect(potion && "potion" in potion && potion.potion).toBe("lesser");
     expect(basic && "codexMove" in basic && BASIC_MOVES.some((m) => m.name === basic.codexMove)).toBe(true);
     expect(basic && "rarity" in basic && basic.rarity).toBe("common");

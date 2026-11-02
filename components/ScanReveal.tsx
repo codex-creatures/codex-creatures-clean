@@ -20,7 +20,7 @@ import { useEscape } from "@/hooks/useEscape";
 import { buzz } from "@/lib/haptics";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
-import { revealChoice, revealTier, shakeMs, shakeStages, type NewFind } from "@/lib/scanReveal";
+import { revealChoice, revealTier, shakeMs, shakeStages, type NewFind, type RevealTier } from "@/lib/scanReveal";
 import type { Drop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.6)";
@@ -80,11 +80,7 @@ export default function ScanReveal({ drop, line, isNew, sellValue, onKeep, onSel
 
   return (
     <div onClick={tap} style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 30%, #141826 0%, #040509 70%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "14cqh 12px 12px", overflow: "hidden" }}>
-      {open && (tier === "shower" || tier === "explosion") && SPARK_LIST.slice(0, tier === "explosion" ? BIG_SPARKS : SPARKS).map((s, i) => (
-        <span key={i} aria-hidden className="triumph-spark"
-          style={{ left: `${s.left}%`, width: s.size, height: s.size, background: s.color, animationDelay: `${s.delay}s`, animationDuration: `${s.dur}s`, animationIterationCount: 1 }} />
-      ))}
-      {open && <div aria-hidden className={tier === "explosion" ? "reveal-flash-big" : "reveal-flash"} style={{ position: "absolute", inset: 0, background: tier === "explosion" ? "#fff2c4" : glow, pointerEvents: "none" }} />}
+      {open && <RevealFlash tier={tier} glow={glow} />}
 
       <div role="dialog" aria-label={open ? look.name : "A Code Cache opens"} className={open && tier === "explosion" ? "reveal-jolt-big" : open && tier === "shower" ? "reveal-jolt" : undefined}
         style={{ position: "relative", width: "100%", maxWidth: 400, display: "grid", gap: 10, textAlign: "center", justifyItems: "center" }}>
@@ -100,11 +96,7 @@ export default function ScanReveal({ drop, line, isNew, sellValue, onKeep, onSel
             </span>
           ) : (
             <>
-              {tier === "explosion" && <div aria-hidden className="reveal-boom" style={{ position: "absolute", width: 160, height: 160, left: "50%", top: "50%", margin: "-80px 0 0 -80px", borderRadius: "50%",
-                border: "10px solid #ffe08a", boxShadow: "0 0 40px #ffcc4d, inset 0 0 40px #ffcc4d" }} />}
-              {tier !== "puff" && <div aria-hidden className="reveal-rays" style={{ position: "absolute", width: 300, height: 300, left: "50%", top: "50%", margin: "-150px 0 0 -150px",
-                background: `repeating-conic-gradient(${glow}55 0deg 10deg, transparent 10deg 30deg)`, maskImage: "radial-gradient(circle, #000 20%, transparent 68%)", WebkitMaskImage: "radial-gradient(circle, #000 20%, transparent 68%)" }} />}
-              <div aria-hidden className="cage-burst" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle, ${glow}99 0%, transparent 60%)` }} />
+              <RevealBurst tier={tier} glow={glow} />
               {/* New to you: a tag pinned to the stage's top, so nothing below moves. */}
               {isNew && <div className="pixel-font levelup-title" style={{ position: "absolute", top: 0, left: "50%", zIndex: 1, translate: "-50% 0", whiteSpace: "nowrap", padding: "3px 10px", fontSize: 15,
                 color: "#1a1206", background: "#ffd66e", border: "2px solid #fff2c4", boxShadow: "0 0 14px #ffcc4d" }}>✨ New {isNew}!</div>}
@@ -142,5 +134,32 @@ export default function ScanReveal({ drop, line, isNew, sellValue, onKeep, onSel
         </div>
       </div>
     </div>
+  );
+}
+
+// The crack, shared with summoning (SummonShow): a flash over the whole screen,
+// and falling gold for epic and legendary (put it in the full-screen backdrop)…
+export function RevealFlash({ tier, glow }: { tier: RevealTier; glow: string }) {
+  return (
+    <>
+      {(tier === "shower" || tier === "explosion") && SPARK_LIST.slice(0, tier === "explosion" ? BIG_SPARKS : SPARKS).map((s, i) => (
+        <span key={i} aria-hidden className="triumph-spark"
+          style={{ left: `${s.left}%`, width: s.size, height: s.size, background: s.color, animationDelay: `${s.delay}s`, animationDuration: `${s.dur}s`, animationIterationCount: 1 }} />
+      ))}
+      <div aria-hidden className={tier === "explosion" ? "reveal-flash-big" : "reveal-flash"} style={{ position: "absolute", inset: 0, background: tier === "explosion" ? "#fff2c4" : glow, pointerEvents: "none" }} />
+    </>
+  );
+}
+// …and round the find: a burst of its colour, light rays (rare and up) and a
+// golden ring (legendary). Put it in the stage, behind the find.
+export function RevealBurst({ tier, glow }: { tier: RevealTier; glow: string }) {
+  return (
+    <>
+      {tier === "explosion" && <div aria-hidden className="reveal-boom" style={{ position: "absolute", width: 160, height: 160, left: "50%", top: "50%", margin: "-80px 0 0 -80px", borderRadius: "50%",
+        border: "10px solid #ffe08a", boxShadow: "0 0 40px #ffcc4d, inset 0 0 40px #ffcc4d" }} />}
+      {tier !== "puff" && <div aria-hidden className="reveal-rays" style={{ position: "absolute", width: 300, height: 300, left: "50%", top: "50%", margin: "-150px 0 0 -150px",
+        background: `repeating-conic-gradient(${glow}55 0deg 10deg, transparent 10deg 30deg)`, maskImage: "radial-gradient(circle, #000 20%, transparent 68%)", WebkitMaskImage: "radial-gradient(circle, #000 20%, transparent 68%)" }} />}
+      <div aria-hidden className="cage-burst" style={{ position: "absolute", inset: 0, background: `radial-gradient(circle, ${glow}99 0%, transparent 60%)` }} />
+    </>
   );
 }

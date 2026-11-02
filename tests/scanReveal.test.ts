@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { GOLD_SHAKE_MS, LEGENDARY_PAUSE_MS, RARITY_ORDER, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs, shakeStages, newFinds } from "../lib/scanReveal";
+import { GOLD_SHAKE_MS, LEGENDARY_PAUSE_MS, RARITY_ORDER, findLine, findPrice, ordinal, revealChoice, revealTier, shakeMs, shakeStages, newFinds, summonStages, summonMs, SUMMON_PLACE_MS, SUMMON_GATHER_MS } from "../lib/scanReveal";
 import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 import { POTIONS, SCROLL_PRICE, codexPrice } from "../lib/dungeon/run";
 import { TOOLS } from "../lib/items/materials";
@@ -82,5 +82,20 @@ describe("new finds", () => {
 
   it("of two of the same new kind at once, only the first is new", () => {
     expect([...newFinds([mon("x", a), mon("y", a), planks("p"), planks("q")], none, none).keys()]).toEqual(["x", "p"]);
+  });
+});
+
+describe("summoning from cards", () => {
+  it("sets the cards down, gathers in white, then climbs to the creature's rarity like a cache", () => {
+    for (const rarity of RARITY_ORDER) {
+      const d = drop({ dropType: "creature", rarity });
+      const cache = shakeStages(d), show = summonStages(d);
+      expect(show.map((s) => s.rarity)).toEqual(cache.map((s) => s.rarity));
+      expect(show[0]).toMatchObject({ rarity: "common", at: SUMMON_PLACE_MS });
+      expect(show.at(-1)!.rarity).toBe(rarity);
+      expect(summonMs(d)).toBe(SUMMON_PLACE_MS + SUMMON_GATHER_MS + shakeMs(d));
+      // Back to back: each stage starts as the last one ends.
+      for (let i = 1; i < show.length; i++) expect(show[i].at).toBe(show[i - 1].at + show[i - 1].ms);
+    }
   });
 });

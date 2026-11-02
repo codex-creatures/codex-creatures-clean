@@ -209,7 +209,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   move of its style in the empty fourth (the user, 2026-10-26: never in place of a starting move).
 - ✅ **Cards:** a card shows one specific rolled creature. Summon with 3 cards of a species
   (`CARDS_TO_SUMMON`): **choose** a card to get exactly that creature, or **random** for a fresh
-  roll.
+  roll. The summoning plays out (the user, 2026-11-02; components/SummonShow.tsx): the 3 cards are
+  set on the Soul Altar, whirl up into a whirlwind that climbs the rarity colours like a Code Cache
+  (`summonStages`, lib/scanReveal.ts) to the creature's, then burst into it. Tap to skip.
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
   the cage (`starterCreature`, Lv 3). Releasing a creature gives nothing. A captured creature joins
   your creatures (the starter is also the first free pick at the Labyrinth's entrance).
