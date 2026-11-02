@@ -1062,14 +1062,14 @@ account, kept entirely apart from Vouchee.
     don't reset (Claude's call: they're your collection; the user may want otherwise).
 - 📌 **PvP: live, each player controlling their own team.** ✅ Built (2026-11-01) as **duels with
   a friend**; not yet tried by two real players. Rules in lib/pvp (tests/duel.test.ts), the screen
-  app/duel, the connection lib/online/duelChannel.ts. Three formats (`PVP_FORMATS`):
-  - **3v3 · Rare · Lv 15:** creatures and items up to Rare.
-  - **5v5 · Rare · Lv 15** (the user, 2026-11-01: closer to what they can field while testing).
-  - **5v5 · Legendary · Lv 25.**
-  - **Every creature fights at the format's level** (the user, 2026-10-31): above it, its stats
-    are scaled down to that level; below it, scaled up. So 3v3 is always Lv 15 and 5v5 Lv 25,
-    and the creature's real level is untouched. Scaling up is fine because levelling isn't the
-    only edge: gear and each creature's stat rolls still reward finding and optimising.
+  app/duel, the connection lib/online/duelChannel.ts.
+  - **Custom formats** (the user, 2026-11-02; lib/pvp/formats.ts): whoever invites picks the size
+    (3v3 or 5v5), the highest rarity (Rare, Epic, Legendary), the level (15 or 25) and the scaling.
+    **Default: 3v3 · Rare · up to Lv 15, not scaled** (`DEFAULT_PVP`): a creature above the level
+    fights at it, one below keeps its own level. **Scale everyone** (a toggle): every creature
+    fights at exactly the level, as all duels did before (the user, 2026-10-31: levelling isn't
+    the only edge). The creature's real level is untouched either way. A format travels as an id
+    ("3v3-rare-15", "5v5-legendary-25-scaled"); the three old ids still read, scaled.
   - **The screen** (the user, 2026-11-01; `ineligibleReason`): a creature above the format's
     rarity can't be picked, and nor can one wearing a weapon or armour piece above it (a Rare
     creature with an Epic sword). Moves learned from codexes are fine. Unfit creatures show
@@ -1077,14 +1077,18 @@ account, kept entirely apart from Vouchee.
   - **Friends** (the user, 2026-11-01): every row on a leaderboard has ➕ to add that player to
     your friend list (one-sided, like following: the `friends` table, `my_friends()`). 👥 on the
     board shows the list, with 🟢 for who's in the game now (Realtime presence, "lobby"), ✕ to
-    remove, and ⚔️ Duel for those who are on. Duel shows the formats, with how many of your
-    creatures fit each (a format you can't fill is greyed).
+    remove, and ⚔️ Duel for those who are on. Duel shows the options (size, rarity, level,
+    scale), with how many of your creatures fit (greyed if you can't fill it).
   - **Invites:** the challenge pops up wherever the friend is in the game
     (components/DuelInbox.tsx), with Accept / No. It lapses after 60 s (`INVITE_SECONDS`).
-  - **The steps** (the user, 2026-11-01): pick your team (**20 s**, `PICK_SECONDS`; time out and
-    the ones you'd tapped, then the first that fit, are picked for you) → **the lead room**, a
-    dungeon room with their team at the back and yours at the front, where you tap who goes
-    out first (20 s, 🧪 Claude's number) → the battle on the usual battle screen.
+  - **The steps** (the user, 2026-11-01): bring your team (**20 s**, `PICK_SECONDS`; time out and
+    the ones you'd tapped, then the first that fit, are brought for you) → **the lead room**, a
+    dungeon room with their line-up at the back and yours at the front → the battle on the usual
+    battle screen.
+  - **Bring 2 more** (the user, 2026-11-02: the other player sees your team, so it's another way
+    to outthink them): you bring the format's size and up to 2 more (`BRING_EXTRA`: 5 for 3v3,
+    7 for 5v5). In the lead room both line-ups are shown and each picks who fights, in order (1
+    goes out first; 20 s, 🧪 Claude's number; time out and the first brought fight).
   - 🧪 Claude's defaults, agreed by the user 2026-11-01: **30 s a move** (`TURN_SECONDS`; then a
     steady move is made for you; 20 s to send in a replacement); **no potions or battle bag**,
     gear only; **no rewards and no effect on the save** (no XP, gold or injuries; the duel goes
@@ -1094,7 +1098,7 @@ account, kept entirely apart from Vouchee.
     choices go to it and each round's result comes back (the guest's copy is mirrored so both
     see themselves on the left). Lost messages are sent again. Only Supabase Realtime is used:
     no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
-  - Later: PvP leaderboards; challenging players who aren't friends; formats with a bench.
+  - Later: PvP leaderboards; challenging players who aren't friends.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
   online/offline start (done, but email login waits for a domain); 2) global registry and sealed

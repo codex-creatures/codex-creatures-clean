@@ -11,8 +11,9 @@
 // they do against the AI. The host's side is A in the real battle; each
 // player's screen shows itself as A (the guest's copy is mirrored).
 //
-// The steps: both join → each picks a team (PICK_SECONDS) → both teams are
-// shown and each picks who goes out first (LEAD_SECONDS) → the battle, one
+// The steps: both join → each brings a team (PICK_SECONDS: the format's size,
+// and up to BRING_EXTRA more) → both line-ups are shown and each picks who
+// fights, the first to go out first (LEAD_SECONDS) → the battle, one
 // round at a time (TURN_SECONDS a move; a steady move is made for you when
 // it runs out) → over. Leaving, or being gone for GONE_SECONDS, loses.
 //
@@ -28,7 +29,7 @@ import {
   createBattle, resolveRound, sendInReplacement, cloneBattle, isValidAction, affordableSkills, activeOf, attackTargets,
   type BattleAction, type BattleEvent, type BattleState, type SideKey,
 } from "../combat/battle";
-import { GONE_SECONDS, GRACE_SECONDS, INVITE_SECONDS, LEAD_SECONDS, PICK_SECONDS, REPLACE_SECONDS, TURN_SECONDS, type PvpFormat } from "./formats";
+import { GONE_SECONDS, GRACE_SECONDS, INVITE_SECONDS, LEAD_SECONDS, PICK_SECONDS, REPLACE_SECONDS, TURN_SECONDS, bringMax, type PvpFormat } from "./formats";
 
 export type DuelRole = "host" | "guest";
 export const RESEND_MS = 4_000;
@@ -49,7 +50,7 @@ export type DuelMsg =
   | { t: "decline" }
   | { t: "forfeit" }
   | { t: "team"; team: DuelTeam }
-  | { t: "lead"; index: number }
+  | { t: "lead"; picks: number[] }
   | { t: "action"; seq: number; action: BattleAction }
   | { t: "replace"; seq: number; index: number }
   // From the host: where things are now (in the host's view: A is the host).
@@ -86,10 +87,14 @@ export function steadyAction(state: BattleState, key: SideKey): BattleAction {
 export const firstStanding = (state: BattleState, key: SideKey) =>
   state.sides[key].team.findIndex((f, i) => f.hp > 0 && i !== state.sides[key].active);
 
-// A team with its chosen first creature moved to the front (the battle starts with index 0 out).
-export function leadFirst(team: DuelTeam, index: number): DuelTeam {
-  const i = index >= 0 && index < team.fighters.length ? index : 0;
-  const order = [i, ...team.fighters.map((_, j) => j).filter((j) => j !== i)];
+// Who fights, from the line-up brought: picks (indexes, the first goes out
+// first: the battle starts with index 0 out), size of them. Picks that don't
+// make sense (time ran out, a bad message) fall back to the first size brought.
+export const firstPicks = (size: number) => Array.from({ length: size }, (_, i) => i);
+export function chooseFighters(team: DuelTeam, picks: number[] | undefined, size: number): DuelTeam {
+  const ok = Array.isArray(picks) && picks.length === size && new Set(picks).size === size &&
+    picks.every((i) => Number.isInteger(i) && i >= 0 && i < team.fighters.length);
+  const order = ok ? picks! : firstPicks(Math.min(size, team.fighters.length));
   return { fighters: order.map((j) => team.fighters[j]), info: order.map((j) => team.info[j]) };
 }
 
@@ -112,11 +117,15 @@ export const duelActionOk = (state: BattleState, key: SideKey, a: BattleAction) 
   a.kind !== "item" && a.kind !== "weapon" && isValidAction(state, key, a);
 
 // A team from the other player, checked loosely (cheating is accepted for
-// playtesting; this only stops a broken or wrong-format team).
+// playtesting; this only stops a broken or wrong-format team): between the
+// format's size and BRING_EXTRA more, each at the format's level (scaled), or
+// at most it (not scaled).
 export function teamFits(team: DuelTeam | undefined, f: PvpFormat): boolean {
+  const n = team?.fighters?.length ?? 0;
   return !!team && Array.isArray(team.fighters) && Array.isArray(team.info) &&
-    team.fighters.length === f.size && team.info.length === f.size &&
-    team.fighters.every((x) => x && typeof x.name === "string" && x.maxHp > 0 && x.level === f.level && Array.isArray(x.skills) && x.skills.length > 0);
+    n >= f.size && n <= bringMax(f) && team.info.length === n &&
+    team.fighters.every((x) => x && typeof x.name === "string" && x.maxHp > 0 && Array.isArray(x.skills) && x.skills.length > 0 &&
+      (f.scaleUp ? x.level === f.level : (x.level ?? 1) <= f.level));
 }
 
 // ── The machine ─────────────────────────────────────────────────────────
@@ -146,13 +155,13 @@ export class Duel {
 
   // Mine (both roles).
   private myTeam?: DuelTeam;
-  private myLead?: number;
+  private myLead?: number[];
   private myAction?: { seq: number; action: BattleAction };
   private myReplace?: { seq: number; index: number };
 
   // The host's own copy of everything.
   private guestTeam?: DuelTeam;
-  private guestLead?: number;
+  private guestLead?: number[];
   private hostTeams?: { host: DuelTeam; guest: DuelTeam };
   private battle?: BattleState;      // the real battle (A = host)
   private info?: Record<SideKey, DuelMember[]>;
@@ -201,11 +210,12 @@ export class Duel {
     else this.hostCheck();
   }
 
-  chooseLead(index: number) {
+  // Who fights (indexes into the line-up you brought; the first goes out first).
+  chooseLead(picks: number[]) {
     if (this.view.phase !== "lead" || this.view.sent) return;
-    this.myLead = index;
+    this.myLead = picks;
     this.set({ ...this.view, sent: true });
-    if (this.role === "guest") this.send({ t: "lead", index });
+    if (this.role === "guest") this.send({ t: "lead", picks });
     else this.hostCheck();
   }
 
@@ -259,7 +269,7 @@ export class Duel {
     // My own time running out.
     if (now >= ("deadline" in v ? v.deadline : Infinity) && "sent" in v && !v.sent) {
       if (v.phase === "pick") this.pickTeam(this.autoTeam());
-      else if (v.phase === "lead") this.chooseLead(0);
+      else if (v.phase === "lead") this.chooseLead(firstPicks(this.format.size));
       else if (v.phase === "battle") {
         if (v.state.needsReplacement.includes("A")) this.replace(firstStanding(v.state, "A"));
         else if (!v.state.needsReplacement.length && !v.state.winner) this.act(steadyAction(v.state, "A"));
@@ -278,7 +288,7 @@ export class Duel {
     if (!("sent" in v) || !v.sent) return;
     this.lastResend = now;
     if (v.phase === "pick" && this.myTeam) this.send({ t: "team", team: this.myTeam });
-    if (v.phase === "lead" && this.myLead !== undefined) this.send({ t: "lead", index: this.myLead });
+    if (v.phase === "lead" && this.myLead !== undefined) this.send({ t: "lead", picks: this.myLead });
     if (v.phase === "battle" && this.myAction?.seq === v.seq) this.send({ t: "action", ...this.myAction });
     if (v.phase === "battle" && this.myReplace?.seq === v.seq) this.send({ t: "replace", ...this.myReplace });
   }
@@ -291,7 +301,7 @@ export class Duel {
       this.send({ t: "snap", phase: "over", winner: "A", reason: "gone" });
       this.over("win", "gone");
     } else if (v.phase === "lead" && this.guestLead === undefined && late(LEAD_SECONDS)) {
-      this.guestLead = 0;
+      this.guestLead = firstPicks(this.format.size);
       this.hostCheck();
     } else if (v.phase === "battle" && this.battle && !this.battle.winner) {
       const b = this.battle;
@@ -336,7 +346,7 @@ export class Duel {
         return;
       case "lead":
         if (phase !== "lead") { this.sendSnap(); return; }
-        this.guestLead = m.index;
+        this.guestLead = m.picks;
         this.hostCheck();
         return;
       case "action":
@@ -369,7 +379,7 @@ export class Duel {
       this.set({ phase: "lead", deadline: this.stepAt + LEAD_SECONDS * 1000, mine: this.myTeam, theirs: this.guestTeam, sent: false });
       this.sendSnap();
     } else if (v.phase === "lead" && this.myLead !== undefined && this.guestLead !== undefined && this.hostTeams) {
-      const A = leadFirst(this.hostTeams.host, this.myLead), B = leadFirst(this.hostTeams.guest, this.guestLead);
+      const A = chooseFighters(this.hostTeams.host, this.myLead, this.format.size), B = chooseFighters(this.hostTeams.guest, this.guestLead, this.format.size);
       this.battle = createBattle(A.fighters, B.fighters);
       this.info = { A: A.info, B: B.info };
       this.seq = 1;

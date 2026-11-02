@@ -2,26 +2,66 @@
 // Duels (live PvP, docs/design.md §12): the formats, the screen that keeps
 // creatures and gear above a format's rarity out, and the timers.
 //
-// - Every creature fights at its format's level: above it, its stats are
-//   scaled down to that level, below it scaled up (the user, 2026-10-31).
-//   Its real level is untouched: the duel never changes your save.
+// - Custom formats (the user, 2026-11-02): whoever invites picks the size
+//   (3v3 or 5v5), the highest rarity, the level, and whether everyone's
+//   scaled to that level. Not scaled (the default): a creature above the
+//   level is scaled down to it, one below keeps its own level. Scaled: every
+//   creature fights at exactly the level (as all duels did before). Its real
+//   level is untouched either way: the duel never changes your save.
+// - Bring 2 more (BRING_EXTRA, the user, 2026-11-02): each player brings up
+//   to size + 2, both line-ups are shown, then each picks who fights.
 // - The screen (the user, 2026-11-01): a creature over the format's rarity
 //   can't be picked, and nor can one wearing gear over it (a Rare creature
 //   with an Epic sword). Moves learned from codexes are fine, whatever their rarity.
+//
+// A format travels as its id (in the duel's link and the invite), e.g.
+// "3v3-rare-15" or "5v5-legendary-25-scaled".
 
 import type { Rarity } from "../items/budgets";
 
-export type PvpFormatId = "3v3-rare" | "5v5-rare" | "5v5-legendary";
-export type PvpFormat = { id: PvpFormatId; name: string; size: number; maxRarity: Rarity; level: number };
+export type PvpFormatId = string;
+export type PvpOptions = { size: number; maxRarity: Rarity; level: number; scaleUp: boolean };
+export type PvpFormat = PvpOptions & { id: PvpFormatId; name: string };
 
-export const PVP_FORMATS: Record<PvpFormatId, PvpFormat> = {
-  "3v3-rare":      { id: "3v3-rare",      name: "3v3 · Rare · Lv 15",      size: 3, maxRarity: "rare",      level: 15 },
-  // (The user, 2026-11-01: closer to what they can field while testing.)
-  "5v5-rare":      { id: "5v5-rare",      name: "5v5 · Rare · Lv 15",      size: 5, maxRarity: "rare",      level: 15 },
-  "5v5-legendary": { id: "5v5-legendary", name: "5v5 · Legendary · Lv 25", size: 5, maxRarity: "legendary", level: 25 },
+// What can be chosen, and the default (3v3, Rare, up to Lv 15, not scaled).
+export const PVP_SIZES = [3, 5];
+export const PVP_RARITIES: Rarity[] = ["rare", "epic", "legendary"];
+export const PVP_LEVELS = [15, 25];
+export const DEFAULT_PVP: PvpOptions = { size: 3, maxRarity: "rare", level: 15, scaleUp: false };
+export const BRING_EXTRA = 2;
+
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+export function makeFormat(o: PvpOptions): PvpFormat {
+  return {
+    ...o,
+    id: `${o.size}v${o.size}-${o.maxRarity}-${o.level}${o.scaleUp ? "-scaled" : ""}`,
+    name: `${o.size}v${o.size} · ${cap(o.maxRarity)} · ${o.scaleUp ? "" : "up to "}Lv ${o.level}`,
+  };
+}
+
+// The three formats before custom ones: their old ids still read (all scaled).
+export const PVP_FORMATS: Record<string, PvpFormat> = {
+  "3v3-rare":      makeFormat({ size: 3, maxRarity: "rare",      level: 15, scaleUp: true }),
+  "5v5-rare":      makeFormat({ size: 5, maxRarity: "rare",      level: 15, scaleUp: true }),
+  "5v5-legendary": makeFormat({ size: 5, maxRarity: "legendary", level: 25, scaleUp: true }),
 };
-export const PVP_FORMAT_IDS = Object.keys(PVP_FORMATS) as PvpFormatId[];
-export const isFormatId = (v: unknown): v is PvpFormatId => typeof v === "string" && v in PVP_FORMATS;
+
+// A format from its id, or null if it isn't one.
+export function parseFormat(v: unknown): PvpFormat | null {
+  if (typeof v !== "string") return null;
+  if (v in PVP_FORMATS) return PVP_FORMATS[v];
+  const m = /^(\d)v\1-([a-z]+)-(\d+)(-scaled)?$/.exec(v);
+  if (!m) return null;
+  const size = Number(m[1]), maxRarity = m[2] as Rarity, level = Number(m[3]);
+  if (!PVP_SIZES.includes(size) || !PVP_RARITIES.includes(maxRarity) || !PVP_LEVELS.includes(level)) return null;
+  return makeFormat({ size, maxRarity, level, scaleUp: !!m[4] });
+}
+export const isFormatId = (v: unknown): v is PvpFormatId => parseFormat(v) !== null;
+
+// The level a creature fights at in this format.
+export const duelLevel = (own: number, f: Pick<PvpOptions, "level" | "scaleUp">) => (f.scaleUp ? f.level : Math.min(Math.max(1, own), f.level));
+// How many you bring: at least the format's size, at most BRING_EXTRA more.
+export const bringMax = (f: PvpOptions) => f.size + BRING_EXTRA;
 
 // Timers, in seconds. Picking your team (the user's 20 s) and your first
 // creature; each round's move (then a steady move is made for you, like a

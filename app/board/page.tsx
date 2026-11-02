@@ -18,7 +18,7 @@ import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { fetchBoard } from "@/lib/online/leaderboard";
 import { addFriend, fetchFriends, removeFriend, type Friend } from "@/lib/online/friends";
 import { onPlayersOnline, playersOnline } from "@/lib/online/duelChannel";
-import { PVP_FORMAT_IDS, PVP_FORMATS, eligibleCount, type PvpFormatId } from "@/lib/pvp/formats";
+import { BRING_EXTRA, DEFAULT_PVP, PVP_LEVELS, PVP_RARITIES, PVP_SIZES, eligibleCount, makeFormat, type PvpOptions } from "@/lib/pvp/formats";
 import { loadOwnedCreatures } from "@/components/BattleScreen";
 import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
@@ -199,25 +199,45 @@ export default function QuestBoardPage() {
 function FriendList({ friends, online, onRemove }: { friends: Friend[] | null; online: Set<string>; onRemove: (id: string) => void }) {
   const router = useRouter();
   const [choosing, setChoosing] = useState<Friend | null>(null);
+  const [opts, setOpts] = useState<PvpOptions>(DEFAULT_PVP);
   if (!friends) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
   if (choosing) {
-    const duel = (f: PvpFormatId) => {
-      const q = new URLSearchParams({ m: crypto.randomUUID(), f, vs: choosing.name, to: choosing.id });
+    const fmt = makeFormat(opts);
+    const fit = eligibleCount(loadOwnedCreatures(fmt.level, fmt.scaleUp), fmt);
+    const duel = () => {
+      const q = new URLSearchParams({ m: crypto.randomUUID(), f: fmt.id, vs: choosing.name, to: choosing.id });
       router.push(`/duel?${q}`);
     };
+    // One row of choices: a label, then a chip for each.
+    const row = <T,>(label: string, values: T[], on: (v: T) => boolean, text: (v: T) => string, pick: (v: T) => void) => (
+      <div style={{ display: "grid", gridTemplateColumns: "4.5em 1fr", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 13, color: MUTED }}>{label}</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          {values.map((v) => <button key={String(v)} className="chip" data-active={on(v)} onClick={() => pick(v)} style={{ flex: 1, minHeight: 44, justifyContent: "center" }}>{text(v)}</button>)}
+        </div>
+      </div>
+    );
     return (
       <div style={{ display: "grid", gap: 8, padding: "8px 0" }}>
-        <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>⚔️ Duel {choosing.name}</div>
-        {PVP_FORMAT_IDS.map((f) => {
-          const fmt = PVP_FORMATS[f];
-          const fit = eligibleCount(loadOwnedCreatures(fmt.level), fmt);
-          return (
-            <button key={f} className="card-btn" disabled={fit < fmt.size} onClick={() => duel(f)} style={{ minHeight: 52, flexDirection: "column", alignItems: "flex-start" }}>
-              <b>{fmt.name}</b>
-              <span style={{ fontSize: 12, color: fit < fmt.size ? "#ff8a80" : MUTED }}>{fit} of your creatures fit{fit < fmt.size ? ` (needs ${fmt.size})` : ""}</span>
-            </button>
-          );
-        })}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="pixel-font" style={{ flex: 1, fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>⚔️ Duel {choosing.name}</span>
+          <Help title="Duel options">
+            <ul>
+              <li><b>Size:</b> how many fight on each side. You each bring up to {BRING_EXTRA} more: both line-ups are shown, then you each pick who fights.</li>
+              <li><b>Rarity:</b> the rarest creatures, and gear, allowed.</li>
+              <li><b>Level:</b> creatures above it fight at it; those below keep their own level.</li>
+              <li><b>Scale everyone:</b> every creature fights at exactly that level, below it or not.</li>
+            </ul>
+          </Help>
+        </div>
+        {row("Size", PVP_SIZES, (v) => v === opts.size, (v) => `${v}v${v}`, (size) => setOpts({ ...opts, size }))}
+        {row("Rarity", PVP_RARITIES, (v) => v === opts.maxRarity, (v) => v[0].toUpperCase() + v.slice(1), (maxRarity) => setOpts({ ...opts, maxRarity }))}
+        {row("Level", PVP_LEVELS, (v) => v === opts.level, (v) => `Lv ${v}`, (level) => setOpts({ ...opts, level }))}
+        {row("Scale", [false, true], (v) => v === opts.scaleUp, (v) => (v ? "Everyone" : "Only down"), (scaleUp) => setOpts({ ...opts, scaleUp }))}
+        <button className="card-btn" disabled={fit < fmt.size} onClick={duel} style={{ minHeight: 52, flexDirection: "column", alignItems: "flex-start" }}>
+          <b>⚔️ Duel · {fmt.name}</b>
+          <span style={{ fontSize: 12, color: fit < fmt.size ? "#ff8a80" : MUTED }}>{fit} of your creatures fit{fit < fmt.size ? ` (needs ${fmt.size})` : ""}</span>
+        </button>
         <button className="chip" onClick={() => setChoosing(null)} style={{ minHeight: 44, justifyContent: "center" }}>Back</button>
       </div>
     );

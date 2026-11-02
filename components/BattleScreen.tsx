@@ -17,6 +17,7 @@ import { combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, combatRules, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { raceOfMove, raceVsAll } from "@/lib/combat/raceChart";
 import { CRIPPLE, revivable } from "@/lib/combat/battle";
+import { duelLevel } from "@/lib/pvp/formats";
 import { MoveTile } from "./MoveTile";
 import { RaceNames } from "./RaceTag";
 import RaceChart from "./RaceChart";
@@ -114,7 +115,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // Roster first (creatures in a team; until you've made a team, the old ★
 // roster), then rarest. atLevel: build them at that level instead
 // of their own (a duel's format level: lib/pvp/formats.ts).
-export function loadOwnedCreatures(atLevel?: number): OwnedCreature[] {
+// atLevel: a duel's level (lib/pvp/formats.ts duelLevel): everyone at it
+// (scaleUp), or those above it brought down to it.
+export function loadOwnedCreatures(atLevel?: number, scaleUp = true): OwnedCreature[] {
   const save = loadSave();
   const inv = save?.inventory ?? [];
   const teams = readTeams(save?.teams);
@@ -138,7 +141,7 @@ export function loadOwnedCreatures(atLevel?: number): OwnedCreature[] {
       weaponName: w?.name,
       armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
-      fighter: fighterFor(atLevel ? { ...d, level: atLevel } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
+      fighter: fighterFor(atLevel ? { ...d, level: duelLevel(d.level ?? 1, { level: atLevel, scaleUp }) } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
       gear: [w, ...worn].filter((g): g is CreatureOrItemDrop => !!g).map((g) => ({ name: g.name, rarity: g.rarity })),
     });
   }

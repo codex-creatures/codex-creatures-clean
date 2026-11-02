@@ -3,10 +3,11 @@
 // A live duel with a friend (docs/design.md §12; the rules in lib/pvp). The
 // player who sent the invite comes here first and waits for an answer; the
 // friend comes here on accepting it (components/DuelInbox.tsx). Then:
-// 1. Each picks a team (PICK_SECONDS): only creatures, and gear, within the
-//    format's rarity can be picked, and all fight at the format's level.
-// 2. The lead room: both teams stand in a dungeon room, and each picks who
-//    goes out first (LEAD_SECONDS).
+// 1. Each brings a team (PICK_SECONDS): the format's size, and up to
+//    BRING_EXTRA more. Only creatures, and gear, within the format's rarity
+//    can be picked; they fight at the format's level (or under it: duelLevel).
+// 2. The lead room: both line-ups stand in a dungeon room, and each picks who
+//    fights, the first to go out first (LEAD_SECONDS).
 // 3. The battle, on the usual battle screen: each round waits for both
 //    players' moves (TURN_SECONDS, then a steady move is made for you).
 // Nothing here changes your save: no XP, gold or injuries (the duel goes in
@@ -28,8 +29,8 @@ import {
 import { onlineClient } from "@/lib/online/client";
 import { readAccount } from "@/lib/online/account";
 import { cancelInvite, openDuelChannel, sendInvite, type DuelLink } from "@/lib/online/duelChannel";
-import { Duel, type DuelMember, type DuelTeam, type DuelView } from "@/lib/pvp/duel";
-import { ineligibleReason, isFormatId, PVP_FORMATS, TURN_SECONDS, type PvpFormat } from "@/lib/pvp/formats";
+import { Duel, firstPicks, type DuelMember, type DuelTeam, type DuelView } from "@/lib/pvp/duel";
+import { bringMax, ineligibleReason, parseFormat, TURN_SECONDS, type PvpFormat } from "@/lib/pvp/formats";
 import { saveBattle } from "@/lib/battleHistory";
 import { createChamber, CW } from "@/lib/dungeon/chamber";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -48,9 +49,9 @@ type Params = { matchId: string; format: PvpFormat; vs: string; to: string | nul
 
 function readParams(): Params | null {
   const p = new URLSearchParams(window.location.search);
-  const m = p.get("m"), f = p.get("f");
-  if (!m || !isFormatId(f)) return null;
-  return { matchId: m, format: PVP_FORMATS[f], vs: (p.get("vs") ?? "").slice(0, 16) || "your friend", to: p.get("to") };
+  const m = p.get("m"), format = parseFormat(p.get("f"));
+  if (!m || !format) return null;
+  return { matchId: m, format, vs: (p.get("vs") ?? "").slice(0, 16) || "your friend", to: p.get("to") };
 }
 
 const memberOf = (c: OwnedCreature): DuelMember => ({
@@ -67,7 +68,7 @@ export default function DuelPage() {
   const [view, setView] = useState<DuelView | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [picked, setPicked] = useState<string[]>([]);
-  const [lead, setLead] = useState(0);
+  const [lead, setLead] = useState<number[]>([]); // who fights, from the line-up brought (the first goes out first)
   const duel = useRef<Duel | null>(null);
   const pickedRef = useRef<string[]>([]);
   useEffect(() => { pickedRef.current = picked; }, [picked]);
@@ -93,7 +94,7 @@ export default function DuelPage() {
     } catch {}
     joinedHere = p.matchId;
     if (seen) { setProblem("That duel is over: leaving it (or reloading) ends it."); return; }
-    const list = loadOwnedCreatures(p.format.level);
+    const list = loadOwnedCreatures(p.format.level, p.format.scaleUp);
     setOwned(list);
     const fitNow = list.filter((c) => !ineligibleReason(c, p.format));
     let link: DuelLink | null = null, live = true, again: number | undefined;
@@ -115,7 +116,7 @@ export default function DuelPage() {
         autoTeam: () => {
           const chosen = pickedRef.current.map((id) => fitNow.find((c) => c.id === id)).filter((c): c is OwnedCreature => !!c);
           const rest = fitNow.filter((c) => !chosen.includes(c));
-          return teamOf([...chosen, ...rest].slice(0, p.format.size));
+          return teamOf([...chosen, ...rest].slice(0, Math.max(chosen.length, Math.min(bringMax(p.format), fitNow.length))));
         },
         onChange: (v) => { if (live) setView(v); },
       });
@@ -195,19 +196,19 @@ export default function DuelPage() {
 
   // ── 1. Picking a team ──
   if (view.phase === "pick") {
-    const size = params.format.size;
-    const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : p.length < size ? [...p, id] : p);
+    const size = params.format.size, most = Math.min(bringMax(params.format), fit.length);
+    const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : p.length < most ? [...p, id] : p);
     return frame(
       <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 8, padding: "10px 10px 12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span className="pixel-font" style={{ flex: 1, fontSize: 16, color: GOLD }}>Pick {size} · {picked.length}/{size}</span>
+          <span className="pixel-font" style={{ flex: 1, fontSize: 16, color: GOLD }}>Bring {most} · {picked.length}/{most}</span>
           <DuelClock seconds={view.sent ? 0 : left(view.deadline)} />
           <Help title="Duels">
             <ul>
-              <li>Pick {size} creatures before the time runs out (or the first that fit are picked for you).</li>
+              <li>Bring up to {bringMax(params.format)} creatures (at least {size}) before the time runs out, or the first that fit are picked for you.</li>
+              <li>Next, both line-ups are shown and you each pick the {size} who fight, and who goes out first. {vs} sees who you brought, so bring some to keep them guessing.</li>
               <li><b>{params.format.name}:</b> creatures and the gear they wear can be {params.format.maxRarity} at most. Moves learned from codexes are fine.</li>
-              <li>Every creature fights at <b>Lv {params.format.level}</b>, whatever its own level.</li>
-              <li>Next, both teams are shown and you pick who goes out first.</li>
+              <li>{params.format.scaleUp ? <>Every creature fights at <b>Lv {params.format.level}</b>, whatever its own level.</> : <>A creature above <b>Lv {params.format.level}</b> fights at it; one below keeps its own level.</>}</li>
               <li>Each round you have {TURN_SECONDS} seconds to choose. No potions or battle bag: gear only.</li>
               <li>Nothing changes in your game: no XP, gold or injuries. Leaving loses.</li>
             </ul>
@@ -238,7 +239,7 @@ export default function DuelPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flex: 1 }}>
         {view.sent
           ? <span className="pixel-font" style={{ color: GOLD, fontSize: 15 }}>Waiting for {vs}…</span>
-          : <button className="pixel-btn" disabled={picked.length !== size} style={{ fontSize: 18, padding: "10px 28px" }}
+          : <button className="pixel-btn" disabled={picked.length < size} style={{ fontSize: 18, padding: "10px 28px" }}
               onClick={() => d?.pickTeam(teamOf(picked.map((id) => fit.find((c) => c.id === id)!)))}>⚔️ Lock in</button>}
       </div>,
     );
@@ -246,14 +247,18 @@ export default function DuelPage() {
 
   // ── 2. The lead room ──
   if (view.phase === "lead") {
-    const mine = view.mine;
+    const mine = view.mine, size = params.format.size;
+    // Bringing just enough: they all fight, so only the order's to choose (tapping one sends it out first).
+    const all = mine.fighters.length === size;
+    const picks = all ? (lead.length ? [lead[0], ...firstPicks(size).filter((i) => i !== lead[0])] : firstPicks(size)) : lead;
+    const tap = (i: number) => setLead((p) => all ? [i] : p.includes(i) ? p.filter((x) => x !== i) : p.length < size ? [...p, i] : p);
     return frame(
-      <LeadRoom mine={mine} theirs={view.theirs} vs={vs} lead={lead} onLead={view.sent ? undefined : setLead} />,
+      <LeadRoom mine={mine} theirs={view.theirs} vs={vs} picks={picks} size={size} onTap={view.sent ? undefined : tap} />,
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, justifyContent: "center" }}>
         {view.sent
           ? <span className="pixel-font" style={{ color: GOLD, fontSize: 15 }}>Waiting for {vs}…</span>
-          : <button className="pixel-btn" style={{ fontSize: 17, padding: "10px 18px", maxWidth: "70%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-              onClick={() => d?.chooseLead(lead)}>Send out {mine.fighters[lead]?.name}</button>}
+          : <button className="pixel-btn" disabled={picks.length !== size} style={{ fontSize: 17, padding: "10px 18px", maxWidth: "70%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+              onClick={() => d?.chooseLead(picks)}>{picks.length === size ? `Fight · ${mine.fighters[picks[0]]?.name} first` : `Pick ${size} · ${picks.length}/${size}`}</button>}
         <DuelClock seconds={view.sent ? 0 : left(view.deadline)} />
       </div>,
     );
@@ -290,9 +295,9 @@ function BackDock({ label = "Back to the board", onClick }: { label?: string; on
   return <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}><button className="pixel-btn" onClick={onClick}>{label}</button></div>;
 }
 
-// Both teams standing in a dungeon room: theirs at the back, yours at the
-// front. Tap one of yours to send it out first.
-function LeadRoom({ mine, theirs, vs, lead, onLead }: { mine: DuelTeam; theirs: DuelTeam; vs: string; lead: number; onLead?: (i: number) => void }) {
+// Both line-ups standing in a dungeon room: theirs at the back, yours at the
+// front. Tap yours to pick who fights (numbered in order: 1 goes out first).
+function LeadRoom({ mine, theirs, vs, picks, size, onTap }: { mine: DuelTeam; theirs: DuelTeam; vs: string; picks: number[]; size: number; onTap?: (i: number) => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chamber = useMemo(() => createChamber({ tunnels: ["unknown"], seed: 11 }), []);
   useEffect(() => {
@@ -310,7 +315,7 @@ function LeadRoom({ mine, theirs, vs, lead, onLead }: { mine: DuelTeam; theirs: 
       {team.fighters.map((f, i) => {
         const id = team.info[i]?.creatureId;
         const sprite = id ? CREATURE_SPRITES[id] : undefined;
-        const chosen = side === "A" && i === lead;
+        const at = side === "A" ? picks.indexOf(i) : -1, chosen = at >= 0;
         const body = (
           <>
             <div style={{ height: side === "A" ? "16cqw" : "12cqw", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
@@ -319,12 +324,12 @@ function LeadRoom({ mine, theirs, vs, lead, onLead }: { mine: DuelTeam; theirs: 
                 : <Token name={f.name} rarity={team.info[i]?.rarity ?? "common"} creatureId={id} />}
             </div>
             <div style={{ fontSize: 11, color: rarityColor(team.info[i]?.rarity), textShadow: "0 1px 0 #000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={f.name}>{f.name}</div>
-            <div className="pixel-font" style={{ fontSize: 11, color: chosen ? "#ffd66e" : "transparent" }}>▲ first</div>
+            <div className="pixel-font" style={{ fontSize: 11, color: at === 0 ? "#ffd66e" : chosen ? "#9cc8ff" : "transparent" }}>{at === 0 ? "▲ first" : chosen ? `#${at + 1}` : "-"}</div>
           </>
         );
         return side === "A"
-          ? <button key={i} onClick={onLead ? () => onLead(i) : undefined} disabled={!onLead} aria-label={`Send out ${f.name} first`}
-              style={{ background: chosen ? "rgba(255,214,110,0.15)" : "rgba(0,0,0,0.25)", border: `2px solid ${chosen ? "#ffd66e" : "transparent"}`, padding: 2, minHeight: 44, cursor: onLead ? "pointer" : "default", minWidth: 0 }}>{body}</button>
+          ? <button key={i} onClick={onTap ? () => onTap(i) : undefined} disabled={!onTap} aria-label={chosen ? `${f.name}: fighting, #${at + 1}` : `Pick ${f.name}`} aria-pressed={chosen}
+              style={{ background: chosen ? "rgba(255,214,110,0.15)" : "rgba(0,0,0,0.25)", border: `2px solid ${at === 0 ? "#ffd66e" : chosen ? "#9cc8ff" : "transparent"}`, padding: 2, minHeight: 44, cursor: onTap ? "pointer" : "default", minWidth: 0, opacity: chosen || picks.length < size ? 1 : 0.55 }}>{body}</button>
           : <div key={i} style={{ padding: 2, minWidth: 0 }}>{body}</div>;
       })}
     </div>
@@ -336,11 +341,11 @@ function LeadRoom({ mine, theirs, vs, lead, onLead }: { mine: DuelTeam; theirs: 
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", imageRendering: "pixelated" }} />
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "10px 8px 12px" }}>
         <div>
-          <div className="pixel-font" style={{ fontSize: 14, color: "#ff8a80", textShadow: "0 2px 0 #000", marginBottom: 4 }}>{vs}&apos;s team</div>
+          <div className="pixel-font" style={{ fontSize: 14, color: "#ff8a80", textShadow: "0 2px 0 #000", marginBottom: 4 }}>{vs} brought</div>
           {row(theirs, "B")}
         </div>
         <div>
-          <div className="pixel-font" style={{ fontSize: 14, color: "#9cc8ff", textShadow: "0 2px 0 #000", marginBottom: 4 }}>Yours: who goes out first?</div>
+          <div className="pixel-font" style={{ fontSize: 14, color: "#9cc8ff", textShadow: "0 2px 0 #000", marginBottom: 4 }}>{mine.fighters.length > size ? `Pick ${size} to fight (1 goes out first)` : "Yours: who goes out first?"}</div>
           {row(mine, "A")}
         </div>
       </div>

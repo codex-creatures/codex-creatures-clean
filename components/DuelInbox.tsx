@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { onlineClient } from "@/lib/online/client";
 import { declineDuel, joinLobby, listenInbox, type Invite } from "@/lib/online/duelChannel";
-import { eligibleCount, INVITE_SECONDS, PVP_FORMATS } from "@/lib/pvp/formats";
+import { eligibleCount, INVITE_SECONDS, parseFormat } from "@/lib/pvp/formats";
 import { loadOwnedCreatures } from "@/components/BattleScreen";
 
 export default function DuelInbox() {
@@ -53,8 +53,8 @@ export default function DuelInbox() {
 
   const invite = invites[invites.length - 1];
   if (off || !me || !invite || path === "/duel") return null;
-  const format = PVP_FORMATS[invite.format];
-  const fit = eligibleCount(loadOwnedCreatures(format.level), format);
+  const format = parseFormat(invite.format)!; // (parseInvite only lets a real format through)
+  const fit = eligibleCount(loadOwnedCreatures(format.level, format.scaleUp), format);
   const enough = fit >= format.size;
   const drop = () => setInvites((list) => list.filter((x) => x.matchId !== invite.matchId));
   const no = () => { const client = onlineClient(); if (client) declineDuel(client, invite.matchId, me); drop(); };

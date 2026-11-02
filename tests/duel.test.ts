@@ -3,28 +3,28 @@ import { CREATURE_TEMPLATES, isSteadyMove } from "../lib/creatures/creatureData"
 import { buildFighter } from "../lib/combat/loadout";
 import { createBattle } from "../lib/combat/battle";
 import {
-  Duel, leadFirst, mirrorBattle, steadyAction, teamFits, RESEND_MS,
+  Duel, chooseFighters, firstPicks, mirrorBattle, steadyAction, teamFits, RESEND_MS,
   type DuelMsg, type DuelTeam, type DuelView,
 } from "../lib/pvp/duel";
 import {
   PVP_FORMATS, GONE_SECONDS, GRACE_SECONDS, PICK_SECONDS, TURN_SECONDS, INVITE_SECONDS,
-  eligibleCount, ineligibleReason, rarityAllowed,
+  eligibleCount, ineligibleReason, rarityAllowed, parseFormat, makeFormat, duelLevel, bringMax, DEFAULT_PVP, BRING_EXTRA,
 } from "../lib/pvp/formats";
 
 const FMT = PVP_FORMATS["3v3-rare"];
-const team = (offset: number, level = FMT.level): DuelTeam => {
-  const ts = CREATURE_TEMPLATES.slice(offset, offset + FMT.size);
+const team = (offset: number, level = FMT.level, n = FMT.size): DuelTeam => {
+  const ts = CREATURE_TEMPLATES.slice(offset, offset + n);
   return { fighters: ts.map((t) => buildFighter(t, undefined, undefined, undefined, undefined, undefined, undefined, level)),
     info: ts.map((t) => ({ rarity: t.rarity, label: t.name, creatureId: t.id })) };
 };
 
 // Two machines joined by a pretend connection. Messages wait in a queue until
 // flush() (so a test can drop some, as a bad connection would); the clock is shared.
-function pair(opts: { drop?: (m: DuelMsg, to: "host" | "guest") => boolean } = {}) {
+function pair(opts: { drop?: (m: DuelMsg, to: "host" | "guest") => boolean; format?: typeof FMT } = {}) {
   let now = 1_000_000;
   const queue: { to: "host" | "guest"; m: DuelMsg }[] = [];
   const mk = (role: "host" | "guest", t: DuelTeam) => new Duel({
-    role, format: FMT, now: () => now, autoTeam: () => t,
+    role, format: opts.format ?? FMT, now: () => now, autoTeam: () => t,
     send: (m) => { const to = role === "host" ? "guest" : "host"; if (!opts.drop?.(m, to)) queue.push({ to, m: JSON.parse(JSON.stringify(m)) }); },
   });
   const host = mk("host", team(0)), guest = mk("guest", team(10));
@@ -37,7 +37,7 @@ function pair(opts: { drop?: (m: DuelMsg, to: "host" | "guest") => boolean } = {
 const battleOf = (v: DuelView) => { if (v.phase !== "battle") throw new Error(`not in battle: ${v.phase}`); return v; };
 
 // Both lock in teams and leads, straight into the battle.
-function toBattle(p: ReturnType<typeof pair>, leads = [0, 0]) {
+function toBattle(p: ReturnType<typeof pair>, leads = [[0, 1, 2], [0, 1, 2]]) {
   p.join();
   p.host.pickTeam(team(0)); p.guest.pickTeam(team(10)); p.flush();
   p.host.chooseLead(leads[0]); p.guest.chooseLead(leads[1]); p.flush();
@@ -83,8 +83,11 @@ describe("duel helpers", () => {
     const sk = s.sides.A.team[0].skills.find((x) => a.kind === "attack" && x.name === a.skillName)!;
     expect(isSteadyMove(sk)).toBe(true);
     const t = team(0);
-    expect(leadFirst(t, 2).fighters.map((f) => f.name)).toEqual([t.fighters[2].name, t.fighters[0].name, t.fighters[1].name]);
-    expect(leadFirst(t, 2).info[0]).toEqual(t.info[2]);
+    expect(chooseFighters(t, [2, 0, 1], 3).fighters.map((f) => f.name)).toEqual([t.fighters[2].name, t.fighters[0].name, t.fighters[1].name]);
+    expect(chooseFighters(t, [2, 0, 1], 3).info[0]).toEqual(t.info[2]);
+    // Nonsense picks (repeats, too few, out of range) fall back to the first ones brought.
+    for (const bad of [[0, 0, 1], [1, 2], [0, 1, 9], undefined]) expect(chooseFighters(t, bad, 3).fighters.map((f) => f.name)).toEqual(t.fighters.map((f) => f.name));
+    expect(firstPicks(3)).toEqual([0, 1, 2]);
   });
 
   it("refuses a team of the wrong size or level", () => {
@@ -109,8 +112,8 @@ describe("a duel between two machines", () => {
     const hv = p.host.view, gv = p.guest.view;
     expect(hv.phase === "lead" && hv.theirs.fighters[0].name).toBe(team(10).fighters[0].name);
     expect(gv.phase === "lead" && gv.mine.fighters[0].name).toBe(team(10).fighters[0].name);
-    p.host.chooseLead(1);
-    p.guest.chooseLead(2);
+    p.host.chooseLead([1, 0, 2]);
+    p.guest.chooseLead([2, 0, 1]);
     p.flush();
     const h = battleOf(p.host.view), g = battleOf(p.guest.view);
     expect(h.state.sides.A.team[0].name).toBe(team(0).fighters[1].name);
@@ -254,3 +257,60 @@ describe("a duel between two machines", () => {
   });
 });
 
+
+describe("custom duels (the user, 2026-11-02)", () => {
+  it("default to 3v3, Rare, up to Lv 15, not scaled up", () => {
+    const f = makeFormat(DEFAULT_PVP);
+    expect(f).toMatchObject({ size: 3, maxRarity: "rare", level: 15, scaleUp: false, id: "3v3-rare-15", name: "3v3 · Rare · up to Lv 15" });
+    expect(makeFormat({ size: 5, maxRarity: "rare", level: 25, scaleUp: true }).name).toBe("5v5 · Rare · Lv 25");
+  });
+
+  it("travel as an id, and only real choices read back (old ids too)", () => {
+    for (const o of [DEFAULT_PVP, { size: 5, maxRarity: "legendary" as const, level: 25, scaleUp: true }, { size: 5, maxRarity: "epic" as const, level: 15, scaleUp: false }])
+      expect(parseFormat(makeFormat(o).id)).toEqual(makeFormat(o));
+    expect(parseFormat("5v5-legendary")).toMatchObject({ size: 5, maxRarity: "legendary", level: 25, scaleUp: true });
+    for (const bad of ["3v5-rare-15", "4v4-rare-15", "3v3-mythic-15", "3v3-rare-99", "3v3-rare-15-x", "", 7, null]) expect(parseFormat(bad)).toBeNull();
+  });
+
+  it("not scaled: only those above the level come down to it; scaled: everyone's at it", () => {
+    const down = makeFormat(DEFAULT_PVP), all = makeFormat({ ...DEFAULT_PVP, scaleUp: true });
+    expect([duelLevel(8, down), duelLevel(15, down), duelLevel(30, down)]).toEqual([8, 15, 15]);
+    expect([duelLevel(8, all), duelLevel(30, all)]).toEqual([15, 15]);
+    expect(teamFits(team(0, 8), down)).toBe(true);
+    expect(teamFits(team(0, 16), down)).toBe(false);
+    expect(teamFits(team(0, 8), all)).toBe(false);
+  });
+
+  it("you bring the size and up to 2 more", () => {
+    const f = makeFormat(DEFAULT_PVP);
+    expect(BRING_EXTRA).toBe(2);
+    expect(bringMax(f)).toBe(5);
+    expect(teamFits(team(0, 15, 2), f)).toBe(false);
+    for (const n of [3, 4, 5]) expect(teamFits(team(0, 15, n), f)).toBe(true);
+    expect(teamFits(team(0, 15, 6), f)).toBe(false);
+  });
+
+  it("both see who the other brought, then each picks who fights", () => {
+    const f = makeFormat(DEFAULT_PVP);
+    const p = pair({ format: f });
+    p.join();
+    p.host.pickTeam(team(0, 15, 5)); p.guest.pickTeam(team(10, 15, 5)); p.flush();
+    const hv = p.host.view;
+    expect(hv.phase === "lead" && hv.theirs.fighters.length).toBe(5);
+    p.host.chooseLead([4, 1, 3]); p.guest.chooseLead([0, 2, 4]); p.flush();
+    const h = battleOf(p.host.view);
+    expect(h.state.sides.A.team.map((x) => x.name)).toEqual([4, 1, 3].map((i) => team(0, 15, 5).fighters[i].name));
+    expect(h.state.sides.B.team.map((x) => x.name)).toEqual([0, 2, 4].map((i) => team(10, 15, 5).fighters[i].name));
+    expect(battleOf(p.guest.view).state.sides.A.team[0].name).toBe(team(10, 15, 5).fighters[0].name);
+  });
+
+  it("out of time choosing: the first 3 brought fight", () => {
+    const p = pair({ format: makeFormat(DEFAULT_PVP) });
+    p.join();
+    p.host.pickTeam(team(0, 15, 5)); p.guest.pickTeam(team(10, 15, 5)); p.flush();
+    p.host.chooseLead([2, 3, 4]);
+    p.tick(60_000);
+    const h = battleOf(p.host.view);
+    expect(h.state.sides.B.team.map((x) => x.name)).toEqual(team(10, 15, 5).fighters.slice(0, 3).map((x) => x.name));
+  });
+});
