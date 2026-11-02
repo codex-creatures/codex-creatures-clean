@@ -15,7 +15,7 @@ import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/l
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { bountyHasStep, canBlast, tavernVisitor } from "@/lib/tavern";
-import { canClaim, dayKey, loadDaily } from "@/lib/daily";
+import { DAILY_ONLINE, canClaim, todayDaily } from "@/lib/daily";
 import { useTour } from "@/hooks/useTour";
 import { tourDenTarget } from "@/lib/tour";
 
@@ -61,7 +61,7 @@ export default function Home() {
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0))} backpack={backpack} highlight={highlight}
           rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble}
-          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} boardNews={game.hydrated && (bountyHasStep(game.tavern, clears) || canClaim(loadDaily(), dayKey()))} upgraded={game.bookcase >= 2}
+          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} boardNews={game.hydrated && (bountyHasStep(game.tavern, clears) || [0, 1].some((i) => canClaim(todayDaily(DAILY_ONLINE), i)))} upgraded={game.bookcase >= 2}
           crateNews={game.hydrated && game.crate.length > 0} cageNews={game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage}
           annex={<TavernRoom tavern={game.tavern} firstClearRun={firstClearRun} />} />
       </div>

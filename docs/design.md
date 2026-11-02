@@ -833,25 +833,47 @@ fields optional with defaults.
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)
 
-On the quest board's Quests tab, above the Cyclops bounty. **One a day, the same for everyone**
-(picked from the date), new at **local midnight**. Only what you do that day counts; finish it,
-then claim the reward once. A ❗ on the board in the Den while one's ready to claim. Plays offline.
+On the quest board's Quests tab, above the Cyclops bounty. **Two a day, a primary and a
+secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
+do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
+ready to claim. Plays offline.
 
-| Quest | Reward |
+**A boss you've never beaten steps down** (the user: the Hydra to the Cyclops or Encampment):
+the Abyss to the Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, until it's one
+you've beaten before. You get the easier quest's reward. 🧪 The Abyss and Cyclops steps follow the
+same rule (Claude's reading). Which quests you got is fixed the first time they're seen that day.
+
+| Primary | Reward |
 |---|---|
-| Scan 5 new barcodes | 500 gold |
-| Beat the Cyclops | Klutz's box (10 pieces) at Rare or better |
+| Beat the Cyclops | a box of 5 pieces of gear, Rare or better |
 | Beat the Encampment twice | a creature, Rare at most |
 | Beat the Hydra | 3 Rare or Epic weapons or armour |
+| Beat the Abyss | an Epic weapon or armour piece |
+
+| Secondary | Reward |
+|---|---|
+| Scan 5 new barcodes | 500 gold |
 | Sell 300 gold's worth of items | the travelling merchant calls at the tavern |
+| Win 5 fights in a dungeon | an XP scroll |
+| Send Klutz out hunting | a bundle of one material |
+| Clear 10 rooms in a dungeon | a Revival Elixir |
+| Beat a mini boss | a codex, its rarity rolled |
+| Summon a creature from 3 cards | 250 gold |
+| Win a duel with a friend | 100 gold |
+| Find a creature you've never owned | a Code Cache (at the altar) |
 
 🧪 Claude's readings, not asked: "5 item scans" counts new barcodes (a Code Cache, sealed or not;
 a rescan's gold doesn't). Rarities are rolled at the usual odds (`RARITY_WEIGHTS`) and then held
-to the limits (`rollRarity`), so the box is mostly Rare. The box keeps Klutz's 10 pieces
-(`BOX_ROLLS`), a weapon a third of the time. Sales count at home (Inventory, altar, crate,
-tavern, materials) and to the Labyrinth's merchant. The merchant replaces whoever's at the tavern
-for 2 runs, and can't be claimed until the tavern's repaired (progress still counts). A reward
-with no room in your chest waits until there is. The Hydra counts only in the Deep Labyrinth.
+to the limits (`rollRarity`), so the box is mostly Rare; a weapon a third of the time. The
+material bundle is a scan's (`materialBundle`, its rarity rolled); the codex is what a scan of the
+rolled rarity gives (Epic and up: a race codex); the Code Cache is a fresh scan roll. Sales count
+at home (Inventory, altar, crate, tavern, materials) and to the Labyrinth's merchant. Fights count
+in any dungeon; rooms are each run's finished rooms, counted as it ends; a mini boss includes a
+guarded storehouse but not the Encampment's chief. A duel counts only when won in battle. Klutz
+steps down to the fights quest until he hunts for you, and duels do in a copy without online.
+The merchant replaces whoever's at the tavern for 2 runs, and can't be claimed until the
+tavern's repaired (progress still counts). A reward with no room (chest boxes, the bookcase for a
+codex, the altar for a Code Cache) waits until there is.
 
 ## 10. UI philosophy (settled; follow it)
 

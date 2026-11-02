@@ -413,7 +413,9 @@ export default function DungeonPage() {
       game.addDrop(x);
       delete loot[id];
     }
-    if (cur.run?.status === "cleared") countDaily(`win:${dungeonOf(cur.run)}`); // (the daily quest: lib/daily.ts)
+    // The daily quests (lib/daily.ts): rooms finished this run, and a win.
+    if (cur.run) countDaily("room", cur.run.cleared.length);
+    if (cur.run?.status === "cleared") countDaily(`win:${dungeonOf(cur.run)}`);
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     updateTavern((t) => comeHome(t, Math.random, onBindle(cur.meta))); // home: a visitor may call at the tavern
     battle.clear();
@@ -1005,6 +1007,8 @@ export default function DungeonPage() {
       return;
     }
     const room = r.current!;
+    countDaily("battle"); // (the daily quests: lib/daily.ts)
+    if (room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded)) countDaily("miniboss");
     if (room.quest === "thief") {
       // It runs off, and the box it was carrying drops to the floor (the box is the prize: no gold).
       updateRun((x) => markDone({ ...after(x), hp, battle: undefined }));

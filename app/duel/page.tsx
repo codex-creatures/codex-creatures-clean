@@ -16,6 +16,7 @@
 // &to=<their account> for the one who invited (the host).
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { countDaily } from "@/lib/daily";
 import { useRouter } from "next/navigation";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
@@ -158,6 +159,7 @@ export default function DuelPage() {
       const m: Match = { state, info, teams: { A: state.sides.A.team, B: state.sides.B.team }, level: "normal", opponent: params.vs, title: `Duel vs ${params.vs}` };
       battle.resume(m);
     } else battle.show(state);
+    if (view.phase === "over" && view.reason === "battle" && view.result === "win") countDaily("duel"); // (the daily quests: lib/daily.ts)
     if (view.phase === "over" && view.reason === "battle" && state.winner) {
       const m: Match = { state, info, teams: { A: state.sides.A.team, B: state.sides.B.team }, level: "normal", opponent: params.vs };
       saveBattle({ id: crypto.randomUUID(), date: new Date().toISOString(), winner: state.winner, rounds: state.round, title: `Duel vs ${params.vs}`,

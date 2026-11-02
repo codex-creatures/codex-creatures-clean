@@ -1,6 +1,6 @@
 "use client";
 // app/board/page.tsx
-// The quest board in the Den, in two tabs. Quests: today's quest (lib/daily.ts),
+// The quest board in the Den, in two tabs. Quests: today's two (lib/daily.ts),
 // and the Cyclops bounty, up once the tavern's repaired (lib/tavern.ts
 // bountyStep): take it, beat the Cyclops, hand in the head. They play offline. Leaderboards (lib/leaderboard.ts):
 // species collected, runs and wins in each dungeon, and time played,
@@ -24,7 +24,8 @@ import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { bountyStep } from "@/lib/tavern";
-import { DAILY_GOLD, canClaim, claimDaily, dailyFor, dayKey, loadDaily, questOfDay, rollDailyReward, updateDaily } from "@/lib/daily";
+import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest } from "@/lib/daily";
+import { CACHE_LIMIT } from "@/hooks/useGameState";
 import { fitInBoxes } from "@/lib/items/storage";
 import CodeCache from "@/components/CodeCache";
 import type { Drop } from "@/lib/types";
@@ -125,7 +126,8 @@ export default function QuestBoardPage() {
             <Help title="Quests">
               <ul>
                 <li>A ❗ on the board in the Den means a quest has a step for you.</li>
-                <li><b>☀️ Today:</b> one quest a day, the same for everyone, new at midnight. Only what you do that day counts. Finish it, then claim the reward.</li>
+                <li><b>☀️ Today:</b> two quests a day, a big one and a smaller one, the same for everyone and new at midnight. Only what you do that day counts. Finish one, then claim its reward.</li>
+                <li>A boss you&apos;ve never beaten is swapped for an easier one (the Abyss for the Hydra, then the Cyclops, then the Encampment).</li>
                 <li><b>The Cyclops bounty:</b> it goes up once the tavern&apos;s repaired. Take it, beat the Cyclops (a win from before counts) and hand in its head: it&apos;s mounted on the tavern wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
               </ul>
             </Help>
@@ -238,32 +240,37 @@ function FriendList({ friends, online, onRemove }: { friends: Friend[] | null; o
   );
 }
 
-// The quests on the board: today's quest (lib/daily.ts), then the Cyclops
-// bounty once it's up. Each is a card of fixed lines (name, two lines on what
-// to do, then its button or where you're at), so a step changes only the words.
+// The quests on the board: today's two (lib/daily.ts), the primary and the
+// secondary, then the Cyclops bounty once it's up. Each is a card of fixed
+// lines (name, two lines on what to do, then its button or where you're at),
+// so a step changes only the words.
 function QuestList() {
   const game = useGameState();
-  const [, reread] = useState(0);              // read the daily quest again after a claim
+  const [, reread] = useState(0);              // read the daily quests again after a claim
   const [prize, setPrize] = useState<Drop[] | null>(null); // what a claim gave, shown as it opens
-  const [full, setFull] = useState(false);     // a claim with no room in your chest
+  const [full, setFull] = useState<number | null>(null);   // a claim with no room for it (which quest)
+  // Fix today's quests in the save the first time they're seen (lib/daily.ts todayDaily).
+  useEffect(() => { if (game.hydrated) todayDaily(DAILY_ONLINE); }, [game.hydrated]);
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
 
-  // Today's quest.
-  const day = dayKey();
-  const daily = dailyFor(loadDaily(), day);
-  const q = questOfDay(day);
-  const got = Math.min(daily.progress ?? 0, q.goal);
-  const waits = q.reward === "merchant" && !game.tavern.repaired; // (he calls at the tavern)
-  function claim() {
-    if (!canClaim(loadDaily(), day) || waits) return;
+  const daily = dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE));
+  const quests = todaysQuests(daily);
+  // The merchant calls at the tavern, so that one waits for the repair.
+  const waits = (q: DailyQuest) => q.reward === "merchant" && !game.tavern.repaired;
+  function claim(i: number) {
+    const q = quests[i];
+    if (!canClaim(dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE)), i) || waits(q)) return;
     const drops = rollDailyReward(q.reward);
-    if (fitInBoxes(game.inventory, drops, game.storage).fit.length < drops.length) { setFull(true); return; }
-    setFull(false);
-    updateDaily((s) => claimDaily(s, day));
-    if (q.reward === "gold") game.addGold(DAILY_GOLD);
-    if (q.reward === "merchant") game.merchantVisits();
-    drops.forEach(game.addDrop);
-    if (drops.length) setPrize(drops);
+    const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
+    const room = q.reward === "cache" ? game.caches.length + game.sealed.length < CACHE_LIMIT
+      : fitInBoxes(game.inventory, drops, game.storage).fit.length === drops.length && codexes <= game.shelfFree;
+    if (!room) { setFull(i); return; }
+    setFull(null);
+    updateDaily(DAILY_ONLINE, (s) => claimDaily(s, i));
+    if (q.reward === "gold") game.addGold(q.gold ?? 0);
+    else if (q.reward === "merchant") game.merchantVisits();
+    else if (q.reward === "cache") drops.forEach(game.addCache);
+    else { drops.forEach(game.addDrop); if (drops.length) setPrize(drops); }
     reread((n) => n + 1);
   }
 
@@ -274,21 +281,28 @@ function QuestList() {
     : step === "hunt" ? "Beat the Cyclops and bring back its head."
     : step === "head" ? `You have the Cyclops Head${meta.firstClearRun ? ` (run ${meta.firstClearRun})` : ""}. Hand it in to be paid.`
     : `Paid: the Crooked Bookcase Schematic.${game.bookcase < 2 ? " Build it at the bookcase." : ""}`;
-  const dailySay = `${q.task}. Reward: ${q.pays}.`;
-  const dailyNote = daily.claimed ? "Claimed: a new quest at midnight" : waits ? "Repair the tavern to claim" : full ? "No room in your chest" : `${got}/${q.goal}`;
   return (
     <div style={{ display: "grid", gap: 8, padding: "8px 0" }}>
-      <div className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: daily.claimed ? 0.7 : 1 }}>
-        <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {daily.claimed ? "✓" : canClaim(daily, day) ? "❗" : "☀️"} Today: {q.name}
-        </div>
-        <div title={dailySay} style={CLAMP2}>{dailySay}</div>
-        <div style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 10 }}>
-          <button className="pixel-btn" onClick={claim} disabled={!canClaim(daily, day) || waits}
-            style={{ visibility: daily.claimed ? "hidden" : "visible" }}>🎁 Claim</button>
-          <span className="pixel-font" style={{ fontSize: 13, color: daily.claimed ? "#5ee08a" : full || waits ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dailyNote}</span>
-        </div>
-      </div>
+      {quests.map((q, i) => {
+        const done = daily.claimed[i];
+        const ready = canClaim(daily, i);
+        const text = `${q.task}. Reward: ${q.pays}.`;
+        const note = done ? "Claimed: new quests at midnight" : waits(q) ? "Repair the tavern to claim"
+          : full === i ? (q.reward === "cache" ? "The altar's full" : "No room for it") : `${Math.min(daily.progress[i], q.goal)}/${q.goal}`;
+        return (
+          <div key={i} className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: done ? 0.7 : 1 }}>
+            <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {done ? "✓" : ready ? "❗" : i === 0 ? "☀️" : "🌙"} {i === 0 ? "Today" : "Also today"}: {q.name}
+            </div>
+            <div title={text} style={CLAMP2}>{text}</div>
+            <div style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 10 }}>
+              <button className="pixel-btn" onClick={() => claim(i)} disabled={!ready || waits(q)}
+                style={{ visibility: done ? "hidden" : "visible" }}>🎁 Claim</button>
+              <span className="pixel-font" style={{ fontSize: 13, color: done ? "#5ee08a" : full === i || waits(q) ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{note}</span>
+            </div>
+          </div>
+        );
+      })}
 
       {step !== "closed" && (
         <div className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: step === "paid" ? 0.7 : 1 }}>

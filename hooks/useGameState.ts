@@ -430,6 +430,7 @@ export function useGameState(initialTab: TabKey = "all") {
       return it ? [{ slot, rarity: it.rarity }] : [];
     });
     setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, worn));
+    countDaily("klutz");
   }
 
   // Spend % points on him (from his stats window).
@@ -596,6 +597,14 @@ export function useGameState(initialTab: TabKey = "all") {
   const speciesOwned = useMemo(() => ownedSpecies(owned, inventory), [owned, inventory]);
   if (hydrated && [...speciesOwned].some((id) => !owned.includes(id))) setOwned([...speciesOwned]);
   const discoveredCreatures = speciesOwned.size;
+  // A species you'd never owned counts towards the daily quest (lib/daily.ts).
+  // (Two of these hooks on one page would count it twice: its goal is 1, so no harm.)
+  const ownedBefore = useRef<number | null>(null);
+  useEffect(() => {
+    if (!hydrated) { ownedBefore.current = null; return; }
+    if (ownedBefore.current !== null && discoveredCreatures > ownedBefore.current) countDaily("species", discoveredCreatures - ownedBefore.current);
+    ownedBefore.current = discoveredCreatures;
+  }, [hydrated, discoveredCreatures]);
   // Every kind of item (lib/items/discovery.ts), used-up ones included.
   const itemKinds = useMemo(() => discoveredItemKeys(found, inventory, materials), [found, inventory, materials]);
   const discoveredItems = itemKinds.size;
@@ -664,6 +673,14 @@ export function useGameState(initialTab: TabKey = "all") {
     addDrop(drop);
     setRecentScanIds((prev) => [drop.id, ...prev.filter((id) => id !== drop.id)].slice(0, RECENT_SCANS));
     return false;
+  }
+
+  // A Code Cache from somewhere other than a scan (a daily quest's reward):
+  // it waits at the altar. False if the altar's full.
+  function addCache(drop: Drop): boolean {
+    if (caches.length + sealed.length >= CACHE_LIMIT) return false;
+    setCaches((prev) => [...prev, drop]);
+    return true;
   }
 
   // A new barcode scanned with the global registry out of reach: a sealed
@@ -856,6 +873,7 @@ export function useGameState(initialTab: TabKey = "all") {
     const creature = summonFromCards(cards, keepId);
     setInventory((prev) => [creature, ...prev.filter((d) => !cardIds.includes(d.id))]);
     setLastDrop(creature);
+    countDaily("summon");
     return creature;
   }
 
@@ -971,7 +989,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, merchantVisits, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, merchantVisits, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
