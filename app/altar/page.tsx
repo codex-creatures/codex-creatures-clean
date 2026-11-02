@@ -24,6 +24,7 @@ import { testingToolsAllowed } from "@/lib/online/admin";
 import { backupSave } from "@/lib/saveFile";
 import { findLine, newFinds, type NewFind } from "@/lib/scanReveal";
 import { countDaily } from "@/lib/daily";
+import { SCAN_MAX, SCAN_REGEN_MS, clockText, nextScanIn } from "@/lib/scanCharges";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -94,12 +95,26 @@ export default function AltarPage() {
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
     onOffline:         (code) => { game.sealScan(code); countDaily("scan"); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
+    canScanNew:        () => rollMode !== "random" && game.scansNow().left > 0,
+    onScanUsed:        () => { game.takeScanCharge(); },
+    onNoScans:         () => setNote(<><b style={{ color: "#ff8a80" }}>No scans left</b><br />The next one comes in {clockText(nextScanIn(game.scanCharges, Date.now()) ?? 0)}.</>),
     onSealed:          (rarity, need) => setNote(<>🔒 Something <b style={{ color: RARITY_COLORS[rarity]?.text, textTransform: "capitalize" }}>{rarity}</b> stirs in it. Come back at explorer level <b>{need}</b>.</>),
   });
 
   // Every scan, camera or typed: with CACHE_LIMIT Code Caches waiting
   // (sealed ones too), it fails. One at a time: the registry may take a moment.
   const cacheCount = game.caches.length + game.sealed.length;
+  // Scans stored, and a clock ticking once a second while you're below full.
+  const [now, setNow] = useState(() => Date.now());
+  const charges = game.scansNow(now);
+  const nextIn = nextScanIn(game.scanCharges, now);
+  const ticking = nextIn !== null;
+  useEffect(() => {
+    if (!ticking) return;
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, [ticking]);
+  useEffect(() => setNow(Date.now()), [game.scanCharges]); // (a scan just used one: show it now)
   const scanning = useRef(false);
   async function scan(code: string) {
     if (scanning.current) return;
@@ -202,6 +217,17 @@ export default function AltarPage() {
           onClick={() => setScannerOn((s) => !s)}>
           {scannerOn ? "✖ Stop scanning" : "🔮 Scan Barcode"}
         </button>
+        {/* Scans stored (lib/scanCharges.ts): one line, the countdown in it while below full. */}
+        <div className="pixel-font" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 14, color: "#c9b48a", minHeight: 22 }}>
+          <span>Scans <b style={{ color: charges.left ? "#f1d9a0" : "#ff8a80" }}>{charges.left}/{SCAN_MAX}</b>{nextIn !== null && <> · next in <b style={{ color: "#f1d9a0", fontVariantNumeric: "tabular-nums" }}>{clockText(nextIn)}</b></>}</span>
+          <Help title="Scans">
+            <ul>
+              <li>You can store up to <b>{SCAN_MAX}</b> scans. Each barcode new to you uses one.</li>
+              <li>Below {SCAN_MAX}, you get one back every <b>{SCAN_REGEN_MS / 60000} minutes</b>: {SCAN_MAX} every {SCAN_MAX * SCAN_REGEN_MS / 3600000} hours. Full, you get no more, so come back and scan while you can.</li>
+              <li>Rescanning a barcode you&apos;ve already opened is free, and so is one that&apos;s too rare for you yet.</li>
+            </ul>
+          </Help>
+        </div>
         {scannerOn && <BarcodeScanner onCode={onCameraCode} />}
 
         <div data-tour="scan-mode" style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 12 }}>

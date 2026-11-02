@@ -113,11 +113,13 @@ export type SideKey = "A" | "B";
 // target: which enemy to hit when they have two on the field (team index);
 // missing = their main creature.
 // item: something from the battle bag used on your creature on the field
-// (the screen takes it out of the bag); heal = HP it restores.
+// (the screen takes it out of the bag); heal = HP it restores. revive: a
+// Revival Elixir instead, on a knocked-out teammate (team index), bringing it
+// back with share of its HP (it can then be swapped in).
 export type BattleAction =
   | { kind: "attack"; skillName: string; target?: number }
   | { kind: "swap"; to: number }
-  | { kind: "item"; item: string; heal: number }
+  | { kind: "item"; item: string; heal: number; revive?: { index: number; share: number } }
   | { kind: "weapon"; name: string; weapon: CombatItem } // swap a weapon in from the bag (uses your turn)
   | { kind: "pass" }; // rest: only when no move is affordable; recovers energy
 
@@ -269,6 +271,11 @@ export function attackTargets(state: BattleState, key: SideKey): number[] {
   return fieldOf(foe).filter((i) => foe.team[i].hp > 0);
 }
 
+// A Revival Elixir can go on any knocked-out teammate (the one on the field
+// never is: a knock-out there is replaced before you choose).
+export const canRevive = (s: BattleSide, index: number) => !s.boss && !!s.team[index] && s.team[index].hp <= 0;
+export const revivable = (s: BattleSide) => s.team.flatMap((_, i) => (canRevive(s, i) ? [i] : []));
+
 export function isValidAction(state: BattleState, key: SideKey, a: BattleAction): boolean {
   const s = state.sides[key];
   const me = activeOf(s);
@@ -276,7 +283,7 @@ export function isValidAction(state: BattleState, key: SideKey, a: BattleAction)
     case "attack": return affordableSkills(me).some((sk) => sk.name === a.skillName)
       && (a.target === undefined || attackTargets(state, key).includes(a.target));
     case "swap":   return swapTargets(s).includes(a.to);
-    case "item":   return !s.boss && me.hp > 0 && me.hp < me.maxHp && a.heal > 0;
+    case "item":   return !s.boss && me.hp > 0 && (a.revive ? canRevive(s, a.revive.index) && a.revive.share > 0 : me.hp < me.maxHp && a.heal > 0);
     case "weapon": return !s.boss && me.hp > 0;
     case "pass":   return affordableSkills(me).length === 0;
   }
@@ -343,6 +350,14 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     }
     if (a.kind !== "item" || state.sides[k].boss) continue;
     const s = state.sides[k];
+    if (a.revive) {
+      const f = s.team[a.revive.index];
+      f.hp = Math.max(1, Math.round(f.maxHp * a.revive.share));
+      f.statuses = [];
+      state.log.push({ type: "effect", side: k, index: a.revive.index, name: f.name, text: `is brought back by a ${a.item} (${f.hp} HP)`, hp: f.hp,
+        statuses: [], kind: "revive" });
+      continue;
+    }
     const me = activeOf(s);
     const healed = Math.min(a.heal, me.maxHp - me.hp);
     me.hp += healed;

@@ -119,12 +119,11 @@ export default function BagPacker({ game, lab, onSave }: {
       {!away && (
         <>
           <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Pack from your Inventory</div>
-          <ItemPicker emptyText="Nothing of this kind to pack (gear on a creature isn't here)."
+          <ItemPicker emptyText="Nothing of this kind to pack (gear on a creature isn't here)." start="consumables" small
             tabs={[
+              { key: "consumables", label: "Consumables", items: [...potions, ...tools] },
               { key: "weapons", label: "Weapons", items: spare.filter((w) => w.itemCategory === "weapon") },
               { key: "armor", label: "Armour", items: spare.filter((w) => w.itemCategory === "armor") },
-              { key: "potions", label: "Potions", items: potions },
-              { key: "tools", label: "Tools", items: tools },
             ]}
             action={(x) => (
               <button className="chip" style={{ minHeight: 44 }} disabled={bag.length >= slots}

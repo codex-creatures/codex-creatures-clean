@@ -45,6 +45,7 @@ import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
 import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
 import { readTeams, toggleInTeam, type Teams } from "@/lib/teams";
+import { scanCharges, spendScan, type ScanCharges } from "@/lib/scanCharges";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -95,6 +96,7 @@ type SaveState = {
   found?: string[];                    // kinds of item you've ever had (lib/items/discovery.ts)
   owned?: string[];                    // creature species you've ever owned, let go or not (ownedSpecies)
   teams?: string[][];                  // the Labyrinth's saved line-ups (lib/teams.ts)
+  scanCharges?: ScanCharges;           // new barcodes you can scan, stored (lib/scanCharges.ts; missing: full)
 };
 
 // A new player's first creature (a Lv 3 Rare): lib/creatures/starter.ts.
@@ -168,6 +170,7 @@ export function loadSave(): SaveState | null {
     materials: obj(parsed.materials) as Materials,
     storage: Array.isArray(parsed.storage) ? parsed.storage : [],
     teams: readTeams(parsed.teams),
+    scanCharges: parsed.scanCharges && typeof parsed.scanCharges === "object" ? (parsed.scanCharges as ScanCharges) : undefined,
     owned: Array.isArray(parsed.owned) ? parsed.owned.filter((c: unknown) => typeof c === "string") : [],
     found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),
   };
@@ -208,6 +211,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [found, setFound] = useState<string[]>([]);
   const [owned, setOwned] = useState<string[]>([]);
   const [teams, setTeams] = useState<Teams>(() => readTeams(undefined));
+  const [charges, setCharges] = useState<ScanCharges | undefined>(undefined);
   // Gear packed in your bag (lib/dungeon/run.ts): it can't be sold.
   const [packedIds, setPackedIds] = useState<Set<string>>(new Set());
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
@@ -251,6 +255,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setFound(saved.found ?? []);
       setOwned(saved.owned ?? []);
       setTeams(readTeams(saved.teams));
+      setCharges(saved.scanCharges);
     }
     setTavern(loadTavern());
     setPackedIds(packedGear());
@@ -259,8 +264,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, scanCharges: charges });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, charges]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -685,6 +690,16 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // A new barcode scanned with the global registry out of reach: a sealed
   // Code Cache, opened once back online (it takes one of the altar's spaces).
+  // New barcodes you can scan (lib/scanCharges.ts): where you stand now, and
+  // using one (false: none left). Rescans and too-rare finds are free.
+  const scansNow = (now = Date.now()) => scanCharges(charges, now);
+  function takeScanCharge(): boolean {
+    const next = spendScan(charges, Date.now());
+    if (!next) return false;
+    setCharges(next);
+    return true;
+  }
+
   function sealScan(code: string) {
     setDeathsSinceScan(0);
     setScanTipRead(false);
@@ -989,7 +1004,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, merchantVisits, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, merchantVisits, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

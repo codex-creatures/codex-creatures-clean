@@ -7,7 +7,6 @@
 // so a refresh never loses it. Going back to the Den ends it (you keep your
 // bag), so a run can't be paused and picked up later.
 
-import { Coin } from "@/components/GoldCount";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,7 +31,7 @@ import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
 import BagPacker from "@/components/BagPacker";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { codexLearners, CREATURE_BY_ID, MOVE_BY_NAME, raceNames } from "@/lib/creatures/creatureData";
+import { CREATURE_BY_ID, raceNames } from "@/lib/creatures/creatureData";
 import { PotionIcon } from "@/components/PixelSprite";
 import CreaturePortrait from "@/components/CreaturePortrait";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
@@ -81,6 +80,7 @@ import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
+import CodexOffer from "@/components/CodexOffer";
 import { TOOLS, toolDrop, type StoragePlan } from "@/lib/items/materials";
 import { BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
 
@@ -184,10 +184,12 @@ export default function DungeonPage() {
     game.equipItem(creatureId, slot, it.id);
   }
 
-  // Used from the bag mid-fight: a potion, or a weapon for the creature on the field.
+  // Used from the bag mid-fight: a potion, a weapon for the creature on the
+  // field, or a Revival Elixir (on a knocked-out teammate: the fight brings it back).
   function useFromBag(key: string, activeIndex: number) {
     const e = key as BagEntry;
     if (isPotionEntry(e)) { takeOne(e); return; }
+    if (itemOf(e)?.tool === "revival") { spendTool(e); return; }
     const creatureId = loadDungeon().run?.current?.fighters?.[activeIndex];
     if (creatureId) equipFromBag(e, creatureId);
   }
@@ -195,6 +197,7 @@ export default function DungeonPage() {
   // The bag's contents as the battle screen shows them.
   const bagForBattle = (bag: BagEntry[]): BagItem[] => [
     ...bagItems(bag.filter(isPotionEntry)),
+    ...bag.flatMap((e) => (itemOf(e)?.tool === "revival" ? [{ key: e, name: TOOLS.revival.name, icon: TOOLS.revival.icon, count: 1, revive: REVIVE_HP }] : [])),
     ...bag.flatMap((e) => {
       const w = itemOf(e);
       if (!w || w.itemCategory !== "weapon" || !w.itemKey) return [];
@@ -1755,22 +1758,9 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {(room.offers ?? []).map((name) => {
-              const move = MOVE_BY_NAME[name];
               const sold = room.bought?.includes(name);
               const price = codexPrice(name);
-              const off = sold || gold < price || bagUsed >= bagSlots;
-              return (
-                <button key={name} className="card-btn" disabled={off} onClick={() => onBuy(name)}
-                  style={{ opacity: off ? 0.5 : 1 }}>
-                  <span style={{ flex: 1 }}>
-                    <b style={{ color: "#c7b8ff" }}>📖 Codex: {name}</b>
-                    <span style={{ fontSize: 12, color: codexLearners(name).color }}> · {codexLearners(name).text}</span>
-                    {/* Two lines whatever the move, so every row is the same height. */}
-                    <span title={move?.desc} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, height: "2.7em", fontSize: 12, color: MUTED }}>{move?.desc}</span>
-                  </span>
-                  <span className="pixel-font" style={{ color: GOLD, flexShrink: 0 }}>{sold ? "bought" : <><Coin /> {price}</>}</span>
-                </button>
-              );
+              return <CodexOffer key={name} name={name} price={price} sold={sold} off={!!sold || gold < price || bagUsed >= bagSlots} onBuy={() => onBuy(name)} />;
             })}
           </div>
           <p style={{ fontSize: 12, color: MUTED }}>

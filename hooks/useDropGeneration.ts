@@ -46,6 +46,11 @@ type UseDropGenerationArgs = {
   // A new barcode with the global registry out of reach: it waits as a
   // sealed Code Cache (the scan counts once it's opened).
   onOffline?: (code: string) => void;
+  // Scans stored (lib/scanCharges.ts): a new barcode needs one (canScanNew),
+  // and uses it once it's opened or sealed (onScanUsed). onNoScans: none left.
+  canScanNew?: () => boolean;
+  onScanUsed?: () => void;
+  onNoScans?: () => void;
 };
 
 export function useDropGeneration({
@@ -57,6 +62,9 @@ export function useDropGeneration({
   playerLevel = 1,
   onSealed,
   onOffline,
+  canScanNew,
+  onScanUsed,
+  onNoScans,
 }: UseDropGenerationArgs) {
   async function generateDrop(code: string) {
     if (!/^[0-9]{6,20}$/.test(code)) return;
@@ -88,8 +96,13 @@ export function useDropGeneration({
     }
 
     // ── FIRST SCAN (for this player) → THE REGISTRY ───────
+    if (canScanNew && !canScanNew()) {
+      onNoScans?.();
+      return;
+    }
     const found = await lookUpBarcode(code);
     if (!found) {
+      onScanUsed?.();
       onOffline?.(code);
       return;
     }
@@ -98,6 +111,7 @@ export function useDropGeneration({
       onSealed?.(opened.rarity, opened.need);
       return;
     }
+    onScanUsed?.();
     onScanCountUpdate(code, 1);
     opened.drops.forEach(onDrop);
     onScan?.(opened.drops, opened.first ? "first" : undefined, opened.place);

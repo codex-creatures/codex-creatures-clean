@@ -34,9 +34,9 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
                   desc: "Light it in the Labyrinth: see the rooms around you and look at your map again." },
   clairvoyance: { name: "Clairvoyance Scroll", icon: "🔮", rarity: "epic",     price: 200,
                   desc: "Read it in the Labyrinth: look at your map and pick any room — you see what's in it, and the rooms around it." },
-  // Between rooms only (not in a fight): see REVIVE_HP in lib/dungeon/run.ts.
+  // Between rooms, or in a fight on a knocked-out teammate (it takes your turn): see REVIVE_HP in lib/dungeon/run.ts.
   revival:      { name: "Revival Elixir",      icon: "💖", rarity: "epic",     price: 500,
-                  desc: "Between rooms in the Labyrinth: brings a knocked-out creature back with half its HP." },
+                  desc: "In the Labyrinth, between rooms or in a fight (it takes your turn): brings a knocked-out creature back with half its HP." },
 };
 
 export type SchematicKey = "crooked_bookcase" | "iron_cage" | "weapon_storage" | "armor_storage";

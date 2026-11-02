@@ -18,15 +18,17 @@ const GRID_HEIGHT = "30cqh";
 
 export type PickerTab = { key: string; label: string; items: CreatureOrItemDrop[] };
 
-export default function ItemPicker({ tabs, action, badge, emptyText = "Nothing of this kind." }: {
+export default function ItemPicker({ tabs, action, badge, emptyText = "Nothing of this kind.", start, small }: {
   tabs: PickerTab[];
+  start?: string;   // the tab to open on (otherwise the first with something in it)
+  small?: boolean;  // the empty box is one line, not the full closer look's height (the bag packer: it's last on the page)
   // The buttons for the one tapped (it's still in the list).
   action: (d: CreatureOrItemDrop) => React.ReactNode;
   badge?: (d: CreatureOrItemDrop) => string | undefined; // e.g. what the merchant pays
   emptyText?: string;
 }) {
-  // Open on the first category with something in it.
-  const [tab, setTab] = useState(() => (tabs.find((t) => t.items.length) ?? tabs[0])?.key);
+  // Open on start, or the first category with something in it.
+  const [tab, setTab] = useState(() => start ?? (tabs.find((t) => t.items.length) ?? tabs[0])?.key);
   const [pickedId, setPickedId] = useState<string | null>(null);
   const current = tabs.find((t) => t.key === tab) ?? tabs[0];
   // (Gone once sold or packed: the box empties.)
@@ -59,6 +61,7 @@ export default function ItemPicker({ tabs, action, badge, emptyText = "Nothing o
       <div style={{ marginTop: 8 }}>
         {picked
           ? <ItemPeek item={{ gear: picked }} action={action(picked)} />
+          : small ? <p style={{ margin: 0, fontSize: 13, color: MUTED }}>Tap something for a closer look.</p>
           : <ItemPeek look={{ name: "Tap something for a closer look", color: MUTED }} />}
       </div>
     </div>

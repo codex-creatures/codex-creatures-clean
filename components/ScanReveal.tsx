@@ -98,8 +98,8 @@ export default function ScanReveal({ drop, line, isNew, sellValue, onKeep, onSel
             <>
               <RevealBurst tier={tier} glow={glow} />
               {/* New to you: a tag pinned to the stage's top, so nothing below moves. */}
-              {isNew && <div className="pixel-font levelup-title" style={{ position: "absolute", top: 0, left: "50%", zIndex: 1, translate: "-50% 0", whiteSpace: "nowrap", padding: "3px 10px", fontSize: 15,
-                color: "#1a1206", background: "#ffd66e", border: "2px solid #fff2c4", boxShadow: "0 0 14px #ffcc4d" }}>✨ New {isNew}!</div>}
+              {isNew && <div className="pixel-font" style={{ position: "absolute", top: 0, left: "50%", zIndex: 1, translate: "-50% 0", whiteSpace: "nowrap", fontSize: 15,
+                color: "#fff", textShadow: "0 1px 3px #000" }}>New {isNew}!</div>}
               <div className="cage-out" style={{ position: "relative", width: 150, height: 170, display: "flex", alignItems: "center", justifyContent: "center", filter: `drop-shadow(0 0 14px ${glow})` }}>
                 {t && drop.dropType === "card" ? <div style={{ width: 120 }}><CardFace t={t} creatureId={creatureId ?? t.id} soulStone={drop.soulStone} mini /></div>
                   : t ? <div style={{ position: "relative", width: 150, height: 150 }}><CreatureArt creatureId={creatureId ?? t.id} title={t.name} /></div>

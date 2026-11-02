@@ -16,7 +16,7 @@ import { fighterFor } from "@/lib/creatures/instance";
 import { combatSummary } from "@/lib/combat/loadout";
 import { calcDamage, combatRules, type CombatItem, type Fighter } from "@/lib/combat/engine";
 import { raceOfMove, raceVsAll } from "@/lib/combat/raceChart";
-import { CRIPPLE } from "@/lib/combat/battle";
+import { CRIPPLE, revivable } from "@/lib/combat/battle";
 import { MoveTile } from "./MoveTile";
 import { RaceNames } from "./RaceTag";
 import RaceChart from "./RaceChart";
@@ -336,8 +336,10 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
 // bag: battle-bag items you can use, one entry per kind (count = how many);
 // onUseItem(key, activeIndex) takes it out of the bag when you use it
 // (activeIndex: your creature on the field, by team order).
-// A potion has heal; a weapon has weapon (its combat stats) and detail.
-export type BagItem = { key: string; name: string; icon: string; potion?: "potion" | "lesser"; count: number; heal?: number; weapon?: CombatItem; detail?: string };
+// A potion has heal; a weapon has weapon (its combat stats) and detail; a
+// Revival Elixir has revive (the share of HP it brings a knocked-out teammate
+// back with: onUseItem gets that teammate's index).
+export type BagItem = { key: string; name: string; icon: string; potion?: "potion" | "lesser"; count: number; heal?: number; weapon?: CombatItem; detail?: string; revive?: number };
 
 // showEstimates: the "hits for ~X, takes ~Y" swap hints (until your first
 // Cyclops; after that you're on your own).
@@ -448,7 +450,17 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <>
             <div style={{ fontSize: 12, color: MUTED, marginBottom: 6 }}>Uses your turn, on your {me.name}.</div>
             <div style={{ display: "grid", gap: 6 }}>
-              {bag.map((it) => it.weapon ? (
+              {bag.map((it) => it.revive ? (
+                // A Revival Elixir: one button per knocked-out teammate (none down: greyed).
+                revivable(you).length === 0
+                  ? <button key={it.key} className="card-btn" disabled>{it.icon} {it.name} <span style={{ fontSize: 12, color: MUTED }}>nobody&apos;s knocked out</span></button>
+                  : revivable(you).map((i) => (
+                    <button key={`${it.key}-${i}`} className="card-btn" disabled={playing}
+                      onClick={() => { onUseItem(it.key, i); act({ kind: "item", item: it.name, heal: 0, revive: { index: i, share: it.revive! } }); }}>
+                      {it.icon} {it.name} on {you.team[i].name} <span style={{ fontSize: 12, color: MUTED }}>back with {Math.max(1, Math.round(you.team[i].maxHp * it.revive!))} HP</span>
+                    </button>
+                  ))
+              ) : it.weapon ? (
                 <button key={it.key} className="card-btn" disabled={playing}
                   onClick={() => { onUseItem(it.key, you.active); act({ kind: "weapon", name: it.name, weapon: it.weapon! }); }}>
                   {it.icon} Swap to {it.name} <span style={{ fontSize: 12, color: MUTED }}>{it.detail}</span>

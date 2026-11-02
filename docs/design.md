@@ -53,6 +53,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   outcome at random and registers it. Everyone who scans it later gets the same outcome (item kind
   and rarity, or creature species) but their own stat roll. Rescanning a barcode you already own
   gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
+- ✅ **Scans stored** (the user, 2026-11-02; lib/scanCharges.ts): up to 9 (`SCAN_MAX`), one more
+  every 20 minutes (`SCAN_REGEN_MS`) while below 9, none while full: 9 every 3 hours. Stops mass
+  scanning and rewards coming back. A barcode new to you uses one (opened, or kept sealed offline);
+  rescans (gold), one too rare for you yet, and the testing "random" mode are free. Saved as
+  `scanCharges` (missing: full). Shown under the altar's Scan button with a countdown.
 - ✅ Online builds use the **global registry** (§12): everyone shares one. A copy without online
   (the offline Windows build, tests, a dev build with no Supabase keys) keeps a **local** one
   (`codex_creatures_registry_v3`): "Reset player" keeps it, to simulate a friend; "Global reset"
@@ -184,8 +189,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ **Backpack upgrades** (2026-10-25): +1 slot each from the backpack's 5 up to 10 (`BAG_MAX`), at
   1,000 → 1,500 → 2,000 → 2,500 → 3,000 gold (`BAG_UPGRADE_PRICES`), from the merchant once you own the backpack. It
   works straight away (in the Labyrinth) or from the next run (tavern). Stored as `bagSize`.
-- ✅ **Revival Elixir** (2026-10-25, a tool: `revival`): from the bag between rooms (not in a
-  fight), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
+- ✅ **Revival Elixir** (2026-10-25, a tool: `revival`): from the bag between rooms, or in a
+  fight (the user, 2026-11-02: it takes your turn, on a knocked-out teammate, who can then be
+  swapped in), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
   the merchant (25% of carts); also in 20% of mini-boss chests (`MINIBOSS_REVIVAL`) and 50% of boss
   chests (`BOSS_REVIVAL`).
 - ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from

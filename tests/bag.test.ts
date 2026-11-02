@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { makeRoom, addToBag, bagSize, bagName, BINDLE, BACKPACK, POTIONS, gearEntry, gearIdOf, lootEntry, lootIdOf, isPotionEntry, cyclopsChest, CYCLOPS_CHEST_MAX, type PotionKey } from "../lib/dungeon/run";
-import { createBattle, resolveRound, isValidAction } from "../lib/combat/battle";
+import { createBattle, resolveRound, isValidAction, revivable, swapTargets } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
@@ -72,6 +72,29 @@ describe("the battle bag", () => {
     nearly.sides.B.team[0].energy = 0;
     resolveRound(nearly, { A: potion, B: { kind: "pass" } });
     expect(nearly.sides.A.team[0].hp).toBe(me.maxHp);
+  });
+
+  it("a Revival Elixir uses your turn to bring back a knocked-out teammate, who can then be swapped in", () => {
+    const me = buildFighter(CREATURE_BY_ID.moss_wolf, {}, {}, ["Slash"]);
+    const mate = buildFighter(CREATURE_BY_ID.cave_bat, {}, {}, ["Flick"]);
+    const foe = buildFighter(CREATURE_BY_ID.cave_bat, {}, {}, ["Flick"]);
+    const s = createBattle([me, mate], [foe]);
+    s.sides.A.team[1].hp = 0;
+    s.sides.A.team[1].statuses = [{ id: "venom", rounds: 2, dmg: 5 }];
+    expect(revivable(s.sides.A)).toEqual([1]);
+    expect(swapTargets(s.sides.A)).toEqual([]);
+    const elixir = { kind: "item" as const, item: "Revival Elixir", heal: 0, revive: { index: 1, share: 0.5 } };
+    expect(isValidAction(s, "A", elixir)).toBe(true);
+    // Not on one still standing, nor at your full-HP creature on the field as a heal.
+    expect(isValidAction(s, "A", { ...elixir, revive: { index: 0, share: 0.5 } })).toBe(false);
+    s.sides.B.team[0].energy = 0;
+    resolveRound(s, { A: elixir, B: { kind: "pass" } });
+    expect(s.sides.A.team[1].hp).toBe(Math.round(mate.maxHp * 0.5));
+    expect(s.sides.A.team[1].statuses).toEqual([]);
+    expect(s.log.some((e) => e.type === "effect" && e.kind === "revive" && e.index === 1)).toBe(true);
+    expect(s.log.some((e) => e.type === "attack" && e.side === "A")).toBe(false); // it took your turn
+    expect(swapTargets(s.sides.A)).toEqual([1]);
+    expect(revivable(s.sides.A)).toEqual([]);
   });
 });
 
