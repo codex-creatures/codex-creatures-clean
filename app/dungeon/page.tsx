@@ -944,7 +944,7 @@ export default function DungeonPage() {
       room.level ?? "hard",
       {
         startHp: mine.map((c, i) => Math.round((r.hp[own[i]] ?? 1) * c.fighter.maxHp)),
-        title: room.boss === "hydra" ? "Deep Labyrinth · the Hydra" : room.boss ? "Labyrinth · the Cyclops" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
+        title: room.boss === "hydra" ? "The Hydra · its lair" : room.boss ? "The Cyclops · its lair" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
         illness: sick >= 0 ? { index: sick, rounds: r.illness!.left } : undefined,
         tutorial,
@@ -1427,34 +1427,36 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
               <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 && !labOpen ? "🔒" : DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
               <span style={{ display: "block", fontSize: 12, color: MUTED }}>
                 {d === 0 ? `${CAMP_ROUTE} rooms · its chief, Lv ${DUNGEONS[0].maxLevel} · free${lab.meta.campClears ? ` · beaten ${lab.meta.campClears}×` : ""}`
-                  : d === 1 ? (labOpen ? `The Cyclops · creatures Lv 1–${DUNGEONS[1].maxLevel}` : "Beat the Encampment first")
-                  : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel} · the ${d === 2 ? "Hydra" : "Warden"}`}
-                {d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : d === 3 ? ` · beaten ${lab.meta.abyssClears ?? 0}×` : ""}
+                  : d === 1 ? (labOpen ? `${DUNGEONS[1].spec.minRoute} rooms · Lv 1–${DUNGEONS[1].maxLevel}` : "Beat the Encampment first")
+                  : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel}${d === 3 ? " · the Warden" : ""}`}
+                {d === 1 && labOpen ? ` · beaten ${lab.meta.clears}×` : d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : d === 3 ? ` · beaten ${lab.meta.abyssClears ?? 0}×` : ""}
               </span>
             </button>
           ))}
         </div>
       )}
-      <div className="stone-panel">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0" }}>Beyond the archway</div>
-          <Help title="The labyrinth">
-            <ul>
-              <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
-              <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
-              <li>Some rooms are a <b>mystery</b> until you walk in.</li>
-              <li>Take <b>{cap} creatures</b> in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
-              <li><b>Free pick</b>: choose from all your creatures each time. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window). A team of more than {cap} sends its first {cap}.</li>
-              <li>Pack your <b>bag</b> here too: spare gear, potions and tools.</li>
-              <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
-            </ul>
-          </Help>
-        </div>
-        <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 0" }}>Find the lair. Choose tunnels in the dark. Fall, and you keep your loot.</p>
-        <div className="pixel-font" style={{ fontSize: 12, color: MUTED, marginTop: 8 }}>
-          Runs {lab.meta.runs} · Lair beaten {lab.meta.clears}×
-        </div>
+      {/* Enter, with what's inside behind the "?". */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
+          {`${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
+        </button>
+        <Help title="The labyrinth">
+          <ul>
+            <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
+            <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
+            <li>Some rooms are a <b>mystery</b> until you walk in.</li>
+            <li>Take <b>{cap} creatures</b> in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
+            <li><b>Free pick</b>: choose from all your creatures each time. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window). A team of more than {cap} sends its first {cap}.</li>
+            <li>Pack your <b>bag</b> here too: spare gear, potions and tools.</li>
+            <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
+          </ul>
+        </Help>
       </div>
+      {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
+        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
+      </p>}
+      {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {fee} gold — you have {gold}.</p>}
+      {askPick && party.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature to take in{pick === null ? "" : ` (Team ${pick + 1} has nobody who can go)`}.</p>}
 
       {injured.length > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -1536,14 +1538,6 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
         )}
       </>}
 
-      <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ marginTop: 22, width: "100%", fontSize: 20, padding: "12px 0" }}>
-        {dungeon === 1 ? "🌀 Enter the labyrinth" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
-      </button>
-      {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
-        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
-      </p>}
-      {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {fee} gold — you have {gold}.</p>}
-      {askPick && party.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature to take in{pick === null ? "" : ` (Team ${pick + 1} has nobody who can go)`}.</p>}
     </>
   );
 }
@@ -1886,7 +1880,7 @@ function beatenTitle(run: DungeonRun) {
 }
 function clearedLine(run: DungeonRun, lab: DungeonSave) {
   return run.dungeon === 0
-    ? `The chief goes down, and the camp is yours. You beat the Encampment on run ${run.runNumber}!${lab.meta.campClears ? "" : " The Labyrinth's way in is open now."}`
+    ? `The chief goes down, and the camp is yours. You beat the Encampment on run ${run.runNumber}!${lab.meta.campClears ? "" : " The Cyclops's way in is open now."}`
     : run.dungeon && run.dungeon !== 1
     ? `${run.dungeon === 2 ? "The last head falls" : "The Warden falls"}, and the deep goes quiet. You beat ${DUNGEONS[run.dungeon].name.replace("The", "the")} on run ${run.runNumber}!`
     : `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`;

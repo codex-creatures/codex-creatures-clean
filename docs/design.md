@@ -507,7 +507,7 @@ How it came about, round by round: history.md.
 
 ## 7. The Labyrinth
 
-- ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, then two tabs. **Party**: Free pick
+- ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, with its Enter button straight under it (the "?" beside it explains a run; the user, 2026-11-03), then two tabs. **Party**: Free pick
   (the default; it starts empty every time: tap the creatures that go in, up to the dungeon's team
   size) or one of **3 teams** (`TEAM_SLOTS`, lib/teams.ts: saved line-ups, up to a full
   party each; a creature can be in several). With a team picked, tapping creatures adds them to it or
@@ -515,7 +515,8 @@ How it came about, round by round: history.md.
   **Add to team** (the first time, that makes Team 1; then it opens Team 1–3). Teams replaced the ★
   roster (the Inventory's ★ tab now lists creatures in a team; a team creature can't be sold).
   **Bag**: the bindle or backpack, packed there as in the Den's Bindle (components/BagPacker.tsx),
-  fresh each run (teams don't remember a bag).
+  fresh each run (teams don't remember a bag). The Inventory to pack from is laid out like the bag (5 a
+  row, slot-sized, no names): drag a thing up into the bag, double-tap it, or tap it and Pack it.
 - ✅ A run is a climb up a **scroll map**: you plan a route and partly see rooms ahead. The first
   step is blind. Rooms can repeat. (lib/dungeon/run.ts, map.ts)
 - ✅ **Four dungeons** (`DUNGEONS`):
@@ -544,6 +545,9 @@ How it came about, round by round: history.md.
       play does far better: the user beat the 5-room version on run 1 twice, where this player won
       22% of the time. (Older, 5 rooms:) Then, with the two cage creatures in the box's leftovers, 87% of runs get through the
       Labyrinth's rooms 1–5 (a brute beats you 16% of the time, the chief ~70%); ungeared, 66%.
+  Their names on screen (the user, 2026-11-03): the Encampment, **the Cyclops** (the Labyrinth below),
+  **the Hydra** (the Deep Labyrinth) and the Abyss. "The Labyrinth" is still the place as a whole (the
+  Den's archway, Klutz's hunts).
   - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
   - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies
     up to Lv 17, boss the **Hydra** (below; it replaced the Warden's pack here, the user, 2026-10-30).

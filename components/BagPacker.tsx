@@ -1,13 +1,15 @@
 "use client";
 // components/BagPacker.tsx
 // Packing your bindle or backpack: its slots, the one picked (take it out or
-// store it back), and what you can pack from your Inventory. Used in the
+// store it back), and what you can pack from your Inventory (drag it into
+// the bag, double-tap it, or tap it and Pack it). Used in the
 // Den's Bindle and at the Labyrinth's entrance (lib/dungeon/run.ts: the bag).
 
 import { useState } from "react";
+import { useDragDrop } from "@/hooks/useDragDrop";
 import PixelSprite, { itemSprite, PotionIcon } from "@/components/PixelSprite";
 import { CODEX_SPRITE } from "@/lib/sprites/items";
-import BagSlots, { slotLook } from "@/components/BagSlots";
+import BagSlots, { slotLook, BAG_COLS } from "@/components/BagSlots";
 import ItemPicker from "@/components/ItemPicker";
 import { GearStatLine } from "@/components/GearCompare";
 import type { useGameState } from "@/hooks/useGameState";
@@ -46,6 +48,14 @@ export default function BagPacker({ game, lab, onSave }: {
   const save = (next: DungeonSave) => { onSave(next); setSel(null); };
   const setBag = (next: BagEntry[]) => save({ ...lab, meta: { ...lab.meta, bag: next } });
   const away = !!lab.run;
+  // Pack something from the Inventory (if there's room).
+  function pack(x: CreatureOrItemDrop) {
+    if (bag.length >= slots) return;
+    if (x.potion) { game.removeDrop(x.id); setBag([...bag, x.potion]); }
+    else if (x.tool) packTool(x);
+    else setBag([...bag, gearEntry(x.id)]);
+  }
+  const { box: dragBox, ...dnd } = useDragDrop<CreatureOrItemDrop>({ onDrop: (x, t) => { if (t === "bag") pack(x); } });
   // Put a potion from the bag back into storage (the Inventory), freeing its slot.
   function store(i: number) {
     const e = bag[i];
@@ -89,10 +99,13 @@ export default function BagPacker({ game, lab, onSave }: {
   };
 
   return (
-    <>
+    <div ref={dragBox} style={{ position: "relative" }}>
       <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "16px 0 8px" }}>Carrying ({bag.length}/{slots})</div>
-      <BagSlots slots={slots} selected={sel} onSelect={setSel}
-        looks={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : byId.get(gearIdOf(e) ?? "") ?? (lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined)))} />
+      {/* The drop target for things dragged up from the Inventory below. */}
+      <div data-drop="bag" style={{ borderRadius: 8, outline: dnd.over === "bag" ? "2px solid #ffd66e" : undefined }}>
+        <BagSlots slots={slots} selected={sel} onSelect={setSel}
+          looks={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : byId.get(gearIdOf(e) ?? "") ?? (lootIdOf(e) ? (lab.meta.loot?.[lootIdOf(e)!] as CreatureOrItemDrop | undefined) : undefined)))} />
+      </div>
       {bag.length === 0 && <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0" }}>Empty — pack some spare gear below.</p>}
       {sel !== null && bag[sel] && (() => {
         const e = bag[sel];
@@ -119,7 +132,10 @@ export default function BagPacker({ game, lab, onSave }: {
       {!away && (
         <>
           <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Pack from your Inventory</div>
-          <ItemPicker emptyText="Nothing of this kind to pack (gear on a creature isn't here)." start="consumables" small
+          <ItemPicker emptyText="Nothing of this kind to pack (gear on a creature isn't here)." start="consumables" small cols={BAG_COLS}
+            hint={bag.length >= slots ? "Your bag is full." : "Drag something into your bag, or double-tap it."}
+            grab={(x) => ({ onPointerDown: dnd.press(x, { sprite: itemSprite(x) }), ...dnd.handlers })}
+            onDouble={pack} wasDrag={dnd.wasDrag}
             tabs={[
               { key: "consumables", label: "Consumables", items: [...potions, ...tools] },
               { key: "weapons", label: "Weapons", items: spare.filter((w) => w.itemCategory === "weapon") },
@@ -127,12 +143,13 @@ export default function BagPacker({ game, lab, onSave }: {
             ]}
             action={(x) => (
               <button className="chip" style={{ minHeight: 44 }} disabled={bag.length >= slots}
-                onClick={() => x.potion ? (game.removeDrop(x.id), setBag([...bag, x.potion])) : x.tool ? packTool(x) : setBag([...bag, gearEntry(x.id)])}>
+                onClick={() => pack(x)}>
                 {bag.length >= slots ? "Bag full" : "Pack it"}
               </button>
             )} />
         </>
       )}
-    </>
+      {dnd.ghost}
+    </div>
   );
 }

@@ -3,7 +3,8 @@
 // Creatures, weapons, armour, materials and consumables laid out in an inventory panel (.inv-panel):
 // each sprite sits loose inside, on a soft glow of its rarity. Grouped by
 // rarity (rarest first), A–Z within. Tap one to open it (or, in sell mode,
-// to select it).
+// to select it). cols: a fixed number of slot-sized tiles a row, no names
+// (the bag packer: the same size as the bag's slots, to drag across).
 
 import { goodsIcon } from "@/lib/items/materials";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -19,6 +20,7 @@ import { RaceIcon } from "./Glyph";
 
 export const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const MUTED = "rgba(255,255,255,0.45)";
+const SLOT = 60; // a compact tile: BagSlots' slot size
 
 // Rarest first, then by name.
 export function sortByRarity<T extends { rarity: Rarity; name: string }>(list: T[]): T[] {
@@ -51,17 +53,20 @@ type Props = {
   large?: boolean;            // big creature cards (the Pit)
   picked?: string | null;     // the one tapped for a closer look (components/ItemPicker)
   pulse?: string;             // a creature card the tutorial wants you to tap (it glows)
+  cols?: number;              // that many slot-sized tiles a row, no names (BagSlots' size)
+  grab?: (d: CreatureOrItemDrop) => React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
 };
 
-export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse }: Props) {
+export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, grab }: Props) {
+  const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : `repeat(auto-fill, minmax(${large ? 132 : 84}px, 1fr))`;
   return (
     <div>
       {groupBy === "none" && (
-        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${large ? 132 : 84}px, 1fr))`, gap: large ? 16 : 10, marginTop: 14 }}>
+        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? 16 : cols ? 8 : 10, marginTop: 14 }}>
           {items.map((d) => large && d.dropType !== "item" ? (
             <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
           ) : (
-            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id}
+            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
               sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
           ))}
         </div>
@@ -73,9 +78,9 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
               <div className="pixel-font" style={{ fontSize: 14, color, textTransform: "capitalize", marginBottom: 8 }}>
                 {title} <span style={{ opacity: 0.5 }}>· {group.length}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(84px, 1fr))", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: columns, justifyContent: cols ? "center" : undefined, gap: cols ? 8 : 10 }}>
                 {group.map((d) => (
-                  <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id}
+                  <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
                     sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
                 ))}
               </div>
@@ -87,8 +92,9 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
   );
 }
 
-function Tile({ d, fav, badge, sell, picked, onClick }: {
+function Tile({ d, fav, badge, sell, picked, onClick, compact, grab }: {
   d: CreatureOrItemDrop; fav: boolean; badge?: string; sell?: { can: boolean; on: boolean }; picked?: boolean; onClick: () => void;
+  compact?: boolean; grab?: React.HTMLAttributes<HTMLElement>;
 }) {
   const col = RARITY_COLORS[d.rarity];
   const sprite = d.dropType === "item" ? itemSprite(d) : creatureSprite(d.creatureId);
@@ -96,15 +102,15 @@ function Tile({ d, fav, badge, sell, picked, onClick }: {
   const dim = sell && !sell.can;
   const tpl = templateOf(d);
   return (
-    <button onClick={onClick} title={d.name} disabled={dim}
-      style={{ background: "none", border: "none", padding: 0, cursor: dim ? "default" : "pointer", color: "white", minWidth: 0, opacity: dim ? 0.35 : 1 }}>
+    <button onClick={onClick} title={d.name} disabled={dim} {...grab}
+      style={{ background: "none", border: "none", padding: 0, cursor: dim ? "default" : grab ? "grab" : "pointer", color: "white", minWidth: 0, opacity: dim ? 0.35 : 1, ...(grab ? { touchAction: "none" } : {}) }}>
       {/* Loose in the panel: a soft glow of its rarity under it, no frame (a gold ring when picked to sell). */}
       <span style={{
         position: "relative", aspectRatio: "1", width: "100%", display: "flex", alignItems: "center", justifyContent: "center",
         background: `radial-gradient(circle, ${rarityGlow(d.rarity)} 0%, transparent 62%)`, borderRadius: 8,
         boxShadow: sell?.on || picked ?"inset 0 0 0 2px #f5c542, 0 0 12px rgba(245,197,66,0.5)" : undefined,
       }}>
-        {sprite ? <PixelSprite sprite={sprite} scale={Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{goodsIcon(d) ?? (d.codexMove ? "📖" : d.scroll ? "📜" : d.potion ? "🧴" : "📦")}</span>}
+        {sprite ? <PixelSprite sprite={sprite} scale={compact ? 4 : Math.max(2, Math.floor(56 / w))} style={ICON} /> : <span style={{ fontSize: 26 }}>{goodsIcon(d) ?? (d.codexMove ? "📖" : d.scroll ? "📜" : d.potion ? "🧴" : "📦")}</span>}
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
         {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} races={tpl.races} cls={tpl.cls} size={10} /></span>}
@@ -112,9 +118,9 @@ function Tile({ d, fav, badge, sell, picked, onClick }: {
         {/* A stack (materials): how many, in the corner, like a count on a game icon. */}
         {!badge && d.qty ? <span className="pixel-font" style={{ position: "absolute", bottom: 0, right: 4, fontSize: 16, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>{d.qty}</span> : null}
       </span>
-      <span style={{ ...NAME, display: "-webkit-box", color: col.text }}>
+      {!compact && <span style={{ ...NAME, display: "-webkit-box", color: col.text }}>
         {d.name}
-      </span>
+      </span>}
     </button>
   );
 }

@@ -102,14 +102,14 @@ export const DUNGEONS: Record<DungeonId, DungeonInfo> = {
   0: { name: "The Encampment", spec: { h: 240, rooms: 15, minRoute: 7, maxRoute: 7, large: 0 },
        foes: [{ upTo: Infinity, easy: ["common", "common", 0], hard: ["common", "common", 0], camp: ["uncommon", "common", 0], miniboss: ["uncommon", "common", 0] }],
        levels: [[Infinity, 1, 4]], maxLevel: 5, goldScale: 1 },
-  1: { name: "The Labyrinth", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 },
+  1: { name: "The Cyclops", spec: { h: 500, rooms: 36, minRoute: 15, maxRoute: 15, large: 1 },
        foes: [
          { upTo: 3,        easy: ["common", "common", 0],       hard: ["uncommon", "uncommon", STEP_UP], camp: ["uncommon", "uncommon", 0], miniboss: ["rare", "rare", 0] },
          { upTo: 6,        easy: ["common", "common", STEP_UP], hard: ["uncommon", "uncommon", STEP_UP], camp: ["uncommon", "uncommon", 0], miniboss: ["rare", "rare", 0] },
          { upTo: Infinity, easy: ["common", "common", STEP_UP], hard: ["rare", "rare", STEP_UP],         camp: ["rare", "uncommon", 0],     miniboss: ["rare", "rare", 0] },
        ],
        levels: [[3, 1, 4], [6, 1, 7], [Infinity, 3, 7]], maxLevel: 7, goldScale: 1 },
-  2: { name: "The Deep Labyrinth", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 },
+  2: { name: "The Hydra", spec: { h: 500, rooms: 40, minRoute: DEEP_ROUTE, maxRoute: DEEP_ROUTE, large: 2 },
        foes: [
          { upTo: Infinity, easy: ["uncommon", "uncommon", STEP_UP], hard: ["epic", "rare", STEP_UP], camp: ["epic", "rare", 0], miniboss: ["rare", "rare", 0.3] },
        ],

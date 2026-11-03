@@ -130,7 +130,7 @@ export default function QuestBoardPage() {
                 <li><b>☀️ Today:</b> two quests a day, a big one and a smaller one, the same for everyone and new at midnight. Only what you do that day counts. Finish one, then claim its reward.</li>
                 <li>A boss you&apos;ve never beaten is swapped for an easier one (the Abyss for the Hydra, then the Cyclops, then the Encampment).</li>
                 <li><b>The Cyclops bounty:</b> it goes up once the tavern&apos;s repaired. Take it, beat the Cyclops (a win from before counts) and hand in its head: it&apos;s mounted on the tavern wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
-                <li><b>Slay the Hydra:</b> it goes up once you&apos;ve beaten the Cyclops. Beat the Hydra in the Deep Labyrinth and claim the <b>Training Pit Schematic</b>: it builds the Sparring Pit up into the Training Pit, twice as fast.</li>
+                <li><b>Slay the Hydra:</b> it goes up once you&apos;ve beaten the Cyclops. Beat the Hydra dungeon and claim the <b>Training Pit Schematic</b>: it builds the Sparring Pit up into the Training Pit, twice as fast.</li>
               </ul>
             </Help>
           ) : <Help title="Leaderboards">
@@ -305,7 +305,7 @@ function QuestList() {
     : `Paid: the Crooked Bookcase Schematic.${game.bookcase < 2 ? " Build it at the bookcase." : ""}`;
   // The Hydra quest: up once the Cyclops is beaten; its reward, the Training Pit's plans (lib/trainingPit.ts).
   const hydra = hydraStep(game.tavern, meta.clears, meta.deepClears ?? 0);
-  const hydraSay = hydra === "hunt" ? "Beat the Hydra in the Deep Labyrinth. Reward: the Training Pit Schematic."
+  const hydraSay = hydra === "hunt" ? "Beat the Hydra. Reward: the Training Pit Schematic."
     : hydra === "claim" ? "You beat the Hydra! Claim the Training Pit Schematic."
     : `Claimed: the Training Pit Schematic.${game.tavern.pit ? "" : " Build it at the Sparring Pit, in the tavern's room."}`;
   return (
