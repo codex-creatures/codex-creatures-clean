@@ -42,7 +42,7 @@ import BattleLog, { FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
 import { hasTeams, readTeams } from "@/lib/teams";
 import PixelSprite, { PotionIcon } from "@/components/PixelSprite";
-import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
+import { CREATURE_SPRITES, fightSprite } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import Glyph from "./Glyph";
@@ -938,7 +938,7 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap }: {
   aimed?: boolean; onTap?: () => void;
 }) {
     const { anim, float } = fighterFx(side, slot, fx);
-    const sprite = mi.creatureId ? CREATURE_SPRITES[mi.creatureId] : undefined;
+    const sprite = mi.creatureId ? fightSprite(mi.creatureId, side === "A") : undefined; // yours from behind, where drawn
     const floats = !!sprite && !!artFor(sprite)?.floats && f.hp > 0;
     return (
       <div onClick={onTap} role={onTap ? "button" : undefined} aria-label={onTap ? `Aim at the ${f.name}` : undefined}

@@ -8,7 +8,7 @@
 
 import { fine, type Sprite } from "./pixels";
 import { BESTIARY } from "./bestiary";
-import { withArt } from "./art";
+import { withArt, artFor } from "./art";
 
 export const CREATURE_SPRITES: Record<string, Sprite> = {
   ...BESTIARY,
@@ -209,3 +209,32 @@ CREATURE_SPRITES.baby_cyclops = withArt([...EGG], { src: "/sprites/creatures/bab
 // 🧪 The Hydra's heads (the Deep Labyrinth's boss) borrow the Void Serpent's art
 // (BossStage tints them apart) until they have PixelLab art of their own.
 for (const id of ["hydra_fang", "hydra_spitter", "hydra_hex"]) CREATURE_SPRITES[id] = CREATURE_SPRITES.void_serpent;
+
+// Seen from behind, for your side of a fight (public/sprites/creatures/back,
+// trimmed). Only the user's approved ones; the rest show their usual art,
+// mirrored. They're drawn looking away towards the foe, so count as facing right.
+const BACK_SIZES: Record<string, [number, number]> = {
+  amber_wasp: [55, 54],
+  cave_bat: [54, 61],
+  crystal_golem: [118, 115],
+  deep_angler: [73, 69],
+  dire_wolf: [107, 109],
+  dreadpox: [82, 89],
+  dust_sprite: [48, 50],
+  flame_imp: [69, 73],
+  glob: [75, 62],
+  ironhide: [119, 85],
+  mr_shadows: [84, 94],
+  swamp_witch: [85, 89],
+  thicket_archer: [74, 76],
+  thunderhead: [104, 105],
+};
+export const BACK_SPRITES: Record<string, Sprite> = {};
+for (const [id, [w, h]] of Object.entries(BACK_SIZES)) {
+  const front = CREATURE_SPRITES[id];
+  BACK_SPRITES[id] = withArt([...(front ?? EGG)], { src: `/sprites/creatures/back/${id}.png`, w, h, faces: "right", ...(front && artFor(front)?.floats ? { floats: true } : {}) });
+}
+
+// The sprite a creature shows in a fight: from behind on your side when it has one.
+export const fightSprite = (id: string, yours: boolean): Sprite | undefined =>
+  (yours ? BACK_SPRITES[id] : undefined) ?? CREATURE_SPRITES[id];

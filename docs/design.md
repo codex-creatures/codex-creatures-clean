@@ -996,6 +996,10 @@ codex, the altar for a Code Cache) waits until there is.
 - **The style:** a single black outline, a dark-fantasy palette, detailed but clean shading (no noisy
   dithering). Creatures are side-on, trimmed and mirrored to face left (battle flips the player's
   side). Register art in `lib/sprites` (`withArt`, `ART_SIZES`); the old grid sprite is the fallback.
+- ✅ **Back views** (2026-11-04): in a fight your creature is shown from behind
+  (`public/sprites/creatures/back/`, `BACK_SIZES` and `fightSprite` in lib/sprites/creatures.ts),
+  drawn as it looks and not mirrored. 14 approved so far; the rest show their usual art, mirrored,
+  until theirs are redone and approved. Foes, and every other screen, use the usual art.
 - **The workflow:** samples first, then the user's approval, then the full rollout. When the user
   hands over their own art, **keep their design** and only restyle it (`edit_image_pro_flash` on
   their upscaled image: "keep this exact …, redraw as crisp pixel art …"). Never reinterpret it

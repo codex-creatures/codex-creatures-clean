@@ -4,8 +4,9 @@ import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNAB
 import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
-import { CREATURE_SPRITES } from "../lib/sprites/creatures";
-import { artFor } from "../lib/sprites/art";
+import { CREATURE_SPRITES, BACK_SPRITES, fightSprite } from "../lib/sprites/creatures";
+import { existsSync } from "node:fs";
+import { artFor, flipToFace } from "../lib/sprites/art";
 
 const sum = (p: Record<string, number>) => Object.values(p).reduce((a, b) => a + b, 0);
 
@@ -120,5 +121,19 @@ describe("creature art", () => {
     const scannable = Object.values(CREATURES_BY_RARITY).flat();
     expect(scannable.length).toBeGreaterThan(0);
     for (const t of scannable) expect(artFor(CREATURE_SPRITES[t.id]), t.id).toMatchObject({ src: `/sprites/creatures/${t.id}.png` });
+  });
+
+  it("your creature shows its back in a fight when it has one, unmirrored; theirs and the rest show their usual art", () => {
+    const ids = Object.keys(BACK_SPRITES);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) {
+      const art = artFor(BACK_SPRITES[id]);
+      expect(art, id).toMatchObject({ src: `/sprites/creatures/back/${id}.png` });
+      expect(existsSync(`public${art!.src}`), id).toBe(true);
+      expect(fightSprite(id, true), id).toBe(BACK_SPRITES[id]);
+      expect(fightSprite(id, false), id).toBe(CREATURE_SPRITES[id]);
+      expect(flipToFace(BACK_SPRITES[id], true), id).toBe(false);
+    }
+    expect(fightSprite("moss_wolf", true)).toBe(CREATURE_SPRITES.moss_wolf);
   });
 });
