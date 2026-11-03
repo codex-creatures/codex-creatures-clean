@@ -6,7 +6,7 @@ import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisi
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
-import { createDen, mergeRects, OBJ, W, H } from "../lib/den/scene";
+import { createDen, mergeRects, strollAt, OBJ, W, H, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "../lib/den/scene";
 
 describe("the tavern questline: Klutz's quest", () => {
   const due = (levels: number[], klutz: number, away = false, done = true, t = {}) => tavernQuestDue(t, done, levels, klutz, away);
@@ -361,5 +361,25 @@ describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
     const again = summonVisitor({ ...lib, bought: [lib.offers![0]] }, "librarian");
     expect(again.bought).toEqual([]);
     expect(summonVisitor(lib, "merchant").wares?.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the tavern's visitor strolling round its room", () => {
+  it("starts by the door, keeps clear of the tavern and the pit, and stays where it can be seen", () => {
+    expect(strollAt(0, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE)).toMatchObject({ u: 12.4, v: 6.2, walking: false });
+    const bad: string[] = [];
+    let walked = false;
+    const turned = new Set<boolean>();
+    for (let t = 0; t < 600; t += 0.5) {
+      const at = strollAt(t, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE);
+      walked ||= at.walking;
+      turned.add(at.left);
+      const inTavern = at.u > 10 && at.u < 21 && at.v < 5.6;
+      const inPit = at.u < 6.7 && at.v < 6.1;
+      if (inTavern || inPit || at.v > 11.5 || at.u < 1 || at.u > 21) bad.push(`${t}s: ${at.u.toFixed(1)}, ${at.v.toFixed(1)}`);
+    }
+    expect(bad).toEqual([]);
+    expect(walked).toBe(true);
+    expect(turned.size).toBe(2); // they face both ways
   });
 });

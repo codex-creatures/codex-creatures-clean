@@ -125,9 +125,14 @@ withArt(ARMOURY_BOX, { src: "/sprites/props/klutz_box.png", w: 69, h: 74, size: 
 // their rooms: the merchant with his overstuffed pack, the librarian and his
 // book cart, the card witch at her table. Drawn at the art's own pixel size.
 // (Their grid is a single dot: there's no older drawing to fall back on.)
-const npc = (id: string, w: number, h: number): Sprite => withArt(["."], { src: `/sprites/npcs/${id}.png`, w, h });
-export const MERCHANT = npc("merchant", 77, 91);
-export const LIBRARIAN = npc("librarian", 90, 89);
+// walk: where the still sits in each 96×96 frame of its walk (PixMiniMax, 8
+// frames), for the merchant and librarian strolling round the tavern's room.
+const npc = (id: string, w: number, h: number, walk?: { x: number; y: number }): Sprite => withArt(["."], {
+  src: `/sprites/npcs/${id}.png`, w, h,
+  walk: walk && { src: `/sprites/npcs/${id}-walk.png`, frames: 8, w: 96, h: 96, ...walk },
+});
+export const MERCHANT = npc("merchant", 77, 91, { x: 9, y: 3 });
+export const LIBRARIAN = npc("librarian", 90, 89, { x: 3, y: 5 });
 export const CARD_WITCH = npc("witch", 78, 92);
 
 // Loot lying about (PixelLab art, drawn at about three quarters of its size):

@@ -2,14 +2,16 @@
 // components/TavernRoom.tsx
 // What stands in the tavern's room, through the Den's doorway behind its
 // right wall (DenRoom's annex): the tavern in the far right corner, with a ❗
-// over it while someone's visiting (tap it for the tavern's window), the Cyclops Head over its door once mounted, and whoever's visiting out front.
+// over it while someone's visiting (tap it for the tavern's window), the Cyclops Head over its door once mounted, and whoever's visiting, strolling round the room.
 // In its back corner, the Sparring Pit (the Training Pit once built over it; tap
 // it for its own window), with a ❗ while a level's ready.
 
+import { useEffect, useState } from "react";
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot } from "@/components/DenRoom";
-import { RES } from "@/lib/den/scene";
-import { fineWidth } from "@/lib/sprites/art";
+import { RES, strollAt, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "@/lib/den/scene";
+import { artFor } from "@/lib/sprites/art";
+import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { tavernVisitor, type TavernQuest } from "@/lib/tavern";
@@ -26,8 +28,6 @@ const CORNER = { u: 20.5, v: 5.1, x: 336, y: 478 };
 const DOOR = { x: 121, y: 233 };
 // Lamp-light from the open door and the windows (px, radius px).
 const LIGHTS = [{ x: 121, y: 345, r: 80 }, { x: 60, y: 242, r: 30 }, { x: 400, y: 347, r: 34 }];
-// Where a visitor stands: out front, just left of the door.
-const VISITOR_SPOT = { u: 12.4, v: 6.2 };
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 // The pit (lib/trainingPit.ts): the Sparring Pit, then the Training Pit built
 // over it. Both pictures share one grid (PixelLab; the sand on the room's 2:1
@@ -85,12 +85,39 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           </div>
         )}
       </RoomSpot>
-      {/* A visitor, standing by the door at the same scale as everything else (1:1). */}
-      {visitor && (
-        <RoomSpot u={VISITOR_SPOT.u} v={VISITOR_SPOT.v} w={fineWidth(visitor === "merchant" ? MERCHANT : LIBRARIAN) / RES}>
-          <PixelSprite sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} style={FIT} />
-        </RoomSpot>
-      )}
+      {visitor && <Visitor sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} />}
     </>
+  );
+}
+
+const VISITOR_FPS = 12; // how often they're moved along
+const STEP_FPS = 9;     // their walk's frames a second (as Klutz's)
+
+// A visitor strolling round the room (VISITOR_PATH), at the same scale as
+// everything else (1:1): their walk while they move, their still while they
+// pause, mirrored when heading right (the art faces left). Drawn in a box the
+// size of a walk frame, with the still where it sits in that frame.
+function Visitor({ sprite, title }: { sprite: Sprite; title: string }) {
+  const [t, setT] = useState(0); // (set on the first tick: the clock differs between server and browser)
+  useEffect(() => {
+    const timer = window.setInterval(() => setT(performance.now() / 1000), 1000 / VISITOR_FPS);
+    return () => window.clearInterval(timer);
+  }, []);
+  const art = artFor(sprite);
+  const walk = art?.walk;
+  const at = strollAt(t, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE);
+  if (!art || !walk) return null;
+  const frame = Math.floor(t * STEP_FPS) % walk.frames;
+  return (
+    <RoomSpot u={at.u} v={at.v} w={walk.w / RES}
+      style={{ transform: `translate(-50%, -${pct(walk.y + art.h, walk.h)})` }}>
+      <div title={title} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={art.src} alt={title} draggable={false}
+          style={{ position: "absolute", left: pct(walk.x, walk.w), top: pct(walk.y, walk.h), width: pct(art.w, walk.w), height: "auto", imageRendering: "pixelated", visibility: at.walking ? "hidden" : "visible" }} />
+        {/* The walk strip, kept loaded while they pause so their first step doesn't flicker. */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: `url(${walk.src})`, backgroundSize: `${walk.frames * 100}% 100%`, backgroundPosition: `${(frame / (walk.frames - 1)) * 100}% 0`, imageRendering: "pixelated", visibility: at.walking ? "visible" : "hidden" }} />
+      </div>
+    </RoomSpot>
   );
 }

@@ -113,6 +113,15 @@ const KLUTZ_PATH: [number, number][] = [
 ];
 const KLUTZ_SPEED = 0.55;  // floor units a second
 const KLUTZ_PAUSE = 2.5;   // seconds at each stop
+// The tavern's visitor's stroll round its room (floor units of that room),
+// starting by the tavern door: in front of the tavern (v > 5.1) and the
+// Sparring Pit (front corner u 6.2, v 5.6), and no further forward than v 11,
+// where the Den's wall starts to hide the floor.
+export const VISITOR_PATH: [number, number][] = [
+  [12.4, 6.2], [17.0, 6.6], [20.0, 8.6], [17.5, 10.8], [12.0, 11.0], [7.5, 10.4], [5.2, 8.2], [8.6, 6.6],
+];
+export const VISITOR_SPEED = 0.45; // a little slower than Klutz: they're laden
+export const VISITOR_PAUSE = 3.5;
 export type KlutzMode = "home" | "pool" | "away";
 
 // The frame's changed patches, joined where they're close: each patch is a
@@ -317,26 +326,28 @@ export type DenScene = {
   glows: { x: number; y: number; r: number; color: string; pulse: boolean; seed: number }[];
 };
 
-// Where Klutz is along his stroll at time t: floor position and which way he faces.
-function strollAt(t: number): { u: number; v: number; left: boolean; walking: boolean } {
-  const legs = KLUTZ_PATH.map((p, i) => {
-    const q = KLUTZ_PATH[(i + 1) % KLUTZ_PATH.length];
-    return { from: p, to: q, time: Math.hypot(q[0] - p[0], q[1] - p[1]) / KLUTZ_SPEED };
+// Where someone strolling a loop of floor spots is at time t (seconds):
+// floor position, which way they face, and whether they're mid-step. Klutz
+// round the Den; the tavern's visitor round its room (components/TavernRoom.tsx).
+export function strollAt(t: number, path: [number, number][] = KLUTZ_PATH, speed = KLUTZ_SPEED, pause = KLUTZ_PAUSE): { u: number; v: number; left: boolean; walking: boolean } {
+  const legs = path.map((p, i) => {
+    const q = path[(i + 1) % path.length];
+    return { from: p, to: q, time: Math.hypot(q[0] - p[0], q[1] - p[1]) / speed };
   });
-  const loop = legs.reduce((s, l) => s + l.time + KLUTZ_PAUSE, 0);
+  const loop = legs.reduce((s, l) => s + l.time + pause, 0);
   let x = t % loop;
   for (const l of legs) {
     // Screen x goes with u − v: facing left when that shrinks.
     const left = (l.to[0] - l.to[1]) < (l.from[0] - l.from[1]);
-    if (x < KLUTZ_PAUSE) return { u: l.from[0], v: l.from[1], left, walking: false };
-    x -= KLUTZ_PAUSE;
+    if (x < pause) return { u: l.from[0], v: l.from[1], left, walking: false };
+    x -= pause;
     if (x < l.time) {
       const k = x / l.time;
       return { u: l.from[0] + (l.to[0] - l.from[0]) * k, v: l.from[1] + (l.to[1] - l.from[1]) * k, left, walking: true };
     }
     x -= l.time;
   }
-  return { u: KLUTZ_PATH[0][0], v: KLUTZ_PATH[0][1], left: false, walking: false };
+  return { u: path[0][0], v: path[0][1], left: false, walking: false };
 }
 
 // backpack: you've found the rugged backpack (otherwise a bindle by the archway).
