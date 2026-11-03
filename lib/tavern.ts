@@ -101,10 +101,17 @@ export const tavernWares = (wares: Ware[] | undefined): Ware[] | undefined =>
 
 // A daily quest's reward (lib/daily.ts): the merchant calls at the repaired
 // tavern now, in place of whoever's there, for VISITOR_STAY runs.
-export function merchantCalls(t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest {
+export const merchantCalls = (t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest => summonVisitor(t, "merchant", rng, bindle);
+
+// Summoning (the user, 2026-11-03): at the repaired tavern you can pay
+// SUMMON_PRICE to have a merchant or a librarian call now, in place of
+// whoever's there (the same kind too: a new one, with new stock), for
+// VISITOR_STAY runs. The gold is the game state's (hooks/useGameState.ts).
+export const SUMMON_PRICE = 500;
+export function summonVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
   if (!t.repaired) return t;
-  const stock = makeRoom("merchant", rng, Infinity, 1, bindle);
-  return { ...t, visitor: "merchant", stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
+  const stock = makeRoom(who, rng, Infinity, 1, bindle);
+  return { ...t, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
 }
 
 // For testing (the altar): open and repair the tavern, and have who call right

@@ -16,7 +16,7 @@ import MerchantCart from "@/components/MerchantCart";
 import { Coin } from "@/components/GoldCount";
 import DenFrame from "@/components/DenFrame";
 import Help from "@/components/Help";
-import CodexOffer from "@/components/CodexOffer";
+import LibrarianShelf from "@/components/LibrarianShelf";
 import PixelSprite, { MaterialIcon } from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -25,7 +25,7 @@ import { MATERIALS, MATERIAL_KEYS, countMaterial, materialDrop } from "@/lib/ite
 import ItemPicker, { type PickerTab } from "@/components/ItemPicker";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
-import { REPAIR_COST, VISITOR_STAY, canRepair, materialOffer, repairNeeds, tavernVisitor } from "@/lib/tavern";
+import { REPAIR_COST, SUMMON_PRICE, VISITOR_STAY, canRepair, materialOffer, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
 
@@ -36,6 +36,7 @@ export default function TavernPage() {
   // to sell (a second tap sells it).
   const [trade, setTrade] = useState<"buy" | "sell">("buy");
   const [armed, setArmed] = useState<string | null>(null);
+  const [summoning, setSummoning] = useState<Visitor | null>(null); // tapped once: a second tap pays
   if (!game.hydrated) return <DenFrame title="Tavern" icon="🍺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   if (!t.blasted) {
     return (
@@ -59,6 +60,7 @@ export default function TavernPage() {
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
               <li>Repairing it puts a <b>bounty</b> on the Cyclops up on the <b>quest board</b>.</li>
               <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
+              <li>Or send for one: <b>{SUMMON_PRICE} gold</b> and they come now, for {VISITOR_STAY} runs. Whoever&apos;s in leaves, so you can send for a fresh one too.</li>
             </ul>
           </Help>
         </div>
@@ -118,12 +120,25 @@ export default function TavernPage() {
         {visitor === "librarian" && (
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: 0 }}>&ldquo;Codexes,&rdquo; it whispers. &ldquo;Each teaches one creature a move — once.&rdquo;</p>
-            {(t.offers ?? []).map((name) => {
-              const sold = t.bought?.includes(name);
-              const price = codexPrice(name);
-              return <CodexOffer key={name} name={name} price={price} sold={sold} off={!!sold || game.gold < price || game.shelfFree <= 0} onBuy={() => game.buyTavernCodex(name)} />;
+            <LibrarianShelf offers={t.offers ?? []} bought={t.bought} price={codexPrice} gold={game.gold} full={game.shelfFree <= 0 ? "Bookcase full" : undefined}
+              room={`bookcase ${game.shelfFree > 0 ? `${game.shelfFree} free` : "full"}`} onBuy={game.buyTavernCodex} />
+          </div>
+        )}
+
+        {/* Sending for someone: a second tap pays (and sends whoever's in on their way). */}
+        {t.repaired && (
+          <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
+            <span style={{ fontSize: 12, color: MUTED }}>Send for:</span>
+            {(["merchant", "librarian"] as const).map((who) => {
+              const on = summoning === who;
+              return (
+                <button key={who} className="chip" disabled={game.gold < SUMMON_PRICE}
+                  onClick={() => { if (!on) { setSummoning(who); return; } setSummoning(null); setArmed(null); setTrade("buy"); game.summonTavernVisitor(who); }}
+                  style={{ minHeight: 44, flex: 1, background: on ? "#6e1f18" : undefined }}>
+                  {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{visitor === who ? `A new ${who}` : who === "merchant" ? "Merchant" : "Librarian"} <Coin /> {SUMMON_PRICE}</>}
+                </button>
+              );
             })}
-            <p style={{ fontSize: 12, color: MUTED, margin: 0 }}>You have {game.gold} gold.{game.shelfFree <= 0 ? " The bookcase is full." : ""}</p>
           </div>
         )}
       </div>

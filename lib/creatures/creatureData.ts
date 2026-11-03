@@ -2,7 +2,7 @@
 
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
 import { KIT_MOVES, KIT_MOVE_RACE, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
-import { NEW_SPECIES_V2, V2_RESTYLE, v2Moves } from "./rosterV2";
+import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "./rosterV2";
 
 export type ElementalType = "inferno" | "aqua" | "naturist" | null;
 
@@ -56,7 +56,13 @@ export type MoveEffect =
   | { kind: "seal"; rounds: number; chance: number; extraChance?: number } // the target can't swap out for some rounds (extraChance: one round more)
   | { kind: "meditate"; energy: number }      // self: extra energy back
   | { kind: "blessing"; heal: number }        // self: next round, after the attacks, whoever is on the field heals this share of max HP
-  | { kind: "soak"; cut: number };            // the target's defences drop by this share until it leaves the field
+  | { kind: "soak"; cut: number }             // the target's defences drop by this share until it leaves the field
+  | { kind: "brace"; cut: number }            // self: goes first; the next attack on it this round does this share less
+  | { kind: "empower"; style: CombatClass; boost: number } // self: its attack stat in that style is this share higher while it stays on the field
+  // A blood pool under the foes (lib/combat/battle.ts: ground effects): cost, its share of max HP
+  // paid; tick, each round to whoever's on their field; entry, to each that comes in; the
+  // entries'th entry bursts for a burst-power magic hit; leech, the share your creature on the field heals.
+  | { kind: "blood"; cost: number; tick: number; entry: number; entries: number; burst: number; leech: number };
 
 export type Skill = {
   name: string;
@@ -70,7 +76,8 @@ export type Skill = {
   cooldown?: number; // rounds before it can be used again
   race?: Race;       // a race move: its race (only that race can learn it, from a codex, unless learnRaces says otherwise)
   learnRaces?: Race[]; // a race move several races can learn (Rabid Bite)
-  learners?: string[]; // a special move only these species can learn (missing: anyone)
+  learners?: string[]; // a special move only these species can learn (missing: anyone, unless learnStyles)
+  learnStyles?: CombatClass[]; // a special move any creature fighting in one of these styles can learn (its archetype's)
   alsoLearners?: string[]; // a race move these species can learn too, whatever their race
   notLearners?: string[];  // a race move these species can't learn, though of its race (Ironhide: Pounce)
   codexRarity?: "common" | "uncommon" | "rare" | "epic"; // a special move's codex rarity
@@ -171,7 +178,7 @@ export const RACE_MOVES: Skill[] = [
     alsoLearners: ["void_serpent", "deep_angler", "veilstalker", "cave_bat"], notLearners: ["ironhide"],
     desc: "Always strikes first this round, whatever its agility. +50% damage if the target is below half HP." },
   { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "toxic", learnRaces: ["beast", "underkin", "toxic"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
-    desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench." },
+    desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench. Toxic creatures are immune." },
   { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
     alsoLearners: ["dust_sprite", "dustwraith", "swamp_witch", "mr_shadows", "dreadpox", "thunderhead", "pale_rider", "storm_phoenix"],
     desc: "Shimmers half out of the world: a 30% chance to dodge each attack for 3 rounds." },
@@ -191,10 +198,18 @@ export const RACE_MOVES: Skill[] = [
 // rarity, and only the species listed can read it (Meditate: anyone). Not
 // race-locked: the list is the user's pick. (The old melee Impale was
 // retired for the new one: an old Impale codex is now this one.)
+const DARK_SEAL_LEARNERS = ["dreadpox", "swamp_witch", "mr_shadows", "flame_imp", "dustwraith", "thunderhead"];
+// The Divine blessings (the user, 2026-11-03): one per style, for the
+// creatures that fight in it (hybrids too).
+const empower = (name: string, style: CombatClass): Skill => ({
+  name, damage: 0, energyCost: 50, type: style, dmgType: "force", race: "divine", codexRarity: "epic", cooldown: 5, self: true,
+  effect: { kind: "empower", style, boost: 0.5 }, learnStyles: [style],
+  desc: `+50% ${CLASS_INFO[style].name.toLowerCase()} attack for the rest of the fight, while it stays on the field (swapping out loses it). Doesn't stack. 5-round cooldown.`,
+});
 export const SPECIAL_MOVES: Skill[] = [
   { name: "Dark Seal", damage: 5, energyCost: 50, type: "magic", dmgType: "force", race: "undead", codexRarity: "rare", cooldown: 5,
     effect: { kind: "seal", rounds: 3, chance: 1 },
-    learners: ["dreadpox", "swamp_witch", "mr_shadows", "flame_imp", "dustwraith", "thunderhead"],
+    learners: DARK_SEAL_LEARNERS,
     desc: "The target can't swap out for 3 rounds, even if you swap. 5-round cooldown." },
   { name: "Meditate", damage: 0, energyCost: 0, type: "magic", dmgType: "force", codexRarity: "common", cooldown: 3, self: true,
     effect: { kind: "meditate", energy: 30 },
@@ -215,11 +230,25 @@ export const SPECIAL_MOVES: Skill[] = [
     effect: { kind: "seal", rounds: 2, chance: 1, extraChance: 0.3 },
     learners: ["thicket_archer", "aurelius", "storm_phoenix", "sylvaran", "hollow_matriarch", "rotgut_fly"],
     desc: "The target can't swap out for 2 rounds (30% chance of a third). 5-round cooldown." },
+  // The user, 2026-11-03.
+  { name: "Brace", damage: 0, energyCost: 50, type: "magic", dmgType: "force", codexRarity: "rare", self: true,
+    effect: { kind: "brace", cut: 0.9 },
+    desc: "Always goes first. The next attack on it this round does 90% less damage." },
+  empower("Divine Strength", "melee"),
+  empower("Arcane Channel", "magic"),
+  empower("Sureshot Blessing", "ranged"),
+  { name: "Blood Sacrifice", damage: 0, energyCost: 70, type: "magic", dmgType: "force", race: "undead", codexRarity: "epic",
+    effect: { kind: "blood", cost: 0.25, tick: 0.05, entry: 0.2, entries: 3, burst: 25, leech: 0.5 },
+    learners: DARK_SEAL_LEARNERS,
+    desc: "Costs 25% of its max HP. Blood pools under the foes: 5% max HP a round to the one out, 20% to each that comes in, and the third bursts for a 25-power magic hit. Whoever you have out heals half of it. Undead are untouched." },
 ];
 const SPECIAL_MOVE_NAMES = new Set(SPECIAL_MOVES.map((m) => m.name));
 export const isSpecialMove = (name: string) => SPECIAL_MOVE_NAMES.has(name);
+// The styles a species fights in (its archetype's; none for Klutz and bosses).
+export const stylesOf = (c: Pick<CreatureTemplate, "id">): CombatClass[] => ARCHETYPE_INFO[SPECIES_ARCHETYPE[c.id]]?.styles ?? [];
 // Can this species read a special move's codex?
-const canLearnSpecial = (c: CreatureTemplate, m: Skill) => !m.learners || m.learners.includes(c.id);
+const canLearnSpecial = (c: CreatureTemplate, m: Skill) =>
+  m.learnStyles ? stylesOf(c).some((st) => m.learnStyles!.includes(st)) : !m.learners || m.learners.includes(c.id);
 
 // Every move creatures are born with also comes as a codex (from scans), which
 // teaches it to a creature of the move's own class. Basic moves (up to this
@@ -272,6 +301,7 @@ for (const m of Object.values(MOVE_BY_NAME)) if (!m.desc && !m.self && !BOSS_MOV
 // in its race's colour (grey: any creature).
 export function codexLearners(moveName: string): { text: string; color: string } {
   const m = MOVE_BY_NAME[moveName];
+  if (m?.learnStyles) return { text: `${m.learnStyles.map((st) => CLASS_INFO[st].name).join(" / ")} fighters only`, color: m.race ? RACE_INFO[m.race].color : BALANCED_INFO.color };
   if (m?.learners) return { text: `${m.learners.length} creatures only`, color: m.race ? RACE_INFO[m.race].color : BALANCED_INFO.color };
   const races = m ? learnRacesOf(m) : [];
   const also = m?.alsoLearners?.length ? ` + ${m.alsoLearners.length} more` : " only";

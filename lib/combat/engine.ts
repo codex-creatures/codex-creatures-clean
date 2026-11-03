@@ -59,6 +59,7 @@ export type Fighter = {
   gentle?: boolean; // its hits never knock anyone out (they leave 1 HP): the guided first fight's thief
   races?: RaceV2[]; // Combat V2 races (lib/creatures/racesV2.ts): only count when the rules' races are on
   defenceCut?: number; // share of its defences lost (Corrosive Soak), until it leaves the field
+  boost?: Partial<Record<CombatClass, number>>; // share added to its attack in a style (Divine Strength and the like), until it leaves the field
   weakTo?: CombatClass; // a boss part's weak spot: moves of this style hit it WEAK_SPOT harder (the Hydra's heads)
 };
 
@@ -111,6 +112,9 @@ function elementalModifier(atk: Fighter["elemental"], def: Fighter["elemental"])
   if (atk === "inferno"  && def === "aqua")     return 0.95;
   return 1.0;
 }
+
+// Toxic creatures can't be poisoned (the user, 2026-11-03): no venom, no poison.
+export const poisonImmune = (f: Fighter) => !!f.races?.includes("toxic");
 
 function withProf(stat: number, profPct: number): number {
   return stat * (1 + (profPct ?? 0) / 100);
@@ -168,9 +172,9 @@ export function effectiveAgil(f: Fighter): number {
 
 export function effectiveStats(f: Fighter) {
   return {
-    atk:    withProf(f.weapon.atk,  f.proficiency.atk),
-    rng:    withProf(f.weapon.rng,  f.proficiency.rng),
-    mag:    withProf(f.weapon.mag ?? 0, f.proficiency.mag),
+    atk:    withProf(f.weapon.atk,  f.proficiency.atk) * (1 + (f.boost?.melee ?? 0)),
+    rng:    withProf(f.weapon.rng,  f.proficiency.rng) * (1 + (f.boost?.ranged ?? 0)),
+    mag:    withProf(f.weapon.mag ?? 0, f.proficiency.mag) * (1 + (f.boost?.magic ?? 0)),
     agil:   withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil),
     mdef:   withProf(f.armor.mdef,  f.proficiency.mdef) * (1 - (f.defenceCut ?? 0)),
     rdef:   withProf(f.armor.rdef,  f.proficiency.rdef) * (1 - (f.defenceCut ?? 0)),
@@ -210,7 +214,7 @@ export function calcDamage(
   const typed = rules.damageTypes !== false;
   const dmgType = typed ? DAMAGE_TYPES[skill.dmgType ?? "force"] : PLAIN_DAMAGE;
   const atkKey = ATTACK_STAT[moveType], defKey = DEFENCE_STAT[moveType];
-  const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]);
+  const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]) * (1 + (attacker.boost?.[moveType] ?? 0));
   const affinity     = typed && attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
   const raw          = (skill.damage + effectiveAtk) * roll;
 

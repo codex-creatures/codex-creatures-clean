@@ -338,7 +338,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   2026-10-31). The codex window no longer says who can learn it: tapping one greys out the rest.
   - Pounce (Beast; also Void Serpent, Deep Angler, Veilstalker, Cave Goblin; not Ironhide).
   - Rabid Bite (Beast, Underkin and Toxic: `learnRaces`; it hits as Toxic; venom ticks even on
-    the bench).
+    the bench; Toxic creatures are immune).
   - Mirage (Divine; also Dust Sprite, Dustwraith, Swamp Witch, Mr. Shadows, Dreadpox, Thunderhead,
     Pale Rider, Skull Raven).
   - Corpsify (Undead; also Hollow Matriarch, Plague Rat; Dreadpox is already Undead).
@@ -372,6 +372,30 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
     can't swap out for 2 rounds, and 30% of the time a third. Thicket Archer, Aurelius, Skull
     Raven, Sylvaran, Hollow Matriarch, Rotgut Fly.
   - A sealed creature still gets replaced when it's knocked out: a seal only stops swaps.
+  - **Brace** (Neutral, utility, Rare; the user, 2026-11-03): 50 energy, always goes first; the next
+    attack that lands on it this round does 90% less (at least 1). Anyone, Klutz too. 🧪 Claude's
+    reading: it lasts that round only, and covers one hit (a barrage's second target isn't it).
+  - **Divine Strength / Arcane Channel / Sureshot Blessing** (Divine, utility, Epic; the user,
+    2026-11-03; strong on purpose: that turn does no damage, and it's best cast for free when your
+    swap-in forces theirs out): 50 energy, 5-round cooldown, +50% melee / magic / ranged attack *stat* (`Fighter.boost`)
+    until it leaves the field; doesn't stack. Learners: every creature whose archetype fights in
+    that style, hybrids included (`learnStyles`, `stylesOf`); not Klutz. With typical gear that's
+    about +45% damage (Common) to +58% (Legendary), as the damage formula squares the hit.
+  - **Blood Sacrifice** (Undead, magic, Epic; the user, 2026-11-03): 70 energy, no damage; Dark
+    Seal's learners. The caster pays 25% of its max HP, which can knock it out (the user, 2026-11-03). A **blood pool** lies
+    under the foes (a *ground effect*, below): 5% max HP at the end of each round to whoever they
+    have out, 20% to each creature that comes in (a swap at once; a replacement as the next round
+    starts); the 3rd comer sets off a 25-power magic hit with the caster's stats, and the pool is
+    gone. Whoever the caster's side has out heals 50% of all of it. Undead are untouched, and one
+    coming in doesn't count. 🧪 Claude's picks: it's Undead-race (for the burst's race multiplier);
+    casting it again replaces the pool (the count restarts). (Both confirmed by the user.)
+- ✅ **Toxic creatures can't be poisoned** (the user, 2026-11-03; `poisonImmune`): no venom (Rabid
+  Bite), no Toxic Skin poison, no Hydra cloud. Illness (the witch) isn't poison.
+- ✅ **Ground effects** (2026-11-03; `BattleSide.ground`, components/GroundEffects.tsx): things lying
+  under a side's field, drawn on the floor under it (the blood pool: a rippling pool with a drop per
+  comer, lit as each is hit). Only blood so far. 📌 The user's direction (theorycraft, not decided):
+  more of them, interacting, e.g. igniting a poison cloud (extra damage, burns the poison off),
+  poison moves hitting harder on creatures standing in blood.
 - ✅ **Move codexes** (decided 2026-10-19): every older move comes as a codex from scans, each
   teachable only to a creature of that move's style (race-kit codexes: below). Every codex says
   who can read it ("Underkin melee only", `codexLearners`) at the librarian, in the loot window
@@ -842,6 +866,7 @@ fields optional with defaults.
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still merchant or librarian at 12:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and they stand in the tavern. They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
+   ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant or a librarian now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)
 

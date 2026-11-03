@@ -322,7 +322,8 @@ function Moves({ seen }: { seen: Set<string> }) {
         // (Creatures you haven't seen stay a number, as above.)
         const who = CREATURE_TEMPLATES.filter((t) => m.learners?.includes(t.id));
         const met = who.filter((t) => seen.has(t.id)), hidden = who.length - met.length;
-        return row(m, !m.learners ? `${m.codexRarity} codex. Any creature can learn it.`
+        return row(m, m.learnStyles ? `${m.codexRarity} codex. Any creature that fights ${m.learnStyles.map((st) => CLASS_INFO[st].name.toLowerCase()).join(" or ")} can learn it.`
+          : !m.learners ? `${m.codexRarity} codex. Any creature can learn it.`
           : <>{m.codexRarity} codex. Learned by {met.map((t) => <CreatureName key={t.id} t={t} />)}{hidden > 0 && <span>{met.length ? "and " : ""}{hidden} creature{hidden === 1 ? "" : "s"} you haven&apos;t seen</span>}</>);
       })}
       <H>Boss moves</H>

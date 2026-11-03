@@ -29,6 +29,7 @@
 //   Beat all three before that and the Hydra is dead.
 
 import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, SideKey } from "./battle";
+import { poisonImmune } from "./engine";
 
 export type BossKind = "cyclops" | "hydra";
 // The Hydra's: next: the head whose turn is next. breathAt: the round of its
@@ -164,10 +165,10 @@ export function bossCloudOnEntry(state: BattleState, key: SideKey, index: number
   return ev ? [ev] : [];
 }
 
-// The cloud's poison, unless it's already poisoned.
+// The cloud's poison, unless it's already poisoned (or Toxic: immune).
 function poisonByCloud(side: BattleSide, key: SideKey, index: number): BattleEvent | undefined {
   const f = side.team[index];
-  if (!f || f.hp <= 0 || f.statuses.some((s) => s.id === "poison")) return undefined;
+  if (!f || f.hp <= 0 || poisonImmune(f) || f.statuses.some((s) => s.id === "poison")) return undefined;
   f.statuses = [...f.statuses, { id: "poison", rounds: HYDRA.POISON_ROUNDS, dmg: Math.max(1, Math.round(f.maxHp * HYDRA.POISON_TICK)) }];
   return { type: "effect", side: key, index, name: f.name, text: `breathes in the poison cloud — poisoned for ${HYDRA.POISON_ROUNDS} rounds`,
     hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "poisoned" };

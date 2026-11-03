@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, MERCHANT_MATERIALS, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, TAVERN_MATERIAL_PRICES, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -347,5 +347,18 @@ describe("the bounty on the quest board", () => {
     expect(bountyStep({ ...repaired, bounty: true }, 0)).toBe("hunt");
     expect(bountyStep({ ...repaired, bounty: true }, 1)).toBe("head");
     expect(bountyStep({ ...repaired, bounty: true, mounted: true }, 1)).toBe("paid");
+  });
+});
+
+describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
+  it("500 gold; only once it's repaired; a new one replaces whoever's in, with new stock", () => {
+    expect(SUMMON_PRICE).toBe(500);
+    expect(summonVisitor({ blasted: true }, "librarian")).toEqual({ blasted: true });
+    const lib = summonVisitor({ blasted: true, repaired: true, visitor: "merchant", stay: 1, bought: ["x"] }, "librarian");
+    expect(lib).toMatchObject({ visitor: "librarian", stay: VISITOR_STAY, bought: [] });
+    expect(lib.offers?.length).toBeGreaterThan(0);
+    const again = summonVisitor({ ...lib, bought: [lib.offers![0]] }, "librarian");
+    expect(again.bought).toEqual([]);
+    expect(summonVisitor(lib, "merchant").wares?.length).toBeGreaterThan(0);
   });
 });

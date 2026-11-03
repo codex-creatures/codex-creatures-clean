@@ -28,9 +28,10 @@ import {
   createBattle, resolveRound, sendInReplacement, cloneBattle,
   activeOf, affordableSkills, swapTargets, currentAgility, changeActive, attackTargets, fieldOf, aliveCount,
   CRIPPLE_ROUNDS, SOAK_ROUNDS, perfectionistBonus,
-  type BattleAction, type BattleEvent, type BattleState, type Combatant, type SideKey,
+  type BattleAction, type BattleEvent, type BattleState, type Combatant, type GroundEffect, type SideKey,
 } from "@/lib/combat/battle";
 import { cloudLeft, type BossKind } from "@/lib/combat/bossAi";
+import GroundEffects from "./GroundEffects";
 import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
 import { effectiveOn } from "@/lib/quest";
 import { REF_LEVEL } from "@/lib/creatures/levels";
@@ -174,8 +175,12 @@ function applyEvent(view: BattleState, e: BattleEvent) {
       if (e.sealed) target.statuses = [...target.statuses.filter((s) => s.id !== "seal"), { id: "seal", rounds: e.sealed }];
       if (e.soaked) target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: e.soaked }];
       if (e.poisoned) attacker.statuses = [...attacker.statuses.filter((s) => s.id !== "poison"), { ...e.poisoned }];
+      if (e.braced) target.statuses = target.statuses.filter((s) => s.id !== "brace");
       break;
     }
+    case "ground":
+      view.sides[e.side].ground = e.ground.map((g) => ({ ...g }));
+      break;
     case "effect": {
       const f = view.sides[e.side].team[e.index];
       f.hp = e.hp;
@@ -294,6 +299,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     let n = 0;
     for (const e of after.log.slice(before.log.length)) {
       if (e.type === "round" || e.type === "end" || e.type === "pass") continue;
+      if (e.type === "ground") { shown = cloneBattle(shown); applyEvent(shown, e); setView(shown); continue; } // (the pool shows as it changes)
       shown = cloneBattle(shown);
       applyEvent(shown, e);
       setView(shown);
@@ -305,8 +311,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
             ...(e.kind === "self" ? { caption: `${e.side === "B" ? "Foe's " : ""}${e.name} used ${e.text.split(" — ")[0].replace(/^uses /, "")}` } : {}),
-            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : e.kind === "poisoned" ? "POISONED!" : e.kind === "regrow" ? "GROWS BACK!" : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "illness" ? "#b06cff" : e.kind === "venom" || e.kind === "poison" || e.kind === "poisoned" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" || e.kind === "regrow" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
+            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : e.kind === "poisoned" ? "POISONED!" : e.kind === "regrow" ? "GROWS BACK!" : e.kind === "blood" ? `-${e.damage} BLOOD` : e.kind === "burst" ? `-${e.damage} BURST!` : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "illness" ? "#b06cff" : e.kind === "blood" || e.kind === "burst" ? "#ff4d5e" : e.kind === "venom" || e.kind === "poison" || e.kind === "poisoned" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" || e.kind === "regrow" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       if (e.type === "attack") buzz(attackHaptic(e)); // (Settings → Vibration; off unless switched on)
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
@@ -431,14 +437,14 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             🧨 {Math.max(0, state.turnLimit - state.round)} round{state.turnLimit - state.round === 1 ? "" : "s"} until the room blows
           </div>
         )}
-        {foe.boss && <BossStage side={foe} fx={fx} infos={info.B} target={target} onTarget={!playing ? setTargetPick : undefined} cloud={cloudLeft(state, "B")}
+        {foe.boss && <BossStage side={foe} fx={fx} infos={info.B} target={target} onTarget={!playing ? setTargetPick : undefined} cloud={cloudLeft(state, "B")} ground={foe.ground}
           you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
 
         {/* The fight, staged in a dungeon room. Two foes (an ambush) stand side by side: tap the one to hit, like the boss's hands. */}
         {!foe.boss && (
           <Stage me={me} mySlot={you.active} myInfo={info.A[you.active]} fx={fx}
             foes={multi ? fieldOf(foe) : [target]} theirInfo={info.B} foeTeam={foe.team}
-            target={multi ? target : undefined} onTarget={multi && !playing ? setTargetPick : undefined} />
+            target={multi ? target : undefined} onTarget={multi && !playing ? setTargetPick : undefined} myGround={you.ground} foeGround={foe.ground} />
         )}
 
         {open === "details" && over(me.name, (
@@ -636,6 +642,9 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   if (fx?.kind === "meditate") tags.push(`+${fx.energy} energy`);
   if (fx?.kind === "blessing") tags.push(`next round: heals ${Math.round(fx.heal * 100)}% HP`);
   if (fx?.kind === "soak") tags.push(`defences −${Math.round(fx.cut * 100)}% until it swaps out`);
+  if (fx?.kind === "brace") tags.push(`goes first · next hit −${Math.round(fx.cut * 100)}%`);
+  if (fx?.kind === "empower") tags.push(me.boost?.[fx.style] ? "already blessed" : `+${Math.round(fx.boost * 100)}% ${fx.style} attack while it stays out`);
+  if (fx?.kind === "blood") tags.push(`costs ${Math.round(fx.cost * 100)}% HP · blood under the foes`);
   const cooling = me.cooldowns?.[sk.name] ?? 0;
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
@@ -797,8 +806,9 @@ export function Chips<T extends string>({ value, onChange, options }: { value: T
 // carry on above and below it, as far as the stage goes.
 // foes: the foe slots standing in the room (two in an ambush). target /
 // onTarget: with two, the one you're aiming at, and tapping the other.
-function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTarget }: {
+function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTarget, myGround, foeGround }: {
   me: Combatant; mySlot: number; myInfo: MemberInfo; foes: number[]; foeTeam: Combatant[]; theirInfo: MemberInfo[]; fx: Fx | null;
+  myGround?: GroundEffect[]; foeGround?: GroundEffect[]; // what lies under each side (a blood pool)
   target?: number; onTarget?: (index: number) => void;
 }) {
   const boxRef = useRef<HTMLDivElement | null>(null);
@@ -835,6 +845,8 @@ function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTar
       <canvas ref={canvasRef} width={CW} height={chamber.height} aria-hidden
         style={{ position: "absolute", left: 0, width: "100%", top: picTop - ext * unit, height: picH + 2 * ext * unit, imageRendering: "pixelated", display: "block" }} />
       <div style={{ position: "absolute", left: 0, width: "100%", top: picTop, height: picH }}>
+        <GroundEffects ground={myGround} at={{ left: "27%" }} />
+        <GroundEffects ground={foeGround} at={{ left: "73%", ...(foes.length > 1 ? { width: "56%" } : {}) }} />
         <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} />
         {foes.length === 1
           ? <Fighter f={foeTeam[foes[0]]} side="B" slot={foes[0]} mi={theirInfo[foes[0]]} fx={fx} />
@@ -875,6 +887,8 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
     [has("corpsify"), "⚰️"],
     [has("seal"), "⛓️"], // (fear stays hidden until it strikes)
     [has("soak"), "🫧"],
+    [has("brace"), "🧱"],
+    [f.statuses.some((s) => s.id === "boost"), "💪"],
   ];
   const shown = marks.filter(([on]) => on).map(([, m]) => m);
   const icons = shown.length ? <>{shown.map((m, i) => <span key={i}>{i > 0 && " "}{m}</span>)}</> : null;

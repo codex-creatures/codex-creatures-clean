@@ -11,7 +11,8 @@
 //   the one to hit. A Hydra's head that's down stays where it fell, with the
 //   rounds until it grows back; its poison cloud hangs over the lair.
 
-import type { BattleSide } from "@/lib/combat/battle";
+import type { BattleSide, GroundEffect } from "@/lib/combat/battle";
+import GroundEffects from "./GroundEffects";
 import { fieldOf } from "@/lib/combat/battle";
 import { CYCLOPS } from "@/lib/combat/bossAi";
 import { BOSS_PARTS_OF } from "@/lib/creatures/bosses";
@@ -35,9 +36,10 @@ const BOSS_SIDE: React.CSSProperties = { paddingLeft: "38%", paddingRight: "2%" 
 
 // target / onTarget: the part you're aiming at, and tapping another (only
 // while you can act). cloud: rounds the Hydra's poison cloud still hangs.
-export default function BossStage({ side, fx, you, infos, target, onTarget, cloud = 0 }: {
+// ground: what lies under the boss (your Blood Sacrifice).
+export default function BossStage({ side, fx, you, infos, target, onTarget, cloud = 0, ground }: {
   side: BattleSide; fx: Fx | null; you?: React.ReactNode; infos?: MemberInfo[];
-  target?: number; onTarget?: (index: number) => void; cloud?: number;
+  target?: number; onTarget?: (index: number) => void; cloud?: number; ground?: GroundEffect[];
 }) {
   const t = side.team;
   const kind = side.boss?.kind ?? "cyclops";
@@ -71,6 +73,7 @@ export default function BossStage({ side, fx, you, infos, target, onTarget, clou
       {cloud > 0 && <div className="boss-cloud" />}
 
       <div className="boss-floor" />
+      <GroundEffects ground={ground} at={{ left: "66%", width: "58%", bottom: "4%", zIndex: 0 }} />
       {you}
       {/* The body topples as its hands tear free. */}
       {scene === "split" && (

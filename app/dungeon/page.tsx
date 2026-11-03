@@ -80,7 +80,7 @@ import EncounterCards from "@/components/EncounterCards";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
-import CodexOffer from "@/components/CodexOffer";
+import LibrarianShelf from "@/components/LibrarianShelf";
 import { TOOLS, toolDrop, type StoragePlan } from "@/lib/items/materials";
 import { BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
 
@@ -1756,16 +1756,9 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
             {room.kind === "library" ? "Between the toppled shelves, a hooded figure is sorting what's left. " : "A hooded figure sits among towers of crumbling books. "}
             &ldquo;Codexes,&rdquo; it whispers. &ldquo;Each teaches one creature a move — once.&rdquo;
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {(room.offers ?? []).map((name) => {
-              const sold = room.bought?.includes(name);
-              const price = codexPrice(name);
-              return <CodexOffer key={name} name={name} price={price} sold={sold} off={!!sold || gold < price || bagUsed >= bagSlots} onBuy={() => onBuy(name)} />;
-            })}
-          </div>
-          <p style={{ fontSize: 12, color: MUTED }}>
-            You have {gold} gold.{bagUsed >= bagSlots && <span style={{ color: "#ff8a80" }}> Your bag is full: sell something from it to make room.</span>}
-          </p>
+          <LibrarianShelf key={run.path.length} offers={room.offers ?? []} bought={room.bought} price={codexPrice} gold={gold} onBuy={onBuy}
+            full={bagUsed >= bagSlots ? "Bag full" : undefined}
+            room={<>🎒 {bagUsed}/{bagSlots}{bagUsed >= bagSlots && <span style={{ color: "#ff8a80" }}> full: sell something to make room</span>}</>} />
           {room.kind === "library" ? onward : next}
         </>
       )}
