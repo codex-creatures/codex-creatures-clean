@@ -35,7 +35,7 @@ const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 // back corner against the right-hand wall, clear of the tavern. PIT_CORNER:
 // the floor spot its front corner stands on, and where that corner is in the picture.
 const PIT = { sparring: "/sprites/den/sparring-pit.png", training: "/sprites/den/training-pit.png", w: 224, h: 144 };
-const PIT_SCALE = 1.3;
+const PIT_SCALE = 1.6;
 const PIT_CORNER = { u: 5.6, v: 4.7, x: 111, y: 134 };
 
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
