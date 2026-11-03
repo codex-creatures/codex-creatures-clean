@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PIT_COST, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, hasPitPlan, hoursToLevel, restartTraining, startTraining, stopTraining, trained, training, trainingId } from "../lib/trainingPit";
+import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hoursToLevel, hydraStep, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingId } from "../lib/trainingPit";
 import { MAX_LEVEL, xpToNext } from "../lib/creatures/levels";
 import { MATERIALS, materialBundle, SCHEMATICS } from "../lib/items/materials";
 import { MERCHANT_MATERIALS, merchantOffer, lootEntry, rollWares } from "../lib/dungeon/run";
@@ -44,28 +44,47 @@ describe("stone and essence stones", () => {
   });
 });
 
-describe("the Training Pit", () => {
+describe("the Sparring Pit and the Training Pit", () => {
   const open: TavernQuest = { blasted: true };
   const rich = { essence_stones: 12, metal_bars: 10, planks: 5, nails: 9, essence: 3 };
 
-  it("comes from beating the Hydra, and costs 10 stone, 10 metal bars, 5 planks, 5 nails and 3 essence stones, once", () => {
-    expect(PIT_COST).toEqual({ essence_stones: 10, metal_bars: 10, planks: 5, nails: 5, essence: 3 });
-    expect(hasPitPlan(0)).toBe(false);
-    expect(canBuildPit(open, rich, 0)).toBe(false);                 // no plans yet
-    expect(canBuildPit({}, rich, 1)).toBe(false);                   // the tavern's room isn't open
-    expect(canBuildPit(open, { ...rich, essence: 2 }, 1)).toBe(false);
-    const done = buildPit(open, rich, 1)!;
-    expect(done.tavern.pit).toBe(true);
-    expect(done.materials).toEqual({ essence_stones: 2, metal_bars: 0, planks: 0, nails: 4, essence: 0 });
-    expect(buildPit(done.tavern, rich, 1)).toBeNull();              // only once
+  it("the Sparring Pit is there once the rubble's open, at half the Training Pit's rate", () => {
+    expect(hasPit({})).toBe(false);
+    expect(hasPit(open)).toBe(true);
+    expect([SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR]).toEqual([50, 100]);
+    expect(pitRate(open)).toBe(50);
+    expect(pitRate({ ...open, pit: true })).toBe(100);
   });
 
-  it("trains at 100 XP an hour and stops when the bar's full", () => {
-    expect(TRAINING_XP_PER_HOUR).toBe(100);
-    const p = { level: 10, xp: 38 };                                 // 300 to go at Lv 10
+  it("the Hydra quest goes up once the Cyclops is beaten, and pays the plans once the Hydra is", () => {
+    expect(hydraStep(open, 0, 0)).toBe("closed");
+    expect(hydraStep(open, 1, 0)).toBe("hunt");
+    expect(hydraStep(open, 1, 1)).toBe("claim");
+    expect(claimPlans(open, 1, 0)).toBe(open);                      // not yet
+    const paid = claimPlans(open, 1, 1);
+    expect(paid.plans).toBe(true);
+    expect(hydraStep(paid, 1, 1)).toBe("paid");
+  });
+
+  it("the plans build the Training Pit over it for 10 stone, 10 metal bars, 5 planks, 5 nails and 3 essence stones, once", () => {
+    const planned: TavernQuest = { ...open, plans: true };
+    expect(PIT_COST).toEqual({ essence_stones: 10, metal_bars: 10, planks: 5, nails: 5, essence: 3 });
+    expect(canBuildPit(open, rich)).toBe(false);                     // no plans yet
+    expect(canBuildPit({ plans: true }, rich)).toBe(false);          // the tavern's room isn't open
+    expect(canBuildPit(planned, { ...rich, essence: 2 })).toBe(false);
+    const done = buildPit(planned, rich)!;
+    expect(done.tavern.pit).toBe(true);
+    expect(done.materials).toEqual({ essence_stones: 2, metal_bars: 0, planks: 0, nails: 4, essence: 0 });
+    expect(buildPit(done.tavern, rich)).toBeNull();                  // only once
+  });
+
+  it("trains at its rate and stops when the bar's full", () => {
+    const p = { level: 10, xp: 38 };
     const room = xpToNext(10) - 38;
     expect(training(p, since, at(1))).toEqual({ earned: 100, room, full: false });
+    expect(training(p, since, at(1), SPARRING_XP_PER_HOUR).earned).toBe(50);
     expect(hoursToLevel(p, since, at(1))).toBeCloseTo((room - 100) / 100);
+    expect(hoursToLevel(p, since, at(1), 50)).toBeCloseTo((room - 50) / 50);
     expect(training(p, since, at(500))).toEqual({ earned: room, room, full: true }); // never more than one level
     expect(trained(p, since, at(500))).toEqual({ level: 11, xp: 0 });
     expect(trained(p, since, at(1))).toEqual({ level: 10, xp: 138 });
@@ -74,9 +93,8 @@ describe("the Training Pit", () => {
   });
 
   it("holds one creature at a time; levelling up starts it over from now", () => {
-    const pit: TavernQuest = { ...open, pit: true };
-    expect(canTrain(open)).toBe(false);                              // not built
-    const t = startTraining(pit, "c1", at(0));
+    expect(canTrain({})).toBe(false);                                // the room's not open
+    const t = startTraining(open, "c1", at(0));
     expect(trainingId(t)).toBe("c1");
     expect(startTraining(t, "c2")).toBe(t);                          // already in use
     expect(restartTraining(t, at(3)).training).toEqual({ id: "c1", since: new Date(at(3)).toISOString() });

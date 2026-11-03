@@ -56,7 +56,8 @@ export type TavernQuest = {
   bought?: string[];  // …and what you've bought (ware keys, codex names)
   visited?: boolean;  // someone's called since the repair (the first roll's a sure thing)
   misses?: number;    // homecomings in a row with nobody calling
-  pit?: boolean;      // the Training Pit's built in the tavern's room (lib/trainingPit.ts)
+  pit?: boolean;      // the Training Pit's built over the Sparring Pit, in the tavern's room (lib/trainingPit.ts)
+  plans?: boolean;    // …its plans, claimed from the Hydra quest on the quest board
   training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
 };
 export type Visitor = "merchant" | "librarian";

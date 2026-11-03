@@ -24,6 +24,7 @@ import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { bountyStep } from "@/lib/tavern";
+import { hydraStep } from "@/lib/trainingPit";
 import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest } from "@/lib/daily";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
 import { fitInBoxes } from "@/lib/items/storage";
@@ -129,6 +130,7 @@ export default function QuestBoardPage() {
                 <li><b>☀️ Today:</b> two quests a day, a big one and a smaller one, the same for everyone and new at midnight. Only what you do that day counts. Finish one, then claim its reward.</li>
                 <li>A boss you&apos;ve never beaten is swapped for an easier one (the Abyss for the Hydra, then the Cyclops, then the Encampment).</li>
                 <li><b>The Cyclops bounty:</b> it goes up once the tavern&apos;s repaired. Take it, beat the Cyclops (a win from before counts) and hand in its head: it&apos;s mounted on the tavern wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
+                <li><b>Slay the Hydra:</b> it goes up once you&apos;ve beaten the Cyclops. Beat the Hydra in the Deep Labyrinth and claim the <b>Training Pit Schematic</b>: it builds the Sparring Pit up into the Training Pit, twice as fast.</li>
               </ul>
             </Help>
           ) : <Help title="Leaderboards">
@@ -301,6 +303,11 @@ function QuestList() {
     : step === "hunt" ? "Beat the Cyclops and bring back its head."
     : step === "head" ? `You have the Cyclops Head${meta.firstClearRun ? ` (run ${meta.firstClearRun})` : ""}. Hand it in to be paid.`
     : `Paid: the Crooked Bookcase Schematic.${game.bookcase < 2 ? " Build it at the bookcase." : ""}`;
+  // The Hydra quest: up once the Cyclops is beaten; its reward, the Training Pit's plans (lib/trainingPit.ts).
+  const hydra = hydraStep(game.tavern, meta.clears, meta.deepClears ?? 0);
+  const hydraSay = hydra === "hunt" ? "Beat the Hydra in the Deep Labyrinth. Reward: the Training Pit Schematic."
+    : hydra === "claim" ? "You beat the Hydra! Claim the Training Pit Schematic."
+    : `Claimed: the Training Pit Schematic.${game.tavern.pit ? "" : " Build it at the Sparring Pit, in the tavern's room."}`;
   return (
     <div style={{ display: "grid", gap: 8, padding: "8px 0" }}>
       {quests.map((q, i) => {
@@ -334,6 +341,19 @@ function QuestList() {
             {step === "offer" ? <button className="pixel-btn" onClick={game.takeBounty}>📜 Take the bounty</button>
               : step === "head" ? <button className="pixel-btn" onClick={game.mountCyclopsHead}>🗿 Hand in the head</button>
               : <span className="pixel-font" style={{ fontSize: 13, color: step === "paid" ? "#5ee08a" : MUTED }}>{step === "paid" ? "Done" : "Cyclops: not beaten yet"}</span>}
+          </div>
+        </div>
+      )}
+
+      {hydra !== "closed" && (
+        <div className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: hydra === "paid" ? 0.7 : 1 }}>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {hydra === "paid" ? "✓" : hydra === "claim" ? "❗" : "🐉"} Slay the Hydra
+          </div>
+          <div title={hydraSay} style={CLAMP2}>{hydraSay}</div>
+          <div style={{ minHeight: 44, display: "flex", alignItems: "center" }}>
+            {hydra === "claim" ? <button className="pixel-btn" onClick={game.claimHydraPlans}>📐 Claim the schematic</button>
+              : <span className="pixel-font" style={{ fontSize: 13, color: hydra === "paid" ? "#5ee08a" : MUTED }}>{hydra === "paid" ? "Done" : "Hydra: not beaten yet"}</span>}
           </div>
         </div>
       )}

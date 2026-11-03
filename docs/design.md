@@ -873,17 +873,22 @@ fields optional with defaults.
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still merchant or librarian at 12:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and they stand in the tavern. They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
-   ✅ **The Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`): beating the
-   **Hydra** gives its plans (not an item: like the bookcase's, the place just offers to build). It
-   stands on the tavern room's floor (faint until built): a sand pit in a stone rim ringed with
-   spears, a straw training dummy in its back corner (`den/training-pit.png`, its sand on the room's 2:1 grid) and costs **10 stone, 10 metal bars, 5 planks, 5 nails and 3 essence
-   stones**, once. One creature at a time trains in it at **100 XP an hour** (`TRAINING_XP_PER_HOUR`,
-   🧪 the user's pick: Lv 10→11 about 3.5h, Lv 20→21 about 8h, Lv 29→30 about 13h), in real
-   time, and stops with its bar full until you tap **Level up** (one level, then it trains on from
-   empty), so it never gains more than a level while you're away: a ❗ on the pit in the room says
-   it's ready. While it's in, it's away training: left out of every fight list (the Labyrinth,
-   duels, the board). Take it out any time with the XP it's earned (a full bar levels it up). An
-   XP scroll read on it banks what it's earned first. Saved in the tavern field (`pit`, `training`).
+   ✅ **The Sparring Pit and the Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`).
+   The **Sparring Pit**, a patch of sand with a straw dummy (`den/sparring-pit.png`), is yours as
+   soon as the rubble's blown open, in the tavern room's back corner against the right-hand wall,
+   clear of the tavern, drawn 1.3× (`PIT_SCALE`). One creature at a time trains in it, in real time
+   (**50 XP an hour**, `SPARRING_XP_PER_HOUR`), and stops with its bar full until you tap **Level
+   up** (one level, then it trains on from empty), so it never gains more than a level while
+   you're away: a ❗ on the pit in the room says it's ready. While it's in, it's away training:
+   left out of every fight list (the Labyrinth, duels, the board). Take it out any time with the XP
+   it's earned (a full bar levels it up). An XP scroll read on it banks what it's earned first.
+   **Slay the Hydra**, a quest on the board's Quests tab, goes up once you've beaten the Cyclops;
+   beat the Hydra and claim its reward there, the **Training Pit Schematic** (not an item: the pit
+   just offers to build). It builds the **Training Pit** over the Sparring Pit (a stone rim ringed with
+   spears, `den/training-pit.png`, the same grid) for **10 stone, 10 metal bars, 5 planks, 5 nails
+   and 3 essence stones**, once: **100 XP an hour** (`TRAINING_XP_PER_HOUR`; 🧪 the user's pick: Lv
+   10→11 about 3.5h, Lv 20→21 about 8h, Lv 29→30 about 13h). Whoever's training keeps what they earned
+   at the sparring rate. Saved in the tavern field (`plans`, `pit`, `training`).
    ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant or a librarian now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)

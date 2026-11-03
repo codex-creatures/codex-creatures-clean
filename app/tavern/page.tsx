@@ -25,7 +25,7 @@ import { MATERIALS, MATERIAL_KEYS, countMaterial, materialDrop } from "@/lib/ite
 import ItemPicker, { type PickerTab } from "@/components/ItemPicker";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
-import { hasPitPlan } from "@/lib/trainingPit";
+import { hasPit } from "@/lib/trainingPit";
 import { REPAIR_COST, SUMMON_PRICE, VISITOR_STAY, canRepair, materialOffer, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -126,10 +126,10 @@ export default function TavernPage() {
           </div>
         )}
 
-        {/* The Training Pit (its own window), once you've the Hydra's plans. */}
-        {(t.pit || hasPitPlan(loadDungeon().meta.deepClears ?? 0)) && (
+        {/* The pit, in the room (its own window). */}
+        {hasPit(t) && (
           <Link href="/training" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 10, minHeight: 44 }}>
-            🏋️ {t.pit ? "Training Pit" : "Plans: a Training Pit"}{game.trainingStatus()?.full ? " ❗" : ""}
+            🏋️ {t.pit ? "Training Pit" : "Sparring Pit"}{game.trainingStatus()?.full ? " ❗" : ""}
           </Link>
         )}
 

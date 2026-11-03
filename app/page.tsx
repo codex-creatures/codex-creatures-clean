@@ -18,7 +18,7 @@ import { bountyHasStep, canBlast, tavernVisitor } from "@/lib/tavern";
 import { DAILY_ONLINE, canClaim, todayDaily } from "@/lib/daily";
 import { useTour } from "@/hooks/useTour";
 import { tourDenTarget } from "@/lib/tour";
-import { hasPitPlan } from "@/lib/trainingPit";
+import { hasPit, hydraStep } from "@/lib/trainingPit";
 
 // The places in the dock under the room: your creatures, your things, then help.
 const PLACES = [OBJ.pit, OBJ.altar, OBJ.cage, OBJ.pool, OBJ.klutz, OBJ.chest, OBJ.bag, OBJ.bookcase, OBJ.crate, OBJ.scroll];
@@ -34,7 +34,7 @@ export default function Home() {
   const [backpack, setBackpack] = useState(false);
   const [firstClearRun, setFirstClearRun] = useState<number | undefined>();
   const [clears, setClears] = useState(0);
-  const [deepClears, setDeepClears] = useState(0); // (the Hydra: its plans for the Training Pit)
+  const [deepClears, setDeepClears] = useState(0); // (the Hydra: the board's Hydra quest)
   useEffect(() => { const meta = loadDungeon().meta; setBackpack(bagSize(meta) > BINDLE); setFirstClearRun(meta.firstClearRun); setClears(meta.clears); setDeepClears(meta.deepClears ?? 0); }, []);
   // Where Klutz has sent you: the cage for your first creature, then the Pit to
   // kit it out; later, with his dynamite, the rubble (lib/tavern.ts).
@@ -63,9 +63,9 @@ export default function Home() {
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0))} backpack={backpack} highlight={highlight}
           rubble={game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut"} onBlast={game.blastRubble}
-          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} boardNews={game.hydrated && (bountyHasStep(game.tavern, clears) || [0, 1].some((i) => canClaim(todayDaily(DAILY_ONLINE), i)))} upgraded={game.bookcase >= 2}
+          tavernNews={game.hydrated && !!tavernVisitor(game.tavern)} boardNews={game.hydrated && (bountyHasStep(game.tavern, clears) || hydraStep(game.tavern, clears, deepClears) === "claim" || [0, 1].some((i) => canClaim(todayDaily(DAILY_ONLINE), i)))} upgraded={game.bookcase >= 2}
           crateNews={game.hydrated && game.crate.length > 0} cageNews={game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage}
-          annex={<TavernRoom tavern={game.tavern} firstClearRun={firstClearRun} pit={hasPitPlan(deepClears) || game.tavern.pit ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined} />} />
+          annex={<TavernRoom tavern={game.tavern} firstClearRun={firstClearRun} pit={hasPit(game.tavern) ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined} />} />
       </div>
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}
