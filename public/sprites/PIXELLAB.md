@@ -127,3 +127,29 @@ the PNG here.
 | items/armor/legs_juggernaut_platemail.png | gallery:23d01b82-b6bf-4f70-aad8-46776d5a98d7 |
 | items/armor/legs_polished_chainbolster.png | gallery:bf2659e1-5f8f-41e0-8e01-0d32cccd761f |
 | den/tavern.png | gallery:9d6fa7cb-85e7-5c36-9aff-b09642a17d19 (raw 512px edit of a code block-out, seed 11; colours warmed + trimmed here) |
+
+## Back views (not used in the game yet)
+
+`creatures/back/<id>.png`: each creature seen from behind, for your side of a
+fight. Made with `edit_image_pro_flash` (text method) from the front sprite,
+padded to multiples of 4; trimmed here. Approved by the user on 2026-11-03.
+Still to redo (the plain prompt kept details you couldn't see from behind): the
+other 22, Klutz included. Each job's image downloads from
+`https://api.pixellab.ai/mcp/images/<job>/download`.
+
+| File | PixelLab job |
+|---|---|
+| creatures/back/amber_wasp.png | 8e66710c-d4ca-48bb-b7ad-6a03e823309e |
+| creatures/back/cave_bat.png | 2a38b5a3-9a8c-459b-85a5-04eaf259d0ec |
+| creatures/back/crystal_golem.png | dd86c394-f667-4bc7-a20f-5466339a6625 |
+| creatures/back/deep_angler.png | b8f0101c-b993-49d1-8c47-53f38808e9d8 |
+| creatures/back/dire_wolf.png | 962ce9cb-4cd1-4852-92f7-a2a0d1c0d885 |
+| creatures/back/dreadpox.png | 71bfc212-9f58-4300-ac1d-58cbe3752aa5 |
+| creatures/back/dust_sprite.png | e09dc271-6ecc-400a-99cd-48d95dd7603e |
+| creatures/back/flame_imp.png | 489b2317-8c9b-4247-9194-45aa323b8b68 |
+| creatures/back/glob.png | 04a463e9-89ae-4c28-9bbc-90090add79c5 |
+| creatures/back/ironhide.png | b4f50c71-8ba0-4630-bea7-1a7ada942abb |
+| creatures/back/mr_shadows.png | dec14e5a-8449-4d90-a683-443a1a643940 |
+| creatures/back/swamp_witch.png | 9cc9a155-a861-4a5b-92b2-7a5ca71b0a1a |
+| creatures/back/thicket_archer.png | bd86c67c-29ab-4af7-9dd3-59fb3c651a1a |
+| creatures/back/thunderhead.png | 6d17eb42-6d74-4ed5-9133-5a8104c6dd26 |
