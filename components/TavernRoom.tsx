@@ -34,7 +34,7 @@ const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 // floor grid), drawn PIT_SCALE times 1:1 (the user, 2026-11-03), in the room's
 // back corner against the right-hand wall, clear of the tavern. PIT_CORNER:
 // the floor spot its front corner stands on, and where that corner is in the picture.
-const PIT = { sparring: "/sprites/den/sparring-pit-2.png", training: "/sprites/den/training-pit.png", w: 224, h: 144 };
+const PIT = { sparring: "/sprites/den/sparring-pit-3.png", training: "/sprites/den/training-pit.png", w: 224, h: 144 };
 const PIT_SCALE = 1.9;
 const PIT_CORNER = { u: 6.2, v: 5.6, x: 111, y: 134 };
 

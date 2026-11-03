@@ -127,7 +127,7 @@ the PNG here.
 | items/armor/legs_juggernaut_platemail.png | gallery:23d01b82-b6bf-4f70-aad8-46776d5a98d7 |
 | items/armor/legs_polished_chainbolster.png | gallery:bf2659e1-5f8f-41e0-8e01-0d32cccd761f |
 | den/training-pit.png | map-object:ea26cf7d-8b3d-45e5-b795-3b0d0e1183fb (the pit), with the dummy cut from image:f23beab8-35f4-4abe-ad45-ee1d00d6d669 (an img2img pass over a code block-out on the room grid) and set in the back corner by hand |
-| den/sparring-pit-2.png | image:abee38b2-54c4-554a-bccb-b56750325141 (edit_image_pro_flash, two passes over the first Sparring Pit, which was den/training-pit.png with the rim and spears taken out: golden sand in a ring of grey stones, the same dummy; renamed so phones fetch it fresh) |
+| den/sparring-pit-3.png | image:abee38b2-54c4-554a-bccb-b56750325141 (edit_image_pro_flash, two passes over the first Sparring Pit, which was den/training-pit.png with the rim and spears taken out: golden sand in a ring of grey stones, the same dummy), with its orange sand recoloured to tan here by script (the stones and dummy untouched). The number in the name changes with each new version so phones fetch it fresh |
 | den/tavern.png | gallery:9d6fa7cb-85e7-5c36-9aff-b09642a17d19 (raw 512px edit of a code block-out, seed 11; colours warmed + trimmed here) |
 
 ## Back views (not used in the game yet)
