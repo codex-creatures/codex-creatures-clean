@@ -15,6 +15,7 @@ code and fix this file. Constants are named in `code font` so you can grep for t
 - 🧪 **Provisional**: built, but with numbers Claude picked as a default or that are still being
   balanced. Fine to tune, but say so.
 - ❓ **Open**: the user hasn't decided. Ask; don't pick.
+- ⏸ **Shelved** / ✗ **Dropped**: set aside for now, or cut by the user. Don't build unasked.
 
 Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
@@ -24,10 +25,12 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   soul stones, the Labyrinth / Deep Labyrinth / Abyss, Klutz and his hunts, the tavern questline
   (stages 1–9), save slots, Vercel hosting.
 - **Recent changes:** see `git log` (the commit messages say what changed for the player).
-- **Next (📌, decided, not built):** the merchant's gear wares and armour priced like weapons (§7),
-  the barcode merchant (§2), the onboarding scan gate (§2), the re-entry cooldown (§7), the
-  Cyclops's Meditate heal (§7), more soul stones and effects (§4, §6), the tavern's interior (§9),
-  Klutz's kidnap plan (§8).
+- **Next (📌, decided, not built):** the onboarding scan gate (§2, later), more soul stones and
+  effects (§4, §6), the tavern's interior (§9), Klutz's kidnap plan (§8).
+- **Dropped (the user, 2026-11-04):** the merchant's gear wares and armour priced like weapons
+  (armour comes at the right rate as it is), the barcode merchant (the tavern has enough), the
+  Cyclops's Meditate heal (its strength is right). The re-entry cooldown is set aside: the gold
+  fee does the job for now.
 - **Going online (📌, 2026-10-31):** accounts, cloud saves, the global registry, leaderboards and
   live PvP, over about 3 weeks (§12).
 - **Open (❓, the user's call):** what Klutz gets in place of his old counter bonus; agility doing
@@ -109,10 +112,9 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   doesn't count, and the altar shows the level needed. **Being first beats the cap** (2026-10-20):
   a barcode nobody has scanned rolls at the usual odds and is yours whatever it is
   (`tooRare`). Online "someone" means any player; locally, any earlier player in this browser.
-- 📌 **Barcode merchant:** 10% of scans, taken from materials and consumables. The planned split
-  is creature 20 / weapon 15 / armour 15 / material 10 / consumable 10 / merchant 10 / gold 20.
-  Not in the outcome roll yet.
-- 📌 **Onboarding scan gate**, deliberately unconventional: the game stays locked until you scan a
+- ✗ **Barcode merchant** (dropped by the user, 2026-11-04: the tavern has enough merchants). It
+  was to be 10% of scans, taken from materials and consumables.
+- 📌 **Onboarding scan gate** (the user, 2026-11-04: later), deliberately unconventional: the game stays locked until you scan a
   real barcode, then Klutz drags you out of the labyrinth. Don't "fix" this for convenience. Edge
   cases still need solving: manual entry, no camera, app-store review. Not built: a new game starts
   at the Den.
@@ -628,16 +630,9 @@ How it came about, round by round: history.md.
   every time; 500 for an essence stone is the benchmark): planks ×5 150, nails ×5 100, metal bars
   ×2 300, stone 300, essence stone 1,000 (`TAVERN_MATERIAL_PRICES`, lib/tavern.ts; Labyrinth 40 / 30 / 90 / 150 / 500;
   stone and essence stones the user's, 2026-11-03). Essence stones are on only 1 cart in 3 (`chance` in `MERCHANT_MATERIALS`). He buys materials back at half the Labyrinth's price at both.
-  📌 **Not built yet:**
-  - **Gear on the cart:** 0–2 weapons or armour pieces, rolled like a scan (`RARITY_WEIGHTS`, **no
-    explorer-level gate**: price is the filter), at **2× the crate's sell value** (rough prices:
-    weapons Common ~100 to Legendary ~5,000).
-  - **Materials:** 3–5 stacks, repeats allowed, filling what's left; never more than 10 wares.
-  - **Armour priced like weapons:** `PIECE_VALUE` (sell.ts) goes, so a piece is worth a weapon of
-    its rarity. The user accepts the knock-on (armour sells for 3× everywhere, gear gold roughly
-    doubles); if gold gets too easy, tune the 2× mark-up or crate prices, not this.
-  - Build notes: a grid for 10 wares (fixed structure), unique ware keys with repeated materials,
-    old saves' 5-ware carts must load, and a quick sim of cart prices.
+  ✗ Dropped (the user, 2026-11-04: armour comes at the right rate as it is): gear on the cart
+  (0–2 weapons or armour pieces at 2× the crate's value) and armour priced like weapons
+  (`PIECE_VALUE` stays).
 - ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
   your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
   retreat (after a "Leave the labyrinth?" check): runs can't be paused.
@@ -657,15 +652,16 @@ How it came about, round by round: history.md.
   - ✅ Decided (the user, 2026-10-20): healing after death **stays as it is now**, with everyone
     coming home at full health (`HEAL_AT_HOME`). The other options (slow pool 25%/h, faster pool
     50%/h, a quick heal to half then the pool) are set aside.
-- 📌 **Re-entry cooldown** as the anti-farming bar, with cooldown potions from barcode merchants
-  (or real money later). Not built: today the gold fee is the only bar.
+- ⏸ **Re-entry cooldown** as the anti-farming bar: set aside (the user, 2026-11-04). The gold fee
+  is the bar, and that's enough for now. (Its cooldown potions were to come from the barcode
+  merchant, since dropped.)
 - ❓ Labyrinth look: a top-down voxel style is the likely long-term direction, not committed.
 
 ### Bosses
 
 - ✅ **The Cyclops** (lib/creatures/bosses.ts, lib/combat/bossAi.ts), each phase with a full health bar:
   1. A melee tank. Stomp (about 1 in 3) can cripple you, so swap out. It has an occasional costly Eye Laser. (A Meditate heal with a
-     3-turn cooldown was decided too; 📌 not built.)
+     3-turn cooldown was decided too, then dropped by the user, 2026-11-04: its strength is right.)
   2. At half HP it becomes **2 crawling hands**, both on the field at once (you pick a target):
      fast, strong melee.
   3. Then **the Eye** leaves the skull: ranged, in Float stance, with very high melee defence.
@@ -697,9 +693,9 @@ How it came about, round by round: history.md.
     (samples first, for the user's approval).
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
   Hydra and the Warden drop a strongbox.
-- 📌 Also decided as Cyclops rewards, **not built** (the game says "next update"): building the
-  **Tavern** (now via the tavern questline in §9, not gold), and a **trophy** showing which run you won on (that run is already
-  recorded: `meta.firstClearRun`).
+- ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and
+  the **trophy** showing which run you won on: the Cyclops Head (§9, step 7), mounted in the
+  tavern's room marked "Run N" (`meta.firstClearRun`).
 - ⏸ **Shelved (2026-10-19): an explorable Labyrinth** walked room to room
   ([ideas/labyrinth-v2.png](ideas/labyrinth-v2.png); details and the 8–12 session estimate in
   history.md). If picked up: a 1-session throwaway prototype in /lab first.
