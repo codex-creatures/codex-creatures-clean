@@ -892,7 +892,11 @@ fields optional with defaults.
    spears, `den/training-pit.png`, the same grid) for **10 stone, 10 metal bars, 5 planks, 5 nails
    and 3 essence stones**, once: **100 XP an hour** (`TRAINING_XP_PER_HOUR`; 🧪 the user's pick: Lv
    10→11 about 3.5h, Lv 20→21 about 8h, Lv 29→30 about 13h). Whoever's training keeps what they earned
-   at the sparring rate. Saved in the tavern field (`plans`, `pit`, `training`).
+   at the sparring rate. Saved in the tavern field (`plans`, `pit`, `training`, and `trainedXp`: the
+   pit's **lifetime XP**, everything banked out of it, `logTrained`). Its window (`/training`, tapped in the
+   room: taps there look past the Den's canvas for the pit) shows the pit's picture, its rate, the lifetime XP
+   (plus what's training now), the creature in it, and with the plans, the schematic: the Training Pit's
+   picture beside a column of material icons with have/need, "50 → 100 XP/h" and Build.
    ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant or a librarian now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)

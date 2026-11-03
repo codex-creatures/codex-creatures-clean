@@ -347,8 +347,17 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
   function press(id: ObjId, e: React.MouseEvent) {
     if (dragged.current) return;
     setHovered(id);
-    if (!id && opened && inAnnex(e)) router.push(PASSAGE.href!);
+    if (!id && opened && inAnnex(e)) router.push(annexHref(e));
     else activate(id);
+  }
+  // Where a tap on the tavern's room goes: past the Den's canvas (which sits
+  // over part of that room), to something marked data-href (the pit), or the tavern.
+  function annexHref(e: React.MouseEvent) {
+    for (const el of document.elementsFromPoint(e.clientX, e.clientY)) {
+      const href = el.closest("[data-href]")?.getAttribute("data-href");
+      if (href) return href;
+    }
+    return PASSAGE.href!;
   }
   function inAnnex(e: React.MouseEvent) {
     const c = canvasRef.current;

@@ -13,15 +13,19 @@ import CreaturePortrait from "@/components/CreaturePortrait";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import { MaterialIcon } from "@/components/PixelSprite";
 import { useGameState } from "@/hooks/useGameState";
-import { MATERIALS } from "@/lib/items/materials";
 import { MAX_LEVEL } from "@/lib/creatures/levels";
 import { loadDungeon } from "@/lib/dungeon/run";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isCreatureDrop, type CreatureOrItemDrop } from "@/lib/types";
-import { SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, canBuildPit, hasPit, pitNeeds, pitRate } from "@/lib/trainingPit";
+import { SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, canBuildPit, hasPit, lifetimeXp, pitNeeds, pitRate } from "@/lib/trainingPit";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
+const GREEN = "#5ee08a";
+const RED = "#ff8a80";
+// The pits' pictures (the same art as in the tavern's room, components/TavernRoom.tsx).
+const PIT_ART = { sparring: "/sprites/den/sparring-pit-3.png", training: "/sprites/den/training-pit.png" };
+const pixelated = { display: "block", width: "100%", height: "auto", imageRendering: "pixelated" } as const;
 
 // "3h 20m", "45m", or "under a minute".
 function wait(hours: number) {
@@ -60,15 +64,27 @@ export default function TrainingPage() {
     <DenFrame title={name} icon="🏋️">
       <div className="stone-panel">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <div className="pixel-font" style={{ fontSize: 17, color: GOLD }}>The {name} · {rate} XP/h</div>
+          <div className="pixel-font" style={{ fontSize: 17, color: GOLD }}>{name}</div>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, marginLeft: "auto" }}>{rate} XP/h</div>
           <Help title={name}>
             <ul>
               <li>Leave <b>one creature</b> here and it trains on its own: <b>{SPARRING_XP_PER_HOUR} XP an hour</b> in the Sparring Pit, <b>{TRAINING_XP_PER_HOUR}</b> in the Training Pit, even with the game shut.</li>
               <li>It stops when its XP bar is full. Come back and tap <b>Level up</b> to bank the level, and it trains on to the next.</li>
               <li>While it&apos;s here it&apos;s <b>away training</b>: it can&apos;t go in the Labyrinth or duel. Take it out any time; it keeps the XP it&apos;s earned.</li>
+              <li><b>Lifetime</b>: all the XP the pit has trained into your creatures.</li>
               <li>The <b>Training Pit</b>&apos;s plans come from the <b>Hydra quest</b> on the quest board, once you&apos;ve beaten the Cyclops.</li>
             </ul>
           </Help>
+        </div>
+
+        {/* The pit itself, and everything it's trained. */}
+        <div style={{ width: "62%", margin: "8px auto 0" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={t.pit ? PIT_ART.training : PIT_ART.sparring} alt={`The ${name}`} draggable={false} style={pixelated} />
+        </div>
+        <div className="pixel-font" style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: GOLD, padding: "6px 8px", marginTop: 6, background: "rgba(0,0,0,0.25)" }}>
+          <span style={{ color: MUTED }}>Lifetime</span>
+          <span>{(lifetimeXp(t) + (status?.earned ?? 0)).toLocaleString()} XP</span>
         </div>
 
         {/* Someone's training: their bar, how long to go, Level up and Take out. */}
@@ -81,7 +97,7 @@ export default function TrainingPage() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="pixel-font" style={{ fontSize: 16, color: RARITY_COLORS[c.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
                   <LevelBar level={status.level} xp={status.xp + status.earned} />
-                  <div style={{ fontSize: 12, color: status.full ? "#5ee08a" : MUTED, marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: status.full ? GREEN : MUTED, marginTop: 4 }}>
                     {status.full ? "Ready to level up!" : status.room === 0 ? "At the top level." : `Full in ${wait((status.room - status.earned) / rate)}`}
                   </div>
                 </div>
@@ -115,16 +131,24 @@ export default function TrainingPage() {
       {/* With the Hydra quest's plans: build the Training Pit over it. */}
       {t.plans && !t.pit && (
         <div className="stone-panel" style={{ marginTop: 10 }}>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}>📐 Build the Training Pit</div>
-          <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0 8px" }}>A stone rim and spears: {TRAINING_XP_PER_HOUR} XP an hour, twice as fast.</p>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-            {needs.map(({ key, have, need }) => (
-              <span key={key} className="pixel-font" style={{ fontSize: 13, color: have >= need ? "#5ee08a" : "#ff8a80" }}>
-                <MaterialIcon k={key} /> {have}/{need} {MATERIALS[key].name.toLowerCase()}
-              </span>
-            ))}
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}>📐 Training Pit Schematic</div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 8 }}>
+            <div style={{ flex: "1 1 55%", minWidth: 0 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={PIT_ART.training} alt="The Training Pit" draggable={false} style={pixelated} />
+            </div>
+            <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: 4 }}>
+              {needs.map(({ key, have, need }) => (
+                <span key={key} className="pixel-font" style={{ fontSize: 14, color: have >= need ? GREEN : RED, whiteSpace: "nowrap" }}>
+                  <MaterialIcon k={key} /> {have}/{need}
+                </span>
+              ))}
+            </div>
           </div>
-          <button className="pixel-btn" disabled={!canBuildPit(t, game.materials)} onClick={game.buildTrainingPit}>🔨 Build it</button>
+          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, textAlign: "center", margin: "8px 0" }}>
+            {SPARRING_XP_PER_HOUR} → <span style={{ color: GREEN }}>{TRAINING_XP_PER_HOUR} XP/h</span>
+          </div>
+          <button className="pixel-btn" style={{ width: "100%", minHeight: 44 }} disabled={!canBuildPit(t, game.materials)} onClick={game.buildTrainingPit}>🔨 Build it</button>
         </div>
       )}
     </DenFrame>

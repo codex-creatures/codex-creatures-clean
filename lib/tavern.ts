@@ -59,6 +59,7 @@ export type TavernQuest = {
   pit?: boolean;      // the Training Pit's built over the Sparring Pit, in the tavern's room (lib/trainingPit.ts)
   plans?: boolean;    // …its plans, claimed from the Hydra quest on the quest board
   training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
+  trainedXp?: number; // …all the XP it has ever trained into creatures (banked; missing: 0)
 };
 export type Visitor = "merchant" | "librarian";
 

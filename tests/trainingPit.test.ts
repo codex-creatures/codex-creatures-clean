@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hoursToLevel, hydraStep, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingId } from "../lib/trainingPit";
+import { PIT_COST, SPARRING_XP_PER_HOUR, TRAINING_XP_PER_HOUR, buildPit, canBuildPit, canTrain, claimPlans, hasPit, hoursToLevel, hydraStep, lifetimeXp, logTrained, pitRate, restartTraining, startTraining, stopTraining, trained, training, trainingId } from "../lib/trainingPit";
 import { MAX_LEVEL, xpToNext } from "../lib/creatures/levels";
 import { MATERIALS, materialBundle, SCHEMATICS } from "../lib/items/materials";
 import { MERCHANT_MATERIALS, merchantOffer, lootEntry, rollWares } from "../lib/dungeon/run";
@@ -100,5 +100,15 @@ describe("the Sparring Pit and the Training Pit", () => {
     expect(restartTraining(t, at(3)).training).toEqual({ id: "c1", since: new Date(at(3)).toISOString() });
     expect(trainingId(stopTraining(t))).toBeUndefined();
     expect(trainingId({ training: { id: "c1", since } })).toBeUndefined(); // (no pit, nobody in it)
+  });
+});
+
+describe("the pit's lifetime XP", () => {
+  it("starts at 0 for old saves and adds up what's banked out of the pit", () => {
+    const t: TavernQuest = { blasted: true };
+    expect(lifetimeXp(t)).toBe(0);
+    const once = logTrained(t, 120);
+    expect(lifetimeXp(logTrained(once, 30))).toBe(150);
+    expect(logTrained(once, 0)).toBe(once); // nothing earned: unchanged
   });
 });

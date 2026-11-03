@@ -20,7 +20,7 @@ import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTave
 import { clearDaily, countDaily } from "@/lib/daily";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
-import { buildPit, claimPlans, hasPit, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
+import { buildPit, claimPlans, hasPit, logTrained, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
 import { starterCreature } from "@/lib/creatures/starter";
 import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
 
@@ -329,7 +329,7 @@ export function useGameState(initialTab: TabKey = "all") {
   // pit doesn't count the scroll's XP as room it filled.
   function bankTraining(id: string): number {
     const earned = trainingEarned(id);
-    if (trainingId(loadTavern()) === id) setTavern(updateTavern((t) => restartTraining(t)));
+    if (trainingId(loadTavern()) === id) setTavern(updateTavern((t) => logTrained(restartTraining(t), earned)));
     return earned;
   }
   // Who's in the pit and how it's going, at a time (null: nobody, or one you've since released).
@@ -352,7 +352,7 @@ export function useGameState(initialTab: TabKey = "all") {
     if (!done) return false;
     const id = trainingId(t);
     const earned = id ? trainingEarned(id) : 0;
-    setTavern(updateTavern(() => restartTraining(done.tavern)));
+    setTavern(updateTavern(() => logTrained(restartTraining(done.tavern), earned)));
     setMaterials(done.materials);
     if (id && earned > 0) gainXp({ [id]: earned });
     return true;
@@ -378,8 +378,9 @@ export function useGameState(initialTab: TabKey = "all") {
   function takeOutOfTraining(): LevelUp | null {
     const id = trainingId(loadTavern());
     if (!id) return null;
-    const up = gainXp({ [id]: trainingEarned(id) })[0] ?? null;
-    setTavern(updateTavern(stopTraining));
+    const earned = trainingEarned(id);
+    const up = gainXp({ [id]: earned })[0] ?? null;
+    setTavern(updateTavern((t) => logTrained(stopTraining(t), earned)));
     return up;
   }
 

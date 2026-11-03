@@ -14,7 +14,7 @@
 // level while you're away. A creature in the pit is away training: it can't
 // fight until you take it out, and it keeps what it's earned (a full bar
 // levels it up as it leaves).
-// Saved with the tavern (lib/tavern.ts: pit, plans, training).
+// Saved with the tavern (lib/tavern.ts: pit, plans, training, trainedXp).
 
 import { MAX_LEVEL, addXp, clampLevel, xpToNext, type Progress } from "./creatures/levels";
 import { addMaterials, canAfford, countMaterial, type MaterialKey, type Materials } from "./items/materials";
@@ -78,6 +78,9 @@ export const startTraining = (t: TavernQuest, id: string, now = Date.now()): Tav
 export const restartTraining = (t: TavernQuest, now = Date.now()): TavernQuest =>
   (t.training ? { ...t, training: { ...t.training, since: new Date(now).toISOString() } } : t);
 export const stopTraining = (t: TavernQuest): TavernQuest => ({ ...t, training: undefined });
+// The pit's lifetime tally: XP banked out of it (levelled up, taken out, or before a scroll).
+export const logTrained = (t: TavernQuest, xp: number): TavernQuest => (xp > 0 ? { ...t, trainedXp: (t.trainedXp ?? 0) + xp } : t);
+export const lifetimeXp = (t: TavernQuest) => t.trainedXp ?? 0;
 
 // Who's in the pit (to keep it out of fights).
 export const trainingId = (t: TavernQuest | undefined) => (t && hasPit(t) ? t.training?.id : undefined);
