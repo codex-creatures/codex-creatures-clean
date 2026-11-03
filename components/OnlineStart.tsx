@@ -4,6 +4,8 @@
 // play, and your account's one save loads (docs/design.md §12, rules in
 // lib/online/cloudSave.ts). With no connection, a device that has played
 // before can play offline, warned that it may be behind another device.
+// Playing claims the account (lib/online/playSession.ts): a game running on
+// any other device goes back to its title screen.
 //
 // Like Settings, this screen doesn't load the game (no useGameState), so the
 // save can be synced and swapped here before any game is running.
@@ -11,12 +13,13 @@
 import { useCallback, useRef, useState } from "react";
 
 import AccountPanel from "@/components/AccountPanel";
-import { CLOUD_RETURN_KEY } from "@/components/CloudSync";
+import { CLOUD_RETURN_KEY, ELSEWHERE } from "@/components/CloudSync";
 import Help from "@/components/Help";
 import { Coin } from "@/components/GoldCount";
 import type { Account } from "@/lib/online/account";
 import { onlineClient } from "@/lib/online/client";
 import { cloudLink, offlineSave, readLastAccount, syncAtStart, OFFLINE_ERROR } from "@/lib/online/cloudSave";
+import { claimPlay, newPlaySession } from "@/lib/online/playSession";
 import { summarise, type SaveSummary } from "@/lib/saveFile";
 import { readSlots, slotGame, touchActive, STARTED_KEY } from "@/lib/saveSlots";
 
@@ -73,8 +76,8 @@ export default function OnlineStart() {
     if (synced.current === a.id) return;
     synced.current = a.id;
     setPhase({ kind: "checking" });
-    let returned = false;
-    try { returned = window.sessionStorage.getItem(CLOUD_RETURN_KEY) !== null; window.sessionStorage.removeItem(CLOUD_RETURN_KEY); } catch {}
+    let returned: string | null = null;
+    try { returned = window.sessionStorage.getItem(CLOUD_RETURN_KEY); window.sessionStorage.removeItem(CLOUD_RETURN_KEY); } catch {}
     syncAtStart(window.localStorage, client, a.id).then((r) => {
       if (r.kind === "failed") {
         const link = playable(a.id);
@@ -83,18 +86,23 @@ export default function OnlineStart() {
         return;
       }
       setPhase({ kind: "ready", slot: r.slot });
-      if (r.kind === "loaded") {
-        setNotice((returned ? "You played on another device, so that newer save was loaded." : "Your save was loaded.")
-          + (r.backedUp ? " This device's old copy is kept as the backup (⚙️ Settings)." : ""));
-      }
+      const backup = r.kind === "loaded" && r.backedUp ? " This device's old copy is kept as the backup (⚙️ Settings)." : "";
+      if (returned === ELSEWHERE) setNotice(`You started playing on another device, so this one stopped. Tap Play to carry on here instead.${backup}`);
+      else if (r.kind === "loaded") setNotice((returned ? "You played on another device, so that newer save was loaded." : "Your save was loaded.") + backup);
     });
   }, []);
 
-  function play(userId?: string) {
+  async function play(userId?: string) {
     if (busy) return;
-    const store = window.localStorage;
+    const store = window.localStorage, tab = window.sessionStorage;
     if (userId && !offlineSave(store, userId)) { setPhase({ kind: "stuck", why: "This device's save couldn't be opened." }); return; }
     setBusy(true);
+    // This tab plays the account now: any other device stops (offline, it
+    // claims once back online). Then the save is checked once more, in case
+    // the other device saved since this screen loaded it.
+    const session = newPlaySession(tab);
+    const client = onlineClient(), id = synced.current;
+    if (!userId && client && id && await claimPlay(client, tab, id, session)) await syncAtStart(store, client, id);
     touchActive(store);
     try { window.sessionStorage.setItem(STARTED_KEY, "1"); } catch {}
     window.location.assign("/"); // (a fresh page, so the game loads this save)

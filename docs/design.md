@@ -1079,6 +1079,14 @@ account, kept entirely apart from Vouchee.
     unsent play); otherwise this device's play goes up. An upload only writes over the revision
     it last saw, so if another device saved meanwhile, the game goes back to the title screen,
     which loads the newer save. (The local barcode registry, unused online, stays per slot.)
+  - 📌 **One game at a time** (the user, 2026-11-03): tapping Play claims the account, and a game
+    running on any other device (or tab) goes back to its title screen, which says why ("Tap Play to
+    carry on here instead"). ✅ Built: the `play_sessions` table (one row per account: the tab playing
+    it, a random id per tab in sessionStorage), lib/online/playSession.ts, claimed in
+    components/OnlineStart.tsx and watched by components/CloudSync.tsx (Realtime, plus a check on
+    coming back to the tab, on coming online and before each upload). A game played offline claims
+    once back online, unless another device started after it. The stopped game's last few seconds
+    (since its last upload) stay on that device as the backup.
   - The player name must be picked before playing (not asked again while offline).
   - The user's own game starts fresh with cloud saves (only one game existed, the user's), so no
     old-save migration is needed.
