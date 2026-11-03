@@ -874,9 +874,9 @@ fields optional with defaults.
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still merchant or librarian at 12:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and they stand in the tavern. They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
    ✅ **The Sparring Pit and the Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`).
-   The **Sparring Pit**, a bed of golden sand in a rim of earth and rocks, with a straw dummy (`den/sparring-pit.png`), is yours as
+   The **Sparring Pit**, a bed of golden sand in a ring of grey stones, with a straw dummy (`den/sparring-pit-2.png`), is yours as
    soon as the rubble's blown open, in the tavern room's back corner against the right-hand wall,
-   clear of the tavern, drawn 1.6× (`PIT_SCALE`, the Training Pit too). One creature at a time trains in it, in real time
+   clear of the tavern, drawn 1.9× (`PIT_SCALE`, the Training Pit too). One creature at a time trains in it, in real time
    (**50 XP an hour**, `SPARRING_XP_PER_HOUR`), and stops with its bar full until you tap **Level
    up** (one level, then it trains on from empty), so it never gains more than a level while
    you're away: a ❗ on the pit in the room says it's ready. While it's in, it's away training:
