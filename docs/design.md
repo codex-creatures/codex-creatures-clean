@@ -214,8 +214,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ 35 scannable species (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts):
   7 races × one of each rarity. Each has a rarity, a main **style** (`cls`: melee / ranged / magic),
   an **archetype** (which style kits it draws from, §6) and **one or two races** (Undead, Divine,
-  Beast, Underkin, Geo, Humanoid, Toxic). Plus Klutz (no race), the boss parts, and 7 retired
-  species kept out of scans.
+  Beast, Underkin, Geo, Humanoid, Toxic). Plus Klutz (no race) and the boss parts. (The 7 species retired before V2 were removed
+  on 2026-11-04: no save from after the fresh start can hold one.)
 - ✅ **Individual rolls:** each creature's %s are the species' values with a small zero-sum spread
   (`ROLL_SPREAD_*` in creatureRoll.ts). Rarer creatures get bigger spreads. 4 move slots: it's
   born with its 3 starting moves (§6), and a 10% chance (`RARE_MOVE_CHANCE`) of a rare learnable
@@ -422,7 +422,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   its Neutral light move becomes another move from its kits; from Lv 20 its Neutral priority move
   does too. It always keeps its race's 30-energy move. 🧪 The levels are Claude's draft. A creature
   Klutz catches keeps the moves it fought with.
-- 🧪 Balance in general: the user tunes from sims (the balance lab is at /lab and /simulator). Their
+- 🧪 Balance in general: the user tunes by playing, and fights against the AI (the balance lab, /simulator and the sim scripts went 2026-11-04). Their
   goals: rarity raises the ceiling but a Legendary must not always win; well-fitted, well-rolled
   gear should beat raw rarity within a band; good play should matter more than it does now.
   Present changes to creature stats or move numbers as options. Don't apply them unasked.
@@ -432,9 +432,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 How it came about, round by round: history.md.
 
 - ✅ **Live rules** (`LIVE_RULES`, `setCombatRules` in engine.ts): races on (each move's own race),
-  triangle off (`TRIANGLE_RULES` kept for sims), damage types off (`damageTypes: false`: Force /
+  triangle off (`TRIANGLE_RULES` kept for tests), damage types off (`damageTypes: false`: Force /
   Pierce / Arcane are gone; a move is just its style and race). **Magic stays** as a third style.
-  Sims: `npx vite-node scripts/sim-races.ts [scale]`.
 - ✅ **7 races:** Undead, Divine, Beast, Underkin, Geo (elemental, not just stone), Humanoid, Toxic
   (was Pestilence; id `toxic`). Creatures have 1 or 2 (`SPECIES_RACES`, lib/creatures/racesV2.ts;
   the user's race pass is in; the user is fine with lopsided races). Colours (`RACE_INFO`): Undead
@@ -539,7 +538,7 @@ How it came about, round by round: history.md.
     - The **Labyrinth opens** once you've beaten it, or scanned 25 barcodes (`LABYRINTH_SCANS`,
       `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
       entrance shows it locked.
-    - Sims (`scripts/sim-encampment.ts`: a lone Rare starter in the best of Klutz's box, spamming
+    - Sims (an encampment sim, since removed: a lone Rare starter in the best of Klutz's box, spamming
       its race move, no scans or pickups, heading for a stash): 27% of runs reach the chief, 13% win
       on run 1, 25% by run 4, 50% not by run 12 (Dustwraith, Veilstalker and Crystalback worst). Real
       play does far better: the user beat the 5-room version on run 1 twice, where this player won
@@ -689,7 +688,7 @@ How it came about, round by round: history.md.
   - **Heads grow back** 5 rounds after one goes down; another head going down starts the count
     again. One head grows back with 75% HP, two with 50% each. All three down at once kills it.
   - 🧪 Its numbers (head HP, attack, defences, the moves' damage) are Claude's, set against the
-    Warden's pack by sim (`scripts/sim-hydra.ts`, 200 fights: an Epic and two Rares, Lv 16, in Rare gear,
+    Warden's pack by sim (since removed; 200 fights: an Epic and two Rares, Lv 16, in Rare gear,
     full health, no potions, the Normal AI): the party beats the Hydra 56% of the time, the Warden's pack
     40%; 17–18 rounds. (With resistances as well, before the user dropped them: 29%.)
     Then the user had every head's HP raised 25% (longer fights, so the poison does more): the
@@ -995,7 +994,7 @@ codex, the altar for a Code Cache) waits until there is.
   IDs in `public/sprites/PIXELLAB.md`.
 - **The style:** a single black outline, a dark-fantasy palette, detailed but clean shading (no noisy
   dithering). Creatures are side-on, trimmed and mirrored to face left (battle flips the player's
-  side). Register art in `lib/sprites` (`withArt`, `ART_SIZES`); the old grid sprite is the fallback.
+  side). Register art in `lib/sprites` (`withArt`, `ART_SIZES`). The old code-drawn grid sprites are gone (2026-11-04): an art sprite's grid is a single dot.
 - ✅ **Back views** (2026-11-04): in a fight your creature is shown from behind
   (`public/sprites/creatures/back/`, `BACK_SIZES` and `fightSprite` in lib/sprites/creatures.ts),
   drawn as it looks and not mirrored. 14 approved so far; the rest show their usual art, mirrored,

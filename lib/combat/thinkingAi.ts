@@ -14,11 +14,10 @@
 // - hard:   deeper lookahead, no noise
 
 import {
-  activeOf, affordableSkills, attackTargets, cloneBattle, createBattle, other, resolveRound, sendInReplacement, swapTargets,
+  activeOf, affordableSkills, attackTargets, cloneBattle, other, resolveRound, sendInReplacement, swapTargets,
   type BattleAction, type BattleState, type SideKey,
 } from "./battle";
 import { aiChooseAction, aiChooseReplacement } from "./teamBattle";
-import type { Fighter } from "./engine";
 
 export type AiLevel = "easy" | "normal" | "hard";
 
@@ -135,14 +134,4 @@ function thinkReplacement(state: BattleState, key: SideKey, t: Thinking): number
     }
     return total / t.rollouts;
   }, t.noise);
-}
-
-// ── Whole battle, both sides AI (Balance Lab / sims) ──────────────
-export function runAiBattle(teamA: Fighter[], teamB: Fighter[], levelA: AiLevel, levelB: AiLevel): BattleState {
-  const s = createBattle(teamA, teamB);
-  while (!s.winner) {
-    resolveRound(s, { A: chooseAiAction(s, "A", levelA), B: chooseAiAction(s, "B", levelB) });
-    for (const k of [...s.needsReplacement]) sendInReplacement(s, k, chooseAiReplacement(s, k, k === "A" ? levelA : levelB));
-  }
-  return s;
 }

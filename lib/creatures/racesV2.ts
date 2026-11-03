@@ -11,11 +11,6 @@ export type RaceV2 = "undead" | "divine" | "beast" | "underkin" | "geo" | "human
 
 export const RACES_V2: RaceV2[] = ["undead", "divine", "beast", "underkin", "geo", "humanoid", "toxic"];
 
-export const RACE_V2_NAME: Record<RaceV2, string> = {
-  undead: "Undead", divine: "Divine", beast: "Beast", underkin: "Underkin",
-  geo: "Geo", humanoid: "Humanoid", toxic: "Toxic",
-};
-
 // Every species' race(s), by what it is and how it looks. Klutz and the
 // boss parts have none for now: they take and deal neutral damage. (Except
 // the Baby Cyclops, the first quest's thief: a giant's whelp, Humanoid, so
@@ -65,17 +60,9 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Toxic has no Legendary)
   // The first quest's thief (lib/quest.ts)
   baby_cyclops:     ["humanoid"],
-  // Retired (still owned by some players)
-  monkey_mage:      ["beast"],
-  mantis_warden:    ["beast"],
-  forest_slime:     ["toxic"],
-  stone_toad:       ["beast", "geo"],
-  thornmaw:         ["geo", "beast"],       // a walking carnivorous plant
-  ironjaw_hound:    ["beast"],
-  ashen_drifter:    ["geo"],
 };
 
-// A draft race for each of today's moves (the "drafted" sim mode). Moves
+// A race for each of today's moves (the live rules' "drafted" mode). Moves
 // not listed (the bosses') are neutral.
 export const MOVE_RACES: Record<string, RaceV2> = {
   // Melee

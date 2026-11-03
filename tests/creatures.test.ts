@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
-import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, RETIRED_CREATURES, defaultMoveNames } from "../lib/creatures/creatureData";
+import { CREATURE_TEMPLATES, CREATURE_BY_ID, CREATURES_BY_RARITY, KLUTZ, LEARNABLE_MOVES, MOVE_SLOTS, RACES, defaultMoveNames } from "../lib/creatures/creatureData";
 import { rollProficiency, rollMoves, rollSpread, RARE_MOVE_CHANCE } from "../lib/creatures/creatureRoll";
 import { creatureOrCard, makeCreatureDrop, summonFromCards, REAL_CREATURE_CHANCE } from "../lib/creatures/summon";
 import { pickCreatureId } from "../lib/items/gameHelpers";
@@ -14,8 +14,8 @@ describe("creature % rolls", () => {
   it("vary more for rarer creatures (more stats to work with)", () => {
     const spread = (id: string) => rollSpread(CREATURE_BY_ID[id].proficiency);
     expect(spread("moss_wolf")).toBe(2);
-    expect(spread("ironhide")).toBeGreaterThan(spread("monkey_mage"));
-    expect(spread("monkey_mage")).toBeGreaterThan(spread("moss_wolf"));
+    expect(spread("ironhide")).toBeGreaterThan(spread("dustwraith"));
+    expect(spread("dustwraith")).toBeGreaterThan(spread("moss_wolf"));
   });
 
   slowIt("keep the same total, stay within the spread for the species, and never go negative", () => {
@@ -104,11 +104,7 @@ describe("races", () => {
     }
   });
 
-  it("retired creatures still load from old saves but never come from scans", () => {
-    for (const c of RETIRED_CREATURES) {
-      expect(CREATURE_BY_ID[c.id]).toBe(c);
-      expect(CREATURE_TEMPLATES).not.toContain(c);
-    }
+  it("scans only ever give scannable creatures", () => {
     const scannable = new Set(CREATURE_TEMPLATES.map((c) => c.id));
     for (const r of ["common", "uncommon", "rare", "epic", "legendary"] as const) {
       for (let i = 0; i < 500; i++) expect(scannable.has(pickCreatureId(r))).toBe(true);

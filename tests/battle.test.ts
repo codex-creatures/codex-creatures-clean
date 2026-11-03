@@ -5,7 +5,7 @@ const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { effectiveAgil } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
 import { createBattle, resolveRound, sendInReplacement, activeOf, isCrippled, currentAgility, CRIPPLE_ROUNDS, CRIPPLE_AGILITY_LOSS } from "../lib/combat/battle";
-import { aiChooseSkill, runTeamBattle } from "../lib/combat/teamBattle";
+import { aiChooseSkill } from "../lib/combat/teamBattle";
 import { creatureTypeLabel } from "../lib/creatures/creatureType";
 
 const f = (id: string, weapon?: Record<string, number>) => buildFighter(CREATURE_BY_ID[id], weapon);
@@ -30,14 +30,14 @@ describe("team battle rules", () => {
   });
 
   it("attack costs energy, then regenerates 30 (max 100)", () => {
-    const s = createBattle([f("ironjaw_hound")], [f("crystal_golem")]);
+    const s = createBattle([f("dire_wolf")], [f("crystal_golem")]);
     resolveRound(s, { A: { kind: "attack", skillName: "Crush" }, B: { kind: "attack", skillName: "Jab" } });
     expect(activeOf(s.sides.A).energy).toBe(80);
     expect(activeOf(s.sides.B).energy).toBe(100);
   });
 
   it("rejects moves the creature can't afford or doesn't know", () => {
-    const s = createBattle([f("ironjaw_hound")], [f("crystal_golem")]);
+    const s = createBattle([f("dire_wolf")], [f("crystal_golem")]);
     expect(() => resolveRound(s, { A: { kind: "attack", skillName: "Annihilator" }, B: { kind: "pass" } })).toThrow();
   });
 
@@ -51,21 +51,13 @@ describe("team battle rules", () => {
     sendInReplacement(s, "B", 1);
     expect(activeOf(s.sides.B).name).toBe("Rust Beetle");
   });
-
-  it("auto battles always finish", () => {
-    const team = () => [f("mantis_warden"), f("swamp_witch"), f("crystalback")];
-    for (let i = 0; i < 50; i++) {
-      const r = runTeamBattle(team(), team(), { swapsA: true, swapsB: true });
-      expect(["A", "B", "draw"]).toContain(r.winner);
-    }
-  });
 });
 
 describe("creature type labels", () => {
   it("come from proficiency multipliers", () => {
     expect(creatureTypeLabel(CREATURE_BY_ID.dire_wolf.proficiency)).toBe("Bruiser");
     expect(creatureTypeLabel(CREATURE_BY_ID.crystalback.proficiency)).toBe("Tank");
-    expect(creatureTypeLabel(CREATURE_BY_ID.forest_slime.proficiency)).toBe("Balanced");
+    expect(creatureTypeLabel({ atk: 6, rng: 6, mag: 0, agil: 6, mdef: 6, rdef: 8, magdef: 7 })).toBe("Balanced"); // (the old Forest Slime)
     expect(creatureTypeLabel(CREATURE_BY_ID.void_serpent.proficiency)).toBe("Hybrid · Skirmisher");
   });
 });
@@ -133,16 +125,16 @@ describe("move slots and learnable moves", () => {
   });
 
   it("a dash move doubles your agility this round only", () => {
-    // Thornmaw has +6% agility: A = 106, B = 116.6 — B is faster unless A dashes.
-    const a = buildFighter(CREATURE_BY_ID.thornmaw, { agility: 100 }, undefined, ["Dash Lash", "Jab"]); // 106 agility
-    const b = buildFighter(CREATURE_BY_ID.thornmaw, { agility: 110 }, undefined, ["Jab"]);              // 116.6 agility
+    // The Shambler has +4% agility: A = 104, B = 114.4 — B is faster unless A dashes.
+    const a = buildFighter(CREATURE_BY_ID.shambler, { agility: 100 }, undefined, ["Dash Lash", "Jab"]); // 104 agility
+    const b = buildFighter(CREATURE_BY_ID.shambler, { agility: 110 }, undefined, ["Jab"]);              // 114.4 agility
     const first = (skill: string) => {
       const s = createBattle([a], [b]);
       resolveRound(s, { A: { kind: "attack", skillName: skill }, B: { kind: "attack", skillName: "Jab" } });
       return s.log.find((x) => x.type === "attack")!;
     };
     expect(first("Jab")).toMatchObject({ side: "B" });
-    expect(first("Dash Lash")).toMatchObject({ side: "A", hasted: 1 }); // 106 × 2 = 212 > 116.6: logged as First Strike!
+    expect(first("Dash Lash")).toMatchObject({ side: "A", hasted: 1 }); // 104 × 2 = 208 > 114.4: logged as First Strike!
 
     // Nothing carries over: next round, a plain move from A goes second again.
     const s = createBattle([a], [b]);
@@ -153,8 +145,8 @@ describe("move slots and learnable moves", () => {
   });
 
   it("the AI only dashes for a knockout it would otherwise not live to land", () => {
-    const a = activeOf(createBattle([buildFighter(CREATURE_BY_ID.thornmaw, { agility: 100 }, undefined, ["Dash Lash", "Crush"])], [f("thornmaw")]).sides.A);
-    const b = activeOf(createBattle([buildFighter(CREATURE_BY_ID.thornmaw, { agility: 110 }, undefined, ["Jab"])], [f("thornmaw")]).sides.A);
+    const a = activeOf(createBattle([buildFighter(CREATURE_BY_ID.shambler, { agility: 100 }, undefined, ["Dash Lash", "Crush"])], [f("shambler")]).sides.A);
+    const b = activeOf(createBattle([buildFighter(CREATURE_BY_ID.shambler, { agility: 110 }, undefined, ["Jab"])], [f("shambler")]).sides.A);
     expect(aiChooseSkill(a, b)?.name).toBe("Crush");                // healthy foe: the bigger hit
     expect(aiChooseSkill(a, { ...b, hp: 5 })?.name).toBe("Dash Lash"); // either move kills; only the dash lands first
   });

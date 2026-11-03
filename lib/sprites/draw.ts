@@ -1,5 +1,5 @@
 // lib/sprites/draw.ts
-// A tiny pixel-art toolkit for drawing sprites on the fine grid in code:
+// A tiny pixel-art toolkit for drawing on the fine grid in code (the move slabs):
 // filled ellipses, polygons and thick lines, each with optional shading
 // (light from the top left), and mirroring for symmetrical creatures.
 // The renderer adds the dark outline, so shapes are drawn without one.
@@ -95,17 +95,3 @@ export class Pen {
 
   sprite(): Sprite { return fine(this.g.map((r) => r.join(""))); }
 }
-
-export const draw = (f: (p: Pen) => void): Sprite => { const p = new Pen(); f(p); return p.sprite(); };
-
-// Common tones.
-export const T = {
-  green:  ["N", "E", "e"] as Tone,  leaf:   ["E", "e", "f"] as Tone,
-  grey:   ["S", "s", "t"] as Tone,  stone:  ["B", "b", "n"] as Tone,
-  fur:    ["L", "l", "m"] as Tone,  sand:   ["I", "i", "j"] as Tone,
-  bone:   ["h", "I", "i"] as Tone,  gold:   ["G", "g", "a"] as Tone,
-  purple: ["P", "p", "q"] as Tone,  cyan:   ["C", "c", "u"] as Tone,
-  red:    ["R", "r", "x"] as Tone,  amber:  ["A", "a", "l"] as Tone,
-  wood:   ["W", "w", "d"] as Tone,  hide:   ["V", "v", "D"] as Tone,
-  dark:   ["b", "n", "k"] as Tone,  void:   ["p", "q", "J"] as Tone,
-};

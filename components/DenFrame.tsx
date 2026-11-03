@@ -25,7 +25,6 @@ export default function DenFrame({
   backLabel?: string;
   backLocked?: string; // why you can't go back right now (shown on tap/hover)
   onBack?: () => void; // going back needs a word first (leaving the Labyrinth ends the run)
-  width?: number; // (no longer used: every screen is the game screen's width)
   fill?: boolean;
   dock?: React.ReactNode;
   children: React.ReactNode;

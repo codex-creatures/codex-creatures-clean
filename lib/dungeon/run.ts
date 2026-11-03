@@ -31,7 +31,7 @@ import { randomSoulStone, type SoulStoneKey } from "../creatures/soulStones";
 import { buildFighter } from "../combat/loadout";
 import type { Fighter } from "../combat/engine";
 import type { AiLevel } from "../combat/thinkingAi";
-import { rollGear, RARITIES } from "../balance/simulate";
+import { rollGear, RARITIES } from "../items/gear";
 import type { BossKind } from "../combat/bossAi";
 import { questMap, rollMap, routeLength, waysOn, type DungeonMap, type MapSpec } from "./map";
 import { newWitchGame, type WitchGame } from "./witch";

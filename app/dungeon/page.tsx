@@ -86,9 +86,6 @@ import { TOOLS, toolDrop, type StoragePlan } from "@/lib/items/materials";
 import { BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
 
 const GOLD = "#f5c542";
-// Every Labyrinth screen keeps to one phone-sized column (the room picture is
-// 518px; with the page's padding), so nothing jumps about from room to room.
-const COLUMN = 552;
 const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑" };
 
 function combatLine(f: Parameters<typeof combatSummary>[0]): string {
@@ -1061,12 +1058,12 @@ export default function DungeonPage() {
 
   // ── Screens ───────────────────────────────────────────────────────
   if (!lab || !game.hydrated) {
-    return <DenFrame title="The Labyrinth" icon="🌀" width={COLUMN}><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+    return <DenFrame title="The Labyrinth" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   }
 
   // fill: the content gets the whole screen (a battle); dock: built into the bottom of the screen.
   const frame = (children: React.ReactNode, opts: { fill?: boolean; dock?: React.ReactNode } = {}) => (
-    <DenFrame title={run ? DUNGEONS[dungeonOf(run)].name : "The Labyrinth"} icon="🌀" gold={game.gold} width={COLUMN} fill={opts.fill} dock={opts.dock}
+    <DenFrame title={run ? DUNGEONS[dungeonOf(run)].name : "The Labyrinth"} icon="🌀" gold={game.gold} fill={opts.fill} dock={opts.dock}
       backLocked={denLocked ? (battle.match && !battle.match.state.winner ? "Not mid-fight" : "Deal with this room first") : undefined}
       onBack={!run || leaving ? undefined : run.status === "dead" || run.status === "retreated" ? leaveRun : () => setLeaveAsk(true)}>
       <Shaker shake={shake} fill={opts.fill}>{children}</Shaker>

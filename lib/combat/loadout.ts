@@ -1,6 +1,6 @@
 // lib/combat/loadout.ts
 // Turns a creature + its equipped items into a combat Fighter.
-// Shared by the main game (creature screen) and the simulator, so what the
+// Shared by the creature screen and the battles themselves, so what the
 // player sees is exactly what battles use.
 
 import { resolveMoves, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";

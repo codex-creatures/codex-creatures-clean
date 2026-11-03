@@ -7,10 +7,9 @@ import { RARITY_WEIGHTS } from "./budgets";
 import type { ItemKey } from "./ceilings";
 import { ITEM_CEILINGS } from "./ceilings";
 import type { ArmorKey } from "./armor";
-import { ARMOR_CEILINGS, ARMOR_KEYS, pieceCeilings } from "./armor";
+import { ARMOR_CEILINGS, pieceCeilings } from "./armor";
 import type { Drop } from "../types";
 import { isItemDrop, isCardDrop, isCreatureDrop, type CreatureOrItemDrop } from "../types";
-import { ITEM_KEYS } from "./ceilings";
 import { CREATURE_TEMPLATES, CREATURES_BY_RARITY, findCreatureTemplate } from "../creatures/creatureData";
 
 // ── Rarity colours ───────────────────────────────────────
@@ -52,27 +51,6 @@ export function pickRarity(seed: string, rollMode: "random" | "deterministic"): 
   return "common";
 }
 
-// ── Weapon / armor key picking ───────────────────────────
-export function pickWeaponKey(
-  code: string,
-  rollMode: "random" | "deterministic"
-): ItemKey {
-  if (rollMode === "deterministic") {
-    return ITEM_KEYS[deterministicRoll(`${code}:itemKey`) % ITEM_KEYS.length];
-  }
-  return ITEM_KEYS[Math.floor(Math.random() * ITEM_KEYS.length)];
-}
-
-export function pickArmorKey(
-  code: string,
-  rollMode: "random" | "deterministic"
-): ArmorKey {
-  if (rollMode === "deterministic") {
-    return ARMOR_KEYS[deterministicRoll(`${code}:armorKey`) % ARMOR_KEYS.length];
-  }
-  return ARMOR_KEYS[Math.floor(Math.random() * ARMOR_KEYS.length)];
-}
-
 // ── Stat cap lookup ──────────────────────────────────────
 export function getStatCapForDrop(d: Drop, stat: string): number | null {
   if (!isItemDrop(d)) return null;
@@ -97,7 +75,7 @@ export function getStatCapForDrop(d: Drop, stat: string): number | null {
 // ── Creatures (roster lives in lib/creatures/creatureData.ts) ──
 export const TOTAL_CREATURES = CREATURE_TEMPLATES.length;
 // The species you have ("Creatures discovered"): creatures and cards both
-// count; companions (Klutz) and retired species don't. Older saves stored
+// count; companions (Klutz) don't. Older saves stored
 // names instead of ids.
 export function discoveredSpecies(inventory: Drop[]): Set<string> {
   return new Set(
@@ -117,8 +95,6 @@ export function ownedSpecies(owned: unknown, inventory: Drop[]): Set<string> {
   return out;
 }
 const CREATURE_IDS = new Set(CREATURE_TEMPLATES.map((t) => t.id));
-export const TOTAL_WEAPONS   = ITEM_KEYS.length;
-export const TOTAL_ARMOR     = Object.keys(ARMOR_CEILINGS).length;
 // Every kind of item there is to discover (weapons, armour, materials, potions, codexes).
 export { TOTAL_DISCOVERABLE_ITEMS as TOTAL_ITEMS } from "./discovery";
 

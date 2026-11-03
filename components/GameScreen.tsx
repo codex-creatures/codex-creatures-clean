@@ -6,7 +6,7 @@
 // makes the page taller: a long list scrolls inside its own panel, and
 // sheets and modals open inside the screen (it's their containing block,
 // and the size for cqw/cqh units). See .game-screen in globals.css.
-// The dev tools (/lab, /simulator) skip it and use the whole window.
+// The dev tools (/lab) skip it and use the whole window.
 //
 // Screen size (Settings, lib/uiScale.ts): everything inside is laid out on a
 // smaller (or bigger) screen and then drawn scaled up to fill this one, so
@@ -37,7 +37,7 @@ export default function GameScreen({ children }: { children: React.ReactNode }) 
     if (picked) setStarted(true);
     else if (needsTitle(path, false)) router.replace("/start");
   }, [path, router, started]);
-  if (path.startsWith("/lab") || path.startsWith("/simulator")) return <>{children}</>;
+  if (path.startsWith("/lab")) return <>{children}</>;
   const show = started || !needsTitle(path, false);
   return (
     <div className="game-shell">

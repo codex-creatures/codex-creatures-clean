@@ -70,10 +70,3 @@ export function rollCreature(c: CreatureTemplate, rng: Rng = Math.random): Creat
   const moves = rollMoves(c, rng);
   return { proficiency, moves, soulStone: rollSoulStone(c, rng) ?? null };
 }
-
-// How a roll differs from the species: { rng: +2, rdef: -2 } etc. (0s left out).
-export function rollDiff(c: CreatureTemplate, p: CreatureProficiency): Partial<Record<ProfKey, number>> {
-  const out: Partial<Record<ProfKey, number>> = {};
-  for (const k of KEYS) if (p[k] !== c.proficiency[k]) out[k] = p[k] - c.proficiency[k];
-  return out;
-}

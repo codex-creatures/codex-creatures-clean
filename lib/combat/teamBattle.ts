@@ -1,14 +1,14 @@
 // lib/combat/teamBattle.ts
-// The auto-battler for team battles: decides each side's action, and runs
-// whole battles for the Balance Lab. The rules themselves live in battle.ts,
-// so AI battles and battles played by hand follow exactly the same rules.
+// The auto-battler for team battles: decides a side's action (thinkingAi.ts
+// builds on it). The rules themselves live in battle.ts, so AI battles and
+// battles played by hand follow exactly the same rules.
 //
 // The AI swaps when its matchup is clearly losing and a teammate would
 // clearly win it, even after taking the free hit.
 
 import { ENERGY_REGEN, calcDamage, chooseSkill, effectiveAgil, type Fighter } from "./engine";
 import {
-  activeOf, affordableSkills, attackTargets, createBattle, currentAgility, isCrippled, other, resolveRound, sendInReplacement,
+  activeOf, affordableSkills, attackTargets, currentAgility, isCrippled, other,
   CRIPPLE_AGILITY_LOSS,
   type BattleAction, type BattleSide, type BattleState, type Combatant, type SideKey,
 } from "./battle";
@@ -29,27 +29,6 @@ export type AiOptions = {
   // false = send in the next creature in team order after a faint
   // instead of the best matchup.
   smartReplace?: boolean;
-};
-
-export type TeamBattleOptions = {
-  swapsA: boolean;
-  swapsB: boolean;
-  // Overrides for balance experiments (defaults above).
-  swapWhenBelow?: number;
-  swapToAtLeast?: number;
-  smartReplaceA?: boolean;
-  smartReplaceB?: boolean;
-};
-
-export type TeamBattleResult = {
-  winner: "A" | "B" | "draw";
-  rounds: number;
-  swapsA: number;
-  swapsB: number;
-  hits: number;
-  minDamageHits: number;
-  survivorsA: number;
-  survivorsB: number;
 };
 
 // ── Matchup reading (what the auto-battler "thinks") ───────────────
@@ -171,40 +150,4 @@ export function aiChooseReplacement(state: BattleState, key: SideKey, smart = tr
     if (best) return best.index;
   }
   return s.team.findIndex((f) => f.hp > 0);
-}
-
-// ── Whole battle, both sides AI (Balance Lab) ──────────────────────
-// Balance experiments can plug in another AI (e.g. the thinking AI from
-// thinkingAi.ts) for both sides; the per-side swap options then don't apply.
-export const TEAM_AI: {
-  choose?: (state: BattleState, key: SideKey) => BattleAction;
-  replace?: (state: BattleState, key: SideKey) => number;
-} = {};
-
-export function runTeamBattle(teamA: Fighter[], teamB: Fighter[], opts: TeamBattleOptions): TeamBattleResult {
-  const state = createBattle(teamA, teamB);
-  const ai: Record<SideKey, AiOptions> = {
-    A: { canSwap: opts.swapsA, swapWhenBelow: opts.swapWhenBelow, swapToAtLeast: opts.swapToAtLeast, smartReplace: opts.smartReplaceA },
-    B: { canSwap: opts.swapsB, swapWhenBelow: opts.swapWhenBelow, swapToAtLeast: opts.swapToAtLeast, smartReplace: opts.smartReplaceB },
-  };
-
-  while (!state.winner) {
-    const choose = (k: SideKey) => (TEAM_AI.choose ? TEAM_AI.choose(state, k) : aiChooseAction(state, k, ai[k]));
-    resolveRound(state, { A: choose("A"), B: choose("B") });
-    for (const k of [...state.needsReplacement]) {
-      sendInReplacement(state, k, TEAM_AI.replace ? TEAM_AI.replace(state, k) : aiChooseReplacement(state, k, ai[k].smartReplace ?? true));
-    }
-  }
-
-  const alive = (k: SideKey) => state.sides[k].team.filter((f) => f.hp > 0).length;
-  return {
-    winner: state.winner ?? "draw",
-    rounds: state.round,
-    swapsA: state.sides.A.swaps,
-    swapsB: state.sides.B.swaps,
-    hits: state.hits,
-    minDamageHits: state.minDamageHits,
-    survivorsA: alive("A"),
-    survivorsB: alive("B"),
-  };
 }

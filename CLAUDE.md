@@ -120,7 +120,7 @@ kill theirs.
   (the title screen: sign-in and your save online, components/OnlineStart.tsx; save slots in a
   copy without online, components/LocalStart.tsx), `privacy` (the privacy policy Google sign-in needs:
   update it whenever online features change what's stored).
-  `lab/*` and `simulator` are dev tools (balance sims, room previews) and sit outside the phone
+  `lab/*` are dev tools (room, card and item previews) and sit outside the phone
   frame.
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan
   drops.

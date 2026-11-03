@@ -36,7 +36,7 @@ import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
 import { effectiveOn } from "@/lib/quest";
 import { REF_LEVEL } from "@/lib/creatures/levels";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
-import { RARITIES } from "@/lib/balance/simulate";
+import { RARITIES } from "@/lib/items/gear";
 import { saveBattle, type BattleMember } from "@/lib/battleHistory";
 import BattleLog, { FOE } from "@/components/BattleLog";
 import BossStage from "@/components/BossStage";
@@ -776,15 +776,6 @@ export function Bar({ label, value, pct, color, trail }: { label: string; value:
         {trail ? <HpFill pct={pct} color={color} />
           : <div style={{ height: "100%", width: `${Math.max(0, Math.min(100, pct))}%`, background: color, transition: "width 0.45s ease-out" }} />}
       </div>
-    </div>
-  );
-}
-
-export function ActionBox({ title, children, dim }: { title: string; children: React.ReactNode; dim?: boolean }) {
-  return (
-    <div className="stone-panel" style={{ marginTop: 16, opacity: dim ? 0.6 : 1, transition: "opacity 0.2s" }}>
-      <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0", marginBottom: 8 }}>{title}</div>
-      {children}
     </div>
   );
 }

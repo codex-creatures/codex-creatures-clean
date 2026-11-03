@@ -16,7 +16,7 @@ import { buildFighter, combatSummary } from "@/lib/combat/loadout";
 import { rollSoulStone } from "@/lib/creatures/soulStones";
 import type { Fighter } from "@/lib/combat/engine";
 import { AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
-import { rollGear, RARITIES } from "@/lib/balance/simulate";
+import { rollGear, RARITIES } from "@/lib/items/gear";
 import { YOU } from "@/components/BattleLog";
 import DenFrame from "@/components/DenFrame";
 import {

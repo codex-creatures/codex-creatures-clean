@@ -7,7 +7,7 @@ describe("the title screen first", () => {
     for (const p of ["/", "/altar", "/dungeon", "/settings", "/board"]) expect(needsTitle(p, false)).toBe(true);
   });
   it("leaves the title screen, privacy page and dev tools alone", () => {
-    for (const p of ["/start", "/privacy", "/lab", "/lab/rooms", "/simulator"]) expect(needsTitle(p, false)).toBe(false);
+    for (const p of ["/start", "/privacy", "/lab", "/lab/rooms"]) expect(needsTitle(p, false)).toBe(false);
     expect(needsTitle("/starter", false)).toBe(true); // (only whole path parts match)
   });
   it("doesn't send you back once a save is picked", () => {

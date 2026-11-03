@@ -63,31 +63,6 @@ export type Fighter = {
   weakTo?: CombatClass; // a boss part's weak spot: moves of this style hit it WEAK_SPOT harder (the Hydra's heads)
 };
 
-export type TurnLog = {
-  turn: number;
-  attacker: string;
-  defender: string;
-  skill: Skill;
-  stance: Stance;
-  defenderStance: Stance;
-  rawDamage: number;
-  finalDamage: number;
-  precise: boolean;
-  braceBlocked: boolean;
-  braceFailed: boolean;
-  attackerEnergyBefore: number;
-  attackerEnergyAfter: number;
-  defenderHpBefore: number;
-  defenderHpAfter: number;
-  stanceChosen: Stance;
-};
-
-export type BattleResult = {
-  winner: string;
-  turns: TurnLog[];
-  totalTurns: number;
-};
-
 function stanceDamageDealt(stance: Stance, moveType: CombatClass): number {
   if (stance === "entrench" && moveType === "melee")  return 1.10;
   if (stance === "float"    && moveType === "ranged") return 1.10;
@@ -260,20 +235,6 @@ export const DAMAGE_VARIANCE = 0.05;
 export const rollDamage = (rng: () => number = Math.random) => 1 - DAMAGE_VARIANCE + rng() * 2 * DAMAGE_VARIANCE;
 
 // ── Auto-battle move choice ─────────────────────────────
-export type CombatStyle = CombatClass;
-
-export function combatStyle(f: Fighter): CombatStyle {
-  return f.cls;
-}
-
-// The class a set of %s points to: its best attack multiplier (for gear
-// suggestions; a creature's real class is set on its template).
-export function styleFromProficiency(p: { atk: number; rng: number; mag?: number }): CombatStyle {
-  const mag = p.mag ?? 0;
-  if (mag > p.atk && mag > p.rng) return "magic";
-  return p.atk >= p.rng ? "melee" : "ranged";
-}
-
 // Auto-battle: the affordable move that hurts this opponent most (its
 // damage already accounts for the triangle, armour and damage types).
 export function chooseSkill(atk: Fighter, def: Fighter): Skill | undefined {
@@ -281,43 +242,4 @@ export function chooseSkill(atk: Fighter, def: Fighter): Skill | undefined {
   if (affordable.length === 0) return undefined;
   const dmg = (s: Skill) => calcDamage(s, atk, def, false).damage;
   return affordable.reduce((best, s) => (dmg(s) > dmg(best) ? s : best));
-}
-
-export function runBattle(fighterA: Fighter, fighterB: Fighter, maxTurns = 60): BattleResult {
-  const a: Fighter = { ...fighterA, hp: fighterA.maxHp, energy: 100, braceActive: false, braceConsecutiveCount: 0 };
-  const b: Fighter = { ...fighterB, hp: fighterB.maxHp, energy: 100, braceActive: false, braceConsecutiveCount: 0 };
-  const logs: TurnLog[] = [];
-  let round = 0;
-
-  const aAgil = effectiveAgil(fighterA);
-  const bAgil = effectiveAgil(fighterB);
-
-  while (a.hp > 0 && b.hp > 0 && round < maxTurns) {
-    round++;
-    a.braceActive = false;
-    b.braceActive = false;
-
-    const [first, second] = aAgil >= bAgil ? [a, b] : [b, a];
-    for (const [atk, def] of [[first, second], [second, first]] as [Fighter, Fighter][]) {
-      if (atk.hp <= 0) continue;
-      const skill = chooseSkill(atk, def);
-      if (!skill) continue;
-
-      const precise      = Math.random() < PRECISE_CHANCE;
-      const energyBefore = atk.energy;
-      const { damage: dmg, braceBlocked, braceFailed } = calcDamage(skill, atk, def, precise, PRECISE_IGNORE, rollDamage());
-      atk.energy -= skill.energyCost;
-
-      const hpBefore = def.hp;
-      def.hp = Math.max(0, def.hp - dmg);
-
-      // Energy regen end of turn
-      atk.energy = Math.min(MAX_ENERGY, atk.energy + ENERGY_REGEN);
-
-      logs.push({ turn: round, attacker: atk.name, defender: def.name, skill, stance: atk.stance, defenderStance: def.stance, rawDamage: skill.damage, finalDamage: dmg, precise, braceBlocked, braceFailed, attackerEnergyBefore: energyBefore, attackerEnergyAfter: atk.energy, defenderHpBefore: hpBefore, defenderHpAfter: def.hp, stanceChosen: atk.stance });
-    }
-  }
-
-  const winner = a.hp > 0 && b.hp <= 0 ? a.name : b.hp > 0 && a.hp <= 0 ? b.name : "Draw";
-  return { winner, turns: logs, totalTurns: round };
 }

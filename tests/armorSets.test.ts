@@ -7,7 +7,7 @@ import { rollArmorPiece } from "../lib/items/rollArmorStats";
 import { RARITY_BUDGETS } from "../lib/items/budgets";
 import { upgradeOldArmor } from "../lib/save";
 import { makeEnemy, droppedPieceStats } from "../lib/dungeon/run";
-import { RARITIES } from "../lib/balance/simulate";
+import { RARITIES } from "../lib/items/gear";
 import { armorDrop } from "../lib/drops";
 import { computeSellGold } from "../lib/items/economy/sell";
 import { getStatCapForDrop } from "../lib/items/gameHelpers";

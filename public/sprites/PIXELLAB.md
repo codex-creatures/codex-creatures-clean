@@ -42,7 +42,6 @@ the PNG here.
 | creatures/klutz.png | gallery:7613b7fe-5887-47b7-8220-51d4c33e246a |
 | creatures/klutz-walk.png | gallery:b8e7eb1c-9a8f-440a-a8b7-59bcd701fed8 |
 | creatures/leafblade_scout.png | gallery:98d5d66f-6d18-42e3-bc5f-32b26de80423 |
-| creatures/monkey_mage.png | gallery:94f0b638-48cd-48de-953f-04e695f372c3 |
 | creatures/moss_wolf.png | gallery:a9aa18c8-cd63-4491-91b6-15f70d87813b |
 | creatures/mr_shadows.png | gallery:ac8442e1-69bc-4ae5-96e7-183341f38d8c |
 | creatures/rattlebones.png | gallery:5b472bc2-c66b-4847-94cc-5e508e6dcd0a |

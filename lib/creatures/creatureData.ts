@@ -4,8 +4,6 @@ import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
 import { KIT_MOVES, KIT_MOVE_RACE, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "./rosterV2";
 
-export type ElementalType = "inferno" | "aqua" | "naturist" | null;
-
 export type CreatureProficiency = {
   atk: number;    // melee
   rng: number;    // ranged
@@ -370,24 +368,10 @@ export const CREATURE_TEMPLATES: CreatureTemplate[] = [...OLDER_SPECIES, ...NEW_
   .map((c) => ({ ...c, ...V2_RESTYLE[c.id] }))
   .map((c) => withRaces({ ...c, skills: v2Moves(c) }));
 
-// Creatures that no longer turn up from scans (they didn't fit a race).
-// Any you already own stay yours and keep working.
-export const RETIRED_CREATURES: CreatureTemplate[] = ([
-  // (Replaced by the Bellow Toad as the Rare beast, 2026-10-18.)
-  { id: "monkey_mage",      name: "Monkey Mage",      rarity: "rare",      baseHp: 88, cls: "magic", proficiency: { atk: 12, rng: 0, mag: 18, agil: 30, mdef: 6, rdef: 4, magdef: 6 }, skills: s("Firebolt","Hex","Slash","Fireball"),                  flavour: "Stole a wizard's hat and staff, and kept practising until the spells started working. Never stops chattering, never stops casting." },
-  { id: "mantis_warden",  name: "Mantis Warden",  rarity: "common",    baseHp: 65, cls: "melee", proficiency: { atk: 18, rng: 2, mag: 0, agil: 6, mdef: 12, rdef: 4, magdef: 8 }, skills: s("Slash","Heavy Blow","Flick"),                         flavour: "One arm a serrated blade, the other a chitinous buckler. It waits." },
-  { id: "forest_slime",   name: "Forest Slime",    rarity: "common",    baseHp: 68, cls: "melee", proficiency: { atk: 6, rng: 6, mag: 0, agil: 6, mdef: 6, rdef: 8, magdef: 7 }, skills: s("Jab","Stone Throw","Flick"),                         flavour: "Unremarkable in every way. Somehow always survives." },
-  { id: "stone_toad",     name: "Stone Toad",      rarity: "common",    baseHp: 73, cls: "melee", proficiency: { atk: 6, rng: 4, mag: 0, agil: 2, mdef: 14, rdef: 10, magdef: 12 }, skills: s("Slash","Stone Throw","Jab"),                         flavour: "Squat, lumpy, impossibly durable. Outlasts everything." },
-  { id: "thornmaw",       name: "Thornmaw",        rarity: "uncommon",  baseHp: 78, cls: "melee", proficiency: { atk: 22, rng: 4, mag: 0, agil: 6, mdef: 8, rdef: 4, magdef: 6 }, skills: s("Heavy Blow","Crush","Slash","Jab"),                   flavour: "A carnivorous plant that learned to walk. Its bite leaves thorns behind." },
-  { id: "ironjaw_hound",  name: "Ironjaw Hound",   rarity: "uncommon",  baseHp: 75, cls: "melee", proficiency: { atk: 26, rng: 2, mag: 0, agil: 14, mdef: 6, rdef: 2, magdef: 4 }, skills: s("Crush","Heavy Blow","Slash","Flick"),                 flavour: "Built for the hunt. Its jaw can crush stone." },
-  { id: "ashen_drifter",  name: "Ashen Drifter",   rarity: "rare",      baseHp: 88, cls: "ranged", proficiency: { atk: 8, rng: 32, mag: 0, agil: 16, mdef: 6, rdef: 12, magdef: 9 }, skills: s("Bolt","Piercing Shot","Stone Throw","Annihilator"),   flavour: "Orbiting rocks wrapped in smoke. Cold and quiet." },
-] as CreatureTemplate[]).map(withRaces);
-
 // The older species as they were before Combat V2, with their old styles and
-// moves (retired ones too), by id: for the sims of the old rules, and tests of
-// battle mechanics written with those moves.
+// moves, by id: for tests of battle mechanics written with those moves.
 export const PRE_V2_SPECIES: Record<string, CreatureTemplate> = Object.fromEntries(
-  [...OLDER_SPECIES.map(withRaces), ...RETIRED_CREATURES].map((c) => [c.id, c]),
+  OLDER_SPECIES.map(withRaces).map((c) => [c.id, c]),
 );
 
 // Klutz: the dopey goblin who drags you into the Den. He's your helper, not
@@ -436,9 +420,9 @@ export const BOSS_PARTS: CreatureTemplate[] = [
     flavour: "A Cyclops whelp with sticky fingers and a hide like a door. It grabbed Klutz's box and ran." },
 ];
 
-// Every creature that can exist (scannable, retired, companions, boss parts), by id.
+// Every creature that can exist (scannable, companions, boss parts), by id.
 export const CREATURE_BY_ID: Record<string, CreatureTemplate> = Object.fromEntries(
-  [...CREATURE_TEMPLATES, ...RETIRED_CREATURES, ...COMPANIONS, ...BOSS_PARTS].map(c => [c.id, c])
+  [...CREATURE_TEMPLATES, ...COMPANIONS, ...BOSS_PARTS].map(c => [c.id, c])
 );
 
 // Template for a creature drop. Older saves stored only the name.

@@ -314,13 +314,6 @@ export function isValidAction(state: BattleState, key: SideKey, a: BattleAction)
   }
 }
 
-// Damage this move would do to the opponent's current creature (no precise hit).
-export function previewDamage(state: BattleState, key: SideKey, skill: Skill): number {
-  const me = activeOf(state.sides[key]);
-  const them = activeOf(state.sides[other(key)]);
-  return calcDamage(skill, me, them, false).damage;
-}
-
 // ── Resolving a round ──────────────────────────────────────────────
 // Mutates and returns `state` (clone first if you need the old one).
 export function resolveRound(state: BattleState, actions: Record<SideKey, BattleAction>): BattleState {

@@ -27,7 +27,7 @@ export const STARTED_KEY = "codex_creatures_started";
 // Opening the game on any page (a phone's home-screen icon can keep the page
 // it was added from) goes to the title screen first, once per visit. Except
 // the title screen itself, the privacy page it links to, and the dev tools.
-const NO_TITLE = ["/start", "/privacy", "/lab", "/simulator"];
+const NO_TITLE = ["/start", "/privacy", "/lab"];
 export function needsTitle(path: string, started: boolean): boolean {
   return !started && !NO_TITLE.some((p) => path === p || path.startsWith(p + "/"));
 }
