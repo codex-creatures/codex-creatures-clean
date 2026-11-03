@@ -23,8 +23,8 @@
 //    the bounty's paid with the Crooked Bookcase Schematic, the only way to
 //    get it (built at the bookcase).
 // 8. Visitors. Once it's repaired, each time you come home from a run there's
-//    a chance a travelling merchant or a wandering librarian calls
-//    (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
+//    a chance a travelling merchant, a wandering librarian or the creature
+//    collector (lib/collector.ts) calls (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
 //    the Labyrinth to sell (materials dearer: TAVERN_MATERIAL_PRICES). The first roll after the repair always brings
 //    someone, and so does the one after VISITOR_PITY misses in a row.
 //    The merchant also buys from your Inventory, at the Labyrinth's prices
@@ -61,14 +61,14 @@ export type TavernQuest = {
   training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
   trainedXp?: number; // …all the XP it has ever trained into creatures (banked; missing: 0)
 };
-export type Visitor = "merchant" | "librarian";
+export type Visitor = "merchant" | "librarian" | "collector";
 
 // Who's in the tavern: only a repaired tavern has visitors. (A ❗ shows at the
 // Den's doorway while someone's there.)
 export const tavernVisitor = (t: TavernQuest): Visitor | undefined => (t.repaired ? t.visitor : undefined);
 
 // Who calls, each homecoming (the rest of the time, nobody).
-export const VISITOR_ODDS: Record<Visitor, number> = { merchant: 0.12, librarian: 0.08 };
+export const VISITOR_ODDS: Record<Visitor, number> = { merchant: 0.12, librarian: 0.08, collector: 0.08 };
 export const VISITOR_STAY = 2;  // runs a visitor stays
 export const VISITOR_PITY = 3;  // after this many misses in a row, someone's sure to call
 
@@ -80,13 +80,20 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle
   if (t.visitor && (t.stay ?? 0) > 1) return { ...t, stay: (t.stay ?? 0) - 1 };
   const gone: TavernQuest = { ...t, visitor: undefined, stay: undefined, wares: undefined, offers: undefined, bought: undefined };
   const sure = !t.visited || (t.misses ?? 0) >= VISITOR_PITY;
-  const total = VISITOR_ODDS.merchant + VISITOR_ODDS.librarian;
-  // A sure visit is still the merchant or the librarian in their usual proportions.
-  const r = rng() * (sure ? total : 1);
-  const who: Visitor | undefined = r < VISITOR_ODDS.merchant ? "merchant" : r < total ? "librarian" : undefined;
+  const odds = Object.entries(VISITOR_ODDS) as [Visitor, number][];
+  const total = odds.reduce((n, [, p]) => n + p, 0);
+  // A sure visit is still one of them, in their usual proportions.
+  let r = rng() * (sure ? total : 1);
+  const who = odds.find(([, p]) => (r -= p) < 0)?.[0];
   if (!who) return { ...gone, misses: (t.misses ?? 0) + 1 };
-  const stock = makeRoom(who, rng, Infinity, 1, bindle);
-  return { ...gone, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
+  return { ...gone, ...arrive(who, rng, bindle) };
+}
+
+// Someone arriving, with the stock they'd have in the Labyrinth (the
+// collector brings none: he deals in your creatures), staying VISITOR_STAY runs.
+function arrive(who: Visitor, rng: () => number, bindle: boolean): TavernQuest {
+  const stock: { wares?: Ware[]; offers?: string[] } = who === "collector" ? {} : makeRoom(who, rng, Infinity, 1, bindle);
+  return { visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
 }
 
 // At the tavern the merchant charges more for materials than in the Labyrinth
@@ -109,21 +116,19 @@ export const tavernWares = (wares: Ware[] | undefined): Ware[] | undefined =>
 export const merchantCalls = (t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest => summonVisitor(t, "merchant", rng, bindle);
 
 // Summoning (the user, 2026-11-03): at the repaired tavern you can pay
-// SUMMON_PRICE to have a merchant or a librarian call now, in place of
+// SUMMON_PRICE to have a merchant, a librarian or the collector call now, in place of
 // whoever's there (the same kind too: a new one, with new stock), for
 // VISITOR_STAY runs. The gold is the game state's (hooks/useGameState.ts).
 export const SUMMON_PRICE = 500;
 export function summonVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
   if (!t.repaired) return t;
-  const stock = makeRoom(who, rng, Infinity, 1, bindle);
-  return { ...t, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
+  return { ...t, ...arrive(who, rng, bindle) };
 }
 
 // For testing (the altar): open and repair the tavern, and have who call right
 // now, with their usual stock, staying VISITOR_STAY runs.
 export function callVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
-  const stock = makeRoom(who, rng, Infinity, 1, bindle);
-  return { ...forceOpen(t), seen: true, repaired: true, visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
+  return { ...forceOpen(t), seen: true, repaired: true, ...arrive(who, rng, bindle) };
 }
 
 // Mark something bought from the visitor (one of each).

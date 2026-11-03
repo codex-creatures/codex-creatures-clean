@@ -13,7 +13,7 @@ import { RES, strollAt, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "@/lib
 import { artFor } from "@/lib/sprites/art";
 import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
+import { COLLECTOR, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { tavernVisitor, type TavernQuest } from "@/lib/tavern";
 
 const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in the room
@@ -85,11 +85,13 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           </div>
         )}
       </RoomSpot>
-      {visitor && <Visitor sprite={visitor === "merchant" ? MERCHANT : LIBRARIAN} title={visitor === "merchant" ? "A travelling merchant" : "A wandering librarian"} />}
+      {visitor && <Visitor sprite={VISITOR_SPRITE[visitor]} title={VISITOR_TITLE[visitor]} />}
     </>
   );
 }
 
+const VISITOR_SPRITE = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR };
+const VISITOR_TITLE = { merchant: "A travelling merchant", librarian: "A wandering librarian", collector: "A creature collector" };
 const VISITOR_FPS = 12; // how often they're moved along
 const STEP_FPS = 9;     // their walk's frames a second (as Klutz's)
 

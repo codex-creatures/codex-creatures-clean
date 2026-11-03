@@ -20,6 +20,7 @@ import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTave
 import { clearDaily, countDaily } from "@/lib/daily";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
+import { collectorCreatures, creaturePrice, tradeUpCard } from "@/lib/collector";
 import { buildPit, claimPlans, hasPit, logTrained, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
 import { starterCreature } from "@/lib/creatures/starter";
 import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
@@ -438,8 +439,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const acceptTavernQuest = () => setTavern(updateTavern((t) => ({ ...t, accepted: true })));
   const blastRubble = () => setTavern(updateTavern(blast));
   const openRubbleForTesting = () => setTavern(updateTavern(forceOpen)); // the altar's testing tools
-  // …and a visitor now: the merchant, or the librarian if he's already here.
-  const callVisitorForTesting = () => setTavern(updateTavern((t) => callVisitor(t, t.visitor === "merchant" ? "librarian" : "merchant", Math.random, onBindle(loadDungeon().meta))));
+  // …and a visitor now: the merchant, then the librarian, then the collector, in turn.
+  const callVisitorForTesting = () => setTavern(updateTavern((t) => callVisitor(t, t.visitor === "merchant" ? "librarian" : t.visitor === "librarian" ? "collector" : "merchant", Math.random, onBindle(loadDungeon().meta))));
   const seeTavern = () => setTavern(updateTavern((t) => ({ ...t, seen: true })));
   // The repair takes its materials once: the tavern's marked repaired as
   // they're taken, and a second go finds it already done.
@@ -823,6 +824,37 @@ export function useGameState(initialTab: TabKey = "all") {
     countDaily("sell", materialOffer(key));
     return true;
   }
+  // The creature collector (lib/collector.ts): he buys creatures and trades 3
+  // of a rarity for a card one up. Not a creature in a team, the pit or on a run.
+  function collectorBusy(): Set<string> {
+    const pit = trainingId(loadTavern());
+    return new Set([...teamIds, ...(loadDungeon().run?.party ?? []), ...(pit ? [pit] : [])]);
+  }
+  const collectorOffers = () => collectorCreatures(inventory, collectorBusy());
+  // A creature gone to him: its gear comes off (and stays yours).
+  function partWithCreatures(ids: string[]) {
+    ids.forEach(removeDrop);
+    setEquipment((prev) => (ids.some((id) => id in prev) ? Object.fromEntries(Object.entries(prev).filter(([id]) => !ids.includes(id))) : prev));
+  }
+  function sellToCollector(id: string): boolean {
+    const d = loadTavern().visitor === "collector" && collectorOffers().find((x) => x.id === id);
+    if (!d) return false;
+    const price = creaturePrice(d);
+    partWithCreatures([id]);
+    setGold((g) => g + price);
+    countDaily("sell", price);
+    return true;
+  }
+  // Returns the card he gives (null: no trade).
+  function tradeUpWithCollector(ids: string[]): CreatureOrItemDrop | null {
+    if (loadTavern().visitor !== "collector") return null;
+    const offers = collectorOffers();
+    const card = tradeUpCard(ids.map((id) => offers.find((x) => x.id === id)!).filter(Boolean));
+    if (!card) return null;
+    partWithCreatures(ids);
+    addDrop(card);
+    return card;
+  }
 
   // Open stored Code Caches (by drop id): what's inside joins your things.
   // Ones for a full chest box stay shut.
@@ -1078,7 +1110,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

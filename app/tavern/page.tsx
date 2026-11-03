@@ -5,9 +5,11 @@
 // first time you see it Klutz has his say. Repairing it takes REPAIR_COST in
 // materials, once. That puts the Cyclops bounty on the quest board
 // (app/board); once paid, the head hangs over the door.
-// Once it's repaired, a merchant or librarian sometimes calls (rolled on
-// coming home from a run: lib/tavern.ts comeHome), selling what they would
-// in the Labyrinth. The merchant buys from your Inventory too.
+// Once it's repaired, a merchant, a librarian or the creature collector
+// sometimes calls (rolled on coming home from a run: lib/tavern.ts comeHome).
+// The merchant and librarian sell what they would in the Labyrinth, and the
+// merchant buys from your Inventory too. The collector buys creatures and
+// trades 3 of a rarity for a card one up (lib/collector.ts).
 // The room itself is in the Den, through its doorway (components/TavernRoom.tsx);
 // this is the tavern's window, opened by tapping it there.
 
@@ -26,6 +28,10 @@ import ItemPicker, { type PickerTab } from "@/components/ItemPicker";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
 import { hasPit } from "@/lib/trainingPit";
+import TileGrid from "@/components/TileGrid";
+import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import type { Rarity } from "@/lib/items/budgets";
+import { COLLECTOR_PRICES, TRADE_UP_COUNT, creaturePrice, rarityAbove } from "@/lib/collector";
 import { REPAIR_COST, SUMMON_PRICE, VISITOR_STAY, canRepair, materialOffer, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -60,7 +66,8 @@ export default function TavernPage() {
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
               <li>Repairing it puts a <b>bounty</b> on the Cyclops up on the <b>quest board</b>.</li>
-              <li>Once it&apos;s repaired, a <b>merchant</b> or a <b>librarian</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
+              <li>Once it&apos;s repaired, a <b>merchant</b>, a <b>librarian</b> or the <b>creature collector</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
+              <li>The <b>creature collector</b> buys creatures (Common {COLLECTOR_PRICES.common}, Uncommon {COLLECTOR_PRICES.uncommon}, Rare {COLLECTOR_PRICES.rare}, Epic {COLLECTOR_PRICES.epic}, Legendary {COLLECTOR_PRICES.legendary} gold), or trades <b>{TRADE_UP_COUNT} creatures of one rarity</b> for a card of a random creature one rarity up. Not cards, and not a creature in a team, the pit or on a run.</li>
               <li>Or send for one: <b>{SUMMON_PRICE} gold</b> and they come now, for {VISITOR_STAY} runs. Whoever&apos;s in leaves, so you can send for a fresh one too.</li>
             </ul>
           </Help>
@@ -126,6 +133,8 @@ export default function TavernPage() {
           </div>
         )}
 
+        {visitor === "collector" && <CollectorDesk game={game} />}
+
         {/* The pit, in the room (its own window). */}
         {hasPit(t) && (
           <Link href="/training" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 10, minHeight: 44 }}>
@@ -137,13 +146,13 @@ export default function TavernPage() {
         {t.repaired && (
           <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
             <span style={{ fontSize: 12, color: MUTED }}>Send for:</span>
-            {(["merchant", "librarian"] as const).map((who) => {
+            {(["merchant", "librarian", "collector"] as const).map((who) => {
               const on = summoning === who;
               return (
                 <button key={who} className="chip" disabled={game.gold < SUMMON_PRICE}
                   onClick={() => { if (!on) { setSummoning(who); return; } setSummoning(null); setArmed(null); setTrade("buy"); game.summonTavernVisitor(who); }}
                   style={{ minHeight: 44, flex: 1, background: on ? "#6e1f18" : undefined }}>
-                  {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{visitor === who ? `A new ${who}` : who === "merchant" ? "Merchant" : "Librarian"} <Coin /> {SUMMON_PRICE}</>}
+                  {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{visitor === who ? `A new ${who}` : who[0].toUpperCase() + who.slice(1)} <Coin /> {SUMMON_PRICE}</>}
                 </button>
               );
             })}
@@ -190,5 +199,83 @@ function TavernSell({ game, armed, setArmed }: { game: ReturnType<typeof useGame
           </button>
         );
       }} />
+  );
+}
+
+// The creature collector: Sell (pick any number, then Sell; a second tap
+// sells) or Trade up (pick TRADE_UP_COUNT of one rarity for a card one up).
+// One rarity at a time, in tabs; a fixed frame: the grid scrolls in its own
+// height, and the line under it keeps its place whatever's picked.
+const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+function CollectorDesk({ game }: { game: ReturnType<typeof useGameState> }) {
+  const [mode, setMode] = useState<"sell" | "trade">("sell");
+  const [rarity, setRarity] = useState<Rarity>("common");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [armed, setArmed] = useState(false); // Sell tapped once
+  const [got, setGot] = useState<CreatureOrItemDrop | null>(null); // the last trade's card
+  const offers = game.collectorOffers();
+  const shown = offers.filter((d) => d.rarity === rarity);
+  const chosen = shown.filter((d) => picked.has(d.id));
+  const reset = () => { setPicked(new Set()); setArmed(false); };
+  const up = rarityAbove(rarity);
+  const canPick = (d: CreatureOrItemDrop) => mode === "sell" || (!!up && (picked.has(d.id) || chosen.length < TRADE_UP_COUNT));
+  function toggle(d: CreatureOrItemDrop) {
+    if (!canPick(d)) return;
+    const next = new Set(picked);
+    if (next.has(d.id)) next.delete(d.id); else next.add(d.id);
+    setPicked(next); setArmed(false);
+  }
+  const total = chosen.reduce((n, d) => n + creaturePrice(d), 0);
+  function go() {
+    if (mode === "sell") {
+      if (!chosen.length) return;
+      if (!armed) { setArmed(true); return; }
+      chosen.forEach((d) => game.sellToCollector(d.id));
+      setGot(null); reset();
+      return;
+    }
+    const card = game.tradeUpWithCollector(chosen.map((d) => d.id));
+    if (card) { setGot(card); reset(); }
+  }
+  const line = mode === "sell"
+    ? (chosen.length ? <>{armed ? "Sell?" : `Sell ${chosen.length}`} <Coin /> {total}</> : "Pick creatures to sell")
+    : !up ? "Legendaries can't be traded up"
+    : <>Trade {chosen.length}/{TRADE_UP_COUNT} for <span style={{ color: RARITY_COLORS[up].text, textTransform: "capitalize" }}>{up}</span> card</>;
+  const ready = mode === "sell" ? chosen.length > 0 : !!up && chosen.length === TRADE_UP_COUNT;
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+        {(["sell", "trade"] as const).map((m) => (
+          <button key={m} className="chip" onClick={() => { setMode(m); reset(); setGot(null); }}
+            style={{ minHeight: 44, flex: 1, background: mode === m ? "#5a3e22" : undefined }}>{m === "sell" ? "Sell" : "Trade up"}</button>
+        ))}
+      </div>
+      <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>
+        {mode === "sell" ? "“Creatures, friend. Good coin for good specimens.”" : `“${TRADE_UP_COUNT} of a kind and I'll part with something finer.”`}
+      </p>
+      <div role="tablist" style={{ display: "flex", border: "2px solid #2a2d38", borderRadius: 10, overflow: "hidden", background: "#101117" }}>
+        {RARITIES.map((r, i) => {
+          const on = r === rarity;
+          return (
+            <button key={r} role="tab" aria-selected={on} className="pixel-font" onClick={() => { setRarity(r); reset(); }}
+              style={{ flex: 1, minWidth: 0, minHeight: 44, padding: "6px 2px", fontSize: 12, cursor: "pointer", border: "none", borderLeft: i ? "2px solid #2a2d38" : "none",
+                background: on ? "#3a2c16" : "transparent", color: RARITY_COLORS[r].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textTransform: "capitalize" }}>
+              {r.slice(0, 3)} <span style={{ opacity: 0.6 }}>{offers.filter((d) => d.rarity === r).length}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ height: "30cqh", overflowY: "auto" }}>
+        {shown.length
+          ? <TileGrid items={shown} favoriteIds={new Set()} groupBy="none" sellMode sellable={canPick} selected={picked} onOpen={toggle}
+              badge={(d) => `🪙 ${creaturePrice(d)}`} />
+          : <p style={{ marginTop: 18, fontSize: 13, color: MUTED }}>No {rarity} creatures he can take.</p>}
+      </div>
+      <button className="pixel-btn" disabled={!ready} onClick={go}
+        style={{ display: "block", width: "100%", minHeight: 44, marginTop: 8, background: armed ? "#6e1f18" : undefined }}>{line}</button>
+      <p style={{ fontSize: 12, color: MUTED, margin: "6px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {got ? <>He hands you a card: <span style={{ color: RARITY_COLORS[got.rarity].text }}>{got.name}</span> (in your Inventory)</> : <>You have {game.gold} gold.</>}
+      </p>
+    </div>
   );
 }

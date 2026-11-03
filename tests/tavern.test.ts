@@ -194,16 +194,20 @@ describe("the tavern questline: visitors", () => {
       expect(t.visitor).toBeDefined();
       if (t.visitor === "merchant") merchants++;
     }
-    // 12 : 8 → 60% merchants.
-    expect(merchants / 400).toBeGreaterThan(0.5);
-    expect(merchants / 400).toBeLessThan(0.7);
+    // 12 : 8 : 8 → 43% merchants.
+    expect(merchants / 400).toBeGreaterThan(0.33);
+    expect(merchants / 400).toBeLessThan(0.53);
   });
 
-  it("rolls 12% merchant, 8% librarian, else nobody", () => {
-    expect(VISITOR_ODDS).toEqual({ merchant: 0.12, librarian: 0.08 });
+  it("rolls 12% merchant, 8% librarian, 8% collector, else nobody", () => {
+    expect(VISITOR_ODDS).toEqual({ merchant: 0.12, librarian: 0.08, collector: 0.08 });
     const base = { repaired: true, visited: true };
     expect(comeHome(base, seq(0.05)).visitor).toBe("merchant");
     expect(comeHome(base, seq(0.15)).visitor).toBe("librarian");
+    const c = comeHome(base, seq(0.25));
+    expect(c.visitor).toBe("collector");
+    expect(c.wares).toBeUndefined(); // he brings no stock
+    expect(c.offers).toBeUndefined();
     const none = comeHome(base, seq(0.5));
     expect(none.visitor).toBeUndefined();
     expect(none.misses).toBe(1);
@@ -215,7 +219,7 @@ describe("the tavern questline: visitors", () => {
     for (let i = 0; i < 3; i++) t = comeHome(t, seq(0.99));
     expect(t.visitor).toBeUndefined();
     t = comeHome(t, seq(0.99));
-    expect(t.visitor).toBe("librarian"); // 0.99 of the sure range
+    expect(t.visitor).toBe("collector"); // 0.99 of the sure range
     expect(t.misses).toBe(0);
   });
 
@@ -235,7 +239,7 @@ describe("the tavern questline: visitors", () => {
     const m = comeHome({ repaired: true }, seq(0.1));
     expect(m.visitor).toBe("merchant");
     expect(m.wares?.length).toBeGreaterThan(0);
-    const l = comeHome({ repaired: true }, seq(0.9));
+    const l = comeHome({ repaired: true }, seq(0.6));
     expect(l.visitor).toBe("librarian");
     expect(l.offers?.length).toBe(3);
     const still = comeHome(m, seq(0.99));

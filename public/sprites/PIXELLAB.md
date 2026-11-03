@@ -130,6 +130,8 @@ the PNG here.
 | den/sparring-pit-3.png | image:abee38b2-54c4-554a-bccb-b56750325141 (edit_image_pro_flash, two passes over the first Sparring Pit, which was den/training-pit.png with the rim and spears taken out: golden sand in a ring of grey stones, the same dummy), with its orange sand recoloured to tan here by script (the stones and dummy untouched). The number in the name changes with each new version so phones fetch it fresh |
 | den/tavern.png | gallery:9d6fa7cb-85e7-5c36-9aff-b09642a17d19 (raw 512px edit of a code block-out, seed 11; colours warmed + trimmed here) |
 | npcs/merchant-walk.png | job 1eeed771-59ac-433f-9244-67ec3f5c3882 (animate_image_pixminimax, 8 frames on a 96×96 canvas from npcs/merchant.png; the still sits at 9, 3 in each frame) |
+| npcs/collector.png | image:e31cefc4-f858-5180-bf74-39d4b7e0d05a (create_image_pro_flash 96×96, seed 37, the merchant as style image; trimmed here to 76×92 from 7, 2) |
+| npcs/collector-walk.png | job a0336eb3-ce1b-4d18-9457-a799cdff9638 (animate_image_pixminimax, 8 frames on a 96×96 canvas from the untrimmed still; the still sits at 7, 2) |
 | npcs/librarian-walk.png | job a6b3df74-0905-40ed-bdf3-b9bf9e297034 (animate_image_pixminimax, 8 frames on a 96×96 canvas from npcs/librarian.png; the still sits at 3, 5) |
 
 ## Back views (not used in the game yet)
