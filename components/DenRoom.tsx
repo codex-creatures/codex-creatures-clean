@@ -74,7 +74,8 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
 // cageNews: a creature's waiting in the cage to capture or release (a ❗ on its label).
 // annex: what stands in the tavern's room, placed with RoomSpot (shown once
-// the rubble's open). A tap in that room opens the tavern.
+// the rubble's open). A tap in that room opens the tavern (or, on something
+// marked data-href, that page: the Training Pit).
 export default function DenRoom({ caged, klutz = "home", klutzNews = false, backpack = false, highlight, rubble = "shut", onBlast, tavernNews = false, boardNews = false, upgraded = false, crateNews = false, cageNews = false, annex }: { caged?: string; klutz?: KlutzMode; klutzNews?: boolean; backpack?: boolean; highlight?: ObjId; rubble?: Rubble; onBlast?: () => void; tavernNews?: boolean; boardNews?: boolean; upgraded?: boolean; crateNews?: boolean; cageNews?: boolean; annex?: ReactNode }) {
   const opened = rubble === "open";
   // The whole picture (layout units): the Den, and the tavern's room up and to its right once it's open.
@@ -369,7 +370,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
     }}>
     {/* The tavern's room, behind the Den's right wall (drawn first: the Den goes over it). */}
     {opened && (
-      <div onClick={() => { if (!dragged.current) router.push(PASSAGE.href!); }}
+      <div onClick={(e) => { if (!dragged.current) router.push((e.target as HTMLElement).closest("[data-href]")?.getAttribute("data-href") ?? PASSAGE.href!); }}
         style={{ position: "absolute", left: `${(dx / WW) * 100}%`, top: 0, width: `${(W / WW) * 100}%`, height: `${(H / HH) * 100}%`, cursor: "pointer" }}>
         <BareRoom crisp={crisp} />
         {annex}

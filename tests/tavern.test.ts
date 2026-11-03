@@ -256,11 +256,12 @@ describe("the tavern questline: visitors", () => {
   });
 
   it("charges more for materials than the Labyrinth's merchant, and buys them back at the Labyrinth's half", () => {
-    expect(TAVERN_MATERIAL_PRICES.essence_stones).toBe(500);
+    expect(TAVERN_MATERIAL_PRICES.essence_stones).toBe(300);
+    expect(TAVERN_MATERIAL_PRICES.essence).toBe(1000);
     for (const m of MERCHANT_MATERIALS) expect(TAVERN_MATERIAL_PRICES[m.material]).toBeGreaterThan(m.price);
     const labyrinth = makeRoom("merchant", () => 0.99, Infinity, 1, false).wares!; // no rare wares: materials fill the cart
     const tavern = tavernWares(labyrinth)!;
-    expect(tavern.filter((w) => "material" in w).length).toBe(MERCHANT_MATERIALS.length);
+    expect(tavern.filter((w) => "material" in w).length).toBe(MERCHANT_MATERIALS.filter((m) => !m.chance).length); // (0.99: no essence stones)
     for (const w of tavern) {
       const before = labyrinth.find((x) => x.key === w.key)!;
       expect(w.price).toBe("material" in w ? TAVERN_MATERIAL_PRICES[w.material] : before.price);

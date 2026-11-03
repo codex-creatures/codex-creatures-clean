@@ -25,6 +25,7 @@ import { MATERIALS, MATERIAL_KEYS, countMaterial, materialDrop } from "@/lib/ite
 import ItemPicker, { type PickerTab } from "@/components/ItemPicker";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
+import { hasPitPlan } from "@/lib/trainingPit";
 import { REPAIR_COST, SUMMON_PRICE, VISITOR_STAY, canRepair, materialOffer, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -125,6 +126,13 @@ export default function TavernPage() {
           </div>
         )}
 
+        {/* The Training Pit (its own window), once you've the Hydra's plans. */}
+        {(t.pit || hasPitPlan(loadDungeon().meta.deepClears ?? 0)) && (
+          <Link href="/training" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 10, minHeight: 44 }}>
+            🏋️ {t.pit ? "Training Pit" : "Plans: a Training Pit"}{game.trainingStatus()?.full ? " ❗" : ""}
+          </Link>
+        )}
+
         {/* Sending for someone: a second tap pays (and sends whoever's in on their way). */}
         {t.repaired && (
           <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
@@ -155,7 +163,7 @@ function TavernSell({ game, armed, setArmed }: { game: ReturnType<typeof useGame
   const of = (f: (d: CreatureOrItemDrop) => boolean) => offers.map((x) => x.drop).filter(f);
   const kind = (d: CreatureOrItemDrop) => d.itemCategory === "weapon" ? "weapons" : d.itemCategory === "armor" ? "armor" : d.codexMove ? "codexes" : "other";
   // Materials are a tally: one stack each, with a stable id.
-  const materials = MATERIAL_KEYS.filter((k) => countMaterial(game.materials, k) > 0)
+  const materials = MATERIAL_KEYS.filter((k) => countMaterial(game.materials, k) > 0 && materialOffer(k) > 0) // (he won't take essence stones)
     .map((k) => ({ ...materialDrop(k, countMaterial(game.materials, k)), id: `material:${k}` }) as CreatureOrItemDrop);
   const tabs: PickerTab[] = [
     { key: "weapons", label: "Weapons", items: of((d) => kind(d) === "weapons") },

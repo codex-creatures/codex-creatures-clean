@@ -46,6 +46,8 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import Glyph from "./Glyph";
+import { loadTavern } from "@/lib/tavern";
+import { trainingId } from "@/lib/trainingPit";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
 // Most art faces left, so yours is mirrored; art drawn facing right is the other way round.
@@ -117,9 +119,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // roster), then rarest. atLevel: build them at that level instead
 // of their own (a duel's format level: lib/pvp/formats.ts).
 // atLevel: a duel's level (lib/pvp/formats.ts duelLevel): everyone at it
-// (scaleUp), or those above it brought down to it.
+// (scaleUp), or those above it brought down to it. A creature in the
+// Training Pit is away training (lib/trainingPit.ts), so it isn't listed.
 export function loadOwnedCreatures(atLevel?: number, scaleUp = true): OwnedCreature[] {
   const save = loadSave();
+  const away = trainingId(loadTavern());
   const inv = save?.inventory ?? [];
   const teams = readTeams(save?.teams);
   const favs = new Set(hasTeams(teams) ? teams.flat() : save?.favoriteIds ?? []);
@@ -129,7 +133,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true): OwnedCreat
   const list: OwnedCreature[] = [];
   for (const d of inv.filter(isCreatureDrop)) {
     const t = findCreatureTemplate(d.creatureId, d.name);
-    if (!t) continue;
+    if (!t || d.id === away) continue;
     const w = items.get(equipment[d.id]?.weaponId ?? "");
     const pieces = armorPieces(equipment[d.id], (id) => items.get(id));
     const worn = pieces.filter((p): p is CreatureOrItemDrop => !!p);

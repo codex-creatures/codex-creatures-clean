@@ -3,6 +3,8 @@
 // What stands in the tavern's room, through the Den's doorway behind its
 // right wall (DenRoom's annex): the tavern in the far right corner, with a ❗
 // over it while someone's visiting (tap it for the tavern's window), the Cyclops Head over its door once mounted, and whoever's visiting out front.
+// Out on the floor, once you've the Hydra's plans, the Training Pit (tap it
+// for its own window): faint until it's built, with a ❗ while a level's ready.
 
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot } from "@/components/DenRoom";
@@ -27,9 +29,15 @@ const LIGHTS = [{ x: 121, y: 345, r: 80 }, { x: 60, y: 242, r: 30 }, { x: 400, y
 // Where a visitor stands: out front, just left of the door.
 const VISITOR_SPOT = { u: 12.4, v: 6.2 };
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
+// The Training Pit (PixelLab; its sand on the room's 2:1 floor grid), out on
+// the open floor to the left. PIT_CORNER: the floor spot its front corner
+// stands on, and where that corner is in the picture.
+const PIT = { src: "/sprites/den/training-pit.png", w: 224, h: 144 };
+const PIT_CORNER = { u: 7, v: 12.5, x: 111, y: 134 };
 
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
-export default function TavernRoom({ tavern: t, firstClearRun }: { tavern: TavernQuest; firstClearRun?: number }) {
+// pit: the Training Pit, once you've its plans (ready: a level waits to be taken).
+export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: TavernQuest; firstClearRun?: number; pit?: { ready: boolean } }) {
   const visitor = tavernVisitor(t);
   const news = !!visitor;
   const head = CREATURE_SPRITES.cyclops;
@@ -58,6 +66,21 @@ export default function TavernRoom({ tavern: t, firstClearRun }: { tavern: Taver
           </div>
         )}
       </RoomSpot>
+      {pit && (
+        <RoomSpot u={PIT_CORNER.u} v={PIT_CORNER.v} w={PIT.w / RES}
+          style={{ transform: `translate(-${pct(PIT_CORNER.x, PIT.w)}, -${pct(PIT_CORNER.y, PIT.h)})` }}>
+          <div data-href="/training" style={{ position: "relative", pointerEvents: "auto" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={PIT.src} alt={t.pit ? "The Training Pit" : "Where the Training Pit could go"} draggable={false}
+              style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated", opacity: t.pit ? 1 : 0.35, filter: t.pit ? "none" : "grayscale(1)" }} />
+            <div className={`pixel-font${pit.ready ? " news-glow" : ""}`}
+              style={{ position: "absolute", left: "50%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
+              {pit.ready && <span className="news-pulse" aria-label="A level's ready">❗ </span>}
+              {t.pit ? "Training Pit" : "Training Pit (plans)"}
+            </div>
+          </div>
+        </RoomSpot>
+      )}
       {/* A visitor, standing by the door at the same scale as everything else (1:1). */}
       {visitor && (
         <RoomSpot u={VISITOR_SPOT.u} v={VISITOR_SPOT.v} w={fineWidth(visitor === "merchant" ? MERCHANT : LIBRARIAN) / RES}>

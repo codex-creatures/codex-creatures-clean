@@ -2,7 +2,7 @@
 // components/CardStack.tsx
 // The creature cards you got, as one neat stack: the rarest card on top and
 // the rest peeking out behind it, up and to the left, each edged in its own
-// rarity colour. Tap the stack to flick through the cards (CardFan).
+// rarity colour. Tap the stack to flick through the cards (CardsFan).
 
 import { useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -19,7 +19,7 @@ const STEP = 9;     // px each one is offset
 
 export default function CardStack({ piles, faded }: { piles: CardPile[]; faded?: boolean }) {
   const [open, setOpen] = useState(false);
-  const sorted = [...piles].sort((a, b) => RANK.indexOf(a.t.rarity) - RANK.indexOf(b.t.rarity));
+  const sorted = sortPiles(piles);
   // Every copy, in order — the ones behind the top card show their own colours.
   const copies = sorted.flatMap((p) => Array.from({ length: p.n }, () => p.t.rarity));
   const total = copies.length;
@@ -50,15 +50,25 @@ export default function CardStack({ piles, faded }: { piles: CardPile[]; faded?:
         </div>
       </button>
 
-      {open && (
-        <CardFan count={sorted.length} label="The cards you got" onClose={() => setOpen(false)}
-          title={total === 1 ? "1 card" : `${total} cards`}
-          size={{ width: "min(300px, 78cqw, 47cqh)", height: "min(420px, 109.2cqw, 65.8cqh)" }}
-          render={(i) => {
-            const p = sorted[i];
-            return <CardFace t={p.t} creatureId={p.x.creatureId ?? p.t.id} soulStone={p.x.soulStone} badge={p.n > 1 ? `×${p.n}` : undefined} />;
-          }} />
-      )}
+      {open && <CardsFan piles={sorted} onClose={() => setOpen(false)} />}
     </>
+  );
+}
+
+const sortPiles = (piles: CardPile[]) => [...piles].sort((a, b) => RANK.indexOf(a.t.rarity) - RANK.indexOf(b.t.rarity));
+
+// The cards themselves, big, to flick through (rarest first): the stack opened,
+// or straight away when they're turned over (the deck room).
+export function CardsFan({ piles, title, onClose }: { piles: CardPile[]; title?: string; onClose: () => void }) {
+  const sorted = sortPiles(piles);
+  const total = sorted.reduce((n, p) => n + p.n, 0);
+  return (
+    <CardFan count={sorted.length} label="The cards you got" onClose={onClose}
+      title={title ?? (total === 1 ? "1 card" : `${total} cards`)}
+      size={{ width: "min(300px, 78cqw, 47cqh)", height: "min(420px, 109.2cqw, 65.8cqh)" }}
+      render={(i) => {
+        const p = sorted[i];
+        return <CardFace t={p.t} creatureId={p.x.creatureId ?? p.t.id} soulStone={p.x.soulStone} badge={p.n > 1 ? `×${p.n}` : undefined} />;
+      }} />
   );
 }

@@ -56,6 +56,8 @@ export type TavernQuest = {
   bought?: string[];  // …and what you've bought (ware keys, codex names)
   visited?: boolean;  // someone's called since the repair (the first roll's a sure thing)
   misses?: number;    // homecomings in a row with nobody calling
+  pit?: boolean;      // the Training Pit's built in the tavern's room (lib/trainingPit.ts)
+  training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
 };
 export type Visitor = "merchant" | "librarian";
 
@@ -87,14 +89,15 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle
 
 // At the tavern the merchant charges more for materials than in the Labyrinth
 // (the user, 2026-11-02: at the old prices you'd just buy the lot every
-// time; 500 for an essence stone is the benchmark). A stack's price, by
+// time). A stack's price, by
 // material; he still buys yours back at half his Labyrinth price
 // (materialOffer), so there's nothing to gain buying in one and selling in the other.
-export const TAVERN_MATERIAL_PRICES: Record<MaterialKey, number> = {
+export const TAVERN_MATERIAL_PRICES: Partial<Record<MaterialKey, number>> = {
   planks: 150,        // ×5 (Labyrinth 40)
   nails: 100,         // ×5 (Labyrinth 30)
   metal_bars: 300,    // ×2 (Labyrinth 90)
-  essence_stones: 500, // ×1 (Labyrinth 150)
+  essence_stones: 300, // stone ×1 (Labyrinth 150; the user, 2026-11-03)
+  essence: 1000,       // essence stones ×1 (Labyrinth 500)
 };
 export const tavernWares = (wares: Ware[] | undefined): Ware[] | undefined =>
   wares?.map((w) => ("material" in w ? { ...w, price: TAVERN_MATERIAL_PRICES[w.material] ?? w.price } : w));

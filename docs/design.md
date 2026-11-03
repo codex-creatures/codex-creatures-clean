@@ -165,9 +165,16 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 
 ### Materials, consumables, bags
 
-- ✅ **Materials** (planks, metal bars, nails, essence stones: lib/items/materials.ts) are a tally at
+- ✅ **Materials** (planks, nails, metal bars, stone, essence stones: lib/items/materials.ts) are a tally at
   home, like gold. In the Labyrinth a material find is a stack that takes one bag slot and joins
   the tally when you get home.
+  ✅ **Stone and essence stones** (the user, 2026-11-03): **Stone** (rare, 🪨 until PixelLab art)
+  took the old rare essence stone's place everywhere: material finds, the merchants (Labyrinth
+  150, tavern 300) and the storage schematics. It keeps the save key `essence_stones`, so stones
+  already in a save are Stone now. **Essence stones** are a new **epic** material (`essence`, the
+  old gem art): 1 in an Epic material find and 1–2 in a Legendary one (each a third of those
+  finds; the rest metal bars or stone), and on 1 merchant's cart in 3: 500 in the Labyrinth,
+  1,000 at the tavern, bought back for 250.
 - ✅ **Potions** go in the bag. The Chest (Inventory) stores the rest.
 - ✅ **Chest boxes** (the user, 2026-10-20, `lib/items/storage.ts`): weapons, armour and consumables each
   hold 50 (`BOX_CAP`). Materials (a tally, shown in a strip by your gold at the top of the
@@ -178,7 +185,7 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   caches (`CACHE_LIMIT`): with 9 waiting, every scan says "Scan Failed / Code Cache Full".
   ✅ **Storage schematics** (2026-10-25): the merchant's Weapon and Armour Storage Schematics
   (`weapon_storage`, `armor_storage`) build that box up to 75 (`BIG_BOX_CAP`; consumables stay at
-  50). Built from the Inventory (a panel above the list) for 10 planks, 10 nails, 1 essence stone.
+  50). Built from the Inventory (a panel above the list) for 10 planks, 10 nails, 1 stone.
   The save remembers which boxes are built (`storage`, optional, default none).
 - ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
   found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
@@ -616,8 +623,8 @@ How it came about, round by round: history.md.
   scroll 20%; clairvoyance scroll 40%); materials fill the rest.
   🧪 **Tavern material prices** (the user, 2026-11-02: at the Labyrinth's prices you'd buy the lot
   every time; 500 for an essence stone is the benchmark): planks ×5 150, nails ×5 100, metal bars
-  ×2 300, essence stone 500 (`TAVERN_MATERIAL_PRICES`, lib/tavern.ts; Labyrinth 40 / 30 / 90 / 150,
-  unchanged). He buys materials back at half the Labyrinth's price at both.
+  ×2 300, stone 300, essence stone 1,000 (`TAVERN_MATERIAL_PRICES`, lib/tavern.ts; Labyrinth 40 / 30 / 90 / 150 / 500;
+  stone and essence stones the user's, 2026-11-03). Essence stones are on only 1 cart in 3 (`chance` in `MERCHANT_MATERIALS`). He buys materials back at half the Labyrinth's price at both.
   📌 **Not built yet:**
   - **Gear on the cart:** 0–2 weapons or armour pieces, rolled like a scan (`RARITY_WEIGHTS`, **no
     explorer-level gate**: price is the filter), at **2× the crate's sell value** (rough prices:
@@ -866,6 +873,17 @@ fields optional with defaults.
    librarian (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still merchant or librarian at 12:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and they stand in the tavern. They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
+   ✅ **The Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`): beating the
+   **Hydra** gives its plans (not an item: like the bookcase's, the place just offers to build). It
+   stands on the tavern room's floor (faint until built): a sand pit in a stone rim ringed with
+   spears, a straw training dummy in its back corner (`den/training-pit.png`, its sand on the room's 2:1 grid) and costs **10 stone, 10 metal bars, 5 planks, 5 nails and 3 essence
+   stones**, once. One creature at a time trains in it at **100 XP an hour** (`TRAINING_XP_PER_HOUR`,
+   🧪 the user's pick: Lv 10→11 about 3.5h, Lv 20→21 about 8h, Lv 29→30 about 13h), in real
+   time, and stops with its bar full until you tap **Level up** (one level, then it trains on from
+   empty), so it never gains more than a level while you're away: a ❗ on the pit in the room says
+   it's ready. While it's in, it's away training: left out of every fight list (the Labyrinth,
+   duels, the board). Take it out any time with the XP it's earned (a full bar levels it up). An
+   XP scroll read on it banks what it's earned first. Saved in the tavern field (`pit`, `training`).
    ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant or a librarian now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)

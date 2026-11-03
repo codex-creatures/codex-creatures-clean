@@ -42,7 +42,7 @@ const cardOf = (g: GotItem) => {
 };
 
 // Copies of the same creature's card stack into one, with a count.
-function stackCards(items: GotItem[]) {
+export function stackCards(items: GotItem[]) {
   const stacks = new Map<string, CardPile>();
   for (const g of items) {
     const c = cardOf(g);

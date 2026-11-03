@@ -499,7 +499,7 @@ export const GOLD_SPRITE = icon("gold");
 export const POTION_SPRITES: Record<"potion" | "lesser", Sprite> = { potion: icon("potion"), lesser: icon("lesser_potion") };
 export const BACKPACK_SPRITE = icon("backpack");
 // Building materials.
-export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars"), essence_stones: icon("materials/essence_stones") };
+export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars"), essence: icon("materials/essence_stones") }; // (the gem art is the epic essence stone's; Stone has none yet)
 // The Labyrinth's tools (the Torch, drawn at 32px, keeps its old id: flare), codexes,
 // XP scrolls and schematics.
 export const TOOL_SPRITES: Record<ToolKey, Sprite> = {

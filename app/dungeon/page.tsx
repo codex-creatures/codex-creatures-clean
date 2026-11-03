@@ -22,7 +22,7 @@ import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
 import CageReveal, { type CageFind } from "@/components/CageReveal";
 import Triumph from "@/components/Triumph";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
-import LootGrid from "@/components/LootGrid";
+import LootGrid, { stackCards } from "@/components/LootGrid";
 import GearCompare, { GearStatLine } from "@/components/GearCompare";
 import { RaceNames } from "@/components/RaceTag";
 import PartySlots, { type PartyMember } from "@/components/PartySlots";
@@ -77,6 +77,7 @@ import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import EncounterCards from "@/components/EncounterCards";
+import { CardsFan } from "@/components/CardStack";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
@@ -791,7 +792,7 @@ export default function DungeonPage() {
   }
 
   // A deck of cards: DECK_CARDS creature cards, each rolled like a scan.
-  // They're turned over in a window, so you see what you got.
+  // They're turned over in the card viewer, so you see what you got.
   const [deckShow, setDeckShow] = useState<Drop[] | null>(null);
   function openDeck() {
     const drops = Array.from({ length: DECK_CARDS }, () =>
@@ -1295,12 +1296,7 @@ export default function DungeonPage() {
         </>
       ) : null}
       {sheet === "roster" && !clubTutorial && <Sheet title="Your party" onClose={() => setSheet(null)}>{partyView}</Sheet>}
-      {deckShow && (
-        <Sheet title="🃏 The deck" onClose={() => setDeckShow(null)}>
-          <LootGrid items={deckShow.map((drop) => ({ drop }))} grouped />
-          <button className="pixel-btn" style={{ width: "100%", marginTop: 10 }} onClick={() => setDeckShow(null)}>Done</button>
-        </Sheet>
-      )}
+      {deckShow && <CardsFan piles={stackCards(deckShow.map((drop) => ({ drop })))} title="🃏 The deck, turned over" onClose={() => setDeckShow(null)} />}
       {nudge && (
         <Sheet title="Leave these behind?" onClose={() => setNudge(null)}>
           <p style={{ fontSize: 14, color: "#d8d4c8", margin: "0 0 8px" }}>

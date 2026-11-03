@@ -1,7 +1,7 @@
 // lib/items/materials.ts
 // Materials, schematics and the Labyrinth's tools.
 //
-// - Materials (planks, metal bars, nails, essence stones) are what you build
+// - Materials (planks, nails, metal bars, stone, essence stones) are what you build
 //   and upgrade things with. At home they're a tally, like gold (Materials:
 //   a count of each). In the Labyrinth a find is a stack (a drop with a qty)
 //   that takes a bag slot (more of the same joins its stack); it only joins
@@ -19,12 +19,17 @@
 import type { Drop, Rarity } from "../types";
 import { SOUL_STONES, type SoulStoneKey } from "../creatures/soulStones";
 
-export type MaterialKey = "planks" | "metal_bars" | "nails" | "essence_stones";
+// (The key essence_stones is Stone: the rare material was the essence stone
+// until 2026-11-03, when the user made essence stones epic and put Stone in
+// its place. Saves keep the key, so the stones they hold are Stone now. The
+// epic essence stone is essence.)
+export type MaterialKey = "planks" | "metal_bars" | "nails" | "essence_stones" | "essence";
 export const MATERIALS: Record<MaterialKey, { name: string; icon: string; rarity: Rarity; desc: string }> = {
   planks:         { name: "Planks",         icon: "🪵", rarity: "common",   desc: "Rough-sawn wood. For building furniture." },
   nails:          { name: "Nails",          icon: "📌", rarity: "common",   desc: "A fistful of bent iron nails." },
   metal_bars:     { name: "Metal bars",     icon: "🧱", rarity: "uncommon", desc: "Dull iron ingots. For upgrades that need to be strong." },
-  essence_stones: { name: "Essence stones", icon: "💎", rarity: "rare",     desc: "Stones that hum like the barcodes do. For magical upgrades." },
+  essence_stones: { name: "Stone",          icon: "🪨", rarity: "rare",     desc: "Squared blocks of cave stone. For building that has to last." },
+  essence:        { name: "Essence stones", icon: "💎", rarity: "epic",     desc: "Stones that hum like the barcodes do. For magical building." },
 };
 export const MATERIAL_KEYS = Object.keys(MATERIALS) as MaterialKey[];
 
@@ -91,8 +96,8 @@ const BUNDLES: Record<Rarity, [MaterialKey, number, number][]> = {
   common:    [["planks", 2, 4], ["nails", 2, 5]],
   uncommon:  [["planks", 4, 7], ["nails", 4, 8], ["metal_bars", 1, 2]],
   rare:      [["planks", 6, 10], ["metal_bars", 2, 3], ["essence_stones", 1, 1]],
-  epic:      [["metal_bars", 3, 5], ["essence_stones", 1, 2]],
-  legendary: [["metal_bars", 5, 8], ["essence_stones", 2, 4]],
+  epic:      [["metal_bars", 3, 5], ["essence_stones", 1, 2], ["essence", 1, 1]],
+  legendary: [["metal_bars", 5, 8], ["essence_stones", 2, 4], ["essence", 1, 2]],
 };
 export function materialBundle(rarity: Rarity, rng: () => number = Math.random): Drop {
   const [key, min, max] = BUNDLES[rarity][Math.floor(rng() * BUNDLES[rarity].length)];

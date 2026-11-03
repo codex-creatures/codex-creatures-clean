@@ -554,11 +554,13 @@ export const WARDEN_SOUL_STONE = 0.05;
 export function bossSoulStone(cyclops: boolean, rng: Rng = Math.random): SackItem[] {
   return rng() < (cyclops ? CYCLOPS_SOUL_STONE : WARDEN_SOUL_STONE) ? [{ gear: soulStoneDrop(randomSoulStone(rng)) }] : [];
 }
-export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: number }[] = [
+// chance: on only that share of carts (the rest are on every cart, room allowing).
+export const MERCHANT_MATERIALS: { material: MaterialKey; qty: number; price: number; chance?: number }[] = [
   { material: "planks", qty: 5, price: 40 },
   { material: "nails", qty: 5, price: 30 },
   { material: "metal_bars", qty: 2, price: 90 },
-  { material: "essence_stones", qty: 1, price: 150 },
+  { material: "essence_stones", qty: 1, price: 150 }, // stone
+  { material: "essence", qty: 1, price: 500, chance: 1 / 3 }, // essence stones (the user, 2026-11-03)
 ];
 // bagUp: a backpack upgrade (its price is set by your bag's size when you see it).
 export type Ware = { key: string; price: number } & (
@@ -579,10 +581,10 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
   if (rng() < REVIVAL_CHANCE) wares.push({ key: "revival", tool: "revival", price: TOOLS.revival.price });
   if (rng() < MERCHANT_SCROLL_CHANCE) wares.push({ key: "scroll", scroll: true, price: SCROLL_PRICE });
   if (rng() < MERCHANT_CLAIRVOYANCE) wares.push({ key: "clairvoyance", tool: "clairvoyance", price: TOOLS.clairvoyance.price });
-  const mats = [...MERCHANT_MATERIALS];
+  const mats = MERCHANT_MATERIALS.filter((m) => m.chance === undefined || rng() < m.chance);
   while (wares.length < MERCHANT_SLOTS && mats.length > 0) {
     const m = mats.splice(Math.floor(rng() * mats.length), 1)[0];
-    wares.push({ key: m.material, ...m });
+    wares.push({ key: m.material, material: m.material, qty: m.qty, price: m.price });
   }
   return wares.slice(0, MERCHANT_SLOTS);
 }

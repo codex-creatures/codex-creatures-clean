@@ -20,6 +20,7 @@ import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTave
 import { clearDaily, countDaily } from "@/lib/daily";
 import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
+import { buildPit, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
 import { starterCreature } from "@/lib/creatures/starter";
 import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
 
@@ -313,7 +314,62 @@ export function useGameState(initialTab: TabKey = "all") {
       setKlutz((k) => klutzGainXp(k, SCROLL_XP).state);
       return r.to > r.from ? { id: KLUTZ_DROP_ID, name: "Klutz", from: r.from, to: r.to } : null;
     }
-    return gainXp({ [targetId]: SCROLL_XP })[0] ?? null;
+    return gainXp({ [targetId]: SCROLL_XP + bankTraining(targetId) })[0] ?? null;
+  }
+
+  // ── The Training Pit (lib/trainingPit.ts) ─────────────
+  // What the creature in the pit has earned so far (0 for anyone else).
+  function trainingEarned(id: string): number {
+    const t = loadTavern();
+    const d = inventory.find((x) => x.id === id);
+    if (trainingId(t) !== id || !t.training || !d || !isCreatureDrop(d)) return 0;
+    return training({ level: d.level ?? 1, xp: d.xp ?? 0 }, t.training.since).earned;
+  }
+  // Bank it (it starts again from now): for an XP scroll read on it, so the
+  // pit doesn't count the scroll's XP as room it filled.
+  function bankTraining(id: string): number {
+    const earned = trainingEarned(id);
+    if (trainingId(loadTavern()) === id) setTavern(updateTavern((t) => restartTraining(t)));
+    return earned;
+  }
+  // Who's in the pit and how it's going, at a time (null: nobody, or one you've since released).
+  function trainingStatus(now = Date.now()) {
+    const d = tavern.pit && tavern.training ? inventory.find((x) => x.id === tavern.training!.id) : undefined;
+    if (!d || !isCreatureDrop(d) || !tavern.training) return null;
+    const p = { level: d.level ?? 1, xp: d.xp ?? 0 };
+    return { creature: d as CreatureOrItemDrop, since: tavern.training.since, ...p, ...training(p, tavern.training.since, now) };
+  }
+  function buildTrainingPit(): boolean {
+    const done = buildPit(loadTavern(), materials, loadDungeon().meta.deepClears ?? 0);
+    if (!done) return false;
+    setTavern(updateTavern(() => done.tavern));
+    setMaterials(done.materials);
+    return true;
+  }
+  // Put a creature in (not one out on a run). One that's gone (released) leaves the pit empty.
+  function trainCreature(id: string): boolean {
+    if (!inventory.some((d) => d.id === id && isCreatureDrop(d)) || loadDungeon().run?.party.includes(id)) return false;
+    setTavern(updateTavern((t) => {
+      const stale = t.training && !inventory.some((d) => d.id === t.training!.id);
+      return startTraining(stale ? stopTraining(t) : t, id);
+    }));
+    return true;
+  }
+  // Level up: only with its bar full. One level, then it trains on from empty.
+  function levelUpTraining(): LevelUp | null {
+    const t = loadTavern();
+    const id = trainingId(t);
+    const d = id && inventory.find((x) => x.id === id);
+    if (!id || !t.training || !d || !isCreatureDrop(d) || !training({ level: d.level ?? 1, xp: d.xp ?? 0 }, t.training.since).full) return null;
+    return gainXp({ [id]: bankTraining(id) })[0] ?? null;
+  }
+  // Take it out, with what it's earned (a full bar levels it up).
+  function takeOutOfTraining(): LevelUp | null {
+    const id = trainingId(loadTavern());
+    if (!id) return null;
+    const up = gainXp({ [id]: trainingEarned(id) })[0] ?? null;
+    setTavern(updateTavern(stopTraining));
+    return up;
   }
 
   function markSeen(ids: string[]) {
@@ -749,7 +805,7 @@ export function useGameState(initialTab: TabKey = "all") {
     return true;
   }
   function sellMaterialToTavern(key: MaterialKey): boolean {
-    if (loadTavern().visitor !== "merchant" || countMaterial(materials, key) < 1) return false;
+    if (loadTavern().visitor !== "merchant" || countMaterial(materials, key) < 1 || materialOffer(key) <= 0) return false;
     setMaterials((m) => addMaterials(m, { [key]: -1 }));
     setGold((g) => g + materialOffer(key));
     countDaily("sell", materialOffer(key));
@@ -1010,7 +1066,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
