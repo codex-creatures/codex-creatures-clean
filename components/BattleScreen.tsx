@@ -442,7 +442,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           </div>
         )}
         {foe.boss && <BossStage side={foe} fx={fx} infos={info.B} target={target} onTarget={!playing ? setTargetPick : undefined} cloud={cloudLeft(state, "B")} ground={foe.ground}
-          you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 14 }} maxW="30cqw" />} />}
+          you={<Fighter f={me} side="A" slot={you.active} mi={info.A[you.active]} fx={fx} at={{ left: "20%", width: "36%", bottom: 4 }} maxW="30cqw" />} />}
 
         {/* The fight, staged in a dungeon room. Two foes (an ambush) stand side by side: tap the one to hit, like the boss's hands. */}
         {!foe.boss && (
@@ -840,16 +840,17 @@ function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTar
       <canvas ref={canvasRef} width={CW} height={chamber.height} aria-hidden
         style={{ position: "absolute", left: 0, width: "100%", top: picTop - ext * unit, height: picH + 2 * ext * unit, imageRendering: "pixelated", display: "block" }} />
       <div style={{ position: "absolute", left: 0, width: "100%", top: picTop, height: picH }}>
-        <GroundEffects ground={myGround} at={{ left: "27%" }} />
-        <GroundEffects ground={foeGround} at={{ left: "73%", ...(foes.length > 1 ? { width: "56%" } : {}) }} />
-        <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} />
+        <GroundEffects ground={myGround} at={{ left: MY_SPOT.left, bottom: `calc(${MY_SPOT.bottom} - 4%)` }} />
+        <GroundEffects ground={foeGround} at={{ left: FOE_SPOT.left, bottom: `calc(${FOE_SPOT.bottom} - 4%)`, width: foes.length > 1 ? "56%" : `${34 * FOE_DEPTH}%` }} />
+        {/* Theirs first, so yours (nearer) stands in front where they overlap. */}
         {foes.length === 1
-          ? <Fighter f={foeTeam[foes[0]]} side="B" slot={foes[0]} mi={theirInfo[foes[0]]} fx={fx} />
+          ? <Fighter f={foeTeam[foes[0]]} side="B" slot={foes[0]} mi={theirInfo[foes[0]]} fx={fx} at={FOE_SPOT} shrink={FOE_DEPTH} />
           : foes.map((i, n) => {
             const up = foeTeam[i].hp > 0;
             return <Fighter key={i} f={foeTeam[i]} side="B" slot={i} mi={theirInfo[i]} fx={fx} maxW={PAIR_W}
-              at={{ left: PAIR_AT[n] ?? "73%", width: "28%" }} aimed={up && i === target} onTap={up && onTarget ? () => onTarget(i) : undefined} />;
+              at={{ left: PAIR_AT[n] ?? FOE_SPOT.left, bottom: FOE_SPOT.bottom, width: "28%" }} aimed={up && i === target} onTap={up && onTarget ? () => onTarget(i) : undefined} />;
           })}
+        <Fighter f={me} side="A" slot={mySlot} mi={myInfo} fx={fx} at={MY_SPOT} />
       </div>
     </div>
   );
@@ -859,15 +860,21 @@ function Stage({ me, mySlot, myInfo, foes, foeTeam, theirInfo, fx, target, onTar
 // pixels, but never taller than STAGE_TALL of it (the big art, Aurelius or
 // the Void Serpent, would fill the room). FIGHTER_W: its column's share.
 const STAGE_SCALE = 2.2;
+// Standing on a diagonal (the user, 2026-11-04): yours near and low on the
+// left, seen from behind; theirs further back in the room, higher up and
+// smaller (FOE_DEPTH of its usual size).
+const MY_SPOT = { left: "30%", bottom: "6%" };
+const FOE_SPOT = { left: "70%", bottom: "27%" };
+const FOE_DEPTH = 0.75;
 // An ambush's two foes: where each stands, and how wide its sprite may be.
-const PAIR_AT = ["61%", "86%"];
-const PAIR_W = "22cqw";
+const PAIR_AT = ["58%", "84%"];
+const PAIR_W = "18cqw";
 const STAGE_EXTEND_STEP = 8;
 const STAGE_TALL = 0.4;
 const FIGHTER_W = 0.4;
-const stageWidth = (sprite: Sprite) => {
+const stageWidth = (sprite: Sprite, shrink = 1) => {
   const fit = Math.min(STAGE_SCALE, (STAGE_TALL * CH) / fineHeight(sprite));
-  return `${Math.min(100, ((fineWidth(sprite) * fit) / CW / FIGHTER_W) * 100)}%`;
+  return `${Math.min(100, ((fineWidth(sprite) * fit * shrink) / CW / FIGHTER_W) * 100)}%`;
 };
 
 // A fighter's floating label: level and name, its races, a small health bar
@@ -923,10 +930,11 @@ function HpFill({ pct, color }: { pct: number; color: string }) {
 // reacting to this step. `at` places it (by default your side left of
 // centre, theirs right); `maxW` caps the sprite's width (the boss's lair is
 // crowded). aimed / onTap: one of two foes, aimed at or tapped to aim at
-// (aimed given at all keeps a line for the 🎯 over its label).
-export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap }: {
+// (aimed given at all keeps a line for the 🎯 over its label). shrink: drawn
+// smaller, further back in the room.
+export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap, shrink }: {
   f: Combatant; side: SideKey; slot: number; mi: MemberInfo; fx: Fx | null; at?: React.CSSProperties; maxW?: string;
-  aimed?: boolean; onTap?: () => void;
+  aimed?: boolean; onTap?: () => void; shrink?: number;
 }) {
     const { anim, float } = fighterFx(side, slot, fx);
     const sprite = mi.creatureId ? fightSprite(mi.creatureId, side === "A") : undefined; // yours from behind, where drawn
@@ -938,7 +946,7 @@ export function Fighter({ f, side, slot, mi, fx, at, maxW, aimed, onTap }: {
         {aimed !== undefined && <div className="pixel-font" style={{ fontSize: 11, height: 14, color: "#ffd66e", visibility: aimed ? "visible" : "hidden" }}>🎯</div>}
         <FighterLabel f={f} side={side} mi={mi} />
         {/* (The floating text sits outside the part rebuilt each step, so it can outlast the step.) */}
-        <div style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite) } : {}) }}>
+        <div style={{ position: "relative", marginTop: 4, ...(sprite && !maxW ? { width: stageWidth(sprite, shrink) } : {}) }}>
           <div key={`${fx?.id ?? 0}-${side}`} className={anim} style={{ opacity: f.hp <= 0 ? 0.35 : 1, filter: f.hp <= 0 ? "grayscale(1)" : undefined }}>
             {/* One that floats hangs above its shadow, bobbing (while it's still up). */}
             <div className={floats ? "float-bob" : undefined} style={aimed ? { filter: "drop-shadow(0 0 6px #ffd66e)" } : undefined}>

@@ -133,7 +133,7 @@ describe("the Hydra", () => {
 
   it("each head takes 1.5× from its weak style (the old triangle) and resists nothing", () => {
     const heads = bossTeam("hydra", 16);
-    expect(heads.map((h) => h.weakTo)).toEqual(["magic", "melee", "ranged"]);
+    expect(heads.map((h) => h.weakTo)).toEqual(["melee", "ranged", "magic"]); // (Spitter, Hex, Fang: left to right, as drawn)
     const base = buildFighter(CREATURE_BY_ID.void_serpent, { melee: 30, ranged: 30, magic: 30 }, {});
     const a = { ...base, proficiency: { ...base.proficiency, atk: 30, rng: 30, mag: 30 } };
     const moves = { melee: MOVE_BY_NAME.Slash, ranged: MOVE_BY_NAME.Bolt, magic: MOVE_BY_NAME.Hex };

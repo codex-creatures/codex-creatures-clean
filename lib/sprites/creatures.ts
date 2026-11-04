@@ -94,9 +94,19 @@ CREATURE_SPRITES.klutz = withArt(["."], {
 // The first quest's thief.
 CREATURE_SPRITES.baby_cyclops = withArt(["."], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83 });
 
-// 🧪 The Hydra's heads (the Deep Labyrinth's boss) borrow the Void Serpent's art
-// (BossStage tints them apart) until they have PixelLab art of their own.
-for (const id of ["hydra_fang", "hydra_spitter", "hydra_hex"]) CREATURE_SPRITES[id] = CREATURE_SPRITES.void_serpent;
+// The Hydra (the Deep Labyrinth's boss): one body with three heads, drawn
+// whole (192×160) once for each mix of heads cut off. hydraSprite(down):
+// down[i] for each head left to right (Spitter, Hex, Fang); the file name
+// marks each cut head with a 1 (public/sprites/creatures/hydra).
+export const HYDRA_HEADS = ["hydra_spitter", "hydra_hex", "hydra_fang"] as const;
+const HYDRA_SPRITES = new Map<string, Sprite>();
+export function hydraSprite(down: readonly boolean[] = []): Sprite {
+  const key = HYDRA_HEADS.map((_, i) => (down[i] ? "1" : "0")).join("");
+  if (!HYDRA_SPRITES.has(key)) HYDRA_SPRITES.set(key, withArt(["."], { src: `/sprites/creatures/hydra/hydra-${key}.png`, w: 192, h: 160 }));
+  return HYDRA_SPRITES.get(key)!;
+}
+// (Each head on its own, as in a list of the boss's parts: the whole Hydra.)
+for (const id of HYDRA_HEADS) CREATURE_SPRITES[id] = hydraSprite();
 
 // Seen from behind, for your side of a fight (public/sprites/creatures/back,
 // trimmed). Only the user's approved ones; the rest show their usual art,

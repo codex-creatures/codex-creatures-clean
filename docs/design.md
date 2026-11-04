@@ -26,7 +26,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   (stages 1–9), save slots, Vercel hosting.
 - **Recent changes:** see `git log` (the commit messages say what changed for the player).
 - **Next (📌, decided, not built):** the onboarding scan gate (§2, later), more soul stones and
-  effects (§4, §6), the tavern's interior (§9), Klutz's kidnap plan (§8).
+  effects (§4, §6), the tavern's interior (§9). Visual work comes first (the user, 2026-11-04):
+  the fighters on a diagonal, and the Hydra's own art.
 - **Dropped (the user, 2026-11-04):** the merchant's gear wares and armour priced like weapons
   (armour comes at the right rate as it is), the barcode merchant (the tavern has enough), the
   Cyclops's Meditate heal (its strength is right). The re-entry cooldown is set aside: the gold
@@ -668,9 +669,9 @@ How it came about, round by round: history.md.
   - It's meant to take a few attempts (sims: a median of about 12–13 runs to the first kill).
 - ✅ **The Hydra** (the Deep Labyrinth's boss; the user's spec, 2026-10-30; `HYDRA` in
   lib/combat/bossAi.ts, `HYDRA_PARTS` in lib/creatures/bosses.ts). Lv 16, no race.
-  - **Three heads, all on the field**, left to right: the Fang Head (melee), the Spitter Head
-    (ranged), the Hex Head (magic). You tap a head to aim at it (the Cyclops's hands work the same
-    way). ✅ **Weak spots, no resistances** (the user, 2026-10-30): every head has the same defences,
+  - **Three heads, all on the field**, left to right as drawn (the user, 2026-11-04): the Spitter
+    Head (ranged), the Hex Head (magic), the Fang Head (melee). You tap a head (or its label) to aim
+    at it. ✅ **Weak spots, no resistances** (the user, 2026-10-30): every head has the same defences,
     and each takes **1.5×** from the style that beat its own in the old triangle (`weakTo`,
     `WEAK_SPOT` in lib/combat/engine.ts): the Fang Head from magic, the Spitter Head from melee,
     the Hex Head from ranged.
@@ -689,8 +690,11 @@ How it came about, round by round: history.md.
     40%; 17–18 rounds. (With resistances as well, before the user dropped them: 29%.)
     Then the user had every head's HP raised 25% (longer fights, so the poison does more): the
     party now beats the Hydra 23% of the time (the Warden's pack 38%), in about 20 rounds (150 fights).
-  - 📌 Art: the heads borrow the Void Serpent's art, tinted apart, until PixelLab art is made
-    (samples first, for the user's approval).
+  - ✅ Art (the user's pick, 2026-11-04): one Hydra, four legs and a tail, three necks from the
+    shoulders, green acid on the left head, purple magic on the middle one. Drawn whole (192×160)
+    for each of the 8 mixes of heads cut off, a cut head a bloody stump
+    (`public/sprites/creatures/hydra/hydra-<spitter><hex><fang>.png`, 1 = cut; `hydraSprite`;
+    `HydraBody` in components/BossStage.tsx). The heads' names and health sit in a row above it.
 - ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
   Hydra and the Warden drop a strongbox.
 - ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and
@@ -789,9 +793,8 @@ How it came about, round by round: history.md.
   flare or clairvoyance scroll can be used straight from a chest (tap it: Light it / Read it). In the Labyrinth, equipping opens a compare window first:
   the slot's old piece vs the new one, each stat's change, and your party along the top marked ▲/▼
   so you can see who it helps.
-- 📌 **Kidnap plan** (after the first Cyclops kill): hunts can end with Klutz kidnapped, rescued
-  through a mini dungeon; rare smoke bombs let him escape. ❓ The chance, smoke-bomb sources, mini
-  dungeon and kidnappers are all undecided.
+- ✗ **Kidnap plan** (Klutz kidnapped on a hunt, rescued through a mini dungeon): replaced by the
+  Encampment dungeon (the user, 2026-11-04).
 - ⏸ The intro (Klutz drags you in, you tip him gold) is parked until the art direction settles.
 
 ## 9. The Den and economy
@@ -995,6 +998,9 @@ codex, the altar for a Code Cache) waits until there is.
   (`public/sprites/creatures/back/`, `BACK_SIZES` and `fightSprite` in lib/sprites/creatures.ts),
   drawn as it looks and not mirrored. 14 approved so far; the rest show their usual art, mirrored,
   until theirs are redone and approved. Foes, and every other screen, use the usual art.
+- ✅ **Fighters on a diagonal** (the user, 2026-11-04): yours near and low on the left, the foe
+  further back, higher and smaller (`MY_SPOT`, `FOE_SPOT`, `FOE_DEPTH` 0.75 in
+  components/BattleScreen.tsx; bosses `BOSS_BACK`, `BOSS_DEPTH` 0.8 in components/BossStage.tsx).
 - **The workflow:** samples first, then the user's approval, then the full rollout. When the user
   hands over their own art, **keep their design** and only restyle it (`edit_image_pro_flash` on
   their upscaled image: "keep this exact …, redraw as crisp pixel art …"). Never reinterpret it

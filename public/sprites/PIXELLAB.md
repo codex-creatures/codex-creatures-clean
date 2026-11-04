@@ -54,6 +54,7 @@ the PNG here.
 | creatures/thicket_archer.png | gallery:5314bf2a-ad13-4573-b277-3b8469662812 |
 | creatures/veilstalker.png | gallery:ddb7e74e-e341-4a8f-b9f1-c330b0d95fe3 |
 | creatures/void_serpent.png | gallery:8add8412-7c6e-4706-b996-f778f94ba8d9 |
+| creatures/hydra/hydra-*.png | The Hydra (2026-11-04), built in code from: the body, pixen job 546b0c16-c71b-40ec-8ce1-810dc4762dde (gallery asset 01366ab9-3c22-541d-9b91-0678a4f57b3a), its middle head's drip repainted purple (inpaint job de4abff7-2386-4758-a03a-f141d3e22382, then 7 green pixels recoloured); each head cut to a stump by inpaint: Spitter dbb84d68-3e02-446f-bfb1-84110cca63b2 (area x4 y16 48×68), Hex fabffde1-c573-4707-a1d9-568499c9d0db (x52 y4 40×58), Fang 986b7ede-f98d-4a96-ad4e-cfd7968e4f71 (x96 y18 48×50, stray teeth at x118–136 y66–74 erased). Each file pastes the cut areas named 1 onto the body. |
 | den/altar.png | gallery:a0615cd8-f9cb-4d00-88dc-d9607567863a |
 | den/altar-anim.png | gallery:cac5c3e3-2e2e-4a17-8555-620a4ddaadf9 |
 | den/chest.png | gallery:6af3a023-a3e5-4062-8e27-dd1643038f7d |

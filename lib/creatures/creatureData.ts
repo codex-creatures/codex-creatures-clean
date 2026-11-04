@@ -407,13 +407,13 @@ export const BOSS_PARTS: CreatureTemplate[] = [
   // The Hydra (the Deep Labyrinth's boss): three heads, each its own fighter, left to right.
   { id: "hydra_fang", name: "Fang Head", rarity: "legendary", baseHp: 250, boss: true, cls: "melee", proficiency: NO_PROF,
     skills: bossMoves("Snap", "Rending Bite", "Toxic Breath"),
-    flavour: "The left head. All teeth, and it never lets go." },
+    flavour: "The right head. All teeth, and it never lets go." },
   { id: "hydra_spitter", name: "Spitter Head", rarity: "legendary", baseHp: 225, boss: true, cls: "ranged", proficiency: NO_PROF,
     skills: bossMoves("Acid Spit", "Acid Torrent", "Toxic Breath"),
-    flavour: "The middle head. Its spit eats through stone." },
+    flavour: "The left head. Its spit eats through stone." },
   { id: "hydra_hex", name: "Hex Head", rarity: "legendary", baseHp: 225, boss: true, cls: "magic", proficiency: NO_PROF,
     skills: bossMoves("Hex Bolt", "Withering Curse", "Toxic Breath"),
-    flavour: "The right head. Its eyes glow, and its whispers hurt." },
+    flavour: "The middle head. Its eyes glow, and its whispers hurt." },
   // The first quest's thief (lib/quest.ts): the guided first fight.
   { id: "baby_cyclops", name: "Baby Cyclops", rarity: "rare", baseHp: 76, boss: true, cls: "melee", proficiency: NO_PROF,
     skills: bossMoves("Backhand", "Club Smash"),
