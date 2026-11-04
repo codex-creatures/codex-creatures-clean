@@ -43,7 +43,7 @@ const PIT_CORNER = { u: 6.2, v: 5.6, x: 111, y: 134 };
 // slanted here onto the wall (rising 1px every 2 across). BASE: the floor spot
 // under the middle of its foot, on the wall, and where that is in the picture.
 // GLOW: the swirl's middle (px), where its light pulses.
-const PORTAL = { src: "/sprites/den/pvp-portal-3.png", w: 96, h: 176 };
+const PORTAL = { src: "/sprites/den/pvp-portal-4.png", w: 96, h: 176 };
 const PORTAL_SCALE = 1.4;
 const PORTAL_BASE = { u: 0.05, v: 8.6, x: 48, y: 138 };
 const PORTAL_GLOW = { x: 48, y: 94 };
@@ -63,9 +63,9 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           <div data-href="/pvp" style={{ position: "relative", pointerEvents: "auto" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={PORTAL.src} alt="The PvP portal" draggable={false}
-              style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated", filter: "drop-shadow(0 0 4px rgba(200, 90, 255, 0.55))" }} />
+              style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated", filter: "drop-shadow(0 0 4px rgba(110, 170, 100, 0.35))" }} />
             <div aria-hidden className="portal-glow"
-              style={{ left: pct(PORTAL_GLOW.x, PORTAL.w), top: pct(PORTAL_GLOW.y, PORTAL.h), width: "90%", aspectRatio: "1", background: "radial-gradient(circle, rgba(220, 110, 255, 0.45), rgba(150, 70, 255, 0.15) 45%, transparent 70%)" }} />
+              style={{ left: pct(PORTAL_GLOW.x, PORTAL.w), top: pct(PORTAL_GLOW.y, PORTAL.h), width: "90%", aspectRatio: "1", background: "radial-gradient(circle, rgba(130, 190, 110, 0.3), rgba(90, 150, 80, 0.1) 45%, transparent 70%)" }} />
             <div className="pixel-font"
               style={{ position: "absolute", left: "50%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
               PvP Portal
