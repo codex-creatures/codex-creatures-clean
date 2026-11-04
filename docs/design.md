@@ -1180,8 +1180,8 @@ account, kept entirely apart from Vouchee.
     2 more), in order. Each shows its **rarest** creature or gear. When picking your team in a
     duel, tapping a team brings its members that fit the format, in order, up to what you may
     bring. The collector won't buy a creature in a PvP team either.
-  - 📌 **Ranked ladders with Elo** (the user, 2026-11-04): they'll live at the portal; the tab
-    shows "Coming soon". Not designed yet (format, matchmaking, K-factor, seasons are open).
+  - ⏸️ **Ranked ladders with Elo**: shelved for now (the user, 2026-11-04). They'll live at the
+    portal; the tab shows "Coming soon". Not designed yet (format, matchmaking, K-factor, seasons).
   - Later: challenging players who aren't friends.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
