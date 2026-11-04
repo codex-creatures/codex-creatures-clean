@@ -43,10 +43,10 @@ const PIT_CORNER = { u: 6.2, v: 5.6, x: 111, y: 134 };
 // slanted here onto the wall (rising 1px every 2 across). BASE: the floor spot
 // under the middle of its foot, on the wall, and where that is in the picture.
 // GLOW: the swirl's middle (px), where its light pulses.
-const PORTAL = { src: "/sprites/den/pvp-portal-2.png", w: 96, h: 176 };
+const PORTAL = { src: "/sprites/den/pvp-portal-3.png", w: 96, h: 176 };
 const PORTAL_SCALE = 1.4;
-const PORTAL_BASE = { u: 0.05, v: 8.6, x: 48, y: 132 };
-const PORTAL_GLOW = { x: 48, y: 86 };
+const PORTAL_BASE = { u: 0.05, v: 8.6, x: 48, y: 138 };
+const PORTAL_GLOW = { x: 48, y: 94 };
 
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).

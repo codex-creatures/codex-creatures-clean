@@ -1169,7 +1169,7 @@ account, kept entirely apart from Vouchee.
     choices go to it and each round's result comes back (the guest's copy is mirrored so both
     see themselves on the left). Lost messages are sent again. Only Supabase Realtime is used:
     no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
-  - ✅ **The PvP portal** (the user, 2026-11-04; app/pvp): a flat carved arch set into the wall, its swirl glowing and pulsing,
+  - ✅ **The PvP portal** (the user, 2026-11-04; app/pvp): a flat stone arch set into the wall, filled with glowing, pulsing purple flame,
     in the tavern's room, against the back-left wall, left of the Sparring/Training Pit. It's
     there once the rubble's blown open (the second room). Tap it for three tabs: **Duel a
     friend** (the friend list and duel options, components/FriendList.tsx, also still behind 👥
