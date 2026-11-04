@@ -38,12 +38,15 @@ const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 const PIT = { sparring: "/sprites/den/sparring-pit-3.png", training: "/sprites/den/training-pit.png", w: 224, h: 144 };
 const PIT_SCALE = 1.9;
 const PIT_CORNER = { u: 6.2, v: 5.6, x: 111, y: 134 };
-// The PvP portal (PixelLab): an archway against the room's back-left wall
-// (u = 0), left of the pit (the user, 2026-11-04). BASE: the floor spot at
-// the front tip of its step, and where that is in the picture.
-const PORTAL = { src: "/sprites/den/pvp-portal.png", w: 128, h: 160 };
-const PORTAL_SCALE = 1.3;
-const PORTAL_BASE = { u: 1.0, v: 8.8, x: 62, y: 145 };
+// The PvP portal (PixelLab): a flat archway set into the room's back-left
+// wall (u = 0), left of the pit (the user, 2026-11-04), drawn front-on and
+// slanted here onto the wall (rising 1px every 2 across). BASE: the floor spot
+// under the middle of its foot, on the wall, and where that is in the picture.
+// GLOW: the swirl's middle (px), where its light pulses.
+const PORTAL = { src: "/sprites/den/pvp-portal-2.png", w: 96, h: 176 };
+const PORTAL_SCALE = 1.4;
+const PORTAL_BASE = { u: 0.05, v: 8.6, x: 48, y: 132 };
+const PORTAL_GLOW = { x: 48, y: 86 };
 
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).
@@ -60,9 +63,9 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           <div data-href="/pvp" style={{ position: "relative", pointerEvents: "auto" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={PORTAL.src} alt="The PvP portal" draggable={false}
-              style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated" }} />
-            <div aria-hidden className="den-glow"
-              style={{ left: "50%", top: "48%", width: "70%", aspectRatio: "1", background: "radial-gradient(circle, rgba(170, 110, 255, 0.35), rgba(120, 80, 255, 0.12) 45%, transparent 70%)" }} />
+              style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated", filter: "drop-shadow(0 0 4px rgba(200, 90, 255, 0.55))" }} />
+            <div aria-hidden className="portal-glow"
+              style={{ left: pct(PORTAL_GLOW.x, PORTAL.w), top: pct(PORTAL_GLOW.y, PORTAL.h), width: "90%", aspectRatio: "1", background: "radial-gradient(circle, rgba(220, 110, 255, 0.45), rgba(150, 70, 255, 0.15) 45%, transparent 70%)" }} />
             <div className="pixel-font"
               style={{ position: "absolute", left: "50%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
               PvP Portal
