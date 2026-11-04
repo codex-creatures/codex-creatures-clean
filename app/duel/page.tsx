@@ -31,6 +31,9 @@ import { readAccount } from "@/lib/online/account";
 import { cancelInvite, openDuelChannel, sendInvite, type DuelLink } from "@/lib/online/duelChannel";
 import { Duel, firstPicks, type DuelMember, type DuelTeam, type DuelView } from "@/lib/pvp/duel";
 import { bringMax, ineligibleReason, parseFormat, TURN_SECONDS, type PvpFormat } from "@/lib/pvp/formats";
+import { PVP_TEAM_SLOTS, readPvpTeams, teamPicks } from "@/lib/pvp/teams";
+import { loadSave } from "@/hooks/useGameState";
+import { loadTavern } from "@/lib/tavern";
 import { saveBattle } from "@/lib/battleHistory";
 import { createChamber, CW } from "@/lib/dungeon/chamber";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -59,6 +62,8 @@ const memberOf = (c: OwnedCreature): DuelMember => ({
   ...(c.weaponName ? { weaponName: c.weaponName } : {}), ...(c.armorName ? { armorName: c.armorName } : {}),
 });
 const teamOf = (list: OwnedCreature[]): DuelTeam => ({ fighters: list.map((c) => c.fighter), info: list.map(memberOf) });
+// Why a creature can't be brought: training in the pit, or not fit for the format.
+const whyNot = (c: OwnedCreature, f: PvpFormat) => (c.away ? "In the pit" : ineligibleReason(c, f));
 
 export default function DuelPage() {
   const router = useRouter();
@@ -76,7 +81,16 @@ export default function DuelPage() {
   const shown = useRef<unknown>(null); // the last battle state handed to the screen
 
   // Who's fit to fight in this format (in the order they're listed).
-  const fit = useMemo(() => params ? owned.filter((c) => !ineligibleReason(c, params.format)) : [], [owned, params]);
+  const fit = useMemo(() => params ? owned.filter((c) => !whyNot(c, params.format)) : [], [owned, params]);
+  // Your PvP teams (saved at the portal, app/pvp): loading one taps its members that fit.
+  const [teams, setTeams] = useState(() => readPvpTeams(undefined));
+  // Where Back goes: the PvP portal once the tavern's room is open, else the quest board.
+  const [home, setHome] = useState("/board");
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the save is read after mount
+    setTeams(readPvpTeams(loadSave()?.pvpTeams));
+    if (loadTavern().blasted) setHome("/pvp");
+  }, []);
 
   // Join the duel.
   useEffect(() => {
@@ -94,9 +108,9 @@ export default function DuelPage() {
     } catch {}
     joinedHere = p.matchId;
     if (seen) { setProblem("That duel is over: leaving it (or reloading) ends it."); return; }
-    const list = loadOwnedCreatures(p.format.level, p.format.scaleUp);
+    const list = loadOwnedCreatures(p.format.level, p.format.scaleUp, true);
     setOwned(list);
-    const fitNow = list.filter((c) => !ineligibleReason(c, p.format));
+    const fitNow = list.filter((c) => !whyNot(c, p.format));
     let link: DuelLink | null = null, live = true, again: number | undefined;
     const isHost = !!p.to;
 
@@ -174,24 +188,24 @@ export default function DuelPage() {
   const inDuel = view && (view.phase === "pick" || view.phase === "lead" || view.phase === "battle");
   const leave = () => {
     if (inDuel && !window.confirm("Leave the duel? You'll lose it.")) return;
-    router.push("/board");
+    router.push(home);
   };
   const frame = (children: React.ReactNode, dock?: React.ReactNode, fill = true) => (
-    <DenFrame title={params ? `Duel · ${params.format.name}` : "Duel"} icon="⚔️" onBack={leave} backLabel={inDuel ? "Leave" : "Board"} fill={fill} dock={dock}>{children}</DenFrame>
+    <DenFrame title={params ? `Duel · ${params.format.name}` : "Duel"} icon="⚔️" onBack={leave} backLabel={inDuel ? "Leave" : home === "/pvp" ? "Portal" : "Board"} fill={fill} dock={dock}>{children}</DenFrame>
   );
 
-  if (problem || params === null) return frame(<Note text={problem ?? "This duel's link is broken."} />, <BackDock onClick={() => router.push("/board")} />);
+  if (problem || params === null) return frame(<Note text={problem ?? "This duel's link is broken."} />, <BackDock onClick={() => router.push(home)} />);
   if (!view || !params) return frame(<Note text="Joining…" />);
 
   // ── Waiting for the other player ──
   if (view.phase === "waiting") {
     return frame(
       <Note text={params.to ? `Waiting for ${vs} to answer…` : `Joining ${vs}'s duel…`} sub={<DuelClock seconds={left(view.deadline)} />} />,
-      <BackDock label="Cancel" onClick={() => router.push("/board")} />,
+      <BackDock label="Cancel" onClick={() => router.push(home)} />,
     );
   }
   if (view.phase === "cancelled") {
-    return frame(<Note text={view.reason === "They said no." ? `${vs} said no.` : view.reason} />, <BackDock onClick={() => router.push("/board")} />);
+    return frame(<Note text={view.reason === "They said no." ? `${vs} said no.` : view.reason} />, <BackDock onClick={() => router.push(home)} />);
   }
 
   // ── 1. Picking a team ──
@@ -214,9 +228,21 @@ export default function DuelPage() {
             </ul>
           </Help>
         </div>
+        {/* Your PvP teams: tap one to bring its members that fit (then tap to change). */}
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${PVP_TEAM_SLOTS}, 1fr)`, gap: 6 }}>
+          {teams.map((t, i) => {
+            const ids = teamPicks(t, fit, params.format);
+            return (
+              <button key={i} className="chip" disabled={view.sent || ids.length === 0} onClick={() => setPicked(ids.slice(0, most))}
+                style={{ minHeight: 44, padding: "2px 4px", justifyContent: "center", textTransform: "none", whiteSpace: "nowrap" }}>
+                Team {i + 1} · {ids.length}
+              </button>
+            );
+          })}
+        </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "grid", gap: 6, alignContent: "start" }}>
           {owned.map((c) => {
-            const why = ineligibleReason(c, params.format);
+            const why = whyNot(c, params.format);
             const slot = picked.indexOf(c.id);
             return (
               <button key={c.id} className="card-btn" disabled={!!why || view.sent} onClick={() => toggle(c.id)}
@@ -268,7 +294,7 @@ export default function DuelPage() {
   // Won or lost by someone leaving: said in words (there's no battle result to show).
   if (view.phase === "over" && view.reason !== "battle") {
     const text = view.result !== "win" ? "You left the duel." : view.reason === "forfeit" ? `${vs} left the duel. You win!` : `${vs} is gone. You win!`;
-    return frame(<Note text={text} />, <BackDock onClick={() => router.push("/board")} />);
+    return frame(<Note text={text} />, <BackDock onClick={() => router.push(home)} />);
   }
   if (!battle.match) return frame(<Note text="The battle is starting…" />);
   return frame(
@@ -276,7 +302,7 @@ export default function DuelPage() {
         battle={{ ...battle, act: async (a) => d?.act(a), replace: (i) => d?.replace(i) }}
         waiting={view.phase === "battle" && view.sent}
         clock={view.phase === "battle" && !view.sent ? left(view.deadline) : undefined}
-        finishedActions={<button className="pixel-btn" onClick={() => router.push("/board")}>Back to the board</button>}
+        finishedActions={<button className="pixel-btn" onClick={() => router.push(home)}>{home === "/pvp" ? "Back to the portal" : "Back to the board"}</button>}
     />,
   );
 }

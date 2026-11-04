@@ -128,6 +128,7 @@ the PNG here.
 | items/armor/legs_polished_chainbolster.png | gallery:bf2659e1-5f8f-41e0-8e01-0d32cccd761f |
 | den/training-pit.png | map-object:ea26cf7d-8b3d-45e5-b795-3b0d0e1183fb (the pit), with the dummy cut from image:f23beab8-35f4-4abe-ad45-ee1d00d6d669 (an img2img pass over a code block-out on the room grid) and set in the back corner by hand |
 | den/sparring-pit-3.png | image:abee38b2-54c4-554a-bccb-b56750325141 (edit_image_pro_flash, two passes over the first Sparring Pit, which was den/training-pit.png with the rim and spears taken out: golden sand in a ring of grey stones, the same dummy), with its orange sand recoloured to tan here by script (the stones and dummy untouched). The number in the name changes with each new version so phones fetch it fresh |
+| den/pvp-portal.png | map-object:47eb1abf-0a5d-421c-ad5f-0434216056e5 (create_map_object 128×160, high top-down; mirrored here to face out from the left wall) |
 | den/tavern.png | gallery:9d6fa7cb-85e7-5c36-9aff-b09642a17d19 (raw 512px edit of a code block-out, seed 11; colours warmed + trimmed here) |
 | npcs/merchant-walk.png | job 1eeed771-59ac-433f-9244-67ec3f5c3882 (animate_image_pixminimax, 8 frames on a 96×96 canvas from npcs/merchant.png; the still sits at 9, 3 in each frame) |
 | npcs/collector.png | image:e31cefc4-f858-5180-bf74-39d4b7e0d05a (create_image_pro_flash 96×96, seed 37, the merchant as style image; trimmed here to 76×92 from 7, 2) |

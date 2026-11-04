@@ -86,6 +86,7 @@ export type MemberInfo = { rarity: Rarity; label: string; weaponName?: string; a
 export type OwnedCreature = MemberInfo & {
   id: string; name: string; template: CreatureTemplate; roster: boolean;
   weaponRarity?: Rarity; armorRarity?: Rarity; fighter: Fighter; gear: { name: string; rarity: Rarity }[];
+  away?: boolean; // in the Training Pit (only listed with withAway)
 };
 
 export type Match = {
@@ -120,8 +121,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // of their own (a duel's format level: lib/pvp/formats.ts).
 // atLevel: a duel's level (lib/pvp/formats.ts duelLevel): everyone at it
 // (scaleUp), or those above it brought down to it. A creature in the
-// Training Pit is away training (lib/trainingPit.ts), so it isn't listed.
-export function loadOwnedCreatures(atLevel?: number, scaleUp = true): OwnedCreature[] {
+// Training Pit is away training (lib/trainingPit.ts), so it isn't listed
+// (withAway: it is, marked away, for a picker to show greyed out).
+export function loadOwnedCreatures(atLevel?: number, scaleUp = true, withAway = false): OwnedCreature[] {
   const save = loadSave();
   const away = trainingId(loadTavern());
   const inv = save?.inventory ?? [];
@@ -133,7 +135,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true): OwnedCreat
   const list: OwnedCreature[] = [];
   for (const d of inv.filter(isCreatureDrop)) {
     const t = findCreatureTemplate(d.creatureId, d.name);
-    if (!t || d.id === away) continue;
+    if (!t || (d.id === away && !withAway)) continue;
     const w = items.get(equipment[d.id]?.weaponId ?? "");
     const pieces = armorPieces(equipment[d.id], (id) => items.get(id));
     const worn = pieces.filter((p): p is CreatureOrItemDrop => !!p);
@@ -148,6 +150,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true): OwnedCreat
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
       fighter: fighterFor(atLevel ? { ...d, level: duelLevel(d.level ?? 1, { level: atLevel, scaleUp }) } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
       gear: [w, ...worn].filter((g): g is CreatureOrItemDrop => !!g).map((g) => ({ name: g.name, rarity: g.rarity })),
+      ...(d.id === away ? { away: true } : {}),
     });
   }
   return list.sort((x, y) =>

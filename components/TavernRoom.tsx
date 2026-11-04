@@ -4,7 +4,8 @@
 // right wall (DenRoom's annex): the tavern in the far right corner, with a ❗
 // over it while someone's visiting (tap it for the tavern's window), the Cyclops Head over its door once mounted, and whoever's visiting, strolling round the room.
 // In its back corner, the Sparring Pit (the Training Pit once built over it; tap
-// it for its own window), with a ❗ while a level's ready.
+// it for its own window), with a ❗ while a level's ready. Left of it, flat
+// against the back-left wall, the PvP portal (app/pvp: duels, teams, ranked).
 
 import { useEffect, useState } from "react";
 import PixelSprite from "@/components/PixelSprite";
@@ -37,6 +38,12 @@ const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 const PIT = { sparring: "/sprites/den/sparring-pit-3.png", training: "/sprites/den/training-pit.png", w: 224, h: 144 };
 const PIT_SCALE = 1.9;
 const PIT_CORNER = { u: 6.2, v: 5.6, x: 111, y: 134 };
+// The PvP portal (PixelLab): an archway against the room's back-left wall
+// (u = 0), left of the pit (the user, 2026-11-04). BASE: the floor spot at
+// the front tip of its step, and where that is in the picture.
+const PORTAL = { src: "/sprites/den/pvp-portal.png", w: 128, h: 160 };
+const PORTAL_SCALE = 1.3;
+const PORTAL_BASE = { u: 1.0, v: 8.8, x: 62, y: 145 };
 
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).
@@ -46,6 +53,23 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
   const head = CREATURE_SPRITES.cyclops;
   return (
     <>
+      {/* The PvP portal, on the back wall. */}
+      {pit && (
+        <RoomSpot u={PORTAL_BASE.u} v={PORTAL_BASE.v} w={(PORTAL.w * PORTAL_SCALE) / RES}
+          style={{ transform: `translate(-${pct(PORTAL_BASE.x, PORTAL.w)}, -${pct(PORTAL_BASE.y, PORTAL.h)})` }}>
+          <div data-href="/pvp" style={{ position: "relative", pointerEvents: "auto" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={PORTAL.src} alt="The PvP portal" draggable={false}
+              style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated" }} />
+            <div aria-hidden className="den-glow"
+              style={{ left: "50%", top: "48%", width: "70%", aspectRatio: "1", background: "radial-gradient(circle, rgba(170, 110, 255, 0.35), rgba(120, 80, 255, 0.12) 45%, transparent 70%)" }} />
+            <div className="pixel-font"
+              style={{ position: "absolute", left: "50%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
+              PvP Portal
+            </div>
+          </div>
+        </RoomSpot>
+      )}
       {/* The pit, drawn first: it stands behind the tavern. */}
       {pit && (
         <RoomSpot u={PIT_CORNER.u} v={PIT_CORNER.v} w={(PIT.w * PIT_SCALE) / RES}

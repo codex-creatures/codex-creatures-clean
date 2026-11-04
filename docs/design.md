@@ -882,7 +882,8 @@ fields optional with defaults.
    (**50 XP an hour**, `SPARRING_XP_PER_HOUR`), and stops with its bar full until you tap **Level
    up** (one level, then it trains on from empty), so it never gains more than a level while
    you're away: a ❗ on the pit in the room says it's ready. While it's in, it's away training:
-   left out of every fight list (the Labyrinth, duels, the board). Take it out any time with the XP
+   it can't fight: where you pick a team (the Labyrinth's entrance, a duel, PvP teams) it shows
+   greyed, "🏋️ In the pit" (the user, 2026-11-04), and other fight lists leave it out. Take it out any time with the XP
    it's earned (a full bar levels it up). An XP scroll read on it banks what it's earned first.
    **Slay the Hydra**, a quest on the board's Quests tab, goes up once you've beaten the Cyclops;
    beat the Hydra and claim its reward there, the **Training Pit Schematic** (not an item: the pit
@@ -1143,7 +1144,7 @@ account, kept entirely apart from Vouchee.
   - **The screen** (the user, 2026-11-01; `ineligibleReason`): a creature above the format's
     rarity can't be picked, and nor can one wearing a weapon or armour piece above it (a Rare
     creature with an Epic sword). Moves learned from codexes are fine. Unfit creatures show
-    greyed with the reason.
+    greyed with the reason. A creature training in the pit shows greyed too, "In the pit".
   - **Friends** (the user, 2026-11-01): every row on a leaderboard has ➕ to add that player to
     your friend list (one-sided, like following: the `friends` table, `my_friends()`). 👥 on the
     board shows the list, with 🟢 for who's in the game now (Realtime presence, "lobby"), ✕ to
@@ -1168,7 +1169,20 @@ account, kept entirely apart from Vouchee.
     choices go to it and each round's result comes back (the guest's copy is mirrored so both
     see themselves on the left). Lost messages are sent again. Only Supabase Realtime is used:
     no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
-  - Later: PvP leaderboards; challenging players who aren't friends.
+  - ✅ **The PvP portal** (the user, 2026-11-04; app/pvp): an archway with a red-violet vortex
+    in the tavern's room, against the back-left wall, left of the Sparring/Training Pit. It's
+    there once the rubble's blown open (the second room). Tap it for three tabs: **Duel a
+    friend** (the friend list and duel options, components/FriendList.tsx, also still behind 👥
+    on the quest board), **Teams** and **Ranked**. A finished or cancelled duel goes back to the
+    portal (to the board for a player whose rubble is still shut).
+  - ✅ **PvP teams** (the user, 2026-11-04; lib/pvp/teams.ts, save field `pvpTeams`, optional,
+    default empty): 3 saved line-ups, apart from the Labyrinth's teams, each up to 7 (a 5v5 and
+    2 more), in order. Each shows its **rarest** creature or gear. When picking your team in a
+    duel, tapping a team brings its members that fit the format, in order, up to what you may
+    bring. The collector won't buy a creature in a PvP team either.
+  - 📌 **Ranked ladders with Elo** (the user, 2026-11-04): they'll live at the portal; the tab
+    shows "Coming soon". Not designed yet (format, matchmaking, K-factor, seasons are open).
+  - Later: challenging players who aren't friends.
   - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
 - 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
   online/offline start (done, but email login waits for a domain); 2) global registry and sealed

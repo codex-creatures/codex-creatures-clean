@@ -7,7 +7,7 @@
 // so a refresh never loses it. Going back to the Den ends it (you keep your
 // bag), so a run can't be paused and picked up later.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BagSlots, { slotLook, type SlotLook } from "@/components/BagSlots";
@@ -1369,7 +1369,10 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
 }) {
   const gold = game.gold;
   const healthy = (id: string) => (lab.meta.injuries[id] ?? 1) > 0;
-  const ownedIds = new Set(owned.map((c) => c.id));
+  // The creature training in the pit (lib/trainingPit.ts) can't go in: shown greyed, last.
+  const away = useMemo(() => loadOwnedCreatures(undefined, true, true).filter((c) => c.away), [game.inventory, game.tavern]); // eslint-disable-line react-hooks/exhaustive-deps
+  const awayIds = new Set(away.map((c) => c.id));
+  const ownedIds = new Set([...owned, ...away].map((c) => c.id));
   // Free pick starts empty every time: you choose who goes in.
   const [free, setFree] = useState<string[]>([]);
   const [tab, setTab] = useState<"party" | "bag">("party");
@@ -1396,7 +1399,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
   // bigger team sends its first ones (the rest are shown waiting).
   const cap = squadsOf(dungeon).team;
   const listed = team ?? free; // who's numbered on the grid (a team's knocked-out creatures too)
-  const party = listed.filter(healthy).slice(0, cap);
+  const party = listed.filter((id) => healthy(id) && !awayIds.has(id)).slice(0, cap);
   const fee = entryFee(dungeon, lab.meta, quest);
   const freeLeft = dungeon === 0 ? freeRunsLeft(lab.meta) : 0;
   const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
@@ -1495,18 +1498,18 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
         )}
         {owned.length > 0 && (
           <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 10 }}>
-            {owned.map((c) => {
+            {[...owned, ...away].map((c) => {
               const slot = listed.indexOf(c.id);
               const hp = lab.meta.injuries[c.id] ?? 1;
               const picked = slot >= 0;
-              const out = hp <= 0;
+              const out = hp <= 0 || !!c.away;
               const waits = picked && !out && !party.includes(c.id); // in the team, past the first {cap}
               // A knocked-out creature can still leave a team, but can't join anything.
               const locked = out && !(pick !== null && picked);
               const what = pick === null ? "party" : "team";
               return (
                 <button key={c.id} onClick={() => toggle(c.id)} disabled={locked} aria-pressed={picked}
-                  title={out ? `${c.name} is knocked out` : picked ? `Take ${c.name} out of the ${what}` : `Add ${c.name} to the ${what}`}
+                  title={c.away ? `${c.name} is training in the pit` : out ? `${c.name} is knocked out` : picked ? `Take ${c.name} out of the ${what}` : `Add ${c.name} to the ${what}`}
                   style={{
                     position: "relative", minWidth: 0, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                     background: picked ? "rgba(241,217,160,0.1)" : "none", border: "none", borderRadius: 8,
@@ -1517,7 +1520,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
                     <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name}
                   </span>
                   <CreaturePortrait creatureId={c.creatureId} title={c.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
-                  <span className="pixel-font" style={{ fontSize: 11 }}><RaceNames races={c.template.races} /></span>
+                  <span className="pixel-font" style={{ fontSize: 11 }}>{c.away ? "🏋️ In the pit" : <RaceNames races={c.template.races} />}</span>
                   {hp < 1 && (
                     <span style={{ width: "80%", height: 4, background: "#1a0e0e", border: "1px solid #000" }}>
                       <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#5ee08a" : hp > 0.25 ? "#f5c542" : "#ff6b5e" }} />
