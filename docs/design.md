@@ -704,27 +704,51 @@ How it came about, round by round: history.md.
   pixel art like [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png), laid out
   like the user's sketch [ideas/labyrinth-v2.png](ideas/labyrinth-v2.png) (older notes in
   history.md). Decided: 2D (not 3D), in the current web game (no engine switch); the procedural
-  randomness stays. Plan, one step at a time:
-  1. ✅ **Rooms and corridors** (`lib/dungeon/floorplan.ts`, previewed in `/lab/floorplan`): the
-     scroll map (map.ts) laid out on a tile grid, rooms as rectangles at their scroll spots,
-     each corridor a tunnel between two doors. **Promise: the tunnels join exactly the rooms the
-     scroll links**, checked by `checkFloorplan`; `rollLabyrinth` rerolls the map in the rare
-     case (~1 in 100) a plan fails. Needs a **planar** scroll (`MapSpec.planar`: no corridors
-     crossing, else a crossing would be a junction underground). Only the walkable Labyrinth uses
-     it; the live game's maps are unchanged. Room sizes, spacing (`SCALE`) and tunnel shape are
-     provisional: the user judges them in the lab.
-  **The Encampment first** (the user, 2026-11-05): its maps as they are (15 rooms, 7 to the camp),
-  made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the user
-  says to switch, so `main` stays releasable.
-  2. ✅ **Walking** (`lib/dungeon/walk.ts`, tried in `/lab/walk` on a rolled Encampment): tap a
-     spot and you walk there by the shortest way (`findPath`, diagonals allowed but never cutting
-     a rock corner), through floors, doors and tunnels only. A tap on rock walks to the nearest
-     walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk finishes the step
-     first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle but never shows past
-     the plan's edge (`cameraAt`). Speed, tile size on screen (16px) and tap reach are
-     provisional: the user judges them in the lab.
-  3. Art samples (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
-  4. Into the run: fights, chests, the witch, saving your spot, the scroll as minimap.
+  randomness stays. **The Encampment first** (the user, 2026-11-05): 15 rooms, at least 7 to the
+  camp, made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the
+  user says to switch, so `main` stays releasable. Plan, one step at a time:
+  1. ✅ **Layout, in layers** (the user's sketches, 2026-11-05: [room 1](ideas/room-1.png),
+     [gen roll 1–4](ideas/gen-roll-1.png); `lib/dungeon/layout.ts`, walked in `/lab/walk`). The
+     layout comes first and the scroll is made from it (`layoutMap`), not the other way round.
+     - **Sizes in blocks** of 3×3 tiles (`BLOCK`): room sizes, places and gaps are all whole
+       blocks. A size is the footprint, walls included. The user's starting sizes: small 5×5, wide
+       10×4, tall 4×10, big 8×6, the entrance 14×4, the boss's room 10×8 (`SHAPES`; provisional).
+     - **Gen 1, rooms:** the entrance alone along the bottom, then rooms dropped one by one into
+       the lowest free spot, 1–2 blocks of rock round each, snug against one side;
+       `LAYOUT_W` 24 blocks across (4 small rooms side by side; 28 made too few rows for a
+       7-room route). The boss's room on top, where most rooms could tunnel into it.
+     - **Gen 2, tunnels:** straight, **3 tiles wide** (the user: so you can get about), only
+       between rooms whose facing walls overlap 3+ blocks with 3 or fewer blocks of rock between.
+       All the up ones are dug and 60% of the sideways ones; then tunnels are dropped (off the
+       shortest route till it's 7+ rooms, from rooms with more than 4, then any at 50%) as long
+       as it stays sound. So the most direct way isn't always there.
+     - **Forward only** (the user, 2026-11-05): up tunnels are one way. Going up one draws a line
+       along the bottom of the room you came into; a room wholly behind it (the one you left, for
+       one) is closed, and every tunnel into it. Sideways tunnels go both ways, even into a room
+       hanging partly behind the line. (🧪 Claude's reading: "wholly behind" also shuts a room
+       you could otherwise only reach by sliding sideways back down.)
+     - **Sound** (`routeProblems`, every roll is checked and rerolled if not): no traps (wherever
+       you go, the boss can still be reached), every room reachable, 2–3 ways out of the entrance,
+       2+ into the boss, 4 tunnels a room at most, the shortest route 7+ rooms; and the tiles pass
+       `checkFloorplan` (tunnels join exactly the rooms they should). About 40 ms a roll.
+     - The first try, `lib/dungeon/floorplan.ts` (`/lab/floorplan`: the scroll map laid out on
+       tiles, tunnels dug round the rooms) made long winding tunnels, too much walking; only its
+       `Floorplan` tiles and `checkFloorplan` are still used.
+  2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
+     the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
+     floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:
+     closed rooms are dimmed, and an up tunnel can't be entered from the top). A tap on rock walks
+     to the nearest walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk
+     finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
+     but never shows past the edge (`cameraAt`). Speed, tile size on screen (16px) and tap
+     reach are provisional: the user judges them in the lab.
+  3. **Gen 3, what's in each room:** the Encampment's room mix as it is (dens, stashes, a
+     chest, mini bosses, the chief at the top).
+  4. **Gen 4, extras** like witches and healing pools sitting inside other rooms: later (the
+     user picked this, 2026-11-05: witches and pools stay rooms of their own for now, so the
+     walkable run matches the live balance first). Then scenery.
+  5. Art (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
+  6. Into the run: fights, chests, saving your spot, the scroll as minimap.
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
     (This touches the room mix, a decided balance: present it as options when it comes up.)

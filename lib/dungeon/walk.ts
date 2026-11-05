@@ -11,6 +11,8 @@
 // - Tapping rock walks you to the nearest walkable tile, if one is within
 //   TAP_REACH (a tap just off a tunnel still counts).
 // - A new tap while walking finishes the step you're on, then turns.
+// - canStep (optional) can forbid steps on top of rock: the Labyrinth's
+//   closed rooms and one-way tunnels (layout.ts stepRule).
 
 import { ROCK, type Floorplan, type Pt } from "./floorplan";
 import type { DungeonMap } from "./map";
@@ -19,6 +21,7 @@ export const WALK_SPEED = 6;  // tiles a second
 export const TAP_REACH = 3;   // a tap on rock looks this many tiles round for somewhere to walk
 
 export type Walker = { x: number; y: number; path: Pt[] }; // path: the tiles still to reach, in order
+export type CanStep = (from: Pt, to: Pt) => boolean;
 
 export const walkable = (fp: Floorplan, x: number, y: number) =>
   x >= 0 && y >= 0 && x < fp.w && y < fp.h && fp.tiles[y * fp.w + x] !== ROCK;
@@ -56,7 +59,7 @@ const STEPS: Pt[] = [
 
 // The shortest way from one tile to another (A*): the tiles after `from`,
 // ending on `to`. [] if they're the same tile, null if there's no way.
-export function findPath(fp: Floorplan, from: Pt, to: Pt): Pt[] | null {
+export function findPath(fp: Floorplan, from: Pt, to: Pt, canStep?: CanStep): Pt[] | null {
   if (!walkable(fp, from.x, from.y) || !walkable(fp, to.x, to.y)) return null;
   if (from.x === to.x && from.y === to.y) return [];
   const { w } = fp;
@@ -110,6 +113,7 @@ export function findPath(fp: Floorplan, from: Pt, to: Pt): Pt[] | null {
       if (!walkable(fp, nx, ny)) continue;
       const diagonal = s.x !== 0 && s.y !== 0;
       if (diagonal && (!walkable(fp, x + s.x, y) || !walkable(fp, x, y + s.y))) continue; // no cutting a corner
+      if (canStep && !canStep({ x, y }, { x: nx, y: ny })) continue;
       const n = ny * w + nx;
       const c = cost[t] + (diagonal ? Math.SQRT2 : 1);
       if (c >= cost[n]) continue;
@@ -123,11 +127,11 @@ export function findPath(fp: Floorplan, from: Pt, to: Pt): Pt[] | null {
 
 // Head for a tapped spot (in tiles). Mid-step, the step is finished first.
 // A tap with nowhere to walk near it leaves you as you were.
-export function walkTo(fp: Floorplan, me: Walker, spot: Pt): Walker {
+export function walkTo(fp: Floorplan, me: Walker, spot: Pt, canStep?: CanStep): Walker {
   const target = nearestWalkable(fp, spot);
   if (!target) return me;
   const from = me.path[0] ?? { x: Math.round(me.x), y: Math.round(me.y) };
-  const way = findPath(fp, from, target);
+  const way = findPath(fp, from, target, canStep);
   if (!way) return me;
   return { ...me, path: me.path.length > 0 ? [from, ...way] : way };
 }
