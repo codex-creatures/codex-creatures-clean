@@ -6,15 +6,17 @@
 // the tunnels out of them; a room lights up as you reach its door, and you
 // can only walk where you can see. Each room is labelled with what's in it
 // (campMap: the live Encampment's mix). The scroll (scrollMarks) can be looked
-// at SCROLL_LOOKS times a roll: a mark per room, nothing else. Plain boxes for now, no art and no
+// at SCROLL_LOOKS times a roll: a mark per room, and, like a treasure map,
+// what your torch has lit, your trail, and red lines where you cut yourself off. Plain boxes for now, no art and no
 // fights (dev tool; nothing is saved). For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DUNGEONS, ROOM_INFO } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, campMap, scrollMarks, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
+import { rollLayout, layoutFloorplan, campMap, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, roomAt, walkTo, type CanStep, type Walker } from "@/lib/dungeon/walk";
-import { RoomIcon } from "@/components/DungeonMapView";
+import { ROOM_ART } from "@/components/DungeonMapView";
+import type { Pt } from "@/lib/dungeon/floorplan";
 
 const TILE = 16; // screen pixels per tile
 
@@ -25,6 +27,10 @@ function seeded(seed: number) {
 
 const COLOURS = { rock: "#0d0d14", wall: "#4a4f5c", floor: "#c9bf9f", tunnel: "#7d7a6c", door: "#3fae4f", you: "#e0483e", goal: "#f1d9a0", label: "#2a2418" };
 const CLOSED = "rgba(13, 13, 20, 0.6)";
+const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14" };
+
+// What the scroll shows when you open it (a snapshot: it doesn't change while open).
+type Scroll = { marks: ScrollMark[]; ink: { x: number; y: number; w: number; wall: boolean }[]; trail: Pt[]; cuts: number[] };
 
 export default function WalkLab() {
   const [seed, setSeed] = useState(1);
@@ -45,7 +51,10 @@ export default function WalkLab() {
   const [dark, setDark] = useState(true);
   const darkRef = useRef(dark);
   const [looks, setLooks] = useState(SCROLL_LOOKS);
-  const [scroll, setScroll] = useState<ScrollMark[] | null>(null);
+  const [scroll, setScroll] = useState<Scroll | null>(null);
+  // Your walk so far, tile by tile, and the cut-offs you've crossed (tiles down), for the scroll.
+  const trail = useRef<Pt[]>([]);
+  const cuts = useRef<number[]>([]);
   useEffect(() => { darkRef.current = dark; }, [dark]);
 
   // What you can see: the rooms you've been in (walls and all) and the
@@ -78,6 +87,8 @@ export default function WalkLab() {
     seen.current = new Set();
     lit.current = new Uint8Array(plan.w * plan.h);
     see(layout.start);
+    trail.current = [startSpot];
+    cuts.current = [];
     setLooks(SCROLL_LOOKS);
     setScroll(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- see() only reads plan and layout
@@ -101,9 +112,12 @@ export default function WalkLab() {
       const onDoor = doorRoom.get(Math.round(me.current.y) * plan.w + Math.round(me.current.x));
       if (onDoor) see(onDoor);
       if (room) see(room);
+      const step = { x: Math.round(me.current.x), y: Math.round(me.current.y) }, prev = trail.current[trail.current.length - 1];
+      if (!prev || prev.x !== step.x || prev.y !== step.y) trail.current.push(step);
       if (room && room !== progressRef.current.room) {
         const next = enter(layout, progressRef.current, room);
         if (next !== progressRef.current) {
+          if (next.line !== progressRef.current.line) cuts.current.push(cutOffY(next));
           progressRef.current = next;
           setProgress(next);
           if (goal.current) me.current = walkTo(plan, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(next));
@@ -167,6 +181,21 @@ export default function WalkLab() {
   };
 
   const label = !here ? "a tunnel" : `${ROOM_INFO[kinds[here].kind].name} (${layout.rooms[here].shape})`;
+  // The scroll as it stands: the lit tiles inked in rows (floor or wall), your trail, the cut-offs, the marks.
+  const readScroll = (): Scroll => {
+    const ink: Scroll["ink"] = [];
+    const at = (x: number, y: number) => (x < 0 || y < 0 || x >= plan.w || y >= plan.h ? ROCK : plan.tiles[y * plan.w + x]);
+    const isWall = (x: number, y: number) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => at(x + dx, y + dy) !== ROCK));
+    for (let y = 0; y < plan.h; y++) for (let x = 0; x < plan.w; x++) {
+      if (!lit.current[y * plan.w + x]) continue;
+      const wall = at(x, y) === ROCK;
+      if (wall && !isWall(x, y)) continue;
+      const run = ink[ink.length - 1];
+      if (run && run.y === y && run.wall === wall && run.x + run.w === x) run.w++;
+      else ink.push({ x, y, w: 1, wall });
+    }
+    return { marks: scrollMarks(camp, layout, seen.current, roomAt(plan, me.current)), ink, trail: trail.current.slice(), cuts: cuts.current.slice() };
+  };
   const sound = routeProblems(layout, DUNGEONS[0].spec.minRoute).length === 0;
 
   return (
@@ -177,7 +206,7 @@ export default function WalkLab() {
         <button className="chip" aria-pressed={dark} onClick={() => setDark((d) => !d)}>Darkness</button>
         <button className="chip" disabled={looks === 0 || !!scroll} onClick={() => {
           setLooks((n) => n - 1);
-          setScroll(scrollMarks(camp, layout, seen.current, roomAt(plan, me.current)));
+          setScroll(readScroll());
         }}>Scroll ({looks} left)</button>
         <span style={{ fontSize: 13, opacity: 0.8 }}>
           Seed {seed} · {Object.keys(layout.rooms).length} rooms · {layout.tunnels.length} tunnels ({layout.tunnels.filter((t) => !t.up).length} sideways) ·{" "}
@@ -191,20 +220,25 @@ export default function WalkLab() {
           style={{ display: "block", width: "100%", height: "100%", border: "1px solid #333", touchAction: "none" }}
         />
         {scroll && (
-          // The scroll: a mark where each room is, nothing else. Tap to put it away.
-          <div onPointerDown={() => setScroll(null)} style={{ position: "absolute", inset: 0, background: "#d8c49a", border: "3px solid #6b4f2a", touchAction: "none" }}>
-            <div style={{ position: "absolute", inset: "4%" }}>
-              {scroll.map((m) => (
-                <span key={m.id} style={{
-                  position: "absolute", left: `${m.x * 100}%`, top: `${m.y * 100}%`, transform: "translate(-50%, -50%)",
-                  width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center",
-                  fontSize: 16, fontWeight: "bold", color: "#3a2a14", background: "#efe0bc",
-                  border: m.here ? "3px solid #e0483e" : "2px solid #8a6a3a",
-                }}>
-                  {m.kind ? <RoomIcon kind={m.kind} icon={ROOM_INFO[m.kind].icon} /> : "?"}
-                </span>
-              ))}
-            </div>
+          // The scroll, like a treasure map: what you've lit, your trail, the
+          // cut-offs in red, a mark per room. Tap to put it away.
+          <div onPointerDown={() => setScroll(null)} style={{ position: "absolute", inset: 0, background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: "none" }}>
+            <svg viewBox={`0 0 ${plan.w} ${plan.h}`} style={{ position: "absolute", inset: "3%", width: "94%", height: "94%" }}>
+              {scroll.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}
+              {scroll.cuts.map((y, i) => <line key={i} x1={0} x2={plan.w} y1={y} y2={y} stroke={INK.cut} strokeWidth={0.9} strokeDasharray="3 2" />)}
+              <polyline points={scroll.trail.map((p) => `${p.x + 0.5},${p.y + 0.5}`).join(" ")} fill="none" stroke={INK.trail} strokeWidth={0.7} strokeDasharray="1.2 1.2" strokeLinejoin="round" />
+              {scroll.marks.map((m) => {
+                const x = m.x * plan.w, y = m.y * plan.h, art = m.kind && ROOM_ART[m.kind];
+                return (
+                  <g key={m.id}>
+                    <circle cx={x} cy={y} r={3.6} fill={INK.mark} stroke={m.here ? COLOURS.you : INK.edge} strokeWidth={m.here ? 0.9 : 0.5} />
+                    {art
+                      ? <image href={art} x={x - 2.6} y={y - 2.6} width={5.2} height={5.2} style={{ imageRendering: "pixelated" }} />
+                      : <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={4.2} fontWeight="bold" fill={INK.text}>{m.kind ? ROOM_INFO[m.kind].icon : "?"}</text>}
+                  </g>
+                );
+              })}
+            </svg>
           </div>
         )}
       </div>

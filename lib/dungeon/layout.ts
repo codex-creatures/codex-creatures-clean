@@ -338,21 +338,29 @@ export function layoutMap(layout: Layout): DungeonMap {
 }
 
 // Gen 3, what's in each room: the Encampment's mix as it is in the live game
-// (map.ts: fillCamp), on the walkable layout, and the same rooms marked on the
-// scroll from the start (markRooms). firstRun: the entrance holds treasure.
+// (map.ts: fillCamp), on the walkable layout. Fewer rooms are marked on the
+// scroll from the start than on the old one: SCROLL_MARKS in all (the user,
+// 2026-11-05: 3–4 at most), the marked stashes counted in, dens for the rest.
+// firstRun: the entrance holds treasure.
+export const SCROLL_MARKS = [3, 4];
 export function campMap(layout: Layout, firstRun: boolean, rng: Rng = Math.random): DungeonMap {
   const map = fillCamp(layoutMap(layout), firstRun, rng);
-  markRooms(map, 0, rng);
+  const stashes = Object.values(map.nodes).filter((n) => n.known).length;
+  markRooms(map, 0, rng, Math.max(0, between(rng, SCROLL_MARKS) - stashes));
   return map;
 }
 
 // The scroll (the user, 2026-11-05): a look at where the rooms are, to work
-// out a way up. Only a mark per room, where its middle is: its icon if you
-// know what's there, else "?". Never the tunnels, nor how big the rooms are.
+// out a way up. A mark per room, where its middle is: its icon if you know
+// what's there, else "?". Of the rooms and tunnels themselves, only what your
+// torch has lit (drawn by the lab, like a treasure map, with your trail and
+// the cut-offs behind you, cutOffY); never the rest.
 // You know the entrance, the top, the rooms marked from the start and the
 // ones you've been in; the hidden ones (the chest, unmarked stashes) only once
 // you've been in. You can look at it SCROLL_LOOKS times a run.
 export const SCROLL_LOOKS = 2;
+// Where a cut-off is on the scroll, in tiles down: the bottom of the room you came up into.
+export const cutOffY = (p: Progress) => p.line * BLOCK;
 export type ScrollMark = { id: string; x: number; y: number; kind: RoomKind | null; here: boolean }; // x, y: 0–1 across and down
 export function scrollMarks(map: DungeonMap, layout: Layout, been: Iterable<string>, here: string | null): ScrollMark[] {
   const visited = new Set(been);

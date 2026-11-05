@@ -756,11 +756,15 @@ How it came about, round by round: history.md.
      marked), the chief's camp in the boss's room. Filled from the bottom up. No mini bosses: the
      live Encampment has none. Fights and pickups come with step 6.
      - **The scroll** (the user, 2026-11-05; `scrollMarks`, the Scroll button in `/lab/walk`):
-       looked at **twice a run** (`SCROLL_LOOKS`), it shows only a mark where each room's middle
-       is: its icon if you know what's there, else "?". Never tunnels or room sizes, so you work
-       the way up out yourself. You know the entrance, the camp, the rooms marked from the start
-       (the live scroll's 8, `markRooms`, plus up to 2 stashes) and rooms you've been in; the chest
-       and unmarked stashes stay "?" till you've been in. Tap it to put it away.
+       looked at **twice a run** (`SCROLL_LOOKS`), it shows a mark where each room's middle
+       is: its icon if you know what's there, else "?". Of the rooms and tunnels themselves it
+       shows only what your torch has lit, drawn like a treasure map: lit floors and walls, your
+       trail dotted, and a **red line at each cut-off** you've crossed (`cutOffY`: the bottom of
+       the room you came up into). Never the unlit tunnels or room sizes, so you work the way up
+       out yourself. You know the entrance, the camp, the rooms marked from the start (**3–4 in
+       all**, the user 2026-11-05, `SCROLL_MARKS`: the 1–2 marked stashes, then dens; the live
+       scroll marks 8 plus stashes) and rooms you've been in; the chest and unmarked stashes stay
+       "?" till you've been in. Tap it to put it away.
   4. **Gen 4, extras** like witches and healing pools sitting inside other rooms: later (the
      user picked this, 2026-11-05: witches and pools stay rooms of their own for now, so the
      walkable run matches the live balance first). Then scenery.

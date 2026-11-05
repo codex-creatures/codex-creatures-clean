@@ -232,11 +232,12 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
 }
 
 // A few rooms are marked on the scroll from the start (never mysteries,
-// nor the Encampment's chest and stashes: campStashes marks those).
-export function markRooms(map: DungeonMap, dungeon: DungeonId, rng: Rng) {
+// nor the Encampment's chest and stashes: campStashes marks those). count:
+// how many (the walkable Labyrinth's scroll marks fewer: layout.ts).
+export function markRooms(map: DungeonMap, dungeon: DungeonId, rng: Rng, count = KNOWN_AT_START) {
   const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery
     && !(dungeon === 0 && (n.kind === "chest" || n.kind === "stash")));
-  for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
+  for (let i = 0; i < count && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
 }
 
 // What's in the Encampment's rooms (dungeon 0), on the scroll map and the

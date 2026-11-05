@@ -54,7 +54,7 @@ const SWORDS: Partial<Record<RoomKind, { ink: string; light: string }>> = {
 
 // Rooms marked with their art instead of an emoji: a stash is a loot sack, not a 💰,
 // and a chest a treasure chest, not a 🧰.
-const ROOM_ART: Partial<Record<RoomKind, string>> = { stash: artFor(BURLAP_SACK)?.src ?? "", chest: artFor(TREASURE_CHEST)?.src ?? "" };
+export const ROOM_ART: Partial<Record<RoomKind, string>> = { stash: artFor(BURLAP_SACK)?.src ?? "", chest: artFor(TREASURE_CHEST)?.src ?? "" };
 
 // A room's mark, for the room's own heading (the art if it has some).
 export function RoomIcon({ kind, icon }: { kind: RoomKind; icon: string }) {

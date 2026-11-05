@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DUNGEONS } from "../lib/dungeon/run";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
-  rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
+  rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
   SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
@@ -159,5 +159,27 @@ describe("labyrinth layout: the scroll", () => {
     expect(shown(scrollMarks(map, l, [l.start, chest.id], chest.id), chest.id)).toBe("chest");
     // Some rooms are still a "?" (it's a guide, not the answer).
     expect(fresh.some((m) => m.kind === null)).toBe(true);
+  });
+});
+
+describe("labyrinth layout: the scroll's marks and cut-offs", () => {
+  it("marks only 3–4 rooms from the start (the marked stashes counted in)", () => {
+    const counts = new Set<number>();
+    for (let seed = 1; seed <= 20; seed++) {
+      const map = campMap(encampment(seed), false, seeded(seed + 300));
+      counts.add(Object.values(map.nodes).filter((n) => n.known).length);
+    }
+    expect([...counts].every((n) => SCROLL_MARKS[0] <= n && n <= SCROLL_MARKS[1])).toBe(true);
+  });
+
+  it("draws a cut-off along the bottom of the room you came up into", () => {
+    const l = encampment(3);
+    const up = l.tunnels.find((t) => t.up && t.a === l.start)!;
+    const above = l.rooms[up.b];
+    const y = cutOffY(enter(l, startProgress(l), up.b));
+    expect(y).toBe((above.y + above.h) * 3);
+    // …below the room's floor, above the room you left.
+    expect(y).toBeGreaterThan(floorOf(above).y + floorOf(above).h - 1);
+    expect(y).toBeLessThanOrEqual(floorOf(l.rooms[l.start]).y);
   });
 });
