@@ -15,6 +15,7 @@ import CreaturePortrait from "@/components/CreaturePortrait";
 import { RaceNames } from "@/components/RaceTag";
 import FriendList, { useFriends } from "@/components/FriendList";
 import { loadOwnedCreatures, rarityColor, type OwnedCreature } from "@/components/BattleScreen";
+import { gearMarks } from "@/components/CreatureMarks";
 import { useGameState } from "@/hooks/useGameState";
 import { onlineConfig } from "@/lib/online/client";
 import { PVP_TEAM_MAX, PVP_TEAM_SLOTS, teamRarity } from "@/lib/pvp/teams";
@@ -148,6 +149,7 @@ function Teams() {
                     </span>
                     <CreaturePortrait creatureId={c.creatureId} title={c.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
                     <span className="pixel-font" style={{ fontSize: 11 }}>{c.away ? "🏋️ In the pit" : <RaceNames races={c.template.races} />}</span>
+                    {gearMarks(game.equipment[c.id]) && <span title="Wearing gear" style={{ position: "absolute", top: 20, right: 4, fontSize: 11 }}>{gearMarks(game.equipment[c.id])}</span>}
                     {picked && (
                       <span className="pixel-font" style={{ position: "absolute", top: 20, left: 4, minWidth: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, borderRadius: 10, background: c.away ? "#6b6350" : GOLD, color: "#1a140c" }}>
                         {at + 1}

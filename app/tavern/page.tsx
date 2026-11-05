@@ -29,6 +29,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { codexPrice, loadDungeon, waresFor } from "@/lib/dungeon/run";
 import { hasPit } from "@/lib/trainingPit";
 import TileGrid from "@/components/TileGrid";
+import { gearMarks } from "@/components/CreatureMarks";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import { COLLECTOR_PRICES, TRADE_UP_COUNT, creaturePrice, rarityAbove } from "@/lib/collector";
@@ -268,7 +269,7 @@ function CollectorDesk({ game }: { game: ReturnType<typeof useGameState> }) {
       <div style={{ height: "30cqh", overflowY: "auto" }}>
         {shown.length
           ? <TileGrid items={shown} favoriteIds={new Set()} groupBy="none" sellMode sellable={canPick} selected={picked} onOpen={toggle}
-              badge={(d) => `🪙 ${creaturePrice(d)}`} />
+              badge={(d) => `🪙 ${creaturePrice(d)}`} gear={(d) => gearMarks(game.equipment[d.id]) || undefined} />
           : <p style={{ marginTop: 18, fontSize: 13, color: MUTED }}>No {rarity} creatures he can take.</p>}
       </div>
       <button className="pixel-btn" disabled={!ready} onClick={go}

@@ -3,7 +3,10 @@
 // Creatures, weapons, armour, materials and consumables laid out in an inventory panel (.inv-panel):
 // each sprite sits loose inside, on a soft glow of its rarity. Grouped by
 // rarity (rarest first), A–Z within. Tap one to open it (or, in sell mode,
-// to select it). cols: a fixed number of slot-sized tiles a row, no names
+// to select it). A creature shows its level, and what it's wearing (gear), so
+// you can tell a trained one from a fresh one at a glance (Kay sold her Lv 17
+// Rattlebones to the collector, 2026-11-05: the tiles looked the same).
+// cols: a fixed number of slot-sized tiles a row, no names
 // (the bag packer: the same size as the bag's slots, to drag across).
 
 import { goodsIcon } from "@/lib/items/materials";
@@ -44,7 +47,8 @@ export function groupTiles(items: CreatureOrItemDrop[], by: GroupBy = "rarity"):
 type Props = {
   items: CreatureOrItemDrop[];          // already sorted
   favoriteIds: Set<string>;
-  badge?: (d: CreatureOrItemDrop) => string | undefined; // e.g. ⚔️🛡️ worn gear, or "on Klutz"
+  badge?: (d: CreatureOrItemDrop) => string | undefined; // e.g. "on Klutz", or a price
+  gear?: (d: CreatureOrItemDrop) => string | undefined;  // a creature's worn gear (gearMarks)
   sellMode?: boolean;
   sellable?: (d: CreatureOrItemDrop) => boolean;
   selected?: Set<string>;
@@ -57,16 +61,16 @@ type Props = {
   grab?: (d: CreatureOrItemDrop) => React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
 };
 
-export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, grab }: Props) {
+export default function TileGrid({ items, favoriteIds, badge, gear, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, grab }: Props) {
   const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : `repeat(auto-fill, minmax(${large ? 132 : 84}px, 1fr))`;
   return (
     <div>
       {groupBy === "none" && (
         <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? 16 : cols ? 8 : 10, marginTop: 14 }}>
           {items.map((d) => large && d.dropType !== "item" ? (
-            <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
+            <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
           ) : (
-            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
+            <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
               sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
           ))}
         </div>
@@ -80,7 +84,7 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
               </div>
               <div style={{ display: "grid", gridTemplateColumns: columns, justifyContent: cols ? "center" : undefined, gap: cols ? 8 : 10 }}>
                 {group.map((d) => (
-                  <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
+                  <Tile key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} picked={picked === d.id} compact={!!cols} grab={grab?.(d)}
                     sell={sellMode ? { can: sellable?.(d) ?? false, on: selected?.has(d.id) ?? false } : undefined} />
                 ))}
               </div>
@@ -92,8 +96,8 @@ export default function TileGrid({ items, favoriteIds, badge, sellMode, sellable
   );
 }
 
-function Tile({ d, fav, badge, sell, picked, onClick, compact, grab }: {
-  d: CreatureOrItemDrop; fav: boolean; badge?: string; sell?: { can: boolean; on: boolean }; picked?: boolean; onClick: () => void;
+function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
+  d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; sell?: { can: boolean; on: boolean }; picked?: boolean; onClick: () => void;
   compact?: boolean; grab?: React.HTMLAttributes<HTMLElement>;
 }) {
   const col = RARITY_COLORS[d.rarity];
@@ -101,8 +105,9 @@ function Tile({ d, fav, badge, sell, picked, onClick, compact, grab }: {
   const w = sprite ? spriteWidth(sprite) : 16;
   const dim = sell && !sell.can;
   const tpl = templateOf(d);
+  const creature = d.dropType === "creature";
   return (
-    <button onClick={onClick} title={d.name} disabled={dim} {...grab}
+    <button onClick={onClick} title={creature ? `Lv ${d.level ?? 1} ${d.name}${gear ? " (wearing gear)" : ""}` : d.name} disabled={dim} {...grab}
       style={{ background: "none", border: "none", padding: 0, cursor: dim ? "default" : grab ? "grab" : "pointer", color: "white", minWidth: 0, opacity: dim ? 0.35 : 1, ...(grab ? { touchAction: "none" } : {}) }}>
       {/* Loose in the panel: a soft glow of its rarity under it, no frame (a gold ring when picked to sell). */}
       <span style={{
@@ -114,7 +119,14 @@ function Tile({ d, fav, badge, sell, picked, onClick, compact, grab }: {
         {fav && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 13, color: "#f5c542" }}>★</span>}
         {sell && sell.can && <span style={{ position: "absolute", top: 2, left: 4, fontSize: 14, color: sell.on ? "#f5c542" : MUTED }}>{sell.on ? "☑" : "☐"}</span>}
         {tpl && <span style={{ position: "absolute", top: 2, right: 2 }}><CreatureMarks race={tpl.race} races={tpl.races} cls={tpl.cls} size={10} /></span>}
-        {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
+        {/* A creature: its level, bottom left, with what it's wearing above. */}
+        {creature && (
+          <span style={{ position: "absolute", bottom: 1, left: 4, display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1 }}>
+            {gear && <span style={{ fontSize: 10 }}>{gear}</span>}
+            <span className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>Lv {d.level ?? 1}</span>
+          </span>
+        )}
+        {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: creature ? "50%" : "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
         {/* A stack (materials): how many, in the corner, like a count on a game icon. */}
         {!badge && d.qty ? <span className="pixel-font" style={{ position: "absolute", bottom: 0, right: 4, fontSize: 16, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>{d.qty}</span> : null}
       </span>
@@ -127,7 +139,7 @@ function Tile({ d, fav, badge, sell, picked, onClick, compact, grab }: {
 
 // A creature in your collection: "Lv 3 Rust Beetle" on top, the creature
 // itself below (just the sprite, no frame), then its attack style and race.
-function CreatureCard({ d, fav, badge, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; onClick: () => void; glow?: boolean }) {
+function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
   return (
@@ -144,7 +156,7 @@ function CreatureCard({ d, fav, badge, onClick, glow }: { d: CreatureOrItemDrop;
         </span>
       )}
       {fav && <span style={{ position: "absolute", top: 26, left: 4, fontSize: 15, color: "#f5c542" }}>★</span>}
-      {badge && <span style={{ position: "absolute", top: 26, right: 4, fontSize: 13 }}>{badge}</span>}
+      {(gear || badge) && <span style={{ position: "absolute", top: 26, right: 4, fontSize: 13 }}>{gear}{badge}</span>}
     </button>
   );
 }

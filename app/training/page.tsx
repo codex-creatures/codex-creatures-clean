@@ -12,6 +12,7 @@ import Help from "@/components/Help";
 import CreaturePortrait from "@/components/CreaturePortrait";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import { MaterialIcon } from "@/components/PixelSprite";
+import { gearMarks } from "@/components/CreatureMarks";
 import { useGameState } from "@/hooks/useGameState";
 import { MAX_LEVEL } from "@/lib/creatures/levels";
 import { loadDungeon } from "@/lib/dungeon/run";
@@ -119,6 +120,7 @@ export default function TrainingPage() {
                 {pickable.map((c) => (
                   <button key={c.id} className="card-btn" style={{ minHeight: 44 }} onClick={() => game.trainCreature(c.id)}>
                     <b style={{ color: RARITY_COLORS[c.rarity].text, flex: 1, textAlign: "left" }}>{c.name}</b>
+                    <span title="Wearing gear" style={{ fontSize: 12 }}>{gearMarks(game.equipment[c.id])}</span>
                     <span className="pixel-font" style={{ fontSize: 13, color: GOLD }}>Lv {c.level ?? 1}</span>
                   </button>
                 ))}

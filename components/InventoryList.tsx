@@ -18,7 +18,7 @@ import CardModal from "./CardModal";
 import CardGallery from "./CardGallery";
 import TileGrid, { groupTiles, RARITY_ORDER } from "./TileGrid";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
-import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
+import { CreatureToolbar, NO_INV_FILTER, gearMarks, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { boxCap, type CappedBox } from "@/lib/items/storage";
 
 // Tabs shown as a grid of sprite squares (sorted by rarity) rather than rows.
@@ -244,9 +244,9 @@ export default function InventoryList({
           pulse={guideGearUp && creatureTab ? creatureList[0]?.id : undefined}
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}
+          gear={(d) => (isCreatureDrop(d) ? gearMarks(equipment[d.id]) || undefined : undefined)}
           badge={(d) => {
-            if (isCreatureDrop(d)) { const l = equipment[d.id]; return `${l?.weaponId ? "⚔️" : ""}${hasArmor(l) ? "🛡️" : ""}` || undefined; }
-            const owner = equippedOn.get(d.id);
+            const owner = isCreatureDrop(d) ? undefined : equippedOn.get(d.id);
             return owner ? `on ${creatureNameById.get(owner) ?? "creature"}` : undefined;
           }}
           sellMode={sellMode}

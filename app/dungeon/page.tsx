@@ -82,6 +82,7 @@ import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
 import Help from "@/components/Help";
 import LibrarianShelf from "@/components/LibrarianShelf";
+import { gearMarks } from "@/components/CreatureMarks";
 import { TOOLS, toolDrop, type StoragePlan } from "@/lib/items/materials";
 import { BOX_NAMES, fullBoxes, type CappedBox } from "@/lib/items/storage";
 
@@ -1521,6 +1522,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
                   </span>
                   <CreaturePortrait creatureId={c.creatureId} title={c.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
                   <span className="pixel-font" style={{ fontSize: 11 }}>{c.away ? "🏋️ In the pit" : <RaceNames races={c.template.races} />}</span>
+                  {gearMarks(game.equipment[c.id]) && <span title="Wearing gear" style={{ position: "absolute", top: 20, right: 4, fontSize: 11 }}>{gearMarks(game.equipment[c.id])}</span>}
                   {hp < 1 && (
                     <span style={{ width: "80%", height: 4, background: "#1a0e0e", border: "1px solid #000" }}>
                       <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#5ee08a" : hp > 0.25 ? "#f5c542" : "#ff6b5e" }} />

@@ -23,6 +23,11 @@ export function CreatureMarks({ race, races, cls, size = 13 }: { race?: Race; ra
   );
 }
 
+// What a creature is wearing, as marks for lists: ⚔️ a weapon, 🛡️ any armour ("" when nothing).
+export function gearMarks(l?: { weaponId?: string; helmetId?: string; chestId?: string; legsId?: string }): string {
+  return `${l?.weaponId ? "⚔️" : ""}${l?.helmetId || l?.chestId || l?.legsId ? "🛡️" : ""}`;
+}
+
 export type GroupBy = "rarity" | "class" | "race";
 export type CreatureFilter = { race: Race | "all"; cls: CombatClass | "all"; groupBy: GroupBy };
 export const NO_FILTER: CreatureFilter = { race: "all", cls: "all", groupBy: "rarity" };

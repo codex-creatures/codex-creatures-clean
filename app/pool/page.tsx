@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import { loadOwnedCreatures, type OwnedCreature } from "@/components/BattleScreen";
+import { gearMarks } from "@/components/CreatureMarks";
 import { HEAL_AT_HOME, hoursToFull, loadDungeon, poolLevel, saveDungeon, type DungeonSave } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { klutzStatus } from "@/lib/klutz";
@@ -79,7 +80,9 @@ export default function PoolPage() {
               <div key={c.id} className="stone-panel" style={{ display: "flex", gap: 10, alignItems: "center", padding: 10 }}>
                 <PixelSprite sprite={creatureSprite(c.template.id)} scale={2} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="pixel-font" style={{ color: RARITY_COLORS[c.rarity].text, fontSize: 15 }}>{c.name}</div>
+                  <div className="pixel-font" style={{ color: RARITY_COLORS[c.rarity].text, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name} <span style={{ fontSize: 12 }}>{gearMarks(game.equipment[c.id])}</span>
+                  </div>
                   <div style={{ height: 8, background: "#0e0f14", marginTop: 4 }}>
                     <div style={{ height: "100%", width: `${hp * 100}%`, background: hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444" }} />
                   </div>
