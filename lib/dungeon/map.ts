@@ -71,8 +71,10 @@ export type MapNode = {
 
 // The size of a labyrinth (dungeon 1 uses the constants above; deeper
 // dungeons are taller, with more rooms and a longer way to the lair).
-// large: how many large rooms it has.
-export type MapSpec = { h: number; rooms: number; minRoute: number; maxRoute: number; large: number };
+// large: how many large rooms it has. planar: no two corridors cross (the
+// walkable Labyrinth needs it, lib/dungeon/floorplan.ts: underground, a
+// crossing would be a junction joining rooms the scroll doesn't link).
+export type MapSpec = { h: number; rooms: number; minRoute: number; maxRoute: number; large: number; planar?: boolean };
 export const DEFAULT_SPEC: MapSpec = { h: MAP_H, rooms: ROOM_COUNT, minRoute: MIN_ROUTE, maxRoute: MAX_ROUTE, large: 1 };
 
 export type DungeonMap = {
@@ -88,6 +90,22 @@ type Rng = () => number;
 type Pt = { x: number; y: number };
 
 export const distance = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+
+// Do corridors a–b and c–d cross? (Ones meeting at a room don't.)
+export function crosses(a: Pt, b: Pt, c: Pt, d: Pt): boolean {
+  const side = (p: Pt, q: Pt, r: Pt) => Math.sign((q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x));
+  return side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0;
+}
+
+// How many pairs of corridors cross on the scroll.
+export function crossings(map: DungeonMap): number {
+  const links = Object.values(map.nodes).flatMap((a) => a.links.filter((b) => a.id < b).map((b) => [a, map.nodes[b]] as const));
+  let n = 0;
+  for (let i = 0; i < links.length; i++) for (let j = i + 1; j < links.length; j++) {
+    if (crosses(links[i][0], links[i][1], links[j][0], links[j][1])) n++;
+  }
+  return n;
+}
 
 function link(nodes: Record<string, MapNode>, a: string, b: string) {
   if (a === b || nodes[a].links.includes(b)) return;
@@ -157,12 +175,15 @@ function layout(rng: Rng, spec: MapSpec): DungeonMap {
   const aheadOf = (id: string) => rooms.filter((r) => isAhead(nodes[id], nodes[r]));
   const behind = (id: string) => ["start", ...rooms].filter((r) => isAhead(nodes[r], nodes[id]));
   const waysOnCount = (id: string) => nodes[id].links.filter((l) => isAhead(nodes[id], nodes[l])).length;
+  // (A planar map never digs a corridor across one already there.)
+  const crossesAny = (a: string, b: string) => !!spec.planar && Object.values(nodes).some((n) =>
+    n.links.some((l) => n.id < l && crosses(n, nodes[l], nodes[a], nodes[b])));
 
   // Ways on: every room leads to one of the nearest rooms ahead (sometimes two).
   for (const id of ["start", ...rooms]) {
     if (lairDoors.has(id)) { link(nodes, id, "boss"); continue; }
     const want = id === "start" ? 2 + (rng() < 0.5 ? 1 : 0) : rng() < BRANCH_CHANCE ? 2 : 1;
-    const options = nearest(id, aheadOf(id)).slice(0, want + 1);
+    const options = nearest(id, aheadOf(id)).filter((o) => !crossesAny(id, o)).slice(0, want + 1);
     // Mostly the nearest, now and then the next one along.
     while (options.length > 0 && waysOnCount(id) < want) {
       const pick = options.length > 1 && rng() < 0.3 ? 1 : 0;
@@ -174,13 +195,14 @@ function layout(rng: Rng, spec: MapSpec): DungeonMap {
   for (const id of rooms) {
     if (nodes[id].links.some((l) => isAhead(nodes[l], nodes[id]))) continue;
     const from = behind(id).filter((r) => r !== "start" || waysOnCount("start") < MAX_STARTS); // keep the entrance to 2–3 ways out
-    link(nodes, id, nearest(id, from.length > 0 ? from : ["start"])[0]);
+    const near = nearest(id, from.length > 0 ? from : ["start"]);
+    link(nodes, id, near.find((o) => !crossesAny(id, o)) ?? near[0]);
   }
   // A few long corridors that skip ahead.
   for (let i = 0, tries = 0; i < LONG_CORRIDORS && tries < 200; tries++) {
     const a = rooms[Math.floor(rng() * rooms.length)], b = rooms[Math.floor(rng() * rooms.length)];
     const d = distance(nodes[a], nodes[b]);
-    if (a === b || d < 40 || d > 70 || nodes[a].links.includes(b) || lairDoors.has(a) || lairDoors.has(b)) continue;
+    if (a === b || d < 40 || d > 70 || nodes[a].links.includes(b) || lairDoors.has(a) || lairDoors.has(b) || crossesAny(a, b)) continue;
     link(nodes, a, b);
     i++;
   }
@@ -192,7 +214,7 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   let map = layout(rng, spec);
   for (let i = 0; i < 600; i++) {
     const r = routeLength(map);
-    if (r >= spec.minRoute && r <= spec.maxRoute && waysOn(map, map.start).length <= MAX_STARTS) break;
+    if (r >= spec.minRoute && r <= spec.maxRoute && waysOn(map, map.start).length <= MAX_STARTS && !(spec.planar && crossings(map) > 0)) break;
     map = layout(rng, spec);
   }
   // The Labyrinth's gentle start (MINIBOSS_FROM, FIRST_ROOM_DENS in run.ts):

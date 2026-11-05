@@ -700,9 +700,25 @@ How it came about, round by round: history.md.
 - ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and
   the **trophy** showing which run you won on: the Cyclops Head (§9, step 7), mounted in the
   tavern's room marked "Run N" (`meta.firstClearRun`).
-- ⏸ **Shelved (2026-10-19): an explorable Labyrinth** walked room to room
-  ([ideas/labyrinth-v2.png](ideas/labyrinth-v2.png); details and the 8–12 session estimate in
-  history.md). If picked up: a 1-session throwaway prototype in /lab first.
+- 🚧 **In progress (picked up 2026-11-05): an explorable Labyrinth**, walked round in 2D top-down
+  pixel art like [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png), laid out
+  like the user's sketch [ideas/labyrinth-v2.png](ideas/labyrinth-v2.png) (older notes in
+  history.md). Decided: 2D (not 3D), in the current web game (no engine switch); the procedural
+  randomness stays. Plan, one step at a time:
+  1. ✅ **Rooms and corridors** (`lib/dungeon/floorplan.ts`, previewed in `/lab/floorplan`): the
+     scroll map (map.ts) laid out on a tile grid, rooms as rectangles at their scroll spots,
+     each corridor a tunnel between two doors. **Promise: the tunnels join exactly the rooms the
+     scroll links**, checked by `checkFloorplan`; `rollLabyrinth` rerolls the map in the rare
+     case (~1 in 100) a plan fails. Needs a **planar** scroll (`MapSpec.planar`: no corridors
+     crossing, else a crossing would be a junction underground). Only the walkable Labyrinth uses
+     it; the live game's maps are unchanged. Room sizes, spacing (`SCALE`) and tunnel shape are
+     provisional: the user judges them in the lab.
+  2. Walking: tap to move, collision from the tile grid, a camera following you.
+  3. Art samples (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
+  4. Into the run: fights, chests, the witch, saving your spot, the scroll as minimap.
+  - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
+    e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
+    (This touches the room mix, a decided balance: present it as options when it comes up.)
 - ✅ **Enemy rarity by room and depth** (the user, 2026-10-19; `DUNGEONS[d].foes`, `foeAt`). Every
   enemy wears a full kit (weapon + whole armour set). Each has a chance to **step up** one rarity,
   creature and gear together (`STEP_UP` 20%):
