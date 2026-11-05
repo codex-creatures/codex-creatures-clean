@@ -171,9 +171,11 @@ Three-quarter top-down, for `/lab/walk` (its Art toggle). PixelLab ids, not gall
 | walk/tiles-a.png | topdown tileset 31c22104-5815-4968-8823-e962e2b820d5 (cobbled floor, mossy grey brick wall faces; 16px, 25 tiles, transition 1.0) |
 | walk/tunnel-a.png | topdown tileset f515821d-f430-4daa-a15a-bf4743ca3a5b (earth tunnel floor, sharing tiles-a's wall top, base tile c993edd4-eb98-4f2a-9265-42ac447db477) |
 | walk/tiles-b.png | topdown tileset 35cd2e41-bae7-41f9-a85e-20372127e592 (dark flagstones, ivy-covered old stone blocks; used for tunnels too) |
-| walk/door-a.png | map object ff8a658a-406b-4ed6-9f2f-4ad0062c9c79 (stone archway, door swung open; 48×48) |
 | walk/hero-a.png | character 781432c6-ac9f-4329-9fb4-3ee2f6f2e8f5 (hooded ranger, standard 4-direction, 48px canvas) + walk group 7b1f4dd5-ff35-4e15-9879-d4f3fb3995a2 (walking-6-frames: south, north, east) |
 | walk/hero-b.png | character e4d97738-0343-4f41-bbbe-7d3eeb4d1c1d (red-haired torchbearer) + walk group 94f4ecb4-70e3-41e3-bdd5-dd73e07de700 (same) |
+| walk/hero-c.png | character d70abd54-d794-4b47-abdd-81ee40ec6f0a (sturdy adventurer with a torch, chibi; standard 4-direction, 68px canvas; no walk yet). Sheet: south, east, north, west stacked |
+| walk/hero-d.png | character ed2ffa26-adf2-4f89-b659-1ae5f8fe4655 (stout bearded delver in an iron cap, with a torch, cartoon; same) |
+| walk/hero-e.png | character b15f91c8-28aa-4912-83c7-891f3ee607ea (small cloaked torchbearer, chibi; same) |
 
 The tile sheets are PixelLab's own sheets as downloaded (the layout: `WANG_TILES` in
 lib/dungeon/tileArt.ts, the same for all three). A hero sheet is packed here: 48px cells,

@@ -121,3 +121,48 @@ export function walkFrame(tiles: number, moving: boolean, frames: number): numbe
 // floor, in tiles), so what's nearer the viewer is in front. Ties: left first.
 export type Standing = { y: number; x: number };
 export const drawOrder = <T extends Standing>(things: T[]): T[] => [...things].sort((a, b) => a.y - b.y || a.x - b.x);
+
+// A little depth (2.5D) on top of the flat sheets, drawn by the lab:
+// - Side walls show their inner face, more the further across the room you
+//   are from them (seen from the right, a room's left wall shows its face):
+//   sideFace, in tiles across.
+// - South walls stand up: a room's bottom wall is drawn raised by WALL_LIFT,
+//   over the floor's bottom row, so you can be hidden behind it; close to it,
+//   it goes see-through (capFade) so you're never lost behind a wall.
+export const SIDE_FACE_RATE = 0.06; // tiles of face per tile you're across from it (🧪)
+export const SIDE_FACE_MAX = 0.4;   // tiles (🧪)
+export const WALL_LIFT = 0.5;       // tiles a south wall stands up over the floor (🧪)
+export const CAP_SEE = 1.6;         // tiles: this close behind a south wall, it's at its faintest
+export const CAP_CLEAR = 3;         // tiles: from here, it's solid
+export const CAP_FAINT = 0.35;      // how solid it is at its faintest
+
+// How wide a side wall's face shows: `across` is how far you (the camera's
+// middle) are from the wall's edge, into the room (≤ 0: you can't see it).
+export const sideFace = (across: number) => Math.max(0, Math.min(SIDE_FACE_MAX, across * SIDE_FACE_RATE));
+
+// How solid a raised south wall's piece is, `d` tiles from you (behind it or not).
+export function capFade(d: number): number {
+  if (d <= CAP_SEE) return CAP_FAINT;
+  if (d >= CAP_CLEAR) return 1;
+  return CAP_FAINT + ((1 - CAP_FAINT) * (d - CAP_SEE)) / (CAP_CLEAR - CAP_SEE);
+}
+
+// The sheet tiles the depth is drawn with: a plain wall face, and a plain wall top.
+export const FACE_TILE = pickTile([UPPER, UPPER, UPPER, UPPER, UPPER, UPPER, UPPER, UPPER, CLIFF, CLIFF, CLIFF, CLIFF, LOWER, LOWER, LOWER, LOWER]);
+export const TOP_TILE = pickTile(new Array<number>(16).fill(UPPER));
+
+// The wall edges a floorplan's depth is drawn along: side walls (rock with
+// walkable to its right, "left" walls, or to its left, "right" walls) and
+// south walls (rock with walkable right above). Each as the rock tile.
+export type DepthEdges = { left: { x: number; y: number }[]; right: { x: number; y: number }[]; south: { x: number; y: number }[] };
+export function depthEdges(fp: Floorplan): DepthEdges {
+  const open = (x: number, y: number) => x >= 0 && y >= 0 && x < fp.w && y < fp.h && fp.tiles[y * fp.w + x] !== ROCK;
+  const out: DepthEdges = { left: [], right: [], south: [] };
+  for (let y = 0; y < fp.h; y++) for (let x = 0; x < fp.w; x++) {
+    if (open(x, y)) continue;
+    if (open(x + 1, y)) out.left.push({ x, y });
+    if (open(x - 1, y)) out.right.push({ x, y });
+    if (open(x, y - 1)) out.south.push({ x, y });
+  }
+  return out;
+}

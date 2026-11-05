@@ -771,18 +771,26 @@ How it came about, round by round: history.md.
      - **Feel** (the user, 2026-11-05): hard to judge yet, with every room in sight and flat
        top-down boxes rather than the slightly 3D view of the future-dungeon picture. That comes
        with the art (step 5) and the scroll as minimap (step 6).
-       So the lab has **darkness** (on by default, a button turns it off): you only see rooms
-       you've been in and the tunnels out of them, a room lights up when you reach its door, and
-       you can only walk where you can see. (Lab only so far; how much you see in the real run is
-       for the user to decide.)
+       So the lab has **darkness** (on by default, a button turns it off). **You explore by
+       torchlight** (the user, 2026-11-06; `lib/dungeon/torch.ts`): the torch lights what it
+       can reach in a straight line within `TORCH_RADIUS` (5.5 tiles 🧪; foes see 7, so one can
+       spot you from the dark), walls blocking it, so you walk round a corner to see past it.
+       What it's lit stays remembered, dimmer (`REMEMBERED`); you only walk where you've seen;
+       foes show only while they're in the light. The light glows warm and flickers, fading to a
+       cold dark (`torchGlow`; the colours are the lab's, 🧪).
+     - **No doors** (the user, 2026-11-06): it's a winding labyrinth. A tunnel closed off behind
+       you is solid rock (`shutPlan`): if you'd seen it, it falls in as you go (stones drop,
+       dust, a shake) and rubble blocks its mouth (`rubbleOf`); if you hadn't, it was never
+       there. The rubble is drawn in code for now, a placeholder for PixelLab art.
   2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
      the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
      floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:
      closed rooms are dimmed, and an up tunnel can't be entered from the top). A tap on rock walks
      to the nearest walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk
      finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
-     but never shows past the edge (`cameraAt`). Speed, tile size on screen (16px) and tap
-     reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
+     but never shows past the edge (`cameraAt`). Zoomed in close so you explore rather than
+     oversee (the user, 2026-11-06): 32px a tile, about 11 across the phone (the lab's Zoom
+     tries 16–40). Speed, zoom and tap reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
      walk, shrinking as you go (the user, 2026-11-05).
   3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
      Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the
@@ -815,19 +823,28 @@ How it came about, round by round: history.md.
      - 🚧 **Samples made (2026-11-06), for the user to pick** (`/lab/walk` → Art, then Tiles and
        Hero to flick between them; ids in public/sprites/PIXELLAB.md, `lib/sprites/walk.ts`):
        two tilesets, "Mossy brick" (cobbles, grey brick wall faces, an earth tunnel floor) and
-       "Ivy blocks" (dark flagstones, ivy-covered old blocks; its floor in the tunnels too), one
-       door arch, and two heroes, a hooded ranger and a torchbearer, each walking in 4 directions
-       (6 frames; west is east mirrored). PixelLab's wall tilesets (16px, 25 tiles each).
+       "Ivy blocks" (dark flagstones, ivy-covered old blocks; its floor in the tunnels too), and
+       two heroes, a hooded ranger and a torchbearer, each walking in 4 directions (6 frames;
+       west is east mirrored). PixelLab's wall tilesets (16px, 25 tiles each). The heroes were
+       too lanky to feel for (the user, 2026-11-06): the hero carries a torch, and three chunkier
+       samples (standing only, no walk yet) are up for picking: a sturdy adventurer, a stout
+       bearded delver, a small cloaked torchbearer, drawn at 3/4 size 🧪. The chosen one gets a
+       walk; then darker, more dungeon-like tile samples.
      - ✅ **Drawing** (`lib/dungeon/tileArt.ts`): the sheets are drawn on a grid half a tile off
        the floorplan's, each cell taking its tile from the four tiles round it (rock the upper
        terrain, walkable the lower; a walkable tile with rock right above is a wall's foot), so
        a wall shows its front face wherever it has floor below, coming down over half the floor's
        top row (you walk there, in front of it). Rock away from any floor stays black. Tunnel
-       floor where a cell is all tunnel (doors count as the room). Things standing up (arches,
-       chests, foes, you) are drawn lowest on screen last (`drawOrder`). The hero faces the way
+       floor where a cell is all tunnel (doors count as the room). Things standing up (chests,
+       rubble, foes, you) are drawn lowest on screen last (`drawOrder`). The hero faces the way
        they're mostly going (`facingOf`) and steps a walk cycle every 1.5 tiles (`STRIDE`, 🧪).
-       A door arch stands where a tunnel leaves a room's top wall. 3 cells in a whole map have
-       no exact tile (inner corners where a wall steps down by a tunnel): the closest is drawn.
+       3 cells in a whole map have no exact tile (inner corners where a wall steps down by a
+       tunnel): the closest is drawn.
+     - ✅ **Depth, 2.5D** (the user, 2026-11-06: not real 3D, which would need three.js and 3D
+       models; `tileArt.ts`, numbers 🧪): side walls show their inner face, wider the further
+       across the room you are (`sideFace`: from a room's right you see its left wall's face),
+       and south walls stand up `WALL_LIFT` (half a tile) over the floor's bottom row, so you
+       and foes can be hidden behind them; close behind one, it goes see-through (`capFade`).
   6. Into the run: fights, chests, saving your spot, the scroll as minimap. (All in `/lab/walk`
      so far, with an in-memory test team; nothing touches a save.)
      - **Fights start by being seen** (the user, 2026-11-05): a room's foes stand in it, some
@@ -855,13 +872,16 @@ How it came about, round by round: history.md.
          (up tunnels are one way); a room still reachable sideways can still see you if you go back.
      - **A room plays out** (the lab, 2026-11-06): seen, you fight that room's foes in the real
        battle screen. Win: they're gone, and what the live game's win leaves (gold, dropped gear,
-       the chief's mini boss extras: `fightSack`) goes in the lab's bag; your team keeps its HP
-       to the next fight. Lose: the run's over, back to the entrance on a fresh roll. Walk within
-       1.5 tiles of a chest or a stash (`REACH_OBJECT`, 🧪; drawn at the room's middle) and it
-       opens: a chest with the live chest roll (`chestSack`), a stash with its sack.
+       the chief's mini boss extras: `fightSack`) is left in a sack where you stand; your team
+       keeps its HP to the next fight. Lose: the run's over, back to the entrance on a fresh roll.
+       **Anything you can loot opens when you tap it** (the user, 2026-11-06): chests, stashes
+       and fight spoils. Tap one and you walk up beside it (chests are solid), then the game's
+       loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room).
+       A chest rolls the live chest roll (`chestSack`), a stash its sack; what you leave stays
+       in it. Later, with the art, the chest should fit the room.
        **The test team** 🧪: three Uncommons in Uncommon gear at level 5, rolled with the layout.
      - **Your spot** is kept for the browser tab (the lab's own sessionStorage key, never a
-       save): where you are, what's lit, cleared and in the bag, the scroll's looks, your trail.
+       save): where you are, what you've seen, cleared, looted and in the bag, the scroll's looks, your trail.
        A reload carries on; Reroll or losing starts afresh. The scroll crosses out cleared rooms.
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
