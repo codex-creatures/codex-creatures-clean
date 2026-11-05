@@ -782,7 +782,8 @@ How it came about, round by round: history.md.
      to the nearest walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk
      finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
      but never shows past the edge (`cameraAt`). Speed, tile size on screen (16px) and tap
-     reach are provisional: the user judges them in the lab.
+     reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
+     walk, shrinking as you go (the user, 2026-11-05).
   3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
      Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the
      scroll map uses too): the entrance (treasure on your first run), dens or a stash 30% of the
@@ -803,6 +804,12 @@ How it came about, round by round: history.md.
      user picked this, 2026-11-05: witches and pools stay rooms of their own for now, so the
      walkable run matches the live balance first). Then scenery.
   5. Art (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
+     That style is three-quarter top-down (floors from above, walls and furniture showing their
+     fronts), not isometric: the square grid, collision, paths and camera stay as they are; only
+     the drawing changes (wall fronts, and things lower on screen drawn over things above).
+     No engine switch for it (the user, 2026-11-05: keep building as we are; if an engine is
+     ever needed, Phaser could run in this web game for the dungeon alone, a new dependency to
+     ask about).
   6. Into the run: fights, chests, saving your spot, the scroll as minimap.
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.

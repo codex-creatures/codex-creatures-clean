@@ -10,7 +10,8 @@
 // what your torch has lit, your trail, and red lines where you cut yourself off.
 // Reveal shows the whole scroll (every room and tunnel, every room's contents)
 // without using a look, and stays open through rerolls, to judge layouts. Plain boxes for now, no art and no
-// fights (dev tool; nothing is saved). For judging the layout and the feel.
+// fights (dev tool; nothing is saved). A dotted line shows the way you'll walk.
+// For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO } from "@/lib/dungeon/run";
@@ -162,9 +163,18 @@ export default function WalkLab() {
         const { name, icon } = ROOM_INFO[kinds[id].kind], c = roomCentre(layout.rooms[id]);
         ctx.fillText(`${icon} ${name}`, sx(c.x + 0.5), sy(c.y + 0.5));
       }
-      // Where you're heading, then you.
+      // The way you'll walk (a dotted line from you, shrinking as you go), where you're heading, then you.
       const end = me.current.path[me.current.path.length - 1];
       if (end) {
+        const mid = (v: number) => (v + 0.5) * TILE;
+        ctx.strokeStyle = COLOURS.goal;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(mid(me.current.x - cam.x), mid(me.current.y - cam.y));
+        for (const q of me.current.path) ctx.lineTo(mid(q.x - cam.x), mid(q.y - cam.y));
+        ctx.stroke();
+        ctx.setLineDash([]);
         ctx.strokeStyle = COLOURS.goal;
         ctx.lineWidth = 2;
         ctx.strokeRect(sx(end.x) + 3, sy(end.y) + 3, TILE - 6, TILE - 6);
