@@ -35,13 +35,19 @@ export default function CagePage() {
   const caged = game.caged as CreatureOrItemDrop[];
   const ownsAny = game.inventory.some((d) => d.dropType === "creature");
 
-  const capture = (d: CreatureOrItemDrop) => { game.captureCaged(d.id); setFreed(d); };
+  const capture = (d: CreatureOrItemDrop) => { game.captureCaged(d.id); setFreed(d); setReleased(null); setConfirming(null); };
   const release = (d: CreatureOrItemDrop) => {
     if (confirming !== d.id) { setConfirming(d.id); return; }
     game.releaseCaged(d.id);
     setConfirming(null);
     setReleased(d);
+    setFreed(null);
   };
+  // While others are still caged, the last capture or release is just a line
+  // above them, so you can deal with the whole cage without leaving it. The
+  // big panels below are for when the cage is empty.
+  const last = freed ?? released;
+  const others = caged.length > 0;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
 
@@ -51,7 +57,7 @@ export default function CagePage() {
       {game.hydrated && <CageUpgrade game={game} />}
       {!game.hydrated ? (
         <p style={{ color: MUTED }}>Loading…</p>
-      ) : freed ? (
+      ) : freed && !others ? (
         <div className="stone-panel" style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}><PixelSprite sprite={creatureSprite(freed.creatureId)} scale={4} /></div>
           <div className="pixel-font" style={{ fontSize: 22, color: RARITY_COLORS[freed.rarity].text, marginTop: 8 }}>{freed.name} is yours!</div>
@@ -63,20 +69,28 @@ export default function CagePage() {
             <Link href="/" className="pixel-btn">Back to the Den</Link>
           </div>
         </div>
-      ) : released ? (
+      ) : released && !others ? (
         <div className="stone-panel" style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center", opacity: 0.45 }}><PixelSprite sprite={creatureSprite(released.creatureId)} scale={4} /></div>
           <div className="pixel-font" style={{ fontSize: 20, color: "#d8d4c8", marginTop: 8 }}>{released.name} scurries off into the dark.</div>
           <p style={{ color: "#c8c4b8", fontSize: 14 }}>It&apos;s back in the Labyrinth where it belongs.</p>
           <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-            {caged.length > 0 && <button className="pixel-btn" onClick={() => setReleased(null)}>Back to the cage</button>}
             <Link href="/" className="pixel-btn">Back to the Den</Link>
           </div>
         </div>
       ) : caged.length === 0 ? (
         <p style={{ color: MUTED }}>The cage is empty. Creatures Klutz beats in the Labyrinth are brought back here.</p>
       ) : (
-        caged.map((d) => {
+        <>
+        {last && (
+          <div className="stone-panel" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ opacity: freed ? 1 : 0.45 }}><PixelSprite sprite={creatureSprite(last.creatureId)} scale={2} /></div>
+            <div style={{ fontSize: 14, color: freed ? RARITY_COLORS[last.rarity].text : "#d8d4c8" }}>
+              {freed ? <><b>{last.name}</b> is yours! It&apos;s in your Creatures.</> : <><b>{last.name}</b> scurries off into the dark.</>}
+            </div>
+          </div>
+        )}
+        {caged.map((d) => {
           const t = findCreatureTemplate(d.creatureId, d.name);
           return (
             <div key={d.id} className="stone-panel" style={{ textAlign: "center" }}>
@@ -104,7 +118,8 @@ export default function CagePage() {
               {confirming === d.id && <p style={{ fontSize: 12, color: "#ff8a80", margin: "6px 0 0" }}>Released creatures are gone for good.</p>}
             </div>
           );
-        })
+        })}
+        </>
       )}
     </DenFrame>
   );
