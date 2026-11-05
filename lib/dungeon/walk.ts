@@ -1,5 +1,5 @@
 // lib/dungeon/walk.ts
-// Walking round the Labyrinth's floorplan (floorplan.ts): tap a spot and you
+// Walking round the Labyrinth's tiles (floorplan.ts, from layout.ts): tap a spot and you
 // walk there by the shortest way, through floors, doors and tunnels only
 // (rock is solid), with the camera following you. Pure rules, no drawing
 // (previewed in app/lab/walk).

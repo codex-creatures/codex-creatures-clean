@@ -2,8 +2,8 @@
 // The walkable Labyrinth's layout, rolled in layers like the user's sketches
 // (docs/ideas/gen-roll-1…4.png): first the rooms, packed together like a
 // jigsaw, then straight tunnels between neighbours. (What's in each room
-// comes next; this is only the shape.) It replaces floorplan.ts's long
-// winding tunnels, which were too much walking.
+// comes next; this is only the shape.) Long winding tunnels, the first
+// try, were too much walking.
 //
 // - Everything is measured in blocks of BLOCK×BLOCK tiles: room sizes,
 //   places and the rock between them, so it all lines up. A room's size is
@@ -361,7 +361,7 @@ export function layoutFloorplan(layout: Layout): Floorplan {
     }
     tunnels[t.key] = pts;
   }
-  return { w, h, tiles, rooms, doors, tunnels, failed: [] };
+  return { w, h, tiles, rooms, doors, tunnels };
 }
 
 // A sound layout for a dungeon (spec.rooms rooms besides the entrance and

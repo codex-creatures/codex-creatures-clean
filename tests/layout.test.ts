@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DUNGEONS } from "../lib/dungeon/run";
-import { checkFloorplan } from "../lib/dungeon/floorplan";
+import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
   rollLayout, layoutFloorplan, layoutMap, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
   SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, type Layout, type Tunnel,
@@ -44,6 +44,25 @@ describe("labyrinth layout (gen 1 and 2)", () => {
       for (const t of l.tunnels) if ((t.up ? t.rect.w : t.rect.h) !== TUNNEL_W) problems.push(tag(`${t.key} isn't ${TUNNEL_W} wide`));
     }
     expect(problems).toEqual([]);
+  });
+
+  // The tile check itself must catch a broken plan.
+  it("the tile check catches a hole in a wall and a blocked tunnel", () => {
+    const l = encampment(2);
+    const sound = layoutFloorplan(l), map = layoutMap(l);
+    const copy = (): Floorplan => ({ ...sound, tiles: sound.tiles.slice() });
+    // A hole in the rock beside a tunnel's door: the tunnel opens into the room off its door.
+    const holed = copy();
+    const t = l.tunnels.find((t) => t.up)!;
+    holed.tiles[(t.rect.y + 1) * holed.w + t.rect.x - 1] = TUNNEL; // just outside the tunnel, below the top door
+    holed.tiles[t.rect.y * holed.w + t.rect.x - 1] = TUNNEL;       // …and through the upper room's wall
+    expect(checkFloorplan(holed, map)).not.toEqual([]);
+    // A rockfall across the middle of a tunnel: it no longer joins its two rooms.
+    const blocked = copy();
+    const midY = t.rect.y + Math.floor(t.rect.h / 2);
+    for (let x = t.rect.x; x < t.rect.x + t.rect.w; x++) blocked.tiles[midY * blocked.w + x] = ROCK;
+    expect(checkFloorplan(blocked, map)).not.toEqual([]);
+    expect(checkFloorplan(sound, map)).toEqual([]);
   });
 
   it("is the same layout for the same roll", () => {

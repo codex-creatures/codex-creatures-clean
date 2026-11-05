@@ -725,15 +725,18 @@ How it came about, round by round: history.md.
      - **Forward only** (the user, 2026-11-05): up tunnels are one way. Going up one draws a line
        along the bottom of the room you came into; a room wholly behind it (the one you left, for
        one) is closed, and every tunnel into it. Sideways tunnels go both ways, even into a room
-       hanging partly behind the line. (🧪 Claude's reading: "wholly behind" also shuts a room
-       you could otherwise only reach by sliding sideways back down.)
+       hanging partly behind the line. You never go back down an up tunnel below the line you've
+       crossed, not even by sliding sideways first (the user confirmed, 2026-11-05).
      - **Sound** (`routeProblems`, every roll is checked and rerolled if not): no traps (wherever
        you go, the boss can still be reached), every room reachable, 2–3 ways out of the entrance,
        2+ into the boss, 4 tunnels a room at most, the shortest route 7+ rooms; and the tiles pass
        `checkFloorplan` (tunnels join exactly the rooms they should). About 40 ms a roll.
-     - The first try, `lib/dungeon/floorplan.ts` (`/lab/floorplan`: the scroll map laid out on
-       tiles, tunnels dug round the rooms) made long winding tunnels, too much walking; only its
-       `Floorplan` tiles and `checkFloorplan` are still used.
+     - (A first try laid the scroll map out on tiles and dug tunnels round the rooms: long and
+       winding, too much walking. Deleted; `lib/dungeon/floorplan.ts` keeps only the tile types
+       and `checkFloorplan`.)
+     - **Feel** (the user, 2026-11-05): hard to judge yet, with every room in sight and flat
+       top-down boxes rather than the slightly 3D view of the future-dungeon picture. That comes
+       with the art (step 5) and the scroll as minimap (step 6).
   2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
      the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
      floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:

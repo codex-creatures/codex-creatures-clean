@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DUNGEONS } from "../lib/dungeon/run";
-import { rollLabyrinth, ROCK, type Pt } from "../lib/dungeon/floorplan";
+import { ROCK, type Pt } from "../lib/dungeon/floorplan";
+import { rollLayout, layoutFloorplan, layoutMap } from "../lib/dungeon/layout";
 import { advance, cameraAt, entranceSpot, findPath, nearestWalkable, roomAt, walkable, walkTo, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
 
 function seeded(seed: number) {
@@ -8,7 +9,10 @@ function seeded(seed: number) {
   return () => ((s = (s * 16807) % 2147483647) / 2147483647);
 }
 
-const encampment = (seed: number) => rollLabyrinth(false, seeded(seed), DUNGEONS[0].spec, 0);
+const encampment = (seed: number) => {
+  const layout = rollLayout(DUNGEONS[0].spec, seeded(seed));
+  return { map: layoutMap(layout), plan: layoutFloorplan(layout) };
+};
 
 // Everything wrong with a path, in words: every step onto a walkable tile, one
 // tile at a time, and a diagonal only where both straight ways round are open.
