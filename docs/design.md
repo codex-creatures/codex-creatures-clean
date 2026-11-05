@@ -713,6 +713,9 @@ How it came about, round by round: history.md.
      crossing, else a crossing would be a junction underground). Only the walkable Labyrinth uses
      it; the live game's maps are unchanged. Room sizes, spacing (`SCALE`) and tunnel shape are
      provisional: the user judges them in the lab.
+  **The Encampment first** (the user, 2026-11-05): its maps as they are (15 rooms, 7 to the camp),
+  made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the user
+  says to switch, so `main` stays releasable.
   2. Walking: tap to move, collision from the tile grid, a camera following you.
   3. Art samples (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
   4. Into the run: fights, chests, the witch, saving your spot, the scroll as minimap.
