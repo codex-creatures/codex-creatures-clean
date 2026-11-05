@@ -4,13 +4,14 @@
 // in a phone-shaped view. Up tunnels are one way, and what's behind you
 // closes (dimmed). In the dark you only see rooms you've been in and
 // the tunnels out of them; a room lights up as you reach its door, and you
-// can only walk where you can see. Plain boxes for now, no art and nothing in the rooms (dev
-// tool; nothing is saved). For judging the layout and the feel.
+// can only walk where you can see. Each room is labelled with what's in it
+// (campMap: the live Encampment's mix). Plain boxes for now, no art and no
+// fights (dev tool; nothing is saved). For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DUNGEONS } from "@/lib/dungeon/run";
+import { DUNGEONS, ROOM_INFO } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
+import { rollLayout, layoutFloorplan, campMap, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, roomAt, walkTo, type CanStep, type Walker } from "@/lib/dungeon/walk";
 
 const TILE = 16; // screen pixels per tile
@@ -27,6 +28,7 @@ export default function WalkLab() {
   const [seed, setSeed] = useState(1);
   const layout = useMemo(() => rollLayout(DUNGEONS[0].spec, seeded(seed)), [seed]);
   const plan = useMemo(() => layoutFloorplan(layout), [layout]);
+  const kinds = useMemo(() => campMap(layout, false, seeded(seed + 7919)).nodes, [layout, seed]);
   const canvas = useRef<HTMLCanvasElement>(null);
   const startSpot = useMemo(() => {
     const r = plan.rooms[layout.start];
@@ -129,8 +131,8 @@ export default function WalkLab() {
         if (darkRef.current && !seen.current.has(id)) continue;
         if (!isOpen(layout, p, id)) { ctx.fillStyle = CLOSED; ctx.fillRect(sx(r.x) - TILE, sy(r.y) - TILE, (r.w + 2) * TILE, (r.h + 2) * TILE); }
         ctx.fillStyle = COLOURS.label;
-        const name = id === layout.start ? "Start" : id === layout.boss ? "Boss" : layout.rooms[id].shape;
-        ctx.fillText(name, sx(r.x + r.w / 2), sy(r.y + r.h / 2));
+        const { name, icon } = ROOM_INFO[kinds[id].kind];
+        ctx.fillText(`${icon} ${name}`, sx(r.x + r.w / 2), sy(r.y + r.h / 2));
       }
       // Where you're heading, then you.
       const end = me.current.path[me.current.path.length - 1];
@@ -147,7 +149,7 @@ export default function WalkLab() {
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- see() and rule() only read plan, layout and refs
-  }, [plan, layout, doorRoom]);
+  }, [plan, layout, doorRoom, kinds]);
 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const el = e.currentTarget, box = el.getBoundingClientRect();
@@ -157,7 +159,7 @@ export default function WalkLab() {
     me.current = walkTo(plan, me.current, spot, rule(progressRef.current));
   };
 
-  const label = !here ? "a tunnel" : here === layout.start ? "the entrance" : here === layout.boss ? "the boss's room" : `a ${layout.rooms[here].shape} room`;
+  const label = !here ? "a tunnel" : `${ROOM_INFO[kinds[here].kind].name} (${layout.rooms[here].shape})`;
   const sound = routeProblems(layout, DUNGEONS[0].spec.minRoute).length === 0;
 
   return (

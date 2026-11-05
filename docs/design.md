@@ -749,8 +749,12 @@ How it came about, round by round: history.md.
      finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
      but never shows past the edge (`cameraAt`). Speed, tile size on screen (16px) and tap
      reach are provisional: the user judges them in the lab.
-  3. **Gen 3, what's in each room:** the Encampment's room mix as it is (dens, stashes, a
-     chest, mini bosses, the chief at the top).
+  3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
+     Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the
+     scroll map uses too): the entrance (treasure on your first run), dens or a stash 30% of the
+     time, never two stashes joined by a tunnel, one hidden chest, at least one stash (up to 2
+     marked), the chief's camp in the boss's room. Filled from the bottom up. No mini bosses: the
+     live Encampment has none. Fights and pickups come with step 6.
   4. **Gen 4, extras** like witches and healing pools sitting inside other rooms: later (the
      user picked this, 2026-11-05: witches and pools stay rooms of their own for now, so the
      walkable run matches the live balance first). Then scenery.

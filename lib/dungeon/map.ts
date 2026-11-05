@@ -198,17 +198,10 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   // The Labyrinth's gentle start (MINIBOSS_FROM, FIRST_ROOM_DENS in run.ts):
   // its first rooms are nearly all creature dens, and no mini boss lurks early.
   const roomDepth = depths(map);
-  // (From the bottom up: each of the Encampment's rooms looks at the ones behind it.)
-  const bottomUp = dungeon === 0 ? Object.values(map.nodes).sort((a, b) => b.y - a.y) : Object.values(map.nodes);
-  for (const n of bottomUp) {
+  if (dungeon === 0) fillCamp(map, firstRun, rng);
+  else for (const n of Object.values(map.nodes)) {
     const d = roomDepth.get(n.id) ?? Infinity;
-    // The Encampment (dungeon 0): dens and stashes, never two stashes in a row, the camp at the top.
-    if (dungeon === 0 && n.id === map.boss) Object.assign(n, { kind: "encampment", large: true });
-    else if (n.id === map.boss) n.kind = "boss";
-    else if (dungeon === 0 && n.id !== map.start) {
-      const behind = n.links.filter((l) => isAhead(map.nodes[l], n)).map((l) => map.nodes[l]);
-      n.kind = campRoomKind(behind.some((b) => b.kind === "stash"), rng);
-    }
+    if (n.id === map.boss) n.kind = "boss";
     else if (n.id === map.start) n.kind = firstRun ? "treasure" : "entrance";
     else {
       const mystery = rng() < MYSTERY_CHANCE;
@@ -218,8 +211,6 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
       else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
     }
   }
-  // The Encampment always has a chest (never marked) and a stash (marked).
-  if (dungeon === 0) campStashes(map, rng);
   // A few rooms are marked on the scroll from the start (never mysteries,
   // nor the Encampment's chest and stashes: campStashes marks those).
   const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery
@@ -241,6 +232,24 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   }
   map.knownLinks = knownLinks;
   placeLarge(map, spec.large, rng, dynamite);
+  return map;
+}
+
+// What's in the Encampment's rooms (dungeon 0), on the scroll map and the
+// walkable layout (layout.ts: campMap) alike: dens and stashes, never two
+// stashes in a row, the camp at the top, then campStashes. Filled from the
+// bottom up, each room looking at the rooms joined to it that are already
+// filled (behind it, or level with it).
+export function fillCamp(map: DungeonMap, firstRun: boolean, rng: Rng): DungeonMap {
+  const done = new Set<string>();
+  for (const n of Object.values(map.nodes).sort((a, b) => b.y - a.y)) {
+    if (n.id === map.boss) Object.assign(n, { kind: "encampment", large: true });
+    else if (n.id === map.start) n.kind = firstRun ? "treasure" : "entrance";
+    else n.kind = campRoomKind(n.links.some((l) => done.has(l) && map.nodes[l].kind === "stash"), rng);
+    done.add(n.id);
+  }
+  // It always has a chest (never marked) and a stash (marked).
+  campStashes(map, rng);
   return map;
 }
 

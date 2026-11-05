@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { DUNGEONS } from "../lib/dungeon/run";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
-  rollLayout, layoutFloorplan, layoutMap, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
+  rollLayout, layoutFloorplan, layoutMap, campMap, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
   SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
+import { CAMP_STASH_MARKS } from "../lib/dungeon/map";
 
 function seeded(seed: number) {
   let s = seed;
@@ -108,5 +109,33 @@ describe("labyrinth layout (gen 1 and 2)", () => {
     // Not even into the tunnel's top door from the room above.
     const door = { x: up.rect.x + 1, y: up.rect.y };
     expect(stepRule(l, fp, after)({ x: door.x, y: door.y - 1 }, door)).toBe(false);
+  });
+});
+
+describe("labyrinth layout (gen 3: what's in each room)", () => {
+  it("fills an Encampment like the live one: dens and stashes, never two stashes side by side, one chest, the camp on top", () => {
+    const problems: string[] = [];
+    for (let seed = 1; seed <= 12; seed++) {
+      const l = encampment(seed);
+      const map = campMap(l, seed % 3 === 0, seeded(seed + 100));
+      const tag = (p: string) => `seed ${seed}: ${p}`;
+      const nodes = Object.values(map.nodes);
+      if (map.nodes[l.start].kind !== (seed % 3 === 0 ? "treasure" : "entrance")) problems.push(tag(`start is ${map.nodes[l.start].kind}`));
+      if (map.nodes[l.boss].kind !== "encampment" || !map.nodes[l.boss].large) problems.push(tag("no camp on top"));
+      const rest = nodes.filter((n) => n.id !== l.start && n.id !== l.boss);
+      const odd = rest.filter((n) => !["easy", "stash", "chest"].includes(n.kind));
+      if (odd.length > 0) problems.push(tag(`odd rooms: ${odd.map((n) => n.kind).join(", ")}`));
+      const chests = rest.filter((n) => n.kind === "chest");
+      if (chests.length !== 1 || !chests[0].hidden) problems.push(tag(`${chests.length} chests`));
+      const stashes = rest.filter((n) => n.kind === "stash");
+      if (stashes.length === 0) problems.push(tag("no stash"));
+      if (stashes.filter((n) => n.known && n.pinned).length !== Math.min(stashes.length, CAMP_STASH_MARKS)) problems.push(tag("stash marks"));
+      for (const n of stashes) if (n.links.some((o) => map.nodes[o].kind === "stash")) problems.push(tag(`stashes side by side at ${n.id}`));
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it("is the same fill for the same roll", () => {
+    expect(campMap(encampment(4), false, seeded(9))).toEqual(campMap(encampment(4), false, seeded(9)));
   });
 });

@@ -1,9 +1,8 @@
 // lib/dungeon/layout.ts
 // The walkable Labyrinth's layout, rolled in layers like the user's sketches
 // (docs/ideas/gen-roll-1…4.png): first the rooms, packed together like a
-// jigsaw, then straight tunnels between neighbours. (What's in each room
-// comes next; this is only the shape.) Long winding tunnels, the first
-// try, were too much walking.
+// jigsaw, then straight tunnels between neighbours, then what's in each
+// room (campMap). Long winding tunnels, the first try, were too much walking.
 //
 // - Everything is measured in blocks of BLOCK×BLOCK tiles: room sizes,
 //   places and the rock between them, so it all lines up. A room's size is
@@ -31,7 +30,7 @@
 //   MAX_TUNNELS tunnels, and the shortest route is spec.minRoute rooms or
 //   more.
 
-import { linkKey, type DungeonMap, type MapNode, type MapSpec } from "./map";
+import { linkKey, fillCamp, type DungeonMap, type MapNode, type MapSpec } from "./map";
 import { FLOOR, TUNNEL, DOOR, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
 
 export const BLOCK = 3;            // tiles across a block
@@ -325,7 +324,7 @@ function pickTunnels(layout: Layout, options: Tunnel[], minRoute: number, rng: R
 // --- Out to the rest of the game --------------------------------------------
 
 // The layout as a scroll map: a node per room (at its middle, in tiles), and a
-// link per tunnel. What's in the rooms isn't rolled yet ("easy" for now).
+// link per tunnel. Just the shape: every room "easy" (campMap fills them).
 export function layoutMap(layout: Layout): DungeonMap {
   const nodes: Record<string, MapNode> = {};
   for (const r of Object.values(layout.rooms)) {
@@ -336,6 +335,11 @@ export function layoutMap(layout: Layout): DungeonMap {
   for (const t of layout.tunnels) { nodes[t.a].links.push(t.b); nodes[t.b].links.push(t.a); }
   return { h: layout.h * BLOCK, start: layout.start, boss: layout.boss, nodes };
 }
+
+// Gen 3, what's in each room: the Encampment's mix as it is in the live game
+// (map.ts: fillCamp), on the walkable layout. firstRun: the entrance holds treasure.
+export const campMap = (layout: Layout, firstRun: boolean, rng: Rng = Math.random): DungeonMap =>
+  fillCamp(layoutMap(layout), firstRun, rng);
 
 // The layout as tiles to walk on (floorplan.ts's Floorplan, so walk.ts and
 // checkFloorplan work on it). A tunnel's end rows are doors in its rooms' walls.
