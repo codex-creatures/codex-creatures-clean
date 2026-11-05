@@ -715,23 +715,30 @@ How it came about, round by round: history.md.
        10×4, tall 4×10, big 8×6, the entrance 14×4, the boss's room 10×8 (`SHAPES`; provisional).
        And the **dog-leg** (the user, 2026-11-05): an L, a 9×4 and a 4×9 joined at a corner
        (9×9 overall), turned any of 4 ways (`cut`: the corner it lacks), as likely as a wide room.
-     - **Gen 1, rooms:** the entrance alone along the bottom, then rooms dropped one by one into
-       the lowest free spot, 1–3 blocks of rock round each, snug against one side;
-       `LAYOUT_W` 30 blocks across (the user, 2026-11-05: about **4 rooms across the middle**;
-       sims average 4.1). The boss's room on top, where most rooms could tunnel into it. A
-       dog-leg is packed as its whole 9×9 box (tunnels may cross its missing corner).
-     - **Gen 2, tunnels:** straight, **3 tiles wide** (the user: so you can get about), only
-       between rooms (any arm of a dog-leg) whose facing floors overlap enough, across up to 6
-       blocks of rock (`MAX_REACH`; was 3: the user wanted longer tunnels too). **Twins** (the
-       user, 2026-11-05: two tunnels into the same room make it harder to work out): a second
-       tunnel between the same two rooms, 2+ tiles of rock from the first, dug 30% of the time
-       (`TWIN_CHANCE`) or wherever a room needs it for a second way on. Everything is dug, then
-       tunnels are dropped (off the shortest route till it's 7+ rooms, from rooms with more than
-       5, then any at 50%) as long as it stays sound. So the most direct way isn't always there.
-       (Sims, 40 rolls: about 9 up and 15 sideways tunnels, 5 twins and 1 dog-leg a map.)
+     - **Gen 1, rooms:** the entrance alone along the bottom, then rooms dropped in one by one,
+       1–3 blocks of rock round each, **laid like bricks**: each as low as it'll go, within a
+       block (`PACK_SLACK`) of that where it sits over the most rooms below, so rooms get more
+       than one way up. `LAYOUT_W` 30 blocks across (the user, 2026-11-05: about **4 rooms across
+       the middle**; staggered, so a band a room tall across the middle holds about 4.9, a single
+       line 2.7; 34 or 38 wide gave fewer tunnels up). The boss's room on top, where most rooms
+       could tunnel into it. A dog-leg is packed as its whole 9×9 box (tunnels may cross its
+       missing corner).
+     - **Gen 2, tunnels:** straight, **3 tiles wide** (the user: so you can get about), between
+       rooms (any arm of a dog-leg) whose facing floors overlap enough for one, its side flush with
+       a corner at most (`DOOR_INSET` 0, so a 2-block overlap does: rooms can sit over two below),
+       across up to 6 blocks of rock (`MAX_REACH`; was 3: the user wanted longer tunnels too).
+       **Twins** (the user, 2026-11-05): a second tunnel **up** into the same room, 30% of the time
+       where one fits (`TWIN_CHANCE`), at least 3 blocks of rock from the first (`TWIN_PILLAR`),
+       so the two look like they could lead to different rooms. Never sideways (a sideways move can
+       be undone), and **a twin is never a choice**: two tunnels into one room are one decision.
+       Everything is dug, then tunnels are dropped (off the shortest route till it's 7+ rooms,
+       from rooms with more than 5, then up ones 20% and sideways 60% of the time:
+       `UP_DROP_CHANCE`, `SIDE_DROP_CHANCE`, as going up is a lasting choice and there should be
+       plenty) as long as it stays sound. So the most direct way isn't always there.
+       (Sims, 100 rolls: about 14 up and 12 sideways tunnels a map, 0.4 twins, 1 dog-leg.)
      - **Always a choice** (the user, 2026-11-05: keep the "do I go left or right here?"
-       feeling; `fewChoices`): from every room but the boss's there are 2+ ways on, counting
-       tunnels up out of it and sideways tunnels that lead on (into a room with a tunnel up, or on
+       feeling; `fewChoices`): from every room but the boss's there are 2+ **different rooms**
+       to go on to: up, or sideways into a room that leads on (one with a tunnel up, or on
        sideways again to one, never back the way you came). A dead end off to the side doesn't
        count, and the room it hangs off still needs 2 other ways on.
      - **Forward only** (the user, 2026-11-05): up tunnels are one way. Going up one draws a line
@@ -740,10 +747,11 @@ How it came about, round by round: history.md.
        hanging partly behind the line. You never go back down an up tunnel below the line you've
        crossed, not even by sliding sideways first (the user confirmed, 2026-11-05).
      - **Sound** (`routeProblems`, every roll is checked and rerolled if not): no traps (wherever
-       you go, the boss can still be reached), every room reachable, 2–3 ways out of the entrance,
-       2+ into the boss, 5 tunnels a room at most, the shortest route 7+ rooms, always a choice;
-       and the tiles pass `checkFloorplan` (tunnels join exactly the rooms they should, twins
-       counted). About 20 ms a layout.
+       you go, the boss can still be reached), every room reachable, the entrance leading to 2–3
+       rooms, **3+ rooms leading into the boss** (`BOSS_WAYS`; the user, 2026-11-05: 2–3 at
+       least), 5 tunnels a room at most, the shortest route 7+ rooms, always a choice; and the
+       tiles pass `checkFloorplan` (tunnels join exactly the rooms they should, twins counted).
+       About 50 ms a layout (most rolls fail fast; up to 3000 tries).
      - (A first try laid the scroll map out on tiles and dug tunnels round the rooms: long and
        winding, too much walking. Deleted; `lib/dungeon/floorplan.ts` keeps only the tile types
        and `checkFloorplan`.)

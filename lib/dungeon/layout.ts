@@ -8,18 +8,20 @@
 //   places and the rock between them, so it all lines up. A room's size is
 //   its footprint, walls included.
 // - Gen 1, rooms: the entrance alone along the bottom, then rooms of the
-//   SHAPES dropped into the lowest free spot one by one (GAP_BLOCKS of rock
-//   round each), LAYOUT_W blocks across (about 4 rooms side by side in the
+//   SHAPES dropped in one by one, low down and laid like bricks over the
+//   rooms below (GAP_BLOCKS of rock round each), LAYOUT_W blocks across (about 4 rooms side by side in the
 //   middle), then the boss's room on top. One shape is a dog-leg: an L, two
 //   long rooms joined at a right angle, turned any of four ways (its `cut`
 //   is the corner it lacks; packed as its whole box).
 // - Gen 2, tunnels: a straight tunnel, TUNNEL_W tiles wide, can join two
 //   rooms whose facing walls overlap enough, with at most MAX_REACH blocks of
 //   rock between them and nothing else in the way; now and then a second one
-//   beside it (TWIN_CHANCE: two ways into the same room). All are dug (twins
-//   by chance, or where a room needs one for a second way on); then tunnels
-//   are dropped at random (DROP_CHANCE) as long as the layout stays sound
-//   (routeProblems), so the straight way up isn't always there.
+//   up into the same room, well apart from the first, so they look like they
+//   could lead to different rooms (TWIN_CHANCE; never sideways: a sideways
+//   move can be undone). All are dug; then tunnels are dropped at random
+//   (UP_DROP_CHANCE, SIDE_DROP_CHANCE: ups kept more, as going up is for
+//   good) as long as the layout stays sound (routeProblems), so the straight
+//   way up isn't always there.
 //
 // Moving on (the user, 2026-11-05): you only ever go forward or sideways.
 // - A tunnel going up is one way: up.
@@ -29,11 +31,12 @@
 //   even into a room that hangs partly behind the line.
 // - Sound (routeProblems): wherever you go, the boss can still be reached
 //   (no traps), every room can be reached somehow, the entrance has
-//   START_WAYS ways out, the boss BOSS_WAYS ways in, no room more than
+//   START_WAYS rooms it leads to, the boss BOSS_WAYS rooms leading in, no room more than
 //   MAX_TUNNELS tunnels, the shortest route is spec.minRoute rooms or more,
 //   and every room offers a choice (the user, 2026-11-05: never just one way
-//   on): CHOICES or more of tunnels up out of it and sideways tunnels into
-//   rooms with a tunnel up out of them.
+//   on): CHOICES or more rooms to go on to, up or sideways into rooms that
+//   lead on. Twins count once (the user: two tunnels into the same room are
+//   one decision).
 
 import type { RoomKind } from "./run";
 import { linkKey, fillCamp, markRooms, type DungeonMap, type MapNode, type MapSpec } from "./map";
@@ -54,18 +57,21 @@ export const SHAPES: Shape[] = [
 export const START_SHAPE: Shape = { name: "start", w: 14, h: 4, weight: 0 };
 export const BOSS_SHAPE: Shape = { name: "boss", w: 10, h: 8, weight: 0 };
 export const GAP_BLOCKS = [1, 3];  // rock between two rooms (at least)
+export const PACK_SLACK = 1;      // blocks higher a room may go, to sit over more rooms
 export const START_BESIDE = 1;     // blocks of rock beside the entrance, so the first rooms sit over it
-export const MIN_OVERLAP = 3;      // blocks two rooms' facing walls share, for a tunnel between them
+export const MIN_OVERLAP = 2;      // blocks two rooms' facing walls share, for a tunnel between them
+export const DOOR_INSET = 0;       // tiles a door sits in from the corner of a floor
 export const MAX_REACH = 6;        // blocks of rock a tunnel may cross
 export const TUNNEL_W = 3;         // tiles
-export const TWIN_CHANCE = 0.3;    // a second tunnel between the same two rooms, where one fits
-export const TWIN_PILLAR = 2;      // tiles of rock between twins, at least
-export const DROP_CHANCE = 0.5;    // a tunnel that could go, goes
+export const TWIN_CHANCE = 0.3;    // a second tunnel up between the same two rooms, where one fits
+export const TWIN_PILLAR = 9;      // tiles of rock between twins, at least (3 blocks: not side by side)
+export const UP_DROP_CHANCE = 0.2;   // a tunnel up that could go, goes
+export const SIDE_DROP_CHANCE = 0.6;  // …and a sideways one
 export const MAX_TUNNELS = 5;      // per room
-export const START_WAYS = [2, 3];  // ways out of the entrance
-export const BOSS_WAYS = 2;        // ways into the boss's room (at least)
+export const START_WAYS = [2, 3];  // rooms the entrance leads to
+export const BOSS_WAYS = 3;        // rooms leading into the boss's (at least; the user, 2026-11-05)
 export const CHOICES = 2;          // ways on from every room (see the top)
-export const LAYOUT_REROLLS = 400;
+export const LAYOUT_REROLLS = 3000;
 
 export type Corner = "ne" | "nw" | "se" | "sw";
 const CORNERS: Corner[] = ["ne", "nw", "se", "sw"];
@@ -99,8 +105,8 @@ function weighted(rng: Rng, shapes: Shape[]): Shape[] {
 // --- Gen 1: rooms -----------------------------------------------------------
 
 // Packed from the bottom up: `top` is how high each column of blocks is
-// filled, and each room goes in the lowest stretch of columns, GAP_BLOCKS
-// above what's there and clear of its neighbours by a block or more.
+// filled, and each room goes GAP_BLOCKS above what's under it and clear of
+// its neighbours by a block or more.
 export function rollRooms(count: number, rng: Rng): Layout {
   const W = LAYOUT_W;
   const placed: { id: string; shape: Shape; x: number; b: number; cut?: Corner }[] = []; // b: blocks up from the bottom
@@ -117,37 +123,26 @@ export function rollRooms(count: number, rng: Rng): Layout {
   top.fill(START_SHAPE.h + START_BESIDE);
   const sx = placed[0].x;
   top.fill(START_SHAPE.h, sx, sx + START_SHAPE.w);
-  const narrowest = Math.min(...SHAPES.map((s) => s.w));
-  for (let n = 1; n <= count;) {
-    // The lowest stretches of columns; one at random.
-    const low = Math.min(...top);
-    const runs: [number, number][] = [];
-    for (let c = 0; c < W; c++) if (top[c] === low && (c === 0 || top[c - 1] !== low)) {
-      let e = c;
-      while (e < W && top[e] === low) e++;
-      runs.push([c, e]);
+  // Each room (its shape by weight) goes as low as it can, within PACK_SLACK
+  // blocks of that where it sits over the most rooms it could tunnel down
+  // into: laid like bricks, so most rooms have two ways up.
+  const under = (x: number, b: number, s: Shape) => placed.filter((p) =>
+    p.b + p.shape.h <= b && b - (p.b + p.shape.h) <= MAX_REACH
+    && Math.min(x + s.w, p.x + p.shape.w) - Math.max(x, p.x) >= MIN_OVERLAP).length;
+  for (let n = 1; n <= count; n++) {
+    const shape = weighted(rng, SHAPES)[0], gap = between(rng, GAP_BLOCKS);
+    const spots: { x: number; b: number; below: number }[] = [];
+    for (let x = 0; x + shape.w <= W; x++) {
+      let b = Math.max(...top.slice(x, x + shape.w)) + gap;
+      while (!clear(x, b, shape)) b++;
+      spots.push({ x, b, below: under(x, b, shape) });
     }
-    const [r0, r1] = runs[Math.floor(rng() * runs.length)];
-    if (r1 - r0 < narrowest) {
-      // Too narrow for any room: rock, up to its lower neighbour.
-      top.fill(Math.min(r0 > 0 ? top[r0 - 1] : Infinity, r1 < W ? top[r1] : Infinity), r0, r1);
-      continue;
-    }
-    const b = low + between(rng, GAP_BLOCKS);
-    let done = false;
-    for (const shape of weighted(rng, SHAPES)) {
-      if (shape.w > r1 - r0) continue;
-      // Snug against one end of the stretch (a block off any neighbour), so
-      // what's left stays in one piece and rooms line up with the ones below.
-      const xs = Array.from({ length: r1 - r0 - shape.w + 1 }, (_, i) => r0 + i);
-      if (rng() < 0.5) xs.reverse();
-      const x = xs.find((x) => clear(x, b, shape));
-      if (x === undefined) continue;
-      put(`r${n++}`, shape, x, b);
-      done = true;
-      break;
-    }
-    if (!done) top.fill(low + 1, r0, r1); // hemmed in by a neighbour: try a block higher
+    const low = Math.min(...spots.map((p) => p.b));
+    const near = spots.filter((p) => p.b <= low + PACK_SLACK);
+    const most = Math.max(...near.map((p) => p.below));
+    const best = near.filter((p) => p.below === most);
+    const { x, b } = best[Math.floor(rng() * best.length)];
+    put(`r${n}`, shape, x, b);
   }
   // The boss's room on top, above every other room's floor: where the most
   // rooms could tunnel up into it, then as low as it'll go, then nearest the middle.
@@ -197,9 +192,9 @@ const overlaps = (a: Rect, b: Rect, margin = 0) =>
 // --- Gen 2: tunnels ---------------------------------------------------------
 
 // Every tunnel that could be dug: straight across the rock between two rooms'
-// facing walls (any arm of a dog-leg), a tile in from their corners, through
+// facing walls (any arm of a dog-leg), DOOR_INSET in from their corners, through
 // nothing else and a tile clear of the other tunnels. And twins, where one
-// fits: a second between the same two rooms, well apart from the first.
+// fits: a second up between the same two rooms, TWIN_PILLAR from the first.
 export function tunnelOptions(layout: Layout, rng: Rng): Tunnel[] {
   const rooms = Object.values(layout.rooms);
   const prints = rooms.flatMap(footprintsOf);
@@ -221,13 +216,13 @@ export function tunnelOptions(layout: Layout, rng: Rng): Tunnel[] {
       // One above the other: from the bottom of a floor of the upper room to the top of one of the lower's.
       for (const fh of floorsOf(hi)) for (const fl of floorsOf(lo)) {
         const y = fh.y + fh.h, h = fl.y - y;
-        if (h <= reach) for (let x = Math.max(fh.x, fl.x) + 1; x + TUNNEL_W <= Math.min(fh.x + fh.w, fl.x + fl.w) - 1; x++) spots.push({ x, y, w: TUNNEL_W, h });
+        if (h <= reach) for (let x = Math.max(fh.x, fl.x) + DOOR_INSET; x + TUNNEL_W <= Math.min(fh.x + fh.w, fl.x + fl.w) - DOOR_INSET; x++) spots.push({ x, y, w: TUNNEL_W, h });
       }
     } else if (l.x + l.w <= r.x) {
       // Side by side.
       for (const fl of floorsOf(l)) for (const fr of floorsOf(r)) {
         const x = fl.x + fl.w, w = fr.x - x;
-        if (w <= reach) for (let y = Math.max(fl.y, fr.y) + 1; y + TUNNEL_W <= Math.min(fl.y + fl.h, fr.y + fr.h) - 1; y++) spots.push({ x, y, w, h: TUNNEL_W });
+        if (w <= reach) for (let y = Math.max(fl.y, fr.y) + DOOR_INSET; y + TUNNEL_W <= Math.min(fl.y + fl.h, fr.y + fr.h) - DOOR_INSET; y++) spots.push({ x, y, w, h: TUNNEL_W });
       }
     } else continue;
     const [from, to] = up ? [lo.id, hi.id] : [l.id, r.id];
@@ -239,7 +234,8 @@ export function tunnelOptions(layout: Layout, rng: Rng): Tunnel[] {
   }
   // The twins, once every pair has its first (so they don't crowd out other rooms' tunnels).
   for (const { first, spots } of pairs) {
-    const apart = (s: Rect) => (first.up ? Math.abs(s.x - first.rect.x) : Math.abs(s.y - first.rect.y)) >= TUNNEL_W + TWIN_PILLAR;
+    if (!first.up) continue;
+    const apart = (s: Rect) => Math.abs(s.x - first.rect.x) >= TUNNEL_W + TWIN_PILLAR;
     const twin = spots.find((s) => apart(s) && fits(s, first.up));
     if (twin) out.push({ ...first, key: `${first.key}${TWIN}`, rect: twin });
   }
@@ -320,18 +316,20 @@ function explore(layout: Layout, tunnels: Tunnel[]) {
 }
 
 const tunnelCount = (tunnels: Tunnel[], id: string) => tunnels.filter((t) => t.a === id || t.b === id).length;
+// The rooms a room's tunnels join it to (twins once).
+const joinedTo = (tunnels: Tunnel[], id: string) => new Set(tunnels.flatMap((t) => (t.a === id ? [t.b] : t.b === id ? [t.a] : []))).size;
 
-// The rooms (bar the boss's) with fewer than CHOICES ways on: tunnels up out
-// of them, and sideways tunnels that lead on: into the boss's room, a room
-// with a tunnel up out of it, or on sideways again to one (never back the
-// way you came).
+// The rooms (bar the boss's) with fewer than CHOICES ways on: rooms a tunnel
+// up leads to, and rooms sideways that lead on: the boss's, a room with a
+// tunnel up out of it, or on sideways again to one (never back the way you
+// came). A twin is the same way on as its first.
 export function fewChoices(layout: Layout, tunnels = layout.tunnels): string[] {
   const sideways = (id: string) => tunnels.filter((t) => !t.up && (t.a === id || t.b === id)).map((t) => (t.a === id ? t.b : t.a));
   const leadsOn = (id: string, been: Set<string>): boolean =>
     id === layout.boss || tunnels.some((t) => t.up && t.a === id)
     || sideways(id).some((n) => !been.has(n) && leadsOn(n, new Set([...been, id])));
-  const ways = (id: string) => tunnels.filter((t) => t.up && t.a === id).length
-    + sideways(id).filter((n) => leadsOn(n, new Set([id]))).length;
+  const ways = (id: string) => new Set(tunnels.filter((t) => t.up && t.a === id).map((t) => t.b)).size
+    + new Set(sideways(id).filter((n) => leadsOn(n, new Set([id])))).size;
   return Object.keys(layout.rooms).filter((id) => id !== layout.boss && ways(id) < CHOICES);
 }
 
@@ -341,9 +339,9 @@ export function routeProblems(layout: Layout, minRoute: number, tunnels = layout
   const problems = unreached.map((id) => `${id} can't be reached`);
   if (stuck.length > 0) problems.push(`stuck in ${stuck.join(", ")}`);
   if (route < minRoute) problems.push(`the route to the boss is ${route} rooms`);
-  const out = tunnelCount(tunnels, layout.start);
+  const out = joinedTo(tunnels, layout.start), into = joinedTo(tunnels, layout.boss);
   if (out < START_WAYS[0] || out > START_WAYS[1]) problems.push(`${out} ways out of the entrance`);
-  if (tunnelCount(tunnels, layout.boss) < BOSS_WAYS) problems.push(`${tunnelCount(tunnels, layout.boss)} ways into the boss`);
+  if (into < BOSS_WAYS) problems.push(`${into} ways into the boss`);
   const crowded = Object.keys(layout.rooms).filter((id) => tunnelCount(tunnels, id) > MAX_TUNNELS);
   if (crowded.length > 0) problems.push(`too many tunnels in ${crowded.join(", ")}`);
   const few = fewChoices(layout, tunnels);
@@ -351,23 +349,17 @@ export function routeProblems(layout: Layout, minRoute: number, tunnels = layout
   return problems;
 }
 
-// Dig them all (twins by chance, or where a room needs one for a second way
-// on), then drop tunnels while it
-// stays sound: off the shortest route till it's long enough, from rooms with
-// too many, then any at DROP_CHANCE.
+// Dig them all (twins by chance), then drop tunnels while it stays sound: off
+// the shortest route till it's long enough, from rooms with too many, then
+// any at UP_DROP_CHANCE or SIDE_DROP_CHANCE.
 function pickTunnels(layout: Layout, options: Tunnel[], minRoute: number, rng: Rng): Tunnel[] | null {
   let chosen = options.filter((t) => !isTwin(t));
-  // Twins: TWIN_CHANCE of them, and any a room needs for a second way on.
-  for (const t of options.filter(isTwin)) {
-    if (!chosen.some((c) => c.key === t.key.slice(0, -TWIN.length))) continue;
-    const short = fewChoices(layout, chosen);
-    if (rng() < TWIN_CHANCE || short.includes(t.a) || short.includes(t.b)) chosen.push(t);
-  }
+  for (const t of options.filter(isTwin)) if (rng() < TWIN_CHANCE) chosen.push(t);
   // Sound but for things dropping tunnels can fix.
   const sound = (ts: Tunnel[]) => {
     const { unreached, stuck } = explore(layout, ts);
     return unreached.length === 0 && stuck.length === 0 && fewChoices(layout, ts).length === 0
-      && tunnelCount(ts, layout.start) >= START_WAYS[0] && tunnelCount(ts, layout.boss) >= BOSS_WAYS;
+      && joinedTo(ts, layout.start) >= START_WAYS[0] && joinedTo(ts, layout.boss) >= BOSS_WAYS;
   };
   if (!sound(chosen)) return null;
   const drop = (t: Tunnel) => {
@@ -379,10 +371,9 @@ function pickTunnels(layout: Layout, options: Tunnel[], minRoute: number, rng: R
   for (let { route, routeTunnels } = explore(layout, chosen); route < minRoute; { route, routeTunnels } = explore(layout, chosen)) {
     if (!shuffle(rng, routeTunnels).some(drop)) return null;
   }
-  const cap = (id: string) => (id === layout.start ? START_WAYS[1] : MAX_TUNNELS);
+  const over = (id: string) => (id === layout.start ? joinedTo(chosen, id) > START_WAYS[1] : tunnelCount(chosen, id) > MAX_TUNNELS);
   for (const t of shuffle(rng, chosen)) {
-    const over = tunnelCount(chosen, t.a) > cap(t.a) || tunnelCount(chosen, t.b) > cap(t.b);
-    if (over || rng() < DROP_CHANCE) drop(t);
+    if (over(t.a) || over(t.b) || rng() < (t.up ? UP_DROP_CHANCE : SIDE_DROP_CHANCE)) drop(t);
   }
   return routeProblems(layout, minRoute, chosen).length === 0 ? chosen : null;
 }

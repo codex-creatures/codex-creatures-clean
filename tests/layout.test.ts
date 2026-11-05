@@ -3,7 +3,7 @@ import { DUNGEONS } from "../lib/dungeon/run";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
   rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
-  SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, type Layout, type Tunnel,
+  SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, TWIN_PILLAR, BOSS_WAYS, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
 import { CAMP_STASH_MARKS } from "../lib/dungeon/map";
@@ -189,34 +189,48 @@ describe("labyrinth layout: variety (the user, 2026-11-05)", () => {
     // tiny(): start → a (up), a ↔ b (sideways), b → boss (up).
     const l = tiny([["start", "a", true], ["a", "b", false], ["b", "boss", true]]);
     expect(fewChoices(l)).toEqual(["start", "a", "b"]); // one way on from each
-    // A twin up from the entrance, and a way up from a too: every room has two ways on.
+    // A way up from a too: a and b each have two ways on, but the entrance's
+    // twin tunnels both lead to a, which is one choice (the user, 2026-11-05).
     const twin = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true], ["b", "boss", true]]);
     twin.tunnels[1].key += "#2";
-    expect(fewChoices(twin)).toEqual([]);
+    expect(fewChoices(twin)).toEqual(["start"]);
     // Sideways into a dead end isn't a way on (b leads only back to a).
     const dead = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true]]);
     dead.tunnels[1].key += "#2";
-    expect(fewChoices(dead)).toEqual(["a", "b"]);
+    expect(fewChoices(dead)).toEqual(["start", "a", "b"]);
   });
 
-  it("rolls rooms about 4 across the middle, long tunnels, twins and dog-legs", () => {
-    let across = 0, long = 0, twins = 0, legs = 0, sideways = 0;
+  it("rolls rooms about 4 across the middle, more tunnels up than sideways, 3 ways into the boss, long tunnels, twins far apart, dog-legs", () => {
+    let across = 0, long = 0, twins = 0, legs = 0, sideways = 0, ups = 0;
+    const problems: string[] = [];
     const N = 20;
     for (let seed = 1; seed <= N; seed++) {
       const l = encampment(seed);
       const rooms = Object.values(l.rooms).filter((r) => r.id !== l.start && r.id !== l.boss);
       const mid = (Math.min(...rooms.map((r) => r.y)) + Math.max(...rooms.map((r) => r.y + r.h))) / 2;
-      across += rooms.filter((r) => r.y <= mid && r.y + r.h >= mid).length;
+      across += rooms.filter((r) => r.y <= mid + 3 && r.y + r.h >= mid - 3).length; // (a band a room tall: they're staggered)
       long += l.tunnels.filter((t) => (t.up ? t.rect.h : t.rect.w) - 2 > 3 * 3).length; // past the old 3 blocks
-      twins += l.tunnels.filter((t) => t.key.endsWith("#2")).length;
       legs += rooms.filter((r) => r.cut).length;
       sideways += l.tunnels.filter((t) => !t.up).length;
+      ups += l.tunnels.filter((t) => t.up).length;
+      // Twins: only up, never side by side.
+      for (const t of l.tunnels.filter((t) => t.key.endsWith("#2"))) {
+        twins++;
+        const first = l.tunnels.find((f) => f.key === t.key.slice(0, -2)); // (gone if it was dropped)
+        if (!t.up) problems.push(`seed ${seed}: a sideways twin`);
+        if (first && Math.abs(t.rect.x - first.rect.x) < TUNNEL_W + TWIN_PILLAR) problems.push(`seed ${seed}: twins side by side`);
+      }
+      const into = new Set(l.tunnels.flatMap((t) => (t.a === l.boss ? [t.b] : t.b === l.boss ? [t.a] : [])));
+      if (into.size < BOSS_WAYS) problems.push(`seed ${seed}: ${into.size} rooms into the boss`);
     }
-    expect(across / N).toBeGreaterThanOrEqual(3.5);
+    expect(problems).toEqual([]);
+    expect(BOSS_WAYS).toBeGreaterThanOrEqual(3);
+    expect(across / N).toBeGreaterThanOrEqual(4);
+    expect(ups).toBeGreaterThan(sideways);
     expect(long).toBeGreaterThan(0);
-    expect(twins / N).toBeGreaterThanOrEqual(1);
+    expect(twins).toBeGreaterThan(0);
     expect(legs / N).toBeGreaterThanOrEqual(0.5);
-    expect(sideways / N).toBeGreaterThanOrEqual(8);
+    expect(sideways / N).toBeGreaterThanOrEqual(6);
   });
 
   it("a dog-leg is an L: two arms meeting at its middle, rock in the missing corner", () => {
