@@ -15,7 +15,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DUNGEONS, ROOM_INFO } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, campMap, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
+import { rollLayout, layoutFloorplan, campMap, roomCentre, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, roomAt, walkTo, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import type { Pt } from "@/lib/dungeon/floorplan";
@@ -42,9 +42,8 @@ export default function WalkLab() {
   const kinds = camp.nodes;
   const canvas = useRef<HTMLCanvasElement>(null);
   const startSpot = useMemo(() => {
-    const r = plan.rooms[layout.start];
-    return { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
-  }, [plan, layout]);
+    return roomCentre(layout.rooms[layout.start]);
+  }, [layout]);
   const me = useRef<Walker>({ ...startSpot, path: [] });
   const goal = useRef<{ x: number; y: number } | null>(null);
   const [progress, setProgress] = useState<Progress>(startProgress(layout));
@@ -71,8 +70,7 @@ export default function WalkLab() {
     const light = (x0: number, y0: number, w: number, h: number) => {
       for (let y = Math.max(0, y0); y < Math.min(plan.h, y0 + h); y++) lit.current.fill(1, y * plan.w + Math.max(0, x0), y * plan.w + Math.min(plan.w, x0 + w));
     };
-    const r = plan.rooms[room];
-    light(r.x - 1, r.y - 1, r.w + 2, r.h + 2);
+    for (const r of plan.rooms[room]) light(r.x - 1, r.y - 1, r.w + 2, r.h + 2);
     for (const t of layout.tunnels) if (t.a === room || t.b === room) light(t.rect.x - 1, t.rect.y - 1, t.rect.w + 2, t.rect.h + 2);
   };
   // Where you may walk: what the forward rule allows, and (in the dark) only what you can see.
@@ -151,12 +149,18 @@ export default function WalkLab() {
       ctx.font = "bold 12px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      for (const [id, r] of Object.entries(plan.rooms)) {
+      for (const [id, rs] of Object.entries(plan.rooms)) {
         if (darkRef.current && !seen.current.has(id)) continue;
-        if (!isOpen(layout, p, id)) { ctx.fillStyle = CLOSED; ctx.fillRect(sx(r.x) - TILE, sy(r.y) - TILE, (r.w + 2) * TILE, (r.h + 2) * TILE); }
+        if (!isOpen(layout, p, id)) {
+          // (One path, so a dog-leg's overlapping arms are dimmed once.)
+          ctx.fillStyle = CLOSED;
+          ctx.beginPath();
+          for (const r of rs) ctx.rect(sx(r.x) - TILE, sy(r.y) - TILE, (r.w + 2) * TILE, (r.h + 2) * TILE);
+          ctx.fill();
+        }
         ctx.fillStyle = COLOURS.label;
-        const { name, icon } = ROOM_INFO[kinds[id].kind];
-        ctx.fillText(`${icon} ${name}`, sx(r.x + r.w / 2), sy(r.y + r.h / 2));
+        const { name, icon } = ROOM_INFO[kinds[id].kind], c = roomCentre(layout.rooms[id]);
+        ctx.fillText(`${icon} ${name}`, sx(c.x + 0.5), sy(c.y + 0.5));
       }
       // Where you're heading, then you.
       const end = me.current.path[me.current.path.length - 1];

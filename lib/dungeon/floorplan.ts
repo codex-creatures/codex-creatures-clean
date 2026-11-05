@@ -2,6 +2,7 @@
 // The walkable Labyrinth as tiles (made by layout.ts's layoutFloorplan, walked
 // by walk.ts): rock, room floors, tunnels and their doors, and the check that
 // the tunnels join exactly the rooms the scroll links, no more and no fewer.
+// A room's floor is one rectangle, or two overlapping ones (an L-shaped room).
 
 import { linkKey, type DungeonMap } from "./map";
 
@@ -15,9 +16,9 @@ export type Floorplan = {
   w: number;
   h: number;
   tiles: Uint8Array;               // row by row, w × h
-  rooms: Record<string, Rect>;
+  rooms: Record<string, Rect[]>;   // each room's floor, in one or two rectangles
   doors: Door[];
-  tunnels: Record<string, Pt[]>;   // by linkKey: the tiles between its two rooms, doors included
+  tunnels: Record<string, Pt[]>;   // by the tunnel's key: the tiles between its two rooms, doors included
 };
 
 // Up, right, down, left.
@@ -25,7 +26,8 @@ const DIRS: Pt[] = [{ x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y:
 
 // Everything wrong with a floorplan, in words (none = it's sound): every room
 // is there, rooms never touch, and the tunnels join exactly the scroll's
-// linked rooms, each by its own tunnel, entered only by its doors.
+// linked rooms (two tunnels where it links two rooms twice), entered only by
+// their doors.
 export function checkFloorplan(fp: Floorplan, map: DungeonMap): string[] {
   const problems: string[] = [];
   const { w, h, tiles } = fp;
@@ -35,8 +37,7 @@ export function checkFloorplan(fp: Floorplan, map: DungeonMap): string[] {
   const label = new Int32Array(w * h).fill(-1);
   const ids = Object.keys(fp.rooms);
   ids.forEach((id, i) => {
-    const r = fp.rooms[id];
-    for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
+    for (const r of fp.rooms[id]) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
       if (tiles[y * w + x] !== FLOOR) problems.push(`room ${id} has a hole at ${x},${y}`);
       label[y * w + x] = i;
     }
@@ -81,18 +82,20 @@ export function checkFloorplan(fp: Floorplan, map: DungeonMap): string[] {
       opens.set(label[tun], set);
     }
   }
-  const joined = new Set<string>();
+  // Tunnels joining each pair of rooms, against the scroll's links between them.
+  const joined = new Map<string, number>(), linked = new Map<string, number>();
   for (let c = ids.length; c < next; c++) {
     const rooms = [...(opens.get(c) ?? [])];
     if (rooms.length !== 2) { problems.push(`a tunnel opens into ${rooms.length} rooms (${rooms.join(", ")})`); continue; }
     const k = linkKey(rooms[0], rooms[1]);
-    if (!map.nodes[rooms[0]].links.includes(rooms[1])) problems.push(`a tunnel joins ${k}, which the scroll doesn't link`);
-    if (joined.has(k)) problems.push(`two tunnels join ${k}`);
-    joined.add(k);
+    joined.set(k, (joined.get(k) ?? 0) + 1);
   }
-  for (const a of Object.values(map.nodes)) for (const b of a.links) {
-    const k = linkKey(a.id, b);
-    if (!joined.has(k)) problems.push(`nothing joins ${k}`);
+  for (const a of Object.values(map.nodes)) for (const b of a.links) if (a.id < b) linked.set(linkKey(a.id, b), (linked.get(linkKey(a.id, b)) ?? 0) + 1);
+  for (const k of new Set([...joined.keys(), ...linked.keys()])) {
+    const j = joined.get(k) ?? 0, l = linked.get(k) ?? 0;
+    if (l === 0) problems.push(`a tunnel joins ${k}, which the scroll doesn't link`);
+    else if (j === 0) problems.push(`nothing joins ${k}`);
+    else if (j !== l) problems.push(`${j} tunnels join ${k}, the scroll links it ${l} times`);
   }
   return [...new Set(problems)];
 }

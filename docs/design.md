@@ -713,15 +713,27 @@ How it came about, round by round: history.md.
      - **Sizes in blocks** of 3×3 tiles (`BLOCK`): room sizes, places and gaps are all whole
        blocks. A size is the footprint, walls included. The user's starting sizes: small 5×5, wide
        10×4, tall 4×10, big 8×6, the entrance 14×4, the boss's room 10×8 (`SHAPES`; provisional).
+       And the **dog-leg** (the user, 2026-11-05): an L, a 9×4 and a 4×9 joined at a corner
+       (9×9 overall), turned any of 4 ways (`cut`: the corner it lacks), as likely as a wide room.
      - **Gen 1, rooms:** the entrance alone along the bottom, then rooms dropped one by one into
-       the lowest free spot, 1–2 blocks of rock round each, snug against one side;
-       `LAYOUT_W` 24 blocks across (4 small rooms side by side; 28 made too few rows for a
-       7-room route). The boss's room on top, where most rooms could tunnel into it.
+       the lowest free spot, 1–3 blocks of rock round each, snug against one side;
+       `LAYOUT_W` 30 blocks across (the user, 2026-11-05: about **4 rooms across the middle**;
+       sims average 4.1). The boss's room on top, where most rooms could tunnel into it. A
+       dog-leg is packed as its whole 9×9 box (tunnels may cross its missing corner).
      - **Gen 2, tunnels:** straight, **3 tiles wide** (the user: so you can get about), only
-       between rooms whose facing walls overlap 3+ blocks with 3 or fewer blocks of rock between.
-       All the up ones are dug and 60% of the sideways ones; then tunnels are dropped (off the
-       shortest route till it's 7+ rooms, from rooms with more than 4, then any at 50%) as long
-       as it stays sound. So the most direct way isn't always there.
+       between rooms (any arm of a dog-leg) whose facing floors overlap enough, across up to 6
+       blocks of rock (`MAX_REACH`; was 3: the user wanted longer tunnels too). **Twins** (the
+       user, 2026-11-05: two tunnels into the same room make it harder to work out): a second
+       tunnel between the same two rooms, 2+ tiles of rock from the first, dug 30% of the time
+       (`TWIN_CHANCE`) or wherever a room needs it for a second way on. Everything is dug, then
+       tunnels are dropped (off the shortest route till it's 7+ rooms, from rooms with more than
+       5, then any at 50%) as long as it stays sound. So the most direct way isn't always there.
+       (Sims, 40 rolls: about 9 up and 15 sideways tunnels, 5 twins and 1 dog-leg a map.)
+     - **Always a choice** (the user, 2026-11-05: keep the "do I go left or right here?"
+       feeling; `fewChoices`): from every room but the boss's there are 2+ ways on, counting
+       tunnels up out of it and sideways tunnels that lead on (into a room with a tunnel up, or on
+       sideways again to one, never back the way you came). A dead end off to the side doesn't
+       count, and the room it hangs off still needs 2 other ways on.
      - **Forward only** (the user, 2026-11-05): up tunnels are one way. Going up one draws a line
        along the bottom of the room you came into; a room wholly behind it (the one you left, for
        one) is closed, and every tunnel into it. Sideways tunnels go both ways, even into a room
@@ -729,8 +741,9 @@ How it came about, round by round: history.md.
        crossed, not even by sliding sideways first (the user confirmed, 2026-11-05).
      - **Sound** (`routeProblems`, every roll is checked and rerolled if not): no traps (wherever
        you go, the boss can still be reached), every room reachable, 2–3 ways out of the entrance,
-       2+ into the boss, 4 tunnels a room at most, the shortest route 7+ rooms; and the tiles pass
-       `checkFloorplan` (tunnels join exactly the rooms they should). About 40 ms a roll.
+       2+ into the boss, 5 tunnels a room at most, the shortest route 7+ rooms, always a choice;
+       and the tiles pass `checkFloorplan` (tunnels join exactly the rooms they should, twins
+       counted). About 20 ms a layout.
      - (A first try laid the scroll map out on tiles and dug tunnels round the rooms: long and
        winding, too much walking. Deleted; `lib/dungeon/floorplan.ts` keeps only the tile types
        and `checkFloorplan`.)

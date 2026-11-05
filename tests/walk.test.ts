@@ -37,8 +37,7 @@ describe("walking the Labyrinth", () => {
       const start = entranceSpot(plan, map);
       expect(roomAt(plan, start)).toBe(map.start);
       for (const id of Object.keys(map.nodes)) {
-        const r = plan.rooms[id];
-        const there = { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
+        const there = { x: map.nodes[id].x, y: map.nodes[id].y }; // (the middle of its floor)
         const path = findPath(plan, start, there);
         if (!path) { problems.push(`seed ${seed}: no way to ${id}`); continue; }
         problems.push(...pathProblems(plan, start, path).map((p) => `seed ${seed} to ${id}: ${p}`));
@@ -57,7 +56,7 @@ describe("walking the Labyrinth", () => {
 
   it("a tap on rock beside a room walks to the room's edge; one deep in rock goes nowhere", () => {
     const { map, plan } = encampment(5);
-    const r = plan.rooms[map.start];
+    const r = plan.rooms[map.start][0];
     // Two tiles above the entrance's top-left floor (its wall, then rock).
     const near = nearestWalkable(plan, { x: r.x + 1, y: r.y - 2 });
     expect(near && walkable(plan, near.x, near.y)).toBe(true);

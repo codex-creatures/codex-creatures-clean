@@ -28,14 +28,14 @@ export const walkable = (fp: Floorplan, x: number, y: number) =>
 
 // Where a walk starts: the middle of the entrance.
 export function entranceSpot(fp: Floorplan, map: DungeonMap): Pt {
-  const r = fp.rooms[map.start];
+  const r = fp.rooms[map.start][0];
   return { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
 }
 
 // The room a spot is in (its floor, not its doors), or null in a tunnel.
 export function roomAt(fp: Floorplan, p: Pt): string | null {
   const x = Math.round(p.x), y = Math.round(p.y);
-  for (const [id, r] of Object.entries(fp.rooms)) if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return id;
+  for (const [id, rs] of Object.entries(fp.rooms)) if (rs.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h)) return id;
   return null;
 }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DUNGEONS } from "../lib/dungeon/run";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
-  rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
+  rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
   SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
@@ -14,7 +14,7 @@ function seeded(seed: number) {
 }
 
 const encampment = (seed: number) => rollLayout(DUNGEONS[0].spec, seeded(seed));
-const middle = (l: Layout, id: string) => { const f = floorOf(l.rooms[id]); return { x: f.x + Math.floor(f.w / 2), y: f.y + Math.floor(f.h / 2) }; };
+const middle = (l: Layout, id: string) => roomCentre(l.rooms[id]);
 
 // A made-up layout (blocks): the entrance, a room above it, a room beside
 // that, and the boss on top. Tunnel rects don't matter to the route rules.
@@ -72,8 +72,8 @@ describe("labyrinth layout (gen 1 and 2)", () => {
 
   it("only goes up an up tunnel, and closes what's behind", () => {
     const l = tiny([["start", "a", true], ["a", "b", false], ["b", "boss", true]]);
-    // (Sound but for its single ways out and in: a real layout needs 2.)
-    expect(routeProblems(l, 3).filter((p) => !p.includes(" ways "))).toEqual([]);
+    // (Sound but for its single ways out, in and on: a real layout needs 2.)
+    expect(routeProblems(l, 3).filter((p) => !p.includes(" ways ") && !p.includes("one way on"))).toEqual([]);
     const p = startProgress(l);
     expect(waysOn(l, p).map((w) => w.to.room)).toEqual(["a"]);
     const inA = enter(l, p, "a");
@@ -179,7 +179,57 @@ describe("labyrinth layout: the scroll's marks and cut-offs", () => {
     const y = cutOffY(enter(l, startProgress(l), up.b));
     expect(y).toBe((above.y + above.h) * 3);
     // …below the room's floor, above the room you left.
-    expect(y).toBeGreaterThan(floorOf(above).y + floorOf(above).h - 1);
-    expect(y).toBeLessThanOrEqual(floorOf(l.rooms[l.start]).y);
+    expect(Math.max(...floorsOf(above).map((f) => f.y + f.h))).toBeLessThan(y + 1);
+    expect(y).toBeLessThanOrEqual(Math.min(...floorsOf(l.rooms[l.start]).map((f) => f.y)));
+  });
+});
+
+describe("labyrinth layout: variety (the user, 2026-11-05)", () => {
+  it("never leaves you just one way on: two tunnels up, or sideways to a room that leads on", () => {
+    // tiny(): start → a (up), a ↔ b (sideways), b → boss (up).
+    const l = tiny([["start", "a", true], ["a", "b", false], ["b", "boss", true]]);
+    expect(fewChoices(l)).toEqual(["start", "a", "b"]); // one way on from each
+    // A twin up from the entrance, and a way up from a too: every room has two ways on.
+    const twin = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true], ["b", "boss", true]]);
+    twin.tunnels[1].key += "#2";
+    expect(fewChoices(twin)).toEqual([]);
+    // Sideways into a dead end isn't a way on (b leads only back to a).
+    const dead = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true]]);
+    dead.tunnels[1].key += "#2";
+    expect(fewChoices(dead)).toEqual(["a", "b"]);
+  });
+
+  it("rolls rooms about 4 across the middle, long tunnels, twins and dog-legs", () => {
+    let across = 0, long = 0, twins = 0, legs = 0, sideways = 0;
+    const N = 20;
+    for (let seed = 1; seed <= N; seed++) {
+      const l = encampment(seed);
+      const rooms = Object.values(l.rooms).filter((r) => r.id !== l.start && r.id !== l.boss);
+      const mid = (Math.min(...rooms.map((r) => r.y)) + Math.max(...rooms.map((r) => r.y + r.h))) / 2;
+      across += rooms.filter((r) => r.y <= mid && r.y + r.h >= mid).length;
+      long += l.tunnels.filter((t) => (t.up ? t.rect.h : t.rect.w) - 2 > 3 * 3).length; // past the old 3 blocks
+      twins += l.tunnels.filter((t) => t.key.endsWith("#2")).length;
+      legs += rooms.filter((r) => r.cut).length;
+      sideways += l.tunnels.filter((t) => !t.up).length;
+    }
+    expect(across / N).toBeGreaterThanOrEqual(3.5);
+    expect(long).toBeGreaterThan(0);
+    expect(twins / N).toBeGreaterThanOrEqual(1);
+    expect(legs / N).toBeGreaterThanOrEqual(0.5);
+    expect(sideways / N).toBeGreaterThanOrEqual(8);
+  });
+
+  it("a dog-leg is an L: two arms meeting at its middle, rock in the missing corner", () => {
+    let seed = 1, l = encampment(seed);
+    while (!Object.values(l.rooms).some((r) => r.cut)) l = encampment(++seed);
+    const r = Object.values(l.rooms).find((r) => r.cut)!;
+    const fp = layoutFloorplan(l);
+    const arms = floorsOf(r);
+    expect(arms.length).toBe(2);
+    const c = roomCentre(r);
+    for (const f of arms) expect(c.x >= f.x && c.x < f.x + f.w && c.y >= f.y && c.y < f.y + f.h).toBe(true);
+    // The missing corner's middle (well inside the box, away from the arms) is rock.
+    const corner = { x: (r.cut![1] === "e" ? r.x + r.w - 2 : r.x + 2) * 3, y: (r.cut![0] === "n" ? r.y + 2 : r.y + r.h - 2) * 3 };
+    expect(fp.tiles[corner.y * fp.w + corner.x]).toBe(ROCK);
   });
 });
