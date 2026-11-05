@@ -778,6 +778,12 @@ How it came about, round by round: history.md.
        What it's lit stays remembered, dimmer (`REMEMBERED`); you only walk where you've seen;
        foes show only while they're in the light. The light glows warm and flickers, fading to a
        cold dark (`torchGlow`; the colours are the lab's, 🧪).
+     - **Torches on the walls** (the user, 2026-11-06; `placeSconces`, numbers 🧪): sconces along
+       rooms' top walls (one per `SCONCE_EVERY` 8 tiles of wall, at least one a room, never over
+       a tunnel), the entrance's burning and `SCONCE_LIT_SHARE` 20% of the rest. Walk within half
+       your torch's reach of an unlit one, in sight of it, and it lights (`canIgnite`); a burning
+       one lights `SCONCE_RADIUS` 4 tiles round it for good (`sconceGlow`, a little dimmer than
+       your torch), seen from up to 12 tiles away. Drawn in code for now (a bracket and a flame).
      - **No doors** (the user, 2026-11-06): it's a winding labyrinth. A tunnel closed off behind
        you is solid rock (`shutPlan`): if you'd seen it, it falls in as you go (stones drop,
        dust, a shake) and rubble blocks its mouth (`rubbleOf`); if you hadn't, it was never
@@ -789,8 +795,8 @@ How it came about, round by round: history.md.
      to the nearest walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk
      finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
      but never shows past the edge (`cameraAt`). Zoomed in close so you explore rather than
-     oversee (the user, 2026-11-06): 11 tiles across the screen, whatever its size, so a laptop
-     shows what a phone does (the lab's Zoom tries 22, 15, 11, 9). The lab plays inside the
+     oversee (the user, 2026-11-06): 15 tiles across the screen (the user's pick), whatever its
+     size, so a laptop shows what a phone does (the lab's Zoom tries 22, 15, 11, 9). The lab plays inside the
      game's own phone screen (header, and the live Labyrinth's dock: Party, Bag, Scroll, Retreat;
      Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
      walk, shrinking as you go (the user, 2026-11-05).
@@ -842,6 +848,15 @@ How it came about, round by round: history.md.
        they're mostly going (`facingOf`) and steps a walk cycle every 1.5 tiles (`STRIDE`, 🧪).
        3 cells in a whole map have no exact tile (inner corners where a wall steps down by a
        tunnel): the closest is drawn.
+     - 🚧 **One angle for everything** (the user, 2026-11-06: the flat tiles didn't match the
+       hero's three-quarter angle, and it wasn't immersive). A PixelLab building kit (walls 2
+       tiles tall, the same low top-down angle as the heroes; id in PIXELLAB.md), cut into its
+       materials (`KitArt` in lib/sprites/walk.ts) and drawn in the reference picture's look:
+       dark mossy flagstones, every north wall a tall brick face under a pale mossy cap standing
+       in the rock above the floor (lit to its top: `FACE_ROWS`), side walls only their narrow
+       tops, south walls a cap band over the floor's bottom row, the rest of the rock dark. Hero
+       pixels the kit's size. "Kit: mossy dungeon", the lab's first Tiles choice; no side-face
+       wobble in it (one fixed angle).
      - ✅ **Depth, 2.5D** (the user, 2026-11-06: not real 3D, which would need three.js and 3D
        models; `tileArt.ts`, numbers 🧪): side walls show their inner face, wider the further
        across the room you are (`sideFace`: from a room's right you see its left wall's face),

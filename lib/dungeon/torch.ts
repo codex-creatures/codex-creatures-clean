@@ -18,6 +18,7 @@ import { ROCK, type Floorplan, type Pt } from "./floorplan";
 import { isOpen, type Layout, type Progress, type Tunnel } from "./layout";
 
 export const TORCH_RADIUS = 5.5; // tiles (🧪: foes see 7, so one can spot you from the dark)
+export const FACE_ROWS = 3;      // rock rows above a floor its wall's face stands in (it's lit with the floor below it)
 export const REMEMBERED = 0.8;   // darkness over what you've seen but isn't lit now (1: black)
 
 const solid = (fp: Floorplan, x: number, y: number) => x < 0 || y < 0 || x >= fp.w || y >= fp.h || fp.tiles[y * fp.w + x] === ROCK;
@@ -36,7 +37,8 @@ function reaches(fp: Floorplan, a: Pt, b: Pt): boolean {
 
 // The tiles your torch lights from where you stand (1 = lit), row by row.
 // Rock is lit where the light hits it, and next to lit floor (the wall round
-// a lit floor shows, even where a ray glances off a corner first).
+// a lit floor shows, even where a ray glances off a corner first), and up a
+// lit floor's wall face (FACE_ROWS).
 export function torchLit(fp: Floorplan, you: Pt, radius = TORCH_RADIUS): Uint8Array {
   const out = new Uint8Array(fp.w * fp.h);
   const r = Math.ceil(radius), cx = Math.round(you.x), cy = Math.round(you.y);
@@ -51,6 +53,12 @@ export function torchLit(fp: Floorplan, you: Pt, radius = TORCH_RADIUS): Uint8Ar
       const nx = x + dx, ny = y + dy;
       if (!solid(fp, nx, ny) && lit[ny * fp.w + nx]) out[y * fp.w + x] = 1;
     }
+  }
+  // A lit floor's wall face, standing in the rock above it, is lit to its top.
+  for (let i = 0; i < lit.length; i++) {
+    if (!lit[i] || fp.tiles[i] === ROCK) continue;
+    const x = i % fp.w, y = (i / fp.w) | 0;
+    for (let k = 1; k <= FACE_ROWS && solid(fp, x, y - k) && y - k >= 0; k++) out[(y - k) * fp.w + x] = 1;
   }
   return out;
 }
@@ -96,4 +104,57 @@ export function rubbleOf(fp: Floorplan, layout: Layout, p: Progress): Rubble[] {
     out.push({ key: t.key, room, tiles, wall });
   }
   return out;
+}
+
+// Torches on the walls (the user, 2026-11-06): sconces along rooms' top
+// walls, most of them unlit. Walk within half your torch's reach of an unlit
+// one (in sight of it) and you light it; a lit one lights its part of the
+// room for good, a little dimmer than your own torch. The entrance's are lit.
+export const SCONCE_EVERY = 8;        // tiles of top wall per sconce (at least one a room) 🧪
+export const SCONCE_LIT_SHARE = 0.2;  // of the rest are already burning 🧪
+export const SCONCE_RADIUS = 4;       // tiles a sconce lights 🧪
+export const SCONCE_BRIGHT = 0.15;    // its darkness right under it (your torch: 0)
+export const IGNITE_REACH = TORCH_RADIUS / 2;
+export const SCONCE_SEEN = 12;        // tiles: a burning sconce in sight this close shows you what it lights
+
+// A sconce: on the wall above floor tile (x, y), the top row of a room's floor.
+export type Sconce = { id: string; room: string; x: number; y: number; lit: boolean };
+type Rng = () => number;
+
+// Sconces for every room: spread along its floor's top row (each floor
+// rectangle of a dog-leg that has a wall above), never over a tunnel's mouth.
+export function placeSconces(fp: Floorplan, start: string, rng: Rng = Math.random): Sconce[] {
+  const out: Sconce[] = [];
+  for (const [room, rects] of Object.entries(fp.rooms)) {
+    let k = 0;
+    for (const r of rects) {
+      const spots: number[] = [];
+      for (let x = r.x + 1; x < r.x + r.w - 1; x++) if (solid(fp, x, r.y - 1) && solid(fp, x - 1, r.y - 1) && solid(fp, x + 1, r.y - 1)) spots.push(x);
+      if (spots.length === 0) continue;
+      const n = Math.max(1, Math.round(r.w / SCONCE_EVERY));
+      for (let i = 0; i < n; i++) {
+        const x = spots[Math.min(spots.length - 1, Math.floor(((i + 0.5) / n) * spots.length))];
+        if (out.some((s) => s.room === room && Math.abs(s.x - x) < 3 && s.y === r.y)) continue;
+        out.push({ id: `${room}:${k++}`, room, x, y: r.y, lit: room === start || rng() < SCONCE_LIT_SHARE });
+      }
+    }
+  }
+  return out;
+}
+
+// Close enough, and in sight, to light it?
+export function canIgnite(fp: Floorplan, s: Sconce, you: Pt): boolean {
+  return !s.lit && Math.hypot(s.x - you.x, s.y - you.y) <= IGNITE_REACH && reaches(fp, you, { x: s.x, y: s.y });
+}
+
+// A burning sconce in your sight (so you see the room it lights)?
+export function sconceInSight(fp: Floorplan, s: Sconce, you: Pt): boolean {
+  return s.lit && Math.hypot(s.x - you.x, s.y - you.y) <= SCONCE_SEEN && reaches(fp, you, { x: s.x, y: s.y });
+}
+
+// How dark a tile a sconce lights is, `d` tiles from it (1 when it doesn't reach).
+export function sconceGlow(d: number, flicker = 1): number {
+  const r = SCONCE_RADIUS * flicker;
+  if (d >= r) return 1;
+  return Math.min(REMEMBERED, SCONCE_BRIGHT + (REMEMBERED - SCONCE_BRIGHT) * Math.pow(d / r, 1.6));
 }

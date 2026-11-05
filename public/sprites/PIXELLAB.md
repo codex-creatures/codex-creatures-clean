@@ -176,6 +176,7 @@ Three-quarter top-down, for `/lab/walk` (its Art toggle). PixelLab ids, not gall
 | walk/hero-c.png | character d70abd54-d794-4b47-abdd-81ee40ec6f0a (sturdy adventurer with a torch, chibi; standard 4-direction, 68px canvas; no walk yet). Sheet: south, east, north, west stacked |
 | walk/hero-d.png | character ed2ffa26-adf2-4f89-b659-1ae5f8fe4655 (stout bearded delver in an iron cap, with a torch, cartoon; same) |
 | walk/hero-e.png | character b15f91c8-28aa-4912-83c7-891f3ee607ea (small cloaked torchbearer, chibi; same) |
+| walk/kit-a-*.png | building kit fde7c218-f55e-4339-b5cd-5406ef04d6cb (square_topdown, 32px, walls 2 tiles, materials layout): floor = tile 0 (10,55 32×24), north = tile 1 (10,7 32×57), cap = tile 1 (10,7 32×15), east = tile 2 (30,7 12×24), west = tile 4 (10,7 12×24) |
 
 The tile sheets are PixelLab's own sheets as downloaded (the layout: `WANG_TILES` in
 lib/dungeon/tileArt.ts, the same for all three). A hero sheet is packed here: 48px cells,

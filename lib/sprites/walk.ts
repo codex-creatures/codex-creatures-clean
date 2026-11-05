@@ -5,8 +5,19 @@
 
 // A tileset: room floors and walls, and the tunnel floor (the same wall).
 // Every sheet has the layout in lib/dungeon/tileArt.ts (WANG_TILES).
-export type WalkTiles = { name: string; floor: string; tunnel: string };
+// Or a kit (PixelLab's building kit, cut into its materials: see KitArt),
+// drawn in the three-quarter look of docs/ideas/future-dungeon-direction.png.
+export type WalkTiles = { name: string; floor: string; tunnel: string; kit?: KitArt };
+// A kit's pieces, at KIT_PX a tile: the floor (KIT_PX × KIT_ROW: the view's
+// rows are squashed), a north wall (its top, a pale cap band, the brick face
+// down to the floor), the cap band alone (south walls), and the narrow side
+// walls' tops, for a wall on a floor's east (right) or west (left).
+export type KitArt = { floor: string; north: string; cap: string; east: string; west: string };
+export const KIT_PX = 32, KIT_ROW = 24, KIT_NORTH = 57, KIT_CAP = 15, KIT_SIDE = 12;
+const KIT_A = "/sprites/walk/kit-a-";
 export const WALK_TILES: WalkTiles[] = [
+  { name: "Kit: mossy dungeon", floor: `${KIT_A}floor.png`, tunnel: `${KIT_A}floor.png`,
+    kit: { floor: `${KIT_A}floor.png`, north: `${KIT_A}north.png`, cap: `${KIT_A}cap.png`, east: `${KIT_A}east.png`, west: `${KIT_A}west.png` } },
   { name: "Mossy brick", floor: "/sprites/walk/tiles-a.png", tunnel: "/sprites/walk/tunnel-a.png" },
   { name: "Ivy blocks", floor: "/sprites/walk/tiles-b.png", tunnel: "/sprites/walk/tiles-b.png" },
 ];

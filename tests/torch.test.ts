@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, WALK_SPEC } from "../lib/dungeon/layout";
-import { torchLit, torchGlow, shutPlan, rubbleOf, tunnelShut, TORCH_RADIUS, REMEMBERED } from "../lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, tunnelShut, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
 import { sideFace, capFade, depthEdges, SIDE_FACE_MAX, CAP_FAINT, FACE_TILE, TOP_TILE, WANG_TILES } from "../lib/dungeon/tileArt";
 
 function seeded(seed: number) {
@@ -34,6 +34,12 @@ describe("the torch", () => {
     expect(lit[2 * legs.w + 1]).toBe(1);   // straight up the arm
     expect(lit[6 * legs.w + 0]).toBe(1);   // the wall beside you
     expect(lit[6 * legs.w + 3]).toBe(1);   // the wall on the other side
+  });
+  it("lights a wall's face up to its top", () => {
+    const tall = plan(["#####", "#####", "#####", "#####", "#...#", "#...#"]);
+    const lit = torchLit(tall, { x: 2, y: 5 });
+    for (let y = 1; y <= 3; y++) expect(lit[y * tall.w + 2]).toBe(1);
+    expect(lit[0 * tall.w + 2]).toBe(0);
   });
   it("doesn't see round a corner, or through a wall", () => {
     const lit = torchLit(legs, { x: 1, y: 6 });
@@ -107,5 +113,37 @@ describe("depth", () => {
     expect(WANG_TILES[FACE_TILE]).toBeDefined();
     expect(WANG_TILES[TOP_TILE]).toBeDefined();
     expect(FACE_TILE).not.toBe(TOP_TILE);
+  });
+});
+
+describe("torches on the walls", () => {
+  it("every room has one on its top wall, the entrance's lit, never over a tunnel", () => {
+    const fails: string[] = [];
+    for (let s = 1; s <= 6; s++) {
+      const layout = rollLayout(WALK_SPEC, seeded(s)), fp = layoutFloorplan(layout);
+      const all = placeSconces(fp, layout.start, seeded(s + 5));
+      for (const id of Object.keys(fp.rooms)) if (!all.some((c) => c.room === id)) fails.push(`${s}: none in ${id}`);
+      for (const c of all) {
+        if (fp.tiles[c.y * fp.w + c.x] === ROCK) fails.push(`${s}: ${c.id} not over a floor`);
+        if (fp.tiles[(c.y - 1) * fp.w + c.x] !== ROCK) fails.push(`${s}: ${c.id} over a tunnel`);
+        if (c.room === layout.start && !c.lit) fails.push(`${s}: the entrance's unlit`);
+      }
+      if (all.filter((c) => !c.lit).length < all.length / 2) fails.push(`${s}: most should be unlit`);
+    }
+    expect(fails).toEqual([]);
+  });
+  it("lights when you walk close, in sight; then it lights round it", () => {
+    const room = plan(["##########", "#........#", "#........#", "#........#", "##########"]);
+    const s = { id: "a", room: "a", x: 2, y: 1, lit: false };
+    expect(canIgnite(room, s, { x: 2 + Math.floor(IGNITE_REACH), y: 1 })).toBe(true);
+    expect(canIgnite(room, s, { x: 2 + Math.ceil(IGNITE_REACH) + 1, y: 1 })).toBe(false);
+    expect(canIgnite(room, { ...s, lit: true }, { x: 2, y: 2 })).toBe(false);
+    expect(sconceGlow(0)).toBe(SCONCE_BRIGHT);
+    expect(sconceGlow(SCONCE_RADIUS + 1)).toBe(1);
+    expect(sconceInSight(room, { ...s, lit: true }, { x: 8, y: 3 })).toBe(true);
+  });
+  it("can't be lit through a wall", () => {
+    const two = plan(["#######", "#..#..#", "#..#..#", "#######"]);
+    expect(canIgnite(two, { id: "a", room: "a", x: 2, y: 1, lit: false }, { x: 4, y: 1 })).toBe(false);
   });
 });

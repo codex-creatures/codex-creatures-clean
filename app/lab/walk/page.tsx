@@ -43,10 +43,10 @@ import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, roomCentre, WALK_SPEC, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkTo, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { cellArt, depthEdges, drawOrder, facingOf, walkFrame, sideFace, capFade, FACINGS, SHEET_TILE, WANG_TILES, FACE_TILE, TOP_TILE, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, TORCH_RADIUS } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
 import { placeFoes, spottedBy, stepFoe, visionCone, ALERT_KINDS, type Foe } from "@/lib/dungeon/foes";
 import { rollWalkRooms, fightSack, chestSack } from "@/lib/dungeon/walkRooms";
-import { WALK_TILES, WALK_HEROES } from "@/lib/sprites/walk";
+import { WALK_TILES, WALK_HEROES, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
@@ -63,7 +63,7 @@ import type { Rarity } from "@/lib/types";
 // Zoom, as tiles across the screen, so it looks the same on a phone and a
 // laptop whatever the screen's size (🧪: the user tries them).
 const ZOOMS = [22, 15, 11, 9];
-const START_ZOOM = 2;
+const START_ZOOM = 1; // 15 across (the user's pick, 2026-11-06)
 const LAB_KEY = "codex_lab_walk_v1"; // sessionStorage: this tab's spot in the lab (never the game's save)
 // The team you fight with (🧪): three creatures of this rarity, in gear of this rarity, at this level.
 const TEST_TEAM: { rarity: Rarity; gear: Rarity; level: number } = { rarity: "uncommon", gear: "uncommon", level: 5 };
@@ -104,7 +104,7 @@ const BOX_NAMES: Record<Box["kind"], string> = { chest: "The chest", stash: "The
 // known: the tiles you've seen, as runs of [start, length].
 type Saved = {
   seed: number; x: number; y: number; room: string; line: number | null; seen: string[]; done: string[]; hp: number[]; bag: SackItem[]; looks: number; cuts: number[]; trail: Pt[];
-  known?: number[]; purse?: SackItem[]; boxes?: Box[];
+  known?: number[]; purse?: SackItem[]; boxes?: Box[]; litSconces?: string[];
 };
 const readSaved = (): Saved | null => {
   try { const s = window.sessionStorage.getItem(LAB_KEY); return s ? (JSON.parse(s) as Saved) : null; } catch { return null; }
@@ -216,6 +216,8 @@ export default function WalkLab() {
   const lightNow = useRef<Uint8Array>(new Uint8Array(0)); // what the torch lights this moment
   // Rubble falling (tunnel key → when it closed, in performance.now() ms): the rest have fallen.
   const falls = useRef(new Map<string, number>());
+  // The torches on the walls (torch.ts): lit or not.
+  const sconces = useRef<Sconce[]>([]);
   const shakeAt = useRef(-Infinity);
   // Where you may walk: what the forward rule allows, (in the dark) only what you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => {
@@ -232,6 +234,7 @@ export default function WalkLab() {
     line: progressRef.current.line === Infinity ? null : progressRef.current.line,
     seen: [...seen.current], done: [...doneRef.current], hp: hpRef.current, bag: bagRef.current, looks: looksRef.current,
     cuts: cuts.current, trail: trail.current, known: toRuns(known.current), purse: purseRef.current, boxes: boxes.current,
+    litSconces: sconces.current.filter((c) => c.lit).map((c) => c.id),
   });
   const keepRef = useRef(keep);
   useEffect(() => { keepRef.current = keep; });
@@ -254,6 +257,8 @@ export default function WalkLab() {
     known.current = saved?.known ? fromRuns(saved.known, plan.w * plan.h) : new Uint8Array(plan.w * plan.h);
     lightNow.current = new Uint8Array(plan.w * plan.h);
     falls.current = new Map();
+    const wasLit = new Set(saved?.litSconces ?? []);
+    sconces.current = placeSconces(plan, layout.start, seeded(seed + 505)).map((c) => (wasLit.has(c.id) ? { ...c, lit: true } : c));
     trail.current = saved?.trail ?? [startSpot];
     cuts.current = saved?.cuts ?? [];
     setLooks(saved?.looks ?? SCROLL_LOOKS);
@@ -358,6 +363,13 @@ export default function WalkLab() {
     const knownAt = (x: number, y: number) => !darkRef.current || (x >= 0 && y >= 0 && x < w && y < h && known.current[y * w + x] === 1);
     const litAt = (x: number, y: number) => !darkRef.current || (x >= 0 && y >= 0 && x < w && y < h && lightNow.current[y * w + x] === 1);
     // The dark, a pixel a tile, drawn smoothed up over the view (soft edges to the light).
+    // What each burning sconce lights (worked out once it's needed).
+    const lightOf = new Map<string, Uint8Array>();
+    const sconceLight = (c: Sconce) => {
+      let a = lightOf.get(c.id);
+      if (!a) { a = torchLit(live, c, SCONCE_RADIUS); lightOf.set(c.id, a); }
+      return a;
+    };
     const mask = document.createElement("canvas");
     mask.width = w;
     mask.height = h;
@@ -376,6 +388,14 @@ export default function WalkLab() {
       // The torch: what it lights now, remembered from now on.
       const flicker = 1 + 0.03 * Math.sin(now / 90) + 0.02 * Math.sin(now / 37 + 1.3);
       lightNow.current = torchLit(live, me.current);
+      // Walk close to an unlit sconce and you light it; a burning one in sight lights its part of the room.
+      for (const c of sconces.current) {
+        if (!busy && canIgnite(live, c, me.current)) c.lit = true;
+        if (sconceInSight(live, c, me.current)) {
+          const a = sconceLight(c);
+          for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
+        }
+      }
       for (let i = 0; i < lightNow.current.length; i++) if (lightNow.current[i]) known.current[i] = 1;
       // Into a new room: maybe up a tunnel (what's behind closes, maybe falling in), so find the way on again.
       const room = roomAt(plan, me.current);
@@ -431,7 +451,38 @@ export default function WalkLab() {
       ctx.fillRect(0, 0, cw, ch);
       const floorSheet = artOn ? image(WALK_TILES[ts].floor) : null, tunnelSheet = artOn ? image(WALK_TILES[ts].tunnel) : null;
       const artReady = !!(floorSheet && tunnelSheet);
-      if (floorSheet && tunnelSheet) {
+      // A kit (lib/sprites/walk.ts KitArt), in the three-quarter look: a kit pixel is T / KIT_PX
+      // across and T / KIT_ROW down (its rows are squashed, as the view is).
+      const kitArt = artOn ? WALK_TILES[ts].kit : undefined;
+      const kitImg = kitArt && { floor: image(kitArt.floor), north: image(kitArt.north), cap: image(kitArt.cap), east: image(kitArt.east), west: image(kitArt.west) };
+      const kit = kitImg && Object.values(kitImg).every(Boolean) ? (kitImg as Record<keyof typeof kitImg, HTMLImageElement>) : null;
+      const vy = T / KIT_ROW, side = Math.round((KIT_SIDE * T) / KIT_PX);
+      // How tall a floor tile's north wall stands on screen (its face, up to the rock there is).
+      const faceAbove = (x: number, y: number) => {
+        let rows = 0;
+        while (rows < 3 && at(x, y - rows - 1) === ROCK) rows++;
+        return Math.min(Math.round(KIT_NORTH * vy), rows * T);
+      };
+      if (kit) {
+        // Floors, then each north wall's face standing in the rock above it, then the narrow
+        // side walls' tops (up the face too, where the side wall meets it). The rest of the rock is dark.
+        for (let y = y0; y < y1 + 3; y++) for (let x = x0; x < x1; x++) {
+          if (at(x, y) === ROCK || !knownAt(x, y)) continue;
+          const wd = sx(x + 1) - sx(x);
+          if (y < y1) ctx.drawImage(kit.floor, 0, 0, KIT_PX, KIT_ROW, sx(x), sy(y), wd, sy(y + 1) - sy(y));
+          if (at(x, y - 1) !== ROCK) continue;
+          const dh = faceAbove(x, y);
+          if (dh > 0) ctx.drawImage(kit.north, 0, KIT_NORTH - dh / vy, KIT_PX, dh / vy, sx(x), sy(y) - dh, wd, dh);
+        }
+        const strip = (img: HTMLImageElement, left: number, q: Pt, floorX: number) => {
+          ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y), side, sy(q.y + 1) - sy(q.y));
+          if (at(floorX, q.y - 1) !== ROCK) return;
+          const dh = faceAbove(floorX, q.y);
+          ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y) - dh, side, dh);
+        };
+        for (const q of edges.left) if (q.x >= x0 - 1 && q.x < x1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x + 1, q.y)) strip(kit.west, sx(q.x + 1) - side, q, q.x + 1);
+        for (const q of edges.right) if (q.x >= x0 && q.x < x1 + 1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x - 1, q.y)) strip(kit.east, sx(q.x), q, q.x - 1);
+      } else if (floorSheet && tunnelSheet) {
         // The art: a cell between each four tiles (tileArt.ts), half a tile off the grid.
         for (let cy = y0; cy < y1; cy++) for (let cx = x0; cx < x1; cx++) {
           if (cx < -1 || cy < -1 || cx >= w || cy >= h) continue;
@@ -461,7 +512,7 @@ export default function WalkLab() {
         } else ctx.fillStyle = COLOURS.wallSide;
         ctx.fillRect(left, sy(y), px, sy(y + 1) - sy(y));
       };
-      if (artReady || !artOn) {
+      if (!kit && (artReady || !artOn)) {
         for (const q of edges.left) if (q.x >= x0 && q.x < x1 && q.y >= y0 && q.y < y1 && knownAt(q.x, q.y)) { const wd = sideFace(eye.x - (q.x + 1)); if (wd > 0) face(q.x, q.y, wd, true); }
         for (const q of edges.right) if (q.x >= x0 && q.x < x1 && q.y >= y0 && q.y < y1 && knownAt(q.x, q.y)) { const wd = sideFace(q.x - eye.x); if (wd > 0) face(q.x, q.y, wd, false); }
       }
@@ -577,7 +628,7 @@ export default function WalkLab() {
         if (heroImg) {
           const moving = me.current.path.length > 0 && !busy;
           const col = heroArt.frames > 0 ? walkFrame(walked.current, moving, heroArt.frames) + 1 : 0;
-          const row = FACINGS.indexOf(facing.current), px = scale * (heroArt.shrink ?? 1), size = heroArt.cell * px;
+          const row = FACINGS.indexOf(facing.current), px = kit ? T / KIT_PX : scale * (heroArt.shrink ?? 1), size = heroArt.cell * px;
           ctx.drawImage(heroImg, col * heroArt.cell, row * heroArt.cell, heroArt.cell, heroArt.cell,
             Math.round(footX(me.current.x) - size / 2), Math.round(footY(me.current.y) - heroArt.feet * px), size, size);
           return;
@@ -588,18 +639,44 @@ export default function WalkLab() {
         ctx.fill();
       } });
       // South walls stand up over the floor's bottom row: their tops, raised (see-through close to you).
-      const lift = Math.round(WALL_LIFT * T);
-      if (artReady || !artOn) for (const q of edges.south) {
+      const lift = kit ? Math.round(KIT_CAP * vy) : Math.round(WALL_LIFT * T);
+      if (artReady || kit || !artOn) for (const q of edges.south) {
         if (q.x < x0 || q.x >= x1 || q.y < y0 || q.y >= y1 || !knownAt(q.x, q.y - 1)) continue;
         standing.push({ x: q.x, y: q.y - 0.5, draw: () => {
           ctx.globalAlpha = capFade(Math.hypot(q.x - me.current.x, q.y - 0.5 - WALL_LIFT / 2 - me.current.y));
-          if (floorSheet) {
+          if (kit) {
+            // The kit's cap band, reaching on over a side wall's top at a corner.
+            const l = at(q.x - 1, q.y) === ROCK && at(q.x - 1, q.y - 1) === ROCK ? side : 0;
+            const r = at(q.x + 1, q.y) === ROCK && at(q.x + 1, q.y - 1) === ROCK ? side : 0;
+            ctx.drawImage(kit.cap, 0, 0, KIT_PX, KIT_CAP, sx(q.x) - l, sy(q.y) - lift, sx(q.x + 1) - sx(q.x) + l + r, lift);
+          } else if (floorSheet) {
             const t = WANG_TILES[TOP_TILE];
             ctx.drawImage(floorSheet, t.col * SHEET_TILE, t.row * SHEET_TILE, SHEET_TILE, SHEET_TILE * WALL_LIFT, sx(q.x), sy(q.y) - lift, sx(q.x + 1) - sx(q.x), lift);
           } else { ctx.fillStyle = COLOURS.wallTop; ctx.fillRect(sx(q.x), sy(q.y) - lift, sx(q.x + 1) - sx(q.x), lift); }
           ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
           ctx.fillRect(sx(q.x), sy(q.y) - lift, T, Math.max(1, scale));
           ctx.globalAlpha = 1;
+        } });
+      }
+      const burning = sconces.current.filter((c) => c.lit && knownAt(c.x, c.y) && c.x >= x0 - SCONCE_RADIUS && c.x < x1 + SCONCE_RADIUS && c.y >= y0 - SCONCE_RADIUS && c.y < y1 + SCONCE_RADIUS);
+      for (const c of sconces.current) {
+        if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y)) continue;
+        standing.push({ x: c.x, y: c.y - 0.6, draw: () => {
+          const fx = footX(c.x), top = sy(c.y) - (kit ? 1.1 : 0.55) * T;
+          ctx.fillStyle = "#2a2018";
+          ctx.fillRect(fx - 0.08 * T, top, 0.16 * T, 0.45 * T);
+          ctx.fillStyle = "#4a3a2a";
+          ctx.fillRect(fx - 0.16 * T, top, 0.32 * T, 0.1 * T);
+          if (!c.lit) return;
+          const wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
+          ctx.fillStyle = "#ffb347";
+          ctx.beginPath();
+          ctx.ellipse(fx, top - 0.12 * T * wob, 0.1 * T, 0.18 * T * wob, 0, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.fillStyle = "#fff1b0";
+          ctx.beginPath();
+          ctx.ellipse(fx, top - 0.06 * T, 0.05 * T, 0.09 * T * wob, 0, 0, 2 * Math.PI);
+          ctx.fill();
         } });
       }
       for (const s of drawOrder(standing)) s.draw();
@@ -611,7 +688,7 @@ export default function WalkLab() {
         const cool = ctx.createRadialGradient(hx, hy, 0, hx, hy, reach);
         cool.addColorStop(0, "rgb(255, 222, 170)");
         cool.addColorStop(0.6, "rgb(205, 170, 150)");
-        cool.addColorStop(1, "rgb(120, 118, 160)");
+        cool.addColorStop(1, "rgb(150, 146, 185)");
         ctx.fillStyle = cool;
         ctx.fillRect(0, 0, cw, ch);
         ctx.globalCompositeOperation = "lighter";
@@ -620,11 +697,21 @@ export default function WalkLab() {
         warm.addColorStop(1, "rgba(255, 150, 60, 0)");
         ctx.fillStyle = warm;
         ctx.fillRect(0, 0, cw, ch);
+        // The burning sconces you've seen: their own warm pools.
+        for (const c of burning) {
+          const fx = footX(c.x), fy = sy(c.y) - 0.3 * T, r = SCONCE_RADIUS * T * flicker;
+          const pool = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
+          pool.addColorStop(0, "rgba(255, 150, 60, 0.2)");
+          pool.addColorStop(1, "rgba(255, 150, 60, 0)");
+          ctx.fillStyle = pool;
+          ctx.fillRect(fx - r, fy - r, 2 * r, 2 * r);
+        }
         ctx.globalCompositeOperation = "source-over";
         const d = shade.data;
         for (let y = Math.max(0, y0 - 1); y < Math.min(h, y1 + 1); y++) for (let x = Math.max(0, x0 - 1); x < Math.min(w, x1 + 1); x++) {
           const i = y * w + x;
-          const glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, TORCH_RADIUS, flicker);
+          let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, TORCH_RADIUS, flicker);
+          for (const c of burning) if (sconceLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
           d[i * 4] = DARK_RGB[0]; d[i * 4 + 1] = DARK_RGB[1]; d[i * 4 + 2] = DARK_RGB[2]; d[i * 4 + 3] = Math.round(glow * 255);
         }
         mctx.putImageData(shade, 0, 0);
