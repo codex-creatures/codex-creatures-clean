@@ -2,14 +2,16 @@
 // app/lab/walk/page.tsx — walking round a rolled Encampment (lib/dungeon/layout.ts,
 // lib/dungeon/walk.ts): tap anywhere to walk there, the camera following you,
 // in a phone-shaped view. Up tunnels are one way, and what's behind you
-// closes (dimmed). Plain boxes for now, no art and nothing in the rooms (dev
+// closes (dimmed). In the dark you only see rooms you've been in and
+// the tunnels out of them; a room lights up as you reach its door, and you
+// can only walk where you can see. Plain boxes for now, no art and nothing in the rooms (dev
 // tool; nothing is saved). For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DUNGEONS } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
-import { advance, cameraAt, roomAt, walkTo, type Walker } from "@/lib/dungeon/walk";
+import { advance, cameraAt, roomAt, walkTo, type CanStep, type Walker } from "@/lib/dungeon/walk";
 
 const TILE = 16; // screen pixels per tile
 
@@ -35,6 +37,30 @@ export default function WalkLab() {
   const [progress, setProgress] = useState<Progress>(startProgress(layout));
   const progressRef = useRef(progress);
   const [here, setHere] = useState<string | null>(layout.start);
+  const [dark, setDark] = useState(true);
+  const darkRef = useRef(dark);
+  useEffect(() => { darkRef.current = dark; }, [dark]);
+
+  // What you can see: the rooms you've been in (walls and all) and the
+  // tunnels out of them, to the far door.
+  const seen = useRef(new Set<string>());
+  const lit = useRef(new Uint8Array(0));
+  const doorRoom = useMemo(() => new Map(plan.doors.map((d) => [d.y * plan.w + d.x, d.room])), [plan]);
+  const see = (room: string) => {
+    if (seen.current.has(room)) return;
+    seen.current.add(room);
+    const light = (x0: number, y0: number, w: number, h: number) => {
+      for (let y = Math.max(0, y0); y < Math.min(plan.h, y0 + h); y++) lit.current.fill(1, y * plan.w + Math.max(0, x0), y * plan.w + Math.min(plan.w, x0 + w));
+    };
+    const r = plan.rooms[room];
+    light(r.x - 1, r.y - 1, r.w + 2, r.h + 2);
+    for (const t of layout.tunnels) if (t.a === room || t.b === room) light(t.rect.x - 1, t.rect.y - 1, t.rect.w + 2, t.rect.h + 2);
+  };
+  // Where you may walk: what the forward rule allows, and (in the dark) only what you can see.
+  const rule = (p: Progress): CanStep => {
+    const forward = stepRule(layout, plan, p);
+    return (from, to) => forward(from, to) && (!darkRef.current || lit.current[to.y * plan.w + to.x] === 1);
+  };
 
   // A new labyrinth: back to its entrance.
   useEffect(() => {
@@ -42,6 +68,10 @@ export default function WalkLab() {
     goal.current = null;
     progressRef.current = startProgress(layout);
     setProgress(progressRef.current);
+    seen.current = new Set();
+    lit.current = new Uint8Array(plan.w * plan.h);
+    see(layout.start);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see() only reads plan and layout
   }, [layout, startSpot]);
 
   // Draw every frame: walk on, move the camera, then the visible tiles and you.
@@ -59,12 +89,15 @@ export default function WalkLab() {
       last = now;
       // Into a new room: maybe up a tunnel (what's behind closes), so find the way on again.
       const room = roomAt(plan, me.current);
+      const onDoor = doorRoom.get(Math.round(me.current.y) * plan.w + Math.round(me.current.x));
+      if (onDoor) see(onDoor);
+      if (room) see(room);
       if (room && room !== progressRef.current.room) {
         const next = enter(layout, progressRef.current, room);
         if (next !== progressRef.current) {
           progressRef.current = next;
           setProgress(next);
-          if (goal.current) me.current = walkTo(plan, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, stepRule(layout, plan, next));
+          if (goal.current) me.current = walkTo(plan, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(next));
         }
       }
       if (room !== shown) { shown = room; setHere(room); }
@@ -81,6 +114,7 @@ export default function WalkLab() {
       for (let y = Math.floor(cam.y); y < cam.y + ch / TILE; y++) for (let x = Math.floor(cam.x); x < cam.x + cw / TILE; x++) {
         const t = at(x, y);
         if (t === ROCK && !isWall(x, y)) continue;
+        if (darkRef.current && !lit.current[y * w + x]) continue;
         ctx.fillStyle = t === FLOOR ? COLOURS.floor : t === DOOR ? COLOURS.door : t !== ROCK ? COLOURS.tunnel : COLOURS.wall;
         ctx.fillRect(sx(x), sy(y), TILE, TILE);
       }
@@ -92,6 +126,7 @@ export default function WalkLab() {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       for (const [id, r] of Object.entries(plan.rooms)) {
+        if (darkRef.current && !seen.current.has(id)) continue;
         if (!isOpen(layout, p, id)) { ctx.fillStyle = CLOSED; ctx.fillRect(sx(r.x) - TILE, sy(r.y) - TILE, (r.w + 2) * TILE, (r.h + 2) * TILE); }
         ctx.fillStyle = COLOURS.label;
         const name = id === layout.start ? "Start" : id === layout.boss ? "Boss" : layout.rooms[id].shape;
@@ -111,14 +146,15 @@ export default function WalkLab() {
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
-  }, [plan, layout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- see() and rule() only read plan, layout and refs
+  }, [plan, layout, doorRoom]);
 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const el = e.currentTarget, box = el.getBoundingClientRect();
     const cam = cameraAt(plan, me.current, { w: el.clientWidth / TILE, h: el.clientHeight / TILE });
     const spot = { x: Math.floor(cam.x + (e.clientX - box.left) / TILE), y: Math.floor(cam.y + (e.clientY - box.top) / TILE) };
     goal.current = spot;
-    me.current = walkTo(plan, me.current, spot, stepRule(layout, plan, progressRef.current));
+    me.current = walkTo(plan, me.current, spot, rule(progressRef.current));
   };
 
   const label = !here ? "a tunnel" : here === layout.start ? "the entrance" : here === layout.boss ? "the boss's room" : `a ${layout.rooms[here].shape} room`;
@@ -129,6 +165,7 @@ export default function WalkLab() {
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Walk the Encampment</h1>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
         <button className="chip" onClick={() => setSeed((s) => s + 1)}>Reroll</button>
+        <button className="chip" aria-pressed={dark} onClick={() => setDark((d) => !d)}>Darkness</button>
         <span style={{ fontSize: 13, opacity: 0.8 }}>
           Seed {seed} · {Object.keys(layout.rooms).length} rooms · {layout.tunnels.length} tunnels ({layout.tunnels.filter((t) => !t.up).length} sideways) ·{" "}
           {sound ? "sound" : "unsound!"} · in {label}{progress.line === Infinity ? "" : " · up tunnels are one way"}

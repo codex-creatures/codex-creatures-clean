@@ -737,6 +737,10 @@ How it came about, round by round: history.md.
      - **Feel** (the user, 2026-11-05): hard to judge yet, with every room in sight and flat
        top-down boxes rather than the slightly 3D view of the future-dungeon picture. That comes
        with the art (step 5) and the scroll as minimap (step 6).
+       So the lab has **darkness** (on by default, a button turns it off): you only see rooms
+       you've been in and the tunnels out of them, a room lights up when you reach its door, and
+       you can only walk where you can see. (Lab only so far; how much you see in the real run is
+       for the user to decide.)
   2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
      the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
      floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:
