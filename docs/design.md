@@ -716,7 +716,13 @@ How it came about, round by round: history.md.
   **The Encampment first** (the user, 2026-11-05): its maps as they are (15 rooms, 7 to the camp),
   made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the user
   says to switch, so `main` stays releasable.
-  2. Walking: tap to move, collision from the tile grid, a camera following you.
+  2. ✅ **Walking** (`lib/dungeon/walk.ts`, tried in `/lab/walk` on a rolled Encampment): tap a
+     spot and you walk there by the shortest way (`findPath`, diagonals allowed but never cutting
+     a rock corner), through floors, doors and tunnels only. A tap on rock walks to the nearest
+     walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk finishes the step
+     first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle but never shows past
+     the plan's edge (`cameraAt`). Speed, tile size on screen (16px) and tap reach are
+     provisional: the user judges them in the lab.
   3. Art samples (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
   4. Into the run: fights, chests, the witch, saving your spot, the scroll as minimap.
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
