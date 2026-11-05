@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { DUNGEONS } from "../lib/dungeon/run";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
-  rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
-  SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, TWIN_PILLAR, BOSS_WAYS, type Layout, type Tunnel,
+  rollLayout, WALK_SPEC, routesToBoss, ROUTES, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
+  SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, TWIN_PILLAR, BOSS_WAYS, BOSS_DRIFT, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
 import { CAMP_STASH_MARKS } from "../lib/dungeon/map";
@@ -13,7 +12,9 @@ function seeded(seed: number) {
   return () => ((s = (s * 16807) % 2147483647) / 2147483647);
 }
 
-const encampment = (seed: number) => rollLayout(DUNGEONS[0].spec, seeded(seed));
+// (Cached: a layout takes a few hundred ms to roll. Tests that change one copy it first.)
+const rolled = new Map<number, Layout>();
+const encampment = (seed: number) => rolled.get(seed) ?? rolled.set(seed, rollLayout(WALK_SPEC, seeded(seed))).get(seed)!;
 const middle = (l: Layout, id: string) => roomCentre(l.rooms[id]);
 
 // A made-up layout (blocks): the entrance, a room above it, a room beside
@@ -34,9 +35,9 @@ describe("labyrinth layout (gen 1 and 2)", () => {
     for (let seed = 1; seed <= 12; seed++) {
       const l = encampment(seed);
       const tag = (p: string) => `seed ${seed}: ${p}`;
-      problems.push(...routeProblems(l, DUNGEONS[0].spec.minRoute).map(tag));
+      problems.push(...routeProblems(l, WALK_SPEC.minRoute).map(tag));
       problems.push(...checkFloorplan(layoutFloorplan(l), layoutMap(l)).map(tag));
-      if (Object.keys(l.rooms).length !== DUNGEONS[0].spec.rooms + 2) problems.push(tag(`${Object.keys(l.rooms).length} rooms`));
+      if (Object.keys(l.rooms).length !== WALK_SPEC.rooms + 2) problems.push(tag(`${Object.keys(l.rooms).length} rooms`));
       const sizes = [...SHAPES, START_SHAPE, BOSS_SHAPE];
       for (const r of Object.values(l.rooms)) {
         if (!sizes.some((s) => s.name === r.shape && s.w === r.w && s.h === r.h)) problems.push(tag(`${r.id} is ${r.w}×${r.h}`));
@@ -67,7 +68,7 @@ describe("labyrinth layout (gen 1 and 2)", () => {
   });
 
   it("is the same layout for the same roll", () => {
-    expect(encampment(5)).toEqual(encampment(5));
+    expect(rollLayout(WALK_SPEC, seeded(5))).toEqual(encampment(5));
   });
 
   it("only goes up an up tunnel, and closes what's behind", () => {
@@ -188,16 +189,29 @@ describe("labyrinth layout: variety (the user, 2026-11-05)", () => {
   it("never leaves you just one way on: two tunnels up, or sideways to a room that leads on", () => {
     // tiny(): start → a (up), a ↔ b (sideways), b → boss (up).
     const l = tiny([["start", "a", true], ["a", "b", false], ["b", "boss", true]]);
-    expect(fewChoices(l)).toEqual(["start", "a", "b"]); // one way on from each
+    expect(fewChoices(l)).toEqual(["start", "a"]); // one way on from each (b opens into the boss: its last step is choice enough)
     // A way up from a too: a and b each have two ways on, but the entrance's
     // twin tunnels both lead to a, which is one choice (the user, 2026-11-05).
     const twin = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true], ["b", "boss", true]]);
     twin.tunnels[1].key += "#2";
     expect(fewChoices(twin)).toEqual(["start"]);
-    // Sideways into a dead end isn't a way on (b leads only back to a).
+    // Sideways into a dead end isn't a way on: b leads only back to a.
     const dead = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true]]);
     dead.tunnels[1].key += "#2";
-    expect(fewChoices(dead)).toEqual(["start", "a", "b"]);
+    expect(fewChoices(dead)).toEqual(["start", "b"]);
+  });
+
+  it("no choke points: 3 ways to the boss that share no room (the user, 2026-11-05)", () => {
+    // tiny(): start → a → boss and start → b → boss: two ways, but nothing a third could take.
+    const two = tiny([["start", "a", true], ["start", "b", true], ["a", "boss", true], ["b", "boss", true]]);
+    expect(routesToBoss(two)).toBe(2);
+    // Both through a: one way, however many tunnels.
+    const one = tiny([["start", "a", true], ["start", "a", true], ["a", "b", false], ["a", "boss", true], ["b", "boss", true]]);
+    one.tunnels[1].key += "#2";
+    expect(routesToBoss(one)).toBe(1);
+    // Every rolled one: no room, or pair of rooms, cuts every way.
+    for (let seed = 1; seed <= 12; seed++) expect(routesToBoss(encampment(seed))).toBe(ROUTES);
+    expect(ROUTES).toBeGreaterThanOrEqual(3);
   });
 
   it("rolls rooms about 4 across the middle, more tunnels up than sideways, 3 ways into the boss, long tunnels, twins far apart, dog-legs", () => {
@@ -222,6 +236,9 @@ describe("labyrinth layout: variety (the user, 2026-11-05)", () => {
       }
       const into = new Set(l.tunnels.flatMap((t) => (t.a === l.boss ? [t.b] : t.b === l.boss ? [t.a] : [])));
       if (into.size < BOSS_WAYS) problems.push(`seed ${seed}: ${into.size} rooms into the boss`);
+      // The boss's room in the middle (the user, 2026-11-05).
+      const boss = l.rooms[l.boss];
+      if (Math.abs(boss.x + boss.w / 2 - l.w / 2) > BOSS_DRIFT + 1) problems.push(`seed ${seed}: the boss is off to one side`);
     }
     expect(problems).toEqual([]);
     expect(BOSS_WAYS).toBeGreaterThanOrEqual(3);

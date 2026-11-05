@@ -9,8 +9,9 @@
 //   its footprint, walls included.
 // - Gen 1, rooms: the entrance alone along the bottom, then rooms of the
 //   SHAPES dropped in one by one, low down and laid like bricks over the
-//   rooms below (GAP_BLOCKS of rock round each), LAYOUT_W blocks across (about 4 rooms side by side in the
-//   middle), then the boss's room on top. One shape is a dog-leg: an L, two
+//   rooms below (GAP_BLOCKS of rock round each; the first row three over the
+//   entrance, the top row one either side of the boss), LAYOUT_W blocks across (about 4 rooms side by side in the
+//   middle), then the boss's room on top, in the middle. One shape is a dog-leg: an L, two
 //   long rooms joined at a right angle, turned any of four ways (its `cut`
 //   is the corner it lacks; packed as its whole box).
 // - Gen 2, tunnels: a straight tunnel, TUNNEL_W tiles wide, can join two
@@ -33,31 +34,36 @@
 //   (no traps), every room can be reached somehow, the entrance has
 //   START_WAYS rooms it leads to, the boss BOSS_WAYS rooms leading in, no room more than
 //   MAX_TUNNELS tunnels, the shortest route is spec.minRoute rooms or more,
-//   and every room offers a choice (the user, 2026-11-05: never just one way
+//   every room offers a choice (the user, 2026-11-05: never just one way
 //   on): CHOICES or more rooms to go on to, up or sideways into rooms that
 //   lead on. Twins count once (the user: two tunnels into the same room are
-//   one decision).
+//   one decision). And no choke points (the user, 2026-11-05): ROUTES ways
+//   to the boss that share no room, so no room (or two) has to be gone
+//   through (routesToBoss).
 
-import type { RoomKind } from "./run";
+import { CAMP_ROUTE, type RoomKind } from "./run";
 import { linkKey, fillCamp, markRooms, type DungeonMap, type MapNode, type MapSpec } from "./map";
 import { FLOOR, TUNNEL, DOOR, checkFloorplan, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
 
 export const BLOCK = 3;            // tiles across a block
-export const LAYOUT_W = 30;        // blocks across the rooms (about 4 side by side in the middle), an EDGE more each side
+export const LAYOUT_W = 38;        // blocks across the rooms (about 4 side by side in the middle), an EDGE more each side
 export const EDGE = 2;             // blocks of rock round the outside
 export type Shape = { name: string; w: number; h: number; weight: number; arm?: number }; // arm: a dog-leg's thickness
-// The user's starting sizes (2026-11-05), in blocks, walls included.
+// The user's starting sizes (2026-11-05), in blocks, walls included, made a
+// bit wider (the user, 2026-11-05: bigger rooms will help later, some empty).
 export const SHAPES: Shape[] = [
-  { name: "small", w: 5, h: 5, weight: 3 },
-  { name: "wide", w: 10, h: 4, weight: 2 },
-  { name: "tall", w: 4, h: 10, weight: 2 },
-  { name: "big", w: 8, h: 6, weight: 2 },
-  { name: "dog-leg", w: 9, h: 9, weight: 2, arm: 4 }, // a 9×4 and a 4×9 joined at a corner
+  { name: "small", w: 6, h: 5, weight: 3 },
+  { name: "wide", w: 12, h: 4, weight: 2 },
+  { name: "tall", w: 5, h: 10, weight: 2 },
+  { name: "big", w: 10, h: 6, weight: 2 },
+  { name: "dog-leg", w: 11, h: 9, weight: 2, arm: 4 }, // an 11×4 and a 4×9 joined at a corner
 ];
-export const START_SHAPE: Shape = { name: "start", w: 14, h: 4, weight: 0 };
-export const BOSS_SHAPE: Shape = { name: "boss", w: 10, h: 8, weight: 0 };
+export const START_SHAPE: Shape = { name: "start", w: 16, h: 4, weight: 0 };
+export const BOSS_SHAPE: Shape = { name: "boss", w: 12, h: 8, weight: 0 };
 export const GAP_BLOCKS = [1, 3];  // rock between two rooms (at least)
 export const PACK_SLACK = 1;      // blocks higher a room may go, to sit over more rooms
+export const SIDE_SHARE = 3;       // blocks of wall the rooms beside the boss share with it
+export const BOSS_DRIFT = 1;       // blocks the boss's room may sit off the middle
 export const START_BESIDE = 1;     // blocks of rock beside the entrance, so the first rooms sit over it
 export const MIN_OVERLAP = 2;      // blocks two rooms' facing walls share, for a tunnel between them
 export const DOOR_INSET = 0;       // tiles a door sits in from the corner of a floor
@@ -68,10 +74,15 @@ export const TWIN_PILLAR = 9;      // tiles of rock between twins, at least (3 b
 export const UP_DROP_CHANCE = 0.2;   // a tunnel up that could go, goes
 export const SIDE_DROP_CHANCE = 0.6;  // …and a sideways one
 export const MAX_TUNNELS = 5;      // per room
-export const START_WAYS = [2, 3];  // rooms the entrance leads to
+export const START_WAYS = [3, 4];  // rooms the entrance leads to (3+: one for each of ROUTES)
 export const BOSS_WAYS = 3;        // rooms leading into the boss's (at least; the user, 2026-11-05)
 export const CHOICES = 2;          // ways on from every room (see the top)
+export const ROUTES = 3;           // ways to the boss that share no room (see the top)
 export const LAYOUT_REROLLS = 3000;
+// The walkable Encampment (the user, 2026-11-05): 19 rooms besides the entrance
+// and the boss's (the scroll map's has 15), so ROUTES separate ways of
+// CAMP_ROUTE rooms or more fit (3 × 6 rooms between = 18).
+export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE };
 
 export type Corner = "ne" | "nw" | "se" | "sw";
 const CORNERS: Corner[] = ["ne", "nw", "se", "sw"];
@@ -107,7 +118,7 @@ function weighted(rng: Rng, shapes: Shape[]): Shape[] {
 // Packed from the bottom up: `top` is how high each column of blocks is
 // filled, and each room goes GAP_BLOCKS above what's under it and clear of
 // its neighbours by a block or more.
-export function rollRooms(count: number, rng: Rng): Layout {
+export function rollRooms(count: number, rng: Rng): Layout | null {
   const W = LAYOUT_W;
   const placed: { id: string; shape: Shape; x: number; b: number; cut?: Corner }[] = []; // b: blocks up from the bottom
   const top = new Array<number>(W).fill(0);
@@ -123,13 +134,27 @@ export function rollRooms(count: number, rng: Rng): Layout {
   top.fill(START_SHAPE.h + START_BESIDE);
   const sx = placed[0].x;
   top.fill(START_SHAPE.h, sx, sx + START_SHAPE.w);
+  // The first row: three rooms over the entrance (one hanging off each end,
+  // one between), so the ROUTES ways up can start apart.
+  let n = 1;
+  for (let tries = 0; tries < 30 && n === 1; tries++) {
+    const [l, m, r] = [0, 1, 2].map(() => weighted(rng, SHAPES)[0]);
+    const xl = sx + MIN_OVERLAP - l.w + between(rng, [0, 1]);
+    const xr = sx + START_SHAPE.w - MIN_OVERLAP - between(rng, [0, 1]);
+    const between_ = xr - 1 - (xl + l.w + 1); // blocks for the middle one, a block of rock either side
+    if (xl < 0 || xr + r.w > W || m.w > between_) continue;
+    const xm = xl + l.w + 1 + Math.floor(rng() * (between_ - m.w + 1));
+    for (const [shape, x] of [[l, xl], [m, xm], [r, xr]] as const) {
+      put(`r${n++}`, shape, x, Math.max(START_SHAPE.h + between(rng, GAP_BLOCKS), ...top.slice(x, x + shape.w)));
+    }
+  }
   // Each room (its shape by weight) goes as low as it can, within PACK_SLACK
   // blocks of that where it sits over the most rooms it could tunnel down
   // into: laid like bricks, so most rooms have two ways up.
   const under = (x: number, b: number, s: Shape) => placed.filter((p) =>
     p.b + p.shape.h <= b && b - (p.b + p.shape.h) <= MAX_REACH
     && Math.min(x + s.w, p.x + p.shape.w) - Math.max(x, p.x) >= MIN_OVERLAP).length;
-  for (let n = 1; n <= count; n++) {
+  for (; n <= count - 2; n++) {
     const shape = weighted(rng, SHAPES)[0], gap = between(rng, GAP_BLOCKS);
     const spots: { x: number; b: number; below: number }[] = [];
     for (let x = 0; x + shape.w <= W; x++) {
@@ -144,20 +169,42 @@ export function rollRooms(count: number, rng: Rng): Layout {
     const { x, b } = best[Math.floor(rng() * best.length)];
     put(`r${n}`, shape, x, b);
   }
-  // The boss's room on top, above every other room's floor: where the most
-  // rooms could tunnel up into it, then as low as it'll go, then nearest the middle.
-  const floorLine = Math.max(...placed.map((p) => p.b));
+  // The boss's room on top (as high as the highest room), in the middle
+  // (BOSS_DRIFT either way; the user, 2026-11-05: never off to one side, so
+  // ways can come into it from both sides and below; rooms either side of
+  // it can tunnel in sideways): where the most rooms could tunnel up into
+  // it, then as low as it'll go.
+  const floorLine = Math.max(...placed.map((p) => p.b + p.shape.h)) - BOSS_SHAPE.h;
   const reaching = (x: number, b: number) => placed.filter((p) =>
     p.b + p.shape.h <= b && b - (p.b + p.shape.h) <= MAX_REACH
     && Math.min(x + BOSS_SHAPE.w, p.x + p.shape.w) - Math.max(x, p.x) >= MIN_OVERLAP).length;
   let best: { x: number; b: number; n: number } | null = null;
-  for (let x = 0; x + BOSS_SHAPE.w <= W; x++) {
+  const centre = Math.floor((W - BOSS_SHAPE.w) / 2);
+  for (let x = centre - BOSS_DRIFT; x <= centre + BOSS_DRIFT; x++) {
     let b = Math.max(Math.max(...top.slice(x, x + BOSS_SHAPE.w)) + GAP_BLOCKS[0], floorLine);
     while (!clear(x, b, BOSS_SHAPE)) b++;
     const n = reaching(x, b), mid = (q: number) => Math.abs(q + BOSS_SHAPE.w / 2 - W / 2);
     if (!best || n > best.n || (n === best.n && (b < best.b || (b === best.b && mid(x) < mid(best.x))))) best = { x, b, n };
   }
   put("boss", BOSS_SHAPE, best!.x, best!.b);
+  // The top row: the last two rooms either side of the boss, level with it
+  // (sharing SIDE_SHARE blocks of wall, and no higher), so ways come into it
+  // from both sides as well as below. None fits: roll again.
+  const boss = placed[placed.length - 1];
+  for (const side of [-1, 1]) {
+    const fits: { shape: Shape; x: number; b: number }[] = [];
+    for (const shape of SHAPES) for (let gap = GAP_BLOCKS[0]; gap <= MAX_REACH; gap++) {
+      const x = side < 0 ? boss.x - gap - shape.w : boss.x + boss.shape.w + gap;
+      if (x < 0 || x + shape.w > W) continue;
+      let b = Math.max(...top.slice(x, x + shape.w)) + GAP_BLOCKS[0];
+      while (!clear(x, b, shape)) b++;
+      const shared = Math.min(b + shape.h, boss.b + boss.shape.h) - Math.max(b, boss.b);
+      if (shared >= SIDE_SHARE && b + shape.h <= boss.b + boss.shape.h) fits.push({ shape, x, b });
+    }
+    if (fits.length === 0) return null;
+    const { shape, x, b } = fits[Math.floor(rng() * fits.length)];
+    put(`r${n++}`, shape, x, b);
+  }
   // Into blocks counted from the top-left, with EDGE round the outside.
   const H = Math.max(...placed.map((p) => p.b + p.shape.h));
   const rooms: Record<string, LayoutRoom> = {};
@@ -330,7 +377,41 @@ export function fewChoices(layout: Layout, tunnels = layout.tunnels): string[] {
     || sideways(id).some((n) => !been.has(n) && leadsOn(n, new Set([...been, id])));
   const ways = (id: string) => new Set(tunnels.filter((t) => t.up && t.a === id).map((t) => t.b)).size
     + new Set(sideways(id).filter((n) => leadsOn(n, new Set([id])))).size;
-  return Object.keys(layout.rooms).filter((id) => id !== layout.boss && ways(id) < CHOICES);
+  // (A room that opens into the boss's is on its last step: that's choice enough.)
+  const last = (id: string) => tunnels.some((t) => (t.a === id && t.b === layout.boss) || (t.b === id && t.a === layout.boss));
+  return Object.keys(layout.rooms).filter((id) => id !== layout.boss && !last(id) && ways(id) < CHOICES);
+}
+
+// Can you still walk from the entrance to the boss with these rooms blocked?
+function reachesBoss(layout: Layout, tunnels: Tunnel[], blocked: Set<string>): boolean {
+  const first = startProgress(layout);
+  const seen = new Set([`${first.room}@${first.line}`]);
+  const queue = [first];
+  while (queue.length > 0) {
+    const p = queue.pop()!;
+    if (p.room === layout.boss) return true;
+    for (const { to } of waysOn(layout, p, tunnels)) {
+      const k = `${to.room}@${to.line}`;
+      if (blocked.has(to.room) || seen.has(k)) continue;
+      seen.add(k);
+      queue.push(to);
+    }
+  }
+  return false;
+}
+
+// How many ways to the boss share no room (up to `most`): the fewest rooms
+// that, blocked, would cut every way (the entrance and the boss aside).
+// Under 2, there's a room you have to go through.
+export function routesToBoss(layout: Layout, tunnels = layout.tunnels, most = ROUTES): number {
+  if (!reachesBoss(layout, tunnels, new Set())) return 0;
+  const rooms = Object.keys(layout.rooms).filter((id) => id !== layout.start && id !== layout.boss);
+  for (let cut = 1; cut < most; cut++) {
+    // Every set of `cut` rooms (only 1 or 2 are ever needed).
+    const sets = cut === 1 ? rooms.map((a) => [a]) : rooms.flatMap((a, i) => rooms.slice(i + 1).map((b) => [a, b]));
+    if (sets.some((set) => !reachesBoss(layout, tunnels, new Set(set)))) return cut;
+  }
+  return most;
 }
 
 // Everything that makes a layout unsound, in words (none = sound). See the top.
@@ -346,6 +427,8 @@ export function routeProblems(layout: Layout, minRoute: number, tunnels = layout
   if (crowded.length > 0) problems.push(`too many tunnels in ${crowded.join(", ")}`);
   const few = fewChoices(layout, tunnels);
   if (few.length > 0) problems.push(`only one way on from ${few.join(", ")}`);
+  const routes = routesToBoss(layout, tunnels);
+  if (routes < ROUTES) problems.push(`only ${routes} separate ways to the boss`);
   return problems;
 }
 
@@ -359,7 +442,8 @@ function pickTunnels(layout: Layout, options: Tunnel[], minRoute: number, rng: R
   const sound = (ts: Tunnel[]) => {
     const { unreached, stuck } = explore(layout, ts);
     return unreached.length === 0 && stuck.length === 0 && fewChoices(layout, ts).length === 0
-      && joinedTo(ts, layout.start) >= START_WAYS[0] && joinedTo(ts, layout.boss) >= BOSS_WAYS;
+      && joinedTo(ts, layout.start) >= START_WAYS[0] && joinedTo(ts, layout.boss) >= BOSS_WAYS
+      && routesToBoss(layout, ts) >= ROUTES;
   };
   if (!sound(chosen)) return null;
   const drop = (t: Tunnel) => {
@@ -458,6 +542,7 @@ export function layoutFloorplan(layout: Layout): Floorplan {
 export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute">, rng: Rng = Math.random): Layout {
   for (let i = 0; i < LAYOUT_REROLLS; i++) {
     const rooms = rollRooms(spec.rooms, rng);
+    if (!rooms) continue;
     const tunnels = pickTunnels(rooms, tunnelOptions(rooms, rng), spec.minRoute, rng);
     if (!tunnels) continue;
     const layout = { ...rooms, tunnels };

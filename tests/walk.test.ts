@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DUNGEONS } from "../lib/dungeon/run";
 import { ROCK, type Pt } from "../lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, layoutMap } from "../lib/dungeon/layout";
+import { rollLayout, layoutFloorplan, layoutMap, WALK_SPEC } from "../lib/dungeon/layout";
 import { advance, cameraAt, entranceSpot, findPath, nearestWalkable, roomAt, walkable, walkTo, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
 
 function seeded(seed: number) {
@@ -10,7 +9,7 @@ function seeded(seed: number) {
 }
 
 const encampment = (seed: number) => {
-  const layout = rollLayout(DUNGEONS[0].spec, seeded(seed));
+  const layout = rollLayout(WALK_SPEC, seeded(seed));
   return { map: layoutMap(layout), plan: layoutFloorplan(layout) };
 };
 

@@ -704,25 +704,30 @@ How it came about, round by round: history.md.
   pixel art like [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png), laid out
   like the user's sketch [ideas/labyrinth-v2.png](ideas/labyrinth-v2.png) (older notes in
   history.md). Decided: 2D (not 3D), in the current web game (no engine switch); the procedural
-  randomness stays. **The Encampment first** (the user, 2026-11-05): 15 rooms, at least 7 to the
+  randomness stays. **The Encampment first** (the user, 2026-11-05): 15 rooms (19 in the walkable one, `WALK_SPEC`: see Sound below), at least 7 to the
   camp, made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the
   user says to switch, so `main` stays releasable. Plan, one step at a time:
   1. ✅ **Layout, in layers** (the user's sketches, 2026-11-05: [room 1](ideas/room-1.png),
      [gen roll 1–4](ideas/gen-roll-1.png); `lib/dungeon/layout.ts`, walked in `/lab/walk`). The
      layout comes first and the scroll is made from it (`layoutMap`), not the other way round.
      - **Sizes in blocks** of 3×3 tiles (`BLOCK`): room sizes, places and gaps are all whole
-       blocks. A size is the footprint, walls included. The user's starting sizes: small 5×5, wide
-       10×4, tall 4×10, big 8×6, the entrance 14×4, the boss's room 10×8 (`SHAPES`; provisional).
-       And the **dog-leg** (the user, 2026-11-05): an L, a 9×4 and a 4×9 joined at a corner
-       (9×9 overall), turned any of 4 ways (`cut`: the corner it lacks), as likely as a wide room.
+       blocks. A size is the footprint, walls included. The user's starting sizes, then made a bit
+       wider (the user, 2026-11-05: bigger rooms will help later, some of them empty): small 6×5,
+       wide 12×4, tall 5×10, big 10×6, the entrance 16×4, the boss's room 12×8 (`SHAPES`;
+       provisional). And the **dog-leg** (the user, 2026-11-05): an L, an 11×4 and a 4×9 joined at
+       a corner (11×9 overall), turned any of 4 ways (`cut`: the corner it lacks), as likely as a
+       wide room.
      - **Gen 1, rooms:** the entrance alone along the bottom, then rooms dropped in one by one,
        1–3 blocks of rock round each, **laid like bricks**: each as low as it'll go, within a
        block (`PACK_SLACK`) of that where it sits over the most rooms below, so rooms get more
-       than one way up. `LAYOUT_W` 30 blocks across (the user, 2026-11-05: about **4 rooms across
-       the middle**; staggered, so a band a room tall across the middle holds about 4.9, a single
-       line 2.7; 34 or 38 wide gave fewer tunnels up). The boss's room on top, where most rooms
-       could tunnel into it. A dog-leg is packed as its whole 9×9 box (tunnels may cross its
-       missing corner).
+       than one way up. The first row is always three rooms over the entrance (one hanging off
+       each end, one between). `LAYOUT_W` 34 blocks across (the user, 2026-11-05: about **4 rooms
+       across the middle**; staggered, so a band a room tall across the middle holds about 5).
+       The boss's room on top, **in the middle** (the user, 2026-11-05: never off to one side,
+       which limits the ways in; `BOSS_DRIFT` a block either way), as high as the highest room,
+       and the top row is a room either side of it, level with it, so ways come in from both sides
+       as well as below. A dog-leg is packed as its whole box (tunnels may cross its missing
+       corner).
      - **Gen 2, tunnels:** straight, **3 tiles wide** (the user: so you can get about), between
        rooms (any arm of a dog-leg) whose facing floors overlap enough for one, its side flush with
        a corner at most (`DOOR_INSET` 0, so a 2-block overlap does: rooms can sit over two below),
@@ -735,23 +740,31 @@ How it came about, round by round: history.md.
        from rooms with more than 5, then up ones 20% and sideways 60% of the time:
        `UP_DROP_CHANCE`, `SIDE_DROP_CHANCE`, as going up is a lasting choice and there should be
        plenty) as long as it stays sound. So the most direct way isn't always there.
-       (Sims, 100 rolls: about 14 up and 12 sideways tunnels a map, 0.4 twins, 1 dog-leg.)
+       (Twins about 0.4 a map, dog-legs about 1.)
      - **Always a choice** (the user, 2026-11-05: keep the "do I go left or right here?"
        feeling; `fewChoices`): from every room but the boss's there are 2+ **different rooms**
        to go on to: up, or sideways into a room that leads on (one with a tunnel up, or on
        sideways again to one, never back the way you came). A dead end off to the side doesn't
-       count, and the room it hangs off still needs 2 other ways on.
+       count, and the room it hangs off still needs 2 other ways on. A room that opens into the
+       boss's is on its last step, and needn't have another.
+     - **No choke points** (the user, 2026-11-05: seed 1 had two rooms you had to go through;
+       `routesToBoss`): **3 ways to the boss that share no room** (`ROUTES`), so no room, nor any
+       two, can be in the way of every route. Hence the entrance leads to 3–4 rooms. Three
+       separate ways of 7+ rooms need 18 rooms between the entrance and the boss, so the walkable
+       Encampment has **19** (the user's pick, 2026-11-05, over a shorter minimum route or only 2
+       separate ways). This changes the Encampment when it goes live (the scroll map's has 15).
      - **Forward only** (the user, 2026-11-05): up tunnels are one way. Going up one draws a line
        along the bottom of the room you came into; a room wholly behind it (the one you left, for
        one) is closed, and every tunnel into it. Sideways tunnels go both ways, even into a room
        hanging partly behind the line. You never go back down an up tunnel below the line you've
        crossed, not even by sliding sideways first (the user confirmed, 2026-11-05).
      - **Sound** (`routeProblems`, every roll is checked and rerolled if not): no traps (wherever
-       you go, the boss can still be reached), every room reachable, the entrance leading to 2–3
+       you go, the boss can still be reached), every room reachable, the entrance leading to 3–4
        rooms, **3+ rooms leading into the boss** (`BOSS_WAYS`; the user, 2026-11-05: 2–3 at
-       least), 5 tunnels a room at most, the shortest route 7+ rooms, always a choice; and the
-       tiles pass `checkFloorplan` (tunnels join exactly the rooms they should, twins counted).
-       About 50 ms a layout (most rolls fail fast; up to 3000 tries).
+       least), 5 tunnels a room at most, the shortest route 7+ rooms, always a choice, no choke
+       points; and the tiles pass `checkFloorplan` (tunnels join exactly the rooms they should,
+       twins counted). About 0.3 s a layout, 0.8 s at worst (most rolls fail fast; up to 3000
+       tries). Sims: about 22 up and 13 sideways tunnels a map.
      - (A first try laid the scroll map out on tiles and dug tunnels round the rooms: long and
        winding, too much walking. Deleted; `lib/dungeon/floorplan.ts` keeps only the tile types
        and `checkFloorplan`.)

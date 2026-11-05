@@ -13,9 +13,9 @@
 // fights (dev tool; nothing is saved). For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DUNGEONS, ROOM_INFO } from "@/lib/dungeon/run";
+import { ROOM_INFO } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, campMap, roomCentre, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
+import { rollLayout, layoutFloorplan, campMap, roomCentre, WALK_SPEC, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, roomAt, walkTo, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import type { Pt } from "@/lib/dungeon/floorplan";
@@ -36,7 +36,7 @@ type Scroll = { marks: ScrollMark[]; ink: { x: number; y: number; w: number; wal
 
 export default function WalkLab() {
   const [seed, setSeed] = useState(1);
-  const layout = useMemo(() => rollLayout(DUNGEONS[0].spec, seeded(seed)), [seed]);
+  const layout = useMemo(() => rollLayout(WALK_SPEC, seeded(seed)), [seed]);
   const plan = useMemo(() => layoutFloorplan(layout), [layout]);
   const camp = useMemo(() => campMap(layout, false, seeded(seed + 7919)), [layout, seed]);
   const kinds = camp.nodes;
@@ -205,7 +205,7 @@ export default function WalkLab() {
     return { marks: scrollMarks(camp, layout, all ? Object.keys(layout.rooms) : seen.current, roomAt(plan, me.current)), ink, trail: all ? [] : trail.current.slice(), cuts: all ? [] : cuts.current.slice() };
   };
   const shown = reveal ? readScroll(true) : scroll;
-  const sound = routeProblems(layout, DUNGEONS[0].spec.minRoute).length === 0;
+  const sound = routeProblems(layout, WALK_SPEC.minRoute).length === 0;
 
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
