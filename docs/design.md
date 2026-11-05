@@ -789,8 +789,10 @@ How it came about, round by round: history.md.
      to the nearest walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk
      finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
      but never shows past the edge (`cameraAt`). Zoomed in close so you explore rather than
-     oversee (the user, 2026-11-06): 32px a tile, about 11 across the phone (the lab's Zoom
-     tries 16–40). Speed, zoom and tap reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
+     oversee (the user, 2026-11-06): 11 tiles across the screen, whatever its size, so a laptop
+     shows what a phone does (the lab's Zoom tries 22, 15, 11, 9). The lab plays inside the
+     game's own phone screen (header, and the live Labyrinth's dock: Party, Bag, Scroll, Retreat;
+     Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
      walk, shrinking as you go (the user, 2026-11-05).
   3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
      Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the

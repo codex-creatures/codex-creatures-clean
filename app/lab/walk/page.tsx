@@ -55,12 +55,15 @@ import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { BattleView, usePlayableBattle, type MemberInfo } from "@/components/BattleScreen";
 import { lookOf } from "@/components/ContainerLoot";
 import LootWindow from "@/components/LootWindow";
+import DenFrame from "@/components/DenFrame";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import type { Pt } from "@/lib/dungeon/floorplan";
 import type { Rarity } from "@/lib/types";
 
-const ZOOMS = [16, 24, 32, 40]; // screen pixels per tile, to try (🧪)
-const START_ZOOM = 2;           // 32: about 11 tiles across the phone
+// Zoom, as tiles across the screen, so it looks the same on a phone and a
+// laptop whatever the screen's size (🧪: the user tries them).
+const ZOOMS = [22, 15, 11, 9];
+const START_ZOOM = 2;
 const LAB_KEY = "codex_lab_walk_v1"; // sessionStorage: this tab's spot in the lab (never the game's save)
 // The team you fight with (🧪): three creatures of this rarity, in gear of this rarity, at this level.
 const TEST_TEAM: { rarity: Rarity; gear: Rarity; level: number } = { rarity: "uncommon", gear: "uncommon", level: 5 };
@@ -86,6 +89,7 @@ const COLOURS = {
 };
 const DARK_RGB = [6, 5, 12]; // the dark's colour: a cold near-black
 const CLOSED = "rgba(7, 6, 11, 0.6)";
+const SHEET: React.CSSProperties = { position: "absolute", inset: "6% 6%", zIndex: 10, overflowY: "auto", padding: 12, background: "rgba(20, 16, 10, 0.95)", border: "2px solid #6b4f2a", color: "#f1d9a0", fontSize: 13 };
 const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14" };
 
 // What the scroll shows when you open it (a snapshot: it doesn't change while open).
@@ -169,8 +173,8 @@ export default function WalkLab() {
   const [hero, setHero] = useState(0);
   const [cones, setCones] = useState(false);
   const [zoom, setZoom] = useState(START_ZOOM);
-  const look = useRef({ drawArt, tileSet, hero, cones, tile: ZOOMS[zoom] });
-  useEffect(() => { look.current = { drawArt, tileSet, hero, cones, tile: ZOOMS[zoom] }; }, [drawArt, tileSet, hero, cones, zoom]);
+  const look = useRef({ drawArt, tileSet, hero, cones, across: ZOOMS[zoom] });
+  useEffect(() => { look.current = { drawArt, tileSet, hero, cones, across: ZOOMS[zoom] }; }, [drawArt, tileSet, hero, cones, zoom]);
   // Your walk so far, tile by tile, and the cut-offs you've crossed (tiles down), for the scroll.
   const trail = useRef<Pt[]>([]);
   const cuts = useRef<number[]>([]);
@@ -188,7 +192,8 @@ export default function WalkLab() {
   const [hp, setHp] = useState<number[]>([1, 1, 1]);
   const [bag, setBag] = useState<SackItem[]>([]);
   const [purse, setPurse] = useState<SackItem[]>([]);
-  const [bagOpen, setBagOpen] = useState(false);
+  const [sheet, setSheet] = useState<"party" | "bag" | null>(null); // the dock's sheets
+  const [retreatArmed, setRetreatArmed] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [fight, setFight] = useState<{ room: string; team: number[] } | null>(null);
   const fightRef = useRef(fight);
@@ -408,10 +413,10 @@ export default function WalkLab() {
       }
       if (now - kept > 1000) { kept = now; keepRef.current(); }
 
-      const { drawArt: artOn, tileSet: ts, hero: hi, cones: conesOn, tile: T } = look.current;
-      const scale = T / 16;
+      const { drawArt: artOn, tileSet: ts, hero: hi, cones: conesOn, across } = look.current;
       const ratio = window.devicePixelRatio || 1;
       const cw = el.clientWidth, ch = el.clientHeight;
+      const T = cw / across, scale = T / 16;
       if (el.width !== Math.round(cw * ratio)) el.width = Math.round(cw * ratio);
       if (el.height !== Math.round(ch * ratio)) el.height = Math.round(ch * ratio);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -434,7 +439,7 @@ export default function WalkLab() {
           if (t < 0) continue;
           if (!knownAt(cx, cy) && !knownAt(cx + 1, cy) && !knownAt(cx, cy + 1) && !knownAt(cx + 1, cy + 1)) continue;
           const { col, row } = WANG_TILES[t];
-          ctx.drawImage(art.tunnel[i] ? tunnelSheet : floorSheet, col * SHEET_TILE, row * SHEET_TILE, SHEET_TILE, SHEET_TILE, sx(cx + 0.5), sy(cy + 0.5), T, T);
+          ctx.drawImage(art.tunnel[i] ? tunnelSheet : floorSheet, col * SHEET_TILE, row * SHEET_TILE, SHEET_TILE, SHEET_TILE, sx(cx + 0.5), sy(cy + 0.5), sx(cx + 1.5) - sx(cx + 0.5), sy(cy + 1.5) - sy(cy + 0.5));
         }
       } else {
         for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
@@ -442,7 +447,7 @@ export default function WalkLab() {
           if (t === ROCK && !isWall(x, y)) continue;
           if (!knownAt(x, y)) continue;
           ctx.fillStyle = t === FLOOR ? COLOURS.floor : t === DOOR ? COLOURS.door : t !== ROCK ? COLOURS.tunnel : COLOURS.wall;
-          ctx.fillRect(sx(x), sy(y), T, T);
+          ctx.fillRect(sx(x), sy(y), sx(x + 1) - sx(x), sy(y + 1) - sy(y));
         }
       }
       // Side walls' faces, wider the further across the room you are.
@@ -451,10 +456,10 @@ export default function WalkLab() {
         const px = Math.max(1, Math.round(wd * T)), left = toRight ? sx(x + 1) : sx(x) - px;
         if (floorSheet) {
           const f = WANG_TILES[FACE_TILE];
-          ctx.drawImage(floorSheet, f.col * SHEET_TILE, f.row * SHEET_TILE, SHEET_TILE, SHEET_TILE, left, sy(y), px, T);
+          ctx.drawImage(floorSheet, f.col * SHEET_TILE, f.row * SHEET_TILE, SHEET_TILE, SHEET_TILE, left, sy(y), px, sy(y + 1) - sy(y));
           ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
         } else ctx.fillStyle = COLOURS.wallSide;
-        ctx.fillRect(left, sy(y), px, T);
+        ctx.fillRect(left, sy(y), px, sy(y + 1) - sy(y));
       };
       if (artReady || !artOn) {
         for (const q of edges.left) if (q.x >= x0 && q.x < x1 && q.y >= y0 && q.y < y1 && knownAt(q.x, q.y)) { const wd = sideFace(eye.x - (q.x + 1)); if (wd > 0) face(q.x, q.y, wd, true); }
@@ -583,15 +588,15 @@ export default function WalkLab() {
         ctx.fill();
       } });
       // South walls stand up over the floor's bottom row: their tops, raised (see-through close to you).
-      const lift = WALL_LIFT * T;
+      const lift = Math.round(WALL_LIFT * T);
       if (artReady || !artOn) for (const q of edges.south) {
         if (q.x < x0 || q.x >= x1 || q.y < y0 || q.y >= y1 || !knownAt(q.x, q.y - 1)) continue;
         standing.push({ x: q.x, y: q.y - 0.5, draw: () => {
           ctx.globalAlpha = capFade(Math.hypot(q.x - me.current.x, q.y - 0.5 - WALL_LIFT / 2 - me.current.y));
           if (floorSheet) {
             const t = WANG_TILES[TOP_TILE];
-            ctx.drawImage(floorSheet, t.col * SHEET_TILE, t.row * SHEET_TILE, SHEET_TILE, SHEET_TILE * WALL_LIFT, sx(q.x), sy(q.y) - lift, T, lift);
-          } else { ctx.fillStyle = COLOURS.wallTop; ctx.fillRect(sx(q.x), sy(q.y) - lift, T, lift); }
+            ctx.drawImage(floorSheet, t.col * SHEET_TILE, t.row * SHEET_TILE, SHEET_TILE, SHEET_TILE * WALL_LIFT, sx(q.x), sy(q.y) - lift, sx(q.x + 1) - sx(q.x), lift);
+          } else { ctx.fillStyle = COLOURS.wallTop; ctx.fillRect(sx(q.x), sy(q.y) - lift, sx(q.x + 1) - sx(q.x), lift); }
           ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
           ctx.fillRect(sx(q.x), sy(q.y) - lift, T, Math.max(1, scale));
           ctx.globalAlpha = 1;
@@ -654,8 +659,8 @@ export default function WalkLab() {
 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (fightRef.current || lootRef.current) return;
-    const T = ZOOMS[zoom];
     const el = e.currentTarget, box = el.getBoundingClientRect();
+    const T = el.clientWidth / ZOOMS[zoom];
     const cam = cameraAt(plan, me.current, { w: el.clientWidth / T, h: el.clientHeight / T });
     const spot = { x: Math.floor(cam.x + (e.clientX - box.left) / T), y: Math.floor(cam.y + (e.clientY - box.top) / T) };
     const can = rule(progressRef.current);
@@ -737,43 +742,84 @@ export default function WalkLab() {
   const over = battle.match && !battle.view && battle.match.state.winner;
   const bagLooks = bag.map((x) => { const l = lookOf(x); return { name: l.name, sprite: l.sprite, icon: l.icon, color: l.color, glow: l.glow, peek: x }; });
 
+  // The dock's Scroll: a look, while you have looks left.
+  const lookAtScroll = () => { setLooks((n) => n - 1); setScroll(readScroll()); setSheet(null); };
+  // Retreat (tap twice): the run's over, a fresh roll from the entrance.
+  const retreat = () => {
+    if (!retreatArmed) { setRetreatArmed(true); window.setTimeout(() => setRetreatArmed(false), 3000); return; }
+    setRetreatArmed(false);
+    writeSaved(null);
+    setSeed((x) => x + 1);
+    setTimeout(() => setNote("You retreated: a fresh roll from the entrance."), 0);
+  };
+  const standing = hp.filter((x) => x > 0).length;
+
   return (
-    <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
-      <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Walk the Encampment</h1>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
-        <button className="chip" disabled={!!fight} onClick={() => { writeSaved(null); setSeed((s) => s + 1); }}>Reroll</button>
-        <button className="chip" aria-pressed={dark} onClick={() => setDark((d) => !d)}>Darkness</button>
-        <button className="chip" onClick={() => setZoom((z) => (z + 1) % ZOOMS.length)}>Zoom: {ZOOMS[zoom]}px</button>
-        <button className="chip" disabled={looks === 0 || !!scroll || reveal} onClick={() => {
-          setLooks((n) => n - 1);
-          setScroll(readScroll());
-        }}>Scroll ({looks} left)</button>
-        <button className="chip" aria-pressed={reveal} onClick={() => setReveal((r) => !r)}>Reveal</button>
-        <button className="chip" aria-pressed={drawArt} onClick={() => setDrawArt((a) => !a)}>Art</button>
-        <button className="chip" disabled={!drawArt} onClick={() => setTileSet((t) => (t + 1) % WALK_TILES.length)}>Tiles: {WALK_TILES[tileSet].name}</button>
-        <button className="chip" disabled={!drawArt} onClick={() => setHero((t) => (t + 1) % WALK_HEROES.length)}>Hero: {WALK_HEROES[hero].name}</button>
-        <button className="chip" aria-pressed={cones} onClick={() => setCones((c) => !c)}>Cones</button>
-        <button className="chip" aria-pressed={bagOpen} onClick={() => setBagOpen((b) => !b)}>Bag ({bag.length}/{LAB_BAG})</button>
-        <span style={{ fontSize: 13, opacity: 0.8 }}>
+    <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-start" }}>
+      {/* The lab's own controls, beside the screen (not part of the game). */}
+      <div style={{ flex: "1 1 220px", maxWidth: 300, display: "flex", flexDirection: "column", gap: 8 }}>
+        <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0", margin: 0 }}>Walk the Encampment</h1>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button className="chip" disabled={!!fight} onClick={() => { writeSaved(null); setSeed((x) => x + 1); }}>Reroll</button>
+          <button className="chip" aria-pressed={dark} onClick={() => setDark((d) => !d)}>Darkness</button>
+          <button className="chip" onClick={() => setZoom((z) => (z + 1) % ZOOMS.length)}>Zoom: {ZOOMS[zoom]} tiles across</button>
+          <button className="chip" aria-pressed={reveal} onClick={() => setReveal((r) => !r)}>Reveal</button>
+          <button className="chip" aria-pressed={drawArt} onClick={() => setDrawArt((a) => !a)}>Art</button>
+          <button className="chip" disabled={!drawArt} onClick={() => setTileSet((t) => (t + 1) % WALK_TILES.length)}>Tiles: {WALK_TILES[tileSet].name}</button>
+          <button className="chip" disabled={!drawArt} onClick={() => setHero((t) => (t + 1) % WALK_HEROES.length)}>Hero: {WALK_HEROES[hero].name}</button>
+          <button className="chip" aria-pressed={cones} onClick={() => setCones((c) => !c)}>Cones</button>
+        </div>
+        <div style={{ fontSize: 13, opacity: 0.8, lineHeight: 1.5 }}>
           Seed {seed} · {Object.keys(layout.rooms).length} rooms · {layout.tunnels.length} tunnels ({layout.tunnels.filter((t) => !t.up).length} sideways) ·{" "}
-          {sound ? "sound" : "unsound!"} · in {label}{progress.line === Infinity ? "" : " · up tunnels are one way"} ·{" "}
-          team {team.info.map((m, i) => `${CREATURE_BY_ID[m.creatureId!].name} ${Math.round(hp[i] * 100)}%`).join(", ")} · {gold} gold
-        </span>
+          {sound ? "sound" : "unsound!"} · in {label}{progress.line === Infinity ? "" : " · up tunnels are one way"}
+        </div>
       </div>
-      <div style={{ position: "relative", width: "min(100%, 400px, calc(80vh * 9 / 16))", aspectRatio: "9 / 16" }}>
+      {/* The game's phone screen, as on a phone (scaled to fit the window): .game-screen
+          makes the loot window and sheets open inside it, and cqw/cqh its shares. */}
+      <div className="game-screen" style={{ height: "calc(100dvh - 32px)", width: "min(100%, calc((100dvh - 32px) * 9 / 16))", border: "1px solid #333" }}>
+        <div className="screen-scale">
+          <DenFrame title="The Encampment" icon="🌀" gold={gold} backLocked="The lab: retreat to leave" fill dock={
+            // Two by two, as in the live Labyrinth: Party and Bag on top, Scroll and Retreat below.
+            <div className="dock-tabs" style={{ gridAutoFlow: "row", gridTemplateColumns: "1fr 1fr" }}>
+              <button className="dock-tab" disabled={!!fight} onClick={() => setSheet((x) => (x === "party" ? null : "party"))}>
+                🐾 Party <span className="count">{standing}/{team.info.length}</span>
+              </button>
+              <button className="dock-tab" disabled={!!fight} onClick={() => setSheet((x) => (x === "bag" ? null : "bag"))}>
+                🎒 Bag <span className="count">{bag.length}/{LAB_BAG}</span>
+              </button>
+              <button className="dock-tab" disabled={!!fight || looks === 0 || !!scroll || reveal} onClick={lookAtScroll}>
+                📜 Scroll <span className="count">{looks}/{SCROLL_LOOKS}</span>
+              </button>
+              <button className="dock-tab" style={{ color: "#ff8a80", background: retreatArmed ? "#6e1f18" : undefined }} disabled={!!fight} onClick={retreat}>
+                {retreatArmed ? "Tap: leave" : "🏃 Retreat"}
+              </button>
+            </div>
+          }>
+      <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
         <canvas
           ref={canvas}
           onPointerDown={tap}
-          style={{ display: "block", width: "100%", height: "100%", border: "1px solid #333", touchAction: "none" }}
+          style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }}
         />
         {note && !fight && !lootId && (
           <div onPointerDown={() => setNote(null)} style={{ position: "absolute", left: 8, right: 8, bottom: 8, padding: "8px 10px", background: "rgba(20, 16, 10, 0.92)", border: "2px solid #6b4f2a", color: "#f1d9a0", fontSize: 13, lineHeight: 1.4 }}>
             {note}
           </div>
         )}
-        {bagOpen && !fight && (
-          <div onPointerDown={() => setBagOpen(false)} style={{ position: "absolute", inset: "10% 8%", overflowY: "auto", padding: 12, background: "rgba(20, 16, 10, 0.95)", border: "2px solid #6b4f2a", color: "#f1d9a0", fontSize: 13 }}>
-            <div className="pixel-font" style={{ marginBottom: 8 }}>The lab&apos;s bag (not saved)</div>
+        {sheet === "party" && !fight && (
+          <div onPointerDown={() => setSheet(null)} style={SHEET}>
+            <div className="pixel-font" style={{ marginBottom: 8 }}>The test team (not saved)</div>
+            {team.info.map((m, i) => (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div>{CREATURE_BY_ID[m.creatureId!].name} · Lv {TEST_TEAM.level} · {Math.round(hp[i] * 100)}%</div>
+                <div style={{ height: 6, background: "#2a2418", marginTop: 3 }}><div style={{ width: `${hp[i] * 100}%`, height: "100%", background: hp[i] > 0.5 ? "#5cc65c" : hp[i] > 0.2 ? "#e0b040" : "#e0483e" }} /></div>
+              </div>
+            ))}
+          </div>
+        )}
+        {sheet === "bag" && !fight && (
+          <div onPointerDown={() => setSheet(null)} style={SHEET}>
+            <div className="pixel-font" style={{ marginBottom: 8 }}>The test bag (not saved)</div>
             {bag.length + purse.length === 0 ? <div style={{ opacity: 0.7 }}>Empty.</div> : [...purse, ...bag].map((x, i) => {
               const l = lookOf(x);
               return <div key={i} style={{ color: l.color }}>{"gold" in x ? `${x.gold} gold` : l.name}</div>;
@@ -781,7 +827,7 @@ export default function WalkLab() {
           </div>
         )}
         {lootBox && (
-          <div className="screen-scale" style={{ position: "absolute", inset: 0 }}>
+          <>
             <LootWindow name={BOX_NAMES[lootBox.kind]} sprite={lootBox.kind === "chest" || lootBox.kind === "treasure" ? TREASURE_CHEST_OPEN : BURLAP_SACK_OPEN}
               items={lootBox.items ?? []} bag={bagLooks} slots={LAB_BAG} bagName="Test bag"
               onTake={(i) => take(i)} onTakeAll={takeAll} onSwap={(i, at) => take(i, at)} onPutBack={putBack}
@@ -791,11 +837,11 @@ export default function WalkLab() {
                 setLootId(null);
                 keepRef.current();
               }} />
-          </div>
+          </>
         )}
         {fight && battle.match && (
-          // The real battle screen, in the phone-shaped box (screen-scale: its cqw/cqh are this box's).
-          <div className="screen-scale" style={{ position: "absolute", inset: 0, background: "#0b0c11" }}>
+          // The real battle screen, over the whole phone screen.
+          <div className="screen-scale" style={{ position: "fixed", inset: 0, zIndex: 20, background: "#0b0c11" }}>
             <BattleView
               battle={battle}
               showEstimates
@@ -828,6 +874,9 @@ export default function WalkLab() {
             </svg>
           </div>
         )}
+      </div>
+          </DenFrame>
+        </div>
       </div>
     </main>
   );
