@@ -211,11 +211,7 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
       else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
     }
   }
-  // A few rooms are marked on the scroll from the start (never mysteries,
-  // nor the Encampment's chest and stashes: campStashes marks those).
-  const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery
-    && !(dungeon === 0 && (n.kind === "chest" || n.kind === "stash")));
-  for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
+  markRooms(map, dungeon, rng);
   // …and a few corridors deeper in.
   const depth = depths(map);
   const deep = Object.values(map.nodes).flatMap((a) => a.links.filter((b) => a.id < b)
@@ -233,6 +229,14 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   map.knownLinks = knownLinks;
   placeLarge(map, spec.large, rng, dynamite);
   return map;
+}
+
+// A few rooms are marked on the scroll from the start (never mysteries,
+// nor the Encampment's chest and stashes: campStashes marks those).
+export function markRooms(map: DungeonMap, dungeon: DungeonId, rng: Rng) {
+  const plain = Object.values(map.nodes).filter((n) => n.id !== map.start && n.id !== map.boss && !n.mystery
+    && !(dungeon === 0 && (n.kind === "chest" || n.kind === "stash")));
+  for (let i = 0; i < KNOWN_AT_START && plain.length > 0; i++) plain.splice(Math.floor(rng() * plain.length), 1)[0].known = true;
 }
 
 // What's in the Encampment's rooms (dungeon 0), on the scroll map and the

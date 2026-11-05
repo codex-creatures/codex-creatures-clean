@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DUNGEONS } from "../lib/dungeon/run";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
-  rollLayout, layoutFloorplan, layoutMap, campMap, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
+  rollLayout, layoutFloorplan, layoutMap, campMap, scrollMarks, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorOf,
   SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
@@ -137,5 +137,27 @@ describe("labyrinth layout (gen 3: what's in each room)", () => {
 
   it("is the same fill for the same roll", () => {
     expect(campMap(encampment(4), false, seeded(9))).toEqual(campMap(encampment(4), false, seeded(9)));
+  });
+});
+
+describe("labyrinth layout: the scroll", () => {
+  it("shows a mark per room: icons for what you know, ? for the rest, the hidden ones only once you've been in", () => {
+    const l = encampment(6);
+    const map = campMap(l, false, seeded(11));
+    const fresh = scrollMarks(map, l, [l.start], l.start);
+    expect(fresh.length).toBe(Object.keys(l.rooms).length);
+    expect(fresh.every((m) => m.x > 0 && m.x < 1 && m.y > 0 && m.y < 1)).toBe(true);
+    expect(fresh.filter((m) => m.here).map((m) => m.id)).toEqual([l.start]);
+    const shown = (marks: ScrollMark[], id: string) => marks.find((m) => m.id === id)!.kind;
+    expect(shown(fresh, l.start)).toBe("entrance");
+    expect(shown(fresh, l.boss)).toBe("encampment");
+    for (const n of Object.values(map.nodes)) if (n.id !== l.start && n.id !== l.boss) {
+      expect(shown(fresh, n.id)).toBe(n.known && !n.hidden ? n.kind : null);
+    }
+    const chest = Object.values(map.nodes).find((n) => n.kind === "chest")!;
+    expect(shown(fresh, chest.id)).toBeNull();
+    expect(shown(scrollMarks(map, l, [l.start, chest.id], chest.id), chest.id)).toBe("chest");
+    // Some rooms are still a "?" (it's a guide, not the answer).
+    expect(fresh.some((m) => m.kind === null)).toBe(true);
   });
 });

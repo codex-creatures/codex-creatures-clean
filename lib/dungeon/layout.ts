@@ -30,7 +30,8 @@
 //   MAX_TUNNELS tunnels, and the shortest route is spec.minRoute rooms or
 //   more.
 
-import { linkKey, fillCamp, type DungeonMap, type MapNode, type MapSpec } from "./map";
+import type { RoomKind } from "./run";
+import { linkKey, fillCamp, markRooms, type DungeonMap, type MapNode, type MapSpec } from "./map";
 import { FLOOR, TUNNEL, DOOR, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
 
 export const BLOCK = 3;            // tiles across a block
@@ -337,9 +338,30 @@ export function layoutMap(layout: Layout): DungeonMap {
 }
 
 // Gen 3, what's in each room: the Encampment's mix as it is in the live game
-// (map.ts: fillCamp), on the walkable layout. firstRun: the entrance holds treasure.
-export const campMap = (layout: Layout, firstRun: boolean, rng: Rng = Math.random): DungeonMap =>
-  fillCamp(layoutMap(layout), firstRun, rng);
+// (map.ts: fillCamp), on the walkable layout, and the same rooms marked on the
+// scroll from the start (markRooms). firstRun: the entrance holds treasure.
+export function campMap(layout: Layout, firstRun: boolean, rng: Rng = Math.random): DungeonMap {
+  const map = fillCamp(layoutMap(layout), firstRun, rng);
+  markRooms(map, 0, rng);
+  return map;
+}
+
+// The scroll (the user, 2026-11-05): a look at where the rooms are, to work
+// out a way up. Only a mark per room, where its middle is: its icon if you
+// know what's there, else "?". Never the tunnels, nor how big the rooms are.
+// You know the entrance, the top, the rooms marked from the start and the
+// ones you've been in; the hidden ones (the chest, unmarked stashes) only once
+// you've been in. You can look at it SCROLL_LOOKS times a run.
+export const SCROLL_LOOKS = 2;
+export type ScrollMark = { id: string; x: number; y: number; kind: RoomKind | null; here: boolean }; // x, y: 0–1 across and down
+export function scrollMarks(map: DungeonMap, layout: Layout, been: Iterable<string>, here: string | null): ScrollMark[] {
+  const visited = new Set(been);
+  const w = layout.w * BLOCK, h = layout.h * BLOCK;
+  return Object.values(map.nodes).map((n) => {
+    const knows = visited.has(n.id) || (!n.hidden && (n.known || n.id === map.start || n.id === map.boss));
+    return { id: n.id, x: n.x / w, y: n.y / h, kind: knows ? n.kind : null, here: n.id === here };
+  });
+}
 
 // The layout as tiles to walk on (floorplan.ts's Floorplan, so walk.ts and
 // checkFloorplan work on it). A tunnel's end rows are doors in its rooms' walls.

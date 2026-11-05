@@ -5,14 +5,16 @@
 // closes (dimmed). In the dark you only see rooms you've been in and
 // the tunnels out of them; a room lights up as you reach its door, and you
 // can only walk where you can see. Each room is labelled with what's in it
-// (campMap: the live Encampment's mix). Plain boxes for now, no art and no
+// (campMap: the live Encampment's mix). The scroll (scrollMarks) can be looked
+// at SCROLL_LOOKS times a roll: a mark per room, nothing else. Plain boxes for now, no art and no
 // fights (dev tool; nothing is saved). For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DUNGEONS, ROOM_INFO } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, campMap, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
+import { rollLayout, layoutFloorplan, campMap, scrollMarks, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, roomAt, walkTo, type CanStep, type Walker } from "@/lib/dungeon/walk";
+import { RoomIcon } from "@/components/DungeonMapView";
 
 const TILE = 16; // screen pixels per tile
 
@@ -28,7 +30,8 @@ export default function WalkLab() {
   const [seed, setSeed] = useState(1);
   const layout = useMemo(() => rollLayout(DUNGEONS[0].spec, seeded(seed)), [seed]);
   const plan = useMemo(() => layoutFloorplan(layout), [layout]);
-  const kinds = useMemo(() => campMap(layout, false, seeded(seed + 7919)).nodes, [layout, seed]);
+  const camp = useMemo(() => campMap(layout, false, seeded(seed + 7919)), [layout, seed]);
+  const kinds = camp.nodes;
   const canvas = useRef<HTMLCanvasElement>(null);
   const startSpot = useMemo(() => {
     const r = plan.rooms[layout.start];
@@ -41,6 +44,8 @@ export default function WalkLab() {
   const [here, setHere] = useState<string | null>(layout.start);
   const [dark, setDark] = useState(true);
   const darkRef = useRef(dark);
+  const [looks, setLooks] = useState(SCROLL_LOOKS);
+  const [scroll, setScroll] = useState<ScrollMark[] | null>(null);
   useEffect(() => { darkRef.current = dark; }, [dark]);
 
   // What you can see: the rooms you've been in (walls and all) and the
@@ -73,6 +78,8 @@ export default function WalkLab() {
     seen.current = new Set();
     lit.current = new Uint8Array(plan.w * plan.h);
     see(layout.start);
+    setLooks(SCROLL_LOOKS);
+    setScroll(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- see() only reads plan and layout
   }, [layout, startSpot]);
 
@@ -168,16 +175,39 @@ export default function WalkLab() {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
         <button className="chip" onClick={() => setSeed((s) => s + 1)}>Reroll</button>
         <button className="chip" aria-pressed={dark} onClick={() => setDark((d) => !d)}>Darkness</button>
+        <button className="chip" disabled={looks === 0 || !!scroll} onClick={() => {
+          setLooks((n) => n - 1);
+          setScroll(scrollMarks(camp, layout, seen.current, roomAt(plan, me.current)));
+        }}>Scroll ({looks} left)</button>
         <span style={{ fontSize: 13, opacity: 0.8 }}>
           Seed {seed} · {Object.keys(layout.rooms).length} rooms · {layout.tunnels.length} tunnels ({layout.tunnels.filter((t) => !t.up).length} sideways) ·{" "}
           {sound ? "sound" : "unsound!"} · in {label}{progress.line === Infinity ? "" : " · up tunnels are one way"}
         </span>
       </div>
-      <canvas
-        ref={canvas}
-        onPointerDown={tap}
-        style={{ display: "block", width: "min(100%, 400px, calc(80vh * 9 / 16))", aspectRatio: "9 / 16", border: "1px solid #333", touchAction: "none" }}
-      />
+      <div style={{ position: "relative", width: "min(100%, 400px, calc(80vh * 9 / 16))", aspectRatio: "9 / 16" }}>
+        <canvas
+          ref={canvas}
+          onPointerDown={tap}
+          style={{ display: "block", width: "100%", height: "100%", border: "1px solid #333", touchAction: "none" }}
+        />
+        {scroll && (
+          // The scroll: a mark where each room is, nothing else. Tap to put it away.
+          <div onPointerDown={() => setScroll(null)} style={{ position: "absolute", inset: 0, background: "#d8c49a", border: "3px solid #6b4f2a", touchAction: "none" }}>
+            <div style={{ position: "absolute", inset: "4%" }}>
+              {scroll.map((m) => (
+                <span key={m.id} style={{
+                  position: "absolute", left: `${m.x * 100}%`, top: `${m.y * 100}%`, transform: "translate(-50%, -50%)",
+                  width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center",
+                  fontSize: 16, fontWeight: "bold", color: "#3a2a14", background: "#efe0bc",
+                  border: m.here ? "3px solid #e0483e" : "2px solid #8a6a3a",
+                }}>
+                  {m.kind ? <RoomIcon kind={m.kind} icon={ROOM_INFO[m.kind].icon} /> : "?"}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
