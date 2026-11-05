@@ -160,3 +160,22 @@ other 22, Klutz included. Each job's image downloads from
 | creatures/back/swamp_witch.png | 9cc9a155-a861-4a5b-92b2-7a5ca71b0a1a |
 | creatures/back/thicket_archer.png | bd86c67c-29ab-4af7-9dd3-59fb3c651a1a |
 | creatures/back/thunderhead.png | 6d17eb42-6d74-4ed5-9133-5a8104c6dd26 |
+
+## The walkable Labyrinth: art samples (2026-11-06, samples only, not in the game)
+
+Three-quarter top-down, for `/lab/walk` (its Art toggle). PixelLab ids, not gallery ids
+(these weren't saved to the gallery). 12 generations in all.
+
+| File | PixelLab |
+|---|---|
+| walk/tiles-a.png | topdown tileset 31c22104-5815-4968-8823-e962e2b820d5 (cobbled floor, mossy grey brick wall faces; 16px, 25 tiles, transition 1.0) |
+| walk/tunnel-a.png | topdown tileset f515821d-f430-4daa-a15a-bf4743ca3a5b (earth tunnel floor, sharing tiles-a's wall top, base tile c993edd4-eb98-4f2a-9265-42ac447db477) |
+| walk/tiles-b.png | topdown tileset 35cd2e41-bae7-41f9-a85e-20372127e592 (dark flagstones, ivy-covered old stone blocks; used for tunnels too) |
+| walk/door-a.png | map object ff8a658a-406b-4ed6-9f2f-4ad0062c9c79 (stone archway, door swung open; 48×48) |
+| walk/hero-a.png | character 781432c6-ac9f-4329-9fb4-3ee2f6f2e8f5 (hooded ranger, standard 4-direction, 48px canvas) + walk group 7b1f4dd5-ff35-4e15-9879-d4f3fb3995a2 (walking-6-frames: south, north, east) |
+| walk/hero-b.png | character e4d97738-0343-4f41-bbbe-7d3eeb4d1c1d (red-haired torchbearer) + walk group 94f4ecb4-70e3-41e3-bdd5-dd73e07de700 (same) |
+
+The tile sheets are PixelLab's own sheets as downloaded (the layout: `WANG_TILES` in
+lib/dungeon/tileArt.ts, the same for all three). A hero sheet is packed here: 48px cells,
+rows south, east, north, west (west is east mirrored: no west walk was generated), column 0
+standing, 1–6 the walk.
