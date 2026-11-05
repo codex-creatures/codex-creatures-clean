@@ -7,7 +7,9 @@
 // can only walk where you can see. Each room is labelled with what's in it
 // (campMap: the live Encampment's mix). The scroll (scrollMarks) can be looked
 // at SCROLL_LOOKS times a roll: a mark per room, and, like a treasure map,
-// what your torch has lit, your trail, and red lines where you cut yourself off. Plain boxes for now, no art and no
+// what your torch has lit, your trail, and red lines where you cut yourself off.
+// Reveal shows the whole scroll (every room and tunnel, every room's contents)
+// without using a look, and stays open through rerolls, to judge layouts. Plain boxes for now, no art and no
 // fights (dev tool; nothing is saved). For judging the layout and the feel.
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -52,6 +54,7 @@ export default function WalkLab() {
   const darkRef = useRef(dark);
   const [looks, setLooks] = useState(SCROLL_LOOKS);
   const [scroll, setScroll] = useState<Scroll | null>(null);
+  const [reveal, setReveal] = useState(false);
   // Your walk so far, tile by tile, and the cut-offs you've crossed (tiles down), for the scroll.
   const trail = useRef<Pt[]>([]);
   const cuts = useRef<number[]>([]);
@@ -182,20 +185,22 @@ export default function WalkLab() {
 
   const label = !here ? "a tunnel" : `${ROOM_INFO[kinds[here].kind].name} (${layout.rooms[here].shape})`;
   // The scroll as it stands: the lit tiles inked in rows (floor or wall), your trail, the cut-offs, the marks.
-  const readScroll = (): Scroll => {
+  // all: the whole map, as if every room had been lit and walked into (Reveal; no trail).
+  const readScroll = (all = false): Scroll => {
     const ink: Scroll["ink"] = [];
     const at = (x: number, y: number) => (x < 0 || y < 0 || x >= plan.w || y >= plan.h ? ROCK : plan.tiles[y * plan.w + x]);
     const isWall = (x: number, y: number) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => at(x + dx, y + dy) !== ROCK));
     for (let y = 0; y < plan.h; y++) for (let x = 0; x < plan.w; x++) {
-      if (!lit.current[y * plan.w + x]) continue;
+      if (!all && !lit.current[y * plan.w + x]) continue;
       const wall = at(x, y) === ROCK;
       if (wall && !isWall(x, y)) continue;
       const run = ink[ink.length - 1];
       if (run && run.y === y && run.wall === wall && run.x + run.w === x) run.w++;
       else ink.push({ x, y, w: 1, wall });
     }
-    return { marks: scrollMarks(camp, layout, seen.current, roomAt(plan, me.current)), ink, trail: trail.current.slice(), cuts: cuts.current.slice() };
+    return { marks: scrollMarks(camp, layout, all ? Object.keys(layout.rooms) : seen.current, roomAt(plan, me.current)), ink, trail: all ? [] : trail.current.slice(), cuts: all ? [] : cuts.current.slice() };
   };
+  const shown = reveal ? readScroll(true) : scroll;
   const sound = routeProblems(layout, DUNGEONS[0].spec.minRoute).length === 0;
 
   return (
@@ -204,10 +209,11 @@ export default function WalkLab() {
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
         <button className="chip" onClick={() => setSeed((s) => s + 1)}>Reroll</button>
         <button className="chip" aria-pressed={dark} onClick={() => setDark((d) => !d)}>Darkness</button>
-        <button className="chip" disabled={looks === 0 || !!scroll} onClick={() => {
+        <button className="chip" disabled={looks === 0 || !!scroll || reveal} onClick={() => {
           setLooks((n) => n - 1);
           setScroll(readScroll());
         }}>Scroll ({looks} left)</button>
+        <button className="chip" aria-pressed={reveal} onClick={() => setReveal((r) => !r)}>Reveal</button>
         <span style={{ fontSize: 13, opacity: 0.8 }}>
           Seed {seed} · {Object.keys(layout.rooms).length} rooms · {layout.tunnels.length} tunnels ({layout.tunnels.filter((t) => !t.up).length} sideways) ·{" "}
           {sound ? "sound" : "unsound!"} · in {label}{progress.line === Infinity ? "" : " · up tunnels are one way"}
@@ -219,15 +225,15 @@ export default function WalkLab() {
           onPointerDown={tap}
           style={{ display: "block", width: "100%", height: "100%", border: "1px solid #333", touchAction: "none" }}
         />
-        {scroll && (
+        {shown && (
           // The scroll, like a treasure map: what you've lit, your trail, the
           // cut-offs in red, a mark per room. Tap to put it away.
-          <div onPointerDown={() => setScroll(null)} style={{ position: "absolute", inset: 0, background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: "none" }}>
+          <div onPointerDown={() => (reveal ? setReveal(false) : setScroll(null))} style={{ position: "absolute", inset: 0, background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: "none" }}>
             <svg viewBox={`0 0 ${plan.w} ${plan.h}`} style={{ position: "absolute", inset: "3%", width: "94%", height: "94%" }}>
-              {scroll.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}
-              {scroll.cuts.map((y, i) => <line key={i} x1={0} x2={plan.w} y1={y} y2={y} stroke={INK.cut} strokeWidth={0.9} strokeDasharray="3 2" />)}
-              <polyline points={scroll.trail.map((p) => `${p.x + 0.5},${p.y + 0.5}`).join(" ")} fill="none" stroke={INK.trail} strokeWidth={0.7} strokeDasharray="1.2 1.2" strokeLinejoin="round" />
-              {scroll.marks.map((m) => {
+              {shown.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}
+              {shown.cuts.map((y, i) => <line key={i} x1={0} x2={plan.w} y1={y} y2={y} stroke={INK.cut} strokeWidth={0.9} strokeDasharray="3 2" />)}
+              <polyline points={shown.trail.map((p) => `${p.x + 0.5},${p.y + 0.5}`).join(" ")} fill="none" stroke={INK.trail} strokeWidth={0.7} strokeDasharray="1.2 1.2" strokeLinejoin="round" />
+              {shown.marks.map((m) => {
                 const x = m.x * plan.w, y = m.y * plan.h, art = m.kind && ROOM_ART[m.kind];
                 return (
                   <g key={m.id}>
