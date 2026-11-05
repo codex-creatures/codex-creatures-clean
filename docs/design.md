@@ -810,7 +810,14 @@ How it came about, round by round: history.md.
      No engine switch for it (the user, 2026-11-05: keep building as we are; if an engine is
      ever needed, Phaser could run in this web game for the dungeon alone, a new dependency to
      ask about).
+     **Who walks** (the user, 2026-11-05): a hero character (the player, a human adventurer);
+     creatures appear only in fights. Samples first, the user picks.
   6. Into the run: fights, chests, saving your spot, the scroll as minimap.
+     - **Fights start by being seen** (the user, 2026-11-05): a room's foes stand in it, some
+       still and some moving about. Each sees along a line of sight (walls block it); if any of
+       them sees you, all of that room's foes fight you together. So a dog-leg can hide foes
+       round its corner for a surprise. (Vision range, cone, how foes move, and what happens if
+       you get past unseen: open, 🧪 until the user judges them in the lab.)
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
     (This touches the room mix, a decided balance: present it as options when it comes up.)
