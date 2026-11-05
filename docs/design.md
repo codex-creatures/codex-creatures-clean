@@ -900,6 +900,22 @@ How it came about, round by round: history.md.
      - **Your spot** is kept for the browser tab (the lab's own sessionStorage key, never a
        save): where you are, what you've seen, cleared, looted and in the bag, the scroll's looks, your trail.
        A reload carries on; Reroll or losing starts afresh. The scroll crosses out cleared rooms.
+  7. **Roadmap to the live Encampment** (the user, 2026-11-06: get this look playable in the
+     real game, on phones, so others can try it). Stages, each pushed when done:
+     - **A. Try it now:** push; `/lab/walk` is then on the Vercel site for anyone (it saves
+       nothing). Make the lab's controls fold away on a phone.
+     - **B. Ready for phones:** pick the hero and give it a walk; check it runs smoothly on a
+       real phone (the light is worked out every frame); tap targets and the screen's edges.
+     - **C. The real run** (the most work): the walkable Encampment played from the live
+       Labyrinth with your own party, bag, gold and HP; fights in the battle screen with XP,
+       level-ups, knock-outs and the battle history; loot into your real bag; the scroll's
+       looks, retreat, the chief's cages and the cleared screen; your spot saved in the run (new
+       optional save fields, so old saves load), so closing the app carries on.
+     - **D. Switch it on:** first behind a per-device setting ("New Encampment") for testers,
+       then for everyone, then the old Encampment goes. A run started the old way finishes the
+       old way.
+     - **Later:** scenery (barrels, tables, rugs), torch and rubble art, sound.
+     Open: whether stage D skips the setting and goes straight to everyone.
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
     (This touches the room mix, a decided balance: present it as options when it comes up.)

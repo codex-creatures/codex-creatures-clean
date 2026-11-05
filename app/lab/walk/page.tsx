@@ -667,16 +667,6 @@ export default function WalkLab() {
           ctx.fillRect(fx - 0.08 * T, top, 0.16 * T, 0.45 * T);
           ctx.fillStyle = "#4a3a2a";
           ctx.fillRect(fx - 0.16 * T, top, 0.32 * T, 0.1 * T);
-          if (!c.lit) return;
-          const wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
-          ctx.fillStyle = "#ffb347";
-          ctx.beginPath();
-          ctx.ellipse(fx, top - 0.12 * T * wob, 0.1 * T, 0.18 * T * wob, 0, 0, 2 * Math.PI);
-          ctx.fill();
-          ctx.fillStyle = "#fff1b0";
-          ctx.beginPath();
-          ctx.ellipse(fx, top - 0.06 * T, 0.05 * T, 0.09 * T * wob, 0, 0, 2 * Math.PI);
-          ctx.fill();
         } });
       }
       for (const s of drawOrder(standing)) s.draw();
@@ -718,6 +708,26 @@ export default function WalkLab() {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(mask, sx(0), sy(0), w * T, h * T);
         ctx.imageSmoothingEnabled = false;
+      }
+      // The burning sconces' flames, over the dark: a fire glows whatever's round it.
+      for (const c of sconces.current) {
+        if (!c.lit || c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y)) continue;
+        const fx = footX(c.x), top = sy(c.y) - (kit ? 1.1 : 0.55) * T, wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
+        ctx.globalCompositeOperation = "lighter";
+        const halo = ctx.createRadialGradient(fx, top - 0.15 * T, 0, fx, top - 0.15 * T, 0.7 * T);
+        halo.addColorStop(0, "rgba(255, 170, 70, 0.55)");
+        halo.addColorStop(1, "rgba(255, 170, 70, 0)");
+        ctx.fillStyle = halo;
+        ctx.fillRect(fx - 0.7 * T, top - 0.85 * T, 1.4 * T, 1.4 * T);
+        ctx.globalCompositeOperation = "source-over";
+        ctx.fillStyle = "#ff9a2e";
+        ctx.beginPath();
+        ctx.ellipse(fx, top - 0.16 * T * wob, 0.14 * T, 0.26 * T * wob, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillStyle = "#fff1b0";
+        ctx.beginPath();
+        ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
+        ctx.fill();
       }
       // Each room's label, on top, once you've been in.
       ctx.font = "bold 12px sans-serif";
