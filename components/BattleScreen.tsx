@@ -223,7 +223,8 @@ export function historyMembers(m: Match, k: SideKey): BattleMember[] {
 // ── Playing a battle ──────────────────────────────────────────────
 // onUpdate is called with every settled state (after each round and each
 // replacement), so a screen can save a battle in progress.
-export function usePlayableBattle(onUpdate?: (m: Match) => void) {
+// history: false keeps finished fights out of the battle history (the /lab pages).
+export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = true }: { history?: boolean } = {}) {
   const [match, setMatchStateRaw] = useState<Match | null>(null);
   const [view, setView] = useState<BattleState | null>(null); // on-screen copy while a round plays
   const [fx, setFx] = useState<Fx | null>(null);
@@ -277,7 +278,7 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void) {
     // The guided fight moves on a step with each move your first creature makes.
     const step = match.tutorial !== undefined && match.tutorial >= 0 && action.kind === "attack" && before.sides.A.active === 0 ? { tutorial: match.tutorial + 1 } : {};
     const done: Match = { ...match, state: after, ...step };
-    if (after.winner) {
+    if (after.winner && history) {
       saveBattle({
         id: crypto.randomUUID(), date: new Date().toISOString(), winner: after.winner, rounds: after.round, title: match.title,
         teams: { A: historyMembers(done, "A"), B: historyMembers(done, "B") }, log: after.log,

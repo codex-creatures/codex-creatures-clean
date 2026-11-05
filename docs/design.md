@@ -812,12 +812,57 @@ How it came about, round by round: history.md.
      ask about).
      **Who walks** (the user, 2026-11-05): a hero character (the player, a human adventurer);
      creatures appear only in fights. Samples first, the user picks.
-  6. Into the run: fights, chests, saving your spot, the scroll as minimap.
+     - 🚧 **Samples made (2026-11-06), for the user to pick** (`/lab/walk` → Art, then Tiles and
+       Hero to flick between them; ids in public/sprites/PIXELLAB.md, `lib/sprites/walk.ts`):
+       two tilesets, "Mossy brick" (cobbles, grey brick wall faces, an earth tunnel floor) and
+       "Ivy blocks" (dark flagstones, ivy-covered old blocks; its floor in the tunnels too), one
+       door arch, and two heroes, a hooded ranger and a torchbearer, each walking in 4 directions
+       (6 frames; west is east mirrored). PixelLab's wall tilesets (16px, 25 tiles each).
+     - ✅ **Drawing** (`lib/dungeon/tileArt.ts`): the sheets are drawn on a grid half a tile off
+       the floorplan's, each cell taking its tile from the four tiles round it (rock the upper
+       terrain, walkable the lower; a walkable tile with rock right above is a wall's foot), so
+       a wall shows its front face wherever it has floor below, coming down over half the floor's
+       top row (you walk there, in front of it). Rock away from any floor stays black. Tunnel
+       floor where a cell is all tunnel (doors count as the room). Things standing up (arches,
+       chests, foes, you) are drawn lowest on screen last (`drawOrder`). The hero faces the way
+       they're mostly going (`facingOf`) and steps a walk cycle every 1.5 tiles (`STRIDE`, 🧪).
+       A door arch stands where a tunnel leaves a room's top wall. 3 cells in a whole map have
+       no exact tile (inner corners where a wall steps down by a tunnel): the closest is drawn.
+  6. Into the run: fights, chests, saving your spot, the scroll as minimap. (All in `/lab/walk`
+     so far, with an in-memory test team; nothing touches a save.)
      - **Fights start by being seen** (the user, 2026-11-05): a room's foes stand in it, some
        still and some moving about. Each sees along a line of sight (walls block it); if any of
        them sees you, all of that room's foes fight you together. So a dog-leg can hide foes
-       round its corner for a surprise. (Vision range, cone, how foes move, and what happens if
-       you get past unseen: open, 🧪 until the user judges them in the lab.)
+       round its corner for a surprise. Built (2026-11-06; `lib/dungeon/foes.ts`; the lab's Cones
+       button shows what each sees), the numbers all 🧪 (Claude's, for the user to judge):
+       - **The foes** are the live room roll's (`lib/dungeon/walkRooms.ts`: `makeRoom` for the
+         Encampment, so the same rarities, levels and gold), one marker each. Every room is rolled
+         as the run starts, not as you walk in (you can see foes before you're through the door);
+         a room's depth is counted forward as the live game does (`routeLength`), or by any
+         route for a room only reached sideways (`roomDepth`).
+       - **Where they stand** 🧪: on the room's floor (not its top row), 4+ tiles from its doors
+         (`DOOR_CLEAR`), 3+ apart (`FOE_GAP`).
+       - **How they move** 🧪: half of them walk about their room (`WANDER_SHARE`; the first
+         always stands still), 1.5 tiles a second, pausing 1–3 s at each spot. The rest face one
+         of 4 ways and turn every 2–5 s.
+       - **What they see** 🧪: 7 tiles (`SIGHT_RANGE`) in a 90° cone (`SIGHT_CONE`) the way they
+         face, or 1.5 tiles (`SIGHT_NEAR`) any way. Rock blocks it; floors, doors and tunnels
+         don't, so a foe can see you coming down a tunnel.
+       - **The chief** 🧪 is waiting: his fight starts as you step into the camp (`ALERT_KINDS`).
+         Won, his cages are listed (the live chief's cages, `campCages`).
+       - **Slipping past unseen** 🧪: nothing happens. The foes stay where they are with their
+         loot, and the room isn't cleared (no cross on the scroll). It's mostly behind you then
+         (up tunnels are one way); a room still reachable sideways can still see you if you go back.
+     - **A room plays out** (the lab, 2026-11-06): seen, you fight that room's foes in the real
+       battle screen. Win: they're gone, and what the live game's win leaves (gold, dropped gear,
+       the chief's mini boss extras: `fightSack`) goes in the lab's bag; your team keeps its HP
+       to the next fight. Lose: the run's over, back to the entrance on a fresh roll. Walk within
+       1.5 tiles of a chest or a stash (`REACH_OBJECT`, 🧪; drawn at the room's middle) and it
+       opens: a chest with the live chest roll (`chestSack`), a stash with its sack.
+       **The test team** 🧪: three Uncommons in Uncommon gear at level 5, rolled with the layout.
+     - **Your spot** is kept for the browser tab (the lab's own sessionStorage key, never a
+       save): where you are, what's lit, cleared and in the bag, the scroll's looks, your trail.
+       A reload carries on; Reroll or losing starts afresh. The scroll crosses out cleared rooms.
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
     (This touches the room mix, a decided balance: present it as options when it comes up.)
