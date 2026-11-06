@@ -943,7 +943,9 @@ How it came about, round by round: history.md.
        (`CAMPFIRE_LIGHT` 5 tiles 🧪). Drawn in code for now, a placeholder for PixelLab art.
        **Pools** (the user's call): a campfire and a healing pool never share a room, and
        campfires take some of the pools' share of rooms. The Encampment has no pools, so this
-       applies once the walkable run reaches the Labyrinth (how big a share is open).
+       applies once the walkable run reaches the Labyrinth: half each (pools 10, campfires 10 of
+       `ROOM_MIX`'s 20; the user, 2026-11-06), 🧪 to adjust, as walking sideways likely finds
+       more of them than the scroll's tunnels did.
      - **Still to come:** scenery, torch, campfire and rubble art, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).
