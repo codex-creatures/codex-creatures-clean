@@ -31,7 +31,12 @@ export type WalkHero = { name: string; sheet: string; cell: number; frames: numb
 export const WALK_HEROES: WalkHero[] = [
   { name: "Sturdy adventurer", sheet: "/sprites/walk/hero-c.png", cell: 68, frames: 0, feet: 54, shrink: 0.75 },
   { name: "Stout delver", sheet: "/sprites/walk/hero-d.png", cell: 68, frames: 0, feet: 55, shrink: 0.75 },
-  { name: "Cloaked torchbearer", sheet: "/sprites/walk/hero-e.png", cell: 68, frames: 0, feet: 54, shrink: 0.75 },
+  { name: "Cloaked torchbearer", sheet: "/sprites/walk/hero-e.png", cell: 80, frames: 6, feet: 70, shrink: 0.75 },
   { name: "Hooded ranger (old)", sheet: "/sprites/walk/hero-a.png", cell: 48, frames: 6, feet: 40 },
   { name: "Torchbearer (old)", sheet: "/sprites/walk/hero-b.png", cell: 48, frames: 6, feet: 40 },
 ];
+
+// What the game uses (the Labyrinth's "New"; the user's picks, 2026-11-06):
+// the mossy kit, and the cloaked torchbearer.
+export const WALK_KIT: KitArt = WALK_TILES[0].kit!;
+export const WALK_HERO: WalkHero = WALK_HEROES.find((h) => h.sheet.endsWith("hero-e.png"))!;

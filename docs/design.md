@@ -900,22 +900,28 @@ How it came about, round by round: history.md.
      - **Your spot** is kept for the browser tab (the lab's own sessionStorage key, never a
        save): where you are, what you've seen, cleared, looted and in the bag, the scroll's looks, your trail.
        A reload carries on; Reroll or losing starts afresh. The scroll crosses out cleared rooms.
-  7. **Roadmap to the live Encampment** (the user, 2026-11-06: get this look playable in the
-     real game, on phones, so others can try it). Stages, each pushed when done:
-     - **A. Try it now:** push; `/lab/walk` is then on the Vercel site for anyone (it saves
-       nothing). Make the lab's controls fold away on a phone.
-     - **B. Ready for phones:** pick the hero and give it a walk; check it runs smoothly on a
-       real phone (the light is worked out every frame); tap targets and the screen's edges.
-     - **C. The real run** (the most work): the walkable Encampment played from the live
-       Labyrinth with your own party, bag, gold and HP; fights in the battle screen with XP,
-       level-ups, knock-outs and the battle history; loot into your real bag; the scroll's
-       looks, retreat, the chief's cages and the cleared screen; your spot saved in the run (new
-       optional save fields, so old saves load), so closing the app carries on.
-     - **D. Switch it on:** first behind a per-device setting ("New Encampment") for testers,
-       then for everyone, then the old Encampment goes. A run started the old way finishes the
-       old way.
-     - **Later:** scenery (barrels, tables, rugs), torch and rubble art, sound.
-     Open: whether stage D skips the setting and goes straight to everyone.
+  7. ✅ **In the game: the Labyrinth's "New"** (the user, 2026-11-06: a new choice at the
+     Labyrinth's entrance, "🔥 New", the Encampment in the new style, live for playtesting and
+     others' opinions; the old Encampment stays as it is). A New run **is an Encampment run**
+     (dungeon 0: its fee and free runs, its run and clear counts, its chief and cages, its room
+     mix and balance), with an optional `walk` record in the run (`lib/dungeon/walkRun.ts`, so
+     old saves load): the layout and its scroll map, every room rolled at the start (its foes
+     stand in it), where you stand, what you've seen, the torches you've lit, where each beaten
+     room's loot lies, your trail and cut-offs. The room you're in is the run's current room, so
+     the Labyrinth screen plays it out as ever: fights (XP, level-ups, knock-outs, the battle
+     history), loot into your bag, the chief's cages, the haul, retreat, losing.
+     - **The screen** (`components/WalkView.tsx`, in place of the room view; `/lab/newrun` shows
+       it without a save): the mossy kit, the cloaked torchbearer (the user's pick, walking with
+       the torch held up), 15 tiles across, torchlight, wall torches, rubble. Walking into a room
+       makes it the current one; walking out leaves it as it is (`walkInto`: foes you slipped past
+       stay; an opened sack's leftovers go to the floor, as down a tunnel). Seen by a room's foes,
+       or into the chief's camp, that room's fight starts. Tap a chest, stash or a fight's sack
+       to walk up and open it in the loot window. A camp that looks empty (an ambush) opens the
+       room's window with its cages; the room button (top left) opens it any time. The dock's
+       Scroll is the treasure map; the Den button is locked only mid-fight.
+     - **Still to come:** scenery, torch and rubble art, the old Encampment's retirement once
+       New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
+       own copy of the drawing for now, with its testing switches).
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
     e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
     (This touches the room mix, a decided balance: present it as options when it comes up.)

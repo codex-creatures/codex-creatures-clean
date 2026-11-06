@@ -76,6 +76,8 @@ import { combatSummary } from "@/lib/combat/loadout";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
+import WalkView, { type WalkState } from "@/components/WalkView";
+import { startWalkRun, walkInto, walkKeep, walkRoom } from "@/lib/dungeon/walkRun";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
 import GearViewModal from "@/components/GearViewModal";
@@ -344,7 +346,7 @@ export default function DungeonPage() {
   const run = lab?.run ?? null;
   // No going back to the Den mid-fight, or from a room you haven't dealt with
   // yet (the same rule as taking a tunnel on).
-  const denLocked = !!run && run.status === "exploring" && (!canMoveOn(run) || (!!battle.match && !battle.match.state.winner));
+  const denLocked = !!run && run.status === "exploring" && ((!canMoveOn(run) && !run.walk) || (!!battle.match && !battle.match.state.winner));
   const inRun = !!run;
   useEffect(() => {
     if (!inRun) return;
@@ -355,7 +357,7 @@ export default function DungeonPage() {
   }, [inRun]);
 
   // ── Starting and ending runs ──────────────────────────────────────
-  function begin(party: string[], dungeon: DungeonId = 1) {
+  function begin(party: string[], dungeon: DungeonId = 1, walk = false) {
     if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
     const meta = lab.meta;
     const deep = dungeon > 1;
@@ -371,7 +373,9 @@ export default function DungeonPage() {
       // Its chief's cages: two creatures of races your party hasn't got, the first time.
       const races = party.flatMap((id) => byId(id)?.template.races ?? []);
       const cages = campCages((lab.meta.campClears ?? 0) === 0, races);
-      update({ meta: { ...meta, campRuns: n }, run: startRun(party, team, hp, n, Math.random, 0, false, onBindle(lab.meta), cages) });
+      // "New": the same Encampment, walked round by torchlight (lib/dungeon/walkRun.ts).
+      const run = walk ? startWalkRun(party, team, hp, n, cages, onBindle(lab.meta)) : startRun(party, team, hp, n, Math.random, 0, false, onBindle(lab.meta), cages);
+      update({ meta: { ...meta, campRuns: n }, run });
       return;
     }
     if (dungeon === 3) {
@@ -916,6 +920,42 @@ export default function DungeonPage() {
     game.questFoundClub();
   }
 
+  // ── The walkable Encampment ("New": lib/dungeon/walkRun.ts, components/WalkView.tsx) ──
+  // You walk between rooms instead of picking a tunnel; each room then plays
+  // out as above. Walking into one leaves the last as you'd leave it down a
+  // tunnel (an opened sack's leftovers stay on the floor).
+  const [walkPanel, setWalkPanel] = useState(false);   // the room's window (what's here, the cages…)
+  const [walkScroll, setWalkScroll] = useState(false); // the scroll, out
+  const walkTo = (r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
+  // Worth opening the room's window as you walk in: treasure to take, a camp that looks empty (its cages).
+  const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || (c.kind === "encampment" && !hasFight(c) && !c.done));
+  function walkEnter(id: string, st: WalkState) {
+    setLootOpen(false);
+    setNotes([]);
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    setWalkPanel(walkWorthPanel(loadDungeon().run?.current ?? null));
+  }
+  // Seen by a room's foes (or into the chief's camp): that room's fight. Its loot will lie where you stood.
+  function walkSpotted(id: string, st: WalkState) {
+    setLootOpen(false);
+    setWalkPanel(false);
+    updateRun((r) => walkTo(walkKeep(r, { ...st, spots: { ...(r.walk?.spots ?? {}), [id]: st.at } }), id));
+    const r = loadDungeon().run;
+    if (r?.current && hasFight(r.current) && !r.current.done && fightingTeam(r).length > 0) startFight(r);
+  }
+  // Walked up to a chest, a sack or the treasure: open it, as tapping it in a room does.
+  function walkObject(id: string, st: WalkState) {
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    const c = loadDungeon().run?.current;
+    if (!c) return;
+    if (c.opened && (c.sack?.length ?? 0) > 0) setLootOpen(true);
+    else if (c.kind === "chest" && !c.done) openChest();
+    else if (c.container && c.done && !c.opened) openSack();
+    else if (c.kind === "stash" && !c.opened) openSack();
+    else if (c.kind === "treasure" && !c.done) takeTreasure(c);
+  }
+  const walkSave = (st: WalkState) => updateRun((r) => walkKeep(r, st));
+
   // ── Fights ────────────────────────────────────────────────────────
   function startFight(r: DungeonRun) {
     const room = r.current!;
@@ -1204,12 +1244,62 @@ export default function DungeonPage() {
       wornIn={(id, slot) => itemsById.get(game.equipment[id]?.[SLOT_FIELD[slot]] ?? "")} />
   );
 
+  // The room's window: what's in it and what to do (the live Labyrinth's room text and buttons).
+  const roomScreen = run.current && (
+    <RoomScreen
+      run={run} room={run.current} notes={notes} byId={byId}
+      gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
+      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite}
+      bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
+      onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
+    />
+  );
+  const walking = !!run.walk && !!run.inside;
+  // The walk: the place itself, with the room's window, any news, and a full bag's finds over it.
+  const walkView = walking && (
+    <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <WalkView walk={run.walk!} map={run.map} here={runPosition(run)} room={(id) => walkRoom(run, id)}
+        busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || cageShow !== undefined || walkPanel}
+        been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onKeep={walkSave} />
+      {run.current && !walkPanel && (
+        <button className="chip" onClick={() => setWalkPanel(true)} aria-label="This room"
+          style={{ position: "absolute", top: 8, left: 8, minHeight: 44, minWidth: 44, zIndex: 3 }}>
+          <RoomIcon kind={run.current.kind} icon={ROOM_INFO[run.current.kind].icon} />
+        </button>
+      )}
+      {notes.length > 0 && !walkPanel && (
+        <div onPointerDown={() => setNotes([])} className="stone-panel" style={{ position: "absolute", top: 8, left: 60, right: 8, zIndex: 3, fontSize: 13, color: "#f1d9a0", padding: "6px 10px" }}>
+          {notes.map((n) => <div key={n}>{n}</div>)}
+        </div>
+      )}
+      {walkPanel && roomScreen && (
+        <div style={{ position: "absolute", left: 6, right: 6, bottom: 6, maxHeight: "55%", overflowY: "auto", zIndex: 4 }}>
+          <button className="chip" onClick={() => setWalkPanel(false)} style={{ position: "sticky", top: 0, float: "right", minHeight: 44, minWidth: 44, zIndex: 1 }} aria-label="Close">✕</button>
+          {roomScreen}
+        </div>
+      )}
+      {(run.pending?.length ?? 0) > 0 && (
+        <div className="stone-panel" style={{ position: "absolute", left: 6, right: 6, bottom: 6, zIndex: 5, borderColor: "#c9a24a", maxHeight: "50%", overflowY: "auto" }}>
+          <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>Your {bagName(lab.meta).toLowerCase()} is full</div>
+          <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 8px" }}>Leave something in your bag on the floor to make room — anything you don&apos;t take stays here.</p>
+          {run.pending!.map((x) => (
+            <div key={x.id} className="card-btn" style={{ cursor: "default", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+              <span>📦 <b style={{ color: x.dropType === "item" ? RARITY_COLORS[x.rarity].text : "white" }}>{dropLabel(x)}</b></span>
+              <button className="chip" disabled={(lab.meta.bag ?? []).length >= bagSize(lab.meta)} onClick={() => takePending(x.id)}>Take it</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return frame(
     <>
       {!run.inside ? (
         <MapFirst run={run} byId={byId} onTeam={(team) => updateRun((r) => setTeam(r, team))}
-          onStep={() => updateRun(stepInside)} onEnter={(id) => { updateRun(stepInside); goTo(id); }} />
-      ) : (
+          onStep={() => updateRun(stepInside)} onEnter={run.walk ? undefined : (id) => { updateRun(stepInside); goTo(id); }} />
+      ) : walking ? null : (
         <>
           <div className="room-bleed"><DungeonRoomView run={run} open={canMoveOn(run) && fightingTeam(run).length > 0 && !clubTutorial && !clubOnFloor && !boxRoom} onGo={goTo}
             onObject={run.current?.opened && (run.current.sack?.length ?? 0) > 0 ? () => setLootOpen(true)
@@ -1222,6 +1312,11 @@ export default function DungeonPage() {
               : undefined}
             onFight={canFight ? () => startFight(run) : undefined}
             onEnemies={enemyIds.length > 0 ? () => setCardsOpen(true) : undefined} /></div>
+        </>
+      )}
+      {walkView}
+      {run.inside && (
+        <>
           {viewGear && gearView(viewGear)}
           {lootOpen && run.current?.opened && (() => {
             const c = run.current!;
@@ -1266,22 +1361,12 @@ export default function DungeonPage() {
           })()}
           {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
           {cageShow !== undefined && <CageReveal find={cageShow} onDone={() => setCageShow(undefined)} />}
-          {showCards && <EncounterCards creatureIds={enemyIds} races={(run.current!.enemies ?? []).map((e) => e.races)} onClose={() => setCardsOpen(false)}
+          {!walking && showCards && <EncounterCards creatureIds={enemyIds} races={(run.current!.enemies ?? []).map((e) => e.races)} onClose={() => setCardsOpen(false)}
             onFight={canFight ? () => { setCardsOpen(false); startFight(run); } : undefined} />}
-          {canMoveOn(run) && fightingTeam(run).length === 0 && (
+          {!walking && canMoveOn(run) && fightingTeam(run).length === 0 && (
             <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Nobody in your team can still fight.</p>
           )}
-          <div style={{ marginTop: 12 }}>
-            {run.current
-              ? <RoomScreen
-                  run={run} room={run.current} notes={notes} byId={byId}
-                  gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-                  clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite}
-                  bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
-                  onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
-                />
-              : <AtEntrance run={run} />}
-          </div>
+          {!walking && <div style={{ marginTop: 12 }}>{roomScreen || <AtEntrance run={run} />}</div>}
         </>
       )}
 
@@ -1314,7 +1399,7 @@ export default function DungeonPage() {
         </Sheet>
       )}
       {sheet === "bag" && !clubTutorial && <Sheet title={`Your ${bagName(lab.meta).toLowerCase()}`} onClose={() => setSheet(null)}>{bagView}</Sheet>}
-      {(run.pending?.length ?? 0) > 0 && (
+      {!walking && (run.pending?.length ?? 0) > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, borderColor: "#c9a24a" }}>
           <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>Your {bagName(lab.meta).toLowerCase()} is full</div>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 8px" }}>
@@ -1330,6 +1415,7 @@ export default function DungeonPage() {
       )}
     </>,
     {
+      fill: walking,
       dock: (
         // Two by two: Party and Bag on top, Scroll and Retreat below.
         <div className="dock-tabs" style={{ gridAutoFlow: "row", gridTemplateColumns: "1fr 1fr" }}>
@@ -1340,7 +1426,7 @@ export default function DungeonPage() {
             🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>
-          <button className="dock-tab" onClick={() => { setSheet(null); setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 })); }}
+          <button className="dock-tab" onClick={() => { setSheet(null); if (walking) setWalkScroll(true); else setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 })); }}
             disabled={!!clubTutorial || !run.inside /* (the map's already open at the entrance) */ || scrollLooksLeft(run) === 0}>
             📜 Scroll <span className="count">{scrollLooksLeft(run)}/{SCROLL_LOOKS}</span>
           </button>
@@ -1366,7 +1452,7 @@ export default function DungeonPage() {
 // Two tabs: the party (picked freely, or one of your teams: lib/teams.ts) and the bag to pack.
 function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSave }: {
   lab: DungeonSave; owned: OwnedCreature[]; game: ReturnType<typeof useGameState>; full: CappedBox[]; quest: boolean; scans: number;
-  onBegin: (party: string[], dungeon: DungeonId) => void; onHeal: () => void; onSave: (next: DungeonSave) => void;
+  onBegin: (party: string[], dungeon: DungeonId, walk?: boolean) => void; onHeal: () => void; onSave: (next: DungeonSave) => void;
 }) {
   const gold = game.gold;
   const healthy = (id: string) => (lab.meta.injuries[id] ?? 1) > 0;
@@ -1394,8 +1480,11 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
   const labOpen = labyrinthOpen(lab.meta, scans);
   const open = DUNGEON_IDS.filter((d) => d <= 1 || (d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0));
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
+  // "New": the Encampment, walked round by torchlight (lib/dungeon/walkRun.ts). Its runs are Encampment runs.
+  const [walkPick, setWalkPick] = useState(false);
   // (The quest's run is in the Labyrinth.)
-  const dungeon: DungeonId = quest ? 1 : picked === 1 && !labOpen ? 0 : picked;
+  const dungeon: DungeonId = quest ? 1 : walkPick ? 0 : picked === 1 && !labOpen ? 0 : picked;
+  const walking = !quest && walkPick;
   // Who goes in: the dungeon's team size (3; 5 in the Abyss), picked here. A
   // bigger team sends its first ones (the rest are shown waiting).
   const cap = squadsOf(dungeon).team;
@@ -1414,7 +1503,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
   }
   function enter() {
     if (party.length === 0) { setAskPick(true); setTab("party"); return; }
-    onBegin(party, dungeon);
+    onBegin(party, dungeon, walking);
   }
 
   return (
@@ -1422,9 +1511,9 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
       {!quest && (
         <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
           {open.map((d) => (
-            <button key={d} className="card-btn" onClick={() => setDungeon(d)} disabled={d === 1 && !labOpen}
+            <button key={d} className="card-btn" onClick={() => { setDungeon(d); setWalkPick(false); }} disabled={d === 1 && !labOpen}
               title={d === 1 && !labOpen ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : undefined}
-              style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: d === 1 && !labOpen ? 0.5 : 1, borderColor: dungeon === d ? "#f1d9a0" : undefined, background: dungeon === d ? "rgba(241,217,160,0.1)" : undefined }}>
+              style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: d === 1 && !labOpen ? 0.5 : 1, borderColor: dungeon === d && !walking ? "#f1d9a0" : undefined, background: dungeon === d && !walking ? "rgba(241,217,160,0.1)" : undefined }}>
               <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 && !labOpen ? "🔒" : DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
               <span style={{ display: "block", fontSize: 12, color: MUTED }}>
                 {d === 0 ? `${CAMP_ROUTE} rooms · its chief, Lv ${DUNGEONS[0].maxLevel} · free${lab.meta.campClears ? ` · beaten ${lab.meta.campClears}×` : ""}`
@@ -1434,12 +1523,17 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
               </span>
             </button>
           ))}
+          <button className="card-btn" onClick={() => setWalkPick(true)}
+            style={{ flex: "1 1 40%", display: "block", textAlign: "center", borderColor: walking ? "#f1d9a0" : undefined, background: walking ? "rgba(241,217,160,0.1)" : undefined }}>
+            <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>🔥 New</b>
+            <span style={{ display: "block", fontSize: 12, color: MUTED }}>The Encampment by torchlight · walk it yourself</span>
+          </button>
         </div>
       )}
       {/* Enter, with what's inside behind the "?". */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
-          {`${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
+          {walking ? "🔥 Enter the new Encampment" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
         </button>
         <Help title="The labyrinth">
           <ul>
@@ -1548,10 +1642,10 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
 // At the entrance: one good look at the map before you go in.
 // onEnter: tap one of the rooms off the entrance to step inside and head straight there.
 function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
-  run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void; onStep: () => void; onEnter: (nodeId: string) => void;
+  run: DungeonRun; byId: (id: string) => OwnedCreature | undefined; onTeam: (team: string[]) => void; onStep: () => void; onEnter?: (nodeId: string) => void; // (none: the walkable Encampment, where you walk there)
 }) {
   const ready = fightingTeam(run).length > 0;
-  const firstRooms = nextRooms(run).length > 0 && ready;
+  const firstRooms = !!onEnter && nextRooms(run).length > 0 && ready;
   return (
     <div className="stone-panel">
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

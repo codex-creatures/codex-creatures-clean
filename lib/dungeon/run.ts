@@ -43,6 +43,7 @@ import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, RACE_CODEX_MOVES } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
+import type { WalkRun } from "./walkRun";
 import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
 export const PARTY_SIZE = 5;
@@ -1015,6 +1016,7 @@ export type DungeonRun = {
   status: RunStatus;
   bindle?: boolean;            // you set out on the bindle: merchants and storehouses have the backpack
   campCages?: Cage[];          // the Encampment: its chief's cages (campCages)
+  walk?: WalkRun;               // the walkable Encampment (the Labyrinth's "New"): walkRun.ts
 };
 
 // The room at the top: the boss's lair, or the Encampment's camp. Finishing it ends the run, cleared.
