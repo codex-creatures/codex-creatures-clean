@@ -932,12 +932,14 @@ export default function DungeonPage() {
   function walkEnter(id: string, st: WalkState) {
     setLootOpen(false);
     setNotes([]);
+    battle.clear(); // (the last fight, won: otherwise a room with a fight still in it would show it again)
     updateRun((r) => walkTo(walkKeep(r, st), id));
     setWalkPanel(walkWorthPanel(loadDungeon().run?.current ?? null));
   }
   // Seen by a room's foes (or into the chief's camp): that room's fight. Its loot will lie where you stood.
   function walkSpotted(id: string, st: WalkState) {
     setLootOpen(false);
+    battle.clear();
     setWalkPanel(false);
     updateRun((r) => walkTo(walkKeep(r, { ...st, spots: { ...(r.walk?.spots ?? {}), [id]: st.at } }), id));
     const r = loadDungeon().run;
@@ -945,6 +947,7 @@ export default function DungeonPage() {
   }
   // Walked up to a chest, a sack or the treasure: open it, as tapping it in a room does.
   function walkObject(id: string, st: WalkState) {
+    battle.clear();
     updateRun((r) => walkTo(walkKeep(r, st), id));
     const c = loadDungeon().run?.current;
     if (!c) return;
