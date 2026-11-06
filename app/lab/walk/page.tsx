@@ -41,7 +41,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ROOM_INFO, makeEnemy, enemyFighter, gearOf, gearName, hasFight, type Enemy, type Room, type SackItem } from "@/lib/dungeon/run";
 import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, roomCentre, WALK_SPEC, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
-import { advance, cameraAt, findPath, roomAt, walkTo, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
+import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { cellArt, depthEdges, drawOrder, facingOf, walkFrame, sideFace, capFade, FACINGS, SHEET_TILE, WANG_TILES, FACE_TILE, TOP_TILE, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
 import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
 import { placeFoes, spottedBy, stepFoe, visionCone, ALERT_KINDS, type Foe } from "@/lib/dungeon/foes";
@@ -750,7 +750,7 @@ export default function WalkLab() {
 
   // A tunnel's turned to rock under the way you were going: find the way again.
   useEffect(() => {
-    if (goal.current) me.current = walkTo(live, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(progress));
+    if (goal.current) me.current = walkToward(live, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(progress));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rule() reads refs and the layout
   }, [live]);
 
@@ -783,7 +783,7 @@ export default function WalkLab() {
     }
     goal.current = spot;
     wantBox.current = null;
-    me.current = walkTo(live, me.current, spot, can);
+    me.current = walkToward(live, me.current, spot, can);
   };
 
   // The loot window's moves, on the box's contents and the test bag (what takes no room goes in the purse).

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { ROCK, type Pt } from "../lib/dungeon/floorplan";
+import { ROCK, FLOOR, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, layoutMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { advance, cameraAt, entranceSpot, findPath, nearestWalkable, roomAt, walkable, walkTo, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
+import { advance, cameraAt, closestReachable, entranceSpot, findPath, nearestWalkable, roomAt, walkable, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
 
 function seeded(seed: number) {
   let s = seed;
@@ -90,5 +90,30 @@ describe("walking the Labyrinth", () => {
     // A view wider than the whole plan centres it.
     expect(cameraAt(plan, start, { w: plan.w + 10, h: 30 }).x).toBe(-5);
     expect(plan.tiles[start.y * plan.w + start.x]).not.toBe(ROCK);
+  });
+});
+
+describe("walking toward a tap you can't reach", () => {
+  // A room with a wall across it, a gap at the left: tapping beyond the wall's right end goes round.
+  const rows = ["#########", "#.......#", "#.......#", "#.#######", "#.......#", "#########"];
+  const fp: Floorplan = (() => {
+    const w = rows[0].length, h = rows.length, tiles = new Uint8Array(w * h);
+    rows.forEach((r, y) => [...r].forEach((c, x) => { tiles[y * w + x] = c === "#" ? ROCK : FLOOR; }));
+    return { w, h, tiles, rooms: {}, doors: [], tunnels: {} };
+  })();
+  it("walks to the spot itself when it can", () => {
+    expect(closestReachable(fp, { x: 7, y: 1 }, { x: 7, y: 4 })).toEqual({ x: 7, y: 4 });
+  });
+  it("walks as close as it can get to rock or the dark beyond", () => {
+    expect(closestReachable(fp, { x: 1, y: 1 }, { x: 20, y: 1 })).toEqual({ x: 7, y: 1 });
+    expect(closestReachable(fp, { x: 1, y: 1 }, { x: 4, y: 3 })).toEqual({ x: 4, y: 2 });
+    const me = walkToward(fp, { x: 1, y: 1, path: [] }, { x: 20, y: 1 });
+    expect(me.path[me.path.length - 1]).toEqual({ x: 7, y: 1 });
+  });
+  it("only where it may step (somewhere unseen, say), and stays put if it's already closest", () => {
+    const seen = (_: { x: number; y: number }, to: { x: number; y: number }) => to.y <= 2;
+    expect(closestReachable(fp, { x: 1, y: 1 }, { x: 7, y: 4 }, seen)).toEqual({ x: 7, y: 2 });
+    const me = { x: 7, y: 1, path: [] };
+    expect(walkToward(fp, me, { x: 20, y: 1 })).toEqual(me);
   });
 });

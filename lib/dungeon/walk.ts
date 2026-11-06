@@ -10,6 +10,8 @@
 //   through a gap between two walls touching at a corner.
 // - Tapping rock walks you to the nearest walkable tile, if one is within
 //   TAP_REACH (a tap just off a tunnel still counts).
+// - A tap anywhere else (the dark, rock, somewhere you can't get to) walks you
+//   as close to it as you can get (walkToward; the user, 2026-11-06).
 // - A new tap while walking finishes the step you're on, then turns.
 // - canStep (optional) can forbid steps on top of rock: the Labyrinth's
 //   closed rooms and one-way tunnels (layout.ts stepRule).
@@ -131,6 +133,41 @@ export function walkTo(fp: Floorplan, me: Walker, spot: Pt, canStep?: CanStep): 
   const target = nearestWalkable(fp, spot);
   if (!target) return me;
   const from = me.path[0] ?? { x: Math.round(me.x), y: Math.round(me.y) };
+  const way = findPath(fp, from, target, canStep);
+  if (!way) return me;
+  return { ...me, path: me.path.length > 0 ? [from, ...way] : way };
+}
+
+// The tile you can reach that's closest to a spot (as the crow flies), and
+// of those the nearest to walk to; `from` itself if nothing reachable is closer.
+export function closestReachable(fp: Floorplan, from: Pt, spot: Pt, canStep?: CanStep): Pt {
+  const { w } = fp;
+  const steps = new Int32Array(fp.w * fp.h).fill(-1);
+  const gap = (x: number, y: number) => Math.hypot(x - spot.x, y - spot.y);
+  let best = from, bestGap = gap(from.x, from.y);
+  steps[from.y * w + from.x] = 0;
+  const queue = [from.y * w + from.x];
+  for (let q = 0; q < queue.length; q++) {
+    const t = queue[q], x = t % w, y = (t / w) | 0;
+    for (const s of STEPS) {
+      const nx = x + s.x, ny = y + s.y, n = ny * w + nx;
+      if (!walkable(fp, nx, ny) || steps[n] >= 0) continue;
+      if (s.x !== 0 && s.y !== 0 && (!walkable(fp, x + s.x, y) || !walkable(fp, x, y + s.y))) continue; // no cutting a corner
+      if (canStep && !canStep({ x, y }, { x: nx, y: ny })) continue;
+      steps[n] = steps[t] + 1;
+      queue.push(n);
+      const g = gap(nx, ny);
+      if (g < bestGap - 1e-9) { best = { x: nx, y: ny }; bestGap = g; } // (breadth first: the first found is the nearest to walk to)
+    }
+  }
+  return best;
+}
+
+// Head for a tapped spot, or as close to it as you can get.
+export function walkToward(fp: Floorplan, me: Walker, spot: Pt, canStep?: CanStep): Walker {
+  const from = me.path[0] ?? { x: Math.round(me.x), y: Math.round(me.y) };
+  const target = closestReachable(fp, from, spot, canStep);
+  if (target.x === from.x && target.y === from.y) return me.path.length > 0 ? { ...me, path: [from] } : me;
   const way = findPath(fp, from, target, canStep);
   if (!way) return me;
   return { ...me, path: me.path.length > 0 ? [from, ...way] : way };

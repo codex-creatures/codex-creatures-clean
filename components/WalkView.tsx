@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
-import { advance, cameraAt, findPath, roomAt, walkTo, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
+import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
 import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
 import { placeFoes, spottedBy, stepFoe, ALERT_KINDS, type Foe } from "@/lib/dungeon/foes";
@@ -477,7 +477,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
 
   // A tunnel's turned to rock under the way you were going: find the way again.
   useEffect(() => {
-    if (goal.current) me.current = walkTo(live, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(progress));
+    if (goal.current) me.current = walkToward(live, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(progress));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rule() reads refs and the layout
   }, [live]);
 
@@ -510,7 +510,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
     }
     goal.current = spot;
     wantThing.current = null;
-    me.current = walkTo(live, me.current, spot, can);
+    me.current = walkToward(live, me.current, spot, can);
   };
 
   return (

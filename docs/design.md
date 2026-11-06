@@ -791,8 +791,9 @@ How it came about, round by round: history.md.
   2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
      the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
      floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:
-     closed rooms are dimmed, and an up tunnel can't be entered from the top). A tap on rock walks
-     to the nearest walkable tile within `TAP_REACH` (3), else nothing; a new tap mid-walk
+     closed rooms are dimmed, and an up tunnel can't be entered from the top). A tap anywhere you
+     can't walk (rock, the dark, somewhere cut off) walks you as close to it as you can get
+     (`walkToward`, the user 2026-11-06); a new tap mid-walk
      finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
      but never shows past the edge (`cameraAt`). Zoomed in close so you explore rather than
      oversee (the user, 2026-11-06): 15 tiles across the screen (the user's pick), whatever its
