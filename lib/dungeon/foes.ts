@@ -16,6 +16,12 @@
 //   together (spottedBy says which room).
 // - The chief's camp (ALERT_KINDS): he's waiting for you, and the fight
 //   starts as you step in.
+// - Seen, the fight doesn't start at once (the user, 2026-11-06): each of
+//   the room's foes lights up (ALARM_LIGHT) with a "!" over it, and after a
+//   moment (ALARM_PAUSE) they all come at you (chargePath, CHARGE_SPEED).
+//   It fades into the fight (FADE_TIME) once they've all reached you, or
+//   LATE_GRACE after the first has, or ALARM_MAX after they saw you, whichever
+//   is first (fightReady).
 // - 🧪 Slipping past unseen: the room's foes stay where they are, its loot
 //   stays with them, and it isn't cleared. Mostly it's then behind you (up
 //   tunnels are one way); a room you can still reach sideways can still see
@@ -101,6 +107,44 @@ export function sees(fp: Floorplan, foe: Foe, you: Pt): boolean {
 export function spottedBy(fp: Floorplan, foes: Foe[], you: Pt, awake: (room: string) => boolean): string | null {
   for (const f of foes) if (awake(f.room) && sees(fp, f, you)) return f.room;
   return null;
+}
+
+export const ALARM_PAUSE = 0.5;   // seconds of "!" before they come
+export const CHARGE_SPEED = 4;    // tiles a second, coming at you
+export const ARRIVE = 1.5;        // tiles from you: it's reached you
+export const LATE_GRACE = 1;      // seconds after the first reaches you, the fight starts anyway
+export const ALARM_MAX = 4;       // …and, whatever else, this long after they saw you
+export const FADE_TIME = 0.6;     // seconds fading into the fight
+export const ALARM_LIGHT = 2.5;   // tiles a foe that's seen you lights round it
+
+// The way a foe comes at you: the shortest way to you, stopping a tile short.
+// [] if it's next to you already, or can't get to you (it stays where it is).
+export function chargePath(fp: Floorplan, from: Pt, you: Pt): Pt[] {
+  const start = { x: Math.round(from.x), y: Math.round(from.y) }, end = { x: Math.round(you.x), y: Math.round(you.y) };
+  const way = findPath(fp, start, end);
+  return way ? way.slice(0, -1) : [];
+}
+
+// Time to fade into the fight? `arrived`: when each foe that's reached you
+// did (seconds after they saw you); `count`: how many are coming; `t`: seconds since.
+export function fightReady(arrived: number[], count: number, t: number): boolean {
+  if (t >= ALARM_MAX || arrived.length >= count) return true;
+  return arrived.length > 0 && t - Math.min(...arrived) >= LATE_GRACE;
+}
+
+// A foe coming at you, `seconds` later: along its path at CHARGE_SPEED, facing the way it goes.
+export function chargeFoe(foe: Foe, seconds: number): Foe {
+  let { x, y } = foe;
+  let left = CHARGE_SPEED * seconds, facing = foe.facing, i = 0;
+  while (i < foe.path.length && left > 0) {
+    const p = foe.path[i], d = Math.hypot(p.x - x, p.y - y);
+    if (d > 0) facing = Math.atan2(p.y - y, p.x - x);
+    if (d <= left) { x = p.x; y = p.y; left -= d; i++; continue; }
+    x += ((p.x - x) / d) * left;
+    y += ((p.y - y) / d) * left;
+    left = 0;
+  }
+  return { ...foe, x, y, facing, path: foe.path.slice(i) };
 }
 
 // A foe `seconds` later: a still one turns when it's looked long enough; a

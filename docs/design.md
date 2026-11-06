@@ -916,7 +916,13 @@ How it came about, round by round: history.md.
        the torch held up), 15 tiles across, torchlight, wall torches, rubble. Walking into a room
        makes it the current one; walking out leaves it as it is (`walkInto`: foes you slipped past
        stay; an opened sack's leftovers go to the floor, as down a tunnel). Seen by a room's foes,
-       or into the chief's camp, that room's fight starts. Tap a chest, stash or a fight's sack
+       or into the chief's camp, that room's fight starts, but not at once (the user, 2026-11-06;
+       `fightReady` and the numbers in foes.ts, 🧪): every foe of the room lights up like your torch
+       (`ALARM_LIGHT` 2.5 tiles) with a "!" over it, half a second later they all come at you
+       (`CHARGE_SPEED` 4 tiles a second), and it fades to black into the fight (`FADE_TIME` 0.6 s)
+       once they've all reached you, or a second after the first has (`LATE_GRACE`), or 4 s after
+       they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. (`/lab/walk` still
+       starts its fights at once.) Tap a chest, stash or a fight's sack
        to walk up and open it in the loot window. A camp that looks empty (an ambush) opens the
        room's window with its cages; the room button (top left) opens it any time. The dock's
        Scroll is the treasure map, and the entrance's look at the map is that scroll with only its marks (`WalkFirstMap`); the Den button is locked only mid-fight. A stash's or a fight's sack is drawn smaller than a chest (the user, 2026-11-06).

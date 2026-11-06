@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { lineOfSight, placeFoes, sees, spottedBy, stepFoe, visionCone, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, type Foe } from "../lib/dungeon/foes";
+import { lineOfSight, placeFoes, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
 import { chestSack, fightSack, rollWalkRooms, roomDepth } from "../lib/dungeon/walkRooms";
 import { routeLength } from "../lib/dungeon/map";
 import { CHEST_DROPS } from "../lib/dungeon/run";
@@ -143,5 +143,33 @@ describe("the walkable Encampment's rooms", () => {
     expect(fightSack(den, seeded(1))[0]).toEqual({ gold: den.gold });
     expect(fightSack(rooms[map.boss], seeded(1)).length).toBeGreaterThan(1);
     expect(chestSack().length).toBeGreaterThanOrEqual(CHEST_DROPS);
+  });
+});
+
+describe("seen: they come at you", () => {
+  const room: Floorplan = (() => {
+    const rows = ["##########", "#........#", "#........#", "##########"];
+    const w = rows[0].length, h = rows.length, tiles = new Uint8Array(w * h);
+    rows.forEach((r, y) => [...r].forEach((c, x) => { tiles[y * w + x] = c === "#" ? ROCK : FLOOR; }));
+    return { w, h, tiles, rooms: {}, doors: [], tunnels: {} };
+  })();
+  it("walks up to you and stops a tile short", () => {
+    const way = chargePath(room, { x: 8, y: 1 }, { x: 1, y: 1 });
+    expect(way[way.length - 1]).toEqual({ x: 2, y: 1 });
+    expect(chargePath(room, { x: 2, y: 1 }, { x: 1, y: 1 })).toEqual([]);
+  });
+  it("comes at CHARGE_SPEED, facing you", () => {
+    const foe: Foe = { room: "a", index: 0, x: 8, y: 1, facing: 0, walks: false, path: chargePath(room, { x: 8, y: 1 }, { x: 1, y: 1 }), wait: 0 };
+    const later = chargeFoe(foe, 1);
+    expect(later.x).toBeCloseTo(8 - CHARGE_SPEED);
+    expect(Math.cos(later.facing)).toBeCloseTo(-1);
+    expect(chargeFoe(later, 10).x).toBe(2);
+  });
+  it("fades into the fight when they're all there, a moment after the first, or after a while regardless", () => {
+    expect(fightReady([], 2, 0.5)).toBe(false);
+    expect(fightReady([1, 1.2], 2, 1.2)).toBe(true);
+    expect(fightReady([1], 2, 1 + LATE_GRACE - 0.1)).toBe(false);
+    expect(fightReady([1], 2, 1 + LATE_GRACE)).toBe(true);
+    expect(fightReady([], 3, ALARM_MAX)).toBe(true);
   });
 });

@@ -9,8 +9,9 @@
 // What it hands back to the screen (app/dungeon/page.tsx), which runs the
 // room as the live Labyrinth does:
 // - onEnter: you walked into a room (it becomes run.current);
-// - onSpotted: a room's foes saw you (or you stepped into the chief's camp):
-//   that room fights you;
+// - onSpotted: a room's foes saw you (or you stepped into the chief's camp),
+//   lit up with a "!", came at you, and it faded out (lib/dungeon/foes.ts
+//   fightReady): that room fights you;
 // - onObject: you tapped a chest, a sack or the treasure and walked up to it;
 // - onKeep: your spot, what you've seen and the torches you've lit, to save
 //   (now and then as you walk, and whenever any of the above happens).
@@ -24,7 +25,7 @@ import { layoutFloorplan, roomCentre, scrollMarks, cutOffY, enter, isOpen, stepR
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
 import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
-import { placeFoes, spottedBy, stepFoe, ALERT_KINDS, type Foe } from "@/lib/dungeon/foes";
+import { placeFoes, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, ALERT_KINDS, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
 import { hasFight, ROOM_INFO, type Room } from "@/lib/dungeon/run";
 import type { WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
@@ -117,6 +118,8 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   const shakeAt = useRef(-Infinity);
   const wantThing = useRef<string | null>(null); // walking up to this room's thing, to open it
   const fired = useRef(0);                      // when a fight was called for (0: none): once, till it starts
+  // Seen: whose room, when (ms), the foes that have set off and reached you (by index: seconds after), the fade's start.
+  const alarm = useRef<{ room: string; at: number; going: Set<number>; arrived: Map<number, number>; fadeAt: number | null } | null>(null);
 
   // The props the frame loop reads, kept current.
   const spots = walk.spots;
@@ -190,10 +193,10 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
       frame = requestAnimationFrame(draw);
       const dt = Math.min(now - last, 100) / 1000;
       last = now;
-      if (fired.current && now - fired.current > 2000) fired.current = 0; // (it didn't start: carry on)
-      const P = props.current, busy = P.busy || fired.current > 0;
+      if (fired.current && now - fired.current > 2000) { fired.current = 0; alarm.current = null; } // (it didn't start: carry on)
+      const P = props.current, busy = P.busy || fired.current > 0, A = alarm.current;
       const before = { x: me.current.x, y: me.current.y };
-      if (!busy) me.current = advance(me.current, dt);
+      if (!busy && !A) me.current = advance(me.current, dt);
       const moved = Math.hypot(me.current.x - before.x, me.current.y - before.y);
       if (moved > 0) { walked.current += moved; movedSince = true; facing.current = facingOf(me.current.x - before.x, me.current.y - before.y, facing.current); }
       // The torch: what it lights now, remembered from now on; the wall torches.
@@ -207,6 +210,9 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
           for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
         }
       }
+      const alarmed = A ? foes.current.filter((f) => f.room === A.room) : [];
+      const foeLight = alarmed.map((f) => torchLit(live, f, ALARM_LIGHT));
+      for (const a of foeLight) for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
       for (let i = 0; i < lightNow.current.length; i++) if (lightNow.current[i]) known.current[i] = 1;
       const step = { x: Math.round(me.current.x), y: Math.round(me.current.y) }, prev = trail.current[trail.current.length - 1];
       if (!prev || prev.x !== step.x || prev.y !== step.y) trail.current.push(step);
@@ -231,15 +237,37 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
       const p = progressRef.current;
       const awake = (id: string) => { const r = P.room(id); return !!r && hasFight(r) && !r.done && isOpen(layout, p, id); };
       foes.current = foes.current.filter((f) => awake(f.room) || !isOpen(layout, p, f.room));
-      if (!busy) {
+      if (!busy && A) {
+        // Seen: a "!" a moment, then they come at you; it fades into the fight once they're there.
+        const t = (now - A.at) / 1000;
+        foes.current = foes.current.map((f) => {
+          if (f.room !== A.room || A.arrived.has(f.index)) return f;
+          let g = f;
+          if (t < ALARM_PAUSE) g = { ...g, facing: Math.atan2(me.current.y - g.y, me.current.x - g.x) };
+          else {
+            if (!A.going.has(f.index)) { A.going.add(f.index); g = { ...g, path: chargePath(live, g, me.current) }; }
+            g = chargeFoe(g, dt);
+            if (Math.hypot(g.x - me.current.x, g.y - me.current.y) <= ARRIVE || g.path.length === 0) A.arrived.set(f.index, t);
+          }
+          return g;
+        });
+        const first = alarmed[0];
+        if (first) facing.current = facingOf(first.x - me.current.x, first.y - me.current.y, facing.current);
+        if (A.fadeAt === null && fightReady([...A.arrived.values()], alarmed.length, t)) A.fadeAt = now;
+        if (A.fadeAt !== null && now - A.fadeAt >= FADE_TIME * 1000) {
+          fired.current = now;
+          P.onSpotted(A.room, state());
+        }
+      } else if (!busy) {
         foes.current = foes.current.map((f) => stepFoe(live, f, dt));
         const camp = now_in && awake(now_in) && ALERT_KINDS.includes(P.room(now_in)!.kind) ? now_in : null;
         const by = camp ?? spottedBy(live, foes.current, me.current, awake);
         if (by) {
-          fired.current = now;
+          alarm.current = { room: by, at: now, going: new Set(), arrived: new Map(), fadeAt: null };
           me.current = { x: Math.round(me.current.x), y: Math.round(me.current.y), path: [] };
           goal.current = null;
-          P.onSpotted(by, state());
+          wantThing.current = null;
+          P.onKeep(state());
           return;
         }
         // Walking up to a thing you tapped: open it once you're close.
@@ -355,7 +383,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         } });
       }
       for (const f of foes.current) {
-        if (!litAt(Math.round(f.x), Math.round(f.y))) continue;
+        if (!litAt(Math.round(f.x), Math.round(f.y)) && !(A && f.room === A.room)) continue;
         const e = P.room(f.room)?.enemies?.[f.index];
         const a = e && artFor(CREATURE_SPRITES[e.creatureId] ?? []), img = a && image(a.src);
         standing.push({ x: f.x, y: f.y, draw: () => {
@@ -437,12 +465,21 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         ctx.fillStyle = pool;
         ctx.fillRect(fx - r, fy - r, 2 * r, 2 * r);
       }
+      for (const f of alarmed) {
+        const fx = footX(f.x), fy = footY(f.y) - 8 * scale, r = ALARM_LIGHT * T * flicker;
+        const pool = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
+        pool.addColorStop(0, "rgba(255, 150, 60, 0.25)");
+        pool.addColorStop(1, "rgba(255, 150, 60, 0)");
+        ctx.fillStyle = pool;
+        ctx.fillRect(fx - r, fy - r, 2 * r, 2 * r);
+      }
       ctx.globalCompositeOperation = "source-over";
       const d = shade.data;
       for (let y = Math.max(0, y0 - 1); y < Math.min(h, y1 + 1); y++) for (let x = Math.max(0, x0 - 1); x < Math.min(w, x1 + 1); x++) {
         const i = y * w + x;
         let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, TORCH_RADIUS, flicker);
         for (const c of burning) if (sconceLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
+        alarmed.forEach((f, k) => { if (foeLight[k][i]) glow = Math.min(glow, torchGlow(Math.hypot(x - f.x, y - f.y), true, true, ALARM_LIGHT, flicker)); });
         d[i * 4] = DARK_RGB[0]; d[i * 4 + 1] = DARK_RGB[1]; d[i * 4 + 2] = DARK_RGB[2]; d[i * 4 + 3] = Math.round(glow * 255);
       }
       mctx.putImageData(shade, 0, 0);
@@ -469,6 +506,24 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
         ctx.fill();
       }
+      if (A) {
+        const pop = Math.min(1, (now - A.at) / 150);
+        ctx.font = `bold ${Math.round(T * 0.9 * pop)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.lineWidth = Math.max(2, scale * 1.5);
+        ctx.strokeStyle = "#1a0e05";
+        ctx.fillStyle = "#ffd23f";
+        for (const f of foes.current.filter((g) => g.room === A.room)) {
+          const fx = footX(f.x), top = footY(f.y) - FOE_PX * scale - 2 * scale - Math.abs(Math.sin(now / 120)) * 3 * scale;
+          ctx.strokeText("!", fx, top);
+          ctx.fillText("!", fx, top);
+        }
+        if (A.fadeAt !== null) {
+          ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(1, (now - A.fadeAt) / (FADE_TIME * 1000))})`;
+          ctx.fillRect(0, 0, cw, ch);
+        }
+      }
     };
     frame = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(frame);
@@ -482,7 +537,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   }, [live]);
 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (busy || fired.current > 0) return;
+    if (busy || fired.current > 0 || alarm.current) return;
     const el = e.currentTarget, box = el.getBoundingClientRect();
     const T = el.clientWidth / WALK_ACROSS;
     const cam = cameraAt(plan, me.current, { w: el.clientWidth / T, h: el.clientHeight / T });
