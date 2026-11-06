@@ -492,22 +492,36 @@ export function campMap(layout: Layout, firstRun: boolean, rng: Rng = Math.rando
 // The scroll (the user, 2026-11-05): a look at where the rooms are, to work
 // out a way up. A mark per room, where its middle is: its icon if you know
 // what's there, else "?". Of the rooms and tunnels themselves, only what your
-// torch has lit (drawn by the lab, like a treasure map, with your trail and
-// the cut-offs behind you, cutOffY); never the rest.
+// torch has lit (drawn like a treasure map, with your trail and a red line
+// along each tunnel you've seen that's closed off since); never the rest.
 // You know the entrance, the top, the rooms marked from the start and the
 // ones you've been in; the hidden ones (the chest, unmarked stashes) only once
 // you've been in. You can look at it SCROLL_LOOKS times a run.
 export const SCROLL_LOOKS = 2;
-// Where a cut-off is on the scroll, in tiles down: the bottom of the room you came up into.
+// Where a cut-off is, in tiles down: the bottom of the room you came up into.
+// (Kept by the game, never drawn on the scroll: the user, 2026-11-06.)
 export const cutOffY = (p: Progress) => p.line * BLOCK;
 export type ScrollMark = { id: string; x: number; y: number; kind: RoomKind | null; here: boolean }; // x, y: 0–1 across and down
-export function scrollMarks(map: DungeonMap, layout: Layout, been: Iterable<string>, here: string | null): ScrollMark[] {
-  const visited = new Set(been);
+export function scrollMarks(map: DungeonMap, layout: Layout, been: Iterable<string>, here: string | null, foreseen: ReadonlySet<string> = new Set()): ScrollMark[] {
+  const visited = new Set([...been, ...foreseen]);
   const w = layout.w * BLOCK, h = layout.h * BLOCK;
   return Object.values(map.nodes).map((n) => {
     const knows = visited.has(n.id) || (!n.hidden && (n.known || n.id === map.start || n.id === map.boss));
     return { id: n.id, x: n.x / w, y: n.y / h, kind: knows ? n.kind : null, here: n.id === here };
   });
+}
+
+// What a clairvoyance scroll or a flare shows on the scroll (the user,
+// 2026-11-06): each room a scroll looked into (seen), and the rooms a tunnel
+// joins to it or to a room a flare lit (lit), bar mysteries and the hidden
+// ones (they still need looking into, or walking into).
+export function foreseen(map: DungeonMap, layout: Layout, lit: string[] = [], seen: string[] = []): Set<string> {
+  const out = new Set(seen.filter((id) => map.nodes[id]));
+  for (const at of lit) for (const t of layout.tunnels) {
+    const n = map.nodes[t.a === at ? t.b : t.b === at ? t.a : ""];
+    if (n && !n.mystery && !n.hidden) out.add(n.id);
+  }
+  return out;
 }
 
 // The layout as tiles to walk on (floorplan.ts's Floorplan, so walk.ts and

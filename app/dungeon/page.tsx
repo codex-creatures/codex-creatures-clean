@@ -76,7 +76,7 @@ import { combatSummary } from "@/lib/combat/loadout";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
-import WalkView, { WalkFirstMap, type WalkState } from "@/components/WalkView";
+import WalkView, { WalkFirstMap, WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom } from "@/lib/dungeon/walkRun";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
@@ -1268,7 +1268,7 @@ export default function DungeonPage() {
     <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <WalkView walk={run.walk!} map={run.map} here={runPosition(run)} room={(id) => walkRoom(run, id)}
         busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || cageShow !== undefined || walkPanel}
-        been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
+        been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
         onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onHeal={walkHeal} onKeep={walkSave} />
       {run.current && !walkPanel && (
@@ -1404,7 +1404,10 @@ export default function DungeonPage() {
       {mapOpen && (
         <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : mapOpen === "view" ? "📜 Your map" : "🧨 Your map, by torchlight"} onClose={() => setMapOpen(null)}>
           {mapOpen === "pick" && <p style={{ fontSize: 13, color: MUTED, margin: "0 0 8px" }}>Tap any room: you&apos;ll see what&apos;s in it, and the rooms around it.</p>}
-          <DungeonMapView run={run} onPick={mapOpen === "pick" ? foresee : undefined} />
+          {run.walk
+            ? <WalkMap key={mapOpen} walk={run.walk} map={run.map} here={runPosition(run)} been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)}
+              lit={run.lit} seen={run.seen} onPick={mapOpen === "pick" ? foresee : undefined} />
+            : <DungeonMapView run={run} onPick={mapOpen === "pick" ? foresee : undefined} />}
         </Sheet>
       )}
       {sheet === "bag" && !clubTutorial && <Sheet title={`Your ${bagName(lab.meta).toLowerCase()}`} onClose={() => setSheet(null)}>{bagView}</Sheet>}

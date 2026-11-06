@@ -23,10 +23,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
-import { layoutFloorplan, roomCentre, scrollMarks, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
+import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
 import { placeFoes, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, ALERT_KINDS, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
 import { hasFight, ROOM_INFO, type Room } from "@/lib/dungeon/run";
@@ -90,7 +90,7 @@ function image(src: string): HTMLImageElement | null {
 // treasure (at its middle), or a beaten room's sack or chest.
 type Thing = { room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art: Parameters<typeof artFor>[0] };
 
-export default function WalkView({ walk, map, here, room, busy, been, cleared, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onHeal, onKeep }: {
+export default function WalkView({ walk, map, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
   map: DungeonMap;                     // what kind each room is
   here: string;                        // the room you're in (the run's position)
@@ -98,6 +98,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   busy: boolean;                       // a window's open over it: nobody moves
   been: string[];                      // rooms you've stood in (the scroll's marks)
   cleared: string[];                   // …and the ones finished (crossed out)
+  lit?: string[]; seen?: string[];     // rooms a flare or a clairvoyance scroll showed (the run's)
   scroll: boolean;                     // the scroll is out
   team: Omit<PartyMember, "hp">[];     // who's walking with you (a campfire heals them)
   hp: Record<string, number>;          // …their health, shares of max HP (the run's)
@@ -337,7 +338,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         showing = true;
         setWarming({ hp: Object.fromEntries(P.team.map((m) => [m.id, Math.min(1, health(m.id))])), giving, left: fire?.left ?? 0 });
       } else if (!show && showing) { showing = false; setWarming(null); }
-      if (lighted || (movedSince && now - kept > KEEP_EVERY)) { kept = now; movedSince = false; P.onKeep(state()); }
+      if (lighted || (movedSince && (now - kept > KEEP_EVERY || P.busy))) { kept = now; movedSince = false; P.onKeep(state()); }
 
       // ── Drawing ──
       const ratio = window.devicePixelRatio || 1;
@@ -702,8 +703,8 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
       <canvas ref={canvas} onPointerDown={tap} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }} />
       {warming && !scroll && <Warmth team={team} warming={warming} />}
-      {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={known.current} trail={trail.current} cuts={cuts.current}
-        been={been} here={roomAt(plan, me.current)} cleared={cleared} onClose={onScrollClose} />}
+      {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={known.current} trail={trail.current} progress={progress}
+        been={been} here={roomAt(plan, me.current)} at={me.current} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
     </div>
   );
 }
@@ -742,37 +743,61 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
 }
 
 // The scroll, like a treasure map (layout.ts scrollMarks): what your torch has
-// lit, your trail, the cut-offs in red, a mark per room (crossed once
-// cleared). Tap to put it away.
-function WalkScroll({ map, layout, plan, known, trail, cuts, been, here, cleared, onClose }: {
-  map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; cuts: number[];
-  been: string[]; here: string | null; cleared: string[]; onClose?: () => void;
+// lit, your trail, a red line along each tunnel you'd seen that's closed off,
+// a mark per room (crossed once cleared). A room a clairvoyance scroll looked
+// into is drawn in, and the rooms it and a flare showed are marked (foreseen).
+// As wide as the rooms' walls reach, scrolling up and down, opened at you
+// (the user, 2026-11-06). Tap to put it away, or (onPick) tap a room to pick it.
+function WalkScroll({ map, layout, plan, known, trail, progress, been, here, at, cleared, lit, seen, onClose, onPick }: {
+  map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress;
+  been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
 }) {
   const [shown] = useState(() => {
+    const tile = (x: number, y: number) => (x < 0 || y < 0 || x >= plan.w || y >= plan.h ? ROCK : plan.tiles[y * plan.w + x]);
+    const isWall = (x: number, y: number) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => tile(x + dx, y + dy) !== ROCK));
+    // What's drawn: what you've seen, and the rooms a clairvoyance scroll looked into (walls and all).
+    const drawn = known.length === plan.w * plan.h ? known.slice() : new Uint8Array(plan.w * plan.h);
+    for (const id of seen ?? []) for (const f of plan.rooms[id] ?? []) {
+      for (let y = Math.max(0, f.y - 1); y <= Math.min(plan.h - 1, f.y + f.h); y++) drawn.fill(1, y * plan.w + Math.max(0, f.x - 1), y * plan.w + Math.min(plan.w, f.x + f.w + 1));
+    }
     const ink: { x: number; y: number; w: number; wall: boolean }[] = [];
-    const at = (x: number, y: number) => (x < 0 || y < 0 || x >= plan.w || y >= plan.h ? ROCK : plan.tiles[y * plan.w + x]);
-    const isWall = (x: number, y: number) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => at(x + dx, y + dy) !== ROCK));
+    let left = plan.w, right = 0;
     for (let y = 0; y < plan.h; y++) for (let x = 0; x < plan.w; x++) {
-      if (!known[y * plan.w + x]) continue;
-      const wall = at(x, y) === ROCK;
+      if (tile(x, y) !== ROCK) { left = Math.min(left, x); right = Math.max(right, x); }
+      if (!drawn[y * plan.w + x]) continue;
+      const wall = tile(x, y) === ROCK;
       if (wall && !isWall(x, y)) continue;
       const run = ink[ink.length - 1];
       if (run && run.y === y && run.wall === wall && run.x + run.w === x) run.w++;
       else ink.push({ x, y, w: 1, wall });
     }
-    const marks: ScrollMark[] = scrollMarks(map, layout, been, here);
-    return { ink, marks, trail: trail.slice(), cuts: cuts.slice() };
+    // Closed-off tunnels you'd seen: a red line down the middle.
+    const shut = !progress ? [] : layout.tunnels
+      .filter((t) => tunnelShut(layout, progress, t) && (plan.tunnels[t.key] ?? []).some((q) => drawn[q.y * plan.w + q.x]))
+      .map(({ rect: { x, y, w, h }, up }) => (up ? { x1: x + w / 2, y1: y, x2: x + w / 2, y2: y + h } : { x1: x, y1: y + h / 2, x2: x + w, y2: y + h / 2 }));
+    const marks: ScrollMark[] = scrollMarks(map, layout, been, here, foreseen(map, layout, lit, seen));
+    // Across: the furthest walls, with a tile of paper either side.
+    const x0 = Math.max(0, left - 2), x1 = Math.min(plan.w, right + 3);
+    return { ink, shut, marks, trail: trail.slice(), x0, vw: x1 - x0 };
   });
+  // Opened at you (or your room).
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current, mark = shown.marks.find((m) => m.here);
+    const y = at ? (at.y + 0.5) / plan.h : mark?.y;
+    if (el && y !== undefined) el.scrollTop = y * el.scrollHeight - el.clientHeight / 2;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div onPointerDown={onClose} style={{ position: "absolute", inset: 0, zIndex: 5, background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: onClose ? "none" : "auto" }}>
-      <svg viewBox={`0 0 ${plan.w} ${plan.h}`} style={{ position: "absolute", inset: "3%", width: "94%", height: "94%" }}>
+    <div ref={box} onClick={onPick ? undefined : onClose} style={{ position: "absolute", inset: 0, zIndex: 5, overflowX: "hidden", overflowY: "auto", background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: "pan-y" }}>
+      <svg viewBox={`${shown.x0} 0 ${shown.vw} ${plan.h}`} style={{ display: "block", width: "100%", aspectRatio: `${shown.vw} / ${plan.h}` }}>
         {shown.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}
-        {shown.cuts.map((y, i) => <line key={i} x1={0} x2={plan.w} y1={y} y2={y} stroke={INK.cut} strokeWidth={0.9} strokeDasharray="3 2" />)}
+        {shown.shut.map((l, i) => <line key={i} {...l} stroke={INK.cut} strokeWidth={0.9} strokeLinecap="round" />)}
         <polyline points={shown.trail.map((p) => `${p.x + 0.5},${p.y + 0.5}`).join(" ")} fill="none" stroke={INK.trail} strokeWidth={0.7} strokeDasharray="1.2 1.2" strokeLinejoin="round" />
         {shown.marks.map((m) => {
           const x = m.x * plan.w, y = m.y * plan.h, art = m.kind && ROOM_ART[m.kind];
           return (
-            <g key={m.id}>
+            <g key={m.id} onClick={onPick ? () => onPick(m.id) : undefined} style={{ cursor: onPick ? "pointer" : undefined }}>
+              {onPick && <circle cx={x} cy={y} r={6} fill="transparent" />}
               <circle cx={x} cy={y} r={3.6} fill={INK.mark} stroke={m.here ? INK.you : INK.edge} strokeWidth={m.here ? 0.9 : 0.5} />
               {art
                 ? <image href={art} x={x - 2.6} y={y - 2.6} width={5.2} height={5.2} style={{ imageRendering: "pixelated" }} />
@@ -786,13 +811,28 @@ function WalkScroll({ map, layout, plan, known, trail, cuts, been, here, cleared
   );
 }
 
+// The scroll in a window (the Labyrinth screen's map sheet, while walking): to
+// pick a room for a clairvoyance scroll (onPick), or to see what one or a
+// flare showed. Your walk as last kept.
+export function WalkMap({ walk, map, here, been, cleared, lit, seen, onPick }: {
+  walk: WalkRun; map: DungeonMap; here: string; been: string[]; cleared: string[]; lit?: string[]; seen?: string[]; onPick?: (id: string) => void;
+}) {
+  const plan = useMemo(() => layoutFloorplan(walk.layout), [walk.layout]);
+  return (
+    <div style={{ position: "relative", width: "100%", height: "60cqh" }}>
+      <WalkScroll map={map} layout={walk.layout} plan={plan} known={fromRuns(walk.known, plan.w * plan.h)} trail={walk.trail ?? [walk.at]}
+        progress={{ room: walk.room, line: walk.line ?? Infinity }} been={been} here={here} at={walk.at} cleared={cleared} lit={lit} seen={seen} onPick={onPick} />
+    </div>
+  );
+}
+
 // The map at the entrance (the Labyrinth screen's MapFirst): the scroll before
 // you've walked anywhere, its marks only (no rooms or tunnels drawn yet).
 export function WalkFirstMap({ walk, map }: { walk: WalkRun; map: DungeonMap }) {
   const plan = useMemo(() => layoutFloorplan(walk.layout), [walk.layout]);
   return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: `${plan.w} / ${plan.h}`, maxHeight: "45cqh", margin: "0 auto" }}>
-      <WalkScroll map={map} layout={walk.layout} plan={plan} known={new Uint8Array(0)} trail={[]} cuts={[]}
+    <div style={{ position: "relative", width: "100%", height: "45cqh", margin: "0 auto" }}>
+      <WalkScroll map={map} layout={walk.layout} plan={plan} known={new Uint8Array(0)} trail={[]}
         been={[map.start]} here={map.start} cleared={[]} />
     </div>
   );

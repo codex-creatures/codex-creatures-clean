@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
-  rollLayout, WALK_SPEC, routesToBoss, ROUTES, layoutFloorplan, layoutMap, campMap, scrollMarks, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
+  rollLayout, WALK_SPEC, routesToBoss, ROUTES, layoutFloorplan, layoutMap, campMap, scrollMarks, foreseen, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
   SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, TWIN_PILLAR, BOSS_WAYS, BOSS_DRIFT, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
@@ -160,6 +160,21 @@ describe("labyrinth layout: the scroll", () => {
     expect(shown(scrollMarks(map, l, [l.start, chest.id], chest.id), chest.id)).toBe("chest");
     // Some rooms are still a "?" (it's a guide, not the answer).
     expect(fresh.some((m) => m.kind === null)).toBe(true);
+  });
+
+  it("marks what a clairvoyance scroll looked into (even the hidden chest) and the rooms joined to it, but no mysteries or hidden ones beside it", () => {
+    const l = encampment(6);
+    const map = campMap(l, false, seeded(11));
+    const chest = Object.values(map.nodes).find((n) => n.kind === "chest")!;
+    const near = (id: string) => l.tunnels.flatMap((t) => (t.a === id ? [t.b] : t.b === id ? [t.a] : []));
+    const shown = foreseen(map, l, [chest.id], [chest.id]);
+    expect(shown.has(chest.id)).toBe(true);
+    for (const id of near(chest.id)) expect(shown.has(id)).toBe(!map.nodes[id].mystery && !map.nodes[id].hidden);
+    expect([...shown].every((id) => id === chest.id || near(chest.id).includes(id))).toBe(true);
+    const marks = scrollMarks(map, l, [l.start], l.start, shown);
+    expect(marks.find((m) => m.id === chest.id)!.kind).toBe("chest");
+    // A flare (lit, not seen) shows only the rooms joined to where you stand.
+    expect(foreseen(map, l, [l.start]).has(l.start)).toBe(false);
   });
 });
 

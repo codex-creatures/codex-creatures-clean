@@ -811,8 +811,11 @@ How it came about, round by round: history.md.
        looked at **twice a run** (`SCROLL_LOOKS`), it shows a mark where each room's middle
        is: its icon if you know what's there, else "?". Of the rooms and tunnels themselves it
        shows only what your torch has lit, drawn like a treasure map: lit floors and walls, your
-       trail dotted, and a **red line at each cut-off** you've crossed (`cutOffY`: the bottom of
-       the room you came up into). Never the unlit tunnels or room sizes, so you work the way up
+       trail dotted, and a **red line along each tunnel you've seen that's closed off** (the cut-offs
+       themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
+       as the furthest walls and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
+       room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare
+       marks the rooms joined to yours. Never the unlit tunnels or room sizes, so you work the way up
        out yourself. You know the entrance, the camp, the rooms marked from the start (**3–4 in
        all**, the user 2026-11-05, `SCROLL_MARKS`: the 1–2 marked stashes, then dens; the live
        scroll marks 8 plus stashes) and rooms you've been in; the chest and unmarked stashes stay
