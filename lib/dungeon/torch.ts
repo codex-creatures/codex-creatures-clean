@@ -110,20 +110,27 @@ export function rubbleOf(fp: Floorplan, layout: Layout, p: Progress): Rubble[] {
 // walls, most of them unlit. Walk within half your torch's reach of an unlit
 // one (in sight of it) and you light it; a lit one lights its part of the
 // room for good, a little dimmer than your own torch. The entrance's are lit.
+// Some tunnels have them too (the user, 2026-11-06), always unlit to start:
+// on an up tunnel's side walls, a sideways tunnel's top wall.
 export const SCONCE_EVERY = 8;        // tiles of top wall per sconce (at least one a room) 🧪
+export const TUNNEL_SCONCE_CHANCE = 0.4; // a tunnel has torches (one every SCONCE_EVERY tiles of it, at least one) 🧪
 export const SCONCE_LIT_SHARE = 0.2;  // of the rest are already burning 🧪
 export const SCONCE_RADIUS = 4;       // tiles a sconce lights 🧪
 export const SCONCE_BRIGHT = 0.15;    // its darkness right under it (your torch: 0)
 export const IGNITE_REACH = TORCH_RADIUS / 2;
 export const SCONCE_SEEN = 12;        // tiles: a burning sconce in sight this close shows you what it lights
 
-// A sconce: on the wall above floor tile (x, y), the top row of a room's floor.
-export type Sconce = { id: string; room: string; x: number; y: number; lit: boolean };
+// A sconce: on the wall above floor tile (x, y), the top row of a room's floor
+// (or a tunnel's: room is then the tunnel's key, and wall which side it's on;
+// none: the top).
+export type Sconce = { id: string; room: string; x: number; y: number; lit: boolean; wall?: "top" | "left" | "right" };
 type Rng = () => number;
 
 // Sconces for every room: spread along its floor's top row (each floor
 // rectangle of a dog-leg that has a wall above), never over a tunnel's mouth.
-export function placeSconces(fp: Floorplan, start: string, rng: Rng = Math.random): Sconce[] {
+// tunnels: some tunnels get theirs too (after the rooms', so the rooms' stay
+// as they were).
+export function placeSconces(fp: Floorplan, start: string, rng: Rng = Math.random, tunnels = false): Sconce[] {
   const out: Sconce[] = [];
   for (const [room, rects] of Object.entries(fp.rooms)) {
     let k = 0;
@@ -139,6 +146,30 @@ export function placeSconces(fp: Floorplan, start: string, rng: Rng = Math.rando
       }
     }
   }
+  if (tunnels) for (const key of Object.keys(fp.tunnels).sort()) if (rng() < TUNNEL_SCONCE_CHANCE) out.push(...tunnelSconces(fp, key));
+  return out;
+}
+
+// A tunnel's sconces: along its walls, away from its ends (its doors and the
+// tile in from each), one every SCONCE_EVERY tiles, taking turns side to side
+// up an up tunnel.
+function tunnelSconces(fp: Floorplan, key: string): Sconce[] {
+  const ts = fp.tunnels[key];
+  const x0 = Math.min(...ts.map((q) => q.x)), x1 = Math.max(...ts.map((q) => q.x));
+  const y0 = Math.min(...ts.map((q) => q.y)), y1 = Math.max(...ts.map((q) => q.y));
+  const up = y1 - y0 > x1 - x0;
+  const from = (up ? y0 : x0) + 2, to = (up ? y1 : x1) - 2;
+  if (to < from) return [];
+  const n = Math.max(1, Math.round((to - from + 1) / SCONCE_EVERY));
+  const out: Sconce[] = [];
+  for (let i = 0; i < n; i++) {
+    const along = from + Math.floor(((i + 0.5) / n) * (to - from + 1));
+    const s: Sconce = up
+      ? (i % 2 === 0 ? { id: "", room: key, x: x0, y: along, lit: false, wall: "left" } : { id: "", room: key, x: x1, y: along, lit: false, wall: "right" })
+      : { id: "", room: key, x: along, y: y0, lit: false, wall: "top" };
+    const wx = s.wall === "left" ? s.x - 1 : s.wall === "right" ? s.x + 1 : s.x, wy = s.wall === "top" ? s.y - 1 : s.y;
+    if (solid(fp, wx, wy) && !solid(fp, s.x, s.y)) out.push({ ...s, id: `${key}:${out.length}` });
+  }
   return out;
 }
 
@@ -149,12 +180,15 @@ export function canIgnite(fp: Floorplan, s: Sconce, you: Pt): boolean {
 
 // A burning sconce in your sight (so you see the room it lights)?
 export function sconceInSight(fp: Floorplan, s: Sconce, you: Pt): boolean {
-  return s.lit && Math.hypot(s.x - you.x, s.y - you.y) <= SCONCE_SEEN && reaches(fp, you, { x: s.x, y: s.y });
+  return s.lit && fireInSight(fp, s, you);
 }
+// …or any fire (a campfire too: campfire.ts).
+export const fireInSight = (fp: Floorplan, at: Pt, you: Pt) => Math.hypot(at.x - you.x, at.y - you.y) <= SCONCE_SEEN && reaches(fp, you, { x: at.x, y: at.y });
 
-// How dark a tile a sconce lights is, `d` tiles from it (1 when it doesn't reach).
-export function sconceGlow(d: number, flicker = 1): number {
-  const r = SCONCE_RADIUS * flicker;
+// How dark a tile a sconce lights is, `d` tiles from it (1 when it doesn't
+// reach). radius: a campfire's reach in place of a sconce's.
+export function sconceGlow(d: number, flicker = 1, radius = SCONCE_RADIUS): number {
+  const r = radius * flicker;
   if (d >= r) return 1;
   return Math.min(REMEMBERED, SCONCE_BRIGHT + (REMEMBERED - SCONCE_BRIGHT) * Math.pow(d / r, 1.6));
 }

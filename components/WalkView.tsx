@@ -13,18 +13,21 @@
 //   lit up with a "!", came at you, and it faded out (lib/dungeon/foes.ts
 //   fightReady): that room fights you;
 // - onObject: you tapped a chest, a sack or the treasure and walked up to it;
+// - onHeal: you stood by a campfire (lib/dungeon/campfire.ts) and your team
+//   got this much health (shares of max HP), now and then while it lasts;
 // - onKeep: your spot, what you've seen and the torches you've lit, to save
 //   (now and then as you walk, and whenever any of the above happens).
 // It reads the rooms as they stand from `room` (beaten rooms lose their
 // foes, opened chests show open). Its own scroll, the treasure map, opens
-// with `scroll`.
+// with `scroll`. By a campfire, a window over it shows your team healing.
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
+import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
 import { placeFoes, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, ALERT_KINDS, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
 import { hasFight, ROOM_INFO, type Room } from "@/lib/dungeon/run";
 import type { WalkRun } from "@/lib/dungeon/walkRun";
@@ -34,6 +37,9 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
 import { ROOM_ART } from "@/components/DungeonMapView";
+import { CreatureArt } from "@/components/CreaturePortrait";
+import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import type { PartyMember } from "@/components/PartySlots";
 
 export const WALK_ACROSS = 15;  // tiles across the screen (the user's pick, 2026-11-06)
 const REACH_OBJECT = 1.5;       // tiles: this close to a chest or a sack, it opens
@@ -43,6 +49,9 @@ const OBJECT_PX = 28;           // a chest's width at 16px tiles
 const SACK_PX = 16;             // …a sack's (stashes, a fight's loot): smaller (the user, 2026-11-06)
 const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
 const KEEP_EVERY = 5000;        // ms: your spot's saved this often while you walk
+const HEAL_EVERY = 400;         // ms: health from a campfire is handed back this often
+const SHOW_EVERY = 100;         // ms: the campfire window updates this often
+const OUT_SHOW = 1500;          // ms the campfire window stays up after the fire's burnt down
 const TRAIL_MAX = 3000;         // tiles of your trail kept for the scroll
 
 const COLOURS = { rock: "#07060b", goal: "#f1d9a0", foe: "#b0302a", rubble: ["#5b5560", "#6f6872", "#48434d"], dust: "200, 190, 175" };
@@ -50,7 +59,9 @@ const DARK_RGB = [6, 5, 12];
 const CLOSED = "rgba(7, 6, 11, 0.6)";
 const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14", you: "#e0483e" };
 
-export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts">;
+export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts" | "fires">;
+// The campfire window: the team's health as it heals, who's getting some, what the fire has left.
+type Warming = { hp: Record<string, number>; giving: string[]; left: number };
 
 function seeded(seed: number) {
   let s = seed % 2147483647 || 1;
@@ -79,7 +90,7 @@ function image(src: string): HTMLImageElement | null {
 // treasure (at its middle), or a beaten room's sack or chest.
 type Thing = { room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art: Parameters<typeof artFor>[0] };
 
-export default function WalkView({ walk, map, here, room, busy, been, cleared, scroll, onScrollClose, onEnter, onSpotted, onObject, onKeep }: {
+export default function WalkView({ walk, map, here, room, busy, been, cleared, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
   map: DungeonMap;                     // what kind each room is
   here: string;                        // the room you're in (the run's position)
@@ -88,10 +99,13 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   been: string[];                      // rooms you've stood in (the scroll's marks)
   cleared: string[];                   // …and the ones finished (crossed out)
   scroll: boolean;                     // the scroll is out
+  team: Omit<PartyMember, "hp">[];     // who's walking with you (a campfire heals them)
+  hp: Record<string, number>;          // …their health, shares of max HP (the run's)
   onScrollClose: () => void;
   onEnter: (id: string, state: WalkState) => void;
   onSpotted: (id: string, state: WalkState) => void;
   onObject: (id: string, state: WalkState) => void;
+  onHeal: (gains: Record<string, number>, state: WalkState) => void;
   onKeep: (state: WalkState) => void;
 }) {
   const layout = walk.layout;
@@ -110,8 +124,10 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   const cuts = useRef<number[]>(walk.cuts ?? []);
   const sconces = useRef<Sconce[]>(useMemo(() => {
     const lit = new Set(walk.lit ?? []);
-    return placeSconces(plan, layout.start, seeded(walk.seed + 505)).map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
+    return placeSconces(plan, layout.start, seeded(walk.seed + 505), true).map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
   }, [plan, layout, walk.seed, walk.lit]));
+  const fires = useRef<Campfire[]>((walk.fires ?? []).map((f) => ({ ...f })));
+  const [warming, setWarming] = useState<Warming | null>(null);
   const facing = useRef<Facing>("south"); // (facing you to start: the torch shows)
   const walked = useRef(0);
   const falls = useRef(new Map<string, number>());
@@ -123,14 +139,14 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
 
   // The props the frame loop reads, kept current.
   const spots = walk.spots;
-  const props = useRef({ here, room, busy, spots, onEnter, onSpotted, onObject, onKeep });
-  useEffect(() => { props.current = { here, room, busy, spots, onEnter, onSpotted, onObject, onKeep }; });
+  const props = useRef({ here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onHeal, onKeep });
+  useEffect(() => { props.current = { here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onHeal, onKeep }; });
 
   const state = (): WalkState => ({
     at: { x: Math.round(me.current.x), y: Math.round(me.current.y) }, room: progressRef.current.room,
     line: progressRef.current.line === Infinity ? null : progressRef.current.line,
     known: toRuns(known.current), lit: sconces.current.filter((c) => c.lit).map((c) => c.id),
-    trail: trail.current.slice(-TRAIL_MAX), cuts: cuts.current,
+    trail: trail.current.slice(-TRAIL_MAX), cuts: cuts.current, fires: fires.current.map((f) => ({ ...f })),
   });
   // Saved as you leave (a fight, the Den, a reload).
   useEffect(() => () => props.current.onKeep(state()), []);
@@ -163,7 +179,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => {
     const forward = stepRule(layout, plan, p);
-    const solid = new Set(things().filter((t) => t.solid).map((t) => `${t.x},${t.y}`));
+    const solid = new Set([...things().filter((t) => t.solid), ...fires.current].map((t) => `${t.x},${t.y}`));
     return (from, to) => forward(from, to) && known.current[to.y * plan.w + to.x] === 1 && !solid.has(`${to.x},${to.y}`);
   };
 
@@ -182,6 +198,18 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
       if (!a) { a = torchLit(live, c, SCONCE_RADIUS); lightOf.set(c.id, a); }
       return a;
     };
+    // (A torch in a tunnel that's fallen in is gone with it.)
+    const there = (c: Sconce) => live.tiles[c.y * w + c.x] !== ROCK;
+    const fireReach = (f: Campfire) => (f.left > 0 ? CAMPFIRE_LIGHT : EMBER_LIGHT);
+    const fireLight = (f: Campfire) => {
+      const id = `fire:${f.room}:${fireReach(f)}`;
+      let a = lightOf.get(id);
+      if (!a) { a = torchLit(live, f, fireReach(f)); lightOf.set(id, a); }
+      return a;
+    };
+    // Health from a campfire: not yet handed back, and handed back but not in `hp` yet.
+    let pending: Record<string, number> = {}, sent: Record<string, number> = {}, sentFor = props.current.hp;
+    let healedAt = performance.now(), shownAt = 0, outAt = -Infinity, showing = false;
     // The dark, a pixel a tile, drawn smoothed up over the view (soft edges to the light).
     const mask = document.createElement("canvas");
     mask.width = w;
@@ -204,12 +232,15 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
       lightNow.current = torchLit(live, me.current);
       let lighted = false;
       for (const c of sconces.current) {
+        if (!there(c)) continue;
         if (!busy && canIgnite(live, c, me.current)) { c.lit = true; lighted = true; }
         if (sconceInSight(live, c, me.current)) {
           const a = sconceLight(c);
           for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
         }
       }
+      const fireSeen = fires.current.filter((f) => fireInSight(live, f, me.current));
+      for (const f of fireSeen) { const a = fireLight(f); for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1; }
       const alarmed = A ? foes.current.filter((f) => f.room === A.room) : [];
       const foeLight = alarmed.map((f) => torchLit(live, f, ALARM_LIGHT));
       for (const a of foeLight) for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
@@ -279,6 +310,33 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
           kept = now;
         } else if (want && me.current.path.length === 0) wantThing.current = null;
       }
+      // By a campfire: the team heals from it, the window shows it, and what it's given is handed back now and then.
+      if (P.hp !== sentFor) { sentFor = P.hp; sent = {}; }
+      const health = (id: string) => (P.hp[id] ?? 1) + (sent[id] ?? 0) + (pending[id] ?? 0);
+      const fire = !busy && !A ? fires.current.find((f) => byFire(live, f, me.current)) : undefined;
+      const giving: string[] = [];
+      if (fire) {
+        const ids = P.team.map((m) => m.id);
+        const warm = warmBy(Object.fromEntries(ids.map((id) => [id, health(id)])), ids, fire.left, dt);
+        for (const [id, g] of Object.entries(warm.gains)) if (g > 0) { pending[id] = (pending[id] ?? 0) + g; giving.push(id); }
+        fire.left = warm.left;
+        if (fire.left === 0) outAt = now;
+      }
+      if (Object.keys(pending).length > 0 && (giving.length === 0 || now - healedAt > HEAL_EVERY)) {
+        for (const [id, g] of Object.entries(pending)) sent[id] = (sent[id] ?? 0) + g;
+        const gains = pending;
+        pending = {};
+        healedAt = now;
+        kept = now;
+        movedSince = false;
+        P.onHeal(gains, state());
+      }
+      const show = !!fire || now - outAt < OUT_SHOW;
+      if (show && now - shownAt > SHOW_EVERY) {
+        shownAt = now;
+        showing = true;
+        setWarming({ hp: Object.fromEntries(P.team.map((m) => [m.id, Math.min(1, health(m.id))])), giving, left: fire?.left ?? 0 });
+      } else if (!show && showing) { showing = false; setWarming(null); }
       if (lighted || (movedSince && now - kept > KEEP_EVERY)) { kept = now; movedSince = false; P.onKeep(state()); }
 
       // ── Drawing ──
@@ -429,15 +487,39 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         } });
       }
       // The wall torches' brackets (their flames go over the dark, below).
-      const burning = sconces.current.filter((c) => c.lit && knownAt(c.x, c.y) && c.x >= x0 - SCONCE_RADIUS && c.x < x1 + SCONCE_RADIUS && c.y >= y0 - SCONCE_RADIUS && c.y < y1 + SCONCE_RADIUS);
+      const burning = sconces.current.filter((c) => c.lit && there(c) && knownAt(c.x, c.y) && c.x >= x0 - SCONCE_RADIUS && c.x < x1 + SCONCE_RADIUS && c.y >= y0 - SCONCE_RADIUS && c.y < y1 + SCONCE_RADIUS);
+      // (On a tunnel's side wall, it sticks out from the wall's edge, by the tile's middle.)
+      const bracket = (c: Sconce) => (c.wall === "left" ? { x: sx(c.x) + 0.1 * T, top: sy(c.y) - 0.2 * T } : c.wall === "right" ? { x: sx(c.x + 1) - 0.1 * T, top: sy(c.y) - 0.2 * T } : { x: footX(c.x), top: sy(c.y) - 1.1 * T });
       for (const c of sconces.current) {
-        if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y)) continue;
-        standing.push({ x: c.x, y: c.y - 0.6, draw: () => {
-          const fx = footX(c.x), top = sy(c.y) - 1.1 * T;
+        if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
+        standing.push({ x: c.x, y: c.wall === "left" || c.wall === "right" ? c.y + 0.4 : c.y - 0.6, draw: () => {
+          const { x: fx, top } = bracket(c);
           ctx.fillStyle = "#2a2018";
           ctx.fillRect(fx - 0.08 * T, top, 0.16 * T, 0.45 * T);
           ctx.fillStyle = "#4a3a2a";
           ctx.fillRect(fx - 0.16 * T, top, 0.32 * T, 0.1 * T);
+        } });
+      }
+      // Campfires: a ring of stones round crossed logs (the flames go over the dark, below). A placeholder for art.
+      for (const f of fires.current) {
+        if (!knownAt(f.x, f.y)) continue;
+        standing.push({ x: f.x, y: f.y, draw: () => {
+          const fx = footX(f.x), fy = footY(f.y) - 3 * scale;
+          ctx.fillStyle = f.left > 0 ? "#3a2412" : "#24170c";
+          for (const tilt of [-0.45, 0.45]) {
+            ctx.save();
+            ctx.translate(fx, fy - 0.08 * T);
+            ctx.rotate(tilt);
+            ctx.fillRect(-0.36 * T, -0.07 * T, 0.72 * T, 0.14 * T);
+            ctx.restore();
+          }
+          for (let k = 0; k < 8; k++) {
+            const a = (k / 8) * 2 * Math.PI;
+            ctx.fillStyle = k % 2 ? "#5b5560" : "#6f6872";
+            ctx.beginPath();
+            ctx.ellipse(fx + Math.cos(a) * 0.42 * T, fy + Math.sin(a) * 0.22 * T, 0.11 * T, 0.08 * T, 0, 0, 2 * Math.PI);
+            ctx.fill();
+          }
         } });
       }
       for (const s of drawOrder(standing)) s.draw();
@@ -465,6 +547,14 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         ctx.fillStyle = pool;
         ctx.fillRect(fx - r, fy - r, 2 * r, 2 * r);
       }
+      for (const f of fireSeen) {
+        const fx = footX(f.x), fy = footY(f.y) - 6 * scale, r = fireReach(f) * T * flicker;
+        const pool = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
+        pool.addColorStop(0, f.left > 0 ? "rgba(255, 150, 50, 0.3)" : "rgba(255, 90, 40, 0.18)");
+        pool.addColorStop(1, "rgba(255, 150, 60, 0)");
+        ctx.fillStyle = pool;
+        ctx.fillRect(fx - r, fy - r, 2 * r, 2 * r);
+      }
       for (const f of alarmed) {
         const fx = footX(f.x), fy = footY(f.y) - 8 * scale, r = ALARM_LIGHT * T * flicker;
         const pool = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
@@ -479,6 +569,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         const i = y * w + x;
         let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, TORCH_RADIUS, flicker);
         for (const c of burning) if (sconceLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
+        for (const f of fireSeen) if (fireLight(f)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - f.x, y - f.y), flicker, fireReach(f)));
         alarmed.forEach((f, k) => { if (foeLight[k][i]) glow = Math.min(glow, torchGlow(Math.hypot(x - f.x, y - f.y), true, true, ALARM_LIGHT, flicker)); });
         d[i * 4] = DARK_RGB[0]; d[i * 4 + 1] = DARK_RGB[1]; d[i * 4 + 2] = DARK_RGB[2]; d[i * 4 + 3] = Math.round(glow * 255);
       }
@@ -488,8 +579,8 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
       ctx.imageSmoothingEnabled = false;
       // The burning torches' flames, over the dark: a fire glows whatever's round it.
       for (const c of sconces.current) {
-        if (!c.lit || c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y)) continue;
-        const fx = footX(c.x), top = sy(c.y) - 1.1 * T, wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
+        if (!c.lit || c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
+        const { x: fx, top } = bracket(c), wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
         ctx.globalCompositeOperation = "lighter";
         const halo = ctx.createRadialGradient(fx, top - 0.15 * T, 0, fx, top - 0.15 * T, 0.7 * T);
         halo.addColorStop(0, "rgba(255, 170, 70, 0.55)");
@@ -505,6 +596,45 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         ctx.beginPath();
         ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
         ctx.fill();
+      }
+      // The campfires' flames (or the embers' glow), over the dark.
+      for (const f of fires.current) {
+        if (f.x < x0 || f.x >= x1 || f.y < y0 || f.y >= y1 + 1 || !knownAt(f.x, f.y)) continue;
+        const fx = footX(f.x), base = footY(f.y) - 0.2 * T, r = (f.left > 0 ? 1.1 : 0.6) * T;
+        ctx.globalCompositeOperation = "lighter";
+        const halo = ctx.createRadialGradient(fx, base - 0.2 * T, 0, fx, base - 0.2 * T, r);
+        halo.addColorStop(0, f.left > 0 ? "rgba(255, 160, 60, 0.6)" : "rgba(255, 80, 30, 0.35)");
+        halo.addColorStop(1, "rgba(255, 160, 60, 0)");
+        ctx.fillStyle = halo;
+        ctx.fillRect(fx - r, base - 0.2 * T - r, 2 * r, 2 * r);
+        ctx.globalCompositeOperation = "source-over";
+        if (f.left > 0) {
+          // Taller the more it has left to give.
+          const big = 0.6 + 0.4 * (f.left / CAMPFIRE_HEAL);
+          for (const [dx, tall, col, wd] of [[-0.14, 0.5, "#ff7a1e", 0.15], [0.14, 0.45, "#ff7a1e", 0.14], [0, 0.7, "#ff9a2e", 0.2], [0, 0.4, "#fff1b0", 0.1]] as const) {
+            const wob = 1 + 0.15 * Math.sin(now / 60 + dx * 20 + f.x);
+            ctx.fillStyle = col;
+            ctx.beginPath();
+            ctx.ellipse(fx + dx * T, base - (tall / 2) * T * big * wob, wd * T, (tall / 2) * T * big * wob, 0, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        } else {
+          for (let k = 0; k < 5; k++) {
+            ctx.fillStyle = `rgba(255, ${Math.round(70 + 40 * Math.abs(Math.sin(now / 300 + k)))}, 30, 0.9)`;
+            ctx.fillRect(fx + (((k * 7) % 5) - 2) * 0.1 * T, base + (((k * 3) % 3) - 1) * 0.06 * T, 0.07 * T, 0.07 * T);
+          }
+        }
+      }
+      // Healing by one: green crosses rising round you.
+      if (giving.length > 0) {
+        ctx.font = `bold ${Math.round(T * 0.4)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let k = 0; k < 6; k++) {
+          const ph = (now / 1100 + k / 6) % 1;
+          ctx.fillStyle = `rgba(120, 255, 140, ${1 - ph})`;
+          ctx.fillText("+", footX(me.current.x) + Math.sin(k * 2.3) * 0.45 * T, footY(me.current.y) - (0.6 + ph * 0.9) * T);
+        }
       }
       if (A) {
         const pop = Math.min(1, (now - A.at) / 150);
@@ -571,8 +701,42 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
       <canvas ref={canvas} onPointerDown={tap} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }} />
+      {warming && !scroll && <Warmth team={team} warming={warming} />}
       {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={known.current} trail={trail.current} cuts={cuts.current}
         been={been} here={roomAt(plan, me.current)} cleared={cleared} onClose={onScrollClose} />}
+    </div>
+  );
+}
+
+// By a campfire: your team's health going up, a "+" rising by each one
+// getting some, and how much the fire has left (burnt down: embers). Taps go
+// through it to the walk.
+function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: Warming }) {
+  return (
+    <div className="stone-panel" style={{ position: "absolute", left: 6, right: 6, bottom: 6, zIndex: 3, padding: "6px 10px", pointerEvents: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, height: 18 }}>
+        <span aria-hidden style={{ fontSize: 14, filter: warming.left > 0 ? undefined : "grayscale(1) brightness(0.6)" }}>🔥</span>
+        <span style={{ flex: 1, height: 6, background: "rgba(0,0,0,0.6)", borderRadius: 3, overflow: "hidden" }}>
+          <span style={{ display: "block", height: "100%", width: `${(warming.left / CAMPFIRE_HEAL) * 100}%`, background: "#ff9a2e", transition: "width 0.1s linear" }} />
+        </span>
+      </div>
+      {team.map((m) => {
+        const hp = warming.hp[m.id] ?? 1, gets = warming.giving.includes(m.id), ko = hp <= 0;
+        return (
+          <div key={m.id} style={{ display: "grid", gridTemplateColumns: "36px 1fr", alignItems: "center", gap: 8, height: 40 }}>
+            <span style={{ width: 36, height: 36, display: "block", opacity: ko ? 0.35 : 1, filter: ko ? "grayscale(1)" : undefined }}>
+              <CreatureArt creatureId={m.creatureId} title={m.name} />
+            </span>
+            <span style={{ minWidth: 0, position: "relative" }}>
+              <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: RARITY_COLORS[m.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
+              <span style={{ display: "block", height: 8, marginTop: 3, background: "rgba(0,0,0,0.7)", borderRadius: 3, overflow: "hidden", boxShadow: gets ? "0 0 8px rgba(120,255,140,0.8)" : undefined }}>
+                <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444", transition: "width 0.1s linear" }} />
+              </span>
+              <span className="fire-heal" aria-hidden style={{ visibility: gets ? "visible" : "hidden" }}>+</span>
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }

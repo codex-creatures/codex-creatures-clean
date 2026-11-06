@@ -143,6 +143,9 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
   animation: float-up 1.9s ease-out forwards; /* FLOAT_MS in components/BattleScreen.tsx */
 }
 /* Pops in, holds still long enough to read, then drifts up and fades. */
+/* A campfire healing your team (components/WalkView.tsx): a "+" rising off the health bar. */
+.fire-heal { position: absolute; right: 2px; bottom: 2px; color: #78ff8c; font-weight: 700; font-size: 14px; text-shadow: 0 0 6px rgba(120,255,140,0.9); animation: fire-heal 0.9s ease-out infinite; }
+@keyframes fire-heal { from { transform: translateY(4px); opacity: 1; } to { transform: translateY(-14px); opacity: 0; } }
 @keyframes float-up {
   0%   { opacity: 0; transform: translate(-50%, 10px) scale(0.7); }
   8%   { opacity: 1; transform: translate(-50%, 0) scale(1.25); }

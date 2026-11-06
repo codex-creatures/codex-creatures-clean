@@ -958,6 +958,11 @@ export default function DungeonPage() {
     else if (c.kind === "treasure" && !c.done) takeTreasure(c);
   }
   const walkSave = (st: WalkState) => updateRun((r) => walkKeep(r, st));
+  // By a campfire: the health it's given (shares of max HP), and what it has left.
+  const walkHeal = (gains: Record<string, number>, st: WalkState) => updateRun((r) => ({
+    ...walkKeep(r, st),
+    hp: { ...r.hp, ...Object.fromEntries(Object.entries(gains).filter(([id]) => (r.hp[id] ?? 1) > 0).map(([id, g]) => [id, Math.min(1, (r.hp[id] ?? 1) + g)])) },
+  }));
 
   // ── Fights ────────────────────────────────────────────────────────
   function startFight(r: DungeonRun) {
@@ -1264,7 +1269,8 @@ export default function DungeonPage() {
       <WalkView walk={run.walk!} map={run.map} here={runPosition(run)} room={(id) => walkRoom(run, id)}
         busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || cageShow !== undefined || walkPanel}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onKeep={walkSave} />
+        team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onHeal={walkHeal} onKeep={walkSave} />
       {run.current && !walkPanel && (
         <button className="chip" onClick={() => setWalkPanel(true)} aria-label="This room"
           style={{ position: "absolute", top: 8, left: 8, minHeight: 44, minWidth: 44, zIndex: 3 }}>

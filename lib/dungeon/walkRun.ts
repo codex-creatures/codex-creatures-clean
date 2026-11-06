@@ -12,12 +12,13 @@
 //   screen's fights, loot, cages and haul all work unchanged;
 // - where you stand and how far up you've come (layout.ts Progress), what
 //   your torch has shown you, the wall torches you've lit, and where each
-//   beaten room's loot lies.
+//   beaten room's loot lies, and the rooms' campfires (campfire.ts).
 // Walking into a room (walkInto) puts the one you leave back, unfinished
 // or not: you can slip past foes unseen, and they're still there.
 
 import type { Cage, DungeonRun, Room } from "./run";
-import { rollLayout, campMap, roomCentre, WALK_SPEC, type Layout } from "./layout";
+import { rollLayout, campMap, roomCentre, layoutFloorplan, WALK_SPEC, type Layout } from "./layout";
+import { placeCampfires, type Campfire } from "./campfire";
 import { rollWalkRooms } from "./walkRooms";
 import type { Pt } from "./floorplan";
 
@@ -35,6 +36,7 @@ export type WalkRun = {
   spots?: Record<string, Pt>;   // where a beaten room's loot lies (else its middle)
   trail?: Pt[];                 // your way so far, tile by tile (the scroll)
   cuts?: number[];              // …and the cut-offs you've crossed (tiles down)
+  fires?: Campfire[];           // the rooms' campfires, and what each has left to give (none in older runs)
 };
 
 // A new run of the walkable Encampment: the Encampment's room mix on a
@@ -46,12 +48,14 @@ export function startWalkRun(party: string[], team: string[], hp: Record<string,
   rooms[map.boss] = { ...rooms[map.boss], cages };
   const start = rooms[map.start] ?? null; // (the entrance holds nothing, unless it's treasure)
   delete rooms[map.start];
+  const seed = Math.floor(rng() * 1e9);
+  const fires = placeCampfires(layoutFloorplan(layout), map, (id) => roomCentre(layout.rooms[id]), rng);
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), dungeon: 0,
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
     room: 0, map, path: [map.start], cleared: start ? [] : [map.start], current: start,
     loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}), campCages: cages,
-    walk: { layout, rooms, seed: Math.floor(rng() * 1e9), at: roomCentre(layout.rooms[map.start]), room: map.start, line: null },
+    walk: { layout, rooms, seed, at: roomCentre(layout.rooms[map.start]), room: map.start, line: null, fires },
   };
 }
 

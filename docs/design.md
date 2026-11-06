@@ -926,7 +926,25 @@ How it came about, round by round: history.md.
        to walk up and open it in the loot window. A camp that looks empty (an ambush) opens the
        room's window with its cages; the room button (top left) opens it any time. The dock's
        Scroll is the treasure map, and the entrance's look at the map is that scroll with only its marks (`WalkFirstMap`); the Den button is locked only mid-fight. A stash's or a fight's sack is drawn smaller than a chest (the user, 2026-11-06).
-     - **Still to come:** scenery, torch and rubble art, the old Encampment's retirement once
+     - **Torches in tunnels** (the user, 2026-11-06; `placeSconces(…, tunnels)` in torch.ts): some
+       tunnels (`TUNNEL_SCONCE_CHANCE` 40% 🧪) have unlit torches along their walls, one every
+       `SCONCE_EVERY` tiles (taking turns side to side up an up tunnel), lit by walking past like
+       the rooms' ones. A tunnel that falls in takes its torches with it.
+     - **Campfires** (the user, 2026-11-06; `lib/dungeon/campfire.ts`): some rooms have one
+       burning (`CAMPFIRE_CHANCE` 15% of rooms, never the entrance or the camp, one a room at
+       most 🧪), rolled with the run (`walk.fires`, optional: older runs have none). Stand by one
+       (`CAMPFIRE_REACH` 2.5 tiles, in sight 🧪) and the team heals: it holds half a creature's
+       health in all (`CAMPFIRE_HEAL`), given out at 5% of max HP a second (`CAMPFIRE_RATE`),
+       shared evenly between those standing and not full (three hurt: a third each; one: all of
+       it; what a nearly full one can't take goes to the rest; knocked-out ones get nothing).
+       A window over the walk shows the team's health bars rising, a "+" by each one healing,
+       and what the fire has left; green crosses rise round you. Given out, it burns down to
+       embers with half its light (`EMBER_LIGHT`). It's solid, and lights its part of the room
+       (`CAMPFIRE_LIGHT` 5 tiles 🧪). Drawn in code for now, a placeholder for PixelLab art.
+       **Pools** (the user's call): a campfire and a healing pool never share a room, and
+       campfires take some of the pools' share of rooms. The Encampment has no pools, so this
+       applies once the walkable run reaches the Labyrinth (how big a share is open).
+     - **Still to come:** scenery, torch, campfire and rubble art, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold

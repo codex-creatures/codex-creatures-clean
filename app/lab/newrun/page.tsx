@@ -2,7 +2,8 @@
 // app/lab/newrun/page.tsx — the Labyrinth's "New" (the walkable Encampment,
 // components/WalkView.tsx) on a made-up run held in memory: to see the
 // game's walk view without a save. Being seen, walking into rooms and
-// tapping things only say so here (the real screen plays them out).
+// tapping things only say so here (the real screen plays them out). A
+// made-up hurt team (one knocked out) heals by the campfires.
 // Dev tool: nothing is saved.
 
 import { useMemo, useState } from "react";
@@ -10,8 +11,14 @@ import WalkView from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom } from "@/lib/dungeon/walkRun";
 import type { DungeonRun } from "@/lib/dungeon/run";
 
+const TEAM = [
+  { id: "a", name: "Moss Wolf", rarity: "uncommon" as const, creatureId: "moss_wolf", maxHp: 60 },
+  { id: "b", name: "Amber Wasp", rarity: "common" as const, creatureId: "amber_wasp", maxHp: 40 },
+  { id: "c", name: "Moss Wolf", rarity: "common" as const, creatureId: "moss_wolf", maxHp: 50 },
+];
+
 export default function NewRunLab() {
-  const first = useMemo(() => startWalkRun(["a"], ["a"], { a: 1 }, 1, [{}, {}]), []);
+  const first = useMemo(() => startWalkRun(["a", "b", "c"], ["a", "b", "c"], { a: 0.3, b: 0.8, c: 0 }, 1, [{}, {}]), []);
   const [run, setRun] = useState<DungeonRun>(first);
   const [log, setLog] = useState<string[]>([]);
   const [scroll, setScroll] = useState(false);
@@ -30,6 +37,8 @@ export default function NewRunLab() {
             onEnter={(id, st) => { setRun((r) => walkInto(walkKeep(r, st), id)); say(`Into ${run.map.nodes[id].kind}`); }}
             onSpotted={(id) => say(`Seen by ${id}'s foes: a fight`)}
             onObject={(id) => say(`Opened ${id}'s ${run.map.nodes[id].kind}`)}
+            team={TEAM} hp={run.hp}
+            onHeal={(gains, st) => setRun((r) => ({ ...walkKeep(r, st), hp: Object.fromEntries(Object.entries(r.hp).map(([id, v]) => [id, v > 0 ? Math.min(1, v + (gains[id] ?? 0)) : v])) }))}
             onKeep={(st) => setRun((r) => walkKeep(r, st))} />
         </div>
       </div>
