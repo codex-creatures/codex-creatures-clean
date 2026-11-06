@@ -1663,11 +1663,19 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
       <p style={{ fontSize: 15, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
         {run.map.quest ? "Just a short way in — it went this way." : "Remember the way to the lair: it's too dark to read inside."}
       </p>
+      {/* The walkable Encampment: the way in first, where it's in reach on a phone (the scroll's tall). */}
+      {run.walk && (
+        <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginBottom: 12, width: "100%", fontSize: 18, padding: "10px 0" }}>
+          📜 Put the scroll away and begin
+        </button>
+      )}
       {run.walk ? <WalkFirstMap walk={run.walk} map={run.map} /> : <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />}
       <div style={{ marginTop: 12 }}><Party run={run} byId={byId} onTeam={onTeam} /></div>
-      <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
-        🔥 Put the map away and step inside
-      </button>
+      {!run.walk && (
+        <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
+          🔥 Put the map away and step inside
+        </button>
+      )}
     </div>
   );
 }

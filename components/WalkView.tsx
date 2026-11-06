@@ -545,7 +545,7 @@ function WalkScroll({ map, layout, plan, known, trail, cuts, been, here, cleared
     return { ink, marks, trail: trail.slice(), cuts: cuts.slice() };
   });
   return (
-    <div onPointerDown={onClose} style={{ position: "absolute", inset: 0, zIndex: 5, background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: "none" }}>
+    <div onPointerDown={onClose} style={{ position: "absolute", inset: 0, zIndex: 5, background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: onClose ? "none" : "auto" }}>
       <svg viewBox={`0 0 ${plan.w} ${plan.h}`} style={{ position: "absolute", inset: "3%", width: "94%", height: "94%" }}>
         {shown.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}
         {shown.cuts.map((y, i) => <line key={i} x1={0} x2={plan.w} y1={y} y2={y} stroke={INK.cut} strokeWidth={0.9} strokeDasharray="3 2" />)}
@@ -572,7 +572,7 @@ function WalkScroll({ map, layout, plan, known, trail, cuts, been, here, cleared
 export function WalkFirstMap({ walk, map }: { walk: WalkRun; map: DungeonMap }) {
   const plan = useMemo(() => layoutFloorplan(walk.layout), [walk.layout]);
   return (
-    <div style={{ position: "relative", width: "100%", aspectRatio: `${plan.w} / ${plan.h}`, maxHeight: "60cqh", margin: "0 auto" }}>
+    <div style={{ position: "relative", width: "100%", aspectRatio: `${plan.w} / ${plan.h}`, maxHeight: "45cqh", margin: "0 auto" }}>
       <WalkScroll map={map} layout={walk.layout} plan={plan} known={new Uint8Array(0)} trail={[]} cuts={[]}
         been={[map.start]} here={map.start} cleared={[]} />
     </div>
