@@ -1092,8 +1092,11 @@ fields optional with defaults.
    see-through doorway and a wall one floor unit thick (`PASS`, lib/den/scene.ts). Each room is its
    own picture, built only once open, so later rooms don't slow the others (watch phone
    performance). The tavern's room is the Den's cave with nothing in it (`createDen({ bare })`), with
-   the tavern, head and visitor standing in it (`components/TavernRoom.tsx`); tapping there opens
-   `/tavern` (repair, trading). Meant to grow into more rooms.
+   the tavern, head and visitor standing in it (`components/TavernRoom.tsx`). Tapping the tavern opens
+   `/tavern` (the repair, sending for a visitor); tapping the visitor opens their wares (`/visitor`,
+   the user, 2026-11-06); the pit and the portal open their own windows; the bare floor does nothing.
+   The view is remembered for the visit (the user, 2026-11-06): coming back from any place opens it
+   where you left it, in either room. Meant to grow into more rooms.
    📌 Still to come: mounted head art, and the tavern's interior (needs design). The user's
    [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png) is the likely long-term
    look for the base.
@@ -1104,7 +1107,7 @@ fields optional with defaults.
    PixelLab, at the room's angle (§11); greyed until repaired. ✅ (the user, 2026-10-20) **No
    wanted poster.** ✅ (the user, 2026-11-02) The bounty lives on the **quest board's Quests tab**
    (`/board`), not in the tavern: a ❗ on the board in the Den while it has a step for you (the
-   bounty to take, or the head to hand in: `bountyHasStep`). The tavern's ❗ is for visitors only.
+   bounty to take, or the head to hand in: `bountyHasStep`). The ❗ for a visitor is over the visitor (and the Den's doorway), not the tavern.
 5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
 6. ✅ **Bounty:** repairing the tavern puts the Cyclops bounty up on the quest board
@@ -1125,7 +1128,7 @@ fields optional with defaults.
    In the Den the shelf swaps to the upgraded art once it's built.
 9. **Visitors** (after the repair): on returning home from each run, roll a merchant (12%), a
    librarian (8%), the creature collector (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
-   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
+   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and over their head (their name: tap them to trade), and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
    ✅ **The Sparring Pit and the Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`).
    The **Sparring Pit**, a bed of tan sand in a ring of grey stones, with a straw dummy (`den/sparring-pit-3.png`), is yours as
@@ -1156,7 +1159,10 @@ fields optional with defaults.
 On the quest board's Quests tab, above the Cyclops bounty. **Two a day, a primary and a
 secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
 do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
-ready to claim. Plays offline.
+ready to claim. Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
+today's quests not yet claimed, with their rewards and progress (`openQuests`,
+components/DailyPopup.tsx): once a day per visit to the site, so again at midnight's new quests;
+not during Klutz's tour or before your first creature. A tap anywhere closes it.
 
 **A boss you've never beaten steps down** (the user: the Hydra to the Cyclops or Encampment):
 the Abyss to the Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, until it's one

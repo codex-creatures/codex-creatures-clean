@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DAILY_BOX, DAILY_GEAR, PRIMARY_QUESTS, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, questsOfDay, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
+import { DAILY_BOX, DAILY_GEAR, PRIMARY_QUESTS, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, openQuests, questsOfDay, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
 import { merchantCalls, VISITOR_STAY } from "../lib/tavern";
 import type { Rarity } from "../lib/items/budgets";
 
@@ -123,5 +123,17 @@ describe("the daily rewards", () => {
     expect(t.visitor).toBe("merchant");
     expect(t.stay).toBe(VISITOR_STAY);
     expect(t.wares?.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the Den's reminder", () => {
+  it("lists today's quests not yet claimed, with progress held at the goal, and a done one marked ready", () => {
+    const day = dayFor("cyclops", "scans");
+    let s = dailyFor({}, day, VET);
+    expect(openQuests(s).map((x) => [x.q.id, x.progress, x.done])).toEqual([["cyclops", 0, false], ["scans", 0, false]]);
+    for (let n = 0; n < 7; n++) s = noteDaily(s, "scan", 1, day, VET);
+    expect(openQuests(s)[1]).toMatchObject({ i: 1, progress: 5, done: true });
+    s = claimDaily(s, 1);
+    expect(openQuests(s).map((x) => x.q.id)).toEqual(["cyclops"]);
   });
 });

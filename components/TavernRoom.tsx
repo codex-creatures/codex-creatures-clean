@@ -1,15 +1,17 @@
 "use client";
 // components/TavernRoom.tsx
 // What stands in the tavern's room, through the Den's doorway behind its
-// right wall (DenRoom's annex): the tavern in the far right corner, with a ❗
-// over it while someone's visiting (tap it for the tavern's window), the Cyclops Head over its door once mounted, and whoever's visiting, strolling round the room.
+// right wall (DenRoom's annex): the tavern in the far right corner (tap it for
+// the tavern's window: the repair, and sending for a visitor), the Cyclops Head
+// over its door once mounted, and whoever's visiting, strolling round the room
+// with a ❗ over them (tap them for their wares: app/visitor).
 // In its back corner, the Sparring Pit (the Training Pit once built over it; tap
 // it for its own window), with a ❗ while a level's ready. Left of it, flat
 // against the back-left wall, the PvP portal (app/pvp: duels, teams, ranked).
 
 import { useEffect, useState } from "react";
 import PixelSprite from "@/components/PixelSprite";
-import { RoomSpot } from "@/components/DenRoom";
+import { RoomSpot, VISITOR_HREF } from "@/components/DenRoom";
 import { RES, strollAt, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "@/lib/den/scene";
 import { artFor } from "@/lib/sprites/art";
 import type { Sprite } from "@/lib/sprites/pixels";
@@ -52,7 +54,6 @@ const PORTAL_GLOW = { x: 48, y: 94 };
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).
 export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: TavernQuest; firstClearRun?: number; pit?: { ready: boolean } }) {
   const visitor = tavernVisitor(t);
-  const news = !!visitor;
   const head = CREATURE_SPRITES.cyclops;
   return (
     <>
@@ -92,16 +93,15 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
       <RoomSpot u={CORNER.u} v={CORNER.v} w={TAVERN.w / RES}
         style={{ transform: `translate(-${pct(CORNER.x, TAVERN.w)}, -${pct(CORNER.y, TAVERN.h)})` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={TAVERN.src} alt={t.repaired ? "The tavern, repaired" : "The tavern, broken"} draggable={false}
-          style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated", filter: t.repaired ? "none" : "grayscale(0.6) brightness(0.75)" }} />
+        <img src={TAVERN.src} alt={t.repaired ? "The tavern, repaired" : "The tavern, broken"} draggable={false} data-href="/tavern"
+          style={{ display: "block", width: "100%", height: "auto", imageRendering: "pixelated", pointerEvents: "auto", cursor: "pointer", filter: t.repaired ? "none" : "grayscale(0.6) brightness(0.75)" }} />
         {LIGHTS.map((g, i) => (
           <div key={i} aria-hidden className="den-glow"
             style={{ left: pct(g.x, TAVERN.w), top: pct(g.y, TAVERN.h), width: pct(g.r * 2, TAVERN.w), aspectRatio: "1", opacity: t.repaired ? 1 : 0.5, background: "radial-gradient(circle, rgba(255, 176, 84, 0.42), rgba(255, 150, 60, 0.14) 45%, transparent 70%)", animationDelay: `${-i * 0.7}s` }} />
         ))}
-        {/* Its name over it, like the Den's places, with a ❗ while someone's visiting. */}
-        <div className={`pixel-font${news ? " news-glow" : ""}`}
-          style={{ position: "absolute", left: "45%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
-          {news && <span className="news-pulse" aria-label="Someone's in the tavern">❗ </span>}
+        {/* Its name over it, like the Den's places. */}
+        <div className="pixel-font" data-href="/tavern"
+          style={{ position: "absolute", left: "45%", pointerEvents: "auto", cursor: "pointer", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
           {t.repaired ? "Tavern" : "Broken tavern"}
         </div>
         {/* The Cyclops Head, mounted over the door, with the run you first beat it on. */}
@@ -112,21 +112,23 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           </div>
         )}
       </RoomSpot>
-      {visitor && <Visitor sprite={VISITOR_SPRITE[visitor]} title={VISITOR_TITLE[visitor]} />}
+      {visitor && <Visitor sprite={VISITOR_SPRITE[visitor]} title={VISITOR_TITLE[visitor]} label={VISITOR_LABEL[visitor]} />}
     </>
   );
 }
 
 const VISITOR_SPRITE = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR };
 const VISITOR_TITLE = { merchant: "A travelling merchant", librarian: "A wandering librarian", collector: "A creature collector" };
+const VISITOR_LABEL = { merchant: "Merchant", librarian: "Librarian", collector: "Collector" };
 const VISITOR_FPS = 12; // how often they're moved along
 const STEP_FPS = 9;     // their walk's frames a second (as Klutz's)
 
 // A visitor strolling round the room (VISITOR_PATH), at the same scale as
 // everything else (1:1): their walk while they move, their still while they
 // pause, mirrored when heading right (the art faces left). Drawn in a box the
-// size of a walk frame, with the still where it sits in that frame.
-function Visitor({ sprite, title }: { sprite: Sprite; title: string }) {
+// size of a walk frame, with the still where it sits in that frame, and their
+// name over their head with a ❗. Tap them for their wares.
+function Visitor({ sprite, title, label }: { sprite: Sprite; title: string; label: string }) {
   const [t, setT] = useState(0); // (set on the first tick: the clock differs between server and browser)
   useEffect(() => {
     const timer = window.setInterval(() => setT(performance.now() / 1000), 1000 / VISITOR_FPS);
@@ -140,7 +142,11 @@ function Visitor({ sprite, title }: { sprite: Sprite; title: string }) {
   return (
     <RoomSpot u={at.u} v={at.v} w={walk.w / RES}
       style={{ transform: `translate(-50%, -${pct(walk.y + art.h, walk.h)})` }}>
-      <div title={title} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)" }}>
+      <div className="pixel-font news-glow" data-href={VISITOR_HREF}
+        style={{ position: "absolute", left: "50%", bottom: pct(walk.h - walk.y, walk.h), translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%", pointerEvents: "auto", cursor: "pointer" }}>
+        <span className="news-pulse" aria-label="Someone's visiting">❗ </span>{label}
+      </div>
+      <div title={title} data-href={VISITOR_HREF} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)", pointerEvents: "auto", cursor: "pointer" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={art.src} alt={title} draggable={false}
           style={{ position: "absolute", left: pct(walk.x, walk.w), top: pct(walk.y, walk.h), width: pct(art.w, walk.w), height: "auto", imageRendering: "pixelated", visibility: at.walking ? "hidden" : "visible" }} />

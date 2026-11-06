@@ -134,6 +134,12 @@ export const canClaim = (s: Required<DailyState>, i: number) => dailyDone(s, i) 
 export const claimDaily = (s: Required<DailyState>, i: number): Required<DailyState> =>
   (canClaim(s, i) ? { ...s, claimed: s.claimed.map((c, j) => c || j === i) } : s);
 
+// What the Den reminds you of as you come in (a popup, once a day per visit:
+// components/DailyPopup.tsx): today's quests not yet claimed, with how far
+// along each is (done: ready to claim at the board).
+export const openQuests = (s: Required<DailyState>) =>
+  todaysQuests(s).map((q, i) => ({ q, i, done: dailyDone(s, i), progress: Math.min(s.progress[i], q.goal) })).filter((x) => !s.claimed[x.i]);
+
 // ── The rewards ──────────────────────────────────────────────────────
 const ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 // A rarity at the usual odds (RARITY_WEIGHTS), held between lo and hi.

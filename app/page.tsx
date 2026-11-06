@@ -9,6 +9,7 @@ import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
 import DenRoom, { SPOTS } from "@/components/DenRoom";
 import TavernRoom from "@/components/TavernRoom";
 import GoldCount from "@/components/GoldCount";
+import DailyPopup from "@/components/DailyPopup";
 import { useEffect, useState } from "react";
 import { klutzStatus, pointsFree } from "@/lib/klutz";
 import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
@@ -39,7 +40,8 @@ export default function Home() {
   // Where Klutz has sent you: the cage for your first creature, then the Pit to
   // kit it out; later, with his dynamite, the rubble (lib/tavern.ts).
   const mine = game.inventory.filter((d) => d.dropType === "creature");
-  const tourAt = tourDenTarget(useTour()); // (Klutz's tour, showing you a place)
+  const tour = useTour();
+  const tourAt = tourDenTarget(tour); // (Klutz's tour, showing you a place)
   const highlight = !game.hydrated ? undefined
     : tourAt !== undefined ? tourAt
     : needsFirstCreature(game.quest, mine.length > 0) && game.caged.length > 0 ? OBJ.cage
@@ -67,6 +69,9 @@ export default function Home() {
           crateNews={game.hydrated && game.crate.length > 0} cageNews={game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage}
           annex={<TavernRoom tavern={game.tavern} firstClearRun={firstClearRun} pit={hasPit(game.tavern) ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined} />} />
       </div>
+
+      {/* Today's quests, as you come in (not over Klutz's tour, nor before your first creature). */}
+      <DailyPopup ready={game.hydrated && tour === null && mine.length > 0} now={now} />
 
       {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}
       <nav className="screen-dock" data-tour="dock" style={{ display: "grid", gap: 6 }}>
