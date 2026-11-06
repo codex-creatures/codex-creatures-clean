@@ -918,7 +918,7 @@ How it came about, round by round: history.md.
        or into the chief's camp, that room's fight starts. Tap a chest, stash or a fight's sack
        to walk up and open it in the loot window. A camp that looks empty (an ambush) opens the
        room's window with its cages; the room button (top left) opens it any time. The dock's
-       Scroll is the treasure map; the Den button is locked only mid-fight.
+       Scroll is the treasure map, and the entrance's look at the map is that scroll with only its marks (`WalkFirstMap`); the Den button is locked only mid-fight. A stash's or a fight's sack is drawn smaller than a chest (the user, 2026-11-06).
      - **Still to come:** scenery, torch and rubble art, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).

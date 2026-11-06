@@ -76,7 +76,7 @@ import { combatSummary } from "@/lib/combat/loadout";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
-import WalkView, { type WalkState } from "@/components/WalkView";
+import WalkView, { WalkFirstMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom } from "@/lib/dungeon/walkRun";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
@@ -1663,7 +1663,7 @@ function MapFirst({ run, byId, onTeam, onStep, onEnter }: {
       <p style={{ fontSize: 15, color: MUTED, margin: "4px 0 12px", lineHeight: 1.5 }}>
         {run.map.quest ? "Just a short way in — it went this way." : "Remember the way to the lair: it's too dark to read inside."}
       </p>
-      <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />
+      {run.walk ? <WalkFirstMap walk={run.walk} map={run.map} /> : <DungeonMapView run={run} onEnter={firstRooms ? onEnter : undefined} />}
       <div style={{ marginTop: 12 }}><Party run={run} byId={byId} onTeam={onTeam} /></div>
       <button className="pixel-btn" onClick={onStep} disabled={!ready} style={{ marginTop: 14, width: "100%", fontSize: 18, padding: "10px 0" }}>
         🔥 Put the map away and step inside

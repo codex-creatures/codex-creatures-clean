@@ -38,7 +38,8 @@ export const WALK_ACROSS = 15;  // tiles across the screen (the user's pick, 202
 const REACH_OBJECT = 1.5;       // tiles: this close to a chest or a sack, it opens
 const TAP_OBJECT = 1;           // tiles: a tap this close to one counts as tapping it
 const FOE_PX = 22;              // a foe's height at 16px tiles (it scales with the zoom)
-const OBJECT_PX = 28;           // a chest's or a sack's width at 16px tiles
+const OBJECT_PX = 28;           // a chest's width at 16px tiles
+const SACK_PX = 16;             // …a sack's (stashes, a fight's loot): smaller (the user, 2026-11-06)
 const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
 const KEEP_EVERY = 5000;        // ms: your spot's saved this often while you walk
 const TRAIL_MAX = 3000;         // tiles of your trail kept for the scroll
@@ -75,7 +76,7 @@ function image(src: string): HTMLImageElement | null {
 
 // Something to loot, drawn where it lies: a room's chest, stash or
 // treasure (at its middle), or a beaten room's sack or chest.
-type Thing = { room: string; x: number; y: number; open: boolean; solid: boolean; art: Parameters<typeof artFor>[0] };
+type Thing = { room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art: Parameters<typeof artFor>[0] };
 
 export default function WalkView({ walk, map, here, room, busy, been, cleared, scroll, onScrollClose, onEnter, onSpotted, onObject, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
@@ -147,11 +148,11 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
     const c = roomCentre(layout.rooms[id]);
     if (r.kind === "chest") return [{ room: id, ...c, open: r.done, solid: true, art: r.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST }];
     if (r.kind === "treasure") return [{ room: id, ...c, open: r.done, solid: true, art: r.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST }];
-    if (r.kind === "stash") return [{ room: id, ...c, open: !!r.opened, solid: true, art: r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK }];
+    if (r.kind === "stash") return [{ room: id, ...c, open: !!r.opened, solid: true, sack: true, art: r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK }];
     if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
       const at = props.current.spots?.[id] ?? c;
       const chest = r.container !== "sack";
-      return [{ room: id, ...at, open: !!r.opened, solid: false, art: chest ? (r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST) : r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK }];
+      return [{ room: id, ...at, open: !!r.opened, solid: false, sack: !chest, art: chest ? (r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST) : r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK }];
     }
     return [];
   });
@@ -325,7 +326,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
         const a = artFor(t.art), img = a && image(a.src);
         standing.push({ x: t.x, y: t.y, draw: () => {
           if (!img || !a) return;
-          const wd = OBJECT_PX * scale, h2 = (wd * a.h) / a.w;
+          const wd = (t.sack ? SACK_PX : OBJECT_PX) * scale, h2 = (wd * a.h) / a.w;
           ctx.drawImage(img, footX(t.x) - wd / 2, footY(t.y) - h2, wd, h2);
         } });
       }
@@ -526,7 +527,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, s
 // cleared). Tap to put it away.
 function WalkScroll({ map, layout, plan, known, trail, cuts, been, here, cleared, onClose }: {
   map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; cuts: number[];
-  been: string[]; here: string | null; cleared: string[]; onClose: () => void;
+  been: string[]; here: string | null; cleared: string[]; onClose?: () => void;
 }) {
   const [shown] = useState(() => {
     const ink: { x: number; y: number; w: number; wall: boolean }[] = [];
@@ -562,6 +563,18 @@ function WalkScroll({ map, layout, plan, known, trail, cuts, been, here, cleared
           );
         })}
       </svg>
+    </div>
+  );
+}
+
+// The map at the entrance (the Labyrinth screen's MapFirst): the scroll before
+// you've walked anywhere, its marks only (no rooms or tunnels drawn yet).
+export function WalkFirstMap({ walk, map }: { walk: WalkRun; map: DungeonMap }) {
+  const plan = useMemo(() => layoutFloorplan(walk.layout), [walk.layout]);
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: `${plan.w} / ${plan.h}`, maxHeight: "60cqh", margin: "0 auto" }}>
+      <WalkScroll map={map} layout={walk.layout} plan={plan} known={new Uint8Array(0)} trail={[]} cuts={[]}
+        been={[map.start]} here={map.start} cleared={[]} />
     </div>
   );
 }
