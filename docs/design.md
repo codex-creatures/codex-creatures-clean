@@ -1014,6 +1014,32 @@ How it came about, round by round: history.md.
      - **Campfire art** (the user, 2026-11-06): PixelLab, logs stacked in a teepee in a ring of
        stones, burning, and the same burnt out; a flickering glow and a tongue of flame are drawn
        over it, bigger the more it has left.
+     - **Candles** (the user, 2026-11-06: "the odd candle in the middle-ish of the rooms,
+       unlit"; torch.ts `placeCandles`): `CANDLE_CHANCE` 35% of rooms 🧪 (never the entrance or
+       the boss's room) have one on the floor 2–5 tiles from the middle, unlit. Walk near it (in
+       sight) and it lights, keeping a little pool of light round it for good (`CANDLE_RADIUS`
+       2.5 tiles 🧪). Placed from the run's seed and kept lit with the wall torches' list, so
+       nothing new is saved. PixelLab art (the unlit one is the lit one with its flame taken off).
+     - 🚧 **Decor samples** (the user, 2026-11-06: "upgrades to the art, things that make the rooms
+       less repetitive and more engaging"; `lib/dungeon/decor.ts`; **only in `/lab/newrun`**, its
+       Decor switch, until the user picks; a still: [decor-samples.png](ideas/decor-samples.png)):
+       - **Worn floor tiles**: a quarter of floor tiles (`FLOOR_WORN`) are one of 12 worn versions
+         of the kit's floor (cracks, chips, moss tufts), picked by place and seed. They tile with
+         the plain one without seams.
+       - **Worn walls**: 30% (`WALL_WORN`) of a top wall's face, in pairs of tiles, is one of 3
+         worn versions (cracks, a broken-out brick, cobwebs, creeping ivy).
+       - **Banners**: 35% of rooms (`BANNER_CHANCE`) have a tattered red banner on the top wall,
+         never over a door or a wall torch.
+       - **Things lying about**, by the room's kind (`THEMES`): skulls, pots and a nest (with eggs)
+         in dens; barrels and crates in storehouses, by merchants and in camps; a bit of everything
+         elsewhere. One per `DECOR_PER` 28 floor tiles, 8 at most, two of a kind at most, one nest;
+         a big room's fallen pillar (a heap of mossy blocks) half the time. Barrels, crates and the
+         pillar are solid and only stand against a wall, so no way through is ever blocked (tested:
+         every door still reaches every other); the rest are walked over. Never on a room's middle,
+         its fire or candle, or by a door.
+       - Ideas not drawn yet: puddles and moss patches as decals (PixelLab gave plain floor
+         circles), side walls' faces, room-kind floors (a library's boards, a camp's dirt),
+         cobwebs in corners, a darker pillar.
      - **Still to come:** scenery, torch and rubble art, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).

@@ -198,3 +198,32 @@ export function sconceGlow(d: number, flicker = 1, radius = SCONCE_RADIUS): numb
   if (d >= r) return 1;
   return Math.min(REMEMBERED, SCONCE_BRIGHT + (REMEMBERED - SCONCE_BRIGHT) * Math.pow(d / r, 1.6));
 }
+
+// Candles (the user, 2026-11-06: "the odd candle in the middle-ish of the
+// rooms, unlit"): now and then a room has one standing on its floor near the
+// middle (CANDLE_CHANCE; never the entrance or the boss's room), unlit. Walk
+// near it (in sight, IGNITE_REACH) and it lights, and keeps a little pool of
+// light (CANDLE_RADIUS) round it for good. Where they stand comes from the
+// run's seed (like the wall torches), and which are lit is kept with the
+// wall torches' (ids "candle:<room>"), so a run needs nothing new saved.
+export const CANDLE_CHANCE = 0.35;  // of rooms have one 🧪
+export const CANDLE_RADIUS = 2.5;   // tiles a lit candle lights 🧪
+export const CANDLE_NEAR = [2, 5];  // tiles from the room's middle (its chest, pool or stash): middle-ish, not on it 🧪
+export const CANDLE_CLEAR = 3;      // tiles from its doors, at least
+export type Candle = Sconce;        // (no wall: it stands on the floor)
+export function placeCandles(fp: Floorplan, centres: Record<string, Pt>, skip: string[], rng: Rng = Math.random): Candle[] {
+  const out: Candle[] = [];
+  for (const id of Object.keys(fp.rooms).sort()) {
+    if (skip.includes(id) || rng() >= CANDLE_CHANCE) continue;
+    const mid = centres[id], doors = fp.doors.filter((d) => d.room === id);
+    const spots: Pt[] = [];
+    for (const r of fp.rooms[id]) for (let y = r.y + 2; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
+      const d = Math.hypot(x - mid.x, y - mid.y);
+      if (d < CANDLE_NEAR[0] || d > CANDLE_NEAR[1] || spots.some((s) => s.x === x && s.y === y)) continue;
+      if (doors.some((q) => Math.hypot(q.x - x, q.y - y) < CANDLE_CLEAR)) continue;
+      spots.push({ x, y });
+    }
+    if (spots.length > 0) out.push({ id: `candle:${id}`, room: id, ...spots[Math.floor(rng() * spots.length)], lit: false });
+  }
+  return out;
+}

@@ -193,3 +193,21 @@ standing, 1–6 the walk.
 | walk/witch.png | character 0d2cdbab-c9e6-41f9-9069-e4954e12fa0b (old crone card witch with a walking stick, chibi, v3, 64px; the first, younger one 866b0221-662d-4516-81ba-c070d8c31f32 was dropped: the user wanted her old) + walk group 58576660-f2a7-4a0f-857f-703e834f9cb3 (v3 custom, "hobbling slowly forward, leaning on her walking stick", 6 frames: south, east, north; the template walk group d79da682-… dropped her cards, unused). Sheet: 67px cells, each frame trimmed and stood on one baseline, rows south, east, north (west = east mirrored), the standing pose then the walk, feet at 65 |
 | walk/campfire.png | map object 74195636-9d23-4f32-b337-9ef76928f9a9 (logs stacked in a teepee in a ring of grey stones, burning; 48×48, low top-down; asked for unlit, came lit, used as the burning fire) |
 | walk/campfire-out.png | edit_image job a30d45a9-9cb2-49ce-9db3-8f041e5afa63 (walk/campfire.png edited: the fire out, charred logs, ash, a few embers) |
+| walk/candle-lit.png | map object 025fa733-ac4b-4ed1-9f7a-3b4cdb337db7 (a candle in an iron holder; asked unlit, came lit; style-matched to the kit floor; trimmed) |
+| walk/candle.png | walk/candle-lit.png with its flame cleared and a dark wick drawn (by script) |
+| walk/floor-worn-0…11.png | edit_image job 38ca44d5-5fd9-4e4d-ac6e-78c534a200da (a 2×2 block of the kit's floor, worn: cracks, chips, moss; 3 results, each cut into 4 tiles) |
+| walk/wall-worn-0…2.png | edit_image job 9071583c-6e7e-4536-a627-3569a558915b (two of the kit's north wall faces side by side, worn: cracks, cobwebs, ivy; 64×57 each) |
+
+### Decor samples (2026-11-06, /lab/newrun only, for the user to pick)
+
+Map objects style-matched to the kit's floor (a 64×64 floor patch as background, oval inpainting), trimmed.
+
+| File | PixelLab |
+|---|---|
+| walk/decor/barrels.png | map object d6030990-1ee7-42a9-919e-1bb89f7ab418 |
+| walk/decor/crates.png | map object 5ca2eba4-c73d-4e00-a191-7095bb2bce0c (plain, not style-matched: the matched one came back floor only) |
+| walk/decor/bones.png | map object 8cc795fe-9333-4762-b318-094c233e5674 (asked for a bone pile, gave a skull) |
+| walk/decor/nest.png | map object 4654fb62-bae6-4e63-ab19-6e3ac1f559ed (a straw nest, with eggs) |
+| walk/decor/pots.png | map object ecb63ca3-b767-4e85-9ce4-d60d46f4ba08 |
+| walk/decor/pillar.png | map object b7d2deb6-f4db-4f46-826b-76ac45883636 (asked for a broken pillar, gave a heap of mossy blocks) |
+| walk/decor/banner.png | map object 08687f45-ed98-459e-aab3-18571baba923 (side view) |

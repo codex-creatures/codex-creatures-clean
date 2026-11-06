@@ -57,3 +57,25 @@ export const WALK_WITCH = { sheet: "/sprites/walk/witch.png", cell: 67, frames: 
 // tongue of flame are drawn over it (WalkView).
 export const WALK_CAMPFIRE: WalkProp = { src: "/sprites/walk/campfire.png", w: 48, h: 48, size: 24 };
 export const WALK_CAMPFIRE_OUT: WalkProp = { src: "/sprites/walk/campfire-out.png", w: 48, h: 48, size: 24 };
+// A candle standing on the floor (PixelLab map object, trimmed; the unlit one
+// is the same with its flame taken off, a wick left), drawn `size` px wide.
+export const WALK_CANDLE: WalkProp = { src: "/sprites/walk/candle.png", w: 15, h: 28, size: 7 };
+export const WALK_CANDLE_LIT: WalkProp = { src: "/sprites/walk/candle-lit.png", w: 15, h: 28, size: 7 };
+
+// 🚧 Decor samples (2026-11-06, /lab/newrun's Decor switch only, for the user
+// to judge; lib/dungeon/decor.ts places them): PixelLab map objects matched
+// to the kit's floor, trimmed, drawn `size` px wide. And worn floor tiles
+// (the kit's floor, edited: cracks, chips, moss), mixed in at random.
+export const WALK_DECOR: Record<"barrels" | "crates" | "skull" | "nest" | "pots" | "pillar", WalkProp> = {
+  barrels: { src: "/sprites/walk/decor/barrels.png", w: 35, h: 26, size: 20 },
+  crates: { src: "/sprites/walk/decor/crates.png", w: 34, h: 42, size: 16 },
+  skull: { src: "/sprites/walk/decor/bones.png", w: 22, h: 33, size: 11 },
+  nest: { src: "/sprites/walk/decor/nest.png", w: 29, h: 28, size: 15 },
+  pots: { src: "/sprites/walk/decor/pots.png", w: 26, h: 26, size: 12 },
+  pillar: { src: "/sprites/walk/decor/pillar.png", w: 37, h: 33, size: 24 },
+};
+export const WALK_FLOOR_WORN: string[] = Array.from({ length: 12 }, (_, i) => `/sprites/walk/floor-worn-${i}.png`);
+// Worn north wall faces (the kit's, edited: cracks, chips, cobwebs, ivy),
+// each two tiles wide (KIT_PX × 2 by KIT_NORTH), and a banner hung on a wall.
+export const WALK_WALL_WORN: string[] = Array.from({ length: 3 }, (_, i) => `/sprites/walk/wall-worn-${i}.png`);
+export const WALK_BANNER: WalkProp = { src: "/sprites/walk/decor/banner.png", w: 32, h: 43, size: 14 };

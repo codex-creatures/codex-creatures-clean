@@ -26,13 +26,14 @@ import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, FLARE_WALK, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
+import { placeDecor, floorVariant, wallVariant, placeBanners, type Decor } from "@/lib/dungeon/decor";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
 import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, spawnOf, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
 import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
 import { waitsHere, cageSpots, type WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
+import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_FLOOR_WORN, WALK_WALL_WORN, WALK_BANNER, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
@@ -98,10 +99,11 @@ function image(src: string): HTMLImageElement | null {
 type Thing = { key: string; room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art?: Parameters<typeof artFor>[0];
   prop?: WalkProp; cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean }; // inert: drawn, not tapped
 
-export default function WalkView({ walk, map, dungeon = 0, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }: {
+export default function WalkView({ walk, map, dungeon = 0, decor = false, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
   map: DungeonMap;                     // what kind each room is
   dungeon?: DungeonId;                 // which (the Encampment's chief waits; the Labyrinth's camps don't)
+  decor?: boolean;                     // 🚧 the decor samples (lib/dungeon/decor.ts): /lab/newrun only, for now
   here: string;                        // the room you're in (the run's position)
   room: (id: string) => Room | undefined; // each room as it stands now
   busy: boolean;                       // a window's open over it: nobody moves
@@ -138,6 +140,25 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
     return placeSconces(plan, layout.start, seeded(walk.seed + 505), true).map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
   }, [plan, layout, walk.seed, walk.lit]));
   const fires = useRef<Campfire[]>((walk.fires ?? []).map((f) => ({ ...f })));
+  // The odd candle near a room's middle (torch.ts placeCandles), lit as you pass; never on a campfire.
+  const candles = useRef<Candle[]>(useMemo(() => {
+    const lit = new Set(walk.lit ?? []);
+    const centres = Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
+    return placeCandles(plan, centres, [layout.start, layout.boss], seeded(walk.seed + 606))
+      .filter((c) => !(walk.fires ?? []).some((f) => Math.hypot(f.x - c.x, f.y - c.y) < 2))
+      .map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
+  }, [plan, layout, walk.seed, walk.lit, walk.fires]));
+  // 🚧 Decor (samples): where it lies, from the run's seed.
+  const decorItems = useMemo<Decor[]>(() => {
+    if (!decor) return [];
+    const centres = Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
+    const kinds = Object.fromEntries(Object.keys(layout.rooms).map((id) => [id, map.nodes[id].kind]));
+    return placeDecor(plan, kinds, centres, [...(walk.fires ?? []), ...candles.current], [layout.start, layout.boss], seeded(walk.seed + 707));
+  }, [decor]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🚧 …and banners on the rooms' top walls, clear of the wall torches.
+  const banners = useMemo(() => (decor
+    ? placeBanners(plan, sconces.current.filter((c) => !c.wall || c.wall === "top"), [layout.start], seeded(walk.seed + 808))
+    : []), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
   // A flare's light: tiles of walking left with it (torch.ts), lit afresh by each new flare.
   const flareLeft = useRef(walk.flare ?? 0);
   const flaresSeen = useRef(walk.flares ?? 0);
@@ -162,7 +183,7 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
   const state = (): WalkState => ({
     at: { x: Math.round(me.current.x), y: Math.round(me.current.y) }, room: progressRef.current.room,
     line: progressRef.current.line === Infinity ? null : progressRef.current.line,
-    known: toRuns(known.current), lit: sconces.current.filter((c) => c.lit).map((c) => c.id),
+    known: toRuns(known.current), lit: [...sconces.current, ...candles.current].filter((c) => c.lit).map((c) => c.id),
     trail: trail.current.slice(-TRAIL_MAX), cuts: cuts.current, fires: fires.current.map((f) => ({ ...f })), flare: Math.round(flareLeft.current),
   });
   // Saved as you leave (a fight, the Den, a reload).
@@ -231,7 +252,7 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => {
     const forward = stepRule(layout, plan, p);
-    const solid = new Set([...things().filter((t) => t.solid), ...fires.current].map((t) => `${t.x},${t.y}`));
+    const solid = new Set([...things().filter((t) => t.solid), ...fires.current, ...decorItems.filter((d) => d.solid)].map((t) => `${t.x},${t.y}`));
     return (from, to) => forward(from, to) && known.current[to.y * plan.w + to.x] === 1 && !solid.has(`${to.x},${to.y}`);
   };
 
@@ -293,6 +314,14 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
           for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
         }
       }
+      for (const c of candles.current) if (!busy && canIgnite(live, c, me.current)) { c.lit = true; lighted = true; }
+      const candlesSeen = candles.current.filter((c) => c.lit && fireInSight(live, c, me.current));
+      const candleLight = (c: Candle) => {
+        let a = lightOf.get(c.id);
+        if (!a) { a = torchLit(live, c, CANDLE_RADIUS); lightOf.set(c.id, a); }
+        return a;
+      };
+      for (const c of candlesSeen) { const a = candleLight(c); for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1; }
       const fireSeen = fires.current.filter((f) => fireInSight(live, f, me.current));
       for (const f of fireSeen) { const a = fireLight(f); for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1; }
       const alarmed = A ? foes.current.filter((f) => f.room === A.room) : [];
@@ -413,6 +442,8 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
       // The kit (lib/sprites/walk.ts): a kit pixel is T / KIT_PX across and T / KIT_ROW down.
       const kitImg = { floor: image(WALK_KIT.floor), north: image(WALK_KIT.north), cap: image(WALK_KIT.cap), east: image(WALK_KIT.east), west: image(WALK_KIT.west) };
       const kit = Object.values(kitImg).every(Boolean) ? (kitImg as Record<keyof typeof kitImg, HTMLImageElement>) : null;
+      const worn = WALK_FLOOR_WORN.map(image).filter((i): i is HTMLImageElement => !!i);
+      const wornWalls = WALK_WALL_WORN.map(image).filter((i): i is HTMLImageElement => !!i);
       const vy = T / KIT_ROW, side = Math.round((KIT_SIDE * T) / KIT_PX);
       const faceAbove = (x: number, y: number) => {
         let rows = 0;
@@ -424,10 +455,18 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
         for (let y = y0; y < y1 + 3; y++) for (let x = x0; x < x1; x++) {
           if (at(x, y) === ROCK || !knownAt(x, y)) continue;
           const wd = sx(x + 1) - sx(x);
-          if (y < y1) ctx.drawImage(kit.floor, 0, 0, KIT_PX, KIT_ROW, sx(x), sy(y), wd, sy(y + 1) - sy(y));
+          const v = decor && worn.length > 0 ? floorVariant(x, y, walk.seed, worn.length) : 0;
+          if (y < y1) ctx.drawImage(v > 0 ? worn[v - 1] : kit.floor, 0, 0, KIT_PX, KIT_ROW, sx(x), sy(y), wd, sy(y + 1) - sy(y));
           if (at(x, y - 1) !== ROCK) continue;
           const dh = faceAbove(x, y);
-          if (dh > 0) ctx.drawImage(kit.north, 0, KIT_NORTH - dh / vy, KIT_PX, dh / vy, sx(x), sy(y) - dh, wd, dh);
+          const wv = decor && wornWalls.length > 0 ? wallVariant(Math.floor(x / 2), y, walk.seed, wornWalls.length) : 0;
+          if (dh > 0) ctx.drawImage(wv > 0 ? wornWalls[wv - 1] : kit.north, wv > 0 ? (x & 1) * KIT_PX : 0, KIT_NORTH - dh / vy, KIT_PX, dh / vy, sx(x), sy(y) - dh, wd, dh);
+        }
+        const bannerImg = image(WALK_BANNER.src);
+        if (bannerImg) for (const b of banners) {
+          if (!knownAt(b.x, b.y) || b.x < x0 - 2 || b.x > x1 || b.y < y0 || b.y > y1 + 3) continue;
+          const wd2 = WALK_BANNER.size * scale, h2 = (wd2 * WALK_BANNER.h) / WALK_BANNER.w, face = faceAbove(b.x, b.y);
+          ctx.drawImage(bannerImg, sx(b.x + 1) - wd2 / 2, sy(b.y) - face + Math.max(0, (face - h2) * 0.35), wd2, Math.min(h2, face));
         }
         const strip = (img: HTMLImageElement, left: number, q: Pt, floorX: number) => {
           ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y), side, sy(q.y + 1) - sy(q.y));
@@ -589,6 +628,25 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
         if (!knownAt(f.x, f.y)) continue;
         standing.push({ x: f.x, y: f.y, draw: () => drawFire(f, f.left > 0 ? fireImg : embersImg) });
       }
+      const candleImg = image(WALK_CANDLE.src), candleLitImg = image(WALK_CANDLE_LIT.src);
+      const drawCandle = (c: Candle) => {
+        const img = c.lit ? candleLitImg : candleImg;
+        if (!img) return;
+        const wd = WALK_CANDLE.size * scale, h2 = (wd * WALK_CANDLE.h) / WALK_CANDLE.w;
+        ctx.drawImage(img, footX(c.x) - wd / 2, footY(c.y) - h2, wd, h2);
+      };
+      for (const c of candles.current) if (knownAt(c.x, c.y)) standing.push({ x: c.x, y: c.y, draw: () => drawCandle(c) });
+      for (const d of decorItems) {
+        if (!knownAt(d.x, d.y) || d.x < x0 - 2 || d.x > x1 + 2 || d.y < y0 - 2 || d.y > y1 + 2) continue;
+        const art = WALK_DECOR[d.kind], img = image(art.src);
+        // (Flat things lie under everything else; things standing up take their turn.)
+        const draw = () => {
+          if (!img) return;
+          const wd = art.size * scale, h2 = (wd * art.h) / art.w;
+          ctx.drawImage(img, footX(d.x) - wd / 2, footY(d.y) - h2 + (d.solid ? 0 : h2 * 0.3), wd, h2);
+        };
+        standing.push({ x: d.x, y: d.solid ? d.y : d.y - 0.6, draw });
+      }
       for (const s of drawOrder(standing)) s.draw();
       // Your torch's warm glow, going cold away from it, the wall torches' pools; then the dark
       // over everything (black where you've never seen, dim where you remember).
@@ -637,6 +695,7 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
         let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, reachNow, flicker);
         for (const c of burning) if (sconceLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
         for (const f of fireSeen) if (fireLight(f)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - f.x, y - f.y), flicker, fireReach(f)));
+        for (const c of candlesSeen) if (candleLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker, CANDLE_RADIUS));
         alarmed.forEach((f, k) => { if (foeLight[k][i]) glow = Math.min(glow, torchGlow(Math.hypot(x - f.x, y - f.y), true, true, ALARM_LIGHT, flicker)); });
         d[i * 4] = DARK_RGB[0]; d[i * 4 + 1] = DARK_RGB[1]; d[i * 4 + 2] = DARK_RGB[2]; d[i * 4 + 3] = Math.round(glow * 255);
       }
@@ -663,6 +722,18 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
         ctx.beginPath();
         ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
         ctx.fill();
+      }
+      // Lit candles, over the dark, with a little flickering halo.
+      for (const c of candlesSeen) {
+        const fx = footX(c.x), top = footY(c.y) - ((WALK_CANDLE.size * scale * WALK_CANDLE.h) / WALK_CANDLE.w) * 0.9, r = 0.5 * T * (1 + 0.1 * Math.sin(now / 80 + c.x));
+        ctx.globalCompositeOperation = "lighter";
+        const halo = ctx.createRadialGradient(fx, top, 0, fx, top, r);
+        halo.addColorStop(0, "rgba(255, 190, 90, 0.5)");
+        halo.addColorStop(1, "rgba(255, 190, 90, 0)");
+        ctx.fillStyle = halo;
+        ctx.fillRect(fx - r, top - r, 2 * r, 2 * r);
+        ctx.globalCompositeOperation = "source-over";
+        drawCandle(c);
       }
       // The campfires, over the dark: a fire glows whatever's round it.
       for (const f of fires.current) {
