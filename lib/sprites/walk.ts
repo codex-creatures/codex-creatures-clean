@@ -48,7 +48,7 @@ export type WalkProp = { src: string; w: number; h: number; size: number };
 export const WALK_CAGE: WalkProp = { src: "/sprites/walk/cage.png", w: 48, h: 48, size: 22 };
 export const WALK_CAGE_OPEN: WalkProp = { src: "/sprites/walk/cage-open.png", w: 48, h: 48, size: 22 };
 export const WALK_POOL: WalkProp = { src: "/sprites/walk/healing-pool.png", w: 64, h: 48, size: 40 };
-// The card witch, walking about her room (PixelLab character, a sheet like the
+// The card witch (an old crone with a stick), hobbling about her room (PixelLab character, a sheet like the
 // hero's: rows south, east, north, west mirrored; column 0 standing, then 6 of
 // walk). tall: her height in the cell, px (she's drawn NPC_PX tall: WalkView).
-export const WALK_WITCH = { sheet: "/sprites/walk/witch.png", cell: 64, frames: 6, feet: 63, tall: 62 };
+export const WALK_WITCH = { sheet: "/sprites/walk/witch.png", cell: 67, frames: 6, feet: 65, tall: 60 };

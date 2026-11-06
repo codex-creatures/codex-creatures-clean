@@ -188,6 +188,6 @@ standing, 1–6 the walk.
 | File | PixelLab |
 |---|---|
 | walk/cage.png | map object 2993e921-4097-485c-90b2-a3a29e0d9f62 (rusty iron cage on a wooden base, shut; 48×48, low top-down) |
-| walk/cage-open.png | map object c1c032ed-7a4a-48bf-aba4-afe74c88ea43 (the same, door swung open; 48×48) |
+| walk/cage-open.png | edit_image job 8988f748-0612-4341-948a-b8058ee6c88c (walk/cage.png edited: the door swung open, the padlock gone; 48×48) |
 | walk/healing-pool.png | map object 0736470c-48bb-49d8-8a03-aed56954346b (round pool in a ring of grey stones, pale blue water; 64×48; its faint glow is drawn in code) |
-| walk/witch.png | character 866b0221-662d-4516-81ba-c070d8c31f32 (card witch, chibi, v3, 64px) + walk group 503adca4-6f86-4cc5-850e-7cee5ed1180a (walking-6-frames: south, east, north). Sheet: 64px cells, rows south, east, north (west = east mirrored), the standing pose then the walk, feet at 63 |
+| walk/witch.png | character 0d2cdbab-c9e6-41f9-9069-e4954e12fa0b (old crone card witch with a walking stick, chibi, v3, 64px; the first, younger one 866b0221-662d-4516-81ba-c070d8c31f32 was dropped: the user wanted her old) + walk group 58576660-f2a7-4a0f-857f-703e834f9cb3 (v3 custom, "hobbling slowly forward, leaning on her walking stick", 6 frames: south, east, north; the template walk group d79da682-… dropped her cards, unused). Sheet: 67px cells, each frame trimmed and stood on one baseline, rows south, east, north (west = east mirrored), the standing pose then the walk, feet at 65 |
