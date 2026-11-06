@@ -41,8 +41,8 @@
 //   to the boss that share no room, so no room (or two) has to be gone
 //   through (routesToBoss).
 
-import { CAMP_ROUTE, type RoomKind } from "./run";
-import { linkKey, fillCamp, markRooms, type DungeonMap, type MapNode, type MapSpec } from "./map";
+import { CAMP_ROUTE, LARGE_MIX, rollRoomKind, type RoomKind, type DungeonId } from "./run";
+import { linkKey, fillCamp, fillRooms, markRooms, LARGE_KNOWN, type DungeonMap, type MapNode, type MapSpec } from "./map";
 import { FLOOR, TUNNEL, DOOR, checkFloorplan, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
 
 export const BLOCK = 3;            // tiles across a block
@@ -60,6 +60,11 @@ export const SHAPES: Shape[] = [
 ];
 export const START_SHAPE: Shape = { name: "start", w: 16, h: 4, weight: 0 };
 export const BOSS_SHAPE: Shape = { name: "boss", w: 12, h: 8, weight: 0 };
+// The Labyrinth's large rooms (an encampment, a library, a storehouse:
+// LARGE_MIX), bigger than any other (provisional 🧪). spec.large of them a map.
+export const LARGE_SHAPE: Shape = { name: "large", w: 14, h: 9, weight: 0 };
+// The shapes big or long enough to hold two dens, one down each end (the user, 2026-11-06).
+export const TWO_DEN_SHAPES = ["wide", "tall", "big", "dog-leg", "large"];
 export const GAP_BLOCKS = [1, 3];  // rock between two rooms (at least)
 export const PACK_SLACK = 1;      // blocks higher a room may go, to sit over more rooms
 export const SIDE_SHARE = 3;       // blocks of wall the rooms beside the boss share with it
@@ -82,7 +87,12 @@ export const LAYOUT_REROLLS = 3000;
 // The walkable Encampment (the user, 2026-11-05): 19 rooms besides the entrance
 // and the boss's (the scroll map's has 15), so ROUTES separate ways of
 // CAMP_ROUTE rooms or more fit (3 × 6 rooms between = 18).
-export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE };
+export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0 };
+// The walkable Labyrinth (the Cyclops; in /lab/newrun only, for now). 🧪
+// Provisional, smaller than the scroll map's (36 rooms, 15 to the lair): with
+// ROUTES separate ways, 15 rooms each needs 44+ rooms, and those layouts take
+// ~15 s to roll and mostly fail. 30 rooms with 10 to the lair roll in ~1 s.
+export const WALK_LABYRINTH = { rooms: 30, minRoute: 10, large: 1 };
 
 export type Corner = "ne" | "nw" | "se" | "sw";
 const CORNERS: Corner[] = ["ne", "nw", "se", "sw"];
@@ -118,7 +128,9 @@ function weighted(rng: Rng, shapes: Shape[]): Shape[] {
 // Packed from the bottom up: `top` is how high each column of blocks is
 // filled, and each room goes GAP_BLOCKS above what's under it and clear of
 // its neighbours by a block or more.
-export function rollRooms(count: number, rng: Rng): Layout | null {
+// large: how many of the rooms are LARGE_SHAPE, spread up the middle of the drop.
+export function rollRooms(count: number, rng: Rng, large = 0): Layout | null {
+  const bigAt = new Set(Array.from({ length: large }, (_, k) => 4 + Math.floor(((count - 6) * (k + 1)) / (large + 1))));
   const W = LAYOUT_W;
   const placed: { id: string; shape: Shape; x: number; b: number; cut?: Corner }[] = []; // b: blocks up from the bottom
   const top = new Array<number>(W).fill(0);
@@ -155,7 +167,7 @@ export function rollRooms(count: number, rng: Rng): Layout | null {
     p.b + p.shape.h <= b && b - (p.b + p.shape.h) <= MAX_REACH
     && Math.min(x + s.w, p.x + p.shape.w) - Math.max(x, p.x) >= MIN_OVERLAP).length;
   for (; n <= count - 2; n++) {
-    const shape = weighted(rng, SHAPES)[0], gap = between(rng, GAP_BLOCKS);
+    const shape = bigAt.has(n) ? LARGE_SHAPE : weighted(rng, SHAPES)[0], gap = between(rng, GAP_BLOCKS);
     const spots: { x: number; b: number; below: number }[] = [];
     for (let x = 0; x + shape.w <= W; x++) {
       let b = Math.max(...top.slice(x, x + shape.w)) + gap;
@@ -489,6 +501,28 @@ export function campMap(layout: Layout, firstRun: boolean, rng: Rng = Math.rando
   return map;
 }
 
+// What's in the walkable Labyrinth's rooms (the Cyclops, and deeper): the
+// live Labyrinth's mix by the same code (map.ts fillRooms: dens up front, mini
+// bosses deeper, "?" rooms), its large-shaped rooms the large rooms
+// (LARGE_MIX, each kind once before any repeats; half marked on the scroll,
+// LARGE_KNOWN), SCROLL_MARKS rooms marked from the start, and half the pools
+// turned into campfire rooms (the user, 2026-11-06: campfires take half the
+// pools' share, CAMPFIRE_SHARE; campfire.ts).
+export const CAMPFIRE_SHARE = 0.5;
+export function labyrinthMap(layout: Layout, firstRun: boolean, dungeon: DungeonId = 1, rng: Rng = Math.random): DungeonMap {
+  const map = fillRooms(layoutMap(layout), firstRun, rng, dungeon);
+  const kinds: RoomKind[] = [];
+  for (const r of Object.values(layout.rooms).filter((r) => r.shape === LARGE_SHAPE.name).sort((a, b) => b.y - a.y)) {
+    const kind = rollRoomKind(rng, kinds.length < LARGE_MIX.length ? kinds : [], LARGE_MIX);
+    kinds.push(kind);
+    const mystery = rng() >= LARGE_KNOWN;
+    Object.assign(map.nodes[r.id], { kind, large: true, mystery, ...(mystery ? {} : { known: true }) });
+  }
+  markRooms(map, dungeon, rng, between(rng, SCROLL_MARKS));
+  for (const n of Object.values(map.nodes)) if (n.kind === "pool" && rng() < CAMPFIRE_SHARE) n.kind = "campfire";
+  return map;
+}
+
 // The scroll (the user, 2026-11-05): a look at where the rooms are, to work
 // out a way up. A mark per room, where its middle is: its icon if you know
 // what's there, else "?". Of the rooms and tunnels themselves, only what your
@@ -505,7 +539,8 @@ export type ScrollMark = { id: string; x: number; y: number; kind: RoomKind | nu
 export function scrollMarks(map: DungeonMap, layout: Layout, been: Iterable<string>, here: string | null, foreseen: ReadonlySet<string> = new Set()): ScrollMark[] {
   const visited = new Set([...been, ...foreseen]);
   const w = layout.w * BLOCK, h = layout.h * BLOCK;
-  return Object.values(map.nodes).map((n) => {
+  // (A big room's second den has no mark of its own: walkRun.ts.)
+  return Object.values(map.nodes).filter((n) => layout.rooms[n.id]).map((n) => {
     const knows = visited.has(n.id) || (!n.hidden && (n.known || n.id === map.start || n.id === map.boss));
     return { id: n.id, x: n.x / w, y: n.y / h, kind: knows ? n.kind : null, here: n.id === here };
   });
@@ -553,9 +588,9 @@ export function layoutFloorplan(layout: Layout): Floorplan {
 // A sound layout for a dungeon (spec.rooms rooms besides the entrance and
 // the boss, the shortest route spec.minRoute rooms or more). Rolls again
 // until one comes out sound, its tiles too (checkFloorplan).
-export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute">, rng: Rng = Math.random): Layout {
+export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute"> & { large?: number }, rng: Rng = Math.random): Layout {
   for (let i = 0; i < LAYOUT_REROLLS; i++) {
-    const rooms = rollRooms(spec.rooms, rng);
+    const rooms = rollRooms(spec.rooms, rng, spec.large ?? 0);
     if (!rooms) continue;
     const tunnels = pickTunnels(rooms, tunnelOptions(rooms, rng), spec.minRoute, rng);
     if (!tunnels) continue;

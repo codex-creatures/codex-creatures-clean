@@ -57,7 +57,7 @@ import {
   PARTY_SIZE, squadsOf, teamSize, entryFee, freeRunsLeft, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey,
   hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
-  startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, atTheTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
+  startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
   loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, gearOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, DUNGEON_IDS, type DungeonId,
   campCages, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE,
@@ -77,7 +77,7 @@ import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import WalkView, { WalkFirstMap, WalkMap, type WalkState } from "@/components/WalkView";
-import { startWalkRun, walkInto, walkKeep, walkRoom } from "@/lib/dungeon/walkRun";
+import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
 import GearViewModal from "@/components/GearViewModal";
@@ -421,7 +421,7 @@ export default function DungeonPage() {
     }
     // The daily quests (lib/daily.ts): rooms finished this run, and a win.
     if (cur.run) countDaily("room", cur.run.cleared.length);
-    if (cur.run?.status === "cleared") countDaily(`win:${dungeonOf(cur.run)}`);
+    if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) countDaily(`win:${dungeonOf(cur.run)}`);
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     updateTavern((t) => comeHome(t, Math.random, onBindle(cur.meta))); // home: a visitor may call at the tavern
     battle.clear();
@@ -930,10 +930,25 @@ export default function DungeonPage() {
   // Worth opening the room's window as you walk in: treasure to take, a camp that looks empty (its cages).
   const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || (c.kind === "encampment" && !hasFight(c) && !c.done));
   function walkEnter(id: string, st: WalkState) {
+    // Leaving the witch mid-game: you walk away with what you've won.
+    const w = loadDungeon().run?.current?.witch;
+    if (w?.state === "playing" && w.correct > 0) witchLeave();
     setLootOpen(false);
     setNotes([]);
     battle.clear(); // (the last fight, won: otherwise a room with a fight still in it would show it again)
-    updateRun((r) => walkTo(walkKeep(r, st), id));
+    let hurt: string | undefined;
+    updateRun((r) => {
+      const n = walkTo(walkKeep(r, st), id);
+      if (n.path.length === r.path.length) return n;
+      // The witch's illness: each room walked into is an action.
+      const tick = illnessTick(n);
+      hurt = tick.hurt;
+      return tick.run;
+    });
+    if (hurt) {
+      setShake((s) => s + 1);
+      setNotes([`🤢 Your ${byId(hurt)?.name ?? "creature"} suffers an illness: −${Math.round(ILLNESS_DAMAGE * 100)}% HP.`]);
+    }
     setWalkPanel(walkWorthPanel(loadDungeon().run?.current ?? null));
   }
   // Seen by a room's foes (or into the chief's camp): that room's fight. Its loot will lie where you stood.
@@ -956,7 +971,18 @@ export default function DungeonPage() {
     else if (c.container && c.done && !c.opened) openSack();
     else if (c.kind === "stash" && !c.opened) openSack();
     else if (c.kind === "treasure" && !c.done) takeTreasure(c);
+    else if ((c.kind === "storehouse" || c.kind === "library") && !hasFight(c) && c.sack && !c.opened) openSack();
+    // Someone to talk to, or a pool or a deck to use: the room's window, as in a room.
+    else if (["pool", "merchant", "witch", "librarian", "cards", "library"].includes(c.kind)) setWalkPanel(true);
   }
+  // Walked up to a camp's cage: open it (once its guards are beaten; an ambush springs).
+  function walkCage(id: string, i: number, st: WalkState) {
+    battle.clear();
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    openCage(i);
+  }
+  // Beaten the boss and stayed to open the cages: head home with the haul.
+  const walkHome = () => { setWalkPanel(false); updateRun((r) => headHome(leavePending(r))); };
   const walkSave = (st: WalkState) => updateRun((r) => walkKeep(r, st));
   // By a campfire: the health it's given (shares of max HP), and what it has left.
   const walkHeal = (gains: Record<string, number>, st: WalkState) => updateRun((r) => ({
@@ -1094,7 +1120,10 @@ export default function DungeonPage() {
     if (room.boss === "cyclops" && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
     const container = room.kind === "boss" && room.boss !== "cyclops" ? "strongbox" as const : miniboss || room.kind === "boss" ? "chest" as const : "sack" as const;
     // At the top, the run's over: straight to the haul, its chest already open.
-    const top = atTheTop(r);
+    // (Walking, you stay: the chest lies where you stood, the cages to open, then
+    // you head home: walkHome.)
+    const top = atTheTop(r) && !r.walk;
+    if (atTheTop(r) && r.walk) winds.push(r.current?.cages?.length ? "🔓 Open the cages, then head home." : "🏠 Take the chest, then head home.");
     updateRun((x) => {
       const done = markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: top } : x.current });
       return top ? leaveRoom(leavePending(done)) : done;
@@ -1266,11 +1295,14 @@ export default function DungeonPage() {
   // The walk: the place itself, with the room's window, any news, and a full bag's finds over it.
   const walkView = walking && (
     <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <WalkView walk={run.walk!} map={run.map} here={runPosition(run)} room={(id) => walkRoom(run, id)}
+      <WalkView walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={runPosition(run)} room={(id) => walkRoom(run, id)}
         busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || cageShow !== undefined || walkPanel}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onHeal={walkHeal} onKeep={walkSave} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onHeal={walkHeal} onKeep={walkSave} />
+      {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
+        <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
+      )}
       {run.current && !walkPanel && (
         <button className="chip" onClick={() => setWalkPanel(true)} aria-label="This room"
           style={{ position: "absolute", top: 8, left: 8, minHeight: 44, minWidth: 44, zIndex: 3 }}>

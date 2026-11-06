@@ -195,22 +195,8 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
     if (r >= spec.minRoute && r <= spec.maxRoute && waysOn(map, map.start).length <= MAX_STARTS) break;
     map = layout(rng, spec);
   }
-  // The Labyrinth's gentle start (MINIBOSS_FROM, FIRST_ROOM_DENS in run.ts):
-  // its first rooms are nearly all creature dens, and no mini boss lurks early.
-  const roomDepth = depths(map);
   if (dungeon === 0) fillCamp(map, firstRun, rng);
-  else for (const n of Object.values(map.nodes)) {
-    const d = roomDepth.get(n.id) ?? Infinity;
-    if (n.id === map.boss) n.kind = "boss";
-    else if (n.id === map.start) n.kind = firstRun ? "treasure" : "entrance";
-    else {
-      const mystery = rng() < MYSTERY_CHANCE;
-      if (mystery) n.mystery = true;
-      // (A "?" among the first rooms is still nearly always a den.)
-      if (dungeon === 1 && d <= FIRST_ROOMS) n.kind = rng() < FIRST_ROOM_DENS ? "easy" : rollRoomKind(rng, ["easy", "hard", "miniboss"]);
-      else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
-    }
-  }
+  else fillRooms(map, firstRun, rng, dungeon);
   markRooms(map, dungeon, rng);
   // …and a few corridors deeper in.
   const depth = depths(map);
@@ -228,6 +214,28 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
   }
   map.knownLinks = knownLinks;
   placeLarge(map, spec.large, rng, dynamite);
+  return map;
+}
+
+// What's in the Labyrinth's rooms (dungeons 1–3), on the scroll map and the
+// walkable layout (layout.ts: labyrinthMap) alike: ROOM_MIX (MYSTERY_MIX for
+// a "?"), the boss at the top. The Labyrinth's gentle start (MINIBOSS_FROM,
+// FIRST_ROOM_DENS in run.ts): its first rooms are nearly all creature dens,
+// and no mini boss lurks early.
+export function fillRooms(map: DungeonMap, firstRun: boolean, rng: Rng, dungeon: DungeonId): DungeonMap {
+  const roomDepth = depths(map);
+  for (const n of Object.values(map.nodes)) {
+    const d = roomDepth.get(n.id) ?? Infinity;
+    if (n.id === map.boss) n.kind = "boss";
+    else if (n.id === map.start) n.kind = firstRun ? "treasure" : "entrance";
+    else {
+      const mystery = rng() < MYSTERY_CHANCE;
+      if (mystery) n.mystery = true;
+      // (A "?" among the first rooms is still nearly always a den.)
+      if (dungeon === 1 && d <= FIRST_ROOMS) n.kind = rng() < FIRST_ROOM_DENS ? "easy" : rollRoomKind(rng, ["easy", "hard", "miniboss"]);
+      else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
+    }
+  }
   return map;
 }
 

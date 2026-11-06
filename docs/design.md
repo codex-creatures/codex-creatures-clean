@@ -886,8 +886,9 @@ How it came about, round by round: history.md.
        - **What they see** 🧪: 7 tiles (`SIGHT_RANGE`) in a 90° cone (`SIGHT_CONE`) the way they
          face, or 1.5 tiles (`SIGHT_NEAR`) any way. Rock blocks it; floors, doors and tunnels
          don't, so a foe can see you coming down a tunnel.
-       - **The chief** 🧪 is waiting: his fight starts as you step into the camp (`ALERT_KINDS`).
-         Won, his cages are listed (the live chief's cages, `campCages`).
+       - **The chief** 🧪 is waiting (the lab: his fight starts as you step into the camp,
+         `ALERT_KINDS`; in the game, see "Bosses wait" under step 7). Won, his cages are listed
+         (the live chief's cages, `campCages`).
        - **Slipping past unseen** 🧪: nothing happens. The foes stay where they are with their
          loot, and the room isn't cleared (no cross on the scroll). It's mostly behind you then
          (up tunnels are one way); a room still reachable sideways can still see you if you go back.
@@ -927,7 +928,30 @@ How it came about, round by round: history.md.
        they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. (`/lab/walk` still
        starts its fights at once.) Tap a chest, stash or a fight's sack
        to walk up and open it in the loot window. A camp that looks empty (an ambush) opens the
-       room's window with its cages; the room button (top left) opens it any time. The dock's
+       room's window with its cages; the room button (top left) opens it any time.
+       **Bosses wait** (the user, 2026-11-06; `placeWaiter`, `waitsHere`): the Encampment's
+       chief (and the Labyrinth's boss) stands at the top of his room (`WAIT_FROM_TOP` 4 tiles
+       down, facing the way in), never wandering, and his fight starts only once you've walked up
+       to him (`WAIT_REACH` 3.5 tiles, in sight 🧪), not as you step in. The Labyrinth's large
+       encampments aren't bosses: their foes look about like any room's.
+       **Cages** (the user, 2026-11-06; `cageSpots`): a camp's cages stand in a row along the top
+       of its room, behind the chief (`CAGE_GAP` 4 tiles apart; PixelLab art, shut and opened).
+       Once he's beaten (or with no guards to see) each one still shut has a "!" over it: tap it,
+       walk up, and it opens like a chest (the creature inside is yours, as ever). **Winning at
+       the top no longer ends a walk at once**: the chest lies where you stood, and a "🏠 Head
+       home" button ends the run on to the cheer and the haul (`headHome`). The clear counts
+       however you leave once he's beaten, by the Den or Retreat too (`wonAtTop`, run.ts
+       `endRun`).
+       **The campfire window** (the user, 2026-11-06: the long bars were too big): your team in a
+       row along the bottom, small (56 px, about the Abyss's five team cards), a health bar
+       under each, and a thin bar of what the fire has left.
+     - **Two dens in a big room** (the user, 2026-11-06: big and long rooms can hold two spawns,
+       one down each end; `SECOND_DEN` 35% 🧪 of creature dens in a wide, tall, big, dog-leg or
+       large room): the second den is a room of its own in the run (`<room>~2`, foes.ts
+       `spawnOf`), with no tunnels or mark on the scroll, its foes keeping to the far end of
+       the room (`endOf`: split across the middle of its longer side) and the first den's to the
+       near end. Each is its own fight, with its own loot. A balance change (more fights, more
+       XP and gold): 🧪 for the user to judge. The dock's
        Scroll is the treasure map, and the entrance's look at the map is that scroll with only its marks (`WalkFirstMap`); the Den button is locked only mid-fight. A stash's or a fight's sack is drawn smaller than a chest (the user, 2026-11-06).
      - **Torches in tunnels** (the user, 2026-11-06; `placeSconces(…, tunnels)` in torch.ts): some
        tunnels (`TUNNEL_SCONCE_CHANCE` 40% 🧪) have unlit torches along their walls, one every
@@ -949,6 +973,28 @@ How it came about, round by round: history.md.
        applies once the walkable run reaches the Labyrinth: half each (pools 10, campfires 10 of
        `ROOM_MIX`'s 20; the user, 2026-11-06), 🧪 to adjust, as walking sideways likely finds
        more of them than the scroll's tunnels did.
+     - **The walkable Labyrinth** (the Cyclops; 🚧 the user, 2026-11-06: "get the game ready to
+       re-create the Cyclops map in this style"; `/lab/newrun` → Labyrinth, not in the game yet):
+       `startWalkRun(…, dungeon 1)`. Its rooms are the live Labyrinth's mix by the same code
+       (map.ts `fillRooms`, shared with the scroll map: dens up front, mini bosses deeper, "?"
+       rooms), on `labyrinthMap` (layout.ts). **Large rooms**: `LARGE_SHAPE` 14×9 blocks 🧪,
+       `spec.large` of them up the middle of the layout, each an encampment, library or
+       storehouse (`LARGE_MIX`, half marked, `LARGE_KNOWN`): its foes (a guarded storehouse's
+       mini boss, a camp's Rares) look about as any room's, its cages along the top (an ambush
+       springs as you open one), a library's codexes or a storehouse's crates to tap, or the
+       librarian. **Pools and campfires**: half the pools are campfire rooms (`CAMPFIRE_SHARE`,
+       a `campfire` room kind, always with a fire; no 15% extra fires in the Labyrinth), pools a
+       stone ring of glowing water (PixelLab, a very faint pulsing glow), tapped for the room's
+       window. **The card witch** walks about her room (PixelLab, a 4-way walk), stopping to
+       face you as you come near; tap her for her game. The merchant, the librarian and a deck
+       of cards stand in their rooms, tapped for the room's window. Walking into a room ticks the
+       witch's illness, and walking out mid-game leaves with your winnings, as down a tunnel.
+       **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).
+       **Its size is open**: the scroll map's Labyrinth is 36 rooms, 15 to the lair, but with
+       `ROUTES` (3) separate ways of 15 that needs 44+ rooms, and those layouts take ~15 s to
+       roll and mostly fail. `WALK_LABYRINTH` is 30 rooms, 10 to the lair, for now (rolls in
+       ~1 s). Options for the user: a shorter route; 2 separate ways instead of 3 for the
+       Labyrinth; or a faster layout roller. Not done yet: Klutz's dynamite storehouse in a walk.
      - **Still to come:** scenery, torch, campfire and rubble art, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).

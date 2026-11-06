@@ -16,11 +16,12 @@
 // Walking into a room (walkInto) puts the one you leave back, unfinished
 // or not: you can slip past foes unseen, and they're still there.
 
-import type { Cage, DungeonRun, Room } from "./run";
-import { rollLayout, campMap, roomCentre, layoutFloorplan, WALK_SPEC, type Layout } from "./layout";
-import { placeCampfires, type Campfire } from "./campfire";
-import { rollWalkRooms } from "./walkRooms";
-import type { Pt } from "./floorplan";
+import { makeRoom, leaveRoom, wonAtTop, type Cage, type DungeonId, type DungeonRun, type Room } from "./run";
+import { rollLayout, campMap, labyrinthMap, roomCentre, layoutFloorplan, WALK_SPEC, WALK_LABYRINTH, TWO_DEN_SHAPES, type Layout } from "./layout";
+import { placeCampfires, CAMPFIRE_CHANCE, type Campfire } from "./campfire";
+import { rollWalkRooms, roomDepth } from "./walkRooms";
+import { spawnOf, isSpawn } from "./foes";
+import type { Floorplan, Pt } from "./floorplan";
 
 type Rng = () => number;
 
@@ -39,25 +40,60 @@ export type WalkRun = {
   fires?: Campfire[];           // the rooms' campfires, and what each has left to give (none in older runs)
 };
 
-// A new run of the walkable Encampment: the Encampment's room mix on a
-// walkable layout, every room rolled, its chief's cages the ones given.
-export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random): DungeonRun {
-  const layout = rollLayout(WALK_SPEC, rng);
-  const map = campMap(layout, false, rng);
-  const rooms = rollWalkRooms(map, rng);
-  rooms[map.boss] = { ...rooms[map.boss], cages };
+// A big or long room that's a creature den holds a second den down its other
+// end this often (the user, 2026-11-06; foes.ts spawnOf). 🧪
+export const SECOND_DEN = 0.35;
+
+// A new walkable run. The Encampment (dungeon 0): its room mix on a walkable
+// layout, every room rolled, its chief's cages the ones given. The Labyrinth
+// (dungeon 1, the Cyclops; /lab/newrun only for now): its own mix and large
+// rooms (layout.ts labyrinthMap) on a bigger layout (WALK_LABYRINTH), the
+// Cyclops waiting at the top. Either way, some big rooms hold two dens.
+export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random, dungeon: WalkDungeon = 0): DungeonRun {
+  const layout = rollLayout(dungeon === 0 ? WALK_SPEC : WALK_LABYRINTH, rng);
+  const map = dungeon === 0 ? campMap(layout, false, rng) : labyrinthMap(layout, false, dungeon, rng);
+  const rooms = rollWalkRooms(map, rng, true, [], dungeon, bindle);
+  if (dungeon === 0) rooms[map.boss] = { ...rooms[map.boss], cages };
   const start = rooms[map.start] ?? null; // (the entrance holds nothing, unless it's treasure)
   delete rooms[map.start];
+  // Second dens, each a room of its own (with no tunnels: you walk into it in its parent).
+  for (const r of Object.values(layout.rooms).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    if (!TWO_DEN_SHAPES.includes(r.shape) || map.nodes[r.id].kind !== "easy" || rng() >= SECOND_DEN) continue;
+    const id = spawnOf(r.id), parent = map.nodes[r.id];
+    map.nodes[id] = { id, x: parent.x, y: parent.y, kind: "easy", links: [] };
+    rooms[id] = makeRoom("easy", rng, roomDepth(map, r.id), dungeon, bindle);
+  }
   const seed = Math.floor(rng() * 1e9);
-  const fires = placeCampfires(layoutFloorplan(layout), map, (id) => roomCentre(layout.rooms[id]), rng);
+  const fires = placeCampfires(layoutFloorplan(layout), map, (id) => roomCentre(layout.rooms[id]), rng, dungeon === 0 ? CAMPFIRE_CHANCE : 0);
   return {
-    id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), dungeon: 0,
+    id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), ...(dungeon !== 1 ? { dungeon } : {}),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
     room: 0, map, path: [map.start], cleared: start ? [] : [map.start], current: start,
-    loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}), campCages: cages,
+    loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}), ...(dungeon === 0 ? { campCages: cages } : {}),
     walk: { layout, rooms, seed, at: roomCentre(layout.rooms[map.start]), room: map.start, line: null, fires },
   };
 }
+
+// The dungeons that can be walked so far (the Encampment, live as "New"; the Labyrinth, in the lab).
+export type WalkDungeon = 0 | 1;
+
+// A boss waiting for you to walk up to it (foes.ts placeWaiter): the
+// Encampment's chief, the Labyrinth's boss. (Not the Labyrinth's large
+// encampments: their foes look about like any room's.)
+export const waitsHere = (r: Room, dungeon: DungeonId) => r.kind === "boss" || (dungeon === 0 && r.kind === "encampment");
+
+// Where a camp's cages stand: a row along the top of its room (its top
+// floor rect's), CAGE_GAP tiles apart, behind the boss waiting below them.
+export const CAGE_GAP = 4;
+export function cageSpots(fp: Floorplan, room: string, count: number): Pt[] {
+  const floors = fp.rooms[room];
+  if (!floors || count === 0) return [];
+  const top = floors.reduce((a, b) => (b.y < a.y ? b : a));
+  const mid = top.x + Math.floor(top.w / 2);
+  const gap = Math.min(CAGE_GAP, Math.floor((top.w - 2) / Math.max(1, count)));
+  return Array.from({ length: count }, (_, i) => ({ x: mid + Math.round((i - (count - 1) / 2) * gap), y: top.y + 1 }));
+}
+
 
 // Where you stand on the run's map: the room you're in.
 const here = (run: DungeonRun) => run.path[run.path.length - 1];
@@ -83,11 +119,17 @@ export function walkInto(run: DungeonRun, id: string): DungeonRun {
   delete rooms[id];
   return {
     ...run, current: next, battle: undefined,
-    path: [...run.path, id], room: run.room + (run.path.includes(id) ? 0 : 1),
+    path: [...run.path, id], room: run.room + (run.path.includes(id) || isSpawn(id) ? 0 : 1), // (a second den's room was counted already)
     cleared: finished ? [...new Set([...run.cleared, was])] : run.cleared,
     walk: { ...walk, rooms },
   };
 }
+
+// Heading home after beating the boss at the top (and staying to open the
+// cages): back to its room if you'd walked out sideways, and the run's
+// cleared, on to the haul as the live game's win is.
+export const headHome = (run: DungeonRun): DungeonRun =>
+  wonAtTop(run) && run.status === "exploring" ? leaveRoom(walkInto(run, run.map.boss)) : run;
 
 // Your spot and what you've seen, kept in the run.
 export const walkKeep = (run: DungeonRun, patch: Partial<WalkRun>): DungeonRun =>

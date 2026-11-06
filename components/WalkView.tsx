@@ -28,13 +28,13 @@ import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
 import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
-import { placeFoes, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, ALERT_KINDS, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
-import { hasFight, ROOM_INFO, type Room } from "@/lib/dungeon/run";
-import type { WalkRun } from "@/lib/dungeon/walkRun";
+import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, spawnOf, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
+import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
+import { waitsHere, cageSpots, type WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import { WALK_KIT, WALK_HERO, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "@/lib/sprites/walk";
+import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN } from "@/lib/sprites/props";
+import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import { CreatureArt } from "@/components/CreaturePortrait";
@@ -45,6 +45,10 @@ export const WALK_ACROSS = 15;  // tiles across the screen (the user's pick, 202
 const REACH_OBJECT = 1.5;       // tiles: this close to a chest or a sack, it opens
 const TAP_OBJECT = 1;           // tiles: a tap this close to one counts as tapping it
 const FOE_PX = 22;              // a foe's height at 16px tiles (it scales with the zoom)
+const BOSS_SCALE = 2.6, CHIEF_SCALE = 1.3; // a waiting boss drawn this much bigger (the Cyclops; the Encampment's chief)
+const NPC_PX = 26;              // a wanderer's height (the merchant, the librarian, the card witch)
+const NPC_STILL = 4;            // tiles: a wanderer stops to let you come up to it
+const NPC_SPEED = 0.6;          // …and walks about at this share of a foe's pace
 const OBJECT_PX = 28;           // a chest's width at 16px tiles
 const SACK_PX = 16;             // …a sack's (stashes, a fight's loot): smaller (the user, 2026-11-06)
 const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
@@ -86,13 +90,18 @@ function image(src: string): HTMLImageElement | null {
   return img.complete && img.naturalWidth > 0 ? img : null;
 }
 
-// Something to loot, drawn where it lies: a room's chest, stash or
-// treasure (at its middle), or a beaten room's sack or chest.
-type Thing = { room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art: Parameters<typeof artFor>[0] };
+// Something to tap, drawn where it lies: a room's chest, stash or treasure
+// (at its middle), a beaten room's sack or chest, a pool, a large room's
+// stores, a camp's cages (along its top; flag: "!" over one you can open), or
+// someone in the room (npc: the merchant, the librarian, the witch walking
+// about). key: the room, or "<room>#<cage>".
+type Thing = { key: string; room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art?: Parameters<typeof artFor>[0];
+  prop?: WalkProp; cage?: number; flag?: boolean; npc?: boolean; glow?: boolean };
 
-export default function WalkView({ walk, map, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onHeal, onKeep }: {
+export default function WalkView({ walk, map, dungeon = 0, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
   map: DungeonMap;                     // what kind each room is
+  dungeon?: DungeonId;                 // which (the Encampment's chief waits; the Labyrinth's camps don't)
   here: string;                        // the room you're in (the run's position)
   room: (id: string) => Room | undefined; // each room as it stands now
   busy: boolean;                       // a window's open over it: nobody moves
@@ -106,6 +115,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
   onEnter: (id: string, state: WalkState) => void;
   onSpotted: (id: string, state: WalkState) => void;
   onObject: (id: string, state: WalkState) => void;
+  onCage?: (id: string, cage: number, state: WalkState) => void;
   onHeal: (gains: Record<string, number>, state: WalkState) => void;
   onKeep: (state: WalkState) => void;
 }) {
@@ -133,15 +143,15 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
   const walked = useRef(0);
   const falls = useRef(new Map<string, number>());
   const shakeAt = useRef(-Infinity);
-  const wantThing = useRef<string | null>(null); // walking up to this room's thing, to open it
+  const wantThing = useRef<string | null>(null); // walking up to this thing (its key), to open it
   const fired = useRef(0);                      // when a fight was called for (0: none): once, till it starts
   // Seen: whose room, when (ms), the foes that have set off and reached you (by index: seconds after), the fade's start.
   const alarm = useRef<{ room: string; at: number; going: Set<number>; arrived: Map<number, number>; fadeAt: number | null } | null>(null);
 
   // The props the frame loop reads, kept current.
   const spots = walk.spots;
-  const props = useRef({ here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onHeal, onKeep });
-  useEffect(() => { props.current = { here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onHeal, onKeep }; });
+  const props = useRef({ here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep });
+  useEffect(() => { props.current = { here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }; });
 
   const state = (): WalkState => ({
     at: { x: Math.round(me.current.x), y: Math.round(me.current.y) }, room: progressRef.current.room,
@@ -152,30 +162,61 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
   // Saved as you leave (a fight, the Den, a reload).
   useEffect(() => () => props.current.onKeep(state()), []);
 
-  // Each fight room's foes, where they start (the same places every time this opens).
+  // Every room, and a big room's second den (foes.ts spawnOf) where it has one.
+  const ids = useMemo(() => Object.keys(layout.rooms).sort().flatMap((id) => (map.nodes[spawnOf(id)] ? [id, spawnOf(id)] : [id])), [layout, map]);
+  // Each fight room's foes, where they start (the same places every time this
+  // opens): two dens in a room keep to an end each; a boss waits at the top.
   const foes = useRef<Foe[]>(useMemo(() => {
     const rng = seeded(walk.seed + 303);
-    return Object.keys(layout.rooms).sort().flatMap((id) => {
+    return ids.flatMap((id) => {
       const r = room(id);
-      return r && hasFight(r) && !r.done && r.enemies ? placeFoes(plan, id, r.enemies.length, rng) : [];
+      if (!r || !hasFight(r) || r.done) return [];
+      if (waitsHere(r, dungeon)) return [placeWaiter(plan, id)];
+      const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
+      return r.enemies ? placeFoes(plan, id, r.enemies.length, rng, end) : [];
     });
   }, [])); // eslint-disable-line react-hooks/exhaustive-deps
+  // The card witch walks about her room (the merchant and the librarian stand by their carts).
+  const npcs = useRef<Foe[]>(useMemo(() => {
+    const rng = seeded(walk.seed + 404);
+    return ids.flatMap((id) => (room(id)?.kind === "witch" ? placeFoes(plan, id, 1, rng).map((f) => ({ ...f, walks: true, wait: 1 })) : []));
+  }, [])); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // The things to loot, as the rooms stand now.
-  const things = (): Thing[] => Object.keys(layout.rooms).flatMap((id): Thing[] => {
+  // The things to tap, as the rooms stand now.
+  const things = (): Thing[] => ids.flatMap((id): Thing[] => {
     const r = props.current.room(id);
     if (!r) return [];
-    const c = roomCentre(layout.rooms[id]);
-    if (r.kind === "chest") return [{ room: id, ...c, open: r.done, solid: true, art: r.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST }];
-    if (r.kind === "treasure") return [{ room: id, ...c, open: r.done, solid: true, art: r.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST }];
-    if (r.kind === "stash") return [{ room: id, ...c, open: !!r.opened, solid: true, sack: true, art: r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK }];
+    const c = roomCentre(layout.rooms[parentOf(id)]);
+    const out: Thing[] = [];
+    const add = (t: Omit<Thing, "key" | "room">) => out.push({ key: id, room: id, ...t });
+    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, open: r.done, solid: true, art: r.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST });
+    else if (r.kind === "stash") add({ ...c, open: !!r.opened, solid: true, sack: true, art: r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK });
+    else if (r.kind === "pool") add({ ...c, open: r.done, solid: true, prop: WALK_POOL, glow: !r.done });
+    else if (r.kind === "cards") add({ ...c, open: r.done, solid: true, art: CARD_DECK });
+    else if (r.kind === "merchant") add({ ...c, open: false, solid: true, npc: true, art: MERCHANT });
+    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, open: false, solid: true, npc: true, art: LIBRARIAN });
+    else if (r.kind === "witch") for (const n of npcs.current.filter((f) => f.room === id)) add({ x: Math.round(n.x), y: Math.round(n.y), open: false, solid: false, npc: true, art: CARD_WITCH });
+    // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
+    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
+      add({ ...c, open: !!r.opened, solid: true, sack: r.kind === "library", art: r.kind === "library" ? (r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK) : r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST });
+    }
     if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
       const at = props.current.spots?.[id] ?? c;
       const chest = r.container !== "sack";
-      return [{ room: id, ...at, open: !!r.opened, solid: false, sack: !chest, art: chest ? (r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST) : r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK }];
+      add({ ...at, open: !!r.opened, solid: false, sack: !chest, art: chest ? (r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST) : r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK });
     }
-    return [];
+    // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
+    if (r.cages?.length) cageSpots(plan, parentOf(id), r.cages.length).forEach((q, i) => {
+      const cage = r.cages![i];
+      out.push({ key: `${id}#${i}`, room: id, ...q, cage: i, open: !!cage.opened, solid: true, prop: cage.opened ? WALK_CAGE_OPEN : WALK_CAGE, flag: !cage.opened && (!hasFight(r) || r.done) });
+    });
+    return out;
   });
+
+  // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
+  const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
+  // A tap on (or by) a thing: within TAP_OBJECT of it, or of someone's body (they stand a tile tall).
+  const tapped = (t: Thing, q: Pt) => Math.hypot(t.x - q.x, t.y - q.y) <= TAP_OBJECT || (!!t.npc && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= TAP_OBJECT);
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => {
@@ -267,8 +308,8 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
       }
       // The foes look about; if any of a room's sees you (or you walk into the chief's camp), that room fights you.
       const p = progressRef.current;
-      const awake = (id: string) => { const r = P.room(id); return !!r && hasFight(r) && !r.done && isOpen(layout, p, id); };
-      foes.current = foes.current.filter((f) => awake(f.room) || !isOpen(layout, p, f.room));
+      const awake = (id: string) => { const r = P.room(id); return !!r && hasFight(r) && !r.done && isOpen(layout, p, parentOf(id)); };
+      foes.current = foes.current.filter((f) => awake(f.room) || !isOpen(layout, p, parentOf(f.room)));
       if (!busy && A) {
         // Seen: a "!" a moment, then they come at you; it fades into the fight once they're there.
         const t = (now - A.at) / 1000;
@@ -292,8 +333,10 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
         }
       } else if (!busy) {
         foes.current = foes.current.map((f) => stepFoe(live, f, dt));
-        const camp = now_in && awake(now_in) && ALERT_KINDS.includes(P.room(now_in)!.kind) ? now_in : null;
-        const by = camp ?? spottedBy(live, foes.current, me.current, awake);
+        // The witch wanders, slowly, and stops (facing you) to let you come up to her.
+        npcs.current = npcs.current.map((n) => (Math.hypot(n.x - me.current.x, n.y - me.current.y) <= NPC_STILL
+          ? { ...n, path: [], facing: Math.atan2(me.current.y - n.y, me.current.x - n.x) } : stepFoe(live, n, dt * NPC_SPEED)));
+        const by = spottedBy(live, foes.current, me.current, awake);
         if (by) {
           alarm.current = { room: by, at: now, going: new Set(), arrived: new Map(), fadeAt: null };
           me.current = { x: Math.round(me.current.x), y: Math.round(me.current.y), path: [] };
@@ -303,11 +346,11 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
           return;
         }
         // Walking up to a thing you tapped: open it once you're close.
-        const want = wantThing.current && things().find((t) => t.room === wantThing.current);
+        const want = wantThing.current && things().find((t) => t.key === wantThing.current);
         if (want && Math.hypot(want.x - me.current.x, want.y - me.current.y) <= REACH_OBJECT) {
           wantThing.current = null;
           me.current = { ...me.current, path: me.current.path.slice(0, 1) };
-          P.onObject(want.room, state());
+          openThing(want, state());
           kept = now;
         } else if (want && me.current.path.length === 0) wantThing.current = null;
       }
@@ -408,13 +451,34 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
       // Everything standing up, lowest on screen last: things to loot, rubble, foes, you, south walls' tops.
       const footX = (x: number) => (x - cam.x + 0.5) * T + jx, footY = (y: number) => (y - cam.y + 0.5) * T + 4 * scale + jy;
       const standing: { x: number; y: number; draw: () => void }[] = [];
-      for (const t of things()) {
-        if (!knownAt(t.x, t.y)) continue;
-        const a = artFor(t.art), img = a && image(a.src);
-        standing.push({ x: t.x, y: t.y, draw: () => {
+      const shown = things().filter((t) => knownAt(t.x, t.y) && (!t.npc || litAt(t.x, t.y) || t.solid));
+      for (const t of shown) {
+        const witch = t.npc && t.art === CARD_WITCH ? npcs.current.find((n) => n.room === t.room) : undefined;
+        const sheet = witch && image(WALK_WITCH.sheet);
+        if (witch && sheet) {
+          // The card witch walking about (a sheet like the hero's), facing the way she goes.
+          standing.push({ x: witch.x, y: witch.y, draw: () => {
+            const face = facingOf(Math.cos(witch.facing), Math.sin(witch.facing), "south");
+            const col = witch.path.length > 0 ? 1 + (Math.floor(now / 130) % WALK_WITCH.frames) : 0;
+            const px = (NPC_PX * scale) / WALK_WITCH.tall, size = WALK_WITCH.cell * px;
+            const row = FACINGS.indexOf(face === "west" ? "east" : face);
+            ctx.save();
+            ctx.translate(Math.round(footX(witch.x)), Math.round(footY(witch.y) - WALK_WITCH.feet * px));
+            if (face === "west") ctx.scale(-1, 1);
+            ctx.drawImage(sheet, col * WALK_WITCH.cell, row * WALK_WITCH.cell, WALK_WITCH.cell, WALK_WITCH.cell, -size / 2, 0, size, size);
+            ctx.restore();
+          } });
+          continue;
+        }
+        const a = t.prop ?? (t.art ? artFor(t.art) : undefined), img = a && image(a.src);
+        const px = witch ? { x: witch.x, y: witch.y } : t;
+        standing.push({ x: px.x, y: px.y, draw: () => {
           if (!img || !a) return;
-          const wd = (t.sack ? SACK_PX : OBJECT_PX) * scale, h2 = (wd * a.h) / a.w;
-          ctx.drawImage(img, footX(t.x) - wd / 2, footY(t.y) - h2, wd, h2);
+          const wd = t.prop ? t.prop.size * scale : t.npc ? (NPC_PX * scale * a.w) / a.h : (t.sack ? SACK_PX : OBJECT_PX) * scale, h2 = (wd * a.h) / a.w;
+          // (A used pool is dimmed.)
+          if (t.prop === WALK_POOL && t.open) ctx.globalAlpha = 0.6;
+          ctx.drawImage(img, footX(px.x) - wd / 2, footY(px.y) - h2 + (t.prop === WALK_POOL ? h2 * 0.35 : 0), wd, h2);
+          ctx.globalAlpha = 1;
         } });
       }
       for (const r of rubbleOf(plan, layout, p)) {
@@ -443,10 +507,11 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
       }
       for (const f of foes.current) {
         if (!litAt(Math.round(f.x), Math.round(f.y)) && !(A && f.room === A.room)) continue;
-        const e = P.room(f.room)?.enemies?.[f.index];
-        const a = e && artFor(CREATURE_SPRITES[e.creatureId] ?? []), img = a && image(a.src);
+        const fr = P.room(f.room), e = fr?.enemies?.[f.index];
+        const sprite = fr?.boss ? CREATURE_SPRITES[fr.boss] : e && CREATURE_SPRITES[e.creatureId];
+        const a = sprite && artFor(sprite), img = a && image(a.src);
         standing.push({ x: f.x, y: f.y, draw: () => {
-          const fx = footX(f.x), fy = footY(f.y), tall = FOE_PX * scale;
+          const fx = footX(f.x), fy = footY(f.y), tall = FOE_PX * scale * (f.waits ? (fr?.boss ? BOSS_SCALE : CHIEF_SCALE) : 1);
           if (img && a) {
             // Art faces left unless marked; turned to face the way it looks.
             const wd = (tall * a.w) / a.h, flip = (Math.cos(f.facing) > 0.1) !== (a.faces === "right");
@@ -626,6 +691,30 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
           }
         }
       }
+      // A healing pool's very faint glow, and a "!" over each cage you can open.
+      for (const t of shown) {
+        if (t.glow) {
+          const fx = footX(t.x), fy = footY(t.y) - 0.1 * T, r = 1.1 * T, pulse = 0.06 + 0.03 * Math.sin(now / 700);
+          ctx.globalCompositeOperation = "lighter";
+          const g = ctx.createRadialGradient(fx, fy, 0, fx, fy, r);
+          g.addColorStop(0, `rgba(120, 220, 255, ${pulse})`);
+          g.addColorStop(1, "rgba(120, 220, 255, 0)");
+          ctx.fillStyle = g;
+          ctx.fillRect(fx - r, fy - r, 2 * r, 2 * r);
+          ctx.globalCompositeOperation = "source-over";
+        }
+        if (t.flag && litAt(t.x, t.y)) {
+          ctx.font = `bold ${Math.round(T * 0.75)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.lineWidth = Math.max(2, scale * 1.5);
+          ctx.strokeStyle = "#1a0e05";
+          ctx.fillStyle = "#ffd23f";
+          const top = footY(t.y) - (t.prop?.size ?? OBJECT_PX) * scale - 1 * scale - Math.abs(Math.sin(now / 200)) * 2 * scale;
+          ctx.strokeText("!", footX(t.x), top);
+          ctx.fillText("!", footX(t.x), top);
+        }
+      }
       // Healing by one: green crosses rising round you.
       if (giving.length > 0) {
         ctx.font = `bold ${Math.round(T * 0.4)}px sans-serif`;
@@ -675,9 +764,9 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
     const spot = { x: Math.floor(cam.x + (e.clientX - box.left) / T), y: Math.floor(cam.y + (e.clientY - box.top) / T) };
     const can = rule(progressRef.current);
     // A tap on (or by) something to loot that you've seen: walk up beside it, and it opens.
-    const t = things().find((x) => Math.hypot(x.x - spot.x, x.y - spot.y) <= TAP_OBJECT && known.current[x.y * plan.w + x.x]);
+    const t = things().find((x) => tapped(x, spot) && known.current[x.y * plan.w + x.x]);
     if (t) {
-      if (Math.hypot(t.x - me.current.x, t.y - me.current.y) <= REACH_OBJECT) { onObject(t.room, state()); return; }
+      if (Math.hypot(t.x - me.current.x, t.y - me.current.y) <= REACH_OBJECT) { openThing(t, state()); return; }
       const from = me.current.path[0] ?? { x: Math.round(me.current.x), y: Math.round(me.current.y) };
       let best: Pt[] | null = null;
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
@@ -689,7 +778,7 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
       }
       if (best) {
         goal.current = null;
-        wantThing.current = t.room;
+        wantThing.current = t.key;
         me.current = { ...me.current, path: me.current.path.length > 0 ? [from, ...best] : best };
       }
       return;
@@ -709,35 +798,36 @@ export default function WalkView({ walk, map, here, room, busy, been, cleared, l
   );
 }
 
-// By a campfire: your team's health going up, a "+" rising by each one
-// getting some, and how much the fire has left (burnt down: embers). Taps go
-// through it to the walk.
+// By a campfire: your team in a row along the bottom, small (the size of the
+// Abyss's five team cards; the user, 2026-11-06), a health bar under each
+// going up and a "+" rising by each one getting some, and a thin bar of what
+// the fire has left (burnt down: embers). Taps go through it to the walk.
+const WARM_CELL = 56; // px across a creature
 function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: Warming }) {
   return (
-    <div className="stone-panel" style={{ position: "absolute", left: 6, right: 6, bottom: 6, zIndex: 3, padding: "6px 10px", pointerEvents: "none" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, height: 18 }}>
-        <span aria-hidden style={{ fontSize: 14, filter: warming.left > 0 ? undefined : "grayscale(1) brightness(0.6)" }}>🔥</span>
-        <span style={{ flex: 1, height: 6, background: "rgba(0,0,0,0.6)", borderRadius: 3, overflow: "hidden" }}>
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 8, zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, pointerEvents: "none" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+        {team.map((m) => {
+          const hp = warming.hp[m.id] ?? 1, gets = warming.giving.includes(m.id), ko = hp <= 0;
+          return (
+            <div key={m.id} title={m.name} style={{ width: WARM_CELL, position: "relative" }}>
+              <span style={{ position: "relative", display: "block", width: WARM_CELL, height: WARM_CELL, borderRadius: 8, border: `2px solid ${RARITY_COLORS[m.rarity].border}`, background: "rgba(10,10,16,0.75)", opacity: ko ? 0.4 : 1, filter: ko ? "grayscale(1)" : undefined, overflow: "hidden" }}>
+                <CreatureArt creatureId={m.creatureId} title={m.name} />
+              </span>
+              <span style={{ display: "block", height: 6, marginTop: 3, background: "rgba(0,0,0,0.75)", borderRadius: 3, overflow: "hidden", boxShadow: gets ? "0 0 6px rgba(120,255,140,0.8)" : undefined }}>
+                <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444", transition: "width 0.1s linear" }} />
+              </span>
+              <span className="fire-heal" aria-hidden style={{ visibility: gets ? "visible" : "hidden", bottom: 12 }}>+</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, width: Math.min(team.length, 5) * (WARM_CELL + 8) - 8 }}>
+        <span aria-hidden style={{ fontSize: 11, filter: warming.left > 0 ? undefined : "grayscale(1) brightness(0.6)" }}>🔥</span>
+        <span style={{ flex: 1, height: 4, background: "rgba(0,0,0,0.6)", borderRadius: 2, overflow: "hidden" }}>
           <span style={{ display: "block", height: "100%", width: `${(warming.left / CAMPFIRE_HEAL) * 100}%`, background: "#ff9a2e", transition: "width 0.1s linear" }} />
         </span>
       </div>
-      {team.map((m) => {
-        const hp = warming.hp[m.id] ?? 1, gets = warming.giving.includes(m.id), ko = hp <= 0;
-        return (
-          <div key={m.id} style={{ display: "grid", gridTemplateColumns: "36px 1fr", alignItems: "center", gap: 8, height: 40 }}>
-            <span style={{ width: 36, height: 36, display: "block", opacity: ko ? 0.35 : 1, filter: ko ? "grayscale(1)" : undefined }}>
-              <CreatureArt creatureId={m.creatureId} title={m.name} />
-            </span>
-            <span style={{ minWidth: 0, position: "relative" }}>
-              <span style={{ display: "block", fontSize: 12, fontWeight: 600, color: RARITY_COLORS[m.rarity].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.name}</span>
-              <span style={{ display: "block", height: 8, marginTop: 3, background: "rgba(0,0,0,0.7)", borderRadius: 3, overflow: "hidden", boxShadow: gets ? "0 0 8px rgba(120,255,140,0.8)" : undefined }}>
-                <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#22c55e" : hp > 0.25 ? "#f5c542" : "#ef4444", transition: "width 0.1s linear" }} />
-              </span>
-              <span className="fire-heal" aria-hidden style={{ visibility: gets ? "visible" : "hidden" }}>+</span>
-            </span>
-          </div>
-        );
-      })}
     </div>
   );
 }

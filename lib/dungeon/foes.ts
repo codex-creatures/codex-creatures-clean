@@ -14,8 +14,10 @@
 //   block it, so a foe may see you coming down a tunnel.
 // - If ANY of a room's foes sees you, ALL of that room's foes fight you
 //   together (spottedBy says which room).
-// - The chief's camp (ALERT_KINDS): he's waiting for you, and the fight
-//   starts as you step in.
+// - Bosses wait for you (the user, 2026-11-06: the Encampment's chief, the
+//   Cyclops): one stands at the top of its room facing the way in, never
+//   wandering, and its fight starts only once you've walked up to it
+//   (WAIT_REACH, in sight), not as you step in.
 // - Seen, the fight doesn't start at once (the user, 2026-11-06): each of
 //   the room's foes lights up (ALARM_LIGHT) with a "!" over it, and after a
 //   moment (ALARM_PAUSE) they all come at you (chargePath, CHARGE_SPEED).
@@ -43,11 +45,30 @@ export const FOE_SPEED = 1.5;        // tiles a second
 export const PAUSE_TIME: [number, number] = [1, 3]; // seconds a walker stops at each spot
 export const FOE_GAP = 3;            // tiles apart, at least, where they start
 export const DOOR_CLEAR = 4;         // tiles from any of the room's doors, where they start
-export const ALERT_KINDS: RoomKind[] = ["encampment"]; // rooms whose foes see you as you step in
+export const ALERT_KINDS: RoomKind[] = ["encampment"]; // /lab/walk only (its own copy): the chief's fight starts as you step in
+export const WAIT_REACH = 3.5;       // tiles: walk this close to a waiting boss (in sight of it) and it fights you 🧪
+export const WAIT_FROM_TOP = 4;      // tiles below its room's top wall a waiting boss stands
 
 // facing: radians, 0 = east, π/2 = south (screen y runs down).
 // home: the room's floor, where a walker may go. path: tiles still to walk to.
-export type Foe = { room: string; index: number; x: number; y: number; facing: number; walks: boolean; path: Pt[]; wait: number };
+// waits: a boss waiting for you (see the top). end: the end of a big room it
+// keeps to, when the room holds two dens (0 or 1: endOf).
+export type Foe = { room: string; index: number; x: number; y: number; facing: number; walks: boolean; path: Pt[]; wait: number; waits?: boolean; end?: 0 | 1 };
+
+// A big room's second den (the user, 2026-11-06: big and long rooms can hold
+// two, one down each end): a room of its own in the run ("<room>~2"),
+// standing in its parent's floor. Its foes keep to the far end (1), the
+// parent's to the near one (0).
+export const spawnOf = (room: string) => `${room}~2`;
+export const parentOf = (room: string) => room.split("~")[0];
+export const isSpawn = (room: string) => room.includes("~");
+// Which end of a room a tile is at: split across the middle of its longer
+// side (a dog-leg's box: so its two arms' tips are its ends).
+export function endOf(floors: Rect[], x: number, y: number): 0 | 1 {
+  const x0 = Math.min(...floors.map((r) => r.x)), x1 = Math.max(...floors.map((r) => r.x + r.w));
+  const y0 = Math.min(...floors.map((r) => r.y)), y1 = Math.max(...floors.map((r) => r.y + r.h));
+  return x1 - x0 >= y1 - y0 ? (x < (x0 + x1) / 2 ? 0 : 1) : (y >= (y0 + y1) / 2 ? 0 : 1);
+}
 
 const between = (rng: Rng, [lo, hi]: [number, number]) => lo + rng() * (hi - lo);
 // The four ways a still foe looks (east, south, west, north).
@@ -57,12 +78,14 @@ const inRects = (rs: Rect[], x: number, y: number) => rs.some((r) => x >= r.x &&
 // Where `count` foes start in a room: on its floor (not the top row, under
 // the wall's face), DOOR_CLEAR from its doors, FOE_GAP apart (closer if the
 // room's too small for that).
-export function placeFoes(fp: Floorplan, room: string, count: number, rng: Rng = Math.random): Foe[] {
-  const floors = fp.rooms[room];
-  const doors = fp.doors.filter((d) => d.room === room);
+// end: keep to that end of the room (a big room with two dens).
+export function placeFoes(fp: Floorplan, room: string, count: number, rng: Rng = Math.random, end?: 0 | 1): Foe[] {
+  const floors = fp.rooms[parentOf(room)];
+  const doors = fp.doors.filter((d) => d.room === parentOf(room));
   const spots: Pt[] = [];
   for (const r of floors) for (let y = r.y + 1; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
     if (spots.some((s) => s.x === x && s.y === y)) continue; // (a dog-leg's arms overlap)
+    if (end !== undefined && endOf(floors, x, y) !== end) continue;
     if (doors.some((d) => Math.hypot(d.x - x, d.y - y) < DOOR_CLEAR)) continue;
     spots.push({ x, y });
   }
@@ -73,10 +96,18 @@ export function placeFoes(fp: Floorplan, room: string, count: number, rng: Rng =
       const s = free.splice(Math.floor(rng() * free.length), 1)[0];
       if (foes.some((f) => Math.hypot(f.x - s.x, f.y - s.y) < Math.max(gap, 1))) continue;
       const i = foes.length;
-      foes.push({ room, index: i, ...s, facing: WAYS[Math.floor(rng() * 4)], walks: i > 0 && rng() < WANDER_SHARE, path: [], wait: between(rng, LOOK_TIME) });
+      foes.push({ room, index: i, ...s, facing: WAYS[Math.floor(rng() * 4)], walks: i > 0 && rng() < WANDER_SHARE, path: [], wait: between(rng, LOOK_TIME), ...(end !== undefined ? { end } : {}) });
     }
   }
   return foes;
+}
+
+// A boss waiting in its room: at the top, in the middle of the floor's top
+// rect (a dog-leg's), WAIT_FROM_TOP tiles down, facing south (the way in).
+export function placeWaiter(fp: Floorplan, room: string): Foe {
+  const top = fp.rooms[room].reduce((a, b) => (b.y < a.y ? b : a));
+  const y = Math.min(top.y + WAIT_FROM_TOP, top.y + top.h - 1);
+  return { room, index: 0, x: top.x + Math.floor(top.w / 2), y, facing: Math.PI / 2, walks: false, path: [], wait: Infinity, waits: true };
 }
 
 // Can you see from one spot to another? Along the straight line between
@@ -97,6 +128,7 @@ const turn = (a: number, b: number) => Math.abs(Math.atan2(Math.sin(a - b), Math
 // Does this foe see you?
 export function sees(fp: Floorplan, foe: Foe, you: Pt): boolean {
   const d = Math.hypot(you.x - foe.x, you.y - foe.y);
+  if (foe.waits) return d <= WAIT_REACH && lineOfSight(fp, foe, you);
   if (d > SIGHT_RANGE) return false;
   if (d > SIGHT_NEAR && turn(Math.atan2(you.y - foe.y, you.x - foe.x), foe.facing) > (SIGHT_CONE * Math.PI) / 360) return false;
   return lineOfSight(fp, foe, you);
@@ -151,6 +183,7 @@ export function chargeFoe(foe: Foe, seconds: number): Foe {
 // walker walks to a spot in its room, faces the way it's going, pauses there,
 // then picks another.
 export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Math.random): Foe {
+  if (foe.waits) return foe;
   if (!foe.walks || foe.path.length === 0) {
     const wait = foe.wait - seconds;
     if (wait > 0) return { ...foe, wait };
@@ -158,10 +191,15 @@ export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Mat
       const others = WAYS.filter((w) => turn(w, foe.facing) > 0.1);
       return { ...foe, facing: others[Math.floor(rng() * others.length)], wait: between(rng, LOOK_TIME) };
     }
-    // Somewhere else in its room to walk to.
-    const floors = fp.rooms[foe.room];
-    const r = floors[Math.floor(rng() * floors.length)];
-    const to = { x: r.x + Math.floor(rng() * r.w), y: r.y + 1 + Math.floor(rng() * Math.max(1, r.h - 1)) };
+    // Somewhere else in its room (its end of it) to walk to.
+    const floors = fp.rooms[parentOf(foe.room)];
+    let to: Pt = { x: foe.x, y: foe.y };
+    for (let tries = 0; tries < 6; tries++) {
+      const r = floors[Math.floor(rng() * floors.length)];
+      to = { x: r.x + Math.floor(rng() * r.w), y: r.y + 1 + Math.floor(rng() * Math.max(1, r.h - 1)) };
+      if (foe.end === undefined || endOf(floors, to.x, to.y) === foe.end) break;
+      to = { x: Math.round(foe.x), y: Math.round(foe.y) };
+    }
     const from = { x: Math.round(foe.x), y: Math.round(foe.y) };
     const path = findPath(fp, from, to, (_, q) => inRects(floors, q.x, q.y)) ?? [];
     return { ...foe, path, wait: between(rng, PAUSE_TIME) };

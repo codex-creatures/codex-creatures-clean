@@ -46,12 +46,14 @@ export function roomDepth(map: DungeonMap, id: string): number {
 // Every room but the entrance, rolled: the chief's camp with its cages
 // (firstClear: the first time, the cages hold races your party hasn't got;
 // partyRaces are the races to leave out).
-export function rollWalkRooms(map: DungeonMap, rng: Rng = Math.random, firstClear = true, partyRaces: string[] = []): Record<string, Room> {
+// dungeon: the walkable Labyrinth's rooms are its own (no chief's cages);
+// backpack: you're on the bindle (merchants and storehouses have the backpack).
+export function rollWalkRooms(map: DungeonMap, rng: Rng = Math.random, firstClear = true, partyRaces: string[] = [], dungeon: DungeonId = ENCAMPMENT, backpack = false): Record<string, Room> {
   const rooms: Record<string, Room> = {};
   for (const n of Object.values(map.nodes)) {
     if (n.kind === "entrance") continue;
-    const room = makeRoom(n.kind, rng, roomDepth(map, n.id), ENCAMPMENT, false);
-    rooms[n.id] = n.id === map.boss ? { ...room, cages: campCages(firstClear, partyRaces, rng) } : room;
+    const room = makeRoom(n.kind, rng, roomDepth(map, n.id), dungeon, backpack);
+    rooms[n.id] = n.id === map.boss && dungeon === ENCAMPMENT ? { ...room, cages: campCages(firstClear, partyRaces, rng) } : room;
   }
   return rooms;
 }

@@ -182,3 +182,12 @@ The tile sheets are PixelLab's own sheets as downloaded (the layout: `WANG_TILES
 lib/dungeon/tileArt.ts, the same for all three). A hero sheet is packed here: 48px cells,
 rows south, east, north, west (west is east mirrored: no west walk was generated), column 0
 standing, 1–6 the walk.
+
+## The walkable Labyrinth: in the game (2026-11-06)
+
+| File | PixelLab |
+|---|---|
+| walk/cage.png | map object 2993e921-4097-485c-90b2-a3a29e0d9f62 (rusty iron cage on a wooden base, shut; 48×48, low top-down) |
+| walk/cage-open.png | map object c1c032ed-7a4a-48bf-aba4-afe74c88ea43 (the same, door swung open; 48×48) |
+| walk/healing-pool.png | map object 0736470c-48bb-49d8-8a03-aed56954346b (round pool in a ring of grey stones, pale blue water; 64×48; its faint glow is drawn in code) |
+| walk/witch.png | character 866b0221-662d-4516-81ba-c070d8c31f32 (card witch, chibi, v3, 64px) + walk group 503adca4-6f86-4cc5-850e-7cee5ed1180a (walking-6-frames: south, east, north). Sheet: 64px cells, rows south, east, north (west = east mirrored), the standing pose then the walk, feet at 63 |

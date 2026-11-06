@@ -64,7 +64,7 @@ export const FIRST_TREASURE_GOLD = 50;
 export const SCROLL_LOOKS = 2;
 export const scrollLooksLeft = (run: { scrollLooks?: number }) => Math.max(0, SCROLL_LOOKS - (run.scrollLooks ?? 0));
 
-export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss"
+export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss" | "campfire" /* the walkable Labyrinth: half the pools share (campfire.ts) */
   | "encampment" | "library" | "storehouse"; // (the large rooms: LARGE_MIX)
 
 // ── The dungeons ─────────────────────────────────────────────────────
@@ -245,6 +245,7 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   treasure:  { name: "Treasure",           icon: "💰" },
   easy:      { name: "Creature den",       icon: "⚔️" },
   pool:      { name: "Healing pool",       icon: "⛲" },
+  campfire:  { name: "Campfire",           icon: "🔥" },
   hard:      { name: "Lurking brute",      icon: "⚔️" },
   chest:     { name: "Chest",              icon: "🧰" },
   stash:     { name: "Stash",              icon: "💰" },
@@ -1021,6 +1022,12 @@ export type DungeonRun = {
 
 // The room at the top: the boss's lair, or the Encampment's camp. Finishing it ends the run, cleared.
 export const atTheTop = (run: DungeonRun) => run.current?.kind === "boss" || (dungeonOf(run) === 0 && run.current?.kind === "encampment");
+// You've beaten the boss at the top of a walk (or the chief), and stayed to
+// open the cages and the chest: the run's won, even if you leave by the Den
+// or Retreat rather than heading home (run.ts endRun counts it).
+// (Walked out of the boss's room since, sideways: still won.)
+export const wonAtTop = (run: DungeonRun) => !!run.walk && run.status !== "dead"
+  && !!(runPosition(run) === run.map.boss ? run.current : run.walk.rooms[run.map.boss])?.done;
 
 // dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts: wantsStorehouse).
 // bindle: you're still on the bindle (see onBindle).
@@ -1089,7 +1096,7 @@ export function takeDynamite(run: DungeonRun): DungeonRun {
 // Rooms you can walk out of without doing anything (and the large rooms
 // with no fight waiting: a library, an unguarded storehouse, an encampment
 // that looks empty).
-const SKIPPABLE: RoomKind[] = ["pool", "stash", "merchant", "librarian", "witch", "library", "storehouse", "encampment"];
+const SKIPPABLE: RoomKind[] = ["pool", "campfire", "stash", "merchant", "librarian", "witch", "library", "storehouse", "encampment"];
 
 // Can you take a tunnel out of here yet? Not until the room is dealt with.
 export const canMoveOn = (run: DungeonRun) =>
@@ -1253,7 +1260,7 @@ export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
     if (!healed && (run.hp[id] ?? 1) < 1) injuries[id] = run.hp[id];
     else delete injuries[id];
   }
-  const cleared = run.status === "cleared";
+  const cleared = run.status === "cleared" || wonAtTop(run);
   if (dungeonOf(run) === 0) {
     return { meta: { ...save.meta, injuries, campClears: (save.meta.campClears ?? 0) + (cleared ? 1 : 0) }, run: null };
   }

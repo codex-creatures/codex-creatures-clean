@@ -34,11 +34,15 @@ export type Campfire = { room: string; x: number; y: number; left: number };
 
 // The rooms' fires, rolled as the run starts: a spot on the floor away from
 // the room's middle and its doors, off its top and bottom rows (under the
-// walls).
-export function placeCampfires(fp: Floorplan, map: DungeonMap, centre: (room: string) => Pt, rng: Rng = Math.random): Campfire[] {
+// walls). A campfire room (the Labyrinth's: half the pools' share of rooms,
+// the user 2026-11-06) always has one; any other room `chance` of one (the
+// Encampment's CAMPFIRE_CHANCE: it has no pools; the Labyrinth's none), never
+// a pool's.
+export function placeCampfires(fp: Floorplan, map: DungeonMap, centre: (room: string) => Pt, rng: Rng = Math.random, chance = CAMPFIRE_CHANCE): Campfire[] {
   const out: Campfire[] = [];
   for (const id of Object.keys(map.nodes).sort()) {
-    if (id === map.start || id === map.boss || !fp.rooms[id] || rng() >= CAMPFIRE_CHANCE) continue;
+    if (id === map.start || id === map.boss || !fp.rooms[id] || map.nodes[id].kind === "pool") continue;
+    if (map.nodes[id].kind !== "campfire" && rng() >= chance) continue;
     const mid = centre(id), doors = fp.doors.filter((d) => d.room === id);
     const spots: Pt[] = [];
     for (const r of fp.rooms[id]) for (let y = r.y + 1; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
