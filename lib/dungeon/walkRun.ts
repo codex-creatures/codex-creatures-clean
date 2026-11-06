@@ -38,6 +38,8 @@ export type WalkRun = {
   trail?: Pt[];                 // your way so far, tile by tile (the scroll)
   cuts?: number[];              // …and the cut-offs you've crossed (tiles down)
   fires?: Campfire[];           // the rooms' campfires, and what each has left to give (none in older runs)
+  flare?: number;               // tiles of walking left with a flare's light (torch.ts FLARE_WALK)
+  flares?: number;              // flares lit this run (a new one lights afresh)
 };
 
 // A big or long room that's a creature den holds a second den down its other
@@ -49,10 +51,12 @@ export const SECOND_DEN = 0.35;
 // (dungeon 1, the Cyclops; /lab/newrun only for now): its own mix and large
 // rooms (layout.ts labyrinthMap) on a bigger layout (WALK_LABYRINTH), the
 // Cyclops waiting at the top. Either way, some big rooms hold two dens.
-export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random, dungeon: WalkDungeon = 0): DungeonRun {
+// dynamite: Klutz's dynamite quest wants a storehouse (the Labyrinth's large room).
+export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random, dungeon: WalkDungeon = 0, dynamite = false): DungeonRun {
   const layout = rollLayout(dungeon === 0 ? WALK_SPEC : WALK_LABYRINTH, rng);
-  const map = dungeon === 0 ? campMap(layout, false, rng) : labyrinthMap(layout, false, dungeon, rng);
+  const map = dungeon === 0 ? campMap(layout, false, rng) : labyrinthMap(layout, false, dungeon, rng, dynamite);
   const rooms = rollWalkRooms(map, rng, true, [], dungeon, bindle);
+  for (const n of Object.values(map.nodes)) if (n.dynamite && rooms[n.id]) rooms[n.id] = { ...rooms[n.id], dynamite: true };
   if (dungeon === 0) rooms[map.boss] = { ...rooms[map.boss], cages };
   const start = rooms[map.start] ?? null; // (the entrance holds nothing, unless it's treasure)
   delete rooms[map.start];

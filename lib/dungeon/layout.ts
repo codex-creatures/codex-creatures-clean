@@ -509,14 +509,17 @@ export function campMap(layout: Layout, firstRun: boolean, rng: Rng = Math.rando
 // turned into campfire rooms (the user, 2026-11-06: campfires take half the
 // pools' share, CAMPFIRE_SHARE; campfire.ts).
 export const CAMPFIRE_SHARE = 0.5;
-export function labyrinthMap(layout: Layout, firstRun: boolean, dungeon: DungeonId = 1, rng: Rng = Math.random): DungeonMap {
+// dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts): the
+// first large room is it, marked, as on the scroll map.
+export function labyrinthMap(layout: Layout, firstRun: boolean, dungeon: DungeonId = 1, rng: Rng = Math.random, dynamite = false): DungeonMap {
   const map = fillRooms(layoutMap(layout), firstRun, rng, dungeon);
   const kinds: RoomKind[] = [];
   for (const r of Object.values(layout.rooms).filter((r) => r.shape === LARGE_SHAPE.name).sort((a, b) => b.y - a.y)) {
-    const kind = rollRoomKind(rng, kinds.length < LARGE_MIX.length ? kinds : [], LARGE_MIX);
+    const stash = dynamite && kinds.length === 0;
+    const kind: RoomKind = stash ? "storehouse" : rollRoomKind(rng, kinds.length < LARGE_MIX.length ? kinds : [], LARGE_MIX);
     kinds.push(kind);
-    const mystery = rng() >= LARGE_KNOWN;
-    Object.assign(map.nodes[r.id], { kind, large: true, mystery, ...(mystery ? {} : { known: true }) });
+    const mystery = !stash && rng() >= LARGE_KNOWN;
+    Object.assign(map.nodes[r.id], { kind, large: true, mystery, ...(mystery ? {} : { known: true }), ...(stash ? { dynamite: true } : {}) });
   }
   markRooms(map, dungeon, rng, between(rng, SCROLL_MARKS));
   for (const n of Object.values(map.nodes)) if (n.kind === "pool" && rng() < CAMPFIRE_SHARE) n.kind = "campfire";

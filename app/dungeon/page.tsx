@@ -78,6 +78,7 @@ import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import WalkView, { WalkFirstMap, WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
+import { FLARE_WALK } from "@/lib/dungeon/torch";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
 import GearViewModal from "@/components/GearViewModal";
@@ -357,7 +358,19 @@ export default function DungeonPage() {
   }, [inRun]);
 
   // ── Starting and ending runs ──────────────────────────────────────
+  // Rolling a walkable layout takes a moment (up to ~2 s for the Labyrinth's):
+  // the screen says so first, rather than freezing on the Enter button.
+  const [lighting, setLighting] = useState(false);
   function begin(party: string[], dungeon: DungeonId = 1, walk = false) {
+    if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
+    if (walk && !lighting) {
+      setLighting(true);
+      setTimeout(() => { try { startBegun(party, dungeon, walk); } finally { setLighting(false); } }, 60);
+      return;
+    }
+    startBegun(party, dungeon, walk);
+  }
+  function startBegun(party: string[], dungeon: DungeonId, walk: boolean) {
     if (!lab || fullBoxes(game.inventory, game.storage).length > 0) return;
     const meta = lab.meta;
     const deep = dungeon > 1;
@@ -386,6 +399,11 @@ export default function DungeonPage() {
     if (deep) {
       const n = (lab.meta.deepRuns ?? 0) + 1;
       update({ meta: { ...meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2, dynamite, onBindle(lab.meta)) });
+      return;
+    }
+    // "New": the Labyrinth walked round by torchlight (lib/dungeon/walkRun.ts), its runs the Labyrinth's.
+    if (walk && !quest) {
+      update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: startWalkRun(party, team, hp, lab.meta.runs + 1, [], onBindle(lab.meta), Math.random, 1, dynamite) });
       return;
     }
     // Klutz's box: until it's back, runs are the quest's short run (club, then thief).
@@ -583,7 +601,7 @@ export default function DungeonPage() {
     }
     if (it.tool === "clairvoyance") { setSeer(null); setSheet(null); setMapOpen("pick"); return; }
     spendTool(entry);
-    updateRun((r) => ({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }));
+    updateRun((r) => walkKeep({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }, { flare: FLARE_WALK, flares: (r.walk?.flares ?? 0) + 1 }));
     setSheet(null);
     setMapOpen("look");
   }
@@ -928,7 +946,7 @@ export default function DungeonPage() {
   const [walkScroll, setWalkScroll] = useState(false); // the scroll, out
   const walkTo = (r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
   // Worth opening the room's window as you walk in: treasure to take, a camp that looks empty (its cages).
-  const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || (c.kind === "encampment" && !hasFight(c) && !c.done));
+  const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || (c.kind === "encampment" && !hasFight(c) && !c.done) || dynamiteHere(c));
   function walkEnter(id: string, st: WalkState) {
     // Leaving the witch mid-game: you walk away with what you've won.
     const w = loadDungeon().run?.current?.witch;
@@ -966,6 +984,7 @@ export default function DungeonPage() {
     updateRun((r) => walkTo(walkKeep(r, st), id));
     const c = loadDungeon().run?.current;
     if (!c) return;
+    if (dynamiteHere(c)) grabDynamite(); // (Klutz's: yours as you reach its crates)
     if (c.opened && (c.sack?.length ?? 0) > 0) setLootOpen(true);
     else if (c.kind === "chest" && !c.done) openChest();
     else if (c.container && c.done && !c.opened) openSack();
@@ -1161,6 +1180,9 @@ export default function DungeonPage() {
 
   if (leaving) return frame(<p className="pixel-font" style={{ color: MUTED, textAlign: "center", marginTop: 40 }}>Back to the Den…</p>);
 
+  if (!run && lighting) {
+    return frame(<p className="pixel-font" style={{ color: "#f1d9a0", textAlign: "center", marginTop: "30cqh", fontSize: 18 }}>🔥 Lighting the torches…</p>);
+  }
   if (!run) {
     return frame(<Entrance lab={lab} owned={owned} game={game} full={fullBoxes(game.inventory, game.storage)} quest={wantsClub(game.quest) || wantsThief(game.quest)} scans={game.totalScans} onBegin={begin} onHeal={healAll} onSave={update} />);
   }
@@ -1524,11 +1546,11 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
   const labOpen = labyrinthOpen(lab.meta, scans);
   const open = DUNGEON_IDS.filter((d) => d <= 1 || (d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0));
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
-  // "New": the Encampment, walked round by torchlight (lib/dungeon/walkRun.ts). Its runs are Encampment runs.
-  const [walkPick, setWalkPick] = useState(false);
-  // (The quest's run is in the Labyrinth.)
-  const dungeon: DungeonId = quest ? 1 : walkPick ? 0 : picked === 1 && !labOpen ? 0 : picked;
-  const walking = !quest && walkPick;
+  // "New": the Encampment or the Labyrinth, walked round by torchlight (lib/dungeon/walkRun.ts),
+  // its runs that dungeon's. (The quest's run is the old Labyrinth's.)
+  const [walkPick, setWalkPick] = useState<0 | 1 | null>(null);
+  const dungeon: DungeonId = quest ? 1 : walkPick !== null ? (walkPick === 1 && !labOpen ? 0 : walkPick) : picked === 1 && !labOpen ? 0 : picked;
+  const walking = !quest && walkPick !== null;
   // Who goes in: the dungeon's team size (3; 5 in the Abyss), picked here. A
   // bigger team sends its first ones (the rest are shown waiting).
   const cap = squadsOf(dungeon).team;
@@ -1555,7 +1577,7 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
       {!quest && (
         <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
           {open.map((d) => (
-            <button key={d} className="card-btn" onClick={() => { setDungeon(d); setWalkPick(false); }} disabled={d === 1 && !labOpen}
+            <button key={d} className="card-btn" onClick={() => { setDungeon(d); setWalkPick(null); }} disabled={d === 1 && !labOpen}
               title={d === 1 && !labOpen ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : undefined}
               style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: d === 1 && !labOpen ? 0.5 : 1, borderColor: dungeon === d && !walking ? "#f1d9a0" : undefined, background: dungeon === d && !walking ? "rgba(241,217,160,0.1)" : undefined }}>
               <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 && !labOpen ? "🔒" : DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
@@ -1567,17 +1589,22 @@ function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSav
               </span>
             </button>
           ))}
-          <button className="card-btn" onClick={() => setWalkPick(true)}
-            style={{ flex: "1 1 40%", display: "block", textAlign: "center", borderColor: walking ? "#f1d9a0" : undefined, background: walking ? "rgba(241,217,160,0.1)" : undefined }}>
-            <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>🔥 New</b>
-            <span style={{ display: "block", fontSize: 12, color: MUTED }}>The Encampment by torchlight · walk it yourself</span>
-          </button>
+          {([0, 1] as const).map((d) => {
+            const on = walking && dungeon === d, locked = d === 1 && !labOpen;
+            return (
+              <button key={`new${d}`} className="card-btn" onClick={() => setWalkPick(d)} disabled={locked}
+                style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: locked ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
+                <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{locked ? "🔒" : "🔥"} New{d === 1 ? ": the Cyclops" : ""}</b>
+                <span style={{ display: "block", fontSize: 12, color: MUTED }}>{d === 0 ? "The Encampment" : "The Labyrinth"} by torchlight · walk it yourself</span>
+              </button>
+            );
+          })}
         </div>
       )}
       {/* Enter, with what's inside behind the "?". */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
-          {walking ? "🔥 Enter the new Encampment" : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
+          {walking ? `🔥 Enter the new ${dungeon === 0 ? "Encampment" : "Labyrinth"}` : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
         </button>
         <Help title="The labyrinth">
           <ul>
@@ -1847,6 +1874,9 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
         </>
       ))}
 
+      {room.kind === "campfire" && (
+        <><p style={{ fontSize: 13, color: "#d8d4c8" }}>A campfire crackles. Stand by it and your team warms up while it lasts.</p>{onward}</>
+      )}
       {room.kind === "pool" && (room.done ? (
         <><p style={{ fontSize: 13, color: "#d8d4c8" }}>The water goes still.</p>{next}</>
       ) : (

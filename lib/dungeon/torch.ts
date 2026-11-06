@@ -18,6 +18,12 @@ import { ROCK, type Floorplan, type Pt } from "./floorplan";
 import { isOpen, type Layout, type Progress, type Tunnel } from "./layout";
 
 export const TORCH_RADIUS = 5.5; // tiles (🧪: foes see 7, so one can spot you from the dark)
+// A flare, lit (the user, 2026-11-06): the scroll on top as ever, and your
+// light reaches FLARE_REACH times as far for the next FLARE_WALK tiles you
+// walk (about half the walkable Encampment, bottom to top, 🧪).
+export const FLARE_REACH = 2;
+export const FLARE_WALK = 90;
+export const torchReach = (flareLeft = 0) => TORCH_RADIUS * (flareLeft > 0 ? FLARE_REACH : 1);
 export const FACE_ROWS = 3;      // rock rows above a floor its wall's face stands in (it's lit with the floor below it)
 export const REMEMBERED = 0.8;   // darkness over what you've seen but isn't lit now (1: black)
 

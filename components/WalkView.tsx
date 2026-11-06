@@ -26,13 +26,13 @@ import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, FLARE_WALK, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
 import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, spawnOf, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
 import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
 import { waitsHere, cageSpots, type WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
+import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
@@ -63,7 +63,7 @@ const DARK_RGB = [6, 5, 12];
 const CLOSED = "rgba(7, 6, 11, 0.6)";
 const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14", you: "#e0483e" };
 
-export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts" | "fires">;
+export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts" | "fires" | "flare">;
 // The campfire window: the team's health as it heals, who's getting some, what the fire has left.
 type Warming = { hp: Record<string, number>; giving: string[]; left: number };
 
@@ -96,7 +96,7 @@ function image(src: string): HTMLImageElement | null {
 // someone in the room (npc: the merchant, the librarian, the witch walking
 // about). key: the room, or "<room>#<cage>".
 type Thing = { key: string; room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art?: Parameters<typeof artFor>[0];
-  prop?: WalkProp; cage?: number; flag?: boolean; npc?: boolean; glow?: boolean };
+  prop?: WalkProp; cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean }; // inert: drawn, not tapped
 
 export default function WalkView({ walk, map, dungeon = 0, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
@@ -138,6 +138,12 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
     return placeSconces(plan, layout.start, seeded(walk.seed + 505), true).map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
   }, [plan, layout, walk.seed, walk.lit]));
   const fires = useRef<Campfire[]>((walk.fires ?? []).map((f) => ({ ...f })));
+  // A flare's light: tiles of walking left with it (torch.ts), lit afresh by each new flare.
+  const flareLeft = useRef(walk.flare ?? 0);
+  const flaresSeen = useRef(walk.flares ?? 0);
+  useEffect(() => {
+    if ((walk.flares ?? 0) > flaresSeen.current) { flaresSeen.current = walk.flares ?? 0; flareLeft.current = FLARE_WALK; }
+  }, [walk.flares]);
   const [warming, setWarming] = useState<Warming | null>(null);
   const facing = useRef<Facing>("south"); // (facing you to start: the torch shows)
   const walked = useRef(0);
@@ -157,7 +163,7 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
     at: { x: Math.round(me.current.x), y: Math.round(me.current.y) }, room: progressRef.current.room,
     line: progressRef.current.line === Infinity ? null : progressRef.current.line,
     known: toRuns(known.current), lit: sconces.current.filter((c) => c.lit).map((c) => c.id),
-    trail: trail.current.slice(-TRAIL_MAX), cuts: cuts.current, fires: fires.current.map((f) => ({ ...f })),
+    trail: trail.current.slice(-TRAIL_MAX), cuts: cuts.current, fires: fires.current.map((f) => ({ ...f })), flare: Math.round(flareLeft.current),
   });
   // Saved as you leave (a fight, the Den, a reload).
   useEffect(() => () => props.current.onKeep(state()), []);
@@ -195,7 +201,11 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
     else if (r.kind === "cards") add({ ...c, open: r.done, solid: true, art: CARD_DECK });
     else if (r.kind === "merchant") add({ ...c, open: false, solid: true, npc: true, art: MERCHANT });
     else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, open: false, solid: true, npc: true, art: LIBRARIAN });
-    else if (r.kind === "witch") for (const n of npcs.current.filter((f) => f.room === id)) add({ x: Math.round(n.x), y: Math.round(n.y), open: false, solid: false, npc: true, art: CARD_WITCH });
+    else if (r.kind === "witch") for (const n of npcs.current.filter((f) => f.room === id)) {
+      // (Her game played out, she wanders on, with nothing more for you: the user, 2026-11-06.)
+      const over = r.done || (!!r.witch && r.witch.state !== "playing");
+      add({ x: Math.round(n.x), y: Math.round(n.y), open: false, solid: false, npc: true, art: CARD_WITCH, inert: over });
+    }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
     if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
       add({ ...c, open: !!r.opened, solid: true, sack: r.kind === "library", art: r.kind === "library" ? (r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK) : r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST });
@@ -216,7 +226,7 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
   // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
   // A tap on (or by) a thing: within TAP_OBJECT of it, or of someone's body (they stand a tile tall).
-  const tapped = (t: Thing, q: Pt) => Math.hypot(t.x - q.x, t.y - q.y) <= TAP_OBJECT || (!!t.npc && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= TAP_OBJECT);
+  const tapped = (t: Thing, q: Pt) => !t.inert && (Math.hypot(t.x - q.x, t.y - q.y) <= TAP_OBJECT || (!!t.npc && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= TAP_OBJECT));
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => {
@@ -268,10 +278,12 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
       const before = { x: me.current.x, y: me.current.y };
       if (!busy && !A) me.current = advance(me.current, dt);
       const moved = Math.hypot(me.current.x - before.x, me.current.y - before.y);
+      if (moved > 0) flareLeft.current = Math.max(0, flareLeft.current - moved);
+      const reachNow = torchReach(flareLeft.current);
       if (moved > 0) { walked.current += moved; movedSince = true; facing.current = facingOf(me.current.x - before.x, me.current.y - before.y, facing.current); }
       // The torch: what it lights now, remembered from now on; the wall torches.
       const flicker = 1 + 0.03 * Math.sin(now / 90) + 0.02 * Math.sin(now / 37 + 1.3);
-      lightNow.current = torchLit(live, me.current);
+      lightNow.current = torchLit(live, me.current, reachNow);
       let lighted = false;
       for (const c of sconces.current) {
         if (!there(c)) continue;
@@ -566,32 +578,21 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
           ctx.fillRect(fx - 0.16 * T, top, 0.32 * T, 0.1 * T);
         } });
       }
-      // Campfires: a ring of stones round crossed logs (the flames go over the dark, below). A placeholder for art.
+      // Campfires: a ring of stones round logs stacked up, burning (or burnt down: embers). PixelLab art.
+      const fireImg = image(WALK_CAMPFIRE.src), embersImg = image(WALK_CAMPFIRE_OUT.src);
+      const drawFire = (f: Campfire, img: HTMLImageElement | null) => {
+        if (!img) return;
+        const wd = WALK_CAMPFIRE.size * scale, h2 = (wd * WALK_CAMPFIRE.h) / WALK_CAMPFIRE.w;
+        ctx.drawImage(img, footX(f.x) - wd / 2, footY(f.y) - h2 + h2 * 0.15, wd, h2);
+      };
       for (const f of fires.current) {
         if (!knownAt(f.x, f.y)) continue;
-        standing.push({ x: f.x, y: f.y, draw: () => {
-          const fx = footX(f.x), fy = footY(f.y) - 3 * scale;
-          ctx.fillStyle = f.left > 0 ? "#3a2412" : "#24170c";
-          for (const tilt of [-0.45, 0.45]) {
-            ctx.save();
-            ctx.translate(fx, fy - 0.08 * T);
-            ctx.rotate(tilt);
-            ctx.fillRect(-0.36 * T, -0.07 * T, 0.72 * T, 0.14 * T);
-            ctx.restore();
-          }
-          for (let k = 0; k < 8; k++) {
-            const a = (k / 8) * 2 * Math.PI;
-            ctx.fillStyle = k % 2 ? "#5b5560" : "#6f6872";
-            ctx.beginPath();
-            ctx.ellipse(fx + Math.cos(a) * 0.42 * T, fy + Math.sin(a) * 0.22 * T, 0.11 * T, 0.08 * T, 0, 0, 2 * Math.PI);
-            ctx.fill();
-          }
-        } });
+        standing.push({ x: f.x, y: f.y, draw: () => drawFire(f, f.left > 0 ? fireImg : embersImg) });
       }
       for (const s of drawOrder(standing)) s.draw();
       // Your torch's warm glow, going cold away from it, the wall torches' pools; then the dark
       // over everything (black where you've never seen, dim where you remember).
-      const hx = footX(me.current.x), hy = footY(me.current.y) - 12 * scale, reach = TORCH_RADIUS * T * flicker;
+      const hx = footX(me.current.x), hy = footY(me.current.y) - 12 * scale, reach = reachNow * T * flicker;
       ctx.globalCompositeOperation = "multiply";
       const cool = ctx.createRadialGradient(hx, hy, 0, hx, hy, reach);
       cool.addColorStop(0, "rgb(255, 222, 170)");
@@ -633,7 +634,7 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
       const d = shade.data;
       for (let y = Math.max(0, y0 - 1); y < Math.min(h, y1 + 1); y++) for (let x = Math.max(0, x0 - 1); x < Math.min(w, x1 + 1); x++) {
         const i = y * w + x;
-        let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, TORCH_RADIUS, flicker);
+        let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, reachNow, flicker);
         for (const c of burning) if (sconceLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
         for (const f of fireSeen) if (fireLight(f)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - f.x, y - f.y), flicker, fireReach(f)));
         alarmed.forEach((f, k) => { if (foeLight[k][i]) glow = Math.min(glow, torchGlow(Math.hypot(x - f.x, y - f.y), true, true, ALARM_LIGHT, flicker)); });
@@ -663,32 +664,28 @@ export default function WalkView({ walk, map, dungeon = 0, here, room, busy, bee
         ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
         ctx.fill();
       }
-      // The campfires' flames (or the embers' glow), over the dark.
+      // The campfires, over the dark: a fire glows whatever's round it.
       for (const f of fires.current) {
         if (f.x < x0 || f.x >= x1 || f.y < y0 || f.y >= y1 + 1 || !knownAt(f.x, f.y)) continue;
-        const fx = footX(f.x), base = footY(f.y) - 0.2 * T, r = (f.left > 0 ? 1.1 : 0.6) * T;
+        const fx = footX(f.x), base = footY(f.y) - 0.45 * T, lit = f.left > 0;
+        const r = (lit ? 0.9 + 0.5 * (f.left / CAMPFIRE_HEAL) : 0.55) * T * (1 + 0.08 * Math.sin(now / 90 + f.x));
         ctx.globalCompositeOperation = "lighter";
-        const halo = ctx.createRadialGradient(fx, base - 0.2 * T, 0, fx, base - 0.2 * T, r);
-        halo.addColorStop(0, f.left > 0 ? "rgba(255, 160, 60, 0.6)" : "rgba(255, 80, 30, 0.35)");
+        const halo = ctx.createRadialGradient(fx, base, 0, fx, base, r);
+        halo.addColorStop(0, lit ? "rgba(255, 160, 60, 0.55)" : "rgba(255, 80, 30, 0.3)");
         halo.addColorStop(1, "rgba(255, 160, 60, 0)");
         ctx.fillStyle = halo;
-        ctx.fillRect(fx - r, base - 0.2 * T - r, 2 * r, 2 * r);
+        ctx.fillRect(fx - r, base - r, 2 * r, 2 * r);
         ctx.globalCompositeOperation = "source-over";
-        if (f.left > 0) {
-          // Taller the more it has left to give.
-          const big = 0.6 + 0.4 * (f.left / CAMPFIRE_HEAL);
-          for (const [dx, tall, col, wd] of [[-0.14, 0.5, "#ff7a1e", 0.15], [0.14, 0.45, "#ff7a1e", 0.14], [0, 0.7, "#ff9a2e", 0.2], [0, 0.4, "#fff1b0", 0.1]] as const) {
-            const wob = 1 + 0.15 * Math.sin(now / 60 + dx * 20 + f.x);
-            ctx.fillStyle = col;
-            ctx.beginPath();
-            ctx.ellipse(fx + dx * T, base - (tall / 2) * T * big * wob, wd * T, (tall / 2) * T * big * wob, 0, 0, 2 * Math.PI);
-            ctx.fill();
-          }
-        } else {
-          for (let k = 0; k < 5; k++) {
-            ctx.fillStyle = `rgba(255, ${Math.round(70 + 40 * Math.abs(Math.sin(now / 300 + k)))}, 30, 0.9)`;
-            ctx.fillRect(fx + (((k * 7) % 5) - 2) * 0.1 * T, base + (((k * 3) % 3) - 1) * 0.06 * T, 0.07 * T, 0.07 * T);
-          }
+        drawFire(f, lit ? fireImg : embersImg);
+        if (lit) {
+          // A tongue of flame flickering over the sprite's, taller the more the fire has left.
+          const big = 0.5 + 0.5 * (f.left / CAMPFIRE_HEAL), wob = 1 + 0.2 * Math.sin(now / 55 + f.x);
+          ctx.globalAlpha = 0.75;
+          ctx.fillStyle = "#ffd27a";
+          ctx.beginPath();
+          ctx.ellipse(fx, base - 0.05 * T - 0.2 * T * big * wob, 0.08 * T, 0.22 * T * big * wob, 0, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.globalAlpha = 1;
         }
       }
       // A healing pool's very faint glow, and a "!" over each cage you can open.

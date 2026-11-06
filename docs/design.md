@@ -967,15 +967,18 @@ How it came about, round by round: history.md.
        A window over the walk shows the team's health bars rising, a "+" by each one healing,
        and what the fire has left; green crosses rise round you. Given out, it burns down to
        embers with half its light (`EMBER_LIGHT`). It's solid, and lights its part of the room
-       (`CAMPFIRE_LIGHT` 5 tiles 🧪). Drawn in code for now, a placeholder for PixelLab art.
+       (`CAMPFIRE_LIGHT` 5 tiles 🧪). PixelLab art (see "Campfire art" below).
        **Pools** (the user's call): a campfire and a healing pool never share a room, and
        campfires take some of the pools' share of rooms. The Encampment has no pools, so this
        applies once the walkable run reaches the Labyrinth: half each (pools 10, campfires 10 of
        `ROOM_MIX`'s 20; the user, 2026-11-06), 🧪 to adjust, as walking sideways likely finds
        more of them than the scroll's tunnels did.
-     - **The walkable Labyrinth** (the Cyclops; 🚧 the user, 2026-11-06: "get the game ready to
-       re-create the Cyclops map in this style"; `/lab/newrun` → Labyrinth, not in the game yet):
-       `startWalkRun(…, dungeon 1)`. Its rooms are the live Labyrinth's mix by the same code
+     - **The walkable Labyrinth** (the Cyclops; ✅ the user, 2026-11-06: live as a second New at
+       the Labyrinth's entrance, "🔥 New: the Cyclops", locked till the Labyrinth opens; the old
+       Labyrinth stays as it is, and Klutz's quest runs are still the old one's;
+       `/lab/newrun` → Labyrinth shows it without a save): `startWalkRun(…, dungeon 1)`, a
+       Labyrinth run (its fee, run and clear counts, first clear, the Cyclops). Rolling its layout
+       takes up to ~2 s, so the screen says "🔥 Lighting the torches…" first. Its rooms are the live Labyrinth's mix by the same code
        (map.ts `fillRooms`, shared with the scroll map: dens up front, mini bosses deeper, "?"
        rooms), on `labyrinthMap` (layout.ts). **Large rooms**: `LARGE_SHAPE` 14×9 blocks 🧪,
        `spec.large` of them up the middle of the layout, each an encampment, library or
@@ -993,9 +996,25 @@ How it came about, round by round: history.md.
        **Its size is open**: the scroll map's Labyrinth is 36 rooms, 15 to the lair, but with
        `ROUTES` (3) separate ways of 15 that needs 44+ rooms, and those layouts take ~15 s to
        roll and mostly fail. `WALK_LABYRINTH` is 30 rooms, 10 to the lair, for now (rolls in
-       ~1 s). Options for the user: a shorter route; 2 separate ways instead of 3 for the
-       Labyrinth; or a faster layout roller. Not done yet: Klutz's dynamite storehouse in a walk.
-     - **Still to come:** scenery, torch, campfire and rubble art, the old Encampment's retirement once
+       ~1 s, 2 s at worst). **Why the big ones are slow** (measured, 2026-11-06): each try is
+       quick (10–20 ms), but rooms are packed first and checked after, and one bad room (mostly
+       at the edges, with only one room above in reach) throws the whole packing away: 7% of
+       19-room packings pass, 1% of 30, ~0% of 44. Tried and dropped, as both were slower than
+       rolling again: moving the bad rooms (the packing's too tight to find them better places),
+       and packing 30% extra rooms then taking the worst out (the gaps break their neighbours).
+       Pre-rolled seeds: not for now (the user). Next idea: build the layout so each room is
+       checked as it's placed.
+       Klutz's dynamite quest: the large room is its storehouse, marked, and the dynamite's yours
+       as you reach its crates.
+     - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,
+       and your light reaches twice as far (`FLARE_REACH`) for the next `FLARE_WALK` 90 tiles
+       you walk (about half the walkable Encampment, 🧪). A new flare lights afresh.
+     - **The card witch** wanders on once her game's played out, but there's nothing more to tap
+       her for (the user, 2026-11-06).
+     - **Campfire art** (the user, 2026-11-06): PixelLab, logs stacked in a teepee in a ring of
+       stones, burning, and the same burnt out; a flickering glow and a tongue of flame are drawn
+       over it, bigger the more it has left.
+     - **Still to come:** scenery, torch and rubble art, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { startWalkRun, walkInto, walkRoom, walkKeep, cageSpots, waitsHere } from "../lib/dungeon/walkRun";
+import { startWalkRun, walkInto, walkRoom, walkKeep, cageSpots, waitsHere, headHome } from "../lib/dungeon/walkRun";
+import { torchReach, FLARE_WALK, FLARE_REACH, TORCH_RADIUS } from "../lib/dungeon/torch";
 import { hasFight, atTheTop, endRun, wonAtTop, type Cage, type DungeonRun, type DungeonSave } from "../lib/dungeon/run";
-import { isSpawn, parentOf, placeFoes, placeWaiter, sees, endOf, WAIT_REACH } from "../lib/dungeon/foes";
+import { isSpawn, parentOf, spawnOf, placeFoes, placeWaiter, sees, endOf, WAIT_REACH } from "../lib/dungeon/foes";
 import { layoutFloorplan, TWO_DEN_SHAPES, LARGE_SHAPE } from "../lib/dungeon/layout";
 import { FLOOR } from "../lib/dungeon/floorplan";
 
@@ -115,7 +116,7 @@ describe("the walkable Encampment run", () => {
   });
 });
 
-describe("the walkable Labyrinth (the lab)", () => {
+describe("the walkable Labyrinth (New: the Cyclops)", () => {
   const lab = startWalkRun(["a"], ["a"], { a: 1 }, 2, [], false, seeded(11), 1);
   it("is a Labyrinth run: its own mix, a large room, the Cyclops waiting at the top", () => {
     expect(lab.dungeon).toBeUndefined();
@@ -131,5 +132,63 @@ describe("the walkable Labyrinth (the lab)", () => {
     const fires = lab.walk!.fires ?? [];
     for (const f of fires) expect(lab.map.nodes[f.room].kind).toBe("campfire");
     for (const n of Object.values(lab.map.nodes)) if (n.kind === "campfire") expect(fires.some((f) => f.room === n.id)).toBe(true);
+  });
+  it("beating the Cyclops and heading home is a Labyrinth clear", () => {
+    const top = walkInto(lab, lab.map.boss);
+    expect(atTheTop(top)).toBe(true);
+    const won = { ...top, current: { ...top.current!, done: true } };
+    const home = headHome(won);
+    expect(home.status).toBe("cleared");
+    const meta = { runs: 2, clears: 0, injuries: {}, bag: [] };
+    const after = endRun({ meta, run: home }).meta;
+    expect(after.clears).toBe(1);
+    expect(after.firstClearRun).toBe(2);
+    // Left by the Den instead (retreated) once he's beaten: still a clear.
+    expect(endRun({ meta, run: { ...won, status: "retreated" } }).meta.clears).toBe(1);
+    // Not beaten: no clear, and heading home does nothing.
+    expect(headHome(top)).toBe(top);
+    expect(endRun({ meta, run: { ...top, status: "retreated" } }).meta.clears).toBe(0);
+  });
+  it("Klutz's dynamite quest: the large room is the storehouse, with the dynamite, marked", () => {
+    const run = startWalkRun(["a"], ["a"], { a: 1 }, 2, [], false, seeded(12), 1, true);
+    const large = Object.values(run.walk!.layout.rooms).find((r) => r.shape === LARGE_SHAPE.name)!;
+    expect(run.map.nodes[large.id]).toMatchObject({ kind: "storehouse", dynamite: true, known: true });
+    expect(run.walk!.rooms[large.id].dynamite).toBe(true);
+  });
+  it("a sweep of runs: every room rolled, standing on floor, sound to walk", () => {
+    const problems: string[] = [];
+    for (let seed = 21; seed < 27; seed++) {
+      const run = startWalkRun(["a"], ["a"], { a: 1 }, 2, [], seed % 2 === 0, seeded(seed), 1);
+      const fp = layoutFloorplan(run.walk!.layout);
+      const floor = (q: { x: number; y: number }) => fp.tiles[q.y * fp.w + q.x] !== 0;
+      for (const [id, n] of Object.entries(run.map.nodes)) {
+        if (id === run.map.start) continue;
+        const room = run.walk!.rooms[id];
+        if (!room) { problems.push(`${seed}: ${id} not rolled`); continue; }
+        if (room.kind !== n.kind) problems.push(`${seed}: ${id} is ${room.kind}, its map node ${n.kind}`);
+        if (hasFight(room) && !room.boss && !(room.enemies?.length)) problems.push(`${seed}: ${id} a fight with no foes`);
+        // Its foes find room to stand (two dens keep to an end each).
+        if (hasFight(room) && room.enemies && !waitsHere(room, 1)) {
+          const two = !!run.map.nodes[spawnOf(parentOf(id))];
+          const placed = placeFoes(fp, id, room.enemies.length, seeded(seed), two ? (isSpawn(id) ? 1 : 0) : undefined);
+          if (placed.length !== room.enemies.length) problems.push(`${seed}: ${id} has room for ${placed.length} of ${room.enemies.length} foes`);
+          for (const f of placed) if (!floor(f)) problems.push(`${seed}: ${id} foe off the floor`);
+        }
+        if (room.cages?.length) for (const c of cageSpots(fp, parentOf(id), room.cages.length)) if (!floor(c)) problems.push(`${seed}: ${id} cage off the floor`);
+      }
+      for (const f of run.walk!.fires ?? []) if (!floor(f)) problems.push(`${seed}: fire off the floor`);
+      if (!floor(placeWaiter(fp, run.map.boss))) problems.push(`${seed}: the Cyclops off the floor`);
+      expect(JSON.parse(JSON.stringify(run))).toEqual(run);
+    }
+    expect(problems).toEqual([]);
+  });
+});
+
+describe("flares, walking", () => {
+  it("light twice as far for a while, then the torch is back to itself", () => {
+    expect(torchReach(FLARE_WALK)).toBe(TORCH_RADIUS * FLARE_REACH);
+    expect(torchReach(1)).toBe(TORCH_RADIUS * 2);
+    expect(torchReach(0)).toBe(TORCH_RADIUS);
+    expect(torchReach()).toBe(TORCH_RADIUS);
   });
 });

@@ -52,3 +52,8 @@ export const WALK_POOL: WalkProp = { src: "/sprites/walk/healing-pool.png", w: 6
 // hero's: rows south, east, north, west mirrored; column 0 standing, then 6 of
 // walk). tall: her height in the cell, px (she's drawn NPC_PX tall: WalkView).
 export const WALK_WITCH = { sheet: "/sprites/walk/witch.png", cell: 67, frames: 6, feet: 65, tall: 60 };
+// A campfire (PixelLab map object: logs stacked in a teepee in a ring of
+// stones, burning), and the same burnt down to embers; flickering glow and a
+// tongue of flame are drawn over it (WalkView).
+export const WALK_CAMPFIRE: WalkProp = { src: "/sprites/walk/campfire.png", w: 48, h: 48, size: 24 };
+export const WALK_CAMPFIRE_OUT: WalkProp = { src: "/sprites/walk/campfire-out.png", w: 48, h: 48, size: 24 };
