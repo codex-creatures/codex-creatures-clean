@@ -15,7 +15,7 @@
 //   (rubbleOf); if you hadn't, it's just rock.
 
 import { ROCK, type Floorplan, type Pt } from "./floorplan";
-import { isOpen, type Layout, type Progress, type Tunnel } from "./layout";
+import { isOpen, blockOf, type Layout, type Progress, type Tunnel } from "./layout";
 
 export const TORCH_RADIUS = 5.5; // tiles (🧪: foes see 7, so one can spot you from the dark)
 // A flare, lit (the user, 2026-11-06): the scroll on top as ever, and your
@@ -114,10 +114,18 @@ export function rubbleOf(fp: Floorplan, layout: Layout, p: Progress): Rubble[] {
 
 // The tunnels that fell in behind you: closed, their mouth still in an open
 // room, and you'd seen it (known: the tiles you've seen). The ones you can't
-// go back down; the scroll crosses each out (the user, 2026-11-07: only
-// these, not every closed tunnel behind you).
+// go back down.
 export const fallenIn = (fp: Floorplan, layout: Layout, p: Progress, known: ArrayLike<number>): Rubble[] =>
   rubbleOf(fp, layout, p).filter((r) => r.tiles.some((q) => known[q.y * fp.w + q.x]));
+// Every tunnel that's fallen in behind you this run, at each cut-off you've
+// crossed (cuts: cutOffY's, tiles down) and now. The scroll crosses each out,
+// and keeps them (the user, 2026-11-07: only these, not every closed tunnel
+// behind you, and kept once you're further up).
+export function fallenSoFar(fp: Floorplan, layout: Layout, p: Progress, cuts: number[], known: ArrayLike<number>): string[] {
+  const keys = new Set<string>();
+  for (const line of [...cuts.map((y) => y / blockOf(layout)), p.line]) for (const r of fallenIn(fp, layout, { ...p, line }, known)) keys.add(r.key);
+  return [...keys];
+}
 
 // Torches on the walls (the user, 2026-11-06): sconces along rooms' top
 // walls, most of them unlit. Walk within half your torch's reach of an unlit

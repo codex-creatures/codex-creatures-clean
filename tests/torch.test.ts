@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
-import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, WALK_SPEC } from "../lib/dungeon/layout";
-import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, tunnelShut, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
+import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, cutOffY, WALK_SPEC } from "../lib/dungeon/layout";
+import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, tunnelShut, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
 import { sideFace, capFade, depthEdges, SIDE_FACE_MAX, CAP_FAINT, FACE_TILE, TOP_TILE, WANG_TILES } from "../lib/dungeon/tileArt";
 
 function seeded(seed: number) {
@@ -109,6 +109,30 @@ describe("the scroll's red lines", () => {
     }
     expect(fails).toEqual([]);
     expect(checked).toBeGreaterThan(0);
+  });
+  it("keeps the ones that fell in further down, once you're further up", () => {
+    const fails: string[] = [];
+    let kept = 0;
+    for (let s = 1; s <= 8; s++) {
+      const layout = rollLayout(WALK_SPEC, seeded(s)), fp = layoutFloorplan(layout);
+      const all = new Uint8Array(fp.w * fp.h).fill(1), none = new Uint8Array(fp.w * fp.h);
+      let p = startProgress(layout);
+      const cuts: number[] = [], earlier = new Set<string>();
+      for (let k = 0; k < 3; k++) {
+        const up = waysOn(layout, p).find((w) => w.tunnel.up);
+        if (!up) break;
+        p = up.to;
+        cuts.push(cutOffY(p, layout));
+        if (k < 2) for (const r of fallenIn(fp, layout, p, all)) earlier.add(r.key);
+      }
+      const so = fallenSoFar(fp, layout, p, cuts, all);
+      for (const key of earlier) if (!so.includes(key)) fails.push(`${s}: ${key} forgotten`);
+      for (const r of fallenIn(fp, layout, p, all)) if (!so.includes(r.key)) fails.push(`${s}: ${r.key} missing now`);
+      if (fallenSoFar(fp, layout, p, cuts, none).length > 0) fails.push(`${s}: a line where you'd seen nothing`);
+      kept += [...earlier].filter((key) => !fallenIn(fp, layout, p, all).some((r) => r.key === key)).length;
+    }
+    expect(fails).toEqual([]);
+    expect(kept).toBeGreaterThan(0); // (some only show because they're kept)
   });
 });
 

@@ -818,9 +818,10 @@ How it came about, round by round: history.md.
        looked at **twice a run** (`SCROLL_LOOKS`), it shows a mark where each room's middle
        is: its icon if you know what's there, else "?". Of the rooms and tunnels themselves it
        shows only what your torch has lit, drawn like a treasure map: lit floors and walls, your
-       trail dotted, and a **red line across each tunnel that fell in behind you** (`fallenIn`:
-       closed, its mouth in a room still open, and you'd seen it; the user, 2026-11-07: not every
-       closed tunnel behind you, which got spammy, so it goes once you're further up) (the cut-offs
+       trail dotted, and a **red line across each tunnel that fell in behind you this run**
+       (`fallenSoFar`: closed with its mouth in a room still open, and you'd seen it, at any
+       cut-off you've crossed; kept once you're further up. The user, 2026-11-07: not every closed
+       tunnel behind you, which got spammy) (the cut-offs
        themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
        as the furthest walls and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
        room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare

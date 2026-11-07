@@ -26,7 +26,7 @@ import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
 import { placeDecor, floorVariant, wallVariant, placeBanners, type Decor } from "@/lib/dungeon/decor";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
 import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, spawnOf, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
@@ -860,7 +860,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
       <canvas ref={canvas} onPointerDown={tap} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }} />
       {warming && !scroll && <Warmth team={team} warming={warming} />}
-      {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={known.current} trail={trail.current} progress={progress}
+      {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={known.current} trail={trail.current} progress={progress} cuts={cuts.current}
         been={been} here={roomAt(plan, me.current)} at={me.current} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
     </div>
   );
@@ -901,13 +901,13 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
 }
 
 // The scroll, like a treasure map (layout.ts scrollMarks): what your torch has
-// lit, your trail, a red line across each tunnel that fell in behind you,
+// lit, your trail, a red line across each tunnel that fell in this run,
 // a mark per room (crossed once cleared). A room a clairvoyance scroll looked
 // into is drawn in, and the rooms it and a flare showed are marked (foreseen).
 // As wide as the rooms' walls reach, scrolling up and down, opened at you
 // (the user, 2026-11-06). Tap to put it away, or (onPick) tap a room to pick it.
-function WalkScroll({ map, layout, plan, known, trail, progress, been, here, at, cleared, lit, seen, onClose, onPick }: {
-  map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress;
+function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
+  map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress; cuts?: number[];
   been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
 }) {
   const [shown] = useState(() => {
@@ -929,8 +929,8 @@ function WalkScroll({ map, layout, plan, known, trail, progress, been, here, at,
       if (run && run.y === y && run.wall === wall && run.x + run.w === x) run.w++;
       else ink.push({ x, y, w: 1, wall });
     }
-    // Tunnels that fell in behind you (fallenIn): a red line across the middle, a tile past each side.
-    const fell = new Set(!progress ? [] : fallenIn(plan, layout, progress, drawn).map((r) => r.key));
+    // Tunnels that fell in behind you this run (fallenSoFar): a red line across the middle, a tile past each side.
+    const fell = new Set(!progress ? [] : fallenSoFar(plan, layout, progress, cuts, drawn));
     const shut = layout.tunnels.filter((t) => fell.has(t.key))
       .map(({ rect: { x, y, w, h }, up }) => (up ? { x1: x - 1, y1: y + h / 2, x2: x + w + 1, y2: y + h / 2 } : { x1: x + w / 2, y1: y - 1, x2: x + w / 2, y2: y + h + 1 }));
     const marks: ScrollMark[] = scrollMarks(map, layout, been, here, foreseen(map, layout, lit, seen));
@@ -979,7 +979,7 @@ export function WalkMap({ walk, map, here, been, cleared, lit, seen, onPick }: {
   return (
     <div style={{ position: "relative", width: "100%", height: "60cqh" }}>
       <WalkScroll map={map} layout={walk.layout} plan={plan} known={fromRuns(walk.known, plan.w * plan.h)} trail={walk.trail ?? [walk.at]}
-        progress={{ room: walk.room, line: walk.line ?? Infinity }} been={been} here={here} at={walk.at} cleared={cleared} lit={lit} seen={seen} onPick={onPick} />
+        progress={{ room: walk.room, line: walk.line ?? Infinity }} cuts={walk.cuts} been={been} here={here} at={walk.at} cleared={cleared} lit={lit} seen={seen} onPick={onPick} />
     </div>
   );
 }
