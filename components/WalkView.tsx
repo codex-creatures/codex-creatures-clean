@@ -26,7 +26,7 @@ import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, tunnelShut, rubbleOf, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
 import { placeDecor, floorVariant, wallVariant, placeBanners, type Decor } from "@/lib/dungeon/decor";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
 import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, spawnOf, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
@@ -339,7 +339,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
           if (next.line !== progressRef.current.line) {
             cuts.current.push(cutOffY(next, layout));
             const was = new Set(rubbleOf(plan, layout, progressRef.current).map((r) => r.key));
-            for (const r of rubbleOf(plan, layout, next)) if (!was.has(r.key) && r.tiles.some((q) => known.current[q.y * w + q.x])) falls.current.set(r.key, now);
+            for (const r of fallenIn(plan, layout, next, known.current)) if (!was.has(r.key)) falls.current.set(r.key, now);
             if (falls.current.size > 0) shakeAt.current = now;
           }
           progressRef.current = next;
@@ -901,7 +901,7 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
 }
 
 // The scroll, like a treasure map (layout.ts scrollMarks): what your torch has
-// lit, your trail, a red line along each tunnel you'd seen that's closed off,
+// lit, your trail, a red line across each tunnel that fell in behind you,
 // a mark per room (crossed once cleared). A room a clairvoyance scroll looked
 // into is drawn in, and the rooms it and a flare showed are marked (foreseen).
 // As wide as the rooms' walls reach, scrolling up and down, opened at you
@@ -929,10 +929,10 @@ function WalkScroll({ map, layout, plan, known, trail, progress, been, here, at,
       if (run && run.y === y && run.wall === wall && run.x + run.w === x) run.w++;
       else ink.push({ x, y, w: 1, wall });
     }
-    // Closed-off tunnels you'd seen: a red line down the middle.
-    const shut = !progress ? [] : layout.tunnels
-      .filter((t) => tunnelShut(layout, progress, t) && (plan.tunnels[t.key] ?? []).some((q) => drawn[q.y * plan.w + q.x]))
-      .map(({ rect: { x, y, w, h }, up }) => (up ? { x1: x + w / 2, y1: y, x2: x + w / 2, y2: y + h } : { x1: x, y1: y + h / 2, x2: x + w, y2: y + h / 2 }));
+    // Tunnels that fell in behind you (fallenIn): a red line across the middle, a tile past each side.
+    const fell = new Set(!progress ? [] : fallenIn(plan, layout, progress, drawn).map((r) => r.key));
+    const shut = layout.tunnels.filter((t) => fell.has(t.key))
+      .map(({ rect: { x, y, w, h }, up }) => (up ? { x1: x - 1, y1: y + h / 2, x2: x + w + 1, y2: y + h / 2 } : { x1: x + w / 2, y1: y - 1, x2: x + w / 2, y2: y + h + 1 }));
     const marks: ScrollMark[] = scrollMarks(map, layout, been, here, foreseen(map, layout, lit, seen));
     // Across: the furthest walls, with a tile of paper either side.
     const x0 = Math.max(0, left - 2), x1 = Math.min(plan.w, right + 3);

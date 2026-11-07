@@ -8,11 +8,14 @@
 // (none) are as they were.
 //
 // Styles, by the room's shape (STYLES; some rooms have none):
-// - pillars: a grid of 2×2 pillars across the middle;
+// - pillars: the odd 2×2 pillar or two (PILLARS_MOST), from a grid across the middle;
 // - colonnade: two rows of pillars down a long room, a lane between them;
 // - alcoves: short stubs of wall out from the long sides, making bays;
 // - divider: a wall part way across the middle, from one side, to go round;
 // - aisle (the boss's room): pillars down both sides, its middle kept clear.
+// The walls (alcoves, divider) and colonnades aren't rolled any more (the
+// user, 2026-11-07: "the walls are too obstructing… the odd pillar could
+// help"); runs that rolled them keep them (they're in the layout).
 // Always kept clear: a margin by the walls (MARGIN: the wall torches, the
 // cages, a way round), the doors (DOOR_KEEP), the room's middle (its chest,
 // pool or stash: MIDDLE_KEEP), and every floor tile still reachable from
@@ -29,15 +32,16 @@ export const DOOR_KEEP = 3;     // tiles from a door kept clear
 export const MIDDLE_KEEP = 2.5; // tiles from the room's middle kept clear
 export const PILLAR = 2;        // a pillar's size (tiles)
 export const PILLAR_GAP = 4;    // tiles of floor between pillars 🧪
+export const PILLARS_MOST = 2;  // lone pillars in a room, at most (1 to this) 🧪
 export const AISLE = 4;         // tiles either side of the boss room's middle kept clear 🧪
 // How likely each style is, by the room's shape (the rest: none). 🧪
 export const STYLES: Record<string, [Style, number][]> = {
   small: [],
-  wide: [["colonnade", 0.45], ["alcoves", 0.3]],
-  tall: [["colonnade", 0.45], ["alcoves", 0.3]],
-  big: [["pillars", 0.4], ["divider", 0.25], ["alcoves", 0.2]],
-  "dog-leg": [["alcoves", 0.4], ["pillars", 0.2]],
-  large: [["pillars", 0.45], ["divider", 0.3], ["alcoves", 0.15]],
+  wide: [["pillars", 0.35]],
+  tall: [["pillars", 0.35]],
+  big: [["pillars", 0.5]],
+  "dog-leg": [["pillars", 0.4]],
+  large: [["pillars", 0.5]],
   boss: [["aisle", 1]],
   start: [],
 };
@@ -46,6 +50,12 @@ const pick = (rng: Rng, styles: [Style, number][]): Style | null => {
   let r = rng();
   for (const [s, p] of styles) { if (r < p) return s; r -= p; }
   return null;
+};
+
+const shuffle = <T>(rng: Rng, xs: T[]): T[] => {
+  const out = xs.slice();
+  for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; }
+  return out;
 };
 
 // The rock a style puts in one floor rect (before the checks).
@@ -134,10 +144,13 @@ export function furnish(layout: Layout, fp: Floorplan, middle: (r: LayoutRoom) =
     const style = pick(rng, STYLES[r.shape] ?? []);
     let inner: Rect[] = [];
     if (style) {
-      const rock = fp.rooms[r.id].flatMap((f) => build(style, f, rng));
+      let rock = fp.rooms[r.id].flatMap((f) => build(style, f, rng));
+      // Lone pillars: a few of the grid's spots, at random.
+      const most = style === "pillars" ? 1 + Math.floor(rng() * PILLARS_MOST) : Infinity;
+      if (style === "pillars") rock = shuffle(rng, rock);
       // Whole if it can; else as much of it as keeps the room sound, piece by piece.
-      if (sound(fp, r.id, rock, middle(r), r.id === layout.boss)) inner = rock;
-      else for (const piece of rock) if (sound(fp, r.id, [...inner, piece], middle(r), r.id === layout.boss)) inner.push(piece);
+      if (rock.length <= most && sound(fp, r.id, rock, middle(r), r.id === layout.boss)) inner = rock;
+      else for (const piece of rock) if (inner.length < most && sound(fp, r.id, [...inner, piece], middle(r), r.id === layout.boss)) inner.push(piece);
     }
     rooms[r.id] = inner.length > 0 ? { ...r, inner } : r;
   }

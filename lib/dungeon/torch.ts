@@ -112,6 +112,13 @@ export function rubbleOf(fp: Floorplan, layout: Layout, p: Progress): Rubble[] {
   return out;
 }
 
+// The tunnels that fell in behind you: closed, their mouth still in an open
+// room, and you'd seen it (known: the tiles you've seen). The ones you can't
+// go back down; the scroll crosses each out (the user, 2026-11-07: only
+// these, not every closed tunnel behind you).
+export const fallenIn = (fp: Floorplan, layout: Layout, p: Progress, known: ArrayLike<number>): Rubble[] =>
+  rubbleOf(fp, layout, p).filter((r) => r.tiles.some((q) => known[q.y * fp.w + q.x]));
+
 // Torches on the walls (the user, 2026-11-06): sconces along rooms' top
 // walls, most of them unlit. Walk within half your torch's reach of an unlit
 // one (in sight of it) and you light it; a lit one lights its part of the

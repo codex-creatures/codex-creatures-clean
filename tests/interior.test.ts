@@ -3,7 +3,7 @@ import { slowIt } from "./slow";
 import { rollLayout, layoutFloorplan, layoutMap, roomCentre, blockOf, WALK_SPEC, WALK_LABYRINTH, BLOCK, OLD_BLOCK, type Layout } from "../lib/dungeon/layout";
 import { checkFloorplan, FLOOR, ROCK } from "../lib/dungeon/floorplan";
 import { findPath } from "../lib/dungeon/walk";
-import { DOOR_KEEP, MIDDLE_KEEP, AISLE } from "../lib/dungeon/interior";
+import { DOOR_KEEP, MIDDLE_KEEP, AISLE, PILLAR, PILLARS_MOST } from "../lib/dungeon/interior";
 
 function seeded(seed: number) {
   let s = seed;
@@ -39,7 +39,7 @@ function problems(l: Layout, tag: string): string[] {
   return out;
 }
 
-describe("rooms' insides (pillars, walls, alcoves)", () => {
+describe("rooms' insides (the odd pillar)", () => {
   it("the walkable Encampment: smaller rooms (2-tile blocks), furnished, every tile still reachable", () => {
     const all: string[] = [];
     let furnished = 0, rooms = 0;
@@ -51,8 +51,20 @@ describe("rooms' insides (pillars, walls, alcoves)", () => {
       rooms += Object.keys(l.rooms).length;
     }
     expect(all).toEqual([]);
-    // A fair share of rooms have something built in them (not the small ones or the entrance).
-    expect(furnished / rooms).toBeGreaterThan(0.25);
+    // Some rooms have a pillar or two (not the small ones or the entrance).
+    expect(furnished / rooms).toBeGreaterThan(0.1);
+  });
+  it("new rooms get only the odd lone pillar: no walls, no rows (the boss's aisle aside)", () => {
+    const fails: string[] = [];
+    for (let seed = 1; seed <= 6; seed++) {
+      const l = rollLayout(WALK_SPEC, seeded(seed));
+      for (const r of Object.values(l.rooms)) {
+        if (r.id === l.boss || !r.inner) continue;
+        if (r.inner.length > PILLARS_MOST) fails.push(`${seed}: ${r.id} has ${r.inner.length} pieces`);
+        if (r.inner.some((q) => q.w !== PILLAR || q.h !== PILLAR)) fails.push(`${seed}: ${r.id} has a wall`);
+      }
+    }
+    expect(fails).toEqual([]);
   });
   slowIt("the walkable Labyrinth (3-tile blocks for now), and the boss's room keeps its aisle", () => {
     const all: string[] = [];

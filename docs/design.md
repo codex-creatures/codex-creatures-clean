@@ -818,7 +818,9 @@ How it came about, round by round: history.md.
        looked at **twice a run** (`SCROLL_LOOKS`), it shows a mark where each room's middle
        is: its icon if you know what's there, else "?". Of the rooms and tunnels themselves it
        shows only what your torch has lit, drawn like a treasure map: lit floors and walls, your
-       trail dotted, and a **red line along each tunnel you've seen that's closed off** (the cut-offs
+       trail dotted, and a **red line across each tunnel that fell in behind you** (`fallenIn`:
+       closed, its mouth in a room still open, and you'd seen it; the user, 2026-11-07: not every
+       closed tunnel behind you, which got spammy, so it goes once you're further up) (the cut-offs
        themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
        as the furthest walls and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
        room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare
@@ -1024,14 +1026,16 @@ How it came about, round by round: history.md.
      - **Rooms' insides** (the user, 2026-11-07: "fill the big rooms with structure, not
        objects"; `lib/dungeon/interior.ts`, rolled with the layout, `LayoutRoom.inner`): solid
        stone built in a room's floor, drawn like the walls (brick face, mossy cap), blocking
-       light and sight, walked round. By shape (`STYLES`, 🧪): wide and tall rooms a colonnade
-       (two rows of 2×2 pillars, a lane between) or alcoves (short stubs out from the long walls);
-       big and large rooms a grid of pillars, a dividing wall part way across, or alcoves;
-       dog-legs alcoves or pillars; the boss's room pillars down both sides with its middle aisle
-       clear (`AISLE`); small rooms and the entrance nothing. Always kept clear: a margin inside
-       the walls (wall torches, cages), the doors, the room's middle (its chest, pool or stash),
-       and every floor tile still reachable from every door; a piece that would break any of
-       that is left out. About a third of rooms get something.
+       light and sight, walked round. **Only the odd lone pillar** (the user, 2026-11-07: the walls
+       were too obstructing; colonnades, alcoves and dividing walls are no longer rolled, though
+       runs that rolled them keep them): 1–2 2×2 pillars (`PILLARS_MOST`) in some bigger rooms
+       (`STYLES`, 🧪: 35–50% of wide, tall, big, dog-leg and large rooms; at the Encampment's
+       size the wide ones are too narrow to take one), the boss's room pillars down both
+       sides with its middle aisle clear (`AISLE`), small rooms and the entrance nothing. Always
+       kept clear: a margin inside the walls (wall torches, cages), the doors, the room's middle
+       (its chest, pool or stash), and every floor tile still reachable from every door; a piece
+       that would break any of that is left out. Drawn like the walls for now (📌 the user wants
+       pillar art that reads as a pillar).
      - **Candles** (the user, 2026-11-06: "the odd candle in the middle-ish of the rooms,
        unlit"; torch.ts `placeCandles`): `CANDLE_CHANCE` 35% of rooms 🧪 (never the entrance or
        the boss's room) have one on the floor 2–5 tiles from the middle, unlit. Walk near it (in

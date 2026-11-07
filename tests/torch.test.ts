@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, WALK_SPEC } from "../lib/dungeon/layout";
-import { torchLit, torchGlow, shutPlan, rubbleOf, tunnelShut, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, tunnelShut, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
 import { sideFace, capFade, depthEdges, SIDE_FACE_MAX, CAP_FAINT, FACE_TILE, TOP_TILE, WANG_TILES } from "../lib/dungeon/tileArt";
 
 function seeded(seed: number) {
@@ -84,6 +84,31 @@ describe("tunnels that fall in", () => {
       for (const r of rubble) if (!isOpen(layout, p, r.room)) fails.push(`${s}: rubble in a closed room`);
     }
     expect(fails).toEqual([]);
+  });
+});
+
+describe("the scroll's red lines", () => {
+  it("only the tunnels that fell in behind you, and only if you'd seen them; none deep behind you", () => {
+    const fails: string[] = [];
+    let checked = 0;
+    for (let s = 1; s <= 8; s++) {
+      const layout = rollLayout(WALK_SPEC, seeded(s)), fp = layoutFloorplan(layout);
+      const all = new Uint8Array(fp.w * fp.h).fill(1), none = new Uint8Array(fp.w * fp.h);
+      // Climb as far as the first way up goes, three times.
+      let p = startProgress(layout);
+      for (let k = 0; k < 3; k++) { const up = waysOn(layout, p).find((w) => w.tunnel.up); if (up) p = up.to; }
+      if (fallenIn(fp, layout, p, none).length > 0) fails.push(`${s}: a line where you'd seen nothing`);
+      for (const r of fallenIn(fp, layout, p, all)) {
+        const t = layout.tunnels.find((u) => u.key === r.key)!;
+        checked++;
+        if (isOpen(layout, p, t.a) === isOpen(layout, p, t.b)) fails.push(`${s}: ${t.key} lined but not fallen in`);
+      }
+      // Tunnels with both ends behind you (shut, but nothing you could go back down) aren't lined.
+      const deep = layout.tunnels.filter((t) => !isOpen(layout, p, t.a) && !isOpen(layout, p, t.b));
+      if (deep.some((t) => fallenIn(fp, layout, p, all).some((r) => r.key === t.key))) fails.push(`${s}: ${deep[0].key} deep behind you lined`);
+    }
+    expect(fails).toEqual([]);
+    expect(checked).toBeGreaterThan(0);
   });
 });
 
