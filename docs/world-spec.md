@@ -35,8 +35,59 @@ after them. Not the battle screen, the Den, the scroll map's room view (`chamber
 ### Units
 
 - **The world unit (`u`)** is the unit for every position, size, height and distance.
-- **The cell** is the gameplay grid: floorplan tiles, collision, paths and occupancy.
-  `CELL_U` = how many units a cell is across: **1** now.
+- **Two grids, one inside the other** (the user, 2026-11-07):
+  - **The panel** is the full-sized dungeon floor tile: room and corridor layouts, walls, doors,
+    tunnels, the floorplan, and major structures. It's what the code and the rest of this file
+    have called a "cell" (`CELL_U`, "cells" in tile numbers); the names in code stay as they are
+    until phase 2b touches them. **One panel is 1 u across** (`CELL_U = 1`), unchanged.
+  - **The subcell** is a third of a panel each way: **one panel is exactly 3 × 3 subcells**
+    (`SUBCELLS = 3`, phase 2b). Subcells are for physical sizes, object placement and occupancy,
+    and one day for fine movement and collision.
+  - Generation stays at panel resolution: rooms, corridors, doors and tunnels are laid out in
+    panels, as now. Only what's put in the rooms uses subcells.
+- **Subcell coordinates are integers.** How they relate to panels and to positions in u is
+  defined once, in "Coordinates" below, and nowhere else.
+- **Why u stays a panel, not a subcell:** every number from phase 1 (torch reach, sight, walk
+  speed, the projection's `T`, the goldens) is in panels. Making u a subcell would rescale all of
+  them for nothing.
+
+### Coordinates: panels, subcells and u (the one definition)
+
+This is the only place these sums are defined. In code they live in one module
+(`lib/world/grid.ts`, from phase 2a) that everything else calls; nothing else writes `3`,
+`/ 3` or `round(3x)`, and the renderer never sees subcells (it gets positions in u and the one
+projection, §4, turns them into pixels; no pixel number changes).
+
+- **Positions in u** are floats: `(x, y)`, x east, y south (below).
+- **A panel** `(px, py)` is integers. Its centre is `(px, py)` u, and it covers
+  `px − ½ ≤ x < px + ½` (and the same in y), as panels already do.
+- **A subcell** `(sx, sy)` is integers, `SUBCELLS = 3` to a panel each way. Its centre is
+  `(sx / 3, sy / 3)` u, and it covers `(sx − ½) / 3 ≤ x < (sx + ½) / 3`.
+- **Panel → its subcells:** panel `px` holds subcells `3px − 1`, `3px`, `3px + 1`. The middle
+  one, `3px`, is the panel's centre, so every place today's game puts a thing (a panel's centre)
+  is a whole subcell.
+- **Subcell → its panel:** `px = floor((sx + 1) / 3)`, and its place in the panel is
+  `sx − 3px`, one of −1, 0, +1 (west, middle, east; north, middle, south in y).
+- **u → subcell:** `sx = floor(3x + ½)`; **u → panel:** `px = floor(x + ½)`.
+- **Boundaries:** every cover runs from its west (north) edge, included, to its east (south)
+  edge, not included, so a point exactly on an edge belongs to the subcell or panel east (south)
+  of it, and every point belongs to exactly one.
+- **Negative coordinates** work the same, as all of the above uses `floor`, never truncation
+  or `%`: subcell −1 is in panel 0, subcell −2 in panel −1 (`floor(−1 / 3) = −1`), and its place
+  is `−2 − (−3) = +1`. Floorplans start at 0 today, but nothing assumes it.
+- **Objects crossing panels:** a footprint is a rectangle of subcells (below). The panels it
+  touches are the panels of its subcells, found one subcell at a time with the rule above, so a
+  rectangle across a panel edge (or across several panels) needs no special case.
+- **A footprint from its anchor subcell:** a definition's footprint is `w × d` subcells facing
+  south, with an **anchor subcell** `(ax, ay)` inside it (default `(floor(w / 2), floor(d / 2))`:
+  the middle, or just east and south of it for even sizes). An instance gives its anchor's subcell
+  `(sx, sy)` and its turn `rot` (0–3 quarter turns, clockwise from above: a south-facing thing
+  turned once faces west). Each footprint subcell `(i, j)` is at offset `(i − ax, j − ay)` from
+  the anchor; a turn takes offset `(dx, dy)` to `(−dy, dx)`, applied `rot` times; the subcell is
+  the anchor plus the turned offset. Integers throughout. A turned `w × d` covers `d × w`.
+- **To u, for drawing and distances:** a subcell's centre is `(sx / 3, sy / 3)`; a footprint's
+  edges are its subcells' outer edges. Its art anchor point (§2, measurement 5) is worked out
+  from those in u.
 - **No real-world scale is assumed.** "The hero is about 1.1 u tall" is a fact about the
   hero, not a claim that a cell is a metre. Other dungeons and later areas can use the same
   unit at a different feel.
@@ -52,38 +103,73 @@ after them. Not the battle screen, the Den, the scroll map's room view (`chamber
 - **Facing:** an angle in the floor plane (0 = east, π/2 = south), as `foes.ts` has it. Sprites
   pick the nearest facing they have (4 now: south, east, north, west mirrored from east).
 
-### The four measurements every object has
+### The measurements every object has (each separate)
 
-1. **Footprint:** the cells it physically takes up on the floor (collision and occupancy), as
-   a w × d rectangle of cells from its origin cell. A cell or more for things on the floor. None
-   for wall-mounted, overhead and walk-over things (§5). A creature's footprint comes from its
-   size class.
-2. **World height:** how tall it physically is, in u. Used for sight and light (does it block
+The user (2026-11-07): collision occupancy, visual bounds, height, placement clearance and
+interaction access are **separate properties**. None is worked out from another, and gameplay
+never reads the visual one.
+
+1. **Footprint:** the subcells it physically takes up on the floor (collision and occupancy), as
+   a w × d rectangle of subcells when it faces south, placed by its anchor subcell (the sums are
+   in "Coordinates" above). Examples (🧪 illustrations, not approved sizes): a candle 1 × 1, a chest 3 × 2, a
+   campfire 2 × 2 or 3 × 3, a pillar 3 × 3 (a whole panel). A footprint may cross panel edges,
+   and big creatures and structures span several panels. Walk-over things have a footprint too,
+   in their own layer (§5.1); wall-mounted and overhead things have none. A creature's comes from
+   its size class.
+   - **Orientation:** an instance can be turned a quarter turn at a time (`rot` 0–3). A turned
+     3 × 2 takes 2 × 3. A definition lists the turns it allows: only those it has art for, as a
+     sprite can't be rotated in a three-quarter view (a chest seen from the side is other art).
+     Most props allow only 0 (and left-right flips where the art allows, which don't change a
+     symmetrical footprint).
+2. **Clearance:** subcells round the footprint that must stay free of other solid things when
+   it's placed (room to get round it, room for a wide picture not to sit over its neighbour).
+   Kept apart from the footprint: it's a placement rule, not collision, and an object never
+   blocks walking with its clearance.
+3. **World height:** how tall it physically is, in u. Used for sight and light (does it block
    them), for drawing order on the same row, and by any future 3D renderer.
-3. **Visual bounds:** the box its picture fills, in u, around its anchor (left, right, up, down).
+4. **Visual bounds:** the box its picture fills, in u, around its anchor (left, right, up, down).
    It may reach well past the footprint: a wolf's tail, a banner's tassels, a boss's arms. The
    renderer uses it for culling and drawing; gameplay never does.
-4. **Anchor:** the world point where it touches the floor (or its wall, or the ceiling), and the
+5. **Art anchor** (not the anchor subcell, which places the footprint): the world point where it touches the floor (or its wall, or the ceiling), and the
    matching pixel in its art. For a floor object, the middle of its footprint's front (south)
    edge, or a creature's feet. The art's anchor pixel is stored with the art (§4.4), not worked
-   out from the image.
+   out from the image. Worked out from the footprint in u, so it can fall on a subcell edge (a
+   2 × 2's middle); that's fine, as the projection takes any position.
+6. **Interaction access:** where you stand to use it and how near counts (§3), kept apart from
+   the footprint: a chest's footprint can grow without moving where you open it from.
 
 Wall-mounted objects also have an **attachment surface** (north wall face, east or west side
-wall, south wall top) and a height up that wall in u. Objects you can use have **interaction
-points** (§3).
+wall, south wall top), a **slot** along that wall in subcells (three to a panel's face; today's
+wall torches are all in the middle one) and a height up the wall in u.
 
 ### Creature size classes
 
 Each class sets a creature's footprint and its height range. The numbers are 🧪, to be set from
 today's sprites in phase 1 so nothing moves:
 
-| Class | Footprint | Height (u) | Today |
-|---|---|---|---|
-| tiny | 1×1 (shares nothing) | 0.4–0.8 | sprites, wisps |
-| small | 1×1 | 0.8–1.2 | most foes (all drawn 1.375 u today: `FOE_PX` 22 at 16px) |
-| medium | 1×1 | 1.2–1.8 | |
-| large | 2×2 | 1.8–3 | the chief (today ×1.3, `CHIEF_SCALE`) |
-| huge | 3×3 | 3+ | the Cyclops (today ×2.6, `BOSS_SCALE`) |
+| Class | Footprint (panels; code today) | Footprint (subcells; 🧪 phase 2b proposal) | Height (u) | Today |
+|---|---|---|---|---|
+| tiny | 1×1 | 1×1 | 0.4–0.8 | sprites, wisps |
+| small | 1×1 | 2×2 | 0.8–1.2 | most foes (all drawn 1.375 u today: `FOE_PX` 22 at 16px) |
+| medium | 1×1 | 3×3 | 1.2–1.8 | |
+| large | 2×2 | 4×4 to 6×6 | 1.8–3 | the chief (today ×1.3, `CHIEF_SCALE`) |
+| huge | 3×3 | 7×7 to 9×9 | 3+ | the Cyclops (today ×2.6, `BOSS_SCALE`) |
+
+The subcell sizes are examples (the user, 2026-11-07), set in the dimensions review before phase
+2b (they replace the panel ones in `lib/world/creatures.ts`, which nothing reads yet). A class
+gives a default; **any species can have its own dimensions** instead.
+
+A creature has four separate size properties, none worked out from another:
+- **physical collision:** its body's footprint in subcells (from its class or its own size);
+- **spawn clearance:** the free floor it needs round it to be placed (a boss's stand, a den);
+- **visual bounds:** its picture (renderer only, as for any object);
+- **movement capability:** how it moves: today every creature walks panel to panel or waits
+  where it stands. One day: the narrowest corridor it fits through, which is why large creatures
+  may need special rooms or wider corridors.
+
+**Phase 2b has no multi-panel creature movement** (the user, 2026-11-07): every creature still
+walks on panels as today, or waits at its stand, whatever its footprint; the footprint and
+clearance are used only to check that its starting spot has room for it.
 
 **A creature's world size comes from its intended physical proportions**, not from its sprite
 (the user, 2026-11-07): today's sprites are a reference, not the source of truth. A creature that
@@ -104,7 +190,9 @@ type ObjectDef = {
   id: string;                         // "chest", "cage", "pillar", "sconce", "skull"…
   kind: "structure" | "prop" | "interactable" | "light" | "creature" | "npc" | "decal";
   attach: Attach;
-  footprint: { w: number; d: number }; // cells (0×0: takes no floor)
+  footprint: { w: number; d: number }; // subcells, facing south (0×0: takes no floor). Phase 1's code has panels.
+  rotations?: (0 | 1 | 2 | 3)[];       // quarter turns it has art for (missing: [0])
+  clearance?: number;                  // subcells round the footprint other solid things keep off (placement only)
   height: number;                      // u
   collision: "solid" | "walk-over" | "none";
   blocksSight: boolean;                // foes' sight (foes.ts)
@@ -122,10 +210,39 @@ type ObjectDef = {
   };
   sizeClass?: "tiny" | "small" | "medium" | "large" | "huge"; // creatures
 };
-type Instance = { id: string; def: string; x: number; y: number; facing?: number; state?: string; room: string };
+type Instance = {
+  id: string; def: string; room: string;  // stable identity, and its type
+  sx: number; sy: number;              // its anchor subcell, integers ("Coordinates", §2)
+  rot?: 0 | 1 | 2 | 3;                 // quarter turns, where the definition allows them (missing: 0)
+  wall?: "north" | "east" | "west";    // wall things: which wall it's on, beside the floor subcell sx, sy (today's `wall`: top, right, left)
+  start?: string;                      // the state generation gave it (a wall torch that starts lit), never changed after
+  size?: { w: number; d: number };     // phase 2b: the footprint it was placed with, unturned (missing: its definition's)
+  legacy?: "panel";                    // placed by the old panel rules: see below
+};
 ```
 
-- **Instance ids are stable** (`<room>:<def>:<n>`), so saves and future triggers can name them.
+- **Instance ids are stable,** so saves and future triggers can name them: `<room>:<def>:<n>`,
+  except that things that already have ids keep them (wall torches `<room>:<n>`, candles
+  `candle:<room>`), because run state already saved (`lit`) names them.
+- **Where it was put, and what's become of it, are kept apart** (the user, 2026-11-07): an
+  instance is what generation made (its place, turn and starting state), and it never changes.
+  What the player changes (lit, opened, beaten, looted, moved, a candle hidden by a campfire you
+  made) is run state, saved separately (§7) and laid over the instances when the room is built.
+  Loading never puts back something the player changed, and never changes an instance.
+- **Physical size and legacy reservation are kept apart** (the user, 2026-11-07). An instance
+  takes its physical footprint from its definition (or its `size`); it is never redefined as a
+  3 × 3 to stand for "a whole panel". Where an existing run needs the old panel behaviour, the
+  instance says so with `legacy: "panel"`, which means exactly what today's code does with it,
+  and nothing more:
+  - **for placement:** it reserves its whole panel against other placements (as today's placers
+    keep things off each other's panels), in the occupancy map's reservation layer, not as a
+    footprint;
+  - **for navigation:** its panel is blocked only if its definition is solid (a chest, a cage,
+    barrels). A walk-over thing (a candle, a skull, a dropped sack) stays walk-over, and a
+    wall-mounted thing (a wall torch, a banner) takes no floor at all;
+  - **for drawing, taps and reach:** from its anchor subcell, the panel's centre, as now.
+- **Phase 2b instances** record the footprint they were placed with (`size`), so revising a
+  definition's 🧪 size later never makes a saved room's things overlap or move.
 - **Gameplay reads** footprint, height, collision, blocksSight, blocksLight, light, interact
   and attach. **The renderer reads** layer and visual. Neither reads the other's half.
 - **Placement rules are kept apart from definitions** (§5): where a skull may lie is a rule of
@@ -226,14 +343,32 @@ drawn. The user is interested in ¾ but wants to see it first.
 
 ### 5.1 Occupancy: four separate kinds of space
 
-Each room has an occupancy map with separate kinds of space, each with its own rules:
+Each room has an occupancy map **at subcell resolution** (phase 2b), over the room's floor
+panels (each is 3 × 3 subcells; walls and rock are never floor), with separate kinds of space,
+each with its own rules:
 
 | Space | Holds | Rule |
 |---|---|---|
-| **Floor (blocking)** | solid floor objects: pillars, chests, cages, barrels, campfires, NPCs' carts | one thing per cell; may not break a reservation (§5.2) |
+| **Floor (blocking)** | solid floor objects: pillars, chests, cages, barrels, campfires, NPCs' carts | one thing per subcell, so several small things can share a panel; every subcell of a footprint must be on floor; clearance kept; may not break a reservation (§5.2) |
 | **Floor (walk-over)** | skulls, nests, pots, candles, decals, worn tiles | may sit under foes' and your paths; not on a blocking thing; may overlap other walk-over things only if their definitions allow it |
-| **Wall slots** | wall torches, banners, future levers or switches: per wall cell, per face (north face, side walls) | one thing per slot, plus a gap rule (`SCONCE_EVERY`) |
-| **Overhead** | hanging things (none yet) | no collision; one per cell |
+| **Wall slots** | wall torches, banners, future levers or switches: three per wall panel, per face (north face, side walls) | one thing per slot, plus a gap rule (`SCONCE_EVERY`, in panels) |
+| **Overhead** | hanging things (none yet) | no collision; one per subcell |
+
+A footprint that crosses a panel edge is fine, as long as every subcell under it is floor; a
+3 × 2 turned a quarter takes 2 × 3 and is checked as that.
+
+**Physical occupancy and navigation occupancy are separate maps** (the user, 2026-11-07):
+- **Physical occupancy** is what is where, in subcells: each thing's real footprint, plus the
+  legacy panel reservations (§3). It's the truth, and it never changes to suit how walkers move.
+  Placement reads it.
+- **Navigation occupancy** is worked out from it, for the way things move at the time, and only
+  walking reads it. **Today's movement is on panels, so: a panel is blocked if any subcell in it
+  is solid**, or a `legacy: "panel"` instance with a solid definition is on it (✅ the user,
+  2026-11-07). That's exactly today's rule for everything today's game places.
+- The whole-panel rule is an **interim compatibility measure** while movement stays on panels.
+  A small solid thing in a panel's corner is a corner in the physical map, so finer movement
+  later (§5.4) can walk round it with no change to placements or saves; only the navigation map
+  is worked out differently.
 
 A pillar, today rock (`interior.ts` writes `ROCK` into the floorplan), becomes a solid floor
 object with `blocksSight` and `blocksLight`. Saved layouts keep their `inner` rock and are read
@@ -251,7 +386,8 @@ Before anything is placed, the room reserves:
    a beaten room's loot is dropped.
 4. **Access:** every interaction point's reach must be reachable from a door.
 
-Any placement that would block a reserved cell, cut a required path or cut off an interaction
+While walking is on panels, reservations are whole panels (a reserved panel has no solid
+subcell), and "at least 1 wide" means 1 panel. Any placement that would block a reserved cell, cut a required path or cut off an interaction
 is refused. Other floor may be blocked off: a corner behind a pillar is fine. Two rules stop a
 blocked-off pocket from causing trouble:
 - foes, NPCs and dropped loot never start in a cell that can't be reached;
@@ -278,8 +414,22 @@ today's single shared stream does.
 ### 5.4 Movement, foes and interactions
 
 - **Walking:** the floorplan's walkable cells, less the solid footprints, plus the forward rule
-  (`stepRule`). Today this is put together in WalkView (`rule()`); it moves into the simulation
-  layer. The pathfinding itself (`findPath`, diagonals that never cut a rock corner) stays.
+  (`stepRule`). Since phase 1 this is put together in `lib/world/walkWorld.ts` (`walkRule`).
+  The pathfinding itself (`findPath`, diagonals that never cut a rock corner) stays.
+- **Walking stays on panels until the user decides to change it** (the user, 2026-11-07: subcells
+  don't mean changing movement now). You, foes, the witch and the merchants path panel to panel,
+  over the panels the occupancy map calls free (§5.1). ⏸ **Designed for, later: walking on
+  subcells.** What it would take, so nothing built now stands in its way:
+  - the walk graph's nodes become subcells (9× as many: fine for rooms this size, but it gets its
+    own speed test), with the same rules (no cutting a rock corner);
+  - each walker gets a body footprint from its size class, and a path is found for that body
+    (solid things grown by its size), so a big creature can't squeeze where a small one can;
+  - corridors and tunnels are 1 panel (3 subcells) wide, so anything over 3 × 3 couldn't use
+    them: big creatures stay in their rooms, as bosses already do;
+  - taps, reach, sight range and torch reach are in u already and don't change; positions are
+    floats already, so saves don't change either;
+  - it changes how the game plays, so it comes in as an intended change, with its own goldens
+    (§7).
 - **Foes:** start in their spawn cells (pass 7), wander inside their room's walkable cells, and
   see by sight lines that anything with `blocksSight` stops (today only rock).
 - **Light:** `torchLit` is blocked by rock and by anything with `blocksLight`.
@@ -365,14 +515,34 @@ spec assumes nothing about them.
 - **The walkable run gets a version:** `WalkRun.v`. Missing = 0 (every run saved so far).
 - **v1 adds** `placed: Instance[]` (everything passes 2–8 placed) and `states` (each instance's
   state: opened, lit, spent). Both optional, so older code still reads a v1 save.
+  - **v1 is in subcells from the start** (§3's `Instance`), so phase 2b needs no second
+    migration. Each thing today's game places is saved with its stable id, its definition, its
+    anchor subcell (its panel's centre, `(3x, 3y)`: today everything stands there), its turn
+    (0: nothing turns today), its wall for wall things, its starting state where generation
+    gives one (a wall torch that starts lit), and `legacy: "panel"`. **No physical size is
+    invented for it:** a wall torch takes no floor, a candle stays walk-over, a chest stays solid
+    on its panel, exactly as today (§3). Its real footprint comes with the definitions in 2b.
+  - **What 2a saves:** wall torches, candles, the things you use (chests, sacks, decks, pools,
+    cages, the merchant and the librarian), the card witch's start, and the lab's decor and
+    banners. Already saved today, and left as they are: campfires (`fires`), a beaten room's
+    loot spot (`spots`).
+  - **Foes' starting spots are not saved in 2a.** Today they're worked out again each time the
+    walk screen opens, from the rooms still to beat, and that's what moves them when you beat a
+    room. Saving them would stop that, which is the foe fix (§7, reviewing goldens), so it waits
+    for its own approved change. Until then they're worked out as today.
+  - **Run state stays where it is and keeps its meaning:** `lit` (torches and candles you lit),
+    the rooms' own state (opened, beaten, looted, the witch's game), `spots`, `fires`, `known`,
+    `trail`, `cuts`, `flare`. The room is built from the instances with that state laid over
+    them. A torch is lit if it started lit or is in `lit`, as now; a candle near a campfire you
+    made is hidden, as now.
 - **Migration: save once; old code kept only as a small, isolated converter** (the user,
   2026-11-07: backward compatibility mustn't become long-term upkeep, but an old run must still
   load months later). `migrateWalkRun` runs on load and on import, chained by version, pure and
   tested.
   - **Saving starts in phase 2, before anything else in it changes** (step 2a, §8). The game
-    saves what today's placers place (wall torches, candles, campfires, cages, foe starts, the
-    witch, the lab's decor and banners) into the run when it starts or loads (v0 → v1). At that
-    point those placers are still the live ones, so no second copy exists yet.
+    saves what today's placers place (the list is under "v1 adds" above; foes' starts wait for
+    the foe fix) into the run when it starts or loads (v0 → v1). At that point those placers are
+    still the live ones, so no second copy exists yet.
   - **Then phase 2 replaces the placers** (step 2b). From then on the new placers are the only
     generator in normal play. The old ones are deleted from the generation code.
   - **What's kept for old runs: one isolated converter,** `lib/world/compat/v0.ts`. It holds only
@@ -509,11 +679,44 @@ Each phase is its own commit (or few), tested and reviewed before the next start
 
 ### Phase 2: occupancy, the placement passes, saved placements, versions
 - **2a, saved placements:** the save version and migration (§7). What today's placers place is
-  saved into every run that starts or loads. Nothing on screen changes, and the goldens stay
-  as they are. Released on its own.
-- **2b, the new placers:** the occupancy map and passes (§5). Today's placers are rebuilt on them,
-  keeping their rules and numbers, and become the only generator. The old ones survive only
-  inside the isolated v0 converter (§7).
+  saved into every run that starts or loads, generated exactly as today. Nothing on screen
+  changes, and the goldens stay as they are. Released on its own.
+  - **Subcells in 2a:** only the save format and the coordinate module (§2 "Coordinates", §7:
+    anchors in integer subcells, `legacy: "panel"`). No subcell occupancy, no new sizes, no
+    change to placement, walking or drawing.
+  - **Not gated on the dimensions review:** 2a gives nothing a new size.
+  - **2a is done when:**
+    - nothing on screen or in play changes: the phase-0 and phase-1 goldens, the walk-sim and
+      draw-list comparisons pass as they are, frame for frame, on every fixture;
+    - a new run is saved with exactly what today's placers place for it, and a v0 fixture
+      migrates to exactly what today's game shows for it;
+    - built from its saved instances, a room has the same solid cells, walk rule, things to tap,
+      reach, lights and drawing as built by today's placers;
+    - no wall thing has a floor footprint, no walk-over thing blocks a panel, and only solid
+      definitions block navigation;
+    - run state is kept apart: lit torches stay lit, opened things stay open, beaten rooms stay
+      beaten, and a migration never changes run state or an instance once saved;
+    - migrating is idempotent: once, twice or after load → save → load gives the same run, with
+      no instance duplicated and every id unique;
+    - a Cyclops run with no `dungeon` field migrates as the Cyclops's; a v1 run survives export
+      and import; older code still plays a v1 run (it ignores `placed`);
+    - the coordinate sums have their own tests: panels ↔ subcells ↔ u both ways, edges,
+      negative coordinates, and turned footprints across panel edges.
+  - ❓ **Foes' starts and 2b's order.** 2a doesn't save them (§7). But 2b replaces today's foe
+    placer, so they must be saved before then, or old runs' foes would move. The recommendation:
+    the foe fix (2c) lands before 2b, as the first step after 2a, approved on its own. The user
+    to decide.
+- **Before 2b: the dimensions review, in subcells.** Every definition's footprint, turns,
+  clearance, height, visual bounds and interaction access, and each creature's size, proposed
+  in subcells for the user to set. Nothing in 2b relies on a size until it's set.
+- **2b, the new placers:** the occupancy map at subcell resolution and the passes (§5), with
+  room and corridor generation still in panels. Today's placers are rebuilt on them, keeping
+  their rules and numbers, and become the only generator. The old ones survive only inside the
+  isolated v0 converter (§7). Walking stays on panels (§5.4).
+  - Rebuilt with each thing still filling its panel, nothing in play changes but what the user
+    already agreed may (§10.3: new runs' exact spots). Giving things their reviewed subcell sizes
+    (two small things sharing a panel, a chest that's 3 × 2) changes what new rooms look like and
+    where you can walk, so it's an intended change, in its own commit, approved first.
 - **2c, intended changes:** the foe fix (§7, reviewing goldens), each in its own commit.
 - **Done when:**
   - migrations are idempotent and keep all run state (§7); a Cyclops run with no `dungeon`
@@ -559,7 +762,9 @@ Each phase is its own commit (or few), tested and reviewed before the next start
 **Designed for, built later:**
 - **Height levels:** z is in the data and the projection. Steps, ledges and raised floors come
   later.
-- **Stamps:** the format is in §5.5; the first is built when a room needs one.
+- **Stamps:** the format is in §5.5; the first is built when a room needs one. (A stamp's grid is
+  in panels; a stamp may give a thing an exact subcell spot.)
+- **Walking on subcells:** designed for in §5.4, changed only when the user decides.
 - **Levers, traps, breakable walls:** a definition slot and instance state only.
 - **A second setting:** packs are laid out for it; built once the dungeon pack is right.
 - **4-way walking art for creatures:** size classes now, art later.
@@ -585,3 +790,9 @@ Each phase is its own commit (or few), tested and reviewed before the next start
 4. **The palette:** the reference is the target, not a source; an original palette (§6.1).
 5. **Order:** 0 → 1 → 2 → 3 → 4, with the art's geometry explored alongside phase 2 (§8).
 6. **Old runs:** placements saved once from phase 1; legacy placers kept only until a sunset (§7).
+7. **Panels and subcells** (the user, 2026-11-07): a panel (the floor tile, 1 u) is exactly 3 × 3
+   subcells. Rooms and corridors are generated in panels; physical sizes, placement and
+   occupancy use subcells (from phase 2b; the save format from 2a); walking stays on panels
+   until the user decides otherwise (§2, §5). Physical and navigation occupancy are separate,
+   the whole-panel blocking rule is interim, legacy panel reservations are kept apart from
+   physical size, and creature sizes are examples, with no multi-panel creature movement in 2b.

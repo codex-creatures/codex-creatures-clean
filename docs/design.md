@@ -1594,6 +1594,11 @@ without rebuilding.
   real-world scale is assumed. Every object has a physical **footprint**, a **world height**,
   **visual bounds** (art may reach past its footprint) and an **anchor**. Creatures get size
   classes.
+- 📌 **Panels and subcells** (the user, 2026-11-07): the floor tile (a **panel**, 1 u) is exactly
+  3 × 3 **subcells**. Rooms and corridors are laid out in panels; physical sizes, placement and
+  occupancy use subcells (from phase 2b; the save format from 2a). Walking stays on panels until
+  decided otherwise. Footprint, clearance, height, visual bounds and interaction access are
+  separate properties (world-spec §2).
 - 📌 **Object definitions:** one registry for every kind of thing: footprint, height, where it
   attaches, collision, blocks sight and light, gives light, interaction points, drawing layer and
   art.
