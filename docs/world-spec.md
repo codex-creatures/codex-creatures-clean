@@ -368,19 +368,28 @@ spec assumes nothing about them.
 - **Migration: save once, no legacy code kept for good** (the user, 2026-11-07: backward
   compatibility mustn't become long-term upkeep). `migrateWalkRun` runs on load, chained by
   version, pure and tested.
-  - **Phase 1 starts saving placements.** Once the instance format exists, the game saves what
-    today's placers placed (decor, banners, candles, wall torches, campfires, cages, foe starts)
-    into the run when it loads or starts (v0 → v1). In phase 1 those placers are still the live
-    ones, so no second copy is needed: every run that's loaded from then on carries its own
-    placements.
-  - **Phase 2 replaces the placers.** A frozen copy of the old ones is kept only for v0 runs not
-    yet loaded since phase 1 (on another computer, or in a cloud save), with a **sunset**: removed
-    after phase 2 has been live for 🧪 4 weeks.
+  - **Saving starts in phase 2, before anything else in it changes** (step 2a, §8). The game
+    saves what today's placers place (wall torches, candles, campfires, cages, foe starts, the
+    witch, the lab's decor and banners) into the run when it starts or loads (v0 → v1). At that
+    point those placers are still the live ones, so no second copy exists yet.
+  - **Then phase 2 replaces the placers** (step 2b, released after 2a has been live 🧪 a week or
+    two). A frozen copy of the old ones is kept only for v0 runs not yet loaded since 2a (on
+    another computer, or in a cloud save), with a **sunset**: removed after the new placers have
+    been live for 🧪 4 weeks.
   - **After the sunset,** a v0 run still unopened is given placements by the new generator,
     from its saved layout and rooms. Its rooms, foes, loot and progress are all saved data and
     don't change; only where decor, torches and foes stand may move, and its lit wall torches may
     go out. It stays playable. A test pins that.
   - Runs are short (one dungeon trip), so the sunset should catch almost every run.
+- **Migrations are idempotent** (the user, 2026-11-07). Loading a run any number of times gives the
+  same run: a migration only fills in what's missing, never regenerates or duplicates what's
+  there, and never touches run state (where you stand, what you've seen, lit, opened, beaten,
+  looted, the trail, cut-offs, campfires, flares). Tests load each fixture repeatedly, and
+  load → save → load, and require the second pass to change nothing.
+- **Which dungeon a run is in is handled explicitly** (the user, 2026-11-07). A missing
+  `run.dungeon` means the Labyrinth (the Cyclops's dungeon, 1) as it always has (`dungeonOf`),
+  never the Encampment. Migrations read it through `dungeonOf` only, and a test pins a Cyclops
+  run with no `dungeon` field through every migration.
 - **What today's saves already carry is read as now:** `layout.block` (missing = 3),
   `layout.rooms[].inner` (pillar rock), `known`, `lit`, `spots`, `trail`, `cuts`, `fires`,
   `flare`. `lit` keeps its wall-torch ids.
@@ -390,9 +399,22 @@ spec assumes nothing about them.
 - **Two computers:** a v1 run opened on a computer with older code still plays. The older code
   ignores `placed` and works placements out from the seed, as today, so things may sit in
   slightly different spots. Update both computers before playing a run across them.
-- **Fixtures:** real saved runs captured from today's game before the work starts (a fresh run,
-  one mid-way with torches lit and cages opened, one from before pillars, a Cyclops run). They're
-  kept in `tests/fixtures/` and must load and play in every phase.
+- **Fixtures:** saved runs captured from today's game before the work starts (phase 0: six made
+  by today's code), kept in `tests/fixtures/walk/`; they must load and play in every phase.
+  **Plus at least one real exported save** from an actual game (Settings → Export, from the
+  user), added when the user supplies one.
+
+### Reviewing goldens: intended changes vs regressions
+
+- A golden is only ever re-recorded (`UPDATE_GOLDEN=1`) for a change the user has approved.
+  That's in **its own commit**, starting "Intended change:", which names the decision (who
+  approved it and when) and lists which goldens changed and why.
+- Any other golden difference is a **regression**: the code is fixed, never the golden.
+- Behaviour corrections the user has approved so far (each lands as its own intended change):
+  - **Foes keep their starting spots** (the user, 2026-11-07): once a run is made, its contents
+    stay put. Beating one room must not move anything in another. Foes still move about
+    while you play. (Today, beating one room moved 25 of 27 other foes' starting spots the
+    next time the view opened.) Phase 2, with saved placements.
 
 ## 8. Phases and acceptance
 
@@ -419,9 +441,11 @@ Each phase is its own commit (or few), tested and reviewed before the next start
   UPDATE_GOLDEN=1 rewrites them, only for a change the user has approved.
 - **Loading:** each fixture goes through the game's own loader (`loadDungeon`) and comes out the
   same, and you can walk on into the next room.
-- **Not pinned yet: the picture itself.** There's no scene builder to test until phase 1, and
-  pinning pixels today would need browser screenshots (with the user's OK). Phase 1 pins the draw
-  list right after the move, checked against these goldens and by the user's eye.
+- **The picture:** 16 screenshots of fixed scenes (`tests/visual-baseline/phase0/`: walls, a
+  pillar, foes, the chief and the Cyclops, the witch, torchlight, a see-through south wall, decor,
+  the scroll), taken locally from `app/lab/baseline` (the user's one-off OK, 2026-11-07). They're
+  references to compare by eye, not pixel tests. Phase 1 also pins the draw list in tests once
+  there's a scene builder.
 - **Done when:** the goldens pass on today's code and are committed. ✅
 
 ### Phase 1: units, projection, definitions, and the logic out of WalkView (**milestone 1**)
@@ -436,27 +460,34 @@ Each phase is its own commit (or few), tested and reviewed before the next start
 - **Out of WalkView into the scene builder:** a pure function from world state and camera to a
   draw list. WalkView keeps the frame loop, taps, the canvas, and the React windows (scroll,
   campfire). A targeted move, not a rewrite.
+- **Not in phase 1** (the user, 2026-11-07): no saved placements, save versions or migrations
+  (phase 2); no visual redesign, new gameplay or art. The instance type is defined, but nothing
+  new is saved. Runs, saves and fixtures stay exactly as they are.
 - **Done when:**
   - every phase-0 golden is unchanged;
   - the draw list for fixed test states is snapshot-tested (taken right after the move, with the
     move's diff reviewed line by line);
   - `npx tsc --noEmit`, lint and `npm run test:all` pass;
-  - placements are saved into runs (v1, §7); the phase-0 fixtures load, migrate, and come out
-    with exactly their phase-0 placements;
+  - the scenes in `tests/visual-baseline/` are shot again (`phase1/`) and match `phase0/` by
+    eye;
   - the user plays a run in each dungeon and confirms it looks and plays exactly as before.
 
 ### Phase 2: occupancy, the placement passes, saved placements, versions
-- The occupancy map and passes (§5). Today's placers rebuilt on them, keeping their rules and
-  numbers.
-- New runs are v1; v0 runs are migrated (§7).
+- **2a, saved placements:** the save version and migration (§7). What today's placers place is
+  saved into every run that starts or loads. Nothing on screen changes, and the goldens stay
+  as they are. Released on its own.
+- **2b, the new placers:** the occupancy map and passes (§5). Today's placers are rebuilt on them,
+  keeping their rules and numbers, for new runs. The old ones are frozen until the sunset (§7).
+- **2c, intended changes:** the foe fix (§7, reviewing goldens), each in its own commit.
 - **Done when:**
+  - migrations are idempotent and keep all run state (§7); a Cyclops run with no `dungeon`
+    field migrates as the Cyclops's;
   - invariant tests over 🧪 300 rolled rooms per dungeon (`slowIt`): reservations intact,
     required paths and access kept, nothing blocking overlaps, wall slots exclusive, spawns and
     loot spots reachable, pockets flagged;
   - the v0 fixtures migrate to exactly the phase-0 placements;
   - a v1 run survives save, export and import, and reload unchanged;
-  - counts per room (decor, candles, torches, fires) stay within agreed ranges of today's.
-
+  - counts per room (decor, candles, torches, fires) stay within agreed ranges of today's;
   - the same seed always gives the same placements (deterministic), and every required path is
     valid;
   - balance kept: counts per room and room kind, foe spacing and distance from doors, loot and

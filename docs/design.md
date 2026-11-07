@@ -1602,7 +1602,8 @@ without rebuilding.
   reserved, rather than every floor tile having to be reachable. Passes run in a fixed order,
   each with its own random numbers; hand-made stamps sit alongside them.
 - 📌 **Saves:** walkable runs get a version, and what's placed is saved into the run, starting in
-  phase 1 while today's placers are still live. The old placers are kept only until a sunset after
+  phase 2 (first, while today's placers are still live). Migrations are idempotent, and a run
+  with no `dungeon` is the Cyclops's, never the Encampment's. The old placers are kept only until a sunset after
   phase 2; a run opened after that gets new placements from its saved layout and rooms, its
   progress unchanged. Fixtures of saved runs are tested in every phase.
 - 📌 **Art:** a spec per setting (camera from the projection, a palette, evenly lit art, PixelLab
@@ -1612,8 +1613,9 @@ without rebuilding.
 - 📌 **Phases:**
   - 0: golden tests of today's game;
   - 1: units, projection, definitions and the logic out of WalkView, reproducing today exactly
-    (milestone 1);
-  - 2: occupancy, placement passes, saved placements, versions;
+    (milestone 1). No saving, versions, migrations, redesign, gameplay or art;
+  - 2: saved placements and versions first, then occupancy and the placement passes, then
+    approved behaviour fixes (foes keep their starting spots);
   - 3: the art standard and tools;
   - 4: the first assets to it.
 - **The reskin samples** (2026-11-07: three kits and two pillars, judged off-brief) are kept
