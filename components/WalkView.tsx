@@ -23,20 +23,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
-import { layoutFloorplan, scrollMarks, foreseen, cutOffY, enter, isOpen, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
-import { advance, roomAt, walkToward, type CanStep, type Walker } from "@/lib/dungeon/walk";
-import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
+import { layoutFloorplan, scrollMarks, foreseen, isOpen, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
+import { roomAt, walkToward, type CanStep } from "@/lib/dungeon/walk";
+import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT } from "@/lib/dungeon/tileArt";
+import { torchGlow, shutPlan, rubbleOf, fallenSoFar, sconceGlow, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
 import { floorVariant, wallVariant } from "@/lib/dungeon/decor";
-import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
-import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
-import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
+import { CAMPFIRE_HEAL, type Campfire } from "@/lib/dungeon/campfire";
+import { ALARM_LIGHT, FADE_TIME } from "@/lib/dungeon/foes";
+import { ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
 import type { WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
 import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_FLOOR_WORN, WALK_WALL_WORN, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "@/lib/sprites/walk";
 import { walkView, tapCell, artPxAcross, artPxDown, across, legacySize, type View } from "@/lib/render/projection";
 import { objectDef, artOf, DECOR_DEF, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE, type ObjectDef, type ArtRef } from "@/lib/world/objects";
-import { placeLights, placeLabDecor, placePeople, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, toRuns, type Thing } from "@/lib/world/walkWorld";
+import { placeLights, placeLabDecor, placePeople, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { startWalk, restartLoop, stepWalk, walkState, torchThere, fireReach, sconceLight, fireLight, candleLight, type WalkState, type Warming } from "@/lib/world/walkSim";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { ROOM_ART } from "@/components/DungeonMapView";
@@ -44,14 +45,7 @@ import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { PartyMember } from "@/components/PartySlots";
 
-const NPC_STILL = 4;            // tiles: a wanderer stops to let you come up to it
-const NPC_SPEED = 0.6;          // …and walks about at this share of a foe's pace
 const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
-const KEEP_EVERY = 5000;        // ms: your spot's saved this often while you walk
-const HEAL_EVERY = 400;         // ms: health from a campfire is handed back this often
-const SHOW_EVERY = 100;         // ms: the campfire window updates this often
-const OUT_SHOW = 1500;          // ms the campfire window stays up after the fire's burnt down
-const TRAIL_MAX = 3000;         // tiles of your trail kept for the scroll
 
 // The kit's and the hero's art pixels (projection.ts ArtDensity): the kit's rows squashed into a square cell.
 const KIT_DENSITY = { perU: KIT_PX, rowsPerU: KIT_ROW }, HERO_DENSITY = { perU: KIT_PX };
@@ -61,9 +55,7 @@ const DARK_RGB = [6, 5, 12];
 const CLOSED = "rgba(7, 6, 11, 0.6)";
 const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14", you: "#e0483e" };
 
-export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts" | "fires" | "flare">;
-// The campfire window: the team's health as it heals, who's getting some, what the fire has left.
-type Warming = { hp: Record<string, number>; giving: string[]; left: number };
+export type { WalkState };
 
 // What's drawn the same way every frame (lib/world/objects.ts).
 const CAMPFIRE = objectDef("campfire"), CANDLE = objectDef("candle"), BANNER = objectDef("banner"), SOUTH_WALL = objectDef("wall-south");
@@ -103,239 +95,79 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const layout = walk.layout;
   const plan = useMemo(() => layoutFloorplan(layout), [layout]);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const me = useRef<Walker>({ ...walk.at, path: [] });
-  const goal = useRef<Pt | null>(null);
   const [progress, setProgress] = useState<Progress>({ room: walk.room, line: walk.line ?? Infinity });
-  const progressRef = useRef(progress);
   // The floorplan as it stands: closed tunnels are rock. Walking, light, sight and drawing all use it.
   const live = useMemo(() => shutPlan(plan, layout, progress), [plan, layout, progress]);
   const edges = useMemo(() => depthEdges(live), [live]);
-  const known = useRef<Uint8Array>(fromRuns(walk.known, plan.w * plan.h));
-  const lightNow = useRef<Uint8Array>(new Uint8Array(plan.w * plan.h));
-  const trail = useRef<Pt[]>(walk.trail ?? [walk.at]);
-  const cuts = useRef<number[]>(walk.cuts ?? []);
-  // The wall torches and the odd candle (lib/world/walkWorld.ts), lit as you pass, and the campfires.
-  const [lights] = useState(() => placeLights(walk, plan));
-  const sconces = useRef<Sconce[]>(lights.sconces);
-  const candles = useRef<Candle[]>(lights.candles);
-  const fires = useRef<Campfire[]>((walk.fires ?? []).map((f) => ({ ...f })));
+  // Every room (and second den), and what's in them where it starts (lib/world/walkWorld.ts): the wall
+  // torches and the odd candle, lit as you pass; each fight room's foes, and the card witch walking about
+  // her room (the merchant and the librarian stand by their carts): the same places every time this opens.
+  const ids = useMemo(() => roomIds(layout, map), [layout, map]);
+  // The walk going on (lib/world/walkSim.ts): you, what you've seen, the lights, foes, the alarm. Kept between frames.
+  const [sim] = useState(() => startWalk(walk, plan, live, { ...placeLights(walk, plan), ...placePeople(walk, plan, map, dungeon, room) }, fromRuns(walk.known, plan.w * plan.h)));
   // 🚧 Decor (samples) and banners: where they lie, from the run's seed.
-  const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, candles.current, sconces.current) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
+  const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, sim.candles, sim.sconces) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
   const decorItems = labDecor.decor, banners = labDecor.banners;
   // A flare's light: tiles of walking left with it (torch.ts), lit afresh by each new flare.
-  const flareLeft = useRef(walk.flare ?? 0);
   const flaresSeen = useRef(walk.flares ?? 0);
   useEffect(() => {
-    if ((walk.flares ?? 0) > flaresSeen.current) { flaresSeen.current = walk.flares ?? 0; flareLeft.current = FLARE_WALK; }
-  }, [walk.flares]);
+    if ((walk.flares ?? 0) > flaresSeen.current) { flaresSeen.current = walk.flares ?? 0; sim.flareLeft = FLARE_WALK; }
+  }, [walk.flares, sim]);
   const [warming, setWarming] = useState<Warming | null>(null);
-  const facing = useRef<Facing>("south"); // (facing you to start: the torch shows)
-  const walked = useRef(0);
-  const falls = useRef(new Map<string, number>());
-  const shakeAt = useRef(-Infinity);
-  const wantThing = useRef<string | null>(null); // walking up to this thing (its key), to open it
-  const fired = useRef(0);                      // when a fight was called for (0: none): once, till it starts
-  // Seen: whose room, when (ms), the foes that have set off and reached you (by index: seconds after), the fade's start.
-  const alarm = useRef<{ room: string; at: number; going: Set<number>; arrived: Map<number, number>; fadeAt: number | null } | null>(null);
 
   // The props the frame loop reads, kept current.
   const spots = walk.spots;
   const props = useRef({ here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep });
   useEffect(() => { props.current = { here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }; });
 
-  const state = (): WalkState => ({
-    at: { x: Math.round(me.current.x), y: Math.round(me.current.y) }, room: progressRef.current.room,
-    line: progressRef.current.line === Infinity ? null : progressRef.current.line,
-    known: toRuns(known.current), lit: [...sconces.current, ...candles.current].filter((c) => c.lit).map((c) => c.id),
-    trail: trail.current.slice(-TRAIL_MAX), cuts: cuts.current, fires: fires.current.map((f) => ({ ...f })), flare: Math.round(flareLeft.current),
-  });
+  const state = (): WalkState => walkState(sim);
   // Saved as you leave (a fight, the Den, a reload).
-  useEffect(() => () => props.current.onKeep(state()), []);
-
-  // Every room (and second den); each fight room's foes where they start, and
-  // the card witch walking about her room (the merchant and the librarian
-  // stand by their carts): the same places every time this opens.
-  const ids = useMemo(() => roomIds(layout, map), [layout, map]);
-  const [people] = useState(() => placePeople(walk, plan, map, dungeon, room));
-  const foes = useRef<Foe[]>(people.foes);
-  const npcs = useRef<Foe[]>(people.npcs);
+  useEffect(() => () => props.current.onKeep(walkState(sim)), [sim]);
 
   // The things to tap, as the rooms stand now.
-  const things = (): Thing[] => thingsOf(layout, plan, ids, props.current.room, npcs.current, props.current.spots);
+  const things = (): Thing[] => thingsOf(layout, plan, ids, props.current.room, sim.npcs, props.current.spots);
 
   // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
-  const rule = (p: Progress): CanStep => walkRule(layout, plan, p, known.current, solidCells(things(), fires.current, decorItems));
+  const rule = (p: Progress): CanStep => walkRule(layout, plan, p, sim.known, solidCells(things(), sim.fires, decorItems));
 
-  // Draw every frame: walk on, move the camera, then what you've seen, lit by your torch.
+  // Draw every frame: walk on (walkSim.ts), move the camera, then what you've seen, lit by your torch.
   useEffect(() => {
     const el = canvas.current;
     const ctx = el?.getContext("2d");
     if (!el || !ctx) return;
     const { w, h } = plan;
     const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? ROCK : live.tiles[y * w + x]);
-    const knownAt = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && known.current[y * w + x] === 1;
-    const litAt = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && lightNow.current[y * w + x] === 1;
-    const lightOf = new Map<string, Uint8Array>();
-    const sconceLight = (c: Sconce) => {
-      let a = lightOf.get(c.id);
-      if (!a) { a = torchLit(live, c, SCONCE_RADIUS); lightOf.set(c.id, a); }
-      return a;
-    };
-    // (A torch in a tunnel that's fallen in is gone with it.)
-    const there = (c: Sconce) => live.tiles[c.y * w + c.x] !== ROCK;
-    const fireReach = (f: Campfire) => (f.left > 0 ? CAMPFIRE_LIGHT : EMBER_LIGHT);
-    const fireLight = (f: Campfire) => {
-      const id = `fire:${f.room}:${fireReach(f)}`;
-      let a = lightOf.get(id);
-      if (!a) { a = torchLit(live, f, fireReach(f)); lightOf.set(id, a); }
-      return a;
-    };
-    // Health from a campfire: not yet handed back, and handed back but not in `hp` yet.
-    let pending: Record<string, number> = {}, sent: Record<string, number> = {}, sentFor = props.current.hp;
-    let healedAt = performance.now(), shownAt = 0, outAt = -Infinity, showing = false;
+    const knownAt = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && sim.known[y * w + x] === 1;
+    const litAt = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && sim.lightNow[y * w + x] === 1;
+    const there = (c: Sconce) => torchThere(sim, c);
     // The dark, a pixel a tile, drawn smoothed up over the view (soft edges to the light).
     const mask = document.createElement("canvas");
     mask.width = w;
     mask.height = h;
     const mctx = mask.getContext("2d")!;
     const shade = mctx.createImageData(w, h);
-    let last = performance.now(), frame = 0, kept = performance.now(), movedSince = false, inRoom: string | null = roomAt(plan, me.current);
+    restartLoop(sim, live, props.current.hp, performance.now());
+    let frame = 0;
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
-      const dt = Math.min(now - last, 100) / 1000;
-      last = now;
-      if (fired.current && now - fired.current > 2000) { fired.current = 0; alarm.current = null; } // (it didn't start: carry on)
-      const P = props.current, busy = P.busy || fired.current > 0, A = alarm.current;
-      const before = { x: me.current.x, y: me.current.y };
-      if (!busy && !A) me.current = advance(me.current, dt);
-      const moved = Math.hypot(me.current.x - before.x, me.current.y - before.y);
-      if (moved > 0) flareLeft.current = Math.max(0, flareLeft.current - moved);
-      const reachNow = torchReach(flareLeft.current);
-      if (moved > 0) { walked.current += moved; movedSince = true; facing.current = facingOf(me.current.x - before.x, me.current.y - before.y, facing.current); }
-      // The torch: what it lights now, remembered from now on; the wall torches.
+      const P = props.current;
+      const F = stepWalk(sim, { now, busy: P.busy, room: P.room, here: P.here, team: P.team.map((m) => m.id), hp: P.hp, things });
+      for (const e of F.events) {
+        if (e.type === "progress") setProgress(e.progress);
+        else if (e.type === "enter") P.onEnter(e.room, e.state);
+        else if (e.type === "spotted") P.onSpotted(e.room, e.state);
+        else if (e.type === "use") openThing(e.thing, e.state);
+        else if (e.type === "heal") P.onHeal(e.gains, e.state);
+        else if (e.type === "keep") P.onKeep(e.state);
+        else setWarming(e.warming);
+      }
+      if (!F.draw) return;
+      const { busy, alarm: A, reachNow, candlesSeen, fireSeen, alarmed, foeLight, giving } = F;
+      const p = sim.progress;
       const flicker = 1 + 0.03 * Math.sin(now / 90) + 0.02 * Math.sin(now / 37 + 1.3);
-      lightNow.current = torchLit(live, me.current, reachNow);
-      let lighted = false;
-      for (const c of sconces.current) {
-        if (!there(c)) continue;
-        if (!busy && canIgnite(live, c, me.current)) { c.lit = true; lighted = true; }
-        if (sconceInSight(live, c, me.current)) {
-          const a = sconceLight(c);
-          for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
-        }
-      }
-      for (const c of candles.current) if (!busy && canIgnite(live, c, me.current)) { c.lit = true; lighted = true; }
-      const candlesSeen = candles.current.filter((c) => c.lit && fireInSight(live, c, me.current));
-      const candleLight = (c: Candle) => {
-        let a = lightOf.get(c.id);
-        if (!a) { a = torchLit(live, c, CANDLE_RADIUS); lightOf.set(c.id, a); }
-        return a;
-      };
-      for (const c of candlesSeen) { const a = candleLight(c); for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1; }
-      const fireSeen = fires.current.filter((f) => fireInSight(live, f, me.current));
-      for (const f of fireSeen) { const a = fireLight(f); for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1; }
-      const alarmed = A ? foes.current.filter((f) => f.room === A.room) : [];
-      const foeLight = alarmed.map((f) => torchLit(live, f, ALARM_LIGHT));
-      for (const a of foeLight) for (let i = 0; i < a.length; i++) if (a[i]) lightNow.current[i] = 1;
-      for (let i = 0; i < lightNow.current.length; i++) if (lightNow.current[i]) known.current[i] = 1;
-      const step = { x: Math.round(me.current.x), y: Math.round(me.current.y) }, prev = trail.current[trail.current.length - 1];
-      if (!prev || prev.x !== step.x || prev.y !== step.y) trail.current.push(step);
-      // Into a room: maybe up a tunnel (what's behind closes, falling in if you'd seen it).
-      const now_in = roomAt(plan, me.current);
-      if (now_in && now_in !== inRoom) {
-        inRoom = now_in;
-        const next = enter(layout, progressRef.current, now_in);
-        if (next !== progressRef.current) {
-          if (next.line !== progressRef.current.line) {
-            cuts.current.push(cutOffY(next, layout));
-            const was = new Set(rubbleOf(plan, layout, progressRef.current).map((r) => r.key));
-            for (const r of fallenIn(plan, layout, next, known.current)) if (!was.has(r.key)) falls.current.set(r.key, now);
-            if (falls.current.size > 0) shakeAt.current = now;
-          }
-          progressRef.current = next;
-          setProgress(next);
-        }
-        if (now_in !== P.here) { P.onEnter(now_in, state()); kept = now; movedSince = false; }
-      }
-      // The foes look about; if any of a room's sees you (or you walk into the chief's camp), that room fights you.
-      const p = progressRef.current;
-      const awake = (id: string) => { const r = P.room(id); return !!r && hasFight(r) && !r.done && isOpen(layout, p, parentOf(id)); };
-      foes.current = foes.current.filter((f) => awake(f.room) || !isOpen(layout, p, parentOf(f.room)));
-      if (!busy && A) {
-        // Seen: a "!" a moment, then they come at you; it fades into the fight once they're there.
-        const t = (now - A.at) / 1000;
-        foes.current = foes.current.map((f) => {
-          if (f.room !== A.room || A.arrived.has(f.index)) return f;
-          let g = f;
-          if (t < ALARM_PAUSE) g = { ...g, facing: Math.atan2(me.current.y - g.y, me.current.x - g.x) };
-          else {
-            if (!A.going.has(f.index)) { A.going.add(f.index); g = { ...g, path: chargePath(live, g, me.current) }; }
-            g = chargeFoe(g, dt);
-            if (Math.hypot(g.x - me.current.x, g.y - me.current.y) <= ARRIVE || g.path.length === 0) A.arrived.set(f.index, t);
-          }
-          return g;
-        });
-        const first = alarmed[0];
-        if (first) facing.current = facingOf(first.x - me.current.x, first.y - me.current.y, facing.current);
-        if (A.fadeAt === null && fightReady([...A.arrived.values()], alarmed.length, t)) A.fadeAt = now;
-        if (A.fadeAt !== null && now - A.fadeAt >= FADE_TIME * 1000) {
-          fired.current = now;
-          P.onSpotted(A.room, state());
-        }
-      } else if (!busy) {
-        foes.current = foes.current.map((f) => stepFoe(live, f, dt));
-        // The witch wanders, slowly, and stops (facing you) to let you come up to her.
-        npcs.current = npcs.current.map((n) => (Math.hypot(n.x - me.current.x, n.y - me.current.y) <= NPC_STILL
-          ? { ...n, path: [], facing: Math.atan2(me.current.y - n.y, me.current.x - n.x) } : stepFoe(live, n, dt * NPC_SPEED)));
-        const by = spottedBy(live, foes.current, me.current, awake);
-        if (by) {
-          alarm.current = { room: by, at: now, going: new Set(), arrived: new Map(), fadeAt: null };
-          me.current = { x: Math.round(me.current.x), y: Math.round(me.current.y), path: [] };
-          goal.current = null;
-          wantThing.current = null;
-          P.onKeep(state());
-          return;
-        }
-        // Walking up to a thing you tapped: open it once you're close.
-        const want = wantThing.current && things().find((t) => t.key === wantThing.current);
-        if (want && inReach(want, me.current)) {
-          wantThing.current = null;
-          me.current = { ...me.current, path: me.current.path.slice(0, 1) };
-          openThing(want, state());
-          kept = now;
-        } else if (want && me.current.path.length === 0) wantThing.current = null;
-      }
-      // By a campfire: the team heals from it, the window shows it, and what it's given is handed back now and then.
-      if (P.hp !== sentFor) { sentFor = P.hp; sent = {}; }
-      const health = (id: string) => (P.hp[id] ?? 1) + (sent[id] ?? 0) + (pending[id] ?? 0);
-      const fire = !busy && !A ? fires.current.find((f) => byFire(live, f, me.current)) : undefined;
-      const giving: string[] = [];
-      if (fire) {
-        const ids = P.team.map((m) => m.id);
-        const warm = warmBy(Object.fromEntries(ids.map((id) => [id, health(id)])), ids, fire.left, dt);
-        for (const [id, g] of Object.entries(warm.gains)) if (g > 0) { pending[id] = (pending[id] ?? 0) + g; giving.push(id); }
-        fire.left = warm.left;
-        if (fire.left === 0) outAt = now;
-      }
-      if (Object.keys(pending).length > 0 && (giving.length === 0 || now - healedAt > HEAL_EVERY)) {
-        for (const [id, g] of Object.entries(pending)) sent[id] = (sent[id] ?? 0) + g;
-        const gains = pending;
-        pending = {};
-        healedAt = now;
-        kept = now;
-        movedSince = false;
-        P.onHeal(gains, state());
-      }
-      const show = !!fire || now - outAt < OUT_SHOW;
-      if (show && now - shownAt > SHOW_EVERY) {
-        shownAt = now;
-        showing = true;
-        setWarming({ hp: Object.fromEntries(P.team.map((m) => [m.id, Math.min(1, health(m.id))])), giving, left: fire?.left ?? 0 });
-      } else if (!show && showing) { showing = false; setWarming(null); }
-      if (lighted || (movedSince && (now - kept > KEEP_EVERY || P.busy))) { kept = now; movedSince = false; P.onKeep(state()); }
 
       // ── Drawing ──
       const ratio = window.devicePixelRatio || 1;
@@ -345,10 +177,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.imageSmoothingEnabled = false;
       // The camera on you (lib/render/projection.ts), shaken a moment when a tunnel falls in.
-      const still = walkView(plan, me.current, cw, ch), scale = still.scale;
-      const shake = (now - shakeAt.current) / 1000 < SHAKE_TIME ? SHAKE_PX * scale * (1 - (now - shakeAt.current) / 1000 / SHAKE_TIME) : 0;
+      const still = walkView(plan, sim.me, cw, ch), scale = still.scale;
+      const shake = (now - sim.shakeAt) / 1000 < SHAKE_TIME ? SHAKE_PX * scale * (1 - (now - sim.shakeAt) / 1000 / SHAKE_TIME) : 0;
       const jx = shake ? (Math.random() * 2 - 1) * shake : 0, jy = shake ? (Math.random() * 2 - 1) * shake : 0;
-      const view = shake ? walkView(plan, me.current, cw, ch, { x: jx, y: jy }) : still;
+      const view = shake ? walkView(plan, sim.me, cw, ch, { x: jx, y: jy }) : still;
       const { T, sx, sy, midX, midY, footX, footY, x0, x1, y0, y1 } = view;
       ctx.fillStyle = COLOURS.rock;
       ctx.fillRect(0, 0, cw, ch);
@@ -399,14 +231,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         ctx.fill();
       }
       // The way you'll walk: a dotted line from you, shrinking as you go.
-      const end = me.current.path[me.current.path.length - 1];
+      const end = sim.me.path[sim.me.path.length - 1];
       if (end) {
         ctx.strokeStyle = COLOURS.goal;
         ctx.lineWidth = 2;
         ctx.setLineDash([3 * scale, 4 * scale]);
         ctx.beginPath();
-        ctx.moveTo(midX(me.current.x), midY(me.current.y));
-        for (const q of me.current.path) ctx.lineTo(midX(q.x), midY(q.y));
+        ctx.moveTo(midX(sim.me.x), midY(sim.me.y));
+        for (const q of sim.me.path) ctx.lineTo(midX(q.x), midY(q.y));
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.strokeRect(sx(end.x) + 3 * scale, sy(end.y) + 3 * scale, T - 6 * scale, T - 6 * scale);
@@ -415,7 +247,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       const standing: { x: number; y: number; draw: () => void }[] = [];
       const shown = things().filter((t) => knownAt(t.x, t.y) && (!t.npc || litAt(t.x, t.y) || t.solid));
       for (const t of shown) {
-        const witch = t.def === "witch" ? npcs.current.find((n) => n.room === t.room) : undefined;
+        const witch = t.def === "witch" ? sim.npcs.find((n) => n.room === t.room) : undefined;
         const sheet = witch && image(WALK_WITCH.sheet);
         if (witch && sheet) {
           // The card witch walking about (a sheet like the hero's), facing the way she goes.
@@ -444,10 +276,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         } });
       }
       for (const r of rubbleOf(plan, layout, p)) {
-        const fell = falls.current.get(r.key);
-        if (fell === undefined && !r.tiles.some((q) => known.current[q.y * w + q.x])) continue; // never seen: just rock
+        const fell = sim.falls.get(r.key);
+        if (fell === undefined && !r.tiles.some((q) => sim.known[q.y * w + q.x])) continue; // never seen: just rock
         const age = fell === undefined ? Infinity : (now - fell) / 1000;
-        if (age > DUST_TIME) falls.current.delete(r.key);
+        if (age > DUST_TIME) sim.falls.delete(r.key);
         const into = r.wall === "top" ? { x: 0, y: 0.35 } : r.wall === "bottom" ? { x: 0, y: -0.35 } : r.wall === "left" ? { x: 0.35, y: 0 } : { x: -0.35, y: 0 };
         for (const q of r.tiles) standing.push({ x: q.x, y: q.y + into.y, draw: () => {
           const drop = age < FALL_TIME ? (1 - age / FALL_TIME) ** 2 * 3 * T : 0;
@@ -467,7 +299,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
           }
         } });
       }
-      for (const f of foes.current) {
+      for (const f of sim.foes) {
         if (!litAt(Math.round(f.x), Math.round(f.y)) && !(A && f.room === A.room)) continue;
         const fr = P.room(f.room), e = fr?.enemies?.[f.index];
         const sprite = fr?.boss ? CREATURE_SPRITES[fr.boss] : e && CREATURE_SPRITES[e.creatureId];
@@ -492,20 +324,20 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         } });
       }
       const heroImg = image(WALK_HERO.sheet);
-      standing.push({ x: me.current.x, y: me.current.y, draw: () => {
+      standing.push({ x: sim.me.x, y: sim.me.y, draw: () => {
         if (!heroImg) return;
-        const moving = me.current.path.length > 0 && !busy;
-        const col = WALK_HERO.frames > 0 ? walkFrame(walked.current, moving, WALK_HERO.frames) + 1 : 0;
-        const row = FACINGS.indexOf(facing.current), px = artPxAcross(view, HERO_DENSITY), size = WALK_HERO.cell * px;
+        const moving = sim.me.path.length > 0 && !busy;
+        const col = WALK_HERO.frames > 0 ? walkFrame(sim.walked, moving, WALK_HERO.frames) + 1 : 0;
+        const row = FACINGS.indexOf(sim.facing), px = artPxAcross(view, HERO_DENSITY), size = WALK_HERO.cell * px;
         ctx.drawImage(heroImg, col * WALK_HERO.cell, row * WALK_HERO.cell, WALK_HERO.cell, WALK_HERO.cell,
-          Math.round(footX(me.current.x) - size / 2), Math.round(footY(me.current.y) - WALK_HERO.feet * px), size, size);
+          Math.round(footX(sim.me.x) - size / 2), Math.round(footY(sim.me.y) - WALK_HERO.feet * px), size, size);
       } });
       // South walls stand up over the floor's bottom row (see-through close to you).
       const lift = Math.round(KIT_CAP * vy);
       if (kit) for (const q of edges.south) {
         if (q.x < x0 || q.x >= x1 || q.y < y0 || q.y >= y1 || !knownAt(q.x, q.y - 1)) continue;
         standing.push({ x: q.x, y: q.y + SOUTH_WALL.visual.legacy.sortDy!, draw: () => {
-          ctx.globalAlpha = capFade(Math.hypot(q.x - me.current.x, q.y - 0.5 - WALL_LIFT / 2 - me.current.y));
+          ctx.globalAlpha = capFade(Math.hypot(q.x - sim.me.x, q.y - 0.5 - WALL_LIFT / 2 - sim.me.y));
           const l = at(q.x - 1, q.y) === ROCK && at(q.x - 1, q.y - 1) === ROCK ? side : 0;
           const r = at(q.x + 1, q.y) === ROCK && at(q.x + 1, q.y - 1) === ROCK ? side : 0;
           ctx.drawImage(kit.cap, 0, 0, KIT_PX, KIT_CAP, sx(q.x) - l, sy(q.y) - lift, sx(q.x + 1) - sx(q.x) + l + r, lift);
@@ -515,10 +347,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         } });
       }
       // The wall torches' brackets (their flames go over the dark, below).
-      const burning = sconces.current.filter((c) => c.lit && there(c) && knownAt(c.x, c.y) && c.x >= x0 - SCONCE_RADIUS && c.x < x1 + SCONCE_RADIUS && c.y >= y0 - SCONCE_RADIUS && c.y < y1 + SCONCE_RADIUS);
+      const burning = sim.sconces.filter((c) => c.lit && there(c) && knownAt(c.x, c.y) && c.x >= x0 - SCONCE_RADIUS && c.x < x1 + SCONCE_RADIUS && c.y >= y0 - SCONCE_RADIUS && c.y < y1 + SCONCE_RADIUS);
       // (On a tunnel's side wall, it sticks out from the wall's edge, by the tile's middle.)
       const bracket = (c: Sconce) => (c.wall === "left" ? { x: sx(c.x) + 0.1 * T, top: sy(c.y) - 0.2 * T } : c.wall === "right" ? { x: sx(c.x + 1) - 0.1 * T, top: sy(c.y) - 0.2 * T } : { x: footX(c.x), top: sy(c.y) - 1.1 * T });
-      for (const c of sconces.current) {
+      for (const c of sim.sconces) {
         if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
         standing.push({ x: c.x, y: c.y + objectDef(c.wall === "left" || c.wall === "right" ? "sconce-side" : "sconce").visual.legacy.sortDy!, draw: () => {
           const { x: fx, top } = bracket(c);
@@ -536,7 +368,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         const { wd, h2 } = fireSize;
         ctx.drawImage(img, footX(f.x) - wd / 2, footY(f.y) - h2 + h2 * CAMPFIRE.visual.legacy.lift!, wd, h2);
       };
-      for (const f of fires.current) {
+      for (const f of sim.fires) {
         if (!knownAt(f.x, f.y)) continue;
         standing.push({ x: f.x, y: f.y, draw: () => drawFire(f, f.left > 0 ? fireImg : embersImg) });
       }
@@ -548,7 +380,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         const { wd, h2 } = candleSize;
         ctx.drawImage(img, footX(c.x) - wd / 2, footY(c.y) - h2, wd, h2);
       };
-      for (const c of candles.current) if (knownAt(c.x, c.y)) standing.push({ x: c.x, y: c.y, draw: () => drawCandle(c) });
+      for (const c of sim.candles) if (knownAt(c.x, c.y)) standing.push({ x: c.x, y: c.y, draw: () => drawCandle(c) });
       for (const d of decorItems) {
         if (!knownAt(d.x, d.y) || d.x < x0 - 2 || d.x > x1 + 2 || d.y < y0 - 2 || d.y > y1 + 2) continue;
         const def = objectDef(DECOR_DEF[d.kind]), art = artOf(def)!, img = image(art.src);
@@ -563,7 +395,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       for (const s of drawOrder(standing)) s.draw();
       // Your torch's warm glow, going cold away from it, the wall torches' pools; then the dark
       // over everything (black where you've never seen, dim where you remember).
-      const hx = footX(me.current.x), hy = footY(me.current.y) - 12 * scale, reach = reachNow * T * flicker;
+      const hx = footX(sim.me.x), hy = footY(sim.me.y) - 12 * scale, reach = reachNow * T * flicker;
       ctx.globalCompositeOperation = "multiply";
       const cool = ctx.createRadialGradient(hx, hy, 0, hx, hy, reach);
       cool.addColorStop(0, "rgb(255, 222, 170)");
@@ -605,10 +437,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       const d = shade.data;
       for (let y = Math.max(0, y0 - 1); y < Math.min(h, y1 + 1); y++) for (let x = Math.max(0, x0 - 1); x < Math.min(w, x1 + 1); x++) {
         const i = y * w + x;
-        let glow = torchGlow(Math.hypot(x - me.current.x, y - me.current.y), lightNow.current[i] === 1, known.current[i] === 1, reachNow, flicker);
-        for (const c of burning) if (sconceLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
-        for (const f of fireSeen) if (fireLight(f)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - f.x, y - f.y), flicker, fireReach(f)));
-        for (const c of candlesSeen) if (candleLight(c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker, CANDLE_RADIUS));
+        let glow = torchGlow(Math.hypot(x - sim.me.x, y - sim.me.y), sim.lightNow[i] === 1, sim.known[i] === 1, reachNow, flicker);
+        for (const c of burning) if (sconceLight(sim, c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker));
+        for (const f of fireSeen) if (fireLight(sim, f)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - f.x, y - f.y), flicker, fireReach(f)));
+        for (const c of candlesSeen) if (candleLight(sim, c)[i]) glow = Math.min(glow, sconceGlow(Math.hypot(x - c.x, y - c.y), flicker, CANDLE_RADIUS));
         alarmed.forEach((f, k) => { if (foeLight[k][i]) glow = Math.min(glow, torchGlow(Math.hypot(x - f.x, y - f.y), true, true, ALARM_LIGHT, flicker)); });
         d[i * 4] = DARK_RGB[0]; d[i * 4 + 1] = DARK_RGB[1]; d[i * 4 + 2] = DARK_RGB[2]; d[i * 4 + 3] = Math.round(glow * 255);
       }
@@ -617,7 +449,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       ctx.drawImage(mask, sx(0), sy(0), w * T, h * T);
       ctx.imageSmoothingEnabled = false;
       // The burning torches' flames, over the dark: a fire glows whatever's round it.
-      for (const c of sconces.current) {
+      for (const c of sim.sconces) {
         if (!c.lit || c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
         const { x: fx, top } = bracket(c), wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
         ctx.globalCompositeOperation = "lighter";
@@ -649,7 +481,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         drawCandle(c);
       }
       // The campfires, over the dark: a fire glows whatever's round it.
-      for (const f of fires.current) {
+      for (const f of sim.fires) {
         if (f.x < x0 || f.x >= x1 || f.y < y0 || f.y >= y1 + 1 || !knownAt(f.x, f.y)) continue;
         const fx = footX(f.x), base = footY(f.y) - 0.45 * T, lit = f.left > 0;
         const r = (lit ? 0.9 + 0.5 * (f.left / CAMPFIRE_HEAL) : 0.55) * T * (1 + 0.08 * Math.sin(now / 90 + f.x));
@@ -704,7 +536,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         for (let k = 0; k < 6; k++) {
           const ph = (now / 1100 + k / 6) % 1;
           ctx.fillStyle = `rgba(120, 255, 140, ${1 - ph})`;
-          ctx.fillText("+", footX(me.current.x) + Math.sin(k * 2.3) * 0.45 * T, footY(me.current.y) - (0.6 + ph * 0.9) * T);
+          ctx.fillText("+", footX(sim.me.x) + Math.sin(k * 2.3) * 0.45 * T, footY(sim.me.y) - (0.6 + ph * 0.9) * T);
         }
       }
       if (A) {
@@ -715,7 +547,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         ctx.lineWidth = Math.max(2, scale * 1.5);
         ctx.strokeStyle = "#1a0e05";
         ctx.fillStyle = "#ffd23f";
-        for (const f of foes.current.filter((g) => g.room === A.room)) {
+        for (const f of sim.foes.filter((g) => g.room === A.room)) {
           const fx = footX(f.x), top = footY(f.y) - across(view, FOE_U) - 2 * scale - Math.abs(Math.sin(now / 120)) * 3 * scale;
           ctx.strokeText("!", fx, top);
           ctx.fillText("!", fx, top);
@@ -733,39 +565,39 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
 
   // A tunnel's turned to rock under the way you were going: find the way again.
   useEffect(() => {
-    if (goal.current) me.current = walkToward(live, { ...me.current, path: me.current.path.slice(0, 1) }, goal.current, rule(progress));
+    if (sim.goal) sim.me = walkToward(live, { ...sim.me, path: sim.me.path.slice(0, 1) }, sim.goal, rule(progress));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rule() reads refs and the layout
   }, [live]);
 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (busy || fired.current > 0 || alarm.current) return;
+    if (busy || sim.fired > 0 || sim.alarm) return;
     const el = e.currentTarget, box = el.getBoundingClientRect();
-    const spot = tapCell(walkView(plan, me.current, el.clientWidth, el.clientHeight), e.clientX - box.left, e.clientY - box.top);
-    const can = rule(progressRef.current);
+    const spot = tapCell(walkView(plan, sim.me, el.clientWidth, el.clientHeight), e.clientX - box.left, e.clientY - box.top);
+    const can = rule(sim.progress);
     // A tap on (or by) something to loot that you've seen: walk up beside it, and it opens.
-    const t = things().find((x) => tapsThing(x, spot) && known.current[x.y * plan.w + x.x]);
+    const t = things().find((x) => tapsThing(x, spot) && sim.known[x.y * plan.w + x.x]);
     if (t) {
-      if (inReach(t, me.current)) { openThing(t, state()); return; }
-      const from = me.current.path[0] ?? { x: Math.round(me.current.x), y: Math.round(me.current.y) };
+      if (inReach(t, sim.me)) { openThing(t, state()); return; }
+      const from = sim.me.path[0] ?? { x: Math.round(sim.me.x), y: Math.round(sim.me.y) };
       const best = approach(live, t, from, can);
       if (best) {
-        goal.current = null;
-        wantThing.current = t.key;
-        me.current = { ...me.current, path: me.current.path.length > 0 ? [from, ...best] : best };
+        sim.goal = null;
+        sim.wantThing = t.key;
+        sim.me = { ...sim.me, path: sim.me.path.length > 0 ? [from, ...best] : best };
       }
       return;
     }
-    goal.current = spot;
-    wantThing.current = null;
-    me.current = walkToward(live, me.current, spot, can);
+    sim.goal = spot;
+    sim.wantThing = null;
+    sim.me = walkToward(live, sim.me, spot, can);
   };
 
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
       <canvas ref={canvas} onPointerDown={tap} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }} />
       {warming && !scroll && <Warmth team={team} warming={warming} />}
-      {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={known.current} trail={trail.current} progress={progress} cuts={cuts.current}
-        been={been} here={roomAt(plan, me.current)} at={me.current} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
+      {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={sim.known} trail={sim.trail} progress={progress} cuts={sim.cuts}
+        been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
     </div>
   );
 }
