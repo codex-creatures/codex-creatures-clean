@@ -352,7 +352,7 @@ each with its own rules:
 |---|---|---|
 | **Floor (blocking)** | solid floor objects: pillars, chests, cages, barrels, campfires, NPCs' carts | one thing per subcell, so several small things can share a panel; every subcell of a footprint must be on floor; clearance kept; may not break a reservation (§5.2) |
 | **Floor (walk-over)** | skulls, nests, pots, candles, decals, worn tiles | may sit under foes' and your paths; not on a blocking thing; may overlap other walk-over things only if their definitions allow it |
-| **Wall slots** | wall torches, banners, future levers or switches: three per wall panel, per face (north face, side walls) | one thing per slot, plus a gap rule (`SCONCE_EVERY`, in panels) |
+| **Wall slots** | wall torches, banners, wall candles, future levers or switches: three per wall panel, per face (north face, side walls; the south wall from 2b, §5.6) | one thing per slot, plus a gap rule (`SCONCE_EVERY`, in panels) |
 | **Overhead** | hanging things (none yet) | no collision; one per subcell |
 
 A footprint that crosses a panel edge is fine, as long as every subcell under it is floor; a
@@ -401,9 +401,9 @@ blocked-off pocket from causing trouble:
    reserved cells.
 3. **Structure:** pillars (`interior.ts` rules).
 4. **Things you use:** the chest, pool, stash, deck, NPCs, cages.
-5. **Wall slots:** wall torches, banners.
-6. **Lights on the floor:** candles, campfires.
-7. **Spawns:** where each foe starts, the NPCs' wander areas, the boss's stand.
+5. **Wall slots:** wall torches, banners, wall candles (§5.6).
+6. **Lights on the floor:** campfires, then candles, by a wall or near the middle (§5.6).
+7. **Spawns:** where each foe starts, where each NPC starts (§5.7), the boss's stand.
 8. **Decor:** blocking decor against walls, walk-over decor anywhere left.
 9. **Floor variety:** worn floor and wall tiles. Purely visual, so these stay worked out from the
    seed and aren't saved.
@@ -454,6 +454,76 @@ stamp: chief-camp   fits: boss   anchor: top-middle
 A stamp places its fixed objects and reservations; the passes after it fill the rest. Stamps are
 chosen by the room's kind and shape and can be flipped left to right. The chief's camp would be
 the first.
+
+### 5.6 Candles by any wall (📌 requirements, the user 2026-11-07; built on 2b's placement)
+
+Today a candle is a floor thing near a room's middle (`placeCandles`: 🧪 35% of rooms, 2–5 panels
+from the middle, clear of doors; unlit till you walk near). The user wants candles along the
+south, west and east walls too, as well as the north one.
+
+- **Two kinds of definition:** a **floor candle** (walk-over, attach `floor`) that may stand
+  against any wall, in the floor subcells next to it; and a **wall candle** (attach `wall-*`,
+  takes no floor) in a wall slot, like a wall torch. Each wall gets its own art and anchor:
+  - **north:** on the wall's face, seen face on; sorts on its wall (as a wall torch, −0.6);
+  - **west and east:** seen edge on, a side variant (as `sconce-side`, +0.4);
+  - **south:** the camera looks over the south wall from behind it, and it's drawn as its top
+    band only, fading near you (`capFade`). A candle on its inside face faces away from the
+    camera. **Recommended: floor candles only there**, standing a subcell or two in from the
+    wall, so the flame shows above the band. (Other options, for the user: a candle drawn on top
+    of the band; or one on the inside face, seen only while the band fades.)
+- **Wall slots gain the south wall** (§5.1: today the north face and the side walls). The
+  instance's `wall` gains `"south"`. An older copy of the game would read that as an unknown
+  wall and hold the run as damaged, so it comes with 2b's world version, never on its own.
+- **Light starts where the candle is:** at its anchor subcell, not its panel's middle. A wall
+  candle's light starts in the floor subcell beside its wall (as a wall torch's does today), so
+  it never starts inside rock. It goes through `torchLit`, so walls and anything with
+  `blocksLight` stop it; and as now it counts for what you've seen only while the candle's in
+  your sight.
+- **Never in a campfire's space:** campfires are rolled as the run starts (`fires`), so pass 6
+  places them first and a candle can't take a subcell in a fire's footprint or its clearance
+  (🧪 a panel). Today's rule (a candle within 2 panels of a fire isn't drawn) stays only for
+  runs placed by the old rules.
+- **Placement rules** (pass 5 for wall candles, pass 6 for floor ones): not in a door's
+  reservation, not on a required path if it blocks (a floor candle is walk-over, so it may sit on
+  one), not in a slot a wall torch or banner has, and a gap from other lights (🧪). How many per
+  room, and what share by the walls, are 🧪 numbers for the user; counts stay within agreed
+  ranges of today's unless the user changes them (§8 2b, done when).
+- **Ids:** today's `candle:<room>` stays for the candle a run already has (`lit` names it); more
+  than one a room become `candle:<room>:<n>`.
+
+### 5.7 Wandering NPCs and the lights they carry (📌 requirements, the user 2026-11-07; a feature after 2b)
+
+The merchant, the librarian and the card witch may walk out of their rooms and round the
+dungeon, each carrying a light, so the world feels lived in. Simple, not clever: no elaborate AI.
+
+- **Friendly, not foes.** NPCs and foes are different walkers with different rules: NPCs never
+  see you, raise an alarm or start a fight; foes keep to their rooms (§5.4) as now. An NPC
+  doesn't block foes' sight or your path (`collision: "none"`, as the witch is today), and foes
+  ignore them.
+- **Where they start:** a saved start (an instance, as the witch has today), placed in pass 7 at
+  a reachable spot in their home room. Stable: the same every time the run opens. Where they've
+  wandered to is for this visit only, not saved, as for foes (2a′); saving it is a later
+  feature.
+- **Where they may go:** the panels the run's live floorplan calls walkable (`shutPlan`: a
+  tunnel that's fallen in or closed is rock), less solid things, and only through open
+  passages. 🧪 They keep to rooms and tunnels you could walk to now (the up tunnels' one-way
+  rule, `stepRule`, applied to them too, so nobody walks through what's closed behind you), and
+  not into a fight room still to beat (🧪, so a merchant never ends up among foes).
+- **How they wander:** pick a reachable spot (often in their own room, now and then in a room
+  next to it), walk there at a walking pace, pause a while (🧪 a few seconds), pick again;
+  deterministic per visit from the run's seed, like the foes' wandering. Never on top of you.
+- **A light each:** a lantern, a torch or a glow, by who they are (a definition field: radius,
+  colour, flicker, held a little above their feet), worked out each frame from where they are
+  through `torchLit`, so walls and occlusion stop it. As with candles, it counts towards what
+  you've seen only while they're in your sight (so a merchant down the corridor doesn't map it
+  for you). A moving light like this already exists: an alarmed foe's (`ALARM_LIGHT`).
+- **Using them where they've got to:** tapping and reach follow them (`tapBody`, as the witch's
+  now); the shop, the library's books and the witch's game stay their home room's state. 🧪
+  Whether the merchant's cart stays put (and you buy at the cart, or from him wherever he is) is
+  for the user to decide when this is built.
+- **What 2b must give it:** the NPCs' start spots as saved instances from the new placer (pass
+  7), their home room on each, their light as a definition field, and the walk rule for NPCs
+  kept apart from the foes' and yours. Nothing in 2b moves them.
 
 ## 6. Art standard and pipeline
 
@@ -886,6 +956,14 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
     already agreed may (§10.3: new runs' exact spots). Giving things their reviewed subcell sizes
     (two small things sharing a panel, a chest that's 3 × 2) changes what new rooms look like and
     where you can walk, so it's an intended change, in its own commit, approved first.
+  - **The foundations for candles by any wall and for wandering NPCs** (the user, 2026-11-07;
+    §5.6, §5.7): south wall slots and `wall: "south"`, wall and floor candle definitions with an
+    anchor and art slot per wall, a light's origin at its anchor subcell, campfires placed before
+    candles with their space kept clear, and NPCs' starts as saved instances with a home room and
+    a light field. All of that is the placement system's own work, with no change in play. The
+    extra candles themselves (along the walls, perhaps more per room) change what rooms look like,
+    so they come in as an intended change, approved first, with their wall and side art made and
+    approved the usual way (PixelLab samples first). Nothing in 2b makes NPCs move.
 - **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing
   goldens), each in its own commit. (The foe fix came early, as 2a′.)
 - **Done when:**
@@ -909,6 +987,13 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
   need (projected boxes, anchors, wall pieces, how multi-cell objects split) and try it with grey
   templates, without settling the look or building the full pipeline. The pipeline itself is
   phase 3.
+
+  **After phase 2: wandering NPCs and the lights they carry** (the user, 2026-11-07; §5.7). Its
+  own gameplay feature, designed and approved before it's built, once 2b's placement is
+  reliable: the NPCs' walk rule and wandering, their lights in `stepWalk`'s lighting, tapping
+  them where they are, and whether the merchant's cart moves. It doesn't need the art phases
+  (3 and 4) and may come before them; its lantern and glow art follows phase 3's standard if
+  that's in place by then.
 
 ### Phase 3: the art standard and its tools
 - The dungeon art spec, palette (from the reference, with the user's OK), template generator,
@@ -935,6 +1020,8 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
 - **Stamps:** the format is in §5.5; the first is built when a room needs one. (A stamp's grid is
   in panels; a stamp may give a thing an exact subcell spot.)
 - **Walking on subcells:** designed for in §5.4, changed only when the user decides.
+- **Wandering NPCs with their own lights** (§5.7): after phase 2, its own feature.
+- **Candles by any wall** (§5.6): on 2b's placement.
 - **Levers, traps, breakable walls:** a definition slot and instance state only.
 - **A second setting:** packs are laid out for it; built once the dungeon pack is right.
 - **4-way walking art for creatures:** size classes now, art later.
