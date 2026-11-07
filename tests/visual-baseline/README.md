@@ -9,6 +9,9 @@ exception to the no-browser rule, run locally on a scratch port, nothing deploye
 
 ## The scenes (`app/lab/baseline`, `?s=<scene>`)
 
+The page is never on the live site: it's shown by the dev server, or a local build made with
+`LAB_BASELINE=1`; any other build makes it "not found" (app/lab/baseline/page.tsx).
+
 Each is a saved run from `tests/fixtures/walk/`, with you stood at a chosen spot and the view
 frozen (busy), so nothing moves. "Seen all": every tile shows as seen (dim where your torch isn't).
 
@@ -35,12 +38,15 @@ frozen (busy), so nothing moves. "Seen all": every tile shows as seen (dim where
 
 Only with the user's OK (the no-browser rule), locally, never on the user's addresses:
 
-1. `npx next build`, then `npx next start -p 3123` (a scratch port; the dev server on 3000 keeps
-   its own build folder).
+1. `LAB_BASELINE=1 npx next build`, then `npx next start -p 3123` (a scratch port; the dev server
+   on 3000 keeps its own build folder). Without LAB_BASELINE=1 a build makes the page "not found",
+   as on the live site; the dev server always shows it.
 2. For each scene, with Edge headless and a throwaway profile:
    `msedge --headless=new --disable-gpu --hide-scrollbars --no-first-run --user-data-dir=<temp>
    --window-size=390,693 --virtual-time-budget=6000 --screenshot=<dir>/<scene>.png
    "http://localhost:3123/lab/baseline?s=<scene>"`
 3. Stop the scratch server.
 
-Put each phase's shots in their own folder (`phase1/`…) beside `phase0/` and compare.
+Put each phase's shots in their own folder (`phase1/`…) beside `phase0/` and compare: by eye,
+and by the average difference per colour channel. Retaking phase 0's scenes with the same build
+gave 0.0–0.2 (torch flicker), so anything well above that is a real difference.
