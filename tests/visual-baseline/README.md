@@ -50,3 +50,14 @@ Only with the user's OK (the no-browser rule), locally, never on the user's addr
 Put each phase's shots in their own folder (`phase1/`…) beside `phase0/` and compare: by eye,
 and by the average difference per colour channel. Retaking phase 0's scenes with the same build
 gave 0.0–0.2 (torch flicker), so anything well above that is a real difference.
+
+## Phase 1 (2026-11-07)
+
+`phase1/` was shot from the phase-1 code (4f2cd52) the same way. Against `phase0/`: 0.00–0.50 on
+average, but the phase-0 code itself, rebuilt and shot again the same day, differed from `phase0/`
+by 0.05–0.47, so a fresh capture session alone moves the numbers that much (the torch glow's radius
+flickers with the time a shot is taken). Shot side by side in one session, the phase-0 and phase-1
+builds differed by 0.00–0.81, about as much as two shots of the same build (0.00–1.03), with every
+pixel more than 24 levels off on a flame (wall torches, a candle, the campfire) and nowhere else.
+So: no visual difference. Compare by shooting the old and new builds side by side in one session,
+not against old shots alone.
