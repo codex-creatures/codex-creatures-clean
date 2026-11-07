@@ -507,8 +507,10 @@ dungeon, each carrying a light, so the world feels lived in. Simple, not clever:
 - **Where they may go:** the panels the run's live floorplan calls walkable (`shutPlan`: a
   tunnel that's fallen in or closed is rock), less solid things, and only through open
   passages. 🧪 They keep to rooms and tunnels you could walk to now (the up tunnels' one-way
-  rule, `stepRule`, applied to them too, so nobody walks through what's closed behind you), and
-  not into a fight room still to beat (🧪, so a merchant never ends up among foes).
+  rule, `stepRule`, applied to them too, so nobody walks through what's closed behind you).
+  **Never into a hostile room; free to roam any other** (✅ the user, 2026-11-07): a hostile room
+  is one with foes still to beat (a fight room not yet beaten, or an ambush not yet sprung);
+  once it's beaten it's open to them like any other.
 - **How they wander:** pick a reachable spot (often in their own room, now and then in a room
   next to it), walk there at a walking pace, pause a while (🧪 a few seconds), pick again;
   deterministic per visit from the run's seed, like the foes' wandering. Never on top of you.
