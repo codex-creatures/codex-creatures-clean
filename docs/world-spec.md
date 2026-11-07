@@ -1,7 +1,8 @@
 # The explorable world: technical specification
 
-❓ **Draft for the user's sign-off (2026-11-07). Nothing here is built yet.** Don't start the
-implementation until the user has agreed it. The summary and the decisions are in
+📌 **Approved by the user (2026-11-07), with the refinements below folded in.** Built phase by
+phase (§8): each phase tightly scoped, behaviour kept unless the user approves a change, its
+regression tests run. The summary and the decisions are in
 [design.md §13](design.md#13-the-explorable-world-architecture); this file holds the detail.
 
 Scope: the walkable dungeons (the Encampment's and the Cyclops's "New") and any explorable place
@@ -84,8 +85,12 @@ today's sprites in phase 1 so nothing moves:
 | large | 2×2 | 1.8–3 | the chief (today ×1.3, `CHIEF_SCALE`) |
 | huge | 3×3 | 3+ | the Cyclops (today ×2.6, `BOSS_SCALE`) |
 
-In phase 1 every creature keeps today's drawn height (legacy overrides), so nothing changes on
-screen. The classes take over when creature art is redone to the standard.
+**A creature's world size comes from its intended physical proportions**, not from its sprite
+(the user, 2026-11-07): today's sprites are a reference, not the source of truth. A creature that
+doesn't fit a class neatly gets its own footprint and height (`size: { w, d, height }` overrides
+the class). In phase 1 each creature gets its class or own size, while the renderer keeps
+drawing it at today's height (a legacy draw size), so nothing changes on screen. The world sizes
+take over the drawing when creature art is redone to the standard.
 
 ## 3. Object definitions
 
@@ -212,8 +217,10 @@ WalkView.
 **D for new art** ❓. D = 1 (today) shows floors straight down from above. D ≈ 0.75 is the
 classic three-quarter look: it's how PixelLab's kits are drawn (their floors are 32 × 24), and
 it's closer to the user's reference. It only changes the renderer (you'd see more rows of the
-room), never gameplay. Proposal: decide in phase 3 from two test-room renders, before any new
-art is made.
+room), never gameplay. **Decided in phase 3** (the user, 2026-11-07) from two proper in-game
+comparison renders (D = 1 and D = 0.75) with walls, creatures, props and lighting, judged on
+sprite anchors, drawing order and whether taps and interaction points still line up with what's
+drawn. The user is interested in ¾ but wants to see it first.
 
 ## 5. Occupancy and placement
 
@@ -304,9 +311,11 @@ the first.
 Each setting is a pack: its palette, kit, props, light settings and decor themes. The spec says:
 - **The camera:** read from `projection.ts`, never retyped.
 - **Art density:** 32 art pixels per u (`artPerU`), square pixels (no `pixelAspect`).
-- **The palette:** about 24 colours, sampled from the user's reference image (with their
-  OK), kept as a file (`art/palettes/dungeon.json`). Generated art is asked to use it; the checks
-  report how far off it is.
+- **The palette:** about 24 colours, kept as a file (`art/palettes/dungeon.json`). **The user's
+  reference image is the visual target, not a source** (the user, 2026-11-07): no textures or
+  colours are copied or sampled from it unless we hold the rights to it. The palette is an
+  original one made to capture its atmosphere (warm brick under torchlight, charcoal stone, a
+  neutral dark). Generated art is asked to use it; the checks report how far off it is.
 - **Light:** evenly lit, mid-tone materials, light from the upper left at most for form. No
   torch glow and no cast shadows in the art: the renderer adds those.
 - **Outline and detail:** one outline style and a detail level, the same for every piece of a
@@ -325,8 +334,8 @@ size:
 It uses `lib/render/projection.ts`, the same module as the game. A test checks that a
 template's size equals the projected visual bounds, so the generator and the game can't drift
 apart. The template goes to PixelLab as the shape to paint over (inpainting or style-matching,
-whichever the tool supports for that asset). The reference image goes as the style reference
-where the tool takes one. Which PixelLab tools take which inputs gets checked in phase 3; this
+whichever the tool supports for that asset). A style reference goes in only where we hold the rights to
+it (our own approved art, once there is some). Which PixelLab tools take which inputs gets checked in phase 3; this
 spec assumes nothing about them.
 
 ### 6.3 Checks (report only)
@@ -356,12 +365,22 @@ spec assumes nothing about them.
 - **The walkable run gets a version:** `WalkRun.v`. Missing = 0 (every run saved so far).
 - **v1 adds** `placed: Instance[]` (everything passes 2–8 placed) and `states` (each instance's
   state: opened, lit, spent). Both optional, so older code still reads a v1 save.
-- **Migration** (`migrateWalkRun`, run on load, chained by version, pure and tested):
-  - v0 → v1 works out a v0 run's placements with **frozen copies of today's placers** (decor,
-    banners, candles, wall torches, campfires, cages, foe starts), exactly as today, and saves
-    them. So a run started before the change looks and plays the same after it.
-  - The frozen copies live in `lib/world/legacy/`, are never edited, and are pinned by
-    golden tests.
+- **Migration: save once, no legacy code kept for good** (the user, 2026-11-07: backward
+  compatibility mustn't become long-term upkeep). `migrateWalkRun` runs on load, chained by
+  version, pure and tested.
+  - **Phase 1 starts saving placements.** Once the instance format exists, the game saves what
+    today's placers placed (decor, banners, candles, wall torches, campfires, cages, foe starts)
+    into the run when it loads or starts (v0 → v1). In phase 1 those placers are still the live
+    ones, so no second copy is needed: every run that's loaded from then on carries its own
+    placements.
+  - **Phase 2 replaces the placers.** A frozen copy of the old ones is kept only for v0 runs not
+    yet loaded since phase 1 (on another computer, or in a cloud save), with a **sunset**: removed
+    after phase 2 has been live for 🧪 4 weeks.
+  - **After the sunset,** a v0 run still unopened is given placements by the new generator,
+    from its saved layout and rooms. Its rooms, foes, loot and progress are all saved data and
+    don't change; only where decor, torches and foes stand may move, and its lit wall torches may
+    go out. It stays playable. A test pins that.
+  - Runs are short (one dungeon trip), so the sunset should catch almost every run.
 - **What today's saves already carry is read as now:** `layout.block` (missing = 3),
   `layout.rooms[].inner` (pillar rock), `known`, `lit`, `spots`, `trail`, `cuts`, `fires`,
   `flare`. `lit` keeps its wall-torch ids.
@@ -379,15 +398,31 @@ spec assumes nothing about them.
 
 Each phase is its own commit (or few), tested and reviewed before the next starts.
 
-### Phase 0: the safety net (no change in the game)
-- Golden snapshots from today's code, 10 seeds each of the Encampment and the Cyclops:
-  - the floorplan;
-  - every placement (decor, banners, wall torches, candles, campfires, cages, foe starts);
-  - worn tile choices;
-  - light grids and foe sight from sample points;
-  - the forward rule.
-- The saved-run fixtures (§7).
-- **Done when:** the goldens pass on today's code and are committed.
+### Phase 0: the safety net (no change in the game) ✅ 2026-11-07
+- **Saved-run fixtures** (`tests/fixtures/walk/`): six runs made once by today's code and kept
+  as saved, never remade by the tests. MAKE_WALK_FIXTURES=1 writes only missing ones.
+  - **Encampment:** fresh; part-way (5 rooms up, torches and a candle lit, cut-offs crossed,
+    loot dropped, a campfire half used); at the top (the chief's camp, cages to open); from
+    before pillars (3-tile blocks, no `block`, no insides).
+  - **Cyclops:** fresh; part-way.
+- **Goldens** (`tests/golden/walk/`, by `tests/walkBaseline.test.ts`). For each fixture,
+  everything the walk screen works out from it (`tests/walkBaseline.ts`, a copy of WalkView's
+  calls and seeds), live and with the lab's decor on:
+  - the floorplan, the forward rule's ways on, the closed plan, the rubble and the fallen tunnels;
+  - the wall edges, what you've seen, your torch's light, the wall torches in sight;
+  - every wall torch, candle, campfire, foe start, the witch, and every thing you can tap (with its
+    path from you);
+  - whether you're spotted;
+  - the lab's decor, banners and worn tiles.
+  Also ten seconds of foes going about (seeded), you walking up to each thing, and paths by the
+  walking rules to every room. Plus ten fresh runs of each dungeon (in the full suite).
+  UPDATE_GOLDEN=1 rewrites them, only for a change the user has approved.
+- **Loading:** each fixture goes through the game's own loader (`loadDungeon`) and comes out the
+  same, and you can walk on into the next room.
+- **Not pinned yet: the picture itself.** There's no scene builder to test until phase 1, and
+  pinning pixels today would need browser screenshots (with the user's OK). Phase 1 pins the draw
+  list right after the move, checked against these goldens and by the user's eye.
+- **Done when:** the goldens pass on today's code and are committed. ✅
 
 ### Phase 1: units, projection, definitions, and the logic out of WalkView (**milestone 1**)
 - `lib/world/units.ts`, `lib/render/projection.ts` (today's numbers), `lib/world/objects.ts` (the
@@ -406,6 +441,8 @@ Each phase is its own commit (or few), tested and reviewed before the next start
   - the draw list for fixed test states is snapshot-tested (taken right after the move, with the
     move's diff reviewed line by line);
   - `npx tsc --noEmit`, lint and `npm run test:all` pass;
+  - placements are saved into runs (v1, §7); the phase-0 fixtures load, migrate, and come out
+    with exactly their phase-0 placements;
   - the user plays a run in each dungeon and confirms it looks and plays exactly as before.
 
 ### Phase 2: occupancy, the placement passes, saved placements, versions
@@ -420,8 +457,18 @@ Each phase is its own commit (or few), tested and reviewed before the next start
   - a v1 run survives save, export and import, and reload unchanged;
   - counts per room (decor, candles, torches, fires) stay within agreed ranges of today's.
 
-  ❓ For the same seed, a new run's exact spots will differ from what today's code would
-  place, though the rules and amounts stay the same. The user agrees that's acceptable.
+  - the same seed always gives the same placements (deterministic), and every required path is
+    valid;
+  - balance kept: counts per room and room kind, foe spacing and distance from doors, loot and
+    torch spread, within agreed ranges of today's (a sim, reported before the switch).
+
+  ✅ The user agrees (2026-11-07): for the same seed, a new run's exact spots may differ from what
+  today's code would have placed. Saved runs must stay compatible (§7).
+
+  **Alongside phase 2: the art's geometry** (the user, 2026-11-07). Work out what the templates
+  need (projected boxes, anchors, wall pieces, how multi-cell objects split) and try it with grey
+  templates, without settling the look or building the full pipeline. The pipeline itself is
+  phase 3.
 
 ### Phase 3: the art standard and its tools
 - The dungeon art spec, palette (from the reference, with the user's OK), template generator,
@@ -461,12 +508,13 @@ Each phase is its own commit (or few), tested and reviewed before the next start
 - re-drawing all 40+ creatures at once;
 - more than one setting before the first is approved.
 
-## 10. Questions for sign-off
+## 10. Decisions at sign-off (the user, 2026-11-07)
 
-1. **D for new art** (§4.6): decide in phase 3 from two renders. OK?
-2. **Creature size-class numbers** (§2): set from today's sprites in phase 1, as 🧪. OK?
-3. **New runs' exact spots differ in phase 2** for the same seed, rules and amounts unchanged.
-   OK?
-4. **Sampling the palette from the reference image:** is it yours to use that way?
-5. **Phase order:** 0 → 1 (milestone 1) → 2 → 3 → 4. Or would you rather have the art standard
-   (phase 3, with grey templates) worked out alongside phase 2?
+1. **Floor depth for new art:** decided in phase 3 from two proper in-game comparisons (§4.6).
+2. **Creature sizes:** classes set in phase 1 from intended physical proportions, with sprites as
+   a reference only; individual sizes where a class doesn't fit (§2).
+3. **New placements may differ from the old generator's** for the same seed; saved runs stay
+   compatible; the new generator must be deterministic, keep paths valid and keep the balance (§8).
+4. **The palette:** the reference is the target, not a source; an original palette (§6.1).
+5. **Order:** 0 → 1 → 2 → 3 → 4, with the art's geometry explored alongside phase 2 (§8).
+6. **Old runs:** placements saved once from phase 1; legacy placers kept only until a sunset (§7).

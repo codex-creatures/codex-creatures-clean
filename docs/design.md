@@ -1572,10 +1572,9 @@ account, kept entirely apart from Vouchee.
 
 ## 13. The explorable world: architecture
 
-❓ **Proposed 2026-11-07, waiting for the user's sign-off; nothing built yet.** The full detail
-(units, object definitions, the projection, occupancy, the art pipeline, saves and the phases with
-their acceptance tests) is in **[world-spec.md](world-spec.md)**. Don't start the work until the
-user has agreed it.
+📌 **Approved by the user 2026-11-07; being built phase by phase.** The full detail (units,
+object definitions, the projection, occupancy, the art pipeline, saves, the phases with their
+acceptance tests, and the decisions at sign-off) is in **[world-spec.md](world-spec.md)**.
 
 **Why:** generated art kept coming out inconsistent, and each new thing in the walkable rooms was
 patched into several placers. Three art conventions share one screen today: the kit's pixels
@@ -1602,9 +1601,10 @@ without rebuilding.
   overhead). Doors, required paths, progression points and access to everything you use are
   reserved, rather than every floor tile having to be reachable. Passes run in a fixed order,
   each with its own random numbers; hand-made stamps sit alongside them.
-- 📌 **Saves:** walkable runs get a version. New runs store what was placed. Older runs are
-  migrated once, with frozen copies of today's placers, so they look and play the same. Fixtures
-  of real saved runs are tested in every phase.
+- 📌 **Saves:** walkable runs get a version, and what's placed is saved into the run, starting in
+  phase 1 while today's placers are still live. The old placers are kept only until a sunset after
+  phase 2; a run opened after that gets new placements from its saved layout and rooms, its
+  progress unchanged. Fixtures of saved runs are tested in every phase.
 - 📌 **Art:** a spec per setting (camera from the projection, a palette, evenly lit art, PixelLab
   settings per kind of asset), templates drawn from the same projection the game uses, and
   report-only checks. **Checks never recolour art, and a brightness check can only hint at

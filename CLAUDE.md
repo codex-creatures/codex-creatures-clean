@@ -4,7 +4,7 @@ Read this first, on either computer. The game design, and what's built vs only p
 **[docs/design.md](docs/design.md)**: read the relevant section before changing game logic. It describes the game
 as it is now: update a decision in place rather than adding a dated round of changes, and put
 long history in docs/history.md (which you don't need to read for normal work).
-Work on the walkable world (its rooms, placement, rendering or art) follows **[docs/world-spec.md](docs/world-spec.md)** (a draft until the user signs it off: §13 of design.md).
+Work on the walkable world (its rooms, placement, rendering or art) follows **[docs/world-spec.md](docs/world-spec.md)**.
 Setup, running and the two-computer routine for the human are in [README.md](README.md).
 
 ## What this is

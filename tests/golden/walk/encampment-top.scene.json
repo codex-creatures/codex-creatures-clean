@@ -1,0 +1,489 @@
+{
+ "live": {
+  "floorplan": {
+   "w": 84,
+   "h": 112,
+   "tiles": "b0ad50f7",
+   "floors": 2800,
+   "rooms": 21,
+   "doors": "fe75311b",
+   "tunnels": [
+    "boss|r16",
+    "boss|r18",
+    "boss|r19",
+    "r10|r11",
+    "r10|r4",
+    "r10|r9",
+    "r11|r12",
+    "r11|r15",
+    "r12|r14",
+    "r12|r8",
+    "r13|r15",
+    "r13|r17",
+    "r13|r9",
+    "r14|r16",
+    "r14|r18",
+    "r15|r16",
+    "r16|r17",
+    "r17|r19",
+    "r1|r2",
+    "r1|r5",
+    "r1|r7",
+    "r1|start",
+    "r2|r3",
+    "r2|r4",
+    "r2|start",
+    "r3|r6",
+    "r3|start",
+    "r4|r7",
+    "r5|r8",
+    "r6|r9",
+    "r7|r8"
+   ],
+   "inner": [
+    [
+     "r8",
+     1
+    ],
+    [
+     "r12",
+     1
+    ],
+    [
+     "r17",
+     1
+    ],
+    [
+     "boss",
+     2
+    ]
+   ],
+   "block": 2
+  },
+  "progress": {
+   "room": "boss",
+   "line": 10,
+   "ways": []
+  },
+  "live": {
+   "tiles": "83307b49",
+   "rubble": [
+    "r14|r18@r18:bottom:3",
+    "r17|r19@r19:bottom:3",
+    "boss|r16@boss:bottom:3"
+   ],
+   "fallen": [
+    "r10|r11",
+    "r10|r4",
+    "r11|r15",
+    "r15|r16",
+    "r1|start"
+   ]
+  },
+  "edges": {
+   "left": 224,
+   "right": 224,
+   "south": 322,
+   "digest": "e72eed66"
+  },
+  "known": {
+   "cells": 978,
+   "digest": "0596ddb5"
+  },
+  "you": {
+   "at": {
+    "x": 42,
+    "y": 12
+   },
+   "room": "boss",
+   "walkable": true
+  },
+  "torch": "7df4ece8",
+  "sconces": [
+   "start:0@36,101*",
+   "start:1@40,101*",
+   "start:2@49,101*",
+   "start:3@53,101*",
+   "r1:0@27,87*",
+   "r2:0@41,89",
+   "r3:0@60,87",
+   "r4:0@51,73*",
+   "r4:1@56,73*",
+   "r4:2@61,73*",
+   "r5:0@18,87",
+   "r6:0@75,75",
+   "r7:0@31,61*",
+   "r8:0@15,65",
+   "r9:0@69,57",
+   "r9:1@75,57",
+   "r10:0@41,59*",
+   "r11:0@34,47*",
+   "r11:1@39,47*",
+   "r11:2@49,47*",
+   "r12:0@8,49",
+   "r12:1@14,49",
+   "r13:0@61,35",
+   "r14:0@23,23",
+   "r14:1@27,23",
+   "r14:2@31,23",
+   "r14:3@16,23",
+   "r15:0@48,35*",
+   "r16:0@48,23*",
+   "r17:0@64,21*",
+   "r17:1@70,21",
+   "boss:0@35,5*",
+   "boss:1@42,5*",
+   "boss:2@48,5*",
+   "r18:0@22,11",
+   "r19:0@61,11",
+   "r19:1@68,11",
+   "r19:2@74,11*",
+   "r10|r11:0@43,56:left",
+   "r10|r4:0@45,70:left",
+   "r12|r8:0@18,62:left",
+   "r16|r17:0@54,24:top",
+   "r1|r7:0@30,83:left",
+   "r7|r8:0@24,69:top"
+  ],
+  "sconcesInSight": [
+   "boss:0",
+   "boss:1",
+   "boss:2"
+  ],
+  "candles": [
+   "candle:r11@38,51*",
+   "candle:r12@11,54",
+   "candle:r15@48,40",
+   "candle:r16@45,25",
+   "candle:r17@64,25",
+   "candle:r18@19,14",
+   "candle:r19@64,14",
+   "candle:r3@58,92",
+   "candle:r4@58,77",
+   "candle:r6@73,81",
+   "candle:r7@29,73",
+   "candle:r9@73,60"
+  ],
+  "fires": [
+   "r1@28,91:0.25",
+   "r12@18,52:0.5",
+   "r3@59,89:0.5"
+  ],
+  "foes": [
+   "r12#0@5,54 face -1.571 end 0",
+   "r12~2#0@22,55 face 3.142 end 1",
+   "r12~2#1@19,52 face 0.000 walks end 1",
+   "r14#0@20,34 face 3.142 end 0",
+   "r14~2#0@31,28 face -1.571 end 1",
+   "r17#0@57,30 face 0.000",
+   "r17#1@60,28 face 1.571",
+   "r18#0@20,15 face 3.142",
+   "r18#1@17,14 face -1.571",
+   "r19#0@66,12 face -1.571 end 0",
+   "r19~2#0@76,13 face 0.000 end 1",
+   "r19~2#1@69,15 face -1.571 end 1",
+   "r2#0@45,93 face -1.571",
+   "r3#0@60,92 face 3.142",
+   "r5#0@12,92 face 3.142",
+   "r7~2#0@30,69 face 3.142 end 1",
+   "r8#0@17,75 face 3.142"
+  ],
+  "npcs": [],
+  "things": [
+   "boss#0 cage@40,6 solid ! path null",
+   "boss#1 cage@44,6 solid ! path null",
+   "r1 sack@30,91 solid path null",
+   "r13 sack@63,44 solid path null",
+   "r6 sack@73,84 solid path null",
+   "r9 chest@70,62 solid path null"
+  ],
+  "spotted": null,
+  "decor": [],
+  "banners": [],
+  "worn": null
+ },
+ "decor": {
+  "floorplan": {
+   "w": 84,
+   "h": 112,
+   "tiles": "b0ad50f7",
+   "floors": 2800,
+   "rooms": 21,
+   "doors": "fe75311b",
+   "tunnels": [
+    "boss|r16",
+    "boss|r18",
+    "boss|r19",
+    "r10|r11",
+    "r10|r4",
+    "r10|r9",
+    "r11|r12",
+    "r11|r15",
+    "r12|r14",
+    "r12|r8",
+    "r13|r15",
+    "r13|r17",
+    "r13|r9",
+    "r14|r16",
+    "r14|r18",
+    "r15|r16",
+    "r16|r17",
+    "r17|r19",
+    "r1|r2",
+    "r1|r5",
+    "r1|r7",
+    "r1|start",
+    "r2|r3",
+    "r2|r4",
+    "r2|start",
+    "r3|r6",
+    "r3|start",
+    "r4|r7",
+    "r5|r8",
+    "r6|r9",
+    "r7|r8"
+   ],
+   "inner": [
+    [
+     "r8",
+     1
+    ],
+    [
+     "r12",
+     1
+    ],
+    [
+     "r17",
+     1
+    ],
+    [
+     "boss",
+     2
+    ]
+   ],
+   "block": 2
+  },
+  "progress": {
+   "room": "boss",
+   "line": 10,
+   "ways": []
+  },
+  "live": {
+   "tiles": "83307b49",
+   "rubble": [
+    "r14|r18@r18:bottom:3",
+    "r17|r19@r19:bottom:3",
+    "boss|r16@boss:bottom:3"
+   ],
+   "fallen": [
+    "r10|r11",
+    "r10|r4",
+    "r11|r15",
+    "r15|r16",
+    "r1|start"
+   ]
+  },
+  "edges": {
+   "left": 224,
+   "right": 224,
+   "south": 322,
+   "digest": "e72eed66"
+  },
+  "known": {
+   "cells": 978,
+   "digest": "0596ddb5"
+  },
+  "you": {
+   "at": {
+    "x": 42,
+    "y": 12
+   },
+   "room": "boss",
+   "walkable": true
+  },
+  "torch": "7df4ece8",
+  "sconces": [
+   "start:0@36,101*",
+   "start:1@40,101*",
+   "start:2@49,101*",
+   "start:3@53,101*",
+   "r1:0@27,87*",
+   "r2:0@41,89",
+   "r3:0@60,87",
+   "r4:0@51,73*",
+   "r4:1@56,73*",
+   "r4:2@61,73*",
+   "r5:0@18,87",
+   "r6:0@75,75",
+   "r7:0@31,61*",
+   "r8:0@15,65",
+   "r9:0@69,57",
+   "r9:1@75,57",
+   "r10:0@41,59*",
+   "r11:0@34,47*",
+   "r11:1@39,47*",
+   "r11:2@49,47*",
+   "r12:0@8,49",
+   "r12:1@14,49",
+   "r13:0@61,35",
+   "r14:0@23,23",
+   "r14:1@27,23",
+   "r14:2@31,23",
+   "r14:3@16,23",
+   "r15:0@48,35*",
+   "r16:0@48,23*",
+   "r17:0@64,21*",
+   "r17:1@70,21",
+   "boss:0@35,5*",
+   "boss:1@42,5*",
+   "boss:2@48,5*",
+   "r18:0@22,11",
+   "r19:0@61,11",
+   "r19:1@68,11",
+   "r19:2@74,11*",
+   "r10|r11:0@43,56:left",
+   "r10|r4:0@45,70:left",
+   "r12|r8:0@18,62:left",
+   "r16|r17:0@54,24:top",
+   "r1|r7:0@30,83:left",
+   "r7|r8:0@24,69:top"
+  ],
+  "sconcesInSight": [
+   "boss:0",
+   "boss:1",
+   "boss:2"
+  ],
+  "candles": [
+   "candle:r11@38,51*",
+   "candle:r12@11,54",
+   "candle:r15@48,40",
+   "candle:r16@45,25",
+   "candle:r17@64,25",
+   "candle:r18@19,14",
+   "candle:r19@64,14",
+   "candle:r3@58,92",
+   "candle:r4@58,77",
+   "candle:r6@73,81",
+   "candle:r7@29,73",
+   "candle:r9@73,60"
+  ],
+  "fires": [
+   "r1@28,91:0.25",
+   "r12@18,52:0.5",
+   "r3@59,89:0.5"
+  ],
+  "foes": [
+   "r12#0@5,54 face -1.571 end 0",
+   "r12~2#0@22,55 face 3.142 end 1",
+   "r12~2#1@19,52 face 0.000 walks end 1",
+   "r14#0@20,34 face 3.142 end 0",
+   "r14~2#0@31,28 face -1.571 end 1",
+   "r17#0@57,30 face 0.000",
+   "r17#1@60,28 face 1.571",
+   "r18#0@20,15 face 3.142",
+   "r18#1@17,14 face -1.571",
+   "r19#0@66,12 face -1.571 end 0",
+   "r19~2#0@76,13 face 0.000 end 1",
+   "r19~2#1@69,15 face -1.571 end 1",
+   "r2#0@45,93 face -1.571",
+   "r3#0@60,92 face 3.142",
+   "r5#0@12,92 face 3.142",
+   "r7~2#0@30,69 face 3.142 end 1",
+   "r8#0@17,75 face 3.142"
+  ],
+  "npcs": [],
+  "things": [
+   "boss#0 cage@40,6 solid ! path null",
+   "boss#1 cage@44,6 solid ! path null",
+   "r1 sack@30,91 solid path null",
+   "r13 sack@63,44 solid path null",
+   "r6 sack@73,84 solid path null",
+   "r9 chest@70,62 solid path null"
+  ],
+  "spotted": null,
+  "decor": [
+   "r1 pots@25,88",
+   "r1 pots@27,89",
+   "r1 barrels@28,94 solid",
+   "r10 skull@39,63",
+   "r10 pots@42,61",
+   "r10 pots@39,65",
+   "r11 skull@48,52",
+   "r11 nest@34,52",
+   "r11 skull@46,48",
+   "r11 pots@52,50",
+   "r12 nest@22,54",
+   "r12 pots@5,56",
+   "r12 skull@17,55",
+   "r12 pots@6,54",
+   "r12 skull@15,51",
+   "r13 barrels@59,47 solid",
+   "r13 barrels@66,46 solid",
+   "r13 pots@66,49",
+   "r13 pots@64,41",
+   "r14 nest@18,31",
+   "r14 pots@24,27",
+   "r14 skull@30,26",
+   "r14 pots@26,25",
+   "r14 skull@15,35",
+   "r15 skull@43,39",
+   "r15 nest@48,42",
+   "r15 pots@43,37",
+   "r16 skull@41,28",
+   "r16 nest@43,27",
+   "r16 skull@48,30",
+   "r17 pots@61,27",
+   "r17 skull@57,30",
+   "r17 nest@63,23",
+   "r17 pots@59,24",
+   "r17 skull@70,26",
+   "r18 pots@24,17",
+   "r18 nest@20,12",
+   "r18 skull@24,13",
+   "r19 nest@72,15",
+   "r19 pots@60,13",
+   "r19 pots@77,16",
+   "r19 skull@76,14",
+   "r2 nest@41,91",
+   "r2 pots@47,94",
+   "r2 skull@40,96",
+   "r3 nest@62,93",
+   "r3 pots@57,89",
+   "r3 pots@62,88",
+   "r4 nest@51,78",
+   "r4 skull@46,75",
+   "r4 pots@48,77",
+   "r4 skull@51,75",
+   "r5 pots@20,88",
+   "r5 pots@13,91",
+   "r5 skull@11,89",
+   "r6 pots@71,86",
+   "r6 barrels@69,77 solid",
+   "r6 barrels@69,80 solid",
+   "r6 pots@71,89",
+   "r7 skull@33,66",
+   "r7 nest@29,75",
+   "r7 pots@30,67",
+   "r7 pots@34,64",
+   "r7 skull@27,62",
+   "r8 nest@13,68",
+   "r8 skull@14,73",
+   "r8 skull@14,70",
+   "r8 pots@14,79",
+   "r8 pots@20,81",
+   "r9 pillar@73,58 solid",
+   "r9 pots@74,63",
+   "r9 pots@67,64",
+   "r9 crates@66,66 solid",
+   "r9 crates@64,66 solid"
+  ],
+  "banners": [
+   "42,23",
+   "24,11"
+  ],
+  "worn": {
+   "floor": "3bbf4b1f",
+   "walls": "47836bc3"
+  }
+ }
+}

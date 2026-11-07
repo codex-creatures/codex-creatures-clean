@@ -1,0 +1,62 @@
+[
+ {
+  "tiles": "d1cbca8d",
+  "rooms": 35,
+  "kinds": "74c4e26c",
+  "scene": "b23c3ae2"
+ },
+ {
+  "tiles": "8470dbf1",
+  "rooms": 34,
+  "kinds": "f5bcf168",
+  "scene": "e17f63b4"
+ },
+ {
+  "tiles": "116d3e4f",
+  "rooms": 35,
+  "kinds": "96408d8d",
+  "scene": "2a179a8f"
+ },
+ {
+  "tiles": "7ec1c2e3",
+  "rooms": 37,
+  "kinds": "fcaa5b5e",
+  "scene": "784190c4"
+ },
+ {
+  "tiles": "806f7f63",
+  "rooms": 33,
+  "kinds": "4e26b39f",
+  "scene": "b982e6f7"
+ },
+ {
+  "tiles": "46d39fcd",
+  "rooms": 32,
+  "kinds": "3ed25cf0",
+  "scene": "56116bc4"
+ },
+ {
+  "tiles": "d05387b3",
+  "rooms": 36,
+  "kinds": "3c133bbf",
+  "scene": "30977f71"
+ },
+ {
+  "tiles": "1065088f",
+  "rooms": 34,
+  "kinds": "95c5477d",
+  "scene": "8f342db1"
+ },
+ {
+  "tiles": "bc630719",
+  "rooms": 35,
+  "kinds": "7d8875cc",
+  "scene": "f2ce11ce"
+ },
+ {
+  "tiles": "a329f007",
+  "rooms": 34,
+  "kinds": "c2d6ea7d",
+  "scene": "0a39dc0c"
+ }
+]
