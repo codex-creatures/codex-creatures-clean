@@ -216,6 +216,7 @@ type Instance = {
   rot?: 0 | 1 | 2 | 3;                 // quarter turns, where the definition allows them (missing: 0)
   wall?: "north" | "east" | "west";    // wall things: which wall it's on, beside the floor subcell sx, sy (today's `wall`: top, right, left)
   start?: string;                      // the state generation gave it (a wall torch that starts lit), never changed after
+  facing?: number;                     // creatures: the way generation set them looking (§2), not a footprint turn
   size?: { w: number; d: number };     // phase 2b: the footprint it was placed with, unturned (missing: its definition's)
   legacy?: "panel";                    // placed by the old panel rules: see below
 };
@@ -523,8 +524,9 @@ spec assumes nothing about them.
     invented for it:** a wall torch takes no floor, a candle stays walk-over, a chest stays solid
     on its panel, exactly as today (§3). Its real footprint comes with the definitions in 2b.
   - **What 2a saves:** wall torches, candles, the things you use (chests, sacks, decks, pools,
-    cages, the merchant and the librarian), the card witch's start, and the lab's decor and
-    banners. Already saved today, and left as they are: campfires (`fires`), a beaten room's
+    cages, the merchant and the librarian), and the card witch's start. Not the lab's decor
+    and banners (✅ the user, 2026-11-07: experimental, shown only in `/lab/newrun` and worked
+    out there as now; 2b brings them into placement and saving properly). Already saved today, and left as they are: campfires (`fires`), a beaten room's
     loot spot (`spots`).
   - **Foes' starting spots are not saved in 2a.** Today they're worked out again each time the
     walk screen opens, from the rooms still to beat, and that's what moves them when you beat a
@@ -582,6 +584,30 @@ spec assumes nothing about them.
 - **Save file and cloud:** the run is a nested, optional part of the save, so
   `SAVE_FILE_VERSION` doesn't change and cloud saves need nothing. A test exports and re-imports
   a save with a v1 run.
+- **Forward compatibility: an older client never overwrites newer world state** (the user,
+  2026-11-07). Offline play, exported files, save slots, cloud saves and two computers mean a
+  save written by newer code will meet older code. The policy:
+  - **The run says its world version** (`walk.v`), and each client knows the newest it
+    understands (`WALK_V`, in `lib/world/migrate.ts`). Bumped only with a migration to it.
+  - **A client that meets a newer run leaves it alone:** `loadDungeon` hands it back exactly as
+    stored, marked unsupported; the game won't play it or start another run over it, and says to
+    update the game. Anything else in the save (your chest, the Den, the Labyrinth's meta) still
+    loads, plays and saves as normal.
+  - **Writing can't overwrite it either:** `saveDungeon` checks what's stored first. If the
+    stored run is newer than this client understands, it keeps that run exactly and writes only
+    the rest. This guard sits in the one function every save of the Labyrinth goes through, so
+    no screen can get round it.
+  - **Built in 2a, before it's needed** (the user asked for the policy now, implemented when
+    needed): only clients that have the guard can obey it, so it has to be in the game well
+    before the first v2 run exists. It does nothing until then.
+  - **Clients from before 2a can't obey it.** What softens that: every place today's code
+    changes a run copies it whole (`{ ...walk, … }`), so an old client keeps `v` and `placed`
+    rather than dropping them; it just shows its own working-out of the placements. In 2a that's
+    the same. After 2b it could differ, so before 2b is released both computers are updated
+    (`Update.bat`), and 2a will have been live long enough that no other copy is still running it.
+  - **Exported files** go through the same `loadDungeon` when imported, so an old client
+    importing a newer file gets the same protection. `SAVE_FILE_VERSION` isn't used for this:
+    the world version travels inside the run.
 - **Two computers:** a v1 run opened on a computer with older code still plays. The older code
   ignores `placed` and works placements out from the seed, as today, so things may sit in
   slightly different spots. Update both computers before playing a run across them.
@@ -700,12 +726,126 @@ Each phase is its own commit (or few), tested and reviewed before the next start
       no instance duplicated and every id unique;
     - a Cyclops run with no `dungeon` field migrates as the Cyclops's; a v1 run survives export
       and import; older code still plays a v1 run (it ignores `placed`);
-    - the coordinate sums have their own tests: panels ↔ subcells ↔ u both ways, edges,
-      negative coordinates, and turned footprints across panel edges.
-  - ❓ **Foes' starts and 2b's order.** 2a doesn't save them (§7). But 2b replaces today's foe
-    placer, so they must be saved before then, or old runs' foes would move. The recommendation:
-    the foe fix (2c) lands before 2b, as the first step after 2a, approved on its own. The user
-    to decide.
+    - the coordinate sums have their own tests: panels ↔ subcells ↔ u both ways, edges and
+      negative coordinates (turned footprints across panel edges: in 2b, with their first use).
+  - **Foes' starts and the order** (✅ the user, 2026-11-07): 2a doesn't save them (§7). The foe
+    fix comes straight after 2a and before 2b ("2a′" below), as its own approved behaviour
+    change with its own tests and commit, so foes are saved before 2b replaces their placer.
+
+#### 2a: the implementation design (📌 for the user's sign-off; no code yet)
+
+**The data.** `WalkRun` gains two optional fields: `v?: 1` and `placed?: Instance[]` (§3). No
+`states` field: everything the player changes already has a home in the run (`lit`, the rooms,
+`spots`, `fires`, `known`…), so 2a adds none; a `states` map comes with the first thing that
+needs one (levers, traps).
+
+**What gets an instance in 2a, and its id** (ids come from generation, never random, so making
+them twice gives the same ones):
+
+| What | id | def | anchor | also saved |
+|---|---|---|---|---|
+| wall torch (room or tunnel) | today's (`<room>:<n>`, `<tunnel>:<n>`) | `sconce` / `sconce-side` | the floor panel beside its wall | `wall` (top → north, left → west, right → east); `start: "lit"` if it starts lit |
+| candle | today's (`candle:<room>`) | `candle` | its panel | |
+| the card witch | `<room>:witch` | `witch` | where she starts | `facing` (her starting look, rolled today) |
+| a room's feature | `<room>:<def>` | `chest`, `sack`, `pool`, `card-deck`, `merchant`, `librarian` | the room's middle | |
+| a large room's stores | `<room>:stores` | `sack` (library) / `rickety-chest` (storehouse) | the room's middle | |
+| a camp's cage | `<room>#<i>` (today's tap key) | `cage` | its spot along the top | |
+
+Every one has `legacy: "panel"` and an anchor `(3x, 3y)` from today's whole-panel position. What
+a thing looks like (shut or open, lit, the witch's game over) and whether it's shown at all (a
+library's stores till its guard's beaten) stay decided from run state, by today's rules, as now.
+An instance is made for everything a room can show, so one that isn't shown yet is already
+there. Not instances in 2a: foes (2a′), a beaten room's loot (`spots`, run state: it's where the
+fight was), campfires (already saved, `fires`), worn floor (from the seed, never saved, §5.3).
+
+**Reading them.** One new module, `lib/world/placements.ts`, builds a room's contents from
+`placed` plus run state: the wall torches (lit if `start` or in `lit`), the candles (hidden near
+a campfire, as now), the witch's start, and each feature's and cage's spot for `thingsOf`. The
+walk screen and the test baseline call it instead of the placers. Foes still come from today's
+placer, live, as now.
+
+**Making them: one function, isolated.** `lib/world/compat/v0.ts` holds `legacyPlacements(run)`,
+the only code that calls today's placers for this (`placeSconces`, `placeCandles`, the witch's
+`placeFoes` on its own seed, `cageSpots`, the room middle). In 2a it's also how a new run gets
+its placements (today's placers are still the live ones, so there's one copy, §7). A test checks
+that nothing but it, and tests, imports those placers; in 2b the new placers take over new runs
+and frozen copies move into `compat/`.
+
+**Migrating: one pure function.** `migrateWalkRun(run)` in `lib/world/migrate.ts`:
+- no `walk`: returned as it is. `placed` present: returned as it is (the same object), never
+  merged, topped up or regenerated. Otherwise (v0): `placed` from `legacyPlacements`, `v: 1`,
+  and nothing else touched.
+- It's called in **`loadDungeon`**, the one place every run is read from (your own save, a save
+  slot, a cloud save and an imported file all land in the same save first), and on a **new run**
+  as it's made. The migrated run is written back the next time the game saves it, which happens
+  as soon as the walk screen opens or you do anything. Writing it later changes nothing, because
+  2a's placements depend only on the run's seed and layout, never on what you've done.
+- **Exported files** are unchanged: a v0 run in a file is migrated when it's imported and loaded.
+  `SAVE_FILE_VERSION` and cloud saves are untouched.
+- **Older code** (the other computer, not yet updated) ignores `v` and `placed` and plays as
+  today; it keeps them when it saves the run (it copies runs whole). Were they lost, the new code
+  would make the same placements again ("repaired", below). Newer runs meeting older clients:
+  §7, forward compatibility.
+
+**Idempotent and deterministic.** Ids and placements come only from the run's seed and layout;
+migrating a migrated run returns it unchanged; `placed` is never added to, so nothing can be
+duplicated.
+
+**Malformed or unsupported placements are handled explicitly** (the user, 2026-11-07), never
+read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
+- **migrated:** a v0 run, given its placements;
+- **unchanged:** a v1 run whose `placed` is sound: a non-empty list, every entry with a string
+  id (no two the same), a known definition, a room, whole-number subcells, and known values for
+  its wall, turn and legacy mark;
+- **repaired:** a v1 run whose `placed` is missing or unsound. In 2a its placements are made
+  again from scratch, which is safe only because generation hasn't changed since they were
+  saved (they come out the same). Said in the console, never silent. From 2b on, a run whose
+  placements can't be made again is **damaged** instead: kept as it is, never played or
+  written over, and reported;
+- **unsupported:** a run from a newer world version: left exactly as stored (§7, forward
+  compatibility).
+
+**Verifying "looks and plays the same":**
+1. **Equivalence (the main test):** for the six fixtures and 300 rolled runs per dungeon
+   (`slowIt`), at several points in a run (fresh, rooms beaten, torches lit, campfires used),
+   the contents built from `placed` match today's placers exactly: torch ids, spots, walls and
+   lit; candles; the witch's start and look; every thing to tap (key, spot, def, state, solid);
+   solid cells; the walk rule; the lights.
+2. **The phase-0 and phase-1 goldens** (scenes, motion, draw lists, sweeps) and the walk-sim and
+   draw-list comparisons all pass untouched, now built from `placed` (the baseline switches to
+   the new reading path, as phase 1 step 3 did).
+3. **Migration:** migrating twice equals once; load → save → load equals load; a JSON round trip
+   changes nothing; apart from `v` and `placed`, the run is deep-equal to before; every id is
+   unique; a Cyclops run with no `dungeon` field migrates as the Cyclops's; a save exported and
+   imported keeps its v1 run.
+4. **New goldens, not changed ones:** each fixture's `placed` pinned as
+   `tests/golden/walk/<fixture>.placed.json`, so a later change to the converter shows up.
+5. **Rules:** no wall thing or walk-over thing makes a panel solid; only solid definitions do.
+6. **Coordinates:** `lib/world/grid.ts` with its own tests (panels ↔ subcells ↔ u, edges,
+   negatives). The footprint and turn sums come in 2b with their first user.
+7. `npm run test:all`, `tsc`, lint, `build`, `build:offline`; then the user plays a run in each
+   dungeon, including one already under way from before the update.
+
+#### 2a′: the foe fix (✅ approved 2026-11-07, its own change; designed in outline)
+
+- **Generated starts:** each fight room's foes saved as instances, `<room>:foe:<i>` (i: the foe's
+  place in the room's enemy list; a waiting boss or chief is `:foe:0`), with what today's placer
+  rolls for them (spot, facing, whether it wanders, its first wait, its end of a two-den room).
+  Saved once, never changed.
+- **Current positions:** where a foe has wandered to stays as now: for this visit only. Each time
+  the walk screen opens, foes start again from their saved starts (✅ the user, 2026-11-07; the
+  same for the witch). Three things kept apart: the **generated start** (saved, never changed),
+  the **current position** (this visit only), and **gameplay state** (beaten, removed: saved, in
+  the run). Saving where creatures have wandered is its own feature, later, with richer
+  exploration.
+- **Beaten foes:** a beaten room's foes aren't built (its `done`, as now). Their instances stay
+  in `placed`, so no id is ever reused and no other room's foes are worked out again.
+- **Migration v1 → v2:** freezes the foes today's game would show at that moment (only rooms not
+  yet beaten have any), without touching run state, and is written back straight away, as this
+  one depends on what you've done.
+- **Tests:** beating any one room never changes another room's contents (fixtures and rolled
+  runs); the frozen starts equal today's at conversion. Goldens that capture a run after a room
+  is beaten change, re-recorded in their own "Intended change:" commit.
 - **Before 2b: the dimensions review, in subcells.** Every definition's footprint, turns,
   clearance, height, visual bounds and interaction access, and each creature's size, proposed
   in subcells for the user to set. Nothing in 2b relies on a size until it's set.
