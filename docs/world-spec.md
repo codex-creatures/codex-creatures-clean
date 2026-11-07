@@ -257,18 +257,18 @@ type Instance = {
   - the hero, and foes (by size class);
   - rubble (a tunnel mouth that fell in).
 
-### Proposed sizes: the dimensions review (🧪 proposed 2026-11-08, for the user to set)
+### Sizes: the dimensions review (✅ the user, 2026-11-08)
 
 Every definition's measurements (§2) proposed in subcells, from today's art and draw sizes
-(`lib/world/objects.ts`) and what each thing is meant to be. **None is set yet, and nothing reads
-them** till the user has set them and 2b's placer uses them. "Today" is what the game does now:
+(`lib/world/objects.ts`) and what each thing is meant to be. Nothing reads them till 2b's placer
+uses them. "Today" is what the game does now:
 every floor thing takes one whole panel (3 × 3), and wall things take none.
 
 Two facts shape the numbers:
 - **Walking stays on panels** (§5.4), and a panel is blocked if any subcell in it is solid
   (§5.1). So a solid thing smaller than a panel still blocks its whole panel, and one that
-  crosses into a second panel blocks both. Things that fit in one panel play exactly as today;
-  only the ones marked **2 panels** change where you can walk.
+  crosses into a second panel blocks both. Everything here fits in one panel,
+  so it plays exactly as today.
 - **Tunnels are a panel (3 subcells) wide,** so nothing that must pass through one can be wider
   than 3.
 
@@ -283,7 +283,7 @@ too) unless said.
 | sack (stash, a fight's loot sack) | 2 × 2 | solid (loot: walk-over) | 0 | 0.6 | 1.0 × 1.04 | |
 | rickety chest (storehouse stores) | 3 × 2 | solid | 1 in front | 0.8 | 1.75 × 1.66 | |
 | deck of cards (on its table) | 3 × 2 | solid | 1 in front | 0.8 | 1.75 × 1.85 | |
-| healing pool | **6 × 3** (2 panels side by side) | solid | 1 all round | 0.3 | 2.5 × 1.88 | its picture is 2½ panels wide today over 1 solid panel; 6 × 3 blocks 2 panels (option: keep 3 × 3) |
+| healing pool | 3 × 3 | solid | 1 all round | 0.3 | 2.5 × 1.88 | one panel, as today (the user); its picture stays wider than it |
 | cage | 3 × 3 | solid | 0 | 1.2 | 1.38 × 1.38 | a whole panel, as today |
 | campfire | 2 × 2 | solid | 1 all round, kept clear of candles too (§5.6) | 0.6 | 1.5 × 1.49 | fits its panel |
 | candle (floor) | 1 × 1 | walk-over | 0 | 0.4 | 0.44 × 0.82 | |
@@ -294,7 +294,7 @@ too) unless said.
 | rubble (fallen-in tunnel) | 3 × 3 | rock, as now | 0 | 0.5 | | a whole panel |
 | barrels | 3 × 2 | solid | 0 | 0.9 | 1.25 × 0.93 | against a wall |
 | crates | 3 × 3 | solid | 0 | 1.1 | 1.0 × 1.24 | |
-| fallen pillar | 3 × 2 | solid | 0 | 0.7 | 1.5 × 1.34 | (option: 4 × 2, closer to its picture, but it blocks 2 panels) |
+| fallen pillar | 3 × 2 | solid | 0 | 0.7 | 1.5 × 1.34 | one panel (the user) |
 | skull | 1 × 1 | walk-over | 0 | 0.3 | 0.69 × 1.03 | |
 | nest | 2 × 2 | walk-over | 0 | 0.3 | 0.94 × 0.9 | |
 | pots | 2 × 2 | walk-over | 0 | 0.5 | 0.75 × 0.74 | |
@@ -322,12 +322,9 @@ too) unless said.
 - Even sizes (2 × 2) have no middle subcell: their anchor is the subcell just south-east of the
   middle (§2), so the placer puts the footprint inside one panel.
 
-**Questions for the user:**
-1. The healing pool at 6 × 3 (matching its picture, blocking 2 panels), or kept at 3 × 3?
-2. The fallen pillar at 3 × 2 (one panel) or 4 × 2 (two)?
-3. The size classes' footprints (1, 2, 3, 5, 8 subcells across) and heights: right as they are?
-4. Any species in the wrong class (`lib/world/creatures.ts`)? Spot checks: the Watcher and Mr
-   Shadows medium, Aurelius and the Hollow Matriarch large, Klutz small.
+**Set by the user (2026-11-08):** the pool and the fallen pillar each keep to one panel; the
+size classes' footprints and heights as above; every species' class in `lib/world/creatures.ts`
+as it is. So in 2b no thing blocks more floor than it does today.
 
 ## 4. Projection and drawing
 
@@ -1020,9 +1017,9 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
   at the end (everything before them unchanged). The scene, motion and draw goldens pass
   untouched, as each fixture is converted at the state it's in.
 
-- **Before 2b: the dimensions review, in subcells** (🧪 proposed 2026-11-08: §3, "Proposed
-  sizes"). Every definition's footprint, turns, clearance, height, visual bounds and interaction
-  access, and each creature's size, for the user to set. Nothing in 2b relies on a size until it's set.
+- **Before 2b: the dimensions review, in subcells** (✅ set by the user, 2026-11-08: §3,
+  "Sizes"). Every definition's footprint, turns, clearance, height, visual bounds and interaction
+  access, and each creature's size.
 - **2b, the new placers:** the occupancy map at subcell resolution and the passes (§5), with
   room and corridor generation still in panels. Today's placers are rebuilt on them, keeping
   their rules and numbers, and become the only generator. The old ones survive only inside the
