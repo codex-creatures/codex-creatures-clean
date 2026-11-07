@@ -78,7 +78,7 @@ import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import WalkView, { WalkFirstMap, WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
-import { withPlacements, placedRun } from "@/lib/world/migrate";
+import { openWalkSave, recoverWalkSave, canRecover, placedRun } from "@/lib/world/migrate";
 import { FLARE_WALK } from "@/lib/dungeon/torch";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
@@ -135,18 +135,6 @@ export default function DungeonPage() {
   const [leaveAsk, setLeaveAsk] = useState(false); // tapped back to the Den mid-run: it ends the run, so a word first
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
-
-  // A walkable run as it's opened: given what's generated in it if it hasn't that saved yet (a run from
-  // before phase 2a), and saved so straight away (lib/world/migrate.ts). Anything else is left as stored.
-  function openedRun(saved: DungeonSave): DungeonSave {
-    if (!saved.run?.walk) return saved;
-    const m = withPlacements(saved.run);
-    if (m.outcome === "damaged") return { ...saved, held: "damaged" };
-    if (m.outcome !== "migrated" && m.outcome !== "repaired") return saved;
-    const next = { ...saved, run: m.run };
-    saveDungeon(next);
-    return next;
-  }
 
   // Every change to the run is saved straight away.
   function update(next: DungeonSave) {
@@ -343,7 +331,8 @@ export default function DungeonPage() {
   const battle = usePlayableBattle((m) => updateRun((r) => ({ ...r, battle: m })));
 
   useEffect(() => {
-    const saved = openedRun(loadDungeon());
+    // A run from before phase 2a is given its placements and saved; a damaged one is held (lib/world/migrate.ts).
+    const saved = openWalkSave(loadDungeon(), saveDungeon);
     setLab(saved);
     setOwned(loadOwnedCreatures());
     // Back in the middle of a fight? Carry on where you left off.
@@ -1178,6 +1167,16 @@ export default function DungeonPage() {
         <p className="pixel-font" style={{ color: "#f1d9a0", textAlign: "center", marginTop: "30cqh", fontSize: 16, padding: "0 16px" }}>
           {lab.held === "newer" ? "This run was saved by a newer version of the game. Update the game to carry on." : "This run can't be opened. It's kept as it is."}
         </p>
+        {/* Mending is the player's choice, never done on its own (lib/world/migrate.ts recoverWalkRun). */}
+        {lab.held === "damaged" && canRecover(lab.run) && (
+          <div style={{ textAlign: "center", marginTop: 16 }}>
+            <button className="pixel-btn" style={{ minHeight: 44 }} onClick={() => {
+              const next = recoverWalkSave(lab, saveDungeon);
+              setLab(next);
+              if (next.run?.battle && next.run.current && !next.run.current.done) battle.resume(next.run.battle as Match);
+            }}>🔧 Mend its rooms</button>
+          </div>
+        )}
       </DenFrame>
     );
   }

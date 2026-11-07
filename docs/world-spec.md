@@ -775,10 +775,14 @@ and frozen copies move into `compat/`.
 - no `walk`: returned as it is. `placed` present: returned as it is (the same object), never
   merged, topped up or regenerated. Otherwise (v0): `placed` from `legacyPlacements`, `v: 1`,
   and nothing else touched.
-- It's called where a run is **opened to be played**: the Labyrinth screen, as it loads the save
-  (your own save, a save slot, a cloud save and an imported file all land in the same save
-  first), which writes the migrated run back straight away; and on a **new run** as it's made
-  (and the lab pages' made-up runs). Not inside `loadDungeon` itself: the world's modules import
+- **One way in** (the user, 2026-11-07): the game reaches it only through `openWalkSave(save,
+  write)` (a saved run **opened to be played**, as the Labyrinth screen loads the save: your own
+  save, a save slot, a cloud save and an imported file all land in the same save first; a
+  migrated run is written back straight away) and `placedRun` (a **new run** as it's made, and
+  the lab pages' made-up runs). Placements are read only through `placementsOfWalk`. A test
+  (tests/migrate.test.ts) fails if anything else imports `migrateWalkRun` or reads a run's
+  `placed` outside `lib/world/`, so a new feature can't read an unmigrated run or migrate one
+  its own way: it calls `openWalkSave`. Not inside `loadDungeon` itself: the world's modules import
   the dungeon's, so the save code calling them would make a circle of imports (as built,
   2026-11-07). Nothing outside the Labyrinth screen reads placements, so a v0 run elsewhere in
   the save is harmless till it's opened; and 2a's placements depend only on the run's seed and
@@ -788,7 +792,7 @@ and frozen copies move into `compat/`.
   `SAVE_FILE_VERSION` and cloud saves are untouched.
 - **Older code** (the other computer, not yet updated) ignores `v` and `placed` and plays as
   today; it keeps them when it saves the run (it copies runs whole). Were they lost, the new code
-  would make the same placements again ("repaired", below). Newer runs meeting older clients:
+  would find the run damaged, and the player could mend it (below). Newer runs meeting older clients:
   §7, forward compatibility.
 
 **Idempotent and deterministic.** Ids and placements come only from the run's seed and layout;
@@ -801,11 +805,14 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
 - **unchanged:** a v1 run whose `placed` is sound: a non-empty list, every entry with a string
   id (no two the same), a known definition, a room, whole-number subcells, and known values for
   its wall, turn and legacy mark;
-- **repaired:** a v1 run whose `placed` is missing or unsound. In 2a its placements are made
-  again from scratch, which is safe only because generation hasn't changed since they were
-  saved (they come out the same). Said in the console, never silent. From 2b on, a run whose
-  placements can't be made again is **damaged** instead: kept as it is, never played or
-  written over, and reported;
+- **damaged:** a v1 run whose `placed` is missing or unsound, a v0 run carrying a `placed`
+  (a legacy run never has one), or one whose placements can't be made (a broken layout). Never
+  made again on its own (the user, 2026-11-07): kept exactly as stored, never played or written
+  over, said in the console, and the Labyrinth says the run can't be opened;
+- **repaired:** a damaged run mended **only when the player taps "Mend its rooms"** there
+  (`recoverWalkRun`, `recoverWalkSave`). Offered only where today's rules made its placements
+  (a v1 run, or a v0 run carrying some), so making them again gives the same ids and spots;
+  what you've done in it is kept. A run from 2b's rules can't be mended this way;
 - **unsupported:** a run from a newer world version: left exactly as stored (§7, forward
   compatibility).
 
