@@ -211,3 +211,18 @@ Map objects style-matched to the kit's floor (a 64×64 floor patch as background
 | walk/decor/pots.png | map object ecb63ca3-b767-4e85-9ce4-d60d46f4ba08 |
 | walk/decor/pillar.png | map object b7d2deb6-f4db-4f46-826b-76ac45883636 (asked for a broken pillar, gave a heap of mossy blocks) |
 | walk/decor/banner.png | map object 08687f45-ed98-459e-aab3-18571baba923 (side view) |
+
+## Reskin comparisons (2026-11-07): not used by the game or the lab
+
+The first tries at the warm reskin after the user's reference ("Dungeon art style.png"), made
+before the art standard existed (docs/world-spec.md). The user judged them not on brief and
+not matching our walls; kept only to compare against. Nothing in lib/sprites points at them.
+Side by side: docs/ideas/reskin-samples-2026-11-07.png.
+
+| File | PixelLab |
+|---|---|
+| walk/samples/kit-b-*.png | Sample 1 (orange brick): building kit 863964ab-53a4-452e-b1a2-2269156ac5f3 (square_topdown, 32px, walls 2 tiles, materials; walls "warm terracotta and reddish-brown dungeon brick… framed by thick squared grey stone blocks", floor "worn brick paving… a shade darker"), cut as kit-a. $0.08 in credits each |
+| walk/samples/kit-c-*.png | Sample 2 (grey-brown brick): building kit 83855ea1-4060-4061-b2e2-369a46992d45 (same settings; walls "muted brown-grey bricks… band of squared charcoal-grey stone", floor "dark worn grey-brown brick paving") |
+| walk/samples/kit-d-*.png | Sample 3 (red brick, dark slabs): building kit ab054945-22ab-46c4-9a71-d2f6fbbbbf56 (same settings; walls "desaturated reddish-brown bricks weathered toward grey… slate-grey stone blocks at the top", floor "large worn charcoal-grey stone bricks… much darker than the walls") |
+| walk/samples/pillar-stone.png | map object b4127d8a-06fe-4359-8aba-9cf1f7a1646b (chunky square pillar of stacked charcoal-grey stone blocks; 64×96 low top-down, trimmed) |
+| walk/samples/pillar-brick.png | map object cc954d9c-ab8a-4527-a31d-8522f0787fae (chunky square pillar of brown-grey brick, grey stone base and cap; same) |
