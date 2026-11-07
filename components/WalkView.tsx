@@ -34,7 +34,8 @@ import type { DungeonMap } from "@/lib/dungeon/map";
 import { walkView, tapCell } from "@/lib/render/projection";
 import { buildScene } from "@/lib/render/scene";
 import { paintScene, type DarkLayer } from "@/lib/render/paint";
-import { placeLights, placeLabDecor, placePeople, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { placeLabDecor, placeFoeStarts, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { placementsOfWalk } from "@/lib/world/migrate";
 import { startWalk, restartLoop, stepWalk, walkState, type WalkState, type Warming } from "@/lib/world/walkSim";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import { CreatureArt } from "@/components/CreaturePortrait";
@@ -82,12 +83,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   // The floorplan as it stands: closed tunnels are rock. Walking, light, sight and drawing all use it.
   const live = useMemo(() => shutPlan(plan, layout, progress), [plan, layout, progress]);
   const edges = useMemo(() => depthEdges(live), [live]);
-  // Every room (and second den), and what's in them where it starts (lib/world/walkWorld.ts): the wall
-  // torches and the odd candle, lit as you pass; each fight room's foes, and the card witch walking about
-  // her room (the merchant and the librarian stand by their carts): the same places every time this opens.
+  // Every room (and second den), and what's in them where it starts: the wall torches and the odd candle,
+  // lit as you pass, the card witch walking about her room, and each room's things (the merchant and the
+  // librarian stand by their carts), as saved in the run (lib/world/placements.ts); each fight room's foes
+  // (lib/world/walkWorld.ts). The same places every time this opens.
   const ids = useMemo(() => roomIds(layout, map), [layout, map]);
+  const [placed] = useState(() => placementsOfWalk(walk, map, room));
   // The walk going on (lib/world/walkSim.ts): you, what you've seen, the lights, foes, the alarm. Kept between frames.
-  const [sim] = useState(() => startWalk(walk, plan, live, { ...placeLights(walk, plan), ...placePeople(walk, plan, map, dungeon, room) }, fromRuns(walk.known, plan.w * plan.h)));
+  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: placeFoeStarts(walk, plan, map, dungeon, room), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
   // 🚧 Decor (samples) and banners: where they lie, from the run's seed.
   const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, sim.candles, sim.sconces) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
   const decorItems = labDecor.decor, banners = labDecor.banners;
@@ -108,7 +111,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   useEffect(() => () => props.current.onKeep(walkState(sim)), [sim]);
 
   // The things to tap, as the rooms stand now.
-  const things = (): Thing[] => thingsOf(layout, plan, ids, props.current.room, sim.npcs, props.current.spots);
+  const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.spots);
 
   // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));

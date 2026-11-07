@@ -1,0 +1,879 @@
+[
+ {
+  "id": "start:0",
+  "def": "sconce",
+  "room": "start",
+  "sx": 168,
+  "sy": 489,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "start:1",
+  "def": "sconce",
+  "room": "start",
+  "sx": 186,
+  "sy": 489,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "start:2",
+  "def": "sconce",
+  "room": "start",
+  "sx": 216,
+  "sy": 489,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "start:3",
+  "def": "sconce",
+  "room": "start",
+  "sx": 231,
+  "sy": 489,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "start:4",
+  "def": "sconce",
+  "room": "start",
+  "sx": 249,
+  "sy": 489,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "start:5",
+  "def": "sconce",
+  "room": "start",
+  "sx": 264,
+  "sy": 489,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r1:0",
+  "def": "sconce",
+  "room": "r1",
+  "sx": 84,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r1:1",
+  "def": "sconce",
+  "room": "r1",
+  "sx": 99,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r1:2",
+  "def": "sconce",
+  "room": "r1",
+  "sx": 117,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r1:3",
+  "def": "sconce",
+  "room": "r1",
+  "sx": 147,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r2:0",
+  "def": "sconce",
+  "room": "r2",
+  "sx": 183,
+  "sy": 435,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r2:1",
+  "def": "sconce",
+  "room": "r2",
+  "sx": 210,
+  "sy": 435,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r3:0",
+  "def": "sconce",
+  "room": "r3",
+  "sx": 297,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r3:1",
+  "def": "sconce",
+  "room": "r3",
+  "sx": 312,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r3:2",
+  "def": "sconce",
+  "room": "r3",
+  "sx": 330,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r3:3",
+  "def": "sconce",
+  "room": "r3",
+  "sx": 345,
+  "sy": 417,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r4:0",
+  "def": "sconce",
+  "room": "r4",
+  "sx": 183,
+  "sy": 363,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r5:0",
+  "def": "sconce",
+  "room": "r5",
+  "sx": 72,
+  "sy": 363,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r5:1",
+  "def": "sconce",
+  "room": "r5",
+  "sx": 93,
+  "sy": 363,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r5:2",
+  "def": "sconce",
+  "room": "r5",
+  "sx": 114,
+  "sy": 363,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r5:3",
+  "def": "sconce",
+  "room": "r5",
+  "sx": 135,
+  "sy": 363,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r6:0",
+  "def": "sconce",
+  "room": "r6",
+  "sx": 276,
+  "sy": 363,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r6:1",
+  "def": "sconce",
+  "room": "r6",
+  "sx": 291,
+  "sy": 363,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r7:0",
+  "def": "sconce",
+  "room": "r7",
+  "sx": 138,
+  "sy": 309,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r7:1",
+  "def": "sconce",
+  "room": "r7",
+  "sx": 153,
+  "sy": 309,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r8:0",
+  "def": "sconce",
+  "room": "r8",
+  "sx": 45,
+  "sy": 309,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r8:1",
+  "def": "sconce",
+  "room": "r8",
+  "sx": 57,
+  "sy": 309,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r9:0",
+  "def": "sconce",
+  "room": "r9",
+  "sx": 216,
+  "sy": 300,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r9:1",
+  "def": "sconce",
+  "room": "r9",
+  "sx": 234,
+  "sy": 300,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r9:2",
+  "def": "sconce",
+  "room": "r9",
+  "sx": 249,
+  "sy": 300,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r9:3",
+  "def": "sconce",
+  "room": "r9",
+  "sx": 282,
+  "sy": 300,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:0",
+  "def": "sconce",
+  "room": "r10",
+  "sx": 147,
+  "sy": 255,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:1",
+  "def": "sconce",
+  "room": "r10",
+  "sx": 162,
+  "sy": 255,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:2",
+  "def": "sconce",
+  "room": "r10",
+  "sx": 174,
+  "sy": 255,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:3",
+  "def": "sconce",
+  "room": "r10",
+  "sx": 189,
+  "sy": 255,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:4",
+  "def": "sconce",
+  "room": "r10",
+  "sx": 210,
+  "sy": 210,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r11:0",
+  "def": "sconce",
+  "room": "r11",
+  "sx": 267,
+  "sy": 210,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r11:1",
+  "def": "sconce",
+  "room": "r11",
+  "sx": 285,
+  "sy": 210,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r11:2",
+  "def": "sconce",
+  "room": "r11",
+  "sx": 303,
+  "sy": 210,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r11:3",
+  "def": "sconce",
+  "room": "r11",
+  "sx": 321,
+  "sy": 210,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r12:0",
+  "def": "sconce",
+  "room": "r12",
+  "sx": 51,
+  "sy": 246,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r12:1",
+  "def": "sconce",
+  "room": "r12",
+  "sx": 66,
+  "sy": 246,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r13:0",
+  "def": "sconce",
+  "room": "r13",
+  "sx": 30,
+  "sy": 174,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r13:1",
+  "def": "sconce",
+  "room": "r13",
+  "sx": 42,
+  "sy": 174,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r13:2",
+  "def": "sconce",
+  "room": "r13",
+  "sx": 69,
+  "sy": 174,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r13:3",
+  "def": "sconce",
+  "room": "r13",
+  "sx": 96,
+  "sy": 174,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:0",
+  "def": "sconce",
+  "room": "r14",
+  "sx": 222,
+  "sy": 102,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:1",
+  "def": "sconce",
+  "room": "r14",
+  "sx": 240,
+  "sy": 102,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:2",
+  "def": "sconce",
+  "room": "r14",
+  "sx": 258,
+  "sy": 102,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:3",
+  "def": "sconce",
+  "room": "r14",
+  "sx": 276,
+  "sy": 102,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:0",
+  "def": "sconce",
+  "room": "r15",
+  "sx": 93,
+  "sy": 111,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:1",
+  "def": "sconce",
+  "room": "r15",
+  "sx": 126,
+  "sy": 111,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:2",
+  "def": "sconce",
+  "room": "r15",
+  "sx": 156,
+  "sy": 111,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:3",
+  "def": "sconce",
+  "room": "r15",
+  "sx": 174,
+  "sy": 111,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r16:0",
+  "def": "sconce",
+  "room": "r16",
+  "sx": 30,
+  "sy": 111,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r16:1",
+  "def": "sconce",
+  "room": "r16",
+  "sx": 57,
+  "sy": 111,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r17:0",
+  "def": "sconce",
+  "room": "r17",
+  "sx": 339,
+  "sy": 102,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r17:1",
+  "def": "sconce",
+  "room": "r17",
+  "sx": 348,
+  "sy": 102,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "boss:0",
+  "def": "sconce",
+  "room": "boss",
+  "sx": 153,
+  "sy": 21,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "boss:1",
+  "def": "sconce",
+  "room": "boss",
+  "sx": 177,
+  "sy": 21,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "boss:2",
+  "def": "sconce",
+  "room": "boss",
+  "sx": 201,
+  "sy": 21,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "boss:3",
+  "def": "sconce",
+  "room": "boss",
+  "sx": 225,
+  "sy": 21,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r18:0",
+  "def": "sconce",
+  "room": "r18",
+  "sx": 42,
+  "sy": 48,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r18:1",
+  "def": "sconce",
+  "room": "r18",
+  "sx": 60,
+  "sy": 48,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r18:2",
+  "def": "sconce",
+  "room": "r18",
+  "sx": 81,
+  "sy": 48,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r18:3",
+  "def": "sconce",
+  "room": "r18",
+  "sx": 99,
+  "sy": 48,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r19:0",
+  "def": "sconce",
+  "room": "r19",
+  "sx": 270,
+  "sy": 57,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r19:1",
+  "def": "sconce",
+  "room": "r19",
+  "sx": 294,
+  "sy": 57,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r19:2",
+  "def": "sconce",
+  "room": "r19",
+  "sx": 318,
+  "sy": 57,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r19:3",
+  "def": "sconce",
+  "room": "r19",
+  "sx": 342,
+  "sy": 57,
+  "wall": "north",
+  "start": "lit",
+  "legacy": "panel"
+ },
+ {
+  "id": "r11|r9:0",
+  "def": "sconce-side",
+  "room": "r11|r9",
+  "sx": 267,
+  "sy": 258,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r11|r9:1",
+  "def": "sconce-side",
+  "room": "r11|r9",
+  "sx": 273,
+  "sy": 282,
+  "wall": "east",
+  "legacy": "panel"
+ },
+ {
+  "id": "r13|r15:0",
+  "def": "sconce-side",
+  "room": "r13|r15",
+  "sx": 84,
+  "sy": 156,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r13|r16:0",
+  "def": "sconce-side",
+  "room": "r13|r16",
+  "sx": 48,
+  "sy": 162,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r14|r17:0",
+  "def": "sconce",
+  "room": "r14|r17",
+  "sx": 309,
+  "sy": 105,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r15|r18:0",
+  "def": "sconce-side",
+  "room": "r15|r18",
+  "sx": 102,
+  "sy": 102,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r17|r19:0",
+  "def": "sconce-side",
+  "room": "r17|r19",
+  "sx": 327,
+  "sy": 93,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r1|r5:0",
+  "def": "sconce-side",
+  "room": "r1|r5",
+  "sx": 135,
+  "sy": 405,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r1|start:0",
+  "def": "sconce-side",
+  "room": "r1|start",
+  "sx": 150,
+  "sy": 477,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r2|r3:0",
+  "def": "sconce",
+  "room": "r2|r3",
+  "sx": 237,
+  "sy": 441,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r2|r3:1",
+  "def": "sconce",
+  "room": "r2|r3",
+  "sx": 255,
+  "sy": 441,
+  "wall": "north",
+  "legacy": "panel"
+ },
+ {
+  "id": "r3|start:0",
+  "def": "sconce-side",
+  "room": "r3|start",
+  "sx": 276,
+  "sy": 477,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r5|r8:0",
+  "def": "sconce-side",
+  "room": "r5|r8",
+  "sx": 51,
+  "sy": 354,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "r6|r9:0",
+  "def": "sconce-side",
+  "room": "r6|r9",
+  "sx": 258,
+  "sy": 345,
+  "wall": "west",
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r10",
+  "def": "candle",
+  "room": "r10",
+  "sx": 216,
+  "sy": 261,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r11",
+  "def": "candle",
+  "room": "r11",
+  "sx": 342,
+  "sy": 231,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r12",
+  "def": "candle",
+  "room": "r12",
+  "sx": 39,
+  "sy": 264,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r13",
+  "def": "candle",
+  "room": "r13",
+  "sx": 54,
+  "sy": 186,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r17",
+  "def": "candle",
+  "room": "r17",
+  "sx": 324,
+  "sy": 138,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r18",
+  "def": "candle",
+  "room": "r18",
+  "sx": 72,
+  "sy": 78,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r19",
+  "def": "candle",
+  "room": "r19",
+  "sx": 315,
+  "sy": 63,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r3",
+  "def": "candle",
+  "room": "r3",
+  "sx": 303,
+  "sy": 435,
+  "legacy": "panel"
+ },
+ {
+  "id": "candle:r6",
+  "def": "candle",
+  "room": "r6",
+  "sx": 279,
+  "sy": 372,
+  "legacy": "panel"
+ },
+ {
+  "id": "boss#0",
+  "def": "cage",
+  "room": "boss",
+  "sx": 183,
+  "sy": 24,
+  "legacy": "panel"
+ },
+ {
+  "id": "boss#1",
+  "def": "cage",
+  "room": "boss",
+  "sx": 195,
+  "sy": 24,
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:sack",
+  "def": "sack",
+  "room": "r15",
+  "sx": 135,
+  "sy": 126,
+  "legacy": "panel"
+ },
+ {
+  "id": "r4:chest",
+  "def": "chest",
+  "room": "r4",
+  "sx": 189,
+  "sy": 381,
+  "legacy": "panel"
+ }
+]

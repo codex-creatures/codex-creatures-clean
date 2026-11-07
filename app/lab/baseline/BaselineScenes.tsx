@@ -8,6 +8,7 @@
 
 import { useSyncExternalStore } from "react";
 import WalkView from "@/components/WalkView";
+import { placedRun } from "@/lib/world/migrate";
 import { walkRoom } from "@/lib/dungeon/walkRun";
 import { dungeonOf, type DungeonRun } from "@/lib/dungeon/run";
 import { layoutFloorplan, roomCentre } from "@/lib/dungeon/layout";
@@ -89,7 +90,8 @@ export default function BaselineScenes() {
   const base = scene.run, walk = base.walk!;
   const at = scene.at?.(base) ?? walk.at;
   const p = plan(base);
-  const run: DungeonRun = { ...base, walk: { ...walk, at, ...(scene.all ? { known: [0, p.w * p.h] } : {}) } };
+  // (Given its placements, as the Labyrinth screen opens a run: lib/world/migrate.ts.)
+  const run: DungeonRun = placedRun({ ...base, walk: { ...walk, at, ...(scene.all ? { known: [0, p.w * p.h] } : {}) } });
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", margin: 0 }}>
       <div className="game-screen" style={{ width: 390, height: 693 }}>

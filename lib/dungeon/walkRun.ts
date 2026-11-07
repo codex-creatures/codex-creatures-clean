@@ -22,6 +22,7 @@ import { placeCampfires, CAMPFIRE_CHANCE, type Campfire } from "./campfire";
 import { rollWalkRooms, roomDepth } from "./walkRooms";
 import { spawnOf, isSpawn } from "./foes";
 import type { Floorplan, Pt } from "./floorplan";
+import type { Instance } from "../world/objects";
 
 type Rng = () => number;
 
@@ -40,6 +41,8 @@ export type WalkRun = {
   fires?: Campfire[];           // the rooms' campfires, and what each has left to give (none in older runs)
   flare?: number;               // tiles of walking left with a flare's light (torch.ts FLARE_WALK)
   flares?: number;              // flares lit this run (a new one lights afresh)
+  v?: number;                   // the world version it was saved by (lib/world/migrate.ts WALK_V; missing: 0)
+  placed?: Instance[];          // what was generated in it, where (lib/world/compat/v0.ts; missing in a v0 run)
 };
 
 // A big or long room that's a creature den holds a second den down its other

@@ -11,6 +11,7 @@
 
 import { useMemo, useState } from "react";
 import WalkView from "@/components/WalkView";
+import { placedRun } from "@/lib/world/migrate";
 import { startWalkRun, walkInto, walkKeep, walkRoom, type WalkDungeon } from "@/lib/dungeon/walkRun";
 import { dungeonOf, type DungeonRun } from "@/lib/dungeon/run";
 
@@ -21,7 +22,7 @@ const TEAM = [
 ];
 
 export default function NewRunLab() {
-  const roll = (d: WalkDungeon) => startWalkRun(["a", "b", "c"], ["a", "b", "c"], { a: 0.3, b: 0.8, c: 0 }, 1, [{}, {}], false, Math.random, d);
+  const roll = (d: WalkDungeon) => placedRun(startWalkRun(["a", "b", "c"], ["a", "b", "c"], { a: 0.3, b: 0.8, c: 0 }, 1, [{}, {}], false, Math.random, d));
   const first = useMemo(() => roll(0), []);
   const [run, setRun] = useState<DungeonRun>(first);
   const [n, setN] = useState(0); // (a new run: the view starts afresh)

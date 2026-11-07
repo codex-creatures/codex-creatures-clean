@@ -14,7 +14,7 @@ import { layoutFloorplan, roomCentre, startProgress, waysOn, cutOffY, type Layou
 import { torchLit, shutPlan, rubbleOf, fallenSoFar, placeSconces, placeCandles, sconceInSight, TORCH_RADIUS } from "../lib/dungeon/torch";
 import { floorVariant, wallVariant, type Decor } from "../lib/dungeon/decor";
 import { spottedBy } from "../lib/dungeon/foes";
-import { placeLights, placeLabDecor, placePeople, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
+import { placeLabDecor, placeFoeStarts, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
 import { byFire, type Campfire } from "../lib/dungeon/campfire";
 import { findPath, roomAt, walkable } from "../lib/dungeon/walk";
 import { walkRoom, walkInto } from "../lib/dungeon/walkRun";
@@ -22,6 +22,7 @@ import { hasFight, type DungeonId, type DungeonRun, type Room } from "../lib/dun
 import { depthEdges } from "../lib/dungeon/tileArt";
 import { FLOOR, ROCK, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { WALK_FLOOR_WORN, WALK_WALL_WORN } from "../lib/sprites/walk";
+import { migrateWalkRun, placementsOfWalk } from "../lib/world/migrate";
 
 // The walk screen's own helpers (lib/world/walkWorld.ts).
 export { seeded, toRuns, fromRuns };
@@ -47,7 +48,9 @@ type ThingFact = { key: string; room: string; x: number; y: number; what: string
 
 // Everything WalkView works out when it opens on this run. decor: the lab's
 // decor switch (/lab/newrun); the live game has it off.
-export function walkSetup(run: DungeonRun, decor = false) {
+export function walkSetup(run0: DungeonRun, decor = false) {
+  // The run as the Labyrinth screen opens it: given its placements (phase 2a) if it has none yet.
+  const run = migrateWalkRun(run0).run;
   const walk = run.walk!;
   const layout = walk.layout, map = run.map, dungeon = dungeonOf(run);
   const plan = layoutFloorplan(layout);
@@ -56,24 +59,25 @@ export function walkSetup(run: DungeonRun, decor = false) {
   const known = fromRuns(walk.known, plan.w * plan.h);
   const room = (id: string): Room | undefined => walkRoom(run, id);
   // Wall torches (lit as saved), candles (never by a campfire), decor and banners.
-  const { sconces, candles } = placeLights(walk, plan);
+  const placed = placementsOfWalk(walk, map, room);
+  const { sconces, candles } = placed;
   const fires: Campfire[] = (walk.fires ?? []).map((f) => ({ ...f }));
   const lab = decor ? placeLabDecor(walk, plan, map, candles, sconces) : { decor: [] as Decor[], banners: [] as Pt[] };
   const decorItems: Decor[] = lab.decor, banners: Pt[] = lab.banners;
   // Every room, and a big room's second den; each fight room's foes where they start; the witch.
   const ids = roomIds(layout, map);
-  const { foes, npcs } = placePeople(walk, plan, map, dungeon, room);
+  const foes = placeFoeStarts(walk, plan, map, dungeon, room), npcs = placed.witches;
   // The things to tap, as the walk screen makes them (named as the phase-0 goldens name them).
-  const things: ThingFact[] = thingsOf(layout, plan, ids, room, npcs, walk.spots).map(({ key, room, x, y, def, state, open, solid, npc, inert, flag }) => ({
+  const things: ThingFact[] = thingsOf(layout, placed, ids, room, npcs, walk.spots).map(({ key, room, x, y, def, state, open, solid, npc, inert, flag }) => ({
     key, room, x, y, what: WHAT[def] + (state === "open" && def !== "card-deck" ? "-open" : ""), open, solid,
     ...(npc ? { npc } : {}), ...(inert !== undefined ? { inert } : {}), ...(flag !== undefined ? { flag } : {}),
   }));
   // Where you may walk (WalkView's rule()): forward, seen, and not into anything solid.
-  const solid = solidCells(thingsOf(layout, plan, ids, room, npcs, walk.spots), fires, decorItems);
+  const solid = solidCells(thingsOf(layout, placed, ids, room, npcs, walk.spots), fires, decorItems);
   const canStep = walkRule(layout, plan, progress, known, solid);
   // (The same without what you've seen: the walking rules alone, for the baselines.)
   const canWalk = walkRule(layout, plan, progress, null, solid);
-  return { canWalk, layout, map, dungeon, plan, live, progress, known, sconces, candles, fires, decorItems, banners, ids, foes, npcs, things, canStep, room };
+  return { canWalk, placed, layout, map, dungeon, plan, live, progress, known, sconces, candles, fires, decorItems, banners, ids, foes, npcs, things, canStep, room };
 }
 
 // The facts to pin for one saved run.

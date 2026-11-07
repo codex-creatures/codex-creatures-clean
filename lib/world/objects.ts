@@ -58,8 +58,18 @@ export type ObjectDef = {
   sizeClass?: SizeClass;
 };
 
-// A placed copy (§3). Defined now; nothing is saved with it till phase 2.
-export type Instance = { id: string; def: string; x: number; y: number; facing?: number; state?: string; room: string };
+// A placed copy (§3), saved with the run (WalkRun.placed, lib/world/migrate.ts):
+// where generation put it, never changed after. What the player does to it
+// (lit, opened, beaten) is run state, kept elsewhere in the run.
+export type Instance = {
+  id: string; def: string; room: string;     // stable identity, and what it is
+  sx: number; sy: number;                    // its anchor subcell (lib/world/grid.ts), whole numbers
+  rot?: 0 | 1 | 2 | 3;                       // quarter turns (missing: 0; nothing turns yet)
+  wall?: "north" | "east" | "west";          // a wall thing: the wall beside the floor subcell sx, sy
+  start?: "lit";                             // the state generation gave it (a wall torch that starts lit)
+  facing?: number;                           // a creature: the way generation set it looking
+  legacy?: "panel";                          // placed by the old panel rules: exactly today's behaviour (world-spec §3)
+};
 
 export const REACH_OBJECT = 1.5; // u: this close to a thing you use, it's used
 export const TAP_OBJECT = 1;     // u: a tap this close to one counts as tapping it

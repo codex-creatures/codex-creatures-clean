@@ -57,8 +57,8 @@ function session(name: string, frames: number) {
   const sim = startWalk(walk, s.plan, s.live, placed(), copy(s.known));
   const o = oldWalk({ layout: s.layout, plan: s.plan, live: s.live, at: walk.at, progress: p0, known: copy(s.known), trail: copy(walk.trail ?? [walk.at]), cuts: copy(walk.cuts ?? []),
     ...placed(), fires: copy(walk.fires ?? []), flare: walk.flare ?? 0 });
-  const thingsNew = () => thingsOf(s.layout, s.plan, s.ids, room, sim.npcs, walk.spots);
-  const thingsOld = () => thingsOf(s.layout, s.plan, s.ids, room, o.npcs.current, walk.spots);
+  const thingsNew = () => thingsOf(s.layout, s.placed, s.ids, room, sim.npcs, walk.spots);
+  const thingsOld = () => thingsOf(s.layout, s.placed, s.ids, room, o.npcs.current, walk.spots);
   // The plan for the session: by a campfire, then each thing in turn, then on up the ways ahead.
   const targets: ({ thing: string } | { spot: Pt } | { fire: number })[] = [
     ...(walk.fires ?? []).slice(0, 1).map((_, i) => ({ fire: i })),

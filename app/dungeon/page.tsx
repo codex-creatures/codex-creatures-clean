@@ -78,6 +78,7 @@ import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import WalkView, { WalkFirstMap, WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
+import { withPlacements, placedRun } from "@/lib/world/migrate";
 import { FLARE_WALK } from "@/lib/dungeon/torch";
 import EncounterCards from "@/components/EncounterCards";
 import { CardsFan } from "@/components/CardStack";
@@ -134,6 +135,17 @@ export default function DungeonPage() {
   const [leaveAsk, setLeaveAsk] = useState(false); // tapped back to the Den mid-run: it ends the run, so a word first
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
+
+  // A walkable run as it's opened: given what's generated in it if it hasn't that saved yet (a run from
+  // before phase 2a), and saved so straight away (lib/world/migrate.ts). Anything else is left as stored.
+  function openedRun(saved: DungeonSave): DungeonSave {
+    if (!saved.run?.walk) return saved;
+    const m = withPlacements(saved.run);
+    if (m.outcome !== "migrated" && m.outcome !== "repaired") return saved;
+    const next = { ...saved, run: m.run };
+    saveDungeon(next);
+    return next;
+  }
 
   // Every change to the run is saved straight away.
   function update(next: DungeonSave) {
@@ -330,7 +342,7 @@ export default function DungeonPage() {
   const battle = usePlayableBattle((m) => updateRun((r) => ({ ...r, battle: m })));
 
   useEffect(() => {
-    const saved = loadDungeon();
+    const saved = openedRun(loadDungeon());
     setLab(saved);
     setOwned(loadOwnedCreatures());
     // Back in the middle of a fight? Carry on where you left off.
@@ -387,7 +399,7 @@ export default function DungeonPage() {
       const races = party.flatMap((id) => byId(id)?.template.races ?? []);
       const cages = campCages((lab.meta.campClears ?? 0) === 0, races);
       // "New": the same Encampment, walked round by torchlight (lib/dungeon/walkRun.ts).
-      const run = walk ? startWalkRun(party, team, hp, n, cages, onBindle(lab.meta)) : startRun(party, team, hp, n, Math.random, 0, false, onBindle(lab.meta), cages);
+      const run = walk ? placedRun(startWalkRun(party, team, hp, n, cages, onBindle(lab.meta))) : startRun(party, team, hp, n, Math.random, 0, false, onBindle(lab.meta), cages);
       update({ meta: { ...meta, campRuns: n }, run });
       return;
     }
@@ -403,7 +415,7 @@ export default function DungeonPage() {
     }
     // "New": the Labyrinth walked round by torchlight (lib/dungeon/walkRun.ts), its runs the Labyrinth's.
     if (walk && !quest) {
-      update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: startWalkRun(party, team, hp, lab.meta.runs + 1, [], onBindle(lab.meta), Math.random, 1, dynamite) });
+      update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: placedRun(startWalkRun(party, team, hp, lab.meta.runs + 1, [], onBindle(lab.meta), Math.random, 1, dynamite)) });
       return;
     }
     // Klutz's box: until it's back, runs are the quest's short run (club, then thief).

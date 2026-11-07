@@ -732,7 +732,7 @@ Each phase is its own commit (or few), tested and reviewed before the next start
     fix comes straight after 2a and before 2b ("2a′" below), as its own approved behaviour
     change with its own tests and commit, so foes are saved before 2b replaces their placer.
 
-#### 2a: the implementation design (📌 for the user's sign-off; no code yet)
+#### 2a: the implementation design (✅ signed off by the user, 2026-11-07; built)
 
 **The data.** `WalkRun` gains two optional fields: `v?: 1` and `placed?: Instance[]` (§3). No
 `states` field: everything the player changes already has a home in the run (`lit`, the rooms,
@@ -775,12 +775,16 @@ and frozen copies move into `compat/`.
 - no `walk`: returned as it is. `placed` present: returned as it is (the same object), never
   merged, topped up or regenerated. Otherwise (v0): `placed` from `legacyPlacements`, `v: 1`,
   and nothing else touched.
-- It's called in **`loadDungeon`**, the one place every run is read from (your own save, a save
-  slot, a cloud save and an imported file all land in the same save first), and on a **new run**
-  as it's made. The migrated run is written back the next time the game saves it, which happens
-  as soon as the walk screen opens or you do anything. Writing it later changes nothing, because
-  2a's placements depend only on the run's seed and layout, never on what you've done.
-- **Exported files** are unchanged: a v0 run in a file is migrated when it's imported and loaded.
+- It's called where a run is **opened to be played**: the Labyrinth screen, as it loads the save
+  (your own save, a save slot, a cloud save and an imported file all land in the same save
+  first), which writes the migrated run back straight away; and on a **new run** as it's made
+  (and the lab pages' made-up runs). Not inside `loadDungeon` itself: the world's modules import
+  the dungeon's, so the save code calling them would make a circle of imports (as built,
+  2026-11-07). Nothing outside the Labyrinth screen reads placements, so a v0 run elsewhere in
+  the save is harmless till it's opened; and 2a's placements depend only on the run's seed and
+  layout, never on what you've done, so when it's migrated changes nothing. The forward-
+  compatibility guard needs no world modules, so it does sit in `loadDungeon` and `saveDungeon`.
+- **Exported files** are unchanged: a v0 run in a file is migrated when it's imported and opened.
   `SAVE_FILE_VERSION` and cloud saves are untouched.
 - **Older code** (the other computer, not yet updated) ignores `v` and `placed` and plays as
   today; it keeps them when it saves the run (it copies runs whole). Were they lost, the new code
@@ -806,7 +810,8 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
   compatibility).
 
 **Verifying "looks and plays the same":**
-1. **Equivalence (the main test):** for the six fixtures and 300 rolled runs per dungeon
+1. **Equivalence (the main test):** for the six fixtures and 50 rolled runs per dungeon (as
+   built: 300 took 8 minutes, rolling a run being most of a second)
    (`slowIt`), at several points in a run (fresh, rooms beaten, torches lit, campfires used),
    the contents built from `placed` match today's placers exactly: torch ids, spots, walls and
    lit; candles; the witch's start and look; every thing to tap (key, spot, def, state, solid);

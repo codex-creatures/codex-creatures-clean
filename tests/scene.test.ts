@@ -59,7 +59,7 @@ function* session(name: string, opts: { frames: number; seeAll?: boolean; decor?
   const rng = seeded(walk.seed + 3);
   for (let k = 0; k < opts.frames; k++) {
     now += 16 + (k % 5);
-    const things = () => thingsOf(s.layout, s.plan, s.ids, s.room, sim.npcs, walk.spots);
+    const things = () => thingsOf(s.layout, s.placed, s.ids, s.room, sim.npcs, walk.spots);
     const frame = stepWalk(sim, { now, busy: !!opts.busy, room: s.room, here: run.path[run.path.length - 1], team: ["a", "b"], hp: run.hp, things, rng });
     if (frame.draw) {
       const input: SceneInput = { sim, frame, plan: s.plan, live, edges, layout: s.layout, decor: !!opts.decor, decorItems: s.decorItems, banners: s.banners, seed: walk.seed,

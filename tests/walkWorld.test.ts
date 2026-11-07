@@ -30,7 +30,7 @@ describe("things you use, out of the walk screen (world-spec §5.4)", () => {
   for (const [name, run] of runs.filter(([f]) => !f.startsWith("cyclops"))) {
     it(`${name}: taps, reach and the way up to each thing are as they were`, () => {
       const s = walkSetup(run);
-      const things = thingsOf(s.layout, s.plan, s.ids, s.room, s.npcs, run.walk!.spots);
+      const things = thingsOf(s.layout, s.placed, s.ids, s.room, s.npcs, run.walk!.spots);
       expect(things.length).toBe(s.things.length);
       const bad: string[] = [];
       for (const t of things) {

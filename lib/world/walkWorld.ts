@@ -1,27 +1,29 @@
 // lib/world/walkWorld.ts
-// What's in a walkable run's rooms (docs/world-spec.md §5.4), worked out from
-// the saved run when the walk screen opens: the wall torches, candles, foes
-// and the card witch where they start, the lab's decor, and the things to tap
-// as the rooms stand now, with where you may walk round them. Pure: the walk
-// screen (components/WalkView.tsx) and the phase-0 goldens
+// What's in a walkable run's rooms (docs/world-spec.md §5.4), when the walk
+// screen opens: the foes where they start, the lab's decor, and the things to
+// tap as the rooms stand now, with where you may walk round them. Pure: the
+// walk screen (components/WalkView.tsx) and the phase-0 goldens
 // (tests/walkBaseline.ts) both call it, so they can't drift apart.
 //
-// Placements are worked out from the run's seed, each kind with its own
-// stream (seed + 303 foes, 404 the witch, 505 wall torches, 606 candles, 707
-// decor, 808 banners), exactly as the walk screen always has. Phase 2 saves
-// them into the run instead (§7).
+// The wall torches, candles, the card witch's start and where each room's
+// things stand are saved in the run (phase 2a: lib/world/placements.ts, made by
+// lib/world/compat/v0.ts). Still worked out from the run's seed each time, each
+// kind on its own stream: foes (seed + 303; saved by the foe fix, phase 2a′),
+// and the lab's decor (707) and banners (808; phase 2b). The saved ones had
+// 404 (the witch), 505 (wall torches) and 606 (candles).
 
 import { roomCentre, stepRule, type Layout, type Progress } from "../dungeon/layout";
-import { placeSconces, placeCandles, type Sconce, type Candle } from "../dungeon/torch";
+import type { Sconce, Candle } from "../dungeon/torch";
 import { placeDecor, placeBanners, type Decor } from "../dungeon/decor";
 import { placeFoes, placeWaiter, spawnOf, parentOf, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, type DungeonId, type Room } from "../dungeon/run";
-import { waitsHere, cageSpots, type WalkRun } from "../dungeon/walkRun";
+import { waitsHere, type WalkRun } from "../dungeon/walkRun";
 import type { Campfire } from "../dungeon/campfire";
 import type { DungeonMap } from "../dungeon/map";
 import type { Floorplan, Pt } from "../dungeon/floorplan";
 import { objectDef, REACH_OBJECT, TAP_OBJECT } from "./objects";
+import type { Placements } from "./placements";
 
 // The walk screen's random numbers: a seeded stream (Park–Miller).
 export function seeded(seed: number) {
@@ -40,20 +42,10 @@ export const fromRuns = (runs: number[] | undefined, size: number) => {
   return a;
 };
 
-const centresOf = (layout: Layout) => Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
+export const centresOf = (layout: Layout) => Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
 
 // Every room, and a big room's second den (foes.ts spawnOf) where it has one.
 export const roomIds = (layout: Layout, map: DungeonMap) => Object.keys(layout.rooms).sort().flatMap((id) => (map.nodes[spawnOf(id)] ? [id, spawnOf(id)] : [id]));
-
-// The wall torches (lit as saved), and the odd candle near a room's middle, never on a campfire.
-export function placeLights(walk: WalkRun, plan: Floorplan): { sconces: Sconce[]; candles: Candle[] } {
-  const layout = walk.layout, lit = new Set(walk.lit ?? []);
-  const sconces = placeSconces(plan, layout.start, seeded(walk.seed + 505), true).map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
-  const candles = placeCandles(plan, centresOf(layout), [layout.start, layout.boss], seeded(walk.seed + 606))
-    .filter((c) => !(walk.fires ?? []).some((f) => Math.hypot(f.x - c.x, f.y - c.y) < 2))
-    .map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
-  return { sconces, candles };
-}
 
 // 🚧 The lab's decor samples (/lab/newrun): where they lie, and banners on the rooms' top walls clear of the wall torches.
 export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, candles: Candle[], sconces: Sconce[]): { decor: Decor[]; banners: Pt[] } {
@@ -65,10 +57,11 @@ export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, c
   };
 }
 
-// Each fight room's foes, where they start (the same places every time the
-// screen opens): two dens in a room keep to an end each; a boss waits at the
-// top. And the card witch, who walks about her room.
-export function placePeople(walk: WalkRun, plan: Floorplan, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): { foes: Foe[]; npcs: Foe[] } {
+// Each fight room's foes, where they start, worked out again each time the
+// screen opens from the rooms still to beat: two dens in a room keep to an end
+// each; a boss waits at the top. (Beating a room moves the others' starts: the
+// foe fix, phase 2a′, saves them.)
+export function placeFoeStarts(walk: WalkRun, plan: Floorplan, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Foe[] {
   const ids = roomIds(walk.layout, map);
   const rng = seeded(walk.seed + 303);
   const foes = ids.flatMap((id) => {
@@ -78,9 +71,7 @@ export function placePeople(walk: WalkRun, plan: Floorplan, map: DungeonMap, dun
     const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
     return r.enemies ? placeFoes(plan, id, r.enemies.length, rng, end) : [];
   });
-  const npcRng = seeded(walk.seed + 404);
-  const npcs = ids.flatMap((id) => (room(id)?.kind === "witch" ? placeFoes(plan, id, 1, npcRng).map((f) => ({ ...f, walks: true, wait: 1 })) : []));
-  return { foes, npcs };
+  return foes;
 }
 
 // Something to tap, drawn where it lies: a room's chest, stash or treasure
@@ -97,37 +88,42 @@ const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
 };
 const shut = (opened: boolean | undefined) => (opened ? "open" : "shut");
 
-// The things to tap, as the rooms stand now (`room`), the witch where she's got to, a beaten room's loot where it was dropped.
-export function thingsOf(layout: Layout, plan: Floorplan, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"]): Thing[] {
+// The things to tap, as the rooms stand now (`room`): each where it was placed
+// (lib/world/placements.ts), the witch where she's got to, a beaten room's loot
+// where it was dropped (else the room's middle, from the layout).
+export function thingsOf(layout: Layout, placed: Placements, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"]): Thing[] {
   return ids.flatMap((id): Thing[] => {
     const r = room(id);
     if (!r) return [];
-    const c = roomCentre(layout.rooms[parentOf(id)]);
     const out: Thing[] = [];
-    const add = (t: Omit<Thing, "key" | "room" | "solid" | "npc">) => out.push(thingOf({ key: id, room: id, ...t }));
-    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, def: "chest", state: shut(r.done), open: r.done });
-    else if (r.kind === "stash") add({ ...c, def: "sack", state: shut(r.opened), open: !!r.opened });
-    else if (r.kind === "pool") add({ ...c, def: "pool", open: r.done, glow: !r.done });
-    else if (r.kind === "cards") add({ ...c, def: "card-deck", open: r.done });
-    else if (r.kind === "merchant") add({ ...c, def: "merchant", open: false });
-    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, def: "librarian", open: false });
+    // A room's placed thing (`<room>:<key>`): one with no placement isn't there.
+    const add = (key: string, t: Omit<Thing, "key" | "room" | "solid" | "npc" | "x" | "y">) => {
+      const at = placed.spot(`${id}:${key}`);
+      if (at) out.push(thingOf({ key: id, room: id, ...at, ...t }));
+    };
+    if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done });
+    else if (r.kind === "stash") add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened });
+    else if (r.kind === "pool") add("pool", { def: "pool", open: r.done, glow: !r.done });
+    else if (r.kind === "cards") add("card-deck", { def: "card-deck", open: r.done });
+    else if (r.kind === "merchant") add("merchant", { def: "merchant", open: false });
+    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add("librarian", { def: "librarian", open: false });
     else if (r.kind === "witch") for (const n of npcs.filter((f) => f.room === id)) {
       // (Her game played out, she wanders on, with nothing more for you: the user, 2026-11-06.)
       const over = r.done || (!!r.witch && r.witch.state !== "playing");
-      add({ x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over });
+      out.push(thingOf({ key: id, room: id, x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over }));
     }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
     if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
-      add({ ...c, def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
+      add("stores", { def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
     }
     if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
-      const at = spots?.[id] ?? c;
-      add({ ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened });
+      const at = spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
+      out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
     }
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
-    if (r.cages?.length) cageSpots(plan, parentOf(id), r.cages.length).forEach((q, i) => {
-      const cage = r.cages![i];
-      out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done) }));
+    r.cages?.forEach((cage, i) => {
+      const q = placed.spot(`${id}#${i}`);
+      if (q) out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done) }));
     });
     return out;
   });
