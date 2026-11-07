@@ -178,7 +178,7 @@ export default function SettingsPage() {
           <Help title="Screen size">
             <ul>
               <li>Makes <b>everything</b> in the game bigger or smaller, if it looks too small (or too big) on this screen.</li>
-              <li>A laptop starts at <b>175%</b>, a phone at <b>100%</b>.</li>
+              <li>A laptop starts at <b>150%</b>, a phone at <b>100%</b>.</li>
               <li>It&apos;s for <b>this device only</b>: your phone and laptop each keep their own, and it isn&apos;t in exported saves.</li>
             </ul>
           </Help>

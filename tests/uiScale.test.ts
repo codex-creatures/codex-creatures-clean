@@ -16,7 +16,7 @@ describe("screen size", () => {
   it("starts a laptop bigger, until you pick a size", () => {
     const s = memory();
     expect(readUiScale(s, true)).toBe(LAPTOP_UI_SCALE);
-    expect(LAPTOP_UI_SCALE).toBe(1.75);
+    expect(LAPTOP_UI_SCALE).toBe(1.5);
     writeUiScale(s, 1);
     expect(readUiScale(s, true)).toBe(1);
   });

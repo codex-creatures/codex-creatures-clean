@@ -5,11 +5,12 @@
 // a laptop and a phone each have their own. Until you pick one, a phone
 // starts at 100% and a laptop (a wide window, where the game is the portrait
 // screen in the middle) at LAPTOP_UI_SCALE: at 100% everything looked too
-// small there, and 175% browser zoom was the right size.
+// small there, and 175% browser zoom was the right size; then 175% was too big
+// (the user, 2026-11-07), so 150%.
 
 export const UI_SCALE_KEY = "codex_creatures_ui_scale_v1";
 export const UI_SCALES = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
-export const LAPTOP_UI_SCALE = 1.75;
+export const LAPTOP_UI_SCALE = 1.5;
 export const UI_SCALE_EVENT = "codex-ui-scale"; // fired on window when it changes
 
 type Store = Pick<Storage, "getItem" | "setItem">;
