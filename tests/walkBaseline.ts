@@ -1,41 +1,30 @@
 // tests/walkBaseline.ts
 // Phase 0 of the world architecture (docs/world-spec.md §8): what the walk
 // screen (components/WalkView.tsx) works out from a saved run, captured as
-// plain data so later phases can prove nothing changed. Every call, seed and
-// filter here copies WalkView as it stood on 2026-11-07; phase 1 moves this
-// logic into lib/, and then these tests call it there instead.
+// plain data so later phases can prove nothing changed. On 2026-11-07 every
+// call, seed and filter here was a copy of WalkView's; phase 1 moved that
+// logic into lib/world/walkWorld.ts, and walkSetup now calls it there (the
+// walk screen's own code), so the goldens pin what the game runs.
 //
 // Nothing here draws. "Scene inputs" are the facts the drawing reads (where
 // each thing stands, what's lit, what's solid, what can be walked); the
 // picture itself is pinned in phase 1, once there's a scene builder to test.
 
-import { layoutFloorplan, roomCentre, startProgress, waysOn, stepRule, cutOffY, type Layout, type Progress } from "../lib/dungeon/layout";
-import { torchLit, shutPlan, rubbleOf, fallenSoFar, placeSconces, placeCandles, sconceInSight, TORCH_RADIUS, type Sconce, type Candle } from "../lib/dungeon/torch";
-import { placeDecor, placeBanners, floorVariant, wallVariant, type Decor } from "../lib/dungeon/decor";
-import { placeFoes, placeWaiter, spottedBy, spawnOf, parentOf, type Foe } from "../lib/dungeon/foes";
+import { layoutFloorplan, roomCentre, startProgress, waysOn, cutOffY, type Layout, type Progress } from "../lib/dungeon/layout";
+import { torchLit, shutPlan, rubbleOf, fallenSoFar, placeSconces, placeCandles, sconceInSight, TORCH_RADIUS } from "../lib/dungeon/torch";
+import { floorVariant, wallVariant, type Decor } from "../lib/dungeon/decor";
+import { spottedBy } from "../lib/dungeon/foes";
+import { placeLights, placeLabDecor, placePeople, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
 import { byFire, type Campfire } from "../lib/dungeon/campfire";
 import { findPath, roomAt, walkable } from "../lib/dungeon/walk";
-import { waitsHere, walkRoom, walkInto, cageSpots } from "../lib/dungeon/walkRun";
+import { walkRoom, walkInto } from "../lib/dungeon/walkRun";
 import { hasFight, type DungeonId, type DungeonRun, type Room } from "../lib/dungeon/run";
 import { depthEdges } from "../lib/dungeon/tileArt";
 import { FLOOR, ROCK, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { WALK_FLOOR_WORN, WALK_WALL_WORN } from "../lib/sprites/walk";
 
-// WalkView's own helpers, copied (they aren't exported).
-export function seeded(seed: number) {
-  let s = seed % 2147483647 || 1;
-  return () => ((s = (s * 16807) % 2147483647) / 2147483647);
-}
-export const toRuns = (a: Uint8Array) => {
-  const out: number[] = [];
-  for (let i = 0; i < a.length; i++) if (a[i] && !a[i - 1]) { let j = i; while (a[j]) j++; out.push(i, j - i); }
-  return out;
-};
-export const fromRuns = (runs: number[] | undefined, size: number) => {
-  const a = new Uint8Array(size);
-  for (let k = 0; runs && k + 1 < runs.length; k += 2) a.fill(1, runs[k], Math.min(size, runs[k] + runs[k + 1]));
-  return a;
-};
+// The walk screen's own helpers (lib/world/walkWorld.ts).
+export { seeded, toRuns, fromRuns };
 
 // A short, stable fingerprint of a big array (FNV-1a), so goldens stay small.
 export function digest(data: ArrayLike<number> | string): string {
@@ -52,7 +41,8 @@ const count = (a: ArrayLike<number>) => { let c = 0; for (let i = 0; i < a.lengt
 const dungeonOf = (run: DungeonRun): DungeonId => run.dungeon ?? 1;
 const progressOf = (run: DungeonRun): Progress => ({ room: run.walk!.room, line: run.walk!.line ?? Infinity });
 
-// What a thing to tap is, by name (WalkView keeps the art itself).
+// What a thing to tap is, by name (WalkView keeps the art itself), from its definition.
+const WHAT: Record<string, string> = { chest: "chest", sack: "sack", "loot-sack": "sack", "rickety-chest": "rickety", "loot-chest": "rickety", "card-deck": "cards", pool: "pool", merchant: "merchant", librarian: "librarian", witch: "witch", cage: "cage" };
 type ThingFact = { key: string; room: string; x: number; y: number; what: string; open: boolean; solid: boolean; npc?: boolean; inert?: boolean; flag?: boolean };
 
 // Everything WalkView works out when it opens on this run. decor: the lab's
@@ -66,65 +56,23 @@ export function walkSetup(run: DungeonRun, decor = false) {
   const known = fromRuns(walk.known, plan.w * plan.h);
   const room = (id: string): Room | undefined => walkRoom(run, id);
   // Wall torches (lit as saved), candles (never by a campfire), decor and banners.
-  const litIds = new Set(walk.lit ?? []);
-  const sconces: Sconce[] = placeSconces(plan, layout.start, seeded(walk.seed + 505), true).map((c) => (litIds.has(c.id) ? { ...c, lit: true } : c));
+  const { sconces, candles } = placeLights(walk, plan);
   const fires: Campfire[] = (walk.fires ?? []).map((f) => ({ ...f }));
-  const centres = Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
-  const candles: Candle[] = placeCandles(plan, centres, [layout.start, layout.boss], seeded(walk.seed + 606))
-    .filter((c) => !(walk.fires ?? []).some((f) => Math.hypot(f.x - c.x, f.y - c.y) < 2))
-    .map((c) => (litIds.has(c.id) ? { ...c, lit: true } : c));
-  const kinds = Object.fromEntries(Object.keys(layout.rooms).map((id) => [id, map.nodes[id].kind]));
-  const decorItems: Decor[] = decor ? placeDecor(plan, kinds, centres, [...(walk.fires ?? []), ...candles], [layout.start, layout.boss], seeded(walk.seed + 707)) : [];
-  const banners: Pt[] = decor ? placeBanners(plan, sconces.filter((c) => !c.wall || c.wall === "top"), [layout.start], seeded(walk.seed + 808)) : [];
+  const lab = decor ? placeLabDecor(walk, plan, map, candles, sconces) : { decor: [] as Decor[], banners: [] as Pt[] };
+  const decorItems: Decor[] = lab.decor, banners: Pt[] = lab.banners;
   // Every room, and a big room's second den; each fight room's foes where they start; the witch.
-  const ids = Object.keys(layout.rooms).sort().flatMap((id) => (map.nodes[spawnOf(id)] ? [id, spawnOf(id)] : [id]));
-  const foeRng = seeded(walk.seed + 303);
-  const foes: Foe[] = ids.flatMap((id) => {
-    const r = room(id);
-    if (!r || !hasFight(r) || r.done) return [];
-    if (waitsHere(r, dungeon)) return [placeWaiter(plan, id)];
-    const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
-    return r.enemies ? placeFoes(plan, id, r.enemies.length, foeRng, end) : [];
-  });
-  const npcRng = seeded(walk.seed + 404);
-  const npcs: Foe[] = ids.flatMap((id) => (room(id)?.kind === "witch" ? placeFoes(plan, id, 1, npcRng).map((f) => ({ ...f, walks: true, wait: 1 })) : []));
-  // The things to tap, as WalkView's things() makes them.
-  const things: ThingFact[] = ids.flatMap((id): ThingFact[] => {
-    const r = room(id);
-    if (!r) return [];
-    const c = roomCentre(layout.rooms[parentOf(id)]);
-    const out: ThingFact[] = [];
-    const add = (t: Omit<ThingFact, "key" | "room">) => out.push({ key: id, room: id, ...t });
-    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, what: r.done ? "chest-open" : "chest", open: r.done, solid: true });
-    else if (r.kind === "stash") add({ ...c, what: r.opened ? "sack-open" : "sack", open: !!r.opened, solid: true });
-    else if (r.kind === "pool") add({ ...c, what: "pool", open: r.done, solid: true });
-    else if (r.kind === "cards") add({ ...c, what: "cards", open: r.done, solid: true });
-    else if (r.kind === "merchant") add({ ...c, what: "merchant", open: false, solid: true, npc: true });
-    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, what: "librarian", open: false, solid: true, npc: true });
-    else if (r.kind === "witch") for (const n of npcs.filter((f) => f.room === id)) {
-      const over = r.done || (!!r.witch && r.witch.state !== "playing");
-      add({ x: Math.round(n.x), y: Math.round(n.y), what: "witch", open: false, solid: false, npc: true, inert: over });
-    }
-    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
-      add({ ...c, what: r.kind === "library" ? (r.opened ? "sack-open" : "sack") : r.opened ? "rickety-open" : "rickety", open: !!r.opened, solid: true });
-    }
-    if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
-      const at = walk.spots?.[id] ?? c;
-      const chest = r.container !== "sack";
-      add({ ...at, what: chest ? (r.opened ? "rickety-open" : "rickety") : r.opened ? "sack-open" : "sack", open: !!r.opened, solid: false });
-    }
-    if (r.cages?.length) cageSpots(plan, parentOf(id), r.cages.length).forEach((q, i) => {
-      const cage = r.cages![i];
-      out.push({ key: `${id}#${i}`, room: id, ...q, what: cage.opened ? "cage-open" : "cage", open: !!cage.opened, solid: true, flag: !cage.opened && (!hasFight(r) || r.done) });
-    });
-    return out;
-  });
+  const ids = roomIds(layout, map);
+  const { foes, npcs } = placePeople(walk, plan, map, dungeon, room);
+  // The things to tap, as the walk screen makes them (named as the phase-0 goldens name them).
+  const things: ThingFact[] = thingsOf(layout, plan, ids, room, npcs, walk.spots).map(({ key, room, x, y, def, state, open, solid, npc, inert, flag }) => ({
+    key, room, x, y, what: WHAT[def] + (state === "open" && def !== "card-deck" ? "-open" : ""), open, solid,
+    ...(npc ? { npc } : {}), ...(inert !== undefined ? { inert } : {}), ...(flag !== undefined ? { flag } : {}),
+  }));
   // Where you may walk (WalkView's rule()): forward, seen, and not into anything solid.
-  const forward = stepRule(layout, plan, progress);
-  const solid = new Set([...things.filter((t) => t.solid), ...fires, ...decorItems.filter((d) => d.solid)].map((t) => `${t.x},${t.y}`));
-  const canStep = (from: Pt, to: Pt) => forward(from, to) && known[to.y * plan.w + to.x] === 1 && !solid.has(`${to.x},${to.y}`);
+  const solid = solidCells(thingsOf(layout, plan, ids, room, npcs, walk.spots), fires, decorItems);
+  const canStep = walkRule(layout, plan, progress, known, solid);
   // (The same without what you've seen: the walking rules alone, for the baselines.)
-  const canWalk = (from: Pt, to: Pt) => forward(from, to) && !solid.has(`${to.x},${to.y}`);
+  const canWalk = walkRule(layout, plan, progress, null, solid);
   return { canWalk, layout, map, dungeon, plan, live, progress, known, sconces, candles, fires, decorItems, banners, ids, foes, npcs, things, canStep, room };
 }
 

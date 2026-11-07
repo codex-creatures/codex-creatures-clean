@@ -23,19 +23,20 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
-import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
-import { advance, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
+import { layoutFloorplan, scrollMarks, foreseen, cutOffY, enter, isOpen, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
+import { advance, roomAt, walkToward, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
-import { placeDecor, floorVariant, wallVariant, placeBanners, type Decor } from "@/lib/dungeon/decor";
+import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
+import { floorVariant, wallVariant } from "@/lib/dungeon/decor";
 import { byFire, warmBy, CAMPFIRE_HEAL, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "@/lib/dungeon/campfire";
-import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, fightReady, spawnOf, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
+import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "@/lib/dungeon/foes";
 import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
-import { waitsHere, cageSpots, type WalkRun } from "@/lib/dungeon/walkRun";
+import type { WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
 import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_FLOOR_WORN, WALK_WALL_WORN, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "@/lib/sprites/walk";
 import { walkView, tapCell, artPxAcross, artPxDown, across, legacySize, type View } from "@/lib/render/projection";
-import { objectDef, artOf, DECOR_DEF, REACH_OBJECT, TAP_OBJECT, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE, type ObjectDef, type ArtRef } from "@/lib/world/objects";
+import { objectDef, artOf, DECOR_DEF, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE, type ObjectDef, type ArtRef } from "@/lib/world/objects";
+import { placeLights, placeLabDecor, placePeople, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, toRuns, type Thing } from "@/lib/world/walkWorld";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { ROOM_ART } from "@/components/DungeonMapView";
@@ -64,21 +65,6 @@ export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" |
 // The campfire window: the team's health as it heals, who's getting some, what the fire has left.
 type Warming = { hp: Record<string, number>; giving: string[]; left: number };
 
-function seeded(seed: number) {
-  let s = seed % 2147483647 || 1;
-  return () => ((s = (s * 16807) % 2147483647) / 2147483647);
-}
-const toRuns = (a: Uint8Array) => {
-  const out: number[] = [];
-  for (let i = 0; i < a.length; i++) if (a[i] && !a[i - 1]) { let j = i; while (a[j]) j++; out.push(i, j - i); }
-  return out;
-};
-const fromRuns = (runs: number[] | undefined, size: number) => {
-  const a = new Uint8Array(size);
-  for (let k = 0; runs && k + 1 < runs.length; k += 2) a.fill(1, runs[k], Math.min(size, runs[k] + runs[k + 1]));
-  return a;
-};
-
 // What's drawn the same way every frame (lib/world/objects.ts).
 const CAMPFIRE = objectDef("campfire"), CANDLE = objectDef("candle"), BANNER = objectDef("banner"), SOUTH_WALL = objectDef("wall-south");
 // A definition's picture on screen, at today's size.
@@ -91,20 +77,6 @@ function image(src: string): HTMLImageElement | null {
   if (!img) { img = new Image(); img.src = src; IMAGES.set(src, img); }
   return img.complete && img.naturalWidth > 0 ? img : null;
 }
-
-// Something to tap, drawn where it lies: a room's chest, stash or treasure
-// (at its middle), a beaten room's sack or chest, a pool, a large room's
-// stores, a camp's cages (along its top; flag: "!" over one you can open), or
-// someone in the room (npc: the merchant, the librarian, the witch walking
-// about). key: the room, or "<room>#<cage>". def: what it is (lib/world/objects.ts),
-// state: which of its pictures; solid and npc come from the definition.
-type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
-  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean }; // inert: drawn, not tapped
-const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
-  const d = objectDef(t.def);
-  return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
-};
-const shut = (opened: boolean | undefined) => (opened ? "open" : "shut");
 
 export default function WalkView({ walk, map, dungeon = 0, decor = false, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
@@ -142,30 +114,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const lightNow = useRef<Uint8Array>(new Uint8Array(plan.w * plan.h));
   const trail = useRef<Pt[]>(walk.trail ?? [walk.at]);
   const cuts = useRef<number[]>(walk.cuts ?? []);
-  const sconces = useRef<Sconce[]>(useMemo(() => {
-    const lit = new Set(walk.lit ?? []);
-    return placeSconces(plan, layout.start, seeded(walk.seed + 505), true).map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
-  }, [plan, layout, walk.seed, walk.lit]));
+  // The wall torches and the odd candle (lib/world/walkWorld.ts), lit as you pass, and the campfires.
+  const [lights] = useState(() => placeLights(walk, plan));
+  const sconces = useRef<Sconce[]>(lights.sconces);
+  const candles = useRef<Candle[]>(lights.candles);
   const fires = useRef<Campfire[]>((walk.fires ?? []).map((f) => ({ ...f })));
-  // The odd candle near a room's middle (torch.ts placeCandles), lit as you pass; never on a campfire.
-  const candles = useRef<Candle[]>(useMemo(() => {
-    const lit = new Set(walk.lit ?? []);
-    const centres = Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
-    return placeCandles(plan, centres, [layout.start, layout.boss], seeded(walk.seed + 606))
-      .filter((c) => !(walk.fires ?? []).some((f) => Math.hypot(f.x - c.x, f.y - c.y) < 2))
-      .map((c) => (lit.has(c.id) ? { ...c, lit: true } : c));
-  }, [plan, layout, walk.seed, walk.lit, walk.fires]));
-  // 🚧 Decor (samples): where it lies, from the run's seed.
-  const decorItems = useMemo<Decor[]>(() => {
-    if (!decor) return [];
-    const centres = Object.fromEntries(Object.values(layout.rooms).map((r) => [r.id, roomCentre(r)]));
-    const kinds = Object.fromEntries(Object.keys(layout.rooms).map((id) => [id, map.nodes[id].kind]));
-    return placeDecor(plan, kinds, centres, [...(walk.fires ?? []), ...candles.current], [layout.start, layout.boss], seeded(walk.seed + 707));
-  }, [decor]); // eslint-disable-line react-hooks/exhaustive-deps
-  // 🚧 …and banners on the rooms' top walls, clear of the wall torches.
-  const banners = useMemo(() => (decor
-    ? placeBanners(plan, sconces.current.filter((c) => !c.wall || c.wall === "top"), [layout.start], seeded(walk.seed + 808))
-    : []), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 🚧 Decor (samples) and banners: where they lie, from the run's seed.
+  const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, candles.current, sconces.current) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
+  const decorItems = labDecor.decor, banners = labDecor.banners;
   // A flare's light: tiles of walking left with it (torch.ts), lit afresh by each new flare.
   const flareLeft = useRef(walk.flare ?? 0);
   const flaresSeen = useRef(walk.flares ?? 0);
@@ -196,74 +152,22 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   // Saved as you leave (a fight, the Den, a reload).
   useEffect(() => () => props.current.onKeep(state()), []);
 
-  // Every room, and a big room's second den (foes.ts spawnOf) where it has one.
-  const ids = useMemo(() => Object.keys(layout.rooms).sort().flatMap((id) => (map.nodes[spawnOf(id)] ? [id, spawnOf(id)] : [id])), [layout, map]);
-  // Each fight room's foes, where they start (the same places every time this
-  // opens): two dens in a room keep to an end each; a boss waits at the top.
-  const foes = useRef<Foe[]>(useMemo(() => {
-    const rng = seeded(walk.seed + 303);
-    return ids.flatMap((id) => {
-      const r = room(id);
-      if (!r || !hasFight(r) || r.done) return [];
-      if (waitsHere(r, dungeon)) return [placeWaiter(plan, id)];
-      const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
-      return r.enemies ? placeFoes(plan, id, r.enemies.length, rng, end) : [];
-    });
-  }, [])); // eslint-disable-line react-hooks/exhaustive-deps
-  // The card witch walks about her room (the merchant and the librarian stand by their carts).
-  const npcs = useRef<Foe[]>(useMemo(() => {
-    const rng = seeded(walk.seed + 404);
-    return ids.flatMap((id) => (room(id)?.kind === "witch" ? placeFoes(plan, id, 1, rng).map((f) => ({ ...f, walks: true, wait: 1 })) : []));
-  }, [])); // eslint-disable-line react-hooks/exhaustive-deps
+  // Every room (and second den); each fight room's foes where they start, and
+  // the card witch walking about her room (the merchant and the librarian
+  // stand by their carts): the same places every time this opens.
+  const ids = useMemo(() => roomIds(layout, map), [layout, map]);
+  const [people] = useState(() => placePeople(walk, plan, map, dungeon, room));
+  const foes = useRef<Foe[]>(people.foes);
+  const npcs = useRef<Foe[]>(people.npcs);
 
   // The things to tap, as the rooms stand now.
-  const things = (): Thing[] => ids.flatMap((id): Thing[] => {
-    const r = props.current.room(id);
-    if (!r) return [];
-    const c = roomCentre(layout.rooms[parentOf(id)]);
-    const out: Thing[] = [];
-    const add = (t: Omit<Thing, "key" | "room" | "solid" | "npc">) => out.push(thingOf({ key: id, room: id, ...t }));
-    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, def: "chest", state: shut(r.done), open: r.done });
-    else if (r.kind === "stash") add({ ...c, def: "sack", state: shut(r.opened), open: !!r.opened });
-    else if (r.kind === "pool") add({ ...c, def: "pool", open: r.done, glow: !r.done });
-    else if (r.kind === "cards") add({ ...c, def: "card-deck", open: r.done });
-    else if (r.kind === "merchant") add({ ...c, def: "merchant", open: false });
-    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, def: "librarian", open: false });
-    else if (r.kind === "witch") for (const n of npcs.current.filter((f) => f.room === id)) {
-      // (Her game played out, she wanders on, with nothing more for you: the user, 2026-11-06.)
-      const over = r.done || (!!r.witch && r.witch.state !== "playing");
-      add({ x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over });
-    }
-    // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
-    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
-      add({ ...c, def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
-    }
-    if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
-      const at = props.current.spots?.[id] ?? c;
-      add({ ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened });
-    }
-    // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
-    if (r.cages?.length) cageSpots(plan, parentOf(id), r.cages.length).forEach((q, i) => {
-      const cage = r.cages![i];
-      out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done) }));
-    });
-    return out;
-  });
+  const things = (): Thing[] => thingsOf(layout, plan, ids, props.current.room, npcs.current, props.current.spots);
 
   // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
-  // A tap on (or by) a thing: within TAP_OBJECT of it, or of someone's body (they stand a tile tall).
-  const tapped = (t: Thing, q: Pt) => {
-    const how = objectDef(t.def).interact, tap = how?.tap ?? TAP_OBJECT;
-    return !t.inert && (Math.hypot(t.x - q.x, t.y - q.y) <= tap || (!!how?.tapBody && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= tap));
-  };
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
-  const rule = (p: Progress): CanStep => {
-    const forward = stepRule(layout, plan, p);
-    const solid = new Set([...things().filter((t) => t.solid), ...fires.current, ...decorItems.filter((d) => d.solid)].map((t) => `${t.x},${t.y}`));
-    return (from, to) => forward(from, to) && known.current[to.y * plan.w + to.x] === 1 && !solid.has(`${to.x},${to.y}`);
-  };
+  const rule = (p: Progress): CanStep => walkRule(layout, plan, p, known.current, solidCells(things(), fires.current, decorItems));
 
   // Draw every frame: walk on, move the camera, then what you've seen, lit by your torch.
   useEffect(() => {
@@ -397,7 +301,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         }
         // Walking up to a thing you tapped: open it once you're close.
         const want = wantThing.current && things().find((t) => t.key === wantThing.current);
-        if (want && Math.hypot(want.x - me.current.x, want.y - me.current.y) <= REACH_OBJECT) {
+        if (want && inReach(want, me.current)) {
           wantThing.current = null;
           me.current = { ...me.current, path: me.current.path.slice(0, 1) };
           openThing(want, state());
@@ -839,18 +743,11 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     const spot = tapCell(walkView(plan, me.current, el.clientWidth, el.clientHeight), e.clientX - box.left, e.clientY - box.top);
     const can = rule(progressRef.current);
     // A tap on (or by) something to loot that you've seen: walk up beside it, and it opens.
-    const t = things().find((x) => tapped(x, spot) && known.current[x.y * plan.w + x.x]);
+    const t = things().find((x) => tapsThing(x, spot) && known.current[x.y * plan.w + x.x]);
     if (t) {
-      if (Math.hypot(t.x - me.current.x, t.y - me.current.y) <= REACH_OBJECT) { openThing(t, state()); return; }
+      if (inReach(t, me.current)) { openThing(t, state()); return; }
       const from = me.current.path[0] ?? { x: Math.round(me.current.x), y: Math.round(me.current.y) };
-      let best: Pt[] | null = null;
-      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
-        const n = { x: t.x + dx, y: t.y + dy };
-        if ((dx || dy || !t.solid) && walkable(live, n.x, n.y)) {
-          const way = findPath(live, from, n, can);
-          if (way && (!best || way.length < best.length)) best = way;
-        }
-      }
+      const best = approach(live, t, from, can);
       if (best) {
         goal.current = null;
         wantThing.current = t.key;
