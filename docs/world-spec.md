@@ -466,11 +466,11 @@ south, west and east walls too, as well as the north one.
   takes no floor) in a wall slot, like a wall torch. Each wall gets its own art and anchor:
   - **north:** on the wall's face, seen face on; sorts on its wall (as a wall torch, −0.6);
   - **west and east:** seen edge on, a side variant (as `sconce-side`, +0.4);
-  - **south:** the camera looks over the south wall from behind it, and it's drawn as its top
-    band only, fading near you (`capFade`). A candle on its inside face faces away from the
-    camera. **Recommended: floor candles only there**, standing a subcell or two in from the
-    wall, so the flame shows above the band. (Other options, for the user: a candle drawn on top
-    of the band; or one on the inside face, seen only while the band fades.)
+  - **south:** wall-mounted candles too (✅ the user, 2026-11-07), on the wall's inside face, as
+    well as floor candles by it. The camera looks over the south wall from behind, and the wall
+    is drawn as its top band only, fading near you (`capFade`), so a south-mounted candle may be
+    hidden behind the band, or show only while it fades: that's fine (the user). Its light still
+    shines into the room from the floor subcell beside the wall, seen or not.
 - **Wall slots gain the south wall** (§5.1: today the north face and the side walls). The
   instance's `wall` gains `"south"`. An older copy of the game would read that as an unknown
   wall and hold the run as damaged, so it comes with 2b's world version, never on its own.
@@ -518,9 +518,10 @@ dungeon, each carrying a light, so the world feels lived in. Simple, not clever:
   you've seen only while they're in your sight (so a merchant down the corridor doesn't map it
   for you). A moving light like this already exists: an alarmed foe's (`ALARM_LIGHT`).
 - **Using them where they've got to:** tapping and reach follow them (`tapBody`, as the witch's
-  now); the shop, the library's books and the witch's game stay their home room's state. 🧪
-  Whether the merchant's cart stays put (and you buy at the cart, or from him wherever he is) is
-  for the user to decide when this is built.
+  now); the shop, the library's books and the witch's game stay their home room's state.
+- **The merchant walks with his cart** (✅ the user, 2026-11-07): you buy from him wherever he's
+  got to. Tunnels are a panel wide, so the moving cart mustn't trap you: 🧪 neither blocks you
+  while they walk (only once they stop), and they never stop in a tunnel or a doorway.
 - **What 2b must give it:** the NPCs' start spots as saved instances from the new placer (pass
   7), their home room on each, their light as a definition field, and the walk rule for NPCs
   kept apart from the foes' and yours. Nothing in 2b moves them.
@@ -991,7 +992,7 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
   **After phase 2: wandering NPCs and the lights they carry** (the user, 2026-11-07; §5.7). Its
   own gameplay feature, designed and approved before it's built, once 2b's placement is
   reliable: the NPCs' walk rule and wandering, their lights in `stepWalk`'s lighting, tapping
-  them where they are, and whether the merchant's cart moves. It doesn't need the art phases
+  them where they are, and the merchant's cart going with him. It doesn't need the art phases
   (3 and 4) and may come before them; its lantern and glow art follows phase 3's standard if
   that's in place by then.
 
