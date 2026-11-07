@@ -167,6 +167,10 @@ describe("today's placers are called from one place (world-spec §7: the isolate
     placeCandles: ["lib/dungeon/torch.ts", "lib/world/compat/v0.ts"],
     cageSpots: ["lib/dungeon/walkRun.ts", "lib/world/compat/v0.ts"],
     legacyPlacements: ["lib/world/compat/v0.ts", "lib/world/migrate.ts"],
+    // (The foe fix, phase 2a′: foes' starts are saved too.)
+    placeFoes: ["lib/dungeon/foes.ts", "lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
+    placeWaiter: ["lib/dungeon/foes.ts", "lib/world/compat/v0.ts"],
+    legacyFoePlacements: ["lib/world/compat/v0.ts", "lib/world/migrate.ts"],
   };
   it("nothing else in the game imports them", () => {
     const bad: string[] = [];

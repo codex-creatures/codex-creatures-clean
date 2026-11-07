@@ -1376,5 +1376,380 @@
   "sy": 303,
   "facing": 1.5707963267948966,
   "legacy": "panel"
+ },
+ {
+  "id": "boss:foe:0",
+  "def": "foe",
+  "room": "boss",
+  "sx": 180,
+  "sy": 33,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "waits": true
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r1:foe:0",
+  "def": "foe",
+  "room": "r1",
+  "sx": 111,
+  "sy": 714,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 2.163016298861716
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:foe:0",
+  "def": "foe",
+  "room": "r14",
+  "sx": 231,
+  "sy": 441,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 2.2481534170211077,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:foe:1",
+  "def": "foe",
+  "room": "r14",
+  "sx": 216,
+  "sy": 441,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "walks": true,
+   "wait": 2.3059691713685027,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14~2:foe:0",
+  "def": "foe",
+  "room": "r14~2",
+  "sx": 237,
+  "sy": 399,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 4.2568502958197385,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14~2:foe:1",
+  "def": "foe",
+  "room": "r14~2",
+  "sx": 231,
+  "sy": 417,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 2.923074939252378,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14~2:foe:2",
+  "def": "foe",
+  "room": "r14~2",
+  "sx": 240,
+  "sy": 408,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 4.275364898739086,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r16:foe:0",
+  "def": "foe",
+  "room": "r16",
+  "sx": 135,
+  "sy": 399,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 3.0406169379319143
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r16:foe:1",
+  "def": "foe",
+  "room": "r16",
+  "sx": 168,
+  "sy": 435,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "walks": true,
+   "wait": 3.4234186445471915
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r2:foe:0",
+  "def": "foe",
+  "room": "r2",
+  "sx": 213,
+  "sy": 675,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 4.484061742892518
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r22:foe:0",
+  "def": "foe",
+  "room": "r22",
+  "sx": 309,
+  "sy": 243,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 2.4410508961607937
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r25:foe:0",
+  "def": "foe",
+  "room": "r25",
+  "sx": 219,
+  "sy": 195,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 3.8520276545789223
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r25:foe:1",
+  "def": "foe",
+  "room": "r25",
+  "sx": 210,
+  "sy": 189,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "walks": true,
+   "wait": 4.818124037616943
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r26:foe:0",
+  "def": "foe",
+  "room": "r26",
+  "sx": 330,
+  "sy": 153,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 4.3621888595457134
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r26:foe:1",
+  "def": "foe",
+  "room": "r26",
+  "sx": 339,
+  "sy": 174,
+  "facing": 0,
+  "foe": {
+   "wait": 4.2078034608661214
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r26:foe:2",
+  "def": "foe",
+  "room": "r26",
+  "sx": 315,
+  "sy": 165,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 3.261834941460674
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r27:foe:0",
+  "def": "foe",
+  "room": "r27",
+  "sx": 132,
+  "sy": 147,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 4.8751136129140455
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r27:foe:1",
+  "def": "foe",
+  "room": "r27",
+  "sx": 96,
+  "sy": 153,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 4.069155680513548
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r27:foe:2",
+  "def": "foe",
+  "room": "r27",
+  "sx": 108,
+  "sy": 144,
+  "facing": 0,
+  "foe": {
+   "walks": true,
+   "wait": 3.9364928765858025
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r3:foe:0",
+  "def": "foe",
+  "room": "r3",
+  "sx": 339,
+  "sy": 717,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 2.5559323712046873
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r4:foe:0",
+  "def": "foe",
+  "room": "r4",
+  "sx": 93,
+  "sy": 603,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 3.7183491972826186
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r5:foe:0",
+  "def": "foe",
+  "room": "r5",
+  "sx": 273,
+  "sy": 642,
+  "facing": 0,
+  "foe": {
+   "wait": 3.4101322607184446
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r6:foe:0",
+  "def": "foe",
+  "room": "r6",
+  "sx": 216,
+  "sy": 585,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 4.794438973904792,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r6~2:foe:0",
+  "def": "foe",
+  "room": "r6~2",
+  "sx": 225,
+  "sy": 564,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 2.0006554145369004,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r7:foe:0",
+  "def": "foe",
+  "room": "r7",
+  "sx": 273,
+  "sy": 540,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 4.446146931706997
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r8:foe:0",
+  "def": "foe",
+  "room": "r8",
+  "sx": 138,
+  "sy": 531,
+  "facing": 0,
+  "foe": {
+   "wait": 4.303083296540698
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r8:foe:1",
+  "def": "foe",
+  "room": "r8",
+  "sx": 138,
+  "sy": 546,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "walks": true,
+   "wait": 2.7734935473527265
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r9:foe:0",
+  "def": "foe",
+  "room": "r9",
+  "sx": 327,
+  "sy": 543,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 2.0769303855844448,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r9~2:foe:0",
+  "def": "foe",
+  "room": "r9~2",
+  "sx": 351,
+  "sy": 528,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 2.7845176946299697,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r9~2:foe:1",
+  "def": "foe",
+  "room": "r9~2",
+  "sx": 345,
+  "sy": 498,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 4.914569474716936,
+   "end": 1
+  },
+  "legacy": "panel"
  }
 ]

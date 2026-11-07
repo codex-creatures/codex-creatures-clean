@@ -603,5 +603,357 @@
   "sx": 186,
   "sy": 216,
   "legacy": "panel"
+ },
+ {
+  "id": "boss:foe:0",
+  "def": "foe",
+  "room": "boss",
+  "sx": 126,
+  "sy": 27,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "waits": true
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r1:foe:0",
+  "def": "foe",
+  "room": "r1",
+  "sx": 45,
+  "sy": 360,
+  "facing": 0,
+  "foe": {
+   "wait": 3.344921614204031,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r1~2:foe:0",
+  "def": "foe",
+  "room": "r1~2",
+  "sx": 81,
+  "sy": 333,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 3.4674491213948695,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:foe:0",
+  "def": "foe",
+  "room": "r10",
+  "sx": 111,
+  "sy": 186,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 4.9551707948349275
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r10:foe:1",
+  "def": "foe",
+  "room": "r10",
+  "sx": 102,
+  "sy": 219,
+  "facing": 0,
+  "foe": {
+   "wait": 3.6794815159772902
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r11:foe:0",
+  "def": "foe",
+  "room": "r11",
+  "sx": 183,
+  "sy": 162,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 3.502700663871458,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r11:foe:1",
+  "def": "foe",
+  "room": "r11",
+  "sx": 207,
+  "sy": 174,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 2.752582392074439,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r11~2:foe:0",
+  "def": "foe",
+  "room": "r11~2",
+  "sx": 216,
+  "sy": 171,
+  "facing": 0,
+  "foe": {
+   "wait": 2.4381029444924103,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r11~2:foe:1",
+  "def": "foe",
+  "room": "r11~2",
+  "sx": 231,
+  "sy": 174,
+  "facing": 3.141592653589793,
+  "foe": {
+   "walks": true,
+   "wait": 4.053061029432835,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r13:foe:0",
+  "def": "foe",
+  "room": "r13",
+  "sx": 138,
+  "sy": 153,
+  "facing": 0,
+  "foe": {
+   "wait": 2.2826457322960003
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:foe:0",
+  "def": "foe",
+  "room": "r14",
+  "sx": 186,
+  "sy": 138,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 4.143243036299591
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r14:foe:1",
+  "def": "foe",
+  "room": "r14",
+  "sx": 174,
+  "sy": 135,
+  "facing": 0,
+  "foe": {
+   "wait": 4.1559463721494865
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:foe:0",
+  "def": "foe",
+  "room": "r15",
+  "sx": 27,
+  "sy": 105,
+  "facing": 0,
+  "foe": {
+   "wait": 4.152450570907654,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r15:foe:1",
+  "def": "foe",
+  "room": "r15",
+  "sx": 30,
+  "sy": 114,
+  "facing": 0,
+  "foe": {
+   "walks": true,
+   "wait": 3.559044660795035,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r15~2:foe:0",
+  "def": "foe",
+  "room": "r15~2",
+  "sx": 63,
+  "sy": 105,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 4.649324021604528,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r15~2:foe:1",
+  "def": "foe",
+  "room": "r15~2",
+  "sx": 60,
+  "sy": 114,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 4.313609518256788,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r17:foe:0",
+  "def": "foe",
+  "room": "r17",
+  "sx": 120,
+  "sy": 78,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 3.6928717473954293
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r17:foe:1",
+  "def": "foe",
+  "room": "r17",
+  "sx": 129,
+  "sy": 102,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 3.404506444653732
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r19:foe:0",
+  "def": "foe",
+  "room": "r19",
+  "sx": 210,
+  "sy": 48,
+  "facing": 3.141592653589793,
+  "foe": {
+   "wait": 3.946348653615615
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r19:foe:1",
+  "def": "foe",
+  "room": "r19",
+  "sx": 222,
+  "sy": 27,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 3.6355384721586197
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r2:foe:0",
+  "def": "foe",
+  "room": "r2",
+  "sx": 126,
+  "sy": 348,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 3.242492273562817
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r3:foe:0",
+  "def": "foe",
+  "room": "r3",
+  "sx": 177,
+  "sy": 348,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 4.398641024436168
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r4:foe:0",
+  "def": "foe",
+  "room": "r4",
+  "sx": 234,
+  "sy": 354,
+  "facing": 0,
+  "foe": {
+   "wait": 2.402144167759523,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r4~2:foe:0",
+  "def": "foe",
+  "room": "r4~2",
+  "sx": 228,
+  "sy": 327,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 4.171514037610737,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r5:foe:0",
+  "def": "foe",
+  "room": "r5",
+  "sx": 189,
+  "sy": 294,
+  "facing": -1.5707963267948966,
+  "foe": {
+   "wait": 4.6495866406008535,
+   "end": 0
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r5~2:foe:0",
+  "def": "foe",
+  "room": "r5~2",
+  "sx": 180,
+  "sy": 285,
+  "facing": 0,
+  "foe": {
+   "wait": 3.790800341307558,
+   "end": 1
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r6:foe:0",
+  "def": "foe",
+  "room": "r6",
+  "sx": 66,
+  "sy": 282,
+  "facing": 0,
+  "foe": {
+   "wait": 3.551134355622872
+  },
+  "legacy": "panel"
+ },
+ {
+  "id": "r7:foe:0",
+  "def": "foe",
+  "room": "r7",
+  "sx": 114,
+  "sy": 279,
+  "facing": 1.5707963267948966,
+  "foe": {
+   "wait": 3.3842611212210083
+  },
+  "legacy": "panel"
  }
 ]

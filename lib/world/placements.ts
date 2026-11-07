@@ -20,6 +20,7 @@ export type Placements = {
   sconces: Sconce[];
   candles: Candle[];
   witches: Foe[];                        // where each card witch starts (she walks about from there, this visit only)
+  foes: Foe[];                           // where each foe starts, beaten or not (walkWorld.ts foeStarts picks the rooms still to beat)
   spot: (id: string) => Pt | undefined;  // where an instance stands (a room's feature, a cage), by id
 };
 
@@ -30,7 +31,7 @@ const BY_FIRE = 2;
 
 export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "fires" | "layout">): Placements {
   const lit = new Set(walk.lit ?? []), fires = walk.fires ?? [];
-  const sconces: Sconce[] = [], candles: Candle[] = [], witches: Foe[] = [];
+  const sconces: Sconce[] = [], candles: Candle[] = [], witches: Foe[] = [], foes: Foe[] = [];
   const spots = new Map<string, Pt>();
   for (const i of placed) {
     const p = anchorPoint(i);
@@ -44,7 +45,11 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
     } else if (i.def === "witch") {
       witches.push({ room: i.room, index: 0, ...p, facing: i.facing ?? 0, walks: true, path: [], wait: 1 });
+    } else if (i.def === "foe" && i.foe) {
+      const f = i.foe, index = Number(i.id.slice(i.id.lastIndexOf(":") + 1));
+      foes.push({ room: i.room, index, ...p, facing: i.facing ?? 0, walks: !!f.walks, path: [], wait: f.waits ? Infinity : f.wait ?? 0,
+        ...(f.waits ? { waits: true } : {}), ...(f.end !== undefined ? { end: f.end } : {}) });
     }
   }
-  return { sconces, candles, witches, spot: (id) => spots.get(id) };
+  return { sconces, candles, witches, foes, spot: (id) => spots.get(id) };
 }

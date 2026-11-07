@@ -528,10 +528,9 @@ spec assumes nothing about them.
     and banners (✅ the user, 2026-11-07: experimental, shown only in `/lab/newrun` and worked
     out there as now; 2b brings them into placement and saving properly). Already saved today, and left as they are: campfires (`fires`), a beaten room's
     loot spot (`spots`).
-  - **Foes' starting spots are not saved in 2a.** Today they're worked out again each time the
-    walk screen opens, from the rooms still to beat, and that's what moves them when you beat a
-    room. Saving them would stop that, which is the foe fix (§7, reviewing goldens), so it waits
-    for its own approved change. Until then they're worked out as today.
+  - **Foes' starting spots are saved from v2** (the foe fix, 2a′, §8). Before it they were
+    worked out again each time the walk screen opened, from the rooms still to beat, which is
+    what moved them when you beat a room.
   - **Run state stays where it is and keeps its meaning:** `lit` (torches and candles you lit),
     the rooms' own state (opened, beaten, looted, the witch's game), `spots`, `fires`, `known`,
     `trail`, `cuts`, `flare`. The room is built from the instances with that state laid over
@@ -542,8 +541,8 @@ spec assumes nothing about them.
   load months later). `migrateWalkRun` runs on load and on import, chained by version, pure and
   tested.
   - **Saving starts in phase 2, before anything else in it changes** (step 2a, §8). The game
-    saves what today's placers place (the list is under "v1 adds" above; foes' starts wait for
-    the foe fix) into the run when it starts or loads (v0 → v1). At that point those placers are
+    saves what today's placers place (the list is under "v1 adds" above; foes' starts from v2,
+    the foe fix) into the run when it starts or loads (v0 → v1 → v2). At that point those placers are
     still the live ones, so no second copy exists yet.
   - **Then phase 2 replaces the placers** (step 2b). From then on the new placers are the only
     generator in normal play. The old ones are deleted from the generation code.
@@ -628,10 +627,10 @@ spec assumes nothing about them.
   approved it and when) and lists which goldens changed and why.
 - Any other golden difference is a **regression**: the code is fixed, never the golden.
 - Behaviour corrections the user has approved so far (each lands as its own intended change):
-  - **Foes keep their starting spots** (the user, 2026-11-07): once a run is made, its contents
-    stay put. Beating one room must not move anything in another. Foes still move about
-    while you play. (Today, beating one room moved 25 of 27 other foes' starting spots the
-    next time the view opened.) Phase 2, with saved placements.
+  - **Foes keep their starting spots** (the user, 2026-11-07; ✅ built as 2a′): once a run is
+    made, its contents stay put. Beating one room must not move anything in another. Foes still
+    move about while you play. (Before, beating one room moved 25 of 27 other foes' starting
+    spots the next time the view opened.)
 
 ## 8. Phases and acceptance
 
@@ -838,26 +837,44 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
 7. `npm run test:all`, `tsc`, lint, `build`, `build:offline`; then the user plays a run in each
    dungeon, including one already under way from before the update.
 
-#### 2a′: the foe fix (✅ approved 2026-11-07, its own change; designed in outline)
+#### 2a′: the foe fix (✅ approved 2026-11-07, its own change; built 2026-11-07, world version 2)
 
-- **Generated starts:** each fight room's foes saved as instances, `<room>:foe:<i>` (i: the foe's
-  place in the room's enemy list; a waiting boss or chief is `:foe:0`), with what today's placer
-  rolls for them (spot, facing, whether it wanders, its first wait, its end of a two-den room).
-  Saved once, never changed.
+- **Generated starts:** each fight room's foes saved as instances (def `foe`), `<room>:foe:<i>`
+  (i: the foe's place in the room's enemy list; a waiting boss or chief is `:foe:0`), with what
+  today's placer rolls for them: spot, `facing`, and `foe: { walks?, wait, end? }` (whether it
+  wanders, its first wait, its end of a two-den room), or `foe: { waits: true }` for a waiting
+  boss (its endless wait isn't a number JSON can hold, so it's made again on load). Saved once,
+  never changed. Made by `legacyFoePlacements` (lib/world/compat/v0.ts), the old placer's one
+  stream (seed + 303), room by room, for the rooms still to beat.
+- **An ambush not yet sprung** showed no foes, so the old stream skipped it. Its foes are placed
+  after everyone else's, on the same stream, so they're saved too (somewhere to stand once it
+  springs) and nobody else's start moves.
 - **Current positions:** where a foe has wandered to stays as now: for this visit only. Each time
   the walk screen opens, foes start again from their saved starts (✅ the user, 2026-11-07; the
   same for the witch). Three things kept apart: the **generated start** (saved, never changed),
   the **current position** (this visit only), and **gameplay state** (beaten, removed: saved, in
   the run). Saving where creatures have wandered is its own feature, later, with richer
   exploration.
-- **Beaten foes:** a beaten room's foes aren't built (its `done`, as now). Their instances stay
-  in `placed`, so no id is ever reused and no other room's foes are worked out again.
-- **Migration v1 → v2:** freezes the foes today's game would show at that moment (only rooms not
-  yet beaten have any), without touching run state, and is written back straight away, as this
-  one depends on what you've done.
-- **Tests:** beating any one room never changes another room's contents (fixtures and rolled
-  runs); the frozen starts equal today's at conversion. Goldens that capture a run after a room
-  is beaten change, re-recorded in their own "Intended change:" commit.
+- **Beaten foes:** a beaten room's foes aren't built (its `done`, as before: walkWorld.ts
+  `foeStarts`). Their instances stay in `placed`, so no id is ever reused and no other room's
+  foes are worked out again.
+- **Migration v1 → v2:** adds the foes today's game would show at that moment (only rooms not yet
+  beaten have any), keeping the rest of `placed` and all run state as they are, and is written
+  back straight away (`openWalkSave`), as this one depends on what you've done. A v0 run goes
+  straight to v2. A copy of the game from before this (it reads up to v1) meets a v2 run as
+  newer and leaves it alone (§7, forward compatibility): update both computers.
+- **Checked:** a v2 run's foe instances must be sound (the id's form, known values) and every
+  room still to beat must have exactly its foes saved (`foesToPlace`), else the run is damaged
+  and held, never read as "no foes". "Mend its rooms" works for v1 and v2 runs: its foes come out
+  as first made if no room's been beaten since, otherwise as the game would show them now.
+- **Tests** (tests/foeStarts.test.ts): on the six fixtures and twelve rolled runs, as saved and
+  with half their fights beaten, from v0 and from v1, the saved starts equal the old placer's
+  (tests/foeStartsBefore.ts) at conversion, and beating any one room changes nothing saved and
+  moves nobody else; a test shows the old placer did move them; the ambush; v1 → v2; broken foe
+  starts held and mended. The only golden change: each fixture's `*.placed.json` gains its foes
+  at the end (everything before them unchanged). The scene, motion and draw goldens pass
+  untouched, as each fixture is converted at the state it's in.
+
 - **Before 2b: the dimensions review, in subcells.** Every definition's footprint, turns,
   clearance, height, visual bounds and interaction access, and each creature's size, proposed
   in subcells for the user to set. Nothing in 2b relies on a size until it's set.
@@ -869,7 +886,8 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
     already agreed may (§10.3: new runs' exact spots). Giving things their reviewed subcell sizes
     (two small things sharing a panel, a chest that's 3 × 2) changes what new rooms look like and
     where you can walk, so it's an intended change, in its own commit, approved first.
-- **2c, intended changes:** the foe fix (§7, reviewing goldens), each in its own commit.
+- **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing
+  goldens), each in its own commit. (The foe fix came early, as 2a′.)
 - **Done when:**
   - migrations are idempotent and keep all run state (§7); a Cyclops run with no `dungeon`
     field migrates as the Cyclops's;

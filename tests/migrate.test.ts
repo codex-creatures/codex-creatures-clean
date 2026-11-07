@@ -19,7 +19,7 @@ const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 // The run with what migration may add taken out again.
 const without = (run: DungeonRun) => { const walk = { ...run.walk! }; delete walk.v; delete walk.placed; return { ...run, walk }; };
 
-describe("migrating a run (v0 → v1)", () => {
+describe("migrating a run (v0 → v2)", () => {
   it("every fixture is a v0 run, migrated once, with nothing but `v` and `placed` added", () => {
     for (const [name, run0] of fixtures) {
       const before = json(run0);
@@ -130,12 +130,12 @@ describe("missing or broken placements are said, never read as empty", () => {
   });
   it("the walk screen never builds rooms from them: it makes them again for the visit, and says so", () => {
     const run = v1(), room = (id: string) => walkRoom(run, id);
-    const sound = placementsOfWalk(run.walk!, run.map, room);
+    const sound = placementsOfWalk(run.walk!, run.map, dungeonOf(run), room);
     const warn = console.warn;
     const said: string[] = [];
     console.warn = (s: string) => { said.push(s); };
     try {
-      const again = placementsOfWalk({ ...run.walk!, placed: [] }, run.map, room);
+      const again = placementsOfWalk({ ...run.walk!, placed: [] }, run.map, dungeonOf(run), room);
       expect(again.sconces).toEqual(sound.sconces);
       expect(again.candles).toEqual(sound.candles);
       expect(again.witches).toEqual(sound.witches);

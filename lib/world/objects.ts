@@ -68,8 +68,15 @@ export type Instance = {
   wall?: "north" | "east" | "west";          // a wall thing: the wall beside the floor subcell sx, sy
   start?: "lit";                             // the state generation gave it (a wall torch that starts lit)
   facing?: number;                           // a creature: the way generation set it looking
-  legacy?: "panel";                          // placed by the old panel rules: exactly today's behaviour (world-spec §3)
+  foe?: FoeStart;                            // a foe (def "foe", id `<room>:foe:<i>`): how it starts out
+  legacy?: "panel";                         // placed by the old panel rules: exactly today's behaviour (world-spec §3)
 };
+
+// How a foe starts out, as generation rolled it (lib/dungeon/foes.ts): it
+// walks about or stands looking (for `wait` seconds before it first turns or
+// sets off), keeps to one end of a room with two dens, or waits for you (a
+// boss at the top of its room: no wait, it never turns).
+export type FoeStart = { walks?: true; wait?: number; end?: 0 | 1; waits?: true };
 
 export const REACH_OBJECT = 1.5; // u: this close to a thing you use, it's used
 export const TAP_OBJECT = 1;     // u: a tap this close to one counts as tapping it

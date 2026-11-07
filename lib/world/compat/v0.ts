@@ -13,20 +13,22 @@
 //   run state when the room is built, as before;
 // - each room's feature at its middle (`<room>:<def>`), a large room's stores
 //   (`<room>:stores`), and a camp's cages (`<room>#<i>`, as the taps name them);
-// - the card witch where she starts (`<room>:witch`), and her starting look.
-// Foes aren't here (the foe fix, phase 2a′), nor the lab's decor (phase 2b).
+// - the card witch where she starts (`<room>:witch`), and her starting look;
+// - each fight room's foes where they start (`<room>:foe:<i>`: legacyFoePlacements).
+// Not the lab's decor (phase 2b).
 //
-// Placements depend only on the run's seed, layout and rooms' kinds, never on
-// what you've done, so making them twice gives the same list.
+// All but the foes depend only on the run's seed, layout and rooms' kinds,
+// never on what you've done, so making them twice gives the same list. The
+// foes depend on which rooms are beaten, so they're made once and saved.
 
 import { roomCentre, layoutFloorplan } from "../../dungeon/layout";
 import { placeSconces, placeCandles, type Sconce } from "../../dungeon/torch";
-import { placeFoes, parentOf } from "../../dungeon/foes";
-import { cageSpots, type WalkRun } from "../../dungeon/walkRun";
-import type { Room } from "../../dungeon/run";
+import { placeFoes, placeWaiter, spawnOf, parentOf, type Foe } from "../../dungeon/foes";
+import { cageSpots, waitsHere, type WalkRun } from "../../dungeon/walkRun";
+import { hasFight, type DungeonId, type Room } from "../../dungeon/run";
 import type { DungeonMap } from "../../dungeon/map";
 import type { Pt } from "../../dungeon/floorplan";
-import { seeded, roomIds, centresOf } from "../walkWorld";
+import { seeded, roomIds, centresOf, fightsLater } from "../walkWorld";
 import { panelAnchor } from "../grid";
 import type { Instance } from "../objects";
 
@@ -83,4 +85,29 @@ export function legacyPlacements(walk: WalkRun, map: DungeonMap, room: (id: stri
     for (const f of placeFoes(plan, id, 1, npcRng)) out.push(at(`${id}:witch`, "witch", id, f, { facing: f.facing }));
   }
   return out;
+}
+
+// Each fight room's foes where they start, exactly as the walk screen worked
+// them out before the foe fix (phase 2a′): on one stream from the run's seed,
+// room by room, for the rooms still to beat; two dens in a room keep to an end
+// each; a boss waits at the top. That stream skipped the rooms beaten so far,
+// so beating one moved everyone else: made once instead, when a run is made or
+// first opened since, and saved. At that moment they're what the game showed.
+// An ambush not yet sprung showed none: its foes come after the rest, on the
+// same stream, so they're saved too and nobody else's start moves.
+export function legacyFoePlacements(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Instance[] {
+  const plan = layoutFloorplan(walk.layout), ids = roomIds(walk.layout, map);
+  const rng = seeded(walk.seed + 303);
+  const startsIn = (id: string): Foe[] => {
+    const r = room(id)!;
+    if (waitsHere(r, dungeon)) return [placeWaiter(plan, id)];
+    const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
+    return r.enemies ? placeFoes(plan, id, r.enemies.length, rng, end) : [];
+  };
+  const toBeat = (id: string, later: boolean) => { const r = room(id); return !!r && !r.done && (later ? fightsLater(r) : hasFight(r)); };
+  const order = [...ids.filter((id) => toBeat(id, false)), ...ids.filter((id) => toBeat(id, true))];
+  return order.flatMap(startsIn).map((f) => at(`${f.room}:foe:${f.index}`, "foe", f.room, f, {
+    facing: f.facing,
+    foe: f.waits ? { waits: true } : { ...(f.walks ? { walks: true as const } : {}), wait: f.wait, ...(f.end !== undefined ? { end: f.end } : {}) },
+  }));
 }

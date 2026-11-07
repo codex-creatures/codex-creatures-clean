@@ -14,7 +14,7 @@ import { layoutFloorplan, roomCentre, startProgress, waysOn, cutOffY, type Layou
 import { torchLit, shutPlan, rubbleOf, fallenSoFar, placeSconces, placeCandles, sconceInSight, TORCH_RADIUS } from "../lib/dungeon/torch";
 import { floorVariant, wallVariant, type Decor } from "../lib/dungeon/decor";
 import { spottedBy } from "../lib/dungeon/foes";
-import { placeLabDecor, placeFoeStarts, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
+import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
 import { byFire, type Campfire } from "../lib/dungeon/campfire";
 import { findPath, roomAt, walkable } from "../lib/dungeon/walk";
 import { walkRoom, walkInto } from "../lib/dungeon/walkRun";
@@ -59,14 +59,14 @@ export function walkSetup(run0: DungeonRun, decor = false) {
   const known = fromRuns(walk.known, plan.w * plan.h);
   const room = (id: string): Room | undefined => walkRoom(run, id);
   // Wall torches (lit as saved), candles (never by a campfire), decor and banners.
-  const placed = placementsOfWalk(walk, map, room);
+  const placed = placementsOfWalk(walk, map, dungeon, room);
   const { sconces, candles } = placed;
   const fires: Campfire[] = (walk.fires ?? []).map((f) => ({ ...f }));
   const lab = decor ? placeLabDecor(walk, plan, map, candles, sconces) : { decor: [] as Decor[], banners: [] as Pt[] };
   const decorItems: Decor[] = lab.decor, banners: Pt[] = lab.banners;
   // Every room, and a big room's second den; each fight room's foes where they start; the witch.
   const ids = roomIds(layout, map);
-  const foes = placeFoeStarts(walk, plan, map, dungeon, room), npcs = placed.witches;
+  const foes = foeStarts(placed, ids, room), npcs = placed.witches;
   // The things to tap, as the walk screen makes them (named as the phase-0 goldens name them).
   const things: ThingFact[] = thingsOf(layout, placed, ids, room, npcs, walk.spots, dungeon).map(({ key, room, x, y, def, state, open, solid, npc, inert, flag }) => ({
     key, room, x, y, what: WHAT[def] + (state === "open" && def !== "card-deck" ? "-open" : ""), open, solid,

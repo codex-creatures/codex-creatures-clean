@@ -5,17 +5,17 @@
 // walk screen (components/WalkView.tsx) and the phase-0 goldens
 // (tests/walkBaseline.ts) both call it, so they can't drift apart.
 //
-// The wall torches, candles, the card witch's start and where each room's
-// things stand are saved in the run (phase 2a: lib/world/placements.ts, made by
-// lib/world/compat/v0.ts). Still worked out from the run's seed each time, each
-// kind on its own stream: foes (seed + 303; saved by the foe fix, phase 2a′),
-// and the lab's decor (707) and banners (808; phase 2b). The saved ones had
-// 404 (the witch), 505 (wall torches) and 606 (candles).
+// The wall torches, candles, the card witch's start, where each room's things
+// stand and where its foes start are saved in the run (phases 2a and 2a′:
+// lib/world/placements.ts, made by lib/world/compat/v0.ts). Still worked out
+// from the run's seed each time: the lab's decor (seed + 707) and banners (808;
+// phase 2b). The saved ones had 303 (foes), 404 (the witch), 505 (wall
+// torches) and 606 (candles).
 
 import { roomCentre, floorsOf, stepRule, type Layout, type Progress } from "../dungeon/layout";
 import type { Sconce, Candle } from "../dungeon/torch";
 import { placeDecor, placeBanners, type Decor } from "../dungeon/decor";
-import { placeFoes, placeWaiter, spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
+import { spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
 import { waitsHere, type WalkRun } from "../dungeon/walkRun";
@@ -57,21 +57,25 @@ export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, c
   };
 }
 
-// Each fight room's foes, where they start, worked out again each time the
-// screen opens from the rooms still to beat: two dens in a room keep to an end
-// each; a boss waits at the top. (Beating a room moves the others' starts: the
-// foe fix, phase 2a′, saves them.)
-export function placeFoeStarts(walk: WalkRun, plan: Floorplan, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Foe[] {
-  const ids = roomIds(walk.layout, map);
-  const rng = seeded(walk.seed + 303);
-  const foes = ids.flatMap((id) => {
+// How many foes a room has saved starts for (lib/world/compat/v0.ts), while
+// it's still to beat: a waiting boss, or one for each of its enemies. A room
+// that will only fight later (an ambush, once it's sprung) has them already,
+// so its foes have somewhere to stand without anyone else's moving.
+export const fightsLater = (r: Room) => r.kind === "encampment" && r.variant === "ambush" && !r.sprung;
+export function foesToPlace(r: Room, dungeon: DungeonId): number {
+  if (r.done || !(hasFight(r) || fightsLater(r))) return 0;
+  return waitsHere(r, dungeon) ? 1 : r.enemies?.length ?? 0;
+}
+
+// Each fight room's foes, where they start: as saved in the run (lib/world/
+// placements.ts), for the rooms still to beat, in the rooms' order. The same
+// spots every time the screen opens, whatever's been beaten elsewhere (the foe
+// fix, phase 2a′, the user, 2026-11-07); where they wander to is this visit's only.
+export function foeStarts(placed: Placements, ids: string[], room: (id: string) => Room | undefined): Foe[] {
+  return ids.flatMap((id) => {
     const r = room(id);
-    if (!r || !hasFight(r) || r.done) return [];
-    if (waitsHere(r, dungeon)) return [placeWaiter(plan, id)];
-    const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
-    return r.enemies ? placeFoes(plan, id, r.enemies.length, rng, end) : [];
+    return r && hasFight(r) && !r.done ? placed.foes.filter((f) => f.room === id) : [];
   });
-  return foes;
 }
 
 // Something to tap, drawn where it lies: a room's chest, stash or treasure

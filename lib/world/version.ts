@@ -6,7 +6,8 @@
 //
 // 0 (or missing): placements worked out from the seed each time (before phase 2a).
 // 1: what's generated in the run saved in it (`placed`), placed by today's rules.
-export const WALK_V = 1;
+// 2: …with each fight room's foes' starts too (phase 2a′, the foe fix).
+export const WALK_V = 2;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

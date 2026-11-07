@@ -34,7 +34,7 @@ import type { DungeonMap } from "@/lib/dungeon/map";
 import { walkView, tapCell } from "@/lib/render/projection";
 import { buildScene } from "@/lib/render/scene";
 import { paintScene, type DarkLayer } from "@/lib/render/paint";
-import { placeLabDecor, placeFoeStarts, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, type Thing } from "@/lib/world/walkWorld";
 import { placementsOfWalk } from "@/lib/world/migrate";
 import { startWalk, restartLoop, stepWalk, walkState, type WalkState, type Warming } from "@/lib/world/walkSim";
 import { ROOM_ART } from "@/components/DungeonMapView";
@@ -85,12 +85,12 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const edges = useMemo(() => depthEdges(live), [live]);
   // Every room (and second den), and what's in them where it starts: the wall torches and the odd candle,
   // lit as you pass, the card witch walking about her room, and each room's things (the merchant and the
-  // librarian stand by their carts), as saved in the run (lib/world/placements.ts); each fight room's foes
-  // (lib/world/walkWorld.ts). The same places every time this opens.
+  // librarian stand by their carts), and each fight room's foes, as saved in the run (lib/world/placements.ts).
+  // The same places every time this opens.
   const ids = useMemo(() => roomIds(layout, map), [layout, map]);
-  const [placed] = useState(() => placementsOfWalk(walk, map, room));
+  const [placed] = useState(() => placementsOfWalk(walk, map, dungeon, room));
   // The walk going on (lib/world/walkSim.ts): you, what you've seen, the lights, foes, the alarm. Kept between frames.
-  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: placeFoeStarts(walk, plan, map, dungeon, room), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
+  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: foeStarts(placed, ids, room), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
   // 🚧 Decor (samples) and banners: where they lie, from the run's seed.
   const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, sim.candles, sim.sconces) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
   const decorItems = labDecor.decor, banners = labDecor.banners;
