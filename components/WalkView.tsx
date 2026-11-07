@@ -24,7 +24,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, roomCentre, scrollMarks, foreseen, cutOffY, enter, isOpen, stepRule, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
-import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
+import { advance, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { depthEdges, drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
 import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, placeSconces, canIgnite, sconceInSight, fireInSight, sconceGlow, torchReach, placeCandles, FLARE_WALK, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "@/lib/dungeon/torch";
 import { placeDecor, floorVariant, wallVariant, placeBanners, type Decor } from "@/lib/dungeon/decor";
@@ -34,6 +34,7 @@ import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/ru
 import { waitsHere, cageSpots, type WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
 import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_FLOOR_WORN, WALK_WALL_WORN, WALK_BANNER, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
+import { walkView, tapCell, artPxAcross, artPxDown } from "@/lib/render/projection";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
@@ -42,7 +43,6 @@ import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { PartyMember } from "@/components/PartySlots";
 
-export const WALK_ACROSS = 15;  // tiles across the screen (the user's pick, 2026-11-06)
 const REACH_OBJECT = 1.5;       // tiles: this close to a chest or a sack, it opens
 const TAP_OBJECT = 1;           // tiles: a tap this close to one counts as tapping it
 const FOE_PX = 22;              // a foe's height at 16px tiles (it scales with the zoom)
@@ -58,6 +58,9 @@ const HEAL_EVERY = 400;         // ms: health from a campfire is handed back thi
 const SHOW_EVERY = 100;         // ms: the campfire window updates this often
 const OUT_SHOW = 1500;          // ms the campfire window stays up after the fire's burnt down
 const TRAIL_MAX = 3000;         // tiles of your trail kept for the scroll
+
+// The kit's and the hero's art pixels (projection.ts ArtDensity): the kit's rows squashed into a square cell.
+const KIT_DENSITY = { perU: KIT_PX, rowsPerU: KIT_ROW }, HERO_DENSITY = { perU: KIT_PX };
 
 const COLOURS = { rock: "#07060b", goal: "#f1d9a0", foe: "#b0302a", rubble: ["#5b5560", "#6f6872", "#48434d"], dust: "200, 190, 175" };
 const DARK_RGB = [6, 5, 12];
@@ -427,16 +430,16 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       // ── Drawing ──
       const ratio = window.devicePixelRatio || 1;
       const cw = el.clientWidth, ch = el.clientHeight;
-      const T = cw / WALK_ACROSS, scale = T / 16;
       if (el.width !== Math.round(cw * ratio)) el.width = Math.round(cw * ratio);
       if (el.height !== Math.round(ch * ratio)) el.height = Math.round(ch * ratio);
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      const cam = cameraAt(plan, me.current, { w: cw / T, h: ch / T });
+      // The camera on you (lib/render/projection.ts), shaken a moment when a tunnel falls in.
+      const still = walkView(plan, me.current, cw, ch), scale = still.scale;
       const shake = (now - shakeAt.current) / 1000 < SHAKE_TIME ? SHAKE_PX * scale * (1 - (now - shakeAt.current) / 1000 / SHAKE_TIME) : 0;
       const jx = shake ? (Math.random() * 2 - 1) * shake : 0, jy = shake ? (Math.random() * 2 - 1) * shake : 0;
-      const sx = (x: number) => Math.round((x - cam.x) * T + jx), sy = (y: number) => Math.round((y - cam.y) * T + jy);
-      const x0 = Math.floor(cam.x) - 1, x1 = Math.ceil(cam.x + cw / T) + 1, y0 = Math.floor(cam.y) - 1, y1 = Math.ceil(cam.y + ch / T) + 1;
+      const view = shake ? walkView(plan, me.current, cw, ch, { x: jx, y: jy }) : still;
+      const { T, sx, sy, midX, midY, footX, footY, x0, x1, y0, y1 } = view;
       ctx.fillStyle = COLOURS.rock;
       ctx.fillRect(0, 0, cw, ch);
       // The kit (lib/sprites/walk.ts): a kit pixel is T / KIT_PX across and T / KIT_ROW down.
@@ -444,7 +447,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       const kit = Object.values(kitImg).every(Boolean) ? (kitImg as Record<keyof typeof kitImg, HTMLImageElement>) : null;
       const worn = WALK_FLOOR_WORN.map(image).filter((i): i is HTMLImageElement => !!i);
       const wornWalls = WALK_WALL_WORN.map(image).filter((i): i is HTMLImageElement => !!i);
-      const vy = T / KIT_ROW, side = Math.round((KIT_SIDE * T) / KIT_PX);
+      const vy = artPxDown(view, KIT_DENSITY), side = Math.round(KIT_SIDE * artPxAcross(view, KIT_DENSITY));
       const faceAbove = (x: number, y: number) => {
         let rows = 0;
         while (rows < 3 && at(x, y - rows - 1) === ROCK) rows++;
@@ -488,7 +491,6 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       // The way you'll walk: a dotted line from you, shrinking as you go.
       const end = me.current.path[me.current.path.length - 1];
       if (end) {
-        const midX = (v: number) => (v - cam.x + 0.5) * T + jx, midY = (v: number) => (v - cam.y + 0.5) * T + jy;
         ctx.strokeStyle = COLOURS.goal;
         ctx.lineWidth = 2;
         ctx.setLineDash([3 * scale, 4 * scale]);
@@ -500,7 +502,6 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         ctx.strokeRect(sx(end.x) + 3 * scale, sy(end.y) + 3 * scale, T - 6 * scale, T - 6 * scale);
       }
       // Everything standing up, lowest on screen last: things to loot, rubble, foes, you, south walls' tops.
-      const footX = (x: number) => (x - cam.x + 0.5) * T + jx, footY = (y: number) => (y - cam.y + 0.5) * T + 4 * scale + jy;
       const standing: { x: number; y: number; draw: () => void }[] = [];
       const shown = things().filter((t) => knownAt(t.x, t.y) && (!t.npc || litAt(t.x, t.y) || t.solid));
       for (const t of shown) {
@@ -585,7 +586,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         if (!heroImg) return;
         const moving = me.current.path.length > 0 && !busy;
         const col = WALK_HERO.frames > 0 ? walkFrame(walked.current, moving, WALK_HERO.frames) + 1 : 0;
-        const row = FACINGS.indexOf(facing.current), px = T / KIT_PX, size = WALK_HERO.cell * px;
+        const row = FACINGS.indexOf(facing.current), px = artPxAcross(view, HERO_DENSITY), size = WALK_HERO.cell * px;
         ctx.drawImage(heroImg, col * WALK_HERO.cell, row * WALK_HERO.cell, WALK_HERO.cell, WALK_HERO.cell,
           Math.round(footX(me.current.x) - size / 2), Math.round(footY(me.current.y) - WALK_HERO.feet * px), size, size);
       } });
@@ -827,9 +828,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (busy || fired.current > 0 || alarm.current) return;
     const el = e.currentTarget, box = el.getBoundingClientRect();
-    const T = el.clientWidth / WALK_ACROSS;
-    const cam = cameraAt(plan, me.current, { w: el.clientWidth / T, h: el.clientHeight / T });
-    const spot = { x: Math.floor(cam.x + (e.clientX - box.left) / T), y: Math.floor(cam.y + (e.clientY - box.top) / T) };
+    const spot = tapCell(walkView(plan, me.current, el.clientWidth, el.clientHeight), e.clientX - box.left, e.clientY - box.top);
     const can = rule(progressRef.current);
     // A tap on (or by) something to loot that you've seen: walk up beside it, and it opens.
     const t = things().find((x) => tapped(x, spot) && known.current[x.y * plan.w + x.x]);
