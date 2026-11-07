@@ -1361,6 +1361,9 @@ codex, the altar for a Code Cache) waits until there is.
 
 ## 11. Art and PixelLab
 
+- 📌 **The walkable world's art will follow a standard** (§13, [world-spec.md](world-spec.md) §6): the
+  shared projection, a palette per setting, templates and report-only checks. Until it's agreed,
+  don't make more walkable-world art.
 - ✅ All creature, item, room, NPC and prop art is from **PixelLab** (the `pixellab` MCP in Claude
   Code, set up with its key on each computer, never in the repo). Files are in `public/sprites/`, with
   IDs in `public/sprites/PIXELLAB.md`.
@@ -1566,3 +1569,53 @@ account, kept entirely apart from Vouchee.
     for playtesting with friends; server checks come later.
   - **Saves and slots:** settled, see Cloud saves above (one online slot; the cloud wins).
   - Shared barcode lists (§2) become a real risk once the registry is global.
+
+## 13. The explorable world: architecture
+
+❓ **Proposed 2026-11-07, waiting for the user's sign-off; nothing built yet.** The full detail
+(units, object definitions, the projection, occupancy, the art pipeline, saves and the phases with
+their acceptance tests) is in **[world-spec.md](world-spec.md)**. Don't start the work until the
+user has agreed it.
+
+**Why:** generated art kept coming out inconsistent, and each new thing in the walkable rooms was
+patched into several placers. Three art conventions share one screen today: the kit's pixels
+show 1⅓× taller than wide, characters are 32 px a cell, and props are each their own size. Room
+contents are re-worked out from the run's seed, so code changes can move things in runs already
+under way. The user wants foundations that take hundreds of assets, creatures and settings
+without rebuilding.
+
+- ✅ **The camera** (the user, 2026-11-07): a fixed three-quarter view from the south, no rotation,
+  for this game. But **gameplay never depends on it**: positions, sizes, collision, sight, light,
+  placement and saves are in world units, and a different renderer (even 3D one day) could draw
+  the same world.
+- 📌 **Layers:** world data and rules in `lib/world/` (and `lib/dungeon/`), a pure scene builder
+  and the one shared projection in `lib/render/`, and WalkView only drawing and taking taps. The
+  game logic now in WalkView moves out, as a targeted move, not a rewrite.
+- 📌 **World units:** a world unit (u), with the gameplay cell `CELL_U` u across (1 now). No
+  real-world scale is assumed. Every object has a physical **footprint**, a **world height**,
+  **visual bounds** (art may reach past its footprint) and an **anchor**. Creatures get size
+  classes.
+- 📌 **Object definitions:** one registry for every kind of thing: footprint, height, where it
+  attaches, collision, blocks sight and light, gives light, interaction points, drawing layer and
+  art.
+- 📌 **Placement:** separate kinds of space (blocking floor, walk-over floor, wall slots,
+  overhead). Doors, required paths, progression points and access to everything you use are
+  reserved, rather than every floor tile having to be reachable. Passes run in a fixed order,
+  each with its own random numbers; hand-made stamps sit alongside them.
+- 📌 **Saves:** walkable runs get a version. New runs store what was placed. Older runs are
+  migrated once, with frozen copies of today's placers, so they look and play the same. Fixtures
+  of real saved runs are tested in every phase.
+- 📌 **Art:** a spec per setting (camera from the projection, a palette, evenly lit art, PixelLab
+  settings per kind of asset), templates drawn from the same projection the game uses, and
+  report-only checks. **Checks never recolour art, and a brightness check can only hint at
+  baked-in light.** Approval is always in the game.
+- 📌 **Phases:**
+  - 0: golden tests of today's game;
+  - 1: units, projection, definitions and the logic out of WalkView, reproducing today exactly
+    (milestone 1);
+  - 2: occupancy, placement passes, saved placements, versions;
+  - 3: the art standard and tools;
+  - 4: the first assets to it.
+- **The reskin samples** (2026-11-07: three kits and two pillars, judged off-brief) are kept
+  only to compare against (`public/sprites/walk/samples/`, `docs/ideas/reskin-samples-2026-11-07.png`).
+  Nothing uses them.
