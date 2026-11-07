@@ -28,7 +28,7 @@ export default function DailyPopup({ ready, now }: { ready: boolean; now: number
   }, [ready, day]);
   if (!open) return null;
   return (
-    <div onClick={() => setOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 40, display: "flex", justifyContent: "center", alignItems: "flex-start", paddingTop: "12cqh", background: "rgba(0, 0, 0, 0.3)" }}>
+    <div onClick={() => setOpen(null)} style={{ position: "fixed", inset: 0, zIndex: 40, display: "flex", justifyContent: "center", alignItems: "center", background: "rgba(0, 0, 0, 0.3)" }}>
       <div className="stone-panel" style={{ width: "min(320px, 86cqw)", padding: 10 }}>
         <div className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0", marginBottom: 6 }}>📜 Today&apos;s quests</div>
         {open.map(({ q, i, done, progress }) => (
