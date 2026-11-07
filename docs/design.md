@@ -1603,7 +1603,9 @@ without rebuilding.
   each with its own random numbers; hand-made stamps sit alongside them.
 - 📌 **Saves:** walkable runs get a version, and what's placed is saved into the run, starting in
   phase 2 (first, while today's placers are still live). Migrations are idempotent, and a run
-  with no `dungeon` is the Cyclops's, never the Encampment's. The old placers are kept only until a sunset after
+  with no `dungeon` is the Cyclops's, never the Encampment's. Old runs convert through one small,
+  isolated, tested converter with **no time limit**. It goes only on evidence that no
+  supported save needs it, or on the user's explicit decision. The old placers are kept only until a sunset after
   phase 2; a run opened after that gets new placements from its saved layout and rooms, its
   progress unchanged. Fixtures of saved runs are tested in every phase.
 - 📌 **Art:** a spec per setting (camera from the projection, a palette, evenly lit art, PixelLab
