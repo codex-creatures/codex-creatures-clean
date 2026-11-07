@@ -141,6 +141,7 @@ export default function DungeonPage() {
   function openedRun(saved: DungeonSave): DungeonSave {
     if (!saved.run?.walk) return saved;
     const m = withPlacements(saved.run);
+    if (m.outcome === "damaged") return { ...saved, held: "damaged" };
     if (m.outcome !== "migrated" && m.outcome !== "repaired") return saved;
     const next = { ...saved, run: m.run };
     saveDungeon(next);
@@ -1168,6 +1169,17 @@ export default function DungeonPage() {
   // ── Screens ───────────────────────────────────────────────────────
   if (!lab || !game.hydrated) {
     return <DenFrame title="The Labyrinth" icon="🌀"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+  }
+
+  // A run this copy of the game can't play (saved by a newer version, or broken): left exactly as it is.
+  if (lab.held) {
+    return (
+      <DenFrame title="The Labyrinth" icon="🌀" gold={game.gold}>
+        <p className="pixel-font" style={{ color: "#f1d9a0", textAlign: "center", marginTop: "30cqh", fontSize: 16, padding: "0 16px" }}>
+          {lab.held === "newer" ? "This run was saved by a newer version of the game. Update the game to carry on." : "This run can't be opened. It's kept as it is."}
+        </p>
+      </DenFrame>
+    );
   }
 
   // fill: the content gets the whole screen (a battle); dock: built into the bottom of the screen.

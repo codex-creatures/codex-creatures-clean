@@ -44,6 +44,7 @@ import { pickRarity, pickCreatureId } from "../items/gameHelpers";
 import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, RACE_CODEX_MOVES } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
+import { unsupportedRun } from "../world/version";
 import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
 export const PARTY_SIZE = 5;
@@ -1217,7 +1218,10 @@ export function soak(meta: DungeonMeta, now = Date.now()): DungeonMeta {
 // How long until a creature at this share of HP is back to full.
 export const hoursToFull = (meta: DungeonMeta, hp: number) => Math.max(0, (1 - hp) / poolLevel(meta).healPerHour);
 
-export type DungeonSave = { meta: DungeonMeta; run: DungeonRun | null };
+// held: the run can't be played here, so it's kept exactly as stored (docs/world-spec.md §7, forward
+// compatibility): "newer", saved by a newer world version (lib/world/version.ts); "damaged", its
+// placements can't be made (lib/world/migrate.ts). Never saved itself.
+export type DungeonSave = { meta: DungeonMeta; run: DungeonRun | null; held?: "newer" | "damaged" };
 
 // Part of the player's one save (lib/save.ts), in its own field.
 const SAVE_FIELD = "labyrinth";
@@ -1231,6 +1235,8 @@ export function loadDungeon(): DungeonSave {
     const loaded: DungeonSave = { meta: { ...EMPTY.meta, ...parsed.meta }, run: parsed.run ?? null };
     const soaked = soak(loaded.meta);
     const save: DungeonSave = { ...loaded, meta: HEAL_AT_HOME ? { ...soaked, injuries: {} } : soaked };
+    // A run from a newer version of the game: handed back as stored, not to be played or ended here.
+    if (unsupportedRun(save.run)) return { ...save, held: "newer" };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
     if (save.run && !save.run.map?.start) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
     return save;
@@ -1239,8 +1245,13 @@ export function loadDungeon(): DungeonSave {
   }
 }
 
+// Never over a run from a newer version of the game: whatever this copy of the game
+// does, the stored run is kept exactly as it is, and only the rest is written.
 export function saveDungeon(save: DungeonSave) {
-  writeSaveField(SAVE_FIELD, save);
+  const next: DungeonSave = { ...save };
+  delete next.held;
+  const stored = (readSave()[SAVE_FIELD] as Partial<DungeonSave> | undefined)?.run;
+  writeSaveField(SAVE_FIELD, unsupportedRun(stored) ? { ...next, run: stored } : next);
 }
 
 // Until you first beat the Cyclops, everyone comes home from a run at full
