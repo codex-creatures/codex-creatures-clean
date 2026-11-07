@@ -43,9 +43,19 @@
 
 import { CAMP_ROUTE, LARGE_MIX, rollRoomKind, type RoomKind, type DungeonId } from "./run";
 import { linkKey, fillCamp, fillRooms, markRooms, LARGE_KNOWN, type DungeonMap, type MapNode, type MapSpec } from "./map";
-import { FLOOR, TUNNEL, DOOR, checkFloorplan, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
+import { furnish } from "./interior";
+import { FLOOR, ROCK, TUNNEL, DOOR, checkFloorplan, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
 
-export const BLOCK = 3;            // tiles across a block
+// Tiles across a block. The user (2026-11-07: rooms felt too large and empty,
+// walking them a chore): the walkable Encampment's are 2 (WALK_SPEC.block),
+// so every room, gap and tunnel is two thirds of what it was (3), while the
+// layout's rules, in blocks, stay as they were. The walkable Labyrinth keeps 3
+// for now: at 2, 30-room layouts mostly fail to roll (24 rooms roll in ~2 s).
+// Each layout keeps the size it was rolled at (Layout.block; older saved
+// runs have none and were 3), so a run in progress draws as it did.
+export const BLOCK = 2;
+export const OLD_BLOCK = 3;
+export const blockOf = (l: { block?: number }) => l.block ?? OLD_BLOCK;
 export const LAYOUT_W = 38;        // blocks across the rooms (about 4 side by side in the middle), an EDGE more each side
 export const EDGE = 2;             // blocks of rock round the outside
 export type Shape = { name: string; w: number; h: number; weight: number; arm?: number }; // arm: a dog-leg's thickness
@@ -70,12 +80,16 @@ export const PACK_SLACK = 1;      // blocks higher a room may go, to sit over mo
 export const SIDE_SHARE = 3;       // blocks of wall the rooms beside the boss share with it
 export const BOSS_DRIFT = 1;       // blocks the boss's room may sit off the middle
 export const START_BESIDE = 1;     // blocks of rock beside the entrance, so the first rooms sit over it
-export const MIN_OVERLAP = 2;      // blocks two rooms' facing walls share, for a tunnel between them
+// Blocks two rooms' facing walls share, for a tunnel between them: enough for
+// a tunnel's width of floor once both walls are off (2 at 3-tile blocks, 3 at 2).
+export function minOverlap(block: number) { return Math.ceil((TUNNEL_W + 2) / block); }
+export const MIN_OVERLAP = 2;     // (minOverlap(OLD_BLOCK))
 export const DOOR_INSET = 0;       // tiles a door sits in from the corner of a floor
 export const MAX_REACH = 6;        // blocks of rock a tunnel may cross
 export const TUNNEL_W = 3;         // tiles
 export const TWIN_CHANCE = 0.3;    // a second tunnel up between the same two rooms, where one fits
-export const TWIN_PILLAR = 9;      // tiles of rock between twins, at least (3 blocks: not side by side)
+export const TWIN_PILLAR = 9;      // tiles of rock between twins, at least (3 blocks: not side by side) at 3-tile blocks
+export const twinPillar = (block: number) => 3 * block;
 export const UP_DROP_CHANCE = 0.2;   // a tunnel up that could go, goes
 export const SIDE_DROP_CHANCE = 0.6;  // …and a sideways one
 export const MAX_TUNNELS = 5;      // per room
@@ -87,20 +101,22 @@ export const LAYOUT_REROLLS = 3000;
 // The walkable Encampment (the user, 2026-11-05): 19 rooms besides the entrance
 // and the boss's (the scroll map's has 15), so ROUTES separate ways of
 // CAMP_ROUTE rooms or more fit (3 × 6 rooms between = 18).
-export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0 };
+export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0, block: BLOCK };
 // The walkable Labyrinth (the Cyclops; in /lab/newrun only, for now). 🧪
 // Provisional, smaller than the scroll map's (36 rooms, 15 to the lair): with
 // ROUTES separate ways, 15 rooms each needs 44+ rooms, and those layouts take
 // ~15 s to roll and mostly fail. 30 rooms with 10 to the lair roll in ~1 s.
-export const WALK_LABYRINTH = { rooms: 30, minRoute: 10, large: 1 };
+export const WALK_LABYRINTH = { rooms: 30, minRoute: 10, large: 1, block: OLD_BLOCK };
 
 export type Corner = "ne" | "nw" | "se" | "sw";
 const CORNERS: Corner[] = ["ne", "nw", "se", "sw"];
 // Blocks, y down. cut and arm: a dog-leg's missing corner and thickness.
-export type LayoutRoom = { id: string; shape: string; x: number; y: number; w: number; h: number; cut?: Corner; arm?: number };
+// block: tiles across a block (blockOf: missing in older saved runs, 3).
+// inner: solid stone built inside it, in tiles (interior.ts; none in older runs).
+export type LayoutRoom = { id: string; shape: string; x: number; y: number; w: number; h: number; cut?: Corner; arm?: number; block?: number; inner?: Rect[] };
 // up: `a` is the room below, `b` the one above (one way, up). Sideways: `a` on the left.
 export type Tunnel = { key: string; a: string; b: string; up: boolean; rect: Rect }; // rect in tiles, door rows included
-export type Layout = { w: number; h: number; start: string; boss: string; rooms: Record<string, LayoutRoom>; tunnels: Tunnel[] };
+export type Layout = { w: number; h: number; start: string; boss: string; rooms: Record<string, LayoutRoom>; tunnels: Tunnel[]; block?: number };
 
 type Rng = () => number;
 const between = (rng: Rng, [lo, hi]: number[]) => lo + Math.floor(rng() * (hi - lo + 1));
@@ -129,7 +145,9 @@ function weighted(rng: Rng, shapes: Shape[]): Shape[] {
 // filled, and each room goes GAP_BLOCKS above what's under it and clear of
 // its neighbours by a block or more.
 // large: how many of the rooms are LARGE_SHAPE, spread up the middle of the drop.
-export function rollRooms(count: number, rng: Rng, large = 0): Layout | null {
+// block: tiles across a block (its rooms are drawn this size; see BLOCK).
+export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK): Layout | null {
+  const MIN_OVERLAP = minOverlap(block);
   const bigAt = new Set(Array.from({ length: large }, (_, k) => 4 + Math.floor(((count - 6) * (k + 1)) / (large + 1))));
   const W = LAYOUT_W;
   const placed: { id: string; shape: Shape; x: number; b: number; cut?: Corner }[] = []; // b: blocks up from the bottom
@@ -222,9 +240,9 @@ export function rollRooms(count: number, rng: Rng, large = 0): Layout | null {
   const rooms: Record<string, LayoutRoom> = {};
   for (const p of placed) {
     rooms[p.id] = { id: p.id, shape: p.shape.name, x: p.x + EDGE, y: H - p.b - p.shape.h + EDGE, w: p.shape.w, h: p.shape.h,
-      ...(p.cut ? { cut: p.cut, arm: p.shape.arm } : {}) };
+      ...(p.cut ? { cut: p.cut, arm: p.shape.arm } : {}), ...(block !== OLD_BLOCK ? { block } : {}) };
   }
-  return { w: W + 2 * EDGE, h: H + 2 * EDGE, start: "start", boss: "boss", rooms, tunnels: [] };
+  return { w: W + 2 * EDGE, h: H + 2 * EDGE, start: "start", boss: "boss", rooms, tunnels: [], ...(block !== OLD_BLOCK ? { block } : {}) };
 }
 
 // A room as rectangles, in blocks: its box, or a dog-leg's two arms (the one
@@ -236,7 +254,7 @@ function partsOf(r: LayoutRoom): Rect[] {
   return [across, upDown];
 }
 // In tiles: its footprints (walls included), and its floors (less a wall all round).
-const footprintsOf = (r: LayoutRoom): Rect[] => partsOf(r).map((p) => ({ x: p.x * BLOCK, y: p.y * BLOCK, w: p.w * BLOCK, h: p.h * BLOCK }));
+const footprintsOf = (r: LayoutRoom): Rect[] => { const B = blockOf(r); return partsOf(r).map((p) => ({ x: p.x * B, y: p.y * B, w: p.w * B, h: p.h * B })); };
 export const floorsOf = (r: LayoutRoom): Rect[] => footprintsOf(r).map((p) => ({ x: p.x + 1, y: p.y + 1, w: p.w - 2, h: p.h - 2 }));
 // A floor tile in the middle of a room (a dog-leg's: where its arms meet).
 export function roomCentre(r: LayoutRoom): Pt {
@@ -264,7 +282,7 @@ export function tunnelOptions(layout: Layout, rng: Rng): Tunnel[] {
     const inner = up ? { ...rect, y: rect.y + 1, h: rect.h - 2 } : { ...rect, x: rect.x + 1, w: rect.w - 2 };
     return prints.every((p) => !overlaps(inner, p)) && out.every((t) => !overlaps(rect, t.rect, 1));
   };
-  const reach = MAX_REACH * BLOCK + 2; // tiles, its two door rows included
+  const reach = MAX_REACH * blockOf(layout) + 2; // tiles, its two door rows included
   for (const a of rooms) for (const b of rooms) {
     if (a.id >= b.id) continue;
     const spots: Rect[] = [];
@@ -294,7 +312,7 @@ export function tunnelOptions(layout: Layout, rng: Rng): Tunnel[] {
   // The twins, once every pair has its first (so they don't crowd out other rooms' tunnels).
   for (const { first, spots } of pairs) {
     if (!first.up) continue;
-    const apart = (s: Rect) => Math.abs(s.x - first.rect.x) >= TUNNEL_W + TWIN_PILLAR;
+    const apart = (s: Rect) => Math.abs(s.x - first.rect.x) >= TUNNEL_W + twinPillar(blockOf(layout));
     const twin = spots.find((s) => apart(s) && fits(s, first.up));
     if (twin) out.push({ ...first, key: `${first.key}${TWIN}`, rect: twin });
   }
@@ -485,7 +503,7 @@ export function layoutMap(layout: Layout): DungeonMap {
     nodes[r.id] = { id: r.id, ...roomCentre(r), kind, links: [] };
   }
   for (const t of layout.tunnels) { nodes[t.a].links.push(t.b); nodes[t.b].links.push(t.a); }
-  return { h: layout.h * BLOCK, start: layout.start, boss: layout.boss, nodes };
+  return { h: layout.h * blockOf(layout), start: layout.start, boss: layout.boss, nodes };
 }
 
 // Gen 3, what's in each room: the Encampment's mix as it is in the live game
@@ -537,11 +555,11 @@ export function labyrinthMap(layout: Layout, firstRun: boolean, dungeon: Dungeon
 export const SCROLL_LOOKS = 2;
 // Where a cut-off is, in tiles down: the bottom of the room you came up into.
 // (Kept by the game, never drawn on the scroll: the user, 2026-11-06.)
-export const cutOffY = (p: Progress) => p.line * BLOCK;
+export const cutOffY = (p: Progress, layout: { block?: number }) => p.line * blockOf(layout);
 export type ScrollMark = { id: string; x: number; y: number; kind: RoomKind | null; here: boolean }; // x, y: 0–1 across and down
 export function scrollMarks(map: DungeonMap, layout: Layout, been: Iterable<string>, here: string | null, foreseen: ReadonlySet<string> = new Set()): ScrollMark[] {
   const visited = new Set([...been, ...foreseen]);
-  const w = layout.w * BLOCK, h = layout.h * BLOCK;
+  const w = layout.w * blockOf(layout), h = layout.h * blockOf(layout);
   // (A big room's second den has no mark of its own: walkRun.ts.)
   return Object.values(map.nodes).filter((n) => layout.rooms[n.id]).map((n) => {
     const knows = visited.has(n.id) || (!n.hidden && (n.known || n.id === map.start || n.id === map.boss));
@@ -565,12 +583,14 @@ export function foreseen(map: DungeonMap, layout: Layout, lit: string[] = [], se
 // The layout as tiles to walk on (floorplan.ts's Floorplan, so walk.ts and
 // checkFloorplan work on it). A tunnel's end rows are doors in its rooms' walls.
 export function layoutFloorplan(layout: Layout): Floorplan {
-  const w = layout.w * BLOCK, h = layout.h * BLOCK;
+  const w = layout.w * blockOf(layout), h = layout.h * blockOf(layout);
   const tiles = new Uint8Array(w * h);
   const rooms: Record<string, Rect[]> = {};
   for (const r of Object.values(layout.rooms)) {
     for (const f of (rooms[r.id] = floorsOf(r))) for (let y = f.y; y < f.y + f.h; y++) tiles.fill(FLOOR, y * w + f.x, y * w + f.x + f.w);
   }
+  // What's built inside the rooms: stone, like the walls (interior.ts).
+  for (const r of Object.values(layout.rooms)) for (const q of r.inner ?? []) for (let y = q.y; y < q.y + q.h; y++) tiles.fill(ROCK, y * w + q.x, y * w + q.x + q.w);
   const doors: Door[] = [];
   const tunnels: Record<string, Pt[]> = {};
   for (const t of layout.tunnels) {
@@ -591,14 +611,16 @@ export function layoutFloorplan(layout: Layout): Floorplan {
 // A sound layout for a dungeon (spec.rooms rooms besides the entrance and
 // the boss, the shortest route spec.minRoute rooms or more). Rolls again
 // until one comes out sound, its tiles too (checkFloorplan).
-export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute"> & { large?: number }, rng: Rng = Math.random): Layout {
+export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute"> & { large?: number; block?: number }, rng: Rng = Math.random): Layout {
   for (let i = 0; i < LAYOUT_REROLLS; i++) {
-    const rooms = rollRooms(spec.rooms, rng, spec.large ?? 0);
+    const rooms = rollRooms(spec.rooms, rng, spec.large ?? 0, spec.block ?? OLD_BLOCK);
     if (!rooms) continue;
     const tunnels = pickTunnels(rooms, tunnelOptions(rooms, rng), spec.minRoute, rng);
     if (!tunnels) continue;
     const layout = { ...rooms, tunnels };
-    if (checkFloorplan(layoutFloorplan(layout), layoutMap(layout)).length === 0) return layout;
+    // Sound: then its rooms' insides are built (pillars, walls, alcoves: interior.ts).
+    const fp = layoutFloorplan(layout);
+    if (checkFloorplan(fp, layoutMap(layout)).length === 0) return furnish(layout, fp, roomCentre, rng);
   }
   throw new Error("layout: none came out sound");
 }

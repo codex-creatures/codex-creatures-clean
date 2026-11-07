@@ -219,7 +219,7 @@ export function placeCandles(fp: Floorplan, centres: Record<string, Pt>, skip: s
     const spots: Pt[] = [];
     for (const r of fp.rooms[id]) for (let y = r.y + 2; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
       const d = Math.hypot(x - mid.x, y - mid.y);
-      if (d < CANDLE_NEAR[0] || d > CANDLE_NEAR[1] || spots.some((s) => s.x === x && s.y === y)) continue;
+      if (d < CANDLE_NEAR[0] || d > CANDLE_NEAR[1] || fp.tiles[y * fp.w + x] === ROCK || spots.some((s) => s.x === x && s.y === y)) continue;
       if (doors.some((q) => Math.hypot(q.x - x, q.y - y) < CANDLE_CLEAR)) continue;
       spots.push({ x, y });
     }

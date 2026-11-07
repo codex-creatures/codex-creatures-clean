@@ -337,7 +337,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         const next = enter(layout, progressRef.current, now_in);
         if (next !== progressRef.current) {
           if (next.line !== progressRef.current.line) {
-            cuts.current.push(cutOffY(next));
+            cuts.current.push(cutOffY(next, layout));
             const was = new Set(rubbleOf(plan, layout, progressRef.current).map((r) => r.key));
             for (const r of rubbleOf(plan, layout, next)) if (!was.has(r.key) && r.tiles.some((q) => known.current[q.y * w + q.x])) falls.current.set(r.key, now);
             if (falls.current.size > 0) shakeAt.current = now;

@@ -710,8 +710,15 @@ How it came about, round by round: history.md.
   1. ✅ **Layout, in layers** (the user's sketches, 2026-11-05: [room 1](ideas/room-1.png),
      [gen roll 1–4](ideas/gen-roll-1.png); `lib/dungeon/layout.ts`, walked in `/lab/walk`). The
      layout comes first and the scroll is made from it (`layoutMap`), not the other way round.
-     - **Sizes in blocks** of 3×3 tiles (`BLOCK`): room sizes, places and gaps are all whole
-       blocks. A size is the footprint, walls included. The user's starting sizes, then made a bit
+     - **Sizes in blocks** (`BLOCK`): room sizes, places and gaps are all whole blocks. A block
+       was 3×3 tiles; **the walkable Encampment's are now 2×2** (the user, 2026-11-07: rooms felt
+       too large and empty, walking them a chore; `WALK_SPEC.block`), so every room, gap and
+       tunnel is two thirds the size while the layout's rules (in blocks) stay the same, and most
+       rooms are about a screen across. Tunnels stay 3 tiles wide, so rooms need 3 blocks of
+       wall in common for one (`minOverlap`). Shrinking the shapes instead was tried and broke
+       the rules (no layout came out sound). **The walkable Labyrinth keeps 3** for now: at 2,
+       30-room layouts mostly fail to roll (24 rooms roll in ~2 s), the user's call. Each layout
+       keeps its block size (`Layout.block`; runs saved before have none, and were 3). A size is the footprint, walls included. The user's starting sizes, then made a bit
        wider (the user, 2026-11-05: bigger rooms will help later, some of them empty): small 6×5,
        wide 12×4, tall 5×10, big 10×6, the entrance 16×4, the boss's room 12×8 (`SHAPES`;
        provisional). And the **dog-leg** (the user, 2026-11-05): an L, an 11×4 and a 4×9 joined at
@@ -1014,6 +1021,17 @@ How it came about, round by round: history.md.
      - **Campfire art** (the user, 2026-11-06): PixelLab, logs stacked in a teepee in a ring of
        stones, burning, and the same burnt out; a flickering glow and a tongue of flame are drawn
        over it, bigger the more it has left.
+     - **Rooms' insides** (the user, 2026-11-07: "fill the big rooms with structure, not
+       objects"; `lib/dungeon/interior.ts`, rolled with the layout, `LayoutRoom.inner`): solid
+       stone built in a room's floor, drawn like the walls (brick face, mossy cap), blocking
+       light and sight, walked round. By shape (`STYLES`, 🧪): wide and tall rooms a colonnade
+       (two rows of 2×2 pillars, a lane between) or alcoves (short stubs out from the long walls);
+       big and large rooms a grid of pillars, a dividing wall part way across, or alcoves;
+       dog-legs alcoves or pillars; the boss's room pillars down both sides with its middle aisle
+       clear (`AISLE`); small rooms and the entrance nothing. Always kept clear: a margin inside
+       the walls (wall torches, cages), the doors, the room's middle (its chest, pool or stash),
+       and every floor tile still reachable from every door; a piece that would break any of
+       that is left out. About a third of rooms get something.
      - **Candles** (the user, 2026-11-06: "the odd candle in the middle-ish of the rooms,
        unlit"; torch.ts `placeCandles`): `CANDLE_CHANCE` 35% of rooms 🧪 (never the entrance or
        the boss's room) have one on the floor 2–5 tiles from the middle, unlit. Walk near it (in

@@ -61,7 +61,7 @@ export function placeDecor(fp: Floorplan, kinds: Record<string, RoomKind>, centr
     const mid = centres[id], doors = fp.doors.filter((d) => d.room === id);
     const floor: Pt[] = [];
     for (const r of fp.rooms[id]) for (let y = r.y + 1; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
-      if (!floor.some((q) => q.x === x && q.y === y)) floor.push({ x, y });
+      if (fp.tiles[y * fp.w + x] === FLOOR && !floor.some((q) => q.x === x && q.y === y)) floor.push({ x, y });
     }
     const free = (q: Pt) => Math.hypot(q.x - mid.x, q.y - mid.y) >= DECOR_CLEAR
       && doors.every((d) => Math.hypot(d.x - q.x, d.y - q.y) >= DOOR_CLEAR)

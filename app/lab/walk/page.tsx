@@ -406,7 +406,7 @@ export default function WalkLab() {
         const next = enter(layout, progressRef.current, room);
         if (next !== progressRef.current) {
           if (next.line !== progressRef.current.line) {
-            cuts.current.push(cutOffY(next));
+            cuts.current.push(cutOffY(next, layout));
             // The tunnels you'd seen that close now fall in (the one you came up, at least).
             const was = new Set(rubbleOf(plan, layout, progressRef.current).map((r) => r.key));
             for (const r of rubbleOf(plan, layout, next)) if (!was.has(r.key) && r.tiles.some((q) => known.current[q.y * w + q.x])) falls.current.set(r.key, now);

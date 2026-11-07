@@ -71,7 +71,9 @@ describe("tile art", () => {
     const misses: string[] = [];
     let cells = 0;
     for (const seed of [1, 2, 3]) {
-      const fp = layoutFloorplan(rollLayout(WALK_SPEC, seeded(seed)));
+      // (The old sample sheets, /lab/walk only, predate rooms' insides: interior.ts. They're left out.)
+      const l = rollLayout(WALK_SPEC, seeded(seed));
+      const fp = layoutFloorplan({ ...l, rooms: Object.fromEntries(Object.entries(l.rooms).map(([id, r]) => [id, { ...r, inner: undefined }])) });
       const c = cornerTerrain(fp);
       const at = (x: number, y: number) => (x < 0 || y < 0 || x >= fp.w || y >= fp.h ? UPPER : c[y * fp.w + x]);
       const art = cellArt(fp);

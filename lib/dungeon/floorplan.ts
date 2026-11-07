@@ -38,7 +38,8 @@ export function checkFloorplan(fp: Floorplan, map: DungeonMap): string[] {
   const ids = Object.keys(fp.rooms);
   ids.forEach((id, i) => {
     for (const r of fp.rooms[id]) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
-      if (tiles[y * w + x] !== FLOOR) problems.push(`room ${id} has a hole at ${x},${y}`);
+      // (Rock inside a room is what's built there: interior.ts. Anything else is a hole.)
+      if (tiles[y * w + x] !== FLOOR && tiles[y * w + x] !== ROCK) problems.push(`room ${id} has a hole at ${x},${y}`);
       label[y * w + x] = i;
     }
   });

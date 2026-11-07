@@ -85,6 +85,7 @@ export function placeFoes(fp: Floorplan, room: string, count: number, rng: Rng =
   const spots: Pt[] = [];
   for (const r of floors) for (let y = r.y + 1; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
     if (spots.some((s) => s.x === x && s.y === y)) continue; // (a dog-leg's arms overlap)
+    if (fp.tiles[y * fp.w + x] === ROCK) continue; // (a pillar: interior.ts)
     if (end !== undefined && endOf(floors, x, y) !== end) continue;
     if (doors.some((d) => Math.hypot(d.x - x, d.y - y) < DOOR_CLEAR)) continue;
     spots.push({ x, y });

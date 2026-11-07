@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { checkFloorplan, ROCK, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import {
   rollLayout, WALK_SPEC, routesToBoss, ROUTES, layoutFloorplan, layoutMap, campMap, scrollMarks, foreseen, cutOffY, SCROLL_MARKS, type ScrollMark, routeProblems, waysOn, enter, startProgress, isOpen, stepRule, floorsOf, roomCentre, fewChoices,
-  SHAPES, START_SHAPE, BOSS_SHAPE, LAYOUT_W, EDGE, TUNNEL_W, TWIN_PILLAR, BOSS_WAYS, BOSS_DRIFT, type Layout, type Tunnel,
+  SHAPES, START_SHAPE, BOSS_SHAPE, BLOCK, blockOf, twinPillar, LAYOUT_W, EDGE, TUNNEL_W, BOSS_WAYS, BOSS_DRIFT, type Layout, type Tunnel,
 } from "../lib/dungeon/layout";
 import { findPath } from "../lib/dungeon/walk";
 import { CAMP_STASH_MARKS } from "../lib/dungeon/map";
@@ -192,8 +192,9 @@ describe("labyrinth layout: the scroll's marks and cut-offs", () => {
     const l = encampment(3);
     const up = l.tunnels.find((t) => t.up && t.a === l.start)!;
     const above = l.rooms[up.b];
-    const y = cutOffY(enter(l, startProgress(l), up.b));
-    expect(y).toBe((above.y + above.h) * 3);
+    const y = cutOffY(enter(l, startProgress(l), up.b), l);
+    expect(y).toBe((above.y + above.h) * blockOf(l));
+    expect(blockOf(l)).toBe(BLOCK);
     // …below the room's floor, above the room you left.
     expect(Math.max(...floorsOf(above).map((f) => f.y + f.h))).toBeLessThan(y + 1);
     expect(y).toBeLessThanOrEqual(Math.min(...floorsOf(l.rooms[l.start]).map((f) => f.y)));
@@ -247,7 +248,7 @@ describe("labyrinth layout: variety (the user, 2026-11-05)", () => {
         twins++;
         const first = l.tunnels.find((f) => f.key === t.key.slice(0, -2)); // (gone if it was dropped)
         if (!t.up) problems.push(`seed ${seed}: a sideways twin`);
-        if (first && Math.abs(t.rect.x - first.rect.x) < TUNNEL_W + TWIN_PILLAR) problems.push(`seed ${seed}: twins side by side`);
+        if (first && Math.abs(t.rect.x - first.rect.x) < TUNNEL_W + twinPillar(blockOf(l))) problems.push(`seed ${seed}: twins side by side`);
       }
       const into = new Set(l.tunnels.flatMap((t) => (t.a === l.boss ? [t.b] : t.b === l.boss ? [t.a] : [])));
       if (into.size < BOSS_WAYS) problems.push(`seed ${seed}: ${into.size} rooms into the boss`);
