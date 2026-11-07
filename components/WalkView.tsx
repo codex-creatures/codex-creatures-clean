@@ -33,25 +33,18 @@ import { placeFoes, placeWaiter, spottedBy, stepFoe, chargePath, chargeFoe, figh
 import { hasFight, ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
 import { waitsHere, cageSpots, type WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_FLOOR_WORN, WALK_WALL_WORN, WALK_BANNER, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE, type WalkProp } from "@/lib/sprites/walk";
-import { walkView, tapCell, artPxAcross, artPxDown } from "@/lib/render/projection";
+import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_FLOOR_WORN, WALK_WALL_WORN, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "@/lib/sprites/walk";
+import { walkView, tapCell, artPxAcross, artPxDown, across, legacySize, type View } from "@/lib/render/projection";
+import { objectDef, artOf, DECOR_DEF, REACH_OBJECT, TAP_OBJECT, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE, type ObjectDef, type ArtRef } from "@/lib/world/objects";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "@/lib/sprites/props";
 import { artFor } from "@/lib/sprites/art";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { PartyMember } from "@/components/PartySlots";
 
-const REACH_OBJECT = 1.5;       // tiles: this close to a chest or a sack, it opens
-const TAP_OBJECT = 1;           // tiles: a tap this close to one counts as tapping it
-const FOE_PX = 22;              // a foe's height at 16px tiles (it scales with the zoom)
-const BOSS_SCALE = 2.6, CHIEF_SCALE = 1.3; // a waiting boss drawn this much bigger (the Cyclops; the Encampment's chief)
-const NPC_PX = 26;              // a wanderer's height (the merchant, the librarian, the card witch)
 const NPC_STILL = 4;            // tiles: a wanderer stops to let you come up to it
 const NPC_SPEED = 0.6;          // …and walks about at this share of a foe's pace
-const OBJECT_PX = 28;           // a chest's width at 16px tiles
-const SACK_PX = 16;             // …a sack's (stashes, a fight's loot): smaller (the user, 2026-11-06)
 const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
 const KEEP_EVERY = 5000;        // ms: your spot's saved this often while you walk
 const HEAL_EVERY = 400;         // ms: health from a campfire is handed back this often
@@ -86,6 +79,11 @@ const fromRuns = (runs: number[] | undefined, size: number) => {
   return a;
 };
 
+// What's drawn the same way every frame (lib/world/objects.ts).
+const CAMPFIRE = objectDef("campfire"), CANDLE = objectDef("candle"), BANNER = objectDef("banner"), SOUTH_WALL = objectDef("wall-south");
+// A definition's picture on screen, at today's size.
+const drawSize = (view: View, d: ObjectDef, a: ArtRef) => legacySize(view, d.visual.legacy, a);
+
 // Pictures for the canvas, loaded once.
 const IMAGES = new Map<string, HTMLImageElement>();
 function image(src: string): HTMLImageElement | null {
@@ -98,9 +96,15 @@ function image(src: string): HTMLImageElement | null {
 // (at its middle), a beaten room's sack or chest, a pool, a large room's
 // stores, a camp's cages (along its top; flag: "!" over one you can open), or
 // someone in the room (npc: the merchant, the librarian, the witch walking
-// about). key: the room, or "<room>#<cage>".
-type Thing = { key: string; room: string; x: number; y: number; open: boolean; solid: boolean; sack?: boolean; art?: Parameters<typeof artFor>[0];
-  prop?: WalkProp; cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean }; // inert: drawn, not tapped
+// about). key: the room, or "<room>#<cage>". def: what it is (lib/world/objects.ts),
+// state: which of its pictures; solid and npc come from the definition.
+type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
+  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean }; // inert: drawn, not tapped
+const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
+  const d = objectDef(t.def);
+  return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
+};
+const shut = (opened: boolean | undefined) => (opened ? "open" : "shut");
 
 export default function WalkView({ walk, map, dungeon = 0, decor = false, here, room, busy, been, cleared, lit, seen, scroll, team, hp, onScrollClose, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }: {
   walk: WalkRun;                       // the run's walk record (read when this opens; your spot is ours from then)
@@ -218,31 +222,30 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     if (!r) return [];
     const c = roomCentre(layout.rooms[parentOf(id)]);
     const out: Thing[] = [];
-    const add = (t: Omit<Thing, "key" | "room">) => out.push({ key: id, room: id, ...t });
-    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, open: r.done, solid: true, art: r.done ? TREASURE_CHEST_OPEN : TREASURE_CHEST });
-    else if (r.kind === "stash") add({ ...c, open: !!r.opened, solid: true, sack: true, art: r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK });
-    else if (r.kind === "pool") add({ ...c, open: r.done, solid: true, prop: WALK_POOL, glow: !r.done });
-    else if (r.kind === "cards") add({ ...c, open: r.done, solid: true, art: CARD_DECK });
-    else if (r.kind === "merchant") add({ ...c, open: false, solid: true, npc: true, art: MERCHANT });
-    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, open: false, solid: true, npc: true, art: LIBRARIAN });
+    const add = (t: Omit<Thing, "key" | "room" | "solid" | "npc">) => out.push(thingOf({ key: id, room: id, ...t }));
+    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, def: "chest", state: shut(r.done), open: r.done });
+    else if (r.kind === "stash") add({ ...c, def: "sack", state: shut(r.opened), open: !!r.opened });
+    else if (r.kind === "pool") add({ ...c, def: "pool", open: r.done, glow: !r.done });
+    else if (r.kind === "cards") add({ ...c, def: "card-deck", open: r.done });
+    else if (r.kind === "merchant") add({ ...c, def: "merchant", open: false });
+    else if (r.kind === "librarian" || (r.kind === "library" && r.librarian)) add({ ...c, def: "librarian", open: false });
     else if (r.kind === "witch") for (const n of npcs.current.filter((f) => f.room === id)) {
       // (Her game played out, she wanders on, with nothing more for you: the user, 2026-11-06.)
       const over = r.done || (!!r.witch && r.witch.state !== "playing");
-      add({ x: Math.round(n.x), y: Math.round(n.y), open: false, solid: false, npc: true, art: CARD_WITCH, inert: over });
+      add({ x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over });
     }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
     if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
-      add({ ...c, open: !!r.opened, solid: true, sack: r.kind === "library", art: r.kind === "library" ? (r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK) : r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST });
+      add({ ...c, def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
     }
     if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
       const at = props.current.spots?.[id] ?? c;
-      const chest = r.container !== "sack";
-      add({ ...at, open: !!r.opened, solid: false, sack: !chest, art: chest ? (r.opened ? RICKETY_CHEST_OPEN : RICKETY_CHEST) : r.opened ? BURLAP_SACK_OPEN : BURLAP_SACK });
+      add({ ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened });
     }
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
     if (r.cages?.length) cageSpots(plan, parentOf(id), r.cages.length).forEach((q, i) => {
       const cage = r.cages![i];
-      out.push({ key: `${id}#${i}`, room: id, ...q, cage: i, open: !!cage.opened, solid: true, prop: cage.opened ? WALK_CAGE_OPEN : WALK_CAGE, flag: !cage.opened && (!hasFight(r) || r.done) });
+      out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done) }));
     });
     return out;
   });
@@ -250,7 +253,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
   // A tap on (or by) a thing: within TAP_OBJECT of it, or of someone's body (they stand a tile tall).
-  const tapped = (t: Thing, q: Pt) => !t.inert && (Math.hypot(t.x - q.x, t.y - q.y) <= TAP_OBJECT || (!!t.npc && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= TAP_OBJECT));
+  const tapped = (t: Thing, q: Pt) => {
+    const how = objectDef(t.def).interact, tap = how?.tap ?? TAP_OBJECT;
+    return !t.inert && (Math.hypot(t.x - q.x, t.y - q.y) <= tap || (!!how?.tapBody && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= tap));
+  };
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => {
@@ -465,10 +471,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
           const wv = decor && wornWalls.length > 0 ? wallVariant(Math.floor(x / 2), y, walk.seed, wornWalls.length) : 0;
           if (dh > 0) ctx.drawImage(wv > 0 ? wornWalls[wv - 1] : kit.north, wv > 0 ? (x & 1) * KIT_PX : 0, KIT_NORTH - dh / vy, KIT_PX, dh / vy, sx(x), sy(y) - dh, wd, dh);
         }
-        const bannerImg = image(WALK_BANNER.src);
+        const bannerArt = artOf(BANNER)!, bannerImg = image(bannerArt.src);
         if (bannerImg) for (const b of banners) {
           if (!knownAt(b.x, b.y) || b.x < x0 - 2 || b.x > x1 || b.y < y0 || b.y > y1 + 3) continue;
-          const wd2 = WALK_BANNER.size * scale, h2 = (wd2 * WALK_BANNER.h) / WALK_BANNER.w, face = faceAbove(b.x, b.y);
+          const { wd: wd2, h2 } = drawSize(view, BANNER, bannerArt), face = faceAbove(b.x, b.y);
           ctx.drawImage(bannerImg, sx(b.x + 1) - wd2 / 2, sy(b.y) - face + Math.max(0, (face - h2) * 0.35), wd2, Math.min(h2, face));
         }
         const strip = (img: HTMLImageElement, left: number, q: Pt, floorX: number) => {
@@ -505,14 +511,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       const standing: { x: number; y: number; draw: () => void }[] = [];
       const shown = things().filter((t) => knownAt(t.x, t.y) && (!t.npc || litAt(t.x, t.y) || t.solid));
       for (const t of shown) {
-        const witch = t.npc && t.art === CARD_WITCH ? npcs.current.find((n) => n.room === t.room) : undefined;
+        const witch = t.def === "witch" ? npcs.current.find((n) => n.room === t.room) : undefined;
         const sheet = witch && image(WALK_WITCH.sheet);
         if (witch && sheet) {
           // The card witch walking about (a sheet like the hero's), facing the way she goes.
           standing.push({ x: witch.x, y: witch.y, draw: () => {
             const face = facingOf(Math.cos(witch.facing), Math.sin(witch.facing), "south");
             const col = witch.path.length > 0 ? 1 + (Math.floor(now / 130) % WALK_WITCH.frames) : 0;
-            const px = (NPC_PX * scale) / WALK_WITCH.tall, size = WALK_WITCH.cell * px;
+            const px = across(view, NPC_U) / WALK_WITCH.tall, size = WALK_WITCH.cell * px;
             const row = FACINGS.indexOf(face === "west" ? "east" : face);
             ctx.save();
             ctx.translate(Math.round(footX(witch.x)), Math.round(footY(witch.y) - WALK_WITCH.feet * px));
@@ -522,14 +528,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
           } });
           continue;
         }
-        const a = t.prop ?? (t.art ? artFor(t.art) : undefined), img = a && image(a.src);
+        const d = objectDef(t.def), a = artOf(d, t.state), img = a && image(a.src);
         const px = witch ? { x: witch.x, y: witch.y } : t;
         standing.push({ x: px.x, y: px.y, draw: () => {
           if (!img || !a) return;
-          const wd = t.prop ? t.prop.size * scale : t.npc ? (NPC_PX * scale * a.w) / a.h : (t.sack ? SACK_PX : OBJECT_PX) * scale, h2 = (wd * a.h) / a.w;
+          const { wd, h2 } = drawSize(view, d, a);
           // (A used pool is dimmed.)
-          if (t.prop === WALK_POOL && t.open) ctx.globalAlpha = 0.6;
-          ctx.drawImage(img, footX(px.x) - wd / 2, footY(px.y) - h2 + (t.prop === WALK_POOL ? h2 * 0.35 : 0), wd, h2);
+          if (t.def === "pool" && t.open) ctx.globalAlpha = 0.6;
+          ctx.drawImage(img, footX(px.x) - wd / 2, footY(px.y) - h2 + h2 * (d.visual.legacy.lift ?? 0), wd, h2);
           ctx.globalAlpha = 1;
         } });
       }
@@ -563,7 +569,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         const sprite = fr?.boss ? CREATURE_SPRITES[fr.boss] : e && CREATURE_SPRITES[e.creatureId];
         const a = sprite && artFor(sprite), img = a && image(a.src);
         standing.push({ x: f.x, y: f.y, draw: () => {
-          const fx = footX(f.x), fy = footY(f.y), tall = FOE_PX * scale * (f.waits ? (fr?.boss ? BOSS_SCALE : CHIEF_SCALE) : 1);
+          const fx = footX(f.x), fy = footY(f.y), tall = across(view, FOE_U) * (f.waits ? (fr?.boss ? BOSS_SCALE : CHIEF_SCALE) : 1);
           if (img && a) {
             // Art faces left unless marked; turned to face the way it looks.
             const wd = (tall * a.w) / a.h, flip = (Math.cos(f.facing) > 0.1) !== (a.faces === "right");
@@ -594,7 +600,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       const lift = Math.round(KIT_CAP * vy);
       if (kit) for (const q of edges.south) {
         if (q.x < x0 || q.x >= x1 || q.y < y0 || q.y >= y1 || !knownAt(q.x, q.y - 1)) continue;
-        standing.push({ x: q.x, y: q.y - 0.5, draw: () => {
+        standing.push({ x: q.x, y: q.y + SOUTH_WALL.visual.legacy.sortDy!, draw: () => {
           ctx.globalAlpha = capFade(Math.hypot(q.x - me.current.x, q.y - 0.5 - WALL_LIFT / 2 - me.current.y));
           const l = at(q.x - 1, q.y) === ROCK && at(q.x - 1, q.y - 1) === ROCK ? side : 0;
           const r = at(q.x + 1, q.y) === ROCK && at(q.x + 1, q.y - 1) === ROCK ? side : 0;
@@ -610,7 +616,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       const bracket = (c: Sconce) => (c.wall === "left" ? { x: sx(c.x) + 0.1 * T, top: sy(c.y) - 0.2 * T } : c.wall === "right" ? { x: sx(c.x + 1) - 0.1 * T, top: sy(c.y) - 0.2 * T } : { x: footX(c.x), top: sy(c.y) - 1.1 * T });
       for (const c of sconces.current) {
         if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
-        standing.push({ x: c.x, y: c.wall === "left" || c.wall === "right" ? c.y + 0.4 : c.y - 0.6, draw: () => {
+        standing.push({ x: c.x, y: c.y + objectDef(c.wall === "left" || c.wall === "right" ? "sconce-side" : "sconce").visual.legacy.sortDy!, draw: () => {
           const { x: fx, top } = bracket(c);
           ctx.fillStyle = "#2a2018";
           ctx.fillRect(fx - 0.08 * T, top, 0.16 * T, 0.45 * T);
@@ -619,34 +625,36 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         } });
       }
       // Campfires: a ring of stones round logs stacked up, burning (or burnt down: embers). PixelLab art.
-      const fireImg = image(WALK_CAMPFIRE.src), embersImg = image(WALK_CAMPFIRE_OUT.src);
+      const fireImg = image(artOf(CAMPFIRE, "lit")!.src), embersImg = image(artOf(CAMPFIRE, "out")!.src);
+      const fireSize = drawSize(view, CAMPFIRE, artOf(CAMPFIRE, "lit")!);
       const drawFire = (f: Campfire, img: HTMLImageElement | null) => {
         if (!img) return;
-        const wd = WALK_CAMPFIRE.size * scale, h2 = (wd * WALK_CAMPFIRE.h) / WALK_CAMPFIRE.w;
-        ctx.drawImage(img, footX(f.x) - wd / 2, footY(f.y) - h2 + h2 * 0.15, wd, h2);
+        const { wd, h2 } = fireSize;
+        ctx.drawImage(img, footX(f.x) - wd / 2, footY(f.y) - h2 + h2 * CAMPFIRE.visual.legacy.lift!, wd, h2);
       };
       for (const f of fires.current) {
         if (!knownAt(f.x, f.y)) continue;
         standing.push({ x: f.x, y: f.y, draw: () => drawFire(f, f.left > 0 ? fireImg : embersImg) });
       }
-      const candleImg = image(WALK_CANDLE.src), candleLitImg = image(WALK_CANDLE_LIT.src);
+      const candleImg = image(artOf(CANDLE, "out")!.src), candleLitImg = image(artOf(CANDLE, "lit")!.src);
+      const candleSize = drawSize(view, CANDLE, artOf(CANDLE, "out")!);
       const drawCandle = (c: Candle) => {
         const img = c.lit ? candleLitImg : candleImg;
         if (!img) return;
-        const wd = WALK_CANDLE.size * scale, h2 = (wd * WALK_CANDLE.h) / WALK_CANDLE.w;
+        const { wd, h2 } = candleSize;
         ctx.drawImage(img, footX(c.x) - wd / 2, footY(c.y) - h2, wd, h2);
       };
       for (const c of candles.current) if (knownAt(c.x, c.y)) standing.push({ x: c.x, y: c.y, draw: () => drawCandle(c) });
       for (const d of decorItems) {
         if (!knownAt(d.x, d.y) || d.x < x0 - 2 || d.x > x1 + 2 || d.y < y0 - 2 || d.y > y1 + 2) continue;
-        const art = WALK_DECOR[d.kind], img = image(art.src);
+        const def = objectDef(DECOR_DEF[d.kind]), art = artOf(def)!, img = image(art.src);
         // (Flat things lie under everything else; things standing up take their turn.)
         const draw = () => {
           if (!img) return;
-          const wd = art.size * scale, h2 = (wd * art.h) / art.w;
-          ctx.drawImage(img, footX(d.x) - wd / 2, footY(d.y) - h2 + (d.solid ? 0 : h2 * 0.3), wd, h2);
+          const { wd, h2 } = drawSize(view, def, art);
+          ctx.drawImage(img, footX(d.x) - wd / 2, footY(d.y) - h2 + h2 * (def.visual.legacy.lift ?? 0), wd, h2);
         };
-        standing.push({ x: d.x, y: d.solid ? d.y : d.y - 0.6, draw });
+        standing.push({ x: d.x, y: d.y + (def.visual.legacy.sortDy ?? 0), draw });
       }
       for (const s of drawOrder(standing)) s.draw();
       // Your torch's warm glow, going cold away from it, the wall torches' pools; then the dark
@@ -726,7 +734,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       }
       // Lit candles, over the dark, with a little flickering halo.
       for (const c of candlesSeen) {
-        const fx = footX(c.x), top = footY(c.y) - ((WALK_CANDLE.size * scale * WALK_CANDLE.h) / WALK_CANDLE.w) * 0.9, r = 0.5 * T * (1 + 0.1 * Math.sin(now / 80 + c.x));
+        const fx = footX(c.x), top = footY(c.y) - candleSize.h2 * 0.9, r = 0.5 * T * (1 + 0.1 * Math.sin(now / 80 + c.x));
         ctx.globalCompositeOperation = "lighter";
         const halo = ctx.createRadialGradient(fx, top, 0, fx, top, r);
         halo.addColorStop(0, "rgba(255, 190, 90, 0.5)");
@@ -779,7 +787,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
           ctx.lineWidth = Math.max(2, scale * 1.5);
           ctx.strokeStyle = "#1a0e05";
           ctx.fillStyle = "#ffd23f";
-          const top = footY(t.y) - (t.prop?.size ?? OBJECT_PX) * scale - 1 * scale - Math.abs(Math.sin(now / 200)) * 2 * scale;
+          const top = footY(t.y) - drawSize(view, objectDef(t.def), artOf(objectDef(t.def), t.state)!).wd - 1 * scale - Math.abs(Math.sin(now / 200)) * 2 * scale;
           ctx.strokeText("!", footX(t.x), top);
           ctx.fillText("!", footX(t.x), top);
         }
@@ -804,7 +812,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         ctx.strokeStyle = "#1a0e05";
         ctx.fillStyle = "#ffd23f";
         for (const f of foes.current.filter((g) => g.room === A.room)) {
-          const fx = footX(f.x), top = footY(f.y) - FOE_PX * scale - 2 * scale - Math.abs(Math.sin(now / 120)) * 3 * scale;
+          const fx = footX(f.x), top = footY(f.y) - across(view, FOE_U) - 2 * scale - Math.abs(Math.sin(now / 120)) * 3 * scale;
           ctx.strokeText("!", fx, top);
           ctx.fillText("!", fx, top);
         }

@@ -80,3 +80,10 @@ export const artPxDown = (v: View, art: ArtDensity) => (v.T * DEPTH) / (art.rows
 
 // A tap (px from the view's top-left) to the cell it's on.
 export const tapCell = (v: View, px: number, py: number): Pt => ({ x: Math.floor(v.cam.x + px / v.T), y: Math.floor(v.cam.y + py / (v.T * DEPTH)) });
+
+// A definition's picture on screen at its legacy draw size (lib/world/objects.ts
+// LegacyDraw): its width, or its height with the art's width; wd × h2 px.
+export function legacySize(v: View, legacy: { width?: number; height?: number }, art: { w: number; h: number }) {
+  const wd = legacy.width !== undefined ? across(v, legacy.width) : (across(v, legacy.height!) * art.w) / art.h;
+  return { wd, h2: (wd * art.h) / art.w };
+}
