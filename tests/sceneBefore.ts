@@ -337,8 +337,10 @@ export function oldDraw(input: SceneInput, ctx: any, mctx: any, mask: unknown, s
         ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
         ctx.fill();
       }
-      // Lit candles, over the dark, with a little flickering halo.
-      for (const c of candlesSeen) {
+      // Lit candles, over the dark, with a little flickering halo. (Changed with the scene builder,
+      // 2026-11-07: in sight or not, as a lit candle stays lit.)
+      for (const c of sim.candles) {
+        if (!c.lit || c.x < x0 - 1 || c.x > x1 + 1 || c.y < y0 - 1 || c.y > y1 + 1 || !knownAt(c.x, c.y)) continue;
         const fx = footX(c.x), top = footY(c.y) - candleSize.h2 * 0.9, r = 0.5 * T * (1 + 0.1 * Math.sin(now / 80 + c.x));
         ctx.globalCompositeOperation = "lighter";
         const halo = ctx.createRadialGradient(fx, top, 0, fx, top, r);

@@ -58,7 +58,7 @@ import {
   hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, ENCAMP_DRUNK_HP, type Ware,
   BACKPACK, BINDLE, onBindle, waresFor, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem,
   startRun, startQuestRun, stepInside, canMoveOn, moveOn, nextRooms, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun,
-  loadDungeon, saveDungeon, freeHealing, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
+  loadDungeon, saveDungeon, freeHealing, fightContainer, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room,
   curse, illnessTick, dungeonOf, gearOf, DUNGEONS, DEEP_ROUTE, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, DUNGEON_IDS, type DungeonId,
   campCages, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE,
   needsSlot, nextToTake, dropRank, sackRank, isRareFind, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats,
@@ -490,6 +490,8 @@ export default function DungeonPage() {
 
   function healOne(id: string) {
     updateRun((r) => markDone(healInPool(r, id)));
+    // Walking, the pool's window goes (the walk waits while it's up): on you go.
+    if (loadDungeon().run?.walk) setWalkPanel(false);
   }
 
   // ── The battle bag ──────────────────────────────────────────────
@@ -1139,10 +1141,10 @@ export default function DungeonPage() {
     if (room.kind === "storehouse") sack.push(...(room.sack ?? []));
     // Until you've got a rugged backpack, the Cyclops' chest holds one.
     if (room.boss === "cyclops" && bagSize(loadDungeon().meta) < BACKPACK) sack.unshift({ backpack: true });
-    const container = room.kind === "boss" && room.boss !== "cyclops" ? "strongbox" as const : miniboss || room.kind === "boss" ? "chest" as const : "sack" as const;
+    const container = fightContainer(room, dungeonOf(r));
     // At the top, the run's over: straight to the haul, its chest already open.
-    // (Walking, you stay: the chest lies where you stood, the cages to open, then
-    // you head home: walkHome.)
+    // (Walking, you stay: the chest it guarded is there to open, the cages too,
+    // then you head home: walkHome.)
     const top = atTheTop(r) && !r.walk;
     if (atTheTop(r) && r.walk) winds.push(r.current?.cages?.length ? "🔓 Open the cages, then head home." : "🏠 Take the chest, then head home.");
     updateRun((x) => {
@@ -1515,8 +1517,12 @@ export default function DungeonPage() {
             🎒 Bag <span className="count">{(lab.meta.bag ?? []).length}/{bagSize(lab.meta)}</span>
             {(run.pending?.length ?? 0) > 0 && <span aria-label="Your bag is full" style={{ position: "absolute", top: 3, right: 3, width: 10, height: 10, borderRadius: 5, background: "#ff6b5e", border: "2px solid #1d1209" }} />}
           </button>
-          <button className="dock-tab" onClick={() => { setSheet(null); if (walking) setWalkScroll(true); else setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 })); }}
-            disabled={!!clubTutorial || !run.inside /* (the map's already open at the entrance) */ || scrollLooksLeft(run) === 0}>
+          {/* A look costs one of the run's; tapped while the scroll's already out, it's put away, free. */}
+          <button className="dock-tab" onClick={() => {
+            if (walking ? walkScroll : mapOpen === "view") { if (walking) setWalkScroll(false); else setMapOpen(null); return; }
+            setSheet(null); if (walking) setWalkScroll(true); else setMapOpen("view"); updateRun((r) => ({ ...r, scrollLooks: (r.scrollLooks ?? 0) + 1 }));
+          }}
+            disabled={!!clubTutorial || !run.inside /* (the map's already open at the entrance) */ || (scrollLooksLeft(run) === 0 && !(walking ? walkScroll : mapOpen === "view"))}>
             📜 Scroll <span className="count">{scrollLooksLeft(run)}/{SCROLL_LOOKS}</span>
           </button>
           {/* Retreat: tap twice (it ends the run). */}
@@ -1811,7 +1817,7 @@ function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, o
   // The club on the floor: not looked at yet, or still lying there.
   const clubShut = room.quest === "club" && !!room.sack && !room.opened;
   const clubLeft = room.quest === "club" && !!room.opened && (room.sack ?? []).some((x) => "gear" in x && isClub(x.gear as CreatureOrItemDrop));
-  const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>↑ Take a tunnel to move on.</p>;
+  const onward = <p className="pixel-font" style={{ fontSize: 13, color: "#c9b48a", margin: "12px 0 0" }}>{run.walk ? "Close this and walk on." : "↑ Take a tunnel to move on."}</p>;
   const top = room.kind === "boss" || (dungeonOf(run) === 0 && room.kind === "encampment");
   const next = top ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={onNext}>Finish →</button>
     : room.quest === "thief" ? (room.boxTaken ? (

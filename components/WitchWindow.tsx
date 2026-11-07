@@ -10,6 +10,7 @@
 // The window keeps one shape the whole game: only the words and cards change.
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import PixelSprite from "./PixelSprite";
 import Help from "./Help";
 import { CreatureArt } from "./CreaturePortrait";
@@ -94,9 +95,12 @@ export default function WitchWindow({ game: w, victim, onGuess, onLeave, onClose
     onGuess(g);
   };
   const behindColour = colourOf(behind);
+  // Drawn straight onto the game screen (GameScreen's .screen-scale), not inside whatever opened it:
+  // walking, that's the room's window, a small scrolling panel that would hide it.
+  const [screen] = useState(() => (typeof document === "undefined" ? null : document.querySelector(".screen-scale")));
   const side: React.CSSProperties = { width: "min(70px, 18cqw)", alignSelf: "stretch", minHeight: 44, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 15, padding: 4 };
 
-  return (
+  const panel = (
     <div style={{ position: "fixed", inset: 0, zIndex: 190, background: "rgba(4,5,9,0.72)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "6cqh 10px 10px" }}>
       <div role="dialog" aria-label="The card witch" className="title-bar sheet-up"
         style={{ width: "100%", maxWidth: 440, padding: 10, display: "grid", gap: 10, userSelect: "none", WebkitUserSelect: "none" }}>
@@ -152,4 +156,5 @@ export default function WitchWindow({ game: w, victim, onGuess, onLeave, onClose
       </div>
     </div>
   );
+  return screen ? createPortal(panel, screen) : panel;
 }

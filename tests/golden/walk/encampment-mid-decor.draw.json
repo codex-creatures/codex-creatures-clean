@@ -327,6 +327,8 @@
 ["set","globalAlpha",1],
 ["drawImage","/sprites/walk/cage.png",691.242,-456.867,35.75,35.75],
 ["set","globalAlpha",1],
+["drawImage","/sprites/props/rickety_chest.png",686.367,-412.179,45.5,43.063],
+["set","globalAlpha",1],
 ["drawImage","/sprites/props/treasure_chest.png",1388.367,-206.617,45.5,45.5],
 ["set","globalAlpha",1],
 ["drawImage","/sprites/walk/candle.png",-206.571,-130.35,11.375,21.233],

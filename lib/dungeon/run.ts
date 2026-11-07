@@ -830,6 +830,15 @@ export type Room = {
   done: boolean;
 };
 
+// What a beaten fight's loot comes in: a strongbox (the Hydra, the Warden), a
+// rickety chest (mini bosses, a guarded storehouse, the Encampment's chief, the
+// Cyclops) or a sack (any other fight).
+export function fightContainer(room: Room, dungeon: DungeonId): "sack" | "chest" | "strongbox" {
+  if (room.kind === "boss") return room.boss !== "cyclops" ? "strongbox" : "chest";
+  const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && !!room.guarded) || (dungeon === 0 && room.kind === "encampment");
+  return miniboss ? "chest" : "sack";
+}
+
 export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "miniboss" || k === "boss";
 // Is there a fight in this room (now)? Fight rooms, an encampment (an
 // ambush only once it's sprung), a guarded storehouse.

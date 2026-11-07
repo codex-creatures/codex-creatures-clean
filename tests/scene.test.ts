@@ -59,7 +59,7 @@ function* session(name: string, opts: { frames: number; seeAll?: boolean; decor?
   const rng = seeded(walk.seed + 3);
   for (let k = 0; k < opts.frames; k++) {
     now += 16 + (k % 5);
-    const things = () => thingsOf(s.layout, s.placed, s.ids, s.room, sim.npcs, walk.spots);
+    const things = () => thingsOf(s.layout, s.placed, s.ids, s.room, sim.npcs, walk.spots, s.dungeon);
     const frame = stepWalk(sim, { now, busy: !!opts.busy, room: s.room, here: run.path[run.path.length - 1], team: ["a", "b"], hp: run.hp, things, rng });
     if (frame.draw) {
       const input: SceneInput = { sim, frame, plan: s.plan, live, edges, layout: s.layout, decor: !!opts.decor, decorItems: s.decorItems, banners: s.banners, seed: walk.seed,
@@ -137,5 +137,24 @@ describe("the draw list for fixed states, pinned (world-spec §8)", () => {
     let last: SceneInput | null = null;
     for (const { input } of session("encampment-mid", { frames: 40, seeAll: true, decor: true })) last = input;
     golden("encampment-mid-decor.draw.json", buildScene(last!).cmds.map(line));
+  });
+});
+
+describe("a lit candle stays lit out of sight (the user, 2026-11-07)", () => {
+  it("its flame is drawn over the dark whether you can see it or not", () => {
+    const { input } = session("encampment-mid", { frames: 1, busy: true, seeAll: true }).next().value!;
+    const c = input.sim.candles[0];
+    expect(c).toBeDefined();
+    c.lit = true;
+    input.sim.me = { ...input.sim.me, x: c.x, y: c.y + 1 };
+    const flames = (seen: typeof c[]) => {
+      const cmds = buildScene({ ...input, frame: { ...input.frame, candlesSeen: seen } }).cmds;
+      const dark = cmds.findIndex((k) => k[0] === "dark");
+      return cmds.slice(dark).filter((k) => k[0] === "drawImage" && k[1] === "/sprites/walk/candle-lit.png").length;
+    };
+    expect(flames([c])).toBe(1);
+    expect(flames([])).toBe(1);
+    c.lit = false;
+    expect(flames([])).toBe(0);
   });
 });

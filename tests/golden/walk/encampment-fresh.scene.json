@@ -202,6 +202,7 @@
   ],
   "npcs": [],
   "things": [
+   "boss rickety@44,8 inert path null",
    "boss#0 cage@40,6 solid path null",
    "boss#1 cage@44,6 solid path null",
    "r12 sack@14,54 solid path null",
@@ -418,6 +419,7 @@
   ],
   "npcs": [],
   "things": [
+   "boss rickety@44,8 inert path null",
    "boss#0 cage@40,6 solid path null",
    "boss#1 cage@44,6 solid path null",
    "r12 sack@14,54 solid path null",

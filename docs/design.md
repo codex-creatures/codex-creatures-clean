@@ -605,7 +605,8 @@ How it came about, round by round: history.md.
     away under it. The next prize lies face down behind it (its rarity shows); a right guess sparkles the card away and
     the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
 - ✅ **The Scroll button** (looking at your map again inside) works 2 times a run (the user, 2026-10-25,
-  `SCROLL_LOOKS`), and not while the map's first look at the entrance is open; a flare still shows
+  `SCROLL_LOOKS`), and not while the map's first look at the entrance is open; tapped while the
+  scroll's already out, it puts it away and costs nothing; a flare still shows
   the map on top. Every scroll (the Encampment's shorter one too) fits the window, with no
   close-up drag view. On the scroll, a stash is marked with a loot sack and a chest with a
   treasure chest (their art, also in the room's title).
@@ -948,10 +949,15 @@ How it came about, round by round: history.md.
        of its room, behind the chief (`CAGE_GAP` 4 tiles apart; PixelLab art, shut and opened).
        Once he's beaten (or with no guards to see) each one still shut has a "!" over it: tap it,
        walk up, and it opens like a chest (the creature inside is yours, as ever). **Winning at
-       the top no longer ends a walk at once**: the chest lies where you stood, and a "🏠 Head
+       the top no longer ends a walk at once**: the chest he guarded is there to open, and a "🏠 Head
        home" button ends the run on to the cheer and the haul (`headHome`). The clear counts
        however you leave once he's beaten, by the Den or Retreat too (`wonAtTop`, run.ts
        `endRun`).
+       **Guarded chests** (the user, 2026-11-07): a mini boss's or boss's chest (`fightContainer`
+       not a sack) is on the ground from the start, shut and not to be tapped till it's beaten:
+       behind a boss waiting at the top (beside him, a little behind, where cages stand), else
+       the room's middle (walkWorld.ts `guardedChestSpot`, from the layout). An ordinary fight's
+       sack still lies where you stood.
        **The campfire window** (the user, 2026-11-06: the long bars were too big): your team in a
        row along the bottom, small (56 px, about the Abyss's five team cards), a health bar
        under each, and a thin bar of what the fire has left.
@@ -1041,7 +1047,8 @@ How it came about, round by round: history.md.
        unlit"; torch.ts `placeCandles`): `CANDLE_CHANCE` 35% of rooms 🧪 (never the entrance or
        the boss's room) have one on the floor 2–5 tiles from the middle, unlit. Walk near it (in
        sight) and it lights, keeping a little pool of light round it for good (`CANDLE_RADIUS`
-       2.5 tiles 🧪). Placed from the run's seed and kept lit with the wall torches' list, so
+       2.5 tiles 🧪). Once lit it's drawn lit wherever you've seen it, in sight or not (its pool of
+       light needs you to see it, like a wall torch's). Placed from the run's seed and kept lit with the wall torches' list, so
        nothing new is saved. PixelLab art (the unlit one is the lit one with its flame taken off).
      - 🚧 **Decor samples** (the user, 2026-11-06: "upgrades to the art, things that make the rooms
        less repetitive and more engaging"; `lib/dungeon/decor.ts`; **only in `/lab/newrun`**, its

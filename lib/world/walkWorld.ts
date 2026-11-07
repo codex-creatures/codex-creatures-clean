@@ -12,12 +12,12 @@
 // and the lab's decor (707) and banners (808; phase 2b). The saved ones had
 // 404 (the witch), 505 (wall torches) and 606 (candles).
 
-import { roomCentre, stepRule, type Layout, type Progress } from "../dungeon/layout";
+import { roomCentre, floorsOf, stepRule, type Layout, type Progress } from "../dungeon/layout";
 import type { Sconce, Candle } from "../dungeon/torch";
 import { placeDecor, placeBanners, type Decor } from "../dungeon/decor";
-import { placeFoes, placeWaiter, spawnOf, parentOf, type Foe } from "../dungeon/foes";
+import { placeFoes, placeWaiter, spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
-import { hasFight, type DungeonId, type Room } from "../dungeon/run";
+import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
 import { waitsHere, type WalkRun } from "../dungeon/walkRun";
 import type { Campfire } from "../dungeon/campfire";
 import type { DungeonMap } from "../dungeon/map";
@@ -88,10 +88,26 @@ const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
 };
 const shut = (opened: boolean | undefined) => (opened ? "open" : "shut");
 
+// Where a mini boss's or a boss's chest lies, there from the start for it to
+// guard (the user, 2026-11-07): behind a boss waiting at the top of its room
+// (beside it, a little behind, where a camp's cages stand along the top), else
+// the room's middle. Worked out from the layout, the same every time.
+export function guardedChestSpot(layout: Layout, id: string, r: Room, dungeon: DungeonId): Pt {
+  const lr = layout.rooms[parentOf(id)];
+  const centre = roomCentre(lr);
+  if (!waitsHere(r, dungeon)) return centre;
+  const top = floorsOf(lr).reduce((a, b) => (b.y < a.y ? b : a));
+  const x = top.x + Math.floor(top.w / 2), y = Math.min(top.y + WAIT_FROM_TOP, top.y + top.h - 1);
+  const at = r.cages ? { x: x + 2, y: y - 1 } : { x, y: y - 2 };
+  const inStone = (lr.inner ?? []).some((q) => at.x >= q.x && at.x < q.x + q.w && at.y >= q.y && at.y < q.y + q.h);
+  return at.y < top.y || inStone ? centre : at;
+}
+
 // The things to tap, as the rooms stand now (`room`): each where it was placed
-// (lib/world/placements.ts), the witch where she's got to, a beaten room's loot
-// where it was dropped (else the room's middle, from the layout).
-export function thingsOf(layout: Layout, placed: Placements, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"]): Thing[] {
+// (lib/world/placements.ts), the witch where she's got to, a beaten room's sack
+// where it was dropped (else the room's middle, from the layout), a mini boss's
+// or boss's chest where it guards it (shut, and not to be tapped, till it's beaten).
+export function thingsOf(layout: Layout, placed: Placements, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"], dungeon: DungeonId): Thing[] {
   return ids.flatMap((id): Thing[] => {
     const r = room(id);
     if (!r) return [];
@@ -116,8 +132,11 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
       add("stores", { def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
     }
-    if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
-      const at = spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
+    const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;
+    if (guards && !r.done) {
+      out.push(thingOf({ key: id, room: id, ...guardedChestSpot(layout, id, r, dungeon), def: "loot-chest", state: "shut", open: false, inert: true }));
+    } else if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
+      const at = guards ? guardedChestSpot(layout, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
       out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
     }
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).

@@ -6,7 +6,7 @@ import { seeded } from "./walkBaseline";
 import { placeLightsBefore, placeWitchesBefore, thingsOfBefore } from "./placementsBefore";
 import { startWalkRun, walkRoom } from "../lib/dungeon/walkRun";
 import { layoutFloorplan } from "../lib/dungeon/layout";
-import { hasFight, type Cage, type DungeonRun, type Room } from "../lib/dungeon/run";
+import { hasFight, dungeonOf, fightContainer, type Cage, type DungeonRun, type Room } from "../lib/dungeon/run";
 import { roomIds, thingsOf, solidCells } from "../lib/world/walkWorld";
 import { migrateWalkRun } from "../lib/world/migrate";
 import { placementsFrom } from "../lib/world/placements";
@@ -61,8 +61,10 @@ function differences(name: string, run0: DungeonRun): string[] {
     const ids = roomIds(walk.layout, run.map);
     const before = { ...placeLightsBefore(walk, plan), witches: placeWitchesBefore(walk, plan, run.map, room) };
     const now = placementsFrom(placed, walk);
-    const thingsBefore = thingsOfBefore(walk.layout, plan, ids, room, before.witches, walk.spots);
-    const thingsNow = thingsOf(walk.layout, now, ids, room, now.witches, walk.spots);
+    // (A mini boss's or boss's chest, there to guard from the start, came after phase 2a: those rooms' loot is left out.)
+    const guarded = (t: { room: string; def: string }) => /^loot-/.test(t.def) && fightContainer(room(t.room)!, dungeonOf(run)) !== "sack";
+    const thingsBefore = thingsOfBefore(walk.layout, plan, ids, room, before.witches, walk.spots).filter((t) => !guarded(t));
+    const thingsNow = thingsOf(walk.layout, now, ids, room, now.witches, walk.spots, dungeonOf(run)).filter((t) => !guarded(t));
     const same = (what: string, a: unknown, b: unknown) => { if (JSON.stringify(a) !== JSON.stringify(b)) out.push(`${name}, ${state}: ${what} differ`); };
     same("wall torches", now.sconces, before.sconces);
     same("candles", now.candles, before.candles);
@@ -128,7 +130,7 @@ describe("what's saved, and how (world-spec §3, §7)", () => {
       }
       // What blocks walking: exactly the things to tap whose definitions are solid (and campfires).
       const placed = placementsFrom(walk.placed!, walk), room = (id: string) => walkRoom(m, id);
-      const things = thingsOf(walk.layout, placed, roomIds(walk.layout, m.map), room, placed.witches, walk.spots);
+      const things = thingsOf(walk.layout, placed, roomIds(walk.layout, m.map), room, placed.witches, walk.spots, dungeonOf(m));
       const solid = solidCells(things, [], []);
       for (const c of [...placed.sconces, ...placed.candles]) if (solid.has(`${c.x},${c.y}`) && !things.some((t) => t.solid && t.x === c.x && t.y === c.y)) bad.push(`${name} ${c.id}: blocks a panel`);
       for (const t of things) if (t.solid !== (OBJECTS[t.def].collision === "solid")) bad.push(`${name} ${t.key}: solid ${t.solid} for ${t.def}`);

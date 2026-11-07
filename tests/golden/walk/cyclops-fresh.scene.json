@@ -346,6 +346,7 @@
    "r20@101,101"
   ],
   "things": [
+   "boss rickety@60,9 inert path null",
    "r10 chest@27,178 solid path null",
    "r13 sack@69,169 solid path null",
    "r15 pool@13,135 solid path null",
@@ -355,6 +356,7 @@
    "r19 pool@69,108 solid path null",
    "r20 witch@101,101 npc path null",
    "r21 cards@57,90 solid path null",
+   "r22 rickety@93,81 inert path null",
    "r23 chest@42,72 solid path null",
    "r28 merchant@72,39 solid npc path null",
    "r29 pool@16,33 solid path null",
@@ -712,6 +714,7 @@
    "r20@101,101"
   ],
   "things": [
+   "boss rickety@60,9 inert path null",
    "r10 chest@27,178 solid path null",
    "r13 sack@69,169 solid path null",
    "r15 pool@13,135 solid path null",
@@ -721,6 +724,7 @@
    "r19 pool@69,108 solid path null",
    "r20 witch@101,101 npc path null",
    "r21 cards@57,90 solid path null",
+   "r22 rickety@93,81 inert path null",
    "r23 chest@42,72 solid path null",
    "r28 merchant@72,39 solid npc path null",
    "r29 pool@16,33 solid path null",

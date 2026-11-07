@@ -111,7 +111,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   useEffect(() => () => props.current.onKeep(walkState(sim)), [sim]);
 
   // The things to tap, as the rooms stand now.
-  const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.spots);
+  const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.spots, dungeon);
 
   // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));

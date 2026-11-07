@@ -52,11 +52,13 @@
   "r9~2#0@110.000,188.000 face 3.142"
  ],
  "walks": [
+  "boss none",
   "r1 none",
   "r12 none",
   "r14 none",
   "r16 0 51.00,130.00",
   "r18 none",
+  "r19 none",
   "r21 none",
   "r23 none",
   "r24 none",

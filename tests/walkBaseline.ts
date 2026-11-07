@@ -68,12 +68,12 @@ export function walkSetup(run0: DungeonRun, decor = false) {
   const ids = roomIds(layout, map);
   const foes = placeFoeStarts(walk, plan, map, dungeon, room), npcs = placed.witches;
   // The things to tap, as the walk screen makes them (named as the phase-0 goldens name them).
-  const things: ThingFact[] = thingsOf(layout, placed, ids, room, npcs, walk.spots).map(({ key, room, x, y, def, state, open, solid, npc, inert, flag }) => ({
+  const things: ThingFact[] = thingsOf(layout, placed, ids, room, npcs, walk.spots, dungeon).map(({ key, room, x, y, def, state, open, solid, npc, inert, flag }) => ({
     key, room, x, y, what: WHAT[def] + (state === "open" && def !== "card-deck" ? "-open" : ""), open, solid,
     ...(npc ? { npc } : {}), ...(inert !== undefined ? { inert } : {}), ...(flag !== undefined ? { flag } : {}),
   }));
   // Where you may walk (WalkView's rule()): forward, seen, and not into anything solid.
-  const solid = solidCells(thingsOf(layout, placed, ids, room, npcs, walk.spots), fires, decorItems);
+  const solid = solidCells(thingsOf(layout, placed, ids, room, npcs, walk.spots, dungeon), fires, decorItems);
   const canStep = walkRule(layout, plan, progress, known, solid);
   // (The same without what you've seen: the walking rules alone, for the baselines.)
   const canWalk = walkRule(layout, plan, progress, null, solid);
