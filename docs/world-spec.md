@@ -1318,7 +1318,7 @@ change, and an older copy of the game holds a newer run, §7):
 **Order:** A, then B, then C. B and C don't depend on each other, so they could swap if you'd
 rather see decor first. Each is tested and played before the next starts.
 
-#### Using things in v4 runs (the user's play-test, 2026-11-08: investigated; fix proposed, not made)
+#### Using things in v4 runs (the user's play-test, 2026-11-08: ✅ fixed and released as 832891c)
 
 The user couldn't open chests or stashes in the dungeon, and saw candles standing beside chests
 and stashes often. These are two separate things with separate causes.
@@ -1343,18 +1343,23 @@ corner). Two pieces of code still assumed every thing stands on a panel's middle
   since everything there stands on a panel's middle.
 - **Why the tests missed it:** they checked a way up to each thing exists, never that you're in
   reach at the end of it, and the tap's lookup lives in the component, where no test reaches.
-- **The regression tests:** `tests/thingAccess.test.ts`, with v3 runs passing and v4 runs marked
-  `it.fails` until the fix.
-- **🧪 The proposed fix**, with no special offsets:
-  - (a) Choosing what a tap picks moves into `lib/world/walkWorld.ts` (🧪 `tappedThing`), which
-    checks the seen-map at the thing's panel.
-  - (b) Reach is measured from the thing's panel, the same panel walking is blocked on and
-    `approach` walks round (one helper for both). Taps still land on the thing as drawn.
+- **The fix** (✅ approved by the user, built and released 2026-11-08), with no special offsets:
+  - A thing has three things to tell apart: where it stands (`t.x`, `t.y`: its footprint's
+    middle), where it's drawn (the same, so taps land on it), and the panel it's used from
+    (`usedFrom`).
+  - (a) Choosing what a tap picks moved into `lib/world/walkWorld.ts` (`tappedThing`). It checks
+    the seen-map at the thing's panel and picks the thing drawn nearest the tap, so of two things
+    in one panel it's the one you tapped. Walking up to it moved into `walkSim.ts` (`walkUpTo`).
+  - (b) Reach is measured from the thing's panel (`usedFrom`), the same panel walking is blocked
+    on and `approach` walks round.
   - For v2 and v3 runs both are exactly today's behaviour, since there the panel's middle is the
     thing's middle.
   - For v4 runs every thing is usable from every panel round it, as stage A meant.
   - No save changes, so v4 runs already made are fixed by the update.
-  - The alternative for (b): reach measured to the nearest edge of the footprint. That's truer to
+  - Tests (`tests/thingAccess.test.ts`): every kind of thing tapped, walked up to from every panel
+    round it, used, opened, saved and reloaded, in v2, v3 and v4 runs, and two things in one
+    panel. With the old code put back, all of the v4 tests fail.
+  - Not taken, for (b): reach measured to the nearest edge of the footprint. That's truer to
     the object, but it lengthens reach (a chest's side would open from two panels off), so it
     waits for walking on subcells.
 
@@ -1553,8 +1558,10 @@ can only leave candles out, so B1's sim measures it again and sets `DARK_PER` to
 - **Candidates:** any free walk-over subcell on the room's floor, at least 3 panels from its
   doors (`CANDLE_CLEAR`), not on a required path's panel, and not in a campfire's or a solid
   thing's clearance.
-- **🧪 Kept off the things you use:** at least 3 panels from a room's feature (its chest, sack,
-  pool, deck or cart) and from cages. Today's rule measures 2 to 5 panels from the room's middle,
+- **🧪 Kept off the things you use, by preference:** 3 panels or more from a room's feature (its
+  chest, sack, pool, deck or cart) and from cages where the room allows it, then 2, so a small or
+  irregular room still gets its candle (✅ the user, 2026-11-08: a preference with fallbacks, not
+  an absolute rule). Never closer than today's 2. Today's rule measures 2 to 5 panels from the room's middle,
   which is exactly where the feature stands, so many candles end up two panels from it (the
   investigation, 2026-11-08). v5 doesn't measure from the middle.
 - **🧪 Where they're picked from:** the foot of a pillar or along a wall half the time, anywhere
@@ -1715,7 +1722,7 @@ it looks onto:
 
 | Step | What | Tests | Gate |
 |---|---|---|---|
-| **first** | The chest and stash fix ("Using things in v4 runs", below), released on its own. | tests/thingAccess.test.ts | your play-test |
+| **first** | The chest and stash fix ("Using things in v4 runs", above), released on its own: ✅ 832891c. | tests/thingAccess.test.ts | your play-test |
 | **B0** | Pin four v4 runs' placements as goldens. Nothing in the game changes. | the goldens; full suite | none |
 | **B1** | v5's placement in `place.ts`: the budget, mounted candles with their lit rolls, and floor candles as objects, at the proposed numbers; **new runs still v4**. The placement view gains the budget, slots in use, light points and the darkness map. | the budget's arithmetic on made-up rooms (a room with no dark gets none; W 0 gets none; the caps); one thing a slot; gaps; at most one a pillar; spread across a dog-leg; no light point in rock; light cells floor; door faces clear; nothing behind a solid thing; floor candles never lit; lit shares by kind within range (sim); deterministic; torches identical to v4; blocked panels equal v4; v2/v3/v4 goldens untouched; the sim's counts per kind and shape | **Gate 1 (placement):** you look at example pictures (written to a folder, as for A), including dog-leg and pillar rooms, and `/lab/placement` |
 | **B2** | Drawing in the scene builder, with today's art and a code bracket: mount points, sort order, the south fade, flame and halo per face. Lab only. | the scene builder's draw list (no browser): north candle before a thing in front of it; south candle before its wall's band and its flame faded by `capFade`; east mirrored; light from the floor panel | **Gate 2 (drawing):** you look in the lab's rooms |
