@@ -16,7 +16,7 @@
 
 import { artFor, type Art } from "../sprites/art";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "../sprites/props";
-import { WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_BANNER, WALK_HERO, KIT_PX, KIT_ROW, KIT_NORTH, type WalkProp } from "../sprites/walk";
+import { WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_BANNER, WALK_HERO, WALK_KIT, KIT_PX, type WalkProp } from "../sprites/walk";
 import { legacyU } from "../render/projection";
 import { SCONCE_RADIUS, CANDLE_RADIUS } from "../dungeon/torch";
 import { CAMPFIRE_LIGHT } from "../dungeon/campfire";
@@ -96,6 +96,8 @@ export const OBJECT_U = legacyU(28); // a chest's width
 export const SACK_U = legacyU(16);   // …a sack's (stashes, a fight's loot): smaller (the user, 2026-11-06)
 // The light a wandering NPC carries (world-spec §5.7): read by nothing till they wander. 🧪
 export const NPC_LIGHT = { radius: 2.5, colour: "#ffd27a", flicker: true };
+// How tall a wall stands (u): the walls' kit's north wall, in its rows.
+const WALL_U = WALK_KIT.size.north / WALK_KIT.size.row;
 export const BOSS_SCALE = 2.6, CHIEF_SCALE = 1.3; // a waiting boss drawn this much bigger (the Cyclops; the Encampment's chief)
 
 const ref = (a: Art | WalkProp | undefined): ArtRef => ({ src: a!.src, w: a!.w, h: a!.h });
@@ -155,12 +157,12 @@ const DEFS: ObjectDef[] = [
     { art: {}, bounds: { left: 0.16, right: 0.16, up: 0.45, down: 0 }, anchorPx: { x: 0, y: 0 }, artPerU: 1, legacy: { sortDy: 0.4 } }),
   def("banner", { kind: "prop", attach: "wall-north", footprint: { w: 0, d: 0 }, height: 1.2, collision: "none", blocksSight: false, blocksLight: false },
     legacyVisual({ base: ref(WALK_BANNER) }, { width: legacyU(WALK_BANNER.size) })),
-  // Structure: a pillar is rock in the floorplan today (interior.ts), so it blocks walking, sight and light as rock.
-  def("pillar", { kind: "structure", attach: "floor", footprint: { w: 3, d: 3 }, height: KIT_NORTH / KIT_ROW, collision: "solid", blocksSight: true, blocksLight: true },
-    { art: {}, bounds: { left: 0.5, right: 0.5, up: KIT_NORTH / KIT_ROW, down: 0.5 }, anchorPx: { x: 0, y: 0 }, artPerU: KIT_PX, pixelAspect: KIT_PX / KIT_ROW, legacy: {} }),
+  // Structure (as tall as the walls' kit draws its north walls: WALK_KIT.size): a pillar is rock in the floorplan today (interior.ts), so it blocks walking, sight and light as rock.
+  def("pillar", { kind: "structure", attach: "floor", footprint: { w: 3, d: 3 }, height: WALL_U, collision: "solid", blocksSight: true, blocksLight: true },
+    { art: {}, bounds: { left: 0.5, right: 0.5, up: WALL_U, down: 0.5 }, anchorPx: { x: 0, y: 0 }, artPerU: WALK_KIT.size.px, pixelAspect: WALK_KIT.size.px / WALK_KIT.size.row, legacy: {} }),
   // A south wall's top band, standing up over the floor's last row (the kit's cap).
-  def("wall-south", { kind: "structure", attach: "wall-south", footprint: { w: 0, d: 0 }, height: KIT_NORTH / KIT_ROW, collision: "none", blocksSight: true, blocksLight: true },
-    { art: {}, bounds: { left: 0.5, right: 0.5, up: 0.625, down: 0 }, anchorPx: { x: 0, y: 0 }, artPerU: KIT_PX, pixelAspect: KIT_PX / KIT_ROW, legacy: { sortDy: -0.5 } }),
+  def("wall-south", { kind: "structure", attach: "wall-south", footprint: { w: 0, d: 0 }, height: WALL_U, collision: "none", blocksSight: true, blocksLight: true },
+    { art: {}, bounds: { left: 0.5, right: 0.5, up: WALK_KIT.size.cap / WALK_KIT.size.row, down: 0 }, anchorPx: { x: 0, y: 0 }, artPerU: WALK_KIT.size.px, pixelAspect: WALK_KIT.size.px / WALK_KIT.size.row, legacy: { sortDy: -0.5 } }),
   // A tunnel's mouth fallen in behind you: rock in the floorplan, rubble drawn on it in code.
   def("rubble", { kind: "structure", attach: "floor", footprint: { w: 3, d: 3 }, height: 0.5, collision: "none", blocksSight: true, blocksLight: true },
     { art: {}, bounds: { left: 0.5, right: 0.5, up: 0.5, down: 0.2 }, anchorPx: { x: 0, y: 0 }, artPerU: 1, legacy: {} }),

@@ -872,6 +872,16 @@ How it came about, round by round: history.md.
        tops, south walls a cap band over the floor's bottom row, the rest of the rock dark. Hero
        pixels the kit's size. "Kit: mossy dungeon", the lab's first Tiles choice; no side-face
        wobble in it (one fixed angle).
+       ✅ **The walls since 2026-11-09: kit E, "dark fieldstone"** (the user's pick: the first kits
+       were "far too orange", "too clean and too brick like… a factory wall"; wanted dark, dingy,
+       random stone). 48 art pixels a tile (the walls' own size, `KitArt.size`; you and things stay
+       at 32 a unit), crumbling grey-brown fieldstone under worn capstones, a mossy cobbled floor
+       (one tile, its seams repaired), and corner pieces so a side wall's top turns into the back
+       wall's cap and the south band as one L. Old kits still draw (butted corners). Next: small floor
+       decorations to break up the repeat (the user: decorations, not scattered tile variants),
+       then 5–6 variants of the wall panel (moss, vines, cracks). Creatures and items: the user's
+       quality target is detailed pixel art about 128–200 px a portrait ("Creature or item pix
+       quality" in their Downloads), when PixelLab spend allows; nothing redone till then.
      - ✅ **Depth, 2.5D** (the user, 2026-11-06: not real 3D, which would need three.js and 3D
        models; `tileArt.ts`, numbers 🧪): side walls show their inner face, wider the further
        across the room you are (`sideFace`: from a room's right you see its left wall's face),

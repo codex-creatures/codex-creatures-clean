@@ -20,7 +20,7 @@ import { floorVariant, wallVariant, type Decor } from "../dungeon/decor";
 import { CAMPFIRE_HEAL, type Campfire } from "../dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "../dungeon/foes";
 import type { Room } from "../dungeon/run";
-import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_FLOOR_WORN, WALK_WALL_WORN, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "../sprites/walk";
+import { WALK_KIT, WALK_HERO, WALK_WITCH, KIT_PX, type KitArt } from "../sprites/walk";
 import { CREATURE_SPRITES } from "../sprites/creatures";
 import { artFor } from "../sprites/art";
 import { objectDef, artOf, DECOR_DEF, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE, type ObjectDef, type ArtRef } from "../world/objects";
@@ -31,7 +31,8 @@ import { walkView, artPxAcross, artPxDown, across, legacySize, type View } from 
 export const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
 
 // The kit's and the hero's art pixels (projection.ts ArtDensity): the kit's rows squashed into a square cell.
-const KIT_DENSITY = { perU: KIT_PX, rowsPerU: KIT_ROW }, HERO_DENSITY = { perU: KIT_PX };
+// You and the things in the walk at KIT_PX art pixels a unit (the walls at their kit's own size: buildScene).
+const HERO_DENSITY = { perU: KIT_PX };
 
 const COLOURS = { rock: "#07060b", goal: "#f1d9a0", foe: "#b0302a", rubble: ["#5b5560", "#6f6872", "#48434d"], dust: "200, 190, 175" };
 export const DARK_RGB = [6, 5, 12];
@@ -97,12 +98,15 @@ export type SceneInput = {
   now: number; w: number; h: number;   // the time (ms), and the view's size (px)
   ready: (src: string) => boolean;     // the picture's loaded
   random: () => number;                // for the screen's shake
+  kit?: KitArt;                         // the walls' art (the game's: WALK_KIT; tests draw the first kit's too)
 };
 // The commands, and the tunnels whose falling in is over (the screen forgets them).
 export type Scene = { cmds: DrawCmd[]; settled: string[] };
 
 export function buildScene(input: SceneInput): Scene {
   const { sim, frame: F, plan, live, edges, layout, decor, decorItems, banners, room, now, w: cw, h: ch, ready, random } = input;
+  // The walls' kit, at its own art size.
+  const KIT = input.kit ?? WALK_KIT, KZ = KIT.size, KIT_DENSITY = { perU: KZ.px, rowsPerU: KZ.row };
   const { w, h } = plan;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? ROCK : live.tiles[y * w + x]);
   // (By the panel a spot is in: things and candles may stand off a panel's middle, from world version 4.)
@@ -122,16 +126,19 @@ export function buildScene(input: SceneInput): Scene {
   const { T, sx, sy, midX, midY, footX, footY, x0, x1, y0, y1 } = view;
   ctx.fillStyle = COLOURS.rock;
   ctx.fillRect(0, 0, cw, ch);
-  // The kit (lib/sprites/walk.ts): a kit pixel is T / KIT_PX across and T / KIT_ROW down.
-  const kitImg = { floor: image(WALK_KIT.floor), north: image(WALK_KIT.north), cap: image(WALK_KIT.cap), east: image(WALK_KIT.east), west: image(WALK_KIT.west) };
+  // The kit (lib/sprites/walk.ts): a kit pixel is T / its px across and T / its row down.
+  const kitImg = { floor: image(KIT.floor), north: image(KIT.north), cap: image(KIT.cap), east: image(KIT.east), west: image(KIT.west) };
   const kit = Object.values(kitImg).every(Boolean) ? (kitImg as Record<keyof typeof kitImg, Img>) : null;
-  const worn = WALK_FLOOR_WORN.map(image).filter((i): i is Img => !!i);
-  const wornWalls = WALK_WALL_WORN.map(image).filter((i): i is Img => !!i);
-  const vy = artPxDown(view, KIT_DENSITY), side = Math.round(KIT_SIDE * artPxAcross(view, KIT_DENSITY));
+  // Its corner pieces, if it has them and they've loaded (else corners are its pieces butted together).
+  const cornerImg = KIT.corners && { nw: image(KIT.corners.nw), ne: image(KIT.corners.ne), sw: image(KIT.corners.sw), se: image(KIT.corners.se) };
+  const corners = cornerImg && Object.values(cornerImg).every(Boolean) ? (cornerImg as Record<keyof typeof cornerImg, Img>) : null;
+  const worn = (KIT.worn?.floors ?? []).map(image).filter((i): i is Img => !!i);
+  const wornWalls = (KIT.worn?.walls ?? []).map(image).filter((i): i is Img => !!i);
+  const vy = artPxDown(view, KIT_DENSITY), side = Math.round(KZ.side * artPxAcross(view, KIT_DENSITY));
   const faceAbove = (x: number, y: number) => {
     let rows = 0;
     while (rows < 3 && at(x, y - rows - 1) === ROCK) rows++;
-    return Math.min(Math.round(KIT_NORTH * vy), rows * T);
+    return Math.min(Math.round(KZ.north * vy), rows * T);
   };
   if (kit) {
     // Floors, each north wall's face standing in the rock above it, the narrow side walls' tops.
@@ -139,11 +146,11 @@ export function buildScene(input: SceneInput): Scene {
       if (at(x, y) === ROCK || !knownAt(x, y)) continue;
       const wd = sx(x + 1) - sx(x);
       const v = decor && worn.length > 0 ? floorVariant(x, y, walk.seed, worn.length) : 0;
-      if (y < y1) ctx.drawImage(v > 0 ? worn[v - 1] : kit.floor, 0, 0, KIT_PX, KIT_ROW, sx(x), sy(y), wd, sy(y + 1) - sy(y));
+      if (y < y1) ctx.drawImage(v > 0 ? worn[v - 1] : kit.floor, 0, 0, KZ.px, KZ.row, sx(x), sy(y), wd, sy(y + 1) - sy(y));
       if (at(x, y - 1) !== ROCK) continue;
       const dh = faceAbove(x, y);
       const wv = decor && wornWalls.length > 0 ? wallVariant(Math.floor(x / 2), y, walk.seed, wornWalls.length) : 0;
-      if (dh > 0) ctx.drawImage(wv > 0 ? wornWalls[wv - 1] : kit.north, wv > 0 ? (x & 1) * KIT_PX : 0, KIT_NORTH - dh / vy, KIT_PX, dh / vy, sx(x), sy(y) - dh, wd, dh);
+      if (dh > 0) ctx.drawImage(wv > 0 ? wornWalls[wv - 1] : kit.north, wv > 0 ? (x & 1) * KZ.px : 0, KZ.north - dh / vy, KZ.px, dh / vy, sx(x), sy(y) - dh, wd, dh);
     }
     const bannerArt = artOf(BANNER)!, bannerImg = image(bannerArt.src);
     if (bannerImg) for (const b of banners) {
@@ -151,14 +158,17 @@ export function buildScene(input: SceneInput): Scene {
       const { wd: wd2, h2 } = drawSize(view, BANNER, bannerArt), face = faceAbove(b.x, b.y);
       ctx.drawImage(bannerImg, sx(b.x + 1) - wd2 / 2, sy(b.y) - face + Math.max(0, (face - h2) * 0.35), wd2, Math.min(h2, face));
     }
-    const strip = (img: Img, left: number, q: Pt, floorX: number) => {
-      ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y), side, sy(q.y + 1) - sy(q.y));
+    // Beside a north wall's end, the side wall's top runs up the wall to its cap: the kit's corner
+    // piece, cut to the wall's height as the wall is (or, without one, the strip stretched up).
+    const strip = (img: Img, corner: Img | undefined, left: number, q: Pt, floorX: number) => {
+      ctx.drawImage(img, 0, 0, KZ.side, KZ.row, left, sy(q.y), side, sy(q.y + 1) - sy(q.y));
       if (at(floorX, q.y - 1) !== ROCK) return;
       const dh = faceAbove(floorX, q.y);
-      ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y) - dh, side, dh);
+      if (corner) ctx.drawImage(corner, 0, KZ.north - dh / vy, KZ.side, dh / vy, left, sy(q.y) - dh, side, dh);
+      else ctx.drawImage(img, 0, 0, KZ.side, KZ.row, left, sy(q.y) - dh, side, dh);
     };
-    for (const q of edges.left) if (q.x >= x0 - 1 && q.x < x1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x + 1, q.y)) strip(kit.west, sx(q.x + 1) - side, q, q.x + 1);
-    for (const q of edges.right) if (q.x >= x0 && q.x < x1 + 1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x - 1, q.y)) strip(kit.east, sx(q.x), q, q.x - 1);
+    for (const q of edges.left) if (q.x >= x0 - 1 && q.x < x1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x + 1, q.y)) strip(kit.west, corners?.nw, sx(q.x + 1) - side, q, q.x + 1);
+    for (const q of edges.right) if (q.x >= x0 && q.x < x1 + 1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x - 1, q.y)) strip(kit.east, corners?.ne, sx(q.x), q, q.x - 1);
   }
   // Rooms cut off behind you, dimmed.
   for (const [id, rs] of Object.entries(plan.rooms)) {
@@ -271,14 +281,19 @@ export function buildScene(input: SceneInput): Scene {
       Math.round(footX(sim.me.x) - size / 2), Math.round(footY(sim.me.y) - WALK_HERO.feet * px), size, size);
   } });
   // South walls stand up over the floor's bottom row (see-through close to you).
-  const lift = Math.round(KIT_CAP * vy);
+  const lift = Math.round(KZ.cap * vy);
   if (kit) for (const q of edges.south) {
     if (q.x < x0 || q.x >= x1 || q.y < y0 || q.y >= y1 || !knownAt(q.x, q.y - 1)) continue;
     standing.push({ x: q.x, y: q.y + SOUTH_WALL.visual.legacy.sortDy!, draw: () => {
       ctx.globalAlpha = capFade(Math.hypot(q.x - sim.me.x, q.y - 0.5 - WALL_LIFT / 2 - sim.me.y));
       const l = at(q.x - 1, q.y) === ROCK && at(q.x - 1, q.y - 1) === ROCK ? side : 0;
       const r = at(q.x + 1, q.y) === ROCK && at(q.x + 1, q.y - 1) === ROCK ? side : 0;
-      ctx.drawImage(kit.cap, 0, 0, KIT_PX, KIT_CAP, sx(q.x) - l, sy(q.y) - lift, sx(q.x + 1) - sx(q.x) + l + r, lift);
+      // Where it meets a side wall it runs on over the wall's top: the kit's corner pieces, or the band stretched.
+      if (corners) {
+        ctx.drawImage(kit.cap, 0, 0, KZ.px, KZ.cap, sx(q.x), sy(q.y) - lift, sx(q.x + 1) - sx(q.x), lift);
+        if (l) ctx.drawImage(corners.sw, 0, 0, KZ.side, KZ.cap, sx(q.x) - l, sy(q.y) - lift, l, lift);
+        if (r) ctx.drawImage(corners.se, 0, 0, KZ.side, KZ.cap, sx(q.x + 1), sy(q.y) - lift, r, lift);
+      } else ctx.drawImage(kit.cap, 0, 0, KZ.px, KZ.cap, sx(q.x) - l, sy(q.y) - lift, sx(q.x + 1) - sx(q.x) + l + r, lift);
       ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
       ctx.fillRect(sx(q.x), sy(q.y) - lift, T, Math.max(1, scale));
       ctx.globalAlpha = 1;

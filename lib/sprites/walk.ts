@@ -8,16 +8,34 @@
 // Or a kit (PixelLab's building kit, cut into its materials: see KitArt),
 // drawn in the three-quarter look of docs/ideas/future-dungeon-direction.png.
 export type WalkTiles = { name: string; floor: string; tunnel: string; kit?: KitArt };
-// A kit's pieces, at KIT_PX a tile: the floor (KIT_PX × KIT_ROW: the view's
-// rows are squashed), a north wall (its top, a pale cap band, the brick face
-// down to the floor), the cap band alone (south walls), and the narrow side
-// walls' tops, for a wall on a floor's east (right) or west (left).
-export type KitArt = { floor: string; north: string; cap: string; east: string; west: string };
+// A kit's pieces, at size.px art pixels a tile: the floor (px × row: the
+// view's rows are squashed), a north wall (its top, a pale cap band, the face
+// down to the floor: north tall), the cap band alone (south walls: cap tall),
+// and the narrow side walls' tops (side wide), for a wall on a floor's east
+// (right) or west (left). corners (optional): a room's corner pieces, so a side
+// wall's top turns into the back wall's cap and the south band as one L: nw
+// and ne (side × north) stand in the rock beside a north wall's ends, sw and se
+// (side × cap) where the south band meets a side wall. Without them a corner
+// is the pieces butted together.
+export type KitSize = { px: number; row: number; north: number; cap: number; side: number };
+export type KitArt = { floor: string; north: string; cap: string; east: string; west: string; size: KitSize;
+  corners?: { nw: string; ne: string; sw: string; se: string };
+  worn?: { floors: string[]; walls: string[] } };
+// The first kit's sizes, and the art density of you and the things in the walk (objects.ts), which
+// stays at KIT_PX a unit whatever kit the walls are drawn with.
 export const KIT_PX = 32, KIT_ROW = 24, KIT_NORTH = 57, KIT_CAP = 15, KIT_SIDE = 12;
-const KIT_A = "/sprites/walk/kit-a-";
+const KIT_A = "/sprites/walk/kit-a-", KIT_E = "/sprites/walk/kit-e-";
 export const WALK_TILES: WalkTiles[] = [
+  // Kit E (the user's pick, 2026-11-09): dark crumbling fieldstone, 48 a tile, a mossy cobbled floor,
+  // and corner pieces cut from its own walls (PIXELLAB.md).
+  { name: "Kit: dark fieldstone", floor: `${KIT_E}floor.png`, tunnel: `${KIT_E}floor.png`,
+    kit: { floor: `${KIT_E}floor.png`, north: `${KIT_E}north.png`, cap: `${KIT_E}cap.png`, east: `${KIT_E}east.png`, west: `${KIT_E}west.png`,
+      size: { px: 48, row: 36, north: 87, cap: 15, side: 20 },
+      corners: { nw: `${KIT_E}nw.png`, ne: `${KIT_E}ne.png`, sw: `${KIT_E}sw.png`, se: `${KIT_E}se.png` } } },
   { name: "Kit: mossy dungeon", floor: `${KIT_A}floor.png`, tunnel: `${KIT_A}floor.png`,
-    kit: { floor: `${KIT_A}floor.png`, north: `${KIT_A}north.png`, cap: `${KIT_A}cap.png`, east: `${KIT_A}east.png`, west: `${KIT_A}west.png` } },
+    kit: { floor: `${KIT_A}floor.png`, north: `${KIT_A}north.png`, cap: `${KIT_A}cap.png`, east: `${KIT_A}east.png`, west: `${KIT_A}west.png`,
+      size: { px: KIT_PX, row: KIT_ROW, north: KIT_NORTH, cap: KIT_CAP, side: KIT_SIDE },
+      worn: { floors: Array.from({ length: 12 }, (_, i) => `/sprites/walk/floor-worn-${i}.png`), walls: Array.from({ length: 3 }, (_, i) => `/sprites/walk/wall-worn-${i}.png`) } } },
   { name: "Mossy brick", floor: "/sprites/walk/tiles-a.png", tunnel: "/sprites/walk/tunnel-a.png" },
   { name: "Ivy blocks", floor: "/sprites/walk/tiles-b.png", tunnel: "/sprites/walk/tiles-b.png" },
 ];
@@ -36,8 +54,8 @@ export const WALK_HEROES: WalkHero[] = [
   { name: "Torchbearer (old)", sheet: "/sprites/walk/hero-b.png", cell: 48, frames: 6, feet: 40 },
 ];
 
-// What the game uses (the Labyrinth's "New"; the user's picks, 2026-11-06):
-// the mossy kit, and the cloaked torchbearer.
+// What the game uses (the Labyrinth's "New"; the user's picks): kit E's dark
+// fieldstone (2026-11-09; the mossy kit before), and the cloaked torchbearer.
 export const WALK_KIT: KitArt = WALK_TILES[0].kit!;
 export const WALK_HERO: WalkHero = WALK_HEROES.find((h) => h.sheet.endsWith("hero-e.png"))!;
 

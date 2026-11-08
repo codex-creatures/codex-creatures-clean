@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { slowIt } from "./slow";
 import { walkSetup, seeded, digest } from "./walkBaseline";
-import { oldDraw } from "./sceneBefore";
+import { oldDraw, OLD_KIT } from "./sceneBefore";
 import { buildScene, type SceneInput, type DrawCmd } from "../lib/render/scene";
 import { paintScene, type DarkLayer } from "../lib/render/paint";
 import { startWalk, restartLoop, stepWalk, type WalkSim } from "../lib/world/walkSim";
@@ -17,7 +17,7 @@ import type { DungeonRun } from "../lib/dungeon/run";
 // The scene builder (lib/render/scene.ts), the walk screen's drawing moved out
 // in phase 1 (docs/world-spec.md §8):
 // - against the drawing as it stood before the move (tests/sceneBefore.ts, the
-//   same lines verbatim), on a stand-in canvas that writes down every call:
+//   same lines verbatim, with the mossy kit it was written for), on a stand-in canvas that writes down every call:
 //   painting the builder's list must make exactly the same calls, in order,
 //   frame after frame (the dark's pixels compared too), over sessions on
 //   every saved run, with pictures loaded or not;
@@ -78,7 +78,8 @@ function compare(name: string, opts: Parameters<typeof session>[1]) {
     const a: unknown[] = [], b: unknown[] = [];
     const mask = { shade: darkOld! };
     oldDraw(input, standIn(a), { putImageData: () => {} }, mask, darkOld!);
-    const scene = buildScene(again());
+    // (With the kit the old drawing was written for: the walls' art has moved on since.)
+    const scene = buildScene({ ...again(), kit: OLD_KIT });
     paintScene(standIn(b) as unknown as CanvasRenderingContext2D, scene.cmds, (src) => ({ src }) as unknown as CanvasImageSource, darkNew!);
     for (const key of scene.settled) input.sim.falls.delete(key);
     frames++;

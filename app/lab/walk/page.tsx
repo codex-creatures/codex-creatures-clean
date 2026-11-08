@@ -452,17 +452,18 @@ export default function WalkLab() {
       ctx.fillRect(0, 0, cw, ch);
       const floorSheet = artOn ? image(WALK_TILES[ts].floor) : null, tunnelSheet = artOn ? image(WALK_TILES[ts].tunnel) : null;
       const artReady = !!(floorSheet && tunnelSheet);
-      // A kit (lib/sprites/walk.ts KitArt), in the three-quarter look: a kit pixel is T / KIT_PX
-      // across and T / KIT_ROW down (its rows are squashed, as the view is).
+      // A kit (lib/sprites/walk.ts KitArt), in the three-quarter look: a kit pixel is T / its px
+      // across and T / its row down (its rows are squashed, as the view is).
       const kitArt = artOn ? WALK_TILES[ts].kit : undefined;
+      const kz = kitArt?.size ?? { px: KIT_PX, row: KIT_ROW, north: KIT_NORTH, cap: KIT_CAP, side: KIT_SIDE };
       const kitImg = kitArt && { floor: image(kitArt.floor), north: image(kitArt.north), cap: image(kitArt.cap), east: image(kitArt.east), west: image(kitArt.west) };
       const kit = kitImg && Object.values(kitImg).every(Boolean) ? (kitImg as Record<keyof typeof kitImg, HTMLImageElement>) : null;
-      const vy = T / KIT_ROW, side = Math.round((KIT_SIDE * T) / KIT_PX);
+      const vy = T / kz.row, side = Math.round((kz.side * T) / kz.px);
       // How tall a floor tile's north wall stands on screen (its face, up to the rock there is).
       const faceAbove = (x: number, y: number) => {
         let rows = 0;
         while (rows < 3 && at(x, y - rows - 1) === ROCK) rows++;
-        return Math.min(Math.round(KIT_NORTH * vy), rows * T);
+        return Math.min(Math.round(kz.north * vy), rows * T);
       };
       if (kit) {
         // Floors, then each north wall's face standing in the rock above it, then the narrow
@@ -470,16 +471,16 @@ export default function WalkLab() {
         for (let y = y0; y < y1 + 3; y++) for (let x = x0; x < x1; x++) {
           if (at(x, y) === ROCK || !knownAt(x, y)) continue;
           const wd = sx(x + 1) - sx(x);
-          if (y < y1) ctx.drawImage(kit.floor, 0, 0, KIT_PX, KIT_ROW, sx(x), sy(y), wd, sy(y + 1) - sy(y));
+          if (y < y1) ctx.drawImage(kit.floor, 0, 0, kz.px, kz.row, sx(x), sy(y), wd, sy(y + 1) - sy(y));
           if (at(x, y - 1) !== ROCK) continue;
           const dh = faceAbove(x, y);
-          if (dh > 0) ctx.drawImage(kit.north, 0, KIT_NORTH - dh / vy, KIT_PX, dh / vy, sx(x), sy(y) - dh, wd, dh);
+          if (dh > 0) ctx.drawImage(kit.north, 0, kz.north - dh / vy, kz.px, dh / vy, sx(x), sy(y) - dh, wd, dh);
         }
         const strip = (img: HTMLImageElement, left: number, q: Pt, floorX: number) => {
-          ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y), side, sy(q.y + 1) - sy(q.y));
+          ctx.drawImage(img, 0, 0, kz.side, kz.row, left, sy(q.y), side, sy(q.y + 1) - sy(q.y));
           if (at(floorX, q.y - 1) !== ROCK) return;
           const dh = faceAbove(floorX, q.y);
-          ctx.drawImage(img, 0, 0, KIT_SIDE, KIT_ROW, left, sy(q.y) - dh, side, dh);
+          ctx.drawImage(img, 0, 0, kz.side, kz.row, left, sy(q.y) - dh, side, dh);
         };
         for (const q of edges.left) if (q.x >= x0 - 1 && q.x < x1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x + 1, q.y)) strip(kit.west, sx(q.x + 1) - side, q, q.x + 1);
         for (const q of edges.right) if (q.x >= x0 && q.x < x1 + 1 && q.y >= y0 && q.y < y1 + 3 && knownAt(q.x - 1, q.y)) strip(kit.east, sx(q.x), q, q.x - 1);
@@ -640,7 +641,7 @@ export default function WalkLab() {
         ctx.fill();
       } });
       // South walls stand up over the floor's bottom row: their tops, raised (see-through close to you).
-      const lift = kit ? Math.round(KIT_CAP * vy) : Math.round(WALL_LIFT * T);
+      const lift = kit ? Math.round(kz.cap * vy) : Math.round(WALL_LIFT * T);
       if (artReady || kit || !artOn) for (const q of edges.south) {
         if (q.x < x0 || q.x >= x1 || q.y < y0 || q.y >= y1 || !knownAt(q.x, q.y - 1)) continue;
         standing.push({ x: q.x, y: q.y - 0.5, draw: () => {
@@ -649,7 +650,7 @@ export default function WalkLab() {
             // The kit's cap band, reaching on over a side wall's top at a corner.
             const l = at(q.x - 1, q.y) === ROCK && at(q.x - 1, q.y - 1) === ROCK ? side : 0;
             const r = at(q.x + 1, q.y) === ROCK && at(q.x + 1, q.y - 1) === ROCK ? side : 0;
-            ctx.drawImage(kit.cap, 0, 0, KIT_PX, KIT_CAP, sx(q.x) - l, sy(q.y) - lift, sx(q.x + 1) - sx(q.x) + l + r, lift);
+            ctx.drawImage(kit.cap, 0, 0, kz.px, kz.cap, sx(q.x) - l, sy(q.y) - lift, sx(q.x + 1) - sx(q.x) + l + r, lift);
           } else if (floorSheet) {
             const t = WANG_TILES[TOP_TILE];
             ctx.drawImage(floorSheet, t.col * SHEET_TILE, t.row * SHEET_TILE, SHEET_TILE, SHEET_TILE * WALL_LIFT, sx(q.x), sy(q.y) - lift, sx(q.x + 1) - sx(q.x), lift);

@@ -10,7 +10,7 @@ import type { Cage, DungeonRun } from "../lib/dungeon/run";
 // pin places its version's things on the saved layout. MAKE_WALK_FIXTURES=1
 // writes any that are missing, from today's code.
 
-const FIXTURES = path.join(__dirname, "fixtures", "walk");
+const FIXTURES = path.join(__dirname, "fixtures", "pins"); // (not walk/: that folder is the baseline's own runs)
 const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
 
 export function pinnedRun(dungeon: 0 | 1, seed: number): DungeonRun {

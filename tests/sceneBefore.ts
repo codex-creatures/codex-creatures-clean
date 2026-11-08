@@ -13,7 +13,11 @@ import { torchGlow, rubbleOf, sconceGlow, SCONCE_RADIUS, CANDLE_RADIUS, type Sco
 import { floorVariant, wallVariant } from "../lib/dungeon/decor";
 import { CAMPFIRE_HEAL, type Campfire } from "../lib/dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "../lib/dungeon/foes";
-import { WALK_KIT, WALK_HERO, WALK_WITCH, WALK_FLOOR_WORN, WALK_WALL_WORN, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "../lib/sprites/walk";
+import { WALK_TILES, WALK_HERO, WALK_WITCH, WALK_FLOOR_WORN, WALK_WALL_WORN, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "../lib/sprites/walk";
+// (The kit this drawing was written for: the first, mossy one. The game's walls have moved on to
+// kit E since, 2026-11-09; tests/scene.test.ts draws the builder with this one to compare.)
+export const OLD_KIT = WALK_TILES.find((t) => t.name === "Kit: mossy dungeon")!.kit!;
+const WALK_KIT = OLD_KIT;
 import { CREATURE_SPRITES } from "../lib/sprites/creatures";
 import { artFor } from "../lib/sprites/art";
 import { objectDef, artOf, DECOR_DEF, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE, type ObjectDef, type ArtRef } from "../lib/world/objects";
