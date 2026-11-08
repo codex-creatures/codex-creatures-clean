@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The offline copy built by `npm run build:offline` (generated, gitignored).
+    "codex-offline/**",
   ]),
 ]);
 
