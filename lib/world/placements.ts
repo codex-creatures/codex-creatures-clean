@@ -14,7 +14,7 @@ import type { Sconce, Candle } from "../dungeon/torch";
 import type { Foe } from "../dungeon/foes";
 import type { WalkRun } from "../dungeon/walkRun";
 import type { Pt } from "../dungeon/floorplan";
-import { anchorPoint } from "./grid";
+import { anchorPoint, footprintCells, SUBCELLS } from "./grid";
 import type { Instance } from "./objects";
 
 export type Placements = {
@@ -31,12 +31,21 @@ const WALLS: Partial<Record<NonNullable<Instance["wall"]>, NonNullable<Sconce["w
 // A candle this close to a campfire isn't lit or drawn (the fire's taken its place).
 const BY_FIRE = 2;
 
-export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "fires" | "layout">): Placements {
+// Where a thing stands, in u: its anchor's centre; from world version 4, a floor
+// thing's footprint's middle (an even size's anchor is off its middle, §3).
+function spotOf(i: Instance, v: number): Pt {
+  if (v < 4 || !i.size || (!i.size.w && !i.size.d)) return anchorPoint(i);
+  const cells = footprintCells(i, i.size, i.rot ?? 0);
+  const xs = cells.map((c) => c.sx), ys = cells.map((c) => c.sy);
+  return { x: (Math.min(...xs) + Math.max(...xs)) / 2 / SUBCELLS, y: (Math.min(...ys) + Math.max(...ys)) / 2 / SUBCELLS };
+}
+
+export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "fires" | "layout" | "v">): Placements {
   const lit = new Set(walk.lit ?? []), fires = walk.fires ?? [];
   const sconces: Sconce[] = [], candles: Candle[] = [], witches: Foe[] = [], foes: Foe[] = [];
   const spots = new Map<string, Pt>();
   for (const i of placed) {
-    const p = anchorPoint(i);
+    const p = spotOf(i, walk.v ?? 0);
     spots.set(i.id, p);
     if (i.def === "sconce" || i.def === "sconce-side") {
       const s: Sconce = { id: i.id, room: i.room, ...p, lit: i.start === "lit" || lit.has(i.id) };

@@ -105,8 +105,9 @@ export function buildScene(input: SceneInput): Scene {
   const { sim, frame: F, plan, live, edges, layout, decor, decorItems, banners, room, now, w: cw, h: ch, ready, random } = input;
   const { w, h } = plan;
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? ROCK : live.tiles[y * w + x]);
-  const knownAt = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && sim.known[y * w + x] === 1;
-  const litAt = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && sim.lightNow[y * w + x] === 1;
+  // (By the panel a spot is in: things and candles may stand off a panel's middle, from world version 4.)
+  const knownAt = (px: number, py: number) => { const x = Math.round(px), y = Math.round(py); return x >= 0 && y >= 0 && x < w && y < h && sim.known[y * w + x] === 1; };
+  const litAt = (px: number, py: number) => { const x = Math.round(px), y = Math.round(py); return x >= 0 && y >= 0 && x < w && y < h && sim.lightNow[y * w + x] === 1; };
   const there = (c: Sconce) => torchThere(sim, c);
   const { busy, alarm: A, reachNow, candlesSeen, fireSeen, alarmed, foeLight, giving } = F;
   const p = sim.progress;

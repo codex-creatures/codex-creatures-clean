@@ -9,10 +9,13 @@ import { findPath } from "../lib/dungeon/walk";
 import type { Pt } from "../lib/dungeon/floorplan";
 import { roomIds, thingsOf, solidCells, approach, foeStarts } from "../lib/world/walkWorld";
 import { newWalkRun, migrateWalkRun, placementsOfWalk, placedProblem, canRecover, recoverWalkRun, LEGACY_WALK_V } from "../lib/world/migrate";
-import { placeWalk, passRng, reachableIn, PLACED_V, CANDLE_FIRE_GAP, type Placed } from "../lib/world/place";
+// (These are world version 3's tests, kept as they were: since 2b-2 stage A a new run is placed at
+// version 4 (tests/placeV4.test.ts), so the runs here are made at version 3 on purpose: newV3.)
+import { placeWalk, passRng, reachableIn, FIRST_PLACED_V as PLACED_V, CANDLE_FIRE_GAP, type Placed } from "../lib/world/place";
 import { legacyPlacements } from "../lib/world/compat/v0";
 import { placementsFrom } from "../lib/world/placements";
-import { panelKey, navBlocked } from "../lib/world/occupancy";
+import { panelKey } from "../lib/world/occupancy";
+import { navBlocked } from "../lib/world/policy";
 import { footprintPanels, panelOfSubcell } from "../lib/world/grid";
 import { objectDef, type Instance } from "../lib/world/objects";
 import { WALK_V, unsupportedRun } from "../lib/world/version";
@@ -26,10 +29,15 @@ const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
 const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
 const made = (dungeon: 0 | 1, seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon);
+// A new run as 2b-1 made it: placed by version 3's rules, saved at version 3.
+const newV3 = (run: DungeonRun): DungeonRun => {
+  const walk = { ...run.walk!, v: PLACED_V };
+  return { ...run, walk: { ...walk, placed: placeWalk(walk, run.map, dungeonOf(run), (id) => walkRoom(run, id)).placed } };
+};
 const cache = new Map<string, DungeonRun>();
 const rolled = (dungeon: 0 | 1, seed: number) => {
   const k = `${dungeon}:${seed}`;
-  if (!cache.has(k)) cache.set(k, newWalkRun(made(dungeon, seed)));
+  if (!cache.has(k)) cache.set(k, newV3(made(dungeon, seed)));
   return structuredClone(cache.get(k)!);
 };
 const roomOf = (run: DungeonRun) => (id: string) => walkRoom(run, id);
@@ -139,7 +147,7 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
   it("a new run is saved at v3, once, with sound placements", () => {
     const run = rolled(0, 21);
     expect(run.walk!.v).toBe(PLACED_V);
-    expect(WALK_V).toBe(PLACED_V);
+    expect(WALK_V).toBeGreaterThanOrEqual(PLACED_V);
     expect(run.walk!.placed!.length).toBeGreaterThan(0);
     // Placed once: making a new run of a run that has them changes nothing.
     expect(quiet(() => newWalkRun(run))).toEqual(run);
@@ -153,7 +161,7 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
     for (const d of [0, 1] as const) {
       let rooms = 0;
       for (let s = 100; rooms < 300; s++) {
-        const run = newWalkRun(made(d, s));
+        const run = newV3(made(d, s));
         rooms += Object.keys(run.walk!.layout.rooms).length;
         bad.push(...problems(`dungeon ${d} seed ${s}`, run));
       }
@@ -164,7 +172,7 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
   it("is deterministic: the same run gives the same placements, and each room's pass its own numbers", () => {
     const run = rolled(1, 22);
     expect(placedOf(run).placed).toEqual(placedOf(structuredClone(run)).placed);
-    expect(newWalkRun(made(1, 22)).walk!.placed).toEqual(run.walk!.placed);
+    expect(newV3(made(1, 22)).walk!.placed).toEqual(run.walk!.placed);
     const a = passRng(5, "r1", 7), b = passRng(5, "r1", 7), c = passRng(5, "r2", 7);
     const first = a();
     expect(b()).toBe(first);
@@ -230,7 +238,7 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
 
   it("versions: a v3 run is newer than a copy reading up to 2; a south wall or a placed size is refused below v3", () => {
     expect(unsupportedRun({ walk: { v: PLACED_V } })).toBe(false);
-    expect(unsupportedRun({ walk: { v: PLACED_V + 1 } })).toBe(true);
+    expect(unsupportedRun({ walk: { v: WALK_V + 1 } })).toBe(true);
     expect(PLACED_V).toBeGreaterThan(LEGACY_WALK_V);
     const one = (extra: Partial<Instance>): Instance[] => [{ id: "r1:0", def: "sconce", room: "r1", sx: 3, sy: 3, ...extra }];
     expect(placedProblem(one({ wall: "south" }), PLACED_V)).toBeNull();
@@ -250,7 +258,7 @@ function simAgainstOld(runs: number) {
   for (const d of [0, 1] as const) {
     const t: Tally = { runs: 0, rooms: 0, candles: 0, candlesOld: 0, candlesShownOld: 0, omitted: 0, moved: 0, lit: 0, litOld: 0, torches: 0, torchesOld: 0, foes: 0, foesOld: 0, doorMin: Infinity, gapMin: Infinity, foesOnThings: 0 };
     for (let s = 500; s < 500 + runs; s++) {
-      const run = newWalkRun(made(d, s));
+      const run = newV3(made(d, s));
       const walk = run.walk!, plan = layoutFloorplan(walk.layout);
       const { placed, report } = placedOf(run);
       const old = quiet(() => migrateWalkRun({ ...run, walk: { ...walk, v: undefined, placed: undefined } })).run.walk!.placed!;

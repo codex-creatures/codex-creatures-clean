@@ -24,6 +24,7 @@ import type { Campfire } from "../dungeon/campfire";
 import type { DungeonMap } from "../dungeon/map";
 import type { Floorplan, Pt } from "../dungeon/floorplan";
 import { objectDef, REACH_OBJECT, TAP_OBJECT } from "./objects";
+import { panelAt } from "./grid";
 import type { Placements } from "./placements";
 
 // The walk screen's random numbers: a seeded stream (Park–Miller).
@@ -153,9 +154,11 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
   });
 }
 
-// The cells nothing may walk into: solid things, campfires, solid decor.
+// The cells nothing may walk into: solid things, campfires, solid decor. (A
+// thing off its panel's middle, from world version 4, blocks the panel it's in:
+// the generator keeps each solid thing inside one.)
 export const solidCells = (things: Thing[], fires: Campfire[], decor: Decor[]) =>
-  new Set([...things.filter((t) => t.solid), ...fires, ...decor.filter((d) => d.solid)].map((t) => `${t.x},${t.y}`));
+  new Set([...things.filter((t) => t.solid), ...fires, ...decor.filter((d) => d.solid)].map((t) => `${panelAt(t.x)},${panelAt(t.y)}`));
 
 // Where you may walk: what the forward rule allows (layout.ts stepRule), only
 // where you've seen (known: null for the walking rules alone), and never into
@@ -181,7 +184,7 @@ export const inReach = (t: Thing, you: Pt) => Math.hypot(t.x - you.x, t.y - you.
 export function approach(plan: Floorplan, t: Thing, from: Pt, can: CanStep): Pt[] | null {
   let best: Pt[] | null = null;
   for (const { dx, dy } of objectDef(t.def).interact?.points ?? []) {
-    const n = { x: t.x + dx, y: t.y + dy };
+    const n = { x: panelAt(t.x) + dx, y: panelAt(t.y) + dy };
     if ((dx || dy || !t.solid) && walkable(plan, n.x, n.y)) {
       const way = findPath(plan, from, n, can);
       if (way && (!best || way.length < best.length)) best = way;

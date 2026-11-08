@@ -38,7 +38,9 @@ export type ObjectDef = {
   kind: "structure" | "prop" | "interactable" | "light" | "creature" | "npc" | "decal";
   attach: Attach;
   footprint: { w: number; d: number }; // subcells, facing south (0×0: takes no floor)
-  clearance?: number;                  // subcells round it kept free of other solid things (placement only)
+  clearance?: number;                  // subcells round it kept free of other things (placement only, from world version 4)
+  clearFront?: boolean;                // …only in front of it (south), not all round
+  occupies?: "structure" | "blocking" | "walk-over" | "trigger" | "overhead"; // its occupancy layer, where it isn't the one its attach and collision give (a trigger area: occupancy.ts layerOf)
   height: number;                      // u
   collision: "solid" | "walk-over" | "none";
   blocksSight: boolean;                // foes' sight (foes.ts)
@@ -123,13 +125,13 @@ const WALK_OVER = { collision: "walk-over" as const, height: 0.3, sortDy: -0.6 }
 
 const DEFS: ObjectDef[] = [
   // Things you use.
-  def("chest", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(TREASURE_CHEST), open: propRef(TREASURE_CHEST_OPEN) }, { width: OBJECT_U })),
+  def("chest", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(TREASURE_CHEST), open: propRef(TREASURE_CHEST_OPEN) }, { width: OBJECT_U })),
   def("sack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, interact: usable("open") }), legacyVisual({ shut: propRef(BURLAP_SACK), open: propRef(BURLAP_SACK_OPEN) }, { width: SACK_U })),
-  def("rickety-chest", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
+  def("rickety-chest", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
   // A beaten room's loot, dropped where the fight was: you walk over it.
   def("loot-sack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("open") }), legacyVisual({ shut: propRef(BURLAP_SACK), open: propRef(BURLAP_SACK_OPEN) }, { width: SACK_U })),
   def("loot-chest", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", collision: "walk-over", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
-  def("card-deck", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, kind: "interactable", interact: usable("play") }), legacyVisual({ base: propRef(CARD_DECK) }, { width: OBJECT_U })),
+  def("card-deck", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("play") }), legacyVisual({ base: propRef(CARD_DECK) }, { width: OBJECT_U })),
   def("pool", floorThing({ footprint: { w: 3, d: 3 }, clearance: 1, kind: "interactable", height: 0.3, interact: usable("drink") }), legacyVisual({ base: ref(WALK_POOL) }, { width: legacyU(WALK_POOL.size), lift: 0.35 })),
   def("cage", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.2, interact: usable("open") }), legacyVisual({ shut: ref(WALK_CAGE), open: ref(WALK_CAGE_OPEN) }, { width: legacyU(WALK_CAGE.size) })),
   // Lights.
@@ -167,8 +169,8 @@ const DEFS: ObjectDef[] = [
   decorDef("nest", "nest", { ...WALK_OVER, footprint: { w: 2, d: 2 } }, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
   decorDef("pots", "pots", { ...WALK_OVER, footprint: { w: 2, d: 2 }, height: 0.5 }, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
   // People: the merchant and the librarian stand by their carts; the card witch walks about (not solid).
-  def("merchant", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(MERCHANT) }, { height: NPC_U })),
-  def("librarian", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),
+  def("merchant", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(MERCHANT) }, { height: NPC_U })),
+  def("librarian", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),
   def("witch", floorThing({ footprint: { w: 2, d: 2 }, kind: "npc", height: 1.3, collision: "none", light: NPC_LIGHT, interact: usable("talk", true) }),
     legacyVisual({ base: propRef(CARD_WITCH) }, { height: NPC_U }, { facings: ["south", "east", "north", "west"] })),
   // You, and foes: a foe's art is its species' (lib/sprites/creatures.ts), drawn FOE_U tall, bigger when it waits.

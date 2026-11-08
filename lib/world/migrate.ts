@@ -31,7 +31,7 @@ import { dungeonOf, type DungeonId, type DungeonRun, type DungeonSave, type Room
 import { walkRoom, type WalkRun } from "../dungeon/walkRun";
 import type { DungeonMap } from "../dungeon/map";
 import { legacyPlacements, legacyFoePlacements } from "./compat/v0";
-import { placeWalk, PLACED_V } from "./place";
+import { placeWalk, PLACED_V, FIRST_PLACED_V } from "./place";
 import { placementsFrom, type Placements } from "./placements";
 import { roomIds, foesToPlace } from "./walkWorld";
 import { OBJECTS, type Instance } from "./objects";
@@ -71,8 +71,8 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (typeof p.room !== "string" || !p.room) return `${p.id}: no room`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
-    if (p.wall !== undefined && !(v >= PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
-    if (p.size !== undefined && (v < PLACED_V || !sizeOk(p.size))) return `${p.id}: unknown size`;
+    if (p.wall !== undefined && !(v >= FIRST_PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
+    if (p.size !== undefined && (v < FIRST_PLACED_V || !sizeOk(p.size))) return `${p.id}: unknown size`;
     if (p.start !== undefined && p.start !== "lit") return `${p.id}: unknown starting state`;
     if (p.facing !== undefined && (typeof p.facing !== "number" || !Number.isFinite(p.facing))) return `${p.id}: unknown facing`;
     if (p.legacy !== undefined && p.legacy !== "panel") return `${p.id}: unknown legacy rule`;
@@ -120,7 +120,7 @@ const v2Problem = (walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id
 // Placements for a walk, by the rules of its version: phase 2b's for a v3
 // run, else the old rules as the game showed them.
 const placementsFor = (walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Instance[] =>
-  (walk.v ?? 0) >= PLACED_V ? placeWalk(walk, map, dungeon, room).placed
+  (walk.v ?? 0) >= FIRST_PLACED_V ? placeWalk(walk, map, dungeon, room).placed
     : [...legacyPlacements(walk, map, room), ...legacyFoePlacements(walk, map, dungeon, room)];
 const roomsOf = (run: DungeonRun) => (id: string) => walkRoom(run, id);
 
@@ -156,7 +156,7 @@ function made(run: DungeonRun, outcome: "migrated" | "repaired", problem?: strin
   } catch (e) {
     return unmade(run, e);
   }
-  const v = (walk.v ?? 0) >= PLACED_V ? PLACED_V : LEGACY_WALK_V;
+  const v = (walk.v ?? 0) >= FIRST_PLACED_V ? walk.v! : LEGACY_WALK_V;
   return { run: { ...run, walk: { ...walk, v, placed } }, outcome, ...(problem ? { problem } : {}) };
 }
 
@@ -180,7 +180,7 @@ export function canRecover(run: DungeonRun | null | undefined): boolean {
   const walk = run?.walk;
   if (!run || !walk || unsupportedRun(run)) return false;
   const v = walk.v ?? 0;
-  return (v === 0 || LEGACY_V.includes(v as number) || v === PLACED_V) && problemOf(run) !== null;
+  return (v === 0 || LEGACY_V.includes(v as number) || (v as number) >= FIRST_PLACED_V && (v as number) <= PLACED_V) && problemOf(run) !== null;
 }
 
 // Mending a damaged run, only when the player asks (the Labyrinth screen's

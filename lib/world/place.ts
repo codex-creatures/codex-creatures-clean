@@ -1,6 +1,18 @@
 // lib/world/place.ts
-// Where things go in a new walkable run (docs/world-spec.md §5.3, §8 phase 2b-1):
-// world version 3. Made once, when the run is made, and saved in it
+// Where things go in a new walkable run (docs/world-spec.md §5.3, §8 phases
+// 2b-1 and 2b-2): world version 4 (stage A), or 3 (2b-1) for a run made then.
+// Each version's rules give exactly what they gave (v3: tests/placeV3.test.ts).
+//
+// Version 3: every floor thing takes its whole panel, at its middle.
+// Version 4: things take their own footprints (§3 "Sizes"), sitting in their
+// panels where suits them (storage leaning to the nearest wall, things used
+// from the front at the back); things whose footprints don't meet may share a
+// panel; each thing's clearance is kept; candles keep today's spots, at
+// subcell level; a creature's size class checks there's floor round where it
+// starts. While walking is on panels the generator also keeps to the temporary
+// policies in policy.ts (one solid thing a panel, inside it).
+//
+// Made once, when the run is made, and saved in it
 // (WalkRun.placed); never made again unless the player asks for a damaged run
 // to be mended, which gives the same list. Runs from before keep what the old
 // rules placed (lib/world/compat/v0.ts).
@@ -16,7 +28,7 @@
 // 3. structure: the pillars, already marked;
 // 4. things you use: a room's feature at its middle, a large room's stores,
 //    the merchant and the librarian, a camp's cages along its top;
-// 5. wall slots: wall torches, as many and where today's rules put them;
+// 5. attachment slots: wall torches, as many and where today's rules put them;
 // 6. floor lights: a candle now and then, kept away from campfires;
 // 7. spawns: every fight room's foes (an ambush's too) and the card witch,
 //    never on something placed or a kept spot, and only where you can get to.
@@ -37,14 +49,19 @@ import { CAGE_GAP, waitsHere, type WalkRun } from "../dungeon/walkRun";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
 import type { DungeonMap } from "../dungeon/map";
 import { seeded, roomIds, fightsLater, guardedChestSpot } from "./walkWorld";
-import { subcellOfPanel } from "./grid";
+import { subcellOfPanel, footprintPanels, footprintCells, SUBCELLS } from "./grid";
+import { creatureSize, sizeClassOf } from "./creatures";
 import { objectDef, type Instance, type FoeStart } from "./objects";
 import {
-  newOccupancy, markStone, reserve, keepClear, canPlace, take, canStand, navBlocked, isFloor, slotKey, slotFree, takeSlot, panelKey,
+  newOccupancy, markStone, reserve, keepClear, canPlace, take, isFloor, slotKey, slotFree, takeSlot, panelKey, roomFor, panelCells,
   type Occupancy, type Wall,
 } from "./occupancy";
+import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
-export const PLACED_V = 3;          // the world version these rules place for (version.ts)
+export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
+export const PLACED_V = 4;          // the world version a new run is placed at (2b-2 stage A; version.ts)
+// Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
+export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
 export const CANDLE_FIRE_GAP = 2;   // panels a candle keeps from a campfire (today's "hidden by the fire" distance)
 
 export type PlaceNote = { id: string; room: string; what: string };
@@ -52,6 +69,7 @@ export type PlaceReport = {
   moved: PlaceNote[];      // a required thing put on the nearest valid panel, its own being taken
   omitted: PlaceNote[];    // an optional thing with no valid spot, left out
   problems: PlaceNote[];   // a required thing or path with nowhere to go (the tests fail on any)
+  rejected: (PlaceNote & { sx: number; sy: number })[]; // spots tried and refused, with why (the debugging view; v4)
 };
 
 type Rng = () => number;
@@ -178,15 +196,50 @@ function pointsOf(layoutRoom: WalkRun["layout"]["rooms"][string], floors: Rect[]
 // a waiting boss, or one for each of its enemies (an ambush's too).
 const foeCount = (r: Room, dungeon: DungeonId) => (waitsHere(r, dungeon) ? 1 : hasFight(r) || fightsLater(r) ? r.enemies?.length ?? 0 : 0);
 
+// Where a thing may sit inside panel p (v4), best first: inside the panel,
+// leaning to the nearest wall (storage favours walls and corners, the user,
+// 2026-11-08); a thing used from the front (a front clearance) keeps to the
+// back rows. A thing filling the panel has one spot, its middle.
+function spotsIn(fp: Floorplan, def: ReturnType<typeof objectDef>, p: Pt): Sub[] {
+  const { w, d } = def.footprint, c = anchorOf(p);
+  const out: Sub[] = [];
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const at = { sx: c.sx + dx, sy: c.sy + dy };
+    if (footprintPanels(at, { w, d }).length === 1) out.push(at);
+  }
+  const rockAt = (x: number, y: number) => x < 0 || y < 0 || x >= fp.w || y >= fp.h || fp.tiles[y * fp.w + x] === ROCK;
+  // How near a wall the footprint's middle sits (the nearest rock panel within 3, by its distance).
+  const nearWall = (at: Sub) => {
+    const cells = footprintCells(at, { w, d });
+    const mx = cells.reduce((a, q) => a + q.sx, 0) / cells.length / SUBCELLS, my = cells.reduce((a, q) => a + q.sy, 0) / cells.length / SUBCELLS;
+    let best = Infinity;
+    for (let y = p.y - 3; y <= p.y + 3; y++) for (let x = p.x - 3; x <= p.x + 3; x++) if (rockAt(x, y)) best = Math.min(best, Math.hypot(x - mx, y - my));
+    return best;
+  };
+  const back = (at: Sub) => (def.clearFront ? at.sy : 0);
+  return out.sort((a, b) => back(a) - back(b) || nearWall(a) - nearWall(b) || a.sy - b.sy || a.sx - b.sx);
+}
+
 export type Placed = { placed: Instance[]; report: PlaceReport; occupancy: Occupancy };
 
 // Everything placed in a new walkable run, with what had to move or be left
 // out, and the occupancy map as it ended (for the tests and a debugging view).
 export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Placed {
   const layout = walk.layout, fp: Floorplan = layoutFloorplan(layout);
-  const o = newOccupancy(fp);
+  const v = walk.v ?? PLACED_V, v4 = v >= 4;
+  const o = newOccupancy(fp, v4);
+  // (v3: every floor thing claims its whole panel, the policy it was placed by.)
+  const claims: PanelClaims | null = v4 ? null : new Map();
   const placed: Instance[] = [];
-  const report: PlaceReport = { moved: [], omitted: [], problems: [] };
+  const report: PlaceReport = { moved: [], omitted: [], problems: [], rejected: [] };
+  // Whether a floor thing may go here: the occupancy map, then the policy its version was placed by.
+  // (v4) Refusals are kept, with why, for the debugging view.
+  const tryAt = (def: ReturnType<typeof objectDef>, at: Sub, id: string, room: string): boolean => {
+    const why = canPlace(o, def, at, id) ?? (v4 ? oneSolidPerPanel(o, def, at, def.footprint) : claimedBy(claims, footprintPanels(at, def.footprint)));
+    if (why && v4) report.rejected.push({ id, room, what: why, ...at });
+    return !why;
+  };
+  const put = (def: ReturnType<typeof objectDef>, at: Sub, id: string) => { take(o, def, at, id); claim(claims, footprintPanels(at, def.footprint), id); };
   const parents = Object.keys(layout.rooms).sort();
   const floorsOf = (id: string) => fp.rooms[parentOf(id)];
 
@@ -198,7 +251,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
   for (const [n, f] of (walk.fires ?? []).entries()) {
     const at = anchorOf(f);
     if (canPlace(o, fire, at, `fire:${n}`)) report.problems.push({ id: `fire:${n}`, room: f.room, what: `a campfire ${canPlace(o, fire, at, `fire:${n}`)}` });
-    take(o, fire, at, `campfire:${f.room}`);
+    put(fire, at, `campfire:${f.room}`);
     keepClear(o, f, CANDLE_FIRE_GAP, ["light"], `campfire:${f.room}`);
   }
 
@@ -229,19 +282,23 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
 
   // 4. Things you use, each at the spot kept for it (or the nearest valid panel).
   const required = (id: string, def: string, want: Pt, floors: Rect[], extra: Partial<Instance> = {}) => {
-    const d = objectDef(def);
-    const spot = byDistance(floors, want).find((p) => !canPlace(o, d, anchorOf(p), id));
-    if (!spot) { report.problems.push({ id, room: extra.room ?? "", what: `nowhere for ${def}: ${canPlace(o, d, anchorOf(want), id)}` }); return; }
-    if (spot.x !== want.x || spot.y !== want.y) report.moved.push({ id, room: extra.room ?? "", what: `${canPlace(o, d, anchorOf(want), id)}; to ${spot.x},${spot.y}` });
-    take(o, d, anchorOf(spot), id);
-    placed.push({ id, def, room: extra.room!, ...anchorOf(spot), size: { ...d.footprint }, ...extra });
+    const d = objectDef(def), room = extra.room ?? "";
+    let at: Sub | null = null, panel: Pt | null = null;
+    for (const p of byDistance(floors, want)) {
+      at = (v4 ? spotsIn(fp, d, p) : [anchorOf(p)]).find((a) => tryAt(d, a, id, room)) ?? null;
+      if (at) { panel = p; break; }
+    }
+    if (!at || !panel) { report.problems.push({ id, room, what: `nowhere for ${def}: ${canPlace(o, d, anchorOf(want), id)}` }); return; }
+    if (panel.x !== want.x || panel.y !== want.y) report.moved.push({ id, room, what: `${canPlace(o, d, anchorOf(want), id)}; to ${panel.x},${panel.y}` });
+    put(d, at, id);
+    placed.push({ id, def, room: extra.room!, ...at, size: { ...d.footprint }, ...extra });
   };
   for (const id of parents) for (const p of pointsBy.get(id)!) {
     if (!p.def) continue;
     required(p.owner, p.def, p.at, fp.rooms[id], { room: p.room });
   }
 
-  // 5. Wall torches: along each room's top wall, one every SCONCE_EVERY panels;
+  // 5. Wall torches, in the attachment slots: along each room's top wall, one every SCONCE_EVERY panels;
   // some tunnels have theirs too. Which start lit, rolled room by room.
   const wallAt = (p: Pt, wall: Wall) => (wall === "north" ? { x: p.x, y: p.y - 1 } : wall === "west" ? { x: p.x - 1, y: p.y } : wall === "east" ? { x: p.x + 1, y: p.y } : { x: p.x, y: p.y + 1 });
   const rock = (p: Pt) => p.x < 0 || p.y < 0 || p.x >= fp.w || p.y >= fp.h || fp.tiles[p.y * fp.w + p.x] === ROCK;
@@ -301,25 +358,35 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       spots.push({ x, y });
     }
     const cid = `candle:${id}`;
-    let put = false;
-    while (spots.length && !put) {
+    let done = false;
+    // Today's spots, picked at random as before; (v4) on that panel, its middle
+    // subcell first, then the rest, so it may share a panel with what fits beside it.
+    while (spots.length && !done) {
       const p = spots.splice(Math.floor(rng() * spots.length), 1)[0];
-      if (canPlace(o, candle, anchorOf(p), cid)) continue;
-      take(o, candle, anchorOf(p), cid);
-      placed.push({ id: cid, def: "candle", room: id, ...anchorOf(p), size: { ...candle.footprint } });
-      put = true;
+      const at = (v4 ? panelCells(p).sort((a, b) => Math.abs(a.sx - 3 * p.x) + Math.abs(a.sy - 3 * p.y) - (Math.abs(b.sx - 3 * p.x) + Math.abs(b.sy - 3 * p.y))) : [anchorOf(p)])
+        .find((a) => tryAt(candle, a, cid, id));
+      if (!at) continue;
+      put(candle, at, cid);
+      placed.push({ id: cid, def: "candle", room: id, ...at, size: { ...candle.footprint } });
+      done = true;
     }
-    if (!put) report.omitted.push({ id: cid, room: id, what: "no valid spot" });
+    if (!done) report.omitted.push({ id: cid, room: id, what: "no valid spot" });
   }
 
   // 7. Spawns: every fight room's foes, and the card witch.
   const reach = new Map(parents.map((id) => [id, reachableIn(o, fp.rooms[id], id)]));
-  const startsFor = (id: string, count: number, rng: Rng, end?: 0 | 1, rule = "foe"): (Pt & { facing: number; walks: boolean; wait: number })[] => {
+  // (v4) Room for the i-th one's body round a spot: its size class's footprint, and spawn clearance.
+  const bodyFits = (p: Pt, species: string | undefined) => {
+    if (!v4 || !species) return true;
+    const cls = sizeClassOf(species), size = creatureSize(species);
+    return !roomFor(o, p, size, cls ? SPAWN_CLEARANCE[cls] ?? 0 : 0);
+  };
+  const startsFor = (id: string, count: number, rng: Rng, end?: 0 | 1, rule = "foe", speciesOf: (i: number) => string | undefined = () => undefined): (Pt & { facing: number; walks: boolean; wait: number })[] => {
     const floors = floorsOf(id), doors = fp.doors.filter((d) => d.room === parentOf(id)), ok = reach.get(parentOf(id))!;
     const spots: Pt[] = [];
     for (const r of floors) for (let y = r.y + 1; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
       const p = { x, y };
-      if (spots.some((s) => s.x === x && s.y === y) || canStand(o, p) || !ok.has(panelKey(p))) continue;
+      if (spots.some((s) => s.x === x && s.y === y) || canStand(o, p, undefined, claims) || !ok.has(panelKey(p))) continue;
       if (end !== undefined && endOf(floors, x, y) !== end) continue;
       if (doors.some((d) => Math.hypot(d.x - x, d.y - y) < DOOR_CLEAR)) continue;
       spots.push(p);
@@ -330,6 +397,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       while (out.length < count && free.length > 0) {
         const s = free.splice(Math.floor(rng() * free.length), 1)[0];
         if (out.some((f) => Math.hypot(f.x - s.x, f.y - s.y) < Math.max(gap, 1))) continue;
+        if (!bodyFits(s, speciesOf(out.length))) continue;
         const i = out.length;
         out.push({ ...s, facing: WAYS[Math.floor(rng() * 4)], walks: i > 0 && rng() < WANDER_SHARE, wait: between(rng, LOOK_TIME) });
       }
@@ -342,19 +410,21 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     if (!r) continue;
     const rng = passRng(walk.seed, id, 7);
     if (r.kind === "witch") {
-      for (const f of startsFor(id, 1, rng, undefined, "witch")) placed.push({ id: `${id}:witch`, def: "witch", room: id, ...anchorOf(f), facing: f.facing });
+      for (const f of startsFor(id, 1, rng, undefined, "witch", () => (v4 ? "card_witch" : undefined))) placed.push({ id: `${id}:witch`, def: "witch", room: id, ...anchorOf(f), facing: f.facing });
       continue;
     }
     const count = foeCount(r, dungeon);
     if (!count) continue;
     if (waitsHere(r, dungeon)) {
-      const at = standOf(floorsOf(id)), why = canStand(o, at, `${id}:foe:0`);
+      const at = standOf(floorsOf(id)), why = canStand(o, at, `${id}:foe:0`, claims);
       if (why) report.problems.push({ id: `${id}:foe:0`, room: id, what: `a waiting boss ${why}` });
+      const species = r.boss ?? r.enemies?.[0]?.creatureId;
+      if (!bodyFits(at, species)) report.problems.push({ id: `${id}:foe:0`, room: id, what: `no room round its stand for ${species}: ${roomFor(o, at, creatureSize(species!), SPAWN_CLEARANCE[sizeClassOf(species!) ?? ""] ?? 0)}` });
       placed.push({ id: `${id}:foe:0`, def: "foe", room: id, ...anchorOf(at), facing: Math.PI / 2, foe: { waits: true } });
       continue;
     }
     const end = map.nodes[spawnOf(parentOf(id))] ? (id === parentOf(id) ? 0 : 1) : undefined;
-    startsFor(id, count, rng, end).forEach((f, i) => {
+    startsFor(id, count, rng, end, "foe", (i) => r.enemies?.[i]?.creatureId).forEach((f, i) => {
       const foe: FoeStart = { ...(f.walks ? { walks: true as const } : {}), wait: f.wait, ...(end !== undefined ? { end } : {}) };
       placed.push({ id: `${id}:foe:${i}`, def: "foe", room: id, ...anchorOf(f), facing: f.facing, foe });
     });

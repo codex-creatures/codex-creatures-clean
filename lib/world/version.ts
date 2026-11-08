@@ -9,7 +9,9 @@
 // 2: …with each fight room's foes' starts too (phase 2a′, the foe fix).
 // 3: placed by phase 2b's rules (lib/world/place.ts): new runs only. Nothing
 //    migrates to it: runs saved at 1 or 2 keep what the old rules placed.
-export const WALK_V = 3;
+// 4: placed at things' own sizes, inside their panels (phase 2b-2 stage A): new
+//    runs only; a v3 run keeps what it was made with.
+export const WALK_V = 4;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

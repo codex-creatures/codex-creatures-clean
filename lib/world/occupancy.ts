@@ -1,27 +1,41 @@
 // lib/world/occupancy.ts
-// What's where in a walkable run's floor, for placing things (docs/world-spec.md
-// §5.1, §5.2; phase 2b). One map for the run, at subcell resolution, with its
-// kinds of space kept apart:
-// - blocking floor: solid things' footprints (and pillars, which are rock in
-//   the layout: their panels' subcells are marked so the same rules see them);
-// - walk-over floor: candles and the like, which may sit on a path;
-// - panels taken: while things still each fill a panel (FULL_PANEL, 2b-1), a
-//   floor thing claims its whole panel, so nothing else goes there;
-// - wall slots: three a panel's wall, on each wall (north, east, west, south);
-// - reservations (whole panels, as walking is on panels): doors, required
-//   paths, and the points things must stand at (a room's middle, the cages, a
-//   waiting boss's stand), each with the one thing allowed on it;
-// - keep-clear zones round a thing (a campfire keeps candles off).
-// Every placement asks `canPlace` (or `canStand` for someone standing), and
-// nothing else decides; navigation is worked out from it (`navBlocked`).
+// What's where in a walkable run, physically, for placing things (docs/world-
+// spec.md §5.1, §5.2, §8 2b-2 stage A). One map for the run, in subcells, made
+// of named layers, each with its own rule for what may share a subcell with it
+// (OVERLAPS):
+// - structure: stone standing in a room (a pillar: rock in the layout). Walls
+//   and tunnels are structure too, and simply aren't floor;
+// - blocking: solid things' footprints;
+// - walk-over: things on the floor you walk over (candles, skulls);
+// - trigger: areas that may lie under anything on the floor (pressure plates,
+//   trap zones, hidden catches: none yet);
+// - overhead: things hanging over the floor (none yet);
+// - attachment: slots on structure's faces, keyed by the stone panel and the
+//   face looking onto the floor: walls' and pillars' (attachmentSlots).
+// Kept alongside: each thing's clearance (the subcells round it others keep
+// off), reservations (doors, required paths, the spots things must stand at;
+// whole panels for now), and keep-clear zones (a campfire keeps candles off).
+//
+// The map holds any footprints: several small solid things in a panel, one
+// thing across several panels, triggers under anything. What the generator
+// chooses to make, and how walking reads the map, are temporary policies kept
+// in lib/world/policy.ts (while movement is on panels), never assumed here.
 
-import { FLOOR, type Floorplan, type Pt } from "../dungeon/floorplan";
-import { footprintCells, footprintPanels, subcellOfPanel, SUBCELLS, type Size } from "./grid";
+import { FLOOR, ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
+import { footprintCells, footprintPanels, subcellOfPanel, subcellCentre, SUBCELLS, type Size } from "./grid";
 import type { ObjectDef } from "./objects";
 
-// 2b-1 (the user, 2026-11-08): every floor thing still takes its own whole
-// panel. Things sharing a panel at their real sizes is a later, approved change.
-export const FULL_PANEL = true;
+export type Layer = "structure" | "blocking" | "walk-over" | "trigger" | "overhead";
+export const LAYERS: Layer[] = ["structure", "blocking", "walk-over", "trigger", "overhead"];
+// Which layers may share a subcell with which (symmetric; a layer never shares
+// with itself, unless that's added here for a kind that stacks).
+export const OVERLAPS: Record<Layer, Layer[]> = {
+  structure: [],
+  blocking: ["trigger", "overhead"],
+  "walk-over": ["trigger", "overhead"],
+  trigger: ["blocking", "walk-over", "overhead"],
+  overhead: ["blocking", "walk-over", "trigger"],
+};
 
 export type Reserve = "door" | "path" | "point";
 export type Wall = "north" | "east" | "west" | "south";
@@ -29,36 +43,49 @@ type Zone = { at: Pt; r: number; against: ObjectDef["kind"][]; who: string };
 
 export type Occupancy = {
   fp: Floorplan;
-  solid: Map<string, string>;     // subcell → what blocks it
-  over: Map<string, string>;      // subcell → what lies on it, walked over
-  panels: Map<string, string>;    // panel → the floor thing that has it (FULL_PANEL)
+  layers: Record<Layer, Map<string, string>>;  // subcell → whose it is, layer by layer
+  attached: Map<string, string>;               // attachment slot → what's on it
+  clear: Map<string, string>;                  // subcell → whose clearance it's in
+  clearances: boolean;                         // kept? (a world version 3 run was placed before they were)
   reserved: Map<string, { why: Reserve; owner?: string }>; // panel → why it's kept
-  slots: Map<string, string>;     // wall slot → what's on it
   zones: Zone[];
 };
 
-const sub = (sx: number, sy: number) => `${sx},${sy}`;
+export const subKey = (sx: number, sy: number) => `${sx},${sy}`;
 export const panelKey = (p: Pt) => `${p.x},${p.y}`;
-export const slotKey = (p: Pt, wall: Wall, k: -1 | 0 | 1 = 0) => `${p.x},${p.y},${wall},${k}`;
+type Sub = { sx: number; sy: number };
 
-export const newOccupancy = (fp: Floorplan): Occupancy =>
-  ({ fp, solid: new Map(), over: new Map(), panels: new Map(), reserved: new Map(), slots: new Map(), zones: [] });
+export const newOccupancy = (fp: Floorplan, clearances = true): Occupancy => ({
+  fp, clearances, attached: new Map(), clear: new Map(), reserved: new Map(), zones: [],
+  layers: { structure: new Map(), blocking: new Map(), "walk-over": new Map(), trigger: new Map(), overhead: new Map() },
+});
 
-// A room's floor panel (not rock, a tunnel or a door).
-export const isFloor = (o: Occupancy, p: Pt) => p.x >= 0 && p.y >= 0 && p.x < o.fp.w && p.y < o.fp.h && o.fp.tiles[p.y * o.fp.w + p.x] === FLOOR;
-
-const panelCells = (p: Pt) => footprintCells({ sx: subcellOfPanel(p.x), sy: subcellOfPanel(p.y) }, { w: SUBCELLS, d: SUBCELLS });
-
-// Solid stone standing in a panel (a pillar: rock inside a room, interior.ts).
-export function markStone(o: Occupancy, p: Pt, who = "pillar") {
-  for (const c of panelCells(p)) o.solid.set(sub(c.sx, c.sy), who);
+// Which layer a definition's footprint goes in (null: none, as a creature's).
+export function layerOf(def: ObjectDef): Layer | null {
+  if (def.occupies) return def.occupies;
+  if (def.attach === "overhead") return "overhead";
+  if (def.attach !== "floor") return null; // (wall things take an attachment slot instead)
+  return def.collision === "solid" ? "blocking" : def.collision === "walk-over" ? "walk-over" : null;
 }
 
-// Something blocks walking through this panel (today's rule while walking is
-// on panels: any solid subcell in it, or rock).
-export function navBlocked(o: Occupancy, p: Pt): boolean {
-  const t = p.x < 0 || p.y < 0 || p.x >= o.fp.w || p.y >= o.fp.h ? 0 : o.fp.tiles[p.y * o.fp.w + p.x];
-  return t === 0 || panelCells(p).some((c) => o.solid.has(sub(c.sx, c.sy)));
+export const isFloor = (o: Occupancy, p: Pt) => p.x >= 0 && p.y >= 0 && p.x < o.fp.w && p.y < o.fp.h && o.fp.tiles[p.y * o.fp.w + p.x] === FLOOR;
+const isRock = (fp: Floorplan, p: Pt) => p.x < 0 || p.y < 0 || p.x >= fp.w || p.y >= fp.h || fp.tiles[p.y * fp.w + p.x] === ROCK;
+export const panelCells = (p: Pt) => footprintCells({ sx: subcellOfPanel(p.x), sy: subcellOfPanel(p.y) }, { w: SUBCELLS, d: SUBCELLS });
+
+// Whose subcell this is in a layer, or anyone's in any layer that won't share with `mine`.
+export const occupant = (o: Occupancy, layer: Layer, c: Sub) => o.layers[layer].get(subKey(c.sx, c.sy));
+function clash(o: Occupancy, mine: Layer, c: Sub): string | null {
+  for (const l of LAYERS) {
+    if (OVERLAPS[mine].includes(l)) continue;
+    const who = o.layers[l].get(subKey(c.sx, c.sy));
+    if (who) return who;
+  }
+  return null;
+}
+
+// Stone standing in a panel (a pillar).
+export function markStone(o: Occupancy, p: Pt, who = "pillar") {
+  for (const c of panelCells(p)) o.layers.structure.set(subKey(c.sx, c.sy), who);
 }
 
 export function reserve(o: Occupancy, p: Pt, why: Reserve, owner?: string) {
@@ -70,46 +97,116 @@ export function reserve(o: Occupancy, p: Pt, why: Reserve, owner?: string) {
 
 export const keepClear = (o: Occupancy, at: Pt, r: number, against: ObjectDef["kind"][], who: string) => { o.zones.push({ at, r, against, who }); };
 
-// Why a floor thing can't go here (its anchor subcell), or null if it can.
-// owner: the id it's placed as, for the point kept for it.
-export function canPlace(o: Occupancy, def: ObjectDef, at: { sx: number; sy: number }, owner: string, size: Size = def.footprint): string | null {
-  if (def.attach !== "floor") return `${def.id} isn't a floor thing`;
+// The subcells a thing keeps others off (its definition's clearance): all
+// round it, or only the row in front (south) of it.
+export function clearanceCells(def: ObjectDef, at: Sub, size: Size = def.footprint): Sub[] {
+  const n = def.clearance ?? 0;
+  if (!n) return [];
   const cells = footprintCells(at, size);
-  const panels = footprintPanels(at, size);
+  const x0 = Math.min(...cells.map((c) => c.sx)), x1 = Math.max(...cells.map((c) => c.sx));
+  const y0 = Math.min(...cells.map((c) => c.sy)), y1 = Math.max(...cells.map((c) => c.sy));
+  const out: Sub[] = [];
+  if (def.clearFront) { for (let y = y1 + 1; y <= y1 + n; y++) for (let x = x0; x <= x1; x++) out.push({ sx: x, sy: y }); return out; }
+  for (let y = y0 - n; y <= y1 + n; y++) for (let x = x0 - n; x <= x1 + n; x++) if (x < x0 || x > x1 || y < y0 || y > y1) out.push({ sx: x, sy: y });
+  return out;
+}
+
+// Why a thing can't go here (its anchor subcell), or null if it can: every
+// subcell on the floor, sharing only with layers its own layer allows, out of
+// others' clearances and with its own clear (stone may border it), off doors
+// and spots kept for others (and, if solid, off required paths), out of zones.
+// owner: the id it's placed as (the spot kept for it, its own clearance).
+export function canPlace(o: Occupancy, def: ObjectDef, at: Sub, owner: string, size: Size = def.footprint): string | null {
+  const mine = layerOf(def);
+  if (!mine) return `${def.id} takes no floor`;
+  const cells = footprintCells(at, size), panels = footprintPanels(at, size);
   for (const p of panels) if (!isFloor(o, p)) return `off the floor at ${p.x},${p.y}`;
-  for (const c of cells) if (o.solid.has(sub(c.sx, c.sy))) return `on ${o.solid.get(sub(c.sx, c.sy))}`;
-  if (def.collision === "solid") for (const c of cells) if (o.over.has(sub(c.sx, c.sy))) return `on ${o.over.get(sub(c.sx, c.sy))}`;
+  for (const c of cells) { const who = clash(o, mine, c); if (who) return `on ${who}`; }
+  if (o.clearances && mine !== "trigger" && mine !== "overhead") {
+    for (const c of cells) { const who = o.clear.get(subKey(c.sx, c.sy)); if (who && who !== owner) return `in ${who}'s clearance`; }
+    for (const c of clearanceCells(def, at, size)) {
+      const who = o.layers.blocking.get(subKey(c.sx, c.sy)) ?? o.layers["walk-over"].get(subKey(c.sx, c.sy));
+      if (who) return `${who} in its clearance`;
+    }
+  }
   for (const p of panels) {
-    if (FULL_PANEL && o.panels.has(panelKey(p))) return `on ${o.panels.get(panelKey(p))}'s panel`;
     const r = o.reserved.get(panelKey(p));
-    if (!r || r.owner === owner) continue;
+    if (!r || r.owner === owner || mine === "trigger" || mine === "overhead") continue;
     if (r.why === "door") return "in a doorway";
     if (r.why === "point") return `on the spot kept for ${r.owner}`;
-    if (r.why === "path" && def.collision === "solid") return "across a required path";
+    if (r.why === "path" && mine === "blocking") return "across a required path";
   }
   for (const z of o.zones) if (z.against.includes(def.kind) && panels.some((p) => Math.hypot(p.x - z.at.x, p.y - z.at.y) < z.r)) return `too near ${z.who}`;
   return null;
 }
 
 // Puts it there (after canPlace said it may go).
-export function take(o: Occupancy, def: ObjectDef, at: { sx: number; sy: number }, owner: string, size: Size = def.footprint) {
-  const layer = def.collision === "solid" ? o.solid : o.over;
-  for (const c of footprintCells(at, size)) layer.set(sub(c.sx, c.sy), owner);
-  if (FULL_PANEL) for (const p of footprintPanels(at, size)) o.panels.set(panelKey(p), owner);
+export function take(o: Occupancy, def: ObjectDef, at: Sub, owner: string, size: Size = def.footprint) {
+  const mine = layerOf(def);
+  if (!mine) return;
+  for (const c of footprintCells(at, size)) o.layers[mine].set(subKey(c.sx, c.sy), owner);
+  if (o.clearances) for (const c of clearanceCells(def, at, size)) if (!o.clear.has(subKey(c.sx, c.sy))) o.clear.set(subKey(c.sx, c.sy), owner);
 }
 
-// Why someone (a foe, the witch) can't start on this panel, or null if they
-// can: on the floor, nothing solid or placed there, not in a doorway or on a
-// spot kept for something else (owner: the spot kept for them, a boss's stand).
-export function canStand(o: Occupancy, p: Pt, owner?: string): string | null {
-  if (!isFloor(o, p)) return "off the floor";
-  if (navBlocked(o, p)) return "on something solid";
-  if (o.panels.has(panelKey(p))) return `on ${o.panels.get(panelKey(p))}'s panel`;
-  const r = o.reserved.get(panelKey(p));
-  if (r && r.owner !== owner && r.why !== "path") return r.why === "door" ? "in a doorway" : `on the spot kept for ${r.owner}`;
+// Room for a body of this footprint round a panel's centre (a creature's size
+// class, its feet on the centre): every subcell on the floor, nothing blocking
+// or stone in it, or within `clearance` of it. Why not, or null.
+export function roomFor(o: Occupancy, p: Pt, size: Size, clearance = 0): string | null {
+  const at = { sx: subcellOfPanel(p.x), sy: subcellOfPanel(p.y) };
+  const grown = { w: size.w + 2 * clearance, d: size.d + 2 * clearance };
+  for (const q of footprintPanels(at, grown)) if (!isFloor(o, q)) return `no floor for its size at ${q.x},${q.y}`;
+  for (const c of footprintCells(at, grown)) {
+    const who = occupant(o, "structure", c) ?? occupant(o, "blocking", c);
+    if (who) return `${who} in its way`;
+  }
   return null;
 }
 
-// Wall slots: one thing each.
-export const slotFree = (o: Occupancy, key: string) => !o.slots.has(key);
-export const takeSlot = (o: Occupancy, key: string, owner: string) => { o.slots.set(key, owner); };
+// --- Attachment: slots on structure's faces -----------------------------------
+
+// A slot: on stone panel `rock`, its face looking onto the floor panel `floor`
+// (the wall that floor has on that side: "north" = the wall north of it), one
+// of three along the face (k: −1, 0, +1, west to east or north to south). kind:
+// a room's or tunnel's wall, or a pillar standing in a room.
+export type Slot = { key: string; rock: Pt; floor: Pt; wall: Wall; k: -1 | 0 | 1; kind: "wall" | "pillar" };
+const STEP: Record<Wall, Pt> = { north: { x: 0, y: -1 }, south: { x: 0, y: 1 }, west: { x: -1, y: 0 }, east: { x: 1, y: 0 } };
+
+// The key of the slot on `floor`'s `wall` (the stone beside it on that side).
+export const slotKey = (floor: Pt, wall: Wall, k: -1 | 0 | 1 = 0) => {
+  const s = STEP[wall];
+  return `${floor.x + s.x},${floor.y + s.y},${wall},${k}`;
+};
+
+// Every slot in the run: each face of a stone panel that looks onto a walkable one.
+export function attachmentSlots(fp: Floorplan): Slot[] {
+  const inRoom = (p: Pt) => Object.values(fp.rooms).some((rs) => rs.some((r) => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h));
+  const out: Slot[] = [];
+  for (let y = 0; y < fp.h; y++) for (let x = 0; x < fp.w; x++) {
+    const floor = { x, y };
+    if (isRock(fp, floor)) continue;
+    for (const wall of ["north", "east", "west", "south"] as Wall[]) {
+      const rock = { x: x + STEP[wall].x, y: y + STEP[wall].y };
+      if (!isRock(fp, rock)) continue;
+      const kind = inRoom(rock) ? "pillar" : "wall";
+      for (const k of [-1, 0, 1] as const) out.push({ key: slotKey(floor, wall, k), rock, floor, wall, k, kind });
+    }
+  }
+  return out;
+}
+
+// Where a slot is in the world (u): on its face, between the stone and the
+// floor, a third of a panel along it per k. Things mounted there are drawn there.
+export function slotPoint(s: Slot): Pt {
+  const d = STEP[s.wall], along = s.k / SUBCELLS;
+  return { x: s.floor.x + d.x / 2 + (d.x ? 0 : along), y: s.floor.y + d.y / 2 + (d.y ? 0 : along) };
+}
+// …and the floor subcell in front of it, where grid lighting starts for a light
+// mounted there (the light itself conceptually comes from slotPoint).
+export function slotLightCell(s: Slot): Sub {
+  const d = STEP[s.wall], c = { sx: subcellOfPanel(s.floor.x), sy: subcellOfPanel(s.floor.y) };
+  return { sx: c.sx + d.x + (d.x ? 0 : s.k), sy: c.sy + d.y + (d.y ? 0 : s.k) };
+}
+export const subcellPoint = (c: Sub): Pt => ({ x: subcellCentre(c.sx), y: subcellCentre(c.sy) });
+
+export const slotFree = (o: Occupancy, key: string) => !o.attached.has(key);
+export const takeSlot = (o: Occupancy, key: string, owner: string) => { o.attached.set(key, owner); };
