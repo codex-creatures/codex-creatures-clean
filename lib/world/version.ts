@@ -13,7 +13,9 @@
 //    runs only; a v3 run keeps what it was made with.
 // 5: candles by the room's dark (stage B): mounted on walls and pillars, and
 //    floor candles as placed objects: new runs only; a v4 run keeps its own.
-export const WALK_V = 5;
+// 6: floor candles kept out of mounted candles' light and off the panels by
+//    walls and pillars (the user's play-test, 2026-11-09): new runs only.
+export const WALK_V = 6;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

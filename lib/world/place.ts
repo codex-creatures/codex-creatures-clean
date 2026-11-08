@@ -1,11 +1,13 @@
 // lib/world/place.ts
 // Where things go in a new walkable run (docs/world-spec.md §5.3, §8 phases
-// 2b-1 and 2b-2): world version 5 (stage B), or 4 (stage A) or 3 (2b-1) for a
-// run made then.
+// 2b-1 and 2b-2): world version 6 (stage B, floor candles fixed), or 5 (stage
+// B), 4 (stage A) or 3 (2b-1) for a run made then.
 // Each version's rules give exactly what they gave (v3: tests/placeV3.test.ts;
 // v4: tests/placeV4Pinned.test.ts). Version 5 (stage B, new runs from
 // 2026-11-08) adds the candle budget, candles on walls' and pillars' faces,
-// and floor candles as placed objects.
+// and floor candles as placed objects. Version 6 (the user's play-test,
+// 2026-11-09) keeps floor candles out of the mounted candles' light and off
+// the panels by walls and pillars (candles there are the mounted ones).
 //
 // Version 3: every floor thing takes its whole panel, at its middle.
 // Version 4: things take their own footprints (§3 "Sizes"), sitting in their
@@ -71,7 +73,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 5;          // the world version a new run is placed at (2b-2 stage B; version.ts)
+export const PLACED_V = 6;          // the world version a new run is placed at (stage B's floor candles fixed; version.ts)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
 export const CANDLE_FIRE_GAP = 2;   // panels a candle keeps from a campfire (today's "hidden by the fire" distance)
@@ -264,7 +266,7 @@ export const MOUNTED_DEFS = ["candle-wall", "candle-wall-side", "candle-wall-sou
 // out, and the occupancy map as it ended (for the tests and a debugging view).
 export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Placed {
   const layout = walk.layout, fp: Floorplan = layoutFloorplan(layout);
-  const v = walk.v ?? PLACED_V, v4 = v >= 4, v5 = v >= 5;
+  const v = walk.v ?? PLACED_V, v4 = v >= 4, v5 = v >= 5, v6 = v >= 6;
   const o = newOccupancy(fp, v4);
   // (v3: every floor thing claims its whole panel, the policy it was placed by.)
   const claims: PanelClaims | null = v4 ? null : new Map();
@@ -502,14 +504,19 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     const fromUsed = (p: Pt) => Math.min(Infinity, ...used.map((q) => Math.hypot(q.x - p.x, q.y - p.y)));
     const byStone = (p: Pt) => STEPS.some((st) => rock({ x: p.x + st.x, y: p.y + st.y }));
     const near = (a: Pt, b: Pt) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) <= 1;
+    // (v6) In a mounted candle's light (no need for another there), or touching stone, diagonals too
+    // (a candle by a wall or a pillar is a mounted one).
+    const inGlow = (p: Pt) => mountedAt.some((q) => Math.hypot(q.x - p.x, q.y - p.y) <= CANDLE_RADIUS);
+    const byStone8 = (p: Pt) => AROUND.some((st) => rock({ x: p.x + st.x, y: p.y + st.y }));
     const stoneFirst = rng() < FLOOR_BY_STONE;
     const mineAt: Pt[] = [];
     for (let n = 0; n < wanted; n++) {
       // Clear of doors and required paths; never in a mounted candle's glow, nor beside another floor candle.
       const ok = panels.filter((p) => !doors.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANDLE_CLEAR)
-        && o.reserved.get(panelKey(p))?.why !== "path" && !mountedAt.some((q) => near(p, q)) && !mineAt.some((q) => near(p, q)));
+        && o.reserved.get(panelKey(p))?.why !== "path" && !mountedAt.some((q) => near(p, q)) && !mineAt.some((q) => near(p, q))
+        && !(v6 && (inGlow(p) || byStone8(p))));
       // Off the things you use: FLOOR_KEEP_OFF's first distance where the room allows it, then its second;
-      // at a pillar's foot or along a wall first, half the time.
+      // (v5) at a pillar's foot or along a wall first, half the time (v6: never there, so it changes nothing).
       const tries: Pt[][] = [];
       let left = ok;
       for (const keep of FLOOR_KEEP_OFF) {

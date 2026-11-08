@@ -1563,8 +1563,8 @@ can only leave candles out, so B1's sim measures it again and sets `DARK_PER` to
   an absolute rule). Never closer than today's 2. Today's rule measures 2 to 5 panels from the room's middle,
   which is exactly where the feature stands, so many candles end up two panels from it (the
   investigation, 2026-11-08). v5 doesn't measure from the middle.
-- **🧪 Where they're picked from:** the foot of a pillar or along a wall half the time, anywhere
-  free otherwise, so they read as placed objects. Never in front of a mounted candle's slot, where
+- **🧪 Where they're picked from:** ~~the foot of a pillar or along a wall half the time, anywhere
+  free otherwise, so they read as placed objects.~~ From v6 (the user, 2026-11-09): never on a panel touching a wall or pillar, and never in a mounted candle's light. Never in front of a mounted candle's slot, where
   they would sit in its glow.
 - **Ids:** `candle:<room>` for the room's first candle of either kind, and `:1`, `:2`… for any
   more.
@@ -1743,6 +1743,7 @@ it looks onto:
 - **The walk reads stage B's candles** (`placements.ts`): a mounted candle is a candle at the floor subcell in front of its slot, lit if it rolled lit or you lit it, lit by walking near, its light from that floor panel; a floor candle is a candle like any other: unlit to start, lit by walking near (the user, after release). Both are drawn with today's candle art where they stand: no bracket, no south-wall fade, no side-on view yet (B2's drawing and B3's art are still to do).
 - **The saved-placement check** (`migrate.ts`): the three mounted definitions and `floor-candle` only from v5 (a v3 or v4 run carrying one is damaged); a mounted candle needs a wall, floor under it and stone on that side; a floor candle never starts lit. Mending a v5 run gives it as made.
 - **Density is now fixed for v5 runs** (`DARK_PER` 350). Changing it, or the placement rules, after the play-test means world version 6.
+- **World version 6** (the user's play-test, 2026-11-09; new runs from then): floor candles are never in a mounted candle's light (within `CANDLE_RADIUS` of its light point: no need for another there) and never on a panel touching a wall or pillar, diagonals included (a candle by stone is a mounted one). Nothing else changes: mounted candles, torches and density are v5's, and floor candles stay at 0.28 a room. v5 runs keep theirs (pinned: tests/placeV4Pinned.test.ts, `v5-*.json`).
 - Still to come, when the user's back: B2's drawing (mount points, sort order, the south fade), B3's sprites, B4's density comparison. (B6, lighting floor candles by tapping, was dropped: they light by walking near.)
 
 B3 can run alongside B1–B2 (it doesn't touch the game). Each step is its own commit; nothing

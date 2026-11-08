@@ -7,7 +7,7 @@ import { startWalkRun, walkRoom } from "../lib/dungeon/walkRun";
 import { dungeonOf, type DungeonRun } from "../lib/dungeon/run";
 import { layoutFloorplan } from "../lib/dungeon/layout";
 import { ROCK, type Pt } from "../lib/dungeon/floorplan";
-import { CANDLE_CLEAR, DARK_KEPT, LIGHT_GAP, MOUNTED_CAP, FLOOR_CANDLE_CAP, FLOOR_KEEP_OFF, CANDLE_MIN_DARK, CANDLE_GROUP } from "../lib/dungeon/torch";
+import { CANDLE_CLEAR, CANDLE_RADIUS, DARK_KEPT, LIGHT_GAP, MOUNTED_CAP, FLOOR_CANDLE_CAP, FLOOR_KEEP_OFF, CANDLE_MIN_DARK, CANDLE_GROUP } from "../lib/dungeon/torch";
 import { placeWalk, candleCount, mountedDef, MOUNTED_DEFS, PLACED_V, type Placed } from "../lib/world/place";
 import { attachmentSlots, slotKey, panelKey, occupant, type Slot } from "../lib/world/occupancy";
 import { navBlocked } from "../lib/world/policy";
@@ -22,7 +22,9 @@ import { unsupportedRun } from "../lib/world/version";
 // World version 5's candles (docs/world-spec.md §8 2b-2 stage B, step B1):
 // the room-by-room budget, mounted candles on walls' and pillars' faces, and
 // floor candles as placed objects; and (B5) new runs made at v5, with the save
-// checks, mending, and how the walk reads them.
+// checks, mending, and how the walk reads them. Version 6 (the user's
+// play-test, 2026-11-09) keeps floor candles out of mounted candles' light and
+// off the panels by stone; new runs are made at it.
 
 const made = (d: 0 | 1, seed: number, v = 5): DungeonRun => {
   const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, d === 0 ? [{ creatureId: "moss_wolf", level: 3 }, {}] : [], false, seeded(seed * 7919 + 13), d);
@@ -174,29 +176,29 @@ describe("v5 changes only the candles", () => {
   });
 });
 
-describe("new runs at world version 5 (B5)", () => {
+describe("new runs (B5; world version 6 since 2026-11-09)", () => {
   const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
   const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
   const fresh = (d: 0 | 1, s: number) => { const r = made(d, s); return newWalkRun({ ...r, walk: { ...r.walk!, v: undefined } }); };
   // The first Encampment run with candles of both kinds.
   const run = Array.from({ length: 20 }, (_, k) => k + 1).map((k) => fresh(0, k))
     .find((r) => r.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def)) && r.walk!.placed!.some((i) => i.def === "floor-candle"))!;
-  it("are made at v5, survive save, export and reload unchanged, and open as they were made", () => {
-    expect(PLACED_V).toBe(5);
-    expect(WALK_V).toBe(5);
-    expect(run.walk!.v).toBe(5);
+  it("are made at the newest version, survive save, export and reload unchanged, and open as they were made", () => {
+    expect(PLACED_V).toBe(6);
+    expect(WALK_V).toBe(6);
+    expect(run.walk!.v).toBe(6);
     expect(run.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def) || i.def === "floor-candle")).toBe(true);
     expect(run.walk!.placed).toEqual(placedOf(run).placed);
     expect(json(run)).toEqual(run);
     expect(migrateWalkRun(json(run)).outcome).toBe("unchanged");
     expect(quiet(() => newWalkRun(run))).toEqual(run);
   });
-  it("a damaged v5 run is held, and mended into the run as made", () => {
+  it("a damaged run is held, and mended into the run as made", () => {
     const broken = { ...run, walk: { ...run.walk!, placed: [] as Instance[] } };
     expect(quiet(() => migrateWalkRun(broken)).outcome).toBe("damaged");
     expect(canRecover(broken)).toBe(true);
     const mended = quiet(() => recoverWalkRun(broken));
-    expect(mended.run.walk!.v).toBe(5);
+    expect(mended.run.walk!.v).toBe(6);
     expect(mended.run.walk!.placed).toEqual(run.walk!.placed);
   });
   it("refuses stage B's candles where they can't be: in a v4 run, a floor candle lit to start, a mounted one off its wall", () => {
@@ -215,9 +217,9 @@ describe("new runs at world version 5 (B5)", () => {
     expect(quiet(() => migrateWalkRun(v4)).outcome).toBe("damaged");
   });
   it("an older copy of the game holds a run from a newer version untouched", () => {
-    expect(unsupportedRun({ walk: { v: 5 } })).toBe(false);
-    expect(unsupportedRun({ walk: { v: 6 } })).toBe(true);
-    const newer = { ...run, walk: { ...run.walk!, v: 6 } };
+    expect(unsupportedRun({ walk: { v: 6 } })).toBe(false);
+    expect(unsupportedRun({ walk: { v: 7 } })).toBe(true);
+    const newer = { ...run, walk: { ...run.walk!, v: 7 } };
     expect(migrateWalkRun(newer)).toEqual({ run: newer, outcome: "unsupported", problem: expect.any(String) });
   });
   it("the walk reads them: mounted candles as candles at the floor by their wall, lit as rolled or as you lit them; floor candles unlit to start, lit by walking near as any candle", () => {
@@ -235,6 +237,47 @@ describe("new runs at world version 5 (B5)", () => {
     }
     for (const i of floors) expect(p.candles.find((q) => q.id === i.id)).toEqual({ id: i.id, room: i.room, x: expect.any(Number), y: expect.any(Number), lit: false });
   });
+});
+
+describe("world version 6's floor candles (the user's play-test, 2026-11-09)", () => {
+  const AROUND = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => [dx, dy])).filter(([dx, dy]) => dx || dy);
+  // Floor candles too near a mounted candle's light point, or on a panel touching stone (diagonals too).
+  const problems = (run: DungeonRun, p: Placed) => {
+    const fp = layoutFloorplan(run.walk!.layout), out: string[] = [];
+    const mounted = p.placed.filter((i) => MOUNTED_DEFS.includes(i.def)).map(panelOf);
+    for (const i of p.placed.filter((q) => q.def === "floor-candle")) {
+      const at = panelOf(i);
+      if (mounted.some((q) => Math.hypot(q.x - at.x, q.y - at.y) <= CANDLE_RADIUS)) out.push(`${i.id} in a mounted candle's light`);
+      if (AROUND.some(([dx, dy]) => fp.tiles[(at.y + dy) * fp.w + at.x + dx] === ROCK)) out.push(`${i.id} by stone`);
+    }
+    return out;
+  };
+  it("are never in a mounted candle's light, nor by a wall or pillar; v5 runs keep theirs", () => {
+    let floors = 0, v5Problems = 0;
+    for (const [d, s] of RUNS) {
+      const run = made(d, s, 6), p = placedOf(run);
+      expect(problems(run, p)).toEqual([]);
+      floors += p.placed.filter((i) => i.def === "floor-candle").length;
+      // (Only the floor candles differ from v5.)
+      const v5 = cases.find((c) => c.d === d && c.s === s)!.p;
+      expect(p.placed.filter((i) => i.def !== "floor-candle" && i.def !== "foe")).toEqual(v5.placed.filter((i) => i.def !== "floor-candle" && i.def !== "foe"));
+      v5Problems += problems(run, v5).length;
+    }
+    expect(floors).toBeGreaterThan(0);
+    expect(v5Problems).toBeGreaterThan(0); // (what the user saw: v5's rules allowed both)
+  });
+  slowIt("floor candles a room at v6 (printed), against v5's", async () => {
+    let rooms = 0, f5 = 0, f6 = 0;
+    for (const d of [0, 1] as const) for (let s = 1; s <= 10; s++) {
+      await new Promise((ok) => setTimeout(ok, 0));
+      const r5 = placedOf(made(d, s, 5)), run = made(d, s, 6), r6 = placedOf(run);
+      expect(problems(run, r6)).toEqual([]);
+      rooms += Object.keys(run.walk!.layout.rooms).length;
+      f5 += r5.placed.filter((i) => i.def === "floor-candle").length; f6 += r6.placed.filter((i) => i.def === "floor-candle").length;
+    }
+    console.log(`${rooms} rooms: floor candles ${(f5 / rooms).toFixed(2)} a room at v5, ${(f6 / rooms).toFixed(2)} at v6`);
+    expect(f6).toBeGreaterThan(0);
+  }, 300000);
 });
 
 // The sim (B1): counts per room kind and shape, and the starting-lit shares, over many runs.
