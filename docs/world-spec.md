@@ -1037,7 +1037,7 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
     so they come in as an intended change, approved first, with their wall and side art made and
     approved the usual way (PixelLab samples first). Nothing in 2b makes NPCs move.
 
-#### 2b: the implementation design (📌 proposed 2026-11-08, for the user's sign-off; not built)
+#### 2b: the implementation design (✅ 2b-1 signed off by the user, 2026-11-08; built, not yet released)
 
 **Two steps, each its own commit and release:**
 - **2b-1, the new placers** (this design): new runs are placed by the passes (§5.3) on the
@@ -1086,7 +1086,7 @@ Ids as today (`<room>:<n>` torches, `candle:<room>`, `<room>:<def>`, `<room>#<i>
 | 5 wall slots | wall torches: same spots (fixed by the rule), one in `SCONCE_EVERY`; which start lit, and which tunnels get them, rolled per room | `SCONCE_LIT_SHARE`, `TUNNEL_SCONCE_CHANCE` | which are lit at the start |
 | 6 floor lights | campfires (already rolled, `fires`) marked first with their clearance; then candles | `CANDLE_CHANCE`, 2–5 panels from the middle, 3 from doors; new: never within 2 panels of a fire | candles' spots (question 1) |
 | 7 spawns | every fight room's foes, the ambush's included, and the card witch | `FOE_GAP`, `DOOR_CLEAR`, not the top row, one end each in a two-den room, the boss's stand; new: never on a solid thing or a reserved point, never in a pocket you can't reach | foes' and the witch's starts |
-| 8 decor | lab only (`/lab/newrun`), as now: run on the new map there, so it can't overlap anything, and not saved | `decor.ts` | no (not in real runs) |
+| 8 decor | lab only (`/lab/newrun`), as now, by its own rule from the seed, not saved; it moves onto the new map when it comes into real runs | `decor.ts` | no (not in real runs) |
 | 9 floor variety | worn tiles from the seed, not saved | | no |
 
 What that fixes as a side effect: nothing in today's foe rule keeps a foe from starting on a
@@ -1120,14 +1120,25 @@ places a wall candle or moves an NPC.
 7. `npm run test:all`, `tsc`, lint, `build`, `build:offline` (in a temporary clone); then the
    user plays a fresh run in each dungeon, and one already under way from before.
 
-**Questions for the user:**
-1. **A candle near a campfire:** today it's placed, then not drawn, so that room has none. In a
-   v3 run, place it elsewhere in the room instead (so a few more rooms have a candle; the sim
-   says how many), or keep today's outcome (no candle in that room)?
-2. **Pillars:** keep them as rock in the layout in 2b-1 (proposed: they're saved already and play
-   right), turning them into objects only when something needs it (one that breaks or moves)?
-3. **Decor and banners:** stay lab-only through 2b-1 (proposed), each brought into real runs
-   later as its own approved change?
+**The user's decisions (2026-11-08):**
+1. **Optional things try again before they're dropped:** a candle (and any optional thing after
+   it) whose spot is taken or too near a campfire tries every other valid spot in its room, in a
+   deterministic random order, and is left out only if none is valid; never forced somewhere
+   invalid. The rise in candles this gives is an approved, intended change (measured by the sim).
+2. **Pillars stay rock in the layout,** but the placer sees their space through the same
+   occupancy rules as everything else (no special case for them). A breakable pillar would later
+   get its own identity and state.
+3. **Decor and banners stay in the lab;** each comes into real runs later as its own approved
+   change, once placement has proved reliable.
+4. **Release:** the design's docs commit stays separate and unpushed, released with 2b-1 after
+   testing and the user's approval.
+5. **Scope of 2b-1:** full-panel placement only. No subcell-sized placements, extra wall candles,
+   decor in real runs, new creature collision or art changes. A required thing whose spot is taken
+   goes to the nearest valid panel, and that's reported (the sim expects none).
+
+**As built:** `lib/world/place.ts` (the passes), `lib/world/occupancy.ts` (the shared rules),
+`lib/world/grid.ts` (footprint sums), `lib/world/compat/v0Placers.ts` (the frozen old placers);
+`newWalkRun` (lib/world/migrate.ts) places a new run. Tests: tests/place.test.ts.
 - **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing
   goldens), each in its own commit. (The foe fix came early, as 2a′.)
 - **Done when:**
@@ -1186,6 +1197,9 @@ places a wall candle or moves an NPC.
 - **Walking on subcells:** designed for in §5.4, changed only when the user decides.
 - **Wandering NPCs with their own lights** (§5.7): after phase 2, its own feature.
 - **Candles by any wall** (§5.6): on 2b's placement.
+- **A placement debugging view** (the user, 2026-11-08): a lab page drawing a room's subcells,
+  each thing's footprint, the blocked and reserved panels, the paths kept, and the interaction
+  points, from `placeWalk`'s occupancy map, to inspect placement by eye.
 - **Levers, traps, breakable walls:** a definition slot and instance state only.
 - **A second setting:** packs are laid out for it; built once the dungeon pack is right.
 - **4-way walking art for creatures:** size classes now, art later.

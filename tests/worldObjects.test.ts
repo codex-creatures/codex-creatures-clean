@@ -97,9 +97,9 @@ describe("creature size classes (world-spec §2)", () => {
   it("every species with art has a class or its own size, and the classes' footprints are as specified", () => {
     const missing = Object.keys(CREATURE_SPRITES).filter((id) => !id.startsWith("cyclops_") && !SPECIES_SIZE[id]);
     expect(missing).toEqual([]);
-    expect(SIZE_CLASSES.large.footprint).toEqual({ w: 2, d: 2 });
-    expect(SIZE_CLASSES.huge.footprint).toEqual({ w: 3, d: 3 });
-    expect(creatureSize("cyclops")).toEqual({ w: 3, d: 3, height: 4 });
-    expect(creatureSize("unknown_thing")).toEqual({ w: 1, d: 1, height: 1 });
+    expect(SIZE_CLASSES.large.footprint).toEqual({ w: 5, d: 5 });
+    expect(SIZE_CLASSES.huge.footprint).toEqual({ w: 8, d: 8 });
+    expect(creatureSize("cyclops")).toEqual({ w: 8, d: 8, height: 4 });
+    expect(creatureSize("unknown_thing")).toEqual({ w: 2, d: 2, height: 1 });
   });
 });

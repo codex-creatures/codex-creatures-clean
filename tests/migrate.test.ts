@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { migrateWalkRun, placedProblem, placementsOfWalk, canRecover, recoverWalkRun, openWalkSave, recoverWalkSave, WALK_V } from "../lib/world/migrate";
+import { migrateWalkRun, placedProblem, placementsOfWalk, canRecover, recoverWalkRun, openWalkSave, recoverWalkSave, WALK_V, LEGACY_WALK_V } from "../lib/world/migrate";
 import { unsupportedRun } from "../lib/world/version";
 import { walkRoom } from "../lib/dungeon/walkRun";
 import { dungeonOf, type DungeonRun, type DungeonSave } from "../lib/dungeon/run";
@@ -26,7 +26,7 @@ describe("migrating a run (v0 → v2)", () => {
       expect(run0.walk!.v, name).toBeUndefined();
       const m = migrateWalkRun(run0);
       expect(m.outcome, name).toBe("migrated");
-      expect(m.run.walk!.v).toBe(WALK_V);
+      expect(m.run.walk!.v).toBe(LEGACY_WALK_V);
       expect(placedProblem(m.run.walk!.placed), name).toBeNull();
       expect(json(without(m.run)), name).toEqual(before); // run state, rooms, everything else: untouched
       expect(json(run0), name).toEqual(before); // and the run it was given isn't changed
@@ -162,7 +162,7 @@ describe("opening the Labyrinth's save (openWalkSave)", () => {
   it("a legacy run is migrated and written back once; opening it again writes nothing", () => {
     const first = opened(fixture("cyclops-mid"));
     expect(first.wrote).toHaveLength(1);
-    expect(first.save.run!.walk!.v).toBe(WALK_V);
+    expect(first.save.run!.walk!.v).toBe(LEGACY_WALK_V);
     expect(first.wrote[0]).toEqual(first.save);
     const again = opened(json(first.save.run!));
     expect(again.wrote).toHaveLength(0);
@@ -197,7 +197,8 @@ describe("one way in (world-spec §7: the migration boundary)", () => {
     recoverWalkRun: [],
     openWalkSave: ["app/dungeon/page.tsx"],
     recoverWalkSave: ["app/dungeon/page.tsx"],
-    placedRun: ["app/dungeon/page.tsx", "app/lab/baseline/BaselineScenes.tsx", "app/lab/newrun/page.tsx"],
+    placedRun: ["app/lab/baseline/BaselineScenes.tsx"],
+    newWalkRun: ["app/dungeon/page.tsx", "app/lab/newrun/page.tsx"],
     placementsOfWalk: ["components/WalkView.tsx"],
   };
   it("the migration is reached only through its named doors", () => {

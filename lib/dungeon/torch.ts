@@ -145,54 +145,8 @@ export const SCONCE_SEEN = 12;        // tiles: a burning sconce in sight this c
 // (or a tunnel's: room is then the tunnel's key, and wall which side it's on;
 // none: the top).
 export type Sconce = { id: string; room: string; x: number; y: number; lit: boolean; wall?: "top" | "left" | "right" };
-type Rng = () => number;
 
-// Sconces for every room: spread along its floor's top row (each floor
-// rectangle of a dog-leg that has a wall above), never over a tunnel's mouth.
-// tunnels: some tunnels get theirs too (after the rooms', so the rooms' stay
-// as they were).
-export function placeSconces(fp: Floorplan, start: string, rng: Rng = Math.random, tunnels = false): Sconce[] {
-  const out: Sconce[] = [];
-  for (const [room, rects] of Object.entries(fp.rooms)) {
-    let k = 0;
-    for (const r of rects) {
-      const spots: number[] = [];
-      for (let x = r.x + 1; x < r.x + r.w - 1; x++) if (solid(fp, x, r.y - 1) && solid(fp, x - 1, r.y - 1) && solid(fp, x + 1, r.y - 1)) spots.push(x);
-      if (spots.length === 0) continue;
-      const n = Math.max(1, Math.round(r.w / SCONCE_EVERY));
-      for (let i = 0; i < n; i++) {
-        const x = spots[Math.min(spots.length - 1, Math.floor(((i + 0.5) / n) * spots.length))];
-        if (out.some((s) => s.room === room && Math.abs(s.x - x) < 3 && s.y === r.y)) continue;
-        out.push({ id: `${room}:${k++}`, room, x, y: r.y, lit: room === start || rng() < SCONCE_LIT_SHARE });
-      }
-    }
-  }
-  if (tunnels) for (const key of Object.keys(fp.tunnels).sort()) if (rng() < TUNNEL_SCONCE_CHANCE) out.push(...tunnelSconces(fp, key));
-  return out;
-}
-
-// A tunnel's sconces: along its walls, away from its ends (its doors and the
-// tile in from each), one every SCONCE_EVERY tiles, taking turns side to side
-// up an up tunnel.
-function tunnelSconces(fp: Floorplan, key: string): Sconce[] {
-  const ts = fp.tunnels[key];
-  const x0 = Math.min(...ts.map((q) => q.x)), x1 = Math.max(...ts.map((q) => q.x));
-  const y0 = Math.min(...ts.map((q) => q.y)), y1 = Math.max(...ts.map((q) => q.y));
-  const up = y1 - y0 > x1 - x0;
-  const from = (up ? y0 : x0) + 2, to = (up ? y1 : x1) - 2;
-  if (to < from) return [];
-  const n = Math.max(1, Math.round((to - from + 1) / SCONCE_EVERY));
-  const out: Sconce[] = [];
-  for (let i = 0; i < n; i++) {
-    const along = from + Math.floor(((i + 0.5) / n) * (to - from + 1));
-    const s: Sconce = up
-      ? (i % 2 === 0 ? { id: "", room: key, x: x0, y: along, lit: false, wall: "left" } : { id: "", room: key, x: x1, y: along, lit: false, wall: "right" })
-      : { id: "", room: key, x: along, y: y0, lit: false, wall: "top" };
-    const wx = s.wall === "left" ? s.x - 1 : s.wall === "right" ? s.x + 1 : s.x, wy = s.wall === "top" ? s.y - 1 : s.y;
-    if (solid(fp, wx, wy) && !solid(fp, s.x, s.y)) out.push({ ...s, id: `${key}:${out.length}` });
-  }
-  return out;
-}
+// Where wall torches go: lib/world/place.ts (new runs) and lib/world/compat/v0Placers.ts (runs from before phase 2b).
 
 // Close enough, and in sight, to light it?
 export function canIgnite(fp: Floorplan, s: Sconce, you: Pt): boolean {
@@ -226,19 +180,4 @@ export const CANDLE_RADIUS = 2.5;   // tiles a lit candle lights 🧪
 export const CANDLE_NEAR = [2, 5];  // tiles from the room's middle (its chest, pool or stash): middle-ish, not on it 🧪
 export const CANDLE_CLEAR = 3;      // tiles from its doors, at least
 export type Candle = Sconce;        // (no wall: it stands on the floor)
-export function placeCandles(fp: Floorplan, centres: Record<string, Pt>, skip: string[], rng: Rng = Math.random): Candle[] {
-  const out: Candle[] = [];
-  for (const id of Object.keys(fp.rooms).sort()) {
-    if (skip.includes(id) || rng() >= CANDLE_CHANCE) continue;
-    const mid = centres[id], doors = fp.doors.filter((d) => d.room === id);
-    const spots: Pt[] = [];
-    for (const r of fp.rooms[id]) for (let y = r.y + 2; y < r.y + r.h - 1; y++) for (let x = r.x + 1; x < r.x + r.w - 1; x++) {
-      const d = Math.hypot(x - mid.x, y - mid.y);
-      if (d < CANDLE_NEAR[0] || d > CANDLE_NEAR[1] || fp.tiles[y * fp.w + x] === ROCK || spots.some((s) => s.x === x && s.y === y)) continue;
-      if (doors.some((q) => Math.hypot(q.x - x, q.y - y) < CANDLE_CLEAR)) continue;
-      spots.push({ x, y });
-    }
-    if (spots.length > 0) out.push({ id: `candle:${id}`, room: id, ...spots[Math.floor(rng() * spots.length)], lit: false });
-  }
-  return out;
-}
+// (Where candles go: lib/world/place.ts, and compat/v0Placers.ts for older runs.)

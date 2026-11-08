@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { startWalkRun, walkInto, walkRoom, walkKeep, cageSpots, waitsHere, headHome } from "../lib/dungeon/walkRun";
+import { startWalkRun, walkInto, walkRoom, walkKeep, waitsHere, headHome } from "../lib/dungeon/walkRun";
 import { torchReach, FLARE_WALK, FLARE_REACH, TORCH_RADIUS } from "../lib/dungeon/torch";
 import { hasFight, atTheTop, endRun, wonAtTop, type Cage, type DungeonRun, type DungeonSave } from "../lib/dungeon/run";
-import { isSpawn, parentOf, spawnOf, placeFoes, placeWaiter, sees, endOf, WAIT_REACH } from "../lib/dungeon/foes";
+import { isSpawn, parentOf, spawnOf, sees, endOf, WAIT_REACH } from "../lib/dungeon/foes";
 import { layoutFloorplan, TWO_DEN_SHAPES, LARGE_SHAPE } from "../lib/dungeon/layout";
 import { FLOOR } from "../lib/dungeon/floorplan";
+import { placeFoes, placeWaiter, cageSpots } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
   let s = seed;

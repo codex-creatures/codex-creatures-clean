@@ -15,13 +15,15 @@
 // - migrated: a v0 run, given its placements and its foes' starts; a v1 run,
 //   given its foes' starts (2a′: they depend on which rooms are beaten, so
 //   they're what the game showed at the moment it was migrated);
-// - unchanged: a v2 run whose placements are sound;
+// - unchanged: a v2 or v3 run whose placements are sound (a v3 run is a new
+//   one, placed by phase 2b's rules, place.ts: newWalkRun; nothing migrates to it);
 // - unsupported: a newer world version (version.ts): left exactly as it is;
 // - damaged: a v1 or v2 run whose placements are missing or unsound (or a v0
 //   run carrying some, or a v2 run missing a room's foes), or one whose
 //   placements couldn't be made: left exactly as stored, never made again on
 //   its own (the user, 2026-11-07). The player can ask for it to be mended
-//   (recoverWalkRun), only where today's rules made it;
+//   (recoverWalkRun): the rules that made it make it again (the old ones for
+//   v0 to v2, place.ts for v3);
 // - repaired: a damaged run mended, at the player's say-so;
 // - none: not a walkable run.
 
@@ -29,6 +31,7 @@ import { dungeonOf, type DungeonId, type DungeonRun, type DungeonSave, type Room
 import { walkRoom, type WalkRun } from "../dungeon/walkRun";
 import type { DungeonMap } from "../dungeon/map";
 import { legacyPlacements, legacyFoePlacements } from "./compat/v0";
+import { placeWalk, PLACED_V } from "./place";
 import { placementsFrom, type Placements } from "./placements";
 import { roomIds, foesToPlace } from "./walkWorld";
 import { OBJECTS, type Instance } from "./objects";
@@ -38,18 +41,21 @@ export { WALK_V };
 export type Outcome = "none" | "migrated" | "unchanged" | "repaired" | "unsupported" | "damaged";
 export type Migrated = { run: DungeonRun; outcome: Outcome; problem?: string };
 
-// The world versions whose placements today's rules (compat/v0.ts) make: only
-// a run saved at one can have them made again (recoverWalkRun). Phase 2b's
-// rules make different ones, so its runs can't be mended this way.
+// The world versions whose placements the old rules (compat/v0.ts) make, and
+// the newest of them: a run from before phase 2b is brought up to it, never
+// to v3 (its rooms keep what it showed).
 const LEGACY_V = [1, 2];
+export const LEGACY_WALK_V = 2;
 
 const WALLS = new Set(["north", "east", "west"]);
+const WALLS_V3 = new Set([...WALLS, "south"]);
 const whole = (n: unknown) => typeof n === "number" && Number.isInteger(n);
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
 // of instances, each with a string id (no two the same), a known definition, a
-// room, whole-number subcells, and only known values in its optional fields.
-export function placedProblem(placed: unknown): string | null {
+// room, whole-number subcells, and only known values in its optional fields
+// (a south wall and a placed size only from world version 3).
+export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null {
   if (placed === undefined) return "no placements";
   if (!Array.isArray(placed)) return "placements aren't a list";
   if (placed.length === 0) return "the placement list is empty";
@@ -65,7 +71,8 @@ export function placedProblem(placed: unknown): string | null {
     if (typeof p.room !== "string" || !p.room) return `${p.id}: no room`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
-    if (p.wall !== undefined && !WALLS.has(p.wall as string)) return `${p.id}: unknown wall`;
+    if (p.wall !== undefined && !(v >= PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
+    if (p.size !== undefined && (v < PLACED_V || !sizeOk(p.size))) return `${p.id}: unknown size`;
     if (p.start !== undefined && p.start !== "lit") return `${p.id}: unknown starting state`;
     if (p.facing !== undefined && (typeof p.facing !== "number" || !Number.isFinite(p.facing))) return `${p.id}: unknown facing`;
     if (p.legacy !== undefined && p.legacy !== "panel") return `${p.id}: unknown legacy rule`;
@@ -74,6 +81,11 @@ export function placedProblem(placed: unknown): string | null {
   }
   return null;
 }
+
+const sizeOk = (s: unknown) => {
+  const z = s as Record<string, unknown> | null;
+  return !!z && typeof z === "object" && whole(z.w) && whole(z.d) && (z.w as number) >= 0 && (z.d as number) >= 0;
+};
 
 // What's wrong with a foe's saved start (or with a start on something else), or null.
 function foeProblem(p: Record<string, unknown>): string | null {
@@ -101,20 +113,22 @@ function missingFoes(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (
   }
   return null;
 }
-// What's wrong with a v2 run's placements, or null.
+// What's wrong with a v2 or v3 run's placements, or null.
 const v2Problem = (walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined) =>
-  placedProblem(walk.placed) ?? missingFoes(walk, map, dungeon, room);
+  placedProblem(walk.placed, walk.v ?? 0) ?? missingFoes(walk, map, dungeon, room);
 
-// Placements for a walk, from what's generated in it as today's game does.
+// Placements for a walk, by the rules of its version: phase 2b's for a v3
+// run, else the old rules as the game showed them.
 const placementsFor = (walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Instance[] =>
-  [...legacyPlacements(walk, map, room), ...legacyFoePlacements(walk, map, dungeon, room)];
+  (walk.v ?? 0) >= PLACED_V ? placeWalk(walk, map, dungeon, room).placed
+    : [...legacyPlacements(walk, map, room), ...legacyFoePlacements(walk, map, dungeon, room)];
 const roomsOf = (run: DungeonRun) => (id: string) => walkRoom(run, id);
 
 // What's wrong with a run's placements at its version, or null.
 function problemOf(run: DungeonRun): string | null {
   const walk = run.walk!, v = walk.v ?? 0;
   if (v === 0) return walk.placed !== undefined ? "a v0 run with placements in it" : null;
-  return v >= 2 ? v2Problem(walk, run.map, dungeonOf(run), roomsOf(run)) : placedProblem(walk.placed);
+  return v >= 2 ? v2Problem(walk, run.map, dungeonOf(run), roomsOf(run)) : placedProblem(walk.placed, v);
 }
 
 export function migrateWalkRun(run: DungeonRun): Migrated {
@@ -132,7 +146,8 @@ export function migrateWalkRun(run: DungeonRun): Migrated {
 const unmade = (run: DungeonRun, e: unknown): Migrated =>
   ({ run, outcome: "damaged", problem: `placements couldn't be made: ${e instanceof Error ? e.message : String(e)}` });
 
-// The run with its placements made by today's rules, or damaged if they can't be.
+// The run with its placements made by the rules of its version (a v0 or v1
+// run: the old ones, so it becomes LEGACY_WALK_V), or damaged if they can't be.
 function made(run: DungeonRun, outcome: "migrated" | "repaired", problem?: string): Migrated {
   const walk = run.walk!;
   let placed: Instance[];
@@ -141,7 +156,8 @@ function made(run: DungeonRun, outcome: "migrated" | "repaired", problem?: strin
   } catch (e) {
     return unmade(run, e);
   }
-  return { run: { ...run, walk: { ...walk, v: WALK_V, placed } }, outcome, ...(problem ? { problem } : {}) };
+  const v = (walk.v ?? 0) >= PLACED_V ? PLACED_V : LEGACY_WALK_V;
+  return { run: { ...run, walk: { ...walk, v, placed } }, outcome, ...(problem ? { problem } : {}) };
 }
 
 // A sound v1 run (2a) with its foes' starts added (2a′): the rest of its
@@ -154,16 +170,17 @@ function withFoes(run: DungeonRun): Migrated {
   } catch (e) {
     return unmade(run, e);
   }
-  return { run: { ...run, walk: { ...walk, v: WALK_V, placed: [...walk.placed!, ...foes] } }, outcome: "migrated" };
+  return { run: { ...run, walk: { ...walk, v: LEGACY_WALK_V, placed: [...walk.placed!, ...foes] } }, outcome: "migrated" };
 }
 
 // Whether a damaged run can be mended: its placements are what's broken, and
-// today's rules made them, so making them again gives the same ids and spots.
+// the rules that made them (the old ones, or phase 2b's for v3) make them
+// again with the same ids and spots.
 export function canRecover(run: DungeonRun | null | undefined): boolean {
   const walk = run?.walk;
   if (!run || !walk || unsupportedRun(run)) return false;
   const v = walk.v ?? 0;
-  return (v === 0 || LEGACY_V.includes(v as number)) && problemOf(run) !== null;
+  return (v === 0 || LEGACY_V.includes(v as number) || v === PLACED_V) && problemOf(run) !== null;
 }
 
 // Mending a damaged run, only when the player asks (the Labyrinth screen's
@@ -184,8 +201,19 @@ function withPlacements(run: DungeonRun): Migrated {
   if (m.outcome === "unsupported" || m.outcome === "damaged") console.warn(`Walkable run ${run.id}: ${m.outcome} (${m.problem})`);
   return m;
 }
-// …for a run that's just been made (it can only be migrated).
+// …for a saved run as it's played in the lab's baseline (made or migrated by the old rules).
 export const placedRun = (run: DungeonRun): DungeonRun => withPlacements(run).run;
+
+// A new walkable run, as it's made: placed by phase 2b's rules (place.ts) and
+// saved as world version 3. Placed once, here; a run that already has its
+// placements (or a version) is left to migrateWalkRun.
+export function newWalkRun(run: DungeonRun): DungeonRun {
+  const walk = run.walk;
+  if (!walk || walk.v !== undefined || walk.placed !== undefined) return placedRun(run);
+  const m = made({ ...run, walk: { ...walk, v: PLACED_V } }, "migrated");
+  if (m.outcome === "damaged") console.warn(`Walkable run ${run.id}: ${m.problem}`);
+  return m.run;
+}
 
 // The Labyrinth's save as it's opened to be played: a run from before phase 2a
 // or 2a′ brought up to date and written back straight away (write:

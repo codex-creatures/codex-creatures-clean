@@ -4,21 +4,21 @@
 // proportions, not its sprite (the user, 2026-11-07). One that doesn't fit a
 // class gets its own size (SPECIES_SIZE's { w, d, height }).
 //
-// 🧪 All first guesses, from the creatures' names and art, for the user to
-// set. Read by nothing in play yet: the walk screen still draws every foe
+// Set by the user (2026-11-08, world-spec §3 "Sizes"), in subcells. Read by
+// nothing in play yet (nothing walks bigger than a panel in phase 2b): the walk screen still draws every foe
 // FOE_U tall (lib/world/objects.ts, a legacy draw size), so nothing moves;
 // these take over when creature art is redone to the standard.
 
 import type { SizeClass } from "./objects";
 
-export type CreatureSize = { w: number; d: number; height: number }; // cells, cells, u
+export type CreatureSize = { w: number; d: number; height: number }; // subcells, subcells, u
 
 export const SIZE_CLASSES: Record<SizeClass, { footprint: { w: number; d: number }; height: [number, number] }> = {
   tiny: { footprint: { w: 1, d: 1 }, height: [0.4, 0.8] },
-  small: { footprint: { w: 1, d: 1 }, height: [0.8, 1.2] },
-  medium: { footprint: { w: 1, d: 1 }, height: [1.2, 1.8] },
-  large: { footprint: { w: 2, d: 2 }, height: [1.8, 3] },
-  huge: { footprint: { w: 3, d: 3 }, height: [3, 5] },
+  small: { footprint: { w: 2, d: 2 }, height: [0.8, 1.2] },
+  medium: { footprint: { w: 3, d: 3 }, height: [1.2, 1.8] },
+  large: { footprint: { w: 5, d: 5 }, height: [1.8, 3] },
+  huge: { footprint: { w: 8, d: 8 }, height: [3, 5] },
 };
 
 // Each species' class (or own size). Missing: small.

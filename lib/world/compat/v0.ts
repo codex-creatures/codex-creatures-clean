@@ -1,9 +1,10 @@
 // lib/world/compat/v0.ts
-// The one place today's placers are run to give a walkable run its saved
-// placements (docs/world-spec.md §7, §8 phase 2a): a run saved before them
-// (v0), and, while today's placers are still the live ones, a new run as it's
-// made. Nothing in play or drawing calls the placers below any more: they read
-// the run's `placed` (lib/world/placements.ts). A test checks that.
+// The one place the old placers are run (frozen copies: v0Placers.ts) to give
+// a walkable run its saved placements (docs/world-spec.md §7, §8 phase 2a): a
+// run saved before them (v0), brought up to world version 2, and a v1 or v2
+// run mended at the player's say-so. New runs are placed by lib/world/place.ts
+// (version 3). Nothing in play or drawing calls the placers: they read the
+// run's `placed` (lib/world/placements.ts). A test checks that.
 //
 // What it gives, each with a stable id, an anchor subcell (its panel's centre:
 // everything here stands on one) and `legacy: "panel"`:
@@ -22,15 +23,16 @@
 // foes depend on which rooms are beaten, so they're made once and saved.
 
 import { roomCentre, layoutFloorplan } from "../../dungeon/layout";
-import { placeSconces, placeCandles, type Sconce } from "../../dungeon/torch";
-import { placeFoes, placeWaiter, spawnOf, parentOf, type Foe } from "../../dungeon/foes";
-import { cageSpots, waitsHere, type WalkRun } from "../../dungeon/walkRun";
+import { type Sconce } from "../../dungeon/torch";
+import { spawnOf, parentOf, type Foe } from "../../dungeon/foes";
+import { waitsHere, type WalkRun } from "../../dungeon/walkRun";
 import { hasFight, type DungeonId, type Room } from "../../dungeon/run";
 import type { DungeonMap } from "../../dungeon/map";
 import type { Pt } from "../../dungeon/floorplan";
 import { seeded, roomIds, centresOf, fightsLater } from "../walkWorld";
 import { panelAnchor } from "../grid";
 import type { Instance } from "../objects";
+import { placeSconces, placeCandles, placeFoes, placeWaiter, cageSpots } from "./v0Placers";
 
 const WALLS: Record<NonNullable<Sconce["wall"]>, NonNullable<Instance["wall"]>> = { top: "north", left: "west", right: "east" };
 

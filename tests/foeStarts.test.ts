@@ -8,7 +8,7 @@ import { startWalkRun, walkRoom, type WalkRun } from "../lib/dungeon/walkRun";
 import { layoutFloorplan } from "../lib/dungeon/layout";
 import { hasFight, dungeonOf, type Cage, type DungeonRun, type DungeonSave, type Room } from "../lib/dungeon/run";
 import { roomIds, foeStarts, foesToPlace } from "../lib/world/walkWorld";
-import { migrateWalkRun, placementsOfWalk, canRecover, recoverWalkRun, openWalkSave, WALK_V } from "../lib/world/migrate";
+import { migrateWalkRun, placementsOfWalk, canRecover, recoverWalkRun, openWalkSave, LEGACY_WALK_V } from "../lib/world/migrate";
 import { legacyPlacements } from "../lib/world/compat/v0";
 import type { Instance } from "../lib/world/objects";
 
@@ -143,7 +143,7 @@ describe("migrating a v1 run (v1 → v2)", () => {
       const v1 = asV1(halfBeaten(run0)), copy = json(v1);
       const m = migrateWalkRun(v1);
       expect(m.outcome, name).toBe("migrated");
-      expect(m.run.walk!.v, name).toBe(WALK_V);
+      expect(m.run.walk!.v, name).toBe(LEGACY_WALK_V);
       const placed = m.run.walk!.placed!, old = v1.walk!.placed!;
       expect(placed.slice(0, old.length), name).toEqual(old);
       expect(placed.slice(old.length).every((i) => i.def === "foe"), name).toBe(true);

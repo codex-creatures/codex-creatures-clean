@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, cutOffY, WALK_SPEC } from "../lib/dungeon/layout";
-import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, tunnelShut, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, tunnelShut, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
 import { sideFace, capFade, depthEdges, SIDE_FACE_MAX, CAP_FAINT, FACE_TILE, TOP_TILE, WANG_TILES } from "../lib/dungeon/tileArt";
+import { placeSconces } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
   let s = seed;

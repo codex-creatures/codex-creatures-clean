@@ -75,41 +75,8 @@ const between = (rng: Rng, [lo, hi]: [number, number]) => lo + rng() * (hi - lo)
 const WAYS = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
 const inRects = (rs: Rect[], x: number, y: number) => rs.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
 
-// Where `count` foes start in a room: on its floor (not the top row, under
-// the wall's face), DOOR_CLEAR from its doors, FOE_GAP apart (closer if the
-// room's too small for that).
-// end: keep to that end of the room (a big room with two dens).
-export function placeFoes(fp: Floorplan, room: string, count: number, rng: Rng = Math.random, end?: 0 | 1): Foe[] {
-  const floors = fp.rooms[parentOf(room)];
-  const doors = fp.doors.filter((d) => d.room === parentOf(room));
-  const spots: Pt[] = [];
-  for (const r of floors) for (let y = r.y + 1; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
-    if (spots.some((s) => s.x === x && s.y === y)) continue; // (a dog-leg's arms overlap)
-    if (fp.tiles[y * fp.w + x] === ROCK) continue; // (a pillar: interior.ts)
-    if (end !== undefined && endOf(floors, x, y) !== end) continue;
-    if (doors.some((d) => Math.hypot(d.x - x, d.y - y) < DOOR_CLEAR)) continue;
-    spots.push({ x, y });
-  }
-  const foes: Foe[] = [];
-  for (let gap = FOE_GAP; foes.length < count && gap >= 0; gap--) {
-    const free = spots.filter((s) => foes.every((f) => Math.hypot(f.x - s.x, f.y - s.y) >= Math.max(gap, 1)));
-    while (foes.length < count && free.length > 0) {
-      const s = free.splice(Math.floor(rng() * free.length), 1)[0];
-      if (foes.some((f) => Math.hypot(f.x - s.x, f.y - s.y) < Math.max(gap, 1))) continue;
-      const i = foes.length;
-      foes.push({ room, index: i, ...s, facing: WAYS[Math.floor(rng() * 4)], walks: i > 0 && rng() < WANDER_SHARE, path: [], wait: between(rng, LOOK_TIME), ...(end !== undefined ? { end } : {}) });
-    }
-  }
-  return foes;
-}
-
-// A boss waiting in its room: at the top, in the middle of the floor's top
-// rect (a dog-leg's), WAIT_FROM_TOP tiles down, facing south (the way in).
-export function placeWaiter(fp: Floorplan, room: string): Foe {
-  const top = fp.rooms[room].reduce((a, b) => (b.y < a.y ? b : a));
-  const y = Math.min(top.y + WAIT_FROM_TOP, top.y + top.h - 1);
-  return { room, index: 0, x: top.x + Math.floor(top.w / 2), y, facing: Math.PI / 2, walks: false, path: [], wait: Infinity, waits: true };
-}
+// Where foes start: lib/world/place.ts (new runs) and lib/world/compat/v0Placers.ts
+// (runs from before phase 2b). The numbers above are the new placer's.
 
 // Can you see from one spot to another? Along the straight line between
 // their middles, every tile it passes over walkable. (Steps of a quarter

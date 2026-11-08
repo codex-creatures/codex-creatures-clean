@@ -43,8 +43,8 @@ import { ROCK, FLOOR, DOOR } from "@/lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, roomCentre, WALK_SPEC, scrollMarks, cutOffY, SCROLL_LOOKS, type ScrollMark, startProgress, enter, isOpen, stepRule, routeProblems, type Progress } from "@/lib/dungeon/layout";
 import { advance, cameraAt, findPath, roomAt, walkToward, walkable, type CanStep, type Walker } from "@/lib/dungeon/walk";
 import { cellArt, depthEdges, drawOrder, facingOf, walkFrame, sideFace, capFade, FACINGS, SHEET_TILE, WANG_TILES, FACE_TILE, TOP_TILE, WALL_LIFT, type Facing } from "@/lib/dungeon/tileArt";
-import { torchLit, torchGlow, shutPlan, rubbleOf, placeSconces, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
-import { placeFoes, spottedBy, stepFoe, visionCone, ALERT_KINDS, type Foe } from "@/lib/dungeon/foes";
+import { torchLit, torchGlow, shutPlan, rubbleOf, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, SCONCE_RADIUS, type Sconce } from "@/lib/dungeon/torch";
+import { spottedBy, stepFoe, visionCone, ALERT_KINDS, type Foe } from "@/lib/dungeon/foes";
 import { rollWalkRooms, fightSack, chestSack } from "@/lib/dungeon/walkRooms";
 import { WALK_TILES, WALK_HEROES, KIT_PX, KIT_ROW, KIT_NORTH, KIT_CAP, KIT_SIDE } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -59,6 +59,7 @@ import DenFrame from "@/components/DenFrame";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import type { Pt } from "@/lib/dungeon/floorplan";
 import type { Rarity } from "@/lib/types";
+import { placeSconces, placeFoes } from "@/lib/world/compat/v0Placers";
 
 // Zoom, as tiles across the screen, so it looks the same on a phone and a
 // laptop whatever the screen's size (🧪: the user tries them).

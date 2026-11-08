@@ -11,7 +11,7 @@
 // picture itself is pinned in phase 1, once there's a scene builder to test.
 
 import { layoutFloorplan, roomCentre, startProgress, waysOn, cutOffY, type Layout, type Progress } from "../lib/dungeon/layout";
-import { torchLit, shutPlan, rubbleOf, fallenSoFar, placeSconces, placeCandles, sconceInSight, TORCH_RADIUS } from "../lib/dungeon/torch";
+import { torchLit, shutPlan, rubbleOf, fallenSoFar, sconceInSight, TORCH_RADIUS } from "../lib/dungeon/torch";
 import { floorVariant, wallVariant, type Decor } from "../lib/dungeon/decor";
 import { spottedBy } from "../lib/dungeon/foes";
 import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, seeded, toRuns, fromRuns } from "../lib/world/walkWorld";
@@ -23,6 +23,7 @@ import { depthEdges } from "../lib/dungeon/tileArt";
 import { FLOOR, ROCK, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { WALK_FLOOR_WORN, WALK_WALL_WORN } from "../lib/sprites/walk";
 import { migrateWalkRun, placementsOfWalk } from "../lib/world/migrate";
+import { placeSconces, placeCandles } from "../lib/world/compat/v0Placers";
 
 // The walk screen's own helpers (lib/world/walkWorld.ts).
 export { seeded, toRuns, fromRuns };

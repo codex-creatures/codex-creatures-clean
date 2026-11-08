@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, roomCentre, WALK_SPEC } from "../lib/dungeon/layout";
 import { placeCampfires, warmBy, byFire, CAMPFIRE_HEAL, CAMPFIRE_RATE, CAMPFIRE_REACH, FIRE_CLEAR } from "../lib/dungeon/campfire";
-import { placeSconces } from "../lib/dungeon/torch";
+
 import { startWalkRun } from "../lib/dungeon/walkRun";
+import { placeSconces } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
   let s = seed;

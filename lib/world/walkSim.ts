@@ -67,6 +67,11 @@ type Loop = {
 };
 
 // The walk as it opens: from the saved run, with what walkWorld.ts placed.
+// How an NPC walks (world-spec §5.7): its own rule, kept apart from the foes'
+// and yours so wandering NPCs can change it alone. Today, the card witch's: a
+// foe's wandering in her own room, at NPC_SPEED of its pace.
+export const stepNpc = (fp: Floorplan, n: Foe, seconds: number, rng: () => number): Foe => stepFoe(fp, n, seconds * NPC_SPEED, rng);
+
 export function startWalk(walk: WalkRun, plan: Floorplan, live: Floorplan, placed: { sconces: Sconce[]; candles: Candle[]; foes: Foe[]; npcs: Foe[] }, known: Uint8Array): WalkSim {
   return {
     layout: walk.layout, plan, live,
@@ -218,7 +223,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
     sim.foes = sim.foes.map((f) => stepFoe(live, f, dt, rng));
     // The witch wanders, slowly, and stops (facing you) to let you come up to her.
     sim.npcs = sim.npcs.map((n) => (Math.hypot(n.x - sim.me.x, n.y - sim.me.y) <= NPC_STILL
-      ? { ...n, path: [], facing: Math.atan2(sim.me.y - n.y, sim.me.x - n.x) } : stepFoe(live, n, dt * NPC_SPEED, rng)));
+      ? { ...n, path: [], facing: Math.atan2(sim.me.y - n.y, sim.me.x - n.x) } : stepNpc(live, n, dt, rng)));
     const by = spottedBy(live, sim.foes, sim.me, awake);
     if (by) {
       sim.alarm = { room: by, at: now, going: new Set(), arrived: new Map(), fadeAt: null };

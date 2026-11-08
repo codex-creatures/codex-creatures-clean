@@ -4,14 +4,15 @@
 // placePeople, and thingsOf), verbatim apart from the names and imports:
 // tests/placements.test.ts builds rooms both ways and they must match.
 import { roomCentre, type Layout } from "../lib/dungeon/layout";
-import { placeSconces, placeCandles, type Sconce, type Candle } from "../lib/dungeon/torch";
-import { placeFoes, parentOf, type Foe } from "../lib/dungeon/foes";
+import { type Sconce, type Candle } from "../lib/dungeon/torch";
+import { parentOf, type Foe } from "../lib/dungeon/foes";
 import { hasFight, type Room } from "../lib/dungeon/run";
-import { cageSpots, type WalkRun } from "../lib/dungeon/walkRun";
+import { type WalkRun } from "../lib/dungeon/walkRun";
 import type { DungeonMap } from "../lib/dungeon/map";
 import type { Floorplan } from "../lib/dungeon/floorplan";
 import { seeded, roomIds, centresOf, type Thing } from "../lib/world/walkWorld";
 import { objectDef } from "../lib/world/objects";
+import { placeSconces, placeCandles, placeFoes, cageSpots } from "../lib/world/compat/v0Placers";
 
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);

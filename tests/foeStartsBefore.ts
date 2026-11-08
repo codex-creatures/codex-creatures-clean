@@ -4,12 +4,13 @@
 // name and imports: worked out again each time from the rooms still to beat.
 // tests/foeStarts.test.ts checks the saved starts are exactly these at the
 // moment they're made, and that this is what used to move them.
-import { placeFoes, placeWaiter, spawnOf, parentOf, type Foe } from "../lib/dungeon/foes";
+import { spawnOf, parentOf, type Foe } from "../lib/dungeon/foes";
 import { hasFight, type DungeonId, type Room } from "../lib/dungeon/run";
 import { waitsHere, type WalkRun } from "../lib/dungeon/walkRun";
 import type { DungeonMap } from "../lib/dungeon/map";
 import type { Floorplan } from "../lib/dungeon/floorplan";
 import { seeded, roomIds } from "../lib/world/walkWorld";
+import { placeFoes, placeWaiter } from "../lib/world/compat/v0Placers";
 
 export function placeFoeStartsBefore(walk: WalkRun, plan: Floorplan, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Foe[] {
   const ids = roomIds(walk.layout, map);

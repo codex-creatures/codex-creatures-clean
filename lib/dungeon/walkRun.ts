@@ -21,7 +21,7 @@ import { rollLayout, campMap, labyrinthMap, roomCentre, layoutFloorplan, WALK_SP
 import { placeCampfires, CAMPFIRE_CHANCE, type Campfire } from "./campfire";
 import { rollWalkRooms, roomDepth } from "./walkRooms";
 import { spawnOf, isSpawn } from "./foes";
-import type { Floorplan, Pt } from "./floorplan";
+import type { Pt } from "./floorplan";
 import type { Instance } from "../world/objects";
 
 type Rng = () => number;
@@ -92,14 +92,7 @@ export const waitsHere = (r: Room, dungeon: DungeonId) => r.kind === "boss" || (
 // Where a camp's cages stand: a row along the top of its room (its top
 // floor rect's), CAGE_GAP tiles apart, behind the boss waiting below them.
 export const CAGE_GAP = 4;
-export function cageSpots(fp: Floorplan, room: string, count: number): Pt[] {
-  const floors = fp.rooms[room];
-  if (!floors || count === 0) return [];
-  const top = floors.reduce((a, b) => (b.y < a.y ? b : a));
-  const mid = top.x + Math.floor(top.w / 2);
-  const gap = Math.min(CAGE_GAP, Math.floor((top.w - 2) / Math.max(1, count)));
-  return Array.from({ length: count }, (_, i) => ({ x: mid + Math.round((i - (count - 1) / 2) * gap), y: top.y + 1 }));
-}
+// (Placed by lib/world/place.ts; compat/v0Placers.ts for older runs.)
 
 
 // Where you stand on the run's map: the room you're in.

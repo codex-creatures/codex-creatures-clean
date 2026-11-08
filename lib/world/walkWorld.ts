@@ -7,10 +7,11 @@
 //
 // The wall torches, candles, the card witch's start, where each room's things
 // stand and where its foes start are saved in the run (phases 2a and 2a′:
-// lib/world/placements.ts, made by lib/world/compat/v0.ts). Still worked out
-// from the run's seed each time: the lab's decor (seed + 707) and banners (808;
-// phase 2b). The saved ones had 303 (foes), 404 (the witch), 505 (wall
-// torches) and 606 (candles).
+// lib/world/placements.ts; made by lib/world/place.ts in a new run, by
+// lib/world/compat/v0.ts in one from before phase 2b). Still worked out from
+// the run's seed each time: the lab's decor (seed + 707) and banners (808).
+// The old rules' saved ones had 303 (foes), 404 (the witch), 505 (wall
+// torches) and 606 (candles); the new rules give each room's pass its own.
 
 import { roomCentre, floorsOf, stepRule, type Layout, type Progress } from "../dungeon/layout";
 import type { Sconce, Candle } from "../dungeon/torch";

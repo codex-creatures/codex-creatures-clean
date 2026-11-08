@@ -162,15 +162,18 @@ describe("today's placers are called from one place (world-spec §7: the isolate
   const files = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? files(path.join(dir, e.name)) : /\.tsx?$/.test(e.name) ? [path.join(dir, e.name).replace(/\\/g, "/")] : []);
   const ALLOWED: Record<string, string[]> = {
-    // (/lab/walk: the old walking test bed, a dev tool on made-up layouts, never a saved run.)
-    placeSconces: ["lib/dungeon/torch.ts", "lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
-    placeCandles: ["lib/dungeon/torch.ts", "lib/world/compat/v0.ts"],
-    cageSpots: ["lib/dungeon/walkRun.ts", "lib/world/compat/v0.ts"],
+    // The old placers live on only as frozen copies (compat/v0Placers.ts) for the
+    // converter, and for /lab/walk: the old walking test bed, a dev tool on
+    // made-up layouts, never a saved run. New runs: lib/world/place.ts.
+    placeSconces: ["lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
+    placeCandles: ["lib/world/compat/v0.ts"],
+    cageSpots: ["lib/world/compat/v0.ts"],
     legacyPlacements: ["lib/world/compat/v0.ts", "lib/world/migrate.ts"],
     // (The foe fix, phase 2a′: foes' starts are saved too.)
-    placeFoes: ["lib/dungeon/foes.ts", "lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
-    placeWaiter: ["lib/dungeon/foes.ts", "lib/world/compat/v0.ts"],
+    placeFoes: ["lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
+    placeWaiter: ["lib/world/compat/v0.ts"],
     legacyFoePlacements: ["lib/world/compat/v0.ts", "lib/world/migrate.ts"],
+    v0Placers: ["lib/world/compat/v0.ts", "app/lab/walk/page.tsx"],
   };
   it("nothing else in the game imports them", () => {
     const bad: string[] = [];

@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { lineOfSight, placeFoes, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
+import { lineOfSight, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
 import { chestSack, fightSack, rollWalkRooms, roomDepth } from "../lib/dungeon/walkRooms";
 import { routeLength } from "../lib/dungeon/map";
 import { CHEST_DROPS } from "../lib/dungeon/run";
+import { placeFoes } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
   let s = seed;

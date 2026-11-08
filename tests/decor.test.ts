@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { placeDecor, floorVariant, wallVariant, placeBanners, THEMES, DECOR_MOST, FLOOR_WORN, SOLID_DECOR } from "../lib/dungeon/decor";
-import { placeCandles, CANDLE_NEAR } from "../lib/dungeon/torch";
+import { CANDLE_NEAR } from "../lib/dungeon/torch";
 import { startWalkRun } from "../lib/dungeon/walkRun";
 import { layoutFloorplan, roomCentre } from "../lib/dungeon/layout";
 import { FLOOR, ROCK } from "../lib/dungeon/floorplan";
 import { findPath } from "../lib/dungeon/walk";
+import { placeCandles } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
   let s = seed;
