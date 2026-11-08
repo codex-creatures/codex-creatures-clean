@@ -1318,7 +1318,63 @@ change, and an older copy of the game holds a newer run, §7):
 **Order:** A, then B, then C. B and C don't depend on each other, so they could swap if you'd
 rather see decor first. Each is tested and played before the next starts.
 
-#### Stage B: the candle design (📝 proposed 2026-11-08, for the user's review; nothing built)
+#### Using things in v4 runs (the user's play-test, 2026-11-08: investigated; fix proposed, not made)
+
+The user couldn't open chests or stashes in the dungeon, and saw candles standing beside chests
+and stashes often. These are two separate things with separate causes.
+
+**1. Chests and stashes won't open: a stage A regression, v4 runs only.** From v4 a thing stands
+at its footprint's middle (`placements.ts` `spotOf`). For a chest, a deck or a cart that's 1/6 of
+a panel north of its panel's middle (the back two rows); for a sack it's 1/6 off both ways (a
+corner). Two pieces of code still assumed every thing stands on a panel's middle:
+- **The tap** (`components/WalkView.tsx`): it checks you've seen the thing with
+  `known[t.y * w + t.x]`, using the thing's position as a grid index.
+  - For a sack the index has a fraction, so it reads nothing, and the tap never picks the sack.
+  - For a chest it's sometimes a whole number (when the map's width is a multiple of 6), but then
+    it reads a different cell, so whether the tap works depends on that other cell.
+- **The reach** (`walkWorld.ts` `inReach`, 1.5 u): it's measured from the thing's off-centre
+  middle. `approach` walks you to any panel round the thing's panel, and from the two far
+  diagonals you arrive 1.54 u from a chest (1.65 u from a sack in the opposite corner), out of
+  reach, so nothing opens.
+- **Affected:** chests, stashes' sacks, a library's codexes, card decks, the merchant and the
+  librarian.
+- **Not affected:** pools and cages (they fill their panel), a beaten room's loot (dropped on a
+  panel's middle) and the witch (her position is rounded). v2 and v3 runs aren't affected,
+  since everything there stands on a panel's middle.
+- **Why the tests missed it:** they checked a way up to each thing exists, never that you're in
+  reach at the end of it, and the tap's lookup lives in the component, where no test reaches.
+- **The regression tests:** `tests/thingAccess.test.ts`, with v3 runs passing and v4 runs marked
+  `it.fails` until the fix.
+- **🧪 The proposed fix**, with no special offsets:
+  - (a) Choosing what a tap picks moves into `lib/world/walkWorld.ts` (🧪 `tappedThing`), which
+    checks the seen-map at the thing's panel.
+  - (b) Reach is measured from the thing's panel, the same panel walking is blocked on and
+    `approach` walks round (one helper for both). Taps still land on the thing as drawn.
+  - For v2 and v3 runs both are exactly today's behaviour, since there the panel's middle is the
+    thing's middle.
+  - For v4 runs every thing is usable from every panel round it, as stage A meant.
+  - No save changes, so v4 runs already made are fixed by the update.
+  - The alternative for (b): reach measured to the nearest edge of the footprint. That's truer to
+    the object, but it lengthens reach (a chest's side would open from two panels off), so it
+    waits for walking on subcells.
+
+**2. Candles beside chests and stashes: the placement rule itself, every version, not a bug.**
+- Candles go 2 to 5 panels from the room's middle (`CANDLE_NEAR`, the user's "middle-ish"
+  candle of 2026-11-06), and the room's feature stands on its middle. So both are measured from
+  the same anchor, and a candle is never closer than 2 panels, but often just that far.
+- Measured over 24 runs, in rooms with a feature:
+  - 32% of candles stand 2–2.9 panels from it (one empty panel between, which with a chest's
+    picture 1.75 u wide reads as "beside");
+  - 39% stand 3–3.9 panels away, and 29% 4–5.
+- The figures are identical for v3 and v4, since stage A left candles where v3 put them. Older
+  runs use the same rule.
+- **Not caused by** placement order, a shared spawn point, or a clearance rule wrongly applied:
+  the clearances hold, as A's tests check.
+- **🧪 The proposed fix:** stage B's floor candles keep 3 panels from the things you use and
+  don't measure from the middle (§1 below). Changing v4's rule would mean a new world version
+  anyway, so it's done in B's.
+
+#### Stage B: the candle design (📝 proposed 2026-11-08; the user's decisions folded in, below; nothing built)
 
 **Three separate changes, judged separately.** Each has its own constants, tests and approval,
 so any one can be kept, changed or dropped without the others:
@@ -1353,16 +1409,31 @@ pillars' faces get slots; v2, v3 and v4 runs never change.
 | | Mounted candle (wall or pillar) | Floor candle |
 |---|---|---|
 | **What it's for** | ambient room light and the architecture's atmosphere | a small placed object: variety, atmosphere, and later interactions |
-| **Starts lit** | by a chance per candle (below) | never |
-| **Walk near it** | lights it, as a wall torch | 🧪 stays unlit (question 1): lighting one is left for a later interaction |
+| **Starts lit** | by a chance per candle (below) | never (✅ the user) |
+| **Walk near it** | lights it, as a wall torch | stays unlit (✅ the user) |
+| **Lit by** | walking near | a deliberate interaction, later (its own scope, below) |
 | **Placed by** | where the room is dark (the budget below) | where it suits as an object (§1) |
-| **Its light** | `CANDLE_RADIUS`, through `torchLit`, counts for what you've seen while in sight | none while unlit, so it reveals nothing of the room's middle |
+| **Its light** | `CANDLE_RADIUS`, through `torchLit`, counts for what you've seen while in sight | none while unlit; once lit, the same as a mounted candle's |
 
 Today's floor candle (`candle`) already starts unlit, but lights when you walk within half your
 torch's reach, and from then on shows its patch of the room whenever it's in sight. That is what
-can give away a room's middle. v5's floor candle is a **new definition** (🧪 `floor-candle`) with
-lighting by walking off. Old runs' `candle` instances keep today's behaviour, because behaviour
-comes from the definition and the old runs never hold the new one.
+can give away a room's middle. v5's floor candle is a **new definition** (🧪 `floor-candle`): a
+real light source (it has the candle's light) that walking near never lights. Old runs' `candle`
+instances keep today's behaviour, because behaviour comes from the definition and the old runs
+never hold the new one.
+
+**Lighting a floor candle on purpose** (✅ wanted by the user, 2026-11-08; designed now, built as
+its own step after B, "B6"):
+- **The interaction:** tap a floor candle in reach and it lights. The usual `TAP_OBJECT` and
+  `REACH_OBJECT` apply, measured from its panel as for everything else you use. The definition
+  gains `interact: usable("light")`. No cost or item (🧪 open for later).
+- **Saved as every light already is:** its id goes in the run's `lit` list, so no new save field
+  is needed and B's saves already have room for it. Until B6, nothing writes it.
+- **Once lit,** it's a light like a mounted candle: `CANDLE_RADIUS` through `torchLit`, counting
+  for what you've seen only while it's in your sight.
+- **Why it's separate:** it's a new kind of tap (on a walk-over thing, not a solid one), with its
+  own tests (in reach, lit once, kept after a reload, never lit by walking). It changes how rooms
+  play, so it gets its own play-test.
 
 ##### The candle budget: room by room (✅ asked for by the user, 2026-11-08; the numbers 🧪)
 
@@ -1407,12 +1478,16 @@ Measured over 30 new runs (795 rooms, v4's layouts):
   - E 0.3: a 30% chance of one;
   - E 1.4: one, and a 40% chance of a second.
 - This one rule answers both *whether* a room gets candles and *how many*.
-- **Capped** by 🧪 2 (3 in a large room), and by what the room's faces can take: a candle is only
-  placed in a slot that lights at least 🧪 3 still-dark panels. A room with no real dark gets
-  none, whatever the roll.
+- **Capped** at 🧪 2 a room, or 🧪 3 in a **large** room (the library and the storehouse; the
+  encampment is a boss room, W 0). That's why the library example below has 3.
+- **Also limited by the room itself:** a candle is only placed in a slot that lights at least
+  🧪 3 still-dark panels, and placing stops once only 🧪 40% of the room would be left dark
+  (`DARK_KEPT`), so some meaningful dark always remains. A room with no real dark gets none,
+  whatever the roll.
 
 **Step 4: wall or pillar, and which slot.** One at a time, each candle takes the free slot that
-lights the most still-dark panels, so the dark decides:
+lights the most panels **still dark after the lights already chosen**: the torches, the campfires
+and the candles placed before it in this room (✅ the user, 2026-11-08). So the dark decides:
 - **Dog-legs:** the first candle goes on the leg's side walls, out of reach of the top wall's
   torches.
 - **Pillar rooms:** a pillar's face is often best, since the pillar's shadow is the room's
@@ -1421,7 +1496,8 @@ lights the most still-dark panels, so the dark decides:
 - **Spread rules:**
   - 🧪 at most one candle per pillar;
   - 🧪 in a dog-leg, no second candle in a rectangle until each dark rectangle has one;
-  - the gaps and keep-clear rules (§2).
+  - the gaps and keep-clear rules (§2): 🧪 3 panels from any other light, so candles never
+    cluster.
 - **Ties:** a wall slot over a pillar's, then by the slot's key, so it's deterministic.
 
 In the measure at `DARK_PER` 300 (30 runs), the faces chosen were: west 161, pillar 135, east 101,
@@ -1446,16 +1522,18 @@ south 17, north 8. North faces are rarely chosen because that's where the torche
 | library (large, avg) | large | torches | 866 | 3.6 → 3 (the cap) | spread round it | 1.4 → 1, 40% two |
 | entrance, boss | — | — | — | none | — | none |
 
-Averages at this setting: 0.53 mounted candles a room (0.49 plain, 0.58 with pillars, 0.65
-dog-legs), and about 0.25 floor candles (estimated from the rooms' sizes), against today's 0.29 candles a
-room (all floor). Measured without the spread rules, which only move candles, never add any.
+Averages at this setting: 0.53 **mounted** candles a room (0.49 plain, 0.58 with pillars, 0.65
+dog-legs), the user's target of about 0.5 (✅ 2026-11-08). On top of those come about 0.25
+**floor** candles a room (estimated from the rooms' sizes), against today's 0.29 candles a room
+(all floor). This was measured without the spread rules, the 3-panel gap and `DARK_KEPT`, which
+can only leave candles out, so B1's sim measures it again and sets `DARK_PER` to give 0.5.
 
 ##### Lit at the start: mounted candles
 
 - **Each mounted candle rolls for itself,** as wall torches do (`SCONCE_LIT_SHARE`, 20%), from
   the placement's own random numbers. It's saved on the instance as `start: "lit"` (the field
   torches already use), so it never changes for that run.
-- **🧪 Chances by room kind:**
+- **Chances by room kind** (✅ the user, 2026-11-08, as starting values):
 
 | Kind | Starts lit | Why |
 |---|---|---|
@@ -1475,9 +1553,13 @@ room (all floor). Measured without the spread rules, which only move candles, ne
 - **Candidates:** any free walk-over subcell on the room's floor, at least 3 panels from its
   doors (`CANDLE_CLEAR`), not on a required path's panel, and not in a campfire's or a solid
   thing's clearance.
-- **🧪 Where they're picked from:** by a solid thing (a chest's side, a sack, a cart) or the foot
-  of a pillar half the time, anywhere free otherwise, so they read as placed objects. Never in
-  front of a mounted candle's slot, where they would sit in its glow.
+- **🧪 Kept off the things you use:** at least 3 panels from a room's feature (its chest, sack,
+  pool, deck or cart) and from cages. Today's rule measures 2 to 5 panels from the room's middle,
+  which is exactly where the feature stands, so many candles end up two panels from it (the
+  investigation, 2026-11-08). v5 doesn't measure from the middle.
+- **🧪 Where they're picked from:** the foot of a pillar or along a wall half the time, anywhere
+  free otherwise, so they read as placed objects. Never in front of a mounted candle's slot, where
+  they would sit in its glow.
 - **Ids:** `candle:<room>` for the room's first candle of either kind, and `:1`, `:2`… for any
   more.
 
@@ -1487,7 +1569,7 @@ room (all floor). Measured without the spread rules, which only move candles, ne
   (they keep their torches only).
 - **One thing a slot.** A torch keeps its middle slot; a candle may take either side slot of a
   torch's face, or any slot of a face with no torch.
-- **Gaps:** 🧪 at least 2 panels from any other light's point (torch, candle, campfire), so
+- **Gaps:** 🧪 at least 3 panels from any other light's point (torch, candle, campfire), so
   lights spread out instead of bunching.
 - **Kept clear:** not on a face whose floor panel is a door's or just inside one, so doorways
   stay plain. Not behind a solid thing standing on the floor panel in front of it (a chest, a
@@ -1633,39 +1715,50 @@ it looks onto:
 
 | Step | What | Tests | Gate |
 |---|---|---|---|
+| **first** | The chest and stash fix ("Using things in v4 runs", below), released on its own. | tests/thingAccess.test.ts | your play-test |
 | **B0** | Pin four v4 runs' placements as goldens. Nothing in the game changes. | the goldens; full suite | none |
 | **B1** | v5's placement in `place.ts`: the budget, mounted candles with their lit rolls, and floor candles as objects, at the proposed numbers; **new runs still v4**. The placement view gains the budget, slots in use, light points and the darkness map. | the budget's arithmetic on made-up rooms (a room with no dark gets none; W 0 gets none; the caps); one thing a slot; gaps; at most one a pillar; spread across a dog-leg; no light point in rock; light cells floor; door faces clear; nothing behind a solid thing; floor candles never lit; lit shares by kind within range (sim); deterministic; torches identical to v4; blocked panels equal v4; v2/v3/v4 goldens untouched; the sim's counts per kind and shape | **Gate 1 (placement):** you look at example pictures (written to a folder, as for A), including dog-leg and pillar rooms, and `/lab/placement` |
 | **B2** | Drawing in the scene builder, with today's art and a code bracket: mount points, sort order, the south fade, flame and halo per face. Lab only. | the scene builder's draw list (no browser): north candle before a thing in front of it; south candle before its wall's band and its flame faded by `capFade`; east mirrored; light from the floor panel | **Gate 2 (drawing):** you look in the lab's rooms |
 | **B3** | Sprites: grey templates, the checker, 3–4 PixelLab samples per view. Not imported by the game. | the checker's report on each sample | **Gate 3 (artwork):** you pick, or ask again; only then into `lib/sprites/walk.ts` |
-| **B4** | Density: the numbers you choose (the options below), in the sim. | counts per room and kind within your ranges | **Gate 4 (density):** you set the numbers |
-| **B5** | Release: new runs at v5 (`WALK_V`, `PLACED_V`); the saved-placement check; save, export, reload; mending. | v5 survives save/export/reload unchanged; mended to as made; a v4 game holds a v5 run; v4 run with a mounted candle is damaged; full suite, type check, both builds | **Gate 5:** your play-test on the live site, both dungeons |
+| **B4** | Density: the three settings below, each measured in the sim and drawn for the same rooms (lab pictures, side by side). | counts per room, kind and shape at each setting | **Gate 4 (density):** you compare them visually and set the numbers |
+| **B5** | Release, only with the approved artwork (✅ the user): new runs at v5 (`WALK_V`, `PLACED_V`); the saved-placement check; save, export, reload; mending. | v5 survives save/export/reload unchanged; mended to as made; a v4 game holds a v5 run; v4 run with a mounted candle is damaged; full suite, type check, both builds | **Gate 5:** your play-test on the live site, both dungeons |
 
 B3 can run alongside B1–B2 (it doesn't touch the game). Each step is its own commit; nothing
-reaches players before B5.
+reaches players before B5. **B6**, lighting floor candles on purpose, comes after B5 as its own
+change and play-test.
 
-**Density options (for gate 4; nothing decided).** The budget's shape stays the same; only the
-dial `DARK_PER` moves. The averages are scaled from the measure at 300, before the spread rules:
+**Density settings for gate 4** (✅ the user: start at about 0.5 mounted candles a room, then
+compare all three visually before approving). Only the dial `DARK_PER` moves. **Mounted**
+candles are the light; floor candles are counted apart (about 0.25 a room at every setting, set
+by `FLOOR_PER`). Sparse and rich are scaled from the measure at 300; B4 measures all three:
 
-| Option | `DARK_PER` | Mounted a room (avg) | A typical fight room (D ≈ 165) | Total with floor candles |
+| Setting | `DARK_PER` | Mounted a room (avg) | A typical fight room (D ≈ 165) | Plus floor candles |
 |---|---|---|---|---|
-| **a. Sparse** | 🧪 1000 | about 0.16 | 12% chance of one | about 0.4 (today: 0.29) |
-| **b. Ambient** (proposed) | 🧪 300 | 0.53 | 41% chance of one | about 0.8 (2.7× today) |
-| **c. Rich** | 🧪 150 | about 1 | 83% chance of one | about 1.3 |
+| **Sparse** | 🧪 1000 | about 0.16 | 12% chance of one | about 0.25 |
+| **Ambient** (the target) | 🧪 300 | 0.53 | 41% chance of one | about 0.25 |
+| **Rich** | 🧪 150 | about 1 | 83% chance of one | about 0.25 |
+
+(An earlier draft gave ambient as "about 0.8": that was mounted and floor candles added together,
+0.53 + 0.25. The target of 0.5 is mounted candles alone.)
 
 The kind weights, the caps and the lit chances are separate constants, so they can be tuned
 without moving the dial.
 
-**Questions for the user:**
-1. **Floor candles and walking:** v5's floor candles stay unlit when you walk near (proposed: no
-   revealing the room's middle, and lighting them left for a later interaction), or light as
-   today's do but cast 🧪 no light?
-2. **Darkness:** count every torch as lit when working out a room's dark (proposed), or only
-   those that start lit?
-3. **South-face art:** reuse the face-on candle (proposed: it's mostly hidden, and saves
-   PixelLab credit), or a separate from-behind view?
-4. **Tunnels:** mounted candles in rooms only for now (proposed), or tunnels too?
-5. **Release:** wait for the new sprites (proposed), or release B with today's art on the walls
-   and swap the art in later (art alone changes no save, so it needs no new version)?
+**The user's decisions (2026-11-08):**
+1. Floor candles always start unlit and never light when you walk near. They stay real light
+   sources, lit later by a deliberate interaction with its state saved (B6).
+2. Mounted candles (wall and pillar) may start lit: 10% in fights, 25% in quiet rooms, 60% in
+   lived-in rooms, as starting values.
+3. Every wall torch counts as lit when working out the budget.
+4. Placement by darkness, room kind, shape, pillars and existing light. Each candle is judged by
+   what it adds after the lights already chosen, with no clustering, and meaningful dark is kept.
+5. Density: about 0.5 mounted candles a room to start; sparse, ambient and rich compared visually
+   at gate 4.
+6. South faces reuse the face-on art, provisionally, if it looks right in the actual renderer
+   (judged at gates 2 and 3).
+7. Mounted candles in rooms only, for now.
+8. Release with approved artwork, never temporary sprites.
+9. B0–B5 and their gates kept; the chest and stash fix comes first, on its own.
 
 - **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing
   goldens), each in its own commit. (The foe fix came early, as 2a′.)
