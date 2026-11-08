@@ -13,6 +13,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:all": "vitest run --mode full",
+    "test:stress": "vitest run --mode stress tests/place.test.ts -t stress",
     "build:offline": "node offline/build.js",
     "setup:google": "node scripts/setup-google-login.mjs",
     "registry:rules": "node scripts/registry-rules.mjs"

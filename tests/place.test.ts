@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slowIt } from "./slow";
+import { slowIt, stressIt } from "./slow";
 import { seeded } from "./walkBaseline";
 import { startWalkRun, walkRoom } from "../lib/dungeon/walkRun";
 import { layoutFloorplan } from "../lib/dungeon/layout";
@@ -112,6 +112,14 @@ function problems(name: string, run: DungeonRun): string[] {
     if (solid.has(panelKey(at)) || taken.has(panelKey(at))) bad(`${f.room} foe ${f.index} on something`);
     if (!from || !findPath(plan, from, at, can)) bad(`${f.room} foe ${f.index} where you can't get`);
     if (!f.waits && plan.doors.some((d) => d.room === parentOf(f.room) && Math.hypot(d.x - f.x, d.y - f.y) < DOOR_CLEAR)) bad(`${f.room} foe ${f.index} by a door`);
+  }
+  // A library holds its librarian or codexes to find, never both, so the one placed is the one it shows.
+  for (const id of ids) {
+    const r = room(id);
+    if (r?.kind !== "library") continue;
+    if (!!r.librarian === !!r.sack) bad(`${id}: a library with ${r.librarian ? "both a librarian and codexes" : "neither a librarian nor codexes"}`);
+    const want = r.librarian ? "librarian" : "stores";
+    if (!placed.some((i) => i.id === `${id}:${want}`) || placed.some((i) => i.id === `${id}:${r.librarian ? "stores" : "librarian"}`)) bad(`${id}: not just its ${want} placed`);
   }
   // Every fight room has its foes; all ids unique (placedProblem), each foe's id its room's.
   for (const id of fightRooms(run)) if (!p.foes.some((f) => f.room === id)) bad(`${id}: no foes`);
@@ -235,13 +243,13 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
 // The sim the user asked for (the user, 2026-11-08): what's placed in new runs,
 // against what the old rules placed in the same runs. Printed, and held to
 // loose ranges of today's (the candles' rise is the approved change).
-slowIt("the sim: counts per room, against the old rules", () => {
+function simAgainstOld(runs: number) {
   type Tally = { runs: number; rooms: number; candles: number; candlesOld: number; candlesShownOld: number; omitted: number; moved: number; lit: number; litOld: number;
     torches: number; torchesOld: number; foes: number; foesOld: number; doorMin: number; gapMin: number; foesOnThings: number };
   const lines: string[] = [];
   for (const d of [0, 1] as const) {
     const t: Tally = { runs: 0, rooms: 0, candles: 0, candlesOld: 0, candlesShownOld: 0, omitted: 0, moved: 0, lit: 0, litOld: 0, torches: 0, torchesOld: 0, foes: 0, foesOld: 0, doorMin: Infinity, gapMin: Infinity, foesOnThings: 0 };
-    for (let s = 500; s < 540; s++) {
+    for (let s = 500; s < 500 + runs; s++) {
       const run = newWalkRun(made(d, s));
       const walk = run.walk!, plan = layoutFloorplan(walk.layout);
       const { placed, report } = placedOf(run);
@@ -277,4 +285,7 @@ slowIt("the sim: counts per room, against the old rules", () => {
     expect(Math.abs(t.candles - t.candlesShownOld) / t.candlesShownOld).toBeLessThan(0.25);
   }
   console.log(lines.join("\n"));
-}, 900_000);
+}
+slowIt("the sim: counts per room, against the old rules (40 runs a dungeon)", () => simAgainstOld(40), 900_000);
+// …and the bigger one, as a stress test of its own: `npm run test:stress` (not part of test:all, to keep that within its time).
+stressIt("the sim, 200 runs a dungeon (stress)", () => simAgainstOld(200), 3_600_000);
