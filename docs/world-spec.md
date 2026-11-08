@@ -1260,9 +1260,10 @@ take beside it:
 **The stages** (each its own world version, commit, release and approval; v2 and v3 runs never
 change, and an older copy of the game holds a newer run, §7):
 
-- **A, subcell occupancy and placement, with the debugging view** (world version 4):
-  - `FULL_PANEL` off for v4: things take their footprints, placed by the rules above; walk-over
-    things may share panels.
+- **A, subcell occupancy and placement, with the debugging view** (world version 4; ✅ design
+  approved 2026-11-08; built, not yet released):
+  - Things take their footprints, placed by the rules above; things whose footprints don't meet
+    may share panels (no whole-panel claims in v4).
   - Walking, taps and reach read each thing's footprint, not its anchor's panel. A solid thing's
     panel is the one its footprint is in, and a thing's spot in u is its footprint's middle.
   - The placer gains a version: v3's rules stay exactly as they are (pinned by new goldens of a
@@ -1276,8 +1277,28 @@ change, and an older copy of the game holds a newer run, §7):
     solid across a panel edge or in a clearance, every thing used from a reachable panel, foes
     reachable and clear of doors); blocked panels per room no more than v3's (a sim); the same
     seed gives the same run; v2 and v3 goldens untouched.
-  - What you'd see: chests and carts at the back of their panels, sacks in corners, candles off
-    their panels' middles, and now and then a candle beside a chest.
+  - What you'd see: chests and carts at the back of their panels, sacks in a corner by the nearest
+    wall. Candles stand where they did. (A chest fills its panel's back rows and keeps its front
+    row clear, so no candle can share a chest's panel; one can share a sack's.)
+  - **As built:**
+    - `lib/world/occupancy.ts`: the layers (structure, blocking, walk-over, trigger, overhead,
+      with `OVERLAPS`), the attachment slots on every stone face (walls and pillars:
+      `attachmentSlots`, `slotPoint` on the face, `slotLightCell` where grid light starts),
+      clearances, reservations and zones.
+    - `lib/world/policy.ts`: the temporary panel policies (`navBlocked`, `canStand`,
+      `oneSolidPerPanel`, and v3's whole-panel claims), which nothing in the occupancy map uses.
+    - `lib/world/place.ts`: v3's rules unchanged, v4's added.
+    - Definitions: `clearFront` (a chest's, a deck's, the carts' clearance is the row in front)
+      and `occupies` (a trigger's layer).
+    - `lib/world/placementView.ts` and `/lab/placement`: the debugging view.
+    - Tests: tests/placeV4.test.ts. Version 3's tests (place.test.ts, placeV3.test.ts) keep their
+      checks; only their run maker now asks for v3.
+  - **The sim (40 runs a dungeon, v4 against v3's rules on the same runs):**
+    - floor things, candles, wall torches, foes and panels blocked to walking all exactly v3's;
+    - nothing moved and no problems;
+    - no panel shared in real runs: candles stand 2 to 5 panels from a room's middle, where its
+      one shareable thing (a stash's sack) is. Sharing comes with later content (decor, stage C;
+      candles placed by where it's dark).
 - **B, expanded attachments: south-wall and pillar candles** (world version 5):
   - Wall candles on all four walls in the wall slots (three a wall panel: a torch keeps the
     middle one, a candle may take a side one), and candles on pillars' faces (above).
