@@ -1036,6 +1036,98 @@ read as an empty list. `migrateWalkRun` checks `placed` and says what it did:
     extra candles themselves (along the walls, perhaps more per room) change what rooms look like,
     so they come in as an intended change, approved first, with their wall and side art made and
     approved the usual way (PixelLab samples first). Nothing in 2b makes NPCs move.
+
+#### 2b: the implementation design (📌 proposed 2026-11-08, for the user's sign-off; not built)
+
+**Two steps, each its own commit and release:**
+- **2b-1, the new placers** (this design): new runs are placed by the passes (§5.3) on the
+  occupancy map (§5.1), as world version 3. Every floor thing still takes its own panel, so rooms
+  look and play as now; only spots rolled at random today come out differently (§10.3, agreed).
+- **2b-2 and after, intended changes, each approved first:** things sharing a panel at their
+  reviewed sizes; the extra candles by every wall (with their art); decor and banners in real
+  runs. None of these is in 2b-1.
+
+**Versions.** v3 means "placed by 2b's rules". Runs saved at v1 and v2 keep their placements for
+good: nothing migrates to v3, so their rooms never change (a v0 run still converts to v2 through
+`compat/v0.ts`, as it showed). This is the one version bump that comes with a new generator, not
+a migration. `WALK_V` becomes 3. A copy of the game reading up to 2 meets a v3 run as newer and
+leaves it alone (§7), so the laptop is updated before a v3 run is played anywhere else (Vercel and
+the phone update themselves).
+
+**The data.** A v3 instance has no `legacy` mark and carries `size` (its definition's footprint
+when placed, §3), so changing a definition's size later never moves a saved thing. `wall` gains
+`"south"`, accepted only in a v3 run (a v1 or v2 run with it is damaged, as now). The definitions'
+footprints change from panels to the reviewed subcells (§3 "Sizes"); only placement reads them.
+Ids as today (`<room>:<n>` torches, `candle:<room>`, `<room>:<def>`, `<room>#<i>` cages,
+`<room>:witch`, `<room>:foe:<i>`), so `lit` and the taps keep working.
+
+**New modules:**
+- `lib/world/grid.ts` gains the footprint sums: the subcells a footprint covers from its anchor
+  (centred on it; an even size's anchor is the subcell just south-east of the middle, §3), with
+  quarter turns swapping w and d, the panels it touches, edges and negative coordinates.
+- `lib/world/occupancy.ts`: one map per room in subcells, with the layers of §5.1 (blocking,
+  walk-over, wall slots on all four walls, overhead), the reservations, and `navBlocked`: a panel
+  is blocked if any subcell in it is solid (today's rule, worked out, never stored).
+- `lib/world/place.ts`: the passes in order, room by room, each on its own random stream from
+  (run seed, room, pass), so a change to one pass never moves anything another placed.
+- `lib/world/compat/v0.ts` takes frozen copies of today's placers (`placeSconces` and the
+  tunnels', `placeCandles`, `placeFoes`, `placeWaiter`, `cageSpots`) and the helpers they need;
+  the live ones go from the generation code. `placements.ts` reads v3 instances too (today's
+  "candle by a campfire isn't drawn" rule kept only for legacy instances).
+
+**The passes, keeping today's rules and numbers:**
+
+| Pass | What | Rule (as today unless said) | Differs from today's game? |
+|---|---|---|---|
+| 1 reserve | doors and the panel inside each, a path between every pair of doors and from the doors to each progression point (1 panel wide), the room's middle, the waiting boss's stand and the way up to it, the cages, the guarded chest's spot | worked out from the layout | no (new: nothing may now block them) |
+| 2 stamp | none yet: the pass is there, empty (§5.5) | | no |
+| 3 structure | pillars stay rock in the layout (`inner`, already saved): read into the map as blocked, not made into objects | `interior.ts` as now | no |
+| 4 things you use | each room's feature and a large room's stores at its middle; cages along the top; the merchant and librarian at the middle, saved as starts with their home room | fixed spots, nothing random | no: the same spots |
+| 5 wall slots | wall torches: same spots (fixed by the rule), one in `SCONCE_EVERY`; which start lit, and which tunnels get them, rolled per room | `SCONCE_LIT_SHARE`, `TUNNEL_SCONCE_CHANCE` | which are lit at the start |
+| 6 floor lights | campfires (already rolled, `fires`) marked first with their clearance; then candles | `CANDLE_CHANCE`, 2–5 panels from the middle, 3 from doors; new: never within 2 panels of a fire | candles' spots (question 1) |
+| 7 spawns | every fight room's foes, the ambush's included, and the card witch | `FOE_GAP`, `DOOR_CLEAR`, not the top row, one end each in a two-den room, the boss's stand; new: never on a solid thing or a reserved point, never in a pocket you can't reach | foes' and the witch's starts |
+| 8 decor | lab only (`/lab/newrun`), as now: run on the new map there, so it can't overlap anything, and not saved | `decor.ts` | no (not in real runs) |
+| 9 floor variety | worn tiles from the seed, not saved | | no |
+
+What that fixes as a side effect: nothing in today's foe rule keeps a foe from starting on a
+room's chest, pool or cage; in a v3 run it can't. And as every fight room's foes are placed when
+the run is made, on their own room's stream, beating a room can't move anyone, and a damaged v3
+run can be mended by the same placers giving the same ids and spots.
+
+**The foundations (no change in play):** wall candle definitions for each wall (`candle-wall`,
+`candle-wall-side`, `candle-wall-south`), each with its anchor and an art slot holding today's
+candle until its own art is made; a light's origin at its anchor subcell; the south wall's slots
+in the map; a `light` field on the merchant, librarian and witch (🧪 numbers, read by nothing
+yet); and the NPCs' walk rule as its own function, giving today's rule for the witch. Nothing
+places a wall candle or moves an NPC.
+
+**Tests:**
+1. **Old runs untouched:** every phase-0 and phase-1 golden, each fixture's `*.placed.json`, the
+   foe-start tests and the walk-sim and draw comparisons pass as they are (the fixtures are v0
+   to v2, read through the converter).
+2. **Invariants** (`slowIt`, 🧪 300 rolled rooms per dungeon): reservations intact, every
+   required path walkable, no two blocking things on one subcell, one thing per wall slot, every
+   foe, NPC and loot spot reachable from a door, pockets over 🧪 6 panels flagged.
+3. **Kept the same:** on rolled runs, a v3 run's torch spots, features, stores and cages are
+   exactly today's placers'; its solid panels are those things' panels, as now.
+4. **Deterministic and stable:** the same seed gives the same placements; beating any room, or
+   springing the ambush, changes nothing saved; save, export, import and reload change nothing;
+   a mended v3 run equals the run as made.
+5. **Versions:** a v3 run is held by a client reading up to 2; `wall: "south"` is refused below v3.
+6. **The sim, reported before the switch** (§8 "Done when"): candles, lit torches and foes per
+   room and per room kind, foes' spacing and distance from doors, on 🧪 200 runs per dungeon,
+   v3 against today's placers.
+7. `npm run test:all`, `tsc`, lint, `build`, `build:offline` (in a temporary clone); then the
+   user plays a fresh run in each dungeon, and one already under way from before.
+
+**Questions for the user:**
+1. **A candle near a campfire:** today it's placed, then not drawn, so that room has none. In a
+   v3 run, place it elsewhere in the room instead (so a few more rooms have a candle; the sim
+   says how many), or keep today's outcome (no candle in that room)?
+2. **Pillars:** keep them as rock in the layout in 2b-1 (proposed: they're saved already and play
+   right), turning them into objects only when something needs it (one that breaks or moves)?
+3. **Decor and banners:** stay lab-only through 2b-1 (proposed), each brought into real runs
+   later as its own approved change?
 - **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing
   goldens), each in its own commit. (The foe fix came early, as 2a′.)
 - **Done when:**
