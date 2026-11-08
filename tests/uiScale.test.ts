@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clampUiScale, readUiScale, writeUiScale, UI_SCALE_KEY, LAPTOP_UI_SCALE } from "../lib/uiScale";
+import { clampUiScale, readUiScale, writeUiScale, drawnScale, UI_SCALE_KEY, LAPTOP_UI_SCALE } from "../lib/uiScale";
 
 function memory() {
   const m = new Map<string, string>();
@@ -29,5 +29,16 @@ describe("screen size", () => {
     const s = memory();
     expect(writeUiScale(s, 1.5)).toBe(1.5);
     expect(readUiScale(s)).toBe(1.5);
+  });
+});
+
+describe("drawn bigger by Screen size (drawnScale)", () => {
+  // (The walk screen turns a tap into a spot, and sizes its canvas, by this: the user, 2026-11-08,
+  // found taps landing in the wrong place at 150%.)
+  const el = (drawn: number, own: number) => ({ offsetWidth: own, getBoundingClientRect: () => ({ width: drawn }) }) as unknown as HTMLElement;
+  it("is how much bigger it's drawn than its own size, and 1 for one not laid out", () => {
+    expect(drawnScale(el(540, 360))).toBe(1.5);
+    expect(drawnScale(el(360, 360))).toBe(1);
+    expect(drawnScale(el(0, 0))).toBe(1);
   });
 });

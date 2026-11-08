@@ -41,6 +41,7 @@ import { ROOM_ART } from "@/components/DungeonMapView";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { PartyMember } from "@/components/PartySlots";
+import { drawnScale } from "@/lib/uiScale";
 
 const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14", you: "#e0483e" };
 
@@ -148,7 +149,8 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       if (!F.draw) return;
 
       // ── Drawing ──
-      const ratio = window.devicePixelRatio || 1;
+      // A canvas pixel for each pixel on screen, Screen size's scaling included, so the browser never stretches the picture.
+      const ratio = (window.devicePixelRatio || 1) * drawnScale(el);
       const cw = el.clientWidth, ch = el.clientHeight;
       if (el.width !== Math.round(cw * ratio)) el.width = Math.round(cw * ratio);
       if (el.height !== Math.round(ch * ratio)) el.height = Math.round(ch * ratio);
@@ -172,8 +174,9 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
 
   const tap = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (busy || sim.fired > 0 || sim.alarm) return;
-    const el = e.currentTarget, box = el.getBoundingClientRect();
-    const spot = tapCell(walkView(plan, sim.me, el.clientWidth, el.clientHeight), e.clientX - box.left, e.clientY - box.top);
+    // (Settings → Screen size draws the screen scaled: the pointer's in drawn pixels, the view in the canvas's own.)
+    const el = e.currentTarget, box = el.getBoundingClientRect(), k = drawnScale(el);
+    const spot = tapCell(walkView(plan, sim.me, el.clientWidth, el.clientHeight), (e.clientX - box.left) / k, (e.clientY - box.top) / k);
     const can = rule(sim.progress);
     // A tap on (or by) something to loot that you've seen: walk up beside it, and it opens.
     const t = things().find((x) => tapsThing(x, spot) && sim.known[x.y * plan.w + x.x]);
