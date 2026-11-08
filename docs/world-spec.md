@@ -1192,10 +1192,10 @@ take beside it:
    where it suits, keeping access and avoiding collisions, with other spots tried when the wall
    ones aren't valid. (As built in A: a thing's own spot in its panel favours the side nearest a
    wall. The room's feature still stands on its middle panel, which the room keeps for it.)
-3. **Candles:** floor candles, kept, favour spots by walls over the middle of a room. Wall-mounted
-   candles are their own kind of placement, and the south wall gets **wall-mounted** ones, in wall
-   slots and drawn as wall things even where the camera hides them, never floor candles standing
-   in for them (stage B).
+3. **Candles** (corrected by the user, 2026-11-08, below): floor candles light the middle of rooms
+   and wherever else is dark, never kept to the walls. Wall-mounted candles are their own kind of
+   placement, and the south wall gets **wall-mounted** ones, in wall slots and drawn as wall things
+   even where the camera hides them, never floor candles standing in for them (stage B).
 4. **Big creatures:** feet on their panel's centre as now; their size class checks there's free
    floor round the spot for them. No multi-panel movement or new collision.
 5. **The stages** A (v4), B (v5) and C (v6) as below, each tested and approved on its own.
@@ -1204,6 +1204,58 @@ take beside it:
    blocked to walking; wall slots; and rejected placements with the reason, where practical.
 7. **Compatibility:** v2 and v3 runs unchanged; v4 for new runs only, deterministic, with stable
    ids and the usual protections. No art changes and no new kinds of object in stage A.
+
+**Aligned with the user's intentions (2026-11-08), before stage A is finished:**
+
+1. **Floor candles are small light sources for the room's middle and its dark places,** not wall
+   decoration. Each one goes where the room needs light, on free floor (any subcell its occupancy
+   allows), never pushed to the edges.
+   - 🧪 For stage A: today's spots kept (2–5 panels from the middle, clear of doors), now at
+     subcell level, so a candle may sit beside a chest in a shared panel.
+   - 🧪 Later, its own approved change: candles placed by where the room is darkest (farthest from
+     its torches, fires and other candles).
+   - Undone from the first draft of A: candles kept against the walls.
+2. **Candles on pillars** (stage B, with the south wall's): a pillar's faces that look onto floor
+   get attachment slots, as walls do.
+   - Each candle on one has its own id (🧪 `<room>:pillar-candle:<n>`) and its world position on
+     the face.
+   - Its light starts in the floor subcell in front of the face.
+   - It's drawn in order with its face: the north face as a wall's, the side faces as a side
+     wall's, the south face hidden by the pillar's top as the south wall's may be.
+   - Pillars stay structure (rock panels in the layout); only their faces gain slots.
+3. **Panels are structure; subcells are for everything placed in it.**
+   - Panels (3 × 3 subcells each) are walls, tunnels, rooms and pillars.
+   - Subcells place objects, creatures, furniture, decorations, environmental features and future
+     interactables. A thing may take part of a panel, share one, or span several.
+   - Movement on panels is a navigation policy for now, not a physical rule, and placement isn't
+     cut down to suit it beyond what the policy needs.
+
+**What that means for stage A's design:**
+- **The occupancy map becomes a set of named layers,** each with its own rule for what may overlap
+  it (a table, not one rule per kind of thing):
+  - *structure:* rock panels: walls and pillars, from the layout;
+  - *blocking:* solid footprints;
+  - *walk-over:* things on the floor you walk over;
+  - *trigger:* areas that may lie under anything on the floor (pressure plates, trap zones, hidden
+    interactions, a secret room's catch); they may overlap the floor, walk-over and blocking
+    layers, but not one another unless their kinds allow it;
+  - *attachment:* slots on structure's faces: a wall's (north, east, west, south) and, from stage
+    B, a pillar's, keyed by the structure panel and the face;
+  - *overhead*, and the reservations and clearances as now.
+  Stage A fills structure, blocking, walk-over and attachment (walls only). Trigger and overhead
+  are there, empty, with a test that they accept overlapping floor space.
+- **Attachment slots are found from structure, not from room walls alone:** every face of a rock
+  panel that looks onto floor, tagged wall or pillar. Torches keep their spots (only room walls
+  and tunnels get them), so nothing moves.
+- **The panel policies are kept apart, as policies:** `navBlocked` (a panel is blocked if any of
+  it is solid) and the generator's "one solid thing a panel, inside it" sit in one module
+  (🧪 `lib/world/policy.ts`), each marked as temporary while movement is on panels, so finer
+  movement later changes them alone. Nothing in the occupancy map assumes them.
+- **Destructible structure later:** a pillar that can break would leave the structure layer and
+  become an instance with its own id and state. The layer split allows that without moving
+  anything else.
+- **Stage A's scope otherwise as approved:** existing objects at their footprints, the debugging
+  view (showing every layer, triggers included once something uses them), no new art or objects.
 
 **The stages** (each its own world version, commit, release and approval; v2 and v3 runs never
 change, and an older copy of the game holds a newer run, §7):
@@ -1226,9 +1278,9 @@ change, and an older copy of the game holds a newer run, §7):
     seed gives the same run; v2 and v3 goldens untouched.
   - What you'd see: chests and carts at the back of their panels, sacks in corners, candles off
     their panels' middles, and now and then a candle beside a chest.
-- **B, expanded wall attachments, south-wall candles included** (world version 5):
+- **B, expanded attachments: south-wall and pillar candles** (world version 5):
   - Wall candles on all four walls in the wall slots (three a wall panel: a torch keeps the
-    middle one, a candle may take a side one), and floor candles against walls.
+    middle one, a candle may take a side one), and candles on pillars' faces (above).
   - `wall: "south"` used for the first time. Each light starts in the floor subcell beside its
     wall.
   - Candle art for each wall (face on, side on, south) from PixelLab: samples first, your
