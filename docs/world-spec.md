@@ -1415,8 +1415,8 @@ pillars' faces get slots; v2, v3 and v4 runs never change.
 |---|---|---|
 | **What it's for** | ambient room light and the architecture's atmosphere | a small placed object: variety, atmosphere, and later interactions |
 | **Starts lit** | by a chance per candle (below) | never (✅ the user) |
-| **Walk near it** | lights it, as a wall torch | stays unlit (✅ the user) |
-| **Lit by** | walking near | a deliberate interaction, later (its own scope, below) |
+| **Walk near it** | lights it, as a wall torch | lights it, as any candle (✅ the user, 2026-11-08, changed after release) |
+| **Lit by** | walking near | walking near (the tap below is no longer needed) |
 | **Placed by** | where the room is dark (the budget below) | where it suits as an object (§1) |
 | **Its light** | `CANDLE_RADIUS`, through `torchLit`, counts for what you've seen while in sight | none while unlit; once lit, the same as a mounted candle's |
 
@@ -1427,8 +1427,7 @@ real light source (it has the candle's light) that walking near never lights. Ol
 instances keep today's behaviour, because behaviour comes from the definition and the old runs
 never hold the new one.
 
-**Lighting a floor candle on purpose** (✅ wanted by the user, 2026-11-08; designed now, built as
-its own step after B, "B6"):
+**Lighting a floor candle on purpose** (~~wanted by the user, 2026-11-08, as "B6"~~: dropped after release, when the user chose to have floor candles light by walking near; kept for the record):
 - **The interaction:** tap a floor candle in reach and it lights. The usual `TAP_OBJECT` and
   `REACH_OBJECT` apply, measured from its panel as for everything else you use. The definition
   gains `interact: usable("light")`. No cost or item (🧪 open for later).
@@ -1741,10 +1740,10 @@ it looks onto:
 
 **Released early (the user, 2026-11-08: "release to everyone… for now lets focus on the functional side").** Gates 1–4 skipped; B2 and B5 done for function only:
 - **New runs are world version 5** (`WALK_V`, `PLACED_V`). v2–v4 runs keep what they were made with (B0's pins).
-- **The walk reads stage B's candles** (`placements.ts`): a mounted candle is a candle at the floor subcell in front of its slot, lit if it rolled lit or you lit it, lit by walking near, its light from that floor panel; a floor candle is a candle walking near never lights (`still`). Both are drawn with today's candle art where they stand: no bracket, no south-wall fade, no side-on view yet (B2's drawing and B3's art are still to do).
+- **The walk reads stage B's candles** (`placements.ts`): a mounted candle is a candle at the floor subcell in front of its slot, lit if it rolled lit or you lit it, lit by walking near, its light from that floor panel; a floor candle is a candle like any other: unlit to start, lit by walking near (the user, after release). Both are drawn with today's candle art where they stand: no bracket, no south-wall fade, no side-on view yet (B2's drawing and B3's art are still to do).
 - **The saved-placement check** (`migrate.ts`): the three mounted definitions and `floor-candle` only from v5 (a v3 or v4 run carrying one is damaged); a mounted candle needs a wall, floor under it and stone on that side; a floor candle never starts lit. Mending a v5 run gives it as made.
 - **Density is now fixed for v5 runs** (`DARK_PER` 350). Changing it, or the placement rules, after the play-test means world version 6.
-- Still to come, when the user's back: B2's drawing (mount points, sort order, the south fade), B3's sprites, B4's density comparison, B6 (lighting floor candles by tapping).
+- Still to come, when the user's back: B2's drawing (mount points, sort order, the south fade), B3's sprites, B4's density comparison. (B6, lighting floor candles by tapping, was dropped: they light by walking near.)
 
 B3 can run alongside B1–B2 (it doesn't touch the game). Each step is its own commit; nothing
 reaches players before B5. **B6**, lighting floor candles on purpose, comes after B5 as its own
@@ -1768,8 +1767,8 @@ The kind weights, the caps and the lit chances are separate constants, so they c
 without moving the dial.
 
 **The user's decisions (2026-11-08):**
-1. Floor candles always start unlit and never light when you walk near. They stay real light
-   sources, lit later by a deliberate interaction with its state saved (B6).
+1. Floor candles always start unlit. ~~They never light when you walk near (lit later by tapping, B6).~~
+   Changed by the user after release, 2026-11-08: walk near one and it lights, as any candle.
 2. Mounted candles (wall and pillar) may start lit: 10% in fights, 25% in quiet rooms, 60% in
    lived-in rooms, as starting values.
 3. Every wall torch counts as lit when working out the budget.

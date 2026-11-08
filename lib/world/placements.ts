@@ -7,9 +7,9 @@
 // Run state laid over: a wall torch or candle burns if it started lit or you
 // lit it (`lit`); (world version 5) a candle on a wall or pillar is a candle
 // standing at the floor in front of it, its light from that floor panel; a
-// floor candle is one walking near never lights (`still`); a candle the old
-// rules put by a campfire isn't there (`fires`: new runs' placer keeps candles
-// away from fires instead). Whether each
+// floor candle is a candle like any other (walk near and it lights); a candle
+// the old rules put by a campfire isn't there (`fires`: new runs' placer keeps
+// candles away from fires instead). Whether each
 // room's thing is shown, and how, is decided where it's drawn (walkWorld.ts
 // thingsOf), from the rooms as they stand.
 
@@ -63,7 +63,7 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
     } else if (MOUNTED.has(i.def)) {
       candles.push({ id: i.id, room: i.room, ...p, lit: i.start === "lit" || lit.has(i.id) });
     } else if (i.def === "floor-candle") {
-      candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id), still: true });
+      candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
     } else if (i.def === "witch") {
       witches.push({ room: i.room, index: 0, ...p, facing: i.facing ?? 0, walks: true, path: [], wait: 1 });
     } else if (i.def === "foe" && i.foe) {

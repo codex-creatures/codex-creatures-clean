@@ -129,7 +129,7 @@ describe("mounted candles (v5)", () => {
 });
 
 describe("floor candles (v5)", () => {
-  it("are floor-candle objects, never lit, clear of doors, paths and what you use", () => {
+  it("are floor-candle objects, never lit to start, clear of doors, paths and what you use", () => {
     for (const { run, p } of cases) {
       const fp = layoutFloorplan(run.walk!.layout);
       expect(p.placed.some((i) => i.def === "candle")).toBe(false);
@@ -220,7 +220,7 @@ describe("new runs at world version 5 (B5)", () => {
     const newer = { ...run, walk: { ...run.walk!, v: 6 } };
     expect(migrateWalkRun(newer)).toEqual({ run: newer, outcome: "unsupported", problem: expect.any(String) });
   });
-  it("the walk reads them: mounted candles as candles at the floor by their wall, lit as rolled or as you lit them; floor candles never lit by walking", () => {
+  it("the walk reads them: mounted candles as candles at the floor by their wall, lit as rolled or as you lit them; floor candles unlit to start, lit by walking near as any candle", () => {
     const placed = run.walk!.placed!, mounted = placed.filter((i) => MOUNTED_DEFS.includes(i.def)), floors = placed.filter((i) => i.def === "floor-candle");
     const unlit = mounted.find((i) => !i.start);
     const lit = unlit ? [unlit.id] : [];
@@ -230,11 +230,10 @@ describe("new runs at world version 5 (B5)", () => {
     for (const i of mounted) {
       const c = p.candles.find((q) => q.id === i.id)!;
       expect(c.lit).toBe(i.start === "lit" || lit.includes(i.id));
-      expect(c.still).toBeUndefined();
       // Its light point rounds to its floor panel, never into the wall.
       expect(fp.tiles[Math.round(c.y) * fp.w + Math.round(c.x)]).not.toBe(ROCK);
     }
-    for (const i of floors) expect(p.candles.find((q) => q.id === i.id)).toMatchObject({ lit: false, still: true });
+    for (const i of floors) expect(p.candles.find((q) => q.id === i.id)).toEqual({ id: i.id, room: i.room, x: expect.any(Number), y: expect.any(Number), lit: false });
   });
 });
 
