@@ -1139,7 +1139,7 @@ places a wall candle or moves an NPC.
 **As built:** `lib/world/place.ts` (the passes), `lib/world/occupancy.ts` (the shared rules),
 `lib/world/grid.ts` (footprint sums), `lib/world/compat/v0Placers.ts` (the frozen old placers);
 `newWalkRun` (lib/world/migrate.ts) places a new run. Tests: tests/place.test.ts.
-#### 2b-2: the dimensions in use, and its stages (📌 proposed 2026-11-08, for the user's review; not built)
+#### 2b-2: the dimensions in use, and its stages (✅ approved by the user, 2026-11-08, with the decisions below; stage A being built)
 
 2b-1 saves each thing's reviewed footprint (`size`) but still gives it a whole panel. 2b-2 is where
 those footprints start to decide what goes where. Nothing here changes v2 or v3 runs: each stage
@@ -1183,12 +1183,27 @@ take beside it:
   picture only.
 - **Pillars stay rock in the layout** (✅ the user): whole panels, as now.
 
-**Questions on the dimensions:**
-1. Solid things kept inside one panel, and one solid thing a panel, while walking is on panels?
-2. A sack in a back corner of its panel, against the wall where there is one (or centred)?
-3. Floor candles by a wall stand in the subcell against it (or anywhere in the panel by it)?
-4. Big foes and bosses: keep their feet on a panel's centre, and use the size class only to check
-   there's room round the spot (so the Cyclops' 8 × 8 needs free floor round its stand)?
+**The user's decisions (2026-11-08):**
+1. **One solid thing a panel, inside its panel: a generator rule for now, not a limit of the
+   occupancy map.** The map already holds any footprints, several small solid things in a panel
+   or one thing across several panels; it's the placer that won't make them while walking is on
+   panels. Walk-over things share a panel wherever their footprints don't meet.
+2. **Storage leans to walls:** sacks, chests, barrels and other storage favour walls and corners
+   where it suits, keeping access and avoiding collisions, with other spots tried when the wall
+   ones aren't valid. (As built in A: a thing's own spot in its panel favours the side nearest a
+   wall. The room's feature still stands on its middle panel, which the room keeps for it.)
+3. **Candles:** floor candles, kept, favour spots by walls over the middle of a room. Wall-mounted
+   candles are their own kind of placement, and the south wall gets **wall-mounted** ones, in wall
+   slots and drawn as wall things even where the camera hides them, never floor candles standing
+   in for them (stage B).
+4. **Big creatures:** feet on their panel's centre as now; their size class checks there's free
+   floor round the spot for them. No multi-panel movement or new collision.
+5. **The stages** A (v4), B (v5) and C (v6) as below, each tested and approved on its own.
+6. **The debugging view shows:** the panel grid and its 3 × 3 subcells; each thing's footprint and
+   anchor; solid and walk-over occupancy; clearances; where each thing is used from; panels
+   blocked to walking; wall slots; and rejected placements with the reason, where practical.
+7. **Compatibility:** v2 and v3 runs unchanged; v4 for new runs only, deterministic, with stable
+   ids and the usual protections. No art changes and no new kinds of object in stage A.
 
 **The stages** (each its own world version, commit, release and approval; v2 and v3 runs never
 change, and an older copy of the game holds a newer run, §7):
