@@ -34,9 +34,9 @@ import type { DungeonMap } from "@/lib/dungeon/map";
 import { walkView, tapCell } from "@/lib/render/projection";
 import { buildScene } from "@/lib/render/scene";
 import { paintScene, type DarkLayer } from "@/lib/render/paint";
-import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, tapsThing, inReach, approach, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, tappedThing, fromRuns, type Thing } from "@/lib/world/walkWorld";
 import { placementsOfWalk } from "@/lib/world/migrate";
-import { startWalk, restartLoop, stepWalk, walkState, type WalkState, type Warming } from "@/lib/world/walkSim";
+import { startWalk, restartLoop, stepWalk, walkState, walkUpTo, type WalkState, type Warming } from "@/lib/world/walkSim";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -179,16 +179,9 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     const spot = tapCell(walkView(plan, sim.me, el.clientWidth, el.clientHeight), (e.clientX - box.left) / k, (e.clientY - box.top) / k);
     const can = rule(sim.progress);
     // A tap on (or by) something to loot that you've seen: walk up beside it, and it opens.
-    const t = things().find((x) => tapsThing(x, spot) && sim.known[x.y * plan.w + x.x]);
+    const t = tappedThing(things(), spot, sim.known, plan.w);
     if (t) {
-      if (inReach(t, sim.me)) { openThing(t, state()); return; }
-      const from = sim.me.path[0] ?? { x: Math.round(sim.me.x), y: Math.round(sim.me.y) };
-      const best = approach(live, t, from, can);
-      if (best) {
-        sim.goal = null;
-        sim.wantThing = t.key;
-        sim.me = { ...sim.me, path: sim.me.path.length > 0 ? [from, ...best] : best };
-      }
+      if (walkUpTo(sim, t, live, can) === "use") openThing(t, state());
       return;
     }
     sim.goal = spot;

@@ -170,21 +170,51 @@ export function walkRule(layout: Layout, plan: Floorplan, p: Progress, known: Ui
     : (from, to) => forward(from, to) && !solid.has(`${to.x},${to.y}`);
 }
 
-// A tap on (or by) a thing: within its definition's tap reach of it, or of
-// someone's body (they stand a cell tall).
-export function tapsThing(t: Thing, q: Pt): boolean {
-  const how = objectDef(t.def).interact, tap = how?.tap ?? TAP_OBJECT;
-  return !t.inert && (Math.hypot(t.x - q.x, t.y - q.y) <= tap || (!!how?.tapBody && Math.hypot(t.x - q.x, t.y - 1 - q.y) <= tap));
+// A thing has two positions (world-spec §8, "Using things in v4 runs"):
+// - where it stands (t.x, t.y): its footprint's middle, where it's drawn, and
+//   so where a tap lands on it. From world version 4 that may be off its
+//   panel's middle (a chest at its panel's back, a sack in a corner);
+// - the panel it's in (usedFrom): where it's used from while walking is on
+//   panels. Walking is blocked there (solidCells), you walk up to a panel round
+//   it (approach), you're in reach of it from there (inReach), and you must
+//   have seen it to tap it (tappedThing). Never the position itself as a grid
+//   cell: off a panel's middle it isn't one.
+export const usedFrom = (t: Pt): Pt => ({ x: panelAt(t.x), y: panelAt(t.y) });
+
+// How far a tap is from a thing as drawn (or from someone's body: they stand a
+// cell tall), and whether that's close enough to tap it.
+function tapDistance(t: Thing, q: Pt): number {
+  const base = Math.hypot(t.x - q.x, t.y - q.y);
+  return objectDef(t.def).interact?.tapBody ? Math.min(base, Math.hypot(t.x - q.x, t.y - 1 - q.y)) : base;
 }
-// Close enough to use it.
-export const inReach = (t: Thing, you: Pt) => Math.hypot(t.x - you.x, t.y - you.y) <= (objectDef(t.def).interact?.reach ?? REACH_OBJECT);
+export const tapsThing = (t: Thing, q: Pt): boolean => !t.inert && tapDistance(t, q) <= (objectDef(t.def).interact?.tap ?? TAP_OBJECT);
+
+// The thing a tap at q picks, of those you've seen (known: the seen-map, w
+// across): the one drawn nearest the tap, so of two things in or by one panel
+// it's the one you tapped (in the list's order on a tie). Undefined: none.
+export function tappedThing(things: Thing[], q: Pt, known: Uint8Array, w: number): Thing | undefined {
+  let best: Thing | undefined, bestD = Infinity;
+  for (const t of things) {
+    const p = usedFrom(t);
+    if (!tapsThing(t, q) || known[p.y * w + p.x] !== 1) continue;
+    const d = tapDistance(t, q);
+    if (d < bestD) { best = t; bestD = d; }
+  }
+  return best;
+}
+// Close enough to use it: within its reach of the panel it's in.
+export const inReach = (t: Thing, you: Pt) => {
+  const p = usedFrom(t);
+  return Math.hypot(p.x - you.x, p.y - you.y) <= (objectDef(t.def).interact?.reach ?? REACH_OBJECT);
+};
 
 // The shortest way from `from` up beside a thing (onto it, if it isn't
-// solid), by its interaction points; null if there's none.
+// solid), by its interaction points round the panel it's in; null if there's none.
 export function approach(plan: Floorplan, t: Thing, from: Pt, can: CanStep): Pt[] | null {
   let best: Pt[] | null = null;
+  const p = usedFrom(t);
   for (const { dx, dy } of objectDef(t.def).interact?.points ?? []) {
-    const n = { x: panelAt(t.x) + dx, y: panelAt(t.y) + dy };
+    const n = { x: p.x + dx, y: p.y + dy };
     if ((dx || dy || !t.solid) && walkable(plan, n.x, n.y)) {
       const way = findPath(plan, from, n, can);
       if (way && (!best || way.length < best.length)) best = way;

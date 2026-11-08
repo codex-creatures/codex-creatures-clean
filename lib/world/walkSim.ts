@@ -13,7 +13,7 @@
 // window), each with the walk's state as it stood at that moment.
 
 import { cutOffY, enter, isOpen, type Layout, type Progress } from "../dungeon/layout";
-import { advance, roomAt, type Walker } from "../dungeon/walk";
+import { advance, roomAt, type CanStep, type Walker } from "../dungeon/walk";
 import { facingOf, type Facing } from "../dungeon/tileArt";
 import { torchLit, rubbleOf, fallenIn, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "../dungeon/campfire";
@@ -21,7 +21,7 @@ import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_
 import { hasFight, type Room } from "../dungeon/run";
 import type { WalkRun } from "../dungeon/walkRun";
 import { ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
-import { inReach, toRuns, type Thing } from "./walkWorld";
+import { inReach, approach, toRuns, type Thing } from "./walkWorld";
 
 export const NPC_STILL = 4;      // u: a wanderer stops to let you come up to it
 export const NPC_SPEED = 0.6;    // …and walks about at this share of a foe's pace
@@ -137,6 +137,20 @@ export type FrameInput = {
   now: number; busy: boolean; room: (id: string) => Room | undefined; here: string;
   team: string[]; hp: Record<string, number>; things: () => Thing[]; rng?: () => number;
 };
+
+// A tap on a thing (walkWorld.ts tappedThing picks it): "use" if you're in reach
+// of it now; else set off up beside it ("walking": stepWalk opens it once you're
+// in reach, its "use" event); "none" if there's no way up to it.
+export function walkUpTo(sim: WalkSim, t: Thing, live: Floorplan, can: CanStep): "use" | "walking" | "none" {
+  if (inReach(t, sim.me)) return "use";
+  const from = sim.me.path[0] ?? { x: Math.round(sim.me.x), y: Math.round(sim.me.y) };
+  const best = approach(live, t, from, can);
+  if (!best) return "none";
+  sim.goal = null;
+  sim.wantThing = t.key;
+  sim.me = { ...sim.me, path: sim.me.path.length > 0 ? [from, ...best] : best };
+  return "walking";
+}
 
 export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
   const { now, room, here, things, rng = Math.random } = input;
