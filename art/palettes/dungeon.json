@@ -1,0 +1,52 @@
+{
+  "about": "The dungeon's palette (docs/world-spec.md §6.1), written by scripts/art-palette.mjs from kit E's walls. stone is the base every asset shares; the ramps are lifted or tinted from it. Flame colours are for the animated flame only.",
+  "from": "public/sprites/walk/kit-e-*.png",
+  "stone": [
+    "#0e0f0c",
+    "#1c1d15",
+    "#1f1e0a",
+    "#22221e",
+    "#2c2a11",
+    "#282a25",
+    "#333115",
+    "#30322c",
+    "#3a362e",
+    "#3e412e",
+    "#454239",
+    "#4a4d45",
+    "#55544a",
+    "#5a5d55",
+    "#646256",
+    "#6d695e"
+  ],
+  "wax": [
+    "#99907a",
+    "#aca38b",
+    "#c0b79e",
+    "#d5cbb1",
+    "#e8dfc2"
+  ],
+  "iron": [
+    "#2a2723",
+    "#3b352f",
+    "#4c433b",
+    "#5e5248"
+  ],
+  "rust": [
+    "#563e2d",
+    "#6d452d",
+    "#844c2c"
+  ],
+  "wood": [
+    "#33271a",
+    "#483522",
+    "#5e432a"
+  ],
+  "flame": [
+    "#962814",
+    "#d65c20",
+    "#f4a034",
+    "#fcd678",
+    "#fff4d2"
+  ]
+}

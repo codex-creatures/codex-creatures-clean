@@ -633,6 +633,8 @@ spec assumes nothing about them.
 
 ### 6.3 Checks (report only)
 
+**Built so far (2026-11-09):** `scripts/art-check.mjs` scores a picture against kit E and the palette: colours (distance from the palette), black (hard outlines darker than the darkest stone: the "sticker" look), texture and contrast (each against the stone's own), colours used. `scripts/art-palette.mjs` writes the palette, `art/palettes/dungeon.json`, from kit E's walls: the stone base, and short ramps (wax, iron, rust, wood, flame) lifted or tinted from it. **Art density is now 48 art pixels a unit** (kit E, the user, 2026-11-09), not the 32 below: new art is made at 48; you and the older objects stay at 32 till they're redone. New objects are generated with the palette and a crop of kit E as the style image (PixelLab Pro Flash objects, exact canvas). The game draws grounding (contact shadows) and flames; the art never paints them. 🧪 The contrast limit needs an allowance for light materials (wax).
+
 `scripts/art/check` runs on a new asset and prints a report. It never changes the image.
 
 | Check | Fails or flags |
