@@ -1139,6 +1139,103 @@ places a wall candle or moves an NPC.
 **As built:** `lib/world/place.ts` (the passes), `lib/world/occupancy.ts` (the shared rules),
 `lib/world/grid.ts` (footprint sums), `lib/world/compat/v0Placers.ts` (the frozen old placers);
 `newWalkRun` (lib/world/migrate.ts) places a new run. Tests: tests/place.test.ts.
+#### 2b-2: the dimensions in use, and its stages (📌 proposed 2026-11-08, for the user's review; not built)
+
+2b-1 saves each thing's reviewed footprint (`size`) but still gives it a whole panel. 2b-2 is where
+those footprints start to decide what goes where. Nothing here changes v2 or v3 runs: each stage
+is a new world version, for new runs only.
+
+**What a footprint means while walking stays on panels** (§5.1, §5.4). A panel is blocked if any
+subcell in it is solid, so the sizes change placement, not where you can walk, as long as:
+- **🧪 a solid thing never crosses a panel's edge** (proposed). A 2 × 2 sack straddling a corner
+  would block four panels; kept inside one, it blocks one, as today. Walk-over things (candles,
+  skulls, nests, pots) may cross edges freely. This rule is dropped only if walking moves to
+  subcells.
+- **🧪 at most one solid thing a panel** (proposed). Two solid things in one panel save nothing
+  (the panel's blocked either way) and crowd the picture.
+- **Walk-over things may share:** with each other, and with a solid thing's free subcells, but
+  never inside its clearance.
+
+**Where each thing sits in its panel, and what's left free** (footprints, heights and pictures as
+set in §3 "Sizes"; nothing new is asked of those). "Free" is the subcells a walk-over thing may
+take beside it:
+
+| Thing | Footprint | Sits | Clearance | Free in its panel | Used from |
+|---|---|---|---|---|---|
+| chest, rickety chest, deck of cards | 3 × 2 | the back two rows | 1 in front: its panel's front row | none (the front row is its clearance) | any panel round it, as today |
+| sack (a stash, a large room's codexes) | 2 × 2 | 🧪 a back corner, by the wall if it's against one | 0 | the other 5 | as today |
+| healing pool | 3 × 3 | the whole panel | 1 all round: the ring of subcells in the 8 panels round it (still walkable) | none | as today |
+| cage | 3 × 3 | the whole panel | 0 | none | as today |
+| campfire (rolled with the run) | 2 × 2 | 🧪 middle-ish: as the anchor rule gives (§3) | 1 all round, and candles 2 panels off (as 2b-1) | none (its clearance) | as today |
+| merchant, librarian (with cart) | 3 × 2 | the back two rows | 1 in front | none | as today, body taps too |
+| card witch | 2 × 2 | where she starts | 0 (not solid) | n/a | as today |
+| floor candle | 1 × 1 | any free subcell; 🧪 by a wall: the subcell against it | 0 | n/a | lit by walking near, as today |
+| skull / nest / pots (stage C) | 1 × 1 / 2 × 2 / 2 × 2 | anywhere free | 0 | n/a | not used |
+| barrels / fallen pillar (stage C) | 3 × 2 | 🧪 against a wall, back to it | 0 | its free row (walk-over only) | not used |
+| crates (stage C) | 3 × 3 | against a wall | 0 | none | not used |
+| foes, you | size class (§3) | 🧪 still a panel's centre (walking is on panels); the class only checks there's free floor for its footprint round that spot | spawn clearance (§3) | n/a | n/a |
+
+- **Interaction access stays as today:** standing on any panel round a thing, within its reach
+  (1.5 u), with taps within 1 u (and on people's bodies). 🧪 Proposed: at least one panel round
+  each thing you use must stay walkable and joined to a door (the required path, as 2b-1 checks).
+- **Pictures don't change:** each thing is drawn at today's size, centred on its footprint. A
+  picture wider than its footprint (the pool, 2.5 u) overlaps its neighbours' floor in the
+  picture only.
+- **Pillars stay rock in the layout** (✅ the user): whole panels, as now.
+
+**Questions on the dimensions:**
+1. Solid things kept inside one panel, and one solid thing a panel, while walking is on panels?
+2. A sack in a back corner of its panel, against the wall where there is one (or centred)?
+3. Floor candles by a wall stand in the subcell against it (or anywhere in the panel by it)?
+4. Big foes and bosses: keep their feet on a panel's centre, and use the size class only to check
+   there's room round the spot (so the Cyclops' 8 × 8 needs free floor round its stand)?
+
+**The stages** (each its own world version, commit, release and approval; v2 and v3 runs never
+change, and an older copy of the game holds a newer run, §7):
+
+- **A, subcell occupancy and placement, with the debugging view** (world version 4):
+  - `FULL_PANEL` off for v4: things take their footprints, placed by the rules above; walk-over
+    things may share panels.
+  - Walking, taps and reach read each thing's footprint, not its anchor's panel. A solid thing's
+    panel is the one its footprint is in, and a thing's spot in u is its footprint's middle.
+  - The placer gains a version: v3's rules stay exactly as they are (pinned by new goldens of a
+    few v3 runs' placements, recorded before A starts), so a v3 run is still mended to what it
+    was made with.
+  - **The placement debugging view** (`/lab/placement`): a room's subcells, each footprint and
+    clearance, the blocked, reserved and path panels, the wall slots, interaction points and
+    reach, from `placeWalk`'s occupancy, for any seed. Built first, so A's changes can be looked
+    at.
+  - Done when: the 2b-1 invariants hold at subcell level (no two things on a subcell, nothing
+    solid across a panel edge or in a clearance, every thing used from a reachable panel, foes
+    reachable and clear of doors); blocked panels per room no more than v3's (a sim); the same
+    seed gives the same run; v2 and v3 goldens untouched.
+  - What you'd see: chests and carts at the back of their panels, sacks in corners, candles off
+    their panels' middles, and now and then a candle beside a chest.
+- **B, expanded wall attachments, south-wall candles included** (world version 5):
+  - Wall candles on all four walls in the wall slots (three a wall panel: a torch keeps the
+    middle one, a candle may take a side one), and floor candles against walls.
+  - `wall: "south"` used for the first time. Each light starts in the floor subcell beside its
+    wall.
+  - Candle art for each wall (face on, side on, south) from PixelLab: samples first, your
+    approval, then the rollout.
+  - 🧪 for you then: how many candles a room, and what share by the walls (today: 35% of rooms,
+    one each).
+  - Done when: one thing a slot, gaps kept, no light starting in rock, counts within the agreed
+    ranges, and the lighting tests hold.
+- **C, decor and banners in real runs** (world version 6):
+  - The lab's decor and banners placed by passes 8 and 5 on the occupancy map, saved as
+    instances.
+  - Solid decor against walls, never across a required path or a clearance; walk-over decor
+    anywhere free. Banners take a wall panel's three slots, after torches and candles.
+  - The lab's numbers as the starting point (`DECOR_PER`, `DECOR_MOST`, `BANNER_CHANCE`), for
+    you to tune.
+  - Done when: the invariants hold with decor in, pockets flagged, required paths kept, blocked
+    panels per room within agreed ranges, and the lab and the game show the same thing for a
+    seed.
+
+**Order:** A, then B, then C. B and C don't depend on each other, so they could swap if you'd
+rather see decor first. Each is tested and played before the next starts.
+
 - **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing
   goldens), each in its own commit. (The foe fix came early, as 2a′.)
 - **Done when:**
