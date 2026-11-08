@@ -1379,7 +1379,7 @@ corner). Two pieces of code still assumed every thing stands on a panel's middle
   don't measure from the middle (§1 below). Changing v4's rule would mean a new world version
   anyway, so it's done in B's.
 
-#### Stage B: the candle design (📝 proposed 2026-11-08; the user's decisions folded in, below; nothing built)
+#### Stage B: the candle design (✅ released 2026-11-08 at world version 5, placement and function only, with today's candle art; the user skipped gates 1–4 to play-test it live. Art and drawing come later: see "Released early" below)
 
 **Three separate changes, judged separately.** Each has its own constants, tests and approval,
 so any one can be kept, changed or dropped without the others:
@@ -1724,11 +1724,27 @@ it looks onto:
 |---|---|---|---|
 | **first** | The chest and stash fix ("Using things in v4 runs", above), released on its own: ✅ 832891c. | tests/thingAccess.test.ts | your play-test |
 | **B0** | Pin four v4 runs' placements as goldens. Nothing in the game changes. ✅ 2026-11-08: tests/placeV4Pinned.test.ts pins each run's placements and its lights (every torch, candle and campfire: where, lit at the start or not, and the cells it lights) as `v4-d<dungeon>-s<seed>.placed.json` / `.lights.json`. On these seeds v4 places candles and torches exactly as v3 does (stage A changed only how things share panels). | the goldens; full suite | none |
-| **B1** | v5's placement in `place.ts`: the budget, mounted candles with their lit rolls, and floor candles as objects, at the proposed numbers; **new runs still v4**. The placement view gains the budget, slots in use, light points and the darkness map. | the budget's arithmetic on made-up rooms (a room with no dark gets none; W 0 gets none; the caps); one thing a slot; gaps; at most one a pillar; spread across a dog-leg; no light point in rock; light cells floor; door faces clear; nothing behind a solid thing; floor candles never lit; lit shares by kind within range (sim); deterministic; torches identical to v4; blocked panels equal v4; v2/v3/v4 goldens untouched; the sim's counts per kind and shape | **Gate 1 (placement):** you look at example pictures (written to a folder, as for A), including dog-leg and pillar rooms, and `/lab/placement` |
+| **B1** | v5's placement in `place.ts`: the budget, mounted candles with their lit rolls, and floor candles as objects, at the proposed numbers; **new runs still v4**. The placement view gains the budget, slots in use, light points and the darkness map. 🔨 2026-11-08: built; released with B5 (gate 1 skipped by the user). | the budget's arithmetic on made-up rooms (a room with no dark gets none; W 0 gets none; the caps); one thing a slot; gaps; at most one a pillar; spread across a dog-leg; no light point in rock; light cells floor; door faces clear; nothing behind a solid thing; floor candles never lit; lit shares by kind within range (sim); deterministic; torches identical to v4; blocked panels equal v4; v2/v3/v4 goldens untouched; the sim's counts per kind and shape | **Gate 1 (placement):** you look at example pictures (written to a folder, as for A), including dog-leg and pillar rooms, and `/lab/placement` |
 | **B2** | Drawing in the scene builder, with today's art and a code bracket: mount points, sort order, the south fade, flame and halo per face. Lab only. | the scene builder's draw list (no browser): north candle before a thing in front of it; south candle before its wall's band and its flame faded by `capFade`; east mirrored; light from the floor panel | **Gate 2 (drawing):** you look in the lab's rooms |
 | **B3** | Sprites: grey templates, the checker, 3–4 PixelLab samples per view. Not imported by the game. | the checker's report on each sample | **Gate 3 (artwork):** you pick, or ask again; only then into `lib/sprites/walk.ts` |
 | **B4** | Density: the three settings below, each measured in the sim and drawn for the same rooms (lab pictures, side by side). | counts per room, kind and shape at each setting | **Gate 4 (density):** you compare them visually and set the numbers |
 | **B5** | Release, only with the approved artwork (✅ the user): new runs at v5 (`WALK_V`, `PLACED_V`); the saved-placement check; save, export, reload; mending. | v5 survives save/export/reload unchanged; mended to as made; a v4 game holds a v5 run; v4 run with a mounted candle is damaged; full suite, type check, both builds | **Gate 5:** your play-test on the live site, both dungeons |
+
+**B1 as built (2026-11-08).** Measured over 20 runs (530 rooms, tests/placeV5.test.ts):
+- `DARK_PER` set to **350** (300 gave 0.58 once the gap, spread and `DARK_KEPT` rules were in): 0.52 mounted candles a room (fights 0.42, quiet 0.59, lived-in 1.27; plain 0.42, pillars 0.52, dog-legs 0.80, large 2.4) and 0.28 floor candles a room.
+- Started lit: fights 10%, quiet 25%, lived-in 56–60%, as set.
+- Faces chosen (30 runs): south walls 139, west 76, east 73, pillars 105, north 1. South walls are the most common because the top wall's torches already light the top of a room; they're drawn faded behind the wall (§4), to judge at gate 2.
+- **Ties** between slots lighting the same dark go to a wall over a pillar, then by a hash of the slot fixed for the run, not by its key: ordering by key put nearly every candle on west walls (173 west to 23 east).
+- **A torch's side slots** are allowed, but the 3-panel gap from every light means a candle never takes one in practice (they share the torch's floor panel).
+- **Floor candles** also keep off a mounted candle's floor panel and the panels round it (its glow), and off the panels round another floor candle. 🧪
+- The placement view (`/lab/placement`, v5 switch) shows the darkness map (dark blue: no torch or campfire reaches; yellow: lit by a candle), each mounted candle's slot and light point (filled: starts lit), floor candles, and the budget under the picture.
+
+**Released early (the user, 2026-11-08: "release to everyone… for now lets focus on the functional side").** Gates 1–4 skipped; B2 and B5 done for function only:
+- **New runs are world version 5** (`WALK_V`, `PLACED_V`). v2–v4 runs keep what they were made with (B0's pins).
+- **The walk reads stage B's candles** (`placements.ts`): a mounted candle is a candle at the floor subcell in front of its slot, lit if it rolled lit or you lit it, lit by walking near, its light from that floor panel; a floor candle is a candle walking near never lights (`still`). Both are drawn with today's candle art where they stand: no bracket, no south-wall fade, no side-on view yet (B2's drawing and B3's art are still to do).
+- **The saved-placement check** (`migrate.ts`): the three mounted definitions and `floor-candle` only from v5 (a v3 or v4 run carrying one is damaged); a mounted candle needs a wall, floor under it and stone on that side; a floor candle never starts lit. Mending a v5 run gives it as made.
+- **Density is now fixed for v5 runs** (`DARK_PER` 350). Changing it, or the placement rules, after the play-test means world version 6.
+- Still to come, when the user's back: B2's drawing (mount points, sort order, the south fade), B3's sprites, B4's density comparison, B6 (lighting floor candles by tapping).
 
 B3 can run alongside B1–B2 (it doesn't touch the game). Each step is its own commit; nothing
 reaches players before B5. **B6**, lighting floor candles on purpose, comes after B5 as its own
@@ -1764,7 +1780,7 @@ without moving the dial.
 6. South faces reuse the face-on art, provisionally, if it looks right in the actual renderer
    (judged at gates 2 and 3).
 7. Mounted candles in rooms only, for now.
-8. Release with approved artwork, never temporary sprites.
+8. ~~Release with approved artwork, never temporary sprites.~~ Changed by the user, 2026-11-08: released now for its function, with today's candle art, to play-test live; art designs later.
 9. B0–B5 and their gates kept; the chest and stash fix comes first, on its own.
 
 - **2c, intended changes:** any later behaviour corrections the user approves (§7, reviewing

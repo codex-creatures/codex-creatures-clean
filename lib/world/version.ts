@@ -11,7 +11,9 @@
 //    migrates to it: runs saved at 1 or 2 keep what the old rules placed.
 // 4: placed at things' own sizes, inside their panels (phase 2b-2 stage A): new
 //    runs only; a v3 run keeps what it was made with.
-export const WALK_V = 4;
+// 5: candles by the room's dark (stage B): mounted on walls and pillars, and
+//    floor candles as placed objects: new runs only; a v4 run keeps its own.
+export const WALK_V = 5;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

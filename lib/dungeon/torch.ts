@@ -179,5 +179,35 @@ export const CANDLE_CHANCE = 0.35;  // of rooms have one 🧪
 export const CANDLE_RADIUS = 2.5;   // tiles a lit candle lights 🧪
 export const CANDLE_NEAR = [2, 5];  // tiles from the room's middle (its chest, pool or stash): middle-ish, not on it 🧪
 export const CANDLE_CLEAR = 3;      // tiles from its doors, at least
-export type Candle = Sconce;        // (no wall: it stands on the floor)
+// (no wall: it stands on the floor, or, from world version 5, it's fixed to a wall or pillar and
+// stands at the floor by it). still: a floor candle from version 5, never lit by walking near.
+export type Candle = Sconce & { still?: true };
 // (Where candles go: lib/world/place.ts, and compat/v0Placers.ts for older runs.)
+
+// World version 5's candles (docs/world-spec.md §8 2b-2 stage B; placed by
+// lib/world/place.ts, nothing older changes). Mounted candles, on walls and
+// pillars' faces, light the room where its torches and campfires leave it
+// dark; floor candles are small placed objects, unlit. Each room's budget:
+// D, its floor panels no fixed light reaches (every torch counted lit), times
+// W, its kind's weight, over DARK_PER, gives how many it expects (the whole
+// part, and one more by a chance of what's left), capped.
+export const DARK_PER = 350;        // dark panels a mounted candle (W 1): the density dial (gate 4; 350 gives about 0.5 a room) 🧪
+export const FLOOR_PER = 900;       // floor panels a floor candle (W 1) 🧪
+export const MOUNTED_CAP = [2, 3];  // mounted candles a room at most (a large room's second) 🧪
+export const FLOOR_CANDLE_CAP = [1, 2]; // floor candles a room at most (…a large room's) 🧪
+export const CANDLE_MIN_DARK = 3;   // dark panels a mounted candle must light, or its slot isn't worth it 🧪
+export const DARK_KEPT = 0.4;       // no candle that would leave less of the room than this dark 🧪
+export const LIGHT_GAP = 3;         // panels a mounted candle keeps from any other light 🧪
+export const FLOOR_KEEP_OFF = [3, 2]; // panels a floor candle keeps from what you use: wanted, then at least 🧪
+export const FLOOR_BY_STONE = 0.5;  // floor candles picked at a pillar's foot or along a wall 🧪
+// Room kinds by group: how much they want candles (W), and how often a mounted one starts lit.
+export type CandleGroup = "none" | "fight" | "quiet" | "lived";
+export const CANDLE_GROUP: Record<string, CandleGroup> = {
+  entrance: "none", boss: "none", encampment: "none",
+  easy: "fight", hard: "fight", miniboss: "fight",
+  chest: "quiet", stash: "quiet", pool: "quiet", campfire: "quiet", cards: "quiet", treasure: "quiet",
+  merchant: "lived", librarian: "lived", library: "lived", witch: "lived", storehouse: "lived",
+};
+export const CANDLE_WEIGHT: Record<CandleGroup, number> = { none: 0, fight: 0.75, quiet: 1, lived: 1.25 }; // 🧪
+export const MOUNTED_LIT: Record<CandleGroup, number> = { none: 0, fight: 0.1, quiet: 0.25, lived: 0.6 }; // starts lit (the user, 2026-11-08) 🧪
+export const PILLAR_LIT = MOUNTED_LIT; // a pillar's candles: the same, till decided otherwise

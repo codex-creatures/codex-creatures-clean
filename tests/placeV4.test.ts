@@ -24,8 +24,9 @@ import { objectDef, type Instance, type ObjectDef } from "../lib/world/objects";
 import { WALK_V } from "../lib/world/version";
 import { placementSvg } from "../lib/world/placementView";
 
-// Phase 2b-2 stage A (docs/world-spec.md §8, the user, 2026-11-08): new runs
-// are placed at world version 4. Things take their own footprints in named
+// Phase 2b-2 stage A (docs/world-spec.md §8, the user, 2026-11-08): runs
+// placed at world version 4 (new runs from stage A until stage B made them v5;
+// built here as newWalkRun built them then). Things take their own footprints in named
 // occupancy layers; things whose footprints don't meet may share a panel;
 // clearances are kept; candles keep today's spots, at subcell level; bodies
 // are checked for room. The panel rules for walking and the generator's "one
@@ -36,10 +37,15 @@ const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
 const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
 const made = (dungeon: 0 | 1, seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon);
+// A v4 run as it was made new: placed by v4's rules, once.
+const v4Run = (r: DungeonRun): DungeonRun => {
+  const walk = { ...r.walk!, v: 4 };
+  return { ...r, walk: { ...walk, placed: placeWalk(walk, r.map, dungeonOf(r), (id) => walkRoom(r, id)).placed } };
+};
 const cache = new Map<string, DungeonRun>();
 const rolled = (dungeon: 0 | 1, seed: number) => {
   const k = `${dungeon}:${seed}`;
-  if (!cache.has(k)) cache.set(k, newWalkRun(made(dungeon, seed)));
+  if (!cache.has(k)) cache.set(k, v4Run(made(dungeon, seed)));
   return structuredClone(cache.get(k)!);
 };
 const roomOf = (run: DungeonRun) => (id: string) => walkRoom(run, id);
@@ -59,11 +65,11 @@ function problems(name: string, run: DungeonRun): string[] {
   const bad = (s: string) => out.push(`${name}: ${s}`);
   const walk = run.walk!, plan = layoutFloorplan(walk.layout), room = roomOf(run), dungeon = dungeonOf(run);
   const { placed, report, occupancy: o } = placedOf(run);
-  if (walk.v !== PLACED_V) bad(`saved as v${walk.v}`);
+  if (walk.v !== 4) bad(`saved as v${walk.v}`);
   if (JSON.stringify(walk.placed) !== JSON.stringify(placed)) bad("saved placements aren't what the placer makes");
   for (const p of report.problems) bad(`placer: ${p.id} ${p.what}`);
   for (const p of report.moved) bad(`moved: ${p.id} ${p.what}`);
-  const problem = placedProblem(walk.placed, PLACED_V);
+  const problem = placedProblem(walk.placed, 4);
   if (problem) bad(problem);
   if (migrateWalkRun(run).outcome !== "unchanged") bad(`opened: ${migrateWalkRun(run).outcome}`);
   // Physical: no two things on a subcell (campfires included), each on the floor at the size it was placed with, clearances kept.
@@ -174,10 +180,10 @@ const at = (p: Pt, dx = 0, dy = 0) => ({ sx: p.x * 3 + dx, sy: p.y * 3 + dy });
 const trigger: ObjectDef = { ...objectDef("candle"), id: "plate", kind: "prop", occupies: "trigger" };
 const hanging: ObjectDef = { ...objectDef("candle"), id: "lamp", kind: "prop", occupies: "overhead" };
 
-describe("new runs are placed at world version 4 (2b-2 stage A)", () => {
-  it("a new run is saved at v4, once, with sound placements", () => {
+describe("runs placed at world version 4 (2b-2 stage A)", () => {
+  it("a v4 run is saved at v4, once, with sound placements", () => {
     const run = rolled(0, 21);
-    expect(run.walk!.v).toBe(PLACED_V);
+    expect(run.walk!.v).toBe(4);
     expect(WALK_V).toBe(PLACED_V);
     expect(quiet(() => newWalkRun(run))).toEqual(run);
   });
@@ -190,7 +196,7 @@ describe("new runs are placed at world version 4 (2b-2 stage A)", () => {
     for (const d of [0, 1] as const) {
       let rooms = 0;
       for (let s = 100; rooms < 300; s++) {
-        const run = newWalkRun(made(d, s));
+        const run = v4Run(made(d, s));
         rooms += Object.keys(run.walk!.layout.rooms).length;
         bad.push(...problems(`dungeon ${d} seed ${s}`, run));
       }
@@ -201,7 +207,7 @@ describe("new runs are placed at world version 4 (2b-2 stage A)", () => {
   it("is deterministic, survives save, export and reload, and beating rooms moves nobody", () => {
     for (const d of [0, 1] as const) {
       const run = rolled(d, 22);
-      expect(newWalkRun(made(d, 22)).walk!.placed).toEqual(run.walk!.placed);
+      expect(v4Run(made(d, 22)).walk!.placed).toEqual(run.walk!.placed);
       expect(json(run)).toEqual(run);
       expect(migrateWalkRun(json(run)).outcome).toBe("unchanged");
       const beaten = fightRooms(run).filter((_, i) => i % 2 === 0).reduce((r, id) => withRoom(r, id, (x) => ({ ...x, done: true })), run);
@@ -227,7 +233,7 @@ describe("new runs are placed at world version 4 (2b-2 stage A)", () => {
     expect(quiet(() => migrateWalkRun(broken)).outcome).toBe("damaged");
     expect(canRecover(broken)).toBe(true);
     const mended = quiet(() => recoverWalkRun(broken));
-    expect(mended.run.walk!.v).toBe(PLACED_V);
+    expect(mended.run.walk!.v).toBe(4);
     expect(mended.run.walk!.placed).toEqual(run.walk!.placed);
     const v3 = asV3(run), v3placed = placedOf(v3).placed;
     for (const i of v3placed) expect(i.sx % 3 === 0 && i.sy % 3 === 0, i.id).toBe(true);
@@ -367,7 +373,7 @@ function simV4(runs: number) {
   for (const d of [0, 1] as const) {
     const t = { rooms: 0, candles: 0, candles3: 0, torches: 0, torches3: 0, foes: 0, foes3: 0, things: 0, things3: 0, blocked: 0, blocked3: 0, shared: 0, offMiddle: 0, rejected: 0, omitted: 0, problems: 0 };
     for (let s = 500; s < 500 + runs; s++) {
-      const run = newWalkRun(made(d, s)), walk = run.walk!;
+      const run = v4Run(made(d, s)), walk = run.walk!;
       const v4 = placedOf(run), v3 = placedOf(asV3(run));
       t.rooms += Object.keys(walk.layout.rooms).length;
       const count = (l: Instance[], f: (i: Instance) => boolean) => l.filter(f).length;

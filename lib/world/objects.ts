@@ -139,7 +139,10 @@ const DEFS: ObjectDef[] = [
     legacyVisual({ lit: ref(WALK_CAMPFIRE), out: ref(WALK_CAMPFIRE_OUT) }, { width: legacyU(WALK_CAMPFIRE.size), lift: 0.15 })),
   def("candle", floorThing({ footprint: { w: 1, d: 1 }, kind: "light", height: 0.4, collision: "walk-over", light: { radius: CANDLE_RADIUS, colour: "#ffbe5a", flicker: true } }),
     legacyVisual({ out: ref(WALK_CANDLE), lit: ref(WALK_CANDLE_LIT) }, { width: legacyU(WALK_CANDLE.size) })),
-  // Candles on a wall (world-spec §5.6), one for each wall's view: nothing places them yet. Each
+  // A floor candle (world version 5 on): a placed object, unlit, that walking near never lights (world-spec §8 stage B).
+  def("floor-candle", floorThing({ footprint: { w: 1, d: 1 }, kind: "light", height: 0.4, collision: "walk-over", light: { radius: CANDLE_RADIUS, colour: "#ffbe5a", flicker: true } }),
+    legacyVisual({ out: ref(WALK_CANDLE), lit: ref(WALK_CANDLE_LIT) }, { width: legacyU(WALK_CANDLE.size) })),
+  // Candles on a wall (world-spec §5.6), one for each wall's view: world version 5 places them (place.ts). Each
   // has today's candle as its art till its own is made; its light starts in the floor subcell by its wall.
   ...(["north", "side", "south"] as const).map((w) => def(w === "north" ? "candle-wall" : `candle-wall-${w}`,
     { kind: "light", attach: w === "north" ? "wall-north" : w === "side" ? "wall-side" : "wall-south", footprint: { w: 0, d: 0 }, height: 0.4, collision: "none",

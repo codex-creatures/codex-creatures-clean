@@ -11,18 +11,21 @@
 // each thing's footprint and anchor; where each thing you use is used from;
 // attachment slots on walls and pillars, free or taken; foes and the witch
 // with their bodies' footprints; and every spot tried and refused, numbered
-// (the reasons are listed beside the picture).
+// (the reasons are listed beside the picture). World version 5 (stage B)
+// adds the darkness map (the panels the room's torches and campfires leave
+// dark, and what each candle then lit), mounted candles in their slots with
+// their light points and whether they start lit, and the room's candle budget.
 
 import { layoutFloorplan } from "../dungeon/layout";
 import { ROCK, FLOOR, type Pt } from "../dungeon/floorplan";
 import type { WalkRun } from "../dungeon/walkRun";
 import type { Room } from "../dungeon/run";
 import { footprintCells, subcellOfPanel, SUBCELLS } from "./grid";
-import { LAYERS, attachmentSlots, slotPoint, occupant, panelKey, type Layer } from "./occupancy";
+import { LAYERS, attachmentSlots, slotPoint, slotLightCell, subcellPoint, occupant, panelKey, type Layer } from "./occupancy";
 import { navBlocked } from "./policy";
 import { objectDef, type Instance } from "./objects";
 import { creatureSize } from "./creatures";
-import type { Placed } from "./place";
+import { MOUNTED_DEFS, type Placed, type CandleBudget } from "./place";
 
 export const VIEW_COLOURS = {
   rock: "#3a3a46", floor: "#e8e1d2", tunnel: "#c9d3e0",
@@ -30,17 +33,19 @@ export const VIEW_COLOURS = {
   blocked: "#c0392b",
   structure: "#5b5b66", blocking: "#d9534f", "walk-over": "#4caf50", trigger: "#8e44ad", overhead: "#2e86de",
   clearance: "#f39c12", access: "#16a7b8", slot: "#7f8c8d", slotTaken: "#e67e22", foe: "#222", rejected: "#000",
+  dark: "#1d2b6b", candleLit: "#ffd23f", candle: "#b8860b",
 } as const;
 
 export type ViewNote = { n: number; id: string; what: string };
 
 // The room's picture, and the numbered refusals it marks.
-export function placementSvg(walk: WalkRun, placed: Placed, roomId: string, room: (id: string) => Room | undefined, S = 10): { svg: string; rejected: ViewNote[]; things: Instance[] } {
+export function placementSvg(walk: WalkRun, placed: Placed, roomId: string, room: (id: string) => Room | undefined, S = 10): { svg: string; rejected: ViewNote[]; things: Instance[]; budget?: CandleBudget } {
   const fp = layoutFloorplan(walk.layout), o = placed.occupancy, P = S * SUBCELLS;
   const floors = fp.rooms[roomId] ?? [];
   const x0 = Math.min(...floors.map((r) => r.x)) - 1, y0 = Math.min(...floors.map((r) => r.y)) - 1;
   const x1 = Math.max(...floors.map((r) => r.x + r.w)) + 1, y1 = Math.max(...floors.map((r) => r.y + r.h)) + 1;
-  const W = (x1 - x0) * P, H = (y1 - y0) * P;
+  const budget = placed.lighting?.budgets.find((b) => b.room === roomId);
+  const W = (x1 - x0) * P, mapH = (y1 - y0) * P, H = mapH + (budget ? 34 : 0);
   const inView = (p: Pt) => p.x >= x0 && p.x < x1 && p.y >= y0 && p.y < y1;
   const px = (x: number) => (x - x0) * P, py = (y: number) => (y - y0) * P;     // a panel's left/top edge
   // A subcell's left/top edge: panel p holds subcells 3p − 1 … 3p + 1.
@@ -57,6 +62,10 @@ export function placementSvg(walk: WalkRun, placed: Placed, roomId: string, room
     out.push(`<rect x="${px(x)}" y="${py(y)}" width="${P}" height="${P}" fill="${t === ROCK ? VIEW_COLOURS.rock : t === FLOOR ? VIEW_COLOURS.floor : VIEW_COLOURS.tunnel}"/>`);
     const r = o.reserved.get(panelKey({ x, y }));
     if (r) out.push(`<rect x="${px(x)}" y="${py(y)}" width="${P}" height="${P}" fill="${VIEW_COLOURS[r.why]}" opacity="0.28"><title>${esc(`${r.why}${r.owner ? `: ${r.owner}` : ""}`)}</title></rect>`);
+    // (v5) The darkness map: dark with every torch and campfire lit, or lit by a candle.
+    const lit = placed.lighting?.candleLit.get(panelKey({ x, y }));
+    if (lit) out.push(`<rect x="${px(x)}" y="${py(y)}" width="${P}" height="${P}" fill="${VIEW_COLOURS.candleLit}" opacity="0.4"><title>${esc(`dark, lit by ${lit}`)}</title></rect>`);
+    else if (placed.lighting?.dark.has(panelKey({ x, y }))) out.push(`<rect x="${px(x)}" y="${py(y)}" width="${P}" height="${P}" fill="${VIEW_COLOURS.dark}" opacity="0.3"><title>dark</title></rect>`);
     if (t !== ROCK && navBlocked(o, { x, y })) out.push(`<rect x="${px(x)}" y="${py(y)}" width="${P}" height="${P}" fill="url(#hatch)" opacity="0.55"><title>blocked to walking (policy)</title></rect>`);
   }
   // Each layer's subcells, and clearances.
@@ -73,14 +82,20 @@ export function placementSvg(walk: WalkRun, placed: Placed, roomId: string, room
     if (c) out.push(`<rect x="${cx(s) + 1.5}" y="${cy(t) + 1.5}" width="${S - 3}" height="${S - 3}" fill="none" stroke="${VIEW_COLOURS.clearance}" stroke-dasharray="2 2"><title>${esc(`clearance: ${c}`)}</title></rect>`);
   }
   // The grid: subcells faint, panels firm.
-  for (let x = x0; x <= x1; x++) for (let k = 0; k < SUBCELLS; k++) out.push(`<line x1="${px(x) + k * S}" y1="0" x2="${px(x) + k * S}" y2="${H}" stroke="#000" stroke-opacity="${k ? 0.1 : 0.4}"/>`);
+  for (let x = x0; x <= x1; x++) for (let k = 0; k < SUBCELLS; k++) out.push(`<line x1="${px(x) + k * S}" y1="0" x2="${px(x) + k * S}" y2="${mapH}" stroke="#000" stroke-opacity="${k ? 0.1 : 0.4}"/>`);
   for (let y = y0; y <= y1; y++) for (let k = 0; k < SUBCELLS; k++) out.push(`<line x1="0" y1="${py(y) + k * S}" x2="${W}" y2="${py(y) + k * S}" stroke="#000" stroke-opacity="${k ? 0.1 : 0.4}"/>`);
-  // Attachment slots on the faces of walls and pillars in view.
-  const taken = new Map(placed.placed.filter((i) => i.wall).map((i) => [`${Math.floor((i.sx + 1) / 3)},${Math.floor((i.sy + 1) / 3)},${i.wall}`, i.id]));
+  // Attachment slots on the faces of walls and pillars in view, free or taken (and by what).
+  // A mounted candle (v5): its slot, a line to its light point (filled if it starts lit).
+  const byId = new Map(placed.placed.map((i) => [i.id, i]));
   for (const sl of attachmentSlots(fp)) {
     if (!inView(sl.floor)) continue;
-    const q = slotPoint(sl), who = sl.k === 0 ? taken.get(`${sl.floor.x},${sl.floor.y},${sl.wall}`) : undefined;
-    out.push(`<circle cx="${ux(q.x)}" cy="${uy(q.y)}" r="${who ? 4 : 2}" fill="${who ? VIEW_COLOURS.slotTaken : VIEW_COLOURS.slot}"><title>${esc(`${sl.kind} slot, ${sl.wall} wall, ${sl.k}${who ? `: ${who}` : ""}`)}</title></circle>`);
+    const q = slotPoint(sl), who = o.attached.get(sl.key), i = who ? byId.get(who) : undefined;
+    if (i && MOUNTED_DEFS.includes(i.def)) {
+      const c = subcellPoint(slotLightCell(sl)), lit = i.start === "lit";
+      out.push(`<line x1="${ux(q.x)}" y1="${uy(q.y)}" x2="${ux(c.x)}" y2="${uy(c.y)}" stroke="${VIEW_COLOURS.candle}" stroke-width="2"/>`);
+      out.push(`<circle cx="${ux(c.x)}" cy="${uy(c.y)}" r="4" fill="${lit ? VIEW_COLOURS.candleLit : "#fff"}" stroke="${VIEW_COLOURS.candle}" stroke-width="2"><title>${esc(`${who}: light point (${lit ? "starts lit" : "unlit"})`)}</title></circle>`);
+    }
+    out.push(`<circle cx="${ux(q.x)}" cy="${uy(q.y)}" r="${who ? 4 : 2}" fill="${i && MOUNTED_DEFS.includes(i.def) ? VIEW_COLOURS.candle : who ? VIEW_COLOURS.slotTaken : VIEW_COLOURS.slot}"><title>${esc(`${sl.kind} slot, ${sl.wall} wall, ${sl.k}${who ? `: ${who}` : ""}`)}</title></circle>`);
   }
   // Things: footprint outline, anchor, where each one you use is used from.
   const things = placed.placed.filter((i) => inView({ x: Math.floor((i.sx + 1) / 3), y: Math.floor((i.sy + 1) / 3) }));
@@ -116,6 +131,13 @@ export function placementSvg(walk: WalkRun, placed: Placed, roomId: string, room
     const x = cx(r.sx), y = cy(r.sy);
     out.push(`<g stroke="${VIEW_COLOURS.rejected}" stroke-width="1.2"><line x1="${x + 2}" y1="${y + 2}" x2="${x + S - 2}" y2="${y + S - 2}"/><line x1="${x + S - 2}" y1="${y + 2}" x2="${x + 2}" y2="${y + S - 2}"/></g><text x="${x + S}" y="${y + S / 2}" font-size="7" fill="#000">${n}<title>${esc(`${r.id}: ${r.what}`)}</title></text>`);
   }
+  // (v5) The room's candle budget, under the picture.
+  if (budget) {
+    const b = budget, f2 = (n: number) => n.toFixed(2);
+    out.push(`<rect x="0" y="${mapH}" width="${W}" height="34" fill="#fff"/>`);
+    out.push(`<text x="4" y="${mapH + 14}" font-size="11" fill="#000">${esc(`${b.kind || "?"} (${b.group}${b.large ? ", large" : ""}): D ${b.dark} of ${b.floor} · W ${b.weight} · E ${f2(b.expected)} → ${b.wanted} wanted, ${b.mounted} mounted`)}</text>`);
+    out.push(`<text x="4" y="${mapH + 28}" font-size="11" fill="#000">${esc(`dark left ${b.darkLeft} (${Math.round((100 * b.darkLeft) / Math.max(1, b.floor))}%) · floor candles: F ${f2(b.floorExpected)} → ${b.floorWanted} wanted, ${b.floorPlaced} placed`)}</text>`);
+  }
   out.push("</svg>");
-  return { svg: out.join(""), rejected, things };
+  return { svg: out.join(""), rejected, things, ...(budget ? { budget } : {}) };
 }

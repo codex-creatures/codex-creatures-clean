@@ -31,7 +31,10 @@ import { dungeonOf, type DungeonId, type DungeonRun, type DungeonSave, type Room
 import { walkRoom, type WalkRun } from "../dungeon/walkRun";
 import type { DungeonMap } from "../dungeon/map";
 import { legacyPlacements, legacyFoePlacements } from "./compat/v0";
-import { placeWalk, PLACED_V, FIRST_PLACED_V } from "./place";
+import { placeWalk, PLACED_V, FIRST_PLACED_V, MOUNTED_DEFS } from "./place";
+import { layoutFloorplan } from "../dungeon/layout";
+import { ROCK } from "../dungeon/floorplan";
+import { panelOfSubcell } from "./grid";
 import { placementsFrom, type Placements } from "./placements";
 import { roomIds, foesToPlace } from "./walkWorld";
 import { OBJECTS, type Instance } from "./objects";
@@ -50,11 +53,14 @@ export const LEGACY_WALK_V = 2;
 const WALLS = new Set(["north", "east", "west"]);
 const WALLS_V3 = new Set([...WALLS, "south"]);
 const whole = (n: unknown) => typeof n === "number" && Number.isInteger(n);
+// Stage B's candles, only ever placed from world version 5: a v3 or v4 run holding one is damaged, not read.
+const CANDLES_V = 5, MOUNTED = new Set(MOUNTED_DEFS);
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
 // of instances, each with a string id (no two the same), a known definition, a
 // room, whole-number subcells, and only known values in its optional fields
-// (a south wall and a placed size only from world version 3).
+// (a south wall and a placed size only from world version 3; stage B's
+// candles only from 5, a mounted one on a wall, a floor one never lit to start).
 export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null {
   if (placed === undefined) return "no placements";
   if (!Array.isArray(placed)) return "placements aren't a list";
@@ -69,6 +75,9 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     ids.add(p.id);
     if (typeof p.def !== "string" || !OBJECTS[p.def]) return `${p.id}: unknown definition ${String(p.def)}`;
     if (typeof p.room !== "string" || !p.room) return `${p.id}: no room`;
+    if ((MOUNTED.has(p.def) || p.def === "floor-candle") && v < CANDLES_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
+    if (MOUNTED.has(p.def) && p.wall === undefined) return `${p.id}: a mounted candle on no wall`;
+    if (p.def === "floor-candle" && p.start !== undefined) return `${p.id}: a floor candle that starts lit`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
     if (p.wall !== undefined && !(v >= FIRST_PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
@@ -113,9 +122,23 @@ function missingFoes(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (
   }
   return null;
 }
-// What's wrong with a v2 or v3 run's placements, or null.
+// (v5) A mounted candle whose subcell isn't floor, or with no stone on its wall's side, or null.
+function mountedProblem(walk: WalkRun): string | null {
+  const mounted = (walk.placed ?? []).filter((i) => MOUNTED.has(i.def));
+  if (!mounted.length) return null;
+  const fp = layoutFloorplan(walk.layout);
+  const rockAt = (x: number, y: number) => x < 0 || y < 0 || x >= fp.w || y >= fp.h || fp.tiles[y * fp.w + x] === ROCK;
+  const STEP = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] } as const;
+  for (const i of mounted) {
+    const x = panelOfSubcell(i.sx), y = panelOfSubcell(i.sy), [dx, dy] = STEP[i.wall!];
+    if (rockAt(x, y)) return `${i.id}: a mounted candle off the floor`;
+    if (!rockAt(x + dx, y + dy)) return `${i.id}: a mounted candle with no stone on its ${i.wall} side`;
+  }
+  return null;
+}
+// What's wrong with a v2 or later run's placements, or null.
 const v2Problem = (walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined) =>
-  placedProblem(walk.placed, walk.v ?? 0) ?? missingFoes(walk, map, dungeon, room);
+  placedProblem(walk.placed, walk.v ?? 0) ?? mountedProblem(walk) ?? missingFoes(walk, map, dungeon, room);
 
 // Placements for a walk, by the rules of its version: phase 2b's for a v3
 // run, else the old rules as the game showed them.
@@ -205,7 +228,7 @@ function withPlacements(run: DungeonRun): Migrated {
 export const placedRun = (run: DungeonRun): DungeonRun => withPlacements(run).run;
 
 // A new walkable run, as it's made: placed by phase 2b's rules (place.ts) and
-// saved as world version 3. Placed once, here; a run that already has its
+// saved at PLACED_V (world version 5). Placed once, here; a run that already has its
 // placements (or a version) is left to migrateWalkRun.
 export function newWalkRun(run: DungeonRun): DungeonRun {
   const walk = run.walk;

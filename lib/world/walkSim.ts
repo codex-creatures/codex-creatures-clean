@@ -178,7 +178,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
       for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1;
     }
   }
-  for (const c of sim.candles) if (!busy && canIgnite(live, c, sim.me)) { c.lit = true; lighted = true; }
+  for (const c of sim.candles) if (!busy && !c.still && canIgnite(live, c, sim.me)) { c.lit = true; lighted = true; }
   const candlesSeen = sim.candles.filter((c) => c.lit && fireInSight(live, c, sim.me));
   for (const c of candlesSeen) { const a = candleLight(sim, c); for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1; }
   const fireSeen = sim.fires.filter((f) => fireInSight(live, f, sim.me));

@@ -5,8 +5,11 @@
 // is run state). The walk screen reads this, never the placers.
 //
 // Run state laid over: a wall torch or candle burns if it started lit or you
-// lit it (`lit`); a candle the old rules put by a campfire isn't there
-// (`fires`: new runs' placer keeps candles away from fires instead). Whether each
+// lit it (`lit`); (world version 5) a candle on a wall or pillar is a candle
+// standing at the floor in front of it, its light from that floor panel; a
+// floor candle is one walking near never lights (`still`); a candle the old
+// rules put by a campfire isn't there (`fires`: new runs' placer keeps candles
+// away from fires instead). Whether each
 // room's thing is shown, and how, is decided where it's drawn (walkWorld.ts
 // thingsOf), from the rooms as they stand.
 
@@ -25,8 +28,11 @@ export type Placements = {
   spot: (id: string) => Pt | undefined;  // where an instance stands (a room's feature, a cage), by id
 };
 
-// (Nothing is put on a south wall yet: §5.6's wall candles come with their art.)
+// (Torches are never on a south wall; v5's candles there are read as candles, below.)
 const WALLS: Partial<Record<NonNullable<Instance["wall"]>, NonNullable<Sconce["wall"]>>> = { north: "top", west: "left", east: "right" };
+
+// (v5) Candles on a wall or a pillar's face (place.ts MOUNTED_DEFS: not imported, to keep this light).
+const MOUNTED = new Set(["candle-wall", "candle-wall-side", "candle-wall-south"]);
 
 // A candle this close to a campfire isn't lit or drawn (the fire's taken its place).
 const BY_FIRE = 2;
@@ -54,6 +60,10 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
     } else if (i.def === "candle") {
       if (i.legacy && fires.some((f) => Math.hypot(f.x - p.x, f.y - p.y) < BY_FIRE)) continue;
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
+    } else if (MOUNTED.has(i.def)) {
+      candles.push({ id: i.id, room: i.room, ...p, lit: i.start === "lit" || lit.has(i.id) });
+    } else if (i.def === "floor-candle") {
+      candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id), still: true });
     } else if (i.def === "witch") {
       witches.push({ room: i.room, index: 0, ...p, facing: i.facing ?? 0, walks: true, path: [], wait: 1 });
     } else if (i.def === "foe" && i.foe) {
