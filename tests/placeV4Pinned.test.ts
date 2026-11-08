@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { slowIt } from "./slow";
-import { seeded, digest } from "./walkBaseline";
-import { startWalkRun, walkRoom } from "../lib/dungeon/walkRun";
-import { dungeonOf, type Cage, type DungeonRun } from "../lib/dungeon/run";
+import { digest } from "./walkBaseline";
+import { pinnedRun } from "./pinnedRuns";
+import { walkRoom } from "../lib/dungeon/walkRun";
+import { dungeonOf, type DungeonRun } from "../lib/dungeon/run";
 import { layoutFloorplan } from "../lib/dungeon/layout";
 import { torchLit, SCONCE_RADIUS, CANDLE_RADIUS } from "../lib/dungeon/torch";
 import { CAMPFIRE_LIGHT } from "../lib/dungeon/campfire";
@@ -17,13 +18,15 @@ import { placementsFrom } from "../lib/world/placements";
 // same cells, whatever stage B's v5 changes. Recorded before any v5 work; only
 // rewritten (UPDATE_GOLDEN=1) for a change the user has approved.
 // (On these seeds v4 places candles and torches as v3 does: stage A changed
-// only how things share panels. These still pin v4's own path.)
+// only how things share panels. These still pin v4's own path.) World version
+// 5's (stage B, released 2026-11-08) are pinned the same way, before v6 changed
+// where floor candles go.
 
 const GOLDEN = path.join(__dirname, "golden", "walk");
-const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
-const made = (dungeon: 0 | 1, seed: number): DungeonRun => {
-  const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon);
-  return { ...run, walk: { ...run.walk!, v: 4 } };
+// (Each from its saved run, tests/pinnedRuns.ts, so rolling layouts differently can't move it.)
+const made = (dungeon: 0 | 1, seed: number, v = 4): DungeonRun => {
+  const run = pinnedRun(dungeon, seed);
+  return { ...run, walk: { ...run.walk!, v } };
 };
 const CASES = [[0, 31], [0, 32], [1, 31], [1, 32]] as const;
 
@@ -52,12 +55,12 @@ const lightsOf = (run: DungeonRun, placed: ReturnType<typeof placeWalk>["placed"
   ];
 };
 
-describe("world version 4's placements and lights stay as they were made", () => {
+for (const v of [4, 5]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
   // (The Cyclops's runs take seconds each: test:all runs them.)
   for (const [d, s] of CASES) (d === 0 ? it : slowIt)(`dungeon ${d} seed ${s}`, () => {
-    const run = made(d, s);
+    const run = made(d, s, v);
     const { placed } = placeWalk(run.walk!, run.map, dungeonOf(run), (id) => walkRoom(run, id));
-    pinned(`v4-d${d}-s${s}.placed.json`, placed);
-    pinned(`v4-d${d}-s${s}.lights.json`, lightsOf(run, placed));
+    pinned(`v${v}-d${d}-s${s}.placed.json`, placed);
+    pinned(`v${v}-d${d}-s${s}.lights.json`, lightsOf(run, placed));
   });
 });

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { seeded } from "./walkBaseline";
-import { startWalkRun, walkRoom } from "../lib/dungeon/walkRun";
-import { dungeonOf, type Cage, type DungeonRun } from "../lib/dungeon/run";
+import { pinnedRun } from "./pinnedRuns";
+import { walkRoom } from "../lib/dungeon/walkRun";
+import { dungeonOf, type DungeonRun } from "../lib/dungeon/run";
 import { placeWalk } from "../lib/world/place";
 
 // World version 3's placements, pinned (docs/world-spec.md §8, 2b-2 stage A):
@@ -12,9 +12,9 @@ import { placeWalk } from "../lib/world/place";
 // rewritten (UPDATE_GOLDEN=1) for a change the user has approved.
 
 const GOLDEN = path.join(__dirname, "golden", "walk");
-const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
+// (Each from its saved run, tests/pinnedRuns.ts, so rolling layouts differently can't move it.)
 const made = (dungeon: 0 | 1, seed: number): DungeonRun => {
-  const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon);
+  const run = pinnedRun(dungeon, seed);
   return { ...run, walk: { ...run.walk!, v: 3 } };
 };
 const CASES = [[0, 31], [0, 32], [1, 31], [1, 32]] as const;
