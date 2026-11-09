@@ -48,11 +48,15 @@ export function roomDepth(map: DungeonMap, id: string): number {
 // partyRaces are the races to leave out).
 // dungeon: the walkable Labyrinth's rooms are its own (no chief's cages);
 // backpack: you're on the bindle (merchants and storehouses have the backpack).
+// An ambush (a camp that looks empty till you open a cage) is off in walked runs for now (the user,
+// 2026-11-09): one rolls as a plain camp, its foes guarding the cages. The rolls are otherwise unchanged.
+export const WALK_AMBUSH = false;
 export function rollWalkRooms(map: DungeonMap, rng: Rng = Math.random, firstClear = true, partyRaces: string[] = [], dungeon: DungeonId = ENCAMPMENT, backpack = false): Record<string, Room> {
   const rooms: Record<string, Room> = {};
   for (const n of Object.values(map.nodes)) {
     if (n.kind === "entrance") continue;
-    const room = makeRoom(n.kind, rng, roomDepth(map, n.id), dungeon, backpack);
+    const rolled = makeRoom(n.kind, rng, roomDepth(map, n.id), dungeon, backpack);
+    const room: Room = rolled.variant === "ambush" && !WALK_AMBUSH ? { ...rolled, variant: "plain" } : rolled;
     rooms[n.id] = n.id === map.boss && dungeon === ENCAMPMENT ? { ...room, cages: campCages(firstClear, partyRaces, rng) } : room;
   }
   return rooms;

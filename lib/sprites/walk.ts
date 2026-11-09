@@ -24,7 +24,14 @@ export type KitSize = { px: number; row: number; north: number; cap: number; sid
 export type KitArt = { floor: string; north: string; cap: string; east: string; west: string; size: KitSize;
   corners?: { nw: string; ne: string; sw: string; se: string };
   edges?: { n: string; w: string };
-  worn?: { floors: string[]; walls: string[] } };
+  worn?: { floors: string[]; walls: string[] };
+  lights?: KitLights };
+// The lights drawn in the kit's style (PixelLab, round 3: PIXELLAB.md), at its art size: a wall torch
+// (its head, where the flame burns, `head` px down its middle) and a floor candle cluster (its three
+// wicks, px from its top left). Unlit pictures: the flames are drawn over them in code (scene.ts).
+export type KitLights = { torch: string; torchSize: [number, number]; head: number; candles: string; candleSize: [number, number]; wicks: [number, number][] };
+export const KIT_LIGHTS: KitLights = { torch: "/sprites/walk/wall-torch.png", torchSize: [24, 48], head: 4,
+  candles: "/sprites/walk/candles.png", candleSize: [32, 40], wicks: [[19, 6], [9.5, 11], [16, 20]] };
 // The first kit's sizes, and the art density of you and the things in the walk (objects.ts), which
 // stays at KIT_PX a unit whatever kit the walls are drawn with.
 export const KIT_PX = 32, KIT_ROW = 24, KIT_NORTH = 57, KIT_CAP = 15, KIT_SIDE = 12;
@@ -36,13 +43,13 @@ export const WALK_TILES: WalkTiles[] = [
     kit: { floor: `${KIT_F}floor.png`, north: `${KIT_F}north.png`, cap: `${KIT_F}cap.png`, east: `${KIT_F}east.png`, west: `${KIT_F}west.png`,
       size: { px: 48, row: 36, north: 87, cap: 15, side: 20 },
       corners: { nw: `${KIT_F}nw.png`, ne: `${KIT_F}ne.png`, sw: `${KIT_F}sw.png`, se: `${KIT_F}se.png` },
-      edges: { n: `${KIT_F}edge-n.png`, w: `${KIT_F}edge-w.png` } } },
+      edges: { n: `${KIT_F}edge-n.png`, w: `${KIT_F}edge-w.png` }, lights: KIT_LIGHTS } },
   // Kit E (the user's pick, 2026-11-09): dark crumbling fieldstone, 48 a tile, a mossy cobbled floor,
   // and corner pieces cut from its own walls (PIXELLAB.md).
   { name: "Kit: dark fieldstone", floor: `${KIT_E}floor.png`, tunnel: `${KIT_E}floor.png`,
     kit: { floor: `${KIT_E}floor.png`, north: `${KIT_E}north.png`, cap: `${KIT_E}cap.png`, east: `${KIT_E}east.png`, west: `${KIT_E}west.png`,
       size: { px: 48, row: 36, north: 87, cap: 15, side: 20 },
-      corners: { nw: `${KIT_E}nw.png`, ne: `${KIT_E}ne.png`, sw: `${KIT_E}sw.png`, se: `${KIT_E}se.png` } } },
+      corners: { nw: `${KIT_E}nw.png`, ne: `${KIT_E}ne.png`, sw: `${KIT_E}sw.png`, se: `${KIT_E}se.png` }, lights: KIT_LIGHTS } },
   { name: "Kit: mossy dungeon", floor: `${KIT_A}floor.png`, tunnel: `${KIT_A}floor.png`,
     kit: { floor: `${KIT_A}floor.png`, north: `${KIT_A}north.png`, cap: `${KIT_A}cap.png`, east: `${KIT_A}east.png`, west: `${KIT_A}west.png`,
       size: { px: KIT_PX, row: KIT_ROW, north: KIT_NORTH, cap: KIT_CAP, side: KIT_SIDE },

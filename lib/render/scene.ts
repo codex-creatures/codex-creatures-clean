@@ -15,7 +15,7 @@
 import { ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
 import { isOpen, type Layout } from "../dungeon/layout";
 import { drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT, type DepthEdges } from "../dungeon/tileArt";
-import { torchGlow, rubbleOf, sconceGlow, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
+import { torchGlow, rubbleOf, showsRubble, sconceGlow, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
 import { floorVariant, wallVariant, type Decor } from "../dungeon/decor";
 import { CAMPFIRE_HEAL, type Campfire } from "../dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "../dungeon/foes";
@@ -29,6 +29,10 @@ import type { Thing } from "../world/walkWorld";
 import { walkView, artPxAcross, artPxDown, across, legacySize, type View } from "./projection";
 
 export const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; // a tunnel falling in
+// The kit's lights (KitLights): a top wall torch's foot, art rows up the wall's face (as in the approved mock-up);
+// a side wall's torch, this much smaller; the torch's flame, this much bigger than a candle's; the candles' size
+// against the walls' art.
+export const TORCH_FOOT = 23, TORCH_SIDE = 0.8, TORCH_FLAME = 1.7, CANDLE_ART = 0.85;
 
 // The kit's and the hero's art pixels (projection.ts ArtDensity): the kit's rows squashed into a square cell.
 // You and the things in the walk at KIT_PX art pixels a unit (the walls at their kit's own size: buildScene).
@@ -40,6 +44,8 @@ const CLOSED = "rgba(7, 6, 11, 0.6)";
 
 // What's drawn the same way every frame (lib/world/objects.ts).
 const CAMPFIRE = objectDef("campfire"), CANDLE = objectDef("candle"), BANNER = objectDef("banner"), SOUTH_WALL = objectDef("wall-south");
+// A flame's colours, outside in (the dungeon's palette: art/palettes/dungeon.json).
+const FLAME = ["#d65c20", "#f4a034", "#fcd678", "#fff4d2"];
 // A definition's picture on screen, at today's size.
 const drawSize = (view: View, d: ObjectDef, a: ArtRef) => legacySize(view, d.visual.legacy, a);
 
@@ -76,6 +82,7 @@ class Recorder {
   ellipse(...a: number[]) { this.cmds.push(["ellipse", ...a]); }
   arc(...a: number[]) { this.cmds.push(["arc", ...a]); }
   moveTo(...a: number[]) { this.cmds.push(["moveTo", ...a]); }
+  quadraticCurveTo(...a: number[]) { this.cmds.push(["quadraticCurveTo", ...a]); }
   lineTo(...a: number[]) { this.cmds.push(["lineTo", ...a]); }
   translate(...a: number[]) { this.cmds.push(["translate", ...a]); }
   scale(...a: number[]) { this.cmds.push(["scale", ...a]); }
@@ -232,7 +239,7 @@ export function buildScene(input: SceneInput): Scene {
       ctx.globalAlpha = 1;
     } });
   }
-  for (const r of rubbleOf(plan, layout, p)) {
+  for (const r of rubbleOf(plan, layout, p).filter(showsRubble)) {
     const fell = sim.falls.get(r.key);
     if (fell === undefined && !r.tiles.some((q) => sim.known[q.y * w + q.x])) continue; // never seen: just rock
     const age = fell === undefined ? Infinity : (now - fell) / 1000;
@@ -308,6 +315,30 @@ export function buildScene(input: SceneInput): Scene {
       ctx.globalAlpha = 1;
     } });
   }
+  // A little teardrop flame with its base at (x, y), `px` screen px an art px, flickering (seed: which flame).
+  const flame = (x: number, y: number, px: number, seed: number) => {
+    const h = (6 + 2 * Math.sin(now / 110 + seed)) * px, wide = 3 * px, lean = 0.8 * px * Math.sin(now / 170 + seed * 1.7);
+    [1, 0.75, 0.45, 0.2].forEach((k, i) => {
+      const hh = h * k, ww = wide * [1, 0.7, 0.45, 0.3][i];
+      ctx.fillStyle = FLAME[i];
+      ctx.beginPath();
+      ctx.moveTo(x - ww / 2, y);
+      ctx.quadraticCurveTo(x - ww / 2, y - hh * 0.5, x + lean, y - hh);
+      ctx.quadraticCurveTo(x + ww / 2, y - hh * 0.5, x + ww / 2, y);
+      ctx.fill();
+    });
+  };
+  // The kit's own torch and candles, if it has them (else a bracket and candle drawn as before).
+  const L = KIT.lights, ax = artPxAcross(view, KIT_DENSITY);
+  const torchImg = L ? image(L.torch) : null;
+  // A torch's picture on the wall: on a top wall standing as the walls' art does (its foot TORCH_FOOT art rows up
+  // the wall's face); on a tunnel's side wall a little smaller, its head where the bracket's top was.
+  const torchBox = (c: Sconce) => {
+    const [tw, th] = L!.torchSize, side = c.wall === "left" || c.wall === "right", k = side ? TORCH_SIDE : 1;
+    const wd = tw * ax * k, ht = th * vy * k, { x, top } = bracket(c);
+    const y = side ? top - L!.head * vy * k : sy(c.y) - TORCH_FOOT * vy - ht;
+    return { x: x - wd / 2, y, wd, ht, head: { x, y: y + L!.head * vy * k }, px: ax * k * TORCH_FLAME };
+  };
   // The wall torches' brackets (their flames go over the dark, below).
   const burning = sim.sconces.filter((c) => c.lit && there(c) && knownAt(c.x, c.y) && c.x >= x0 - SCONCE_RADIUS && c.x < x1 + SCONCE_RADIUS && c.y >= y0 - SCONCE_RADIUS && c.y < y1 + SCONCE_RADIUS);
   // (On a tunnel's side wall, it sticks out from the wall's edge, by the tile's middle.)
@@ -315,6 +346,11 @@ export function buildScene(input: SceneInput): Scene {
   for (const c of sim.sconces) {
     if (c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
     standing.push({ x: c.x, y: c.y + objectDef(c.wall === "left" || c.wall === "right" ? "sconce-side" : "sconce").visual.legacy.sortDy!, draw: () => {
+      if (L) {
+        const b = torchBox(c);
+        if (torchImg) ctx.drawImage(torchImg, b.x, b.y, b.wd, b.ht);
+        return;
+      }
       const { x: fx, top } = bracket(c);
       ctx.fillStyle = "#2a2018";
       ctx.fillRect(fx - 0.08 * T, top, 0.16 * T, 0.45 * T);
@@ -336,7 +372,15 @@ export function buildScene(input: SceneInput): Scene {
   }
   const candleImg = image(artOf(CANDLE, "out")!.src), candleLitImg = image(artOf(CANDLE, "lit")!.src);
   const candleSize = drawSize(view, CANDLE, artOf(CANDLE, "out")!);
+  const candlesImg = L ? image(L.candles) : null;
   const drawCandle = (c: Candle) => {
+    if (L) {
+      // The kit's candles: the picture, and a flame on each wick when lit.
+      const [cw2, ch2] = L.candleSize, px = ax * CANDLE_ART, wd = cw2 * px, ht = ch2 * px, x = footX(c.x) - wd / 2, y = footY(c.y) - ht;
+      if (candlesImg) ctx.drawImage(candlesImg, x, y, wd, ht);
+      if (c.lit) L.wicks.forEach(([wx, wy], i) => flame(x + wx * px, y + wy * px, px, c.x * 3 + c.y + i * 2.3));
+      return;
+    }
     const img = c.lit ? candleLitImg : candleImg;
     if (!img) return;
     const { wd, h2 } = candleSize;
@@ -415,7 +459,8 @@ export function buildScene(input: SceneInput): Scene {
   // The burning torches' flames, over the dark: a fire glows whatever's round it.
   for (const c of sim.sconces) {
     if (!c.lit || c.x < x0 || c.x >= x1 || c.y < y0 || c.y >= y1 + 1 || !knownAt(c.x, c.y) || !there(c)) continue;
-    const { x: fx, top } = bracket(c), wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
+    const b = L ? torchBox(c) : null;
+    const { x: fx, top } = b ? { x: b.head.x, top: b.head.y + 0.15 * T } : bracket(c), wob = 1 + 0.12 * Math.sin(now / 70 + c.x);
     ctx.globalCompositeOperation = "lighter";
     const halo = ctx.createRadialGradient(fx, top - 0.15 * T, 0, fx, top - 0.15 * T, 0.7 * T);
     halo.addColorStop(0, "rgba(255, 170, 70, 0.55)");
@@ -423,6 +468,10 @@ export function buildScene(input: SceneInput): Scene {
     ctx.fillStyle = halo;
     ctx.fillRect(fx - 0.7 * T, top - 0.85 * T, 1.4 * T, 1.4 * T);
     ctx.globalCompositeOperation = "source-over";
+    if (b) {
+      flame(b.head.x, b.head.y, b.px, c.x * 7 + c.y);
+      continue;
+    }
     ctx.fillStyle = "#ff9a2e";
     ctx.beginPath();
     ctx.ellipse(fx, top - 0.16 * T * wob, 0.14 * T, 0.26 * T * wob, 0, 0, 2 * Math.PI);

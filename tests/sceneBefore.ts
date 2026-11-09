@@ -9,7 +9,7 @@
 import { ROCK, type Pt } from "../lib/dungeon/floorplan";
 import { isOpen } from "../lib/dungeon/layout";
 import { drawOrder, facingOf, walkFrame, capFade, FACINGS, WALL_LIFT } from "../lib/dungeon/tileArt";
-import { torchGlow, rubbleOf, sconceGlow, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../lib/dungeon/torch";
+import { torchGlow, rubbleOf, showsRubble, sconceGlow, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../lib/dungeon/torch";
 import { floorVariant, wallVariant } from "../lib/dungeon/decor";
 import { CAMPFIRE_HEAL, type Campfire } from "../lib/dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "../lib/dungeon/foes";
@@ -137,7 +137,7 @@ export function oldDraw(input: SceneInput, ctx: any, mctx: any, mask: unknown, s
           ctx.globalAlpha = 1;
         } });
       }
-      for (const r of rubbleOf(plan, layout, p)) {
+      for (const r of rubbleOf(plan, layout, p).filter(showsRubble)) { // (since 2026-11-09: none across)
         const fell = sim.falls.get(r.key);
         if (fell === undefined && !r.tiles.some((q) => sim.known[q.y * w + q.x])) continue; // never seen: just rock
         const age = fell === undefined ? Infinity : (now - fell) / 1000;

@@ -189,3 +189,15 @@ describe("seen: they come at you", () => {
     expect(fightReady([], 3, ALARM_MAX)).toBe(true);
   });
 });
+
+describe("no ambushes in walked runs, for now (the user, 2026-11-09)", () => {
+  it("a camp that rolls as an ambush is a plain camp, its foes there to guard the cages", () => {
+    const nodes: Record<string, { id: string; kind: string; links: string[] }> = { e: { id: "e", kind: "entrance", links: [] } };
+    for (let i = 0; i < 60; i++) nodes[`c${i}`] = { id: `c${i}`, kind: "encampment", links: [] };
+    const rooms = rollWalkRooms({ nodes, start: "e", boss: "none" } as unknown as Parameters<typeof rollWalkRooms>[0], seeded(9), true, [], 1);
+    const camps = Object.values(rooms);
+    expect(camps.some((r) => r.variant === "ambush")).toBe(false);
+    expect(camps.filter((r) => r.variant === "plain").length).toBeGreaterThan(20); // (plain and the old ambushes: about two in three)
+    expect(camps.every((r) => (r.enemies?.length ?? 0) > 0 && (r.cages?.length ?? 0) > 0)).toBe(true);
+  });
+});

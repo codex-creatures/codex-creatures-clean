@@ -9,6 +9,7 @@ import { paintScene, type DarkLayer } from "../lib/render/paint";
 import { startWalk, restartLoop, stepWalk, type WalkSim } from "../lib/world/walkSim";
 import { thingsOf } from "../lib/world/walkWorld";
 import { depthEdges } from "../lib/dungeon/tileArt";
+import { WALK_KIT } from "../lib/sprites/walk";
 import { shutPlan } from "../lib/dungeon/torch";
 import { roomCentre, waysOn } from "../lib/dungeon/layout";
 import { walkToward } from "../lib/dungeon/walk";
@@ -151,7 +152,7 @@ describe("a lit candle stays lit out of sight (the user, 2026-11-07)", () => {
     const flames = (seen: typeof c[]) => {
       const cmds = buildScene({ ...input, frame: { ...input.frame, candlesSeen: seen } }).cmds;
       const dark = cmds.findIndex((k) => k[0] === "dark");
-      return cmds.slice(dark).filter((k) => k[0] === "drawImage" && k[1] === "/sprites/walk/candle-lit.png").length;
+      return cmds.slice(dark).filter((k) => k[0] === "drawImage" && k[1] === WALK_KIT.lights!.candles).length;
     };
     expect(flames([c])).toBe(1);
     expect(flames([])).toBe(1);

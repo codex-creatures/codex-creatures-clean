@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { walkSetup } from "./walkBaseline";
-import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, usableNear, guarding, foeStarts, type Thing } from "../lib/world/walkWorld";
+import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, usableNear, guarding, foeStarts, cageGuardSpot, type Thing } from "../lib/world/walkWorld";
 import { startWalk, restartLoop, stepWalk, soundAlarm } from "../lib/world/walkSim";
 import { findPath, walkable, type CanStep } from "../lib/dungeon/walk";
 import type { Pt } from "../lib/dungeon/floorplan";
@@ -120,5 +120,22 @@ describe("the joystick's use button", () => {
     expect(usableNear(things, { x: 3, y: 3 }, known, 10)?.key).toBe("shut");
     expect(usableNear(things, { x: 3, y: 3 }, new Uint8Array(100), 10)).toBeUndefined();
     expect(usableNear([thing("drawn", 3, false, true)], { x: 3, y: 3 }, known, 10)).toBeUndefined();
+  });
+});
+
+describe("a camp's cages are guarded like a chest (the user, 2026-11-09)", () => {
+  const cages = [{ x: 4, y: 2 }, { x: 7, y: 2 }, { x: 10, y: 2 }];
+  const placed = { spot: (id: string) => cages[Number(id.split("#")[1])] } as unknown as Parameters<typeof cageGuardSpot>[0];
+  const camp = (done: boolean): Room => ({ kind: "encampment", variant: "plain", enemies: [{} as never, {} as never], cages: [{}, {}, {}], level: "normal", done });
+  it("its foes patrol in front of the middle of the cages", () => {
+    expect(cageGuardSpot(placed, "r", camp(false))).toEqual({ x: 7, y: 3 });
+    const foe = { room: "r", index: 0, x: 5, y: 6, facing: 0, walks: false, path: [], wait: 0 };
+    const [f] = guarding([foe], { rooms: {}, tunnels: [] } as never, () => camp(false), 1, placed);
+    expect(f).toMatchObject({ walks: true, guard: { x: 7, y: 3 } });
+  });
+  it("trying a cage before they're beaten sets them on you; after, it opens", () => {
+    const things = (done: boolean) => thingsOf({ rooms: {}, tunnels: [] } as never, { ...placed, sconces: [], candles: [], witches: [], foes: [] } as never, ["r"], () => camp(done), [], undefined, 1);
+    expect(things(false).filter((t) => t.def === "cage").every((t) => t.guarded && !t.flag)).toBe(true);
+    expect(things(true).filter((t) => t.def === "cage").every((t) => !t.guarded && t.flag)).toBe(true);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, startProgress, waysOn, isOpen, cutOffY, WALK_SPEC } from "../lib/dungeon/layout";
-import { torchLit, torchGlow, shutPlan, rubbleOf, fallenIn, fallenSoFar, tunnelShut, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
+import { torchLit, torchGlow, shutPlan, rubbleOf, showsRubble, fallenIn, fallenSoFar, tunnelShut, canIgnite, sconceInSight, sconceGlow, TORCH_RADIUS, REMEMBERED, IGNITE_REACH, SCONCE_RADIUS, SCONCE_BRIGHT } from "../lib/dungeon/torch";
 import { sideFace, capFade, depthEdges, SIDE_FACE_MAX, CAP_FAINT, FACE_TILE, TOP_TILE, WANG_TILES } from "../lib/dungeon/tileArt";
 import { placeSconces } from "../lib/world/compat/v0Placers";
 
@@ -195,5 +195,12 @@ describe("torches on the walls", () => {
   it("can't be lit through a wall", () => {
     const two = plan(["#######", "#..#..#", "#..#..#", "#######"]);
     expect(canIgnite(two, { id: "a", room: "a", x: 2, y: 1, lit: false }, { x: 4, y: 1 })).toBe(false);
+  });
+});
+
+describe("no rubble across (the user, 2026-11-09)", () => {
+  it("only a tunnel up's mouth shows rubble; a closed tunnel across is just wall", () => {
+    const r = (wall: "top" | "bottom" | "left" | "right") => ({ key: "k", room: "a", tiles: [], wall });
+    expect(["top", "bottom", "left", "right"].map((w) => showsRubble(r(w as "top")))).toEqual([true, true, false, false]);
   });
 });

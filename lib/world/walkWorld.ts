@@ -72,12 +72,25 @@ export function foesToPlace(r: Room, dungeon: DungeonId): number {
 // A guarded chest's foes patrol close round it (foes.ts GUARD_REACH), all of
 // them walking, instead of wandering the room (the user, 2026-11-09). A boss
 // waiting at the top stays where it stands. Where they start is unchanged.
-export function guarding(foes: Foe[], layout: Layout, room: (id: string) => Room | undefined, dungeon: DungeonId): Foe[] {
+// A camp's foes guard its cages the same way, round the middle of the row
+// (placed: where the cages stand; the user, 2026-11-09).
+export function guarding(foes: Foe[], layout: Layout, room: (id: string) => Room | undefined, dungeon: DungeonId, placed?: Placements): Foe[] {
   return foes.map((f) => {
     const r = room(f.room);
-    if (f.waits || !r || !hasFight(r) || r.done || fightContainer(r, dungeon) === "sack") return f;
+    if (f.waits || !r || !hasFight(r) || r.done) return f;
+    const cages = placed ? cageGuardSpot(placed, f.room, r) : undefined;
+    if (cages) return { ...f, walks: true, guard: cages };
+    if (fightContainer(r, dungeon) === "sack") return f;
     return { ...f, walks: true, guard: guardedChestSpot(layout, f.room, r, dungeon) };
   });
+}
+
+// Where a camp's guards patrol: in front of the middle of its cages (a row along the top).
+export function cageGuardSpot(placed: Placements, id: string, r: Room): Pt | undefined {
+  const at = (r.cages ?? []).map((_, i) => placed.spot(`${id}#${i}`)).filter((q): q is Pt => !!q);
+  if (at.length === 0) return undefined;
+  const x = at.reduce((s, q) => s + q.x, 0) / at.length, y = Math.max(...at.map((q) => q.y));
+  return { x: Math.round(x), y: Math.round(y) + 1 };
 }
 
 // Each fight room's foes, where they start: as saved in the run (lib/world/
@@ -158,9 +171,11 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
     }
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
+    // Till they're beaten, its guards are round them: trying one sets them on you, as a guarded chest does.
     r.cages?.forEach((cage, i) => {
       const q = placed.spot(`${id}#${i}`);
-      if (q) out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done) }));
+      const guarded = hasFight(r) && !r.done && !cage.opened;
+      if (q) out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done), ...(guarded ? { guarded } : {}) }));
     });
     return out;
   });

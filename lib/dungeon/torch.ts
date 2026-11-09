@@ -112,6 +112,10 @@ export function rubbleOf(fp: Floorplan, layout: Layout, p: Progress): Rubble[] {
   return out;
 }
 
+// Rubble is only shown in a tunnel up's mouth: a tunnel across that's closed is just wall, as if
+// there'd never been one (the user, 2026-11-09).
+export const showsRubble = (r: Rubble) => r.wall === "top" || r.wall === "bottom";
+
 // The tunnels that fell in behind you: closed, their mouth still in an open
 // room, and you'd seen it (known: the tiles you've seen). The ones you can't
 // go back down.

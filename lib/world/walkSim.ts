@@ -15,7 +15,7 @@
 import { cutOffY, enter, isOpen, type Layout, type Progress } from "../dungeon/layout";
 import { advance, roomAt, type CanStep, type Walker } from "../dungeon/walk";
 import { facingOf, type Facing } from "../dungeon/tileArt";
-import { torchLit, rubbleOf, fallenIn, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
+import { torchLit, rubbleOf, fallenIn, showsRubble, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "../dungeon/campfire";
 import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "../dungeon/foes";
 import { hasFight, type Room } from "../dungeon/run";
@@ -208,7 +208,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
       if (next.line !== sim.progress.line) {
         sim.cuts.push(cutOffY(next, layout));
         const was = new Set(rubbleOf(plan, layout, sim.progress).map((r) => r.key));
-        for (const r of fallenIn(plan, layout, next, sim.known)) if (!was.has(r.key)) sim.falls.set(r.key, now);
+        for (const r of fallenIn(plan, layout, next, sim.known)) if (!was.has(r.key) && showsRubble(r)) sim.falls.set(r.key, now);
         if (sim.falls.size > 0) sim.shakeAt = now;
       }
       sim.progress = next;

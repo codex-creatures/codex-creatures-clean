@@ -93,7 +93,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const ids = useMemo(() => roomIds(layout, map), [layout, map]);
   const [placed] = useState(() => placementsOfWalk(walk, map, dungeon, room));
   // The walk going on (lib/world/walkSim.ts): you, what you've seen, the lights, foes, the alarm. Kept between frames.
-  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: guarding(foeStarts(placed, ids, room), layout, room, dungeon), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
+  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: guarding(foeStarts(placed, ids, room), layout, room, dungeon, placed), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
   // 🚧 Decor (samples) and banners: where they lie, from the run's seed.
   const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, sim.candles, sim.sconces) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
   const decorItems = labDecor.decor, banners = labDecor.banners;
@@ -122,7 +122,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   // The things to tap, as the rooms stand now.
   const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.spots, dungeon);
 
-  // Tapped (and walked up to) a thing: a cage opens as a cage; a chest still guarded sets its guards on you; anything else is its room's.
+  // Tapped (and walked up to) a thing: a cage opens as a cage; a chest or cage still guarded sets its guards on you; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.guarded ? soundAlarm(sim, t.room, performance.now())
     : t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
 
@@ -319,22 +319,26 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
 // As wide as the rooms' walls reach, scrolling up and down, opened at you
 // (the user, 2026-11-06). Tap to put it away, or (onPick) tap a room to pick it.
 const SCROLL_ROOM = 1 / 0.9; // zoomed out 10% past the walls, paper either side to look round (the user, 2026-11-09)
-// Its old paper (the user, 2026-11-09: older-looking): a worn parchment sheet with burnt edges and pins
-// (PixelLab: PIXELLAB.md), cut nine ways round the map (its edges SCROLL_EDGE px of the sheet, drawn
-// SCROLL_BORDER px wide), the map scrolling inside.
-const SCROLL_SHEET = "/sprites/walk/scroll-frame.png", SCROLL_EDGE = 30, SCROLL_BORDER = 18;
+// Its paper (the user, 2026-11-09: a classic tea-stained scroll that looks like one): rolled at the top
+// and bottom (PixelLab: PIXELLAB.md), cut nine ways round the map (its edges SCROLL_EDGE px of the sheet:
+// top, right, bottom, left; drawn SCROLL_PX screen px a sheet px), the map scrolling between the rolls.
+const SCROLL_SHEET = "/sprites/walk/scroll-frame.png", SCROLL_EDGE = [36, 12, 34, 12], SCROLL_PX = 1.6;
+const SCROLL_BORDER = SCROLL_EDGE.map((e) => `${e * SCROLL_PX}px`).join(" ");
 function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
   map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress; cuts?: number[];
   been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
 }) {
   const [shown] = useState(() => {
-    const tile = (x: number, y: number) => (x < 0 || y < 0 || x >= plan.w || y >= plan.h ? ROCK : plan.tiles[y * plan.w + x]);
-    const isWall = (x: number, y: number) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => tile(x + dx, y + dy) !== ROCK));
     // What's drawn: what you've seen, and the rooms a clairvoyance scroll looked into (walls and all).
     const drawn = known.length === plan.w * plan.h ? known.slice() : new Uint8Array(plan.w * plan.h);
     for (const id of seen ?? []) for (const f of plan.rooms[id] ?? []) {
       for (let y = Math.max(0, f.y - 1); y <= Math.min(plan.h - 1, f.y + f.h); y++) drawn.fill(1, y * plan.w + Math.max(0, f.x - 1), y * plan.w + Math.min(plan.w, f.x + f.w + 1));
     }
+    const fell = new Set(!progress ? [] : fallenSoFar(plan, layout, progress, cuts, drawn));
+    // A tunnel across that fell in is drawn as rock, as if there'd never been one (the user, 2026-11-09).
+    const gone = new Set(layout.tunnels.filter((t) => !t.up && fell.has(t.key)).flatMap((t) => (plan.tunnels[t.key] ?? []).map((q) => q.y * plan.w + q.x)));
+    const tile = (x: number, y: number) => (x < 0 || y < 0 || x >= plan.w || y >= plan.h || gone.has(y * plan.w + x) ? ROCK : plan.tiles[y * plan.w + x]);
+    const isWall = (x: number, y: number) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => tile(x + dx, y + dy) !== ROCK));
     const ink: { x: number; y: number; w: number; wall: boolean }[] = [];
     let left = plan.w, right = 0;
     for (let y = 0; y < plan.h; y++) for (let x = 0; x < plan.w; x++) {
@@ -347,8 +351,6 @@ function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been
       else ink.push({ x, y, w: 1, wall });
     }
     // Tunnels up that fell in behind you this run (fallenSoFar): a red line across the middle, a tile past each side.
-    // (Only the ones up: a fallen tunnel across is just left out, the user, 2026-11-09.)
-    const fell = new Set(!progress ? [] : fallenSoFar(plan, layout, progress, cuts, drawn));
     const shut = layout.tunnels.filter((t) => t.up && fell.has(t.key))
       .map(({ rect: { x, y, w, h } }) => ({ x1: x - 1, y1: y + h / 2, x2: x + w + 1, y2: y + h / 2 }));
     const marks: ScrollMark[] = scrollMarks(map, layout, been, here, foreseen(map, layout, lit, seen));
@@ -365,7 +367,7 @@ function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div onClick={onPick ? undefined : onClose} style={{ position: "absolute", inset: 0, zIndex: 5, borderStyle: "solid", borderWidth: SCROLL_BORDER,
-      borderImage: `url(${SCROLL_SHEET}) ${SCROLL_EDGE} fill / ${SCROLL_BORDER}px stretch`, imageRendering: "pixelated", background: "transparent" }}>
+      borderImage: `url(${SCROLL_SHEET}) ${SCROLL_EDGE.join(" ")} fill / ${SCROLL_BORDER} stretch`, imageRendering: "pixelated", background: "transparent" }}>
     <div ref={box} style={{ position: "absolute", inset: 0, overflowX: "hidden", overflowY: "auto", touchAction: "pan-y" }}>
       <svg viewBox={`${shown.x0} 0 ${shown.vw} ${plan.h}`} style={{ display: "block", width: "100%", aspectRatio: `${shown.vw} / ${plan.h}` }}>
         {shown.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}

@@ -301,8 +301,8 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
   shared by impact (damage dealt + half the damage taken, at least 10% each). No XP for a lost
   fight. Levelling is 1.5× slower than first built (`XP_PACE`), at the user's request.
 - ✅ **After a won fight** (the user, 2026-11-09; components/FightWon.tsx, `xpShown`): a Victory
-  window shows each creature's XP and its level bar filling, with what's left to its next level,
-  then **Loot** (opens what they dropped) or **Leave** (it stays on the floor to open later; a
+  window shows each creature's XP counting up from what it had to what it has now ("120 / 300
+  XP"), its level bar filling with it and on through each level it gains, then **Loot** (opens what they dropped) or **Leave** (it stays on the floor to open later; a
   fight with nothing to loot, the thief's, has just Carry on). Level-up shows follow it. Not
   when a win ends the run at the top (classic): the haul screen shows it, as before.
 - ✅ **Explorer level** (you, `save.player`) gets every fight's full XP and gates scan rarity
@@ -592,7 +592,8 @@ How it came about, round by round: history.md.
 - ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
   scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.
 - ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you
-  keep, in 3 variants: plain, ambush, rigged. The ambush pair stand side by side in the battle room,
+  keep, in 3 variants: plain, ambush, rigged; no ambushes in walked runs for now, the user, 2026-11-09:
+  one rolls as a plain camp, `WALK_AMBUSH`). The ambush pair stand side by side in the battle room,
   drawn like the Cyclops's hands (tap the one to hit), not as cards. The drunk one, foes on ×3 HP, was removed by the user
   on 2026-10-26: nothing answered it once damage types went), Library (codexes to find, or a librarian
   selling) and Storehouse (mostly materials, sometimes guarded by a mini boss).
@@ -796,11 +797,14 @@ How it came about, round by round: history.md.
        a tunnel), the entrance's burning and `SCONCE_LIT_SHARE` 20% of the rest. Walk within half
        your torch's reach of an unlit one, in sight of it, and it lights (`canIgnite`); a burning
        one lights `SCONCE_RADIUS` 4 tiles round it for good (`sconceGlow`, a little dimmer than
-       your torch), seen from up to 12 tiles away. Drawn in code for now (a bracket and a flame).
+       your torch), seen from up to 12 tiles away. PixelLab art in the walls' style (round 3, the kit's
+       `lights`; a smaller one on a tunnel's side wall), with its flame drawn in code over it.
      - **No doors** (the user, 2026-11-06): it's a winding labyrinth. A tunnel closed off behind
        you is solid rock (`shutPlan`): if you'd seen it, it falls in as you go (stones drop,
        dust, a shake) and rubble blocks its mouth (`rubbleOf`); if you hadn't, it was never
-       there. The rubble is drawn in code for now, a placeholder for PixelLab art.
+       there. Only a tunnel up gets rubble (`showsRubble`): one across just becomes wall, on the
+       scroll too, as if it was never there (the user, 2026-11-09). The rubble is drawn in code
+       for now, a placeholder for PixelLab art.
   2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
      the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
      floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:
@@ -839,8 +843,8 @@ How it came about, round by round: history.md.
        cut-off you've crossed; kept once you're further up. The user, 2026-11-07: not every closed
        tunnel behind you, which got spammy) (the cut-offs
        themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
-       as the furthest walls, on old paper (a PixelLab parchment sheet, burnt edges and pins, cut
-       nine ways round it: the user, 2026-11-09), zoomed out 10% for paper either side (`SCROLL_ROOM`, the user,
+       as the furthest walls, on a classic tea-stained scroll rolled at the top and bottom (PixelLab,
+       cut nine ways round it, the map scrolling between the rolls: the user, 2026-11-09), zoomed out 10% for paper either side (`SCROLL_ROOM`, the user,
        2026-11-09), and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
        room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare
        marks the rooms joined to yours. Never the unlit tunnels or room sizes, so you work the way up
@@ -972,8 +976,10 @@ How it came about, round by round: history.md.
        once they've all reached you, or a second after the first has (`LATE_GRACE`), or 4 s after
        they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. (`/lab/walk` still
        starts its fights at once.) Tap a chest, stash or a fight's sack
-       to walk up and open it in the loot window. A camp that looks empty (an ambush) opens the
-       room's window with its cages; the room button (top left) opens it any time.
+       to walk up and open it in the loot window. A camp's cages are guarded like a mini boss's
+       chest (the user, 2026-11-09): its foes patrol in front of them (`cageGuardSpot`), and
+       trying one before they're beaten sets them on you; then each opens as you walk up. Walking
+       in never opens the room's window now; the room button (top left) opens it any time.
        **Bosses wait** (the user, 2026-11-06; `placeWaiter`, `waitsHere`): the Encampment's
        chief (and the Labyrinth's boss) stands at the top of his room (`WAIT_FROM_TOP` 4 tiles
        down, facing the way in), never wandering, and his fight starts only once you've walked up
@@ -1133,7 +1139,7 @@ How it came about, round by round: history.md.
        - Ideas not drawn yet: puddles and moss patches as decals (PixelLab gave plain floor
          circles), side walls' faces, room-kind floors (a library's boards, a camp's dirt),
          cobwebs in corners, a darker pillar.
-     - **Still to come:** scenery, torch and rubble art, the old Encampment's retirement once
+     - **Still to come:** scenery, rubble art, the animated flame sprite, the old Encampment's retirement once
        New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
        own copy of the drawing for now, with its testing switches).
   - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold

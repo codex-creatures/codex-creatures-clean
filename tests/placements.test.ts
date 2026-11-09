@@ -64,7 +64,9 @@ function differences(name: string, run0: DungeonRun): string[] {
     // (A mini boss's or boss's chest, there to guard from the start, came after phase 2a: those rooms' loot is left out.)
     const guarded = (t: { room: string; def: string }) => /^loot-/.test(t.def) && fightContainer(room(t.room)!, dungeonOf(run)) !== "sack";
     const thingsBefore = thingsOfBefore(walk.layout, plan, ids, room, before.witches, walk.spots).filter((t) => !guarded(t));
-    const thingsNow = thingsOf(walk.layout, now, ids, room, now.witches, walk.spots, dungeonOf(run)).filter((t) => !guarded(t));
+    // (And a camp's cages guarded till its foes are beaten, the user, 2026-11-09: compared without that flag.)
+    const thingsNow = thingsOf(walk.layout, now, ids, room, now.witches, walk.spots, dungeonOf(run)).filter((t) => !guarded(t))
+      .map(({ guarded: g, ...t }) => (t.cage !== undefined || !g ? t : { ...t, guarded: g }));
     const same = (what: string, a: unknown, b: unknown) => { if (JSON.stringify(a) !== JSON.stringify(b)) out.push(`${name}, ${state}: ${what} differ`); };
     same("wall torches", now.sconces, before.sconces);
     same("candles", now.candles, before.candles);

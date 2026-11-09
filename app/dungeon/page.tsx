@@ -952,8 +952,8 @@ export default function DungeonPage() {
   const [walkPanel, setWalkPanel] = useState(false);   // the room's window (what's here, the cages…)
   const [walkScroll, setWalkScroll] = useState(false); // the scroll, out
   const walkTo = (r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
-  // Worth opening the room's window as you walk in: treasure to take, a camp that looks empty (its cages).
-  const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || (c.kind === "encampment" && !hasFight(c) && !c.done) || dynamiteHere(c));
+  // Worth opening the room's window as you walk in: treasure to take. (Not a camp: you walk up to its cages, the user, 2026-11-09.)
+  const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || dynamiteHere(c));
   function walkEnter(id: string, st: WalkState) {
     // Leaving the witch mid-game: you walk away with what you've won.
     const w = loadDungeon().run?.current?.witch;
