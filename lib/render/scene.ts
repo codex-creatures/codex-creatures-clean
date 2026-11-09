@@ -132,6 +132,8 @@ export function buildScene(input: SceneInput): Scene {
   // Its corner pieces, if it has them and they've loaded (else corners are its pieces butted together).
   const cornerImg = KIT.corners && { nw: image(KIT.corners.nw), ne: image(KIT.corners.ne), sw: image(KIT.corners.sw), se: image(KIT.corners.se) };
   const corners = cornerImg && Object.values(cornerImg).every(Boolean) ? (cornerImg as Record<keyof typeof cornerImg, Img>) : null;
+  const edgeImg = KIT.edges && { n: image(KIT.edges.n), w: image(KIT.edges.w) };
+  const edgeArt = edgeImg?.n && edgeImg.w ? (edgeImg as { n: Img; w: Img }) : null;
   const worn = (KIT.worn?.floors ?? []).map(image).filter((i): i is Img => !!i);
   const wornWalls = (KIT.worn?.walls ?? []).map(image).filter((i): i is Img => !!i);
   const vy = artPxDown(view, KIT_DENSITY), side = Math.round(KZ.side * artPxAcross(view, KIT_DENSITY));
@@ -147,6 +149,24 @@ export function buildScene(input: SceneInput): Scene {
       const wd = sx(x + 1) - sx(x);
       const v = decor && worn.length > 0 ? floorVariant(x, y, walk.seed, worn.length) : 0;
       if (y < y1) ctx.drawImage(v > 0 ? worn[v - 1] : kit.floor, 0, 0, KZ.px, KZ.row, sx(x), sy(y), wd, sy(y + 1) - sy(y));
+      // By a wall, the floor shades into its stone (each wall side's overlay, darkest wins where two meet).
+      if (y < y1 && edgeArt) {
+        const ht = sy(y + 1) - sy(y);
+        const sides: [Img, number, number][] = [];
+        if (at(x, y - 1) === ROCK) sides.push([edgeArt.n, 1, 1]);
+        if (at(x, y + 1) === ROCK) sides.push([edgeArt.n, 1, -1]);
+        if (at(x - 1, y) === ROCK) sides.push([edgeArt.w, 1, 1]);
+        if (at(x + 1, y) === ROCK) sides.push([edgeArt.w, -1, 1]);
+        if (sides.length > 0) ctx.globalCompositeOperation = "darken";
+        for (const [img, fx, fy] of sides) {
+          ctx.save();
+          ctx.translate(sx(x) + (fx < 0 ? wd : 0), sy(y) + (fy < 0 ? ht : 0));
+          ctx.scale(fx, fy);
+          ctx.drawImage(img, 0, 0, KZ.px, KZ.row, 0, 0, wd, ht);
+          ctx.restore();
+        }
+        if (sides.length > 0) ctx.globalCompositeOperation = "source-over";
+      }
       if (at(x, y - 1) !== ROCK) continue;
       const dh = faceAbove(x, y);
       const wv = decor && wornWalls.length > 0 ? wallVariant(Math.floor(x / 2), y, walk.seed, wornWalls.length) : 0;

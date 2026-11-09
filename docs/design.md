@@ -839,7 +839,8 @@ How it came about, round by round: history.md.
        cut-off you've crossed; kept once you're further up. The user, 2026-11-07: not every closed
        tunnel behind you, which got spammy) (the cut-offs
        themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
-       as the furthest walls, zoomed out 10% for paper either side (`SCROLL_ROOM`, the user,
+       as the furthest walls, on old paper (a PixelLab parchment sheet, burnt edges and pins, cut
+       nine ways round it: the user, 2026-11-09), zoomed out 10% for paper either side (`SCROLL_ROOM`, the user,
        2026-11-09), and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
        room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare
        marks the rooms joined to yours. Never the unlit tunnels or room sizes, so you work the way up
@@ -893,7 +894,13 @@ How it came about, round by round: history.md.
        random stone). 48 art pixels a tile (the walls' own size, `KitArt.size`; you and things stay
        at 32 a unit), crumbling grey-brown fieldstone under worn capstones, a mossy cobbled floor
        (one tile, its seams repaired), and corner pieces so a side wall's top turns into the back
-       wall's cap and the south band as one L. Old kits still draw (butted corners). Next: small floor
+       wall's cap and the south band as one L. Old kits still draw (butted corners).
+       🧪 **Kit F, to try (2026-11-09):** kit E softened at the user's ask (the wall tops' trim stood
+       out, and the floor met the walls in a hard line): the wall tops' stone toned to 75%
+       (`CAP_TONE`), and the floor shading into the walls at its edges, from two PixelLab inpaints
+       of the floor (a wall above, a wall to the left) used as overlays (`KitArt.edges`), flipped
+       for a wall below or to the right and drawn together, darkest winning, where two meet.
+       Kit E is `WALK_TILES[1]`, to go back to. Next: small floor
        decorations to break up the repeat (the user: decorations, not scattered tile variants),
        then 5–6 variants of the wall panel (moss, vines, cracks). Creatures and items: the user's
        quality target is detailed pixel art about 128–200 px a portrait ("Creature or item pix

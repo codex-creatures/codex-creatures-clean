@@ -44,7 +44,8 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { PartyMember } from "@/components/PartySlots";
 import { drawnScale } from "@/lib/uiScale";
 
-const INK = { paper: "#d8c49a", edge: "#6b4f2a", floor: "#bfa676", wall: "#5a3e1e", trail: "#7a4a1a", cut: "#c0281e", mark: "#efe0bc", text: "#3a2a14", you: "#e0483e" };
+// (Faded browns on the old paper: SCROLL_SHEET.)
+const INK = { edge: "#6b4f2a", floor: "#c4a874", wall: "#5e4024", trail: "#7a4a1a", cut: "#b02a1e", mark: "#e8d6a8", text: "#3a2a14", you: "#e0483e" };
 
 export type { WalkState };
 
@@ -318,6 +319,10 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
 // As wide as the rooms' walls reach, scrolling up and down, opened at you
 // (the user, 2026-11-06). Tap to put it away, or (onPick) tap a room to pick it.
 const SCROLL_ROOM = 1 / 0.9; // zoomed out 10% past the walls, paper either side to look round (the user, 2026-11-09)
+// Its old paper (the user, 2026-11-09: older-looking): a worn parchment sheet with burnt edges and pins
+// (PixelLab: PIXELLAB.md), cut nine ways round the map (its edges SCROLL_EDGE px of the sheet, drawn
+// SCROLL_BORDER px wide), the map scrolling inside.
+const SCROLL_SHEET = "/sprites/walk/scroll-frame.png", SCROLL_EDGE = 30, SCROLL_BORDER = 18;
 function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
   map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress; cuts?: number[];
   been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
@@ -359,7 +364,9 @@ function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been
     if (el && y !== undefined) el.scrollTop = y * el.scrollHeight - el.clientHeight / 2;
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <div ref={box} onClick={onPick ? undefined : onClose} style={{ position: "absolute", inset: 0, zIndex: 5, overflowX: "hidden", overflowY: "auto", background: INK.paper, border: `3px solid ${INK.edge}`, touchAction: "pan-y" }}>
+    <div onClick={onPick ? undefined : onClose} style={{ position: "absolute", inset: 0, zIndex: 5, borderStyle: "solid", borderWidth: SCROLL_BORDER,
+      borderImage: `url(${SCROLL_SHEET}) ${SCROLL_EDGE} fill / ${SCROLL_BORDER}px stretch`, imageRendering: "pixelated", background: "transparent" }}>
+    <div ref={box} style={{ position: "absolute", inset: 0, overflowX: "hidden", overflowY: "auto", touchAction: "pan-y" }}>
       <svg viewBox={`${shown.x0} 0 ${shown.vw} ${plan.h}`} style={{ display: "block", width: "100%", aspectRatio: `${shown.vw} / ${plan.h}` }}>
         {shown.ink.map((r, i) => <rect key={i} x={r.x} y={r.y} width={r.w} height={1.05} fill={r.wall ? INK.wall : INK.floor} />)}
         {shown.shut.map((l, i) => <line key={i} {...l} stroke={INK.cut} strokeWidth={0.9} strokeLinecap="round" />)}
@@ -378,6 +385,7 @@ function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been
           );
         })}
       </svg>
+    </div>
     </div>
   );
 }

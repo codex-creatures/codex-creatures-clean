@@ -16,16 +16,27 @@ export type WalkTiles = { name: string; floor: string; tunnel: string; kit?: Kit
 // wall's top turns into the back wall's cap and the south band as one L: nw
 // and ne (side × north) stand in the rock beside a north wall's ends, sw and se
 // (side × cap) where the south band meets a side wall. Without them a corner
-// is the pieces butted together.
+// is the pieces butted together. edges (optional): the floor's edge by a
+// wall, shading into the wall's stone, as overlays drawn over a floor tile
+// (n: a wall above it; w: a wall to its left; flipped for one below or to the
+// right, and drawn together where a floor has walls on two sides or more).
 export type KitSize = { px: number; row: number; north: number; cap: number; side: number };
 export type KitArt = { floor: string; north: string; cap: string; east: string; west: string; size: KitSize;
   corners?: { nw: string; ne: string; sw: string; se: string };
+  edges?: { n: string; w: string };
   worn?: { floors: string[]; walls: string[] } };
 // The first kit's sizes, and the art density of you and the things in the walk (objects.ts), which
 // stays at KIT_PX a unit whatever kit the walls are drawn with.
 export const KIT_PX = 32, KIT_ROW = 24, KIT_NORTH = 57, KIT_CAP = 15, KIT_SIDE = 12;
-const KIT_A = "/sprites/walk/kit-a-", KIT_E = "/sprites/walk/kit-e-";
+const KIT_A = "/sprites/walk/kit-a-", KIT_E = "/sprites/walk/kit-e-", KIT_F = "/sprites/walk/kit-f-";
 export const WALK_TILES: WalkTiles[] = [
+  // Kit F (2026-11-09, to try): kit E with its wall tops' stone toned down (the user: the cap trim stood
+  // out too much), and the floor shading into the walls at its edges (PixelLab inpaints: PIXELLAB.md).
+  { name: "Kit: dark fieldstone, soft edges", floor: `${KIT_F}floor.png`, tunnel: `${KIT_F}floor.png`,
+    kit: { floor: `${KIT_F}floor.png`, north: `${KIT_F}north.png`, cap: `${KIT_F}cap.png`, east: `${KIT_F}east.png`, west: `${KIT_F}west.png`,
+      size: { px: 48, row: 36, north: 87, cap: 15, side: 20 },
+      corners: { nw: `${KIT_F}nw.png`, ne: `${KIT_F}ne.png`, sw: `${KIT_F}sw.png`, se: `${KIT_F}se.png` },
+      edges: { n: `${KIT_F}edge-n.png`, w: `${KIT_F}edge-w.png` } } },
   // Kit E (the user's pick, 2026-11-09): dark crumbling fieldstone, 48 a tile, a mossy cobbled floor,
   // and corner pieces cut from its own walls (PIXELLAB.md).
   { name: "Kit: dark fieldstone", floor: `${KIT_E}floor.png`, tunnel: `${KIT_E}floor.png`,
@@ -54,8 +65,8 @@ export const WALK_HEROES: WalkHero[] = [
   { name: "Torchbearer (old)", sheet: "/sprites/walk/hero-b.png", cell: 48, frames: 6, feet: 40 },
 ];
 
-// What the game uses (the Labyrinth's "New"; the user's picks): kit E's dark
-// fieldstone (2026-11-09; the mossy kit before), and the cloaked torchbearer.
+// What the game uses (the Labyrinth's "New"; the user's picks): kit F, kit E's dark fieldstone
+// softened (2026-11-09, to try: kit E, WALK_TILES[1], is the one to go back to), and the cloaked torchbearer.
 export const WALK_KIT: KitArt = WALK_TILES[0].kit!;
 export const WALK_HERO: WalkHero = WALK_HEROES.find((h) => h.sheet.endsWith("hero-e.png"))!;
 
