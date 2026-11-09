@@ -897,7 +897,8 @@ How it came about, round by round: history.md.
        wall's cap and the south band as one L. Old kits still draw (butted corners).
        🧪 **Kit F, to try (2026-11-09):** kit E softened at the user's ask (the wall tops' trim stood
        out, and the floor met the walls in a hard line): the wall tops' stone toned to 75%
-       (`CAP_TONE`), and the floor shading into the walls at its edges, from two PixelLab inpaints
+       (`CAP_TONE`), fading into the dark away from the floor (to 12% at the far edge: the user,
+       "more natural"), and the floor shading into the walls at its edges, from two PixelLab inpaints
        of the floor (a wall above, a wall to the left) used as overlays (`KitArt.edges`), flipped
        for a wall below or to the right and drawn together, darkest winning, where two meet.
        Kit E is `WALK_TILES[1]`, to go back to. Next: small floor
