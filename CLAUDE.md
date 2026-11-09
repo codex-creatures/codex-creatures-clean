@@ -166,6 +166,10 @@ kill theirs.
 
 - **Match the surrounding code:** short helpers, comments that explain *why* in plain English,
   tuning numbers as named `export const`s at the top of the module (e.g. `ROOM_MIX`, `FREE_RUNS`).
+- **The Labyrinth screen is played end to end** in tests/dungeonPage.test.tsx (happy-dom, with the
+  canvases and the battle stood in for): what's on screen and saved after each step is pinned in
+  tests/golden/page/dungeon.json. A difference there is a regression unless the user approved the
+  change; then re-record with `UPDATE_PAGE_GOLDEN=1`, in its own "Intended change:" commit.
 - **Game rules go in `lib/` with a test.** Changes to the rules need a test or a sim result. Run
   `npm run test:all` and `npx tsc --noEmit` before committing. Mark a new test `slowIt` only if it
   takes seconds (and check it isn't just thousands of `expect` calls: collect failures, expect once).
