@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dungeonCells, shadeOf, uprightStretch, DEFAULT_PITCH, WALL_HEIGHT } from "../lib/render3d/dungeon3d";
+import { dungeonCells, shadeOf, uprightStretch, rockHeights, carvedMesh, DEFAULT_PITCH, WALL_HEIGHT, SOUTH_LIP } from "../lib/render3d/dungeon3d";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { layoutFloorplan } from "../lib/dungeon/layout";
 import { newWalkRun } from "../lib/world/migrate";
@@ -49,5 +49,50 @@ describe("the default view", () => {
     expect(36 / (48 * Math.sin(DEFAULT_PITCH))).toBeCloseTo(1, 6); // floor depth shows sin(pitch)
     expect(72 / (48 * WALL_HEIGHT * Math.cos(DEFAULT_PITCH))).toBeCloseTo(1, 1); // a wall's height shows cos(pitch)
     expect(uprightStretch(DEFAULT_PITCH) * Math.cos(DEFAULT_PITCH)).toBeCloseTo(1, 6);
+  });
+});
+
+describe("the grey experiment: rock carved by heights", () => {
+  // A 3 × 2 room in solid rock.
+  const fp = plan(["#####", "#...#", "#...#", "#####", "#####", "#####"]);
+  const all = (i: number) => fp.tiles[i] !== ROCK;
+  const H = WALL_HEIGHT;
+
+  it("open floor at 0, rock at the wall's height; with the low rim, the two rows south of floor drop to the lip", () => {
+    const full = rockHeights(fp, all, H, false);
+    expect(full[1 * 5 + 2]).toBe(0);
+    expect(full[0]).toBe(H);
+    const low = rockHeights(fp, all, H, true);
+    expect([low[3 * 5 + 2], low[4 * 5 + 2], low[5 * 5 + 2]]).toEqual([SOUTH_LIP, SOUTH_LIP, H]);
+    expect(low[3 * 5 + 0]).toBe(H); // (the side wall's column runs on at full height)
+  });
+  it("rock between two rooms keeps the lower room's north wall at full height", () => {
+    const two = plan(["#.#", "###", "#.#"]);
+    expect(rockHeights(two, (i) => two.tiles[i] !== ROCK, H, true)[1 * 3 + 1]).toBe(H);
+  });
+  it("unseen floor counts as rock: nothing gives away a place you haven't found", () => {
+    const h = rockHeights(fp, (i) => i === 1 * 5 + 1, H, false);
+    expect(h[1 * 5 + 2]).toBe(H);
+  });
+  it("one face per wall edge, facing the floor: north walls face south, side walls face in, south walls face north", () => {
+    const m = carvedMesh(rockHeights(fp, all, H, false), fp.w, fp.h, H, 2);
+    expect(m.quads).toMatchObject({ south: 3, north: 3, east: 2, west: 2 });
+    expect(m.position.length).toBe(Object.values(m.quads).reduce((a, b) => a + b, 0) * 18);
+  });
+  it("a floor quad a tile; the rock's tops merged along each row", () => {
+    const m = carvedMesh(rockHeights(fp, all, H, false), fp.w, fp.h, H, 0);
+    // Rows 0, 3, 4, 5: one top each; rows 1 and 2: rock, 3 floors, rock.
+    expect(m.quads.up).toBe(4 + 2 * 5);
+  });
+  it("every quad faces the way its normal says (wound counter-clockwise from the front)", () => {
+    const m = carvedMesh(rockHeights(fp, all, H, true), fp.w, fp.h, H, 1);
+    const bad: number[] = [];
+    for (let t = 0; t < m.position.length / 9; t++) {
+      const p = m.position.subarray(t * 9, t * 9 + 9), n = m.normal.subarray(t * 9, t * 9 + 3);
+      const u = [p[3] - p[0], p[4] - p[1], p[5] - p[2]], v = [p[6] - p[0], p[7] - p[1], p[8] - p[2]];
+      const c = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      if (c[0] * n[0] + c[1] * n[1] + c[2] * n[2] <= 0) bad.push(t);
+    }
+    expect(bad).toEqual([]);
   });
 });

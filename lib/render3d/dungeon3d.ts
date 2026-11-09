@@ -50,3 +50,86 @@ export function shadeOf(fp: Floorplan, known: Uint8Array): Float32Array {
 // wall behind); seen from above at `pitch` it shows shorter, so it's drawn this much taller to
 // keep its art's proportions on screen.
 export const uprightStretch = (pitch: number) => 1 / Math.cos(pitch);
+
+// ── 🧪 The grey geometry experiment (world/rendering.md §4.8 "Next experiment") ──
+// The dungeon carved out of solid rock: every tile has a height (0 where it's open, the wall's
+// height where it's rock), and one mesh is built from the heights: a top on every tile and a
+// face wherever two neighbours differ, facing the lower one. North walls' faces look at the
+// camera; south walls' faces look away from it, so the camera never draws them.
+
+// 🧪 How many rows of rock south of open floor the "low" south rim covers: at 60° a full-height
+// wall hides about 0.58 × its height of floor behind it (1.3 u for 2.25 u), so one row isn't enough.
+export const SOUTH_BAND = 2;
+// 🧪 How high the low south rim stands (u): a lip that says where the room ends, hiding nothing.
+export const SOUTH_LIP = 0.25;
+// 🧪 How far round the plan the rock goes on (u), so the edge of the world is never seen.
+export const ROCK_MARGIN = 24;
+
+// Each tile's height. `open` says which tiles are carved (the lab: walkable and seen, so rock
+// never gives away a place you haven't found). With `southLow`, rock just south of open floor
+// drops to the lip, unless it's also a north wall (open floor south of it): that keeps its face.
+export function rockHeights(fp: Floorplan, open: (i: number) => boolean, wall: number, southLow: boolean): Float32Array {
+  const h = new Float32Array(fp.w * fp.h);
+  const isOpen = (x: number, y: number) => x >= 0 && y >= 0 && x < fp.w && y < fp.h && open(y * fp.w + x);
+  for (let y = 0; y < fp.h; y++) for (let x = 0; x < fp.w; x++) {
+    if (isOpen(x, y)) continue;
+    let low = false;
+    if (southLow && !isOpen(x, y + 1)) for (let d = 1; d <= SOUTH_BAND; d++) if (isOpen(x, y - d)) low = true;
+    h[y * fp.w + x] = low ? SOUTH_LIP : wall;
+  }
+  return h;
+}
+
+// Which way a quad faces: up, or the way its normal points (+z is south).
+export type Facing = "up" | "north" | "south" | "east" | "west";
+export type CarvedMesh = { position: Float32Array; normal: Float32Array; quads: Record<Facing, number> };
+
+// The mesh of a height grid (w × h, rock beyond it to `margin`). Floors get a quad a tile (so
+// they can be told apart); rock tops are merged along each row, to keep the triangles down.
+export function carvedMesh(heights: Float32Array, w: number, h: number, wall: number, margin = ROCK_MARGIN): CarvedMesh {
+  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? wall : heights[y * w + x]);
+  const quads: Record<Facing, number> = { up: 0, north: 0, south: 0, east: 0, west: 0 };
+  // Two passes over the grid: count the quads, then write them into arrays made to fit.
+  let pos = new Float32Array(0), nor = new Float32Array(0), k = 0, counting = true;
+  // A quad from four corners (a, b, c, d) in order round it, wound so its front faces (nx, ny, nz).
+  // (Rebuilt as you explore, so it has to be quick: hence two passes and no growing arrays.)
+  const quad = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number, dx: number, dy: number, dz: number, nx: number, ny: number, nz: number, f: Facing) => {
+    quads[f]++;
+    if (counting) return;
+    const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
+    const front = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz >= 0;
+    pos.set(front ? [ax, ay, az, bx, by, bz, cx, cy, cz, ax, ay, az, cx, cy, cz, dx, dy, dz] : [ax, ay, az, dx, dy, dz, cx, cy, cz, ax, ay, az, cx, cy, cz, bx, by, bz], k);
+    for (let i = 0; i < 18; i += 3) { nor[k + i] = nx; nor[k + i + 1] = ny; nor[k + i + 2] = nz; }
+    k += 18;
+  };
+  for (const pass of [0, 1]) {
+    if (pass) {
+      const n = Object.values(quads).reduce((a, b) => a + b, 0) * 18;
+      pos = new Float32Array(n); nor = new Float32Array(n); counting = false;
+      for (const f of Object.keys(quads) as Facing[]) quads[f] = 0;
+    }
+    for (let y = -margin; y < h + margin; y++) {
+      for (let x = -margin; x < w + margin;) {
+        const t = at(x, y);
+        let end = x + 1;
+        if (t > 0) while (end < w + margin && at(end, y) === t) end++;
+        quad(x - 0.5, t, y - 0.5, end - 0.5, t, y - 0.5, end - 0.5, t, y + 0.5, x - 0.5, t, y + 0.5, 0, 1, 0, "up");
+        x = end;
+      }
+      for (let x = -margin; x < w + margin; x++) {
+        const t = at(x, y), east = at(x + 1, y), south = at(x, y + 1);
+        // Between this tile and the one east of it (at x + 0.5), facing the lower.
+        if (x + 1 < w + margin && t !== east) {
+          const lo = Math.min(t, east), hi = Math.max(t, east), X = x + 0.5, n = t < east ? -1 : 1;
+          quad(X, lo, y - 0.5, X, lo, y + 0.5, X, hi, y + 0.5, X, hi, y - 0.5, n, 0, 0, n < 0 ? "west" : "east");
+        }
+        // Between this tile and the one south of it (at y + 0.5).
+        if (y + 1 < h + margin && t !== south) {
+          const lo = Math.min(t, south), hi = Math.max(t, south), Z = y + 0.5, n = t < south ? -1 : 1;
+          quad(x - 0.5, lo, Z, x + 0.5, lo, Z, x + 0.5, hi, Z, x - 0.5, hi, Z, 0, 0, n, n < 0 ? "north" : "south");
+        }
+      }
+    }
+  }
+  return { position: pos, normal: nor, quads };
+}

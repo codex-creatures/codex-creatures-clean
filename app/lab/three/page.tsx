@@ -3,7 +3,9 @@
 // walk view (components/WalkView.tsx), on the same made-up run held in memory: the same seed gives
 // the same layout, placements and foes in both. Nothing is saved, and the game doesn't use any of
 // it. The switches try the camera's pitch, a perspective camera, sharp art-sized pixels, your
-// torch's shadows and the zoom; the numbers under them say how it's running.
+// torch's shadows and the zoom; the numbers under them say how it's running. "Grey geometry" is the
+// camera-and-geometry experiment (world/rendering.md §4.8): solid rock, flat greys, one plain light,
+// and the two side-wall candidates, A (a narrow perspective camera) and B (orthographic, leaned).
 // Dev tool: Three.js is loaded on this page only.
 
 import { useMemo, useState } from "react";
@@ -13,7 +15,7 @@ import type { View3D, Stats3D } from "@/components/WalkView3D";
 import { newWalkRun } from "@/lib/world/migrate";
 import { startWalkRun, walkInto, walkKeep, walkRoom, type WalkDungeon } from "@/lib/dungeon/walkRun";
 import { dungeonOf, type DungeonRun } from "@/lib/dungeon/run";
-import { DEFAULT_PITCH } from "@/lib/render3d/dungeon3d";
+import { DEFAULT_PITCH, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 
 const WalkView3D = dynamic(() => import("@/components/WalkView3D"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 
@@ -25,15 +27,21 @@ const TEAM = [
 // The same run for both views: a seeded roll (a seed per dungeon, changed by "Another run").
 const seeded = (seed: number) => { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); };
 const roll = (d: WalkDungeon, seed: number) => newWalkRun(startWalkRun(["a", "b", "c"], ["a", "b", "c"], { a: 1, b: 1, c: 1 }, 1, [{}, {}], false, seeded(seed), d));
+const SIXTY = Math.PI / 3;
+// The side-wall candidates, set up at 60°: A, a narrow perspective camera; B, orthographic with the lean.
+const CANDIDATES = { A: { perspective: true, fov: 20, lean: 0, pitch: SIXTY }, B: { perspective: false, fov: 20, lean: 0.03, pitch: SIXTY } };
 const PITCHES = [{ label: "35°", v: (35 * Math.PI) / 180 }, { label: "¾ (48.6°)", v: DEFAULT_PITCH }, { label: "60°", v: Math.PI / 3 }, { label: "75°", v: (75 * Math.PI) / 180 }];
 
 // Settings from the address, to share or shoot a view:
 // ?view=2d|3d&pitch=<degrees>&camera=persp&pixels=art&shadows=1&across=<n>&dungeon=1&seed=<n>
+// and the grey experiment: &geo=grey (pitch 60° unless given) &fov=<degrees> &lean=<n> &south=low &wall=<u>
 // and, 3D only: &seen=all (everything shown as seen) &room=<kind> (start in the first room of that kind: boss, encampment, chest…)
 function fromAddress() {
   const q = new URLSearchParams(window.location.search), num = (k: string) => (q.has(k) ? Number(q.get(k)) : undefined);
-  const view: View3D = { pitch: num("pitch") !== undefined ? (num("pitch")! * Math.PI) / 180 : DEFAULT_PITCH, perspective: q.get("camera") === "persp",
-    pixels: q.get("pixels") === "art" ? "art" : "device", shadows: q.get("shadows") === "1", across: num("across") ?? 15 };
+  const grey = q.get("geo") === "grey";
+  const view: View3D = { pitch: num("pitch") !== undefined ? (num("pitch")! * Math.PI) / 180 : grey ? SIXTY : DEFAULT_PITCH, perspective: q.get("camera") === "persp",
+    pixels: q.get("pixels") === "art" ? "art" : "device", shadows: q.get("shadows") === "1", across: num("across") ?? 15,
+    grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? 0, south: q.get("south") === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT };
   return { three: q.get("view") !== "2d", dungeon: (num("dungeon") === 1 ? 1 : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
 }
 
@@ -72,6 +80,28 @@ function ThreeLab() {
           {chip(false, "Another run", () => reroll(dungeon, seed + 1))}
         </div>
         {three && <>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {chip(!view.grey, "Kit art", () => set({ grey: false }))}
+            {chip(view.grey, "Grey geometry", () => set({ grey: true, ...CANDIDATES.B }))}
+          </div>
+          {view.grey && <>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>Side walls</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {chip(view.perspective, "A: perspective", () => set(CANDIDATES.A))}
+              {chip(!view.perspective, "B: ortho + lean", () => set(CANDIDATES.B))}
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {view.perspective
+                ? [10, 20, 30].map((v) => chip(view.fov === v, `FOV ${v}°`, () => set({ fov: v })))
+                : [0, 0.015, 0.03, 0.05].map((v) => chip(view.lean === v, v ? `Lean ${v}` : "No lean", () => set({ lean: v })))}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>South rock · wall height</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {chip(view.south === "full", "Full", () => set({ south: "full" }))}
+              {chip(view.south === "low", "Low rim", () => set({ south: "low" }))}
+              {[1.5, WALL_HEIGHT].map((v) => chip(view.wall === v, `${v} u`, () => set({ wall: v })))}
+            </div>
+          </>}
           <div style={{ fontSize: 12, opacity: 0.7 }}>Camera pitch</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{PITCHES.map((p) => chip(Math.abs(view.pitch - p.v) < 1e-6, p.label, () => set({ pitch: p.v })))}</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

@@ -196,3 +196,16 @@ at 60° facing north, solid rock tops, north faces only, no south faces, and the
 candidates (a) and (b) switchable side by side. Flat grey materials and one plain light, so only
 shape is judged. *Done when* the user picks a side-wall approach and a south-wall treatment by eye.
 Then lighting from light reach (no bleed through rock), then the art standard.
+
+**Built (2026-11-10), awaiting the user's pick:** the "Grey geometry" switch in /lab/three
+(`?view=3d&geo=grey`), on the same made-up runs (not a single stretch). The dungeon is one mesh carved
+from a height per tile (`rockHeights`, `carvedMesh` in lib/render3d/dungeon3d.ts): open floor at 0,
+rock at the wall's height out to `ROCK_MARGIN` (24 u) past the plan, a face wherever neighbours
+differ, facing the lower. Floor you haven't seen counts as rock, so nothing gives away an unfound
+place. South walls' faces look away from the camera, so they're never drawn. Flat greys (a faint
+floor checker, to show foreshortening), ambient plus one directional light, no torch or wall lights,
+no wall torches. Switches: **A** perspective (FOV 10°, 20°, 30°) or **B** orthographic with the lean
+(`transformed.x += lean × (x − your x) × height` in the vertex shader; 0, 0.015, 0.03, 0.05);
+south rock **full** or a **low rim** (`SOUTH_LIP` 0.25 u for `SOUTH_BAND` 2 rows, except rock that is
+also a north wall); wall height 1.5 or 2.25 u. A Labyrinth run is about 18k triangles in one draw
+call, rebuilt in about 12 ms as you see more (at most 4 times a second).

@@ -75,7 +75,8 @@ The user's visual direction (camera about 60° down facing north, north faces on
 side walls, solid rock, light that never passes through rock), what's still to validate, the
 prototype's limits and **the next experiment** (camera and geometry only, in grey) are in
 [world/rendering.md](world/rendering.md#48-the-3d-direction-the-user-2026-11-10). Not decided: the
-side- and south-wall techniques, lighting's technique, sprite sizes or a 3D art standard.
+side- and south-wall techniques, lighting's technique, sprite sizes or a 3D art standard. The grey
+geometry experiment is built (`/lab/three?view=3d&geo=grey`) and waits for the user's pick.
 
 ### Paused (the user, 2026-11-10)
 

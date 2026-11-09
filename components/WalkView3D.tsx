@@ -29,10 +29,14 @@ import { objectDef, artOf, FOE_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/ob
 import { WALK_TILES, WALK_HERO, KIT_LIGHTS, KIT_PX } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
-import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch } from "@/lib/render3d/dungeon3d";
+import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh } from "@/lib/render3d/dungeon3d";
 
-// What the lab can change, to compare.
-export type View3D = { pitch: number; perspective: boolean; pixels: "device" | "art"; shadows: boolean; across: number };
+// What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
+// solid rock in flat grey under one plain light, no art; `lean` (orthographic's side-wall candidate)
+// leans everything outwards with its height and its distance across from you; `fov` is the
+// perspective camera's; `south` and `wall` shape the rock.
+export type View3D = { pitch: number; perspective: boolean; pixels: "device" | "art"; shadows: boolean; across: number;
+  grey: boolean; lean: number; fov: number; south: "full" | "low"; wall: number };
 export type Stats3D = { fps: number; calls: number; triangles: number; lights: number };
 
 const KIT = WALK_TILES[0].kit!;        // kit F, the game's walls
@@ -192,7 +196,7 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
       camera.position.copy(target).addScaledVector(back, 60);
       camera.zoom = size.width / view.across;
     } else if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = 30;
+      camera.fov = view.fov;
       const halfW = Math.atan(Math.tan((camera.fov * Math.PI) / 360) * (size.width / size.height));
       camera.position.copy(target).addScaledVector(back, view.across / 2 / Math.tan(halfW));
     }
@@ -215,8 +219,8 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
       if (l) { pl.position.set(l.x, FIRE.height, l.y); pl.distance = l.r * 1.4; }
     });
     // What you've seen: black where you never have.
-    const seen = sim.known.reduce((n, k) => n + k, 0);
-    if (seen !== last.current.known && now - last.current.shadeAt > 150) {
+    const seen = view.grey ? -1 : sim.known.reduce((n, k) => n + k, 0);
+    if (!view.grey && seen !== last.current.known && now - last.current.shadeAt > 150) {
       last.current.known = seen; last.current.shadeAt = now;
       const s = shadeOf(live, sim.known), c = new THREE.Color();
       cells.floor.forEach((p, i) => floorRef.current?.setColorAt(i, c.setScalar(s[p.y * live.w + p.x])));
@@ -242,6 +246,15 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
     state.gl.info.reset();
   });
 
+  if (view.grey) return (
+    <>
+      <ambientLight intensity={GREY_LIGHT.ambient} />
+      <directionalLight position={GREY_LIGHT.from} intensity={GREY_LIGHT.sun} />
+      <GreyRock sim={sim} live={live} view={view} tap={tap} />
+      <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
+      <Sprites sim={sim} live={live} things={things()} room={room} stretch={stretch} sconces={false} />
+    </>
+  );
   return (
     <>
       <ambientLight color="#8a93b8" intensity={AMBIENT} />
@@ -258,7 +271,7 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
 }
 
 // Things, foes and wall torches: upright pictures, sized from their definitions (lib/world/objects.ts).
-function Sprites({ sim, live, things, room, stretch }: { sim: WalkSim; live: WalkSim["live"]; things: Thing[]; room: (id: string) => Room | undefined; stretch: number }) {
+function Sprites({ sim, live, things, room, stretch, sconces = true }: { sim: WalkSim; live: WalkSim["live"]; things: Thing[]; room: (id: string) => Room | undefined; stretch: number; sconces?: boolean }) {
   const seen = (x: number, y: number) => sim.known[Math.round(y) * live.w + Math.round(x)] === 1;
   const lightNow = (x: number, y: number) => sim.lightNow[Math.round(y) * live.w + Math.round(x)] === 1;
   const out: React.ReactNode[] = [];
@@ -278,7 +291,7 @@ function Sprites({ sim, live, things, room, stretch }: { sim: WalkSim; live: Wal
     const flip = (Math.cos(f.facing) > 0.1) !== (a.faces === "right");
     out.push(<Upright key={`foe:${f.room}:${f.index}`} src={a.src} x={f.x} y={f.y} w={flip ? -wd : wd} h={tall} below={0} />);
   }
-  for (const c of sim.sconces) {
+  for (const c of sconces ? sim.sconces : []) {
     if (!seen(c.x, c.y)) continue;
     const side = c.wall === "left" ? -1 : c.wall === "right" ? 1 : 0;
     const [tw, th] = KIT_LIGHTS.torchSize, w = tw / ART_PER_U, h = th / ART_PER_U;
@@ -301,4 +314,54 @@ function Upright({ src, x, y, w, h, below }: { src: string; x: number; y: number
       <meshLambertMaterial map={texture(src)} alphaTest={0.5} side={THREE.DoubleSide} />
     </mesh>
   );
+}
+
+// ── 🧪 The grey experiment: the dungeon carved out of solid rock (lib/render3d/dungeon3d.ts) ──
+const GREY = { floor: 0.34, floorAlt: 0.3, rock: 0.62 };              // 🧪 flat greys: floor (a faint checker, to show foreshortening), rock
+const GREY_LIGHT = { ambient: 0.55, sun: 0.9, from: [3.5, 10, 7] as [number, number, number] }; // 🧪 one plain light, from above and a little south-east, so tops, north faces and each side face read as different values
+
+function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"]; view: View3D; tap: (p: THREE.Vector3) => void }) {
+  // The lean, in the vertex shader: a point moves outwards by lean × its height × how far across from you it is.
+  const uni = useRef({ uLean: { value: 0 }, uCx: { value: 0 } });
+  const mat = useMemo(() => {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, uni.current);
+      sh.vertexShader = "uniform float uLean;\nuniform float uCx;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\ntransformed.x += uLean * (transformed.x - uCx) * transformed.y;");
+    };
+    return m;
+  }, []);
+  // Built from what you've seen (again as you see more, 4 times a second at most: about 12 ms a Labyrinth).
+  const build = () => {
+    const h = rockHeights(live, (i) => live.tiles[i] !== 0 && sim.known[i] === 1, view.wall, view.south === "low");
+    const m = carvedMesh(h, live.w, live.h, view.wall);
+    const col = new Float32Array(m.position.length);
+    for (let v = 0; v < m.position.length; v += 3) {
+      const up = m.normal[v + 1] > 0.5 && m.position[v + 1] === 0;
+      // (a floor quad's corners sit on half-units: its tile is the one its first triangle's centre is in)
+      const t = Math.floor(v / 18) * 18, cx = (m.position[t] + m.position[t + 3] + m.position[t + 6]) / 3, cz = (m.position[t + 2] + m.position[t + 5] + m.position[t + 8]) / 3;
+      const g = up ? ((Math.round(cx) + Math.round(cz)) & 1 ? GREY.floorAlt : GREY.floor) : GREY.rock;
+      col[v] = col[v + 1] = col[v + 2] = g;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(m.position, 3));
+    geo.setAttribute("normal", new THREE.BufferAttribute(m.normal, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    geo.computeBoundingSphere();
+    return geo;
+  };
+  const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
+  useEffect(() => () => geo?.dispose(), [geo]);
+  const last = useRef({ key: "", at: -Infinity, live });
+  useFrame(() => {
+    uni.current.uLean.value = view.lean; uni.current.uCx.value = sim.me.x;
+    const now = performance.now(), key = `${sim.known.reduce((n, k) => n + k, 0)}|${view.wall}|${view.south}`;
+    if ((key !== last.current.key && now - last.current.at > 250) || live !== last.current.live) {
+      last.current = { key, at: now, live };
+      setGeo(build());
+    }
+  });
+  if (!geo) return null;
+  // Taps count on the floor only (a tap on rock's top would land on the wrong tile).
+  return <mesh geometry={geo} material={mat} onPointerDown={(e) => { if (e.point.y < 0.01) { e.stopPropagation(); tap(e.point); } }} />;
 }
