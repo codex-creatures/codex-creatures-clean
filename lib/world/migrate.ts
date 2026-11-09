@@ -55,6 +55,7 @@ const WALLS_V3 = new Set([...WALLS, "south"]);
 const whole = (n: unknown) => typeof n === "number" && Number.isInteger(n);
 // Stage B's candles, only ever placed from world version 5: a v3 or v4 run holding one is damaged, not read.
 const CANDLES_V = 5, MOUNTED = new Set(MOUNTED_DEFS);
+const NO_WALL_CANDLES_V = 8; // (wall torches instead: place.ts)
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
 // of instances, each with a string id (no two the same), a known definition, a
@@ -76,6 +77,7 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (typeof p.def !== "string" || !OBJECTS[p.def]) return `${p.id}: unknown definition ${String(p.def)}`;
     if (typeof p.room !== "string" || !p.room) return `${p.id}: no room`;
     if ((MOUNTED.has(p.def) || p.def === "floor-candle") && v < CANDLES_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
+    if (MOUNTED.has(p.def) && v >= NO_WALL_CANDLES_V) return `${p.id}: a wall candle in a world version ${v} run (there are none from ${NO_WALL_CANDLES_V})`;
     if (MOUNTED.has(p.def) && p.wall === undefined) return `${p.id}: a mounted candle on no wall`;
     if (p.def === "floor-candle" && p.start !== undefined) return `${p.id}: a floor candle that starts lit`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;

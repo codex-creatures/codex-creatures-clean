@@ -8,7 +8,7 @@ import { dungeonOf, type DungeonRun } from "../lib/dungeon/run";
 import { layoutFloorplan } from "../lib/dungeon/layout";
 import { ROCK, type Pt } from "../lib/dungeon/floorplan";
 import { CANDLE_CLEAR, CANDLE_RADIUS, DARK_KEPT, LIGHT_GAP, MOUNTED_CAP, FLOOR_CANDLE_CAP, FLOOR_KEEP_OFF, CANDLE_MIN_DARK, CANDLE_GROUP } from "../lib/dungeon/torch";
-import { placeWalk, candleCount, mountedDef, MOUNTED_DEFS, PLACED_V, type Placed } from "../lib/world/place";
+import { placeWalk, candleCount, mountedDef, MOUNTED_DEFS, type Placed } from "../lib/world/place";
 import { attachmentSlots, slotKey, panelKey, occupant, type Slot } from "../lib/world/occupancy";
 import { navBlocked } from "../lib/world/policy";
 import { panelOfSubcell, footprintPanels } from "../lib/world/grid";
@@ -176,16 +176,15 @@ describe("v5 changes only the candles", () => {
   });
 });
 
-describe("new runs (B5; world version 7 since 2026-11-09)", () => {
+describe("runs with wall candles (B5; new runs from v5 to v7: v8's are tests/placeV8.test.ts)", () => {
   const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
   const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
-  const fresh = (d: 0 | 1, s: number) => { const r = made(d, s); return newWalkRun({ ...r, walk: { ...r.walk!, v: undefined } }); };
+  // A v7 run as new runs were made then: placed once, by v7's rules.
+  const fresh = (d: 0 | 1, s: number) => { const r = made(d, s, 7); return { ...r, walk: { ...r.walk!, placed: placedOf(r).placed } }; };
   // The first Encampment run with candles of both kinds.
   const run = Array.from({ length: 20 }, (_, k) => k + 1).map((k) => fresh(0, k))
     .find((r) => r.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def)) && r.walk!.placed!.some((i) => i.def === "floor-candle"))!;
-  it("are made at the newest version, survive save, export and reload unchanged, and open as they were made", () => {
-    expect(PLACED_V).toBe(7);
-    expect(WALK_V).toBe(7);
+  it("a v7 run survives save, export and reload unchanged, and opens as it was made", () => {
     expect(run.walk!.v).toBe(7);
     expect(run.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def) || i.def === "floor-candle")).toBe(true);
     expect(run.walk!.placed).toEqual(placedOf(run).placed);
@@ -217,9 +216,9 @@ describe("new runs (B5; world version 7 since 2026-11-09)", () => {
     expect(quiet(() => migrateWalkRun(v4)).outcome).toBe("damaged");
   });
   it("an older copy of the game holds a run from a newer version untouched", () => {
-    expect(unsupportedRun({ walk: { v: 7 } })).toBe(false);
-    expect(unsupportedRun({ walk: { v: 8 } })).toBe(true);
-    const newer = { ...run, walk: { ...run.walk!, v: 8 } };
+    expect(unsupportedRun({ walk: { v: WALK_V } })).toBe(false);
+    expect(unsupportedRun({ walk: { v: WALK_V + 1 } })).toBe(true);
+    const newer = { ...run, walk: { ...run.walk!, v: WALK_V + 1 } };
     expect(migrateWalkRun(newer)).toEqual({ run: newer, outcome: "unsupported", problem: expect.any(String) });
   });
   it("the walk reads them: mounted candles as candles at the floor by their wall, lit as rolled or as you lit them; floor candles unlit to start, lit by walking near as any candle", () => {
@@ -285,13 +284,13 @@ describe("world version 6's floor candles (the user's play-test, 2026-11-09)", (
 describe("the v5 candle sim", () => {
   // (Async, with a pause between runs, so the test runner's worker can still report while it works.)
   const breathe = () => new Promise((ok) => setTimeout(ok, 0));
-  slowIt("new runs: about 0.5 mounted candles a room, lit shares by kind, and the dog-leg spread", async () => {
+  slowIt("v7: about 0.5 mounted candles a room, lit shares by kind, and the dog-leg spread", async () => {
     const by: Record<string, { rooms: number; mounted: number; floor: number; lit: number }> = {};
     const add = (k: string, m: number, f: number, l: number) => { const r = (by[k] ??= { rooms: 0, mounted: 0, floor: 0, lit: 0 }); r.rooms++; r.mounted += m; r.floor += f; r.lit += l; };
     let spread = 0, sameLeg = 0;
     for (const d of [0, 1] as const) for (let s = 1; s <= 10; s++) {
       await breathe();
-      const run = made(d, s, PLACED_V), p = placedOf(run), fp = layoutFloorplan(run.walk!.layout); // (new runs' version: the density is set per version)
+      const run = made(d, s, 7), p = placedOf(run), fp = layoutFloorplan(run.walk!.layout); // (v7, the last with wall candles: the density is set per version)
       for (const b of p.lighting!.budgets) {
         const rects = fp.rooms[b.room], mine = p.placed.filter((i) => i.room === b.room && MOUNTED_DEFS.includes(i.def));
         const pillars = rects.some((r) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (fp.tiles[y * fp.w + x] === ROCK) return true; return false; });

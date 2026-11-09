@@ -17,7 +17,9 @@
 //    walls and pillars (the user's play-test, 2026-11-09): new runs only.
 // 7: the candle density retuned for the smaller rooms guided layouts and the
 //    Cyclops's 2-tile blocks make (2026-11-09): new runs only.
-export const WALK_V = 7;
+// 8: no wall candles: the same budget places wall torches on rooms' walls and
+//    pillars instead (the user, 2026-11-09): new runs only.
+export const WALK_V = 8;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

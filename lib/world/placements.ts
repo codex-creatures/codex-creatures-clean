@@ -55,8 +55,10 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
     spots.set(i.id, p);
     if (i.def === "sconce" || i.def === "sconce-side") {
       const s: Sconce = { id: i.id, room: i.room, ...p, lit: i.start === "lit" || lit.has(i.id) };
-      // (As torch.ts gives them: a room's torches are all on its top wall and carry no `wall`; a tunnel's say which.)
-      sconces.push(i.wall && !walk.layout.rooms[i.room] ? { ...s, wall: WALLS[i.wall] } : s);
+      // (As torch.ts gives them: a room's top-wall torches carry no `wall`; a tunnel's say which, and so
+      // do a room's on its side walls or a pillar's sides, from world version 8.)
+      const side = i.wall === "west" || i.wall === "east";
+      sconces.push(i.wall && (!walk.layout.rooms[i.room] || side) ? { ...s, wall: WALLS[i.wall] } : s);
     } else if (i.def === "candle") {
       if (i.legacy && fires.some((f) => Math.hypot(f.x - p.x, f.y - p.y) < BY_FIRE)) continue;
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });

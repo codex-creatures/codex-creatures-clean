@@ -5,7 +5,8 @@
 // Each version's rules give exactly what they gave (v3: tests/placeV3.test.ts;
 // v4: tests/placeV4Pinned.test.ts). Version 5 (stage B, new runs from
 // 2026-11-08) adds the candle budget, candles on walls' and pillars' faces,
-// and floor candles as placed objects. Version 6 (the user's play-test,
+// and floor candles as placed objects (version 8, the user, 2026-11-09: no wall
+// candles; the same budget places wall torches instead). Version 6 (the user's play-test,
 // 2026-11-09) keeps floor candles out of the mounted candles' light and off
 // the panels by walls and pillars (candles there are the mounted ones).
 //
@@ -73,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 7;          // the world version a new run is placed at (the candle density for smaller rooms; version.ts)
+export const PLACED_V = 8;          // the world version a new run is placed at (no wall candles: wall torches instead; version.ts)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
 export const CANDLE_FIRE_GAP = 2;   // panels a candle keeps from a campfire (today's "hidden by the fire" distance)
@@ -269,6 +270,10 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
   const v = walk.v ?? PLACED_V, v4 = v >= 4, v5 = v >= 5, v6 = v >= 6;
   // (v7) the density dials for the smaller rooms (torch.ts).
   const darkPer = v >= 7 ? DARK_PER_V7 : DARK_PER, floorPer = v >= 7 ? FLOOR_PER_V7 : FLOOR_PER;
+  // (v8) The budget's lights are wall torches, not candles (the user, 2026-11-09: wall candles no
+  // longer exist): a torch's reach, a torch's definition and id, never on a south wall (no art
+  // for one seen from behind).
+  const v8 = v >= 8, mountedReach = v8 ? SCONCE_RADIUS : CANDLE_RADIUS;
   const o = newOccupancy(fp, v4);
   // (v3: every floor thing claims its whole panel, the policy it was placed by.)
   const claims: PanelClaims | null = v4 ? null : new Map();
@@ -434,7 +439,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     for (const f of walk.fires ?? []) { shine(f, f.left > 0 ? CAMPFIRE_LIGHT : EMBER_LIGHT); lights.push(f); }
     // Each candle's light, worked out once for its floor panel (every slot on a panel lights the same).
     const glow = new Map<string, Uint8Array>();
-    const glowOf = (p: Pt) => { let a = glow.get(panelKey(p)); if (!a) { a = torchLit(fp, p, CANDLE_RADIUS); glow.set(panelKey(p), a); } return a; };
+    const glowOf = (p: Pt) => { let a = glow.get(panelKey(p)); if (!a) { a = torchLit(fp, p, mountedReach); glow.set(panelKey(p), a); } return a; };
     const slots = attachmentSlots(fp);
     for (const id of parents) {
       const r = room(id), kind = r?.kind ?? "", group = CANDLE_GROUP[kind] ?? "none", weight = CANDLE_WEIGHT[group];
@@ -452,7 +457,9 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       const usedPillars = new Set<string>(), inRect = rects.map(() => 0);
       const tieOf = (key: string) => passRng(walk.seed, `${id}|${key}`, MOUNTED_PASS)();
       // The room's own faces (walls and pillars; not its tunnels'), clear of doors, with nothing solid in front.
-      const mine = slots.filter((sl) => inRects(rects, sl.floor) && o.reserved.get(panelKey(sl.floor))?.why !== "door" && !solidInFront(sl));
+      const mine = slots.filter((sl) => inRects(rects, sl.floor) && o.reserved.get(panelKey(sl.floor))?.why !== "door" && !solidInFront(sl) && !(v8 && sl.wall === "south"));
+      // (v8) The room's torches so far, so a new one takes the next id.
+      let torchesHere = placed.filter((i) => i.room === id && (i.def === "sconce" || i.def === "sconce-side")).length;
       for (let n = 0; n < wanted; n++) {
         const darkRects = rects.map((_, k) => panels.filter((p) => rectOf(p) === k && isDark.has(panelKey(p))).length >= CANDLE_MIN_DARK);
         const unlitDark = darkRects.some((d, k) => d && inRect[k] === 0);
@@ -473,11 +480,14 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
           if (better) best = { sl, gain };
         }
         if (!best) { report.omitted.push({ id: nextCandle(id), room: id, what: `no slot for mounted candle ${n + 1} of ${wanted}` }); break; }
-        const { sl } = best, cid = nextCandle(id), g = glowOf(sl.floor);
+        const { sl } = best, cid = v8 ? `${id}:${torchesHere++}` : nextCandle(id), g = glowOf(sl.floor);
         const startsLit = rng() < (sl.kind === "pillar" ? PILLAR_LIT : MOUNTED_LIT)[group];
-        countCandle(id);
         takeSlot(o, sl.key, cid);
-        placed.push({ id: cid, def: mountedDef(sl.wall), room: id, ...slotLightCell(sl), wall: sl.wall, ...(startsLit ? { start: "lit" as const } : {}) });
+        if (v8) placed.push({ id: cid, def: sl.wall === "north" ? "sconce" : "sconce-side", room: id, ...anchorOf(sl.floor), wall: sl.wall, ...(startsLit ? { start: "lit" as const } : {}) });
+        else {
+          countCandle(id);
+          placed.push({ id: cid, def: mountedDef(sl.wall), room: id, ...slotLightCell(sl), wall: sl.wall, ...(startsLit ? { start: "lit" as const } : {}) });
+        }
         for (const p of panels) if (g[p.y * fp.w + p.x] && isDark.delete(panelKey(p))) candleLit.set(panelKey(p), cid);
         lights.push(sl.floor); mountedAt.push(sl.floor);
         if (sl.kind === "pillar") usedPillars.add(pillarOf.get(panelKey(sl.rock)) ?? "");
