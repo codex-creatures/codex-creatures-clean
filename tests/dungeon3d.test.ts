@@ -95,4 +95,23 @@ describe("the grey experiment: rock carved by heights", () => {
     }
     expect(bad).toEqual([]);
   });
+  it("each quad names its tile: a top its first tile, a face its rocky side, -1 past the plan", () => {
+    const m = carvedMesh(rockHeights(fp, all, H, false), fp.w, fp.h, H, 1);
+    expect(m.tile).toHaveLength(m.position.length / 18);
+    const floors = [...m.tile].filter((t, q) => m.normal[q * 18 + 1] > 0.5 && m.position[q * 18 + 1] === 0);
+    expect(floors.sort((a, b) => a - b)).toEqual([6, 7, 8, 11, 12, 13]);
+    const faces = [...m.tile].filter((t, q) => m.normal[q * 18 + 1] < 0.5);
+    expect(faces.every((t) => t >= 0 && fp.tiles[t] === ROCK)).toBe(true);
+    expect([...m.tile].some((t) => t === -1)).toBe(true);
+  });
+  it("tops aren't merged across a change in split (so seen and unseen rock can be coloured apart)", () => {
+    const h = rockHeights(fp, all, H, false);
+    const split = new Uint8Array(fp.w * fp.h); split[0 * 5 + 2] = 1;
+    expect(carvedMesh(h, fp.w, fp.h, H, 0, split).quads.up).toBe(carvedMesh(h, fp.w, fp.h, H, 0).quads.up + 2);
+  });
+  it("heights are presentation only: lowering the rim leaves the floorplan (walking, sight, light) as it was", () => {
+    const before = Uint8Array.from(fp.tiles);
+    rockHeights(fp, all, H, true);
+    expect(fp.tiles).toEqual(before);
+  });
 });

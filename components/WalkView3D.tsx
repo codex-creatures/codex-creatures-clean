@@ -29,14 +29,15 @@ import { objectDef, artOf, FOE_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/ob
 import { WALK_TILES, WALK_HERO, KIT_LIGHTS, KIT_PX } from "@/lib/sprites/walk";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
-import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh } from "@/lib/render3d/dungeon3d";
+import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, ROCK_MARGIN } from "@/lib/render3d/dungeon3d";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
 // solid rock in flat grey under one plain light, no art; `lean` (orthographic's side-wall candidate)
 // leans everything outwards with its height and its distance across from you; `fov` is the
-// perspective camera's; `south` and `wall` shape the rock.
+// perspective camera's; `south` and `wall` shape the rock; `unseen` is how places you haven't
+// found show: as solid rock, carved but black (as the 2D view does), or carved and shown (to judge).
 export type View3D = { pitch: number; perspective: boolean; pixels: "device" | "art"; shadows: boolean; across: number;
-  grey: boolean; lean: number; fov: number; south: "full" | "low"; wall: number };
+  grey: boolean; lean: number; fov: number; south: "full" | "low"; wall: number; unseen: "rock" | "black" | "shown" };
 export type Stats3D = { fps: number; calls: number; triangles: number; lights: number };
 
 const KIT = WALK_TILES[0].kit!;        // kit F, the game's walls
@@ -317,7 +318,7 @@ function Upright({ src, x, y, w, h, below }: { src: string; x: number; y: number
 }
 
 // ── 🧪 The grey experiment: the dungeon carved out of solid rock (lib/render3d/dungeon3d.ts) ──
-const GREY = { floor: 0.34, floorAlt: 0.3, rock: 0.62 };              // 🧪 flat greys: floor (a faint checker, to show foreshortening), rock
+const GREY = { floor: 0.34, floorAlt: 0.3, rock: 0.62, rim: 0.46 };   // 🧪 flat greys: floor (a faint checker, to show foreshortening), rock, and the lowered south rim's top (darker, so it reads as a step down)
 const GREY_LIGHT = { ambient: 0.55, sun: 0.9, from: [3.5, 10, 7] as [number, number, number] }; // 🧪 one plain light, from above and a little south-east, so tops, north faces and each side face read as different values
 
 function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"]; view: View3D; tap: (p: THREE.Vector3) => void }) {
@@ -332,16 +333,19 @@ function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"
     return m;
   }, []);
   // Built from what you've seen (again as you see more, 4 times a second at most: about 12 ms a Labyrinth).
+  // Only the picture: the sim still walks, sees and lights by the floorplan, whatever shows here.
   const build = () => {
-    const h = rockHeights(live, (i) => live.tiles[i] !== 0 && sim.known[i] === 1, view.wall, view.south === "low");
-    const m = carvedMesh(h, live.w, live.h, view.wall);
+    const known = (i: number) => view.unseen === "shown" || sim.known[i] === 1;
+    const h = rockHeights(live, (i) => live.tiles[i] !== 0 && (view.unseen !== "rock" || known(i)), view.wall, view.south === "low");
+    // "black": everything's carved, and what's beside nothing you've seen is drawn black.
+    const lit = view.unseen === "black" ? shadeOf(live, sim.known).map((v) => (v > 0 ? 1 : 0)) : null;
+    const m = carvedMesh(h, live.w, live.h, view.wall, lit ? 0 : ROCK_MARGIN, lit ? Uint8Array.from(lit) : undefined);
     const col = new Float32Array(m.position.length);
-    for (let v = 0; v < m.position.length; v += 3) {
-      const up = m.normal[v + 1] > 0.5 && m.position[v + 1] === 0;
-      // (a floor quad's corners sit on half-units: its tile is the one its first triangle's centre is in)
-      const t = Math.floor(v / 18) * 18, cx = (m.position[t] + m.position[t + 3] + m.position[t + 6]) / 3, cz = (m.position[t + 2] + m.position[t + 5] + m.position[t + 8]) / 3;
-      const g = up ? ((Math.round(cx) + Math.round(cz)) & 1 ? GREY.floorAlt : GREY.floor) : GREY.rock;
-      col[v] = col[v + 1] = col[v + 2] = g;
+    for (let q = 0; q < m.tile.length; q++) {
+      const v = q * 18, ti = m.tile[q], y = m.position[v + 1], up = m.normal[v + 1] > 0.5;
+      const g = up && y === 0 ? (((ti % live.w) + Math.floor(ti / live.w)) & 1 ? GREY.floorAlt : GREY.floor)
+        : up && y < view.wall ? GREY.rim : GREY.rock;
+      col.fill(lit && (ti < 0 || !lit[ti]) ? 0 : g, v, v + 18);
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(m.position, 3));
@@ -355,7 +359,7 @@ function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"
   const last = useRef({ key: "", at: -Infinity, live });
   useFrame(() => {
     uni.current.uLean.value = view.lean; uni.current.uCx.value = sim.me.x;
-    const now = performance.now(), key = `${sim.known.reduce((n, k) => n + k, 0)}|${view.wall}|${view.south}`;
+    const now = performance.now(), key = `${sim.known.reduce((n, k) => n + k, 0)}|${view.wall}|${view.south}|${view.unseen}`;
     if ((key !== last.current.key && now - last.current.at > 250) || live !== last.current.live) {
       last.current = { key, at: now, live };
       setGeo(build());

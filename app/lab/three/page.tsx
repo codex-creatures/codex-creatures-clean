@@ -6,9 +6,11 @@
 // torch's shadows and the zoom; the numbers under them say how it's running. "Grey geometry" is the
 // camera-and-geometry experiment (world/rendering.md §4.8): solid rock, flat greys, one plain light,
 // and the two side-wall candidates, A (a narrow perspective camera) and B (orthographic, leaned).
+// Its baseline is the user's pick (2026-11-10): B, lean 0.03, 60°, 2.25 u walls. "Flip" swaps a
+// pair of choices every second, so a small difference shows as movement.
 // Dev tool: Three.js is loaded on this page only.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import WalkView from "@/components/WalkView";
 import type { View3D, Stats3D } from "@/components/WalkView3D";
@@ -34,14 +36,15 @@ const PITCHES = [{ label: "35°", v: (35 * Math.PI) / 180 }, { label: "¾ (48.6�
 
 // Settings from the address, to share or shoot a view:
 // ?view=2d|3d&pitch=<degrees>&camera=persp&pixels=art&shadows=1&across=<n>&dungeon=1&seed=<n>
-// and the grey experiment: &geo=grey (pitch 60° unless given) &fov=<degrees> &lean=<n> &south=low &wall=<u>
+// and the grey experiment: &geo=grey (pitch 60° and lean 0.03 unless given) &fov=<degrees> &lean=<n> &south=low &wall=<u> &unseen=black|shown
 // and, 3D only: &seen=all (everything shown as seen) &room=<kind> (start in the first room of that kind: boss, encampment, chest…)
 function fromAddress() {
   const q = new URLSearchParams(window.location.search), num = (k: string) => (q.has(k) ? Number(q.get(k)) : undefined);
   const grey = q.get("geo") === "grey";
   const view: View3D = { pitch: num("pitch") !== undefined ? (num("pitch")! * Math.PI) / 180 : grey ? SIXTY : DEFAULT_PITCH, perspective: q.get("camera") === "persp",
     pixels: q.get("pixels") === "art" ? "art" : "device", shadows: q.get("shadows") === "1", across: num("across") ?? 15,
-    grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? 0, south: q.get("south") === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT };
+    grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? (grey ? CANDIDATES.B.lean : 0), south: q.get("south") === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT,
+    unseen: q.get("unseen") === "black" ? "black" : q.get("unseen") === "shown" ? "shown" : "rock" };
   return { three: q.get("view") !== "2d", dungeon: (num("dungeon") === 1 ? 1 : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
 }
 
@@ -62,6 +65,14 @@ function ThreeLab() {
   const say = (s: string) => setLog((l) => [s, ...l].slice(0, 5));
   const reroll = (d: WalkDungeon, s: number) => { setDungeon(d); setSeed(s); setRun(roll(d, s)); setN((k) => k + 1); };
   const set = (v: Partial<View3D>) => setView((was) => ({ ...was, ...v }));
+  // Flip: swap one pair every second (south rock full ↔ low rim; unfound places rock ↔ black).
+  const [flip, setFlip] = useState<"south" | "unseen" | null>(null);
+  useEffect(() => {
+    if (!flip) return;
+    const t = setInterval(() => setView((v) => flip === "south" ? { ...v, south: v.south === "full" ? "low" : "full" } : { ...v, unseen: v.unseen === "rock" ? "black" : "rock" }), 1000);
+    return () => clearInterval(t);
+  }, [flip]);
+  const flipChip = (k: "south" | "unseen") => chip(flip === k, flip === k ? "Flipping…" : "Flip", () => setFlip((f) => (f === k ? null : k)));
   const chip = (on: boolean, label: string, onClick: () => void) => <button className="chip" data-active={on} onClick={onClick} style={{ minHeight: 36 }}>{label}</button>;
   const here = run.path[run.path.length - 1];
   const enter = (id: string, st: Parameters<typeof walkKeep>[1]) => { setRun((r) => walkInto(walkKeep(r, st), id)); say(`Into ${run.map.nodes[id].kind}`); };
@@ -95,16 +106,25 @@ function ThreeLab() {
                 ? [10, 20, 30].map((v) => chip(view.fov === v, `FOV ${v}°`, () => set({ fov: v })))
                 : [0, 0.015, 0.03, 0.05].map((v) => chip(view.lean === v, v ? `Lean ${v}` : "No lean", () => set({ lean: v })))}
             </div>
-            <div style={{ fontSize: 12, opacity: 0.7 }}>South rock · wall height</div>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>South rock (stand by a room&apos;s south wall)</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {chip(view.south === "full", "Full", () => set({ south: "full" }))}
               {chip(view.south === "low", "Low rim", () => set({ south: "low" }))}
-              {[1.5, WALL_HEIGHT].map((v) => chip(view.wall === v, `${v} u`, () => set({ wall: v })))}
+              {flipChip("south")}
             </div>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>Places not found yet</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {chip(view.unseen === "rock", "Solid rock", () => set({ unseen: "rock" }))}
+              {chip(view.unseen === "black", "Black", () => set({ unseen: "black" }))}
+              {chip(view.unseen === "shown", "Shown", () => set({ unseen: "shown" }))}
+              {flipChip("unseen")}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>Wall height</div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{[1.5, WALL_HEIGHT].map((v) => chip(view.wall === v, `${v} u`, () => set({ wall: v })))}</div>
           </>}
           <div style={{ fontSize: 12, opacity: 0.7 }}>Camera pitch</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{PITCHES.map((p) => chip(Math.abs(view.pitch - p.v) < 1e-6, p.label, () => set({ pitch: p.v })))}</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {!view.grey && <><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {chip(!view.perspective, "Orthographic", () => set({ perspective: false }))}
             {chip(view.perspective, "Perspective", () => set({ perspective: true }))}
           </div>
@@ -112,7 +132,8 @@ function ThreeLab() {
             {chip(view.pixels === "device", "Screen pixels", () => set({ pixels: "device" }))}
             {chip(view.pixels === "art", "Art pixels", () => set({ pixels: "art" }))}
             {chip(view.shadows, `Torch shadows: ${view.shadows ? "on" : "off"}`, () => set({ shadows: !view.shadows }))}
-          </div>
+          </div></>}
+          {view.grey && <div style={{ fontSize: 12, opacity: 0.6 }}>(Grey: the camera is A or B; no art or torch, so no pixel or shadow switches.)</div>}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{[11, 15, 19].map((a) => chip(view.across === a, `${a} across`, () => set({ across: a })))}</div>
           <div className="pixel-font" style={{ fontSize: 13, color: "#9fe0a8" }}>
             {stats ? `${stats.fps} fps · ${stats.calls} draw calls · ${(stats.triangles / 1000).toFixed(1)}k triangles · ${stats.lights} lights near` : "…"}

@@ -76,7 +76,9 @@ side walls, solid rock, light that never passes through rock), what's still to v
 prototype's limits and **the next experiment** (camera and geometry only, in grey) are in
 [world/rendering.md](world/rendering.md#48-the-3d-direction-the-user-2026-11-10). Not decided: the
 side- and south-wall techniques, lighting's technique, sprite sizes or a 3D art standard. The grey
-geometry experiment is built (`/lab/three?view=3d&geo=grey`) and waits for the user's pick.
+geometry experiment is built (`/lab/three?view=3d&geo=grey`). The user's provisional baseline: B
+(orthographic, lean 0.03), 60°, 2.25 u walls. Still to pick: south rock (full or low rim) and how
+unfound places show (solid rock or black), then lighting and materials.
 
 ### Paused (the user, 2026-11-10)
 

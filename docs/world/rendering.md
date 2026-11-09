@@ -209,3 +209,25 @@ no wall torches. Switches: **A** perspective (FOV 10°, 20°, 30°) or **B** ort
 south rock **full** or a **low rim** (`SOUTH_LIP` 0.25 u for `SOUTH_BAND` 2 rows, except rock that is
 also a north wall); wall height 1.5 or 2.25 u. A Labyrinth run is about 18k triangles in one draw
 call, rebuilt in about 12 ms as you see more (at most 4 times a second).
+
+**Provisional baseline (the user, 2026-11-10, after trying it, phone included):** side walls **B**,
+orthographic with **lean 0.03**, pitch **60°**, walls **2.25 u**; walking and performance felt
+good. It's the grey switch's default (and `?geo=grey`'s). Still to pick, made easier to compare:
+
+- **South rock, full or low rim:** the rim's top is now its own darker grey (`GREY.rim`), so it
+  reads as a step down, and "Flip" swaps the two every second. The difference is at a room's
+  south edge: full rock hides about 1.3 u of floor (and you, standing there); the rim doesn't.
+- **Places not found yet:** solid rock (unfound floor is rock: the carved-from-rock look), black
+  (everything carved, and anything not beside floor you've seen drawn black, as the 2D view does),
+  or shown (everything carved and grey, to judge the shapes). "Flip" swaps rock and black.
+- **Physical versus shown rock:** the heights are presentation only. Walking, sight and light read
+  the floorplan's tiles (the sim), never the mesh, so a wall can be lowered, cut away or hidden
+  without changing what it blocks (tested). `carvedMesh` names each quad's tile, so a wall can be
+  coloured, hidden or cut by tile later.
+- In grey, the Orthographic/Perspective and Screen/Art pixel switches are hidden: the camera is
+  the A/B pick (they were the same switch twice), and with no art or torch, pixels and shadows had
+  nothing to change. (In kit-art mode at 15 across, an art pixel is already only about 1 to 2
+  screen pixels, so art-sized pixels barely show there either.)
+
+*Done when* the user picks the south rock and the unfound look by eye; then the geometry is
+settled and lighting and materials come next.

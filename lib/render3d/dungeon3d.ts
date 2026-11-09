@@ -56,6 +56,11 @@ export const uprightStretch = (pitch: number) => 1 / Math.cos(pitch);
 // height where it's rock), and one mesh is built from the heights: a top on every tile and a
 // face wherever two neighbours differ, facing the lower one. North walls' faces look at the
 // camera; south walls' faces look away from it, so the camera never draws them.
+//
+// The heights are presentation only: what rock *shows*. What rock *is* (it blocks walking, sight
+// and light) is the floorplan's tiles, which the sim reads (lib/world/walkSim.ts) and this never
+// changes. So a wall can be lowered, cut away or hidden here (the low south rim is one) and it
+// still blocks exactly as before.
 
 // 🧪 How many rows of rock south of open floor the "low" south rim covers: at 60° a full-height
 // wall hides about 0.58 × its height of floor behind it (1.3 u for 2.25 u), so one row isn't enough.
@@ -82,20 +87,26 @@ export function rockHeights(fp: Floorplan, open: (i: number) => boolean, wall: n
 
 // Which way a quad faces: up, or the way its normal points (+z is south).
 export type Facing = "up" | "north" | "south" | "east" | "west";
-export type CarvedMesh = { position: Float32Array; normal: Float32Array; quads: Record<Facing, number> };
+// `tile`: for each quad, the tile it belongs to (a top's first tile; a face's higher, rocky side),
+// or -1 past the plan's edge, so a quad can be coloured by what's known of its tile.
+export type CarvedMesh = { position: Float32Array; normal: Float32Array; tile: Int32Array; quads: Record<Facing, number> };
 
 // The mesh of a height grid (w × h, rock beyond it to `margin`). Floors get a quad a tile (so
-// they can be told apart); rock tops are merged along each row, to keep the triangles down.
-export function carvedMesh(heights: Float32Array, w: number, h: number, wall: number, margin = ROCK_MARGIN): CarvedMesh {
-  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? wall : heights[y * w + x]);
+// they can be told apart); rock tops are merged along each row, to keep the triangles down, but
+// not across a change in `split` (a value a tile, 0 past the edge: e.g. seen or not).
+export function carvedMesh(heights: Float32Array, w: number, h: number, wall: number, margin = ROCK_MARGIN, split?: Uint8Array): CarvedMesh {
+  const idx = (x: number, y: number) => (x < 0 || y < 0 || x >= w || y >= h ? -1 : y * w + x);
+  const at = (x: number, y: number) => { const i = idx(x, y); return i < 0 ? wall : heights[i]; };
+  const sp = (x: number, y: number) => { const i = idx(x, y); return i < 0 || !split ? 0 : split[i]; };
   const quads: Record<Facing, number> = { up: 0, north: 0, south: 0, east: 0, west: 0 };
   // Two passes over the grid: count the quads, then write them into arrays made to fit.
-  let pos = new Float32Array(0), nor = new Float32Array(0), k = 0, counting = true;
+  let pos = new Float32Array(0), nor = new Float32Array(0), til = new Int32Array(0), k = 0, counting = true;
   // A quad from four corners (a, b, c, d) in order round it, wound so its front faces (nx, ny, nz).
   // (Rebuilt as you explore, so it has to be quick: hence two passes and no growing arrays.)
-  const quad = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number, dx: number, dy: number, dz: number, nx: number, ny: number, nz: number, f: Facing) => {
+  const quad = (ax: number, ay: number, az: number, bx: number, by: number, bz: number, cx: number, cy: number, cz: number, dx: number, dy: number, dz: number, nx: number, ny: number, nz: number, f: Facing, ti: number) => {
     quads[f]++;
     if (counting) return;
+    til[k / 18] = ti;
     const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
     const front = (uy * vz - uz * vy) * nx + (uz * vx - ux * vz) * ny + (ux * vy - uy * vx) * nz >= 0;
     pos.set(front ? [ax, ay, az, bx, by, bz, cx, cy, cz, ax, ay, az, cx, cy, cz, dx, dy, dz] : [ax, ay, az, dx, dy, dz, cx, cy, cz, ax, ay, az, cx, cy, cz, bx, by, bz], k);
@@ -105,15 +116,15 @@ export function carvedMesh(heights: Float32Array, w: number, h: number, wall: nu
   for (const pass of [0, 1]) {
     if (pass) {
       const n = Object.values(quads).reduce((a, b) => a + b, 0) * 18;
-      pos = new Float32Array(n); nor = new Float32Array(n); counting = false;
+      pos = new Float32Array(n); nor = new Float32Array(n); til = new Int32Array(n / 18); counting = false;
       for (const f of Object.keys(quads) as Facing[]) quads[f] = 0;
     }
     for (let y = -margin; y < h + margin; y++) {
       for (let x = -margin; x < w + margin;) {
         const t = at(x, y);
         let end = x + 1;
-        if (t > 0) while (end < w + margin && at(end, y) === t) end++;
-        quad(x - 0.5, t, y - 0.5, end - 0.5, t, y - 0.5, end - 0.5, t, y + 0.5, x - 0.5, t, y + 0.5, 0, 1, 0, "up");
+        if (t > 0) while (end < w + margin && at(end, y) === t && sp(end, y) === sp(x, y)) end++;
+        quad(x - 0.5, t, y - 0.5, end - 0.5, t, y - 0.5, end - 0.5, t, y + 0.5, x - 0.5, t, y + 0.5, 0, 1, 0, "up", idx(x, y));
         x = end;
       }
       for (let x = -margin; x < w + margin; x++) {
@@ -121,15 +132,15 @@ export function carvedMesh(heights: Float32Array, w: number, h: number, wall: nu
         // Between this tile and the one east of it (at x + 0.5), facing the lower.
         if (x + 1 < w + margin && t !== east) {
           const lo = Math.min(t, east), hi = Math.max(t, east), X = x + 0.5, n = t < east ? -1 : 1;
-          quad(X, lo, y - 0.5, X, lo, y + 0.5, X, hi, y + 0.5, X, hi, y - 0.5, n, 0, 0, n < 0 ? "west" : "east");
+          quad(X, lo, y - 0.5, X, lo, y + 0.5, X, hi, y + 0.5, X, hi, y - 0.5, n, 0, 0, n < 0 ? "west" : "east", t > east ? idx(x, y) : idx(x + 1, y));
         }
         // Between this tile and the one south of it (at y + 0.5).
         if (y + 1 < h + margin && t !== south) {
           const lo = Math.min(t, south), hi = Math.max(t, south), Z = y + 0.5, n = t < south ? -1 : 1;
-          quad(x - 0.5, lo, Z, x + 0.5, lo, Z, x + 0.5, hi, Z, x - 0.5, hi, Z, 0, 0, n, n < 0 ? "north" : "south");
+          quad(x - 0.5, lo, Z, x + 0.5, lo, Z, x + 0.5, hi, Z, x - 0.5, hi, Z, 0, 0, n, n < 0 ? "north" : "south", t > south ? idx(x, y) : idx(x, y + 1));
         }
       }
     }
   }
-  return { position: pos, normal: nor, quads };
+  return { position: pos, normal: nor, tile: til, quads };
 }
