@@ -3,7 +3,7 @@
 // The walkable Encampment (the Labyrinth's "New"; lib/dungeon/walkRun.ts),
 // drawn and walked on the Labyrinth screen in place of the room view: tap to
 // walk there (lib/dungeon/walk.ts), or hold the stick bottom right (walkStick;
-// its ✋ uses what you're beside), by torchlight (lib/dungeon/torch.ts) in
+// its ✋ uses what you're beside; or WASD / the arrows, and E), by torchlight (lib/dungeon/torch.ts) in
 // the kit's three-quarter look (lib/sprites/walk.ts), 15 tiles across.
 // Worked out and tried in /lab/walk first; the rules are the same here.
 //
@@ -25,7 +25,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, scrollMarks, foreseen, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
-import { roomAt, walkToward, walkStick, STICK_DEAD, type CanStep } from "@/lib/dungeon/walk";
+import { roomAt, walkToward, walkStick, keysPush, isWalkKey, STICK_DEAD, type CanStep } from "@/lib/dungeon/walk";
 import { depthEdges } from "@/lib/dungeon/tileArt";
 import { shutPlan, fallenSoFar, FLARE_WALK } from "@/lib/dungeon/torch";
 import { CAMPFIRE_HEAL } from "@/lib/dungeon/campfire";
@@ -106,11 +106,13 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const stick = useRef<Pt | null>(null);
   const [usable, setUsable] = useState<Thing | null>(null);
   useEffect(() => { if (scroll) stick.current = null; }, [scroll]); // (the stick goes with the scroll out: let go)
+  // The keyboard's stick (WASD, the arrows), used when the on-screen one isn't held.
+  const keys = useRef(new Set<string>());
 
   // The props the frame loop reads, kept current.
   const spots = walk.spots;
-  const props = useRef({ here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep });
-  useEffect(() => { props.current = { here, room, busy, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }; });
+  const props = useRef({ here, room, busy, scroll, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep });
+  useEffect(() => { props.current = { here, room, busy, scroll, spots, team, hp, onEnter, onSpotted, onObject, onCage, onHeal, onKeep }; });
 
   const state = (): WalkState => walkState(sim);
   // Saved as you leave (a fight, the Den, a reload).
@@ -142,7 +144,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
       frame = requestAnimationFrame(draw);
       const P = props.current;
       // Holding the stick: walk the way it points (a tapped walk's dropped; the rule's only worked out when a step's picked).
-      const S = stick.current;
+      const S = stick.current ?? (props.current.scroll ? null : keysPush(keys.current));
       if (S && Math.hypot(S.x, S.y) >= STICK_DEAD && !P.busy && sim.fired === 0 && !sim.alarm) {
         sim.goal = null;
         sim.wantThing = null;
@@ -209,6 +211,24 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     if (busy || sim.fired > 0 || sim.alarm || !usable) return;
     openThing(usable, state());
   };
+  const useNow = useRef(use);
+  useEffect(() => { useNow.current = use; });
+
+  // Keys: WASD / the arrows walk (held), E uses what you're beside. Not while typing in a box.
+  useEffect(() => {
+    const typing = (e: KeyboardEvent) => e.target instanceof HTMLElement && (e.target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName));
+    const down = (e: KeyboardEvent) => {
+      if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isWalkKey(e.code)) { keys.current.add(e.code); e.preventDefault(); }
+      else if (e.code === "KeyE" && !e.repeat) useNow.current();
+    };
+    const up = (e: KeyboardEvent) => { keys.current.delete(e.code); };
+    const drop = () => keys.current.clear(); // (the window lost focus: a key let go there never tells us)
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", drop);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); window.removeEventListener("blur", drop); };
+  }, []);
 
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>

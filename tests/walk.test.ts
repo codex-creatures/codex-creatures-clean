@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, layoutMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { advance, cameraAt, closestReachable, entranceSpot, findPath, nearestWalkable, roomAt, stickNext, walkable, walkStick, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
+import { advance, cameraAt, closestReachable, entranceSpot, findPath, isWalkKey, keysPush, nearestWalkable, roomAt, stickNext, walkable, walkStick, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
 
 function seeded(seed: number) {
   let s = seed;
@@ -147,5 +147,16 @@ describe("the joystick", () => {
     expect(me.x).toBeCloseTo(1 + (30 / 60) * WALK_SPEED, 5); // (no stop at each tile)
     for (let i = 0; i < 60; i++) me = advance(walkStick(fp, me, 0, 0), 1 / 60);
     expect(me).toEqual({ x: 5, y: 3, path: [] });
+  });
+});
+
+describe("walking by keyboard", () => {
+  it("WASD and the arrows push the stick, two at once a diagonal, opposites cancelling", () => {
+    expect(keysPush(["KeyW"])).toEqual({ x: 0, y: -1 });
+    expect(keysPush(["KeyD", "ArrowDown"])).toEqual({ x: 1, y: 1 });
+    expect(keysPush(["KeyW", "ArrowUp"])).toEqual({ x: 0, y: -1 });
+    expect(keysPush(["KeyA", "KeyD"])).toBeNull();
+    expect(keysPush(["KeyQ"])).toBeNull();
+    expect(isWalkKey("ArrowLeft") && !isWalkKey("Space")).toBe(true);
   });
 });

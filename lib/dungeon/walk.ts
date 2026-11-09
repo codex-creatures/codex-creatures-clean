@@ -235,3 +235,24 @@ export function walkStick(fp: Floorplan, me: Walker, dx: number, dy: number, can
   if (!next) return to ? { ...me, path: [to] } : me;
   return { ...me, path: to ? [to, next] : [next] };
 }
+
+// The keyboard's stick: WASD or the arrows (by key position, so any layout),
+// held together for a diagonal; null when none's held (or they cancel out).
+const KEY_WAYS: Record<string, Pt> = {
+  KeyW: { x: 0, y: -1 }, ArrowUp: { x: 0, y: -1 }, KeyS: { x: 0, y: 1 }, ArrowDown: { x: 0, y: 1 },
+  KeyA: { x: -1, y: 0 }, ArrowLeft: { x: -1, y: 0 }, KeyD: { x: 1, y: 0 }, ArrowRight: { x: 1, y: 0 },
+};
+export const isWalkKey = (code: string) => code in KEY_WAYS;
+export function keysPush(held: Iterable<string>): Pt | null {
+  let x = 0, y = 0;
+  const seen = new Set<string>();
+  for (const k of held) {
+    const w = KEY_WAYS[k];
+    const way = w && `${w.x},${w.y}`;
+    if (!w || seen.has(way)) continue; // (W and ↑ together are one push)
+    seen.add(way);
+    x += w.x; y += w.y;
+  }
+  x = Math.sign(x); y = Math.sign(y);
+  return x === 0 && y === 0 ? null : { x, y };
+}
