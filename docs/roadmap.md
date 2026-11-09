@@ -66,6 +66,13 @@ theme, Mr. Shadows redraws, parchment / MTG / wood-and-brass cards); hand-drawn 
 
 ## The walkable world
 
+### In progress: the 3D prototype (the user, 2026-11-10)
+
+`/lab/three` (components/WalkView3D.tsx, lib/render3d/dungeon3d.ts): the walkable run drawn with
+Three.js and React Three Fiber from the same layout, placements and sim as the 2D walk view, beside
+it for comparison. Lab only: the game still draws with the 2D view. Not decided: whether to adopt
+it, the camera angle, sprite sizes or a 3D art pipeline.
+
 ### Paused (the user, 2026-11-10)
 
 While a 3D renderer (Three.js with React Three Fiber) is assessed for the walkable dungeons:
