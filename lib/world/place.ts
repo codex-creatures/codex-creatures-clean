@@ -54,7 +54,7 @@ import { roomCentre, layoutFloorplan } from "../dungeon/layout";
 import { ROCK, type Floorplan, type Pt, type Rect } from "../dungeon/floorplan";
 import {
   SCONCE_EVERY, TUNNEL_SCONCE_CHANCE, SCONCE_LIT_SHARE, CANDLE_CHANCE, CANDLE_NEAR, CANDLE_CLEAR, SCONCE_RADIUS, CANDLE_RADIUS, torchLit,
-  DARK_PER, FLOOR_PER, MOUNTED_CAP, FLOOR_CANDLE_CAP, CANDLE_MIN_DARK, DARK_KEPT, LIGHT_GAP, FLOOR_KEEP_OFF, FLOOR_BY_STONE,
+  DARK_PER, FLOOR_PER, DARK_PER_V7, FLOOR_PER_V7, MOUNTED_CAP, FLOOR_CANDLE_CAP, CANDLE_MIN_DARK, DARK_KEPT, LIGHT_GAP, FLOOR_KEEP_OFF, FLOOR_BY_STONE,
   CANDLE_GROUP, CANDLE_WEIGHT, MOUNTED_LIT, PILLAR_LIT, type CandleGroup,
 } from "../dungeon/torch";
 import { CAMPFIRE_LIGHT, EMBER_LIGHT } from "../dungeon/campfire";
@@ -73,7 +73,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 6;          // the world version a new run is placed at (stage B's floor candles fixed; version.ts)
+export const PLACED_V = 7;          // the world version a new run is placed at (the candle density for smaller rooms; version.ts)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
 export const CANDLE_FIRE_GAP = 2;   // panels a candle keeps from a campfire (today's "hidden by the fire" distance)
@@ -242,7 +242,7 @@ export type CandleBudget = {
   floor: number;       // its floor panels
   dark: number;        // D: those no torch (all counted lit) or campfire reaches
   weight: number;      // W, by its kind
-  expected: number;    // E = W × D ÷ DARK_PER
+  expected: number;    // E = W × D ÷ DARK_PER (DARK_PER_V7 from v7)
   wanted: number;      // E rolled (its whole part, and one more by a chance of what's left), capped
   mounted: number;     // placed (the slots may run out first)
   darkLeft: number;    // dark panels left once they're in
@@ -267,6 +267,8 @@ export const MOUNTED_DEFS = ["candle-wall", "candle-wall-side", "candle-wall-sou
 export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, room: (id: string) => Room | undefined): Placed {
   const layout = walk.layout, fp: Floorplan = layoutFloorplan(layout);
   const v = walk.v ?? PLACED_V, v4 = v >= 4, v5 = v >= 5, v6 = v >= 6;
+  // (v7) the density dials for the smaller rooms (torch.ts).
+  const darkPer = v >= 7 ? DARK_PER_V7 : DARK_PER, floorPer = v >= 7 ? FLOOR_PER_V7 : FLOOR_PER;
   const o = newOccupancy(fp, v4);
   // (v3: every floor thing claims its whole panel, the policy it was placed by.)
   const claims: PanelClaims | null = v4 ? null : new Map();
@@ -439,7 +441,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       const rects = fp.rooms[id], large = layout.rooms[id].shape === "large";
       const panels = roomPanels(rects), isDark = new Set(panels.filter((p) => !lit[p.y * fp.w + p.x]).map(panelKey));
       for (const k of isDark) dark.add(k);
-      const D = isDark.size, expected = (weight * D) / DARK_PER;
+      const D = isDark.size, expected = (weight * D) / darkPer;
       const rng = passRng(walk.seed, id, MOUNTED_PASS);
       const wanted = candleCount(expected, MOUNTED_CAP[large ? 1 : 0], rng());
       const budget: CandleBudget = { room: id, kind, group, large, floor: panels.length, dark: D, weight, expected, wanted, mounted: 0, darkLeft: D, floorExpected: 0, floorWanted: 0, floorPlaced: 0 };
@@ -494,7 +496,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     const r = room(id), group = CANDLE_GROUP[r?.kind ?? ""] ?? "none", weight = CANDLE_WEIGHT[group];
     const budget = lighting!.budgets.find((b) => b.room === id)!;
     const rects = fp.rooms[id], panels = roomPanels(rects);
-    const expected = (weight * panels.length) / FLOOR_PER, rng = passRng(walk.seed, id, 6);
+    const expected = (weight * panels.length) / floorPer, rng = passRng(walk.seed, id, 6);
     const wanted = candleCount(expected, FLOOR_CANDLE_CAP[budget.large ? 1 : 0], rng());
     Object.assign(budget, { floorExpected: expected, floorWanted: wanted });
     if (!wanted) continue;

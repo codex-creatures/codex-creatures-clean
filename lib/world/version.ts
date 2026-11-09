@@ -15,7 +15,9 @@
 //    floor candles as placed objects: new runs only; a v4 run keeps its own.
 // 6: floor candles kept out of mounted candles' light and off the panels by
 //    walls and pillars (the user's play-test, 2026-11-09): new runs only.
-export const WALK_V = 6;
+// 7: the candle density retuned for the smaller rooms guided layouts and the
+//    Cyclops's 2-tile blocks make (2026-11-09): new runs only.
+export const WALK_V = 7;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

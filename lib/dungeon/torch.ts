@@ -193,6 +193,11 @@ export type Candle = Sconce;
 // part, and one more by a chance of what's left), capped.
 export const DARK_PER = 350;        // dark panels a mounted candle (W 1): the density dial (gate 4; 350 gives about 0.5 a room) 🧪
 export const FLOOR_PER = 900;       // floor panels a floor candle (W 1) 🧪
+// (World version 7, 2026-11-09) the same density on the smaller rooms the guided layouts and the
+// Cyclops's 2-tile blocks make: less dark a room, so fewer dark panels a candle (about 0.5 mounted
+// and 0.28 floor candles a room again, as the user approved).
+export const DARK_PER_V7 = 120;     // 🧪 set by the sim (tests/placeV5.test.ts)
+export const FLOOR_PER_V7 = 300;    // 🧪
 export const MOUNTED_CAP = [2, 3];  // mounted candles a room at most (a large room's second) 🧪
 export const FLOOR_CANDLE_CAP = [1, 2]; // floor candles a room at most (…a large room's) 🧪
 export const CANDLE_MIN_DARK = 3;   // dark panels a mounted candle must light, or its slot isn't worth it 🧪

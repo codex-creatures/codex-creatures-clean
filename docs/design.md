@@ -1030,6 +1030,33 @@ How it came about, round by round: history.md.
        and packing 30% extra rooms then taking the worst out (the gaps break their neighbours).
        Pre-rolled seeds: not for now (the user). Next idea: build the layout so each room is
        checked as it's placed.
+       ✅ **Built 2026-11-09: guided rolling** (`rollRooms` with `guided`; both dungeons use it).
+       Each room goes where it gives the rooms below the ways up they still need (`GUIDE_UPS`),
+       never with nothing below it if it can help it; a room closed in short of ways on (nothing
+       more could land near enough above it; a room beside counts as a way, `SIDE_WAY`) has its
+       real tunnels counted, and if it's short, the last few rooms are taken up and placed again
+       (`BACK_STEP` 5, more each time it comes back; `BACKTRACKS` 400 at most); the top (the
+       boss's room and the two beside it) steps back the same way when it won't fit. Measured
+       (tests/layoutBench.test.ts, `npm run test:stress`, this PC): the Encampment 0.2 s a layout
+       (0.5 s at worst; 0.25 s and 2 s before); **the Cyclops at the Encampment's room size**
+       (2-tile blocks, the user, 2026-11-09: narrower rooms are more fun to explore) 0.4 s, 1.3 s
+       at worst (unguided, a third couldn't be rolled at all). Its large room keeps its shape in
+       blocks, so about two thirds of the size it was in tiles (the user: large rooms can be
+       large, needn't stay as large). Runs already made keep their layouts.
+       **The rule for a new dungeon's size** (`rooms`, `minRoute`, and `across`: rooms side by side
+       at the widest, which sets the width, `acrossW`), from the bench:
+       - **across ≥ 4**: three separate ways to the boss don't fit in 3 (3 wide failed even at
+         a gentle route).
+       - **route × across ÷ rooms ≤ 1.33** rolls reliably and fast; about 1.5 works but slowly
+         (5–15 s); 1.6 or more fails. So rooms ≥ route × across ÷ 1.33: 4 wide with a route of
+         10 needs 30 rooms; **5 wide, route 15 needs about 56** (55 rolled in 2.7 s, 5 s at
+         worst; 45 took minutes).
+       - **Time grows with rooms** at a good ratio: about 0.5 s at 30, 0.6 s at 45, 3 s at
+         55–65, 7–10 s at 70–80 (worst about twice that; a phone perhaps 3× slower). Past ~60
+         rooms a dungeon wants its layout rolled ahead of time, or in parts.
+       Rare tunnels that skip a row (the user: fine, for risk and reward): a tunnel may already
+       cross up to `MAX_REACH` blocks of rock, past a gap in the row between; nothing marks them
+       yet.
        Klutz's dynamite quest: the large room is its storehouse, marked, and the dynamite's yours
        as you reach its crates.
      - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,

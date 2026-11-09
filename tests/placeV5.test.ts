@@ -176,7 +176,7 @@ describe("v5 changes only the candles", () => {
   });
 });
 
-describe("new runs (B5; world version 6 since 2026-11-09)", () => {
+describe("new runs (B5; world version 7 since 2026-11-09)", () => {
   const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
   const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
   const fresh = (d: 0 | 1, s: number) => { const r = made(d, s); return newWalkRun({ ...r, walk: { ...r.walk!, v: undefined } }); };
@@ -184,9 +184,9 @@ describe("new runs (B5; world version 6 since 2026-11-09)", () => {
   const run = Array.from({ length: 20 }, (_, k) => k + 1).map((k) => fresh(0, k))
     .find((r) => r.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def)) && r.walk!.placed!.some((i) => i.def === "floor-candle"))!;
   it("are made at the newest version, survive save, export and reload unchanged, and open as they were made", () => {
-    expect(PLACED_V).toBe(6);
-    expect(WALK_V).toBe(6);
-    expect(run.walk!.v).toBe(6);
+    expect(PLACED_V).toBe(7);
+    expect(WALK_V).toBe(7);
+    expect(run.walk!.v).toBe(7);
     expect(run.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def) || i.def === "floor-candle")).toBe(true);
     expect(run.walk!.placed).toEqual(placedOf(run).placed);
     expect(json(run)).toEqual(run);
@@ -198,7 +198,7 @@ describe("new runs (B5; world version 6 since 2026-11-09)", () => {
     expect(quiet(() => migrateWalkRun(broken)).outcome).toBe("damaged");
     expect(canRecover(broken)).toBe(true);
     const mended = quiet(() => recoverWalkRun(broken));
-    expect(mended.run.walk!.v).toBe(6);
+    expect(mended.run.walk!.v).toBe(7);
     expect(mended.run.walk!.placed).toEqual(run.walk!.placed);
   });
   it("refuses stage B's candles where they can't be: in a v4 run, a floor candle lit to start, a mounted one off its wall", () => {
@@ -217,9 +217,9 @@ describe("new runs (B5; world version 6 since 2026-11-09)", () => {
     expect(quiet(() => migrateWalkRun(v4)).outcome).toBe("damaged");
   });
   it("an older copy of the game holds a run from a newer version untouched", () => {
-    expect(unsupportedRun({ walk: { v: 6 } })).toBe(false);
-    expect(unsupportedRun({ walk: { v: 7 } })).toBe(true);
-    const newer = { ...run, walk: { ...run.walk!, v: 7 } };
+    expect(unsupportedRun({ walk: { v: 7 } })).toBe(false);
+    expect(unsupportedRun({ walk: { v: 8 } })).toBe(true);
+    const newer = { ...run, walk: { ...run.walk!, v: 8 } };
     expect(migrateWalkRun(newer)).toEqual({ run: newer, outcome: "unsupported", problem: expect.any(String) });
   });
   it("the walk reads them: mounted candles as candles at the floor by their wall, lit as rolled or as you lit them; floor candles unlit to start, lit by walking near as any candle", () => {
@@ -285,13 +285,13 @@ describe("world version 6's floor candles (the user's play-test, 2026-11-09)", (
 describe("the v5 candle sim", () => {
   // (Async, with a pause between runs, so the test runner's worker can still report while it works.)
   const breathe = () => new Promise((ok) => setTimeout(ok, 0));
-  slowIt("about 0.5 mounted candles a room, lit shares by kind, and the dog-leg spread", async () => {
+  slowIt("new runs: about 0.5 mounted candles a room, lit shares by kind, and the dog-leg spread", async () => {
     const by: Record<string, { rooms: number; mounted: number; floor: number; lit: number }> = {};
     const add = (k: string, m: number, f: number, l: number) => { const r = (by[k] ??= { rooms: 0, mounted: 0, floor: 0, lit: 0 }); r.rooms++; r.mounted += m; r.floor += f; r.lit += l; };
     let spread = 0, sameLeg = 0;
     for (const d of [0, 1] as const) for (let s = 1; s <= 10; s++) {
       await breathe();
-      const run = made(d, s), p = placedOf(run), fp = layoutFloorplan(run.walk!.layout);
+      const run = made(d, s, PLACED_V), p = placedOf(run), fp = layoutFloorplan(run.walk!.layout); // (new runs' version: the density is set per version)
       for (const b of p.lighting!.budgets) {
         const rects = fp.rooms[b.room], mine = p.placed.filter((i) => i.room === b.room && MOUNTED_DEFS.includes(i.def));
         const pillars = rects.some((r) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (fp.tiles[y * fp.w + x] === ROCK) return true; return false; });
@@ -314,7 +314,7 @@ describe("the v5 candle sim", () => {
     expect(litShare("kind fight")).toBeGreaterThan(0.03); expect(litShare("kind fight")).toBeLessThan(0.2);
     expect(litShare("kind quiet")).toBeGreaterThan(0.15); expect(litShare("kind quiet")).toBeLessThan(0.35);
     expect(litShare("kind lived")).toBeGreaterThan(0.45); expect(litShare("kind lived")).toBeLessThan(0.75);
-    expect(spread).toBeGreaterThan(sameLeg);
+    expect(spread).toBeGreaterThanOrEqual(sameLeg); // (smaller rooms rarely get two: then there's nothing to spread)
   }, 300000);
 
   slowIt("the placement view shows the darkness map, the budget and the candles' light points; PLACEMENT_SVG=<folder> writes examples", () => {

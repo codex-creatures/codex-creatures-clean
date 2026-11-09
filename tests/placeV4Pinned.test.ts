@@ -20,7 +20,7 @@ import { placementsFrom } from "../lib/world/placements";
 // (On these seeds v4 places candles and torches as v3 does: stage A changed
 // only how things share panels. These still pin v4's own path.) World version
 // 5's (stage B, released 2026-11-08) are pinned the same way, before v6 changed
-// where floor candles go.
+// where floor candles go, and 6's before v7 retuned the candles for smaller rooms.
 
 const GOLDEN = path.join(__dirname, "golden", "walk");
 // (Each from its saved run, tests/pinnedRuns.ts, so rolling layouts differently can't move it.)
@@ -55,7 +55,7 @@ const lightsOf = (run: DungeonRun, placed: ReturnType<typeof placeWalk>["placed"
   ];
 };
 
-for (const v of [4, 5]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
+for (const v of [4, 5, 6]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
   // (The Cyclops's runs take seconds each: test:all runs them.)
   for (const [d, s] of CASES) (d === 0 ? it : slowIt)(`dungeon ${d} seed ${s}`, () => {
     const run = made(d, s, v);
