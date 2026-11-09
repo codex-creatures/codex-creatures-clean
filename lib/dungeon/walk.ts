@@ -197,3 +197,41 @@ export function cameraAt(fp: Floorplan, me: Pt, view: { w: number; h: number }):
     span >= size ? (size - span) / 2 : Math.min(Math.max(at + 0.5 - span / 2, 0), size - span);
   return { x: axis(me.x, fp.w, view.w), y: axis(me.y, fp.h, view.h) };
 }
+
+// ── The joystick (WalkView's stick, bottom right; the user, 2026-11-09) ──
+// Held, it walks you a tile at a time the way it points, snapped to the eight
+// ways. Pushed diagonally into a wall, you slide along it the way it leans
+// (the straight way with more push first); pushed straight into one, you stop.
+export const STICK_DEAD = 0.3;  // share of the stick's reach that counts as letting go
+export const STICK_NEXT = 0.35; // tiles: this close to the tile you're stepping onto, the next step's picked (no stop between)
+
+// The tile next to `from` to step onto for a push (dx, dy: screen ways, down is +y), or null.
+export function stickNext(fp: Floorplan, from: Pt, dx: number, dy: number, canStep?: CanStep): Pt | null {
+  if (Math.hypot(dx, dy) < STICK_DEAD) return null;
+  const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)); // the nearest of the eight ways
+  const sx = Math.round(Math.cos(a * Math.PI / 4)), sy = Math.round(Math.sin(a * Math.PI / 4));
+  const ok = (x: number, y: number) => {
+    if (x === 0 && y === 0) return false;
+    const to = { x: from.x + x, y: from.y + y };
+    if (!walkable(fp, to.x, to.y)) return false;
+    if (x !== 0 && y !== 0 && (!walkable(fp, from.x + x, from.y) || !walkable(fp, from.x, from.y + y))) return false; // no cutting a corner
+    return !canStep || canStep(from, to);
+  };
+  const tries: Pt[] = sx !== 0 && sy !== 0
+    ? (Math.abs(dx) >= Math.abs(dy) ? [{ x: sx, y: sy }, { x: sx, y: 0 }, { x: 0, y: sy }] : [{ x: sx, y: sy }, { x: 0, y: sy }, { x: sx, y: 0 }])
+    : [{ x: sx, y: sy }];
+  const s = tries.find((t) => ok(t.x, t.y));
+  return s ? { x: from.x + s.x, y: from.y + s.y } : null;
+}
+
+// Walk the way the stick's pushed: once you're nearly onto the tile you're
+// stepping to (or standing), the next one's queued, so you walk on smoothly.
+// Let go, and you finish the step you're on.
+export function walkStick(fp: Floorplan, me: Walker, dx: number, dy: number, canStep?: CanStep): Walker {
+  const to = me.path[0];
+  if (to && Math.hypot(to.x - me.x, to.y - me.y) > STICK_NEXT) return { ...me, path: [to] };
+  const from = to ?? { x: Math.round(me.x), y: Math.round(me.y) };
+  const next = stickNext(fp, from, dx, dy, canStep);
+  if (!next) return to ? { ...me, path: [to] } : me;
+  return { ...me, path: to ? [to, next] : [next] };
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { walkSetup } from "./walkBaseline";
-import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, type Thing } from "../lib/world/walkWorld";
+import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, usableNear, type Thing } from "../lib/world/walkWorld";
 import { findPath, walkable, type CanStep } from "../lib/dungeon/walk";
 import type { Pt } from "../lib/dungeon/floorplan";
 import { fightContainer, type DungeonRun, type Room } from "../lib/dungeon/run";
@@ -77,5 +77,16 @@ describe("a mini boss's or boss's chest is there from the start, guarded (the us
     const won = (i: string) => (i === id ? { ...s.room(i)!, done: true, container: "sack" as const, sack: [] } : s.room(i));
     const sack = thingsOf(s.layout, s.placed, s.ids, won, s.npcs, { [id!]: { x: 3, y: 4 } }, s.dungeon).find((t) => t.room === id && t.def === "loot-sack");
     expect(sack).toMatchObject({ x: 3, y: 4 });
+  });
+});
+
+describe("the joystick's use button", () => {
+  const thing = (key: string, x: number, open = false, inert = false): Thing => ({ key, room: "r", x, y: 2, def: "chest", open, solid: true, inert });
+  const known = new Uint8Array(100).fill(1);
+  it("picks what you're in reach of and have seen, unopened first", () => {
+    const things = [thing("far", 9), thing("open", 3, true), thing("shut", 4)];
+    expect(usableNear(things, { x: 3, y: 3 }, known, 10)?.key).toBe("shut");
+    expect(usableNear(things, { x: 3, y: 3 }, new Uint8Array(100), 10)).toBeUndefined();
+    expect(usableNear([thing("drawn", 3, false, true)], { x: 3, y: 3 }, known, 10)).toBeUndefined();
   });
 });

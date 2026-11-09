@@ -2,7 +2,8 @@
 // components/WalkView.tsx
 // The walkable Encampment (the Labyrinth's "New"; lib/dungeon/walkRun.ts),
 // drawn and walked on the Labyrinth screen in place of the room view: tap to
-// walk there (lib/dungeon/walk.ts), by torchlight (lib/dungeon/torch.ts) in
+// walk there (lib/dungeon/walk.ts), or hold the stick bottom right (walkStick;
+// its ✋ uses what you're beside), by torchlight (lib/dungeon/torch.ts) in
 // the kit's three-quarter look (lib/sprites/walk.ts), 15 tiles across.
 // Worked out and tried in /lab/walk first; the rules are the same here.
 //
@@ -24,17 +25,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { layoutFloorplan, scrollMarks, foreseen, type Progress, type ScrollMark } from "@/lib/dungeon/layout";
-import { roomAt, walkToward, type CanStep } from "@/lib/dungeon/walk";
+import { roomAt, walkToward, walkStick, STICK_DEAD, type CanStep } from "@/lib/dungeon/walk";
 import { depthEdges } from "@/lib/dungeon/tileArt";
 import { shutPlan, fallenSoFar, FLARE_WALK } from "@/lib/dungeon/torch";
 import { CAMPFIRE_HEAL } from "@/lib/dungeon/campfire";
 import { ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
 import type { WalkRun } from "@/lib/dungeon/walkRun";
 import type { DungeonMap } from "@/lib/dungeon/map";
-import { walkView, tapCell } from "@/lib/render/projection";
+import { walkView, tapCell, DEPTH } from "@/lib/render/projection";
 import { buildScene } from "@/lib/render/scene";
 import { paintScene, type DarkLayer } from "@/lib/render/paint";
-import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, tappedThing, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, tappedThing, usableNear, fromRuns, type Thing } from "@/lib/world/walkWorld";
 import { placementsOfWalk } from "@/lib/world/migrate";
 import { startWalk, restartLoop, stepWalk, walkState, walkUpTo, type WalkState, type Warming } from "@/lib/world/walkSim";
 import { ROOM_ART } from "@/components/DungeonMapView";
@@ -101,6 +102,10 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     if ((walk.flares ?? 0) > flaresSeen.current) { flaresSeen.current = walk.flares ?? 0; sim.flareLeft = FLARE_WALK; }
   }, [walk.flares, sim]);
   const [warming, setWarming] = useState<Warming | null>(null);
+  // The stick: how far it's pushed each way (-1..1, screen ways), null when let go; and the thing its ✋ would use.
+  const stick = useRef<Pt | null>(null);
+  const [usable, setUsable] = useState<Thing | null>(null);
+  useEffect(() => { if (scroll) stick.current = null; }, [scroll]); // (the stick goes with the scroll out: let go)
 
   // The props the frame loop reads, kept current.
   const spots = walk.spots;
@@ -136,6 +141,14 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
       const P = props.current;
+      // Holding the stick: walk the way it points (a tapped walk's dropped; the rule's only worked out when a step's picked).
+      const S = stick.current;
+      if (S && Math.hypot(S.x, S.y) >= STICK_DEAD && !P.busy && sim.fired === 0 && !sim.alarm) {
+        sim.goal = null;
+        sim.wantThing = null;
+        let can: CanStep | null = null;
+        sim.me = walkStick(live, sim.me, S.x, S.y / DEPTH, (a, b) => (can ??= rule(sim.progress))(a, b));
+      }
       const F = stepWalk(sim, { now, busy: P.busy, room: P.room, here: P.here, team: P.team.map((m) => m.id), hp: P.hp, things });
       for (const e of F.events) {
         if (e.type === "progress") setProgress(e.progress);
@@ -147,6 +160,8 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
         else setWarming(e.warming);
       }
       if (!F.draw) return;
+      const near = usableNear(things(), sim.me, sim.known, plan.w) ?? null;
+      setUsable((was) => (was?.key === near?.key && was?.open === near?.open ? was : near));
 
       // ── Drawing ──
       // A canvas pixel for each pixel on screen, Screen size's scaling included, so the browser never stretches the picture.
@@ -189,12 +204,54 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     sim.me = walkToward(live, sim.me, spot, can);
   };
 
+  // The stick's ✋: use what you're beside, as tapping it does.
+  const use = () => {
+    if (busy || sim.fired > 0 || sim.alarm || !usable) return;
+    openThing(usable, state());
+  };
+
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
       <canvas ref={canvas} onPointerDown={tap} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }} />
+      {!scroll && <Stick onPush={(p) => { stick.current = p; }} canUse={!!usable && !busy} onUse={use} />}
       {warming && !scroll && <Warmth team={team} warming={warming} />}
       {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={sim.known} trail={sim.trail} progress={progress} cuts={sim.cuts}
         been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
+    </div>
+  );
+}
+
+// The stick, bottom right (above the dock's Bag; the user, 2026-11-09): press
+// anywhere on the ring and drag, and you walk that way while it's held; the
+// knob follows your thumb. Above it, ✋ uses the thing you're beside (dimmed
+// when there's nothing). Tapping the floor to walk works as before.
+const STICK_SIZE = "min(28cqw, 120px)";
+const STICK_KNOB = 0.42; // the knob's share of the ring
+function Stick({ onPush, canUse, onUse }: { onPush: (push: Pt | null) => void; canUse: boolean; onUse: () => void }) {
+  const ring = useRef<HTMLDivElement>(null);
+  const [knob, setKnob] = useState<Pt>({ x: 0, y: 0 });
+  const push = (e: React.PointerEvent) => {
+    const box = ring.current!.getBoundingClientRect(), r = box.width / 2;
+    let x = (e.clientX - box.left - r) / r, y = (e.clientY - box.top - r) / r;
+    const d = Math.hypot(x, y);
+    if (d > 1) { x /= d; y /= d; }
+    onPush({ x, y });
+    setKnob({ x, y });
+  };
+  const letGo = () => { onPush(null); setKnob({ x: 0, y: 0 }); };
+  const travel = ((1 - STICK_KNOB) / 2) * 100; // % of the ring the knob sits in from the edge, centred
+  return (
+    <div style={{ position: "absolute", right: 10, bottom: 10, zIndex: 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <button className="chip" onClick={onUse} disabled={!canUse} aria-label="Use"
+        style={{ minHeight: 48, minWidth: 48, fontSize: 20, opacity: canUse ? 1 : 0.4 }}>✋</button>
+      <div ref={ring} aria-label="Walk"
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); push(e); }}
+        onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) push(e); }}
+        onPointerUp={letGo} onPointerCancel={letGo} onLostPointerCapture={letGo}
+        style={{ position: "relative", width: STICK_SIZE, height: STICK_SIZE, borderRadius: "50%", background: "rgba(10,10,16,0.45)", border: "2px solid rgba(241,217,160,0.5)", touchAction: "none" }}>
+        <span aria-hidden style={{ position: "absolute", width: `${STICK_KNOB * 100}%`, height: `${STICK_KNOB * 100}%`, left: `${travel + knob.x * travel}%`, top: `${travel + knob.y * travel}%`,
+          borderRadius: "50%", background: "rgba(241,217,160,0.75)", border: "2px solid #6b4f2a", pointerEvents: "none" }} />
+      </div>
     </div>
   );
 }

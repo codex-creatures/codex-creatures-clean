@@ -809,6 +809,10 @@ How it came about, round by round: history.md.
      game's own phone screen (header, and the live Labyrinth's dock: Party, Bag, Scroll, Retreat;
      Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
      walk, shrinking as you go (the user, 2026-11-05).
+     A **joystick** bottom right, above the dock (the user, 2026-11-09; `walkStick`, WalkView `Stick`):
+     held, you walk the way it points, a tile at a time snapped to the eight ways, sliding along
+     a wall you push into diagonally; above it a ✋ button uses what you're beside (`usableNear`:
+     unopened things first), dimmed when there's nothing. Tapping to walk still works. 🧪
   3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
      Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the
      scroll map uses too): the entrance (treasure on your first run), dens or a stash 30% of the

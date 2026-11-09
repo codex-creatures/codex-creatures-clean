@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, layoutMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { advance, cameraAt, closestReachable, entranceSpot, findPath, nearestWalkable, roomAt, walkable, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
+import { advance, cameraAt, closestReachable, entranceSpot, findPath, nearestWalkable, roomAt, stickNext, walkable, walkStick, walkTo, walkToward, WALK_SPEED, type Walker } from "../lib/dungeon/walk";
 
 function seeded(seed: number) {
   let s = seed;
@@ -115,5 +115,37 @@ describe("walking toward a tap you can't reach", () => {
     expect(closestReachable(fp, { x: 1, y: 1 }, { x: 7, y: 4 }, seen)).toEqual({ x: 7, y: 2 });
     const me = { x: 7, y: 1, path: [] };
     expect(walkToward(fp, me, { x: 20, y: 1 })).toEqual(me);
+  });
+});
+
+describe("the joystick", () => {
+  // A room with a wall along its top and a pillar in the middle.
+  const rows = ["#######", "#.....#", "#..#..#", "#.....#", "#######"];
+  const fp: Floorplan = (() => {
+    const w = rows[0].length, h = rows.length, tiles = new Uint8Array(w * h);
+    rows.forEach((r, y) => [...r].forEach((c, x) => { tiles[y * w + x] = c === "#" ? ROCK : FLOOR; }));
+    return { w, h, tiles, rooms: {}, doors: [], tunnels: {} };
+  })();
+
+  it("steps the nearest of the eight ways it's pushed, and not at all barely pushed", () => {
+    expect(stickNext(fp, { x: 1, y: 1 }, 1, 0.1)).toEqual({ x: 2, y: 1 });
+    expect(stickNext(fp, { x: 1, y: 1 }, 0.7, 0.7)).toEqual({ x: 2, y: 2 });
+    expect(stickNext(fp, { x: 1, y: 1 }, 0.1, 0.1)).toBeNull();
+  });
+  it("slides along a wall pushed diagonally into it, the way it leans; stops pushed straight in", () => {
+    expect(stickNext(fp, { x: 2, y: 1 }, 0.8, -0.6)).toEqual({ x: 3, y: 1 });
+    expect(stickNext(fp, { x: 2, y: 1 }, 0, -1)).toBeNull();
+  });
+  it("never cuts a pillar's corner, and keeps to the step rule", () => {
+    expect(stickNext(fp, { x: 2, y: 1 }, 0.6, 0.8)).toEqual({ x: 2, y: 2 }); // (leaning down: down, not through the pillar at 3,2)
+    expect(stickNext(fp, { x: 1, y: 1 }, 1, 0, (_, to) => to.x !== 2)).toBeNull();
+  });
+  it("walks on smoothly while held and finishes the step it's on when let go", () => {
+    let me: Walker = { x: 1, y: 3, path: [] };
+    for (let i = 0; i < 30; i++) me = advance(walkStick(fp, me, 1, 0), 1 / 60);
+    expect(me.y).toBe(3);
+    expect(me.x).toBeCloseTo(1 + (30 / 60) * WALK_SPEED, 5); // (no stop at each tile)
+    for (let i = 0; i < 60; i++) me = advance(walkStick(fp, me, 0, 0), 1 / 60);
+    expect(me).toEqual({ x: 5, y: 3, path: [] });
   });
 });

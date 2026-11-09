@@ -222,3 +222,15 @@ export function approach(plan: Floorplan, t: Thing, from: Pt, can: CanStep): Pt[
   }
   return best;
 }
+// The joystick's use button: the thing you're in reach of and have seen
+// (unopened ones first, then the nearest), or undefined.
+export function usableNear(things: Thing[], you: Pt, known: Uint8Array, w: number): Thing | undefined {
+  let best: Thing | undefined, bestD = Infinity;
+  for (const t of things) {
+    const p = usedFrom(t);
+    if (t.inert || !inReach(t, you) || known[p.y * w + p.x] !== 1) continue;
+    const d = Math.hypot(p.x - you.x, p.y - you.y) + (t.open ? 100 : 0);
+    if (d < bestD) { best = t; bestD = d; }
+  }
+  return best;
+}
