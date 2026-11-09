@@ -10,7 +10,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 pixel art like [ideas/future-dungeon-direction.png](../ideas/future-dungeon-direction.png), laid out
 like the user's sketch [ideas/labyrinth-v2.png](../ideas/labyrinth-v2.png) (older notes in
 history.md). Decided: 2D (not 3D), in the current web game (no engine switch); the procedural
-randomness stays. **The Encampment first** (the user, 2026-11-05): 15 rooms (19 in the walkable one, `WALK_SPEC`: see Sound below), at least 7 to the
+randomness stays. ⚠️ Since 2026-11-10 a 3D renderer (Three.js, same web game) is being assessed;
+the 2D view stays what the game draws until the user approves a move ([world/rendering.md](../world/rendering.md#48-the-3d-direction-the-user-2026-11-10)). **The Encampment first** (the user, 2026-11-05): 15 rooms (19 in the walkable one, `WALK_SPEC`: see Sound below), at least 7 to the
 camp, made walkable end to end before the deeper dungeons. It was kept behind `/lab` until the
 user switched it on: since 2026-11-06 it's live as "🔥 New" runs (step 7). Plan, one step at a time:
 
@@ -135,7 +136,7 @@ creatures appear only in fights. Samples first, the user picks.
   quality target is detailed pixel art about 128–200 px a portrait ("Creature or item pix
   quality" in their Downloads), when PixelLab spend allows; nothing redone till then.
 - ✅ **Depth, 2.5D** (the user, 2026-11-06: not real 3D, which would need three.js and 3D
-  models; `tileArt.ts`, numbers 🧪): side walls show their inner face, wider the further
+  models; ⚠️ 3D now being assessed, [world/rendering.md](../world/rendering.md#48-the-3d-direction-the-user-2026-11-10); `tileArt.ts`, numbers 🧪): side walls show their inner face, wider the further
   across the room you are (`sideFace`: from a room's right you see its left wall's face),
   and south walls stand up `WALL_LIFT` (half a tile) over the floor's bottom row, so you
   and foes can be hidden behind them; close behind one, it goes see-through (`capFade`).

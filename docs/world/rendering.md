@@ -1,12 +1,15 @@
 # Projection and drawing
 
-Authoritative for the camera, the projection, anchors and drawing order. Part of the [world specification](../world-spec.md) (the walkable world's technical rules). Status tags are explained in [docs/README.md](../README.md#status-tags).
+Authoritative for the camera, the projection, anchors and drawing order, and (§4.8) for the 3D direction and its prototype. Part of the [world specification](../world-spec.md) (the walkable world's technical rules). Status tags are explained in [docs/README.md](../README.md#status-tags).
 
 Moved here word for word from world-spec.md on 2026-11-09 (the original is in [archive/2026-11-09](../archive/2026-11-09/world-spec.md)); section numbers are kept, so references like "world-spec.md §5.4" still find their place.
 
 ## 4. Projection and drawing
 
 ### 4.1 The camera (✅ decided: fixed three-quarter, from the south, no rotation)
+
+> ⚠️ This is the live 2D view's camera, still authoritative for the game. The approved direction for
+> a 3D renderer (about 60° down, facing north, orthographic) is in §4.8; no move to it is approved.
 
 An oblique, orthographic view: no perspective, nothing smaller with distance. On screen:
 
@@ -111,3 +114,85 @@ finer than a panel and drawn crisp; no full-screen tints or additive washes; a l
 the falloff; surfaces lit by facing; value steps between terrain, props and characters; contact
 shadows drawn by the game. **Not decided:** D, sprite sizes and the art pipeline wait for the
 rendering architecture (the user, 2026-11-10).
+
+## 4.8 The 3D direction (the user, 2026-11-10)
+
+**The 2D walk view (components/WalkView.tsx) is what the game draws, and stays authoritative for
+live play. No move to 3D is approved;** §4.1–4.6 describe it. This section is where a 3D renderer
+is headed if it's adopted. It changes drawing only: world units, subcells, placements, the sim,
+sight and light reach stay as they are ([space.md](space.md) §1).
+
+### Approved visual intentions 📌
+
+The goal: **a mostly top-down dungeon crawler that uses real 3D geometry for depth, light and
+structure. Not an isometric game.**
+
+- **Camera:** fixed, about **60° down** from the horizon, always facing north (no diagonal or
+  isometric turn, no rotation), **orthographic** to start with. The floor and the walkable space
+  are what you look at; depth is subtle and serves the crawl.
+- **North walls** (the wall on a room's north side) show their face. **South walls show no
+  equivalent face.** The dungeon stays easy to read from above.
+- **Side walls (east and west):** close to you, a side wall shows as a thin edge; further away
+  across the screen, a little more of its face, texture and depth shows. Subtle: no large faces,
+  no isometric look. **An artistic rule, not physics.** (The 2D view already does a version of
+  this: `sideFace` in lib/dungeon/tileArt.ts.)
+- **Solid rock:** to explore treating everything outside rooms and tunnels as solid rock, so the
+  dungeon feels carved out, not floors with walls set around them.
+- **Lighting:** lights reveal surfaces (texture, colour, shape); no blur or washed-out look; dark
+  areas atmospheric but readable; **no light through solid rock**; consistent with the game's
+  sight and light reach where possible. "Clear and atmospheric, not just darker." (The 2D faults
+  it must avoid are in §4.7.)
+- **Art standard, after the camera and geometry are validated:** one rule of thumb for size,
+  texel density, proportions, materials and lighting, so new assets aren't re-sized each time.
+  The 48-a-unit and ¾-depth work (§4.6, [art-pipeline.md](art-pipeline.md)) is context, not
+  automatically carried into 3D. Style unchanged: stylised fantasy pixel art, readable stonework,
+  cohesive proportions, deliberate light. The user brings the reference images again.
+
+### Technical approaches still to validate 🧪 (nothing here is decided)
+
+- **Side walls:** an orthographic camera facing north sees east and west faces exactly edge-on, so
+  the side-wall rule needs something. Candidates: (a) a perspective camera with a narrow field of
+  view (faces open with distance from the centre of the screen, which is you, but the floor
+  foreshortens slightly); (b) orthographic, with the side faces leaned in the wall's vertex shader
+  by their distance across from you; (c) side faces as separate, flat-shaded quads sized per
+  frame. Pick the one with no camera movement and the fewest special cases.
+- **South walls:** a full-height block on a room's south side hides the floor behind it (about
+  1.3 u at 60° for today's 2.25 u wall). Candidates: lower south rock, a cap with no face, or
+  fading it near you as the 2D `capFade` does.
+- **Solid rock:** rock tops as one merged surface at wall height over all rock (not only the ring
+  touching floor), floors carved into it. Check: draw calls and triangles on a 30-room Cyclops
+  run, the unexplored (`known`) blackout, culling, and that layouts need no change (they don't
+  read the renderer).
+- **Light through rock:** today's point lights ignore walls unless shadows are on. Candidates:
+  shadow maps (cube shadows cost six passes a light); or lighting driven by the sim's own light
+  reach (`lightNow`, `torchGlow`) at subcell resolution, which can't bleed and matches gameplay
+  by construction. The second is the likelier fit; it needs a test.
+
+### The prototype as built (2026-11-10)
+
+`/lab/three`: a made-up run held in memory, drawn by the 2D view or the 3D one from the same
+seed. Nothing is saved; the game doesn't use it.
+
+| File | What |
+|---|---|
+| app/lab/three/page.tsx | the lab page; switches for pitch (35°, ¾ 48.6°, 60°, 75°), orthographic or perspective, art-sized pixels, torch shadows, zoom; settings in the address (`?view=3d&pitch=60&camera=persp&pixels=art&shadows=1&across=15&dungeon=1&seed=…`); fps, draw calls, triangles |
+| components/WalkView3D.tsx | the renderer: React Three Fiber canvas, `walkSim` for walking, sight, foes and taps (no fights or loot); instanced floor and wall meshes; your torch plus a pool of 8 point lights (`LIGHT_POOL`) for the nearest lit torches, candles and campfires; ambient 0.5; upright sprites. Its setup copies WalkView's |
+| lib/render3d/dungeon3d.ts | pure rules: `dungeonCells` (a floor on every walkable tile, a wall block on rock touching floor, diagonals included), `shadeOf` (seen or never seen), `WALL_HEIGHT` 2.25, `DEFAULT_PITCH` asin 0.75, `uprightStretch` |
+| tests/dungeon3d.test.ts | its tests |
+
+Dependencies: `three` 0.186.0 and `@react-three/fiber` 9.8.2, pinned, loaded on this page only.
+
+**Limitations, against the direction above:** default pitch 48.6°, not 60°; walls are 2.25 u
+cubes with the 2D kit F north face on every side and its cap on top (art drawn for the 2D
+three-quarter view, 48 × 36 floors); south walls are full blocks with faces; side walls show no
+face orthographically; only rock touching floor is built (deeper rock is empty black); lights pass
+through rock unless the torch's shadows are on; sprites are flat cut-outs facing south, stretched
+by `uprightStretch`.
+
+### Next experiment
+
+**Camera and geometry only, grey, in /lab/three:** one seeded room-and-tunnel stretch, orthographic
+at 60° facing north, solid rock tops, north faces only, no south faces, and the side-wall
+candidates (a) and (b) switchable side by side. Flat grey materials and one plain light, so only
+shape is judged. *Done when* the user picks a side-wall approach and a south-wall treatment by eye.
+Then lighting from light reach (no bleed through rock), then the art standard.

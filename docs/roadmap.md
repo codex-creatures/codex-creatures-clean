@@ -70,8 +70,12 @@ theme, Mr. Shadows redraws, parchment / MTG / wood-and-brass cards); hand-drawn 
 
 `/lab/three` (components/WalkView3D.tsx, lib/render3d/dungeon3d.ts): the walkable run drawn with
 Three.js and React Three Fiber from the same layout, placements and sim as the 2D walk view, beside
-it for comparison. Lab only: the game still draws with the 2D view. Not decided: whether to adopt
-it, the camera angle, sprite sizes or a 3D art pipeline.
+it for comparison. Lab only: the game still draws with the 2D view, and no move to 3D is approved.
+The user's visual direction (camera about 60° down facing north, north faces only, thin-to-wider
+side walls, solid rock, light that never passes through rock), what's still to validate, the
+prototype's limits and **the next experiment** (camera and geometry only, in grey) are in
+[world/rendering.md](world/rendering.md#48-the-3d-direction-the-user-2026-11-10). Not decided: the
+side- and south-wall techniques, lighting's technique, sprite sizes or a 3D art standard.
 
 ### Paused (the user, 2026-11-10)
 
@@ -146,7 +150,8 @@ kept in [world/rendering.md](world/rendering.md#47-what-todays-drawing-gets-wron
 - **A different renderer:** the world/scene split allows it; nothing is built for it.
 
 **Not worth it for this game:**
-- real 3D, or a rotating camera;
+- real 3D, or a rotating camera; ⚠️ (2026-11-10) real 3D is now being assessed
+  ([world/rendering.md](world/rendering.md) §4.8); a rotating camera is still out;
 - a general game-engine object framework, or a physics engine;
 - lighting tricks that give flat sprites depth (normal maps, dynamic shadows from sprites);
 - smart pattern-matching or constraint-solving generators: passes plus stamps are enough;

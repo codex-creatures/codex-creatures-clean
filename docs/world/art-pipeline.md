@@ -98,6 +98,9 @@ Flag these when a task needs them; don't invent an answer.
    down): not recorded.
 5. **PixelLab settings per kind of asset** (§6.1): recorded for objects (Pro Flash, the palette, a
    crop of kit E as the style image, §6.3); not for characters, creatures, tiles or decals.
-6. **The template generator and the test room** (§6.2, §6.4): not built, so a template's size is
+6. **Art for a 3D renderer** ([rendering.md](rendering.md) §4.8): size, texel density, proportions,
+   materials and lighting rules wait for the camera and geometry to be validated; 1–4 above may be
+   answered differently there. Until then, this file's standards are for the 2D view.
+7. **The template generator and the test room** (§6.2, §6.4): not built, so a template's size is
    worked out by hand from the projected bounds for now.
-7. **The checker's contrast limit** needs an allowance for light materials (wax): not set.
+8. **The checker's contrast limit** needs an allowance for light materials (wax): not set.
