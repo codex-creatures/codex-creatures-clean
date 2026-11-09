@@ -275,8 +275,9 @@ describe("labyrinth layout: variety (the user, 2026-11-05)", () => {
     expect(arms.length).toBe(2);
     const c = roomCentre(r);
     for (const f of arms) expect(c.x >= f.x && c.x < f.x + f.w && c.y >= f.y && c.y < f.y + f.h).toBe(true);
-    // The missing corner's middle (well inside the box, away from the arms) is rock.
-    const corner = { x: (r.cut![1] === "e" ? r.x + r.w - 2 : r.x + 2) * 3, y: (r.cut![0] === "n" ? r.y + 2 : r.y + r.h - 2) * 3 };
-    expect(fp.tiles[corner.y * fp.w + corner.x]).toBe(ROCK);
+    // The missing corner's middle (well inside the box, away from the arms) isn't the room's floor.
+    const B = blockOf(l); // (tiles a block: the layout's own)
+    const corner = { x: (r.cut![1] === "e" ? r.x + r.w - 2 : r.x + 2) * B, y: (r.cut![0] === "n" ? r.y + 2 : r.y + r.h - 2) * B };
+    expect([ROCK, TUNNEL]).toContain(fp.tiles[corner.y * fp.w + corner.x]); // (a tunnel may pass through the empty corner)
   });
 });

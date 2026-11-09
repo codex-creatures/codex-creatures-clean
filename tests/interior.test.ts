@@ -66,11 +66,11 @@ describe("rooms' insides (the odd pillar)", () => {
     }
     expect(fails).toEqual([]);
   });
-  slowIt("the walkable Labyrinth (3-tile blocks for now), and the boss's room keeps its aisle", () => {
+  slowIt("the walkable Labyrinth (2-tile blocks since 2026-11-09, as the Encampment), and the boss's room keeps its aisle", () => {
     const all: string[] = [];
     for (let seed = 1; seed <= 3; seed++) {
       const l = rollLayout(WALK_LABYRINTH, seeded(seed));
-      expect(blockOf(l)).toBe(OLD_BLOCK);
+      expect(blockOf(l)).toBe(BLOCK);
       all.push(...problems(l, `seed ${seed}`));
     }
     expect(all).toEqual([]);

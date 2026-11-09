@@ -49,8 +49,9 @@ import { FLOOR, ROCK, TUNNEL, DOOR, checkFloorplan, type Door, type Floorplan, t
 // Tiles across a block. The user (2026-11-07: rooms felt too large and empty,
 // walking them a chore): the walkable Encampment's are 2 (WALK_SPEC.block),
 // so every room, gap and tunnel is two thirds of what it was (3), while the
-// layout's rules, in blocks, stay as they were. The walkable Labyrinth keeps 3
-// for now: at 2, 30-room layouts mostly fail to roll (24 rooms roll in ~2 s).
+// layout's rules, in blocks, stay as they were. The walkable Labyrinth kept 3
+// till 2026-11-09, when the guided rolling (rollRooms) made its 30 rooms at 2
+// roll in under a second.
 // Each layout keeps the size it was rolled at (Layout.block; older saved
 // runs have none and were 3), so a run in progress draws as it did.
 export const BLOCK = 2;
@@ -97,16 +98,21 @@ export const START_WAYS = [3, 4];  // rooms the entrance leads to (3+: one for e
 export const BOSS_WAYS = 3;        // rooms leading into the boss's (at least; the user, 2026-11-05)
 export const CHOICES = 2;          // ways on from every room (see the top)
 export const ROUTES = 3;           // ways to the boss that share no room (see the top)
+export const GUIDE_UPS = CHOICES;  // ways up a guided layout gives each room where it can (rollRooms)
 export const LAYOUT_REROLLS = 3000;
 // The walkable Encampment (the user, 2026-11-05): 19 rooms besides the entrance
 // and the boss's (the scroll map's has 15), so ROUTES separate ways of
 // CAMP_ROUTE rooms or more fit (3 × 6 rooms between = 18).
-export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0, block: BLOCK };
+// Rolled guided (rollRooms, 2026-11-09): about 0.2 s a layout, against 0.25 s (2 s at worst) before.
+export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0, block: BLOCK, guided: true };
 // The walkable Labyrinth (the Cyclops; in /lab/newrun only, for now). 🧪
 // Provisional, smaller than the scroll map's (36 rooms, 15 to the lair): with
 // ROUTES separate ways, 15 rooms each needs 44+ rooms, and those layouts take
 // ~15 s to roll and mostly fail. 30 rooms with 10 to the lair roll in ~1 s.
-export const WALK_LABYRINTH = { rooms: 30, minRoute: 10, large: 1, block: OLD_BLOCK };
+// Since 2026-11-09 (the user: the Encampment's narrower rooms are more fun to explore) its rooms are
+// the Encampment's size (2-tile blocks, its large room a large shape still), rolled guided: about
+// 0.4 s a layout, 1.3 s at worst; unguided, a third of them couldn't be rolled at all.
+export const WALK_LABYRINTH = { rooms: 30, minRoute: 10, large: 1, block: BLOCK, guided: true };
 
 export type Corner = "ne" | "nw" | "se" | "sw";
 const CORNERS: Corner[] = ["ne", "nw", "se", "sw"];
@@ -146,12 +152,34 @@ function weighted(rng: Rng, shapes: Shape[]): Shape[] {
 // its neighbours by a block or more.
 // large: how many of the rooms are LARGE_SHAPE, spread up the middle of the drop.
 // block: tiles across a block (its rooms are drawn this size; see BLOCK).
-export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK): Layout | null {
+// How a layout's rooms are rolled, beyond the room count (rollRooms; RoomSpec below):
+// - w: blocks across (LAYOUT_W): set it straight, or from `across`, the rooms side by side at the
+//   widest (acrossW);
+// - guided (2026-11-09): each room goes where it gives the rooms below the ways up they still
+//   need (GUIDE_UPS), never with nothing below it to come up from if it can help it, and when a
+//   room is closed in short of ways up (nothing more could land near enough above it), the last
+//   few rooms are taken up and placed again (backtracking, BACKTRACKS at most), instead of the
+//   whole layout being thrown away at the end;
+// - shapes, largeShape, slack: the shapes rooms are drawn from, the large rooms' shape, PACK_SLACK.
+export type RoomOpts = { w?: number; across?: number; guided?: boolean; shapes?: Shape[]; largeShape?: Shape; slack?: number;
+  sideWay?: number; backStep?: number; finalCheck?: boolean }; // (the guided tuning: SIDE_WAY, BACK_STEP, the last look)
+export const BACKTRACKS = 400;     // room placements a guided layout may take back, in all, before it's rolled again
+export const SIDE_WAY = 1;         // a room beside counts this much of a way on 🧪
+export const BACK_STEP = 5;        // rooms taken up at the first try at a dead end (more each time it comes back; 5 the fastest of 3–12, 2026-11-09) 🧪
+// Blocks across for `across` rooms side by side: their average width, a gap each, and the edge.
+export const acrossW = (across: number, shapes: Shape[] = SHAPES) => {
+  const total = shapes.reduce((n, s) => n + s.weight, 0);
+  const avg = shapes.reduce((n, s) => n + s.w * s.weight, 0) / total;
+  return Math.round(across * (avg + 1) + 1);
+};
+
+export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK, opts: RoomOpts = {}): Layout | null {
   const MIN_OVERLAP = minOverlap(block);
+  const SH = opts.shapes ?? SHAPES, BIG = opts.largeShape ?? LARGE_SHAPE, SLACK = opts.slack ?? PACK_SLACK;
   const bigAt = new Set(Array.from({ length: large }, (_, k) => 4 + Math.floor(((count - 6) * (k + 1)) / (large + 1))));
-  const W = LAYOUT_W;
+  const W = opts.w ?? (opts.across ? acrossW(opts.across, SH) : LAYOUT_W);
   const placed: { id: string; shape: Shape; x: number; b: number; cut?: Corner }[] = []; // b: blocks up from the bottom
-  const top = new Array<number>(W).fill(0);
+  let top = new Array<number>(W).fill(0);
   const clear = (x: number, b: number, s: Shape) => placed.every((p) =>
     x >= p.x + p.shape.w + 1 || p.x >= x + s.w + 1 || b >= p.b + p.shape.h + 1 || p.b >= b + s.h + 1);
   const put = (id: string, shape: Shape, x: number, b: number) => {
@@ -168,7 +196,7 @@ export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK)
   // one between), so the ROUTES ways up can start apart.
   let n = 1;
   for (let tries = 0; tries < 30 && n === 1; tries++) {
-    const [l, m, r] = [0, 1, 2].map(() => weighted(rng, SHAPES)[0]);
+    const [l, m, r] = [0, 1, 2].map(() => weighted(rng, SH)[0]);
     const xl = sx + MIN_OVERLAP - l.w + between(rng, [0, 1]);
     const xr = sx + START_SHAPE.w - MIN_OVERLAP - between(rng, [0, 1]);
     const between_ = xr - 1 - (xl + l.w + 1); // blocks for the middle one, a block of rock either side
@@ -178,27 +206,106 @@ export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK)
       put(`r${n++}`, shape, x, Math.max(START_SHAPE.h + between(rng, GAP_BLOCKS), ...top.slice(x, x + shape.w)));
     }
   }
-  // Each room (its shape by weight) goes as low as it can, within PACK_SLACK
+  // Each room (its shape by weight) goes as low as it can, within SLACK
   // blocks of that where it sits over the most rooms it could tunnel down
   // into: laid like bricks, so most rooms have two ways up.
-  const under = (x: number, b: number, s: Shape) => placed.filter((p) =>
+  const coveredBy = (x: number, b: number, s: Shape) => placed.filter((p) =>
     p.b + p.shape.h <= b && b - (p.b + p.shape.h) <= MAX_REACH
-    && Math.min(x + s.w, p.x + p.shape.w) - Math.max(x, p.x) >= MIN_OVERLAP).length;
-  for (; n <= count - 2; n++) {
-    const shape = bigAt.has(n) ? LARGE_SHAPE : weighted(rng, SHAPES)[0], gap = between(rng, GAP_BLOCKS);
-    const spots: { x: number; b: number; below: number }[] = [];
+    && Math.min(x + s.w, p.x + p.shape.w) - Math.max(x, p.x) >= MIN_OVERLAP);
+  // (Guided) the ways up each room has so far, and what each placement left behind, to take it back.
+  let ups = new Map<string, number>();
+  const saved: { top: number[]; ups: Map<string, number> }[] = [];
+  const need = (over: typeof placed) => over.reduce((k, p) => k + Math.max(0, GUIDE_UPS - (ups.get(p.id) ?? 0)), 0);
+  // Closed in: no room could ever land near enough above it now (every stretch of its top it
+  // could be tunnelled from is already built over higher than MAX_REACH above it).
+  const sealed = (p: (typeof placed)[number]) => {
+    const t = p.b + p.shape.h;
+    for (let x = p.x; x + MIN_OVERLAP <= p.x + p.shape.w; x++) {
+      if (Math.max(...top.slice(x, x + MIN_OVERLAP)) + GAP_BLOCKS[0] <= t + MAX_REACH) return false;
+    }
+    return true;
+  };
+  // Its rooms beside it, near and level enough to tunnel across to (a way on too, as fewChoices counts).
+  const beside = (p: (typeof placed)[number]) => placed.filter((q) => q !== p
+    && (q.x >= p.x + p.shape.w ? q.x - (p.x + p.shape.w) : p.x - (q.x + q.shape.w)) <= MAX_REACH
+    && (q.x >= p.x + p.shape.w || q.x + q.shape.w <= p.x)
+    && Math.min(p.b + p.shape.h, q.b + q.shape.h) - Math.max(p.b, q.b) >= MIN_OVERLAP).length;
+  const SIDE = opts.sideWay ?? SIDE_WAY, STEP0 = opts.backStep ?? BACK_STEP;
+  const ways = (p: (typeof placed)[number]) => (ups.get(p.id) ?? 0) + SIDE * beside(p);
+  // The rooms closed in and found sound, and every room's real ways on as the rooms stand: the
+  // tunnels that could be dug now (up to a room, or across), each other room once.
+  const checked = new Set<string>();
+  const realWays = () => {
+    const H = Math.max(...placed.map((p) => p.b + p.shape.h));
+    const rooms: Record<string, LayoutRoom> = {};
+    for (const p of placed) rooms[p.id] = { id: p.id, shape: p.shape.name, x: p.x + EDGE, y: H - p.b - p.shape.h + EDGE, w: p.shape.w, h: p.shape.h,
+      ...(p.cut ? { cut: p.cut, arm: p.shape.arm } : {}), ...(block !== OLD_BLOCK ? { block } : {}) };
+    const options = tunnelOptions({ w: W + 2 * EDGE, h: H + 2 * EDGE, start: "start", boss: "boss", rooms, tunnels: [], ...(block !== OLD_BLOCK ? { block } : {}) }, () => 0.5);
+    const on = new Map<string, Set<string>>();
+    const add = (a: string, b: string) => { if (!on.has(a)) on.set(a, new Set()); on.get(a)!.add(b); };
+    for (const t of options) { if (t.up) add(t.a, t.b); else { add(t.a, t.b); add(t.b, t.a); } }
+    return new Map([...on].map(([k, v]) => [k, v.size]));
+  };
+  const first = n;
+  let backs = 0, step = STEP0, lastDeadAt = -1;
+  // Take the placements back to room `to` (a dead end, or the top that wouldn't finish).
+  const stepBack = () => {
+    step = n === lastDeadAt ? step + 1 : STEP0;
+    lastDeadAt = n;
+    const to = Math.max(first, n - step);
+    placed.length = to;
+    top = saved[to].top.slice();
+    ups = new Map(saved[to].ups);
+    checked.clear();
+    n = to;
+  };
+  for (;;) {
+  while (n <= count - 2) {
+    const shape = bigAt.has(n) ? BIG : weighted(rng, SH)[0], gap = between(rng, GAP_BLOCKS);
+    const spots: { x: number; b: number; score: number }[] = [];
     for (let x = 0; x + shape.w <= W; x++) {
       let b = Math.max(...top.slice(x, x + shape.w)) + gap;
       while (!clear(x, b, shape)) b++;
-      spots.push({ x, b, below: under(x, b, shape) });
+      const over = coveredBy(x, b, shape);
+      // (Guided) the rooms still short of ways up first, then the most rooms, never none below if it can help it.
+      spots.push({ x, b, score: opts.guided ? (over.length ? 1000 : 0) + need(over) * 100 + over.length : over.length });
     }
     const low = Math.min(...spots.map((p) => p.b));
-    const near = spots.filter((p) => p.b <= low + PACK_SLACK);
-    const most = Math.max(...near.map((p) => p.below));
-    const best = near.filter((p) => p.below === most);
+    const near = spots.filter((p) => p.b <= low + SLACK);
+    const most = Math.max(...near.map((p) => p.score));
+    const best = near.filter((p) => p.score === most);
     const { x, b } = best[Math.floor(rng() * best.length)];
+    if (opts.guided) {
+      saved[n] = { top: top.slice(), ups: new Map(ups) };
+      for (const p of coveredBy(x, b, shape)) ups.set(p.id, (ups.get(p.id) ?? 0) + 1);
+    }
     put(`r${n}`, shape, x, b);
+    n++;
+    if (!opts.guided) continue;
+    // A room closed in short of ways on: take the last few placements back and try again. Once
+    // closed in, nothing more can land between it and the rooms above it, so its tunnels are as
+    // they'll be: they're counted for real (tunnelOptions), once, not by the rooms near it.
+    const shut = placed.slice(1, -1).filter((p) => !checked.has(p.id) && sealed(p));
+    let dead = shut.some((p) => ways(p) < GUIDE_UPS);
+    if (!dead && shut.length) {
+      const real = realWays();
+      dead = shut.some((p) => (real.get(p.id) ?? 0) < GUIDE_UPS);
+      if (!dead) for (const p of shut) checked.add(p.id);
+    }
+    if (!dead) continue;
+    if (++backs > BACKTRACKS) return null;
+    stepBack();
   }
+  // The top: the boss's room and the two beside it, and (guided) a last look at every room. If it
+  // won't finish, a guided layout steps back as for a dead end; else it's rolled again.
+  const before = { length: placed.length, top: top.slice() };
+  if (finishTop()) break;
+  if (!opts.guided || ++backs > BACKTRACKS) return null;
+  placed.length = before.length;
+  top = before.top;
+  stepBack();
+  }
+  function finishTop(): boolean {
   // The boss's room on top (as high as the highest room), in the middle
   // (BOSS_DRIFT either way; the user, 2026-11-05: never off to one side, so
   // ways can come into it from both sides and below; rooms either side of
@@ -223,7 +330,7 @@ export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK)
   const boss = placed[placed.length - 1];
   for (const side of [-1, 1]) {
     const fits: { shape: Shape; x: number; b: number }[] = [];
-    for (const shape of SHAPES) for (let gap = GAP_BLOCKS[0]; gap <= MAX_REACH; gap++) {
+    for (const shape of SH) for (let gap = GAP_BLOCKS[0]; gap <= MAX_REACH; gap++) {
       const x = side < 0 ? boss.x - gap - shape.w : boss.x + boss.shape.w + gap;
       if (x < 0 || x + shape.w > W) continue;
       let b = Math.max(...top.slice(x, x + shape.w)) + GAP_BLOCKS[0];
@@ -231,9 +338,24 @@ export function rollRooms(count: number, rng: Rng, large = 0, block = OLD_BLOCK)
       const shared = Math.min(b + shape.h, boss.b + boss.shape.h) - Math.max(b, boss.b);
       if (shared >= SIDE_SHARE && b + shape.h <= boss.b + boss.shape.h) fits.push({ shape, x, b });
     }
-    if (fits.length === 0) return null;
+    if (fits.length === 0) return false;
     const { shape, x, b } = fits[Math.floor(rng() * fits.length)];
-    put(`r${n++}`, shape, x, b);
+    put(`r${n + (side < 0 ? 0 : 1)}`, shape, x, b);
+  }
+  // (Guided) a last look before any tunnel is dug, by the same measure: every room but the entrance,
+  // the boss's and the two beside it has its ways on and a way in; else it's dropped now, saving the
+  // dearer checks on its tunnels.
+  if (opts.guided && (opts.finalCheck ?? true)) {
+    const near = (p: (typeof placed)[number], q: (typeof placed)[number]) => q.b >= p.b + p.shape.h && q.b - (p.b + p.shape.h) <= MAX_REACH
+      && Math.min(p.x + p.shape.w, q.x + q.shape.w) - Math.max(p.x, q.x) >= MIN_OVERLAP; // q above p, near enough to tunnel up into
+    const exempt = new Set(["start", "boss", ...placed.slice(-2).map((p) => p.id)]);
+    for (const p of placed) {
+      if (exempt.has(p.id)) continue;
+      const side = beside(p), up = placed.filter((q) => near(p, q)).length;
+      if (up + SIDE * side < GUIDE_UPS || (!placed.some((q) => near(q, p)) && !side)) return false;
+    }
+  }
+  return true;
   }
   // Into blocks counted from the top-left, with EDGE round the outside.
   const H = Math.max(...placed.map((p) => p.b + p.shape.h));
@@ -611,9 +733,9 @@ export function layoutFloorplan(layout: Layout): Floorplan {
 // A sound layout for a dungeon (spec.rooms rooms besides the entrance and
 // the boss, the shortest route spec.minRoute rooms or more). Rolls again
 // until one comes out sound, its tiles too (checkFloorplan).
-export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute"> & { large?: number; block?: number }, rng: Rng = Math.random): Layout {
+export function rollLayout(spec: Pick<MapSpec, "rooms" | "minRoute"> & { large?: number; block?: number } & RoomOpts, rng: Rng = Math.random): Layout {
   for (let i = 0; i < LAYOUT_REROLLS; i++) {
-    const rooms = rollRooms(spec.rooms, rng, spec.large ?? 0, spec.block ?? OLD_BLOCK);
+    const rooms = rollRooms(spec.rooms, rng, spec.large ?? 0, spec.block ?? OLD_BLOCK, spec);
     if (!rooms) continue;
     const tunnels = pickTunnels(rooms, tunnelOptions(rooms, rng), spec.minRoute, rng);
     if (!tunnels) continue;
