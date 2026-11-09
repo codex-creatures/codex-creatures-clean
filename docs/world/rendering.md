@@ -148,21 +148,41 @@ structure. Not an isometric game.**
   automatically carried into 3D. Style unchanged: stylised fantasy pixel art, readable stonework,
   cohesive proportions, deliberate light. The user brings the reference images again.
 
+### Geometry and camera rules 📌 (settled by the user, 2026-11-10, in the grey experiment)
+
+Chosen by eye in `/lab/three`'s grey geometry, phone included, where walking and performance felt
+good. They hold for any 3D renderer of the walkable dungeon; the 2D view is still what the game
+draws, and no migration is approved.
+
+- **Camera:** orthographic, fixed, facing north, **60°** down from the horizon. No rotation, no
+  perspective, no movement besides following you.
+- **Side walls (east and west): the lean.** Every point of the rock moves outwards, away from your
+  column, by `lean × its height × its distance across from you`, with **lean 0.03** (in the vertex
+  shader). Near you a side wall is a thin edge; across the screen a little of its face shows.
+  (Candidate A, a narrow perspective camera, was turned down.)
+- **Wall height: 2.25 u.**
+- **North walls** show their faces. **South walls show none:** their faces turn away from the
+  camera and are never drawn.
+- **South walls: a low rim.** Rock just south of open floor (`SOUTH_BAND`, 2 rows) shows as a lip
+  `SOUTH_LIP` (0.25 u) high, so it marks the room's edge and hides nothing; rock that is also
+  another room's north wall keeps its full height and face. (Full-height south rock hid about
+  1.3 u of floor, and you standing there.)
+- **Solid rock:** the dungeon is carved from one mass of rock at wall height, running on past the
+  plan; rock tops are one surface, with floors cut into it.
+- **Places you haven't found: black, for now.** Everything is carved, and rock or floor not beside
+  floor you've seen is drawn black (as the 2D view does). Hard to judge without art, so the user
+  wants it softened later: unexplored places **fading** to black rather than a hard edge, worked
+  out with lighting. (The other option, unfound floor shown as solid rock, stays in the lab.)
+- **Physical rock and shown rock are separate.** What rock *is* (it blocks walking, sight and
+  light) is the floorplan's tiles, read by the sim. What rock *shows* is only the mesh's heights.
+  So a wall can be lowered, cut away or hidden on screen (the low rim is one) without changing
+  what it blocks. The renderer never feeds back into the rules. The user called this important
+  for visibility, lighting and later work: keep it.
+
 ### Technical approaches still to validate 🧪 (nothing here is decided)
 
-- **Side walls:** an orthographic camera facing north sees east and west faces exactly edge-on, so
-  the side-wall rule needs something. Candidates: (a) a perspective camera with a narrow field of
-  view (faces open with distance from the centre of the screen, which is you, but the floor
-  foreshortens slightly); (b) orthographic, with the side faces leaned in the wall's vertex shader
-  by their distance across from you; (c) side faces as separate, flat-shaded quads sized per
-  frame. Pick the one with no camera movement and the fewest special cases.
-- **South walls:** a full-height block on a room's south side hides the floor behind it (about
-  1.3 u at 60° for today's 2.25 u wall). Candidates: lower south rock, a cap with no face, or
-  fading it near you as the 2D `capFade` does.
-- **Solid rock:** rock tops as one merged surface at wall height over all rock (not only the ring
-  touching floor), floors carved into it. Check: draw calls and triangles on a 30-room Cyclops
-  run, the unexplored (`known`) blackout, culling, and that layouts need no change (they don't
-  read the renderer).
+Side walls, south walls and solid rock are settled (above). Still open:
+
 - **Light through rock:** today's point lights ignore walls unless shadows are on. Candidates:
   shadow maps (cube shadows cost six passes a light); or lighting driven by the sim's own light
   reach (`lightNow`, `torchGlow`) at subcell resolution, which can't bleed and matches gameplay
@@ -210,24 +230,17 @@ south rock **full** or a **low rim** (`SOUTH_LIP` 0.25 u for `SOUTH_BAND` 2 rows
 also a north wall); wall height 1.5 or 2.25 u. A Labyrinth run is about 18k triangles in one draw
 call, rebuilt in about 12 ms as you see more (at most 4 times a second).
 
-**Provisional baseline (the user, 2026-11-10, after trying it, phone included):** side walls **B**,
-orthographic with **lean 0.03**, pitch **60°**, walls **2.25 u**; walking and performance felt
-good. It's the grey switch's default (and `?geo=grey`'s). Still to pick, made easier to compare:
+**Done (2026-11-10):** the user picked by eye; the rules are in "Geometry and camera rules" above,
+and the grey switch (and `?geo=grey`) starts on them. Aids kept for comparing: the low rim's top
+has its own darker grey (`GREY.rim`); "Flip" swaps full rock and the rim, or rock and black for
+unfound places, every second; "Places not found yet" also offers "shown" (everything carved, to
+judge shapes). `carvedMesh` names each quad's tile (`tile`), so a wall can be coloured, hidden or
+cut by tile. In grey, the Orthographic/Perspective and Screen/Art pixel switches are hidden: the
+camera is the A/B pick, and with no art or torch, pixels and shadows have nothing to change. (In
+kit-art mode at 15 across, an art pixel is only about 1 to 2 screen pixels, so art-sized pixels
+barely show there either.)
 
-- **South rock, full or low rim:** the rim's top is now its own darker grey (`GREY.rim`), so it
-  reads as a step down, and "Flip" swaps the two every second. The difference is at a room's
-  south edge: full rock hides about 1.3 u of floor (and you, standing there); the rim doesn't.
-- **Places not found yet:** solid rock (unfound floor is rock: the carved-from-rock look), black
-  (everything carved, and anything not beside floor you've seen drawn black, as the 2D view does),
-  or shown (everything carved and grey, to judge the shapes). "Flip" swaps rock and black.
-- **Physical versus shown rock:** the heights are presentation only. Walking, sight and light read
-  the floorplan's tiles (the sim), never the mesh, so a wall can be lowered, cut away or hidden
-  without changing what it blocks (tested). `carvedMesh` names each quad's tile, so a wall can be
-  coloured, hidden or cut by tile later.
-- In grey, the Orthographic/Perspective and Screen/Art pixel switches are hidden: the camera is
-  the A/B pick (they were the same switch twice), and with no art or torch, pixels and shadows had
-  nothing to change. (In kit-art mode at 15 across, an art pixel is already only about 1 to 2
-  screen pixels, so art-sized pixels barely show there either.)
-
-*Done when* the user picks the south rock and the unfound look by eye; then the geometry is
-settled and lighting and materials come next.
+**Next, when the user says so (not started):** lighting and materials. The goal stays the
+original one: detailed, consistent stonework, controlled pixel density, clear environmental
+definition, and light that shows things rather than hiding them; with light that never passes
+through rock, and unexplored places fading to black.

@@ -6,7 +6,8 @@
 // torch's shadows and the zoom; the numbers under them say how it's running. "Grey geometry" is the
 // camera-and-geometry experiment (world/rendering.md §4.8): solid rock, flat greys, one plain light,
 // and the two side-wall candidates, A (a narrow perspective camera) and B (orthographic, leaned).
-// Its baseline is the user's pick (2026-11-10): B, lean 0.03, 60°, 2.25 u walls. "Flip" swaps a
+// It starts on the settled geometry (the user, 2026-11-10; world/rendering.md §4.8): B, lean 0.03,
+// 60°, 2.25 u walls, a low south rim, unfound places black. "Flip" swaps a
 // pair of choices every second, so a small difference shows as movement.
 // Dev tool: Three.js is loaded on this page only.
 
@@ -36,15 +37,15 @@ const PITCHES = [{ label: "35°", v: (35 * Math.PI) / 180 }, { label: "¾ (48.6�
 
 // Settings from the address, to share or shoot a view:
 // ?view=2d|3d&pitch=<degrees>&camera=persp&pixels=art&shadows=1&across=<n>&dungeon=1&seed=<n>
-// and the grey experiment: &geo=grey (pitch 60° and lean 0.03 unless given) &fov=<degrees> &lean=<n> &south=low &wall=<u> &unseen=black|shown
+// and the grey experiment: &geo=grey (the settled geometry unless given) &fov=<degrees> &lean=<n> &south=full|low &wall=<u> &unseen=rock|black|shown
 // and, 3D only: &seen=all (everything shown as seen) &room=<kind> (start in the first room of that kind: boss, encampment, chest…)
 function fromAddress() {
   const q = new URLSearchParams(window.location.search), num = (k: string) => (q.has(k) ? Number(q.get(k)) : undefined);
   const grey = q.get("geo") === "grey";
   const view: View3D = { pitch: num("pitch") !== undefined ? (num("pitch")! * Math.PI) / 180 : grey ? SIXTY : DEFAULT_PITCH, perspective: q.get("camera") === "persp",
     pixels: q.get("pixels") === "art" ? "art" : "device", shadows: q.get("shadows") === "1", across: num("across") ?? 15,
-    grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? (grey ? CANDIDATES.B.lean : 0), south: q.get("south") === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT,
-    unseen: q.get("unseen") === "black" ? "black" : q.get("unseen") === "shown" ? "shown" : "rock" };
+    grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? (grey ? CANDIDATES.B.lean : 0), south: (q.get("south") ?? (grey ? "low" : "full")) === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT,
+    unseen: (["rock", "black", "shown"] as const).find((u) => u === q.get("unseen")) ?? (grey ? "black" : "rock") };
   return { three: q.get("view") !== "2d", dungeon: (num("dungeon") === 1 ? 1 : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
 }
 
@@ -93,7 +94,7 @@ function ThreeLab() {
         {three && <>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {chip(!view.grey, "Kit art", () => set({ grey: false }))}
-            {chip(view.grey, "Grey geometry", () => set({ grey: true, ...CANDIDATES.B }))}
+            {chip(view.grey, "Grey geometry", () => set({ grey: true, ...CANDIDATES.B, south: "low", unseen: "black" }))}
           </div>
           {view.grey && <>
             <div style={{ fontSize: 12, opacity: 0.7 }}>Side walls</div>
