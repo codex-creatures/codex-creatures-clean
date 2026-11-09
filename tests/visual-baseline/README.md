@@ -61,3 +61,12 @@ builds differed by 0.00–0.81, about as much as two shots of the same build (0.
 pixel more than 24 levels off on a flame (wall torches, a candle, the campfire) and nowhere else.
 So: no visual difference. Compare by shooting the old and new builds side by side in one session,
 not against old shots alone.
+
+## Comparing (2026-11-10)
+
+`node scripts/shot-diff.mjs <folder-a> <folder-b>` prints each scene's average difference per
+colour channel and the share of pixels more than 24 levels off. These scenes show only the walk
+view (`WalkView`, `lib/render/`), so they check changes there, not the rest of the Labyrinth
+screen: that's played through in tests/dungeonPage.test.tsx. Against `phase1/`, today's build
+differs by 2–8 (and the scroll by 48), from the art approved since (kit E/F walls, the torch and
+candle art, the new scroll), so shoot a new reference before the next walk-view change.
