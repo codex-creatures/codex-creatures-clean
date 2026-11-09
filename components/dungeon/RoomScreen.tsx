@@ -13,18 +13,13 @@ import { type Guess } from "@/lib/dungeon/witch";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
 import { squadsOf, CHEST_DROPS, DECK_CARDS, ROOM_INFO, hasFight, codexPrice, type Ware, waresFor, type BagEntry, fightingTeam, gearName, type DungeonRun, type Room, dungeonOf, bossLevel, dynamiteHere } from "@/lib/dungeon/run";
 import { rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
-import { combatSummary } from "@/lib/combat/loadout";
+import { combatLine } from "@/lib/dungeon/runText";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import { RoomIcon } from "@/components/DungeonMapView";
 import LibrarianShelf from "@/components/LibrarianShelf";
 import { type StoragePlan } from "@/lib/items/materials";
 import EncampmentPanel from "./EncampmentPanel";
 import WitchTable from "./WitchTable";
-
-function combatLine(f: Parameters<typeof combatSummary>[0]): string {
-  const s = combatSummary(f);
-  return `${s.hp} HP · Atk ${Math.round(s.atk)} · Rng ${Math.round(s.rng)} · Mag ${Math.round(s.mag)} · Agi ${Math.round(s.agil)} · MDef ${Math.round(s.mdef)} · RDef ${Math.round(s.rdef)} · MgDef ${Math.round(s.magdef)}`;
-}
 
 export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite }: {
   plans: StoragePlan[]; // storage schematics you have or built (the merchant won't offer them)

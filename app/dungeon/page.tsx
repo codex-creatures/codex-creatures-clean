@@ -40,7 +40,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room, curse, illnessTick, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room, curse, illnessTick, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -67,14 +67,8 @@ import RunOver from "@/components/dungeon/RunOver";
 import Haul from "@/components/dungeon/Haul";
 import Bag from "@/components/dungeon/Bag";
 import Shaker from "@/components/dungeon/Shaker";
-import { beatenTitle, clearedLine, chestName } from "@/components/dungeon/Haul";
+import { beatenTitle, clearedLine, chestName, dropLabel } from "@/lib/dungeon/runText";
 
-function dropLabel(d: Drop): string {
-  if (d.dropType === "item" && d.material) return `${d.name} ×${d.qty ?? 1}`;
-  if (d.dropType === "reward") return `${d.amount} gold`;
-  if (d.dropType === "card") return `${d.name} card`;
-  return d.dropType === "item" ? `${d.name} (${d.rarity})` : d.name;
-}
 
 export default function DungeonPage() {
   const game = useGameState();
@@ -1526,11 +1520,4 @@ export default function DungeonPage() {
       ),
     },
   );
-}
-
-// The potions in the bag, one entry per kind (for the battle screen).
-function bagItems(bag: PotionKey[]): BagItem[] {
-  return (Object.keys(POTIONS) as PotionKey[])
-    .map((k) => ({ key: k, ...POTIONS[k], potion: k, count: bag.filter((b) => b === k).length }))
-    .filter((it) => it.count > 0);
 }

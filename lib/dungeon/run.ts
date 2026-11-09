@@ -326,6 +326,13 @@ export const POTIONS: Record<PotionKey, { name: string; heal: number; price: num
   potion: { name: "Healing Potion", heal: 100, price: 100, icon: "⚗️" }, // (a round flask: the art is a red bottle)
   lesser: { name: "Lesser Potion",  heal: 50,  price: 50,  icon: "🧪" }, // (a little vial)
 };
+
+// The potions in the bag, one entry per kind (for the battle screen).
+export function bagItems(bag: PotionKey[]) {
+  return (Object.keys(POTIONS) as PotionKey[])
+    .map((k) => ({ key: k, ...POTIONS[k], potion: k, count: bag.filter((b) => b === k).length }))
+    .filter((it) => it.count > 0);
+}
 // A stash: a burlap sack of STASH_ITEMS things. Open it and take what you
 // want (one slot each, gold takes none); what you leave stays on the floor.
 // - STASH_POTIONS potions (each a Healing Potion STASH_POTION_CHANCE of the

@@ -7,22 +7,10 @@ import BagSlots, { slotLook } from "@/components/BagSlots";
 import LootGrid from "@/components/LootGrid";
 import type { Drop } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
-import { bagSize, bagName, isPotionEntry, type BagEntry, type GotItem, type DungeonSave, type DungeonRun, type Room, DUNGEONS, isRareFind } from "@/lib/dungeon/run";
+import { bagSize, bagName, isPotionEntry, type BagEntry, type GotItem, type DungeonSave, type DungeonRun, isRareFind } from "@/lib/dungeon/run";
 import { MUTED } from "@/components/BattleScreen";
 import EncampmentPanel from "./EncampmentPanel";
-
-// The boss beaten: its name in the celebration's banner, and a line about the clear.
-export function beatenTitle(run: DungeonRun) {
-  return run.dungeon === 0 ? "The Encampment is yours!" : run.dungeon === 2 ? "The Hydra falls!" : run.dungeon === 3 ? "The Warden falls!" : "The Cyclops falls!";
-}
-export function clearedLine(run: DungeonRun, lab: DungeonSave) {
-  return run.dungeon === 0
-    ? `The chief goes down, and the camp is yours. You beat the Encampment on run ${run.runNumber}!${lab.meta.campClears ? "" : " The Cyclops's way in is open now."}`
-    : run.dungeon && run.dungeon !== 1
-    ? `${run.dungeon === 2 ? "The last head falls" : "The Warden falls"}, and the deep goes quiet. You beat ${DUNGEONS[run.dungeon].name.replace("The", "the")} on run ${run.runNumber}!`
-    : `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`;
-}
-export const chestName = (room: Room) => (room.container === "strongbox" ? "The strongbox" : room.kind === "encampment" ? "The chief's chest" : "The Cyclops' chest");
+import { beatenTitle, chestName } from "@/lib/dungeon/runText";
 
 // The haul, once the boss is beaten (the user, 2026-11-02: one looting
 // screen, then home): your bag's free space, the boss's chest (and the
