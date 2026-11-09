@@ -19,7 +19,7 @@ import CageReveal, { type CageFind } from "@/components/CageReveal";
 import Triumph from "@/components/Triumph";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
 import LootGrid, { stackCards } from "@/components/LootGrid";
-import { useGameState, SLOT_FIELD, type EquipSlot } from "@/hooks/useGameState";
+import { useGameState, SLOT_FIELD } from "@/hooks/useGameState";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
@@ -40,7 +40,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonSave, type DungeonRun, type Room, curse, illnessTick, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, wipedOut, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -67,13 +67,13 @@ import RunOver from "@/components/dungeon/RunOver";
 import Haul from "@/components/dungeon/Haul";
 import Bag from "@/components/dungeon/Bag";
 import Shaker from "@/components/dungeon/Shaker";
+import { useDungeonSave } from "@/hooks/useDungeonSave";
 import { beatenTitle, clearedLine, chestName, dropLabel } from "@/lib/dungeon/runText";
-
 
 export default function DungeonPage() {
   const game = useGameState();
   const router = useRouter();
-  const [lab, setLab] = useState<DungeonSave | null>(null);
+  const { lab, setLab, update, updateRun, updateBag, takeOne, itemsById, itemOf, slotOf, carry, here } = useDungeonSave(game);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [lootOpen, setLootOpen] = useState(false); // an opened chest or sack, in its window with your bag
   const [notes, setNotes] = useState<string[]>([]);
@@ -101,42 +101,6 @@ export default function DungeonPage() {
   const [leaveAsk, setLeaveAsk] = useState(false); // tapped back to the Den mid-run: it ends the run, so a word first
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
-
-  // Every change to the run is saved straight away.
-  function update(next: DungeonSave) {
-    saveDungeon(next);
-    setLab(next);
-  }
-  // Nobody left standing means the run is over (you wake up in the Den).
-  function updateRun(fn: (r: DungeonRun) => DungeonRun) {
-    const cur = loadDungeon();
-    if (!cur.run) return;
-    const next = fn(cur.run);
-    update({ ...cur, run: wipedOut(next) ? { ...next, status: "dead" } : next });
-  }
-  function updateBag(fn: (bag: BagEntry[]) => BagEntry[]) {
-    const cur = loadDungeon();
-    update({ ...cur, meta: { ...cur.meta, bag: fn(cur.meta.bag ?? []) } });
-  }
-  // A potion drunk: out of the bag, and (if it was found this run) out of the haul.
-  const takeOne = (key: PotionKey) => {
-    const cur = loadDungeon();
-    const i = cur.meta.bag.indexOf(key);
-    if (i < 0) return;
-    update({ meta: { ...cur.meta, bag: [...cur.meta.bag.slice(0, i), ...cur.meta.bag.slice(i + 1)] }, run: cur.run && { ...cur.run, got: usedUp(cur.run.got, { potion: key }) } });
-  };
-
-  // What a bag entry holds: gear is one of your items (in storage); loot was
-  // found this run and is kept in the bag until you get home.
-  const itemsById = new Map(game.inventory.filter((x) => x.dropType === "item").map((x) => [x.id, x as CreatureOrItemDrop]));
-  function itemOf(e: BagEntry, meta = lab?.meta): CreatureOrItemDrop | undefined {
-    const g = gearIdOf(e);
-    if (g) return itemsById.get(g);
-    const l = lootIdOf(e);
-    return l ? (meta?.loot?.[l] as CreatureOrItemDrop | undefined) : undefined;
-  }
-  const slotOf = (it: CreatureOrItemDrop): EquipSlot | null =>
-    it.itemCategory === "weapon" ? "weapon" : it.itemCategory === "armor" && it.armorSlot ? it.armorSlot : null;
 
   // Put a weapon or armour piece from the bag on a creature. Loot joins your
   // storage first; whatever it replaces takes its place in the bag.
@@ -175,28 +139,6 @@ export default function DungeonPage() {
         detail: damageTypesOn() ? `${aff.icon} ${aff.name} · ${w.rarity}` : w.rarity }];
     }),
   ];
-
-  // Found something. Gold and creature cards take no space (and real
-  // creatures aren't found lying about: they come as cards — an
-  // encampment's cages are the exception, see openCage). Everything else
-  // needs a slot (a material joins its stack if you have one); if the bag's
-  // full it waits for you to make room. Materials join your tally at home.
-  function carry(drops: Drop[]) {
-    const cur = loadDungeon();
-    let meta: DungeonSave["meta"] = { ...cur.meta, bag: [...(cur.meta.bag ?? [])], loot: { ...(cur.meta.loot ?? {}) } };
-    const pending: Drop[] = [];
-    for (const raw of drops) {
-      const x = (raw.dropType === "creature" ? { ...raw, dropType: "card" } : raw) as Drop;
-      if (x.dropType === "reward") { game.addGold(x.amount); continue; }
-      if (x.dropType === "card") { game.addDrop(x); continue; }
-      const next = stowDrop(meta, x); // (a potion goes straight in the bag, ready to drink)
-      if (next) meta = next; else pending.push(x);
-    }
-    update({ meta, run: cur.run ? { ...cur.run, pending: [...(cur.run.pending ?? []), ...pending] } : null });
-  }
-
-  // Where you are, for things left on the floor.
-  const here = (r: DungeonRun) => (r.current ? ROOM_INFO[r.current.kind].name : "the entrance");
 
   // Leave something from the bag on the floor, to make room. (Your own gear
   // leaves your storage too: it's down here now.)
