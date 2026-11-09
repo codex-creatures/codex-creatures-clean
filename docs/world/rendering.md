@@ -179,68 +179,61 @@ draws, and no migration is approved.
   what it blocks. The renderer never feeds back into the rules. The user called this important
   for visibility, lighting and later work: keep it.
 
-### Technical approaches still to validate 🧪 (nothing here is decided)
-
-Side walls, south walls and solid rock are settled (above). Still open:
-
-- **Light through rock:** today's point lights ignore walls unless shadows are on. Candidates:
-  shadow maps (cube shadows cost six passes a light); or lighting driven by the sim's own light
-  reach (`lightNow`, `torchGlow`) at subcell resolution, which can't bleed and matches gameplay
-  by construction. The second is the likelier fit; it needs a test.
-
 ### The prototype as built (2026-11-10)
 
 `/lab/three`: a made-up run held in memory, drawn by the 2D view or the 3D one from the same
-seed. Nothing is saved; the game doesn't use it.
+seed. Nothing is saved; the game doesn't use it. **Start from `?view=3d&geo=grey`:** the "Grey
+geometry" mode follows the rules above. The older "Kit art" mode doesn't (see its limits below).
 
 | File | What |
 |---|---|
-| app/lab/three/page.tsx | the lab page; switches for pitch (35°, ¾ 48.6°, 60°, 75°), orthographic or perspective, art-sized pixels, torch shadows, zoom; settings in the address (`?view=3d&pitch=60&camera=persp&pixels=art&shadows=1&across=15&dungeon=1&seed=…`); fps, draw calls, triangles |
-| components/WalkView3D.tsx | the renderer: React Three Fiber canvas, `walkSim` for walking, sight, foes and taps (no fights or loot); instanced floor and wall meshes; your torch plus a pool of 8 point lights (`LIGHT_POOL`) for the nearest lit torches, candles and campfires; ambient 0.5; upright sprites. Its setup copies WalkView's |
-| lib/render3d/dungeon3d.ts | pure rules: `dungeonCells` (a floor on every walkable tile, a wall block on rock touching floor, diagonals included), `shadeOf` (seen or never seen), `WALL_HEIGHT` 2.25, `DEFAULT_PITCH` asin 0.75, `uprightStretch` |
-| tests/dungeon3d.test.ts | its tests |
+| app/lab/three/page.tsx | the lab page. Both modes: 2D or 3D, Encampment or Labyrinth, another run, pitch, zoom (11, 15, 19 across); fps, draw calls, triangles. Grey: side walls A or B (FOV or lean), south rock full or low rim, places not found yet (solid rock, black, shown), wall height, and "Flip" (swaps a pair every second). Kit art: orthographic or perspective, screen or art pixels, torch shadows. Address: `?view=2d\|3d&geo=grey&pitch=<°>&lean=<n>&fov=<°>&south=full\|low&unseen=rock\|black\|shown&wall=<u>&across=<n>&dungeon=1&seed=<n>&seen=all&room=<kind>&camera=persp&pixels=art&shadows=1` |
+| components/WalkView3D.tsx | the renderer: a React Three Fiber canvas, with `walkSim` for walking, sight, foes and taps (no fights or loot). Grey (`GreyRock`): one carved mesh, with the lean in its vertex shader, flat greys (`GREY`) by vertex colour, and ambient plus one directional light (`GREY_LIGHT`), rebuilt at most 4 times a second as you see more. Kit art: instanced floor tiles and wall cubes with the 2D kit F art, your torch plus a pool of 8 point lights (`LIGHT_POOL`), ambient 0.5. Both: upright sprites for you, things and foes. Its setup copies WalkView's |
+| lib/render3d/dungeon3d.ts | pure rules: `rockHeights` (what rock shows: a height per tile, with the low rim), `carvedMesh` (the mesh from the heights: tops, and faces facing the lower side; each quad's `tile`), `SOUTH_BAND`, `SOUTH_LIP`, `ROCK_MARGIN`, `WALL_HEIGHT` 2.25, `shadeOf` (seen or never seen), and the kit-art mode's `dungeonCells`, `DEFAULT_PITCH`, `uprightStretch` |
+| tests/dungeon3d.test.ts | its tests, including that heights never change the floorplan |
 
-Dependencies: `three` 0.186.0 and `@react-three/fiber` 9.8.2, pinned, loaded on this page only.
+Dependencies: `three` 0.186.0 and `@react-three/fiber` 9.8.2, pinned, loaded on this page only. A
+Labyrinth run in grey is about 18k triangles in one draw call, rebuilt in about 12 ms; the user
+found it smooth on their phone.
 
-**Limitations, against the direction above:** default pitch 48.6°, not 60°; walls are 2.25 u
-cubes with the 2D kit F north face on every side and its cap on top (art drawn for the 2D
-three-quarter view, 48 × 36 floors); south walls are full blocks with faces; side walls show no
-face orthographically; only rock touching floor is built (deeper rock is empty black); lights pass
-through rock unless the torch's shadows are on; sprites are flat cut-outs facing south, stretched
-by `uprightStretch`.
+**Limits:**
+- **Grey** has no textures, no torch and no wall lights; unseen places switch to black with a
+  hard edge.
+- **Kit art** predates the rules above: default pitch 48.6°, no lean, full wall cubes with the 2D
+  kit's north face on every side, only the ring of rock touching floor, and lights through rock
+  unless torch shadows are on.
+- **Both:** sprites are flat cut-outs facing south, stretched by `uprightStretch`.
+- In grey, screen or art pixels and torch shadows are hidden (no art or torch to change). In kit
+  art at 15 across, an art pixel is only about 1 to 2 screen pixels, so art-sized pixels barely
+  show.
 
-### Next experiment
+### Done: the grey geometry experiment (2026-11-10)
 
-**Camera and geometry only, grey, in /lab/three:** one seeded room-and-tunnel stretch, orthographic
-at 60° facing north, solid rock tops, north faces only, no south faces, and the side-wall
-candidates (a) and (b) switchable side by side. Flat grey materials and one plain light, so only
-shape is judged. *Done when* the user picks a side-wall approach and a south-wall treatment by eye.
-Then lighting from light reach (no bleed through rock), then the art standard.
+Camera and geometry only, in flat greys, to judge shape. The user compared side walls A (narrow
+perspective) and B (orthographic with the lean), full south rock and a low rim, wall heights, and
+unfound places as rock or black, and picked the rules above (decision 36). The comparison aids stay
+in the lab: the rim's darker top (`GREY.rim`), "Flip", and unfound places "shown".
 
-**Built (2026-11-10), awaiting the user's pick:** the "Grey geometry" switch in /lab/three
-(`?view=3d&geo=grey`), on the same made-up runs (not a single stretch). The dungeon is one mesh carved
-from a height per tile (`rockHeights`, `carvedMesh` in lib/render3d/dungeon3d.ts): open floor at 0,
-rock at the wall's height out to `ROCK_MARGIN` (24 u) past the plan, a face wherever neighbours
-differ, facing the lower. Floor you haven't seen counts as rock, so nothing gives away an unfound
-place. South walls' faces look away from the camera, so they're never drawn. Flat greys (a faint
-floor checker, to show foreshortening), ambient plus one directional light, no torch or wall lights,
-no wall torches. Switches: **A** perspective (FOV 10°, 20°, 30°) or **B** orthographic with the lean
-(`transformed.x += lean × (x − your x) × height` in the vertex shader; 0, 0.015, 0.03, 0.05);
-south rock **full** or a **low rim** (`SOUTH_LIP` 0.25 u for `SOUTH_BAND` 2 rows, except rock that is
-also a north wall); wall height 1.5 or 2.25 u. A Labyrinth run is about 18k triangles in one draw
-call, rebuilt in about 12 ms as you see more (at most 4 times a second).
+### Next experiment: materials and lighting 🧪 (the user, 2026-11-10; not started)
 
-**Done (2026-11-10):** the user picked by eye; the rules are in "Geometry and camera rules" above,
-and the grey switch (and `?geo=grey`) starts on them. Aids kept for comparing: the low rim's top
-has its own darker grey (`GREY.rim`); "Flip" swaps full rock and the rim, or rock and black for
-unfound places, every second; "Places not found yet" also offers "shown" (everything carved, to
-judge shapes). `carvedMesh` names each quad's tile (`tile`), so a wall can be coloured, hidden or
-cut by tile. In grey, the Orthographic/Perspective and Screen/Art pixel switches are hidden: the
-camera is the A/B pick, and with no art or torch, pixels and shadows have nothing to change. (In
-kit-art mode at 15 across, an art pixel is only about 1 to 2 screen pixels, so art-sized pixels
-barely show there either.)
+**Small and representative, in /lab/three, on the settled geometry.** Not another large design
+exercise, and not a new art library: a few materials and a few lights, enough to judge by eye, and
+then a short art standard written from what actually works.
 
-**Next, when the user says so (not started):** lighting and materials. The goal stays the
-original one: detailed, consistent stonework, controlled pixel density, clear environmental
-definition, and light that shows things rather than hiding them; with light that never passes
-through rock, and unexplored places fading to black.
+The user's priorities:
+- **Textures:** sharper, more detailed and cohesive pixel art, closer to the user's reference
+  images (they share them again: they're not in the repo).
+- **Density:** consistent texture density and asset proportions, built on the world units (1 u a
+  panel, 3 × 3 subcells; the densities in use are in [art-pipeline.md](art-pipeline.md)).
+- **Surfaces:** floor, north wall faces, rock tops and the low rim each distinct and readable.
+- **Light** shows stonework and objects; no coloured haze over the picture.
+- **No light through solid rock.** The open candidates are under "Technical approaches still to
+  validate" above.
+- **Darkness** stays atmospheric without losing readability.
+- **Unexplored places fade smoothly** into black, without giving their layout away.
+- **Afterwards: a concise art standard**, from what works in this renderer.
+
+Kept from earlier decisions: art from PixelLab, samples first and the user's approval before any
+rollout (CLAUDE.md, [art-pipeline.md](art-pipeline.md), decision 33: the reference is a target,
+not a source); the geometry and camera rules above; physical rock kept apart from shown rock; the
+game, its saves and its 2D view untouched; no migration to 3D.

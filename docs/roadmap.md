@@ -78,7 +78,8 @@ prototype's limits and **the next experiment** (camera and geometry only, in gre
 side- and south-wall techniques, lighting's technique, sprite sizes or a 3D art standard. The grey
 geometry experiment is done (`/lab/three?view=3d&geo=grey`): the geometry and camera rules are
 settled (decision 36: orthographic at 60°, lean 0.03, 2.25 u walls, a low south rim, unfound places
-black). Next, when the user says so: lighting and materials.
+black). Next, when the user says so: a small materials-and-lighting experiment on that geometry
+(its priorities and scope are in world/rendering.md §4.8, "Next experiment").
 
 ### Paused (the user, 2026-11-10)
 
