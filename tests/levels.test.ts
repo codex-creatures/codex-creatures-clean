@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { CREATURE_BY_ID, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
 import { rollCreature } from "../lib/creatures/creatureRoll";
-import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP_SCALE, shareXp, impactsFromLog, addPlayerXp, playerXpToNext, canFind, SCAN_UNLOCK } from "../lib/creatures/levels";
+import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP_SCALE, shareXp, impactsFromLog, addPlayerXp, playerXpToNext, canFind, SCAN_UNLOCK, xpShown } from "../lib/creatures/levels";
 import { starterCreature, STARTER_LEVEL } from "../lib/creatures/starter";
 import { buildFighter } from "../lib/combat/loadout";
 import { newWitchGame, guess, walkAway, remaining, drawNext, odds, sitDown, isSeated, DECK, MAX_CORRECT, type WitchGame } from "../lib/dungeon/witch";
@@ -254,5 +254,20 @@ describe("the starter's quick attack", () => {
     expect(MOVES[QUICK_ATTACK[t.cls]].type).toBe(t.cls);
     expect(out.slice(0, own.length - 1)).toEqual(own.slice(0, own.length - 1));
     expect(withQuickAttack(t, [...own.slice(0, 3), "Quickcast"])).toEqual([...own.slice(0, 3), "Quickcast"]);
+  });
+});
+
+describe("the XP shown after a fight (xpShown)", () => {
+  it("shows where a creature was and got to, and what's left to its next level", () => {
+    const s = xpShown({ level: 3, xp: 10 }, 20);
+    expect(s.from).toEqual({ level: 3, xp: 10, fill: 10 / xpToNext(3) });
+    expect(s.to).toEqual({ level: 3, xp: 30, fill: 30 / xpToNext(3), need: xpToNext(3) - 30 });
+  });
+  it("carries over a level up, and is full with nothing left at the top", () => {
+    const s = xpShown({ level: 3, xp: xpToNext(3) - 5 }, 12);
+    expect(s.to.level).toBe(4);
+    expect(s.to.xp).toBe(7);
+    const top = xpShown({ level: MAX_LEVEL - 1, xp: 0 }, 1e6);
+    expect(top.to).toEqual({ level: MAX_LEVEL, xp: 0, fill: 1, need: 0 });
   });
 });

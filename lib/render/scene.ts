@@ -34,7 +34,7 @@ export const FALL_TIME = 0.6, DUST_TIME = 1.2, SHAKE_TIME = 0.4, SHAKE_PX = 3; /
 // You and the things in the walk at KIT_PX art pixels a unit (the walls at their kit's own size: buildScene).
 const HERO_DENSITY = { perU: KIT_PX };
 
-const COLOURS = { rock: "#07060b", goal: "#f1d9a0", foe: "#b0302a", rubble: ["#5b5560", "#6f6872", "#48434d"], dust: "200, 190, 175" };
+const COLOURS = { rock: "#07060b", foe: "#b0302a", rubble: ["#5b5560", "#6f6872", "#48434d"], dust: "200, 190, 175" };
 export const DARK_RGB = [6, 5, 12];
 const CLOSED = "rgba(7, 6, 11, 0.6)";
 
@@ -123,7 +123,7 @@ export function buildScene(input: SceneInput): Scene {
   const shake = (now - sim.shakeAt) / 1000 < SHAKE_TIME ? SHAKE_PX * scale * (1 - (now - sim.shakeAt) / 1000 / SHAKE_TIME) : 0;
   const jx = shake ? (random() * 2 - 1) * shake : 0, jy = shake ? (random() * 2 - 1) * shake : 0;
   const view = shake ? walkView(plan, sim.me, cw, ch, { x: jx, y: jy }) : still;
-  const { T, sx, sy, midX, midY, footX, footY, x0, x1, y0, y1 } = view;
+  const { T, sx, sy, footX, footY, x0, x1, y0, y1 } = view;
   ctx.fillStyle = COLOURS.rock;
   ctx.fillRect(0, 0, cw, ch);
   // The kit (lib/sprites/walk.ts): a kit pixel is T / its px across and T / its row down.
@@ -178,21 +178,10 @@ export function buildScene(input: SceneInput): Scene {
     for (const r of rs) ctx.rect(sx(r.x) - T, sy(r.y) - T, (r.w + 2) * T, (r.h + 2) * T);
     ctx.fill();
   }
-  // The way you'll walk: a dotted line from you, shrinking as you go.
-  const end = sim.me.path[sim.me.path.length - 1];
-  if (end) {
-    ctx.strokeStyle = COLOURS.goal;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3 * scale, 4 * scale]);
-    ctx.beginPath();
-    ctx.moveTo(midX(sim.me.x), midY(sim.me.y));
-    for (const q of sim.me.path) ctx.lineTo(midX(q.x), midY(q.y));
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.strokeRect(sx(end.x) + 3 * scale, sy(end.y) + 3 * scale, T - 6 * scale, T - 6 * scale);
-  }
   // Everything standing up, lowest on screen last: things to loot, rubble, foes, you, south walls' tops.
   const standing: { x: number; y: number; draw: () => void }[] = [];
+  // Things you walk over lie on the floor, under everything standing (you walk over them, not behind them: the user, 2026-11-09).
+  const flat: { x: number; y: number; draw: () => void }[] = [];
   const shown = things().filter((t) => knownAt(t.x, t.y) && (!t.npc || litAt(t.x, t.y) || t.solid));
   for (const t of shown) {
     const witch = t.def === "witch" ? sim.npcs.find((n) => n.room === t.room) : undefined;
@@ -214,7 +203,7 @@ export function buildScene(input: SceneInput): Scene {
     }
     const d = objectDef(t.def), a = artOf(d, t.state), img = a && image(a.src);
     const px = witch ? { x: witch.x, y: witch.y } : t;
-    standing.push({ x: px.x, y: px.y, draw: () => {
+    (d.collision === "walk-over" ? flat : standing).push({ x: px.x, y: px.y, draw: () => {
       if (!img || !a) return;
       const { wd, h2 } = drawSize(view, d, a);
       // (A used pool is dimmed.)
@@ -333,7 +322,7 @@ export function buildScene(input: SceneInput): Scene {
     const { wd, h2 } = candleSize;
     ctx.drawImage(img, footX(c.x) - wd / 2, footY(c.y) - h2, wd, h2);
   };
-  for (const c of sim.candles) if (knownAt(c.x, c.y)) standing.push({ x: c.x, y: c.y, draw: () => drawCandle(c) });
+  for (const c of sim.candles) if (knownAt(c.x, c.y)) (c.wall ? standing : flat).push({ x: c.x, y: c.y, draw: () => drawCandle(c) });
   for (const d of decorItems) {
     if (!knownAt(d.x, d.y) || d.x < x0 - 2 || d.x > x1 + 2 || d.y < y0 - 2 || d.y > y1 + 2) continue;
     const def = objectDef(DECOR_DEF[d.kind]), art = artOf(def)!, img = image(art.src);
@@ -345,6 +334,7 @@ export function buildScene(input: SceneInput): Scene {
     };
     standing.push({ x: d.x, y: d.y + (def.visual.legacy.sortDy ?? 0), draw });
   }
+  for (const s of drawOrder(flat)) s.draw();
   for (const s of drawOrder(standing)) s.draw();
   // Your torch's warm glow, going cold away from it, the wall torches' pools; then the dark
   // over everything (black where you've never seen, dim where you remember).
@@ -422,6 +412,8 @@ export function buildScene(input: SceneInput): Scene {
     ctx.ellipse(fx, top - 0.08 * T, 0.07 * T, 0.13 * T * wob, 0, 0, 2 * Math.PI);
     ctx.fill();
   }
+  // (A floor candle you're standing on or just behind: you stay in front of it.)
+  const underFoot = (c: Candle) => Math.abs(c.x - sim.me.x) < 0.6 && c.y <= sim.me.y + 0.05 && c.y > sim.me.y - 0.6;
   // Lit candles, over the dark, with a little flickering halo: in sight or not (like the wall
   // torches' flames, a lit candle stays lit; only the light it casts needs you to see it).
   for (const c of sim.candles) {
@@ -434,7 +426,7 @@ export function buildScene(input: SceneInput): Scene {
     ctx.fillStyle = halo;
     ctx.fillRect(fx - r, top - r, 2 * r, 2 * r);
     ctx.globalCompositeOperation = "source-over";
-    drawCandle(c);
+    if (c.wall || !underFoot(c)) drawCandle(c);
   }
   // The campfires, over the dark: a fire glows whatever's round it.
   for (const f of sim.fires) {

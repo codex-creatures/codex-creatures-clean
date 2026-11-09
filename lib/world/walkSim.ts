@@ -138,6 +138,16 @@ export type FrameInput = {
   team: string[]; hp: Record<string, number>; things: () => Thing[]; rng?: () => number;
 };
 
+// Tried to open a chest its guards still stand round: they've seen you (as
+// if one had spotted you), and the fight follows once they reach you.
+export function soundAlarm(sim: WalkSim, room: string, now: number) {
+  if (sim.alarm || sim.fired) return;
+  sim.alarm = { room, at: now, going: new Set(), arrived: new Map(), fadeAt: null };
+  sim.me = { x: Math.round(sim.me.x), y: Math.round(sim.me.y), path: [] };
+  sim.goal = null;
+  sim.wantThing = null;
+}
+
 // A tap on a thing (walkWorld.ts tappedThing picks it): "use" if you're in reach
 // of it now; else set off up beside it ("walking": stepWalk opens it once you're
 // in reach, its "use" event); "none" if there's no way up to it.

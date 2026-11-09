@@ -69,6 +69,17 @@ export function foesToPlace(r: Room, dungeon: DungeonId): number {
   return waitsHere(r, dungeon) ? 1 : r.enemies?.length ?? 0;
 }
 
+// A guarded chest's foes patrol close round it (foes.ts GUARD_REACH), all of
+// them walking, instead of wandering the room (the user, 2026-11-09). A boss
+// waiting at the top stays where it stands. Where they start is unchanged.
+export function guarding(foes: Foe[], layout: Layout, room: (id: string) => Room | undefined, dungeon: DungeonId): Foe[] {
+  return foes.map((f) => {
+    const r = room(f.room);
+    if (f.waits || !r || !hasFight(r) || r.done || fightContainer(r, dungeon) === "sack") return f;
+    return { ...f, walks: true, guard: guardedChestSpot(layout, f.room, r, dungeon) };
+  });
+}
+
 // Each fight room's foes, where they start: as saved in the run (lib/world/
 // placements.ts), for the rooms still to beat, in the rooms' order. The same
 // spots every time the screen opens, whatever's been beaten elsewhere (the foe
@@ -87,7 +98,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // key: the room, or "<room>#<cage>". def: what it is (objects.ts), state:
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
-  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean }; // inert: drawn, not tapped
+  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean }; // inert: drawn, not tapped; guarded: opening it sets its guards on you
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -112,7 +123,8 @@ export function guardedChestSpot(layout: Layout, id: string, r: Room, dungeon: D
 // The things to tap, as the rooms stand now (`room`): each where it was placed
 // (lib/world/placements.ts), the witch where she's got to, a beaten room's sack
 // where it was dropped (else the room's middle, from the layout), a mini boss's
-// or boss's chest where it guards it (shut, and not to be tapped, till it's beaten).
+// or boss's chest where it guards it (shut; trying to open it before they're
+// beaten sets them on you: the user, 2026-11-09).
 export function thingsOf(layout: Layout, placed: Placements, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"], dungeon: DungeonId): Thing[] {
   return ids.flatMap((id): Thing[] => {
     const r = room(id);
@@ -140,7 +152,7 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     }
     const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;
     if (guards && !r.done) {
-      out.push(thingOf({ key: id, room: id, ...guardedChestSpot(layout, id, r, dungeon), def: "loot-chest", state: "shut", open: false, inert: true }));
+      out.push(thingOf({ key: id, room: id, ...guardedChestSpot(layout, id, r, dungeon), def: "loot-chest", state: "shut", open: false, guarded: true }));
     } else if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
       const at = guards ? guardedChestSpot(layout, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
       out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));

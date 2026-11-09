@@ -299,13 +299,13 @@
    "r29@17,17"
   ],
   "things": [
-   "boss rickety@63,9 inert path null",
+   "boss rickety@63,9 solid path null",
    "r1 chest-open@30,253 solid open path null",
    "r12 chest-open@30,175 solid open path null",
    "r14 cards@81,150 solid path null",
    "r16 rickety@51,130 solid path 0",
    "r18 sack@15,133 solid path null",
-   "r19 rickety@102,112 inert path null",
+   "r19 rickety@102,112 solid path null",
    "r21 pool@82,105 solid path null",
    "r23 sack@36,78 solid path null",
    "r24 pool@105,78 solid path null",
@@ -621,13 +621,13 @@
    "r29@17,17"
   ],
   "things": [
-   "boss rickety@63,9 inert path null",
+   "boss rickety@63,9 solid path null",
    "r1 chest-open@30,253 solid open path null",
    "r12 chest-open@30,175 solid open path null",
    "r14 cards@81,150 solid path null",
    "r16 rickety@51,130 solid path 0",
    "r18 sack@15,133 solid path null",
-   "r19 rickety@102,112 inert path null",
+   "r19 rickety@102,112 solid path null",
    "r21 pool@82,105 solid path null",
    "r23 sack@36,78 solid path null",
    "r24 pool@105,78 solid path null",

@@ -19,6 +19,7 @@ import TeamDropRow from "@/components/TeamDropRow";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { WEAPON_SPRITES } from "@/lib/sprites/items";
 import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
+import FightWon, { type WonRow } from "@/components/FightWon";
 import CageReveal, { type CageFind } from "@/components/CageReveal";
 import Triumph from "@/components/Triumph";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
@@ -47,7 +48,7 @@ import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, ran
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, isSeated, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import WitchWindow from "@/components/WitchWindow";
-import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, SCROLL_XP } from "@/lib/creatures/levels";
+import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
@@ -115,6 +116,8 @@ export default function DungeonPage() {
   const [notes, setNotes] = useState<string[]>([]);
   // Creatures that just levelled up: their show plays over the room (LevelUpShow).
   const [levelUps, setLevelUps] = useState<LevelUpInfo[]>([]);
+  // A fight just won: the XP each creature got (FightWon), then Loot or Leave; its level-ups play after.
+  const [won, setWon] = useState<{ rows: WonRow[]; ups: LevelUpInfo[]; loot: boolean } | null>(null);
   // A cage just opened: what came out of it, shown over the room (CageReveal; null: it was empty).
   const [cageShow, setCageShow] = useState<CageFind | undefined>(undefined);
   // Leaving for the Den: keep showing what's on screen until the Den loads
@@ -1071,21 +1074,30 @@ export default function DungeonPage() {
       return sum + (e ? xpForEnemy(e.level ?? 15, CREATURE_BY_ID[e.creatureId].rarity) : 0);
     }, 0);
     const xpNotes: string[] = [];
+    // (Shown after the fight in FightWon, unless the run's over at the top: then in the notes, as before.)
+    const toHaul = atTheTop(r) && !r.walk;
+    const wonRows: WonRow[] = [];
+    let wonUps: LevelUpInfo[] = [];
     if (xp > 0) {
       const mineAt = ids.map((id, i) => (id && id !== KLUTZ_DROP_ID ? i : -1)).filter((i) => i >= 0);
       const impacts = impactsFromLog(m.state.log, "A", ids.length);
       const shares = shareXp(xp, mineAt.map((i) => impacts[i]));
       const gains: Record<string, number> = {};
       mineAt.forEach((i, k) => { gains[ids[i]] = shares[k]; });
+      for (const [i, k] of mineAt.map((i, k) => [i, k])) {
+        const c = byId(ids[i]), drop = game.inventory.find((d) => d.id === ids[i]) as CreatureOrItemDrop | undefined;
+        if (c) wonRows.push({ id: ids[i], name: c.name, creatureId: c.creatureId, rarity: c.rarity, xp: xpShown({ level: drop?.level ?? 1, xp: drop?.xp ?? 0 }, shares[k]) });
+      }
       const parts = mineAt.map((i, k) => `${byId(ids[i])?.name} +${shares[k]}`);
-      xpNotes.push(`✨ ${xp} XP — ${parts.join(", ")}`);
+      if (toHaul) xpNotes.push(`✨ ${xp} XP — ${parts.join(", ")}`);
       const ups = game.gainXp(gains);
-      for (const u of ups) xpNotes.push(`⬆️ ${u.name} reached level ${u.to}!`);
-      setLevelUps(ups.flatMap((u) => {
+      if (toHaul) for (const u of ups) xpNotes.push(`⬆️ ${u.name} reached level ${u.to}!`);
+      wonUps = ups.flatMap((u) => {
         const c = byId(u.id);
         const drop = game.inventory.find((d) => d.id === u.id) as CreatureOrItemDrop | undefined;
         return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency }] : [];
-      }));
+      });
+      if (toHaul) setLevelUps(wonUps);
       const you = game.gainPlayerXp(xp);
       if (you) xpNotes.push(`🌟 You reached explorer level ${you}!`);
     }
@@ -1112,6 +1124,8 @@ export default function DungeonPage() {
       // It runs off, and the box it was carrying drops to the floor (the box is the prize: no gold).
       updateRun((x) => markDone({ ...after(x), hp, battle: undefined }));
       setNotes(xpNotes);
+      if (wonRows.length > 0) setWon({ rows: wonRows, ups: wonUps, loot: false });
+      else setLevelUps(wonUps);
       return;
     }
     const drops: Drop[] = [goldOnly(room.gold ?? 0)];
@@ -1145,13 +1159,14 @@ export default function DungeonPage() {
     // At the top, the run's over: straight to the haul, its chest already open.
     // (Walking, you stay: the chest it guarded is there to open, the cages too,
     // then you head home: walkHome.)
-    const top = atTheTop(r) && !r.walk;
+    const top = toHaul;
     if (atTheTop(r) && r.walk) winds.push(r.current?.cages?.length ? "🔓 Open the cages, then head home." : "🏠 Take the chest, then head home.");
     updateRun((x) => {
       const done = markDone({ ...after(x), hp, battle: undefined, current: x.current ? { ...x.current, sack, container, opened: top } : x.current });
       return top ? leaveRoom(leavePending(done)) : done;
     });
     setNotes([...xpNotes, ...winds]);
+    if (!top) setWon({ rows: wonRows, ups: wonUps, loot: sack.length > 0 });
     // The rugged backpack (the Cyclops' first chest) goes straight on: more room to sort the haul.
     const pack = top ? sack.findIndex((x) => "backpack" in x) : -1;
     if (pack >= 0) takeFromSack(pack);
@@ -1343,7 +1358,7 @@ export default function DungeonPage() {
   const walkView = walking && (
     <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <WalkView walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={runPosition(run)} room={(id) => walkRoom(run, id)}
-        busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || cageShow !== undefined || walkPanel}
+        busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || !!won || cageShow !== undefined || walkPanel}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
         onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onHeal={walkHeal} onKeep={walkSave} />
@@ -1447,6 +1462,9 @@ export default function DungeonPage() {
                 onConfirm={(id) => { if (equipAsk.entry) equipFromBag(equipAsk.entry, id); else equipStraightFromSack(it.id, id); setEquipAsk(null); }} />
             );
           })()}
+          {won && <FightWon rows={won.rows}
+            onLoot={won.loot ? () => { setWon(null); setLevelUps(won.ups); openSack(); } : undefined}
+            onLeave={() => { setWon(null); setLevelUps(won.ups); }} />}
           {levelUps.length > 0 && <LevelUpShow ups={levelUps} onDone={() => setLevelUps([])} />}
           {cageShow !== undefined && <CageReveal find={cageShow} onDone={() => setCageShow(undefined)} />}
           {!walking && showCards && <EncounterCards creatureIds={enemyIds} races={(run.current!.enemies ?? []).map((e) => e.races)} onClose={() => setCardsOpen(false)}

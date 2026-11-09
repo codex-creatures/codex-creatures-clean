@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { lineOfSight, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
+import { lineOfSight, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, GUARD_REACH, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
 import { chestSack, fightSack, rollWalkRooms, roomDepth } from "../lib/dungeon/walkRooms";
 import { routeLength } from "../lib/dungeon/map";
 import { CHEST_DROPS } from "../lib/dungeon/run";
@@ -110,6 +110,21 @@ describe("foes in a room", () => {
       expect(fp.rooms[id].some((r) => Math.round(walker.x) >= r.x && Math.round(walker.x) < r.x + r.w && Math.round(walker.y) >= r.y && Math.round(walker.y) < r.y + r.h)).toBe(true);
     }
     expect(moved).toBe(true);
+  });
+
+  it("a chest's guard walks to it, then keeps close round it (GUARD_REACH)", () => {
+    const bad: string[] = [];
+    for (const id of Object.keys(layout.rooms).filter((r) => r !== layout.start)) {
+      const r = fp.rooms[id][0], chest = { x: r.x + Math.floor(r.w / 2), y: r.y + Math.floor(r.h / 2) };
+      let g: Foe = { ...placeFoes(fp, id, 1, seeded(3))[0], walks: true, wait: 0, guard: chest };
+      const rng = seeded(21);
+      for (let i = 0; i < 600; i++) {
+        g = stepFoe(fp, g, 0.1, rng);
+        // (Once it's had time to get there, walking from spot to spot round the chest.)
+        if (i > 300 && Math.max(Math.abs(g.x - chest.x), Math.abs(g.y - chest.y)) > GUARD_REACH + 0.01) { bad.push(`${id}: strayed`); break; }
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });
 

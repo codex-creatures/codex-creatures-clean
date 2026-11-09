@@ -137,8 +137,10 @@ function problems(name: string, run: DungeonRun): string[] {
     const from = doorOf(t.room);
     if (from && !approach(plan, t, from, can)) bad(`${t.key} ${t.def}: can't be walked up to`);
   }
-  // Navigation is today's: exactly the panels of solid things and fires are blocked.
-  const blockedByThings = new Set([...things.filter((i) => objectDef(i.def).collision === "solid").map((i) => panelKey(panelOf(i))), ...(walk.fires ?? []).map(panelKey)]);
+  // Navigation is today's: exactly the panels of solid things and fires are blocked (and a mini boss's or
+  // boss's chest, solid since 2026-11-09: kept a spot, not placed as a thing).
+  const chests = shown.filter((t) => t.def === "loot-chest").map((t) => panelKey({ x: panelAt(t.x), y: panelAt(t.y) }));
+  const blockedByThings = new Set([...things.filter((i) => objectDef(i.def).collision === "solid").map((i) => panelKey(panelOf(i))), ...(walk.fires ?? []).map(panelKey), ...chests]);
   if ([...solid].sort().join() !== [...blockedByThings].sort().join()) bad("walking's blocked panels aren't the solid things' panels");
   // Foes and the witch: reachable, on nothing, clear of the doors, with room for their bodies.
   for (const f of [...p.foes, ...p.witches]) {

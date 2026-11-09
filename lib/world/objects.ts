@@ -130,9 +130,9 @@ const DEFS: ObjectDef[] = [
   def("chest", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(TREASURE_CHEST), open: propRef(TREASURE_CHEST_OPEN) }, { width: OBJECT_U })),
   def("sack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, interact: usable("open") }), legacyVisual({ shut: propRef(BURLAP_SACK), open: propRef(BURLAP_SACK_OPEN) }, { width: SACK_U })),
   def("rickety-chest", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
-  // A beaten room's loot, dropped where the fight was: you walk over it.
+  // A beaten room's loot: a sack dropped where the fight was, which you walk over; a chest (a mini boss's or boss's), solid.
   def("loot-sack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("open") }), legacyVisual({ shut: propRef(BURLAP_SACK), open: propRef(BURLAP_SACK_OPEN) }, { width: SACK_U })),
-  def("loot-chest", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", collision: "walk-over", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
+  def("loot-chest", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
   def("card-deck", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("play") }), legacyVisual({ base: propRef(CARD_DECK) }, { width: OBJECT_U })),
   def("pool", floorThing({ footprint: { w: 3, d: 3 }, clearance: 1, kind: "interactable", height: 0.3, interact: usable("drink") }), legacyVisual({ base: ref(WALK_POOL) }, { width: legacyU(WALK_POOL.size), lift: 0.35 })),
   def("cage", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.2, interact: usable("open") }), legacyVisual({ shut: ref(WALK_CAGE), open: ref(WALK_CAGE_OPEN) }, { width: legacyU(WALK_CAGE.size) })),

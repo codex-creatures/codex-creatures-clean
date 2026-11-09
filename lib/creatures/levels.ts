@@ -138,6 +138,16 @@ export function addPlayerXp(p: Progress, gained: number): Progress & { gained: n
   return { level, xp, gained: up };
 }
 
+// What a fight's XP did for one creature, to show after the fight: where
+// it was and where it got to, each as a level and how full that level's bar
+// is (0..1; full at the top level).
+export type XpShown = { gained: number; from: Progress & { fill: number }; to: Progress & { fill: number; need: number } };
+export function xpShown(p: Progress, gained: number): XpShown {
+  const fill = (q: Progress) => (q.level >= MAX_LEVEL ? 1 : Math.min(1, q.xp / xpToNext(q.level)));
+  const from = { level: clampLevel(p.level), xp: Math.max(0, p.xp) }, to = addXp(from, gained);
+  return { gained, from: { ...from, fill: fill(from) }, to: { level: to.level, xp: to.xp, fill: fill(to), need: to.level >= MAX_LEVEL ? 0 : xpToNext(to.level) - to.xp } };
+}
+
 // Total XP needed to get from level 1 to this level.
 export function xpToReach(level: number): number {
   let total = 0;

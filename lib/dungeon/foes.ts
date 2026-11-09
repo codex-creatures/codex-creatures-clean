@@ -48,12 +48,14 @@ export const DOOR_CLEAR = 4;         // tiles from any of the room's doors, wher
 export const ALERT_KINDS: RoomKind[] = ["encampment"]; // /lab/walk only (its own copy): the chief's fight starts as you step in
 export const WAIT_REACH = 3.5;       // tiles: walk this close to a waiting boss (in sight of it) and it fights you 🧪
 export const WAIT_FROM_TOP = 4;      // tiles below its room's top wall a waiting boss stands
+export const GUARD_REACH = 2;        // tiles: a chest's guards patrol this close round it (the user, 2026-11-09) 🧪
 
 // facing: radians, 0 = east, π/2 = south (screen y runs down).
 // home: the room's floor, where a walker may go. path: tiles still to walk to.
 // waits: a boss waiting for you (see the top). end: the end of a big room it
-// keeps to, when the room holds two dens (0 or 1: endOf).
-export type Foe = { room: string; index: number; x: number; y: number; facing: number; walks: boolean; path: Pt[]; wait: number; waits?: boolean; end?: 0 | 1 };
+// keeps to, when the room holds two dens (0 or 1: endOf). guard: the chest it
+// patrols round, close (GUARD_REACH), instead of wandering its room.
+export type Foe = { room: string; index: number; x: number; y: number; facing: number; walks: boolean; path: Pt[]; wait: number; waits?: boolean; end?: 0 | 1; guard?: Pt };
 
 // A big room's second den (the user, 2026-11-06: big and long rooms can hold
 // two, one down each end): a room of its own in the run ("<room>~2"),
@@ -147,6 +149,17 @@ export function chargeFoe(foe: Foe, seconds: number): Foe {
   return { ...foe, x, y, facing, path: foe.path.slice(i) };
 }
 
+// A spot round a chest for its guard to walk to: on the room's floor, within
+// GUARD_REACH of it, not on it (else where the guard is).
+function guardSpot(fp: Floorplan, floors: Rect[], chest: Pt, at: Pt, rng: Rng): Pt {
+  const c = { x: Math.round(chest.x), y: Math.round(chest.y) };
+  for (let tries = 0; tries < 8; tries++) {
+    const q = { x: c.x + Math.round((rng() * 2 - 1) * GUARD_REACH), y: c.y + Math.round((rng() * 2 - 1) * GUARD_REACH) };
+    if ((q.x !== c.x || q.y !== c.y) && inRects(floors, q.x, q.y) && fp.tiles[q.y * fp.w + q.x] !== ROCK) return q;
+  }
+  return { x: Math.round(at.x), y: Math.round(at.y) };
+}
+
 // A foe `seconds` later: a still one turns when it's looked long enough; a
 // walker walks to a spot in its room, faces the way it's going, pauses there,
 // then picks another.
@@ -159,10 +172,11 @@ export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Mat
       const others = WAYS.filter((w) => turn(w, foe.facing) > 0.1);
       return { ...foe, facing: others[Math.floor(rng() * others.length)], wait: between(rng, LOOK_TIME) };
     }
-    // Somewhere else in its room (its end of it) to walk to.
+    // Somewhere else in its room (its end of it; a guard, round its chest) to walk to.
     const floors = fp.rooms[parentOf(foe.room)];
     let to: Pt = { x: foe.x, y: foe.y };
-    for (let tries = 0; tries < 6; tries++) {
+    if (foe.guard) to = guardSpot(fp, floors, foe.guard, to, rng);
+    else for (let tries = 0; tries < 6; tries++) {
       const r = floors[Math.floor(rng() * floors.length)];
       to = { x: r.x + Math.floor(rng() * r.w), y: r.y + 1 + Math.floor(rng() * Math.max(1, r.h - 1)) };
       if (foe.end === undefined || endOf(floors, to.x, to.y) === foe.end) break;

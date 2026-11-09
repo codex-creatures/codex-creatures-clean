@@ -66,8 +66,9 @@ describe("object definitions (world-spec §3)", () => {
 
   it("solid where the walk screen made them solid; the sort nudges as they were", () => {
     const solid = (id: string) => objectDef(id).collision === "solid";
-    for (const id of ["chest", "sack", "rickety-chest", "card-deck", "pool", "cage", "merchant", "librarian", "campfire"]) expect(solid(id), id).toBe(true);
-    for (const id of ["loot-sack", "loot-chest", "witch", "candle"]) expect(solid(id), id).toBe(false);
+    // (A mini boss's or boss's chest, loot-chest, solid since 2026-11-09: the user.)
+    for (const id of ["chest", "sack", "rickety-chest", "loot-chest", "card-deck", "pool", "cage", "merchant", "librarian", "campfire"]) expect(solid(id), id).toBe(true);
+    for (const id of ["loot-sack", "witch", "candle"]) expect(solid(id), id).toBe(false);
     for (const k of Object.keys(DECOR_DEF) as DecorKind[]) expect(solid(DECOR_DEF[k]), k).toBe(SOLID_DECOR.includes(k));
     expect(objectDef("sconce").visual.legacy.sortDy).toBe(-0.6);
     expect(objectDef("sconce-side").visual.legacy.sortDy).toBe(0.4);

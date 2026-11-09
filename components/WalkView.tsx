@@ -3,7 +3,7 @@
 // The walkable Encampment (the Labyrinth's "New"; lib/dungeon/walkRun.ts),
 // drawn and walked on the Labyrinth screen in place of the room view: tap to
 // walk there (lib/dungeon/walk.ts), or hold the stick bottom right (walkStick;
-// its ✋ uses what you're beside; or WASD / the arrows, and E), by torchlight (lib/dungeon/torch.ts) in
+// or WASD / the arrows, and E uses what you're beside), by torchlight (lib/dungeon/torch.ts) in
 // the kit's three-quarter look (lib/sprites/walk.ts), 15 tiles across.
 // Worked out and tried in /lab/walk first; the rules are the same here.
 //
@@ -35,9 +35,9 @@ import type { DungeonMap } from "@/lib/dungeon/map";
 import { walkView, tapCell, DEPTH } from "@/lib/render/projection";
 import { buildScene } from "@/lib/render/scene";
 import { paintScene, type DarkLayer } from "@/lib/render/paint";
-import { placeLabDecor, foeStarts, roomIds, thingsOf, solidCells, walkRule, tappedThing, usableNear, fromRuns, type Thing } from "@/lib/world/walkWorld";
+import { placeLabDecor, foeStarts, guarding, roomIds, thingsOf, solidCells, walkRule, tappedThing, usableNear, fromRuns, type Thing } from "@/lib/world/walkWorld";
 import { placementsOfWalk } from "@/lib/world/migrate";
-import { startWalk, restartLoop, stepWalk, walkState, walkUpTo, type WalkState, type Warming } from "@/lib/world/walkSim";
+import { startWalk, restartLoop, stepWalk, walkState, walkUpTo, soundAlarm, type WalkState, type Warming } from "@/lib/world/walkSim";
 import { ROOM_ART } from "@/components/DungeonMapView";
 import { CreatureArt } from "@/components/CreaturePortrait";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
@@ -92,7 +92,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   const ids = useMemo(() => roomIds(layout, map), [layout, map]);
   const [placed] = useState(() => placementsOfWalk(walk, map, dungeon, room));
   // The walk going on (lib/world/walkSim.ts): you, what you've seen, the lights, foes, the alarm. Kept between frames.
-  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: foeStarts(placed, ids, room), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
+  const [sim] = useState(() => startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: guarding(foeStarts(placed, ids, room), layout, room, dungeon), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h)));
   // 🚧 Decor (samples) and banners: where they lie, from the run's seed.
   const labDecor = useMemo(() => (decor ? placeLabDecor(walk, plan, map, sim.candles, sim.sconces) : { decor: [], banners: [] }), [decor]); // eslint-disable-line react-hooks/exhaustive-deps
   const decorItems = labDecor.decor, banners = labDecor.banners;
@@ -102,7 +102,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     if ((walk.flares ?? 0) > flaresSeen.current) { flaresSeen.current = walk.flares ?? 0; sim.flareLeft = FLARE_WALK; }
   }, [walk.flares, sim]);
   const [warming, setWarming] = useState<Warming | null>(null);
-  // The stick: how far it's pushed each way (-1..1, screen ways), null when let go; and the thing its ✋ would use.
+  // The stick: how far it's pushed each way (-1..1, screen ways), null when let go; and the thing E would use.
   const stick = useRef<Pt | null>(null);
   const [usable, setUsable] = useState<Thing | null>(null);
   useEffect(() => { if (scroll) stick.current = null; }, [scroll]); // (the stick goes with the scroll out: let go)
@@ -121,8 +121,9 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   // The things to tap, as the rooms stand now.
   const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.spots, dungeon);
 
-  // Tapped (and walked up to) a thing: a cage opens as a cage; anything else is its room's.
-  const openThing = (t: Thing, st: WalkState) => (t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
+  // Tapped (and walked up to) a thing: a cage opens as a cage; a chest still guarded sets its guards on you; anything else is its room's.
+  const openThing = (t: Thing, st: WalkState) => (t.guarded ? soundAlarm(sim, t.room, performance.now())
+    : t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => walkRule(layout, plan, p, sim.known, solidCells(things(), sim.fires, decorItems));
@@ -206,7 +207,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     sim.me = walkToward(live, sim.me, spot, can);
   };
 
-  // The stick's ✋: use what you're beside, as tapping it does.
+  // E: use what you're beside, as tapping it does.
   const use = () => {
     if (busy || sim.fired > 0 || sim.alarm || !usable) return;
     openThing(usable, state());
@@ -233,7 +234,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%" }}>
       <canvas ref={canvas} onPointerDown={tap} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", touchAction: "none" }} />
-      {!scroll && <Stick onPush={(p) => { stick.current = p; }} canUse={!!usable && !busy} onUse={use} />}
+      {!scroll && <Stick onPush={(p) => { stick.current = p; }} />}
       {warming && !scroll && <Warmth team={team} warming={warming} />}
       {scroll && <WalkScroll map={map} layout={layout} plan={plan} known={sim.known} trail={sim.trail} progress={progress} cuts={sim.cuts}
         been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
@@ -243,11 +244,11 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
 
 // The stick, bottom right (above the dock's Bag; the user, 2026-11-09): press
 // anywhere on the ring and drag, and you walk that way while it's held; the
-// knob follows your thumb. Above it, ✋ uses the thing you're beside (dimmed
-// when there's nothing). Tapping the floor to walk works as before.
+// knob follows your thumb. Tap a thing to use it (the ✋ button over it was
+// taken out: the user, 2026-11-09). Tapping the floor to walk works as before.
 const STICK_SIZE = "min(28cqw, 120px)";
 const STICK_KNOB = 0.42; // the knob's share of the ring
-function Stick({ onPush, canUse, onUse }: { onPush: (push: Pt | null) => void; canUse: boolean; onUse: () => void }) {
+function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
   const ring = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState<Pt>({ x: 0, y: 0 });
   const push = (e: React.PointerEvent) => {
@@ -261,9 +262,7 @@ function Stick({ onPush, canUse, onUse }: { onPush: (push: Pt | null) => void; c
   const letGo = () => { onPush(null); setKnob({ x: 0, y: 0 }); };
   const travel = ((1 - STICK_KNOB) / 2) * 100; // % of the ring the knob sits in from the edge, centred
   return (
-    <div style={{ position: "absolute", right: 10, bottom: 10, zIndex: 4, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-      <button className="chip" onClick={onUse} disabled={!canUse} aria-label="Use"
-        style={{ minHeight: 48, minWidth: 48, fontSize: 20, opacity: canUse ? 1 : 0.4 }}>✋</button>
+    <div style={{ position: "absolute", right: 10, bottom: 10, zIndex: 4 }}>
       <div ref={ring} aria-label="Walk"
         onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); push(e); }}
         onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) push(e); }}
@@ -276,15 +275,23 @@ function Stick({ onPush, canUse, onUse }: { onPush: (push: Pt | null) => void; c
   );
 }
 
-// By a campfire: your team in a row along the bottom, small (the size of the
-// Abyss's five team cards; the user, 2026-11-06), a health bar under each
-// going up and a "+" rising by each one getting some, and a thin bar of what
-// the fire has left (burnt down: embers). Taps go through it to the walk.
+// By a campfire: a thin bar of what the fire has left (burnt down: embers),
+// then your team in a column down from the top left (under the room's
+// button: app/dungeon/page.tsx), out of the way (the
+// user, 2026-11-09), small (the size of the Abyss's five team cards), a
+// health bar under each going up and a "+" rising by each one getting some.
+// Taps go through it to the walk.
 const WARM_CELL = 56; // px across a creature
 function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: Warming }) {
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 8, zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, pointerEvents: "none" }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+    <div style={{ position: "absolute", left: 8, top: 60, zIndex: 3, width: WARM_CELL, display: "flex", flexDirection: "column", gap: 6, pointerEvents: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+        <span aria-hidden style={{ fontSize: 11, filter: warming.left > 0 ? undefined : "grayscale(1) brightness(0.6)" }}>🔥</span>
+        <span style={{ flex: 1, height: 4, background: "rgba(0,0,0,0.6)", borderRadius: 2, overflow: "hidden" }}>
+          <span style={{ display: "block", height: "100%", width: `${(warming.left / CAMPFIRE_HEAL) * 100}%`, background: "#ff9a2e", transition: "width 0.1s linear" }} />
+        </span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {team.map((m) => {
           const hp = warming.hp[m.id] ?? 1, gets = warming.giving.includes(m.id), ko = hp <= 0;
           return (
@@ -300,12 +307,6 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
           );
         })}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, width: Math.min(team.length, 5) * (WARM_CELL + 8) - 8 }}>
-        <span aria-hidden style={{ fontSize: 11, filter: warming.left > 0 ? undefined : "grayscale(1) brightness(0.6)" }}>🔥</span>
-        <span style={{ flex: 1, height: 4, background: "rgba(0,0,0,0.6)", borderRadius: 2, overflow: "hidden" }}>
-          <span style={{ display: "block", height: "100%", width: `${(warming.left / CAMPFIRE_HEAL) * 100}%`, background: "#ff9a2e", transition: "width 0.1s linear" }} />
-        </span>
-      </div>
     </div>
   );
 }
@@ -316,6 +317,7 @@ function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: W
 // into is drawn in, and the rooms it and a flare showed are marked (foreseen).
 // As wide as the rooms' walls reach, scrolling up and down, opened at you
 // (the user, 2026-11-06). Tap to put it away, or (onPick) tap a room to pick it.
+const SCROLL_ROOM = 1 / 0.9; // zoomed out 10% past the walls, paper either side to look round (the user, 2026-11-09)
 function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
   map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress; cuts?: number[];
   been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
@@ -339,14 +341,15 @@ function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been
       if (run && run.y === y && run.wall === wall && run.x + run.w === x) run.w++;
       else ink.push({ x, y, w: 1, wall });
     }
-    // Tunnels that fell in behind you this run (fallenSoFar): a red line across the middle, a tile past each side.
+    // Tunnels up that fell in behind you this run (fallenSoFar): a red line across the middle, a tile past each side.
+    // (Only the ones up: a fallen tunnel across is just left out, the user, 2026-11-09.)
     const fell = new Set(!progress ? [] : fallenSoFar(plan, layout, progress, cuts, drawn));
-    const shut = layout.tunnels.filter((t) => fell.has(t.key))
-      .map(({ rect: { x, y, w, h }, up }) => (up ? { x1: x - 1, y1: y + h / 2, x2: x + w + 1, y2: y + h / 2 } : { x1: x + w / 2, y1: y - 1, x2: x + w / 2, y2: y + h + 1 }));
+    const shut = layout.tunnels.filter((t) => t.up && fell.has(t.key))
+      .map(({ rect: { x, y, w, h } }) => ({ x1: x - 1, y1: y + h / 2, x2: x + w + 1, y2: y + h / 2 }));
     const marks: ScrollMark[] = scrollMarks(map, layout, been, here, foreseen(map, layout, lit, seen));
-    // Across: the furthest walls, with a tile of paper either side.
-    const x0 = Math.max(0, left - 2), x1 = Math.min(plan.w, right + 3);
-    return { ink, shut, marks, trail: trail.slice(), x0, vw: x1 - x0 };
+    // Across: the furthest walls, with a tile of paper either side, then zoomed out (SCROLL_ROOM) for paper to spare.
+    const fit = right + 3 - (left - 2), vw = fit * SCROLL_ROOM;
+    return { ink, shut, marks, trail: trail.slice(), x0: left - 2 - (vw - fit) / 2, vw };
   });
   // Opened at you (or your room).
   const box = useRef<HTMLDivElement>(null);

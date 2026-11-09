@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import { walkSetup } from "./walkBaseline";
-import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, usableNear, type Thing } from "../lib/world/walkWorld";
+import { thingsOf, tapsThing, inReach, approach, guardedChestSpot, usableNear, guarding, foeStarts, type Thing } from "../lib/world/walkWorld";
+import { startWalk, restartLoop, stepWalk, soundAlarm } from "../lib/world/walkSim";
 import { findPath, walkable, type CanStep } from "../lib/dungeon/walk";
 import type { Pt } from "../lib/dungeon/floorplan";
 import { fightContainer, type DungeonRun, type Room } from "../lib/dungeon/run";
@@ -55,14 +56,28 @@ describe("a mini boss's or boss's chest is there from the start, guarded (the us
   const boss = s.layout.boss;
   const chestOf = (room: (id: string) => Room | undefined, spots = run.walk!.spots) =>
     thingsOf(s.layout, s.placed, s.ids, room, s.npcs, spots, s.dungeon).filter((t) => t.room === boss && t.def === "loot-chest");
-  it("before the fight: shut, and not to be tapped, behind the boss", () => {
+  it("before the fight: shut and solid, behind the boss; tapping it is trying to open it under their noses (2026-11-09)", () => {
     const r = s.room(boss)!;
     expect(r.done).toBe(false);
     expect(fightContainer(r, s.dungeon)).not.toBe("sack");
     const [c, ...more] = chestOf(s.room);
     expect(more).toEqual([]);
-    expect(c).toMatchObject({ state: "shut", open: false, inert: true, ...guardedChestSpot(s.layout, boss, r, s.dungeon) });
-    expect(tapsThing(c, c)).toBe(false);
+    expect(c).toMatchObject({ state: "shut", open: false, solid: true, guarded: true, ...guardedChestSpot(s.layout, boss, r, s.dungeon) });
+    expect(tapsThing(c, c)).toBe(true);
+  });
+  it("trying to open it sets its guards on you: they've seen you, and the fight follows", () => {
+    const sim = startWalk(run.walk!, s.plan, s.live, { sconces: s.sconces, candles: s.candles, foes: s.foes, npcs: s.npcs }, s.known);
+    let now = 1000;
+    restartLoop(sim, s.live, run.hp, now);
+    soundAlarm(sim, boss, now);
+    expect(sim.alarm?.room).toBe(boss);
+    let spotted: string | undefined;
+    const things = () => thingsOf(s.layout, s.placed, s.ids, s.room, sim.npcs, run.walk!.spots, s.dungeon);
+    for (let k = 0; k < 600 && !spotted; k++) {
+      now += 16;
+      spotted = stepWalk(sim, { now, busy: false, room: s.room, here: run.path[run.path.length - 1], team: ["a"], hp: run.hp, things }).events.find((e) => e.type === "spotted")?.room;
+    }
+    expect(spotted).toBe(boss);
   });
   it("beaten: the same chest, in the same place, to loot (not where you stood when the fight began)", () => {
     const won = (id: string) => (id === boss ? { ...s.room(id)!, done: true, container: "chest" as const, sack: [] } : s.room(id));
@@ -77,6 +92,23 @@ describe("a mini boss's or boss's chest is there from the start, guarded (the us
     const won = (i: string) => (i === id ? { ...s.room(i)!, done: true, container: "sack" as const, sack: [] } : s.room(i));
     const sack = thingsOf(s.layout, s.placed, s.ids, won, s.npcs, { [id!]: { x: 3, y: 4 } }, s.dungeon).find((t) => t.room === id && t.def === "loot-sack");
     expect(sack).toMatchObject({ x: 3, y: 4 });
+  });
+});
+
+describe("a guarded chest's foes patrol close round it (the user, 2026-11-09)", () => {
+  it("every foe of a room with a chest to guard walks round it; a waiting boss and a sack's foes don't", () => {
+    const bad: string[] = [];
+    for (const [name, run] of runs) {
+      const s = walkSetup(run);
+      const foes = guarding(foeStarts(s.placed, s.ids, s.room), s.layout, s.room, s.dungeon);
+      for (const f of foes) {
+        const r = s.room(f.room)!;
+        const guards = !f.waits && fightContainer(r, s.dungeon) !== "sack";
+        if (guards !== !!f.guard) bad.push(`${name} ${f.room}: guard ${!!f.guard}`);
+        if (guards && (!f.walks || f.guard!.x !== guardedChestSpot(s.layout, f.room, r, s.dungeon).x)) bad.push(`${name} ${f.room}: not patrolling its chest`);
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });
 

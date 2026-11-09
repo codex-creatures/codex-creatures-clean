@@ -300,6 +300,11 @@ Ideas the user floated but never confirmed are listed as ❓, not as decisions.
 - ✅ XP per KO depends on the enemy's level and rarity. A boss part gives 200. A fight's XP is
   shared by impact (damage dealt + half the damage taken, at least 10% each). No XP for a lost
   fight. Levelling is 1.5× slower than first built (`XP_PACE`), at the user's request.
+- ✅ **After a won fight** (the user, 2026-11-09; components/FightWon.tsx, `xpShown`): a Victory
+  window shows each creature's XP and its level bar filling, with what's left to its next level,
+  then **Loot** (opens what they dropped) or **Leave** (it stays on the floor to open later; a
+  fight with nothing to loot, the thief's, has just Carry on). Level-up shows follow it. Not
+  when a win ends the run at the top (classic): the haul screen shows it, as before.
 - ✅ **Explorer level** (you, `save.player`) gets every fight's full XP and gates scan rarity
   (section 2).
 - ✅ **Tattered XP Scroll:** a flat 400 XP (`SCROLL_XP`, about Lv 1 → 5). Read from the creature
@@ -807,13 +812,17 @@ How it came about, round by round: history.md.
      oversee (the user, 2026-11-06): 15 tiles across the screen (the user's pick), whatever its
      size, so a laptop shows what a phone does (the lab's Zoom tries 22, 15, 11, 9). The lab plays inside the
      game's own phone screen (header, and the live Labyrinth's dock: Party, Bag, Scroll, Retreat;
-     Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. A dotted line shows the way you'll
-     walk, shrinking as you go (the user, 2026-11-05).
+     Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. No line or
+     square shows where you're walking: you just walk (the user, 2026-11-09).
      A **joystick** bottom right, above the dock (the user, 2026-11-09; `walkStick`, WalkView `Stick`):
      held, you walk the way it points, a tile at a time snapped to the eight ways, sliding along
-     a wall you push into diagonally; above it a ✋ button uses what you're beside (`usableNear`:
-     unopened things first), dimmed when there's nothing. On a keyboard, WASD or the arrows walk
-     (`keysPush`, two at once a diagonal) and E uses. Tapping to walk still works. 🧪
+     a wall you push into diagonally. Things are used by tapping them (the ✋ button was taken
+     out, the user, 2026-11-09). On a keyboard, WASD or the arrows walk (`keysPush`, two at once
+     a diagonal) and E uses what you're beside (`usableNear`: unopened things first). Tapping to
+     walk still works. 🧪
+     **Drawing order** (the user, 2026-11-09): things you walk over (a fight's sack, floor
+     candles) lie under everything standing, so you're always drawn over them; a mini boss's or
+     boss's chest is solid (you walk round it), as chests, cages and pools are.
   3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
      Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the
      scroll map uses too): the entrance (treasure on your first run), dens or a stash 30% of the
@@ -824,12 +833,14 @@ How it came about, round by round: history.md.
        looked at **twice a run** (`SCROLL_LOOKS`), it shows a mark where each room's middle
        is: its icon if you know what's there, else "?". Of the rooms and tunnels themselves it
        shows only what your torch has lit, drawn like a treasure map: lit floors and walls, your
-       trail dotted, and a **red line across each tunnel that fell in behind you this run**
+       trail dotted, and a **red line across each tunnel up that fell in behind you this run** (not
+       the tunnels across: the user, 2026-11-09)
        (`fallenSoFar`: closed with its mouth in a room still open, and you'd seen it, at any
        cut-off you've crossed; kept once you're further up. The user, 2026-11-07: not every closed
        tunnel behind you, which got spammy) (the cut-offs
        themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
-       as the furthest walls and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
+       as the furthest walls, zoomed out 10% for paper either side (`SCROLL_ROOM`, the user,
+       2026-11-09), and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
        room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare
        marks the rooms joined to yours. Never the unlit tunnels or room sizes, so you work the way up
        out yourself. You know the entrance, the camp, the rooms marked from the start (**3–4 in
@@ -969,13 +980,15 @@ How it came about, round by round: history.md.
        however you leave once he's beaten, by the Den or Retreat too (`wonAtTop`, run.ts
        `endRun`).
        **Guarded chests** (the user, 2026-11-07): a mini boss's or boss's chest (`fightContainer`
-       not a sack) is on the ground from the start, shut and not to be tapped till it's beaten:
-       behind a boss waiting at the top (beside him, a little behind, where cages stand), else
-       the room's middle (walkWorld.ts `guardedChestSpot`, from the layout). An ordinary fight's
-       sack still lies where you stood.
-       **The campfire window** (the user, 2026-11-06: the long bars were too big): your team in a
-       row along the bottom, small (56 px, about the Abyss's five team cards), a health bar
-       under each, and a thin bar of what the fire has left.
+       not a sack) is on the ground from the start, shut: behind a boss waiting at the top (beside
+       him, a little behind, where cages stand), else the room's middle (walkWorld.ts
+       `guardedChestSpot`, from the layout). Its guards patrol close round it (`guarding`, foes.ts
+       `GUARD_REACH` 2 tiles 🧪; a waiting boss still stands). You can tap it before they're beaten,
+       but trying to open it sets them on you (`soundAlarm`: as if seen); win, and Loot opens it
+       (the user, 2026-11-09). An ordinary fight's sack still lies where you stood.
+       **The campfire window** (the user, 2026-11-06: the long bars were too big; 2026-11-09: out
+       of the way): a thin bar of what the fire has left, then your team in a column down from the
+       top left, small (56 px), a health bar under each.
      - **Two dens in a big room** (the user, 2026-11-06: big and long rooms can hold two spawns,
        one down each end; `SECOND_DEN` 35% 🧪 of creature dens in a wide, tall, big, dog-leg or
        large room): the second den is a room of its own in the run (`<room>~2`, foes.ts
