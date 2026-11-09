@@ -1,0 +1,214 @@
+"use client";
+// components/dungeon/Entrance.tsx
+// The Labyrinth's entrance: pick the dungeon, the party and the bag, then go in. Moved out of app/dungeon/page.tsx as it was.
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { RaceNames } from "@/components/RaceTag";
+import { useGameState } from "@/hooks/useGameState";
+import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
+import BagPacker from "@/components/BagPacker";
+import CreaturePortrait from "@/components/CreaturePortrait";
+import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, DUNGEON_IDS, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE } from "@/lib/dungeon/run";
+import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
+import Help from "@/components/Help";
+import { gearMarks } from "@/components/CreatureMarks";
+import { BOX_NAMES, type CappedBox } from "@/lib/items/storage";
+
+const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑" };
+
+// ── The entrance: choose your party ─────────────────────────────────
+// quest: Klutz's box is still to fetch (the quest's short run, in the Labyrinth). scans: barcodes scanned.
+// Two tabs: the party (picked freely, or one of your teams: lib/teams.ts) and the bag to pack.
+export default function Entrance({ lab, owned, game, full, quest, scans, onBegin, onHeal, onSave }: {
+  lab: DungeonSave; owned: OwnedCreature[]; game: ReturnType<typeof useGameState>; full: CappedBox[]; quest: boolean; scans: number;
+  onBegin: (party: string[], dungeon: DungeonId, walk?: boolean) => void; onHeal: () => void; onSave: (next: DungeonSave) => void;
+}) {
+  const gold = game.gold;
+  const healthy = (id: string) => (lab.meta.injuries[id] ?? 1) > 0;
+  // The creature training in the pit (lib/trainingPit.ts) can't go in: shown greyed, last.
+  const away = useMemo(() => loadOwnedCreatures(undefined, true, true).filter((c) => c.away), [game.inventory, game.tavern]); // eslint-disable-line react-hooks/exhaustive-deps
+  const awayIds = new Set(away.map((c) => c.id));
+  const ownedIds = new Set([...owned, ...away].map((c) => c.id));
+  // Free pick starts empty every time: you choose who goes in.
+  const [free, setFree] = useState<string[]>([]);
+  const [tab, setTab] = useState<"party" | "bag">("party");
+  // Tapped Enter with nobody picked: say so (until someone is).
+  const [askPick, setAskPick] = useState(false);
+  // null: free pick (the default); else the team in use (remembered for next time).
+  const pick = lab.meta.teamPick !== undefined && lab.meta.teamPick < TEAM_SLOTS ? lab.meta.teamPick : null;
+  const choose = (p: number | null) => {
+    const meta = { ...lab.meta };
+    if (p === null) delete meta.teamPick; else meta.teamPick = p;
+    onSave({ ...lab, meta });
+  };
+  const team = pick === null ? null : teamMembers(game.teams, pick, ownedIds);
+  // The Deep Labyrinth opens once you've beaten the Cyclops.
+  const deepOpen = lab.meta.clears > 0;
+  // The Labyrinth opens once you've beaten the Encampment (or scanned plenty: labyrinthOpen);
+  // until then it's shown, locked. The Abyss opens once you've beaten the Deep Labyrinth.
+  const labOpen = labyrinthOpen(lab.meta, scans);
+  const open = DUNGEON_IDS.filter((d) => d <= 1 || (d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0));
+  const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
+  // "New": the Encampment or the Labyrinth, walked round by torchlight (lib/dungeon/walkRun.ts),
+  // its runs that dungeon's. (The quest's run is the old Labyrinth's.)
+  const [walkPick, setWalkPick] = useState<0 | 1 | null>(null);
+  const dungeon: DungeonId = quest ? 1 : walkPick !== null ? (walkPick === 1 && !labOpen ? 0 : walkPick) : picked === 1 && !labOpen ? 0 : picked;
+  const walking = !quest && walkPick !== null;
+  // Who goes in: the dungeon's team size (3; 5 in the Abyss), picked here. A
+  // bigger team sends its first ones (the rest are shown waiting).
+  const cap = squadsOf(dungeon).team;
+  const listed = team ?? free; // who's numbered on the grid (a team's knocked-out creatures too)
+  const party = listed.filter((id) => healthy(id) && !awayIds.has(id)).slice(0, cap);
+  const fee = entryFee(dungeon, lab.meta, quest);
+  const freeLeft = dungeon === 0 ? freeRunsLeft(lab.meta) : 0;
+  const injured = owned.filter((c) => lab.meta.injuries[c.id] !== undefined);
+  const canPay = gold >= fee;
+  const bag = lab.meta.bag ?? [];
+
+  // Tapping a creature: in or out of the party (free pick), or of the team (saved straight away).
+  function toggle(id: string) {
+    if (pick !== null) { game.toggleTeam(pick, id); return; }
+    setFree((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < cap ? [...p, id] : p));
+  }
+  function enter() {
+    if (party.length === 0) { setAskPick(true); setTab("party"); return; }
+    onBegin(party, dungeon, walking);
+  }
+
+  return (
+    <>
+      {!quest && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          {open.map((d) => (
+            <button key={d} className="card-btn" onClick={() => { setDungeon(d); setWalkPick(null); }} disabled={d === 1 && !labOpen}
+              title={d === 1 && !labOpen ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : undefined}
+              style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: d === 1 && !labOpen ? 0.5 : 1, borderColor: dungeon === d && !walking ? "#f1d9a0" : undefined, background: dungeon === d && !walking ? "rgba(241,217,160,0.1)" : undefined }}>
+              <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 && !labOpen ? "🔒" : DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
+              <span style={{ display: "block", fontSize: 12, color: MUTED }}>
+                {d === 0 ? `${CAMP_ROUTE} rooms · its chief, Lv ${DUNGEONS[0].maxLevel} · free${lab.meta.campClears ? ` · beaten ${lab.meta.campClears}×` : ""}`
+                  : d === 1 ? (labOpen ? `${DUNGEONS[1].spec.minRoute} rooms · Lv 1–${DUNGEONS[1].maxLevel}` : "Beat the Encampment first")
+                  : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel}${d === 3 ? " · the Warden" : ""}`}
+                {d === 1 && labOpen ? ` · beaten ${lab.meta.clears}×` : d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : d === 3 ? ` · beaten ${lab.meta.abyssClears ?? 0}×` : ""}
+              </span>
+            </button>
+          ))}
+          {([0, 1] as const).map((d) => {
+            const on = walking && dungeon === d, locked = d === 1 && !labOpen;
+            return (
+              <button key={`new${d}`} className="card-btn" onClick={() => setWalkPick(d)} disabled={locked}
+                style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: locked ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
+                <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{locked ? "🔒" : "🔥"} New{d === 1 ? ": the Cyclops" : ""}</b>
+                <span style={{ display: "block", fontSize: 12, color: MUTED }}>{d === 0 ? "The Encampment" : "The Labyrinth"} by torchlight · walk it yourself</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {/* Enter, with what's inside behind the "?". */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
+          {walking ? `🔥 Enter the new ${dungeon === 0 ? "Encampment" : "Labyrinth"}` : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
+        </button>
+        <Help title="The labyrinth">
+          <ul>
+            <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
+            <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
+            <li>Some rooms are a <b>mystery</b> until you walk in.</li>
+            <li>Take <b>{cap} creatures</b> in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
+            <li><b>Free pick</b>: choose from all your creatures each time. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window). A team of more than {cap} sends its first {cap}.</li>
+            <li>Pack your <b>bag</b> here too: spare gear, potions and tools.</li>
+            <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
+          </ul>
+        </Help>
+      </div>
+      {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
+        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
+      </p>}
+      {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {fee} gold — you have {gold}.</p>}
+      {askPick && party.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature to take in{pick === null ? "" : ` (Team ${pick + 1} has nobody who can go)`}.</p>}
+
+      {injured.length > 0 && (
+        <div className="stone-panel" style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: MUTED }}>⛲ {injured.length} hurt — healing in the Den&apos;s pool.</span>
+          <button className="chip" onClick={onHeal} title="A shortcut for playtesting">Testing: heal now</button>
+        </div>
+      )}
+
+      {/* Party or bag: two tabs, the same size whichever is open. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+        <button className="chip" data-active={tab === "party"} onClick={() => setTab("party")} style={{ minHeight: 44, textTransform: "none" }}>🐾 Party {party.length}/{cap}</button>
+        <button className="chip" data-active={tab === "bag"} onClick={() => setTab("bag")} style={{ minHeight: 44, textTransform: "none" }}>🎒 {bagName(lab.meta)} {bag.length}/{bagSize(lab.meta)}</button>
+      </div>
+
+      {tab === "bag" ? <BagPacker game={game} lab={lab} onSave={onSave} /> : <>
+        {/* Free pick, or one of the teams. */}
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS + 1}, 1fr)`, gap: 6, marginTop: 10 }}>
+          {[null, ...Array.from({ length: TEAM_SLOTS }, (_, i) => i)].map((p) => (
+            <button key={p ?? "free"} className="chip" data-active={pick === p} onClick={() => choose(p)}
+              style={{ minHeight: 44, padding: "2px 4px", textTransform: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {p === null ? "Free pick" : `Team ${p + 1}`}
+              <span style={{ display: "block", fontSize: 11, opacity: 0.7, visibility: p === null ? "hidden" : "visible" }}>
+                {p === null ? "-" : `${teamMembers(game.teams, p, ownedIds).length}/${PARTY_SIZE}`}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+          <SectionTitle>{pick === null ? "Your party" : `Team ${pick + 1}`} ({pick === null ? `${listed.length}/${cap}` : `${listed.length}/${PARTY_SIZE}`})</SectionTitle>
+          <span style={{ fontSize: 12, color: askPick && party.length === 0 ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>
+            {askPick && party.length === 0 ? "Pick who goes in" : pick === null ? `Tap up to ${cap}` : "Tap to add or take out"}
+          </span>
+        </div>
+        {owned.length < PARTY_SIZE && (
+          <p style={{ color: MUTED, fontSize: 13, margin: "0 0 8px" }}>
+            More creatures make it easier — <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>scan</Link> or summon more.
+          </p>
+        )}
+        {owned.length > 0 && (
+          <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 10 }}>
+            {[...owned, ...away].map((c) => {
+              const slot = listed.indexOf(c.id);
+              const hp = lab.meta.injuries[c.id] ?? 1;
+              const picked = slot >= 0;
+              const out = hp <= 0 || !!c.away;
+              const waits = picked && !out && !party.includes(c.id); // in the team, past the first {cap}
+              // A knocked-out creature can still leave a team, but can't join anything.
+              const locked = out && !(pick !== null && picked);
+              const what = pick === null ? "party" : "team";
+              return (
+                <button key={c.id} onClick={() => toggle(c.id)} disabled={locked} aria-pressed={picked}
+                  title={c.away ? `${c.name} is training in the pit` : out ? `${c.name} is knocked out` : picked ? `Take ${c.name} out of the ${what}` : `Add ${c.name} to the ${what}`}
+                  style={{
+                    position: "relative", minWidth: 0, padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                    background: picked ? "rgba(241,217,160,0.1)" : "none", border: "none", borderRadius: 8,
+                    boxShadow: picked ? `inset 0 0 0 2px ${out || waits ? "#6b6350" : "#f1d9a0"}` : undefined,
+                    color: "white", cursor: locked ? "default" : "pointer", opacity: out ? 0.35 : 1,
+                  }}>
+                  <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 12, color: rarityColor(c.rarity), textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
+                    <span style={{ color: "#f1d9a0" }}>Lv {c.fighter.level ?? 1}</span> {c.name}
+                  </span>
+                  <CreaturePortrait creatureId={c.creatureId} title={c.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
+                  <span className="pixel-font" style={{ fontSize: 11 }}>{c.away ? "🏋️ In the pit" : <RaceNames races={c.template.races} />}</span>
+                  {gearMarks(game.equipment[c.id]) && <span title="Wearing gear" style={{ position: "absolute", top: 20, right: 4, fontSize: 11 }}>{gearMarks(game.equipment[c.id])}</span>}
+                  {hp < 1 && (
+                    <span style={{ width: "80%", height: 4, background: "#1a0e0e", border: "1px solid #000" }}>
+                      <span style={{ display: "block", height: "100%", width: `${Math.max(0, hp) * 100}%`, background: hp > 0.5 ? "#5ee08a" : hp > 0.25 ? "#f5c542" : "#ff6b5e" }} />
+                    </span>
+                  )}
+                  {picked && (
+                    <span className="pixel-font" style={{ position: "absolute", top: 20, left: 4, minWidth: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, borderRadius: 10, background: out || waits ? "#6b6350" : "#f1d9a0", color: "#1a140c" }}>
+                      {slot + 1}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </>}
+
+    </>
+  );
+}
