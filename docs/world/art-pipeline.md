@@ -8,11 +8,12 @@ Moved here word for word from world-spec.md on 2026-11-09 (the original is in [a
 
 ### 6.1 The art spec (one per setting: "the dungeon" first)
 
-> ⚠️ §6.3 records that art density is now **48** art pixels a unit for new art (kit E, the user, 2026-11-09), not the 32 below; you and the older objects stay at 32 till they are redone.
-
 Each setting is a pack: its palette, kit, props, light settings and decor themes. The spec says:
 - **The camera:** read from `projection.ts`, never retyped.
-- **Art density:** 32 art pixels per u (`artPerU`), square pixels (no `pixelAspect`).
+- **Art density:** **48** art pixels per u (`artPerU`) for new walkable assets (the user, 2026-11-09;
+  it was 32), square pixels (no `pixelAspect`). Existing assets keep theirs: see
+  [Densities in use](#densities-in-use-checked-against-the-code-2026-11-09). ⚠️ The walls (kits E and F)
+  are 48 × 36 a tile, so not square: see [Still undefined](#still-undefined).
 - **The palette:** about 24 colours, kept as a file (`art/palettes/dungeon.json`). **The user's
   reference image is the visual target, not a source** (the user, 2026-11-07): no textures or
   colours are copied or sampled from it unless we hold the rights to it. The palette is an
@@ -63,3 +64,40 @@ spec assumes nothing about them.
 3. Then the user looks in the game (the lab, a scratch address). Nothing is approved without it.
 4. Only approved assets go into the active registry (`lib/sprites/walk.ts`). Samples live in
    `public/sprites/walk/samples/` and are never imported by the game.
+
+## Density and open standards
+
+### Densities in use (checked against the code, 2026-11-09)
+
+- **Density is per asset, not global.** The projection scales each picture by T ÷ its own
+  `artPerU` (§4.4), so assets at 48 and at 32 share a screen with no change to gameplay, placement
+  or saves. **Moving to 48 for new assets needs no change to existing ones,** and none are changed
+  until each is redone and approved.
+- **Walls and floor:** per kit, in `KitArt.size` (lib/sprites/walk.ts), read by the scene builder
+  (`KIT_DENSITY`, lib/render/scene.ts). Kits E and F (F is the default, `WALK_TILES[0]`; E is
+  `WALK_TILES[1]`) are **48 across and 36 down a tile**; the older kits 32 × 24. Both are the old
+  4:3 shape (`pixelAspect`), drawn into a square cell, so their pixels show 1⅓× taller than wide.
+- **The hero:** 32 art pixels a unit (`KIT_PX`, `WALK_HERO`). **Foes:** drawn at a fixed height
+  (`FOE_U`) whatever their art's size; bosses and the chief scaled from it.
+- **Props and decor** (chests, sacks, cages, pools, campfires, candles, decor): legacy pictures,
+  each drawn at its own width (`size` at 16 px a cell, turned into u by `legacyU` in
+  lib/world/objects.ts), so their density is their art's width ÷ that width, not a set number.
+- **Wall torch:** 24 × 48 art pixels (`KIT_LIGHTS`), its flame drawn in code.
+
+### Still undefined
+
+Flag these when a task needs them; don't invent an answer.
+
+1. **Square pixels for walls.** §6.1 says new art has square pixels, but the live walls (kits E/F)
+   are 48 × 36 a tile, the old 4:3 shape. Is 4:3 accepted for wall kits, or must the next kit be
+   square (48 × 48 a tile)? (A code/spec discrepancy.)
+2. **D, the floor depth, for new art** (§4.6): open until phase 3's two in-game comparisons.
+3. **When the hero, foes and today's props move to 48**, and creatures' drawn sizes from their size
+   classes: "when redone", with no plan or order.
+4. **The outline style and detail level** for the dungeon setting (§6.1 asks for one, written
+   down): not recorded.
+5. **PixelLab settings per kind of asset** (§6.1): recorded for objects (Pro Flash, the palette, a
+   crop of kit E as the style image, §6.3); not for characters, creatures, tiles or decals.
+6. **The template generator and the test room** (§6.2, §6.4): not built, so a template's size is
+   worked out by hand from the projected bounds for now.
+7. **The checker's contrast limit** needs an allowance for light materials (wax): not set.

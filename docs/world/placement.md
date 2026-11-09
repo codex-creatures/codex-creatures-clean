@@ -322,6 +322,16 @@ it lights only while it's in your sight.
   A test checks every light point is floor.
 - Drawn with the current art where they stand. The walk reads a room's side-wall torch with its
   side, so it's drawn on that wall, as a tunnel's is.
-- 🚧 Still open from stage B: the drawing work (mount points, sort order, the south-wall fade),
-  sprites per view and a visual density comparison (steps B2–B4). ⚠️ Whether these still apply now
-  that v8 has no wall candles is for the user: [decisions.md](../decisions.md#conflicts-to-resolve).
+- **Stage B's unfinished steps** (B2 drawing, B3 sprites, B4 density; the user, 2026-11-09):
+  - ✗ **Superseded by v8** (no wall candles in new runs): the wall-candle sprites (face-on,
+    side-on, the south face reusing face-on), the south-face fade (`capFade` on a candle behind the
+    south wall's band: torches never take a south face), and the wall-candle bracket drawn in code.
+    v5–v7 runs keep their wall candles, drawn with today's candle art, as now.
+  - 🚧 **Kept, now for the extra torches** on rooms' side walls and pillars' faces: each drawn from
+    its mount point (where the holder meets the wall), at the wall torches' bracket height, sorted
+    with its face (a north face on its wall, behind what stands in front; a west or east face at
+    its own y, like a tunnel's side torch), its flame and halo over the dark, its light from its
+    floor panel. Pin these in the scene builder's draw-list tests if they aren't already.
+  - 🚧 **Kept: the density comparison** (B4): sparse, ambient and rich settings of the dial
+    (`DARK_PER_V7`) compared side by side for the user to set the number; still 🧪 (the user
+    skipped this gate to play-test). A change after that is a new world version.

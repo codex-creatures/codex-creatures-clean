@@ -34,28 +34,18 @@ Section numbers are kept inside the files, so "design.md §N" in code comments s
 Cross-cutting: [decisions.md](decisions.md) (the key decisions, why, and conflicts awaiting the
 user) and [roadmap.md](roadmap.md) (everything decided but not built, open, shelved or dropped).
 
-## Where things stand (2026-10-26)
+## Where things stand (2026-11-09)
 
-> ⚠️ Kept word for word from the old design.md. It predates the walkable Labyrinth, the world
-> architecture and most of the online work (now built). For what's planned or open now, use
-> [roadmap.md](roadmap.md); for what's recent, `git log`.
-
-- **Live:** Combat V2 (7 races, 35 creatures, race kits, codexes for the rest of a creature's kit),
-  soul stones, the Labyrinth / Deep Labyrinth / Abyss, Klutz and his hunts, the tavern questline
-  (stages 1–9), save slots, Vercel hosting.
-- **Recent changes:** see `git log` (the commit messages say what changed for the player).
-- **Next (📌, decided, not built):** the onboarding scan gate (§2, later), more soul stones and
-  effects (§4, §6), the tavern's interior (§9). Visual work comes first (the user, 2026-11-04):
-  the fighters on a diagonal, and the Hydra's own art.
-- **Dropped (the user, 2026-11-04):** the merchant's gear wares and armour priced like weapons
-  (armour comes at the right rate as it is), the barcode merchant (the tavern has enough), the
-  Cyclops's Meditate heal (its strength is right). The re-entry cooldown is set aside: the gold
-  fee does the job for now.
-- **Going online (📌, 2026-10-31):** accounts, cloud saves, the global registry, leaderboards and
-  live PvP, over about 3 weeks (§12).
-- **Open (❓, the user's call):** what Klutz gets in place of his old counter bonus; agility doing
-  more; race-move rules beyond the kits; shared barcode lists once there's a global registry;
-  longer Klutz walks; a creature trader.
+- **Live:** Combat V2 (7 races, 35 creatures, race kits, codexes), soul stones, the Encampment,
+  Labyrinth (the Cyclops), Deep Labyrinth (the Hydra) and Abyss; **walkable "🔥 New" runs** of the
+  Encampment and the Cyclops (world version 8: [design/walkable-play.md](design/walkable-play.md));
+  Klutz and his hunts, the tavern questline (stages 1–9), the pits, the collector, daily quests;
+  online: Google sign-in, cloud saves, the global registry, leaderboards and duels with friends
+  (built, not yet tried by two players); Vercel hosting. The fighters on a diagonal and the
+  Hydra's art are in.
+- **Recent changes:** `git log` (the commit messages say what changed for the player).
+- **Next, open, shelved and dropped:** [roadmap.md](roadmap.md), the one list of what isn't built.
+  (This section as it stood on 2026-10-26 is in the [archive](archive/2026-11-09/design.md).)
 
 ## Keeping these files right
 

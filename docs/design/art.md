@@ -6,9 +6,13 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 11. Art and PixelLab
 
-- 📌 **The walkable world's art will follow a standard** (§13, [world-spec.md](../world-spec.md) §6): the
-  shared projection, a palette per setting, templates and report-only checks. Until it's agreed,
-  don't make more walkable-world art.
+- ✅ **Walkable-world art follows the current standard** ([world/art-pipeline.md](../world/art-pipeline.md)):
+  world units and subcell footprints with their own visual bounds and anchors
+  ([world/objects.md](../world/objects.md)), the one shared projection, 48 art pixels a unit for new
+  assets, the dungeon palette and the report-only checks; samples first, approval in the game. (The
+  user, 2026-11-09: the old "until it's agreed, don't make more walkable-world art" no longer
+  applies.) Where the standard is still undefined, flag it rather than inventing one: the list is in
+  [world/art-pipeline.md](../world/art-pipeline.md#still-undefined).
 - ✅ All creature, item, room, NPC and prop art is from **PixelLab** (the `pixellab` MCP in Claude
   Code, set up with its key on each computer, never in the repo). Files are in `public/sprites/`, with
   IDs in `public/sprites/PIXELLAB.md`.

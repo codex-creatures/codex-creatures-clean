@@ -79,9 +79,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   swapped in), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
   the merchant (25% of carts); also in 20% of mini-boss chests (`MINIBOSS_REVIVAL`) and 50% of boss
   chests (`BOSS_REVIVAL`).
-- ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from
-  10 to 25 codexes. 📌 Changing (the user, 2026-10-20): it will come only from the tavern
-  questline (§9), for 10 planks + 5 nails, holding 20.
+- ✅ **Schematics:** the Crooked Bookcase raises the bookcase from 10 to 20 codexes. It comes only
+  from the tavern questline (§9, step 8) and costs 10 planks + 5 nails (`crooked_bookcase`,
+  lib/items/materials.ts). (It was an epic drop for 20 planks + 10 nails, holding 25; a bookcase
+  built then keeps its 25: `BOOKCASE_LEVELS`.)
 - ✅ **Throwing out codexes** (2026-10-25): tap a codex on the bookcase, then Throw out and Yes. It
   is gone for good (no gold), to free the shelf without having to teach it.
 - 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.

@@ -4,8 +4,10 @@ Start here to find the one file a task needs. Read that file's relevant section,
 
 ## Which documents are authoritative
 
-1. **The code is the truth for numbers.** If a doc and a constant disagree, trust the code and fix
-   the doc.
+1. **Code determines what is currently implemented; approved specs determine intended
+   behaviour.** If a doc's description of the game (or a number) disagrees with the code, the code
+   is what's built: fix the description. If an approved rule disagrees with the code, that's a
+   discrepancy: flag it in [decisions.md](decisions.md#conflicts-to-resolve), don't silently pick one.
 2. **For a subject, its subsystem file is the authority** (tables below). Index files
    ([design.md](design.md), [world-spec.md](world-spec.md)) only summarise and point.
 3. **Player-facing behaviour** is in `design/`; **how the walkable world is built underneath**

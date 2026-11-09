@@ -151,6 +151,10 @@ today's sprites in phase 1 so nothing moves:
 | large | 2×2 | 4×4 to 6×6 | 1.8–3 | the chief (today ×1.3, `CHIEF_SCALE`) |
 | huge | 3×3 | 7×7 to 9×9 | 3+ | the Cyclops (today ×2.6, `BOSS_SCALE`) |
 
+> ⚠️ The subcell column is the 2026-11-07 proposal. The user set the classes on 2026-11-08: tiny 1 × 1,
+> small 2 × 2, medium 3 × 3, large 5 × 5, huge 8 × 8 (heights 0.4–0.8, 0.8–1.2, 1.2–1.8, 1.8–3, 3–5),
+> as in [objects.md](objects.md) "Sizes" and `lib/world/creatures.ts`.
+
 The subcell sizes are examples (the user, 2026-11-07), set in the dimensions review before phase
 2b (they replace the panel ones in `lib/world/creatures.ts`, which nothing reads yet). A class
 gives a default; **any species can have its own dimensions** instead.

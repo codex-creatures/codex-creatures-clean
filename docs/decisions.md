@@ -42,7 +42,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 | # | Decision | Why | Status | Rule |
 |---|---|---|---|---|
-| 15 | Everyone comes home at full health (`HEAL_AT_HOME`) | Decided by the user, 2026-10-20 | ✅ (see conflict 9) | [design/labyrinth.md](design/labyrinth.md) §7 |
+| 15 | For now, everyone comes home at full health (`HEAL_AT_HOME`) | Kept by the user, 2026-10-20; a testing convenience, not the settled design (the user, 2026-11-09) | 🧪 | [design/labyrinth.md](design/labyrinth.md) §7 |
 | 16 | Mystery rooms stay high risk, high reward | Don't soften them | ✅ | [design/labyrinth.md](design/labyrinth.md) §7 |
 | 17 | Online: sign in with Google, one save per account, the cloud wins (the device's copy kept as the backup), one game at a time | Saves follow players between devices without questions | ✅ | [design/online.md](design/online.md) §12 |
 
@@ -50,7 +50,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 | # | Decision | Why | Status | Rule |
 |---|---|---|---|---|
-| 18 | The explorable Labyrinth is 2D three-quarter top-down, in the current web game (no engine switch), with procedural randomness kept | The user, 2026-11-05 | ✅ live as "New" runs | [design/walkable-play.md](design/walkable-play.md) |
+| 18 | The explorable Labyrinth is a stylised 2D three-quarter dungeon with an illusion of depth (not voxel), in the current web game (no engine switch), with procedural randomness kept | The user, 2026-11-05 | ✅ live as "New" runs | [design/walkable-play.md](design/walkable-play.md) |
 | 19 | Four layers: world data, simulation, a pure scene builder and one shared projection, and a renderer with no game rules. Gameplay never depends on the camera | A new renderer (or 3D one day) could draw the same world; art and logic stop drifting apart | ✅ (2026-11-07) | [world/space.md](world/space.md) §1 |
 | 20 | Fixed three-quarter camera from the south, no rotation. D (floor depth) for new art is decided in phase 3 from two in-game comparisons | The user's sign-off, 2026-11-07 | ✅ camera; ❓ D | [world/rendering.md](world/rendering.md) §4 |
 | 21 | A panel (1 u) is exactly 3 × 3 subcells: layout in panels, sizes and placement in subcells, **walking on panels until the user decides** | Fine placement without changing how the game plays | ✅ | [world/space.md](world/space.md) §2 |
@@ -60,12 +60,12 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 | 25 | What a run places is saved in it, with a world version. **From v3 each version is a new generator for new runs only; a run keeps the rules it was made with for good.** Pin a version before changing placement rules | Changing code never moves things in a run under way | ✅ (now v8) | [world/persistence.md](world/persistence.md#world-versions) |
 | 26 | Separate random numbers per room and per placement pass, from (run seed, room, pass) | Changing one pass never moves anything else | ✅ | [world/placement.md](world/placement.md) §5.3 |
 | 27 | Migrations are idempotent and never touch run state; one way in (`openWalkSave`, `placedRun`); damaged runs are held, mended only when the player asks | An old run must load months later, and nothing is silently regenerated | ✅ | [world/persistence.md](world/persistence.md) |
-| 28 | The v0 converter (`lib/world/compat/v0.ts`) is isolated, frozen and has no time limit; removed only on evidence no supported save needs it, or the user's explicit decision recorded with its date | Backward compatibility mustn't become long-term upkeep | ✅ (see conflict 8) | [world/persistence.md](world/persistence.md) §7 |
+| 28 | The v0 converter (`lib/world/compat/v0.ts`) is isolated, frozen and has no time limit; removed only on evidence no supported save needs it, or the user's explicit decision recorded with its date | Backward compatibility mustn't become long-term upkeep | ✅ (no date: only those two triggers) | [world/persistence.md](world/persistence.md) §7 |
 | 29 | An older client never overwrites newer world state: it holds a newer run untouched and saves only the rest | Two computers, offline copies and stale tabs | ✅ | [world/persistence.md](world/persistence.md) §7 |
 | 30 | A run with no `dungeon` field is the Cyclops's, never the Encampment's | How runs have always been read | ✅ | [world/persistence.md](world/persistence.md) §7 |
 | 31 | Goldens are re-recorded only for a change the user approved, in its own "Intended change:" commit; any other difference is a regression | Tests pin behaviour, not whatever the code does | ✅ | [world/persistence.md](world/persistence.md) |
 | 32 | Mounted lights by each room's darkness (v5); since v8 they are wall torches, never wall candles, never on south faces; floor candles are decorative and light by walking near | The user, 2026-11-08 and 2026-11-09 | ✅ numbers 🧪 | [world/placement.md](world/placement.md#candles-and-extra-torches-world-versions-58) |
-| 33 | Art standard: the user's reference image is a target, not a source (an original palette); checks report and never "fix" art; approval is always in the game; the walls are kit E's look at 48 art pixels a unit | Rights, and consistency across hundreds of assets | 🚧 partly built | [world/art-pipeline.md](world/art-pipeline.md) |
+| 33 | Art standard: the user's reference image is a target, not a source (an original palette); checks report and never "fix" art; approval is always in the game; new walkable assets at 48 art pixels a unit, existing ones unchanged till redone | Rights, and consistency across hundreds of assets | ✅ in force; 🚧 tools partly built | [world/art-pipeline.md](world/art-pipeline.md) |
 | 34 | Walkable layouts are rolled guided, with backtracking; the Encampment and the Cyclops use 2-tile blocks; a new dungeon's size follows the bench rule (≥ 4 across; route × across ÷ rooms ≤ 1.33) | Smaller rooms are more fun to explore; big layouts must roll fast | ✅ (2026-11-09) | [design/walkable-layout.md](design/walkable-layout.md) |
 
 **The sign-off decisions** (world-spec §10, the user, 2026-11-07), word for word:
@@ -87,45 +87,47 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 
 ## Conflicts to resolve
 
-Found while restructuring the docs on 2026-11-09. Each was left as it stands, with a ⚠️ note where
-it could mislead, for the user to decide. Remove an entry once it's settled (and fix the file).
+Conflicts between docs, or between docs and code, that need the user. Each stays as it is in its
+file, with a ⚠️ note, until settled; then move it to "Resolved" and fix the file.
 
-1. **Walkable art before the standard.** [design/art.md](design/art.md) §11 says "until [the art
-   standard is] agreed, don't make more walkable-world art", but kit E and kit F walls, the round-3
-   torch and the candle cluster were made and put in the game (2026-11-09), and the palette and
-   checker exist. Is the standard agreed enough to make walkable art, and is that line still in
-   force?
-2. **Art density: 32 or 48.** [world/art-pipeline.md](world/art-pipeline.md) §6.1 (and the stage B
-   sprite notes) say 32 art pixels a unit; §6.3 says new art is 48 since kit E (you and older
-   objects stay 32). Is 48 the standard for every new walkable asset, so §6.1 should say 48?
-3. **Stage B's leftover steps.** B2 (drawing mounted candles: mount points, sort order, the south
-   fade), B3 (their sprites) and B4 (a visual density comparison) were never done, and v8 replaced
-   wall candles with wall torches. Are B2–B4 dropped, or do they now apply to the extra torches?
-4. **"Labyrinth look: a top-down voxel style is the likely long-term direction"** (❓ in
-   [design/labyrinth.md](design/labyrinth.md) §7) against the decided 2D three-quarter view
-   (decisions 18–20). Drop the voxel line?
-5. **The palette's source.** Phase 3's text (archive §8) says "palette (from the reference, with
-   the user's OK)"; §6.1 and sign-off decision 4 say the reference is a target, not a source. The
-   palette as built comes from kit E's walls. The roadmap follows §6.1; confirm.
-6. **The walkable Cyclops's size.** [design/walkable-play.md](design/walkable-play.md) step 7 says
-   "its size is open" (`WALK_LABYRINTH` 30 rooms, 10 to the lair, "for now"), written before
-   guided rolling made bigger layouts quick. Still open, or is 30 / 10 settled?
-7. **Stale status tags** (facts in other sections say these are built): the Crooked Bookcase change
-   is 📌 in [design/items.md](design/items.md) §3 but built per [design/den.md](design/den.md) §9
-   step 8; "Tavern … Not built" in §9, where its outside and repair are built (the interior isn't);
-   the questline heading says "stages 1–8 built" while stage 9 is built too; the walkable overview
-   says it all "stays behind `/lab`" while it's live. Fine to update these tags?
-8. **When the v0 converter may go.** Sign-off decision 6 and the old design.md §13 speak of "a
-   sunset after phase 2"; world §7 says "no time limit", removal only on evidence or the user's
-   explicit decision. Read together: no sunset date, only those two triggers. Confirm.
-9. **`HEAL_AT_HOME`: testing switch or decision?** [design/labyrinth.md](design/labyrinth.md) §7
-   calls it "🧪 for testing … set it to `false` to bring the pool back", and right after "✅
-   Decided: healing after death stays as it is now". Is coming home at full health the design, or
-   still a testing shortcut?
-10. **Creature footprints: two tables.** [world/space.md](world/space.md) §2 has the 🧪 phase-2b
-    proposal (large 4 × 4 to 6 × 6, huge 7 × 7 to 9 × 9); [world/objects.md](world/objects.md) §3
-    has what the user set on 2026-11-08 (large 5 × 5, huge 8 × 8). The second is the decision;
-    fine to mark the first as superseded?
-11. **Phase 1's last check.** Its "done when" asked the user to play a run in each dungeon and
-    confirm it looked and played as before; the docs don't record that. Nothing to do unless you
-    remember otherwise.
+1. **Square pixels for walls** (code vs spec): §6.1 says new art has square pixels, but the live
+   walls (kits E and F) are 48 × 36 art pixels a tile, the old 4:3 shape. Accept 4:3 for wall kits,
+   or require the next kit to be square? [world/art-pipeline.md](world/art-pipeline.md#still-undefined)
+2. **Phase 1's last check:** its "done when" asked the user to play a run in each dungeon and
+   confirm it looked and played as before; nothing records that it happened. Nothing to do unless
+   the user remembers otherwise.
+
+Undefined standards (not conflicts, but not to be invented) are listed in
+[world/art-pipeline.md](world/art-pipeline.md#still-undefined).
+
+## Resolved
+
+Settled by the user on 2026-11-09, or by the code and approved decisions; the files now say so.
+
+1. **Walkable art before the standard:** the old blanket "don't make more walkable-world art" no
+   longer applies; art follows the current world-unit, footprint and density standards, flagging
+   what's undefined. ([design/art.md](design/art.md) §11)
+2. **Art density:** 48 for new walkable assets; checked against the renderer (density is per asset,
+   so 32 and 48 coexist); existing assets unchanged. ([world/art-pipeline.md](world/art-pipeline.md#densities-in-use-checked-against-the-code-2026-11-09))
+3. **Stage B's leftovers:** the wall-candle sprites, south fade and bracket are superseded by v8;
+   the drawing rules and density comparison are kept, for the extra torches.
+   ([world/placement.md](world/placement.md#candles-and-extra-torches-world-versions-58))
+4. **Visual direction:** a stylised 2D three-quarter dungeon with an illusion of depth; voxel is
+   not the objective. ([design/labyrinth.md](design/labyrinth.md) §7)
+5. **The palette's source:** per §6.1 and sign-off decision 4, the reference is a target, not a
+   source; the palette as built comes from kit E's walls. Phase 3's "from the reference" wording
+   was archive-only.
+6. **The walkable Cyclops's size:** 30 rooms, route 10 are the current settings, not a fixed
+   constraint; guided rolling documented as built. ([design/walkable-layout.md](design/walkable-layout.md#size-and-guided-rolling))
+7. **Stale status tags:** the bookcase (built: 10 planks + 5 nails, 20 codexes, per
+   lib/items/materials.ts), the tavern (outside, repair, visitors and pits built; interior not), the
+   questline (stages 1–9 built), the walkable Labyrinth (live since 2026-11-06), the hero samples
+   (the torchbearer picked).
+8. **When the v0 converter may go:** "a sunset" in sign-off decision 6 means no date; only the two
+   triggers in world §7 (evidence no supported save needs it, or the user's explicit decision).
+9. **`HEAL_AT_HOME`:** a testing convenience kept on for now (the game labels it "🧪 Testing … for
+   now"); the healing pool is what it switches back to. ([design/labyrinth.md](design/labyrinth.md) §7)
+10. **Creature footprints:** the set values (large 5 × 5, huge 8 × 8, as in code) win over the
+    older proposal table, now marked. ([world/space.md](world/space.md) §2)
+11. **`states` in v1 saves:** left out as built; §7 now says so.
+    ([world/persistence.md](world/persistence.md))

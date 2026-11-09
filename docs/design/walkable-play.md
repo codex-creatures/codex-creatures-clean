@@ -6,15 +6,13 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## Overview
 
-- 🚧 **In progress (picked up 2026-11-05): an explorable Labyrinth**, walked round in 2D top-down
+- ✅ **An explorable Labyrinth** (picked up 2026-11-05; live, still growing), walked round in 2D top-down
 pixel art like [ideas/future-dungeon-direction.png](../ideas/future-dungeon-direction.png), laid out
 like the user's sketch [ideas/labyrinth-v2.png](../ideas/labyrinth-v2.png) (older notes in
 history.md). Decided: 2D (not 3D), in the current web game (no engine switch); the procedural
 randomness stays. **The Encampment first** (the user, 2026-11-05): 15 rooms (19 in the walkable one, `WALK_SPEC`: see Sound below), at least 7 to the
-camp, made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the
-user says to switch, so `main` stays releasable. Plan, one step at a time:
-
-> ⚠️ "It all stays behind `/lab` until the user says to switch" is from 2026-11-05. Since 2026-11-06 the walkable Encampment and Cyclops are live as "🔥 New" runs (step 7). Listed in [decisions.md](../decisions.md#conflicts-to-resolve).
+camp, made walkable end to end before the deeper dungeons. It was kept behind `/lab` until the
+user switched it on: since 2026-11-06 it's live as "🔥 New" runs (step 7). Plan, one step at a time:
 
 ## 1. Layout
 
@@ -90,7 +88,7 @@ ever needed, Phaser could run in this web game for the dungeon alone, a new depe
 ask about).
 **Who walks** (the user, 2026-11-05): a hero character (the player, a human adventurer);
 creatures appear only in fights. Samples first, the user picks.
-- 🚧 **Samples made (2026-11-06), for the user to pick** (`/lab/walk` → Art, then Tiles and
+- ✅ **Samples made (2026-11-06); the user picked the cloaked torchbearer (step 7)** (`/lab/walk` → Art, then Tiles and
   Hero to flick between them; ids in public/sprites/PIXELLAB.md, `lib/sprites/walk.ts`):
   two tilesets, "Mossy brick" (cobbles, grey brick wall faces, an earth tunnel floor) and
   "Ivy blocks" (dark flagstones, ivy-covered old blocks; its floor in the tunnels too), and

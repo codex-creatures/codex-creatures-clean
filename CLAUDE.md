@@ -78,10 +78,15 @@ own: everything else runs in the browser.
 2. **Read that section and the code it names;** widen only when they point further. Read broadly
    (the whole file, linked specs, [docs/decisions.md](docs/decisions.md)) only for architecture,
    core rules, saves or cross-system behaviour.
-3. **What counts:** the code for numbers, the subsystem file for rules, ⚠️ notes for which passage
-   wins. [docs/history.md](docs/history.md), `docs/archive/` and `docs/ideas/` are records, never
-   requirements: open them only when asked how something came about, or before reopening
-   something tried.
+3. **What counts:**
+   - **Code determines what is currently implemented** (numbers included).
+   - **Approved design specs determine intended behaviour** (the subsystem files; ⚠️ notes say
+     which passage wins).
+   - **If code and an approved spec conflict, flag the discrepancy** rather than silently choosing
+     one, and add it to [docs/decisions.md](docs/decisions.md#conflicts-to-resolve).
+   - **Historical docs are reference, not active requirements:** [docs/history.md](docs/history.md),
+     `docs/archive/` and `docs/ideas/`. Open them only when asked how something came about, or
+     before reopening something tried.
 4. **Keep established decisions** unless told otherwise. Never resolve a conflict between docs, or
    docs and code, silently: say so, and add it to [docs/decisions.md](docs/decisions.md#conflicts-to-resolve).
 5. **Change behaviour, update its doc in the same commit:** the subsystem file in place (no dated

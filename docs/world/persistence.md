@@ -8,7 +8,8 @@ Moved here word for word from world-spec.md on 2026-11-09 (the original is in [a
 
 - **The walkable run gets a version:** `WalkRun.v`. Missing = 0 (every run saved so far).
 - **v1 adds** `placed: Instance[]` (everything passes 2–8 placed) and `states` (each instance's
-  state: opened, lit, spent). Both optional, so older code still reads a v1 save.
+  state: opened, lit, spent). Both optional, so older code still reads a v1 save. (As built,
+  `states` was left out: see [World versions](#world-versions).)
   - **v1 is in subcells from the start** (§3's `Instance`), so phase 2b needs no second
     migration. Each thing today's game places is saved with its stable id, its definition, its
     anchor subcell (its panel's centre, `(3x, 3y)`: today everything stands there), its turn

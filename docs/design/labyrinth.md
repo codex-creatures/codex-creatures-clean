@@ -149,13 +149,18 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     shortcut.
   - 🧪 **For testing, everyone comes home at full health** (`HEAL_AT_HOME` in lib/dungeon/run.ts,
     on since 2026-10-19). Set it to `false` to bring the pool back.
-  - ✅ Decided (the user, 2026-10-20): healing after death **stays as it is now**, with everyone
-    coming home at full health (`HEAL_AT_HOME`). The other options (slow pool 25%/h, faster pool
-    50%/h, a quick heal to half then the pool) are set aside.
+  - 🧪 Kept on for now (the user, 2026-10-20: healing after death "stays as it is now"; the other
+    options, a slow pool 25%/h, a faster pool 50%/h or a quick heal to half then the pool, set
+    aside). **It's a testing convenience, not the settled design** (the user, 2026-11-09): the game
+    labels it so ("🧪 Testing: everyone comes home from the Labyrinth at full health for now",
+    app/pool), and the pool above is what it switches back to.
 - ⏸ **Re-entry cooldown** as the anti-farming bar: set aside (the user, 2026-11-04). The gold fee
   is the bar, and that's enough for now. (Its cooldown potions were to come from the barcode
   merchant, since dropped.)
-- ❓ Labyrinth look: a top-down voxel style is the likely long-term direction, not committed.
+- ✅ **The Labyrinth's look** (the user, 2026-11-09): a stylised 2D three-quarter-perspective dungeon
+  giving an illusion of depth ([walkable-play.md](walkable-play.md) §5,
+  [world/rendering.md](../world/rendering.md)). Voxel-style rendering is not the objective (it was
+  once noted as a likely long-term direction, never committed).
 
 ### Bosses
 

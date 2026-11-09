@@ -44,7 +44,9 @@ unasked · ✗ dropped: don't propose again unless the user brings it back.
   trader. [design/creatures.md](design/creatures.md)
 - A 10-item battle bag; bags for Klutz. [design/items.md](design/items.md)
 - Cards showing level-15 %s; Pit fights giving no XP. [design/creatures.md](design/creatures.md) §5
-- Labyrinth look "voxel" (⚠️ see [decisions.md](decisions.md#conflicts-to-resolve), conflict 4).
+- Whether coming home at full health (`HEAL_AT_HOME`, a testing convenience) ever turns off, and
+  what the healing pool becomes then (the user's planned upgrades and elixirs).
+  [design/labyrinth.md](design/labyrinth.md) §7
 
 ### ⏸ Shelved
 
@@ -57,7 +59,9 @@ unasked · ✗ dropped: don't propose again unless the user brings it back.
 
 The barcode merchant; the merchant's gear wares and armour priced like weapons; the Cyclops's
 Meditate heal; the Klutz kidnap plan (replaced by the Encampment); the Codex of Stances; the drunk
-encampment; lighting floor candles by tapping ("B6"); the rejected art (the mushroom/ruin room
+encampment; lighting floor candles by tapping ("B6"); wall candles in new runs (replaced by wall
+torches in v8, with their sprites and south-face fade); voxel-style rendering for the Labyrinth;
+the rejected art (the mushroom/ruin room
 theme, Mr. Shadows redraws, parchment / MTG / wood-and-brass cards); hand-drawn sprites in code.
 
 ## The walkable world
@@ -80,8 +84,13 @@ theme, Mr. Shadows redraws, parchment / MTG / wood-and-brass cards); hand-drawn 
   candles; the lab's numbers to start (`DECOR_PER`, `DECOR_MOST`, `BANNER_CHANCE`). *Done when:*
   the invariants hold with decor in, pockets flagged, required paths kept, blocked panels per room
   within agreed ranges, and the lab and the game show the same thing for a seed.
-- **Stage B's leftovers** B2–B4 (drawing, sprites, density comparison): ⚠️ unclear since v8,
-  [decisions.md](decisions.md#conflicts-to-resolve) conflict 3.
+- **Stage B's leftovers, now for the extra wall torches** (v8): drawing each from its mount point,
+  sorted with its face, pinned in draw-list tests; and the density comparison (sparse, ambient,
+  rich) for the user to set `DARK_PER_V7`. The wall-candle sprites and south fade are superseded.
+  [world/placement.md](world/placement.md#candles-and-extra-torches-world-versions-58)
+- **Undefined art standards** to settle as they come up (square wall pixels, D, when older assets
+  move to 48, outline and detail, PixelLab settings per kind):
+  [world/art-pipeline.md](world/art-pipeline.md#still-undefined)
 - **Candles placed by where a room is darkest** was proposed as its own approved change (stage A
   notes); the v5 budget does this for mounted lights. Floor candles are decorative.
 - **Wandering NPCs and the lights they carry**: its own feature, designed and approved before it's

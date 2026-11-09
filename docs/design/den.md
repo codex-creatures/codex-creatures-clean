@@ -10,8 +10,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 20 upgraded), bindle/bag, merchant
   stall, and a boarded-up Tavern.
 - 📌 **Tavern:** where travellers, merchants and librarians gather. Now reached through the
-  questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). Not
-  built.
+  questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). ✅ Its
+  outside, repair, visitors and pits are built (the questline below); 📌 its interior is not.
 - 📌 Wandering merchants and weapon dealers as gold sinks. The user will design gold sinks.
 - ✅ **Save slots and the title screen** (2026-10-20, `app/start`, lib/saveSlots.ts): opening the
   game shows Continue / New Game / Load file; up to 4 named saves per browser (no real login: the
@@ -20,7 +20,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ Sell prices **stay as they are** (the user, 2026-10-20), even though they (epic ~800,
   legendary ~2,700) dwarf Labyrinth gold (~18 a room) and re-scan gold has no cap.
 
-### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–8 built, lib/tavern.ts)
+### The tavern questline (the user's spec, 2026-10-20; ✅ stages 1–9 built, lib/tavern.ts)
 
 Each stage unlocks the next, so every stage can ship on its own and leave the game playable.
 Placeholder art (existing sprites, simple markers) until a later PixelLab pass. All new save
