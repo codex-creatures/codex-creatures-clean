@@ -1,0 +1,1706 @@
+# Codex Creatures: game design
+
+This is the agreed design **as it stands now**, with how far each part has got. Keep it that way:
+each decision once, in its current form, with a short reason (and anything tried and rejected, so
+it isn't proposed again). Change rounds, superseded plans and old sims go in
+[history.md](history.md), which Claude doesn't need to read for normal work. It's gathered from the design decisions
+made with Claude through October 2026, and the built numbers were checked against the code on
+2026-10-26 (after Combat V2 and the audit that followed it). **The code is the truth for numbers:** if this file and a constant disagree, trust the
+code and fix this file. Constants are named in `code font` so you can grep for them.
+
+**Status tags**
+
+- ✅ **Built**: in the game now.
+- 📌 **Decided**: the user has agreed it, but it isn't built (or only partly).
+- 🧪 **Provisional**: built, but with numbers Claude picked as a default or that are still being
+  balanced. Fine to tune, but say so.
+- ❓ **Open**: the user hasn't decided. Ask; don't pick.
+- ⏸ **Shelved** / ✗ **Dropped**: set aside for now, or cut by the user. Don't build unasked.
+
+Ideas the user floated but never confirmed are listed as ❓, not as decisions.
+
+## Where things stand (2026-10-26)
+
+- **Live:** Combat V2 (7 races, 35 creatures, race kits, codexes for the rest of a creature's kit),
+  soul stones, the Labyrinth / Deep Labyrinth / Abyss, Klutz and his hunts, the tavern questline
+  (stages 1–9), save slots, Vercel hosting.
+- **Recent changes:** see `git log` (the commit messages say what changed for the player).
+- **Next (📌, decided, not built):** the onboarding scan gate (§2, later), more soul stones and
+  effects (§4, §6), the tavern's interior (§9). Visual work comes first (the user, 2026-11-04):
+  the fighters on a diagonal, and the Hydra's own art.
+- **Dropped (the user, 2026-11-04):** the merchant's gear wares and armour priced like weapons
+  (armour comes at the right rate as it is), the barcode merchant (the tavern has enough), the
+  Cyclops's Meditate heal (its strength is right). The re-entry cooldown is set aside: the gold
+  fee does the job for now.
+- **Going online (📌, 2026-10-31):** accounts, cloud saves, the global registry, leaderboards and
+  live PvP, over about 3 weeks (§12).
+- **Open (❓, the user's call):** what Klutz gets in place of his old counter bonus; agility doing
+  more; race-move rules beyond the kits; shared barcode lists once there's a global registry;
+  longer Klutz walks; a creature trader.
+
+---
+
+## 1. Core idea
+
+- ✅ Creatures and items have always lived inside barcodes. Scanning a real barcode opens a
+  **Code Cache** with what that barcode holds. Scanning stays the most effective source of items
+  forever, even as other sources grow.
+- ✅ Battles give scanning a purpose: you take a team into the **Labyrinth**, a roguelike climb of
+  rooms to a boss.
+- ✅ Home is the **Den**, a gloomy cavern you move around (pan/zoom map) with places to visit.
+- Design goal (the user's): attachment to *individual* creatures, and team building plus
+  outplaying should decide fights, not rarity alone.
+
+## 2. Barcodes and scanning
+
+- ✅ **The barcode number must not decide the outcome.** The first-ever scan of a barcode rolls its
+  outcome at random and registers it. Everyone who scans it later gets the same outcome (item kind
+  and rarity, or creature species) but their own stat roll. Rescanning a barcode you already own
+  gives gold, never a new item or a reroll. (lib/barcodeRegistry.ts)
+- ✅ **Scans stored** (the user, 2026-11-02; lib/scanCharges.ts): up to 9 (`SCAN_MAX`), one more
+  every 20 minutes (`SCAN_REGEN_MS`) while below 9, none while full: 9 every 3 hours. Stops mass
+  scanning and rewards coming back. A barcode new to you uses one (opened, or kept sealed offline);
+  rescans (gold), one too rare for you yet, and the testing "random" mode are free. Saved as
+  `scanCharges` (missing: full). Shown under the altar's Scan button with a countdown.
+- ✅ Online builds use the **global registry** (§12): everyone shares one. A copy without online
+  (the offline Windows build, tests, a dev build with no Supabase keys) keeps a **local** one
+  (`codex_creatures_registry_v3`): "Reset player" keeps it, to simulate a friend; "Global reset"
+  (shown only there) clears it.
+- 🧪 Outcome odds (`SCAN_ODDS`, 2026-10-20, for playtesting): 40% creature, 13% weapon, 26% armour,
+  7% consumable, 6% material, 7% gold, 1% soul stone (2026-10-25, first scanner only). Aim: about 1 legendary creature or card per 250 scans (from
+  explorer level 12); a real creature every 12–13 scans. Players will also hunt legendaries with good
+  rolls, so the chase goes on past the first. Shared barcode lists (once there's a global database)
+  are an open risk: ideas are seasons, limited stock, or the legendary species rolled per player.
+- ✅ Labyrinth chests keep the original table (`CHEST_ODDS`): 20% creature, 12% weapon, 24% armour,
+  12% consumable, 12% material, 20% gold. Creatures found in the Labyrinth always come as cards;
+  only encampment cages hold real creatures.
+- ✅ **1 drop per new scan** (`SCAN_DROPS`). Items should stay scarce; gold scans are the
+  "dud" consolation.
+- ✅ The altar (layout 2026-10-20): a big **Scan Barcode** button, the Looting/Storage toggle, and a
+  3×3 loot window (one empty row of 3 until something's in it). **Looting** opens each Code Cache
+  at once: the find goes straight to your things and the window shows this visit's latest 9,
+  cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when
+  full, open some before scanning. ✅ (the user, 2026-11-01) **The unveiling** (lib/scanReveal.ts,
+  components/ScanReveal.tsx): every Looting scan, and tapping one stored cache, plays a short show
+  on its own dark screen (nothing behind shows through)
+  (the cache rattles up the rarities one stage at a time, harder each time: white 0.8s, then green,
+  blue and purple 0.55s each, stopping at its find's; a legendary goes still for 0.45s after purple, then
+  rattles gold 0.65s (`shakeStages`, about 3.5s in all; gold coins 0.75s). It cracks in a flash of that colour;
+  rare adds light rays, epic falling gold and a jolt, legendary a big golden explosion on top; tap to skip), then the find with its stats and
+  **Keep / Sell** (at the merchant's price: gear for what the Inventory pays; potions, codexes,
+  scrolls and tools for half what they cost), **Keep / Release** (a creature or card), **Keep**
+  (materials, which go straight to your tally, and what has no price), or just "+N gold" (tap on).
+  Under the find's name, who got there first (`findLine`; the user, 2026-11-01, a treasure hunt for
+  barcodes nobody has scanned): "✨ First to find this Code Cache!", online "You're the 3rd to find
+  this Code Cache", or "You've already looted this Code Cache" on a rescan. In Storage it shows under
+  the window instead. ✅ (the user, 2026-11-02) **New finds:** the first of a kind you've had gets a
+  "✨ New creature!" or "✨ New item!" tag over it as it opens (`newFinds`): a species you don't
+  have (as "Creatures discovered" counts it, so one you've let go of is new again) or a kind of item
+  never had ("Items discovered"). Of two of the same new kind at once, only the first. "Open all" opens stored caches
+  together, with no show (each new find tagged NEW once revealed). Typed barcodes (Repeatable by default, or Random) sit at the
+  bottom as a testing tool. ✅ (the user, 2026-10-31) Online, the altar's testing tools (typed
+  barcodes, Random, the resets, rubble and visitor) show only for the owner's account
+  (`ADMIN_IDS`, lib/online/admin.ts); a copy without online keeps them. This hides them in the
+  game only: the server can't tell a typed barcode from a scanned one. **✨ Start new** is for
+  every player (two taps); the old save is kept as the backup (Settings → Restore backup).
+- ✅ **Items discovered** counts every kind of item: weapon and armour types, materials, potions and
+  codexes (lib/items/discovery.ts). The save remembers kinds you've used up (`found`).
+- ✅ Scanned creatures: 20% are a real creature, 80% a **creature card** (`REAL_CREATURE_CHANCE`).
+  In the loot window a real creature shows as the creature itself (its sprite, its plain name), a
+  card as the card.
+- ✅ Your **explorer level** caps how rare a creature you can take from a barcode **someone already
+  found** (`SCAN_UNLOCK`: rare at Lv 2, epic at 6, legendary at 12). That barcode stays sealed: it
+  doesn't count, and the altar shows the level needed. **Being first beats the cap** (2026-10-20):
+  a barcode nobody has scanned rolls at the usual odds and is yours whatever it is
+  (`tooRare`). Online "someone" means any player; locally, any earlier player in this browser.
+- ✗ **Barcode merchant** (dropped by the user, 2026-11-04: the tavern has enough merchants). It
+  was to be 10% of scans, taken from materials and consumables.
+- 📌 **Onboarding scan gate** (the user, 2026-11-04: later), deliberately unconventional: the game stays locked until you scan a
+  real barcode, then Klutz drags you out of the labyrinth. Don't "fix" this for convenience. Edge
+  cases still need solving: manual entry, no camera, app-store review. Not built: a new game starts
+  at the Den.
+- ✅ **Global registry** (the user, 2026-10-31): the online registry replaces the local one, and
+  offline scans wait as sealed Code Caches. See §12.
+- ✅ **The camera** (2026-11-01, for Samsungs that never read a code and phones without a close-up
+  lens): opens the main back lens (Android: the lowest "camera2 N, facing back") at 1080p with
+  continuous focus, reads shop-type 1D barcodes (no QR) with the browser's own BarcodeDetector where
+  there is one (Android Chrome), else ZXing with try-harder. Under the picture: 🔍 zoom 1×/2×/3×
+  (the lens's own zoom where it has one, else cropping), 📷 next camera, 🔦 torch where there is one.
+  The last lens and zoom are kept per device. Fake-scan detection is still a future project.
+  Test with manual barcode entry.
+
+## 3. Items
+
+### Stat rolling: the user's most carefully balanced system. Don't change the numbers unasked.
+
+- ✅ Rarity odds 40/30/20/9/1 (`RARITY_WEIGHTS`, shared by items, scanned creatures and Klutz's
+  encounters, so changing it changes all three). Use whole-number weights.
+- ✅ Stat budgets by rarity: 60/80/100/120/150 (lib/items/budgets.ts).
+- ✅ The roller (lib/items/rollConfig.ts and rollItemStats.ts):
+  - +1 to each of the 2 primary stats;
+  - chunks of 5–20% of the *original* budget, rounded up and clamped to what's left;
+  - 20% chaos / 80% weighted toward room left (^0.6);
+  - the total comes out exact.
+  - A Legendary Void Scythe with Attack ≥ 100 about 1.1% of the time is intended. Impossible
+    configs (ceilings summing below the budget) throw.
+- ✅ Tests lock these numbers (tests/rollSystem.test.ts and others).
+
+### Gear
+
+- ✅ 15 weapons and 7 armour sets (helmet / chest / legs).
+- ✅ **Armour pieces roll in full** (decided 2026-10-19, so armour doesn't look weak next to
+  weapons): every piece rolls the whole budget (60–150) within its armour's ceilings, and the slot
+  doesn't change what it can roll. Defence counts at a third in the damage maths
+  (`ARMOR_DEFENCE_WEIGHT`, lib/combat/engine.ts): 30 melee defence blocks what 10 used to, so
+  defence is unchanged. HP and agility count in full; a piece can roll ⅓ of its armour's HP
+  ceiling (`PIECE_HP_SHARE`).
+  - Enemies wear three real pieces, and the one that drops is one they wore. Bosses' and the
+    thief's hand-set armour is on the same scale.
+  - Old saves: armour's defence is multiplied by 3 on load (`upgradeOldArmor`, lib/save.ts), so it
+    blocks what it did.
+  - ⚠️ Provisional: HP at ⅓ is the user's playtest choice. A full set gives about twice the old
+    armour HP (rare +46, legendary +72), and fights run about ½–1 hit longer (sim: ~5.9 hits to
+    KO at every rarity, against 4.9–5.9 before). ⅕ would keep fights as they were.
+- ✅ Full-set bonuses (all 3 pieces) are effects, not stats (`SET_BONUS` in lib/items/armor.ts):
+  Hard Shell, Quickscale, Nullify, Deflect, Steadfast, Unstoppable, Second Wind.
+- Weapons have a damage-type affinity (+15% when the move's type matches: `AFFINITY_BONUS`), but only
+  under the old rules: Combat V2 has no damage types, so it's off (and not shown).
+
+### Materials, consumables, bags
+
+- ✅ **Materials** (planks, nails, metal bars, stone, essence stones: lib/items/materials.ts) are a tally at
+  home, like gold. In the Labyrinth a material find is a stack that takes one bag slot and joins
+  the tally when you get home.
+  ✅ **Stone and essence stones** (the user, 2026-11-03): **Stone** (rare, 🪨 until PixelLab art)
+  took the old rare essence stone's place everywhere: material finds, the merchants (Labyrinth
+  150, tavern 300) and the storage schematics. It keeps the save key `essence_stones`, so stones
+  already in a save are Stone now. **Essence stones** are a new **epic** material (`essence`, the
+  old gem art): 1 in an Epic material find and 1–2 in a Legendary one (each a third of those
+  finds; the rest metal bars or stone), and on 1 merchant's cart in 3: 500 in the Labyrinth,
+  1,000 at the tavern, bought back for 250.
+- ✅ **Potions** go in the bag. The Chest (Inventory) stores the rest.
+- ✅ **Chest boxes** (the user, 2026-10-20, `lib/items/storage.ts`): weapons, armour and consumables each
+  hold 50 (`BOX_CAP`). Materials (a tally, shown in a strip by your gold at the top of the
+  Inventory) and codexes (their own Inventory tab; the bookcase limits them) don't count. A run's
+  haul still comes home into a full box and can go over, but you can't enter the Labyrinth while
+  any box is at 50 or more. A scan for a full box is kept as a sealed Code Cache at the altar (even
+  in Looting mode), and a cache for a full box won't open until there's room. The altar holds 9
+  caches (`CACHE_LIMIT`): with 9 waiting, every scan says "Scan Failed / Code Cache Full".
+  ✅ **Storage schematics** (2026-10-25): the merchant's Weapon and Armour Storage Schematics
+  (`weapon_storage`, `armor_storage`) build that box up to 75 (`BIG_BOX_CAP`; consumables stay at
+  50). Built from the Inventory (a panel above the list) for 10 planks, 10 nails, 1 stone.
+  The save remembers which boxes are built (`storage`, optional, default none).
+- ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
+  found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
+  wandering merchant's cart, Labyrinth or tavern, for 1,000 gold (`BACKPACK_PRICE`; it takes one of
+  the cart's 10 slots); and 50% of
+  storehouses (`STOREHOUSE_BACKPACK`). Gear, codexes, potions, tools and material stacks take a slot; gold and
+  creature cards don't. Swapping a weapon from the bag mid-fight uses your turn.
+- ✅ **Backpack upgrades** (2026-10-25): +1 slot each from the backpack's 5 up to 10 (`BAG_MAX`), at
+  1,000 → 1,500 → 2,000 → 2,500 → 3,000 gold (`BAG_UPGRADE_PRICES`), from the merchant once you own the backpack. It
+  works straight away (in the Labyrinth) or from the next run (tavern). Stored as `bagSize`.
+- ✅ **Revival Elixir** (2026-10-25, a tool: `revival`): from the bag between rooms, or in a
+  fight (the user, 2026-11-02: it takes your turn, on a knocked-out teammate, who can then be
+  swapped in), brings a knocked-out creature back with 50% HP (`REVIVE_HP`). One bag slot. 500 gold at
+  the merchant (25% of carts); also in 20% of mini-boss chests (`MINIBOSS_REVIVAL`) and 50% of boss
+  chests (`BOSS_REVIVAL`).
+- ✅ **Schematics:** the Crooked Bookcase (epic drop: 20 planks + 10 nails) raises the bookcase from
+  10 to 25 codexes. 📌 Changing (the user, 2026-10-20): it will come only from the tavern
+  questline (§9), for 10 planks + 5 nails, holding 20.
+- ✅ **Throwing out codexes** (2026-10-25): tap a codex on the bookcase, then Throw out and Yes. It
+  is gone for good (no gold), to free the shelf without having to teach it.
+- 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.
+- ❓ A 10-item battle bag and bags for Klutz have been mentioned, but neither is designed.
+
+## 4. Creatures
+
+- ✅ 35 scannable species (`CREATURE_TEMPLATES`, lib/creatures/creatureData.ts and rosterV2.ts):
+  7 races × one of each rarity. Each has a rarity, a main **style** (`cls`: melee / ranged / magic),
+  an **archetype** (which style kits it draws from, §6) and **one or two races** (Undead, Divine,
+  Beast, Underkin, Geo, Humanoid, Toxic). Plus Klutz (no race) and the boss parts. (The 7 species retired before V2 were removed
+  on 2026-11-04: no save from after the fresh start can hold one.)
+- ✅ **Individual rolls:** each creature's %s are the species' values with a small zero-sum spread
+  (`ROLL_SPREAD_*` in creatureRoll.ts). Rarer creatures get bigger spreads. 4 move slots: it's
+  born with its 3 starting moves (§6), and a 10% chance (`RARE_MOVE_CHANCE`) of a rare learnable
+  move of its style in the empty fourth (the user, 2026-10-26: never in place of a starting move).
+- ✅ **Cards:** a card shows one specific rolled creature. Summon with 3 cards of a species
+  (`CARDS_TO_SUMMON`): **choose** a card to get exactly that creature, or **random** for a fresh
+  roll. The summoning plays out (the user, 2026-11-02; components/SummonShow.tsx): the 3 cards are
+  set on the Soul Altar, whirl up into a whirlwind that climbs the rarity colours like a Code Cache
+  (`summonStages`, lib/scanReveal.ts) to the creature's, then burst into it. Tap to skip.
+- ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
+  the cage (`starterCreature`, Lv 3). Releasing a creature gives nothing. A captured creature joins
+  your creatures (the starter is also the first free pick at the Labyrinth's entrance).
+- ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
+  the quality benchmark for sprites and cards.
+- ✅ Races have 5 creatures each, one per rarity (a dual-race creature counts under its first race).
+- ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
+  by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
+
+### Soul stones (✅ the user's spec, 2026-10-25; lib/creatures/soulStones.ts)
+
+- A passive power some creatures are born with, shown under the weapon in the creature window
+  (and on cards). They **replaced the old abilities** (Keen Eye, Divine Healing), which are gone.
+- Only Rare or better, and not guaranteed: Rare 25%, Epic 60%, Legendary 100% (`SOUL_STONE_CHANCE`),
+  cards included. Summoning "choose" keeps the card's stone; "random" rolls a new one.
+- Each Rare+ species has a pool of **at least 2** stones (`POOLS`, picked by Claude to fit each
+  creature; the user may re-sort them), so two of a species can differ. Trickster only goes on
+  races with a utility move (Divine: Mirage; Undead: Corpsify).
+- Creatures and cards from before soul stones get theirs rolled once on load (`soulStoneOf`,
+  seeded by the drop's id). Save field `soulStone` on the drop: a key, or `null` for none.
+- Enemies roll them too, at the same rates (the user, 2026-10-25: `makeEnemy`, and the practice
+  battles), and a creature Klutz catches keeps its stone. In a fight, each creature's stone is
+  written out under it (plain text for now, while they're tested). The first quest's thief and
+  the Cyclops have none.
+- The starter creature always has one, from its pool (the user, 2026-10-25).
+- **Klutz:** he can't just pick one: you give him one of your loose soul stones from his Equip
+  window (tap the soul stone slot), on the same terms as a creature (free into an empty slot,
+  5,000 gold to replace his, the old one destroyed), and only while he's home (the user,
+  2026-10-31; before that you chose his stone for free, and a stone he got then he keeps). Only the four that do
+  something for him (`KLUTZ_STONES`): no Revitalise (he never swaps out) and no Trickster (no
+  utility move). Saved as `KlutzState.soulStone` (missing = none).
+- **Loose soul stones** (the user, 2026-10-25): a stone found on its own, as a consumable item
+  (`stone` on the drop, `soulStoneDrop`), always one particular stone of the six.
+  - Scans: 1% of outcomes (`SCAN_ODDS.soul_stone`, taken from armour: now 26%), **only for the
+    first ever to scan the barcode**; anyone after gets gold (`claimedOutcome`). Online, "first"
+    means first of all players (the global registry, §12).
+  - Boss chests: the Cyclops 2% (`CYCLOPS_SOUL_STONE`), the strongbox (the Hydra's, the Warden's) 5%
+    (`WARDEN_SOUL_STONE`). Not in ordinary Labyrinth chests (`CHEST_ODDS`).
+  - Set in **any creature** (any rarity, any stone, not just its species pool; not cards) by tapping
+    its soul stone slot: free into an empty slot, 5,000 gold to replace one
+    (`SOUL_STONE_REPLACE_COST`), and the old stone is destroyed (`setStoneIn`).
+  - 📌 Later (the user's plan): 1 in 500 creature drops (real creatures, not cards) a cosmetic
+    variant, only for the first to scan that barcode, for trading. Needs the global registry to
+    mean much.
+- The altar says **"First to find this Code Cache!"** when nobody had scanned the barcode before,
+  and **"You've already looted this Code Cache"** on a rescan (the user, 2026-10-25).
+- The six (the user's numbers):
+  - **Toxic Skin**: hit by a melee attack, 50% to poison the attacker: 5% of its max HP each turn
+    for 3–5 turns, on the bench too. A new poisoning replaces the old one with a fresh 3–5 roll.
+  - **Haunting Presence**: when it enters (the start of the fight or a swap; not when sent in
+    after a knockout, which the user confirmed is right, 2026-10-26), 25% that the enemy
+    on the field is "crippled with fear": it loses its next attack and spends no energy. Swaps
+    resolve first, so swapping it in can stop the attack due that same turn. The fear is hidden
+    (no status icon, no log line) until the creature tries to attack and loses it.
+  - **Unstoppable Force**: can't be crippled.
+  - **Perfectionist**: each use of the same move in a row does 10% more than the last, compounding
+    (10 → 11 → 12.1, ±5% spread), with no cap. Resets on a different move, a rest, a stumble or
+    fear, an item, or swapping out (the foe swapping doesn't reset it).
+  - **Trickster**: its utility moves (ones used on itself: Mirage, Corpsify) go before everyone,
+    whatever the agility. (Cripple, Haste and Precise are utility *attacks*: not included.)
+  - **Revitalise**: swapped out to the bench, heals 25% of its max HP.
+- 📌 More stones later: the user plans to expand the list.
+- ❓ A slave trader who buys creatures (with the Tavern's encounters): mentioned, not designed.
+
+## 5. Levels and XP
+
+- ✅ Levels 1–30 (`MAX_LEVEL`). The species' listed %s are its level-15 values (`REF_LEVEL`). At
+  Lv 1 a creature has only its roll, so two creatures of a rarity are close and the species shows
+  as they level. HP is ×1.5 overall (`HP_SCALE`). (lib/creatures/levels.ts)
+- ✅ XP per KO depends on the enemy's level and rarity. A boss part gives 200. A fight's XP is
+  shared by impact (damage dealt + half the damage taken, at least 10% each). No XP for a lost
+  fight. Levelling is 1.5× slower than first built (`XP_PACE`), at the user's request.
+- ✅ **After a won fight** (the user, 2026-11-09; components/FightWon.tsx, `xpShown`): a Victory
+  window shows each creature's XP counting up from what it had to what it has now ("120 / 300
+  XP"), its level bar filling with it and on through each level it gains, then **Loot** (opens what they dropped) or **Leave** (it stays on the floor to open later; a
+  fight with nothing to loot, the thief's, has just Carry on). Level-up shows follow it. Not
+  when a win ends the run at the top (classic): the haul screen shows it, as before.
+- ✅ **Explorer level** (you, `save.player`) gets every fight's full XP and gates scan rarity
+  (section 2).
+- ✅ **Tattered XP Scroll:** a flat 400 XP (`SCROLL_XP`, about Lv 1 → 5). Read from the creature
+  window; works on Klutz.
+  - 🧪 Drop rates: mini-boss chests 25%, boss chests 50%, 20% of merchants at 200 gold. The 25% and
+    50% are Claude's numbers.
+- ✅ Enemy levels come in bands by depth (`DUNGEONS[d].levels`). Cyclops Lv 6, Hydra Lv 16, Warden Lv 25 (the Abyss).
+- ❓ Cards still show level-15 %s; Pit fights give no XP.
+
+## 6. Combat
+
+### The rules (lib/combat)
+
+- ✅ **Format:** teams of 3, one active creature each side. Swapping uses your turn and resolves
+  before attacks, so the incoming creature takes the hit. The creature swapped out recovers 50% of
+  its *missing* energy (`SWAP_ENERGY_RESTORE`).
+- ✅ **Agility only decides who strikes first.** This threshold behaviour is intended: players
+  judge how much to invest. Don't "fix" it.
+- ✅ **Races, not the triangle** (Combat V2, below). The old class triangle (melee > ranged > magic,
+  ±50%) and damage types are off; their code stays, for the sims.
+- ✅ **Damage:** ratio formula, hit² / (hit + defence), so a bad matchup still chips (the user wants
+  Pokémon-style chip damage, never ~0). A move's style (melee, ranged, magic) picks the attack and
+  defence stats; then the race multipliers apply.
+- ✅ **Hard counters are intended:** a counter means much less damage and a reason to swap, not
+  invulnerability.
+- ✅ **Energy:** max 100, +30 after each attack, so energy never falls below 30 once it has attacked.
+- ✅ **No resting** (the user, 2026-10-26): every set of moves keeps at least one **steady move**
+  (30 energy or less, no cooldown: `isSteadyMove`, `STEADY_MAX_ENERGY`), so a creature can always
+  attack. The Moves tab and the codex "forget which?" won't give up the last one; a set saved
+  without one gets its first steady move back in the last slot (`resolveMoves`). The Rest button
+  is gone (the engine's "pass" stays as a safety net: with nothing affordable, a creature rests by itself).
+- ✅ **Who used what:** while a round plays out, the line above the moves says "Moss Wolf used
+  Gore" ("Foe's …" for theirs) in place of the energy bar.
+- ✅ **Precise hits:** 5% chance, ignoring 25% of defence, and 1.75× damage (`PRECISE_DAMAGE`, the user, 2026-10-24; a brief try at 75% ignored instead was reverted).
+- **The armour gap was removed** (the user, 2026-10-25): repeating a move no longer raises the
+  precise chance or cracks armour. The Perfectionist soul stone is the only thing that rewards
+  repeating a move now. (Tank-vs-tank stalls can now run to the 100-round draw.)
+- ✅ **Stances:** neutral, float, entrench (engine.ts). Float takes −10% from melee and +10% from
+  ranged, and deals +10% ranged; Entrench is the mirror image (melee). The stance rules are
+  provisional in the original design, and there's no elemental type chart.
+- ✅ **Utility moves** (learnable): Cripple (−50% agility for 3 rounds, plus a 25% chance each
+  attack is lost), Haste/Quickcast (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
+  always precise).
+- ✅ **Race moves:** single-use codexes, learnable by that race (either of a creature's two), plus
+  the species the user named (`alsoLearners`), minus any left out (`notLearners`) (the user,
+  2026-10-31). The codex window no longer says who can learn it: tapping one greys out the rest.
+  - Pounce (Beast; also Void Serpent, Deep Angler, Veilstalker, Cave Goblin; not Ironhide).
+  - Rabid Bite (Beast, Underkin and Toxic: `learnRaces`; it hits as Toxic; venom ticks even on
+    the bench; Toxic creatures are immune).
+  - Mirage (Divine; also Dust Sprite, Dustwraith, Swamp Witch, Mr. Shadows, Dreadpox, Thunderhead,
+    Pale Rider, Skull Raven).
+  - Corpsify (Undead; also Hollow Matriarch, Plague Rat; Dreadpox is already Undead).
+  - Barrage (Humanoid, hits every enemy; also Rotgut Fly, The Watcher, Thunderhead, Skull Raven,
+    Hollow Matriarch; Leafblade Scout, Aurelius and Sylvaran are already Humanoid).
+  - Erupt (Geo; also Swamp Witch, Mr. Shadows, Ironhide): magic, 25 damage, 70 energy, a 25%
+    chance to cripple for 3–5 rounds.
+- ✅ **Special moves** (the user's, 2026-10-27; `SPECIAL_MOVES` in creatureData.ts). Each has its
+  own codex rarity and a list of the species that can learn it (`learners`; not race-locked:
+  the list is the user's pick). Their codexes come from librarians, chests, library rooms and the
+  Cyclops (with the race codexes), and from scans at their rarity (Common / Uncommon / Rare pools;
+  the Epic one only from the Labyrinth; a librarian charges 500 for it, 200 for the rest).
+  - **Dark Seal** (Undead, magic, Rare): 5 damage, 50 energy, 5-round cooldown. The target can't
+    swap out for 3 rounds, even if you swap. Dreadpox, Swamp Witch, Mr. Shadows, Flame Imp,
+    Dustwraith, Thunderhead.
+  - **Meditate** (Neutral, utility, Common): 0 energy, 3-round cooldown, +30 energy on top of the
+    usual 30. Anyone, Klutz too.
+  - **Healing Blessing** (Divine, utility, Uncommon): 40 energy, 3-round cooldown. Next round,
+    after both sides have attacked (the user, 2026-11-01: it mends the hit just taken), whoever is
+    on your side of the field heals 60% of its max HP, if it's still standing.
+    Thunderhead, Crystal Golem, Veilstalker, Flicker Wisp, Sylvaran.
+  - **Corrosive Soak** (Toxic, utility, Rare): 40 energy, no damage. The target's three defences
+    drop by 30% of their full value until it leaves the field; no stacking (the user's pick of
+    energy, duration and stacking). Bellow Toad, Rotgut Fly, Plague Rat, Glob, Deep Angler,
+    Dreadpox, Void Serpent, Hollow Matriarch.
+  - **Impale** (Underkin, ranged, Epic): 25 damage, 80 energy; 60% chance the target can't swap
+    out for 2 rounds. Deep Angler, Aurelius, Crystal Golem, Skull Raven, Sylvaran, The Pale Rider.
+    The old melee Impale (a Rare scan codex) is retired: an old codex of it is now this one, and a
+    creature that learned it keeps it only if it's on this list.
+  - **Pin Down** (Humanoid, ranged, Rare): 10 damage, 60 energy, 5-round cooldown; the target
+    can't swap out for 2 rounds, and 30% of the time a third. Thicket Archer, Aurelius, Skull
+    Raven, Sylvaran, Hollow Matriarch, Rotgut Fly.
+  - A sealed creature still gets replaced when it's knocked out: a seal only stops swaps.
+  - **Brace** (Neutral, utility, Rare; the user, 2026-11-03): 50 energy, always goes first; the next
+    attack that lands on it this round does 90% less (at least 1). Anyone, Klutz too. 🧪 Claude's
+    reading: it lasts that round only, and covers one hit (a barrage's second target isn't it).
+  - **Divine Strength / Arcane Channel / Sureshot Blessing** (Divine, utility, Epic; the user,
+    2026-11-03; strong on purpose: that turn does no damage, and it's best cast for free when your
+    swap-in forces theirs out): 50 energy, 5-round cooldown, +50% melee / magic / ranged attack *stat* (`Fighter.boost`)
+    until it leaves the field; doesn't stack. Learners: every creature whose archetype fights in
+    that style, hybrids included (`learnStyles`, `stylesOf`); not Klutz. With typical gear that's
+    about +45% damage (Common) to +58% (Legendary), as the damage formula squares the hit.
+  - **Blood Sacrifice** (Undead, magic, Epic; the user, 2026-11-03): 70 energy, no damage; Dark
+    Seal's learners. The caster pays 25% of its max HP, which can knock it out (the user, 2026-11-03). A **blood pool** lies
+    under the foes (a *ground effect*, below): 5% max HP at the end of each round to whoever they
+    have out, 20% to each creature that comes in (a swap at once; a replacement as the next round
+    starts); the 3rd comer sets off a 25-power magic hit with the caster's stats, and the pool is
+    gone. Whoever the caster's side has out heals 50% of all of it. Undead are untouched, and one
+    coming in doesn't count. 🧪 Claude's picks: it's Undead-race (for the burst's race multiplier);
+    casting it again replaces the pool (the count restarts). (Both confirmed by the user.)
+- ✅ **Toxic creatures can't be poisoned** (the user, 2026-11-03; `poisonImmune`): no venom (Rabid
+  Bite), no Toxic Skin poison, no Hydra cloud. Illness (the witch) isn't poison.
+- ✅ **Ground effects** (2026-11-03; `BattleSide.ground`, components/GroundEffects.tsx): things lying
+  under a side's field, drawn on the floor under it (the blood pool: a rippling pool with a drop per
+  comer, lit as each is hit). Only blood so far. 📌 The user's direction (theorycraft, not decided):
+  more of them, interacting, e.g. igniting a poison cloud (extra damage, burns the poison off),
+  poison moves hitting harder on creatures standing in blood.
+- ✅ **Move codexes** (decided 2026-10-19): every older move comes as a codex from scans, each
+  teachable only to a creature of that move's style (race-kit codexes: below). Every codex says
+  who can read it ("Underkin melee only", `codexLearners`) at the librarian, in the loot window
+  and on the bookcase, and every move has a description (one without its own just says "A plain melee
+  hit.": the user, 2026-10-27, doesn't want moves spelling out what they're strong against; the
+  race chart is for that). Up to 20 damage (`BASIC_MOVES`, 15 moves)
+  they're Common; above that (`STRONG_MOVES`, 9 moves) they're Rare.
+- ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a basic
+  codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex. Rare
+  is a strong codex or a Healing Potion, half each (`STRONG_CODEX_SHARE`). The Healing Potion is
+  Rare everywhere now (it was Uncommon).
+- Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In), once a planned
+  Cyclops reward. (Meditate is now a special move.)
+- ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.
+- ✅ **Enemies' moves scale with level** (the user, 2026-10-26; `enemyMoves`, `ENEMY_MOVE_LEVELS`
+  in lib/dungeon/run.ts). From Lv 5 its empty fourth slot holds its race's heavy move; from Lv 12
+  its Neutral light move becomes another move from its kits; from Lv 20 its Neutral priority move
+  does too. It always keeps its race's 30-energy move. 🧪 The levels are Claude's draft. A creature
+  Klutz catches keeps the moves it fought with.
+- 🧪 Balance in general: the user tunes by playing, and fights against the AI (the balance lab, /simulator and the sim scripts went 2026-11-04). Their
+  goals: rarity raises the ceiling but a Legendary must not always win; well-fitted, well-rolled
+  gear should beat raw rarity within a band; good play should matter more than it does now.
+  Present changes to creature stats or move numbers as options. Don't apply them unasked.
+
+### Combat V2: races (✅ live since 2026-10-26)
+
+How it came about, round by round: history.md.
+
+- ✅ **Live rules** (`LIVE_RULES`, `setCombatRules` in engine.ts): races on (each move's own race),
+  triangle off (`TRIANGLE_RULES` kept for tests), damage types off (`damageTypes: false`: Force /
+  Pierce / Arcane are gone; a move is just its style and race). **Magic stays** as a third style.
+- ✅ **7 races:** Undead, Divine, Beast, Underkin, Geo (elemental, not just stone), Humanoid, Toxic
+  (was Pestilence; id `toxic`). Creatures have 1 or 2 (`SPECIES_RACES`, lib/creatures/racesV2.ts;
+  the user's race pass is in; the user is fine with lopsided races). Colours (`RACE_INFO`): Undead
+  bone grey, Divine light gold, Beast green, Underkin brown, Geo red, Humanoid blue, Toxic purple;
+  **Neutral** (no race) slate grey (in code still `BALANCED_INFO` / `BALANCED_MOVES`).
+- 🧪 **Multipliers 1.25× effective / 0.8× resisted** (`RACE_EFFECT`; dual races multiply), plus
+  1.15× for a move of the creature's own race, once (`MATCH_BONUS`). The user picked these over
+  1.4× / 0.75× (2026-10-26): the race edge drops from 74% to 68% of even duels, and gear a rarity
+  better can make up for a bad matchup. The chart (`RACE_BEATS`, lib/combat/raceChart.ts) is Claude's
+  rebalance of the user's draft: each race beats 3 and is weak to 3, with 4 mutual pairs.
+- ✅ **35 creatures** (`CREATURE_TEMPLATES`, `ROSTER_V2` in rosterV2.ts), one per rarity per race;
+  the older 25 as they were are `PRE_V2_SPECIES`, for tests of battle mechanics. V2 style changes
+  are `V2_RESTYLE` (main % moved to the new style, total unchanged). The Cave Bat is now the **Cave
+  Goblin** (same id `cave_bat`). The Deep Angler is a melee Battlemage. The Deep Angler, Rotgut Fly
+  and Dust Sprite PNGs are mirrored.
+- ✅ **The user's restyles (2026-10-27,** `RESTYLED_SPECIES`**):** Cave Goblin melee (Bruiser), Dust
+  Sprite magic (Arcanist), Amber Wasp melee (Bruiser) and Beast / Toxic, Crystal Golem melee +
+  magic (Battlemage), Tunnel Wyrm melee (Bulwark), Thunderhead magic + melee (Battlemage). 🧪 Their
+  new %s are Claude's: each one's attack %s add up to the same as before, moved to the new style
+  (hybrids split; Crystal Golem atk 20 / mag 14, Thunderhead mag 44 / atk 38). Ones players already
+  own move over once on load (`upgradeStyle`, `styleSet`): defence and agility rolls stay, the
+  roll's attack gain or loss goes on the new main style, and they go back to their new starting
+  moves (codex moves of the old style no longer fit).
+- ✅ **Archetypes** (`ARCHETYPE_INFO`, Claude's draft, approved): Bruiser, Bulwark (melee tank),
+  Sniper, Skirmisher, Arcanist, Warden (magic tank), and hybrids Ranger (melee + ranged), Battlemage
+  (melee + magic), Spellbow (ranged + magic). An archetype decides which style kits a creature draws
+  from. Since the restyles: 6 Bruisers, 5 Bulwarks, 5 Arcanists, 7 Battlemages, 4 Rangers, and 2
+  each of Sniper, Skirmisher, Warden and Spellbow.
+- ✅ **Race kits** (lib/creatures/raceKitsV2.ts): per race and style, a 30 and a 50 energy move
+  (15/25 damage), a quick attack (20 energy, 8 damage, always first) and a precise move (30 energy,
+  15 damage, 70% to hit, always precise): 84 race moves (`KIT_RACE_MOVES`). Each style's 20-energy
+  light move is one shared **Neutral** move (Strike, Shot, Zap; `RETIRED_KIT_MOVES` maps the old
+  names). Plus the **Neutral priority moves** (`NEUTRAL_QUICK_MOVES`: Rush, Quickshot, Blink; 15
+  damage, 50 energy, always first; two in one round: the faster goes first). The old haste spell
+  Blink is now **Quickcast**. 🧪 Move names are Claude's; the user will add more moves.
+- ✅ **Starting moves** (`STARTING_MOVES`): every creature is born with 3, all in its main style:
+  Neutral 20, its race's 30, and the Neutral priority move. The fourth slot needs a codex. Klutz
+  still starts with 4. Saves from before this went back to their 3 once (`upgradeMoveSet`, `moveSet`
+  = 2; codex-learned moves kept): the user chose this over keeping their 4.
+- ✅ **Race-kit codexes:** only a creature with that move in its kits can read one (`movesAvailableTo`:
+  born + learned). From scans by the usual split (`KIT_BASIC_CODEXES` Common / `KIT_STRONG_CODEXES`
+  Rare), and librarians, chests and the Cyclops alongside the older race codexes
+  (`RACE_CODEX_MOVES`). 🧪 A librarian's kit codex costs 200 (`LEARNABLE_CODEX_PRICE`).
+- ✅ **Guided first fight** teaches races (the user, 2026-10-31): your creature fights with its own
+  moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`; Humanoid
+  if it has no race moves). Klutz names its race and has you hit it with that move (it glows), then
+  points you to the ▲▼ race chart (it glows) and lets you finish it. Sim: 3–8 rounds (about 6), never a loss.
+  Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
+- ✅ **UI:** moves show their race; tablets are cut in their race's stone with a big style icon
+  (impact / arrow / bolt). Cards show race squares under the sprite (not the style); creature
+  windows and name plates show races spelled out. A hit says **EFFECTIVE!** or **RESISTED**. A move's
+  (i) says how its race lands; no hint on the tile. The Bestiary's "How fights work" has the race
+  chart and a calculator; Labyrinth fights have a race chart button (▲▼).
+- ✅ **Style colours in a fight** (the user, 2026-10-30; `STYLE_COLOR` in components/BattleScreen.tsx):
+  as a move is used, its name in the dock's line ("Foe's Moss Wolf used Gore") and the damage it
+  does are in its style's colour: red melee, green ranged, blue magic (a precise or crippling hit's
+  number keeps its own colour). Under the damage: EFFECTIVE! / RESISTED for its race, WEAK SPOT! for a
+  boss's weak spot.
+- 🧪 Soul stone pools for the six new Rare+ creatures are Claude's drafts.
+- 🧪 Sim of the live roster (2026-10-26): spread within a rarity 3.3 (was 6.3); the race edge wins
+  72% of even duels; swapping no longer pays (50%).
+- ❓ `MOVE_RACES` gives the older moves (codexes, Klutz's, learnable ones) draft races. Race move
+  rules beyond the kits are open.
+
+### Planned
+
+- 📌 More effects: vampirism, curse/blind, fear (blocks swapping). More moves from encounters,
+  drops or daily quests.
+- ❓ Making agility do more (e.g. a dodge chance): mentioned, needs the user's decision.
+
+## 7. The Labyrinth
+
+- ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, with its Enter button straight under it (the "?" beside it explains a run; the user, 2026-11-03), then two tabs. **Party**: Free pick
+  (the default; it starts empty every time: tap the creatures that go in, up to the dungeon's team
+  size) or one of **3 teams** (`TEAM_SLOTS`, lib/teams.ts: saved line-ups, up to a full
+  party each; a creature can be in several). With a team picked, tapping creatures adds them to it or
+  takes them out, saved at once; the screen remembers the last choice. A creature's window has
+  **Add to team** (the first time, that makes Team 1; then it opens Team 1–3). Teams replaced the ★
+  roster (the Inventory's ★ tab now lists creatures in a team; a team creature can't be sold).
+  **Bag**: the bindle or backpack, packed there as in the Den's Bindle (components/BagPacker.tsx),
+  fresh each run (teams don't remember a bag). The Inventory to pack from is laid out like the bag (5 a
+  row, slot-sized, no names): drag a thing up into the bag, double-tap it, or tap it and Pack it.
+- ✅ A run is a climb up a **scroll map**: you plan a route and partly see rooms ahead. The first
+  step is blind. Rooms can repeat. (lib/dungeon/run.ts, map.ts)
+- ✅ **Four dungeons** (`DUNGEONS`):
+  - **The Encampment** (dungeon 0; the user, 2026-10-27): a new player's first labyrinth, after
+    Klutz's box. 7 rooms you walk into (`CAMP_ROUTE`, the user, 2026-10-27: it should be a struggle
+    to reach the chief without finding potions or some luck): rooms 1–6 are creature dens (1–2
+    creatures however deep), or a stash 30% of the time (`CAMP_STASH`, 🧪 Claude's number), never
+    two stashes in a row; no mysteries. Every map also has one chest (a den turned into it; the
+    user, 2026-11-01), never marked on the scroll (the user, 2026-11-02: it's a find), and at least
+    one stash. Up to 2 stashes are marked on the scroll (`CAMP_STASH_MARKS`), even on the blind
+    first step; the chest and any other stash stay hidden (even in torch sight) till you walk in. Its first rooms ease you in like the
+    Labyrinth's (below). Room 7 is the camp: its **chief**, an Uncommon in Common gear,
+    Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI), with a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
+    2 cages (`campCages`): each a Common or Uncommon (even odds), Lv 2–4, of no race your party
+    has, so you've a team of 3 for the Labyrinth. After that, one cage with a creature in it 20% of
+    the time (`CAMP_REPEAT_CHANCE`). Opening a cage plays a short show (`CageReveal`): it rattles,
+    then out pops the creature in its rarity's glow. Beating any labyrinth's boss opens with a
+    celebration (`Triumph`: gold falling, your team cheering, rooms/finds/run number) before the
+    haul (below; the user, 2026-11-01). The first 10 runs are free (`FREE_RUNS`), then 50 gold.
+    - The **Labyrinth opens** once you've beaten it, or scanned 25 barcodes (`LABYRINTH_SCANS`,
+      `labyrinthOpen`); anyone who'd beaten the Cyclops before keeps the way in. Until then the
+      entrance shows it locked.
+    - Sims (an encampment sim, since removed: a lone Rare starter in the best of Klutz's box, spamming
+      its race move, no scans or pickups, heading for a stash): 27% of runs reach the chief, 13% win
+      on run 1, 25% by run 4, 50% not by run 12 (Dustwraith, Veilstalker and Crystalback worst). Real
+      play does far better: the user beat the 5-room version on run 1 twice, where this player won
+      22% of the time. (Older, 5 rooms:) Then, with the two cage creatures in the box's leftovers, 87% of runs get through the
+      Labyrinth's rooms 1–5 (a brute beats you 16% of the time, the chief ~70%); ungeared, 66%.
+  Their names on screen (the user, 2026-11-03): the Encampment, **the Cyclops** (the Labyrinth below),
+  **the Hydra** (the Deep Labyrinth) and the Abyss. "The Labyrinth" is still the place as a whole (the
+  Den's archway, Klutz's hunts).
+  - **The Labyrinth:** 15 rooms to the lair, 1 large room, enemies Lv 1–7, boss the **Cyclops**.
+  - **The Deep Labyrinth:** opens after your first Cyclops clear. 15 rooms, 2 large rooms, enemies
+    up to Lv 17, boss the **Hydra** (below; it replaced the Warden's pack here, the user, 2026-10-30).
+  - **The Abyss:** opens after your first Deep Labyrinth clear (the user, 2026-10-26). The Deep Labyrinth
+    again (same map, same creature rarities) with higher levels (Lv 15–26 by depth) and every piece
+    of enemy gear a rarity up; gold ×3. Its boss is the **Warden's pack** (a Legendary plus Epic
+    guards, Warden Lv 25; the user kept it here when the Hydra took the Deep Labyrinth). 🧪 The levels and gold
+    are Claude's numbers.
+    - **Fought 5 against 5** (the user, 2026-10-27): your whole party of 5 goes in, and foes come in
+      matching numbers (`ABYSS_SQUADS`, `squadsOf`): dens 2 in the first 2 rooms, 2–3 to depth 4, 3–5
+      deeper; brutes and mini bosses (and a storehouse's guard) come in pairs; encampments 3–5 (an
+      ambush 3) with a 30-round fuse; the Warden has 4 guards. No two foes in a fight are the same
+      species. 🧪 The counts are Claude's, about 5/3 of the usual. The user kept brutes and mini
+      bosses as pairs, and the party at 5 (so no bench in the Abyss), 2026-10-27.
+- ✅ **Party** (the user, 2026-11-02): the creatures that go in are picked at the entrance: 3
+  (`TEAM_SIZE`; 5 in the Abyss: `teamSize`). A team holds up to 5 (`PARTY_SIZE`); a bigger team
+  than the dungeon takes sends its first ones. No bench and no picking at the map (it shows the team,
+  to change who leads). Entering with nobody picked asks you to pick.
+- ✅ **PvP** (built 2026-11-01, waiting for its first two-player test): live duels with a friend, from the quest board. See §12.
+- ✅ **Entry** (`ENTRY_FEES`, `entryFee`, the user 2026-10-31: a gold sink that grows with the loot, and a nudge to scan): the Encampment 50 gold after its first 10 free runs (`FREE_RUNS`), the Labyrinth 100, the Deep Labyrinth 200, the Abyss 500. No free Labyrinth runs; Klutz's quest run is free.
+- ✅ **Room mix** (`ROOM_MIX`): creature den 40, healing pool 20, lurking brute 10, chest 10,
+  stash 10, merchant 5, card witch 5.
+  - **Mystery "?" rooms** (`MYSTERY_MIX`) are a gamble: 45% a mini boss, some good wanderers
+    (librarians appear only here), and the rest ordinary rooms. They're meant to be high risk,
+    high reward. Don't soften them.
+- ✅ **Dens scale with depth** (the user's fix after progression sims): the first 2 rooms hold 1
+  creature, up to depth 4 hold 1–2, deeper hold 2–3.
+- ✅ **Gentle start, the Encampment's and the Cyclops' Labyrinth's** (the user, 2026-10-19, as the game felt too hard
+  without scanned gear): no mini boss (nor a guarded storehouse) before room 7 (`MINIBOSS_FROM`);
+  the first 2 rooms are creature dens 90% of the time (`FIRST_ROOM_DENS`, otherwise a room with
+  no fight), their creatures Lv 1 60% / Lv 2 25% / Lv 3 15% (`FIRST_ROOM_LEVELS`).
+  Lighter-armed foes (the user, 2026-10-26, `LIGHT_GEAR`): rooms 1–3 no weapon but all 3 armour
+  pieces (they were 1–2 pieces and too easy to one-shot: the user, later on 2026-10-26); rooms 4–7 a weapon and 1–2 armour pieces; deeper as rolled. Mini bosses
+  and the Cyclops are armed as ever. The piece that drops is always one they wore.
+- ✅ **Map** (the user, 2026-10-19): a large room is never before room 5 (`LARGE_FROM`), and the
+  scroll marks 7 corridors from the start (`KNOWN_CORRIDORS`), no two touching the same room.
+- ✅ **Large rooms** (`LARGE_MIX`): Encampment (Rares guarding cages that may hold a creature you
+  keep, in 3 variants: plain, ambush, rigged; no ambushes in walked runs for now, the user, 2026-11-09:
+  one rolls as a plain camp, `WALK_AMBUSH`). The ambush pair stand side by side in the battle room,
+  drawn like the Cyclops's hands (tap the one to hit), not as cards. The drunk one, foes on ×3 HP, was removed by the user
+  on 2026-10-26: nothing answered it once damage types went), Library (codexes to find, or a librarian
+  selling) and Storehouse (mostly materials, sometimes guarded by a mini boss).
+  - 🧪 Content visible 50%, storehouse guard 35%, equal variant odds, and a rigged timeout ending
+    the run (loot kept) are Claude's defaults.
+- ✅ **Card witch:** higher or lower on cards 1–11. Each correct guess wins a creature card. Lose and
+  she stabs a creature: an illness costing 15% max HP per action for 3 actions.
+  - ✅ (the user, 2026-10-19) Her deck is 33 cards: 1–11 in each of three suits (Melee, Ranged,
+    Magic, for variety). Every card, the first included, is drawn evenly from what's left; played
+    cards are gone. The same number again ("stick") is a push: guess again.
+  - ✅ Walking away (or winning all 10 prizes), she turns over the card that would have come next.
+  - ✅ (the user, 2026-10-19) She offers a game; accept and it opens in a window over her room. Her card keeps the
+    creature card's shape and rarity trim, laid out like a playing card: the prize's sprite in the middle, the number top
+    right and bottom left, the suit (attack style) top left and bottom right. Lower to its left, higher to its right, walk
+    away under it. The next prize lies face down behind it (its rarity shows); a right guess sparkles the card away and
+    the one behind comes forward (`nextPrize`, components/WitchWindow.tsx).
+- ✅ **The Scroll button** (looking at your map again inside) works 2 times a run (the user, 2026-10-25,
+  `SCROLL_LOOKS`), and not while the map's first look at the entrance is open; tapped while the
+  scroll's already out, it puts it away and costs nothing; a flare still shows
+  the map on top. Every scroll (the Encampment's shorter one too) fits the window, with no
+  close-up drag view. On the scroll, a stash is marked with a loot sack and a chest with a
+  treasure chest (their art, also in the room's title).
+- ✅ **Tools:** Torch (id `flare`: it was the Flare until 2026-10-30, and old saves are renamed on load; re-view the map and light around you, twice as far as your own light), clairvoyance scroll (reveal any room
+  and its surroundings; 200 gold at merchants). Merchants carry 5 wares. Also found (the user,
+  2026-10-20): a flare in 10% of stashes and 20% of chests, a clairvoyance scroll in 5% of stashes and
+  10% of chests (`STASH_TOOLS`, `CHEST_TOOLS`), on top of what they already hold. A chest holds at
+  most 5 things (`CHEST_SLOTS`, `capSack`): rolled more, the least rare fall out (gold first, then
+  Common, Uncommon…).
+- ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room,
+  or Use it (opens it in your bag: drink, equip…). In the merchant's or a librarian's room, your bag also has a
+  Sell button, at the same prices (`buysHere`; selling to a librarian is Claude's default, 2026-10-23). A codex
+  can't be bought with a full bag (the user, 2026-10-23).
+  - ✅ Prices (decided 2026-10-19; `merchantOffer`, lib/dungeon/run.ts): weapons and armour at the crate's sell price; potions, materials,
+    scrolls and tools at half his price (`MERCHANT_BUYBACK`); codexes at half the librarian's. Klutz's club can't be sold.
+    Claude's defaults, added 2026-10-19.
+- **The bigger merchant** (the user, 2026-10-23; the Labyrinth's and the tavern's alike; the user
+  wants him to keep growing). ✅ Built: the 10-slot cart (`MERCHANT_SLOTS`, always 10 spaces shown):
+  always a Healing Potion, Lesser Potion and Torch; rare wares rolled one by one (backpack or, once
+  owned, a backpack upgrade 20%; each storage schematic 20% until bought; Revival Elixir 25%; XP
+  scroll 20%; clairvoyance scroll 40%); materials fill the rest.
+  🧪 **Tavern material prices** (the user, 2026-11-02: at the Labyrinth's prices you'd buy the lot
+  every time; 500 for an essence stone is the benchmark): planks ×5 150, nails ×5 100, metal bars
+  ×2 300, stone 300, essence stone 1,000 (`TAVERN_MATERIAL_PRICES`, lib/tavern.ts; Labyrinth 40 / 30 / 90 / 150 / 500;
+  stone and essence stones the user's, 2026-11-03). Essence stones are on only 1 cart in 3 (`chance` in `MERCHANT_MATERIALS`). He buys materials back at half the Labyrinth's price at both.
+  ✗ Dropped (the user, 2026-11-04: armour comes at the right rate as it is): gear on the cart
+  (0–2 weapons or armour pieces at 2× the crate's value) and armour priced like weapons
+  (`PIECE_VALUE` stays).
+- ✅ **Death / retreat:** a party wipe ends the run. Items left on the room floor are lost; what's in
+  your bag comes home. Retreating keeps the witch's winnings. Going back to the Den mid-run is a
+  retreat (after a "Leave the labyrinth?" check): runs can't be paused.
+- ✅ After a boss clear, **the haul** (the user, 2026-11-02: one looting screen, then home; it
+  replaced the boss room's chest, the summary and the walk back): your bag's free space, then the
+  boss's chest (and the Encampment's cages), then everything you left on the floors. "Sort" opens
+  either one to take things into your bag or put things down; then **Return to Den** (a check
+  first if anything rare is left). Only what fits in your bag comes home; gold and creature cards
+  come free, the rest stays (the user, 2026-10-26: on 2026-10-23 everything came home, but most of
+  it was junk). The Cyclops' first rugged backpack goes on straight away.
+- ✅ **Healing pool (Den):** heals 25% HP an hour on one global clock, runs included.
+  - 🧪 The rate is Claude's default (the user said "slowly"). The user plans upgrades and elixirs,
+    and may use it as a monetisation lever later. The instant heal at the entrance is a testing
+    shortcut.
+  - 🧪 **For testing, everyone comes home at full health** (`HEAL_AT_HOME` in lib/dungeon/run.ts,
+    on since 2026-10-19). Set it to `false` to bring the pool back.
+  - ✅ Decided (the user, 2026-10-20): healing after death **stays as it is now**, with everyone
+    coming home at full health (`HEAL_AT_HOME`). The other options (slow pool 25%/h, faster pool
+    50%/h, a quick heal to half then the pool) are set aside.
+- ⏸ **Re-entry cooldown** as the anti-farming bar: set aside (the user, 2026-11-04). The gold fee
+  is the bar, and that's enough for now. (Its cooldown potions were to come from the barcode
+  merchant, since dropped.)
+- ❓ Labyrinth look: a top-down voxel style is the likely long-term direction, not committed.
+
+### Bosses
+
+- ✅ **The Cyclops** (lib/creatures/bosses.ts, lib/combat/bossAi.ts), each phase with a full health bar:
+  1. A melee tank. Stomp (about 1 in 3) can cripple you, so swap out. It has an occasional costly Eye Laser. (A Meditate heal with a
+     3-turn cooldown was decided too, then dropped by the user, 2026-11-04: its strength is right.)
+  2. At half HP it becomes **2 crawling hands**, both on the field at once (you pick a target):
+     fast, strong melee.
+  3. Then **the Eye** leaves the skull: ranged, in Float stance, with very high melee defence.
+  - It's meant to take a few attempts (sims: a median of about 12–13 runs to the first kill).
+- ✅ **The Hydra** (the Deep Labyrinth's boss; the user's spec, 2026-10-30; `HYDRA` in
+  lib/combat/bossAi.ts, `HYDRA_PARTS` in lib/creatures/bosses.ts). Lv 16, no race.
+  - **Three heads, all on the field**, left to right as drawn (the user, 2026-11-04): the Spitter
+    Head (ranged), the Hex Head (magic), the Fang Head (melee). You tap a head (or its label) to aim
+    at it. ✅ **Weak spots, no resistances** (the user, 2026-10-30): every head has the same defences,
+    and each takes **1.5×** from the style that beat its own in the old triangle (`weakTo`,
+    `WEAK_SPOT` in lib/combat/engine.ts): the Fang Head from magic, the Spitter Head from melee,
+    the Hex Head from ranged.
+  - **One head acts a round**, always left to right, starting from a random head; a head that's
+    down is skipped.
+  - **Toxic Breath:** once, in a random round from 3 to 5, the head whose turn it is breathes
+    instead. The cloud hangs for 3 rounds: your creature on the field, and every creature that
+    comes in while it hangs (a swap or a replacement), is poisoned for **2.5% of max HP a round for
+    20 rounds** (50% in all). A creature that's already poisoned isn't poisoned again. Once a cloud
+    has cleared, each turn has a 20% chance of another breath.
+  - **Heads grow back** 5 rounds after one goes down; another head going down starts the count
+    again. One head grows back with 75% HP, two with 50% each. All three down at once kills it.
+  - 🧪 Its numbers (head HP, attack, defences, the moves' damage) are Claude's, set against the
+    Warden's pack by sim (since removed; 200 fights: an Epic and two Rares, Lv 16, in Rare gear,
+    full health, no potions, the Normal AI): the party beats the Hydra 56% of the time, the Warden's pack
+    40%; 17–18 rounds. (With resistances as well, before the user dropped them: 29%.)
+    Then the user had every head's HP raised 25% (longer fights, so the poison does more): the
+    party now beats the Hydra 23% of the time (the Warden's pack 38%), in about 20 rounds (150 fights).
+  - ✅ Art (the user's pick, 2026-11-04): one Hydra, four legs and a tail, three necks from the
+    shoulders, green acid on the left head, purple magic on the middle one. Drawn whole (192×160)
+    for each of the 8 mixes of heads cut off, a cut head a bloody stump
+    (`public/sprites/creatures/hydra/hydra-<spitter><hex><fang>.png`, 1 = cut; `hydraSprite`;
+    `HydraBody` in components/BossStage.tsx). The heads' names and health sit in a row above it.
+- ✅ **Boss rewards:** the boss chest (10 rolls, plus a scroll chance) and the Rugged Backpack. The
+  Hydra and the Warden drop a strongbox.
+- ✅ Also Cyclops rewards: building the **Tavern** (via the tavern questline in §9, not gold), and
+  the **trophy** showing which run you won on: the Cyclops Head (§9, step 7), mounted in the
+  tavern's room marked "Run N" (`meta.firstClearRun`).
+- 🚧 **In progress (picked up 2026-11-05): an explorable Labyrinth**, walked round in 2D top-down
+  pixel art like [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png), laid out
+  like the user's sketch [ideas/labyrinth-v2.png](ideas/labyrinth-v2.png) (older notes in
+  history.md). Decided: 2D (not 3D), in the current web game (no engine switch); the procedural
+  randomness stays. **The Encampment first** (the user, 2026-11-05): 15 rooms (19 in the walkable one, `WALK_SPEC`: see Sound below), at least 7 to the
+  camp, made walkable end to end before the deeper dungeons. It all stays behind `/lab` until the
+  user says to switch, so `main` stays releasable. Plan, one step at a time:
+  1. ✅ **Layout, in layers** (the user's sketches, 2026-11-05: [room 1](ideas/room-1.png),
+     [gen roll 1–4](ideas/gen-roll-1.png); `lib/dungeon/layout.ts`, walked in `/lab/walk`). The
+     layout comes first and the scroll is made from it (`layoutMap`), not the other way round.
+     - **Sizes in blocks** (`BLOCK`): room sizes, places and gaps are all whole blocks. A block
+       was 3×3 tiles; **the walkable Encampment's are now 2×2** (the user, 2026-11-07: rooms felt
+       too large and empty, walking them a chore; `WALK_SPEC.block`), so every room, gap and
+       tunnel is two thirds the size while the layout's rules (in blocks) stay the same, and most
+       rooms are about a screen across. Tunnels stay 3 tiles wide, so rooms need 3 blocks of
+       wall in common for one (`minOverlap`). Shrinking the shapes instead was tried and broke
+       the rules (no layout came out sound). **The walkable Labyrinth keeps 3** for now: at 2,
+       30-room layouts mostly fail to roll (24 rooms roll in ~2 s), the user's call. Each layout
+       keeps its block size (`Layout.block`; runs saved before have none, and were 3). A size is the footprint, walls included. The user's starting sizes, then made a bit
+       wider (the user, 2026-11-05: bigger rooms will help later, some of them empty): small 6×5,
+       wide 12×4, tall 5×10, big 10×6, the entrance 16×4, the boss's room 12×8 (`SHAPES`;
+       provisional). And the **dog-leg** (the user, 2026-11-05): an L, an 11×4 and a 4×9 joined at
+       a corner (11×9 overall), turned any of 4 ways (`cut`: the corner it lacks), as likely as a
+       wide room.
+     - **Gen 1, rooms:** the entrance alone along the bottom, then rooms dropped in one by one,
+       1–3 blocks of rock round each, **laid like bricks**: each as low as it'll go, within a
+       block (`PACK_SLACK`) of that where it sits over the most rooms below, so rooms get more
+       than one way up. The first row is always three rooms over the entrance (one hanging off
+       each end, one between). `LAYOUT_W` 34 blocks across (the user, 2026-11-05: about **4 rooms
+       across the middle**; staggered, so a band a room tall across the middle holds about 5).
+       The boss's room on top, **in the middle** (the user, 2026-11-05: never off to one side,
+       which limits the ways in; `BOSS_DRIFT` a block either way), as high as the highest room,
+       and the top row is a room either side of it, level with it, so ways come in from both sides
+       as well as below. A dog-leg is packed as its whole box (tunnels may cross its missing
+       corner).
+     - **Gen 2, tunnels:** straight, **3 tiles wide** (the user: so you can get about), between
+       rooms (any arm of a dog-leg) whose facing floors overlap enough for one, its side flush with
+       a corner at most (`DOOR_INSET` 0, so a 2-block overlap does: rooms can sit over two below),
+       across up to 6 blocks of rock (`MAX_REACH`; was 3: the user wanted longer tunnels too).
+       **Twins** (the user, 2026-11-05): a second tunnel **up** into the same room, 30% of the time
+       where one fits (`TWIN_CHANCE`), at least 3 blocks of rock from the first (`TWIN_PILLAR`),
+       so the two look like they could lead to different rooms. Never sideways (a sideways move can
+       be undone), and **a twin is never a choice**: two tunnels into one room are one decision.
+       Everything is dug, then tunnels are dropped (off the shortest route till it's 7+ rooms,
+       from rooms with more than 5, then up ones 20% and sideways 60% of the time:
+       `UP_DROP_CHANCE`, `SIDE_DROP_CHANCE`, as going up is a lasting choice and there should be
+       plenty) as long as it stays sound. So the most direct way isn't always there.
+       (Twins about 0.4 a map, dog-legs about 1.)
+     - **Always a choice** (the user, 2026-11-05: keep the "do I go left or right here?"
+       feeling; `fewChoices`): from every room but the boss's there are 2+ **different rooms**
+       to go on to: up, or sideways into a room that leads on (one with a tunnel up, or on
+       sideways again to one, never back the way you came). A dead end off to the side doesn't
+       count, and the room it hangs off still needs 2 other ways on. A room that opens into the
+       boss's is on its last step, and needn't have another.
+     - **No choke points** (the user, 2026-11-05: seed 1 had two rooms you had to go through;
+       `routesToBoss`): **3 ways to the boss that share no room** (`ROUTES`), so no room, nor any
+       two, can be in the way of every route. Hence the entrance leads to 3–4 rooms. Three
+       separate ways of 7+ rooms need 18 rooms between the entrance and the boss, so the walkable
+       Encampment has **19** (the user's pick, 2026-11-05, over a shorter minimum route or only 2
+       separate ways). This changes the Encampment when it goes live (the scroll map's has 15).
+     - **Forward only** (the user, 2026-11-05): up tunnels are one way. Going up one draws a line
+       along the bottom of the room you came into; a room wholly behind it (the one you left, for
+       one) is closed, and every tunnel into it. Sideways tunnels go both ways, even into a room
+       hanging partly behind the line. You never go back down an up tunnel below the line you've
+       crossed, not even by sliding sideways first (the user confirmed, 2026-11-05).
+     - **Sound** (`routeProblems`, every roll is checked and rerolled if not): no traps (wherever
+       you go, the boss can still be reached), every room reachable, the entrance leading to 3–4
+       rooms, **3+ rooms leading into the boss** (`BOSS_WAYS`; the user, 2026-11-05: 2–3 at
+       least), 5 tunnels a room at most, the shortest route 7+ rooms, always a choice, no choke
+       points; and the tiles pass `checkFloorplan` (tunnels join exactly the rooms they should,
+       twins counted). About 0.3 s a layout, 0.8 s at worst (most rolls fail fast; up to 3000
+       tries). Sims: about 22 up and 13 sideways tunnels a map.
+     - (A first try laid the scroll map out on tiles and dug tunnels round the rooms: long and
+       winding, too much walking. Deleted; `lib/dungeon/floorplan.ts` keeps only the tile types
+       and `checkFloorplan`.)
+     - **Feel** (the user, 2026-11-05): hard to judge yet, with every room in sight and flat
+       top-down boxes rather than the slightly 3D view of the future-dungeon picture. That comes
+       with the art (step 5) and the scroll as minimap (step 6).
+       So the lab has **darkness** (on by default, a button turns it off). **You explore by
+       torchlight** (the user, 2026-11-06; `lib/dungeon/torch.ts`): the torch lights what it
+       can reach in a straight line within `TORCH_RADIUS` (5.5 tiles 🧪; foes see 7, so one can
+       spot you from the dark), walls blocking it, so you walk round a corner to see past it.
+       What it's lit stays remembered, dimmer (`REMEMBERED`); you only walk where you've seen;
+       foes show only while they're in the light. The light glows warm and flickers, fading to a
+       cold dark (`torchGlow`; the colours are the lab's, 🧪).
+     - **Torches on the walls** (the user, 2026-11-06; `placeSconces`, numbers 🧪): sconces along
+       rooms' top walls (one per `SCONCE_EVERY` 8 tiles of wall, at least one a room, never over
+       a tunnel), the entrance's burning and `SCONCE_LIT_SHARE` 20% of the rest. Walk within half
+       your torch's reach of an unlit one, in sight of it, and it lights (`canIgnite`); a burning
+       one lights `SCONCE_RADIUS` 4 tiles round it for good (`sconceGlow`, a little dimmer than
+       your torch), seen from up to 12 tiles away. PixelLab art in the walls' style (round 3, the kit's
+       `lights`; a smaller one on a tunnel's side wall), with its flame drawn in code over it.
+     - **No doors** (the user, 2026-11-06): it's a winding labyrinth. A tunnel closed off behind
+       you is solid rock (`shutPlan`): if you'd seen it, it falls in as you go (stones drop,
+       dust, a shake) and rubble blocks its mouth (`rubbleOf`); if you hadn't, it was never
+       there. Only a tunnel up gets rubble (`showsRubble`): one across just becomes wall, on the
+       scroll too, as if it was never there (the user, 2026-11-09). The rubble is drawn in code
+       for now, a placeholder for PixelLab art.
+  2. ✅ **Walking** (`lib/dungeon/walk.ts`, in `/lab/walk`): tap a spot and you walk there by
+     the shortest way (`findPath`, diagonals allowed but never cutting a rock corner), through
+     floors, doors and tunnels only, and only where the forward rule lets you (`stepRule`:
+     closed rooms are dimmed, and an up tunnel can't be entered from the top). A tap anywhere you
+     can't walk (rock, the dark, somewhere cut off) walks you as close to it as you can get
+     (`walkToward`, the user 2026-11-06); a new tap mid-walk
+     finishes the step first. `WALK_SPEED` 6 tiles a second; the camera keeps you in the middle
+     but never shows past the edge (`cameraAt`). Zoomed in close so you explore rather than
+     oversee (the user, 2026-11-06): 15 tiles across the screen (the user's pick), whatever its
+     size, so a laptop shows what a phone does (the lab's Zoom tries 22, 15, 11, 9). The lab plays inside the
+     game's own phone screen (header, and the live Labyrinth's dock: Party, Bag, Scroll, Retreat;
+     Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. No line or
+     square shows where you're walking: you just walk (the user, 2026-11-09).
+     A **joystick** bottom right, above the dock (the user, 2026-11-09; `walkStick`, WalkView `Stick`):
+     held, you walk the way it points, a tile at a time snapped to the eight ways, sliding along
+     a wall you push into diagonally. Things are used by tapping them (the ✋ button was taken
+     out, the user, 2026-11-09). On a keyboard, WASD or the arrows walk (`keysPush`, two at once
+     a diagonal) and E uses what you're beside (`usableNear`: unopened things first). Tapping to
+     walk still works. 🧪
+     **Drawing order** (the user, 2026-11-09): things you walk over (a fight's sack, floor
+     candles) lie under everything standing, so you're always drawn over them; a mini boss's or
+     boss's chest is solid (you walk round it), as chests, cages and pools are.
+  3. ✅ **Gen 3, what's in each room** (`campMap` in layout.ts, labelled in `/lab/walk`): the
+     Encampment's mix exactly as in the live game, by the same code (`fillCamp`, map.ts, which the
+     scroll map uses too): the entrance (treasure on your first run), dens or a stash 30% of the
+     time, never two stashes joined by a tunnel, one hidden chest, at least one stash (up to 2
+     marked), the chief's camp in the boss's room. Filled from the bottom up. No mini bosses: the
+     live Encampment has none. Fights and pickups come with step 6.
+     - **The scroll** (the user, 2026-11-05; `scrollMarks`, the Scroll button in `/lab/walk`):
+       looked at **twice a run** (`SCROLL_LOOKS`), it shows a mark where each room's middle
+       is: its icon if you know what's there, else "?". Of the rooms and tunnels themselves it
+       shows only what your torch has lit, drawn like a treasure map: lit floors and walls, your
+       trail dotted, and a **red line across each tunnel up that fell in behind you this run** (not
+       the tunnels across: the user, 2026-11-09)
+       (`fallenSoFar`: closed with its mouth in a room still open, and you'd seen it, at any
+       cut-off you've crossed; kept once you're further up. The user, 2026-11-07: not every closed
+       tunnel behind you, which got spammy) (the cut-offs
+       themselves, `cutOffY`, are kept by the game but not drawn: the user, 2026-11-06). It's as wide
+       as the furthest walls, on a classic tea-stained scroll rolled at the top and bottom (PixelLab,
+       cut nine ways round it, the map scrolling between the rolls: the user, 2026-11-09), zoomed out 10% for paper either side (`SCROLL_ROOM`, the user,
+       2026-11-09), and scrolls up and down, opened at you. A **clairvoyance scroll** picks a
+       room on it: that room's drawn in and marked, with the rooms joined to it (`foreseen`); a flare
+       marks the rooms joined to yours. Never the unlit tunnels or room sizes, so you work the way up
+       out yourself. You know the entrance, the camp, the rooms marked from the start (**3–4 in
+       all**, the user 2026-11-05, `SCROLL_MARKS`: the 1–2 marked stashes, then dens; the live
+       scroll marks 8 plus stashes) and rooms you've been in; the chest and unmarked stashes stay
+       "?" till you've been in. Tap it to put it away.
+  4. **Gen 4, extras** like witches and healing pools sitting inside other rooms: later (the
+     user picked this, 2026-11-05: witches and pools stay rooms of their own for now, so the
+     walkable run matches the live balance first). Then scenery.
+  5. Art (PixelLab): a dungeon tileset in the tavern image's style and a walking character.
+     That style is three-quarter top-down (floors from above, walls and furniture showing their
+     fronts), not isometric: the square grid, collision, paths and camera stay as they are; only
+     the drawing changes (wall fronts, and things lower on screen drawn over things above).
+     No engine switch for it (the user, 2026-11-05: keep building as we are; if an engine is
+     ever needed, Phaser could run in this web game for the dungeon alone, a new dependency to
+     ask about).
+     **Who walks** (the user, 2026-11-05): a hero character (the player, a human adventurer);
+     creatures appear only in fights. Samples first, the user picks.
+     - 🚧 **Samples made (2026-11-06), for the user to pick** (`/lab/walk` → Art, then Tiles and
+       Hero to flick between them; ids in public/sprites/PIXELLAB.md, `lib/sprites/walk.ts`):
+       two tilesets, "Mossy brick" (cobbles, grey brick wall faces, an earth tunnel floor) and
+       "Ivy blocks" (dark flagstones, ivy-covered old blocks; its floor in the tunnels too), and
+       two heroes, a hooded ranger and a torchbearer, each walking in 4 directions (6 frames;
+       west is east mirrored). PixelLab's wall tilesets (16px, 25 tiles each). The heroes were
+       too lanky to feel for (the user, 2026-11-06): the hero carries a torch, and three chunkier
+       samples (standing only, no walk yet) are up for picking: a sturdy adventurer, a stout
+       bearded delver, a small cloaked torchbearer, drawn at 3/4 size 🧪. The chosen one gets a
+       walk; then darker, more dungeon-like tile samples.
+     - ✅ **Drawing** (`lib/dungeon/tileArt.ts`): the sheets are drawn on a grid half a tile off
+       the floorplan's, each cell taking its tile from the four tiles round it (rock the upper
+       terrain, walkable the lower; a walkable tile with rock right above is a wall's foot), so
+       a wall shows its front face wherever it has floor below, coming down over half the floor's
+       top row (you walk there, in front of it). Rock away from any floor stays black. Tunnel
+       floor where a cell is all tunnel (doors count as the room). Things standing up (chests,
+       rubble, foes, you) are drawn lowest on screen last (`drawOrder`). The hero faces the way
+       they're mostly going (`facingOf`) and steps a walk cycle every 1.5 tiles (`STRIDE`, 🧪).
+       3 cells in a whole map have no exact tile (inner corners where a wall steps down by a
+       tunnel): the closest is drawn.
+     - 🚧 **One angle for everything** (the user, 2026-11-06: the flat tiles didn't match the
+       hero's three-quarter angle, and it wasn't immersive). A PixelLab building kit (walls 2
+       tiles tall, the same low top-down angle as the heroes; id in PIXELLAB.md), cut into its
+       materials (`KitArt` in lib/sprites/walk.ts) and drawn in the reference picture's look:
+       dark mossy flagstones, every north wall a tall brick face under a pale mossy cap standing
+       in the rock above the floor (lit to its top: `FACE_ROWS`), side walls only their narrow
+       tops, south walls a cap band over the floor's bottom row, the rest of the rock dark. Hero
+       pixels the kit's size. "Kit: mossy dungeon", the lab's first Tiles choice; no side-face
+       wobble in it (one fixed angle).
+       ✅ **The walls since 2026-11-09: kit E, "dark fieldstone"** (the user's pick: the first kits
+       were "far too orange", "too clean and too brick like… a factory wall"; wanted dark, dingy,
+       random stone). 48 art pixels a tile (the walls' own size, `KitArt.size`; you and things stay
+       at 32 a unit), crumbling grey-brown fieldstone under worn capstones, a mossy cobbled floor
+       (one tile, its seams repaired), and corner pieces so a side wall's top turns into the back
+       wall's cap and the south band as one L. Old kits still draw (butted corners).
+       🧪 **Kit F, to try (2026-11-09):** kit E softened at the user's ask (the wall tops' trim stood
+       out, and the floor met the walls in a hard line): the wall tops' stone toned to 75%
+       (`CAP_TONE`), fading into the dark away from the floor (to 12% at the far edge: the user,
+       "more natural"), and the floor shading into the walls at its edges, from two PixelLab inpaints
+       of the floor (a wall above, a wall to the left) used as overlays (`KitArt.edges`), flipped
+       for a wall below or to the right and drawn together, darkest winning, where two meet.
+       Kit E is `WALK_TILES[1]`, to go back to. Next: small floor
+       decorations to break up the repeat (the user: decorations, not scattered tile variants),
+       then 5–6 variants of the wall panel (moss, vines, cracks). Creatures and items: the user's
+       quality target is detailed pixel art about 128–200 px a portrait ("Creature or item pix
+       quality" in their Downloads), when PixelLab spend allows; nothing redone till then.
+     - ✅ **Depth, 2.5D** (the user, 2026-11-06: not real 3D, which would need three.js and 3D
+       models; `tileArt.ts`, numbers 🧪): side walls show their inner face, wider the further
+       across the room you are (`sideFace`: from a room's right you see its left wall's face),
+       and south walls stand up `WALL_LIFT` (half a tile) over the floor's bottom row, so you
+       and foes can be hidden behind them; close behind one, it goes see-through (`capFade`).
+  6. Into the run: fights, chests, saving your spot, the scroll as minimap. (All in `/lab/walk`
+     so far, with an in-memory test team; nothing touches a save.)
+     - **Fights start by being seen** (the user, 2026-11-05): a room's foes stand in it, some
+       still and some moving about. Each sees along a line of sight (walls block it); if any of
+       them sees you, all of that room's foes fight you together. So a dog-leg can hide foes
+       round its corner for a surprise. Built (2026-11-06; `lib/dungeon/foes.ts`; the lab's Cones
+       button shows what each sees), the numbers all 🧪 (Claude's, for the user to judge):
+       - **The foes** are the live room roll's (`lib/dungeon/walkRooms.ts`: `makeRoom` for the
+         Encampment, so the same rarities, levels and gold), one marker each. Every room is rolled
+         as the run starts, not as you walk in (you can see foes before you're through the door);
+         a room's depth is counted forward as the live game does (`routeLength`), or by any
+         route for a room only reached sideways (`roomDepth`).
+       - **Where they stand** 🧪: on the room's floor (not its top row), 4+ tiles from its doors
+         (`DOOR_CLEAR`), 3+ apart (`FOE_GAP`).
+       - **How they move** 🧪: half of them walk about their room (`WANDER_SHARE`; the first
+         always stands still), 1.5 tiles a second, pausing 1–3 s at each spot. The rest face one
+         of 4 ways and turn every 2–5 s.
+       - **What they see** 🧪: 7 tiles (`SIGHT_RANGE`) in a 90° cone (`SIGHT_CONE`) the way they
+         face, or 1.5 tiles (`SIGHT_NEAR`) any way. Rock blocks it; floors, doors and tunnels
+         don't, so a foe can see you coming down a tunnel.
+       - **The chief** 🧪 is waiting (the lab: his fight starts as you step into the camp,
+         `ALERT_KINDS`; in the game, see "Bosses wait" under step 7). Won, his cages are listed
+         (the live chief's cages, `campCages`).
+       - **Slipping past unseen** 🧪: nothing happens. The foes stay where they are with their
+         loot, and the room isn't cleared (no cross on the scroll). It's mostly behind you then
+         (up tunnels are one way); a room still reachable sideways can still see you if you go back.
+     - **A room plays out** (the lab, 2026-11-06): seen, you fight that room's foes in the real
+       battle screen. Win: they're gone, and what the live game's win leaves (gold, dropped gear,
+       the chief's mini boss extras: `fightSack`) is left in a sack where you stand; your team
+       keeps its HP to the next fight. Lose: the run's over, back to the entrance on a fresh roll.
+       **Anything you can loot opens when you tap it** (the user, 2026-11-06): chests, stashes
+       and fight spoils. Tap one and you walk up beside it (chests are solid), then the game's
+       loot window opens (`LootWindow`, with a 6-slot test bag; gold and cards take no room).
+       A chest rolls the live chest roll (`chestSack`), a stash its sack; what you leave stays
+       in it. Later, with the art, the chest should fit the room.
+       **The test team** 🧪: three Uncommons in Uncommon gear at level 5, rolled with the layout.
+     - **Your spot** is kept for the browser tab (the lab's own sessionStorage key, never a
+       save): where you are, what you've seen, cleared, looted and in the bag, the scroll's looks, your trail.
+       A reload carries on; Reroll or losing starts afresh. The scroll crosses out cleared rooms.
+  7. ✅ **In the game: the Labyrinth's "New"** (the user, 2026-11-06: a new choice at the
+     Labyrinth's entrance, "🔥 New", the Encampment in the new style, live for playtesting and
+     others' opinions; the old Encampment stays as it is). A New run **is an Encampment run**
+     (dungeon 0: its fee and free runs, its run and clear counts, its chief and cages, its room
+     mix and balance), with an optional `walk` record in the run (`lib/dungeon/walkRun.ts`, so
+     old saves load): the layout and its scroll map, every room rolled at the start (its foes
+     stand in it), where you stand, what you've seen, the torches you've lit, where each beaten
+     room's loot lies, your trail and cut-offs. The room you're in is the run's current room, so
+     the Labyrinth screen plays it out as ever: fights (XP, level-ups, knock-outs, the battle
+     history), loot into your bag, the chief's cages, the haul, retreat, losing.
+     - **The screen** (`components/WalkView.tsx`, in place of the room view; `/lab/newrun` shows
+       it without a save): the mossy kit, the cloaked torchbearer (the user's pick, walking with
+       the torch held up), 15 tiles across, torchlight, wall torches, rubble. Walking into a room
+       makes it the current one; walking out leaves it as it is (`walkInto`: foes you slipped past
+       stay; an opened sack's leftovers go to the floor, as down a tunnel). Seen by a room's foes,
+       or into the chief's camp, that room's fight starts, but not at once (the user, 2026-11-06;
+       `fightReady` and the numbers in foes.ts, 🧪): every foe of the room lights up like your torch
+       (`ALARM_LIGHT` 2.5 tiles) with a "!" over it, half a second later they all come at you
+       (`CHARGE_SPEED` 4 tiles a second), and it fades to black into the fight (`FADE_TIME` 0.6 s)
+       once they've all reached you, or a second after the first has (`LATE_GRACE`), or 4 s after
+       they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. (`/lab/walk` still
+       starts its fights at once.) Tap a chest, stash or a fight's sack
+       to walk up and open it in the loot window. A camp's cages are guarded like a mini boss's
+       chest (the user, 2026-11-09): its foes patrol in front of them (`cageGuardSpot`), and
+       trying one before they're beaten sets them on you; then each opens as you walk up. Walking
+       in never opens the room's window now; the room button (top left) opens it any time.
+       **Bosses wait** (the user, 2026-11-06; `placeWaiter`, `waitsHere`): the Encampment's
+       chief (and the Labyrinth's boss) stands at the top of his room (`WAIT_FROM_TOP` 4 tiles
+       down, facing the way in), never wandering, and his fight starts only once you've walked up
+       to him (`WAIT_REACH` 3.5 tiles, in sight 🧪), not as you step in. The Labyrinth's large
+       encampments aren't bosses: their foes look about like any room's.
+       **Cages** (the user, 2026-11-06; `cageSpots`): a camp's cages stand in a row along the top
+       of its room, behind the chief (`CAGE_GAP` 4 tiles apart; PixelLab art, shut and opened).
+       Once he's beaten (or with no guards to see) each one still shut has a "!" over it: tap it,
+       walk up, and it opens like a chest (the creature inside is yours, as ever). **Winning at
+       the top no longer ends a walk at once**: the chest he guarded is there to open, and a "🏠 Head
+       home" button ends the run on to the cheer and the haul (`headHome`). The clear counts
+       however you leave once he's beaten, by the Den or Retreat too (`wonAtTop`, run.ts
+       `endRun`).
+       **Guarded chests** (the user, 2026-11-07): a mini boss's or boss's chest (`fightContainer`
+       not a sack) is on the ground from the start, shut: behind a boss waiting at the top (beside
+       him, a little behind, where cages stand), else the room's middle (walkWorld.ts
+       `guardedChestSpot`, from the layout). Its guards patrol close round it (`guarding`, foes.ts
+       `GUARD_REACH` 2 tiles 🧪; a waiting boss still stands). You can tap it before they're beaten,
+       but trying to open it sets them on you (`soundAlarm`: as if seen); win, and Loot opens it
+       (the user, 2026-11-09). An ordinary fight's sack still lies where you stood.
+       **The campfire window** (the user, 2026-11-06: the long bars were too big; 2026-11-09: out
+       of the way): a thin bar of what the fire has left, then your team in a column down from the
+       top left, small (56 px), a health bar under each.
+     - **Two dens in a big room** (the user, 2026-11-06: big and long rooms can hold two spawns,
+       one down each end; `SECOND_DEN` 35% 🧪 of creature dens in a wide, tall, big, dog-leg or
+       large room): the second den is a room of its own in the run (`<room>~2`, foes.ts
+       `spawnOf`), with no tunnels or mark on the scroll, its foes keeping to the far end of
+       the room (`endOf`: split across the middle of its longer side) and the first den's to the
+       near end. Each is its own fight, with its own loot. A balance change (more fights, more
+       XP and gold): 🧪 for the user to judge. The dock's
+       Scroll is the treasure map, and the entrance's look at the map is that scroll with only its marks (`WalkFirstMap`); the Den button is locked only mid-fight. A stash's or a fight's sack is drawn smaller than a chest (the user, 2026-11-06).
+     - **Torches in tunnels** (the user, 2026-11-06; `placeSconces(…, tunnels)` in torch.ts): some
+       tunnels (`TUNNEL_SCONCE_CHANCE` 40% 🧪) have unlit torches along their walls, one every
+       `SCONCE_EVERY` tiles (taking turns side to side up an up tunnel), lit by walking past like
+       the rooms' ones. A tunnel that falls in takes its torches with it.
+     - **Campfires** (the user, 2026-11-06; `lib/dungeon/campfire.ts`): some rooms have one
+       burning (`CAMPFIRE_CHANCE` 15% of rooms, never the entrance or the camp, one a room at
+       most 🧪), rolled with the run (`walk.fires`, optional: older runs have none). Stand by one
+       (`CAMPFIRE_REACH` 2.5 tiles, in sight 🧪) and the team heals: it holds half a creature's
+       health in all (`CAMPFIRE_HEAL`), given out at 5% of max HP a second (`CAMPFIRE_RATE`),
+       shared evenly between those standing and not full (three hurt: a third each; one: all of
+       it; what a nearly full one can't take goes to the rest; knocked-out ones get nothing).
+       A window over the walk shows the team's health bars rising, a "+" by each one healing,
+       and what the fire has left; green crosses rise round you. Given out, it burns down to
+       embers with half its light (`EMBER_LIGHT`). It's solid, and lights its part of the room
+       (`CAMPFIRE_LIGHT` 5 tiles 🧪). PixelLab art (see "Campfire art" below).
+       **Pools** (the user's call): a campfire and a healing pool never share a room, and
+       campfires take some of the pools' share of rooms. The Encampment has no pools, so this
+       applies once the walkable run reaches the Labyrinth: half each (pools 10, campfires 10 of
+       `ROOM_MIX`'s 20; the user, 2026-11-06), 🧪 to adjust, as walking sideways likely finds
+       more of them than the scroll's tunnels did.
+     - **The walkable Labyrinth** (the Cyclops; ✅ the user, 2026-11-06: live as a second New at
+       the Labyrinth's entrance, "🔥 New: the Cyclops", locked till the Labyrinth opens; the old
+       Labyrinth stays as it is, and Klutz's quest runs are still the old one's;
+       `/lab/newrun` → Labyrinth shows it without a save): `startWalkRun(…, dungeon 1)`, a
+       Labyrinth run (its fee, run and clear counts, first clear, the Cyclops). Rolling its layout
+       takes up to ~2 s, so the screen says "🔥 Lighting the torches…" first. Its rooms are the live Labyrinth's mix by the same code
+       (map.ts `fillRooms`, shared with the scroll map: dens up front, mini bosses deeper, "?"
+       rooms), on `labyrinthMap` (layout.ts). **Large rooms**: `LARGE_SHAPE` 14×9 blocks 🧪,
+       `spec.large` of them up the middle of the layout, each an encampment, library or
+       storehouse (`LARGE_MIX`, half marked, `LARGE_KNOWN`): its foes (a guarded storehouse's
+       mini boss, a camp's Rares) look about as any room's, its cages along the top (an ambush
+       springs as you open one), a library's codexes or a storehouse's crates to tap, or the
+       librarian. **Pools and campfires**: half the pools are campfire rooms (`CAMPFIRE_SHARE`,
+       a `campfire` room kind, always with a fire; no 15% extra fires in the Labyrinth), pools a
+       stone ring of glowing water (PixelLab, a very faint pulsing glow), tapped for the room's
+       window. **The card witch** walks about her room (PixelLab, a 4-way walk), stopping to
+       face you as you come near; tap her for her game. The merchant, the librarian and a deck
+       of cards stand in their rooms, tapped for the room's window. Walking into a room ticks the
+       witch's illness, and walking out mid-game leaves with your winnings, as down a tunnel.
+       **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).
+       **Its size is open**: the scroll map's Labyrinth is 36 rooms, 15 to the lair, but with
+       `ROUTES` (3) separate ways of 15 that needs 44+ rooms, and those layouts take ~15 s to
+       roll and mostly fail. `WALK_LABYRINTH` is 30 rooms, 10 to the lair, for now (rolls in
+       ~1 s, 2 s at worst). **Why the big ones are slow** (measured, 2026-11-06): each try is
+       quick (10–20 ms), but rooms are packed first and checked after, and one bad room (mostly
+       at the edges, with only one room above in reach) throws the whole packing away: 7% of
+       19-room packings pass, 1% of 30, ~0% of 44. Tried and dropped, as both were slower than
+       rolling again: moving the bad rooms (the packing's too tight to find them better places),
+       and packing 30% extra rooms then taking the worst out (the gaps break their neighbours).
+       Pre-rolled seeds: not for now (the user). Next idea: build the layout so each room is
+       checked as it's placed.
+       ✅ **Built 2026-11-09: guided rolling** (`rollRooms` with `guided`; both dungeons use it).
+       Each room goes where it gives the rooms below the ways up they still need (`GUIDE_UPS`),
+       never with nothing below it if it can help it; a room closed in short of ways on (nothing
+       more could land near enough above it; a room beside counts as a way, `SIDE_WAY`) has its
+       real tunnels counted, and if it's short, the last few rooms are taken up and placed again
+       (`BACK_STEP` 5, more each time it comes back; `BACKTRACKS` 400 at most); the top (the
+       boss's room and the two beside it) steps back the same way when it won't fit. Measured
+       (tests/layoutBench.test.ts, `npm run test:stress`, this PC): the Encampment 0.2 s a layout
+       (0.5 s at worst; 0.25 s and 2 s before); **the Cyclops at the Encampment's room size**
+       (2-tile blocks, the user, 2026-11-09: narrower rooms are more fun to explore) 0.4 s, 1.3 s
+       at worst (unguided, a third couldn't be rolled at all). Its large room keeps its shape in
+       blocks, so about two thirds of the size it was in tiles (the user: large rooms can be
+       large, needn't stay as large). Runs already made keep their layouts.
+       **The rule for a new dungeon's size** (`rooms`, `minRoute`, and `across`: rooms side by side
+       at the widest, which sets the width, `acrossW`), from the bench:
+       - **across ≥ 4**: three separate ways to the boss don't fit in 3 (3 wide failed even at
+         a gentle route).
+       - **route × across ÷ rooms ≤ 1.33** rolls reliably and fast; about 1.5 works but slowly
+         (5–15 s); 1.6 or more fails. So rooms ≥ route × across ÷ 1.33: 4 wide with a route of
+         10 needs 30 rooms; **5 wide, route 15 needs about 56** (55 rolled in 2.7 s, 5 s at
+         worst; 45 took minutes).
+       - **Time grows with rooms** at a good ratio: about 0.5 s at 30, 0.6 s at 45, 3 s at
+         55–65, 7–10 s at 70–80 (worst about twice that; a phone perhaps 3× slower). Past ~60
+         rooms a dungeon wants its layout rolled ahead of time, or in parts.
+       Rare tunnels that skip a row (the user: fine, for risk and reward): a tunnel may already
+       cross up to `MAX_REACH` blocks of rock, past a gap in the row between; nothing marks them
+       yet.
+       Klutz's dynamite quest: the large room is its storehouse, marked, and the dynamite's yours
+       as you reach its crates.
+     - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,
+       and your light reaches twice as far (`FLARE_REACH`) for the next `FLARE_WALK` 90 tiles
+       you walk (about half the walkable Encampment, 🧪). A new flare lights afresh.
+     - **The card witch** wanders on once her game's played out, but there's nothing more to tap
+       her for (the user, 2026-11-06).
+     - **Campfire art** (the user, 2026-11-06): PixelLab, logs stacked in a teepee in a ring of
+       stones, burning, and the same burnt out; a flickering glow and a tongue of flame are drawn
+       over it, bigger the more it has left.
+     - **Rooms' insides** (the user, 2026-11-07: "fill the big rooms with structure, not
+       objects"; `lib/dungeon/interior.ts`, rolled with the layout, `LayoutRoom.inner`): solid
+       stone built in a room's floor, drawn like the walls (brick face, mossy cap), blocking
+       light and sight, walked round. **Only the odd lone pillar** (the user, 2026-11-07: the walls
+       were too obstructing; colonnades, alcoves and dividing walls are no longer rolled, though
+       runs that rolled them keep them): 1–2 2×2 pillars (`PILLARS_MOST`) in some bigger rooms
+       (`STYLES`, 🧪: 35–50% of wide, tall, big, dog-leg and large rooms; at the Encampment's
+       size the wide ones are too narrow to take one), the boss's room pillars down both
+       sides with its middle aisle clear (`AISLE`), small rooms and the entrance nothing. Always
+       kept clear: a margin inside the walls (wall torches, cages), the doors, the room's middle
+       (its chest, pool or stash), and every floor tile still reachable from every door; a piece
+       that would break any of that is left out. Drawn like the walls for now (📌 the user wants
+       pillar art that reads as a pillar).
+     - **Candles** (the user, 2026-11-06: "the odd candle in the middle-ish of the rooms,
+       unlit"; torch.ts `placeCandles`): `CANDLE_CHANCE` 35% of rooms 🧪 (never the entrance or
+       the boss's room) have one on the floor 2–5 tiles from the middle, unlit. Walk near it (in
+       sight) and it lights, keeping a little pool of light round it for good (`CANDLE_RADIUS`
+       2.5 tiles 🧪). Once lit it's drawn lit wherever you've seen it, in sight or not (its pool of
+       light needs you to see it, like a wall torch's). Placed from the run's seed and kept lit with the wall torches' list, so
+       nothing new is saved. PixelLab art (the unlit one is the lit one with its flame taken off).
+     - 🚧 **Decor samples** (the user, 2026-11-06: "upgrades to the art, things that make the rooms
+       less repetitive and more engaging"; `lib/dungeon/decor.ts`; **only in `/lab/newrun`**, its
+       Decor switch, until the user picks; a still: [decor-samples.png](ideas/decor-samples.png)):
+       - **Worn floor tiles**: a quarter of floor tiles (`FLOOR_WORN`) are one of 12 worn versions
+         of the kit's floor (cracks, chips, moss tufts), picked by place and seed. They tile with
+         the plain one without seams.
+       - **Worn walls**: 30% (`WALL_WORN`) of a top wall's face, in pairs of tiles, is one of 3
+         worn versions (cracks, a broken-out brick, cobwebs, creeping ivy).
+       - **Banners**: 35% of rooms (`BANNER_CHANCE`) have a tattered red banner on the top wall,
+         never over a door or a wall torch.
+       - **Things lying about**, by the room's kind (`THEMES`): skulls, pots and a nest (with eggs)
+         in dens; barrels and crates in storehouses, by merchants and in camps; a bit of everything
+         elsewhere. One per `DECOR_PER` 28 floor tiles, 8 at most, two of a kind at most, one nest;
+         a big room's fallen pillar (a heap of mossy blocks) half the time. Barrels, crates and the
+         pillar are solid and only stand against a wall, so no way through is ever blocked (tested:
+         every door still reaches every other); the rest are walked over. Never on a room's middle,
+         its fire or candle, or by a door.
+       - Ideas not drawn yet: puddles and moss patches as decals (PixelLab gave plain floor
+         circles), side walls' faces, room-kind floors (a library's boards, a camp's dirt),
+         cobwebs in corners, a darker pillar.
+     - **Still to come:** scenery, rubble art, the animated flame sprite, the old Encampment's retirement once
+       New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
+       own copy of the drawing for now, with its testing switches).
+  - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
+    e.g. a mini boss *and* a healing pool, or nothing. Several kinds of room, each in 1–3 styles.
+    (This touches the room mix, a decided balance: present it as options when it comes up.)
+- ✅ **Enemy rarity by room and depth** (the user, 2026-10-19; `DUNGEONS[d].foes`, `foeAt`). Every
+  enemy wears a full kit (weapon + whole armour set). Each has a chance to **step up** one rarity,
+  creature and gear together (`STEP_UP` 20%):
+  - Labyrinth dens: Commons in Common gear; rooms 1–3 never step up.
+  - Labyrinth brutes: Uncommon to room 6, then Rare (in matching gear). Encampments: Uncommon
+    to room 6, then Rare creatures in Uncommon gear (no step-up).
+  - Labyrinth mini bosses: Rare in Rare gear, no step-up.
+  - Deep: dens Uncommon, brutes Epic in Rare gear, encampments Epic in Rare gear, mini bosses Rare
+    in Rare gear with 30% Epic.
+  - Sim (60 players × 25 runs, no scans): a lone starter beats a first-room den 75% (was 67%);
+    players with a Cyclops clear by run 25: 28/60 (was 16/60); the Cyclops itself is still beaten
+    only ~15% of attempts. (The shelved alternative, shrinking enemy gear by level, was tried and
+    dropped as too complicated.)
+- ✅ **Enemy gear drops** (the user, 2026-10-19; `ENEMY_DROP_CHANCE`): every enemy you fight has a
+  20% chance to drop one of its 4 equipped items when you win, each 1 in 4: weapon, helmet, chest
+  or legs (chosen when the room is made, `dropSlot`). It goes in the fight's sack. One item per
+  enemy at most. (Was 5%, brutes only.) Easy fights' 5% upgraded piece (`UPGRADE_CHANCE`) still
+  drops, picked the same 1-in-4 way. The Cyclops has no gear, so no change there.
+
+## 8. Klutz
+
+- ✅ A clumsy goblin **helper, not a party creature.** He's easily bribed with gold into serving
+  you, wanders the Den, and you tap him for /klutz. (lib/klutz.ts)
+- ✅ **Hunts** (until beaten, decided 2026-10-20): every 20–60 minutes (🧪 Claude's range) he meets a
+  creature (his level −2 to +1) and fights it 1v1, and he keeps going until one beats him. He
+  doesn't heal between fights. Past 6 hours out, what he meets is a level tougher for every hour
+  past it (🧪). You can see his HP while he's away and **call him back** at any time (he comes home
+  with what he's won so far). A safety stop brings him home after 60 fights. The user's aim: send
+  him off at bedtime and wake up to creatures and gear. Sim (400 trips a level, gear at his rarity):
+  trips last about 2 h on average (2–4 fights, 1–3 wins; 90% are under 3–5 h), so the 6-hour
+  toughening rarely comes into it. **Open:** longer walks would make trips last overnight.
+  - **Each win:** the creature goes to the cage, and its weapon plus one armour piece to his crate.
+  - **Beaten:** he comes home with everything and heals in the pool (1 HP every 10 s) before he can
+    go out again.
+  - His gear is locked while he's away.
+- ✅ **The cage** holds 1. The **Iron Cage Schematic** (rare) is in a mini boss's chest 20% of the
+  time until you have one (at home or in your bag) or have built it; with 10 metal bars it builds
+  the iron cage, which holds 3 (`CAGE_LEVELS`, lib/items/materials.ts). Catches that don't fit are
+  let go (he keeps their gear).
+- ✅ **Neutral** (decided 2026-10-20): Klutz hunts alone and can't swap, so he was outside the
+  triangle (+25% when a move of his countered, `NEUTRAL_COUNTER`). In Combat V2 he has **no race**,
+  so nothing is effective against him and he gets no matching-race bonus; but his moves (the older
+  ones) have races (`MOVE_RACES`), so they can be effective or resisted like anyone's. ❓ Whether
+  he should get something in place of his old counter bonus is open. His badge reads a grey
+  "⚖️ Neutral", and he shows no race (the user, 2026-10-26).
+- ✅ **Codexes** (2026-10-23): Klutz reads codexes you own from his Equip window → Moves (not while
+  he's away). Any class's moves and the learnable ones, but **no race moves**, not even his own
+  race's. What he's learned is kept in `KlutzState.learned`.
+  - **Skill points** (decided 2026-10-20, replacing the even 9s): he's a **Rare**, his %s start at 0,
+    and he earns 6 points a level over 1 (84 at Lv 15, about a Rare's total; `POINTS_PER_LEVEL`).
+    In his stats window, tap a stat to add 1% (attacks on the top row beside the points left;
+    defences and agility below), then Confirm or Cancel; the stat bars preview it. A re-spec gives
+    every point back for 1000 gold. His weapon and the codexes you teach him still decide most of
+    how he fights. He starts with Slash, Heavy Blow, Jab and Stone Throw. (A pre-V2 sim: history.md.)
+- ✅ **Finds:** 35% of walks (each fight's) bring home gear for a slot he wears. It's **never rarer than his own
+  piece** (the same rarity only 5%, rising slightly with his level).
+- ✅ **Levels:** a won hunt gives the KO's XP + 50, and every piece of gear he brings home gives 20
+  (a catch's weapon and armour, and a find; 2026-10-20, to make him level faster). A first catch
+  reaches Lv 2. The crate shows a ❗ in the Den while it holds loot. Scrolls work on
+  him, and the user wants that to feel worthwhile ("the closest thing to you").
+- ✅ **A new game starts at Klutz:** he dragged you in out of the Labyrinth and, because you were kind
+  to him, he'll help you. He caught an evil creature exploring: you can recruit it. The cage glows
+  until you do; only then does he tell you about his box (`needsFirstCreature`, lib/quest.ts).
+- ✅ **First quest, "Klutz's box":** a Baby Cyclops stole his box. In a guided first fight he gives
+  advice (he doesn't fight). The box holds 10 pieces of Common/Uncommon gear (lib/quest.ts).
+  On the way, Klutz's Club lies on the floor and is picked up through the loot window: a tutorial
+  there teaches taking it into the bag and equipping it (tap, or drag onto a creature), and the
+  equip window explains where stats come from (gear × the creature's %).
+  Before he borrows any gear, you have to put some armour from the box on your creature
+  (`needsGearUp`). Each step glows (the user, 2026-10-31): the Pit in the Den, the Creatures tab, your
+  creature, the armour slots you have armour for, a piece in the picker, Equip, then "Back to Klutz".
+  Once the box is opened, Klutz offers "Show me round" or "Skip the tutorial" (the user, 2026-11-01):
+  skipping goes straight to him hunting for you (`skipTutorial`).
+- ✅ **Klutz's tour** (lib/tour.ts, components/TourOverlay.tsx; the user, 2026-11-01): "Show me round"
+  walks you through the Den. Each step dims the screen but one thing (a place's label in the Den, or a
+  `data-tour` mark on a screen) with a line from Klutz; a tap anywhere goes on, into a place after
+  it's been lit up in the Den. Altar, Pit, bag and Klutz are entered; cage, crate, pool, bookcase,
+  board, Bestiary and the Labyrinth are explained from the Den. It ends in the Inventory with the
+  box's gear and how to equip it, then the quest carries on (armour on, then "Deal"). The aim: a new
+  player understands ~70% of the game. Skip tour any time; it resumes where you left it (its own
+  save field, `tour`); "Show me round again" on Klutz's page.
+- ✅ **Equipping:** gear can be dragged onto a creature (loot windows, and the bag in the Labyrinth)
+  or onto its slot (the creature window). Dragged straight from a chest, it opens the compare
+  window with nothing moved (bag full or not); equipped, what it replaces goes in the bag, or into
+  the chest if the bag is full.
+  In loot windows and the Labyrinth bag, an XP scroll can be dragged onto any party creature to read
+  it, and a Revival Elixir onto a knocked-out one (the party row shows the knocked out at 0%). A
+  flare or clairvoyance scroll can be used straight from a chest (tap it: Light it / Read it). In the Labyrinth, equipping opens a compare window first:
+  the slot's old piece vs the new one, each stat's change, and your party along the top marked ▲/▼
+  so you can see who it helps.
+- ✗ **Kidnap plan** (Klutz kidnapped on a hunt, rescued through a mini dungeon): replaced by the
+  Encampment dungeon (the user, 2026-11-04).
+- ⏸ The intro (Klutz drags you in, you tip him gold) is parked until the art direction settles.
+
+## 9. The Den and economy
+
+- ✅ Places: Soul Altar (scanning), Labyrinth archway, quest board, Bestiary lectern, cage, pool,
+  Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 20 upgraded), bindle/bag, merchant
+  stall, and a boarded-up Tavern.
+- 📌 **Tavern:** where travellers, merchants and librarians gather. Now reached through the
+  questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). Not
+  built.
+- 📌 Wandering merchants and weapon dealers as gold sinks. The user will design gold sinks.
+- ✅ **Save slots and the title screen** (2026-10-20, `app/start`, lib/saveSlots.ts): opening the
+  game shows Continue / New Game / Load file; up to 4 named saves per browser (no real login: the
+  user chose this over online accounts). The game saves itself on every change. The slot in play
+  lives in the usual keys; the others are parked as save files.
+- ✅ Sell prices **stay as they are** (the user, 2026-10-20), even though they (epic ~800,
+  legendary ~2,700) dwarf Labyrinth gold (~18 a room) and re-scan gold has no cap.
+
+### The tavern questline (📌 the user's spec, 2026-10-20; stages 1–8 built, lib/tavern.ts)
+
+Each stage unlocks the next, so every stage can ship on its own and leave the game playable.
+Placeholder art (existing sprites, simple markers) until a later PixelLab pass. All new save
+fields optional with defaults.
+
+1. ✅ **Klutz's quest.** It unlocks once any creature reaches Lv 6 **and** Klutz is Lv 2 or more
+   (either order). Only won hunts give him XP and a first catch takes him to Lv 2, so his level
+   is the record of having hunted, and old saves work too. While he's out, the quest waits until
+   he's home. Then a "!" shows over him; talking to him gives the quest, once.
+2. ✅ **Storehouse.** Once the quest is accepted and until you have the dynamite, a Labyrinth's
+   Large Room is always a Storehouse, always marked on the scroll from the start (no extra room).
+   In the Deep (2 large rooms) only one is. The first-quest run has no large room. The dynamite
+   lies among its crates and barrels. Taking it is permanent: rooms go back to normal and you
+   can't get a second one. 🧪 Its usual mini-boss guard chance stays (the dynamite waits until the
+   guard's beaten). 🧪 The dynamite takes no bag slot and is yours the moment you pick it up, even if
+   the run then goes wrong (there's no second one). Both Claude's defaults; not asked.
+3. ✅ **Rubble.** A rubble-choked doorway on the Den's right-hand wall, between the bookcase
+   corner and the merchant (the user's sketch: [ideas/den-second-room.png](ideas/den-second-room.png)).
+   Using the dynamite on it (once) blows it open (a flash and a shake) into a passage to a second
+   room. **Until then you can't see or pan over the second room at all.** It isn't a general
+   destructible-walls system.
+   ✅ **The room strip:** the Den and the tavern's room sit side by side in one view you drag across
+   (`DenRoom`'s `annex`); the tavern's room lies straight behind the Den's right wall, through a
+   see-through doorway and a wall one floor unit thick (`PASS`, lib/den/scene.ts). Each room is its
+   own picture, built only once open, so later rooms don't slow the others (watch phone
+   performance). The tavern's room is the Den's cave with nothing in it (`createDen({ bare })`), with
+   the tavern, head and visitor standing in it (`components/TavernRoom.tsx`). Tapping the tavern opens
+   `/tavern` (the repair, sending for a visitor); tapping the visitor opens their wares (`/visitor`,
+   the user, 2026-11-06); the pit and the portal open their own windows; the bare floor does nothing.
+   The view is remembered for the visit (the user, 2026-11-06): coming back from any place opens it
+   where you left it, in either room. Meant to grow into more rooms.
+   📌 Still to come: mounted head art, and the tavern's interior (needs design). The user's
+   [ideas/future-dungeon-direction.png](ideas/future-dungeon-direction.png) is the likely long-term
+   look for the base.
+   🧪 Testing tools at the altar: "🧨 Open the rubble" (`forceOpen`) and "🍺 Call a visitor"
+   (`callVisitor`).
+4. ✅ **The tavern (outside only for now)** stands broken in that room, a building against its far
+   wall (the sketch). The first time you see it, Klutz reacts once (it needs materials). Art:
+   PixelLab, at the room's angle (§11); greyed until repaired. ✅ (the user, 2026-10-20) **No
+   wanted poster.** ✅ (the user, 2026-11-02) The bounty lives on the **quest board's Quests tab**
+   (`/board`), not in the tavern: a ❗ on the board in the Den while it has a step for you (the
+   bounty to take, or the head to hand in: `bountyHasStep`). The ❗ for a visitor is over the visitor (and the Den's doorway), not the tavern.
+5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
+   takes the materials exactly once, and swaps in the restored look.
+6. ✅ **Bounty:** repairing the tavern puts the Cyclops bounty up on the quest board
+   (`bountyStep`: offer, hunt, head, paid). Cyclops combat is unchanged. 🧪 A "Take the bounty"
+   button; with a win already on record (`meta.clears`), the head is ready to hand in straight away.
+7. ✅ **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
+   the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Handing it
+   in at the board (once) mounts it on the tavern wall, completes the bounty and unlocks the bookcase schematic.
+   🧪 The head isn't an item in your storage: it's yours once you've beaten the Cyclops and taken
+   the bounty, so it can't be sold, used, lost or doubled. Mounted, it hangs over the tavern door
+   (placeholder: the Cyclops sprite on a plaque marked with the run).
+   The schematic it pays isn't an item either: the bookcase just offers to build.
+8. ✅ **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
+   **only** way to get it: it no longer drops from mini bosses, the Cyclops or storehouses. It costs
+   10 planks and 5 nails, is built separately, holds **20** codexes, and uses the user's upgraded
+   bookcase art (`den/bookcase-2.png`). (It was 20 planks + 10 nails for 25.) A save that already
+   built it keeps its 25 slots, and schematics already in a save stay buildable (now 20 slots).
+   In the Den the shelf swaps to the upgraded art once it's built.
+9. **Visitors** (after the repair): on returning home from each run, roll a merchant (12%), a
+   librarian (8%), the creature collector (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
+   guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and over their head (their name: tap them to trade), and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
+   (The creature trader is left out for now.)
+   ✅ **The Sparring Pit and the Training Pit** (the user, 2026-11-03; lib/trainingPit.ts, `/training`).
+   The **Sparring Pit**, a bed of tan sand in a ring of grey stones, with a straw dummy (`den/sparring-pit-3.png`), is yours as
+   soon as the rubble's blown open, in the tavern room's back corner against the right-hand wall,
+   clear of the tavern, drawn 1.9× (`PIT_SCALE`, the Training Pit too). One creature at a time trains in it, in real time
+   (**50 XP an hour**, `SPARRING_XP_PER_HOUR`), and stops with its bar full until you tap **Level
+   up** (one level, then it trains on from empty), so it never gains more than a level while
+   you're away: a ❗ on the pit in the room says it's ready. While it's in, it's away training:
+   it can't fight: where you pick a team (the Labyrinth's entrance, a duel, PvP teams) it shows
+   greyed, "🏋️ In the pit" (the user, 2026-11-04), and other fight lists leave it out. Take it out any time with the XP
+   it's earned (a full bar levels it up). An XP scroll read on it banks what it's earned first.
+   **Slay the Hydra**, a quest on the board's Quests tab, goes up once you've beaten the Cyclops;
+   beat the Hydra and claim its reward there, the **Training Pit Schematic** (not an item: the pit
+   just offers to build). It builds the **Training Pit** over the Sparring Pit (a stone rim ringed with
+   spears, `den/training-pit.png`, the same grid) for **10 stone, 10 metal bars, 5 planks, 5 nails
+   and 3 essence stones**, once: **100 XP an hour** (`TRAINING_XP_PER_HOUR`; 🧪 the user's pick: Lv
+   10→11 about 3.5h, Lv 20→21 about 8h, Lv 29→30 about 13h). Whoever's training keeps what they earned
+   at the sparring rate. Saved in the tavern field (`plans`, `pit`, `training`, and `trainedXp`: the
+   pit's **lifetime XP**, everything banked out of it, `logTrained`). Its window (`/training`, tapped in the
+   room: taps there look past the Den's canvas for the pit) shows the pit's picture, its rate, the lifetime XP
+   (plus what's training now), the creature in it, and with the plans, the schematic: the Training Pit's
+   picture beside a column of material icons with have/need, "50 → 100 XP/h" and Build.
+   ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant, a librarian or the collector now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
+   ✅ **The creature collector** (the user, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
+
+### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)
+
+On the quest board's Quests tab, above the Cyclops bounty. **Two a day, a primary and a
+secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
+do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
+ready to claim. Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
+today's quests not yet claimed, with their rewards and progress (`openQuests`,
+components/DailyPopup.tsx): once a day per visit to the site, so again at midnight's new quests;
+not during Klutz's tour or before your first creature. A tap anywhere closes it.
+
+**A boss you've never beaten steps down** (the user: the Hydra to the Cyclops or Encampment):
+the Abyss to the Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, until it's one
+you've beaten before. You get the easier quest's reward. 🧪 The Abyss and Cyclops steps follow the
+same rule (Claude's reading). Which quests you got is fixed the first time they're seen that day.
+
+| Primary | Reward |
+|---|---|
+| Beat the Cyclops | a box of 5 pieces of gear, Rare or better |
+| Beat the Encampment twice | a creature, Rare at most |
+| Beat the Hydra | 3 Rare or Epic weapons or armour |
+| Beat the Abyss | an Epic weapon or armour piece |
+
+| Secondary | Reward |
+|---|---|
+| Scan 5 new barcodes | 500 gold |
+| Sell 300 gold's worth of items | the travelling merchant calls at the tavern |
+| Win 5 fights in a dungeon | an XP scroll |
+| Send Klutz out hunting | a bundle of one material |
+| Clear 10 rooms in a dungeon | a Revival Elixir |
+| Beat a mini boss | a codex, its rarity rolled |
+| Summon a creature from 3 cards | 250 gold |
+| Win a duel with a friend | 100 gold |
+| Find a creature you've never owned | a Code Cache (at the altar) |
+
+🧪 Claude's readings, not asked: "5 item scans" counts new barcodes (a Code Cache, sealed or not;
+a rescan's gold doesn't). Rarities are rolled at the usual odds (`RARITY_WEIGHTS`) and then held
+to the limits (`rollRarity`), so the box is mostly Rare; a weapon a third of the time. The
+material bundle is a scan's (`materialBundle`, its rarity rolled); the codex is what a scan of the
+rolled rarity gives (Epic and up: a race codex); the Code Cache is a fresh scan roll. Sales count
+at home (Inventory, altar, crate, tavern, materials) and to the Labyrinth's merchant. Fights count
+in any dungeon; rooms are each run's finished rooms, counted as it ends; a mini boss includes a
+guarded storehouse but not the Encampment's chief. A duel counts only when won in battle. Klutz
+steps down to the fights quest until he hunts for you, and duels do in a copy without online.
+The merchant replaces whoever's at the tavern for 2 runs, and can't be claimed until the
+tavern's repaired (progress still counts). A reward with no room (chest boxes, the bookcase for a
+codex, the altar for a Code Cache) waits until there is.
+
+## 10. UI philosophy (settled; follow it)
+
+- **Mobile-first**, for iOS/Android later. Touch only: tap targets of 44px or more, no hover-only
+  information, safe areas.
+- **One fixed phone-sized screen** (`components/GameScreen.tsx`). On a laptop: no border, full window height, 9:16 wide, centred. **Screen size** (Settings, `lib/uiScale.ts`, built 2026-10-20): everything inside is laid out smaller and drawn scaled up; per device, a laptop starts at 150% (175% at first, from the user's browser zoom; too big, 2026-11-07), a phone at 100%.
+  - The page never grows or shrinks between areas; long lists scroll inside panels.
+  - Actions sit in docks built into the screen, not floating buttons.
+  - In battle, the moves fill the bottom ~30% of the screen. Above them, a one-on-one fight's room
+    fills the whole stage (the code-drawn room's ceiling and floor carry on, `extend` in
+    `lib/dungeon/chamber.ts`); there's no row of who's left (Swap shows your bench).
+  - Labyrinth rooms have no frame: edge to edge, the floor fading into the screen.
+  - On a laptop, Esc closes whatever's open (`hooks/useEscape.ts`); with nothing open it goes back
+    a page (`components/EscapeBack.tsx`), except mid-fight in the Labyrinth.
+- **Vibration** (Settings, `lib/haptics.ts`, built 2026-10-24): off by default, per device. When it's on, hits that land buzz briefly, and precise hits and level-ups buzz harder. It only works in browsers that allow vibration (Android, not iPhone), and the switch is hidden elsewhere.
+- **Double tap** (`lib/doubleTap.ts`, built 2026-10-24): a quick second tap on the same thing does its main button. In a creature's Equip picker it equips the piece (or unequips, on ⊘); in the loot window it takes the item.
+- **Few words.** One-line summaries on screen, and depth behind a "?" (`components/Help.tsx`) in
+  big, bold, broken-up text. Klutz's lines are short.
+- **The stone card standard:**
+  - #23262f stone with pixel bevels and a thin rarity-coloured trim;
+  - the pixel font in yellow #f1d9a0, and sunken wells for text;
+  - `.inv-panel` for anything holding loot or creatures;
+  - Colour carries **race** (`RACE_INFO`: Beast green, Humanoid blue…; Neutral slate grey); the
+    three styles share one neutral cream, so they don't clash.
+- **Fixed structure, text fits it** (the user, 2026-10-19: "the text around the box should move as
+  that is the variable, not the constant"). Windows are a standard frame of fixed boxes; flicking
+  through items or creatures changes only the contents. Varying text gets a fixed number of lines
+  (clamped), and absent parts keep their space. This is what makes the game feel polished.
+  - **Text budgets** (lib/uiText.ts, checked by tests/uiText.test.ts): a card's name gets two lines
+    of at most 14 letters (`CARD_NAME_LINE`), a move tablet's two lines of 12 (`MOVE_NAME_LINE`).
+    New creature and move names must fit: write them shorter rather than growing the box.
+  - Built this way (2026-10-26): cards (the name box is always two lines tall), move tablets (name
+    box plus one tag/note line, kept when empty), the item window (one fixed size; the ←/→ row
+    kept), the creature window's gear picker (a 3×3 grid that scrolls inside itself past 9 pieces, so the Equip button and the stat list below stay put; under it the picked piece's name, five fixed stat boxes in the Stats list's icons and colours with ▲/▼ against what's worn, set and owner lines; no Cancel: tap off the picker to close it; the 🔒 line kept), librarian rows
+    (two-line descriptions), the battle dock (no Rest tab; the energy line doubles as "X used Y"),
+    and the loot window (one fixed "closer look" box for whatever you tap, chest or bag, its buttons
+    in one row that scrolls sideways; the chest's rows never shrink while it's open). With nothing
+    tapped the box is gone and the one-line hint under the chest does the job, so the window fits
+    without scrolling (the user's call: the bag moves down when you tap something).
+  - Bags (2026-10-28): every view draws all `BAG_MAX` (10) slots in rows of 5 (`BAG_COLS`), the
+    ones you haven't unlocked yet greyed out with a 🔒, so bindle and backpack share one layout.
+  - The creature window's set line follows the armour slot you tap (that piece's set and how
+    many of it you wear), instead of always the set you wear most of.
+- One tap on a Den object goes in (no name-first double tap).
+
+## 11. Art and PixelLab
+
+- 📌 **The walkable world's art will follow a standard** (§13, [world-spec.md](world-spec.md) §6): the
+  shared projection, a palette per setting, templates and report-only checks. Until it's agreed,
+  don't make more walkable-world art.
+- ✅ All creature, item, room, NPC and prop art is from **PixelLab** (the `pixellab` MCP in Claude
+  Code, set up with its key on each computer, never in the repo). Files are in `public/sprites/`, with
+  IDs in `public/sprites/PIXELLAB.md`.
+- **The style:** a single black outline, a dark-fantasy palette, detailed but clean shading (no noisy
+  dithering). Creatures are side-on, trimmed and mirrored to face left (battle flips the player's
+  side). Register art in `lib/sprites` (`withArt`, `ART_SIZES`). The old code-drawn grid sprites are gone (2026-11-04): an art sprite's grid is a single dot.
+- ✅ **Back views** (2026-11-04): in a fight your creature is shown from behind
+  (`public/sprites/creatures/back/`, `BACK_SIZES` and `fightSprite` in lib/sprites/creatures.ts),
+  drawn as it looks and not mirrored. 14 approved so far; the rest show their usual art, mirrored,
+  until theirs are redone and approved. Foes, and every other screen, use the usual art.
+- ✅ **Fighters on a diagonal** (the user, 2026-11-04): yours near and low on the left, the foe
+  further back, higher and smaller (`MY_SPOT`, `FOE_SPOT`, `FOE_DEPTH` 0.75 in
+  components/BattleScreen.tsx; bosses `BOSS_BACK`, `BOSS_DEPTH` 0.8 in components/BossStage.tsx).
+- **The workflow:** samples first, then the user's approval, then the full rollout. When the user
+  hands over their own art, **keep their design** and only restyle it (`edit_image_pro_flash` on
+  their upscaled image: "keep this exact …, redraw as crisp pixel art …"). Never reinterpret it
+  from a description.
+- **Recipes that worked:**
+  - creatures: `create_image_pixen`, side view, "…to the right in profile…";
+  - items: `create_image_pro_flash` 64×64 with the Void Scythe as the style image;
+  - rooms: `edit_image` over the code-drawn chamber, so the tunnels line up.
+  - Ask before using the expensive generators (`create_image_pro`, pro characters).
+- **Scale (the block standard, 2026-10-20):** the Den and its rooms draw art 1:1 (one PNG pixel =
+  one room pixel), and **1 floor block = 64px across**. Plan a prop's footprint in blocks first; its
+  width in pixels follows. The Soul Altar is 2×2 blocks (128px); Klutz is about 1 block wide and 1⅓
+  tall (69×85px) and is the yardstick for doors. The tavern is 10×5 blocks (510px), its door
+  about 130px. An isometric footprint of a×b blocks is (a+b)×32px wide.
+  - **Buildings must match the room's 2:1 angle** (walls slope 1 down for every 2 across). AI
+    generators draw their own perspective, so: draw a flat-colour block-out in code on the exact grid
+    (doors and windows where the code expects them), then `edit_image` (up to 512px, ~25
+    generations) on the block-out with an approved sample as the reference image. It keeps the
+    shape and angle and copies the look. It comes out a little gloomy: warm it in code (a gentle
+    saturation and lamp-light lift), and add the light spill as glows in the room.
+  - Don't enlarge a small draft and redraw it with pixflux: it lost the angle and the colours.
+- Hand-drawn detailed sprites in code were tried and scrapped. Don't do it again.
+- Rejected, so don't reopen: the mushroom/ruin room theme, the Mr. Shadows redraws (keep the old
+  sprite), and the parchment / MTG / wood-and-brass card styles.
+
+## 12. Online (📌 the user, 2026-10-31; accounts, cloud saves and the global registry built)
+
+The user is building online infrastructure now, so later design keeps it in mind. This is for
+playtesting with friends, not yet hardened. Backend: **Supabase**, as its own project on its own
+account, kept entirely apart from Vouchee.
+
+- 📌 **Online first, offline mode as a fallback.** The game starts normally and tries to connect.
+  With no connection it says so: online features aren't available. The player taps **Offline
+  mode** and plays the rest of the game as normal. Offline:
+  - Scans are kept as **sealed Code Caches** that open only once back online (each needs the
+    global registry to find out what it holds). They still count against scan limits.
+    ✅ Built: a barcode new to you, scanned with the registry out of reach (offline, signed out,
+    or no answer in 8 s), waits in the altar window as 🔒 Sealed (save field `sealed`, barcode
+    numbers; optional, default none). It takes one of the 9 cache spaces. Rescans of barcodes you
+    already have still give gold offline. On visiting the altar, or coming back online, each is
+    asked again and becomes an ordinary Code Cache, and the scan counts then. One that turns out
+    too rare for your explorer level is dropped, with a note (scan it again later).
+  - No trading and no PvP.
+  - Everything else (the Den, the Labyrinth, Klutz, inventory) works as now.
+- 📌 **Accounts:** for now, **Sign in with Google** (the user, 2026-10-31); the player then picks a
+  name. ✅ Built: the title screen's 🌐 box (components/AccountPanel.tsx, rules in
+  lib/online/account.ts). Signing in returns to `/start`. Names are 1–16 letters and need not be
+  unique. Signing out signs out only this device. ✅ Set up and working (2026-10-31): Google Cloud
+  project `codex-creatures`, client "Codex Creatures web". 📌 Anyone with a Google account may
+  sign in (the user, 2026-10-31: players share the game freely), so the Google app is published
+  rather than kept to a test-user list. Google needs the privacy page for that: `/privacy`
+  (app/privacy/page.tsx), which must be kept in step with what's really stored.
+  Google blocks sign-in inside apps' built-in browsers (e.g. Cursor's): use Chrome or Safari. To
+  set it up again from scratch: `npm run setup:google` (scripts/setup-google-login.mjs).
+  - **Email links** (no password) are built too but hidden (`EMAIL_LOGIN` in account.ts): Supabase's
+    own mailer only reaches the project's team. To switch them on: a domain for the game, then
+    **Resend** (approved by the user, 2026-10-31) in Supabase's SMTP settings. The link signs in
+    whichever browser opens it (the "implicit" flow: phone mail apps often use their own browser).
+  - Later, for the iPhone App Store: Apple requires Sign in with Apple alongside Google.
+- 📌 **Cloud saves:** the save syncs to the player's account, so it follows them between devices.
+  Decided (the user, 2026-10-31). ✅ Built: lib/online/cloudSave.ts (rules, tests/cloudSave.test.ts),
+  the `cloud_saves` table (supabase/migrations), synced on the title screen (app/start) and
+  uploaded while playing by components/CloudSync.tsx.
+  - 📌 **Sign in to play, one save per account** (the user, 2026-10-31): online, the title screen
+    (components/OnlineStart.tsx) asks you to sign in, then loads your account's save: no save
+    slots to pick, so there is always a cloud save. Sharing a device: sign out, and the other
+    player signs in. Underneath, each account's save is still a slot on the device (the one in
+    play when an account first signs in there, unless another account has it; otherwise a new
+    "Online" slot). Slots from before stay stored but hidden. A copy without online (the offline
+    Windows build) keeps the old slot screen (components/LocalStart.tsx).
+  - 📌 **Offline** (the user, 2026-10-31): a device that has synced for the account before (and
+    hasn't signed out) may **Play offline**, with a warning: it shows when it last synced, that
+    progress from another device may be missing, and that the newer save wins once back online
+    (this copy kept as the backup). A device that has never synced needs the internet once.
+  - **What syncs:** the game save plus battle history. Not the local barcode registry (online
+    builds use the global one instead).
+  - **The cloud wins:** signing in on a device whose online slot differs from the account's cloud
+    save loads the cloud save, with no question asked. The device's copy is kept as the backup
+    (Settings → Restore backup), so nothing is lost for good. An account with no cloud save yet
+    uploads the device's slot.
+  - Playing signed in uploads the online slot a few seconds after each change (5 s after the last,
+    at most every 30 s) and on leaving the page; with no connection it waits and uploads once back
+    online.
+  - How "differs" is told: the table counts a revision on every write, and each device remembers
+    the revision it last matched. The cloud on a newer revision wins (even over this device's own
+    unsent play); otherwise this device's play goes up. An upload only writes over the revision
+    it last saw, so if another device saved meanwhile, the game goes back to the title screen,
+    which loads the newer save. (The local barcode registry, unused online, stays per slot.)
+  - 📌 **One game at a time** (the user, 2026-11-03): tapping Play claims the account, and a game
+    running on any other device (or tab) goes back to its title screen, which says why ("Tap Play to
+    carry on here instead"). ✅ Built: the `play_sessions` table (one row per account: the tab playing
+    it, a random id per tab in sessionStorage), lib/online/playSession.ts, claimed in
+    components/OnlineStart.tsx and watched by components/CloudSync.tsx (Realtime, plus a check on
+    coming back to the tab, on coming online and before each upload). A game played offline claims
+    once back online, unless another device started after it. The stopped game's last few seconds
+    (since its last upload) stay on that device as the backup.
+  - The player name must be picked before playing (not asked again while offline).
+  - The user's own game starts fresh with cloud saves (only one game existed, the user's), so no
+    old-save migration is needed.
+- 📌 **Global registry:** the first scan of a barcode anywhere is rolled **on the server** and
+  stored, and everyone after gets that outcome (their own stat roll, as now). This makes "being
+  first" (the explorer-level cap, soul stones) work between players. It starts **empty** (a fresh
+  start, not a copy of any local registry). No global resets planned for now.
+  ✅ Built (2026-10-31): the `barcode_registry` table and the database function `scan_barcode`
+  (supabase/migrations), asked by lib/online/registry.ts. Only signed-in players may call it, and
+  nobody reads the table directly. It stores the barcode number and its outcome, and in `barcode_finders` (2026-11-01) which players
+  found it and when, one row each, so `scan_barcode` can answer `place` (you're the Nth to find it;
+  asking again never counts twice). Players only ever see their own place. The server rolls from `registry_rules`, a copy of `REGISTRY_RULES` (lib/barcodeRegistry.ts:
+  `SCAN_ODDS`, `RARITY_WEIGHTS`, the species of each rarity, weapon and armour kinds, soul stones,
+  gold 50–150). Its `registry_roll` takes the same steps as `rollFromRules`. **After changing any
+  of those** (a new species, item or soul stone, new odds), run `npm run registry:rules` and
+  apply the migration it writes. tests/registryRules.test.ts fails until the copy matches.
+  Until it's applied, the server keeps rolling from the old copy. Labyrinth chests (`CHEST_ODDS`)
+  and the altar's Random testing mode still roll on the device and register nothing.
+  - Not hardened: a player could script calls to farm fresh barcodes. Accepted for playtesting
+    (see Cheating below).
+- ✅ **Leaderboards**, the quest board's second tab (`/board`; the first is Quests, §9).
+  Boards: creature species you've owned, shown as 12/120 (the altar's "Creatures discovered": creatures and
+  cards; ✅ the user, 2026-11-02: one you've let go of still counts, kept in the save's `owned`,
+  `ownedSpecies`; older saves start from what they hold); runs started in each dungeon; wins in each
+  dungeon (a win is beating its final boss); time played (as Settings counts it, idle time left
+  out); barcodes scanned (rescans count too). Starting a new game resets them all. PvP boards come later. Signed-in players only; top
+  50 shown, plus your own rank; only named players with more than 0 are listed, ties share a rank.
+  - The game works out each player's numbers (`leaderboardStats`, lib/leaderboard.ts) and they go
+    up with the cloud save, in `cloud_saves.stats`. The server's `leaderboard(board)` ranks them
+    (supabase/migrations …_leaderboards.sql). Like the rest, not hardened against a scripted cheat.
+  - **Seasons** (resets run by the user): `select public.start_season();` in the Supabase SQL
+    editor. It notes everyone's numbers then, and runs, wins, time and scans count from there. 🧪 Species
+    don't reset (Claude's call: they're your collection; the user may want otherwise).
+- 📌 **PvP: live, each player controlling their own team.** ✅ Built (2026-11-01) as **duels with
+  a friend**; not yet tried by two real players. Rules in lib/pvp (tests/duel.test.ts), the screen
+  app/duel, the connection lib/online/duelChannel.ts.
+  - **Custom formats** (the user, 2026-11-02; lib/pvp/formats.ts): whoever invites picks the size
+    (3v3 or 5v5), the highest rarity (Rare, Epic, Legendary), the level (15 or 25) and the scaling.
+    **Default: 3v3 · Rare · up to Lv 15, not scaled** (`DEFAULT_PVP`): a creature above the level
+    fights at it, one below keeps its own level. **Scale everyone** (a toggle): every creature
+    fights at exactly the level, as all duels did before (the user, 2026-10-31: levelling isn't
+    the only edge). The creature's real level is untouched either way. A format travels as an id
+    ("3v3-rare-15", "5v5-legendary-25-scaled"); the three old ids still read, scaled.
+  - **The screen** (the user, 2026-11-01; `ineligibleReason`): a creature above the format's
+    rarity can't be picked, and nor can one wearing a weapon or armour piece above it (a Rare
+    creature with an Epic sword). Moves learned from codexes are fine. Unfit creatures show
+    greyed with the reason. A creature training in the pit shows greyed too, "In the pit".
+  - **Friends** (the user, 2026-11-01): every row on a leaderboard has ➕ to add that player to
+    your friend list (one-sided, like following: the `friends` table, `my_friends()`). 👥 on the
+    board shows the list, with 🟢 for who's in the game now (Realtime presence, "lobby"), ✕ to
+    remove, and ⚔️ Duel for those who are on. Duel shows the options (size, rarity, level,
+    scale), with how many of your creatures fit (greyed if you can't fill it).
+  - **Invites:** the challenge pops up wherever the friend is in the game
+    (components/DuelInbox.tsx), with Accept / No. It lapses after 60 s (`INVITE_SECONDS`).
+  - **The steps** (the user, 2026-11-01): bring your team (**20 s**, `PICK_SECONDS`; time out and
+    the ones you'd tapped, then the first that fit, are brought for you) → **the lead room**, a
+    dungeon room with their line-up at the back and yours at the front → the battle on the usual
+    battle screen.
+  - **Bring 2 more** (the user, 2026-11-02: the other player sees your team, so it's another way
+    to outthink them): you bring the format's size and up to 2 more (`BRING_EXTRA`: 5 for 3v3,
+    7 for 5v5). In the lead room both line-ups are shown and each picks who fights, in order (1
+    goes out first; 20 s, 🧪 Claude's number; time out and the first brought fight).
+  - 🧪 Claude's defaults, agreed by the user 2026-11-01: **30 s a move** (`TURN_SECONDS`; then a
+    steady move is made for you; 20 s to send in a replacement); **no potions or battle bag**,
+    gear only; **no rewards and no effect on the save** (no XP, gold or injuries; the duel goes
+    in your battle history); **leaving loses**, and so does being gone 30 s (`GONE_SECONDS`).
+  - **How the two browsers agree** (Claude's answer to the kink below): whoever sent the invite
+    is the host and their browser runs the fight with the usual rules; the other player's
+    choices go to it and each round's result comes back (the guest's copy is mirrored so both
+    see themselves on the left). Lost messages are sent again. Only Supabase Realtime is used:
+    no new tables for duels. Not hardened: a guest's team and the host's dice are trusted.
+  - ✅ **The PvP portal** (the user, 2026-11-04; app/pvp): a flat stone arch set into the wall, filled with a softly glowing, pulsing green flame (muted, in the cave's colours),
+    in the tavern's room, against the back-left wall, left of the Sparring/Training Pit. It's
+    there once the rubble's blown open (the second room). Tap it for three tabs: **Duel a
+    friend** (the friend list and duel options, components/FriendList.tsx, also still behind 👥
+    on the quest board), **Teams** and **Ranked**. A finished or cancelled duel goes back to the
+    portal (to the board for a player whose rubble is still shut).
+  - ✅ **PvP teams** (the user, 2026-11-04; lib/pvp/teams.ts, save field `pvpTeams`, optional,
+    default empty): 3 saved line-ups, apart from the Labyrinth's teams, each up to 7 (a 5v5 and
+    2 more), in order. Each shows its **rarest** creature or gear. When picking your team in a
+    duel, tapping a team brings its members that fit the format, in order, up to what you may
+    bring. The collector won't buy a creature in a PvP team either.
+  - ⏸️ **Ranked ladders with Elo**: shelved for now (the user, 2026-11-04). They'll live at the
+    portal; the tab shows "Coming soon". Not designed yet (format, matchmaking, K-factor, seasons).
+  - Later: challenging players who aren't friends.
+  - First playtest goal (by about 2026-11-21): the user and a friend fight each other.
+- 🧪 **Order of work** (Claude's plan): 1) Supabase project, email login, name, cloud saves, the
+  online/offline start (done, but email login waits for a domain); 2) global registry and sealed
+  caches (done), leaderboards (done); 3) live PvP (built, 2026-11-01).
+- Known kinks to solve, not decided:
+  - **Live battles need both browsers to agree.** Solved: the host's browser runs the fight
+    (see PvP above).
+  - **Cheating:** saves can be edited in the browser, so teams and scores can be faked. Accepted
+    for playtesting with friends; server checks come later.
+  - **Saves and slots:** settled, see Cloud saves above (one online slot; the cloud wins).
+  - Shared barcode lists (§2) become a real risk once the registry is global.
+
+## 13. The explorable world: architecture
+
+📌 **Approved by the user 2026-11-07; being built phase by phase.** The full detail (units,
+object definitions, the projection, occupancy, the art pipeline, saves, the phases with their
+acceptance tests, and the decisions at sign-off) is in **[world-spec.md](world-spec.md)**.
+
+**Why:** generated art kept coming out inconsistent, and each new thing in the walkable rooms was
+patched into several placers. Three art conventions share one screen today: the kit's pixels
+show 1⅓× taller than wide, characters are 32 px a cell, and props are each their own size. Room
+contents are re-worked out from the run's seed, so code changes can move things in runs already
+under way. The user wants foundations that take hundreds of assets, creatures and settings
+without rebuilding.
+
+- ✅ **The camera** (the user, 2026-11-07): a fixed three-quarter view from the south, no rotation,
+  for this game. But **gameplay never depends on it**: positions, sizes, collision, sight, light,
+  placement and saves are in world units, and a different renderer (even 3D one day) could draw
+  the same world.
+- 📌 **Layers:** world data and rules in `lib/world/` (and `lib/dungeon/`), a pure scene builder
+  and the one shared projection in `lib/render/`, and WalkView only drawing and taking taps. The
+  game logic now in WalkView moves out, as a targeted move, not a rewrite.
+- 📌 **World units:** a world unit (u), with the gameplay cell `CELL_U` u across (1 now). No
+  real-world scale is assumed. Every object has a physical **footprint**, a **world height**,
+  **visual bounds** (art may reach past its footprint) and an **anchor**. Creatures get size
+  classes.
+- 📌 **Panels and subcells** (the user, 2026-11-07): the floor tile (a **panel**, 1 u) is exactly
+  3 × 3 **subcells**. Rooms and corridors are laid out in panels; physical sizes, placement and
+  occupancy use subcells (from phase 2b; the save format from 2a). Walking stays on panels until
+  decided otherwise. Footprint, clearance, height, visual bounds and interaction access are
+  separate properties (world-spec §2).
+- 📌 **Object definitions:** one registry for every kind of thing: footprint, height, where it
+  attaches, collision, blocks sight and light, gives light, interaction points, drawing layer and
+  art.
+- 📌 **Placement:** separate kinds of space (blocking floor, walk-over floor, wall slots,
+  overhead). Doors, required paths, progression points and access to everything you use are
+  reserved, rather than every floor tile having to be reachable. Passes run in a fixed order,
+  each with its own random numbers; hand-made stamps sit alongside them.
+- 📌 **Saves:** walkable runs get a version, and what's placed is saved into the run, starting in
+  phase 2 (first, while today's placers are still live). Migrations are idempotent, and a run
+  with no `dungeon` is the Cyclops's, never the Encampment's. Old runs convert through one small,
+  isolated, tested converter with **no time limit**. It goes only on evidence that no
+  supported save needs it, or on the user's explicit decision. The old placers are kept only until a sunset after
+  phase 2; a run opened after that gets new placements from its saved layout and rooms, its
+  progress unchanged. Fixtures of saved runs are tested in every phase.
+- 📌 **Art:** a spec per setting (camera from the projection, a palette, evenly lit art, PixelLab
+  settings per kind of asset), templates drawn from the same projection the game uses, and
+  report-only checks. **Checks never recolour art, and a brightness check can only hint at
+  baked-in light.** Approval is always in the game.
+- 📌 **Phases:**
+  - 0: golden tests of today's game;
+  - 1: units, projection, definitions and the logic out of WalkView, reproducing today exactly
+    (milestone 1). No saving, versions, migrations, redesign, gameplay or art;
+  - 2: saved placements and versions first, then occupancy and the placement passes, then
+    approved behaviour fixes (foes keep their starting spots);
+  - 3: the art standard and tools;
+  - 4: the first assets to it.
+- **The reskin samples** (2026-11-07: three kits and two pillars, judged off-brief) are kept
+  only to compare against (`public/sprites/walk/samples/`, `docs/ideas/reskin-samples-2026-11-07.png`).
+  Nothing uses them.

@@ -165,7 +165,7 @@ Per-computer setup that isn't in GitHub:
 
 - Claude Code's own memory for this project lives in your user folder
   (`%USERPROFILE%\.claude\projects\…`), not in the repo. Anything both computers need is in
-  `CLAUDE.md` and `docs/design.md` instead, so Claude starts with it on either computer.
+  `CLAUDE.md` and `docs/` instead, so Claude starts with it on either computer.
 - The PixelLab connection (its API key) is set up in Claude Code on each computer. **Never put that
   key, or any other key, in this repo.** (`.gitignore` already ignores `.env*` files.)
 
@@ -180,6 +180,7 @@ Per-computer setup that isn't in GitHub:
 - `offline/`: the standalone copy's launchers (`npm run build:offline`).
 - `scripts/check-port.mjs`: stops `npm run dev` with a clear message if port 3000 is taken.
 - `Start Game.bat` / `Update.bat`: the double-click launchers (their logic is in `scripts/`).
-- `CLAUDE.md` (how to work on the project) and `docs/design.md` (the game design, and what's
-  built vs planned): these are what Claude Code reads on either computer.
+- `CLAUDE.md` (how to work on the project) and `docs/` (the game design and the walkable world's
+  spec, one file per subsystem; `docs/README.md` says what's where, `docs/roadmap.md` what's
+  planned but not built): these are what Claude Code reads on either computer.
 - `tests/`: `npm test`.

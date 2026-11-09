@@ -4,7 +4,9 @@ Passages moved out of [design.md](design.md) on 2026-10-27, word for word, so th
 description of the game as it is now. This is the long story: change rounds, superseded plans and
 old sims. **Claude: you do not need to read this file for normal work.** Look here only when the
 user asks how or why something came about, or before reopening something design.md says was tried.
-design.md wins wherever the two disagree.
+design.md wins wherever the two disagree. (Since 2026-11-09 design.md is an index over
+[design/](design/); the subsystem files win. The design and world-spec files as they were before that
+split are kept word for word in [archive/2026-11-09/](archive/2026-11-09/).)
 
 ## "Just changed" list (2026-10-26)
 
