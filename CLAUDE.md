@@ -17,7 +17,9 @@ The address: **https://codex-creatures-clean.vercel.app/**. The game itself has 
 own: everything else runs in the browser.
 
 - Next.js 16 (App Router), React 19, TypeScript, Vitest 3. **No other runtime dependency** apart
-  from `@zxing/browser` (barcode scanning) and `@supabase/supabase-js`.
+  from `@zxing/browser` (barcode scanning), `@supabase/supabase-js`, and `three` with
+  `@react-three/fiber` (approved 2026-11-10 for the 3D prototype, `/lab/three` only for now; versions
+  pinned exactly).
 - Every page is a client component. Game state is in the browser's `localStorage`.
 - Server logic lives only in the game's own Supabase project (e.g. the registry roll), kept in the
   repo (`supabase/migrations`) so it can be rebuilt. No analytics. Supabase's public (anon) key may

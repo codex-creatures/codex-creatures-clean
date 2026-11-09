@@ -19,17 +19,20 @@
     "registry:rules": "node scripts/registry-rules.mjs"
   },
   "dependencies": {
+    "@react-three/fiber": "9.8.2",
     "@supabase/supabase-js": "^2.118.0",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "three": "0.186.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "0.186.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "happy-dom": "^15.11.7",
