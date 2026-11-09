@@ -66,6 +66,14 @@ theme, Mr. Shadows redraws, parchment / MTG / wood-and-brass cards); hand-drawn 
 
 ## The walkable world
 
+### Paused (the user, 2026-11-10)
+
+While a 3D renderer (Three.js with React Three Fiber) is assessed for the walkable dungeons:
+Stage 3 of splitting app/dungeon/page.tsx (one step done: hooks/useDungeonSave.ts; next the sack
+and loot handlers, each with a played-through scenario first), the four-way 2D lighting and
+pixel-scaling experiment, and settling D, sprite sizes and the art pipeline. The 2D findings are
+kept in [world/rendering.md](world/rendering.md#47-what-todays-drawing-gets-wrong-found-2026-11-10-true-whichever-renderer-comes-next).
+
 ### Still to do
 
 - **Phase 3, the art standard and its tools:** the dungeon art spec, palette, template generator,

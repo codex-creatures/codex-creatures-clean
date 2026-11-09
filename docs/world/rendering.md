@@ -86,3 +86,28 @@ room), never gameplay. **Decided in phase 3** (the user, 2026-11-07) from two pr
 comparison renders (D = 1 and D = 0.75) with walls, creatures, props and lighting, judged on
 sprite anchors, drawing order and whether taps and interaction points still line up with what's
 drawn. The user is interested in ¾ but wants to see it first.
+
+## 4.7 What today's drawing gets wrong (found 2026-11-10; true whichever renderer comes next)
+
+Measured from the code (lib/render/scene.ts, projection.ts, lib/sprites/walk.ts), not yet fixed:
+
+- **The haze is the lighting, not the art.** The dark is one value per panel (`torchGlow`),
+  scaled up with smoothing on, so every light's edge is a soft blur a panel wide. Over it, a
+  full-screen `multiply` gradient tints everything (going cold blue-grey towards your torch's
+  edge), and your torch, burning torches, campfires and alarmed foes each add an orange `lighter`
+  wash that lifts the darks. Falloff is a smooth curve (`REMEMBERED · (d/r)^1.6`) with no fully lit
+  core, and walls aren't lit by whether they face the light.
+- **Pixels aren't one size.** The kit (48 × 36 a tile, from PixelLab's three-quarter building kits)
+  is stretched to 4/3 its height into square cells (`DEPTH` 1); the hero is 32 art px a unit, the
+  walls 48, props each their own legacy width; and the whole view is scaled by a fractional
+  amount (15 units across any screen) with nearest-neighbour pixels, so art pixels come out
+  uneven. Fine stone detail turns to mush.
+- **Little separation.** Floor, walls and props share a narrow band of dark values; kit F softened
+  the wall tops and edges further (the user's choice, 2026-11-09); props have no outline of their
+  own and no contact shadow.
+
+What follows from them, for any renderer: one art density with square pixels; light computed
+finer than a panel and drawn crisp; no full-screen tints or additive washes; a lit core before
+the falloff; surfaces lit by facing; value steps between terrain, props and characters; contact
+shadows drawn by the game. **Not decided:** D, sprite sizes and the art pipeline wait for the
+rendering architecture (the user, 2026-11-10).
