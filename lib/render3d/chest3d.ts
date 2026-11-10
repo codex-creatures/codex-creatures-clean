@@ -24,10 +24,11 @@ export const OPEN_ANGLE = 1.9;    // radians the lid turns back, open (a little 
 export const ART_PER_U = 48;
 export const ART_PITCH = Math.PI / 3;
 // (`?v=`: a new address when a picture changes, as browsers keep sprites up to an hour: next.config.ts.)
-export const ART_V = 3;
+export const ART_V = 4;
 export const ART_FACES = {
   front: { src: `/sprites/props/chest3d/front.png?v=${ART_V}`, w: 60, h: 19, lid: 6 },
   side: { src: `/sprites/props/chest3d/side.png?v=${ART_V}`, w: 38, h: 19 },
+  inside: { src: `/sprites/props/chest3d/inside.png?v=${ART_V}`, w: 60, h: 33 }, // looking down into it, open: the body's top
   top: { src: `/sprites/props/chest3d/top.png?v=${ART_V}`, w: 60, h: 33 },
 };
 

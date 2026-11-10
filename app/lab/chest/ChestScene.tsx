@@ -150,7 +150,7 @@ function useArt(edges: boolean) {
     const lam = (src: string) => leaned(new THREE.MeshLambertMaterial({ map: loaded(src) }));
     const lit = (src: string) => (edges ? src.replace(".png", "-lit.png") : src);
     const front = lam(lit(ART_FACES.front.src)), side = lam(lit(ART_FACES.side.src)), top = lam(lit(ART_FACES.top.src)), under = lam(ART_FACES.top.src.replace("top.png", "under.png"));
-    const inside = leaned(new THREE.MeshLambertMaterial({ map: standIn("gold") })), dark = leaned(new THREE.MeshLambertMaterial({ color: "#141010" }));
+    const inside = lam(ART_FACES.inside.src), dark = leaned(new THREE.MeshLambertMaterial({ color: "#141010" }));
     return { lid: [side, side, top, under, front, front], body: [side, side, inside, dark, front, front] };
   }, [edges]);
   return { art, geo, mats };

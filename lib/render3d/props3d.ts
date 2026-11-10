@@ -5,13 +5,14 @@
 import { ART_PER_U, ART_PITCH } from "./chest3d";
 
 // ── The bookcase: one box with PixelLab's flat faces, drawn square on screen at 48 a unit (as the
-// chest's), so its size comes from the pictures: 0.9 wide, 1.29 tall (the object is 1.4), 0.46 deep. (Its
-// front is cut from a whole bookcase picture, PixelLab having drawn one rather than a flat face.)
-export const BOOKCASE_V = 1; // (a new address when a picture changes: browsers keep sprites up to an hour)
+// chest's), so its size comes from the pictures: 1.25 wide, 2 tall, 0.5 deep. As tall as you look (the
+// user, 2026-11-11: "at least our character high"): your sprite is drawn stretched to stand up, so on
+// screen you're as tall as a thing about 2 units high, nearly a wall (the object's 1.4 is shorter).
+export const BOOKCASE_V = 2; // (a new address when a picture changes: browsers keep sprites up to an hour)
 export const BOOKCASE_FACES = {
-  front: { src: `/sprites/props/bookcase3d/front.png?v=${BOOKCASE_V}`, w: 43, h: 31 },
-  side: { src: `/sprites/props/bookcase3d/side.png?v=${BOOKCASE_V}`, w: 22, h: 31 },
-  top: { src: `/sprites/props/bookcase3d/top.png?v=${BOOKCASE_V}`, w: 43, h: 19 },
+  front: { src: `/sprites/props/bookcase3d/front.png?v=${BOOKCASE_V}`, w: 60, h: 48 },
+  side: { src: `/sprites/props/bookcase3d/side.png?v=${BOOKCASE_V}`, w: 24, h: 48 },
+  top: { src: `/sprites/props/bookcase3d/top.png?v=${BOOKCASE_V}`, w: 60, h: 21 },
 };
 export function bookcaseArt() {
   const F = BOOKCASE_FACES, up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);

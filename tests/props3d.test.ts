@@ -3,12 +3,12 @@ import { bookcaseArt, BOOKCASE_FACES, sackOutline, SACK_TALL, SACK_NECK } from "
 import { ART_PER_U } from "../lib/render3d/chest3d";
 
 describe("the 3D bookcase and sack drafts", () => {
-  it("the bookcase's box comes from its pictures, near the object's height (1.4)", () => {
+  it("the bookcase's box comes from its pictures, about 2 units tall (as tall as you look on screen)", () => {
     const b = bookcaseArt();
     expect(b.width * ART_PER_U).toBeCloseTo(BOOKCASE_FACES.front.w, 6);
     expect(Math.abs(b.depth * ART_PER_U - BOOKCASE_FACES.side.w)).toBeLessThan(0.5); // (its sides as deep as its top)
     expect(BOOKCASE_FACES.side.h).toBe(BOOKCASE_FACES.front.h);
-    expect(Math.abs(b.height - 1.4)).toBeLessThan(0.15);
+    expect(b.height).toBeCloseTo(2, 6);
     expect(b.width * ART_PER_U).toBeCloseTo(BOOKCASE_FACES.top.w, 6);
   });
   it("the sack is closed top and bottom, as tall as the object, narrowest at the tie", () => {

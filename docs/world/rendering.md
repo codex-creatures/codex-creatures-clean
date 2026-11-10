@@ -291,8 +291,12 @@ lean, as in the game.
 **A stash and a bookcase too (the user, 2026-11-11):** the lab's buttons pick Chest, Stash or
 Bookcase (lib/render3d/props3d.ts), each beside its flat sprite, with the same outline, lit edges and
 lean. The **bookcase** is one box with PixelLab faces (public/sprites/props/bookcase3d/), its size
-from the pictures: 0.9 × 1.29 × 0.46 u (the object is 1.4 tall; its front was cut from a whole
-bookcase PixelLab drew, so as not to stretch its pixels). The **sack** is a bag's outline turned round
+from the pictures: 1.25 × 2 × 0.5 u, brown oak (the user: "more brown wooden, at least our character
+high"). ⚠️ You look about 2 u tall: the hero sprite is drawn stretched to stand up (`uprightStretch`),
+47 art pixels of 32 a unit, so on screen it's as tall as a 3D thing about 2 u high, against the
+objects' heights in lib/world/objects.ts (the hero's 1.1, a bookcase's 1.4). The art standard will
+need one scale for both. Open, the **chest** shows its inside (`inside.png`: the rim, gold and gems),
+where it showed a stand-in gold box. The **sack** is a bag's outline turned round
 (`sackOutline`, 8 sides, flat-shaded so they show as facets: a round thing can't be boxes), 0.6 tall,
 in a burlap cloth repeated round it (public/sprites/props/sack3d/), with a rope round its neck.
 "Turned" stands any of them end on (a quarter turn), to see a chest the other way round: in the lab
