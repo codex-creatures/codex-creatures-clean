@@ -78,8 +78,12 @@ prototype's limits and **the next experiment** (camera and geometry only, in gre
 side- and south-wall techniques, lighting's technique, sprite sizes or a 3D art standard. The grey
 geometry experiment is done (`/lab/three?view=3d&geo=grey`): the geometry and camera rules are
 settled (decision 36: orthographic at 60°, lean 0.03, 2.25 u walls, a low south rim, unfound places
-black). Next, when the user says so: a small materials-and-lighting experiment on that geometry
-(its priorities and scope are in world/rendering.md §4.8, "Next experiment").
+black). The materials-and-lighting experiment is built (`/lab/three?view=3d&geo=stone`): stand-in
+textures laid flat, light from the game's own light reach, and switches comparing 32 and 48 art
+pixels a unit, texels square on screen or on the surface, art or whole-number pixel scaling,
+smooth, stepped or dithered light, and a fade or a hard edge into the unexplored. Waiting for the
+user's comparison (world/rendering.md §4.8, "Built: the Stone experiment"); then PixelLab samples
+and a short art standard.
 
 ### Paused (the user, 2026-11-10)
 

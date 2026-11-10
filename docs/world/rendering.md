@@ -179,16 +179,31 @@ draws, and no migration is approved.
   what it blocks. The renderer never feeds back into the rules. The user called this important
   for visibility, lighting and later work: keep it.
 
+### Technical approaches still to validate 🧪 (nothing here is decided)
+
+The camera and geometry candidates were settled in the grey experiment (the rules above). Still open:
+
+- **Light through rock:** Three.js point lights ignore walls unless shadows are on (cube shadow
+  maps cost six passes a light). The other candidate, lighting driven by the sim's own light reach
+  (`lightNow`) at subcell resolution, can't bleed and matches gameplay by construction. **Stone
+  tries it** (below); not adopted yet.
+- **Texture density and mapping:** source art drawn flat and square at one density, laid on the
+  geometry by the renderer from the camera, so assets carry no foreshortening. Stone compares
+  texels square on screen with square on the surface, and 32 with 48 art pixels a unit. Not decided.
+
 ### The prototype as built (2026-11-10)
 
 `/lab/three`: a made-up run held in memory, drawn by the 2D view or the 3D one from the same
-seed. Nothing is saved; the game doesn't use it. **Start from `?view=3d&geo=grey`:** the "Grey
-geometry" mode follows the rules above. The older "Kit art" mode doesn't (see its limits below).
+seed. Nothing is saved; the game doesn't use it. **Start from `?view=3d&geo=stone`** (the
+materials-and-lighting experiment, on the settled geometry) or `?view=3d&geo=grey` (the same
+geometry in flat grey). The older "Kit art" mode doesn't follow the rules above (see its limits below).
 
 | File | What |
 |---|---|
-| app/lab/three/page.tsx | the lab page. Both modes: 2D or 3D, Encampment or Labyrinth, another run, pitch, zoom (11, 15, 19 across); fps, draw calls, triangles. Grey: side walls A or B (FOV or lean), south rock full or low rim, places not found yet (solid rock, black, shown), wall height, and "Flip" (swaps a pair every second). Kit art: orthographic or perspective, screen or art pixels, torch shadows. Address: `?view=2d\|3d&geo=grey&pitch=<°>&lean=<n>&fov=<°>&south=full\|low&unseen=rock\|black\|shown&wall=<u>&across=<n>&dungeon=1&seed=<n>&seen=all&room=<kind>&camera=persp&pixels=art&shadows=1` |
+| app/lab/three/page.tsx | the lab page. All modes: 2D or 3D, Encampment or Labyrinth, another run, pitch, zoom (11, 15, 19 across); fps, draw calls, triangles, units across as drawn and the pixel scale. Stone: art density (32, 48), stand-in art (kit F or A), texels (square on screen or on the surface), pixels (screen, art, whole-number), light (smooth, stepped, dithered), edge of the unexplored (fade or hard), each with "Flip" where there are two to compare. Grey: side walls A or B (FOV or lean), south rock full or low rim, places not found yet (solid rock, black, shown), wall height, and "Flip" (swaps a pair every second). Kit art: orthographic or perspective, screen or art pixels, torch shadows. Address: `?view=2d\|3d&geo=grey\|stone&density=32\|48&kit=f\|a&texels=screen\|world&pixels=device\|art\|whole&light=smooth\|stepped\|dither&fade=0\|1&pitch=<°>&lean=<n>&fov=<°>&south=full\|low&unseen=rock\|black\|shown&wall=<u>&across=<n>&dungeon=1&seed=<n>&seen=all&room=<kind>&camera=persp&shadows=1` |
 | components/WalkView3D.tsx | the renderer: a React Three Fiber canvas, with `walkSim` for walking, sight, foes and taps (no fights or loot). Grey (`GreyRock`): one carved mesh, with the lean in its vertex shader, flat greys (`GREY`) by vertex colour, and ambient plus one directional light (`GREY_LIGHT`), rebuilt at most 4 times a second as you see more. Kit art: instanced floor tiles and wall cubes with the 2D kit F art, your torch plus a pool of 8 point lights (`LIGHT_POOL`), ambient 0.5. Both: upright sprites for you, things and foes. Its setup copies WalkView's |
+| lib/render3d/stone.ts | Stone's pure rules: `texelsPerU` (how a flat texture is laid: square on screen or on the surface), `pixelScale` (screen, art or whole-number pixels), `lightField` (the light grid, `SUB` 3 a tile, `WINDOW` 64 tiles round you: lit only where the sim's `lightNow` says and along a clear line through the floorplan; `CORE`, `FALLOFF`), `lightAt`, `seenField` (what shows, and the `FADE` into the unexplored, which never touches a black tile) |
+| tests/stone3d.test.ts | its tests, including no light through rock, none where the sim says dark, and the fade never showing a place you haven't found |
 | lib/render3d/dungeon3d.ts | pure rules: `rockHeights` (what rock shows: a height per tile, with the low rim), `carvedMesh` (the mesh from the heights: tops, and faces facing the lower side; each quad's `tile`), `SOUTH_BAND`, `SOUTH_LIP`, `ROCK_MARGIN`, `WALL_HEIGHT` 2.25, `shadeOf` (seen or never seen), and the kit-art mode's `dungeonCells`, `DEFAULT_PITCH`, `uprightStretch` |
 | tests/dungeon3d.test.ts | its tests, including that heights never change the floorplan |
 
@@ -214,11 +229,50 @@ perspective) and B (orthographic with the lean), full south rock and a low rim, 
 unfound places as rock or black, and picked the rules above (decision 36). The comparison aids stay
 in the lab: the rim's darker top (`GREY.rim`), "Flip", and unfound places "shown".
 
-### Next experiment: materials and lighting 🧪 (the user, 2026-11-10; not started)
+### Built: the Stone experiment (materials and lighting) 🧪 (2026-11-10; waiting for the user's comparison)
 
-**Small and representative, in /lab/three, on the settled geometry.** Not another large design
-exercise, and not a new art library: a few materials and a few lights, enough to judge by eye, and
-then a short art standard written from what actually works.
+**Small and representative, in /lab/three, on the settled geometry** (`?view=3d&geo=stone`): the
+grey mode's carved mesh, the lean, the camera and the sim unchanged, with stand-in textures and a
+new light. No new art and no art standard yet; the comparison comes first.
+
+- **Textures: drawn flat, laid by the renderer.** Source art is a flat, square picture of the
+  surface at one density (art pixels a unit), with no foreshortening drawn in. The shader lays it
+  by world position (floors and rock tops by x and z, faces by across and height), so density is
+  the same everywhere and nothing is mapped per tile. "Square on screen" lays floors sin(pitch) and
+  faces cos(pitch) tighter, so one art pixel shows as one square on screen at any camera; "square on
+  the surface" is the plain 3D way (the camera squashes faces to half at 60°). Either way the art
+  needn't be redrawn when the camera changes.
+- **Stand-ins:** today's 2D kits, not redrawn: floors are the kit's floor (drawn foreshortened for
+  the 2D view), wall faces the rows of its north wall under the cap, rock tops that stone again at
+  half brightness, the low rim's top the cap band. Kit F was drawn at 48 a unit, so at 32 it shows
+  1.5 times bigger (bigger pixels and bigger stones); kit A is the one set drawn at 32. A fair
+  32-against-48 judgement of detail needs art drawn at each.
+- **Pixels:** screen (the device's own), art (density × 15 canvas pixels across, blown up sharp by
+  an uneven amount, e.g. ×2.4) or whole-number (blown up a whole number of times, every art pixel
+  the same size, the units across moving to fit, e.g. 18.3 at 32 on a 1170-pixel phone). With art
+  pixels the camera moves in whole canvas pixels, so the stone doesn't crawl as you walk.
+- **Light: no Three.js lights.** A grid a subcell apart round you, lit only where the sim lit a tile
+  this frame (`lightNow`) and along a clear line through the floorplan, so never through rock and
+  never where the game says dark. Each light has a fully lit core (`CORE` 0.4 of its reach), then
+  falls off to nothing at the reach the sim uses. Your torch is kept apart so faces take it by how
+  squarely they face it; faces also darken towards their tops (the torch is lower than the wall).
+  Rock tops get a little light, the low rim nearly the floor's. Light multiplies the art (warm where
+  lit, a plain dim, `remember` 0.2, where you only remember); nothing is added over the picture.
+  Smooth, stepped (6 bands) or stepped with an ordered dither where bands meet.
+- **The unexplored:** what you've seen fades to black over 1.5 tiles towards places you haven't
+  found, or ends hard. The fade dims only what already shows; black stays black, so it never
+  gives a layout away.
+- **Sprites** take the light where they stand (you stay unlit, as in the other modes). The tuning
+  numbers are `STONE` in components/WalkView3D.tsx.
+
+**Limits:** stand-in art (above); you and the objects are 32 a unit, so at 48 they're blown up
+unevenly; no shadows from objects or creatures, and no contact shadows or darkening where floor
+meets wall yet; the light grid covers 64 tiles round you; the curve is not the 2D view's
+`torchGlow`. One draw call for the rock, as grey.
+
+**Next:** the user compares density, texel mapping, pixel scaling, light and fade in the same
+scene, on desktop and phone. Then, with their approval and reference images, a few PixelLab sample
+textures drawn flat at the chosen density, and a short art standard written from what works.
 
 The user's priorities:
 - **Textures:** sharper, more detailed and cohesive pixel art, closer to the user's reference

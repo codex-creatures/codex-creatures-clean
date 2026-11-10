@@ -155,7 +155,7 @@ kill theirs.
     `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`.
   - `world/`: the walkable world (units, grid, objects, occupancy, policy, place, placements,
     migrate, version, walkWorld, walkSim, compat). `render/`: projection and the scene builder.
-    `render3d/`: the 3D prototype's geometry (components/WalkView3D.tsx; world/rendering.md §4.8).
+    `render3d/`: the 3D prototype's geometry and its Stone mode's texture and light rules (components/WalkView3D.tsx; world/rendering.md §4.8).
   - `barcodeRegistry.ts`, `scanning.ts`, `drops.ts`, `pvp/`, `online/` (the one Supabase module
     family: client, registry, cloud saves, friends, duel channel), `klutz.ts`, `quest.ts`,
     `tavern.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`, `sprites/` (art registry).

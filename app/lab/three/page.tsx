@@ -7,8 +7,11 @@
 // camera-and-geometry experiment (world/rendering.md §4.8): solid rock, flat greys, one plain light,
 // and the two side-wall candidates, A (a narrow perspective camera) and B (orthographic, leaned).
 // It starts on the settled geometry (the user, 2026-11-10; world/rendering.md §4.8): B, lean 0.03,
-// 60°, 2.25 u walls, a low south rim, unfound places black. "Flip" swaps a
-// pair of choices every second, so a small difference shows as movement.
+// 60°, 2.25 u walls, a low south rim, unfound places black. "Stone" is the materials-and-lighting
+// experiment on that geometry: stand-in textures, light from the game's own light reach, and
+// switches for art density, how textures are laid, pixel scaling, smooth or stepped light, and the
+// fade into the unexplored. "Flip" swaps a pair of choices every second, so a small difference
+// shows as movement.
 // Dev tool: Three.js is loaded on this page only.
 
 import { useEffect, useMemo, useState } from "react";
@@ -33,17 +36,23 @@ const roll = (d: WalkDungeon, seed: number) => newWalkRun(startWalkRun(["a", "b"
 const SIXTY = Math.PI / 3;
 // The side-wall candidates, set up at 60°: A, a narrow perspective camera; B, orthographic with the lean.
 const CANDIDATES = { A: { perspective: true, fov: 20, lean: 0, pitch: SIXTY }, B: { perspective: false, fov: 20, lean: 0.03, pitch: SIXTY } };
+// Flip: a setting and the two choices it swaps between.
+type Flip = [keyof View3D, View3D[keyof View3D], View3D[keyof View3D]];
 const PITCHES = [{ label: "35°", v: (35 * Math.PI) / 180 }, { label: "¾ (48.6°)", v: DEFAULT_PITCH }, { label: "60°", v: Math.PI / 3 }, { label: "75°", v: (75 * Math.PI) / 180 }];
 
 // Settings from the address, to share or shoot a view:
 // ?view=2d|3d&pitch=<degrees>&camera=persp&pixels=art&shadows=1&across=<n>&dungeon=1&seed=<n>
 // and the grey experiment: &geo=grey (the settled geometry unless given) &fov=<degrees> &lean=<n> &south=full|low &wall=<u> &unseen=rock|black|shown
+// and Stone: &geo=stone (the settled geometry too) &density=32|48 &kit=f|a &texels=screen|world &pixels=device|art|whole &light=smooth|stepped|dither &fade=0|1
 // and, 3D only: &seen=all (everything shown as seen) &room=<kind> (start in the first room of that kind: boss, encampment, chest…)
 function fromAddress() {
   const q = new URLSearchParams(window.location.search), num = (k: string) => (q.has(k) ? Number(q.get(k)) : undefined);
-  const grey = q.get("geo") === "grey";
+  const stone = q.get("geo") === "stone", grey = stone || q.get("geo") === "grey";
+  const one = <T extends string>(k: string, of: readonly T[], or: T): T => of.find((v) => v === q.get(k)) ?? or;
   const view: View3D = { pitch: num("pitch") !== undefined ? (num("pitch")! * Math.PI) / 180 : grey ? SIXTY : DEFAULT_PITCH, perspective: q.get("camera") === "persp",
-    pixels: q.get("pixels") === "art" ? "art" : "device", shadows: q.get("shadows") === "1", across: num("across") ?? 15,
+    pixels: one("pixels", ["device", "art", "whole"] as const, stone ? "art" : "device"), shadows: q.get("shadows") === "1", across: num("across") ?? 15,
+    stone, density: num("density") === 48 ? 48 : 32, kit: one("kit", ["f", "a"] as const, "f"), texels: one("texels", ["screen", "world"] as const, "screen"),
+    light: one("light", ["smooth", "stepped", "dither"] as const, "stepped"), fade: q.get("fade") !== "0",
     grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? (grey ? CANDIDATES.B.lean : 0), south: (q.get("south") ?? (grey ? "low" : "full")) === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT,
     unseen: (["rock", "black", "shown"] as const).find((u) => u === q.get("unseen")) ?? (grey ? "black" : "rock") };
   return { three: q.get("view") !== "2d", dungeon: (num("dungeon") === 1 ? 1 : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
@@ -66,14 +75,17 @@ function ThreeLab() {
   const say = (s: string) => setLog((l) => [s, ...l].slice(0, 5));
   const reroll = (d: WalkDungeon, s: number) => { setDungeon(d); setSeed(s); setRun(roll(d, s)); setN((k) => k + 1); };
   const set = (v: Partial<View3D>) => setView((was) => ({ ...was, ...v }));
-  // Flip: swap one pair every second (south rock full ↔ low rim; unfound places rock ↔ black).
-  const [flip, setFlip] = useState<"south" | "unseen" | null>(null);
+  // Flip: swap one setting between two choices every second (e.g. south rock full ↔ low rim).
+  const [flip, setFlip] = useState<Flip | null>(null);
   useEffect(() => {
     if (!flip) return;
-    const t = setInterval(() => setView((v) => flip === "south" ? { ...v, south: v.south === "full" ? "low" : "full" } : { ...v, unseen: v.unseen === "rock" ? "black" : "rock" }), 1000);
+    const [k, a, b] = flip;
+    const t = setInterval(() => setView((v) => ({ ...v, [k]: v[k] === a ? b : a })), 1000);
     return () => clearInterval(t);
   }, [flip]);
-  const flipChip = (k: "south" | "unseen") => chip(flip === k, flip === k ? "Flipping…" : "Flip", () => setFlip((f) => (f === k ? null : k)));
+  const flipChip = (k: keyof View3D, a: View3D[keyof View3D], b: View3D[keyof View3D]) =>
+    chip(flip?.[0] === k, flip?.[0] === k ? "Flipping…" : "Flip", () => setFlip((f) => (f?.[0] === k ? null : [k, a, b])));
+  const row = (label: string, chips: React.ReactNode) => <><div style={{ fontSize: 12, opacity: 0.7 }}>{label}</div><div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{chips}</div></>;
   const chip = (on: boolean, label: string, onClick: () => void) => <button className="chip" data-active={on} onClick={onClick} style={{ minHeight: 36 }}>{label}</button>;
   const here = run.path[run.path.length - 1];
   const enter = (id: string, st: Parameters<typeof walkKeep>[1]) => { setRun((r) => walkInto(walkKeep(r, st), id)); say(`Into ${run.map.nodes[id].kind}`); };
@@ -93,10 +105,43 @@ function ThreeLab() {
         </div>
         {three && <>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {chip(!view.grey, "Kit art", () => set({ grey: false }))}
-            {chip(view.grey, "Grey geometry", () => set({ grey: true, ...CANDIDATES.B, south: "low", unseen: "black" }))}
+            {chip(!view.grey, "Kit art", () => set({ grey: false, stone: false, pixels: "device" }))}
+            {chip(view.grey && !view.stone, "Grey geometry", () => set({ grey: true, stone: false, ...CANDIDATES.B, south: "low", unseen: "black" }))}
+            {chip(view.stone, "Stone", () => set({ grey: true, stone: true, ...CANDIDATES.B, south: "low", unseen: "black", pixels: "art" }))}
           </div>
-          {view.grey && <>
+          {view.stone && <>
+            {row("Art density (art pixels a unit)", <>
+              {[32, 48].map((d) => chip(view.density === d, `${d} px`, () => set({ density: d })))}
+              {flipChip("density", 32, 48)}
+            </>)}
+            {row("Stand-in art", <>
+              {chip(view.kit === "f", "Kit F (drawn at 48)", () => set({ kit: "f" }))}
+              {chip(view.kit === "a", "Kit A (drawn at 32)", () => set({ kit: "a" }))}
+            </>)}
+            {row("Texels", <>
+              {chip(view.texels === "screen", "Square on screen", () => set({ texels: "screen" }))}
+              {chip(view.texels === "world", "Square on the surface", () => set({ texels: "world" }))}
+              {flipChip("texels", "screen", "world")}
+            </>)}
+            {row("Pixels", <>
+              {chip(view.pixels === "device", "Screen", () => set({ pixels: "device" }))}
+              {chip(view.pixels === "art", "Art (15 across)", () => set({ pixels: "art" }))}
+              {chip(view.pixels === "whole", "Whole-number", () => set({ pixels: "whole" }))}
+              {flipChip("pixels", "art", "whole")}
+            </>)}
+            {row("Light", <>
+              {chip(view.light === "smooth", "Smooth", () => set({ light: "smooth" }))}
+              {chip(view.light === "stepped", "Stepped", () => set({ light: "stepped" }))}
+              {chip(view.light === "dither", "Stepped, dithered", () => set({ light: "dither" }))}
+              {flipChip("light", "smooth", "stepped")}
+            </>)}
+            {row("Edge of the unexplored", <>
+              {chip(view.fade, "Fade", () => set({ fade: true }))}
+              {chip(!view.fade, "Hard", () => set({ fade: false }))}
+              {flipChip("fade", true, false)}
+            </>)}
+          </>}
+          {view.grey && !view.stone && <>
             <div style={{ fontSize: 12, opacity: 0.7 }}>Side walls</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {chip(view.perspective, "A: perspective", () => set(CANDIDATES.A))}
@@ -111,14 +156,14 @@ function ThreeLab() {
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {chip(view.south === "full", "Full", () => set({ south: "full" }))}
               {chip(view.south === "low", "Low rim", () => set({ south: "low" }))}
-              {flipChip("south")}
+              {flipChip("south", "full", "low")}
             </div>
             <div style={{ fontSize: 12, opacity: 0.7 }}>Places not found yet</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {chip(view.unseen === "rock", "Solid rock", () => set({ unseen: "rock" }))}
               {chip(view.unseen === "black", "Black", () => set({ unseen: "black" }))}
               {chip(view.unseen === "shown", "Shown", () => set({ unseen: "shown" }))}
-              {flipChip("unseen")}
+              {flipChip("unseen", "rock", "black")}
             </div>
             <div style={{ fontSize: 12, opacity: 0.7 }}>Wall height</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{[1.5, WALL_HEIGHT].map((v) => chip(view.wall === v, `${v} u`, () => set({ wall: v })))}</div>
@@ -134,10 +179,10 @@ function ThreeLab() {
             {chip(view.pixels === "art", "Art pixels", () => set({ pixels: "art" }))}
             {chip(view.shadows, `Torch shadows: ${view.shadows ? "on" : "off"}`, () => set({ shadows: !view.shadows }))}
           </div></>}
-          {view.grey && <div style={{ fontSize: 12, opacity: 0.6 }}>(Grey: the camera is A or B; no art or torch, so no pixel or shadow switches.)</div>}
+          {view.grey && !view.stone && <div style={{ fontSize: 12, opacity: 0.6 }}>(Grey: the camera is A or B; no art or torch, so no pixel or shadow switches.)</div>}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{[11, 15, 19].map((a) => chip(view.across === a, `${a} across`, () => set({ across: a })))}</div>
           <div className="pixel-font" style={{ fontSize: 13, color: "#9fe0a8" }}>
-            {stats ? `${stats.fps} fps · ${stats.calls} draw calls · ${(stats.triangles / 1000).toFixed(1)}k triangles · ${stats.lights} lights near` : "…"}
+            {stats ? `${stats.fps} fps · ${stats.calls} draw calls · ${(stats.triangles / 1000).toFixed(1)}k triangles · ${stats.lights} lights near · ${stats.across.toFixed(1)} across${view.pixels !== "device" && (view.stone || !view.grey) ? ` · ×${stats.scale.toFixed(2)}` : ""}` : "…"}
           </div>
         </>}
         <div style={{ fontSize: 12, opacity: 0.75 }}>{log.map((l, i) => <div key={i}>{l}</div>)}</div>
