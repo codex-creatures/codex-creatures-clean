@@ -277,7 +277,7 @@ so the boxes' sizes come from the pictures (`chestArt`: 1.25 × 0.79 × 0.79 u).
 front's end; the lid's underside is its top darkened; the gold inside is still a stand-in. Two
 pixel-art touches, each with a switch: a **one-pixel dark outline** round each box (a black copy a
 pixel bigger, drawn inside out) and **lit top edges** (the top row of each front and the lid top's
-front row, ×1.4). The stand-in's textures are now laid square on screen too (they were square on the
+front row, ×1.4, made beforehand as `front-lit.png` and `top-lit.png`; the underside is `under.png`). Each face is its part of a picture by its UVs (a copy of a texture cut before its picture loaded stayed black: the first try of this pass showed a black box). The stand-in's textures are now laid square on screen too (they were square on the
 surface, so its fronts' pixels showed half height).
 
 ### Done: the grey geometry experiment (2026-11-10)

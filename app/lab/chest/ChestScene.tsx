@@ -20,7 +20,6 @@ import { legacyU } from "@/lib/render/projection";
 const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
-const EDGE_LIGHT = 1.4;          // 🧪 how much lighter a lit top edge is
 const OLD_W = legacyU(28);       // the flat chest as the game draws it now (OBJECT_U)
 
 export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean };
@@ -57,37 +56,19 @@ function loaded(src: string, repeat = false): THREE.Texture {
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }
-// A picture with some of its rows a little lighter (the lit edges), or as drawn; `dim` darkens all of it.
-// (Its copies, cut by `region`, are told when it's loaded too: a copy keeps its own version.)
-const COPIES = new WeakMap<THREE.Texture, THREE.Texture[]>();
-function painted(src: string, lit: number[], dim = 1): THREE.CanvasTexture {
-  const c = document.createElement("canvas"), t = new THREE.CanvasTexture(c);
-  sharp(t);
-  COPIES.set(t, []);
-  const img = new Image();
-  img.onload = () => {
-    c.width = img.width; c.height = img.height;
-    const g = c.getContext("2d")!;
-    g.drawImage(img, 0, 0);
-    const px = g.getImageData(0, 0, c.width, c.height);
-    for (let y = 0; y < c.height; y++) {
-      const k = dim * (lit.includes(y) ? EDGE_LIGHT : 1);
-      if (k === 1) continue;
-      for (let x = 0; x < c.width; x++) for (let ch = 0; ch < 3; ch++) { const i = (y * c.width + x) * 4 + ch; px.data[i] = Math.min(255, px.data[i] * k); }
+// A painted box: each face shows part of a picture, columns [x0, x1) and rows [y0, y1) of a w × h
+// picture (rows counted from the top), set in the box's UVs (BoxGeometry's faces: east, west, top,
+// bottom, south, north; a top shows the picture's top row at the back).
+type Part = { w: number; h: number; x0: number; x1: number; y0: number; y1: number };
+function paintedBox(w: number, h: number, d: number, parts: Part[]): THREE.BoxGeometry {
+  const g = new THREE.BoxGeometry(w, h, d), uv = g.getAttribute("uv") as THREE.BufferAttribute;
+  parts.forEach((p, face) => {
+    for (let k = 0; k < 4; k++) {
+      const i = face * 4 + k;
+      uv.setXY(i, (p.x0 + uv.getX(i) * (p.x1 - p.x0)) / p.w, 1 - (p.y1 - uv.getY(i) * (p.y1 - p.y0)) / p.h);
     }
-    g.putImageData(px, 0, 0);
-    for (const u of [t, ...(COPIES.get(t) ?? [])]) u.needsUpdate = true;
-  };
-  img.src = src;
-  return t;
-}
-// Part of a picture: columns [x0, x1) and rows [y0, y1) of a w × h picture (rows counted from the top).
-function region(t: THREE.Texture, w: number, h: number, x0: number, x1: number, y0: number, y1: number): THREE.Texture {
-  const r = t.clone();
-  COPIES.get(t)?.push(r);
-  r.repeat.set((x1 - x0) / w, (y1 - y0) / h); r.offset.set(x0 / w, 1 - y1 / h);
-  r.needsUpdate = true;
-  return r;
+  });
+  return g;
 }
 
 // A stand-in box, its texture laid a unit of art to a unit across and square on screen: upright faces
@@ -124,23 +105,28 @@ function StandIn({ boxes, mats, outline }: { boxes: Box[]; mats: Record<ChestMat
   return <>{boxes.map((b, i) => <Solid key={i} geometry={geos[i]} material={mats[b.mat]} at={[b.x, b.y, b.z]} size={[b.w, b.h, b.d]} outline={outline} />)}</>;
 }
 
-// The painted faces, for the body and the lid (BoxGeometry's faces: east, west, top, bottom, south, north).
+// The painted body and lid: their boxes, and a material for each face. The lit edges (the top row of
+// each front, the lid top's front row) and the lid's darker underside are made beforehand, in the
+// pictures `-lit` and `under` beside the others.
 function useArt(edges: boolean) {
-  return useMemo(() => {
-    const F = ART_FACES, lam = (t: THREE.Texture) => new THREE.MeshLambertMaterial({ map: t });
-    const front = painted(F.front.src, edges ? [0, F.front.lid] : []);
-    const top = painted(F.top.src, edges ? [0] : []); // (a box's top shows the picture's top row at the front)
-    const under = painted(F.top.src, [], 0.35);
-    const fw = F.front.w, fh = F.front.h, split = F.front.lid, side = F.front.side;
-    const lidFront = region(front, fw, fh, 0, fw, 0, split), bodyFront = region(front, fw, fh, 0, fw, split, fh);
-    const lidSide = region(front, fw, fh, 0, side, 0, split), bodySide = region(front, fw, fh, 0, side, split, fh);
-    const inside = new THREE.MeshLambertMaterial({ map: standIn("gold") });
-    const dark = new THREE.MeshLambertMaterial({ color: "#141010" });
+  const art = useMemo(() => chestArt(), []);
+  const geo = useMemo(() => {
+    const F = ART_FACES, fw = F.front.w, fh = F.front.h, split = F.front.lid, side = F.front.side;
+    const front = (y0: number, y1: number, x1 = fw): Part => ({ w: fw, h: fh, x0: 0, x1, y0, y1 });
+    const top: Part = { w: F.top.w, h: F.top.h, x0: 0, x1: F.top.w, y0: 0, y1: F.top.h };
     return {
-      lid: [lam(lidSide), lam(lidSide), lam(top), lam(under), lam(lidFront), lam(lidFront)],
-      body: [lam(bodySide), lam(bodySide), inside, dark, lam(bodyFront), lam(bodyFront)],
+      lid: paintedBox(art.width, art.lid, art.depth, [front(0, split, side), front(0, split, side), top, top, front(0, split), front(0, split)]),
+      body: paintedBox(art.width, art.body, art.depth, [front(split, fh, side), front(split, fh, side), top, top, front(split, fh), front(split, fh)]),
     };
+  }, [art]);
+  const mats = useMemo(() => {
+    const lam = (src: string) => new THREE.MeshLambertMaterial({ map: loaded(src) });
+    const lit = (src: string) => (edges ? src.replace(".png", "-lit.png") : src);
+    const front = lam(lit(ART_FACES.front.src)), top = lam(lit(ART_FACES.top.src)), under = lam(ART_FACES.top.src.replace("top.png", "under.png"));
+    const inside = new THREE.MeshLambertMaterial({ map: standIn("gold") }), dark = new THREE.MeshLambertMaterial({ color: "#141010" });
+    return { lid: [front, front, top, under, front, front], body: [front, front, inside, dark, front, front] };
   }, [edges]);
+  return { art, geo, mats };
 }
 
 function Scene({ view }: { view: ChestView }) {
@@ -149,12 +135,7 @@ function Scene({ view }: { view: ChestView }) {
   useEffect(() => { setDpr(pix.dpr); }, [pix.dpr, setDpr]);
 
   const chest = useMemo(() => chestParts(view.width), [view.width]);
-  const art = useMemo(() => chestArt(), []);
-  const artMats = useArt(view.edges);
-  const artGeo = useMemo(() => ({
-    body: new THREE.BoxGeometry(art.width, art.body, art.depth),
-    lid: new THREE.BoxGeometry(art.width, art.lid, art.depth),
-  }), [art]);
+  const { art, geo: artGeo, mats: artMats } = useArt(view.edges);
   const mats = useMemo(() => {
     const m = {} as Record<ChestMat, THREE.Material>;
     for (const k of ["wood", "iron", "gold", "inside"] as ChestMat[]) m[k] = new THREE.MeshLambertMaterial({ map: standIn(k) });
