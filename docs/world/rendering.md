@@ -238,6 +238,10 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   rooms cut off behind you dimmed; a used pool dimmed; rubble falling where a tunnel fell in, with
   the shake; the witch walking (her sheet); campfires (full bright while burning) and the kit's
   candles with a flame on each lit wick.
+- **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
+  couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
+  the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,
+  sight and light are unchanged. (The 2D view showed these open too.)
 - **Taps:** the floor under the tap (where the ray from the camera meets it), as the 2D view's
   `tapCell`, measured from the box as drawn so Settings → Screen size doesn't throw it off. The
   stick's push up the screen walks 1 / sin(pitch) of floor, so you go the way it points.

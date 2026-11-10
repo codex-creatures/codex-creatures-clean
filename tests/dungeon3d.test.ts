@@ -1,8 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { dungeonCells, shadeOf, uprightStretch, rockHeights, carvedMesh, DEFAULT_PITCH, WALL_HEIGHT, SOUTH_LIP } from "../lib/render3d/dungeon3d";
+import fs from "node:fs";
+import path from "node:path";
+import { shutPlan } from "../lib/dungeon/torch";
+import { roomAt } from "../lib/dungeon/walk";
+import { dungeonCells, shadeOf, oneWayDoors, uprightStretch, rockHeights, carvedMesh, DEFAULT_PITCH, WALL_HEIGHT, SOUTH_LIP } from "../lib/render3d/dungeon3d";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { layoutFloorplan } from "../lib/dungeon/layout";
-import { newWalkRun } from "../lib/world/migrate";
+import { newWalkRun, migrateWalkRun } from "../lib/world/migrate";
 import { startWalkRun } from "../lib/dungeon/walkRun";
 
 // The 3D prototype's geometry rules (lib/render3d/dungeon3d.ts).
@@ -113,5 +117,27 @@ describe("the grey experiment: rock carved by heights", () => {
     const before = Uint8Array.from(fp.tiles);
     rockHeights(fp, all, H, true);
     expect(fp.tiles).toEqual(before);
+  });
+});
+
+describe("oneWayDoors: a tunnel up shown shut from above (drawing only)", () => {
+  const fix = (n: string) => migrateWalkRun(JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures", "walk", `${n}.json`), "utf8"))).run;
+  it("in the Cyclops part-way, the tunnels up out of open rooms below you show shut; never one you're in, or one from your room", () => {
+    const run = fix("cyclops-mid"), w = run.walk!, L = w.layout, plan = layoutFloorplan(L);
+    const live = shutPlan(plan, L, { room: w.room, line: w.line ?? Infinity });
+    const here = roomAt(plan, w.at);
+    const shut = oneWayDoors(L, live, w.at, here);
+    expect(shut.length).toBeGreaterThan(0);
+    for (const d of shut) {
+      const t = L.tunnels.find((q) => q.key === d.key)!;
+      expect(t.up).toBe(true);
+      expect(t.a).not.toBe(here);
+      for (const q of d.tiles) { expect(q.y).toBe(t.rect.y); expect(live.tiles[q.y * live.w + q.x]).not.toBe(ROCK); }
+    }
+    // Standing in a tunnel's bottom room, or inside it: that one shows open.
+    const t = L.tunnels.find((q) => q.key === shut[0].key)!;
+    const inside = { x: t.rect.x, y: t.rect.y + 1 };
+    expect(oneWayDoors(L, live, inside, roomAt(plan, inside)).some((d) => d.key === t.key)).toBe(false);
+    expect(oneWayDoors(L, live, w.at, t.a).some((d) => d.key === t.key)).toBe(false);
   });
 });

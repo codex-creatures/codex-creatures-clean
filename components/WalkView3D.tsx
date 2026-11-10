@@ -36,7 +36,7 @@ import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
 import { Stick, Warmth, WalkScroll } from "@/components/WalkView";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
-import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
+import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
 import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -253,7 +253,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   const others = { sim, live, layout, progress, frame, things: things(), room, stretch };
   if (view.stone) return (
     <>
-      <StoneRock sim={sim} live={live} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} />
+      <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} />
       {/* You, unlit, as in the other modes. */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
       <Sprites {...others} shade={(x, y) => stoneShade(field.current, x, y)} />
@@ -263,7 +263,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
     <>
       <ambientLight intensity={GREY_LIGHT.ambient} />
       <directionalLight position={GREY_LIGHT.from} intensity={GREY_LIGHT.sun} />
-      <GreyRock sim={sim} live={live} view={view} />
+      <GreyRock sim={sim} live={live} layout={layout} view={view} />
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
       <Sprites {...others} sconces={false} />
     </>
@@ -363,6 +363,11 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
   for (const r of rubbleOf(sim.plan, layout, progress).filter(showsRubble)) {
     if (!sim.falls.has(r.key) && !r.tiles.some((q) => sim.known[q.y * live.w + q.x])) continue; // never seen: just rock
     out.push(<RubbleHeap key={r.key} sim={sim} r={r} shade={shade} />);
+  }
+  // A tunnel up's top door, seen from above: shut, with rubble (dungeon3d.ts oneWayDoors).
+  for (const d of oneWayDoors(layout, live, sim.me, roomAt(sim.plan, sim.me))) {
+    if (!d.tiles.some((q) => sim.known[q.y * live.w + q.x])) continue;
+    out.push(<RubbleHeap key={`up:${d.key}`} sim={sim} r={{ key: `up:${d.key}`, room: "", tiles: d.tiles, wall: "bottom" }} shade={shade} />);
   }
   for (const c of sconces ? sim.sconces : []) {
     if (!seen(c.x, c.y) || !torchThere(sim, c)) continue;
@@ -487,10 +492,11 @@ const GREY_LIGHT = { ambient: 0.55, sun: 0.9, from: [3.5, 10, 7] as [number, num
 // The carved rock's mesh, built from what you've seen (again as you see more, 4 times a second at
 // most: about 12 ms a Labyrinth). Only the picture: the sim still walks, sees and lights by the
 // floorplan, whatever shows here. `paint`: colours a vertex (the grey mode's), if the mode wants them.
-function useCarved(sim: WalkSim, live: WalkSim["live"], view: View3D, paint?: (m: CarvedMesh, lit: Uint8Array | null) => Float32Array): THREE.BufferGeometry | null {
-  const build = () => {
+// (A tunnel up's top door, seen from above, shows shut: dungeon3d.ts oneWayDoors.)
+function useCarved(sim: WalkSim, live: WalkSim["live"], layout: Layout, view: View3D, paint?: (m: CarvedMesh, lit: Uint8Array | null) => Float32Array): THREE.BufferGeometry | null {
+  const build = (plugs: Set<number>) => {
     const known = (i: number) => view.unseen === "shown" || sim.known[i] === 1;
-    const h = rockHeights(live, (i) => live.tiles[i] !== 0 && (view.unseen !== "rock" || known(i)), view.wall, view.south === "low");
+    const h = rockHeights(live, (i) => live.tiles[i] !== 0 && !plugs.has(i) && (view.unseen !== "rock" || known(i)), view.wall, view.south === "low");
     // "black": everything's carved, and what's beside nothing you've seen is drawn black.
     const lit = view.unseen === "black" ? Uint8Array.from(shadeOf(live, sim.known), (v) => (v > 0 ? 1 : 0)) : null;
     const m = carvedMesh(h, live.w, live.h, view.wall, lit ? 0 : ROCK_MARGIN, lit ?? undefined);
@@ -503,12 +509,13 @@ function useCarved(sim: WalkSim, live: WalkSim["live"], view: View3D, paint?: (m
   };
   const [geo, setGeo] = useState<THREE.BufferGeometry | null>(null);
   useEffect(() => () => geo?.dispose(), [geo]);
-  const last = useRef({ key: "", at: -Infinity, live });
+  const last = useRef({ key: "", at: -Infinity, live, doors: "" });
   useFrame(() => {
     const now = performance.now(), key = `${sim.known.reduce((n, k) => n + k, 0)}|${view.wall}|${view.south}|${view.unseen}`;
-    if ((key !== last.current.key && now - last.current.at > 250) || live !== last.current.live) {
-      last.current = { key, at: now, live };
-      setGeo(build());
+    const shut = oneWayDoors(layout, live, sim.me, roomAt(sim.plan, sim.me)), doors = shut.map((d) => d.key).join();
+    if ((key !== last.current.key && now - last.current.at > 250) || live !== last.current.live || doors !== last.current.doors) {
+      last.current = { key, at: now, live, doors };
+      setGeo(build(new Set(shut.flatMap((d) => d.tiles.map((q) => q.y * live.w + q.x)))));
     }
   });
   return geo;
@@ -516,7 +523,7 @@ function useCarved(sim: WalkSim, live: WalkSim["live"], view: View3D, paint?: (m
 // The lean, in the vertex shader: a point moves outwards by lean × its height × how far across from you it is.
 const LEAN = "transformed.x += uLean * (transformed.x - uCx) * transformed.y;";
 
-function GreyRock({ sim, live, view }: { sim: WalkSim; live: WalkSim["live"]; view: View3D }) {
+function GreyRock({ sim, live, layout, view }: { sim: WalkSim; live: WalkSim["live"]; layout: Layout; view: View3D }) {
   const uni = useRef({ uLean: { value: 0 }, uCx: { value: 0 } });
   const mat = useMemo(() => {
     const m = new THREE.MeshLambertMaterial({ vertexColors: true });
@@ -526,7 +533,7 @@ function GreyRock({ sim, live, view }: { sim: WalkSim; live: WalkSim["live"]; vi
     };
     return m;
   }, []);
-  const geo = useCarved(sim, live, view, (m, lit) => {
+  const geo = useCarved(sim, live, layout, view, (m, lit) => {
     const col = new Float32Array(m.position.length);
     for (let q = 0; q < m.tile.length; q++) {
       const v = q * 18, ti = m.tile[q], y = m.position[v + 1], up = m.normal[v + 1] > 0.5;
@@ -666,11 +673,11 @@ void main() {
   gl_FragColor = vec4(tex * colour * (I > 0.0 ? Q / I : 0.0), 1.0);
 }`;
 
-function StoneRock({ sim, live, view, closed, frame, centre, fieldRef }: {
-  sim: WalkSim; live: WalkSim["live"]; view: View3D; closed: Uint8Array; frame: React.RefObject<Frame | null>;
+function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef }: {
+  sim: WalkSim; live: WalkSim["live"]; layout: Layout; view: View3D; closed: Uint8Array; frame: React.RefObject<Frame | null>;
   centre: React.RefObject<{ x: number; z: number }>; fieldRef: React.RefObject<LightField | null>;
 }) {
-  const geo = useCarved(sim, live, view);
+  const geo = useCarved(sim, live, layout, view);
   // The light grid and what you've seen, as textures (written into each frame, so kept in a ref).
   const grids = useRef<{ light: THREE.DataTexture; seen: THREE.DataTexture } | null>(null);
   useEffect(() => () => { grids.current?.light.dispose(); grids.current?.seen.dispose(); }, []);

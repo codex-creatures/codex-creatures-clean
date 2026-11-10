@@ -1,12 +1,14 @@
 // lib/render3d/dungeon3d.ts
 // 🧪 The 3D prototype's world-to-geometry rules (components/WalkView3D.tsx, /lab/three): which
 // tiles get a floor, which get a wall block, and how bright each shows from what you've seen.
-// Pure, so it's tested (tests/dungeon3d.test.ts) without a GPU. Nothing in the game uses it.
+// Pure, so it's tested (tests/dungeon3d.test.ts) without a GPU. The game draws its walk with it
+// (decision 38).
 //
 // One world unit (a panel, world-spec §2) is one unit in 3D: x east, z south (the floorplan's y),
 // y up. A tile's centre is at its whole-number (x, z), as positions in the sim are.
 
 import { ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
+import type { Layout } from "../dungeon/layout";
 
 // 🧪 How tall a wall block stands (u). The kit's north face is 72 rows for 48 across; at the
 // default pitch its rows show as tall as its columns are wide (square pixels) at about this height.
@@ -69,6 +71,25 @@ export const SOUTH_BAND = 2;
 export const SOUTH_LIP = 0.25;
 // 🧪 How far round the plan the rock goes on (u), so the edge of the world is never seen.
 export const ROCK_MARGIN = 24;
+
+// Tunnels up are one-way (layout.ts stepRule: an up tunnel's top door is entered only from inside
+// it), but one you've come up stays open behind you until its lower room closes. So it isn't seen as
+// a way back, its top door is shown shut (rock, with rubble) except from inside the tunnel or the room
+// below it (the user, 2026-11-10: it showed open, though you couldn't go down it). Drawing only:
+// walking, sight and light still go by the floorplan. Each such tunnel, and its top door's open tiles.
+export function oneWayDoors(layout: Layout, fp: Floorplan, me: Pt, here: string | null): { key: string; tiles: Pt[] }[] {
+  const out: { key: string; tiles: Pt[] }[] = [];
+  const x = Math.round(me.x), y = Math.round(me.y);
+  for (const t of layout.tunnels) {
+    if (!t.up || t.a === here) continue;
+    const r = t.rect;
+    if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) continue;
+    const tiles: Pt[] = [];
+    for (let q = r.x; q < r.x + r.w; q++) if (walkable(fp, q, r.y)) tiles.push({ x: q, y: r.y });
+    if (tiles.length > 0) out.push({ key: t.key, tiles });
+  }
+  return out;
+}
 
 // Each tile's height. `open` says which tiles are carved (the lab: walkable and seen, so rock
 // never gives away a place you haven't found). With `southLow`, rock just south of open floor
