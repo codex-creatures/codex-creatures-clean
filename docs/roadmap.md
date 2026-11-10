@@ -20,6 +20,8 @@ campfires, the scroll and torch, rubble, alarms, saving mid-run. The game rules 
 unchanged (the sim, layouts, placements and world versions are shared). The classic scroll-map
 dungeons are untouched. Then the user play-tests on their phone (Vercel), and the gameplay work
 starts. Kept until the 3D view has been played: components/WalkView.tsx (the 2D view) and the labs.
+Since 2026-11-11 the treasure chest, stashes, loot sacks and bookcases are drawn in 3D (the lab's
+drafts; world/rendering.md §4.8 "In the game"), the first things in the dungeon that aren't flat.
 
 **Built: people who wander, and the locators** (✅ the user, 2026-11-10, decision 39; built
 2026-11-10, world version 9, the Cyclops first): 2 witches, a merchant and a librarian walking the

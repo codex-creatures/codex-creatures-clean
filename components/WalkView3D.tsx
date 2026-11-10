@@ -41,6 +41,9 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
+import { prop3dOf, propSpot } from "@/lib/render3d/props3d";
+import { SUBCELLS } from "@/lib/world/grid";
+import { Prop3D, PROP_LEAN } from "@/components/Props3D";
 import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -252,6 +255,8 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
     camera.near = 0.1; camera.far = 200;
     camera.lookAt(target);
     camera.updateProjectionMatrix();
+    // The 3D things lean as the rock does, about the camera's centre (Props3D).
+    PROP_LEAN.uLean.value = view.grey ? view.lean : 0; PROP_LEAN.uCx.value = centre.current.x;
     // Your torch, held up.
     torch.current?.position.set(sim.me.x + 0.25, TORCH.height, sim.me.y - 0.1); // (held up beside you, not in front of your face)
     // The nearest lit lights you've seen get the pool's real lights.
@@ -369,6 +374,14 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     const walking = person && STROLLS[t.def] && artFor(STROLLS[t.def]);
     if (person && walking) {
       out.push(<Stroller key={t.key} find={() => person() ?? { ...t, facing: Math.PI, path: [] }} art={walking} w={w} stretch={stretch} shade={shade} />);
+      continue;
+    }
+    // A chest, a stash's sack or a bookcase: built in 3D, standing on its footprint (Props3D).
+    const kind = prop3dOf(t.def);
+    if (kind) {
+      const at = propSpot(t, d.footprint, SUBCELLS);
+      out.push(<group key={t.key} position={[at.x, 0, at.z]}><Prop3D kind={kind} open={t.open} colour={shade?.(t.x, t.y)} /></group>);
+      if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }
     const colour = shade?.(t.x, t.y) ?? (t.def === "pool" && t.open ? new THREE.Color(1, 1, 1) : undefined);

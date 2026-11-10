@@ -21,3 +21,30 @@ describe("the 3D bookcase and sack drafts", () => {
     expect(tie[0]).toBeLessThan(Math.max(...o.map(([r]) => r)) / 3);
   });
 });
+
+describe("the 3D props in the dungeon", () => {
+  it("the treasure chest, the sacks and the bookcases go 3D; the rickety chests stay flat", async () => {
+    const { prop3dOf } = await import("../lib/render3d/props3d");
+    expect(["chest", "sack", "loot-sack", "bookcase"].map(prop3dOf)).toEqual(["chest", "stash", "stash", "bookcase"]);
+    expect(["rickety-chest", "loot-chest", "pool", "cage"].map(prop3dOf)).toEqual([undefined, undefined, undefined, undefined]);
+  });
+  it("each stands in the middle of its footprint", async () => {
+    const { propSpot } = await import("../lib/render3d/props3d");
+    const { objectDef } = await import("../lib/world/objects");
+    const { footprintCells, subcellAt, subcellCentre, SUBCELLS } = await import("../lib/world/grid");
+    for (const def of ["chest", "sack", "bookcase"]) {
+      const at = { x: 4, y: 7 + 1 / 3 }, f = objectDef(def).footprint, s = propSpot(at, f, SUBCELLS);
+      const cells = footprintCells({ sx: subcellAt(at.x), sy: subcellAt(at.y) }, f);
+      const mid = (k: "sx" | "sy") => cells.reduce((n, c) => n + subcellCentre(c[k]), 0) / cells.length;
+      expect(s.x).toBeCloseTo(mid("sx"), 6);
+      expect(s.z).toBeCloseTo(mid("sy"), 6);
+    }
+  });
+  it("an opened sack is untied: open at the top, no higher than the tie's tuft", async () => {
+    const { sackOpenOutline } = await import("../lib/render3d/props3d");
+    const o = sackOpenOutline();
+    expect(o[0][0]).toBe(0);
+    expect(o[o.length - 1][0]).toBeGreaterThan(SACK_NECK.r);
+    expect(Math.max(...o.map(([, y]) => y))).toBeLessThan(SACK_TALL);
+  });
+});

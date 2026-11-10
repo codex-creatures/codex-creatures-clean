@@ -32,3 +32,23 @@ const SACK_OUTLINE: [number, number][] = [
 ];
 export const SACK_NECK = { y: 0.49, r: 0.075, rope: 0.022 }; // where the rope's tied, and its thickness
 export const sackOutline = (): [number, number][] => SACK_OUTLINE.map(([r, y]) => [r, y]);
+
+// Opened, the sack's neck is untied: the outline stops at the neck and flares a little into an open
+// mouth (no tuft, no rope), so you can see it's been gone through, as the flat open picture showed.
+const SACK_OPEN_OUTLINE: [number, number][] = [...SACK_OUTLINE.slice(0, 8), [0.11, 0.53], [0.13, 0.55]];
+export const sackOpenOutline = (): [number, number][] => SACK_OPEN_OUTLINE.map(([r, y]) => [r, y]);
+
+// ── In the game (the user, 2026-11-11: "getting the 3d items into the dungeon") ──
+// Which objects the walk view draws in 3D instead of their flat pictures. The rickety chests (a
+// mini boss's or boss's loot, and the rickety ones) stay flat: their look isn't the treasure chest's,
+// and they'd need their own painted faces.
+export type Prop3DKind = "chest" | "stash" | "bookcase";
+export const PROPS_3D: Record<string, Prop3DKind> = { chest: "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase" };
+export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
+
+// Where one stands: in the middle of its footprint (lib/world/grid.ts footprintCells: an even depth
+// reaches one subcell further back than forward), so its box sits on the floor it takes up.
+export function propSpot(t: { x: number; y: number }, footprint: { w: number; d: number }, subcells: number): { x: number; z: number } {
+  const off = (n: number) => (n % 2 ? 0 : -0.5 / subcells);
+  return { x: t.x + off(footprint.w), z: t.y + off(footprint.d) };
+}

@@ -241,6 +241,18 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   A fire, candle or wall torch glows (full bright, its flame, a light of the pool) only while it's
   in sight (the sim's `lightNow` where it stands, as the sim counts its light): out of sight, round a
   corner or cut off, it's drawn as dark as what's round it (the user, 2026-11-11).
+- **The chest, stashes and bookcases are 3D** (the user, 2026-11-11: "getting the 3d items into the
+  dungeon"): the treasure chest, a stash's sack, a beaten room's loot sack and the library's
+  bookcases are drawn as the lab's 3D drafts (components/Props3D.tsx, shared with /lab/chest), in
+  place of their flat pictures (lib/render3d/props3d.ts `PROPS_3D`): PixelLab faces, the outline, the
+  lit edges, and the rock's lean about the camera. Each stands in the middle of its footprint
+  (`propSpot`), facing south, unlit and tinted by the light where it stands as the sprites are. A chest
+  opened swings its lid back and shows the gold inside; a sack opened is untied (no rope, its mouth
+  open: `sackOpenOutline`). Drawing only: footprints, sight, taps and saves are unchanged. ⚠️ They're
+  the lab's sizes, not the footprints': the chest (1.25 × 0.79 u) is wider and deeper than its 1 ×
+  0.67 u footprint, and the bookcase (2 u tall, whole) is taller than its object's 1.4 and isn't the
+  broken one the flat picture showed. The rickety chests (a boss's or mini boss's loot, and the
+  rickety ones) stay flat: they'd need their own faces.
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
   couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,
@@ -255,7 +267,7 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   stands the 3D view in as it did the 2D one (its golden unchanged) and checks the page hands it
   every prop.
 
-### Draft: a 3D chest (2026-11-11; lab only, to judge)
+### Draft: a 3D chest (2026-11-11; in the game since the same day, "In the game" above)
 
 The first 3D object, to see how one looks before any goes in the dungeon (the user, 2026-11-11).
 `/lab/chest`: the chest built from boxes (lib/render3d/chest3d.ts `chestParts`: a body open at the
