@@ -8,6 +8,32 @@ out and update its file. (Gathered on 2026-11-09 from design.md and world-spec.m
 📌 decided, not built · ❓ open: the user hasn't decided (ask, don't pick) · ⏸ shelved: don't build
 unasked · ✗ dropped: don't propose again unless the user brings it back.
 
+## Current focus: gameplay (the user, 2026-11-10)
+
+For now the work is **the gameplay loop and player engagement**: playtesters should meet more
+interesting situations, real decisions, progression and surprises, not feel they've seen it all.
+- **Areas:** combat variety, creature progression, dungeon encounters, rewards, quests, Den
+  progression.
+- **How:** improve the loop, not features for their own sake. Reuse existing systems; little or no
+  new art; no architectural refactoring unless an agreed gameplay feature needs it. Keep the live
+  game stable and playable.
+- **Paused, not abandoned:** the 3D prototype and all art-style work (below, "The walkable world").
+  Its work and decisions (35–37) stay as they are; no PixelLab material samples until the user says
+  (their credits reset about 2026-11-16).
+- **Candidates from the 2026-11-10 review** (none approved yet; the user picks, one at a time):
+  1. Encounter variety inside runs: rooms holding more than one thing (📌 below) and small room
+     twists, from the existing rooms, foes and loot.
+  2. ❓ Elite foes: a den or brute foe now and then with one modifier (e.g. venomous, armoured,
+     swift, vampiric) built from existing effects, shown as a word or badge, with better loot.
+     New proposal.
+  3. The planned combat effects (📌 below: vampirism, curse/blind, fear), as codexes for you and
+     as moves foes use.
+  4. Goals after the tavern questline: bounties for the Hydra and the Abyss on the quest board
+     (the Cyclops bounty's machinery), and Den upgrades as material and gold sinks (the fireplace,
+     📌 below; its art waits for PixelLab).
+  5. ❓ Whether coming home at full health (`HEAL_AT_HOME`) turns off, so the pool, potions and
+     rotating creatures matter between runs (Open, below).
+
 ## The game
 
 ### 📌 Decided, not built
@@ -66,7 +92,12 @@ theme, Mr. Shadows redraws, parchment / MTG / wood-and-brass cards); hand-drawn 
 
 ## The walkable world
 
-### In progress: the 3D prototype (the user, 2026-11-10)
+### ⏸ Paused, not abandoned: the 3D prototype (the user, 2026-11-10)
+
+**Paused on 2026-11-10 while gameplay comes first** (the current focus, above). Everything below
+stays as it is, to pick up again when the user says: the prototype, its geometry, materials and
+lighting decisions (35–37), and the next step. Lab only throughout; the game draws with the 2D view.
+
 
 `/lab/three` (components/WalkView3D.tsx, lib/render3d/dungeon3d.ts): the walkable run drawn with
 Three.js and React Three Fiber from the same layout, placements and sim as the 2D walk view, beside
@@ -83,18 +114,21 @@ textures laid flat, light from the game's own light reach, and switches comparin
 pixels a unit, texels square on screen or on the surface, art or whole-number pixel scaling,
 smooth, stepped or dithered light, and a fade or a hard edge into the unexplored. The user picked
 48 a unit, square on screen, kit F's style, art pixels at 15 across, smooth light and the fade
-(decision 37), and Stone starts on them. Next, when the user says so: PixelLab sample textures drawn
-to those picks, then a short art standard (world/rendering.md §4.8, "Built: the Stone experiment").
+(decision 37), and Stone starts on them. **On resuming:** PixelLab sample textures drawn to those
+picks, then a short art standard (world/rendering.md §4.8, "Built: the Stone experiment").
 
 ### Paused (the user, 2026-11-10)
 
-While a 3D renderer (Three.js with React Three Fiber) is assessed for the walkable dungeons:
+Paused earlier the same day, and still paused with the 3D work. While a 3D renderer (Three.js with React Three Fiber) is assessed for the walkable dungeons:
 Stage 3 of splitting app/dungeon/page.tsx (one step done: hooks/useDungeonSave.ts; next the sack
 and loot handlers, each with a played-through scenario first), the four-way 2D lighting and
 pixel-scaling experiment, and settling D, sprite sizes and the art pipeline. The 2D findings are
 kept in [world/rendering.md](world/rendering.md#47-what-todays-drawing-gets-wrong-found-2026-11-10-true-whichever-renderer-comes-next).
 
 ### Still to do
+
+⏸ The art items here (phases 3 and 4, the art standards, art in the walkable rooms) wait with the
+3D work while gameplay comes first (the user, 2026-11-10).
 
 - **Phase 3, the art standard and its tools:** the dungeon art spec, palette, template generator,
   checks and test-room render; D for new art decided from two in-game comparisons

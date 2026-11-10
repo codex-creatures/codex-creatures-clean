@@ -276,7 +276,10 @@ unevenly; no shadows from objects or creatures, and no contact shadows or darken
 meets wall yet; the light grid covers 64 tiles round you; the curve is not the 2D view's
 `torchGlow`. One draw call for the rock, as grey.
 
-**Next, when the user says so:** a few PixelLab sample textures in kit F's style, drawn flat and
+⏸ **Paused, not abandoned** (the user, 2026-11-10): gameplay comes first for now
+([roadmap.md](../roadmap.md#current-focus-gameplay-the-user-2026-11-10)). Everything here stays.
+
+**Next, on resuming, when the user says so:** a few PixelLab sample textures in kit F's style, drawn flat and
 square at 48 a unit (floor, wall face, rock top, rim), with the user's reference images and their
 approval before any rollout; then a short art standard written from what works.
 
