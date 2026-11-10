@@ -117,9 +117,9 @@ rendering architecture (the user, 2026-11-10).
 
 ## 4.8 The 3D direction (the user, 2026-11-10)
 
-**The 2D walk view (components/WalkView.tsx) is what the game draws, and stays authoritative for
-live play. No move to 3D is approved;** §4.1–4.6 describe it. This section is where a 3D renderer
-is headed if it's adopted. It changes drawing only: world units, subcells, placements, the sim,
+**Since 2026-11-10 the game draws the walkable dungeons in 3D** (decision 38; "In the game" below),
+in Stone with decision 37's picks. The 2D walk view (components/WalkView.tsx), which §4.1–4.6
+describe, is kept until the 3D one has been played. The 3D view changes drawing only: world units, subcells, placements, the sim,
 sight and light reach stay as they are ([space.md](space.md) §1).
 
 ### Approved visual intentions 📌
@@ -201,7 +201,8 @@ geometry in flat grey). The older "Kit art" mode doesn't follow the rules above 
 | File | What |
 |---|---|
 | app/lab/three/page.tsx | the lab page. All modes: 2D or 3D, Encampment or Labyrinth, another run, pitch, zoom (11, 15, 19 across); fps, draw calls, triangles, units across as drawn and the pixel scale. Stone: art density (32, 48), stand-in art (kit F or A), texels (square on screen or on the surface), pixels (screen, art, whole-number), light (smooth, stepped, dithered), edge of the unexplored (fade or hard), each with "Flip" where there are two to compare. Grey: side walls A or B (FOV or lean), south rock full or low rim, places not found yet (solid rock, black, shown), wall height, and "Flip" (swaps a pair every second). Kit art: orthographic or perspective, screen or art pixels, torch shadows. Address: `?view=2d\|3d&geo=grey\|stone&density=32\|48&kit=f\|a&texels=screen\|world&pixels=device\|art\|whole&light=smooth\|stepped\|dither&fade=0\|1&pitch=<°>&lean=<n>&fov=<°>&south=full\|low&unseen=rock\|black\|shown&wall=<u>&across=<n>&dungeon=1&seed=<n>&seen=all&room=<kind>&camera=persp&shadows=1` |
-| components/WalkView3D.tsx | the renderer: a React Three Fiber canvas, with `walkSim` for walking, sight, foes and taps (no fights or loot). Grey (`GreyRock`): one carved mesh, with the lean in its vertex shader, flat greys (`GREY`) by vertex colour, and ambient plus one directional light (`GREY_LIGHT`), rebuilt at most 4 times a second as you see more. Kit art: instanced floor tiles and wall cubes with the 2D kit F art, your torch plus a pool of 8 point lights (`LIGHT_POOL`), ambient 0.5. Both: upright sprites for you, things and foes. Its setup copies WalkView's |
+| hooks/useWalkPlay.ts | the walk going on, everything but the drawing, set up as WalkView sets it up: placements, the sim, its events to the screen's callbacks, taps, the stick and keys, flares, saving as you leave (tests/walkPlay.test.tsx) |
+| components/WalkView3D.tsx | the renderer: a React Three Fiber canvas, played by `useWalkPlay` (fights, loot and the rest, as in the game; the lab only logs them). Grey (`GreyRock`): one carved mesh, with the lean in its vertex shader, flat greys (`GREY`) by vertex colour, and ambient plus one directional light (`GREY_LIGHT`), rebuilt at most 4 times a second as you see more. Kit art: instanced floor tiles and wall cubes with the 2D kit F art, your torch plus a pool of 8 point lights (`LIGHT_POOL`), ambient 0.5. All modes: upright sprites for you, things, foes, the witch, campfires, candles, wall torches and rubble. `GAME_VIEW`: what the game draws |
 | lib/render3d/stone.ts | Stone's pure rules: `texelsPerU` (how a flat texture is laid: square on screen or on the surface), `pixelScale` (screen, art or whole-number pixels), `lightField` (the light grid, `SUB` 3 a tile, `WINDOW` 64 tiles round you: lit only where the sim's `lightNow` says and along a clear line through the floorplan; `CORE`, `FALLOFF`), `lightAt`, `seenField` (what shows, and the `FADE` into the unexplored, which never touches a black tile) |
 | tests/stone3d.test.ts | its tests, including no light through rock, none where the sim says dark, and the fade never showing a place you haven't found |
 | lib/render3d/dungeon3d.ts | pure rules: `rockHeights` (what rock shows: a height per tile, with the low rim), `carvedMesh` (the mesh from the heights: tops, and faces facing the lower side; each quad's `tile`), `SOUTH_BAND`, `SOUTH_LIP`, `ROCK_MARGIN`, `WALL_HEIGHT` 2.25, `shadeOf` (seen or never seen), and the kit-art mode's `dungeonCells`, `DEFAULT_PITCH`, `uprightStretch` |
@@ -221,6 +222,31 @@ found it smooth on their phone.
 - In grey, screen or art pixels and torch shadows are hidden (no art or torch to change). In kit
   art at 15 across, an art pixel is only about 1 to 2 screen pixels, so art-sized pixels barely
   show.
+
+### In the game (✅ built 2026-11-10, decision 38; to play-test)
+
+Both walkable dungeons, "New: the Encampment" and "New: the Cyclops", are drawn by WalkView3D in
+Stone with `GAME_VIEW` (decision 36's geometry, decision 37's picks), in place of WalkView, with
+no switch. app/dungeon/page.tsx hands it the same props and callbacks it handed WalkView, so the run
+plays out as before (fights and the boss, loot, cages, pools and people, campfires, the scroll,
+flares, saving mid-run). Three.js loads only once you walk. The rules, sim, layouts, placements,
+world versions and saves are unchanged, and the classic dungeons untouched.
+
+- **Shared with WalkView:** the stick, the campfire window (`Warmth`) and the scroll (`WalkScroll`).
+- **Drawn as the 2D view does, in its own way:** a "!" over foes that have seen you (lit like your
+  torch, `ALARM_LIGHT`) and over cages you can open; the fade to black into a fight (`FADE_TIME`);
+  rooms cut off behind you dimmed; a used pool dimmed; rubble falling where a tunnel fell in, with
+  the shake; the witch walking (her sheet); campfires (full bright while burning) and the kit's
+  candles with a flame on each lit wick.
+- **Taps:** the floor under the tap (where the ray from the camera meets it), as the 2D view's
+  `tapCell`, measured from the box as drawn so Settings → Screen size doesn't throw it off. The
+  stick's push up the screen walks 1 / sin(pitch) of floor, so you go the way it points.
+- **Not drawn (yet):** the glow of torches, candles and fires over the dark, the pool's faint
+  glow, the green crosses round you by a fire (the window's "+" shows it), the campfire's flame
+  tongue, the dust of a fall, the lab's decor samples. Limits as Stone's, below.
+- **Tests:** tests/walkPlay.test.tsx plays the hook on the saved runs; tests/dungeonPage.test.tsx
+  stands the 3D view in as it did the 2D one (its golden unchanged) and checks the page hands it
+  every prop.
 
 ### Done: the grey geometry experiment (2026-11-10)
 

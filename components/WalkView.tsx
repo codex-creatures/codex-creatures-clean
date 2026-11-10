@@ -249,7 +249,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
 // taken out: the user, 2026-11-09). Tapping the floor to walk works as before.
 const STICK_SIZE = "min(28cqw, 120px)";
 const STICK_KNOB = 0.42; // the knob's share of the ring
-function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
+export function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
   const ring = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState<Pt>({ x: 0, y: 0 });
   const push = (e: React.PointerEvent) => {
@@ -283,7 +283,7 @@ function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
 // health bar under each going up and a "+" rising by each one getting some.
 // Taps go through it to the walk.
 const WARM_CELL = 56; // px across a creature
-function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: Warming }) {
+export function Warmth({ team, warming }: { team: Omit<PartyMember, "hp">[]; warming: Warming }) {
   return (
     <div style={{ position: "absolute", left: 8, top: 60, zIndex: 3, width: WARM_CELL, display: "flex", flexDirection: "column", gap: 6, pointerEvents: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -324,7 +324,7 @@ const SCROLL_ROOM = 1 / 0.9; // zoomed out 10% past the walls, paper either side
 // top, right, bottom, left; drawn SCROLL_PX screen px a sheet px), the map scrolling between the rolls.
 const SCROLL_SHEET = "/sprites/walk/scroll-frame.png", SCROLL_EDGE = [36, 12, 34, 12], SCROLL_PX = 1.6;
 const SCROLL_BORDER = SCROLL_EDGE.map((e) => `${e * SCROLL_PX}px`).join(" ");
-function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
+export function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
   map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress; cuts?: number[];
   been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
 }) {

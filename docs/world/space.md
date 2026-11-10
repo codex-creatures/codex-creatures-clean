@@ -18,7 +18,8 @@ Moved here word for word from world-spec.md on 2026-11-09 (the original is in [a
    - **Scene:** what to draw this frame (`lib/render/`). A list of draw commands built from the
      world and the projection. Pure and tested.
    - **Renderer:** React and canvas (`components/WalkView.tsx`). Runs the frame loop, takes
-     taps, and paints the draw list. No game rules.
+     taps, and paints the draw list. No game rules. (Since 2026-11-10 the game draws the walk in
+     3D instead, `components/WalkView3D.tsx`, played by `hooks/useWalkPlay.ts`: [rendering.md](rendering.md) §4.8.)
 3. **One projection, shared** by the renderer, the scene builder, the art template generator and
    the art checks (`lib/render/projection.ts`). Nothing else turns world sizes into pixels.
 4. **Nothing generated is lost when the code changes.** What a run places is saved with the run

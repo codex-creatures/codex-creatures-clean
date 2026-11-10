@@ -48,11 +48,14 @@ import { BattleView, loadOwnedCreatures, usePlayableBattle, MUTED, type Match, t
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
 import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
-import WalkView, { WalkMap, type WalkState } from "@/components/WalkView";
+import dynamic from "next/dynamic";
+import { WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
 import { openWalkSave, recoverWalkSave, canRecover, newWalkRun } from "@/lib/world/migrate";
 import { FLARE_WALK } from "@/lib/dungeon/torch";
 import EncounterCards from "@/components/EncounterCards";
+// The walk, drawn in 3D (decision 38): Three.js loads only once you're walking, not for the classic dungeons.
+const WalkView3D = dynamic(() => import("@/components/WalkView3D"), { ssr: false, loading: () => <div style={{ flex: 1, background: "#000" }} /> });
 import { CardsFan } from "@/components/CardStack";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
@@ -850,7 +853,7 @@ export default function DungeonPage() {
     game.questFoundClub();
   }
 
-  // ── The walkable Encampment ("New": lib/dungeon/walkRun.ts, components/WalkView.tsx) ──
+  // ── The walkable Encampment ("New": lib/dungeon/walkRun.ts, components/WalkView3D.tsx) ──
   // You walk between rooms instead of picking a tunnel; each room then plays
   // out as above. Walking into one leaves the last as you'd leave it down a
   // tunnel (an opened sack's leftovers stay on the floor).
@@ -1261,7 +1264,7 @@ export default function DungeonPage() {
   // The walk: the place itself, with the room's window, any news, and a full bag's finds over it.
   const walkView = walking && (
     <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <WalkView walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={runPosition(run)} room={(id) => walkRoom(run, id)}
+      <WalkView3D walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={runPosition(run)} room={(id) => walkRoom(run, id)}
         busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || !!won || cageShow !== undefined || walkPanel}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}

@@ -195,8 +195,10 @@ stand in it), where you stand, what you've seen, the torches you've lit, where e
 room's loot lies, your trail and cut-offs. The room you're in is the run's current room, so
 the Labyrinth screen plays it out as ever: fights (XP, level-ups, knock-outs, the battle
 history), loot into your bag, the chief's cages, the haul, retreat, losing.
-- **The screen** (`components/WalkView.tsx`, in place of the room view; `/lab/newrun` shows
-  it without a save): the mossy kit, the cloaked torchbearer (the user's pick, walking with
+- **The screen** (`components/WalkView3D.tsx` since 2026-11-10, decision 38: drawn in 3D, Stone with decision 37's picks,
+  [world/rendering.md](../world/rendering.md#48-the-3d-direction-the-user-2026-11-10); its play logic, events and taps in
+  `hooks/useWalkPlay.ts`; in place of the room view. Before, `components/WalkView.tsx`, the 2D view, kept until the 3D one
+  has been played; `/lab/newrun` still shows that one without a save): the mossy kit, the cloaked torchbearer (the user's pick, walking with
   the torch held up), 15 tiles across, torchlight, wall torches, rubble. Walking into a room
   makes it the current one; walking out leaves it as it is (`walkInto`: foes you slipped past
   stay; an opened sack's leftovers go to the floor, as down a tunnel). Seen by a room's foes,

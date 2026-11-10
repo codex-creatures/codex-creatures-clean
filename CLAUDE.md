@@ -160,7 +160,7 @@ kill theirs.
     family: client, registry, cloud saves, friends, duel channel), `klutz.ts`, `quest.ts`,
     `tavern.ts`, `save.ts`, `saveFile.ts`, `den/scene.ts`, `sprites/` (art registry).
 - `components/`: `GameScreen.tsx` (the fixed phone screen), `DenFrame`, `BattleScreen`,
-  `BossStage`, `WalkView` (the walkable renderer), `CardGallery` (`CardFace`, the card standard),
+  `BossStage`, `WalkView3D` (the walkable dungeons' renderer, 3D; its play logic in `hooks/useWalkPlay.ts`), `WalkView` (the 2D one, kept until the 3D one has been played; its stick, campfire window and scroll are shared), `CardGallery` (`CardFace`, the card standard),
   `LootWindow`, `Help.tsx` (the "?" panels), and others.
 - `public/sprites/`: all art (PixelLab), with IDs in `public/sprites/PIXELLAB.md`.
 - `offline/`: the standalone copy's builder and launchers. `tests/`: Vitest, one file per system.

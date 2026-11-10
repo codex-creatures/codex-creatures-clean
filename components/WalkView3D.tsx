@@ -1,8 +1,13 @@
 "use client";
 // components/WalkView3D.tsx
-// 🧪 The 3D prototype of the walk view (/lab/three only; the game uses components/WalkView.tsx).
-// The same walk as the 2D view: the run's layout, saved placements and the frame-by-frame sim
-// (lib/world/walkSim.ts: walking, sight, light reach, foes, taps), with only the drawing new.
+// The walk view the game draws (the user, 2026-11-10, decision 38): both walkable dungeons, "New:
+// the Encampment" and "New: the Cyclops", on the Labyrinth screen in place of the room view, in
+// Stone mode with decision 37's picks (GAME_VIEW); /lab/three tries its other modes.
+// The same walk as the 2D view (components/WalkView.tsx, kept until this one has been played),
+// set up by the same code (hooks/useWalkPlay.ts: the run's layout, saved placements and the
+// frame-by-frame sim, lib/world/walkSim.ts), and handing the screen the same callbacks: onEnter,
+// onSpotted, onObject, onCage, onHeal, onKeep (WalkView's header says what each is). The stick,
+// the campfire window and the scroll are WalkView's own. Only the drawing is new.
 // It's drawn with Three.js (React Three Fiber): the floor and wall blocks as real geometry
 // (lib/render3d/dungeon3d.ts), today's kit art as their textures, sharp (no smoothing), lit by
 // real lights (your torch, and the nearest burning torches, candles and campfires), with no
@@ -11,25 +16,24 @@
 // "Stone" (?geo=stone) is the materials-and-lighting experiment on the settled geometry: the grey
 // mode's carved rock with flat stand-in textures and no Three.js lights at all, its light taken
 // from the sim's light reach (lib/render3d/stone.ts).
-// The setup copies WalkView's (a seam to share later, if the prototype is kept).
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import type { Pt } from "@/lib/dungeon/floorplan";
-import { layoutFloorplan, type Progress } from "@/lib/dungeon/layout";
-import { walkToward, walkStick, keysPush, isWalkKey, STICK_DEAD, type CanStep } from "@/lib/dungeon/walk";
-import { shutPlan, torchReach, TORCH_RADIUS, SCONCE_RADIUS, CANDLE_RADIUS } from "@/lib/dungeon/torch";
+import { roomAt } from "@/lib/dungeon/walk";
+import { torchReach, rubbleOf, showsRubble, TORCH_RADIUS, SCONCE_RADIUS, CANDLE_RADIUS, type Rubble } from "@/lib/dungeon/torch";
 import { CAMPFIRE_LIGHT } from "@/lib/dungeon/campfire";
-import { FACINGS, walkFrame } from "@/lib/dungeon/tileArt";
-import type { DungeonId, Room } from "@/lib/dungeon/run";
-import type { WalkRun } from "@/lib/dungeon/walkRun";
-import type { DungeonMap } from "@/lib/dungeon/map";
-import { foeStarts, guarding, roomIds, thingsOf, solidCells, walkRule, tappedThing, fromRuns, type Thing } from "@/lib/world/walkWorld";
-import { placementsOfWalk } from "@/lib/world/migrate";
-import { startWalk, restartLoop, stepWalk, walkUpTo, soundAlarm, type WalkState, type WalkSim } from "@/lib/world/walkSim";
-import { objectDef, artOf, FOE_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
-import { WALK_TILES, WALK_HERO, KIT_LIGHTS, KIT_PX } from "@/lib/sprites/walk";
+import { ALARM_LIGHT, FADE_TIME } from "@/lib/dungeon/foes";
+import { FACINGS, facingOf, walkFrame } from "@/lib/dungeon/tileArt";
+import type { Room } from "@/lib/dungeon/run";
+import type { Layout, Progress } from "@/lib/dungeon/layout";
+import type { Thing } from "@/lib/world/walkWorld";
+import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
+import { objectDef, artOf, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
+import { WALK_TILES, WALK_HERO, WALK_WITCH, KIT_LIGHTS, KIT_PX } from "@/lib/sprites/walk";
+import { FALL_TIME, DUST_TIME, SHAKE_TIME } from "@/lib/render/scene";
+import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
+import { Stick, Warmth, WalkScroll } from "@/components/WalkView";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
@@ -76,91 +80,72 @@ function part(src: string, ox: number, oy: number, rx: number, ry: number): THRE
   return t;
 }
 
-export default function WalkView3D({ walk, map, dungeon = 0, here, room, view, onEnter, onLog, onStats, seeAll = false, startIn }: {
-  walk: WalkRun; map: DungeonMap; dungeon?: DungeonId; here: string;
-  seeAll?: boolean;                    // the lab: everything shown as seen (to judge a room)
-  startIn?: string;                    // the lab: start in the middle of this room
-  room: (id: string) => Room | undefined;
-  view: View3D;
-  onEnter: (id: string, state: WalkState) => void;
-  onLog: (s: string) => void;
-  onStats?: (s: Stats3D) => void;
+// What the game draws (the user, 2026-11-10: decision 36's geometry, decision 37's picks): B, the
+// orthographic camera at 60° with the lean, 2.25 u walls, a low south rim, unfound places black;
+// Stone at 48 art pixels a unit, kit F's stand-ins laid square on screen, art pixels at 15 across,
+// smooth light and the fade into the unexplored. (/lab/three's Stone starts on the same.)
+export const GAME_VIEW: View3D = { pitch: Math.PI / 3, perspective: false, pixels: "art", shadows: false, across: 15,
+  grey: true, lean: 0.03, fov: 20, south: "low", wall: WALL_HEIGHT, unseen: "black",
+  stone: true, density: 48, kit: "f", texels: "screen", light: "smooth", fade: true };
+
+export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, lit, seen, onScrollClose, ...play }: WalkPlayProps & {
+  been: string[];                      // rooms you've stood in (the scroll's marks)
+  cleared: string[];                   // …and the ones finished (crossed out)
+  lit?: string[]; seen?: string[];     // rooms a flare or a clairvoyance scroll showed (the run's)
+  onScrollClose: () => void;
+  view?: View3D;                       // the lab: another way to draw it
+  onStats?: (s: Stats3D) => void;      // the lab: how it's running
 }) {
-  // ── The walk, as WalkView sets it up ──
-  const layout = walk.layout;
-  const plan = useMemo(() => layoutFloorplan(layout), [layout]);
-  const [progress, setProgress] = useState<Progress>({ room: walk.room, line: walk.line ?? Infinity });
-  const live = useMemo(() => shutPlan(plan, layout, progress), [plan, layout, progress]);
-  const ids = useMemo(() => roomIds(layout, map), [layout, map]);
-  const [placed] = useState(() => placementsOfWalk(walk, map, dungeon, room));
-  const [sim] = useState(() => {
-    const s = startWalk(walk, plan, live, { sconces: placed.sconces, candles: placed.candles, foes: guarding(foeStarts(placed, ids, room), layout, room, dungeon, placed), npcs: placed.witches }, fromRuns(walk.known, plan.w * plan.h));
-    if (seeAll) s.known.fill(1);
-    const r = startIn ? plan.rooms[startIn]?.[0] : undefined;
-    if (r) s.me = { ...s.me, x: Math.floor(r.x + r.w / 2), y: Math.floor(r.y + r.h / 2), path: [] };
-    return s;
-  });
-  const props = useRef({ here, room, onEnter, onLog });
-  useEffect(() => { props.current = { here, room, onEnter, onLog }; });
-  const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, walk.spots, dungeon);
-  const rule = (p: Progress): CanStep => walkRule(layout, plan, p, sim.known, solidCells(things(), sim.fires, []));
-  // (The lab only says what you opened; the real screen would play it out.)
-  const openThing = (t: Thing) => { if (t.guarded) soundAlarm(sim, t.room, performance.now()); else props.current.onLog(`Opened ${t.def} in ${t.room}`); };
-  useEffect(() => { restartLoop(sim, live, {}, performance.now()); }, [sim, live]);
-  useEffect(() => { if (sim.goal) sim.me = walkToward(live, { ...sim.me, path: sim.me.path.slice(0, 1) }, sim.goal, rule(progress)); }, [live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const W = useWalkPlay(play);
+  const { sim, plan } = W, { scroll, team } = play;
+  // The camera (for taps: the scene keeps it here), and the fade into a fight over the picture.
+  const camera = useRef<THREE.Camera | null>(null);
+  const dark = useRef<HTMLDivElement>(null);
+  const frame = useRef<Frame | null>(null);
 
-  // Keys: WASD / the arrows walk, as in WalkView.
-  const keys = useRef(new Set<string>());
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => { if (isWalkKey(e.code)) { keys.current.add(e.code); e.preventDefault(); } };
-    const up = (e: KeyboardEvent) => { keys.current.delete(e.code); };
-    const drop = () => keys.current.clear();
-    window.addEventListener("keydown", down); window.addEventListener("keyup", up); window.addEventListener("blur", drop);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); window.removeEventListener("blur", drop); };
-  }, []);
-
-  // A tap on the floor: a thing beside it (walk up and use it), or walk there.
-  const tap = (p: THREE.Vector3) => {
-    if (sim.fired > 0 || sim.alarm) return;
-    const spot: Pt = { x: Math.round(p.x), y: Math.round(p.z) };
-    const can = rule(sim.progress);
-    const t = tappedThing(things(), spot, sim.known, plan.w);
-    if (t) { if (walkUpTo(sim, t, live, can) === "use") openThing(t); return; }
-    sim.goal = spot; sim.wantThing = null;
-    sim.me = walkToward(live, sim.me, spot, can);
+  // Each frame: walk on (the stick's push up the screen is 1 / sin(pitch) of floor), then the picture follows.
+  const step = (now: number) => {
+    const F = frame.current = W.step(now, 1 / Math.sin(view.pitch));
+    const A = F.alarm;
+    if (dark.current) dark.current.style.opacity = A && A.fadeAt !== null ? String(Math.min(1, (now - A.fadeAt) / (FADE_TIME * 1000))) : "0";
   };
 
-  // Each frame: walk on (the sim), then the picture follows.
-  const step = (now: number) => {
-    const S = keysPush(keys.current);
-    if (S && Math.hypot(S.x, S.y) >= STICK_DEAD && sim.fired === 0 && !sim.alarm) {
-      sim.goal = null; sim.wantThing = null;
-      let can: CanStep | null = null;
-      sim.me = walkStick(live, sim.me, S.x, S.y, (a, b) => (can ??= rule(sim.progress))(a, b));
-    }
-    const P = props.current;
-    const F = stepWalk(sim, { now, busy: false, room: P.room, here: P.here, team: [], hp: {}, things });
-    for (const e of F.events) {
-      if (e.type === "progress") setProgress(e.progress);
-      else if (e.type === "enter") P.onEnter(e.room, e.state);
-      else if (e.type === "spotted") { P.onLog(`Seen by ${e.room}'s foes: a fight`); sim.fired = 0; sim.alarm = null; }
-      else if (e.type === "use") openThing(e.thing);
-    }
+  // A tap: the floor under it (where the ray from the camera meets the floor), as the 2D view's tapCell.
+  // (Measured from the box as drawn, so Settings → Screen size's scaling doesn't throw it off.)
+  const tap = (e: React.PointerEvent<HTMLDivElement>) => {
+    const cam = camera.current;
+    if (!cam) return;
+    const box = e.currentTarget.getBoundingClientRect();
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, 1 - ((e.clientY - box.top) / box.height) * 2), cam);
+    const p = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+    if (p) W.tapAt({ x: Math.round(p.x), y: Math.round(p.z) });
   };
 
   return (
-    <Canvas key={view.perspective ? "p" : "o"} orthographic={!view.perspective} flat shadows={view.shadows ? "basic" : false}
-      gl={{ antialias: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.info.autoReset = false; /* (counted by hand: read, then reset, each frame) */ }}
-      style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
-      <World sim={sim} live={live} view={view} step={step} tap={tap} things={things} room={room} onStats={onStats} />
-    </Canvas>
+    <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%", background: "#000" }}>
+      <div onPointerDown={tap} style={{ position: "absolute", inset: 0, touchAction: "none" }}>
+        <Canvas key={view.perspective ? "p" : "o"} orthographic={!view.perspective} flat shadows={view.shadows ? "basic" : false}
+          gl={{ antialias: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.info.autoReset = false; /* (counted by hand: read, then reset, each frame) */ }}
+          style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
+          <World sim={sim} live={W.live} layout={W.layout} progress={W.progress} closed={W.closed} view={view} step={step} things={W.things} room={play.room}
+            busy={play.busy} frame={frame} cameraRef={camera} onStats={onStats} />
+        </Canvas>
+      </div>
+      <div ref={dark} aria-hidden style={{ position: "absolute", inset: 0, background: "#000", opacity: 0, pointerEvents: "none", zIndex: 2 }} />
+      {!scroll && <Stick onPush={W.push} />}
+      {W.warming && !scroll && <Warmth team={team} warming={W.warming} />}
+      {scroll && <WalkScroll map={play.map} layout={W.layout} plan={plan} known={sim.known} trail={sim.trail} progress={W.progress} cuts={sim.cuts}
+        been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
+    </div>
   );
 }
 
 // ── The world, in the scene ───────────────────────────────────────────────
-function World({ sim, live, view, step, tap, things, room, onStats }: {
-  sim: WalkSim; live: WalkSim["live"]; view: View3D; step: (now: number) => void; tap: (p: THREE.Vector3) => void;
-  things: () => Thing[]; room: (id: string) => Room | undefined; onStats?: (s: Stats3D) => void;
+function World({ sim, live, layout, progress, closed, view, step, things, room, busy, frame, cameraRef, onStats }: {
+  sim: WalkSim; live: WalkSim["live"]; layout: Layout; progress: Progress; closed: Uint8Array; view: View3D; step: (now: number) => void;
+  things: () => Thing[]; room: (id: string) => Room | undefined; busy: boolean; frame: React.RefObject<Frame | null>;
+  cameraRef: React.RefObject<THREE.Camera | null>; onStats?: (s: Stats3D) => void;
 }) {
   const { size, setDpr } = useThree();
   const cells = useMemo(() => dungeonCells(live), [live]);
@@ -207,11 +192,14 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
 
   useFrame((state) => {
     const now = performance.now(), camera = state.camera;
+    cameraRef.current = camera;
     step(now);
     // The camera on you, from the south, at the pitch.
     const zs = density * Math.sin(view.pitch);
     centre.current = snapped ? { x: Math.round(sim.me.x * density) / density, z: Math.round(sim.me.y * zs) / zs } : { x: sim.me.x, z: sim.me.y };
-    const target = new THREE.Vector3(centre.current.x, 0, centre.current.z);
+    // A tunnel falling in shakes the picture a moment (as the 2D view's SHAKE_PX, about 3 art pixels).
+    const shook = (now - sim.shakeAt) / 1000, shake = shook < SHAKE_TIME ? SHAKE_U * (1 - shook / SHAKE_TIME) : 0;
+    const target = new THREE.Vector3(centre.current.x + (shake ? (Math.random() * 2 - 1) * shake : 0), 0, centre.current.z + (shake ? (Math.random() * 2 - 1) * shake : 0));
     const back = new THREE.Vector3(0, Math.sin(view.pitch), Math.cos(view.pitch));
     if (camera instanceof THREE.OrthographicCamera) {
       camera.position.copy(target).addScaledVector(back, 60);
@@ -227,7 +215,7 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
     // Your torch, held up.
     torch.current?.position.set(sim.me.x + 0.25, TORCH.height, sim.me.y - 0.1); // (held up beside you, not in front of your face)
     // The nearest lit lights you've seen get the pool's real lights.
-    const lit = litLights(sim, live);
+    const lit = litLights(sim, live, frame.current);
     pool.current.forEach((pl, i) => {
       if (!pl) return;
       const l = lit[i];
@@ -245,7 +233,7 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
     }
     // You: your sheet's frame for the way you face, standing up on your feet.
     if (hero.current) {
-      const cols = heroTex[0].length, moving = sim.me.path.length > 0;
+      const cols = heroTex[0].length, moving = sim.me.path.length > 0 && !busy;
       const col = cols > 1 ? walkFrame(sim.walked, moving, WALK_HERO.frames) + 1 : 0;
       (hero.current.material as THREE.MeshBasicMaterial).map = heroTex[FACINGS.indexOf(sim.facing)][col];
       const w = WALK_HERO.cell / KIT_PX, h = w * stretch, below = (1 - WALK_HERO.feet / WALK_HERO.cell) * h;
@@ -262,21 +250,22 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
     state.gl.info.reset();
   });
 
+  const others = { sim, live, layout, progress, frame, things: things(), room, stretch };
   if (view.stone) return (
     <>
-      <StoneRock sim={sim} live={live} view={view} tap={tap} centre={centre} fieldRef={field} />
+      <StoneRock sim={sim} live={live} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} />
       {/* You, unlit, as in the other modes. */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
-      <Sprites sim={sim} live={live} things={things()} room={room} stretch={stretch} shade={(x, y) => stoneShade(field.current, x, y)} />
+      <Sprites {...others} shade={(x, y) => stoneShade(field.current, x, y)} />
     </>
   );
   if (view.grey) return (
     <>
       <ambientLight intensity={GREY_LIGHT.ambient} />
       <directionalLight position={GREY_LIGHT.from} intensity={GREY_LIGHT.sun} />
-      <GreyRock sim={sim} live={live} view={view} tap={tap} />
+      <GreyRock sim={sim} live={live} view={view} />
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
-      <Sprites sim={sim} live={live} things={things()} room={room} stretch={stretch} sconces={false} />
+      <Sprites {...others} sconces={false} />
     </>
   );
   return (
@@ -284,50 +273,99 @@ function World({ sim, live, view, step, tap, things, room, onStats }: {
       <ambientLight color="#8a93b8" intensity={AMBIENT} />
       <pointLight ref={torch} color={TORCH.colour} intensity={TORCH.power} distance={TORCH_RADIUS * 1.6} decay={TORCH.decay} castShadow={view.shadows} shadow-mapSize={[512, 512]} />
       {Array.from({ length: LIGHT_POOL }, (_, i) => <pointLight key={i} ref={(l) => { pool.current[i] = l; }} color={FIRE.colour} intensity={0} decay={FIRE.decay} />)}
-      <instancedMesh key={`f${cells.floor.length}`} ref={floorRef} args={[floorGeo, mats.floor, cells.floor.length]} receiveShadow
-        onPointerDown={(e) => { e.stopPropagation(); tap(e.point); }} />
+      <instancedMesh key={`f${cells.floor.length}`} ref={floorRef} args={[floorGeo, mats.floor, cells.floor.length]} receiveShadow raycast={() => null} />
       <instancedMesh key={`w${cells.walls.length}`} ref={wallRef} args={[wallGeo, mats.walls, cells.walls.length]} castShadow receiveShadow raycast={() => null} />
       {/* You, unlit: the player always reads clearly, whatever the light. */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
-      <Sprites sim={sim} live={live} things={things()} room={room} stretch={stretch} />
+      <Sprites {...others} />
     </>
   );
 }
 
-// The lit lights you've seen (wall torches, candles, campfires), nearest you first.
-function litLights(sim: WalkSim, live: WalkSim["live"]): { x: number; y: number; r: number }[] {
+// The lit lights you've seen (wall torches, candles, campfires), and the foes that have seen you
+// (lit up like your torch: the sim's ALARM_LIGHT), nearest you first.
+function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: number; y: number; r: number }[] {
   return [
-    ...sim.sconces.filter((c) => c.lit).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
+    ...sim.sconces.filter((c) => c.lit && torchThere(sim, c)).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
     ...sim.candles.filter((c) => c.lit).map((c) => ({ x: c.x, y: c.y, r: CANDLE_RADIUS })),
     ...sim.fires.map((f) => ({ x: f.x, y: f.y, r: f.left > 0 ? CAMPFIRE_LIGHT : CAMPFIRE_LIGHT / 2 })),
+    ...(F?.alarmed ?? []).map((f) => ({ x: f.x, y: f.y, r: ALARM_LIGHT })),
   ].filter((l) => sim.known[Math.round(l.y) * live.w + Math.round(l.x)])
     .sort((a, b) => Math.hypot(a.x - sim.me.x, a.y - sim.me.y) - Math.hypot(b.x - sim.me.x, b.y - sim.me.y));
 }
 
 // Things, foes and wall torches: upright pictures, sized from their definitions (lib/world/objects.ts).
 // `shade` (Stone): the colour of the light where each stands, as there are no Three.js lights to light them.
-function Sprites({ sim, live, things, room, stretch, sconces = true, shade }: { sim: WalkSim; live: WalkSim["live"]; things: Thing[]; room: (id: string) => Room | undefined; stretch: number; sconces?: boolean; shade?: (x: number, y: number) => THREE.Color }) {
+// As the 2D view (lib/render/scene.ts): things you've seen (people only while lit, unless solid), a
+// used pool dimmed, a "!" over each cage you can open; foes while lit, or all of a room that's seen you,
+// with a "!" over each; the card witch walking about; campfires and candles; rubble where a tunnel fell.
+// Foes and the witch follow the sim every frame (the list itself is shown again now and then).
+const CAMPFIRE = objectDef("campfire");
+const FLAME_COLOUR = "#ffd27a";
+const DIM_POOL = 0.6;                  // a used pool's picture, this bright (the 2D view's)
+const SHAKE_U = 0.09;                  // u: the picture's shake as a tunnel falls in (the 2D view's 3 art pixels at 32 a unit)
+const RUBBLE = { colours: ["#5b5560", "#6f6872", "#48434d"], size: 0.22, drop: 3 }; // the 2D view's stones; fallen from `drop` u up
+function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sconces = true, shade }: {
+  sim: WalkSim; live: WalkSim["live"]; layout: Layout; progress: Progress; frame: React.RefObject<Frame | null>; things: Thing[];
+  room: (id: string) => Room | undefined; stretch: number; sconces?: boolean; shade?: (x: number, y: number) => THREE.Color;
+}) {
   const seen = (x: number, y: number) => sim.known[Math.round(y) * live.w + Math.round(x)] === 1;
   const lightNow = (x: number, y: number) => sim.lightNow[Math.round(y) * live.w + Math.round(x)] === 1;
+  const A = frame.current?.alarm ?? sim.alarm;
   const out: React.ReactNode[] = [];
   for (const t of things) {
-    if (!seen(t.x, t.y)) continue;
+    if (!seen(t.x, t.y) || (t.npc && !lightNow(t.x, t.y) && !t.solid)) continue;
     const d = objectDef(t.def), a = artOf(d, t.state ?? (t.open ? "open" : "shut"));
+    const witch = t.def === "witch" ? sim.npcs.find((n) => n.room === t.room) : undefined;
+    if (witch) { out.push(<Witch key={t.key} sim={sim} room={t.room} stretch={stretch} shade={shade} />); continue; }
     if (!a) continue;
     const b = d.visual.bounds, w = b.left + b.right, h = (b.up + b.down) * stretch;
-    out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={shade?.(t.x, t.y)} />);
+    const colour = shade?.(t.x, t.y) ?? (t.def === "pool" && t.open ? new THREE.Color(1, 1, 1) : undefined);
+    if (t.def === "pool" && t.open) colour?.multiplyScalar(DIM_POOL);
+    out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={colour} />);
+    if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
   }
   for (const f of sim.foes) {
-    if (!lightNow(f.x, f.y) && !sim.alarm) continue;
+    const alarmed = !!A && f.room === A.room;
+    if (!lightNow(f.x, f.y) && !alarmed) continue;
     const r = room(f.room), e = r?.enemies?.[f.index];
     const sprite = r?.boss ? CREATURE_SPRITES[r.boss] : e && CREATURE_SPRITES[e.creatureId], a = sprite && artFor(sprite);
     if (!a) continue;
     const tall = FOE_U * (f.waits ? (r?.boss ? BOSS_SCALE : CHIEF_SCALE) : 1) * stretch, wd = (tall / stretch) * (a.w / a.h);
-    const flip = (Math.cos(f.facing) > 0.1) !== (a.faces === "right");
-    out.push(<Upright key={`foe:${f.room}:${f.index}`} src={a.src} x={f.x} y={f.y} w={flip ? -wd : wd} h={tall} below={0} colour={shade?.(f.x, f.y)} />);
+    // (The sim swaps a foe for a moved copy each step: find it again by its room and place in it.)
+    const now = () => sim.foes.find((g) => g.room === f.room && g.index === f.index) ?? f;
+    out.push(<Upright key={`foe:${f.room}:${f.index}`} src={a.src} x={f.x} y={f.y} w={wd} h={tall} below={0} colour={shade?.(f.x, f.y)}
+      follow={() => { const g = now(); return { x: g.x, y: g.y, flip: (Math.cos(g.facing) > 0.1) !== (a.faces === "right") }; }} />);
+    if (alarmed) out.push(<Mark key={`!foe:${f.room}:${f.index}`} at={now} up={tall + 0.25} pop={A!.at} />);
+  }
+  for (const f of sim.fires) {
+    if (!seen(f.x, f.y)) continue;
+    // A fire glows whatever's round it: drawn full bright while it burns, its embers lit as the rest.
+    const a = artOf(CAMPFIRE, f.left > 0 ? "lit" : "out")!, b = CAMPFIRE.visual.bounds;
+    out.push(<Upright key={`fire:${f.room}`} src={a.src} x={f.x} y={f.y} w={b.left + b.right} h={(b.up + b.down) * stretch} below={b.down * stretch}
+      colour={f.left > 0 ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(f.x, f.y)} />);
+  }
+  for (const c of sim.candles) {
+    if (!seen(c.x, c.y)) continue;
+    // The kit's candles, the 2D view's size against the walls' art (CANDLE_ART 0.85), a flame on each wick when lit.
+    const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch;
+    out.push(
+      <group key={c.id}>
+        <Upright src={KIT_LIGHTS.candles} x={c.x} y={c.y} w={w} h={h} below={0} colour={c.lit ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
+        {c.lit && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
+          <mesh key={i} raycast={() => null} position={[c.x - w / 2 + wx * k, h - wy * k * stretch + 0.04, c.y + 0.06]} scale={[0.05, 0.09, 1]}>
+            <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
+          </mesh>
+        ))}
+      </group>,
+    );
+  }
+  for (const r of rubbleOf(sim.plan, layout, progress).filter(showsRubble)) {
+    if (!sim.falls.has(r.key) && !r.tiles.some((q) => sim.known[q.y * live.w + q.x])) continue; // never seen: just rock
+    out.push(<RubbleHeap key={r.key} sim={sim} r={r} shade={shade} />);
   }
   for (const c of sconces ? sim.sconces : []) {
-    if (!seen(c.x, c.y)) continue;
+    if (!seen(c.x, c.y) || !torchThere(sim, c)) continue;
     const side = c.wall === "left" ? -1 : c.wall === "right" ? 1 : 0;
     const [tw, th] = KIT_LIGHTS.torchSize, w = tw / ART_PER_U, h = th / ART_PER_U;
     const x = c.x + side * 0.49, z = side ? c.y : c.y - 0.49, rot = side ? -side * (Math.PI / 2) : 0;
@@ -345,14 +383,100 @@ function Sprites({ sim, live, things, room, stretch, sconces = true, shade }: { 
 
 // A picture standing upright at (x, y) on the floor, facing the camera's way (south), lit by the
 // lights, or (`colour`, Stone) tinted by the light where it stands.
-function Upright({ src, x, y, w, h, below, colour }: { src: string; x: number; y: number; w: number; h: number; below: number; colour?: THREE.Color }) {
+// `follow`: where it stands now (and whether it's turned round), read every frame, for one that walks.
+function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: number; y: number; w: number; h: number; below: number; colour?: THREE.Color;
+  follow?: () => { x: number; y: number; flip?: boolean } }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    const m = mesh.current, at = follow?.();
+    if (!m || !at) return;
+    m.position.set(at.x, h / 2 - below, at.y + 0.05);
+    m.scale.x = at.flip ? -w : w;
+  });
   return (
-    <mesh raycast={() => null} position={[x, h / 2 - below, y + 0.05]} scale={[w, h, 1]}>
+    <mesh ref={mesh} raycast={() => null} position={[x, h / 2 - below, y + 0.05]} scale={[w, h, 1]}>
       <planeGeometry />
       {colour
         ? <meshBasicMaterial map={texture(src)} alphaTest={0.5} side={THREE.DoubleSide} color={colour} />
         : <meshLambertMaterial map={texture(src)} alphaTest={0.5} side={THREE.DoubleSide} />}
     </mesh>
+  );
+}
+
+// The card witch walking about her room (a sheet like the hero's: still, then her walk; south, east
+// and north, west being east turned round), facing the way she goes, at NPC_U tall.
+function Witch({ sim, room, stretch, shade }: { sim: WalkSim; room: string; stretch: number; shade?: (x: number, y: number) => THREE.Color }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  const S = WALK_WITCH, cols = S.frames + 1, rows = 3;
+  const frames = useMemo(() => Array.from({ length: rows }, (_, row) => Array.from({ length: cols }, (_, col) => part(S.sheet, col / cols, 1 - (row + 1) / rows, 1 / cols, 1 / rows))), [S.sheet, cols]);
+  const size = (NPC_U / S.tall) * S.cell, below = ((S.cell - S.feet) / S.cell) * size * stretch;
+  useFrame(() => {
+    const m = mesh.current, n = sim.npcs.find((q) => q.room === room);
+    if (!m || !n) return;
+    const face = facingOf(Math.cos(n.facing), Math.sin(n.facing), "south");
+    const col = n.path.length > 0 ? 1 + (Math.floor(performance.now() / 130) % S.frames) : 0;
+    const mat = m.material as THREE.MeshBasicMaterial;
+    mat.map = frames[["south", "east", "north"].indexOf(face === "west" ? "east" : face)][col];
+    if (shade) mat.color = shade(n.x, n.y);
+    m.scale.set(face === "west" ? -size : size, size * stretch, 1);
+    m.position.set(n.x, (size * stretch) / 2 - below, n.y + 0.05);
+  });
+  return <mesh ref={mesh} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>;
+}
+
+// A "!" over something (a foe that's seen you, a cage you can open), bobbing; popping up from `pop` (ms).
+const MARK = (() => {
+  let t: THREE.CanvasTexture | null = null;
+  return () => {
+    if (t || typeof document === "undefined") return t;
+    const c = document.createElement("canvas");
+    c.width = 32; c.height = 48;
+    const g = c.getContext("2d");
+    if (!g) return null;
+    g.font = "bold 44px sans-serif"; g.textAlign = "center"; g.textBaseline = "bottom";
+    g.lineWidth = 5; g.strokeStyle = "#1a0e05"; g.fillStyle = "#ffd23f";
+    g.strokeText("!", 16, 46); g.fillText("!", 16, 46);
+    t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  };
+})();
+function Mark({ at, up, pop }: { at: () => { x: number; y: number }; up: number; pop?: number }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    const m = mesh.current, p = at(), now = performance.now();
+    if (!m) return;
+    const k = pop === undefined ? 1 : Math.min(1, (now - pop) / 150);
+    m.position.set(p.x, up + 0.12 * Math.abs(Math.sin(now / (pop === undefined ? 200 : 120))), p.y + 0.1);
+    m.scale.set(0.35 * k, 0.52 * k, 1);
+  });
+  return <mesh ref={mesh} raycast={() => null} renderOrder={2}><planeGeometry /><meshBasicMaterial map={MARK()} transparent depthTest={false} /></mesh>;
+}
+
+// Rubble where a tunnel fell in (the 2D view's: five stones a tile, a little into the room), falling in
+// from above as it happens; then the sim forgets the fall (as the 2D view's `settled`).
+function RubbleHeap({ sim, r, shade }: { sim: WalkSim; r: Rubble; shade?: (x: number, y: number) => THREE.Color }) {
+  const group = useRef<THREE.Group>(null);
+  const into = r.wall === "top" ? 0.7 : -0.7; // (out in front of the rock it left)
+  useFrame(() => {
+    const fell = sim.falls.get(r.key), age = fell === undefined ? Infinity : (performance.now() - fell) / 1000;
+    if (age > DUST_TIME && fell !== undefined) sim.falls.delete(r.key);
+    if (group.current) group.current.position.y = age < FALL_TIME ? (1 - age / FALL_TIME) ** 2 * RUBBLE.drop : 0;
+  });
+  return (
+    <group ref={group}>
+      {r.tiles.flatMap((q) => Array.from({ length: 5 }, (_, k) => {
+        const rx = ((q.x * 7 + q.y * 13 + k * 29) % 10) / 10 - 0.5, ry = ((q.x * 11 + q.y * 5 + k * 17) % 10) / 10 - 0.5;
+        const c = new THREE.Color(RUBBLE.colours[k % 3]);
+        if (shade) c.multiply(shade(q.x, q.y + into));
+        const s = RUBBLE.size + 0.05 * (k % 2);
+        return (
+          <mesh key={`${q.x},${q.y},${k}`} raycast={() => null} position={[q.x + rx * 0.8, s * 0.5 * (1 + k * 0.15), q.y + into + ry * 0.5]} scale={[s, s * 0.7, s * 0.75]}>
+            <icosahedronGeometry args={[1, 0]} /><meshBasicMaterial color={c} />
+          </mesh>
+        );
+      }))}
+    </group>
   );
 }
 
@@ -389,12 +513,10 @@ function useCarved(sim: WalkSim, live: WalkSim["live"], view: View3D, paint?: (m
   });
   return geo;
 }
-// Taps count on the floor only (a tap on rock's top would land on the wrong tile).
-const floorTap = (tap: (p: THREE.Vector3) => void) => (e: { point: THREE.Vector3; stopPropagation: () => void }) => { if (e.point.y < 0.01) { e.stopPropagation(); tap(e.point); } };
 // The lean, in the vertex shader: a point moves outwards by lean × its height × how far across from you it is.
 const LEAN = "transformed.x += uLean * (transformed.x - uCx) * transformed.y;";
 
-function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"]; view: View3D; tap: (p: THREE.Vector3) => void }) {
+function GreyRock({ sim, live, view }: { sim: WalkSim; live: WalkSim["live"]; view: View3D }) {
   const uni = useRef({ uLean: { value: 0 }, uCx: { value: 0 } });
   const mat = useMemo(() => {
     const m = new THREE.MeshLambertMaterial({ vertexColors: true });
@@ -416,7 +538,7 @@ function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"
   });
   useFrame(() => { uni.current.uLean.value = view.lean; uni.current.uCx.value = sim.me.x; });
   if (!geo) return null;
-  return <mesh geometry={geo} material={mat} onPointerDown={floorTap(tap)} />;
+  return <mesh geometry={geo} material={mat} raycast={() => null} />;
 }
 
 // ── 🧪 Stone: the carved rock with flat stand-in textures, lit from the sim's light reach (lib/render3d/stone.ts) ──
@@ -424,6 +546,7 @@ function GreyRock({ sim, live, view, tap }: { sim: WalkSim; live: WalkSim["live"
 // apart, never through rock) and what you've seen, and shades each surface by which way it faces.
 // Light multiplies the art (warm where it's lit, a plain dim where you only remember); nothing is
 // added over the picture, so no wash or haze.
+const CLOSED_DIM = 0.4; // a room cut off behind you shows this bright (the 2D view's dimming)
 const STONE = {
   remember: 0.2,     // 🧪 how bright a place you've seen but isn't lit now shows (a plain dim, no tint)
   gain: 1.25,        // 🧪 full light: the art a little brighter than drawn (the kits are drawn dark)
@@ -543,8 +666,8 @@ void main() {
   gl_FragColor = vec4(tex * colour * (I > 0.0 ? Q / I : 0.0), 1.0);
 }`;
 
-function StoneRock({ sim, live, view, tap, centre, fieldRef }: {
-  sim: WalkSim; live: WalkSim["live"]; view: View3D; tap: (p: THREE.Vector3) => void;
+function StoneRock({ sim, live, view, closed, frame, centre, fieldRef }: {
+  sim: WalkSim; live: WalkSim["live"]; view: View3D; closed: Uint8Array; frame: React.RefObject<Frame | null>;
   centre: React.RefObject<{ x: number; z: number }>; fieldRef: React.RefObject<LightField | null>;
 }) {
   const geo = useCarved(sim, live, view);
@@ -581,7 +704,7 @@ function StoneRock({ sim, live, view, tap, centre, fieldRef }: {
     if (now - last.current.light > 33) {
       last.current.light = now;
       const torch: Light3D = { x: sim.me.x, y: sim.me.y, r: torchReach(sim.flareLeft), power: 1 };
-      const lights = litLights(sim, live).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
+      const lights = litLights(sim, live, frame.current).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
       const f = fieldRef.current = lightField(live, sim.lightNow, torch, lights, sim.me.x, sim.me.y, WINDOW, fieldRef.current ?? undefined);
       fillGrid(tex.light, f.torch, f.other);
       u.uWin.value.set(f.x0 - 0.5, f.y0 - 0.5, f.size);
@@ -592,11 +715,13 @@ function StoneRock({ sim, live, view, tap, centre, fieldRef }: {
     if ((key !== last.current.seen && now - last.current.seenAt > 250) || live !== last.current.live || fresh) {
       last.current = { ...last.current, seen: key, seenAt: now, live };
       const s = seenField(live, sim.known, view.unseen, view.fade ? undefined : 0);
+      // Rooms cut off behind you, dimmed (as the 2D view's).
+      if (closed.length === s.fade.length) for (let i = 0; i < closed.length; i++) if (closed[i]) s.fade[i] *= CLOSED_DIM;
       fillGrid(tex.seen, s.fade, s.shown);
     }
   });
   if (!geo) return null;
-  return <mesh ref={mesh} geometry={geo} onPointerDown={floorTap(tap)} />;
+  return <mesh ref={mesh} geometry={geo} raycast={() => null} />;
 }
 
 // The shader's settings, filled in each frame from the view (STONE's numbers to start).

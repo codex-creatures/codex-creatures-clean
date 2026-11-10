@@ -191,7 +191,10 @@ function ThreeLab() {
       <div className="game-screen" style={{ height: "calc(100dvh - 24px)", width: "min(100%, calc((100dvh - 24px) * 9 / 16))", border: "1px solid #333" }}>
         <div className="screen-scale" style={{ position: "relative" }}>
           {three
-            ? <WalkView3D key={n} walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={here} room={(id) => walkRoom(run, id)} view={view} onEnter={enter} onLog={say} onStats={setStats}
+            ? <WalkView3D key={n} walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={here} room={(id) => walkRoom(run, id)} view={view} onStats={setStats} busy={false}
+                been={run.path} cleared={run.cleared} scroll={false} onScrollClose={() => {}} team={TEAM} hp={run.hp}
+                onEnter={enter} onSpotted={(id) => say(`Seen by ${id}'s foes: a fight`)} onObject={(id) => say(`Opened ${id}'s ${run.map.nodes[id].kind}`)}
+                onCage={(id, i) => say(`Opened cage ${i + 1} in ${id}`)} onHeal={() => {}} onKeep={(st) => setRun((r) => walkKeep(r, st))}
                 seeAll={start.seeAll} startIn={start.roomKind && n === 0 ? Object.keys(run.map.nodes).find((id) => run.map.nodes[id].kind === start.roomKind) : undefined} />
             : <WalkView key={n} walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={here} room={(id) => walkRoom(run, id)} busy={false}
                 been={run.path} cleared={run.cleared} scroll={false} onScrollClose={() => {}} team={TEAM} hp={run.hp}

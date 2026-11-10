@@ -199,7 +199,7 @@ describe("one way in (world-spec §7: the migration boundary)", () => {
     recoverWalkSave: ["app/dungeon/page.tsx"],
     placedRun: ["app/lab/baseline/BaselineScenes.tsx"],
     newWalkRun: ["app/dungeon/page.tsx", "app/lab/newrun/page.tsx", "app/lab/three/page.tsx"],
-    placementsOfWalk: ["components/WalkView.tsx", "components/WalkView3D.tsx"], // (the 3D prototype reads them as the walk view does)
+    placementsOfWalk: ["components/WalkView.tsx", "hooks/useWalkPlay.ts"], // (the 2D walk view, and the 3D one's play logic: the same reading)
   };
   it("the migration is reached only through its named doors", () => {
     const bad: string[] = [];

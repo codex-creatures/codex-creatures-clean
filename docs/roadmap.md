@@ -10,8 +10,8 @@ unasked · ✗ dropped: don't propose again unless the user brings it back.
 
 ## Current focus: gameplay (the user, 2026-11-10)
 
-**First, before the gameplay work: the 3D migration of the walkable dungeons** (📌 the user,
-2026-11-10, decision 38). Both walkable dungeons in the game, "🔥 New: the Encampment" and
+**First, before the gameplay work: the 3D migration of the walkable dungeons** (the user,
+2026-11-10, decision 38; ✅ built 2026-11-10, waiting for the user's play-test: world/rendering.md §4.8 "In the game"). Both walkable dungeons in the game, "🔥 New: the Encampment" and
 "🔥 New: the Cyclops", are drawn by the 3D view instead of the 2D one: a full migration, no switch.
 The 3D view (components/WalkView3D.tsx, Stone mode with decision 37's picks: 48 a unit, square on
 screen, kit F stand-in textures, art pixels at 15 across, smooth light, the fade; today's flat

@@ -36,6 +36,11 @@ vi.mock("@/components/DungeonRoomView", () => ({
 vi.mock("@/components/WalkView", () => ({
   default: () => <div data-stub="walk" />, WalkFirstMap: () => <div data-stub="walk-first-map" />, WalkMap: () => <div data-stub="walk-map" />,
 }));
+// The walk the game draws (3D, decision 38): stood in for like the 2D one, keeping what the page handed it.
+const walkProps: { last: Record<string, unknown> | null } = { last: null };
+vi.mock("@/components/WalkView3D", () => ({
+  default: (p: Record<string, unknown>) => { walkProps.last = p; return <div data-stub="walk" />; },
+}));
 const outcome = { next: "A" as "A" | "B" };
 vi.mock("@/components/BattleScreen", async (orig) => {
   const real = await orig<typeof import("@/components/BattleScreen")>();
@@ -206,6 +211,9 @@ async function playWalk() {
   note("the scroll's first look");
   await tap("Put the scroll away and begin"); note("walking");
   expect(document.querySelector("[data-stub='walk']")).not.toBeNull();
+  // The 3D walk is handed everything the 2D one was: the run, the rooms, the windows over it, and each callback.
+  for (const k of ["walk", "map", "here", "room", "busy", "been", "cleared", "scroll", "team", "hp", "onScrollClose", "onEnter", "onSpotted", "onObject", "onCage", "onHeal", "onKeep"]) expect(walkProps.last?.[k], k).toBeDefined();
+  expect(walkProps.last?.busy).toBe(false);
   await unmount(); await mount(); note("reloaded");
   await tap("🏃 Retreat"); await tap("Tap: leave"); note("retreated");
   await tap("Continue"); note("home");
