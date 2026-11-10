@@ -341,21 +341,28 @@ others. A new world version (9): runs already made keep today's rules.
   here…".
 - **The rooms they leave:** more creature rooms (you can sneak past foes, so more dens keep about
   as many fights on the way up), and more campfires (they fit the theme best), some with a stash
-  beside them. ❓ The numbers are still to set.
-- **The witches:** each has her own game and winnings. While you can play her she gives off a
-  candle's light; once you've played (won or lost) she doesn't. Both can give illnesses, and
-  illnesses stack. (Today a run holds one illness: lib/dungeon/run.ts `illness`.)
-- **Locators** (rare finds in chests and stashes; the merchant sells them too):
+  beside them: **half of campfires** have a stash. ❓ The room mix is still to set.
+- **Candle light:** every wandering person (witches, the merchant, the librarian) gives off a
+  candle's light. A witch's goes out once you've played her (won or lost).
+- **The witches:** each has her own game and winnings. Both can give illnesses, and illnesses
+  stack: each counts down on its own, so two on one creature hurt twice as much. (Today a run holds
+  one illness: lib/dungeon/run.ts `illness`, 15% of max HP for each of the next 3 actions.)
+- **The librarian** always starts in the large library, then wanders like the others. The large
+  library no longer sometimes holds a librarian of its own selling books: it's the wandering one.
+  The library keeps its codexes lying about (sometimes), and has a **locator lectern**: using it
+  finds the librarian as the librarian locator does (the scroll shows where they are, or "It appears
+  that they are no longer here…" if they're cut off). So the loop: find the library, maybe free
+  books, often the librarian there; if not, the lectern shows where they went.
+- **Locators** (rare finds: **5% per chest or stash**, one of the three at random; the merchant
+  sells **one**, at **200 gold**):
   - **Merchant map**: where the merchant is;
   - **Crystal ball**: where a witch is (always the closest one you can still reach);
   - **Librarian locator**: where the librarian is.
   
   Using one opens the scroll with that person's icon at exactly where they are, among the rooms'
   marks: it shows nothing else (no rooms or tunnels). Opening the scroll again shows where they
-  are now, if they've moved.
-- ❓ **Still to set:** the new room mix (above), how often a campfire has a stash, the locators' drop
-  chance and price, whether a used locator lasts the rest of the run, whether the large library
-  still sometimes holds its own librarian, and what stacked illnesses on one creature do.
+  are now, if they've moved. A locator is **used once and then works for the rest of the run**.
+- ❓ **Still to set:** the new room mix (above).
 
 ## Later
 
