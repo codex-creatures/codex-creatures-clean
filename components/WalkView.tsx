@@ -31,6 +31,7 @@ import { shutPlan, fallenSoFar, FLARE_WALK } from "@/lib/dungeon/torch";
 import { CAMPFIRE_HEAL } from "@/lib/dungeon/campfire";
 import { ROOM_INFO, type DungeonId, type Room } from "@/lib/dungeon/run";
 import type { WalkRun } from "@/lib/dungeon/walkRun";
+import type { Person } from "@/lib/dungeon/people";
 import type { DungeonMap } from "@/lib/dungeon/map";
 import { walkView, tapCell, DEPTH } from "@/lib/render/projection";
 import { buildScene } from "@/lib/render/scene";
@@ -324,9 +325,10 @@ const SCROLL_ROOM = 1 / 0.9; // zoomed out 10% past the walls, paper either side
 // top, right, bottom, left; drawn SCROLL_PX screen px a sheet px), the map scrolling between the rolls.
 const SCROLL_SHEET = "/sprites/walk/scroll-frame.png", SCROLL_EDGE = [36, 12, 34, 12], SCROLL_PX = 1.6;
 const SCROLL_BORDER = SCROLL_EDGE.map((e) => `${e * SCROLL_PX}px`).join(" ");
-export function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, onClose, onPick }: {
+// people: who your locators find (decision 39), each shown by their icon where they stand, and nothing else.
+export function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [], been, here, at, cleared, lit, seen, people = [], onClose, onPick }: {
   map: DungeonMap; layout: WalkRun["layout"]; plan: ReturnType<typeof layoutFloorplan>; known: Uint8Array; trail: Pt[]; progress?: Progress; cuts?: number[];
-  been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; onClose?: () => void; onPick?: (id: string) => void;
+  been: string[]; here: string | null; at?: Pt; cleared: string[]; lit?: string[]; seen?: string[]; people?: Person[]; onClose?: () => void; onPick?: (id: string) => void;
 }) {
   const [shown] = useState(() => {
     // What's drawn: what you've seen, and the rooms a clairvoyance scroll looked into (walls and all).
@@ -356,7 +358,7 @@ export function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [
     const marks: ScrollMark[] = scrollMarks(map, layout, been, here, foreseen(map, layout, lit, seen));
     // Across: the furthest walls, with a tile of paper either side, then zoomed out (SCROLL_ROOM) for paper to spare.
     const fit = right + 3 - (left - 2), vw = fit * SCROLL_ROOM;
-    return { ink, shut, marks, trail: trail.slice(), x0: left - 2 - (vw - fit) / 2, vw };
+    return { ink, shut, marks, people: people.map((q) => ({ ...q, at: { ...q.at } })), trail: trail.slice(), x0: left - 2 - (vw - fit) / 2, vw };
   });
   // Opened at you (or your room).
   const box = useRef<HTMLDivElement>(null);
@@ -386,6 +388,12 @@ export function WalkScroll({ map, layout, plan, known, trail, progress, cuts = [
             </g>
           );
         })}
+        {shown.people.map((q) => (
+          <g key={q.id}>
+            <circle cx={q.at.x + 0.5} cy={q.at.y + 0.5} r={3.6} fill={INK.mark} stroke={INK.you} strokeWidth={0.9} strokeDasharray="1.4 0.8" />
+            <text x={q.at.x + 0.5} y={q.at.y + 0.5} textAnchor="middle" dominantBaseline="central" fontSize={4.2} fill={INK.text}>{ROOM_INFO[q.kind].icon}</text>
+          </g>
+        ))}
       </svg>
     </div>
     </div>

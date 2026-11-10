@@ -31,7 +31,7 @@ wants foundations that take hundreds of assets, creatures and settings without r
   and interaction access, from one registry of definitions (`lib/world/objects.ts`). ✅
 - **Placement:** separate kinds of space, reservations instead of "every tile reachable", fixed
   passes each on their own random numbers. ✅ (Stamps: format only.)
-- **Saves:** what's placed is saved in the run, with a world version (now **8**). Old runs never
+- **Saves:** what's placed is saved in the run, with a world version (now **9**). Old runs never
   change: they keep the rules they were made with. Migrations are idempotent; an older client never
   overwrites newer world state. ✅
 - **Art:** a standard per setting, templates from the same projection, report-only checks,

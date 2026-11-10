@@ -41,7 +41,7 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
 import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, RACE_CODEX_MOVES } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, randomCodexOfRarity, RACE_CODEX_MOVES } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
 import { unsupportedRun } from "../world/version";
@@ -66,7 +66,8 @@ export const SCROLL_LOOKS = 2;
 export const scrollLooksLeft = (run: { scrollLooks?: number }) => Math.max(0, SCROLL_LOOKS - (run.scrollLooks ?? 0));
 
 export type RoomKind = "entrance" | "treasure" | "easy" | "pool" | "hard" | "chest" | "stash" | "librarian" | "merchant" | "cards" | "miniboss" | "witch" | "boss" | "campfire" /* the walkable Labyrinth: half the pools share (campfire.ts) */
-  | "encampment" | "library" | "storehouse"; // (the large rooms: LARGE_MIX)
+  | "encampment" | "library" | "storehouse" // (the large rooms: LARGE_MIX)
+  | "empty" | "bookcase"; // (the walkable Labyrinth from world version 9, decision 39: a small room with nothing in it; a library's broken bookcase)
 
 // ── The dungeons ─────────────────────────────────────────────────────
 // 0: the Encampment, a new player's first labyrinth (the user, 2026-10-27):
@@ -241,6 +242,19 @@ export const MYSTERY_MIX: [RoomKind, number][] = [
   ["easy", 7], ["pool", 7], ["hard", 6], ["chest", 6], ["stash", 6],
 ];
 
+// The walkable Labyrinth's mixes (decision 39, the user, 2026-11-10): its
+// witches, merchant and librarian wander (lib/dungeon/people.ts) instead of
+// having rooms. Their shares went to dens (40 → 45) and a campfire share of 5
+// (on top of the half of pools drawn as campfires: layout.ts CAMPFIRE_SHARE);
+// a "?"'s witch, librarian and merchant (18) to dens, brutes and campfires, +6 each.
+export const WALK_ROOM_MIX: [RoomKind, number][] = [
+  ["easy", 45], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["campfire", 5],
+];
+export const WALK_MYSTERY_MIX: [RoomKind, number][] = [
+  ["miniboss", 45], ["cards", 5], ["campfire", 6],
+  ["easy", 13], ["pool", 7], ["hard", 12], ["chest", 6], ["stash", 6],
+];
+
 export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   entrance:  { name: "Entrance",           icon: "🚪" },
   treasure:  { name: "Treasure",           icon: "💰" },
@@ -259,6 +273,8 @@ export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
   encampment: { name: "Encampment",        icon: "⛺" },
   library:   { name: "Library",            icon: "🏛️" },
   storehouse: { name: "Storehouse",        icon: "🏚️" },
+  empty:     { name: "Empty room",         icon: "🕸️" },
+  bookcase:  { name: "Broken bookcase",    icon: "📚" },
 };
 
 // Fights.
@@ -521,6 +537,27 @@ export type Cage = { creatureId?: string; level?: number; opened?: boolean };
 export const LIBRARY_FIND = 0.75;
 export const LIBRARY_CODEXES: [number, number] = [1, 3];
 export const LIBRARY_BOOKS = 5;
+// A walkable library's broken bookcases (decision 39, the user, 2026-11-10;
+// world version 9): BOOKCASES of them, each a loot box holding only codexes
+// and clairvoyance scrolls, rolled apart. BOOKCASE_EMPTY of them hold no
+// codex, the rest BOOKCASE_CODEXES, each at CODEX_ODDS (Legendary counts as
+// Epic till there's a Legendary codex: randomCodexOfRarity); each has
+// BOOKCASE_SCROLL of a clairvoyance scroll, BOOKCASE_SCROLLS at most a library.
+export const BOOKCASES: [number, number] = [3, 5];
+export const BOOKCASE_EMPTY = 0.3;
+export const BOOKCASE_CODEXES: [number, number] = [1, 2];
+export const CODEX_ODDS: [Rarity, number][] = [["common", 40], ["uncommon", 30], ["rare", 20], ["epic", 9], ["legendary", 1]];
+export const BOOKCASE_SCROLL = 0.2;
+export const BOOKCASE_SCROLLS = 2;
+export function rollBookcases(rng: Rng = Math.random): Room[] {
+  let scrolls = 0;
+  return Array.from({ length: randInt(...BOOKCASES, rng) }, (): Room => {
+    const sack: SackItem[] = rng() < BOOKCASE_EMPTY ? []
+      : Array.from({ length: randInt(...BOOKCASE_CODEXES, rng) }, () => ({ gear: codexDrop(randomCodexOfRarity(weighted(CODEX_ODDS, rng), rng)) }));
+    if (rng() < BOOKCASE_SCROLL && scrolls < BOOKCASE_SCROLLS) { scrolls++; sack.push({ gear: toolDrop("clairvoyance") }); }
+    return { kind: "bookcase", sack, done: false };
+  });
+}
 export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read, or a race-kit move's (Claude's draft, 2026-10-26; older race codexes: CODEX_PRICE)
 // (Impale, the Epic special move, costs what the older race codexes do.)
 export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) || MOVE_BY_NAME[move]?.codexRarity === "epic" ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
@@ -823,6 +860,7 @@ export type Room = {
   bought?: string[];   // …and the ones you bought (librarian codexes; merchant wares, by key)
   wares?: Ware[];      // a merchant's cart
   librarian?: boolean; // a library: a wandering librarian is in (otherwise there are codexes to find)
+  lectern?: boolean;   // a walkable library (world version 9): its locator lectern finds the librarian (its codexes are in its bookcases)
   variant?: EncampVariant; // an encampment: which kind
   cages?: Cage[];      // …its cages
   sprung?: boolean;    // …an ambush: you opened a cage and they jumped you
@@ -977,6 +1015,8 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
     }
     case "witch":
       return { kind, witch: newWitchGame(rng, witchPrize), done: false };
+    case "empty":
+      return { kind, done: true };
     case "boss":
       // Dungeon 1: the Cyclops; the Deep Labyrinth: the Hydra (lib/creatures/bosses.ts, lib/combat/bossAi.ts).
       if (dungeon === 1) return { kind, boss: "cyclops", gold: gold(BOSS_GOLD), done: false };
@@ -1002,7 +1042,8 @@ export type RunStatus = "exploring" | "dead" | "cleared" | "retreated";
 
 // The witch's curse: a creature loses ILLNESS_DAMAGE of its max HP for each
 // of the next ILLNESS_ACTIONS actions (each room you walk into, each round
-// of a fight).
+// of a fight). Illnesses stack (decision 39, the user, 2026-11-10): each
+// counts down on its own, so two on one creature hurt twice as much.
 export const ILLNESS_DAMAGE = 0.15;
 export const ILLNESS_ACTIONS = 3;
 export type Illness = { id: string; left: number };
@@ -1011,7 +1052,8 @@ export type DungeonRun = {
   id: string;
   dungeon?: DungeonId;         // which dungeon (missing = 1)
   lastOnField?: string;        // the creature on the field when the last fight ended
-  illness?: Illness;           // a creature the witch stabbed
+  illness?: Illness;           // a creature the witch stabbed (a run saved before illnesses stacked: read by illnessesOf)
+  illnesses?: Illness[];       // …the illnesses going on, each counting down on its own (decision 39)
   runNumber: number;           // 1 = your first ever run
   startedAt: string;
   party: string[];             // creature drop ids (1 to PARTY_SIZE)
@@ -1169,19 +1211,34 @@ export function stabTarget(run: DungeonRun): string | undefined {
   if (last && run.party.includes(last) && isAlive(run, last)) return last;
   return fightingTeam(run)[0];
 }
+// The illnesses going on (an older run's one illness, or none).
+export const illnessesOf = (run: Pick<DungeonRun, "illness" | "illnesses">): Illness[] => run.illnesses ?? (run.illness ? [run.illness] : []);
+// The run with these illnesses (none left: no field at all).
+export const withIllnesses = (run: DungeonRun, list: Illness[]): DungeonRun => {
+  const rest = { ...run };
+  delete rest.illness;
+  delete rest.illnesses;
+  return list.length > 0 ? { ...rest, illnesses: list } : rest;
+};
 export function curse(run: DungeonRun): DungeonRun {
   const id = stabTarget(run);
-  return id ? { ...run, illness: { id, left: ILLNESS_ACTIONS } } : run;
+  return id ? withIllnesses(run, [...illnessesOf(run), { id, left: ILLNESS_ACTIONS }]) : run;
 }
-// One action passes (a room walked into): the sick creature loses its share.
-// Returns the run and who was hurt (if anyone).
+// One action passes (a room walked into): each illness takes its share from
+// its creature. Returns the run and who was hurt (if anyone; a creature with
+// two illnesses is named once, hurt twice).
 export function illnessTick(run: DungeonRun): { run: DungeonRun; hurt?: string } {
-  const ill = run.illness;
-  if (!ill || ill.left <= 0) return { run: { ...run, illness: undefined } };
-  const left = ill.left - 1;
-  const next = { ...run, illness: left > 0 ? { ...ill, left } : undefined };
-  if (!isAlive(run, ill.id)) return { run: next };
-  return { run: { ...next, hp: { ...run.hp, [ill.id]: Math.max(0, (run.hp[ill.id] ?? 1) - ILLNESS_DAMAGE) } }, hurt: ill.id };
+  const list = illnessesOf(run);
+  if (list.length === 0) return { run: withIllnesses(run, []) };
+  const hp = { ...run.hp };
+  let hurt: string | undefined;
+  for (const ill of list) {
+    if (ill.left <= 0 || !isAlive({ ...run, hp }, ill.id)) continue;
+    hp[ill.id] = Math.max(0, (hp[ill.id] ?? 1) - ILLNESS_DAMAGE);
+    hurt ??= ill.id;
+  }
+  const left = list.map((ill) => ({ ...ill, left: ill.left - 1 })).filter((ill) => ill.left > 0);
+  return { run: { ...withIllnesses(run, left), hp }, ...(hurt ? { hurt } : {}) };
 }
 
 // ── Saved progress (separate from the main save) ─────────────────────

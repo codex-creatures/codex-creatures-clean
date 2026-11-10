@@ -281,7 +281,8 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   stone ring of glowing water (PixelLab, a very faint pulsing glow), tapped for the room's
   window. **The card witch** walks about her room (PixelLab, a 4-way walk), stopping to
   face you as you come near; tap her for her game. The merchant, the librarian and a deck
-  of cards stand in their rooms, tapped for the room's window. Walking into a room ticks the
+  of cards stand in their rooms, tapped for the room's window. (From world version 9 the
+  witches, merchant and librarian wander the dungeon instead: §8.) Walking into a room ticks the
   witch's illness, and walking out mid-game leaves with your winnings, as down a tunnel.
   **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).
   (Its size, the guided rolling and the rule for a new dungeon's size: [walkable-layout.md](walkable-layout.md#size-and-guided-rolling).)
@@ -328,52 +329,75 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
   own copy of the drawing for now, with its testing switches).
 
-## 8. 📌 People who wander, and the locators (the user, 2026-11-10; decision 39; not built)
+## 8. ✅ People who wander, and the locators (the user, 2026-11-10; decision 39; built 2026-11-10)
 
-A core mechanic, for every walkable dungeon; **built in the Cyclops first**, then carried to the
-others. A new world version (9): runs already made keep today's rules.
+A core mechanic, for every walkable dungeon; **built in the Cyclops first** (the Encampment has
+no witches, merchant or librarian to wander). World version 9: runs already made keep today's
+rules (version 8 is pinned: tests/placeV4Pinned.test.ts). Code: `lib/dungeon/people.ts` (who,
+where they start, how they wander, the locators), the rooms in `walkRun.ts` (`addWanderersRooms`),
+the walk in `lib/world/walkSim.ts`, what you tap in `walkWorld.ts thingsOf`, drawn by
+`components/WalkView3D.tsx`; tests in tests/people.test.ts and the Labyrinth page test.
 
 - **Who:** every dungeon has **2 card witches, 1 merchant and 1 librarian**, wandering. They no
-  longer take up a room of their own: each starts in any room that isn't hostile, and walks the
-  whole dungeon without restriction, but keeps out of any room with creatures in it.
-- **Cut off:** one left somewhere you can no longer reach (behind a tunnel that's fallen in) stops
-  wandering. A locator used for them isn't used up; it says "It appears that they are no longer
-  here…".
-- **The rooms they leave:** more creature rooms (you can sneak past foes, so more dens keep about
-  as many fights on the way up), and more campfires (they fit the theme best), some with a stash
-  beside them: **half of campfires** have a stash. The new mix: normal rooms, dens 40 → 45 and a
-  campfire share of 5 (besides the half of pools drawn as campfires); "?" rooms, the witch,
-  librarian and merchant shares (18) go to dens +6, brutes +6 and campfires +6. Smaller rooms are
-  empty **1 time in 5**.
-- **Candle light:** every wandering person (witches, the merchant, the librarian) gives off a
-  candle's light. A witch's goes out once you've played her (won or lost).
+  longer take up a room of their own: each starts in any room that isn't hostile (the boss's lair
+  left out), and walks the whole dungeon, but keeps out of any room with creatures in it.
+  - **As built:** each is a room of the run of their own, `person~witch0`, `person~witch1`,
+    `person~merchant`, `person~librarian` (like a big room's second den), holding their game or
+    their cart, with a mark on the run's map that's never on the scroll. Talking to one (walk up
+    and tap, as before) walks you "into" them, so the witch's, merchant's and librarian's windows
+    work on them unchanged; walking into a room puts them back. Where each stands is saved in the
+    run (`walk.people`, with the last room they were in), so they're where you left them.
+  - **Wandering** (🧪 `WANDER_*` in people.ts): off to one of the 6 open rooms nearest them with no
+    creatures in it (`WANDER_NEAR`), through rooms with none, at 0.6 of a foe's pace; a pause of
+    4–10 s there (`WANDER_PAUSE`), then on. They stop and face you when you come within 4 tiles
+    (`NPC_STILL`), as the witch did. Nobody moves while a window's open.
+  - The merchant and the librarian walk without their carts for now (their standing pictures,
+    sliding; ❓ walking art is for the user to choose); the witches use their 4-way walk.
+- **Cut off:** one left somewhere you can no longer reach (their room behind you, or a tunnel
+  that's fallen in round them) stops wandering for good (`stopped`). A locator used for them isn't
+  used up; it says "It appears that they are no longer here…".
+- **The rooms they leave** (`WALK_ROOM_MIX`, `WALK_MYSTERY_MIX` in run.ts): normal rooms, dens 40 →
+  45 and a campfire share of 5 (besides the half of pools drawn as campfires); "?" rooms, the
+  witch, librarian and merchant shares (18) go to dens +6, brutes +6 and campfires +6. **Half of
+  campfires** have a stash beside them (`CAMPFIRE_STASH`, a stash's sack rolled as a stash's).
+  Smaller rooms are empty **1 time in 5** (`EMPTY_CHANCE`; ❓ "smaller" read as the `small` shape,
+  `EMPTY_SHAPES`): a new room kind, `empty`, done from the start.
+- **Candle light:** every wandering person gives off a candle's light (`PERSON_LIGHT`, the candle's
+  2.5 tiles, worked out where they stand each frame, and only while in your sight). A witch's goes
+  out once you've played her, won or lost (or walked away with your winnings).
 - **The witches:** each has her own game and winnings. Both can give illnesses, and illnesses
-  stack: each counts down on its own, so two on one creature hurt twice as much. (Today a run holds
-  one illness: lib/dungeon/run.ts `illness`, 15% of max HP for each of the next 3 actions.)
-- **The librarian** always starts in the large library, then wanders like the others. The large
-  library no longer sometimes holds a librarian of its own selling books: it's the wandering one.
-  The library's free codexes are now only in its broken bookcases (below), and it has a **locator lectern**: using it
-  finds the librarian as the librarian locator does (the scroll shows where they are, or "It appears
-  that they are no longer here…" if they're cut off). So the loop: find the library, maybe free
-  books, often the librarian there; if not, the lectern shows where they went.
-- **Broken bookcases** (the user, 2026-11-10): every large library holds **3–5** of them (the
-  battered bookcase art, den/bookcase-2.png), each a loot box to search. They hold only codexes and clairvoyance scrolls, rolled
-  separately: **30%** hold no codex, the rest **1–2 codexes**, each at the usual rarity odds
+  stack: each counts down on its own, so two on one creature hurt twice as much (`illnesses` in
+  the run, read from an older run's one `illness`; in a fight each is its own status, and what's
+  left of each comes back out). This holds in every dungeon, the classic ones too.
+- **The librarian** always starts in the large library (if the run has one; else any calm room),
+  then wanders like the others. The large library no longer holds a librarian of its own selling
+  books, nor codexes lying about: its codexes are in its broken bookcases, and it has a **locator
+  lectern** (the Den's lectern art): using it finds the librarian as the librarian locator does,
+  and from then on the scroll shows them (❓ as built: the lectern counts as a used librarian
+  locator for the rest of the run). The room's window has the lectern's button too.
+- **Broken bookcases:** every large library holds **3–5** of them (the battered bookcase art,
+  den/bookcase-2.png), in a row along its top, each a room of its own (`<library>~b<i>`) searched
+  like a stash. They hold only codexes and clairvoyance scrolls, rolled separately (run.ts
+  `rollBookcases`): **30%** hold no codex, the rest **1–2 codexes**, each at the usual rarity odds
   (Common 40, Uncommon 30, Rare 20, Epic 9, Legendary 1; Legendary counts as Epic until there's a
-  Legendary codex), and each bookcase has a **20%** chance of a clairvoyance scroll, at most **2** a
-  library. They replace the codexes lying about: a library's codexes come from its bookcases and
-  the librarian's stock. (About 4.2 codexes a library, and a 35% chance of at least one Epic.)
+  Legendary codex: drops.ts `randomCodexOfRarity`, any codex of the rarity), and each bookcase has
+  a **20%** chance of a clairvoyance scroll, at most **2** a library.
 - **Later, planned by the user (not part of this decision):** codexes can be sold for half what
   they cost; a scan that gives a codex fixes its rarity, and which codex of that rarity is random.
-- **Locators** (rare finds: **5% per chest or stash**, one of the three at random; the merchant
-  sells **one**, at **200 gold**):
+- **Locators** (new tools, `LOCATORS` in materials.ts: Rare; stand-in icons till they have art of
+  their own): **5% per chest or stash** holds one, any of the three (`LOCATOR_FIND`; a stash's
+  rolled with the run, a chest's as it's opened); the merchant sells **one**, at **200 gold** (in
+  his cart's last slot if it's full).
   - **Merchant map**: where the merchant is;
-  - **Crystal ball**: where a witch is (always the closest one you can still reach);
+  - **Crystal ball**: where a witch is (always the closest one you can still reach, as the crow
+    flies, played or not);
   - **Librarian locator**: where the librarian is.
-  
-  Using one opens the scroll with that person's icon at exactly where they are, among the rooms'
-  marks: it shows nothing else (no rooms or tunnels). Opening the scroll again shows where they
-  are now, if they've moved. A locator is **used once and then works for the rest of the run**.
+
+  Using one (the bag's "Use it") opens the scroll, free (no look spent), with that person's icon at
+  exactly where they are, among the rooms' marks: it shows nothing else (no rooms or tunnels).
+  Every time the scroll's opened from then on (the Scroll button, its looks as ever) it shows where
+  they are now. A locator is **used once and then works for the rest of the run** (`walk.tracking`);
+  a second one of a kind you're already using opens the scroll and isn't spent.
 
 ## Later
 

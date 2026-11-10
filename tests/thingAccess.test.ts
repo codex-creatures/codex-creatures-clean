@@ -35,7 +35,8 @@ const cache = new Map<string, DungeonRun>();
 const made = (dungeon: 0 | 1, seed: number, v: number): DungeonRun => {
   const k = `${dungeon}:${seed}:${v}`;
   if (!cache.has(k)) {
-    const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(seed), dungeon);
+    // (Rooms as rolled before people wandered, decision 39: these are runs at older world versions.)
+    const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(seed), dungeon, false, false);
     const walk = { ...run.walk!, v };
     cache.set(k, { ...run, walk: { ...walk, placed: placeWalk(walk, run.map, dungeonOf(run), (id) => walkRoom(run, id)).placed } });
   }

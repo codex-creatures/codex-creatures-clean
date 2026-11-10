@@ -41,7 +41,7 @@
 //   to the boss that share no room, so no room (or two) has to be gone
 //   through (routesToBoss).
 
-import { CAMP_ROUTE, LARGE_MIX, rollRoomKind, type RoomKind, type DungeonId } from "./run";
+import { CAMP_ROUTE, LARGE_MIX, WALK_ROOM_MIX, WALK_MYSTERY_MIX, rollRoomKind, type RoomKind, type DungeonId } from "./run";
 import { linkKey, fillCamp, fillRooms, markRooms, LARGE_KNOWN, type DungeonMap, type MapNode, type MapSpec } from "./map";
 import { furnish } from "./interior";
 import { FLOOR, ROCK, TUNNEL, DOOR, checkFloorplan, type Door, type Floorplan, type Pt, type Rect } from "./floorplan";
@@ -649,10 +649,19 @@ export function campMap(layout: Layout, firstRun: boolean, rng: Rng = Math.rando
 // turned into campfire rooms (the user, 2026-11-06: campfires take half the
 // pools' share, CAMPFIRE_SHARE; campfire.ts).
 export const CAMPFIRE_SHARE = 0.5;
+// People who wander (decision 39, the user, 2026-11-10; world version 9): the
+// rooms are rolled from WALK_ROOM_MIX and WALK_MYSTERY_MIX (no witch,
+// merchant or librarian rooms: they walk the dungeon, people.ts), and a small
+// room (EMPTY_SHAPES) is empty EMPTY_CHANCE of the time.
+export const EMPTY_SHAPES = ["small"];
+export const EMPTY_CHANCE = 0.2;
 // dynamite: Klutz's dynamite quest wants its storehouse (lib/tavern.ts): the
-// first large room is it, marked, as on the scroll map.
-export function labyrinthMap(layout: Layout, firstRun: boolean, dungeon: DungeonId = 1, rng: Rng = Math.random, dynamite = false): DungeonMap {
-  const map = fillRooms(layoutMap(layout), firstRun, rng, dungeon);
+// first large room is it, marked, as on the scroll map. wander: decision 39's rooms.
+export function labyrinthMap(layout: Layout, firstRun: boolean, dungeon: DungeonId = 1, rng: Rng = Math.random, dynamite = false, wander = false): DungeonMap {
+  const map = fillRooms(layoutMap(layout), firstRun, rng, dungeon, wander ? { rooms: WALK_ROOM_MIX, mystery: WALK_MYSTERY_MIX } : undefined);
+  if (wander) for (const r of Object.values(layout.rooms).sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    if (EMPTY_SHAPES.includes(r.shape) && r.id !== layout.start && r.id !== layout.boss && rng() < EMPTY_CHANCE) map.nodes[r.id].kind = "empty";
+  }
   const kinds: RoomKind[] = [];
   for (const r of Object.values(layout.rooms).filter((r) => r.shape === LARGE_SHAPE.name).sort((a, b) => b.y - a.y)) {
     const stash = dynamite && kinds.length === 0;

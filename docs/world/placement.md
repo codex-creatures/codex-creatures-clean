@@ -159,6 +159,12 @@ south, west and east walls too, as well as the north one.
 
 ### 5.7 Wandering NPCs and the lights they carry (📌 requirements, the user 2026-11-07; a feature after 2b)
 
+> ⚠️ Decision 39 (the user, 2026-11-10; built as world version 9) wins where it differs:
+> [design/walkable-play.md §8](../design/walkable-play.md). They wander the whole dungeon, not just
+> near their room, and have no home room (their shop or game goes with them); where they've got to
+> is saved; they start where people.ts puts them (not a placed instance); the merchant walks without
+> his cart for now; their light is a candle's.
+
 The merchant, the librarian and the card witch may walk out of their rooms and round the
 dungeon, each carrying a light, so the world feels lived in. Simple, not clever: no elaborate AI.
 
@@ -200,8 +206,10 @@ Distilled on 2026-11-09 from the phase designs in world-spec §8 (kept word for 
 [archive/2026-11-09/world-spec.md](../archive/2026-11-09/world-spec.md), §8). This is what the code
 does now; the archive holds why, the options weighed and the approval gates. Each world version is
 for new runs only: **a run keeps the rules it was made with for good** (see
-[persistence.md](persistence.md#world-versions)). New runs are made at `PLACED_V` 8
-(lib/world/place.ts).
+[persistence.md](persistence.md#world-versions)). New runs are made at `PLACED_V` 9
+(lib/world/place.ts). (v9, decision 39: a library's broken bookcases in a row along its top, its
+lectern at its middle, a campfire's stash two tiles east of the fire; the people who wander aren't
+placed: lib/dungeon/people.ts starts them.)
 
 ### Modules
 

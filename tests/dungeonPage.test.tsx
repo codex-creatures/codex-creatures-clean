@@ -18,7 +18,10 @@ import { SAVE_KEY } from "@/lib/save";
 import { CREATURE_TEMPLATES } from "@/lib/creatures/creatureData";
 import { makeCreatureDrop } from "@/lib/creatures/summon";
 import { waysOn } from "@/lib/dungeon/map";
-import { runPosition, loadDungeon, type DungeonRun } from "@/lib/dungeon/run";
+import { runPosition, loadDungeon, saveDungeon, lootEntry, type DungeonRun } from "@/lib/dungeon/run";
+import { startWalkRun } from "@/lib/dungeon/walkRun";
+import { newWalkRun } from "@/lib/world/migrate";
+import { toolDrop } from "@/lib/items/materials";
 import { createBattle } from "@/lib/combat/battle";
 
 // ── Stand-ins for what draws to a canvas, and for the battle ──────────────
@@ -241,4 +244,61 @@ describe("the Labyrinth screen, played through (what's on screen and what's save
   it("an Encampment run: a stash, fights won, loot, equipping, a reload, the chief, the haul, home", () => pinned("encampment", playEncampment));
   it("a fight lost: knocked out and home", () => pinned("defeat", playDefeat));
   it("a walkable run: started, the scroll, a reload, a retreat", () => pinned("walk", playWalk));
+});
+
+// People who wander (decision 39; world version 9): a Cyclops walk with its witches, merchant and
+// librarian about. Talking to the merchant walks you "into" him (his cart's window); a locator
+// opens the scroll, free, and works for the rest of the run; one for someone cut off says so and
+// isn't used up; the library's lectern finds the librarian. (Not pinned: checked as it goes.)
+describe("people who wander, on the Labyrinth screen", () => {
+  it("talking to the merchant, a locator used and one refused, the lectern", async () => {
+    seedSave();
+    const ids = JSON.parse(localStorage.getItem(SAVE_KEY)!).inventory.map((d: { id: string }) => d.id);
+    const run = { ...newWalkRun(startWalkRun(ids, ids, {}, 2, [], false, Math.random, 1)), inside: true };
+    const walk = run.walk!, merchant = walk.people!.find((p) => p.kind === "merchant")!;
+    // The merchant cut off (stopped for good), so a merchant map can't find him.
+    const people = walk.people!.map((p) => (p.id === merchant.id ? { ...p, stopped: true as const } : p));
+    // (A library with its lectern, should this run have none: the librarian's room made one.)
+    const library = Object.keys(walk.layout.rooms).find((id) => run.map.nodes[id].kind === "library") ?? walk.people!.find((p) => p.kind === "librarian")!.room;
+    run.map.nodes[library].kind = "library";
+    walk.rooms[library] = { kind: "library", lectern: true, done: false };
+    const ball = toolDrop("crystal_ball"), map = toolDrop("merchant_map");
+    saveDungeon({ meta: { runs: 1, clears: 0, injuries: {}, bag: [lootEntry(ball.id), lootEntry(map.id)], loot: { [ball.id]: ball, [map.id]: map } },
+      run: { ...run, walk: { ...walk, people } } });
+    await mount();
+    const props = () => walkProps.last as unknown as { onObject: (id: string, st: object) => void; scroll: boolean; busy: boolean };
+    const state = { at: walk.at, room: walk.room, line: walk.line, people };
+    expect(props()).toBeTruthy();
+    // Talking to him: you're "in" him, and his cart's window is up.
+    await act(async () => { props().onObject(merchant.id, state); }); await settle();
+    expect(runPosition(loadDungeon().run!)).toBe(merchant.id);
+    expect(loadDungeon().run!.current?.kind).toBe("merchant");
+    expect(text()).toContain("a merchant who smiles too much");
+    expect(props().busy).toBe(true);
+    await tap(document.querySelector("button[aria-label='Close']") as HTMLElement);
+    // The merchant map: he's cut off, so it says so and stays in the bag.
+    const use = async (name: string) => {
+      await tap(/^🎒 Bag/);
+      await tap(document.querySelector(`button[aria-label='${name}']`) as HTMLElement);
+      await tap(/ Use it$/);
+    };
+    await use("Merchant Map");
+    expect(text()).toContain("It appears that they are no longer here");
+    expect(loadDungeon().meta.bag).toHaveLength(2);
+    expect(props().scroll).toBe(false);
+    // The crystal ball finds a witch: the scroll's out (no look spent), and it's tracked from now on.
+    const looks = loadDungeon().run!.scrollLooks ?? 0;
+    await use("Crystal Ball");
+    expect(props().scroll).toBe(true);
+    expect(loadDungeon().run!.walk!.tracking).toEqual(["crystal_ball"]);
+    expect(loadDungeon().meta.bag).toEqual([lootEntry(map.id)]);
+    expect(loadDungeon().run!.scrollLooks ?? 0).toBe(looks);
+    // The library's lectern finds the librarian: tracked too, the scroll out.
+    await tap(document.querySelector("button[aria-label='Close']") as HTMLElement ?? document.body);
+    await act(async () => { props().onObject(library, state); }); await settle();
+    expect(loadDungeon().run!.current?.kind).toBe("library");
+    expect(loadDungeon().run!.walk!.tracking).toEqual(["crystal_ball", "librarian_locator"]);
+    expect(props().scroll).toBe(true);
+    await unmount();
+  }, 60_000);
 });

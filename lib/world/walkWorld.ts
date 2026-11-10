@@ -19,7 +19,8 @@ import { placeDecor, placeBanners, type Decor } from "../dungeon/decor";
 import { spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
-import { waitsHere, type WalkRun } from "../dungeon/walkRun";
+import { waitsHere, bookcaseOf, type WalkRun } from "../dungeon/walkRun";
+import { personLit, type Wanderer } from "../dungeon/people";
 import type { Campfire } from "../dungeon/campfire";
 import type { DungeonMap } from "../dungeon/map";
 import type { Floorplan, Pt } from "../dungeon/floorplan";
@@ -138,8 +139,16 @@ export function guardedChestSpot(layout: Layout, id: string, r: Room, dungeon: D
 // where it was dropped (else the room's middle, from the layout), a mini boss's
 // or boss's chest where it guards it (shut; trying to open it before they're
 // beaten sets them on you: the user, 2026-11-09).
-export function thingsOf(layout: Layout, placed: Placements, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"], dungeon: DungeonId): Thing[] {
-  return ids.flatMap((id): Thing[] => {
+// (World version 9) people who wander: each where they've got to (`people`, the sim's), a witch
+// she's been played inert; a library's broken bookcases and its lectern; a campfire's stash.
+export function thingsOf(layout: Layout, placed: Placements, ids: string[], room: (id: string) => Room | undefined, npcs: Foe[], spots: WalkRun["spots"], dungeon: DungeonId, people: Wanderer[] = []): Thing[] {
+  const wanderers = people.flatMap((w): Thing[] => {
+    const r = room(w.id);
+    if (!r) return [];
+    const def = w.kind === "witch" ? "witch" : `${w.kind}-walk`;
+    return [thingOf({ key: w.id, room: w.id, x: Math.round(w.x), y: Math.round(w.y), def, open: false, ...(!personLit(w.kind, r) ? { inert: true } : {}) })];
+  });
+  return [...wanderers, ...ids.flatMap((id): Thing[] => {
     const r = room(id);
     if (!r) return [];
     const out: Thing[] = [];
@@ -149,7 +158,14 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       if (at) out.push(thingOf({ key: id, room: id, ...at, ...t }));
     };
     if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done });
-    else if (r.kind === "stash") add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened });
+    else if (r.kind === "stash" || (r.kind === "campfire" && r.sack)) add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened });
+    else if (r.kind === "library" && r.lectern) {
+      add("lectern", { def: "lectern", open: false });
+      for (let i = 0; placed.spot(`${bookcaseOf(id, i)}:bookcase`); i++) {
+        const bid = bookcaseOf(id, i), b = room(bid), at = placed.spot(`${bid}:bookcase`)!;
+        if (b) out.push(thingOf({ key: bid, room: bid, ...at, def: "bookcase", state: shut(b.opened), open: !!b.opened }));
+      }
+    }
     else if (r.kind === "pool") add("pool", { def: "pool", open: r.done, glow: !r.done });
     else if (r.kind === "cards") add("card-deck", { def: "card-deck", open: r.done });
     else if (r.kind === "merchant") add("merchant", { def: "merchant", open: false });
@@ -178,7 +194,7 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       if (q) out.push(thingOf({ key: `${id}#${i}`, room: id, ...q, def: "cage", state: shut(cage.opened), cage: i, open: !!cage.opened, flag: !cage.opened && (!hasFight(r) || r.done), ...(guarded ? { guarded } : {}) }));
     });
     return out;
-  });
+  })];
 }
 
 // The cells nothing may walk into: solid things, campfires, solid decor. (A

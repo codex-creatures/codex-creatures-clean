@@ -248,17 +248,19 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
 
   // startHp: your creatures' HP if they start hurt.
   // boss: the opponent is that dungeon boss (played by its script).
-  // illness: one of your creatures is sick (the witch's curse) for this many rounds.
+  // illnesses: your creatures that are sick (the witch's curse), each for this many rounds (they stack: decision 39).
   // tutorial: the first quest's guided fight (see tutorialSteps).
   // pair: their first two are both on the field (an ambush). turnLimit: the
   // room blows after this many rounds (see BattleState.turnLimit).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
-    opts: { startHp?: number[]; title?: string; boss?: BossKind; illness?: { index: number; rounds: number }; tutorial?: boolean; pair?: boolean; turnLimit?: number } = {}) {
+    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number } = {}) {
     setView(null);
     setFx(null);
     const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit });
-    const sick = opts.illness && state.sides.A.team[opts.illness.index];
-    if (sick && opts.illness!.rounds > 0) sick.statuses.push({ id: "illness", rounds: opts.illness!.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });
+    for (const ill of opts.illnesses ?? []) {
+      const sick = state.sides.A.team[ill.index];
+      if (sick && ill.rounds > 0) sick.statuses.push({ id: "illness", rounds: ill.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });
+    }
     setMatch({ state, info, teams, level, title: opts.title, ...(opts.tutorial ? { tutorial: -1 } : {}) });
   }
 

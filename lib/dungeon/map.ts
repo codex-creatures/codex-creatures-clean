@@ -222,7 +222,8 @@ export function rollMap(firstRun: boolean, rng: Rng = Math.random, spec: MapSpec
 // a "?"), the boss at the top. The Labyrinth's gentle start (MINIBOSS_FROM,
 // FIRST_ROOM_DENS in run.ts): its first rooms are nearly all creature dens,
 // and no mini boss lurks early.
-export function fillRooms(map: DungeonMap, firstRun: boolean, rng: Rng, dungeon: DungeonId): DungeonMap {
+// mixes: the rooms' mix and the "?" rooms' (the walkable Labyrinth has its own: run.ts WALK_ROOM_MIX).
+export function fillRooms(map: DungeonMap, firstRun: boolean, rng: Rng, dungeon: DungeonId, mixes: { rooms: [RoomKind, number][]; mystery: [RoomKind, number][] } = { rooms: ROOM_MIX, mystery: MYSTERY_MIX }): DungeonMap {
   const roomDepth = depths(map);
   for (const n of Object.values(map.nodes)) {
     const d = roomDepth.get(n.id) ?? Infinity;
@@ -233,7 +234,7 @@ export function fillRooms(map: DungeonMap, firstRun: boolean, rng: Rng, dungeon:
       if (mystery) n.mystery = true;
       // (A "?" among the first rooms is still nearly always a den.)
       if (dungeon === 1 && d <= FIRST_ROOMS) n.kind = rng() < FIRST_ROOM_DENS ? "easy" : rollRoomKind(rng, ["easy", "hard", "miniboss"]);
-      else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? MYSTERY_MIX : ROOM_MIX);
+      else n.kind = rollRoomKind(rng, minibossAllowed(dungeon, d) ? [] : ["miniboss"], mystery ? mixes.mystery : mixes.rooms);
     }
   }
   return map;

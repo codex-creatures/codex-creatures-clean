@@ -640,7 +640,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
 
   // 3. End of round: the ground bites whoever stands on it, venom bites
   //    (field and bench), then status effects and cooldowns tick down.
-  //    The witch's illness works the same way (lib/dungeon/run.ts: curse).
+  //    The witch's illness works the same way (lib/dungeon/run.ts: curse), each
+  //    one a creature has biting on its own (they stack: decision 39).
   for (const k of ["A", "B"] as SideKey[]) {
     const pool = state.sides[k].ground?.find((g) => g.kind === "blood");
     if (!pool) continue;
@@ -648,9 +649,12 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   }
   for (const k of ["A", "B"] as SideKey[]) {
     state.sides[k].team.forEach((f, i) => {
-      for (const id of ["venom", "poison", "illness"] as const) {
-        const st = f.statuses.find((s) => s.id === id);
-        if (!st || f.hp <= 0 || f.hidden) continue;
+      const biting = (["venom", "poison", "illness"] as const).flatMap((id) => {
+        const all = f.statuses.filter((s) => s.id === id);
+        return (id === "illness" ? all : all.slice(0, 1)).map((st) => ({ id, st }));
+      });
+      for (const { id, st } of biting) {
+        if (f.hp <= 0 || f.hidden) continue;
         const damage = Math.min(f.hp - bossMinHp(state, k, i), st.dmg ?? 0);
         if (damage <= 0) continue;
         f.hp -= damage;

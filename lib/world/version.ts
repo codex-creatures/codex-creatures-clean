@@ -19,7 +19,10 @@
 //    Cyclops's 2-tile blocks make (2026-11-09): new runs only.
 // 8: no wall candles: the same budget places wall torches on rooms' walls and
 //    pillars instead (the user, 2026-11-09): new runs only.
-export const WALK_V = 8;
+// 9: people who wander (decision 39, the user, 2026-11-10): the Cyclops's
+//    witches, merchant and librarian walk about (WalkRun.people), a library's
+//    broken bookcases and lectern, a stash by half the campfires: new runs only.
+export const WALK_V = 9;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

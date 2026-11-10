@@ -28,7 +28,7 @@ import { WALK_V, unsupportedRun } from "../lib/world/version";
 const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
 const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
-const made = (dungeon: 0 | 1, seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon);
+const made = (dungeon: 0 | 1, seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon, false, false); // (rooms as rolled before people wandered: a v3 run)
 // A new run as 2b-1 made it: placed by version 3's rules, saved at version 3.
 const newV3 = (run: DungeonRun): DungeonRun => {
   const walk = { ...run.walk!, v: PLACED_V };

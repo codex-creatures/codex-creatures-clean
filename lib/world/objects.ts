@@ -16,7 +16,7 @@
 
 import { artFor, type Art } from "../sprites/art";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "../sprites/props";
-import { WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_BANNER, WALK_HERO, WALK_KIT, KIT_PX, type WalkProp } from "../sprites/walk";
+import { WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_BOOKCASE, WALK_LECTERN, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_BANNER, WALK_HERO, WALK_KIT, KIT_PX, type WalkProp } from "../sprites/walk";
 import { legacyU } from "../render/projection";
 import { SCONCE_RADIUS, CANDLE_RADIUS } from "../dungeon/torch";
 import { CAMPFIRE_LIGHT } from "../dungeon/campfire";
@@ -135,6 +135,9 @@ const DEFS: ObjectDef[] = [
   def("loot-chest", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
   def("card-deck", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("play") }), legacyVisual({ base: propRef(CARD_DECK) }, { width: OBJECT_U })),
   def("pool", floorThing({ footprint: { w: 3, d: 3 }, clearance: 1, kind: "interactable", height: 0.3, interact: usable("drink") }), legacyVisual({ base: ref(WALK_POOL) }, { width: legacyU(WALK_POOL.size), lift: 0.35 })),
+  // (World version 9, decision 39) a library's broken bookcases, searched like a stash, and its locator lectern.
+  def("bookcase", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", height: 1.4, interact: usable("search") }), legacyVisual({ shut: ref(WALK_BOOKCASE), open: ref(WALK_BOOKCASE) }, { width: legacyU(WALK_BOOKCASE.size) })),
+  def("lectern", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 1, interact: usable("read") }), legacyVisual({ base: ref(WALK_LECTERN) }, { width: legacyU(WALK_LECTERN.size) })),
   def("cage", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.2, interact: usable("open") }), legacyVisual({ shut: ref(WALK_CAGE), open: ref(WALK_CAGE_OPEN) }, { width: legacyU(WALK_CAGE.size) })),
   // Lights.
   def("campfire", floorThing({ footprint: { w: 2, d: 2 }, clearance: 1, kind: "light", height: 0.6, light: { radius: CAMPFIRE_LIGHT, colour: "#ff9632", flicker: true } }),
@@ -176,6 +179,9 @@ const DEFS: ObjectDef[] = [
   // People: the merchant and the librarian stand by their carts; the card witch walks about (not solid).
   def("merchant", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(MERCHANT) }, { height: NPC_U })),
   def("librarian", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),
+  // (World version 9, decision 39) the merchant and the librarian walking about, without their carts (not solid).
+  def("merchant-walk", floorThing({ footprint: { w: 2, d: 2 }, kind: "npc", height: 1.4, collision: "none", light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(MERCHANT) }, { height: NPC_U })),
+  def("librarian-walk", floorThing({ footprint: { w: 2, d: 2 }, kind: "npc", height: 1.4, collision: "none", light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),
   def("witch", floorThing({ footprint: { w: 2, d: 2 }, kind: "npc", height: 1.3, collision: "none", light: NPC_LIGHT, interact: usable("talk", true) }),
     legacyVisual({ base: propRef(CARD_WITCH) }, { height: NPC_U }, { facings: ["south", "east", "north", "west"] })),
   // You, and foes: a foe's art is its species' (lib/sprites/creatures.ts), drawn FOE_U tall, bigger when it waits.

@@ -22,6 +22,7 @@ import { hasFight, type Room } from "../dungeon/run";
 import type { WalkRun } from "../dungeon/walkRun";
 import { ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
 import { inReach, approach, toRuns, type Thing } from "./walkWorld";
+import { stepWanderer, wandererOf, personOf, personLit, PERSON_LIGHT, type Wanderer } from "../dungeon/people";
 
 export const NPC_STILL = 4;      // u: a wanderer stops to let you come up to it
 export const NPC_SPEED = 0.6;    // …and walks about at this share of a foe's pace
@@ -33,7 +34,7 @@ export const TRAIL_MAX = 3000;   // cells of your trail kept for the scroll
 export const FIRED_WAIT = 2000;  // ms: a fight called for that hasn't started by then: carry on
 
 // What the screen saves of the walk (WalkRun's parts that change as you go).
-export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts" | "fires" | "flare">;
+export type WalkState = Pick<WalkRun, "at" | "room" | "line" | "known" | "lit" | "trail" | "cuts" | "fires" | "flare" | "people">;
 // The campfire window: the team's health as it heals, who's getting some, what the fire has left.
 export type Warming = { hp: Record<string, number>; giving: string[]; left: number };
 // Seen: whose room, when (ms), the foes that have set off and reached you (by index: seconds after), the fade's start.
@@ -47,7 +48,8 @@ export type WalkSim = {
   progress: Progress;
   known: Uint8Array; lightNow: Uint8Array; trail: Pt[]; cuts: number[];
   sconces: Sconce[]; candles: Candle[]; fires: Campfire[]; foes: Foe[]; npcs: Foe[];
-  flareLeft: number;                 // cells of walking left with a flare's light
+  people: Wanderer[];                // who wanders the dungeon (world version 9 on: people.ts)
+  flareLeft: number;                // cells of walking left with a flare's light
   falls: Map<string, number>;        // tunnels falling in (rubble key: when, ms)
   shakeAt: number;                   // when the screen last shook (ms)
   wantThing: string | null;          // walking up to this thing (its key), to open it
@@ -79,6 +81,7 @@ export function startWalk(walk: WalkRun, plan: Floorplan, live: Floorplan, place
     progress: { room: walk.room, line: walk.line ?? Infinity },
     known, lightNow: new Uint8Array(plan.w * plan.h), trail: walk.trail ?? [walk.at], cuts: walk.cuts ?? [],
     sconces: placed.sconces, candles: placed.candles, fires: (walk.fires ?? []).map((f) => ({ ...f })), foes: placed.foes, npcs: placed.npcs,
+    people: (walk.people ?? []).map(wandererOf),
     flareLeft: walk.flare ?? 0, falls: new Map(), shakeAt: -Infinity, wantThing: null, fired: 0, alarm: null,
     loop: newLoop(plan, { x: walk.at.x, y: walk.at.y }, {}, 0),
   };
@@ -99,6 +102,7 @@ export const walkState = (sim: WalkSim): WalkState => ({
   line: sim.progress.line === Infinity ? null : sim.progress.line,
   known: toRuns(sim.known), lit: [...sim.sconces, ...sim.candles].filter((c) => c.lit).map((c) => c.id),
   trail: sim.trail.slice(-TRAIL_MAX), cuts: sim.cuts, fires: sim.fires.map((f) => ({ ...f })), flare: Math.round(sim.flareLeft),
+  ...(sim.people.length > 0 ? { people: sim.people.map(personOf) } : {}),
 });
 
 // The lights, worked out once per floorplan: a wall torch, a campfire (burning or embers), a candle.
@@ -128,6 +132,7 @@ export type Frame = {
   draw: boolean;            // false: you've just been seen (the picture holds this frame)
   busy: boolean; alarm: Alarm | null; reachNow: number;
   candlesSeen: Candle[]; fireSeen: Campfire[]; alarmed: Foe[]; foeLight: Uint8Array[]; giving: string[];
+  peopleLit: Wanderer[];    // people giving off their candle's light, in sight
   events: WalkEvent[];
 };
 // The screen's side: the time (ms), whether a window's over the walk, the
@@ -193,6 +198,9 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
   for (const c of candlesSeen) { const a = candleLight(sim, c); for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1; }
   const fireSeen = sim.fires.filter((f) => fireInSight(live, f, sim.me));
   for (const f of fireSeen) { const a = fireLight(sim, f); for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1; }
+  // People carry a candle's light (a witch's out once she's been played), worked out where they stand now.
+  const peopleLit = sim.people.filter((w) => personLit(w.kind, room(w.id)) && fireInSight(live, w, sim.me));
+  for (const w of peopleLit) { const a = torchLit(live, w, PERSON_LIGHT); for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1; }
   const alarmed = A ? sim.foes.filter((f) => f.room === A.room) : [];
   const foeLight = alarmed.map((f) => torchLit(live, f, ALARM_LIGHT));
   for (const a of foeLight) for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1;
@@ -220,7 +228,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
   const p = sim.progress;
   const awake = (id: string) => { const r = room(id); return !!r && hasFight(r) && !r.done && isOpen(layout, p, parentOf(id)); };
   sim.foes = sim.foes.filter((f) => awake(f.room) || !isOpen(layout, p, parentOf(f.room)));
-  const frame = (draw: boolean): Frame => ({ draw, busy, alarm: A, reachNow, candlesSeen, fireSeen, alarmed, foeLight, giving, events });
+  const frame = (draw: boolean): Frame => ({ draw, busy, alarm: A, reachNow, candlesSeen, fireSeen, alarmed, foeLight, giving, peopleLit, events });
   const giving: string[] = [];
   if (!busy && A) {
     // Seen: a "!" a moment, then they come at you; it fades into the fight once they're there.
@@ -248,6 +256,9 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
     // The witch wanders, slowly, and stops (facing you) to let you come up to her.
     sim.npcs = sim.npcs.map((n) => (Math.hypot(n.x - sim.me.x, n.y - sim.me.y) <= NPC_STILL
       ? { ...n, path: [], facing: Math.atan2(sim.me.y - n.y, sim.me.x - n.x) } : stepNpc(live, n, dt, rng)));
+    // People who wander the dungeon (people.ts) stop for you the same way, picking up where they were going after.
+    sim.people = sim.people.map((w) => (!w.stopped && Math.hypot(w.x - sim.me.x, w.y - sim.me.y) <= NPC_STILL
+      ? { ...w, facing: Math.atan2(sim.me.y - w.y, sim.me.x - w.x) } : stepWanderer(plan, live, layout, p, w, dt, room, rng)));
     const by = spottedBy(live, sim.foes, sim.me, awake);
     if (by) {
       sim.alarm = { room: by, at: now, going: new Set(), arrived: new Map(), fadeAt: null };

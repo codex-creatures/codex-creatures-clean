@@ -36,7 +36,7 @@ import { placementSvg } from "../lib/world/placementView";
 const json = <T>(v: T): T => JSON.parse(JSON.stringify(v));
 const quiet = <T>(f: () => T): T => { const warn = console.warn; console.warn = () => {}; try { return f(); } finally { console.warn = warn; } };
 const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
-const made = (dungeon: 0 | 1, seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon);
+const made = (dungeon: 0 | 1, seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, dungeon === 0 ? cages : [], false, seeded(seed), dungeon, false, false); // (rooms as rolled before people wandered: a v4 run)
 // A v4 run as it was made new: placed by v4's rules, once.
 const v4Run = (r: DungeonRun): DungeonRun => {
   const walk = { ...r.walk!, v: 4 };

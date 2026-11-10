@@ -131,7 +131,7 @@ Moved here word for word from world-spec.md on 2026-11-09 (the original is in [a
 Distilled on 2026-11-09 from world-spec §8 (kept word for word in
 [archive/2026-11-09/world-spec.md](../archive/2026-11-09/world-spec.md), §8). A walkable run's
 version is `walk.v`; the newest this client understands is `WALK_V` (lib/world/version.ts, now
-**8**), and new runs are placed at `PLACED_V` (lib/world/place.ts, 8). **v3 onward, each version
+**9**), and new runs are placed at `PLACED_V` (lib/world/place.ts, 9). **v3 onward, each version
 is a new generator for new runs only: nothing migrates to it, so a run's rooms never change.** Only
 v0 → v1 → v2 are migrations.
 
@@ -146,8 +146,9 @@ v0 → v1 → v2 are migrations.
 | 6 | the user's play-test (2026-11-09) | floor candles off stone and out of mounted light |
 | 7 | guided layouts, 2-tile Cyclops blocks (2026-11-09) | candle dials retuned |
 | 8 | the user (2026-11-09) | no wall candles: the budget places wall torches (a v8 run holding a wall candle is damaged) |
+| 9 | decision 39 (the user, 2026-11-10) | people who wander (`walk.people`, `walk.tracking`; the Cyclops's witches, merchant and librarian are rooms `person~…` with no place in the layout); a library's broken bookcases (`<library>~b<i>`: `bookcase`) and its `lectern`; a `sack` beside half the campfires. The Encampment's runs are placed as at v8 |
 
-**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v7 (tests/placeV4Pinned.test.ts,
+**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v8 (tests/placeV4Pinned.test.ts,
 saved runs in tests/fixtures/pins/), each fixture's `tests/golden/walk/<fixture>.placed.json`, and the
 phase-0/1 goldens. **Before changing placement rules, pin the current version; new rules mean a new
 world version.**

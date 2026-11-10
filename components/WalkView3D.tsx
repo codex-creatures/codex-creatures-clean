@@ -26,6 +26,8 @@ import { CAMPFIRE_LIGHT } from "@/lib/dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "@/lib/dungeon/foes";
 import { FACINGS, facingOf, walkFrame } from "@/lib/dungeon/tileArt";
 import type { Room } from "@/lib/dungeon/run";
+import { isPerson, locate, personOf, PERSON_LIGHT } from "@/lib/dungeon/people";
+import type { LocatorKey } from "@/lib/items/materials";
 import type { Layout, Progress } from "@/lib/dungeon/layout";
 import type { Thing } from "@/lib/world/walkWorld";
 import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
@@ -136,9 +138,17 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
       {!scroll && <Stick onPush={W.push} />}
       {W.warming && !scroll && <Warmth team={team} warming={W.warming} />}
       {scroll && <WalkScroll map={play.map} layout={W.layout} plan={plan} known={sim.known} trail={sim.trail} progress={W.progress} cuts={sim.cuts}
-        been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose} />}
+        been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose}
+        people={tracked(play.walk.tracking, sim, W.layout, W.live, W.progress)} />}
     </div>
   );
+}
+
+// Who your locators find now (people.ts locate), each once, to show on the scroll where they stand.
+function tracked(kinds: LocatorKey[] | undefined, sim: WalkSim, layout: Layout, live: WalkSim["live"], p: Progress) {
+  const people = sim.people.map(personOf);
+  const found = (kinds ?? []).flatMap((k) => { const q = locate(k, people, sim.me, layout, live, p); return q ? [q] : []; });
+  return found.filter((q, i) => found.findIndex((o) => o.id === q.id) === i);
 }
 
 // ── The world, in the scene ───────────────────────────────────────────────
@@ -290,6 +300,7 @@ function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: n
     ...sim.candles.filter((c) => c.lit).map((c) => ({ x: c.x, y: c.y, r: CANDLE_RADIUS })),
     ...sim.fires.map((f) => ({ x: f.x, y: f.y, r: f.left > 0 ? CAMPFIRE_LIGHT : CAMPFIRE_LIGHT / 2 })),
     ...(F?.alarmed ?? []).map((f) => ({ x: f.x, y: f.y, r: ALARM_LIGHT })),
+    ...(F?.peopleLit ?? []).map((w) => ({ x: w.x, y: w.y, r: PERSON_LIGHT })),
   ].filter((l) => sim.known[Math.round(l.y) * live.w + Math.round(l.x)])
     .sort((a, b) => Math.hypot(a.x - sim.me.x, a.y - sim.me.y) - Math.hypot(b.x - sim.me.x, b.y - sim.me.y));
 }
@@ -298,8 +309,8 @@ function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: n
 // `shade` (Stone): the colour of the light where each stands, as there are no Three.js lights to light them.
 // As the 2D view (lib/render/scene.ts): things you've seen (people only while lit, unless solid), a
 // used pool dimmed, a "!" over each cage you can open; foes while lit, or all of a room that's seen you,
-// with a "!" over each; the card witch walking about; campfires and candles; rubble where a tunnel fell.
-// Foes and the witch follow the sim every frame (the list itself is shown again now and then).
+// with a "!" over each; the card witch walking about, and the people who wander; campfires and candles; rubble where a tunnel fell.
+// Foes, the witch and the people follow the sim every frame (the list itself is shown again now and then).
 const CAMPFIRE = objectDef("campfire");
 const FLAME_COLOUR = "#ffd27a";
 const DIM_POOL = 0.6;                  // a used pool's picture, this bright (the 2D view's)
@@ -316,10 +327,17 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
   for (const t of things) {
     if (!seen(t.x, t.y) || (t.npc && !lightNow(t.x, t.y) && !t.solid)) continue;
     const d = objectDef(t.def), a = artOf(d, t.state ?? (t.open ? "open" : "shut"));
-    const witch = t.def === "witch" ? sim.npcs.find((n) => n.room === t.room) : undefined;
-    if (witch) { out.push(<Witch key={t.key} sim={sim} room={t.room} stretch={stretch} shade={shade} />); continue; }
+    // (Someone who wanders the dungeon, world version 9, followed by their id; a room's witch by her room.)
+    const person = isPerson(t.key) ? () => sim.people.find((q) => q.id === t.key) : undefined;
+    const witch = t.def === "witch" ? person ?? (() => sim.npcs.find((n) => n.room === t.room)) : undefined;
+    if (witch?.()) { out.push(<Witch key={t.key} find={witch} stretch={stretch} shade={shade} />); continue; }
     if (!a) continue;
     const b = d.visual.bounds, w = b.left + b.right, h = (b.up + b.down) * stretch;
+    if (person) {
+      out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={shade?.(t.x, t.y)}
+        follow={() => { const q = person() ?? t; return { x: q.x, y: q.y }; }} />);
+      continue;
+    }
     const colour = shade?.(t.x, t.y) ?? (t.def === "pool" && t.open ? new THREE.Color(1, 1, 1) : undefined);
     if (t.def === "pool" && t.open) colour?.multiplyScalar(DIM_POOL);
     out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={colour} />);
@@ -410,13 +428,13 @@ function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: n
 
 // The card witch walking about her room (a sheet like the hero's: still, then her walk; south, east
 // and north, west being east turned round), facing the way she goes, at NPC_U tall.
-function Witch({ sim, room, stretch, shade }: { sim: WalkSim; room: string; stretch: number; shade?: (x: number, y: number) => THREE.Color }) {
+function Witch({ find, stretch, shade }: { find: () => { x: number; y: number; facing: number; path: unknown[] } | undefined; stretch: number; shade?: (x: number, y: number) => THREE.Color }) {
   const mesh = useRef<THREE.Mesh>(null);
   const S = WALK_WITCH, cols = S.frames + 1, rows = 3;
   const frames = useMemo(() => Array.from({ length: rows }, (_, row) => Array.from({ length: cols }, (_, col) => part(S.sheet, col / cols, 1 - (row + 1) / rows, 1 / cols, 1 / rows))), [S.sheet, cols]);
   const size = (NPC_U / S.tall) * S.cell, below = ((S.cell - S.feet) / S.cell) * size * stretch;
   useFrame(() => {
-    const m = mesh.current, n = sim.npcs.find((q) => q.room === room);
+    const m = mesh.current, n = find();
     if (!m || !n) return;
     const face = facingOf(Math.cos(n.facing), Math.sin(n.facing), "south");
     const col = n.path.length > 0 ? 1 + (Math.floor(performance.now() / 130) % S.frames) : 0;

@@ -60,7 +60,7 @@ import {
 } from "../dungeon/torch";
 import { CAMPFIRE_LIGHT, EMBER_LIGHT } from "../dungeon/campfire";
 import { FOE_GAP, DOOR_CLEAR, WANDER_SHARE, LOOK_TIME, WAIT_FROM_TOP, endOf, spawnOf, parentOf } from "../dungeon/foes";
-import { CAGE_GAP, waitsHere, type WalkRun } from "../dungeon/walkRun";
+import { CAGE_GAP, waitsHere, bookcaseOf, bookcasesIn, type WalkRun } from "../dungeon/walkRun";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
 import type { DungeonMap } from "../dungeon/map";
 import { seeded, roomIds, fightsLater, guardedChestSpot } from "./walkWorld";
@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 8;          // the world version a new run is placed at (no wall candles: wall torches instead; version.ts)
+export const PLACED_V = 9;          // the world version a new run is placed at (people who wander, a library's bookcases and lectern, campfire stashes; version.ts)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
 export const CANDLE_FIRE_GAP = 2;   // panels a candle keeps from a campfire (today's "hidden by the fire" distance)
@@ -114,7 +114,7 @@ function featureOf(r: Room): { key: string; def: string } | null {
     case "merchant": return { key: "merchant", def: "merchant" };
     case "librarian": return { key: "librarian", def: "librarian" };
     // (A library has its librarian, or codexes lying about: never both.)
-    case "library": return r.librarian ? { key: "librarian", def: "librarian" } : { key: "stores", def: "sack" };
+    case "library": return r.lectern ? { key: "lectern", def: "lectern" } : r.librarian ? { key: "librarian", def: "librarian" } : { key: "stores", def: "sack" };
     case "storehouse": return { key: "stores", def: "rickety-chest" };
     default: return null;
   }
@@ -310,6 +310,15 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       const r = room(k);
       return r ? pointsOf(layout.rooms[id], floors, k, r, dungeon, walk) : [];
     });
+    // (v9) A library's broken bookcases, in a row along its top; a campfire's stash beside the fire.
+    if (v >= 9) {
+      cageRow(floors, bookcasesIn(map, id).length).forEach((at, i) => {
+        const bid = bookcaseOf(id, i);
+        if (room(bid)) points.push({ at, owner: `${bid}:bookcase`, room: bid, def: "bookcase", solid: true });
+      });
+      const r = room(id), f = (walk.fires ?? []).find((q) => q.room === id);
+      if (r?.kind === "campfire" && r.sack && f) points.push({ at: { x: Math.round(f.x) + 2, y: Math.round(f.y) }, owner: `${id}:sack`, room: id, def: "sack", solid: true });
+    }
     pointsBy.set(id, points);
     const doors = doorsInside(o, floors, id);
     for (const d of doors) reserve(o, d, "door");

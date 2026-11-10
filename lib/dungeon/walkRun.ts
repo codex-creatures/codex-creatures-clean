@@ -16,13 +16,16 @@
 // Walking into a room (walkInto) puts the one you leave back, unfinished
 // or not: you can slip past foes unseen, and they're still there.
 
-import { makeRoom, leaveRoom, wonAtTop, type Cage, type DungeonId, type DungeonRun, type Room } from "./run";
+import { makeRoom, leaveRoom, wonAtTop, rollBookcases, type Cage, type DungeonId, type DungeonRun, type Room } from "./run";
+import { rollPeople, locatorFinds, CAMPFIRE_STASH, type Person } from "./people";
+import type { LocatorKey } from "../items/materials";
 import { rollLayout, campMap, labyrinthMap, roomCentre, layoutFloorplan, WALK_SPEC, WALK_LABYRINTH, TWO_DEN_SHAPES, type Layout } from "./layout";
 import { placeCampfires, CAMPFIRE_CHANCE, type Campfire } from "./campfire";
 import { rollWalkRooms, roomDepth } from "./walkRooms";
 import { spawnOf, isSpawn } from "./foes";
 import type { Pt } from "./floorplan";
 import type { Instance } from "../world/objects";
+import type { DungeonMap } from "./map";
 
 type Rng = () => number;
 
@@ -43,7 +46,14 @@ export type WalkRun = {
   flares?: number;              // flares lit this run (a new one lights afresh)
   v?: number;                   // the world version it was saved by (lib/world/migrate.ts WALK_V; missing: 0)
   placed?: Instance[];          // what was generated in it, where (lib/world/compat/v0.ts; missing in a v0 run)
+  people?: Person[];            // who wanders it, and where they are (people.ts; world version 9 on: none in older runs)
+  tracking?: LocatorKey[];      // the locators you've used this run: your scroll shows who each finds (people.ts locate)
 };
+
+// A library's broken bookcases (world version 9): rooms of their own, "<library>~b<i>" (as a second den is).
+export const bookcaseOf = (library: string, i: number) => `${library}~b${i}`;
+export const bookcasesIn = (map: DungeonMap, library: string) => Object.keys(map.nodes).filter((id) => id.startsWith(`${library}~b`))
+  .sort((a, b) => Number(a.slice(a.lastIndexOf("b") + 1)) - Number(b.slice(b.lastIndexOf("b") + 1)));
 
 // A big or long room that's a creature den holds a second den down its other
 // end this often (the user, 2026-11-06; foes.ts spawnOf). 🧪
@@ -55,10 +65,13 @@ export const SECOND_DEN = 0.35;
 // rooms (layout.ts labyrinthMap) on a bigger layout (WALK_LABYRINTH), the
 // Cyclops waiting at the top. Either way, some big rooms hold two dens.
 // dynamite: Klutz's dynamite quest wants a storehouse (the Labyrinth's large room).
-export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random, dungeon: WalkDungeon = 0, dynamite = false): DungeonRun {
+// wander: people who wander (decision 39; the Cyclops's, world version 9 on); false: the rooms as
+// they were before (the tests' runs made at older world versions).
+export function startWalkRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, cages: Cage[], bindle = false, rng: Rng = Math.random, dungeon: WalkDungeon = 0, dynamite = false, wander = dungeon === 1): DungeonRun {
   const layout = rollLayout(dungeon === 0 ? WALK_SPEC : WALK_LABYRINTH, rng);
-  const map = dungeon === 0 ? campMap(layout, false, rng) : labyrinthMap(layout, false, dungeon, rng, dynamite);
+  const map = dungeon === 0 ? campMap(layout, false, rng) : labyrinthMap(layout, false, dungeon, rng, dynamite, wander);
   const rooms = rollWalkRooms(map, rng, true, [], dungeon, bindle);
+  if (wander) addWanderersRooms(map, rooms, rng);
   for (const n of Object.values(map.nodes)) if (n.dynamite && rooms[n.id]) rooms[n.id] = { ...rooms[n.id], dynamite: true };
   if (dungeon === 0) rooms[map.boss] = { ...rooms[map.boss], cages };
   const start = rooms[map.start] ?? null; // (the entrance holds nothing, unless it's treasure)
@@ -72,13 +85,38 @@ export function startWalkRun(party: string[], team: string[], hp: Record<string,
   }
   const seed = Math.floor(rng() * 1e9);
   const fires = placeCampfires(layoutFloorplan(layout), map, (id) => roomCentre(layout.rooms[id]), rng, dungeon === 0 ? CAMPFIRE_CHANCE : 0);
+  const people = wander ? rollPeople(map, layout, layoutFloorplan(layout), rooms, rng, dungeon, bindle) : null;
+  if (people) Object.assign(rooms, people.rooms);
   return {
     id: crypto.randomUUID(), runNumber, startedAt: new Date().toISOString(), ...(dungeon !== 1 ? { dungeon } : {}),
     party: [...party], team: [...team], hp: Object.fromEntries(party.map((id) => [id, hp[id] ?? 1])),
     room: 0, map, path: [map.start], cleared: start ? [] : [map.start], current: start,
     loot: [], status: "exploring", inside: false, ...(bindle ? { bindle } : {}), ...(dungeon === 0 ? { campCages: cages } : {}),
-    walk: { layout, rooms, seed, at: roomCentre(layout.rooms[map.start]), room: map.start, line: null, fires },
+    walk: { layout, rooms, seed, at: roomCentre(layout.rooms[map.start]), room: map.start, line: null, fires, ...(people ? { people: people.people } : {}) },
   };
+}
+
+// The rooms decision 39 changes (world version 9): a library's broken
+// bookcases in place of its codexes lying about and its own librarian (the
+// librarian wanders), with a locator lectern; half the campfires with a stash
+// beside them; and now and then a locator in a stash (a chest's is rolled as
+// it's opened).
+function addWanderersRooms(map: DungeonMap, rooms: Record<string, Room>, rng: Rng) {
+  for (const id of Object.keys(rooms).sort()) {
+    const r = rooms[id];
+    if (r.kind === "library") {
+      rooms[id] = { kind: "library", lectern: true, done: false };
+      rollBookcases(rng).forEach((b, i) => {
+        const bid = bookcaseOf(id, i), n = map.nodes[id];
+        map.nodes[bid] = { id: bid, x: n.x, y: n.y, kind: "bookcase", links: [] };
+        rooms[bid] = b;
+      });
+    } else if (r.kind === "campfire" && rng() < CAMPFIRE_STASH) {
+      rooms[id] = { ...r, sack: [...(makeRoom("stash", rng).sack ?? []), ...locatorFinds(rng)] };
+    } else if (r.kind === "stash") {
+      rooms[id] = { ...r, sack: [...(r.sack ?? []), ...locatorFinds(rng)] };
+    }
+  }
 }
 
 // The dungeons that can be walked so far (the Encampment, live as "New"; the Labyrinth, in the lab).

@@ -40,7 +40,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -52,14 +52,16 @@ import dynamic from "next/dynamic";
 import { WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
 import { openWalkSave, recoverWalkSave, canRecover, newWalkRun } from "@/lib/world/migrate";
-import { FLARE_WALK } from "@/lib/dungeon/torch";
+import { FLARE_WALK, shutPlan } from "@/lib/dungeon/torch";
+import { layoutFloorplan, type Progress } from "@/lib/dungeon/layout";
+import { locate, locatorFinds } from "@/lib/dungeon/people";
 import EncounterCards from "@/components/EncounterCards";
 // The walk, drawn in 3D (decision 38): Three.js loads only once you're walking, not for the classic dungeons.
 const WalkView3D = dynamic(() => import("@/components/WalkView3D"), { ssr: false, loading: () => <div style={{ flex: 1, background: "#000" }} /> });
 import { CardsFan } from "@/components/CardStack";
 import GearViewModal from "@/components/GearViewModal";
 import Sheet from "@/components/Sheet";
-import { TOOLS, toolDrop } from "@/lib/items/materials";
+import { TOOLS, toolDrop, isLocator, type LocatorKey } from "@/lib/items/materials";
 import { fullBoxes } from "@/lib/items/storage";
 import Entrance from "@/components/dungeon/Entrance";
 import MapFirst from "@/components/dungeon/MapFirst";
@@ -384,7 +386,9 @@ export default function DungeonPage() {
       if (d) drops.push(d);
     }
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
-    const sack = capSack([...drops.map((d): SackItem => (d.dropType === "reward" ? { gold: d.amount } : { gear: d })), ...toolFinds(CHEST_TOOLS)]);
+    // (Where people wander, now and then a locator on top: people.ts LOCATOR_FIND.)
+    const sack = [...capSack([...drops.map((d): SackItem => (d.dropType === "reward" ? { gold: d.amount } : { gear: d })), ...toolFinds(CHEST_TOOLS)]),
+      ...(loadDungeon().run?.walk?.people ? locatorFinds() : [])];
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, sack, opened: true, done: true } } : r));
     setLootOpen(true);
   }
@@ -515,10 +519,30 @@ export default function DungeonPage() {
       return;
     }
     if (it.tool === "clairvoyance") { setSeer(null); setSheet(null); setMapOpen("pick"); return; }
+    if (isLocator(it.tool)) { if (track(it.tool)) spendTool(entry); return; }
     spendTool(entry);
     updateRun((r) => walkKeep({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }, { flare: FLARE_WALK, flares: (r.walk?.flares ?? 0) + 1 }));
     setSheet(null);
     setMapOpen("look");
+  }
+  // A locator (or a library's lectern): the scroll opens, showing who it finds (people.ts locate), and
+  // does every time it's opened from now on. Who it finds cut off (or no one wandering here): a word,
+  // and it isn't used up. True: it's working now (a second one of a kind you're using isn't spent).
+  function track(kind: LocatorKey): boolean {
+    const r = loadDungeon().run, walk = r?.walk;
+    const plan = walk && layoutFloorplan(walk.layout), p: Progress | undefined = walk && { room: walk.room, line: walk.line ?? Infinity };
+    const found = walk?.people && plan && p && locate(kind, walk.people, walk.at, walk.layout, shutPlan(plan, walk.layout, p), p);
+    if (!found) {
+      setSheet(null);
+      setNotes([walk?.people ? "It appears that they are no longer here…" : "Nobody wanders this dungeon."]);
+      return false;
+    }
+    const fresh = !(walk.tracking ?? []).includes(kind);
+    if (fresh) updateRun((x) => walkKeep(x, { tracking: [...(x.walk?.tracking ?? []), kind] }));
+    setSheet(null);
+    setWalkPanel(false);
+    setWalkScroll(true);
+    return fresh;
   }
   function spendTool(entry: BagEntry) {
     const cur = loadDungeon();
@@ -792,7 +816,7 @@ export default function DungeonPage() {
       let n: DungeonRun = { ...r, current: { ...r.current, witch: next } };
       if (next.state === "lost") {
         n = markDone(curse(n));
-        stabbed = n.illness?.id;
+        stabbed = illnessesOf(n).at(-1)?.id;
       }
       return n;
     });
@@ -903,7 +927,8 @@ export default function DungeonPage() {
     if (c.opened && (c.sack?.length ?? 0) > 0) setLootOpen(true);
     else if (c.kind === "chest" && !c.done) openChest();
     else if (c.container && c.done && !c.opened) openSack();
-    else if (c.kind === "stash" && !c.opened) openSack();
+    else if ((c.kind === "stash" || c.kind === "bookcase" || (c.kind === "campfire" && c.sack)) && !c.opened) openSack(); // (a library's broken bookcase, a campfire's stash: world version 9)
+    else if (c.kind === "library" && c.lectern) track("librarian_locator"); // (its lectern finds the librarian)
     else if (c.kind === "treasure" && !c.done) takeTreasure(c);
     else if ((c.kind === "storehouse" || c.kind === "library") && !hasFight(c) && c.sack && !c.opened) openSack();
     // Someone to talk to, or a pool or a deck to use: the room's window, as in a room.
@@ -933,7 +958,6 @@ export default function DungeonPage() {
     const tutorial = room.quest === "thief";
     const fighters = mine.map((c) => c.fighter);
     const ids = own;
-    const sick = r.illness ? ids.indexOf(r.illness.id) : -1;
     const info: MemberInfo[] = room.boss
       ? BOSS_PARTS_OF[room.boss].map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName, creatureId: p.id }))
       : room.enemies!.map((e) => ({
@@ -952,7 +976,8 @@ export default function DungeonPage() {
         startHp: mine.map((c, i) => Math.round((r.hp[own[i]] ?? 1) * c.fighter.maxHp)),
         title: room.boss === "hydra" ? "The Hydra · its lair" : room.boss ? "The Cyclops · its lair" : `${DUNGEONS[dungeonOf(r)].name} · ${ROOM_INFO[room.kind].name}`,
         boss: room.boss,
-        illness: sick >= 0 ? { index: sick, rounds: r.illness!.left } : undefined,
+        // (Each illness its own, counting down on its own: decision 39.)
+        illnesses: illnessesOf(r).flatMap((ill) => (ids.includes(ill.id) ? [{ index: ids.indexOf(ill.id), rounds: ill.left }] : [])),
         tutorial,
         pair: room.kind === "encampment" && room.variant === "ambush",
         turnLimit: room.kind === "encampment" && room.variant === "rigged" ? squadsOf(dungeonOf(r)).fuse : undefined,
@@ -968,9 +993,13 @@ export default function DungeonPage() {
     A.team.forEach((f, i) => { if (ids[i] && ids[i] !== KLUTZ_DROP_ID) hp[ids[i]] = f.hp / f.maxHp; });
     // Who was on the field at the end (the witch's next target), and what's left of any illness.
     const last = ids[A.active] && ids[A.active] !== KLUTZ_DROP_ID ? ids[A.active] : r.lastOnField;
-    const sickAt = r.illness ? ids.indexOf(r.illness.id) : -1;
-    const sickLeft = sickAt >= 0 ? (A.team[sickAt].statuses.find((s) => s.id === "illness")?.rounds ?? 0) : r.illness?.left ?? 0;
-    const illness = r.illness && sickLeft > 0 && (hp[r.illness.id] ?? 1) > 0 ? { ...r.illness, left: sickLeft } : undefined;
+    // (A creature that fought keeps what's left of each of its illnesses; one that didn't, all of them.)
+    const illnesses = [...new Set(illnessesOf(r).map((ill) => ill.id))].flatMap((id) => {
+      if ((hp[id] ?? 1) <= 0) return [];
+      const at = ids.indexOf(id);
+      if (at < 0) return illnessesOf(r).filter((ill) => ill.id === id);
+      return A.team[at].statuses.filter((s) => s.id === "illness" && s.rounds > 0).map((s) => ({ id, left: s.rounds }));
+    });
     // XP (only for a win: no levelling up by throwing fights): every enemy
     // knocked out. You get all of it; your team shares it by how much each
     // did (at least 10% each, even from the bench).
@@ -1009,7 +1038,7 @@ export default function DungeonPage() {
       const you = game.gainPlayerXp(xp);
       if (you) xpNotes.push(`🌟 You reached explorer level ${you}!`);
     }
-    const after = (x: DungeonRun): DungeonRun => ({ ...x, lastOnField: last, illness });
+    const after = (x: DungeonRun): DungeonRun => withIllnesses({ ...x, lastOnField: last }, illnesses);
     // Second Wind (a full Frontier's Mail set): a won fight heals a little.
     const winds: string[] = [];
     if (m.state.winner === "A") {
@@ -1255,7 +1284,7 @@ export default function DungeonPage() {
     <RoomScreen
       run={run} room={run.current} notes={notes} byId={byId}
       gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite}
+      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
       bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
       onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
     />

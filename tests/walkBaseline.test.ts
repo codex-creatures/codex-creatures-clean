@@ -31,7 +31,7 @@ const UPDATE = process.env.UPDATE_GOLDEN === "1";
 
 const cages: Cage[] = [{ creatureId: "moss_wolf", level: 3 }, {}];
 const encampment = (seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, cages, false, seeded(seed), 0);
-const cyclops = (seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(seed), 1);
+const cyclops = (seed: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(seed), 1, false, false); // (rooms as rolled before people wandered, decision 39: phase 0 pinned them)
 // A run from before rooms had stone in them (2026-11-07): rolled at 3-tile blocks, saved with no block and no insides.
 function beforePillars(seed: number): DungeonRun {
   const was = WALK_SPEC.block;

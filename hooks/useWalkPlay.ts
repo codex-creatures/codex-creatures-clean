@@ -91,7 +91,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
   useEffect(() => () => props.current.onKeep(walkState(sim)), [sim]);
 
   // The things to tap, as the rooms stand now.
-  const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.walk.spots, dungeon);
+  const things = (): Thing[] => thingsOf(layout, placed, ids, props.current.room, sim.npcs, props.current.walk.spots, dungeon, sim.people);
 
   // Tapped (and walked up to) a thing: a cage opens as a cage; a chest or cage still guarded sets its guards on you; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.guarded ? soundAlarm(sim, t.room, performance.now())

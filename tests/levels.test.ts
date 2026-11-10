@@ -5,7 +5,7 @@ import { proficiencyAt, rollsOf, hpAt, addXp, xpToNext, MAX_LEVEL, REF_LEVEL, HP
 import { starterCreature, STARTER_LEVEL } from "../lib/creatures/starter";
 import { buildFighter } from "../lib/combat/loadout";
 import { newWitchGame, guess, walkAway, remaining, drawNext, odds, sitDown, isSeated, DECK, MAX_CORRECT, type WitchGame } from "../lib/dungeon/witch";
-import { startRun, curse, illnessTick, stabTarget, makeRoom, enemyLevel, ILLNESS_DAMAGE, ILLNESS_ACTIONS, DEEP_ROUTE } from "../lib/dungeon/run";
+import { startRun, curse, illnessTick, illnessesOf, stabTarget, makeRoom, enemyLevel, ILLNESS_DAMAGE, ILLNESS_ACTIONS, DEEP_ROUTE } from "../lib/dungeon/run";
 import { rollMap, routeLength } from "../lib/dungeon/map";
 import { DUNGEONS, ABYSS_WARDEN_LEVEL, endRun } from "../lib/dungeon/run";
 
@@ -93,11 +93,32 @@ describe("the card witch", () => {
     expect(stabTarget(run)).toBe("b");
     expect(stabTarget({ ...run, lastOnField: undefined })).toBe("a");
     let r = curse(run);
-    expect(r.illness).toEqual({ id: "b", left: ILLNESS_ACTIONS });
+    expect(illnessesOf(r)).toEqual([{ id: "b", left: ILLNESS_ACTIONS }]);
     for (let i = 0; i < ILLNESS_ACTIONS; i++) r = illnessTick(r).run;
     expect(r.hp.b).toBeCloseTo(1 - ILLNESS_DAMAGE * ILLNESS_ACTIONS);
-    expect(r.illness).toBeUndefined();
+    expect(illnessesOf(r)).toEqual([]);
+    expect("illnesses" in r || "illness" in r).toBe(false);
     expect(illnessTick(r).hurt).toBeUndefined();
+  });
+
+  it("illnesses stack, each counting down on its own (decision 39): two on one creature hurt twice as much", () => {
+    const run = { ...startRun(["a", "b"], ["a", "b"], {}, 2), lastOnField: "b" };
+    let r = curse(run);
+    r = illnessTick(r).run;                        // the first has 2 left
+    r = curse(r);                                  // a second witch: 3
+    expect(illnessesOf(r).map((i) => i.left)).toEqual([ILLNESS_ACTIONS - 1, ILLNESS_ACTIONS]);
+    const hp = r.hp.b;
+    const t = illnessTick(r);
+    expect(t.hurt).toBe("b");
+    expect(t.run.hp.b).toBeCloseTo(hp - 2 * ILLNESS_DAMAGE);
+    r = illnessTick(illnessTick(t.run).run).run;   // the first ran out a tick before the second
+    expect(r.hp.b).toBeCloseTo(1 - ILLNESS_DAMAGE * 2 * ILLNESS_ACTIONS);
+    expect(illnessesOf(r)).toEqual([]);
+    // A run saved before they stacked: its one illness is read, and counts down the same.
+    const old = { ...run, illness: { id: "a", left: 1 } };
+    expect(illnessesOf(old)).toEqual([{ id: "a", left: 1 }]);
+    expect(illnessTick(old)).toMatchObject({ hurt: "a", run: { hp: { a: 1 - ILLNESS_DAMAGE } } });
+    expect(illnessTick(old).run.illness).toBeUndefined();
   });
 });
 

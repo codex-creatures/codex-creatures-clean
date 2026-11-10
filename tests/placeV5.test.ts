@@ -27,7 +27,7 @@ import { unsupportedRun } from "../lib/world/version";
 // off the panels by stone; new runs are made at it.
 
 const made = (d: 0 | 1, seed: number, v = 5): DungeonRun => {
-  const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, d === 0 ? [{ creatureId: "moss_wolf", level: 3 }, {}] : [], false, seeded(seed * 7919 + 13), d);
+  const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, d === 0 ? [{ creatureId: "moss_wolf", level: 3 }, {}] : [], false, seeded(seed * 7919 + 13), d, false, false); // (rooms as rolled before people wandered, decision 39)
   return { ...run, walk: { ...run.walk!, v } };
 };
 const placedOf = (run: DungeonRun) => placeWalk(run.walk!, run.map, dungeonOf(run), (id) => walkRoom(run, id));

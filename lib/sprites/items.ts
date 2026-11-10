@@ -33,6 +33,8 @@ export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: 
 export const TOOL_SPRITES: Record<ToolKey, Sprite> = {
   flare: withArt(["."], { src: "/sprites/items/tools/flare.png", w: 32, h: 32, size: 32 }),
   clairvoyance: icon("tools/clairvoyance"), revival: icon("tools/revival"),
+  // (Stand-ins till the locators have art of their own.)
+  merchant_map: icon("schematic"), crystal_ball: icon("tools/clairvoyance"), librarian_locator: icon("codex"),
 };
 export const CODEX_SPRITE = icon("codex");
 export const SCROLL_SPRITE = icon("xp_scroll");

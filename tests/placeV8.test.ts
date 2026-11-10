@@ -31,11 +31,11 @@ const RUNS: [0 | 1, number][] = process.env.FULL_TESTS ? [[0, 1], [0, 2], [0, 3]
 const cases = RUNS.map(([d, s]) => { const run = made(d, s); return { d, s, run, p: placedOf(run) }; });
 
 describe("world version 8: wall torches, not wall candles", () => {
-  it("new runs are made at v8, with no wall candles at all", () => {
-    expect(PLACED_V).toBe(8);
-    expect(WALK_V).toBe(8);
+  it("new runs are made at v8 or later (9: people who wander), with no wall candles at all", () => {
+    expect(PLACED_V).toBeGreaterThanOrEqual(8);
+    expect(WALK_V).toBe(PLACED_V);
     for (const { run } of cases) {
-      expect(run.walk!.v).toBe(8);
+      expect(run.walk!.v).toBe(PLACED_V);
       expect(run.walk!.placed!.some((i) => MOUNTED_DEFS.includes(i.def))).toBe(false);
     }
   });

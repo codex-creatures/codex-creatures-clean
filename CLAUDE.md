@@ -52,7 +52,7 @@ own: everything else runs in the browser.
      card's `soulStone`, where missing means "roll it on load" and `null` means none).
    - Exported save files must stay importable: bump `SAVE_FILE_VERSION` (lib/saveFile.ts) only
      together with a reader for the older version.
-   - **Walkable runs carry a world version** (`WALK_V`, now 8). A run keeps the placement rules it
+   - **Walkable runs carry a world version** (`WALK_V`, now 9). A run keeps the placement rules it
      was made with for good: pin the current version before changing placement rules, and make new
      rules a new world version ([docs/world/persistence.md](docs/world/persistence.md)).
    - **Never write saves on the user's real addresses** while testing: http://localhost:3000, the
@@ -152,7 +152,8 @@ kill theirs.
     rolls, summoning, bosses, starter, soul stones); `items/` (stat rolling: `rollConfig.ts`,
     `budgets.ts`, `ceilings.ts`, **the user's most carefully balanced system**; armour, materials).
   - `dungeon/`: runs (`run.ts`), the scroll map (`map.ts`), walkable layouts (`layout.ts`,
-    `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`.
+    `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`,
+    `people.ts` (the people who wander, and the locators).
   - `world/`: the walkable world (units, grid, objects, occupancy, policy, place, placements,
     migrate, version, walkWorld, walkSim, compat). `render/`: projection and the scene builder.
     `render3d/`: the 3D prototype's geometry and its Stone mode's texture and light rules (components/WalkView3D.tsx; world/rendering.md §4.8).

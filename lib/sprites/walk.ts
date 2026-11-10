@@ -84,6 +84,9 @@ export type WalkProp = { src: string; w: number; h: number; size: number };
 export const WALK_CAGE: WalkProp = { src: "/sprites/walk/cage.png", w: 48, h: 48, size: 22 };
 export const WALK_CAGE_OPEN: WalkProp = { src: "/sprites/walk/cage-open.png", w: 48, h: 48, size: 22 };
 export const WALK_POOL: WalkProp = { src: "/sprites/walk/healing-pool.png", w: 64, h: 48, size: 40 };
+// A library's broken bookcases and its locator lectern (decision 39): the Den's battered bookcase and lectern art.
+export const WALK_BOOKCASE: WalkProp = { src: "/sprites/den/bookcase-2.png", w: 76, h: 86, size: 30 };
+export const WALK_LECTERN: WalkProp = { src: "/sprites/den/lectern.png", w: 48, h: 56, size: 20 };
 // The card witch (an old crone with a stick), hobbling about her room (PixelLab character, a sheet like the
 // hero's: rows south, east, north, west mirrored; column 0 standing, then 6 of
 // walk). tall: her height in the cell, px (she's drawn NPC_PX tall: WalkView).

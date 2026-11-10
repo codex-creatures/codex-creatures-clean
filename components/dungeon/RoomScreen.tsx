@@ -11,7 +11,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { isClub } from "@/lib/quest";
 import { type Guess } from "@/lib/dungeon/witch";
 import { AI_LEVEL_LABELS } from "@/lib/combat/thinkingAi";
-import { squadsOf, CHEST_DROPS, DECK_CARDS, ROOM_INFO, hasFight, codexPrice, type Ware, waresFor, type BagEntry, fightingTeam, gearName, type DungeonRun, type Room, dungeonOf, bossLevel, dynamiteHere } from "@/lib/dungeon/run";
+import { squadsOf, CHEST_DROPS, DECK_CARDS, ROOM_INFO, hasFight, codexPrice, type Ware, waresFor, type BagEntry, fightingTeam, gearName, type DungeonRun, type Room, dungeonOf, bossLevel, dynamiteHere, illnessesOf } from "@/lib/dungeon/run";
 import { rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import { combatLine } from "@/lib/dungeon/runText";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
@@ -21,9 +21,10 @@ import { type StoragePlan } from "@/lib/items/materials";
 import EncampmentPanel from "./EncampmentPanel";
 import WitchTable from "./WitchTable";
 
-export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite }: {
+export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite, onLectern }: {
   plans: StoragePlan[]; // storage schematics you have or built (the merchant won't offer them)
   onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void; onDynamite: () => void;
+  onLectern?: () => void; // a walkable library's lectern (world version 9): find the librarian
   bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void; onUseBag: (bagIndex: number) => void;
   run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
@@ -123,7 +124,7 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
         </>
       ))}
 
-      {room.kind === "witch" && room.witch && <WitchTable key={run.path.length} room={room} victim={byId(run.illness?.id ?? "")?.name} onSit={onWitchSit} onGuess={onWitch} onLeave={onWitchLeave} next={next} />}
+      {room.kind === "witch" && room.witch && <WitchTable key={run.path.length} room={room} victim={byId(illnessesOf(run).at(-1)?.id ?? "")?.name} onSit={onWitchSit} onGuess={onWitch} onLeave={onWitchLeave} next={next} />}
 
       {room.kind === "cards" && (room.done ? next : (
         <>
@@ -132,9 +133,26 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
         </>
       ))}
 
-      {room.kind === "campfire" && (
+      {room.kind === "campfire" && !room.sack && (
         <><p style={{ fontSize: 13, color: "#d8d4c8" }}>A campfire crackles. Stand by it and your team warms up while it lasts.</p>{onward}</>
       )}
+      {room.kind === "campfire" && room.sack && (!room.opened ? (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>A campfire crackles, and someone&apos;s left a sack beside it. Stand by the fire and your team warms up.</p>
+          <button className="pixel-btn" onClick={onOpenSack}>Open the sack</button>
+          {onward}
+        </>
+      ) : <>{sackPanel}{onward}</>)}
+      {room.kind === "empty" && (
+        <><p style={{ fontSize: 13, color: "#d8d4c8" }}>Nothing here but dust and cobwebs.</p>{onward}</>
+      )}
+      {room.kind === "bookcase" && (!room.opened ? (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>A broken bookcase, its shelves split. Something may still be wedged in there.</p>
+          <button className="pixel-btn" onClick={onOpenSack}>🔍 Search it</button>
+          {onward}
+        </>
+      ) : <>{sackPanel}{onward}</>)}
       {room.kind === "pool" && (room.done ? (
         <><p style={{ fontSize: 13, color: "#d8d4c8" }}>The water goes still.</p>{next}</>
       ) : (
@@ -189,7 +207,14 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
         </>
       )}
 
-      {room.kind === "library" && !room.librarian && (!room.opened ? (
+      {room.kind === "library" && room.lectern && (
+        <>
+          <p style={{ fontSize: 13, color: "#d8d4c8" }}>Toppled shelves and broken bookcases to search. On a lectern, a reading glass over a map: it shows where the librarian is.</p>
+          {onLectern && <button className="pixel-btn" onClick={onLectern}>🔍 Look through the glass</button>}
+          {onward}
+        </>
+      )}
+      {room.kind === "library" && !room.librarian && !room.lectern && (!room.opened ? (
         <>
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>Shelves to the ceiling, most of them toppled. Something bound in leather is still in there somewhere.</p>
           <button className="pixel-btn" onClick={onOpenSack}>🔍 Search the shelves</button>

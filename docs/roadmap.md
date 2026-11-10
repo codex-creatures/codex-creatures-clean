@@ -21,10 +21,12 @@ unchanged (the sim, layouts, placements and world versions are shared). The clas
 dungeons are untouched. Then the user play-tests on their phone (Vercel), and the gameplay work
 starts. Kept until the 3D view has been played: components/WalkView.tsx (the 2D view) and the labs.
 
-**Next: people who wander, and the locators** (📌 the user, 2026-11-10, decision 39; not built;
-the Cyclops first): 2 witches, a merchant and a librarian walking the dungeon instead of having
-rooms, more dens and campfires in their place, and three rare locators (merchant map, crystal
-ball, librarian locator). [design/walkable-play.md](design/walkable-play.md) §8.
+**Built: people who wander, and the locators** (✅ the user, 2026-11-10, decision 39; built
+2026-11-10, world version 9, the Cyclops first): 2 witches, a merchant and a librarian walking the
+dungeon instead of having rooms, more dens and campfires in their place (half with a stash), empty
+small rooms, the library's broken bookcases and lectern, stacking illnesses, and three rare
+locators (merchant map, crystal ball, librarian locator). [design/walkable-play.md](design/walkable-play.md) §8.
+Then the user play-tests it on Vercel.
 
 Then the work is **the gameplay loop and player engagement**: playtesters should meet more
 interesting situations, real decisions, progression and surprises, not feel they've seen it all.
@@ -171,8 +173,8 @@ kept in [world/rendering.md](world/rendering.md#47-what-todays-drawing-gets-wron
   [world/art-pipeline.md](world/art-pipeline.md#still-undefined)
 - **Candles placed by where a room is darkest** was proposed as its own approved change (stage A
   notes); the v5 budget does this for mounted lights. Floor candles are decorative.
-- **Wandering NPCs and the lights they carry**: its own feature, designed and approved before it's
-  built ([world/placement.md](world/placement.md) §5.7). Needs nothing from the art phases.
+- ✅ **Wandering NPCs and the lights they carry**: built as decision 39 (2026-11-10, world version 9;
+  [design/walkable-play.md](design/walkable-play.md) §8, which wins over §5.7 where they differ).
 - **Art in the walkable rooms** (the user's list, [design/walkable-play.md](design/walkable-play.md)):
   small floor decorations to break up the repeat (decorations, not scattered tile variants); 5–6
   variants of the wall panel (moss, vines, cracks); pillar art that reads as a pillar; rubble art;
@@ -197,7 +199,7 @@ kept in [world/rendering.md](world/rendering.md#47-what-todays-drawing-gets-wron
 - **Stamps:** the format is in §5.5; the first is built when a room needs one. (A stamp's grid is
   in panels; a stamp may give a thing an exact subcell spot.)
 - **Walking on subcells:** designed for in §5.4, changed only when the user decides.
-- **Wandering NPCs with their own lights** (§5.7): after phase 2, its own feature.
+- ✅ **Wandering NPCs with their own lights** (§5.7): built as decision 39 (world version 9).
 - **Candles by any wall** (§5.6): on 2b's placement.
 - **A placement debugging view** (the user, 2026-11-08): a lab page drawing a room's subcells,
   each thing's footprint, the blocked and reserved panels, the paths kept, and the interaction

@@ -13,7 +13,11 @@
 //     around you (twice your own light's radius) and lets you look at your map
 //     scroll again;
 //   - a clairvoyance scroll lets you look at the map and pick any room: you
-//     see what's in it (even a mystery) and the rooms around it.
+//     see what's in it (even a mystery) and the rooms around it;
+//   - the locators (decision 39, the user, 2026-11-10): a merchant map, a
+//     crystal ball and a librarian locator show where the wandering merchant,
+//     the closest card witch you can reach, or the librarian is, on your scroll
+//     (lib/dungeon/people.ts). Used once, each works for the rest of the run.
 //   Tools stay in your bag between runs.
 
 import type { Drop, Rarity } from "../types";
@@ -33,7 +37,10 @@ export const MATERIALS: Record<MaterialKey, { name: string; icon: string; rarity
 };
 export const MATERIAL_KEYS = Object.keys(MATERIALS) as MaterialKey[];
 
-export type ToolKey = "flare" | "clairvoyance" | "revival";
+export type ToolKey = "flare" | "clairvoyance" | "revival" | LocatorKey;
+export type LocatorKey = "merchant_map" | "crystal_ball" | "librarian_locator";
+export const LOCATORS: LocatorKey[] = ["merchant_map", "crystal_ball", "librarian_locator"];
+export const isLocator = (k: ToolKey | undefined): k is LocatorKey => !!k && (LOCATORS as string[]).includes(k);
 export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity; price: number; desc: string }> = {
   flare:        { name: "Torch",               icon: "🧨", rarity: "uncommon", price: 75,
                   desc: "Light it in the Labyrinth: see the rooms around you and look at your map again." },
@@ -42,6 +49,13 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
   // Between rooms, or in a fight on a knocked-out teammate (it takes your turn): see REVIVE_HP in lib/dungeon/run.ts.
   revival:      { name: "Revival Elixir",      icon: "💖", rarity: "epic",     price: 500,
                   desc: "In the Labyrinth, between rooms or in a fight (it takes your turn): brings a knocked-out creature back with half its HP." },
+  // The locators (lib/dungeon/people.ts: LOCATOR_PRICE is the merchant's price).
+  merchant_map:      { name: "Merchant Map",      icon: "🗺️", rarity: "rare", price: 200,
+                       desc: "Use it in the Labyrinth: your scroll shows where the wandering merchant is, for the rest of the run." },
+  crystal_ball:      { name: "Crystal Ball",      icon: "🔮", rarity: "rare", price: 200,
+                       desc: "Use it in the Labyrinth: your scroll shows where the closest card witch you can still reach is, for the rest of the run." },
+  librarian_locator: { name: "Librarian Locator", icon: "📖", rarity: "rare", price: 200,
+                       desc: "Use it in the Labyrinth: your scroll shows where the librarian is, for the rest of the run." },
 };
 
 export type SchematicKey = "crooked_bookcase" | "iron_cage" | "weapon_storage" | "armor_storage";
