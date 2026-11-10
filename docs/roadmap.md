@@ -10,16 +10,27 @@ unasked · ✗ dropped: don't propose again unless the user brings it back.
 
 ## Current focus: gameplay (the user, 2026-11-10)
 
-For now the work is **the gameplay loop and player engagement**: playtesters should meet more
+**First, before the gameplay work: the 3D migration of the walkable dungeons** (📌 the user,
+2026-11-10, decision 38). Both walkable dungeons in the game, "🔥 New: the Encampment" and
+"🔥 New: the Cyclops", are drawn by the 3D view instead of the 2D one: a full migration, no switch.
+The 3D view (components/WalkView3D.tsx, Stone mode with decision 37's picks: 48 a unit, square on
+screen, kit F stand-in textures, art pixels at 15 across, smooth light, the fade; today's flat
+sprites) is wired to the real run as WalkView is: fights and the boss, loot sacks, cages, pools,
+campfires, the scroll and torch, rubble, alarms, saving mid-run. The game rules and saves are
+unchanged (the sim, layouts, placements and world versions are shared). The classic scroll-map
+dungeons are untouched. Then the user play-tests on their phone (Vercel), and the gameplay work
+starts. Kept until the 3D view has been played: components/WalkView.tsx (the 2D view) and the labs.
+
+Then the work is **the gameplay loop and player engagement**: playtesters should meet more
 interesting situations, real decisions, progression and surprises, not feel they've seen it all.
 - **Areas:** combat variety, creature progression, dungeon encounters, rewards, quests, Den
   progression.
 - **How:** improve the loop, not features for their own sake. Reuse existing systems; little or no
   new art; no architectural refactoring unless an agreed gameplay feature needs it. Keep the live
   game stable and playable.
-- **Paused, not abandoned:** the 3D prototype and all art-style work (below, "The walkable world").
-  Its work and decisions (35–37) stay as they are; no PixelLab material samples until the user says
-  (their credits reset about 2026-11-16).
+- **Paused, not abandoned:** further 3D look and art-style work (below, "The walkable world"):
+  no PixelLab material samples or art standard until the user says (their credits reset about
+  2026-11-16). Decisions 35–37 stay; the migration above uses them as they are.
 - **Candidates from the 2026-11-10 review** (none approved yet; the user picks, one at a time):
   1. Encounter variety inside runs: rooms holding more than one thing (📌 below) and small room
      twists, from the existing rooms, foes and loot.
