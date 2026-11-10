@@ -147,8 +147,9 @@ v0 → v1 → v2 are migrations.
 | 7 | guided layouts, 2-tile Cyclops blocks (2026-11-09) | candle dials retuned |
 | 8 | the user (2026-11-09) | no wall candles: the budget places wall torches (a v8 run holding a wall candle is damaged) |
 | 9 | decision 39 (the user, 2026-11-10) | people who wander (`walk.people`, `walk.tracking`; the Cyclops's witches, merchant and librarian are rooms `person~…` with no place in the layout); a library's broken bookcases (`<library>~b<i>`: `bookcase`) and its `lectern`; a `sack` beside half the campfires. The Encampment's runs are placed as at v8 |
+| 10 | the user's play-test (2026-11-11) | a library's broken bookcases kept clear of its doorways (`BOOKCASE_DOOR_GAP`); nothing else differs |
 
-**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v8 (tests/placeV4Pinned.test.ts,
+**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v9 (tests/placeV4Pinned.test.ts,
 saved runs in tests/fixtures/pins/), each fixture's `tests/golden/walk/<fixture>.placed.json`, and the
 phase-0/1 goldens. **Before changing placement rules, pin the current version; new rules mean a new
 world version.**

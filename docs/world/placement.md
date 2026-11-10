@@ -206,10 +206,12 @@ Distilled on 2026-11-09 from the phase designs in world-spec §8 (kept word for 
 [archive/2026-11-09/world-spec.md](../archive/2026-11-09/world-spec.md), §8). This is what the code
 does now; the archive holds why, the options weighed and the approval gates. Each world version is
 for new runs only: **a run keeps the rules it was made with for good** (see
-[persistence.md](persistence.md#world-versions)). New runs are made at `PLACED_V` 9
+[persistence.md](persistence.md#world-versions)). New runs are made at `PLACED_V` 10
 (lib/world/place.ts). (v9, decision 39: a library's broken bookcases in a row along its top, its
 lectern at its middle, a campfire's stash two tiles east of the fire; the people who wander aren't
-placed: lib/dungeon/people.ts starts them.)
+placed: lib/dungeon/people.ts starts them. v10, the user's play-test, 2026-11-11, after one stood in
+front of a tunnel: each bookcase moves to the nearest panel more than `BOOKCASE_DOOR_GAP` 2 panels
+from every door's inside panel, and not touching another bookcase.)
 
 ### Modules
 

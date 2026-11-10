@@ -74,7 +74,8 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 9;          // the world version a new run is placed at (people who wander, a library's bookcases and lectern, campfire stashes; version.ts)
+export const PLACED_V = 10;         // the world version a new run is placed at (a library's bookcases clear of its doorways; version.ts)
+export const BOOKCASE_DOOR_GAP = 2;  // (v10) panels: no broken bookcase this close to the panel inside a door (either way)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
 export const CANDLE_FIRE_GAP = 2;   // panels a candle keeps from a campfire (today's "hidden by the fire" distance)
@@ -127,6 +128,17 @@ function cageRow(floors: Rect[], count: number): Pt[] {
   const mid = top.x + Math.floor(top.w / 2);
   const gap = Math.min(CAGE_GAP, Math.floor((top.w - 2) / Math.max(1, count)));
   return Array.from({ length: count }, (_, i) => ({ x: mid + Math.round((i - (count - 1) / 2) * gap), y: top.y + 1 }));
+}
+// (v10) A library's broken bookcases: the cages' row, each moved to the nearest panel clear of the
+// doorways (BOOKCASE_DOOR_GAP) and of the bookcases before it, so none stands in front of a tunnel.
+function bookcaseRow(floors: Rect[], count: number, doors: Pt[]): Pt[] {
+  const out: Pt[] = [];
+  const near = (a: Pt, b: Pt, gap: number) => Math.abs(a.x - b.x) <= gap && Math.abs(a.y - b.y) <= gap;
+  for (const want of cageRow(floors, count)) {
+    const at = byDistance(floors, want).find((p) => !doors.some((d) => near(p, d, BOOKCASE_DOOR_GAP)) && !out.some((q) => near(p, q, 1)));
+    out.push(at ?? want);
+  }
+  return out;
 }
 // A waiting boss's stand: the middle of its room's top floor, WAIT_FROM_TOP down.
 function standOf(floors: Rect[]): Pt {
@@ -312,7 +324,8 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     });
     // (v9) A library's broken bookcases, in a row along its top; a campfire's stash beside the fire.
     if (v >= 9) {
-      cageRow(floors, bookcasesIn(map, id).length).forEach((at, i) => {
+      const n = bookcasesIn(map, id).length;
+      (v >= 10 ? bookcaseRow(floors, n, doorsInside(o, floors, id)) : cageRow(floors, n)).forEach((at, i) => {
         const bid = bookcaseOf(id, i);
         if (room(bid)) points.push({ at, owner: `${bid}:bookcase`, room: bid, def: "bookcase", solid: true });
       });

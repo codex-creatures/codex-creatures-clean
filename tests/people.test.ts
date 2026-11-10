@@ -2,13 +2,14 @@ import { describe, expect, it } from "vitest";
 import { slowIt } from "./slow";
 import { seeded } from "./walkBaseline";
 import { startWalkRun, walkRoom, bookcasesIn } from "../lib/dungeon/walkRun";
-import { WALK_ROOM_MIX, WALK_MYSTERY_MIX, rollBookcases, hasFight, BOOKCASE_SCROLLS, type DungeonRun } from "../lib/dungeon/run";
+import { WALK_ROOM_MIX, WALK_MYSTERY_MIX, rollBookcases, hasFight, BOOKCASE_SCROLLS, dungeonOf, type DungeonRun } from "../lib/dungeon/run";
 import { layoutFloorplan, startProgress, EMPTY_SHAPES } from "../lib/dungeon/layout";
 import { shutPlan } from "../lib/dungeon/torch";
 import { roomAt } from "../lib/dungeon/walk";
 import { codexRarityOf } from "../lib/drops";
 import { PEOPLE, LOCATOR_PRICE, isPerson, hostile, locate, cutOff, stepWanderer, wandererOf, personLit, type Wanderer } from "../lib/dungeon/people";
 import { newWalkRun } from "../lib/world/migrate";
+import { placeWalk, BOOKCASE_DOOR_GAP } from "../lib/world/place";
 import { placementsOfWalk } from "../lib/world/migrate";
 import { roomIds, thingsOf } from "../lib/world/walkWorld";
 import { WALK_V } from "../lib/world/version";
@@ -149,6 +150,27 @@ describe("people who wander", () => {
 });
 
 describe("a library's broken bookcases", () => {
+  // (World version 10, the user's play-test, 2026-11-11: one stood in front of a tunnel. Seed 4's library has a door in its top wall.)
+  it("stand clear of the library's doorways", () => {
+    const run = cyclops(4), walk = run.walk!;
+    expect(walk.v).toBe(10);
+    const plan = layoutFloorplan(walk.layout);
+    const { placed } = placeWalk(walk, run.map, dungeonOf(run), (id) => walkRoom(run, id));
+    const libraries = Object.keys(walk.layout.rooms).filter((id) => walkRoom(run, id)?.kind === "library");
+    expect(libraries.length).toBeGreaterThan(0);
+    for (const id of libraries) {
+      const rects = plan.rooms[id];
+      const inside = (x: number, y: number) => rects.some((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+      const doors = plan.doors.filter((d) => d.room === id).flatMap((d) => [[0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => ({ x: d.x + dx, y: d.y + dy })).filter((q) => inside(q.x, q.y)));
+      const cases = placed.filter((q) => q.def === "bookcase" && q.room.startsWith(`${id}~b`));
+      expect(cases.length).toBe(bookcasesIn(run.map, id).length);
+      for (const c of cases) {
+        const at = { x: Math.floor(c.sx / 3), y: Math.floor(c.sy / 3) };
+        for (const d of doors) expect(Math.max(Math.abs(at.x - d.x), Math.abs(at.y - d.y)), `${c.id} by the door at ${d.x},${d.y}`).toBeGreaterThan(BOOKCASE_DOOR_GAP);
+      }
+    }
+  });
+
   it("3–5 a library; only codexes (never Legendary) and clairvoyance scrolls, at most 2 scrolls; about 30% hold no codex", () => {
     const rng = seeded(11);
     let cases = 0, noCodex = 0, codexes = 0, epic = 0;

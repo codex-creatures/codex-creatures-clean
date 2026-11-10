@@ -238,6 +238,9 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   rooms cut off behind you dimmed; a used pool dimmed; rubble falling where a tunnel fell in, with
   the shake; the witch walking (her sheet); campfires (full bright while burning) and the kit's
   candles with a flame on each lit wick.
+  A fire, candle or wall torch glows (full bright, its flame, a light of the pool) only while it's
+  in sight (the sim's `lightNow` where it stands, as the sim counts its light): out of sight, round a
+  corner or cut off, it's drawn as dark as what's round it (the user, 2026-11-11).
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
   couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,

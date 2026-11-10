@@ -29,7 +29,7 @@ import { makeRoom, hasFight, MERCHANT_SLOTS, type DungeonId, type Room, type Roo
 import { isOpen, roomCentre, type Layout, type Progress } from "./layout";
 import { findPath, type CanStep } from "./walk";
 import { spawnOf, FOE_SPEED } from "./foes";
-import { CANDLE_RADIUS } from "./torch";
+import { SCONCE_RADIUS } from "./torch";
 import { ROCK, type Floorplan, type Pt } from "./floorplan";
 import type { DungeonMap } from "./map";
 import { toolDrop, LOCATORS, type LocatorKey } from "../items/materials";
@@ -51,7 +51,7 @@ export type Wanderer = Person & { x: number; y: number; facing: number; path: Pt
 export const WANDER_SPEED = 0.6;                         // of a foe's pace (as the card witch walked her room)
 export const WANDER_PAUSE: [number, number] = [4, 10];   // seconds they stay in a room they've walked to
 export const WANDER_NEAR = 6;                            // they set off to one of this many rooms nearest them
-export const PERSON_LIGHT = CANDLE_RADIUS;               // a candle's light (tiles)
+export const PERSON_LIGHT = SCONCE_RADIUS;               // 🧪 tiles: a wall torch's reach (a candle's was too small round the whole picture, the user, 2026-11-11)
 export const LOCATOR_FIND = 0.05;                        // of chests and stashes hold a locator
 export const LOCATOR_PRICE = 200;                        // the merchant's (he has one)
 export const CAMPFIRE_STASH = 0.5;                       // of campfires have a stash beside them

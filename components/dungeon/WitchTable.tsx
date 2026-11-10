@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { isSeated, type Guess } from "@/lib/dungeon/witch";
 import WitchWindow from "@/components/WitchWindow";
-import { type Room } from "@/lib/dungeon/run";
+import { type Room, ILLNESS_DAMAGE, ILLNESS_ACTIONS } from "@/lib/dungeon/run";
 
 // The card witch: she offers a game of higher or lower, played in a window
 // over her room (components/WitchWindow.tsx). Once it's over, the room says how it went.
@@ -20,7 +20,7 @@ export default function WitchTable({ room, victim, onSit, onGuess, onLeave, next
     <div style={{ marginTop: 6 }}>
       <p style={{ fontSize: 14, color: "#d8d4c8", margin: "0 0 10px" }}>
         {w.state === "playing" && <>A hunched witch shuffles a deck of bone cards. &ldquo;Fancy a game, dearie? Guess right and the creature&apos;s yours…&rdquo;</>}
-        {w.state === "lost" && <b style={{ color: "#ff8a80" }}>She stabbed {victim ?? "your creature"}{won > 0 ? " and swept your cards back into her deck" : ""}.</b>}
+        {w.state === "lost" && <b style={{ color: "#ff8a80" }}>🗡️ She stabbed {victim ?? "your creature"}{won > 0 ? " and took your cards back" : ""}. 🤢 −{Math.round(ILLNESS_DAMAGE * 100)}% HP for {ILLNESS_ACTIONS} actions.</b>}
         {w.state === "left" && <b style={{ color: "#f1d9a0" }}>You walked away with {w.correct} card{w.correct === 1 ? "" : "s"}.</b>}
       </p>
       {w.state === "playing" && !isSeated(w) ? <button className="pixel-btn" onClick={onSit}>🃏 Play her game</button>

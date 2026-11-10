@@ -19,6 +19,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import type { Pt } from "@/lib/dungeon/floorplan";
 import * as THREE from "three";
 import { roomAt } from "@/lib/dungeon/walk";
 import { torchReach, rubbleOf, showsRubble, TORCH_RADIUS, SCONCE_RADIUS, CANDLE_RADIUS, type Rubble } from "@/lib/dungeon/torch";
@@ -59,6 +60,7 @@ export type Stats3D = { fps: number; calls: number; triangles: number; lights: n
 
 const KIT = WALK_TILES[0].kit!;        // kit F, the game's walls
 const ART_PER_U = 48;                  // the kit's art pixels a unit across (KitArt.size.px)
+const HOLD_DRAG = 10;                  // 🧪 px a held finger moves before you follow it (less, and it's a tap)
 const LIGHT_POOL = 8;                  // 🧪 real lights besides your torch, given to the nearest lit ones (a fixed number: changing it recompiles shaders)
 const AMBIENT = 0.5;                   // 🧪 how much of a remembered, unlit place you still see (a cool, dim light)
 const TORCH = { colour: "#ffc68a", power: 34, height: 1.8, decay: 1.6 }; // 🧪 your torch: a bright core, then falling off
@@ -106,8 +108,22 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
   const dark = useRef<HTMLDivElement>(null);
   const frame = useRef<Frame | null>(null);
 
+  // A finger held down: once it's dragged past HOLD_DRAG px, you walk toward the floor under it, worked out
+  // every frame (the camera follows you, so a finger held still near the edge keeps you walking that way).
+  const pad = useRef<HTMLDivElement>(null);
+  const held = useRef<{ id: number; x0: number; y0: number; x: number; y: number; drag: boolean; at: string } | null>(null);
+  const following = () => {
+    const h = held.current, el = pad.current;
+    if (!h?.drag || !el) return;
+    const spot = floorAt(el, h.x, h.y);
+    if (!spot || `${spot.x},${spot.y}` === h.at) return;
+    h.at = `${spot.x},${spot.y}`;
+    W.holdAt(spot);
+  };
+
   // Each frame: walk on (the stick's push up the screen is 1 / sin(pitch) of floor), then the picture follows.
   const step = (now: number) => {
+    following();
     const F = frame.current = W.step(now, 1 / Math.sin(view.pitch));
     const A = F.alarm;
     if (dark.current) dark.current.style.opacity = A && A.fadeAt !== null ? String(Math.min(1, (now - A.fadeAt) / (FADE_TIME * 1000))) : "0";
@@ -115,19 +131,32 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
 
   // A tap: the floor under it (where the ray from the camera meets the floor), as the 2D view's tapCell.
   // (Measured from the box as drawn, so Settings → Screen size's scaling doesn't throw it off.)
-  const tap = (e: React.PointerEvent<HTMLDivElement>) => {
+  const floorAt = (el: HTMLElement, clientX: number, clientY: number): Pt | null => {
     const cam = camera.current;
-    if (!cam) return;
-    const box = e.currentTarget.getBoundingClientRect();
+    if (!cam) return null;
+    const box = el.getBoundingClientRect();
     const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(((e.clientX - box.left) / box.width) * 2 - 1, 1 - ((e.clientY - box.top) / box.height) * 2), cam);
+    ray.setFromCamera(new THREE.Vector2(((clientX - box.left) / box.width) * 2 - 1, 1 - ((clientY - box.top) / box.height) * 2), cam);
     const p = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
-    if (p) W.tapAt({ x: Math.round(p.x), y: Math.round(p.z) });
+    return p ? { x: Math.round(p.x), y: Math.round(p.z) } : null;
   };
+  const tap = (e: React.PointerEvent<HTMLDivElement>) => {
+    const spot = floorAt(e.currentTarget, e.clientX, e.clientY);
+    held.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, drag: false, at: spot ? `${spot.x},${spot.y}` : "" };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    if (spot) W.tapAt(spot);
+  };
+  const drag = (e: React.PointerEvent<HTMLDivElement>) => {
+    const h = held.current;
+    if (!h || h.id !== e.pointerId) return;
+    h.x = e.clientX; h.y = e.clientY;
+    if (Math.hypot(h.x - h.x0, h.y - h.y0) > HOLD_DRAG) h.drag = true;
+  };
+  const letGo = (e: React.PointerEvent<HTMLDivElement>) => { if (held.current?.id === e.pointerId) held.current = null; };
 
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%", background: "#000" }}>
-      <div onPointerDown={tap} style={{ position: "absolute", inset: 0, touchAction: "none" }}>
+      <div ref={pad} onPointerDown={tap} onPointerMove={drag} onPointerUp={letGo} onPointerCancel={letGo} style={{ position: "absolute", inset: 0, touchAction: "none" }}>
         <Canvas key={view.perspective ? "p" : "o"} orthographic={!view.perspective} flat shadows={view.shadows ? "basic" : false}
           gl={{ antialias: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.info.autoReset = false; /* (counted by hand: read, then reset, each frame) */ }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
@@ -293,8 +322,9 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   );
 }
 
-// The lit lights you've seen (wall torches, candles, campfires), and the foes that have seen you
-// (lit up like your torch: the sim's ALARM_LIGHT), nearest you first.
+// The lit lights in sight now (wall torches, candles, campfires: the sim counts their light only
+// while you can see them), and the foes that have seen you (lit up like your torch: the sim's
+// ALARM_LIGHT), nearest you first.
 function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: number; y: number; r: number }[] {
   return [
     ...sim.sconces.filter((c) => c.lit && torchThere(sim, c)).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
@@ -302,7 +332,7 @@ function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: n
     ...sim.fires.map((f) => ({ x: f.x, y: f.y, r: f.left > 0 ? CAMPFIRE_LIGHT : CAMPFIRE_LIGHT / 2 })),
     ...(F?.alarmed ?? []).map((f) => ({ x: f.x, y: f.y, r: ALARM_LIGHT })),
     ...(F?.peopleLit ?? []).map((w) => ({ x: w.x, y: w.y, r: PERSON_LIGHT })),
-  ].filter((l) => sim.known[Math.round(l.y) * live.w + Math.round(l.x)])
+  ].filter((l) => sim.lightNow[Math.round(l.y) * live.w + Math.round(l.x)])
     .sort((a, b) => Math.hypot(a.x - sim.me.x, a.y - sim.me.y) - Math.hypot(b.x - sim.me.x, b.y - sim.me.y));
 }
 
@@ -323,6 +353,8 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
 }) {
   const seen = (x: number, y: number) => sim.known[Math.round(y) * live.w + Math.round(x)] === 1;
   const lightNow = (x: number, y: number) => sim.lightNow[Math.round(y) * live.w + Math.round(x)] === 1;
+  // A flame glows only while it's in sight: out of it (round a corner, or cut off), it's as dark as what's round it.
+  const glows = (lit: boolean, x: number, y: number) => lit && lightNow(x, y);
   const A = frame.current?.alarm ?? sim.alarm;
   const out: React.ReactNode[] = [];
   for (const t of things) {
@@ -362,16 +394,16 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     // A fire glows whatever's round it: drawn full bright while it burns, its embers lit as the rest.
     const a = artOf(CAMPFIRE, f.left > 0 ? "lit" : "out")!, b = CAMPFIRE.visual.bounds;
     out.push(<Upright key={`fire:${f.room}`} src={a.src} x={f.x} y={f.y} w={b.left + b.right} h={(b.up + b.down) * stretch} below={b.down * stretch}
-      colour={f.left > 0 ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(f.x, f.y)} />);
+      colour={glows(f.left > 0, f.x, f.y) ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(f.x, f.y)} />);
   }
   for (const c of sim.candles) {
     if (!seen(c.x, c.y)) continue;
     // The kit's candles, the 2D view's size against the walls' art (CANDLE_ART 0.85), a flame on each wick when lit.
-    const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch;
+    const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, on = glows(c.lit, c.x, c.y);
     out.push(
       <group key={c.id}>
-        <Upright src={KIT_LIGHTS.candles} x={c.x} y={c.y} w={w} h={h} below={0} colour={c.lit ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
-        {c.lit && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
+        <Upright src={KIT_LIGHTS.candles} x={c.x} y={c.y} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
+        {on && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
           <mesh key={i} raycast={() => null} position={[c.x - w / 2 + wx * k, h - wy * k * stretch + 0.04, c.y + 0.06]} scale={[0.05, 0.09, 1]}>
             <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
           </mesh>
@@ -398,7 +430,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
         <mesh raycast={() => null} position={[0, 0, 0.01]} scale={[w, h, 1]}><planeGeometry />{shade
           ? <meshBasicMaterial map={texture(KIT_LIGHTS.torch)} alphaTest={0.5} color={shade(c.x, c.y)} />
           : <meshLambertMaterial map={texture(KIT_LIGHTS.torch)} alphaTest={0.5} />}</mesh>
-        {c.lit && <mesh raycast={() => null} position={[0, h / 2 - KIT_LIGHTS.head / ART_PER_U, 0.03]} scale={[0.14, 0.2, 1]}><planeGeometry /><meshBasicMaterial color="#ffd27a" /></mesh>}
+        {glows(c.lit, c.x, c.y) && <mesh raycast={() => null} position={[0, h / 2 - KIT_LIGHTS.head / ART_PER_U, 0.03]} scale={[0.14, 0.2, 1]}><planeGeometry /><meshBasicMaterial color="#ffd27a" /></mesh>}
       </group>,
     );
   }

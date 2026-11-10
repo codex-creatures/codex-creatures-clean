@@ -22,7 +22,9 @@
 // 9: people who wander (decision 39, the user, 2026-11-10): the Cyclops's
 //    witches, merchant and librarian walk about (WalkRun.people), a library's
 //    broken bookcases and lectern, a stash by half the campfires: new runs only.
-export const WALK_V = 9;
+// 10: a library's broken bookcases kept clear of its doorways (the user's
+//    play-test, 2026-11-11: one stood in front of a tunnel): new runs only.
+export const WALK_V = 10;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

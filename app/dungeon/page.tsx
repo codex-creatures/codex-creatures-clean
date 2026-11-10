@@ -40,7 +40,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, ILLNESS_ACTIONS, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, DECK_CARDS, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -831,10 +831,8 @@ export default function DungeonPage() {
       }
       return n;
     });
-    if (stabbed) {
-      setShake((s) => s + 1);
-      setNotes([`🗡️ The witch lunges and stabs your ${byId(stabbed)?.name ?? "creature"}! It suffers an illness: −${Math.round(ILLNESS_DAMAGE * 100)}% HP for each of the next ${ILLNESS_ACTIONS} actions (rooms or fight rounds).`]);
-    }
+    // (No note: her window says she stabs, and her table how ill it is. Saying it three times was a wall of text, the user, 2026-11-11.)
+    if (stabbed) setShake((s) => s + 1);
     // Her deck's spent: you walk away with your winnings.
     const after = loadDungeon().run?.current;
     if (after?.witch?.state === "left" && !after.done) witchPayout(after.witch);
@@ -896,6 +894,7 @@ export default function DungeonPage() {
   const [walkScroll, setWalkScroll] = useState(false); // the scroll, out
   const walkTo = (r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
   // Worth opening the room's window as you walk in: treasure to take. (Not a camp: you walk up to its cages, the user, 2026-11-09.)
+  const shopHere = (c: Room | null | undefined) => !!c && (c.kind === "merchant" || c.kind === "librarian" || (c.kind === "library" && !!c.librarian));
   const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || dynamiteHere(c));
   function walkEnter(id: string, st: WalkState) {
     // Leaving the witch mid-game: you walk away with what you've won.
@@ -1324,7 +1323,9 @@ export default function DungeonPage() {
         </div>
       )}
       {walkPanel && roomScreen && (
-        <div style={{ position: "absolute", left: 6, right: 6, bottom: 6, maxHeight: "55%", overflowY: "auto", zIndex: 4 }}>
+        // A shop (the merchant's cart, the librarian's shelf) is taller than the bottom half: it gets the whole view, anchored to the top.
+        <div style={{ position: "absolute", left: 6, right: 6, bottom: 6, overflowY: "auto", zIndex: 4,
+          ...(shopHere(run.current) ? { top: 6 } : { maxHeight: "55%" }) }}>
           <button className="chip" onClick={() => setWalkPanel(false)} style={{ position: "sticky", top: 0, float: "right", minHeight: 44, minWidth: 44, zIndex: 1 }} aria-label="Close">✕</button>
           {roomScreen}
         </div>

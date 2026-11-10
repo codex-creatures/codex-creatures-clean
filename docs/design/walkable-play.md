@@ -34,6 +34,10 @@ size, so a laptop shows what a phone does (the lab's Zoom tries 22, 15, 11, 9). 
 game's own phone screen (header, and the live Labyrinth's dock: Party, Bag, Scroll, Retreat;
 Retreat, tapped twice, starts afresh), so its windows are sized as in the game. Speed, zoom and tap reach are provisional: the user judges them in the lab. No line or
 square shows where you're walking: you just walk (the user, 2026-11-09).
+**Press and hold, then drag** (the user, 2026-11-11; WalkView3D `HOLD_DRAG` 10 px 🧪, `useWalkPlay`
+`holdAt`): once a held finger moves, you walk toward the floor under it, again as it moves (and as
+the camera follows you, so a finger held near an edge keeps you walking that way); a drag never
+opens things on the way. A plain tap is as before.
 A **joystick** bottom right, above the dock (the user, 2026-11-09; `walkStick`, WalkView `Stick`):
 held, you walk the way it points, a tile at a time snapped to the eight ways, sliding along
 a wall you push into diagonally. Things are used by tapping them (the ✋ button was taken
@@ -212,7 +216,9 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   to walk up and open it in the loot window. A camp's cages are guarded like a mini boss's
   chest (the user, 2026-11-09): its foes patrol in front of them (`cageGuardSpot`), and
   trying one before they're beaten sets them on you; then each opens as you walk up. Walking
-  in never opens the room's window now; the room button (top left) opens it any time.
+  in never opens the room's window now; the room button (top left) opens it any time. It sits at the
+  bottom, at most 55% of the view; a shop's (the merchant's cart, the librarian's shelf) takes the
+  whole view, anchored to the top, as it was cut off at the bottom (the user, 2026-11-11).
   **Bosses wait** (the user, 2026-11-06; `placeWaiter`, `waitsHere`): the Encampment's
   chief (and the Labyrinth's boss) stands at the top of his room (`WAIT_FROM_TOP` 4 tiles
   down, facing the way in), never wandering, and his fight starts only once you've walked up
@@ -362,8 +368,8 @@ the walk in `lib/world/walkSim.ts`, what you tap in `walkWorld.ts thingsOf`, dra
   campfires** have a stash beside them (`CAMPFIRE_STASH`, a stash's sack rolled as a stash's).
   Smaller rooms are empty **1 time in 5** (`EMPTY_CHANCE`; ❓ "smaller" read as the `small` shape,
   `EMPTY_SHAPES`): a new room kind, `empty`, done from the start.
-- **Candle light:** every wandering person gives off a candle's light (`PERSON_LIGHT`, the candle's
-  2.5 tiles, worked out where they stand each frame, and only while in your sight). A witch's goes
+- **Their light:** every wandering person gives off a light (`PERSON_LIGHT` 🧪, a wall torch's 4
+  tiles: a candle's 2.5 was too small for the person drawn fully lit in it, the user, 2026-11-11; worked out where they stand each frame, and only while in your sight). A witch's goes
   out once you've played her, won or lost (or walked away with your winnings).
 - **The witches:** each has her own game and winnings. Both can give illnesses, and illnesses
   stack: each counts down on its own, so two on one creature hurt twice as much (`illnesses` in
@@ -376,7 +382,7 @@ the walk in `lib/world/walkSim.ts`, what you tap in `walkWorld.ts thingsOf`, dra
   and from then on the scroll shows them (❓ as built: the lectern counts as a used librarian
   locator for the rest of the run). The room's window has the lectern's button too.
 - **Broken bookcases:** every large library holds **3–5** of them (the battered bookcase art,
-  den/bookcase-2.png), in a row along its top, each a room of its own (`<library>~b<i>`) searched
+  den/bookcase-2.png), in a row along its top (kept clear of its doorways: world version 10), each a room of its own (`<library>~b<i>`) searched
   like a stash. They hold only codexes and clairvoyance scrolls, rolled separately (run.ts
   `rollBookcases`): **30%** hold no codex, the rest **1–2 codexes**, each at the usual rarity odds
   (Common 40, Uncommon 30, Rare 20, Epic 9, Legendary 1; Legendary counts as Epic until there's a

@@ -148,6 +148,14 @@ export function useWalkPlay(P0: WalkPlayProps) {
     sim.me = walkToward(live, sim.me, spot, can);
   };
 
+  // A finger held down and dragged: walk toward the floor under it, again as it moves (never opening things on the way).
+  const holdAt = (spot: Pt) => {
+    if (props.current.busy || sim.fired > 0 || sim.alarm) return;
+    sim.goal = spot;
+    sim.wantThing = null;
+    sim.me = walkToward(live, sim.me, spot, rule(sim.progress));
+  };
+
   // E: use what you're beside, as tapping it does.
   const use = () => {
     if (props.current.busy || sim.fired > 0 || sim.alarm || !usable) return;
@@ -175,6 +183,6 @@ export function useWalkPlay(P0: WalkPlayProps) {
   // The on-screen stick, pushed (or let go: null).
   const push = (p: Pt | null) => { stick.current = p; };
 
-  return { plan, live, layout, progress, closed, sim, things, warming, usable, push, step, tapAt, use };
+  return { plan, live, layout, progress, closed, sim, things, warming, usable, push, step, tapAt, holdAt, use };
 }
 export type WalkPlay = ReturnType<typeof useWalkPlay>;
