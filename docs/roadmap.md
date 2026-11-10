@@ -21,6 +21,11 @@ unchanged (the sim, layouts, placements and world versions are shared). The clas
 dungeons are untouched. Then the user play-tests on their phone (Vercel), and the gameplay work
 starts. Kept until the 3D view has been played: components/WalkView.tsx (the 2D view) and the labs.
 
+**Next: people who wander, and the locators** (📌 the user, 2026-11-10, decision 39; not built;
+the Cyclops first): 2 witches, a merchant and a librarian walking the dungeon instead of having
+rooms, more dens and campfires in their place, and three rare locators (merchant map, crystal
+ball, librarian locator). [design/walkable-play.md](design/walkable-play.md) §8.
+
 Then the work is **the gameplay loop and player engagement**: playtesters should meet more
 interesting situations, real decisions, progression and surprises, not feel they've seen it all.
 - **Areas:** combat variety, creature progression, dungeon encounters, rewards, quests, Den

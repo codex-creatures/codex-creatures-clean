@@ -328,6 +328,35 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its
   own copy of the drawing for now, with its testing switches).
 
+## 8. 📌 People who wander, and the locators (the user, 2026-11-10; decision 39; not built)
+
+A core mechanic, for every walkable dungeon; **built in the Cyclops first**, then carried to the
+others. A new world version (9): runs already made keep today's rules.
+
+- **Who:** every dungeon has **2 card witches, 1 merchant and 1 librarian**, wandering. They no
+  longer take up a room of their own: each starts in any room that isn't hostile, and walks the
+  whole dungeon without restriction, but keeps out of any room with creatures in it.
+- **Cut off:** one left somewhere you can no longer reach (behind a tunnel that's fallen in) stops
+  wandering. A locator used for them isn't used up; it says "It appears that they are no longer
+  here…".
+- **The rooms they leave:** more creature rooms (you can sneak past foes, so more dens keep about
+  as many fights on the way up), and more campfires (they fit the theme best), some with a stash
+  beside them. ❓ The numbers are still to set.
+- **The witches:** each has her own game and winnings. While you can play her she gives off a
+  candle's light; once you've played (won or lost) she doesn't. Both can give illnesses, and
+  illnesses stack. (Today a run holds one illness: lib/dungeon/run.ts `illness`.)
+- **Locators** (rare finds in chests and stashes; the merchant sells them too):
+  - **Merchant map**: where the merchant is;
+  - **Crystal ball**: where a witch is (always the closest one you can still reach);
+  - **Librarian locator**: where the librarian is.
+  
+  Using one opens the scroll with that person's icon at exactly where they are, among the rooms'
+  marks: it shows nothing else (no rooms or tunnels). Opening the scroll again shows where they
+  are now, if they've moved.
+- ❓ **Still to set:** the new room mix (above), how often a campfire has a stash, the locators' drop
+  chance and price, whether a used locator lasts the rest of the run, whether the large library
+  still sometimes holds its own librarian, and what stacked illnesses on one creature do.
+
 ## Later
 
 - **Later (the user, 2026-11-05):** what's in a room stops being one thing: a room can hold
