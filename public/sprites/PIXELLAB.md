@@ -66,7 +66,7 @@ the PNG here.
 | props/treasure_chest_open.png | gallery:89cd6782-5a1e-4b57-8267-9888fae07572 |
 | props/treasure_chest.png | gallery:2df0068e-66c1-4280-939c-886481ebfc23 |
 | props/chest3d/front.png | pro job 03cbe4bb-df94-4871-b722-a0a5a057eff3, asset 664e3b36-974d-5d56-9ebd-f5d6d1edbba6: candidate 7 of 16 (the 3D chest draft's front face; 2 pale columns cropped off each side, widened back to 60) |
-| props/chest3d/top.png | pro job 95e7bbe3-13d8-4b45-b41f-a505e2f6c13a, asset 07757305-c5b7-5a0b-9702-985c8035698d: candidate 1 of 25 (the 3D chest draft's lid top) |
+| props/chest3d/top.png | pro job 95e7bbe3-13d8-4b45-b41f-a505e2f6c13a, asset 07757305-c5b7-5a0b-9702-985c8035698d: candidate 1 of 25 (the 3D chest draft's lid top; its pale left column replaced by the right edge's dark one) |
 | props/chest3d/front-lit.png, top-lit.png, under.png | made from front.png and top.png: the lit edges (front rows 0 and 6, the top's front row 32) ×1.4, and the lid's underside (the top ×0.35) |
 | props/klutz_box.png | gallery:2b204dad-def9-42f7-9e8b-6c13e649ad52 |
 | den/pit.png | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
