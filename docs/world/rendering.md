@@ -186,10 +186,10 @@ The camera and geometry candidates were settled in the grey experiment (the rule
 - **Light through rock:** Three.js point lights ignore walls unless shadows are on (cube shadow
   maps cost six passes a light). The other candidate, lighting driven by the sim's own light reach
   (`lightNow`) at subcell resolution, can't bleed and matches gameplay by construction. **Stone
-  tries it** (below); not adopted yet.
+  uses it** (below), and the user's picks were made on it (decision 37).
 - **Texture density and mapping:** source art drawn flat and square at one density, laid on the
-  geometry by the renderer from the camera, so assets carry no foreshortening. Stone compares
-  texels square on screen with square on the surface, and 32 with 48 art pixels a unit. Not decided.
+  geometry by the renderer from the camera, so assets carry no foreshortening. Picked in Stone
+  (decision 37): square on screen, 48 art pixels a unit.
 
 ### The prototype as built (2026-11-10)
 
@@ -229,11 +229,17 @@ perspective) and B (orthographic with the lean), full south rock and a low rim, 
 unfound places as rock or black, and picked the rules above (decision 36). The comparison aids stay
 in the lab: the rim's darker top (`GREY.rim`), "Flip", and unfound places "shown".
 
-### Built: the Stone experiment (materials and lighting) 🧪 (2026-11-10; waiting for the user's comparison)
+### Built: the Stone experiment (materials and lighting) (2026-11-10)
 
 **Small and representative, in /lab/three, on the settled geometry** (`?view=3d&geo=stone`): the
 grey mode's carved mesh, the lean, the camera and the sim unchanged, with stand-in textures and a
-new light. No new art and no art standard yet; the comparison comes first.
+new light. No new art and no art standard yet.
+
+**The user's picks 📌 (2026-11-10, by eye in the comparison; decision 37; lab only, no migration):**
+**48 art pixels a unit; texels square on screen; kit F's style; art pixels at 15 units across**
+(not whole-number scaling); **smooth light** (not stepped or dithered); **unexplored places fade**
+to black (not a hard edge). Stone now starts on these. The other choices stay in the lab to compare.
+The art standard itself is still to write, from samples drawn to these picks.
 
 - **Textures: drawn flat, laid by the renderer.** Source art is a flat, square picture of the
   surface at one density (art pixels a unit), with no foreshortening drawn in. The shader lays it
@@ -270,9 +276,9 @@ unevenly; no shadows from objects or creatures, and no contact shadows or darken
 meets wall yet; the light grid covers 64 tiles round you; the curve is not the 2D view's
 `torchGlow`. One draw call for the rock, as grey.
 
-**Next:** the user compares density, texel mapping, pixel scaling, light and fade in the same
-scene, on desktop and phone. Then, with their approval and reference images, a few PixelLab sample
-textures drawn flat at the chosen density, and a short art standard written from what works.
+**Next, when the user says so:** a few PixelLab sample textures in kit F's style, drawn flat and
+square at 48 a unit (floor, wall face, rock top, rim), with the user's reference images and their
+approval before any rollout; then a short art standard written from what works.
 
 The user's priorities:
 - **Textures:** sharper, more detailed and cohesive pixel art, closer to the user's reference

@@ -81,9 +81,10 @@ settled (decision 36: orthographic at 60°, lean 0.03, 2.25 u walls, a low south
 black). The materials-and-lighting experiment is built (`/lab/three?view=3d&geo=stone`): stand-in
 textures laid flat, light from the game's own light reach, and switches comparing 32 and 48 art
 pixels a unit, texels square on screen or on the surface, art or whole-number pixel scaling,
-smooth, stepped or dithered light, and a fade or a hard edge into the unexplored. Waiting for the
-user's comparison (world/rendering.md §4.8, "Built: the Stone experiment"); then PixelLab samples
-and a short art standard.
+smooth, stepped or dithered light, and a fade or a hard edge into the unexplored. The user picked
+48 a unit, square on screen, kit F's style, art pixels at 15 across, smooth light and the fade
+(decision 37), and Stone starts on them. Next, when the user says so: PixelLab sample textures drawn
+to those picks, then a short art standard (world/rendering.md §4.8, "Built: the Stone experiment").
 
 ### Paused (the user, 2026-11-10)
 

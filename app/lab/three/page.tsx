@@ -10,7 +10,8 @@
 // 60°, 2.25 u walls, a low south rim, unfound places black. "Stone" is the materials-and-lighting
 // experiment on that geometry: stand-in textures, light from the game's own light reach, and
 // switches for art density, how textures are laid, pixel scaling, smooth or stepped light, and the
-// fade into the unexplored. "Flip" swaps a pair of choices every second, so a small difference
+// fade into the unexplored; it starts on the user's picks (48 a unit, kit F, square on screen, art
+// pixels at 15 across, smooth light, the fade: world/rendering.md §4.8, decision 37). "Flip" swaps a pair of choices every second, so a small difference
 // shows as movement.
 // Dev tool: Three.js is loaded on this page only.
 
@@ -51,8 +52,8 @@ function fromAddress() {
   const one = <T extends string>(k: string, of: readonly T[], or: T): T => of.find((v) => v === q.get(k)) ?? or;
   const view: View3D = { pitch: num("pitch") !== undefined ? (num("pitch")! * Math.PI) / 180 : grey ? SIXTY : DEFAULT_PITCH, perspective: q.get("camera") === "persp",
     pixels: one("pixels", ["device", "art", "whole"] as const, stone ? "art" : "device"), shadows: q.get("shadows") === "1", across: num("across") ?? 15,
-    stone, density: num("density") === 48 ? 48 : 32, kit: one("kit", ["f", "a"] as const, "f"), texels: one("texels", ["screen", "world"] as const, "screen"),
-    light: one("light", ["smooth", "stepped", "dither"] as const, "stepped"), fade: q.get("fade") !== "0",
+    stone, density: num("density") === 32 ? 32 : 48, kit: one("kit", ["f", "a"] as const, "f"), texels: one("texels", ["screen", "world"] as const, "screen"),
+    light: one("light", ["smooth", "stepped", "dither"] as const, "smooth"), fade: q.get("fade") !== "0",
     grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? (grey ? CANDIDATES.B.lean : 0), south: (q.get("south") ?? (grey ? "low" : "full")) === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT,
     unseen: (["rock", "black", "shown"] as const).find((u) => u === q.get("unseen")) ?? (grey ? "black" : "rock") };
   return { three: q.get("view") !== "2d", dungeon: (num("dungeon") === 1 ? 1 : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
