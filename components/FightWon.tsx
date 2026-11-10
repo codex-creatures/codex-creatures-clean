@@ -2,7 +2,7 @@
 // components/FightWon.tsx
 // A won fight, before anything else (the user, 2026-11-09): what XP each of
 // your creatures got: its XP counting up from what it had to what it has now,
-// the bar filling with it (on through each level it gains), then Loot (open what they dropped) or Leave
+// the bar filling with it (on through each level it gains), then Leave or Loot (open what they dropped)
 // (it stays on the floor, to open later). With nothing to loot (the thief),
 // just Carry on. A creature that levelled up gets its show after this.
 
@@ -71,8 +71,8 @@ export default function FightWon({ rows, onLoot, onLeave }: { rows: WonRow[]; on
           })}
         </div>
         <div className="dock-tabs">
-          {onLoot && <button className="dock-tab" onClick={onLoot} style={{ minHeight: 44 }}>Loot</button>}
           <button className="dock-tab" onClick={onLeave} style={{ minHeight: 44 }}>{onLoot ? "Leave" : "Carry on"}</button>
+          {onLoot && <button className="dock-tab" onClick={onLoot} style={{ minHeight: 44 }}>Loot</button>}
         </div>
       </div>
     </div>

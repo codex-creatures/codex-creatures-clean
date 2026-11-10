@@ -86,10 +86,14 @@ export function addXp(p: Progress, gained: number): Progress & { gained: number 
 // much each creature did: damage dealt, plus half the damage it soaked up.
 // Everyone on the team gets at least MIN_SHARE of it — even one that never
 // left the bench — so a weak creature can be levelled up by tagging along.
+// A creature at MAX_LEVEL can't use XP, so it takes only MAXED_SHARE of its
+// share and the rest goes to the others (by their shares): only half, so a
+// low creature can't be power-levelled behind a maxed one too quickly.
 export const MIN_SHARE = 0.1;
 export const TANK_WEIGHT = 0.5;
+export const MAXED_SHARE = 0.5;
 
-export type Impact = { dealt: number; taken: number };
+export type Impact = { dealt: number; taken: number; maxed?: boolean };
 export const impactOf = (i: Impact) => Math.max(0, i.dealt) + TANK_WEIGHT * Math.max(0, i.taken);
 
 // Each member's XP from a pool (rounded; the floor is MIN_SHARE each).
@@ -100,7 +104,10 @@ export function shareXp(pool: number, impacts: Impact[]): number[] {
   const rest = 1 - floor * n;
   const scores = impacts.map(impactOf);
   const total = scores.reduce((a, b) => a + b, 0);
-  return scores.map((s) => Math.round(pool * (floor + rest * (total > 0 ? s / total : 1 / n))));
+  const base = scores.map((s) => floor + rest * (total > 0 ? s / total : 1 / n));
+  const freed = impacts.reduce((sum, im, i) => sum + (im.maxed ? base[i] * (1 - MAXED_SHARE) : 0), 0);
+  const growing = impacts.reduce((sum, im, i) => sum + (im.maxed ? 0 : base[i]), 0);
+  return base.map((b, i) => Math.round(pool * (impacts[i].maxed ? b * MAXED_SHARE : growing > 0 ? b + freed * b / growing : b)));
 }
 
 // Who did what in a fight, from its log (attack entries carry indices).

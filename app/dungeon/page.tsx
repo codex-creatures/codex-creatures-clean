@@ -35,7 +35,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
-import { xpForEnemy, BOSS_XP, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
+import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
@@ -1028,7 +1028,8 @@ export default function DungeonPage() {
     if (xp > 0) {
       const mineAt = ids.map((id, i) => (id && id !== KLUTZ_DROP_ID ? i : -1)).filter((i) => i >= 0);
       const impacts = impactsFromLog(m.state.log, "A", ids.length);
-      const shares = shareXp(xp, mineAt.map((i) => impacts[i]));
+      const maxed = (id: string) => ((game.inventory.find((d) => d.id === id) as CreatureOrItemDrop | undefined)?.level ?? 1) >= MAX_LEVEL;
+      const shares = shareXp(xp, mineAt.map((i) => ({ ...impacts[i], maxed: maxed(ids[i]) })));
       const gains: Record<string, number> = {};
       mineAt.forEach((i, k) => { gains[ids[i]] = shares[k]; });
       for (const [i, k] of mineAt.map((i, k) => [i, k])) {

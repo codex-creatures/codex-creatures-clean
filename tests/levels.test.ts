@@ -191,6 +191,12 @@ describe("sharing a fight's XP", () => {
     expect(shares.reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(99);
     expect(shareXp(90, [{ dealt: 0, taken: 0 }, { dealt: 0, taken: 0 }, { dealt: 0, taken: 0 }])).toEqual([30, 30, 30]);
   });
+  it("a creature at the top level takes half its share; the rest goes to the others", () => {
+    const even = [{ dealt: 10, taken: 0 }, { dealt: 10, taken: 0 }, { dealt: 10, taken: 0 }];
+    expect(shareXp(90, even)).toEqual([30, 30, 30]);
+    expect(shareXp(90, [{ ...even[0], maxed: true }, even[1], even[2]])).toEqual([15, 38, 38]);
+    expect(shareXp(90, even.map((e) => ({ ...e, maxed: true })))).toEqual([15, 15, 15]);
+  });
   it("reads who did what from the fight's log", () => {
     const log = [
       { type: "attack", side: "A", attackerIndex: 0, targetIndex: 0, damage: 20 },

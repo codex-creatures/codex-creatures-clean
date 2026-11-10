@@ -90,11 +90,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   Lv 1 a creature has only its roll, so two creatures of a rarity are close and the species shows
   as they level. HP is ×1.5 overall (`HP_SCALE`). (lib/creatures/levels.ts)
 - ✅ XP per KO depends on the enemy's level and rarity. A boss part gives 200. A fight's XP is
-  shared by impact (damage dealt + half the damage taken, at least 10% each). No XP for a lost
+  shared by impact (damage dealt + half the damage taken, at least 10% each); a level-30 creature
+  takes half its share and the rest goes to the others (`MAXED_SHARE`, the user, 2026-11-11). No XP for a lost
   fight. Levelling is 1.5× slower than first built (`XP_PACE`), at the user's request.
 - ✅ **After a won fight** (the user, 2026-11-09; components/FightWon.tsx, `xpShown`): a Victory
   window shows each creature's XP counting up from what it had to what it has now ("120 / 300
-  XP"), its level bar filling with it and on through each level it gains, then **Loot** (opens what they dropped) or **Leave** (it stays on the floor to open later; a
+  XP"), its level bar filling with it and on through each level it gains, then **Leave** (on the left; the loot stays on the floor to open later) or **Loot** (opens what they dropped; a
   fight with nothing to loot, the thief's, has just Carry on). Level-up shows follow it. Not
   when a win ends the run at the top (classic): the haul screen shows it, as before.
 - ✅ **Explorer level** (you, `save.player`) gets every fight's full XP and gates scan rarity
