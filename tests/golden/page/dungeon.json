@@ -317,7 +317,7 @@
   },
   {
    "step": "room 2: fight over",
-   "screen": "← Den🌀 The Encampment500way r13floor objectVictory!Cave Goblin+20 XPLv 40 / 140 XPLootLeave⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500way r13floor objectVictory!Cave Goblin+20 XPLv 40 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -567,7 +567,7 @@
   },
   {
    "step": "room 3: fight over",
-   "screen": "← Den🌀 The Encampment518way r8floor objectVictory!Cave Goblin+12 XPLv 420 / 140 XPLootLeave⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment518way r8floor objectVictory!Cave Goblin+12 XPLv 420 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 518,
     "creatures": [
@@ -780,7 +780,7 @@
   },
   {
    "step": "room 4: fight over",
-   "screen": "← Den🌀 The Encampment529way r11way r6floor objectVictory!Cave Goblin+16 XPLv 432 / 140 XPLootLeave⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment529way r11way r6floor objectVictory!Cave Goblin+16 XPLv 432 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 529,
     "creatures": [
@@ -998,7 +998,7 @@
   },
   {
    "step": "room 5: fight over",
-   "screen": "← Den🌀 The Encampment541way r5floor objectVictory!Cave Goblin+40 XPLv 448 / 140 XPLootLeave⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment541way r5floor objectVictory!Cave Goblin+40 XPLv 448 / 140 XPLeaveLoot⚔️ Creature denIt leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 541,
     "creatures": [
@@ -1221,7 +1221,7 @@
   },
   {
    "step": "room 6: fight over",
-   "screen": "← Den🌀 The Encampment555way bossfloor objectVictory!Cave Goblin+24 XPLv 488 / 140 XPLootLeave⚔️ Creature den🌟 You reached explorer level 2!It leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment555way bossfloor objectVictory!Cave Goblin+24 XPLv 488 / 140 XPLeaveLoot⚔️ Creature den🌟 You reached explorer level 2!It leaves a grubby sack behind.💰 Loot the sack↑ Take a tunnel to move on.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 555,
     "creatures": [
