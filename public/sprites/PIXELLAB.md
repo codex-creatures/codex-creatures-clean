@@ -69,6 +69,11 @@ the PNG here.
 | props/chest3d/top.png | pro job 95e7bbe3-13d8-4b45-b41f-a505e2f6c13a, asset 07757305-c5b7-5a0b-9702-985c8035698d: candidate 1 of 25 (the 3D chest draft's lid top; its pale left column replaced by the right edge's dark one) |
 | props/chest3d/side.png | pro job beba8142-abc7-49da-9a88-ccb38f5e5307, asset 676a9d99-74e7-579e-bfee-260a7d9ce658: candidate 4 of 64 (the 3D chest draft's ends; moved down a row so its lid seam meets the front's) |
 | props/chest3d/front-lit.png, side-lit.png, top-lit.png, under.png | made from front.png, side.png and top.png: the lit edges (front and side rows 0 and 6, the top's front row 32) ×1.4, and the lid's underside (the top ×0.35) |
+| props/bookcase3d/front.png | pro job a071a685-ef98-465a-8757-cf3139e0795b, asset 6d871c92-c432-5f4a-b51c-8092ffba7eaf: candidate 16 of 25, its front panel cut out (43 × 31 from x 8, y 1: PixelLab drew a whole bookcase, not a flat face) |
+| props/bookcase3d/side.png | pro job d3c856a3-26bb-4771-a256-1cb58b19c1b2, asset a5e472fe-a221-596c-80bb-dffc75237992: candidate 19 of 64, 34 rows taken down to 31 |
+| props/bookcase3d/top.png | pro job add29372-497b-45fc-80a1-f44b7fafc807, asset e1dd1b27-4653-5e1d-bb5f-33b6dedbefbd: candidate 0 of 16, 60 columns taken down to 43 |
+| props/bookcase3d/*-lit.png | made from those: the top row of the front and side, and the top's front (last) row, ×1.4 |
+| props/sack3d/burlap.png | pro job 838108d6-42b2-46d1-892e-6f3c89bf0adf, asset c8cc9e27-0fe3-5efe-a5ef-f5f4145c7534: candidate 0 of 25 (the 3D sack's cloth, repeated round it) |
 | props/klutz_box.png | gallery:2b204dad-def9-42f7-9e8b-6c13e649ad52 |
 | den/pit.png | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
 | den/bookcase-2.png | gallery:7c56b09e-b67f-46ae-abe7-e2ab98275292 |

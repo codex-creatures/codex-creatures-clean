@@ -288,6 +288,19 @@ shows a little of its end, more the further across. Its ends have their own pict
 flat one as far the other way), and the lean on or off. The flat sprites (you, the old chest) don't
 lean, as in the game.
 
+**A stash and a bookcase too (the user, 2026-11-11):** the lab's buttons pick Chest, Stash or
+Bookcase (lib/render3d/props3d.ts), each beside its flat sprite, with the same outline, lit edges and
+lean. The **bookcase** is one box with PixelLab faces (public/sprites/props/bookcase3d/), its size
+from the pictures: 0.9 × 1.29 × 0.46 u (the object is 1.4 tall; its front was cut from a whole
+bookcase PixelLab drew, so as not to stretch its pixels). The **sack** is a bag's outline turned round
+(`sackOutline`, 8 sides, flat-shaded so they show as facets: a round thing can't be boxes), 0.6 tall,
+in a burlap cloth repeated round it (public/sprites/props/sack3d/), with a rope round its neck.
+"Turned" stands any of them end on (a quarter turn), to see a chest the other way round: in the lab
+only. In the game every object faces south (`rot` in lib/world/objects.ts is there for turns, but
+nothing turns yet); turning chests there would need the 3D chest in the game first (a flat picture
+can't turn), then a new world version whose placement picks a turn, swaps the footprint and moves the
+clear space in front (`clearFront`) to the side it faces.
+
 ### Done: the grey geometry experiment (2026-11-10)
 
 Camera and geometry only, in flat greys, to judge shape. The user compared side walls A (narrow

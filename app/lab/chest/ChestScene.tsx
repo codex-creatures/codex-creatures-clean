@@ -16,15 +16,23 @@ import { pixelScale } from "@/lib/render3d/stone";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 import { WALK_KIT, WALK_HERO, KIT_PX } from "@/lib/sprites/walk";
 import { legacyU } from "@/lib/render/projection";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL } from "@/lib/render3d/props3d";
 
 const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
 const OLD_W = legacyU(28);       // the flat chest as the game draws it now (OBJECT_U)
+// The flat sprites as the game draws them now, beside each: picture, width (units) and height for width.
+const OLD: Record<Thing3D, { shut: string; open: string; w: number; tall: number }> = {
+  chest: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
+  stash: { shut: "/sprites/props/burlap_sack.png", open: "/sprites/props/burlap_sack_open.png", w: legacyU(16), tall: 1 },
+  bookcase: { shut: "/sprites/den/bookcase-2.png", open: "/sprites/den/bookcase-2.png", w: legacyU(30), tall: 86 / 76 },
+};
 const PATCH = 17;                // units of floor and wall across (the screen is 15 at game zoom)
 
 export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean;
-  at: number; lean: boolean };
+  at: number; lean: boolean; thing: Thing3D; turned: boolean };
+export type Thing3D = "chest" | "stash" | "bookcase";
 
 // The walls' lean (decision 36, WalkView3D's LEAN at GAME_VIEW's 0.03), on the chest and the wall
 // here: a point moves outwards by lean × its height × how far across from you (x = 0) it is, so a
@@ -35,8 +43,10 @@ const LEANING = { uLean: { value: LEAN_U }, uCx: { value: 0 } };
 function leaned<M extends THREE.Material>(m: M): M {
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, LEANING);
-    sh.vertexShader = "uniform float uLean;\nuniform float uCx;\n" + sh.vertexShader.replace("#include <begin_vertex>",
-      "#include <begin_vertex>\n{ vec4 w = modelMatrix * vec4(transformed, 1.0); transformed.x += uLean * (w.x - uCx) * w.y; }");
+    // (In the world, as the rock's is, so a thing turned round still leans across the screen.)
+    sh.vertexShader = "uniform float uLean;\nuniform float uCx;\n" + sh.vertexShader.replace("#include <project_vertex>",
+      "vec4 mvPosition = modelMatrix * vec4(transformed, 1.0);\nmvPosition.x += uLean * (mvPosition.x - uCx) * mvPosition.y;\n" +
+      "mvPosition = viewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;");
   };
   return m;
 }
@@ -146,6 +156,40 @@ function useArt(edges: boolean) {
   return { art, geo, mats };
 }
 
+// The bookcase: one box, its faces PixelLab's (lit edges made beforehand, as the chest's).
+function Bookcase({ outline, edges }: { outline: boolean; edges: boolean }) {
+  const b = useMemo(() => bookcaseArt(), []);
+  const geo = useMemo(() => new THREE.BoxGeometry(b.width, b.height, b.depth), [b]);
+  const mats = useMemo(() => {
+    const F = BOOKCASE_FACES, lam = (src: string) => leaned(new THREE.MeshLambertMaterial({ map: loaded(src) }));
+    const lit = (src: string) => (edges ? src.replace(".png", "-lit.png") : src);
+    const front = lam(lit(F.front.src)), side = lam(lit(F.side.src)), top = lam(lit(F.top.src)), dark = leaned(new THREE.MeshLambertMaterial({ color: "#141010" }));
+    return [side, side, top, dark, front, front];
+  }, [edges]);
+  return <Solid geometry={geo} material={mats} at={[0, b.height / 2, 0]} size={[b.width, b.height, b.depth]} outline={outline} />;
+}
+
+// The sack: its outline turned round (flat-shaded, so its few sides show as facets), in burlap laid
+// about a unit of cloth to a unit round it, and a rope round its neck.
+function Sack({ outline }: { outline: boolean }) {
+  const geo = useMemo(() => new THREE.LatheGeometry(sackOutline().map(([r, y]) => new THREE.Vector2(r, y)), SACK_SIDES), []);
+  const rope = useMemo(() => new THREE.TorusGeometry(SACK_NECK.r + SACK_NECK.rope / 2, SACK_NECK.rope, 4, SACK_SIDES), []);
+  const mats = useMemo(() => {
+    const cloth = loaded(SACK_CLOTH.src, true);
+    cloth.repeat.set(2, 0.5);
+    return { cloth: leaned(new THREE.MeshLambertMaterial({ map: cloth, flatShading: true })), rope: leaned(new THREE.MeshLambertMaterial({ color: "#8a6a44", flatShading: true })) };
+  }, []);
+  const wide = 2 * Math.max(...sackOutline().map(([r]) => r));
+  return (
+    <>
+      <Solid geometry={geo} material={mats.cloth} at={[0, 0, 0]} size={[wide, SACK_TALL, wide]} outline={outline} />
+      <group rotation={[Math.PI / 2, 0, 0]} position={[0, SACK_NECK.y, 0]}>
+        <Solid geometry={rope} material={mats.rope} at={[0, 0, 0]} size={[0.2, 0.2, 0.05]} outline={false} />
+      </group>
+    </>
+  );
+}
+
 function Scene({ view }: { view: ChestView }) {
   const { size, setDpr } = useThree();
   const pix = pixelScale("art", ART_PER_U, view.across, size.width, window.devicePixelRatio || 1);
@@ -169,7 +213,7 @@ function Scene({ view }: { view: ChestView }) {
     t.repeat.set(1 / cols, 1 / 4); t.offset.set(0, 3 / 4); // standing, facing south
     return t;
   }, []);
-  const old = useMemo(() => [loaded("/sprites/props/treasure_chest.png"), loaded("/sprites/props/treasure_chest_open.png")], []);
+  const old = useMemo(() => Object.fromEntries((Object.keys(OLD) as Thing3D[]).map((k) => [k, [loaded(OLD[k].shut), loaded(OLD[k].open)]])) as Record<Thing3D, THREE.Texture[]>, []);
 
   // You stand in the middle (the camera's on you); the chest `at` units across, the old one as far the other way.
   const chestX = view.at || 1, oldX = -(view.at || 1.3);
@@ -198,6 +242,7 @@ function Scene({ view }: { view: ChestView }) {
   // You, for scale, sized as the game sizes you (WalkView3D), standing on your feet.
   const stretch = uprightStretch(PITCH), heroW = WALK_HERO.cell / KIT_PX, heroH = heroW * stretch, below = (1 - WALK_HERO.feet / WALK_HERO.cell) * heroH;
   const hinge = view.art ? { y: art.body, z: -art.depth / 2 } : chest.hinge;
+  const o = OLD[view.thing];
   return (
     <>
       <ambientLight color="#9aa6c8" intensity={0.55} />
@@ -209,7 +254,10 @@ function Scene({ view }: { view: ChestView }) {
       <mesh position={[0, WALL_HEIGHT / 2, -3]} material={wall}>
         <boxGeometry args={[PATCH, WALL_HEIGHT, 2]} />
       </mesh>
-      <group position={[chestX, 0, 0]}>
+      <group position={[chestX, 0, 0]} rotation={[0, view.turned ? Math.PI / 2 : 0, 0]}>
+        {view.thing === "bookcase" && <Bookcase outline={view.outline} edges={view.edges} />}
+        {view.thing === "stash" && <Sack outline={view.outline} />}
+        {view.thing === "chest" && (<>
         {view.art
           ? <Solid geometry={artGeo.body} material={artMats.body} at={[0, art.body / 2, 0]} size={[art.width, art.body, art.depth]} outline={view.outline} />
           : <StandIn boxes={chest.body} mats={mats} outline={view.outline} />}
@@ -218,11 +266,12 @@ function Scene({ view }: { view: ChestView }) {
             ? <Solid geometry={artGeo.lid} material={artMats.lid} at={[0, art.lid / 2, art.depth / 2]} size={[art.width, art.lid, art.depth]} outline={view.outline} />
             : <StandIn boxes={chest.lid} mats={mats} outline={view.outline} />}
         </group>
+        </>)}
       </group>
       {view.old && (
-        <mesh position={[oldX, (OLD_W * stretch) / 2, 0.4]} scale={[OLD_W, OLD_W * stretch, 1]}>
+        <mesh position={[oldX, (o.w * o.tall * stretch) / 2, 0.4]} scale={[o.w, o.w * o.tall * stretch, 1]}>
           <planeGeometry />
-          <meshLambertMaterial map={old[view.open ? 1 : 0]} alphaTest={0.5} transparent />
+          <meshLambertMaterial map={old[view.thing][view.open ? 1 : 0]} alphaTest={0.5} transparent />
         </mesh>
       )}
       <mesh position={[0, heroH / 2 - below, 1.5]} scale={[heroW, heroH, 1]}>
