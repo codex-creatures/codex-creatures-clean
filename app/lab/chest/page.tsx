@@ -1,7 +1,8 @@
 "use client";
 // app/lab/chest/page.tsx — 🧪 a draft 3D chest (the user, 2026-11-11), on the game's floor under the
 // game's camera, to judge the look before any 3D object goes in the dungeon. Boxes for the shape
-// (lib/render3d/chest3d.ts) with plain stand-in surfaces; the old flat chest and you beside it for
+// (lib/render3d/chest3d.ts) with PixelLab's painted faces, a dark outline and lit top edges (or plain
+// stand-ins, to compare); the old flat chest and you beside it for
 // comparison and scale. Nothing is saved, and the game doesn't use it.
 // Dev tool: Three.js is loaded on this page only.
 
@@ -16,7 +17,7 @@ const SIZES = [1, CHEST_W, 1.5, 1.75];
 const ZOOMS = [{ label: "Game zoom", across: 15 }, { label: "Close", across: 7 }];
 
 export default function ChestLab() {
-  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true });
+  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true });
   const set = (p: Partial<ChestView>) => setView((v) => ({ ...v, ...p }));
   const btn = (on: boolean) => ({ minHeight: 44, padding: "0 12px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
   return (
@@ -27,17 +28,20 @@ export default function ChestLab() {
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, maxWidth: 480 }}>
         <button style={btn(view.open)} onClick={() => set({ open: !view.open })}>{view.open ? "Shut" : "Open"}</button>
+        <button style={btn(view.art)} onClick={() => set({ art: !view.art })}>{view.art ? "PixelLab art" : "Stand-in"}</button>
+        <button style={btn(view.outline)} onClick={() => set({ outline: !view.outline })}>Outline {view.outline ? "on" : "off"}</button>
+        <button style={btn(view.edges)} onClick={() => set({ edges: !view.edges })}>Lit edges {view.edges ? "on" : "off"}</button>
         <button style={btn(view.moving)} onClick={() => set({ moving: !view.moving })}>Torch {view.moving ? "moving" : "still"}</button>
         <button style={btn(view.old)} onClick={() => set({ old: !view.old })}>Old chest {view.old ? "shown" : "hidden"}</button>
         {ZOOMS.map((z) => <button key={z.across} style={btn(view.across === z.across)} onClick={() => set({ across: z.across })}>{z.label}</button>)}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480, alignItems: "center" }}>
-        <span>Width (units):</span>
+        <span>Stand-in width (units):</span>
         {SIZES.map((w) => <button key={w} style={btn(view.width === w)} onClick={() => set({ width: w })}>{w}</button>)}
       </div>
       <p style={{ color: "#a89878", fontSize: 13, maxWidth: 480 }}>
-        Shape only: the wood, iron and gold are plain stand-ins. The real surfaces would be PixelLab art
-        laid on the same boxes. Lit by a test torch, not yet the game&apos;s own light.
+        PixelLab art: the front and lid top are painted; the sides reuse the front&apos;s end, and the gold
+        inside is still a stand-in. Lit by a test torch, not yet the game&apos;s own light.
       </p>
     </div>
   );

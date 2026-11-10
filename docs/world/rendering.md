@@ -269,6 +269,17 @@ the test torch moving round it or still, the old chest shown or not, game zoom (
 be flat PixelLab art on the same boxes. Lit by Three.js lights (a warm torch and a dim ambient), not
 yet the game's own light field. The game doesn't use it. Tests: tests/chest3d.test.ts.
 
+**Second pass (the user, 2026-11-11: "looks 3D but nowhere near as good"):** it now starts on
+**PixelLab art**: the chest as two boxes, body and lid, with painted faces
+(public/sprites/props/chest3d/: `front.png` 60 × 19, the lid's front edge over the body's, and
+`top.png` 60 × 33, the lid top; Pro, styled on the old chest), drawn square on screen at 48 a unit,
+so the boxes' sizes come from the pictures (`chestArt`: 1.25 × 0.79 × 0.79 u). The sides reuse the
+front's end; the lid's underside is its top darkened; the gold inside is still a stand-in. Two
+pixel-art touches, each with a switch: a **one-pixel dark outline** round each box (a black copy a
+pixel bigger, drawn inside out) and **lit top edges** (the top row of each front and the lid top's
+front row, ×1.4). The stand-in's textures are now laid square on screen too (they were square on the
+surface, so its fronts' pixels showed half height).
+
 ### Done: the grey geometry experiment (2026-11-10)
 
 Camera and geometry only, in flat greys, to judge shape. The user compared side walls A (narrow

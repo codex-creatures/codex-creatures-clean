@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chestParts, CHEST_W, BAND } from "../lib/render3d/chest3d";
+import { chestParts, chestArt, CHEST_W, BAND, ART_FACES, ART_PER_U, ART_PITCH } from "../lib/render3d/chest3d";
 
 describe("the 3D chest draft", () => {
   it("stands on the floor, inside its size, with the lid on top of the body", () => {
@@ -15,6 +15,15 @@ describe("the 3D chest draft", () => {
       const top = Math.max(...lidBoxes.map((b) => b.y + b.h / 2));
       expect(top).toBeCloseTo(c.height + BAND, 6); // (the lid's iron bands stand proud of the wood)
     }
+  });
+  it("the painted chest's boxes come from its pictures: one art pixel a square on screen, about 0.8 units tall", () => {
+    const a = chestArt();
+    expect(a.width * ART_PER_U).toBeCloseTo(ART_FACES.front.w, 6);
+    expect(a.width).toBeCloseTo(ART_FACES.top.w / ART_PER_U, 6); // (the top as wide as the front)
+    expect((a.lid + a.body) * ART_PER_U * Math.cos(ART_PITCH)).toBeCloseTo(ART_FACES.front.h, 6);
+    expect(a.depth * ART_PER_U * Math.sin(ART_PITCH)).toBeCloseTo(ART_FACES.top.h, 6);
+    expect(a.lid + a.body).toBeGreaterThan(0.75);
+    expect(a.lid + a.body).toBeLessThan(0.85);
   });
   it("is 0.8 units tall at its usual width, as the chest's object is", () => {
     expect(chestParts().height).toBeCloseTo(0.8, 6);

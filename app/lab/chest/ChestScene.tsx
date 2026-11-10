@@ -1,14 +1,17 @@
 "use client";
 // app/lab/chest/ChestScene.tsx — 🧪 the 3D chest draft (lib/render3d/chest3d.ts) on a patch of the
 // game's floor under its camera: orthographic, facing north, 60° down, art pixels at 48 a unit
-// (decision 37). The wood, iron and gold are plain stand-ins made here (planks and noise, no
-// detail): the real surfaces would be flat PixelLab art laid on the same boxes. Lit with a warm
-// torch light you can send round it, and a dim ambient, not yet the game's own light.
+// (decision 37). Two looks: "art", the body and lid as two boxes with PixelLab's flat faces on them
+// (public/sprites/props/chest3d/), and "stand-in", the boxes of chestParts with plain planks and
+// noise made here. Either can have a one-pixel dark outline round its shape (a black copy a pixel
+// bigger, drawn inside out, as every sprite in the game has an outline) and its top edges a pixel
+// lighter (where the corners catch the light). Lit with a warm torch light you can send round it, and
+// a dim ambient, not yet the game's own light.
 
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { chestParts, OPEN_ANGLE, type Box, type ChestMat } from "@/lib/render3d/chest3d";
+import { chestParts, chestArt, OPEN_ANGLE, ART_FACES, type Box, type ChestMat } from "@/lib/render3d/chest3d";
 import { pixelScale } from "@/lib/render3d/stone";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 import { WALK_KIT, WALK_HERO, KIT_PX } from "@/lib/sprites/walk";
@@ -16,9 +19,11 @@ import { legacyU } from "@/lib/render/projection";
 
 const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
-const OLD_W = legacyU(28); // the flat chest as the game draws it now (OBJECT_U)
+const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
+const EDGE_LIGHT = 1.4;          // 🧪 how much lighter a lit top edge is
+const OLD_W = legacyU(28);       // the flat chest as the game draws it now (OBJECT_U)
 
-export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean };
+export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean };
 
 // Stand-in surfaces, a unit of art (48 px) each, repeated across the boxes.
 function standIn(mat: ChestMat): THREE.Texture {
@@ -37,36 +42,105 @@ function standIn(mat: ChestMat): THREE.Texture {
   }
   const t = new THREE.DataTexture(data, n, n);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.magFilter = t.minFilter = THREE.NearestFilter;
-  t.colorSpace = THREE.SRGBColorSpace;
+  sharp(t);
   t.needsUpdate = true;
   return t;
 }
 
-function loaded(src: string, repeat = false): THREE.Texture {
-  const t = new THREE.TextureLoader().load(src);
+function sharp(t: THREE.Texture) {
   t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
   t.colorSpace = THREE.SRGBColorSpace;
+}
+function loaded(src: string, repeat = false): THREE.Texture {
+  const t = new THREE.TextureLoader().load(src);
+  sharp(t);
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }
+// A picture with some of its rows a little lighter (the lit edges), or as drawn; `dim` darkens all of it.
+// (Its copies, cut by `region`, are told when it's loaded too: a copy keeps its own version.)
+const COPIES = new WeakMap<THREE.Texture, THREE.Texture[]>();
+function painted(src: string, lit: number[], dim = 1): THREE.CanvasTexture {
+  const c = document.createElement("canvas"), t = new THREE.CanvasTexture(c);
+  sharp(t);
+  COPIES.set(t, []);
+  const img = new Image();
+  img.onload = () => {
+    c.width = img.width; c.height = img.height;
+    const g = c.getContext("2d")!;
+    g.drawImage(img, 0, 0);
+    const px = g.getImageData(0, 0, c.width, c.height);
+    for (let y = 0; y < c.height; y++) {
+      const k = dim * (lit.includes(y) ? EDGE_LIGHT : 1);
+      if (k === 1) continue;
+      for (let x = 0; x < c.width; x++) for (let ch = 0; ch < 3; ch++) { const i = (y * c.width + x) * 4 + ch; px.data[i] = Math.min(255, px.data[i] * k); }
+    }
+    g.putImageData(px, 0, 0);
+    for (const u of [t, ...(COPIES.get(t) ?? [])]) u.needsUpdate = true;
+  };
+  img.src = src;
+  return t;
+}
+// Part of a picture: columns [x0, x1) and rows [y0, y1) of a w × h picture (rows counted from the top).
+function region(t: THREE.Texture, w: number, h: number, x0: number, x1: number, y0: number, y1: number): THREE.Texture {
+  const r = t.clone();
+  COPIES.get(t)?.push(r);
+  r.repeat.set((x1 - x0) / w, (y1 - y0) / h); r.offset.set(x0 / w, 1 - y1 / h);
+  r.needsUpdate = true;
+  return r;
+}
 
-// A box whose texture is laid by size, a unit of art to a unit (so every face has the same density),
-// and by height, so planks line up across boxes side by side.
+// A stand-in box, its texture laid a unit of art to a unit across and square on screen: upright faces
+// cos(pitch) tighter up the face and tops sin(pitch) tighter front to back, as the game's walls are
+// laid (decision 37), and by height, so planks line up across boxes side by side.
 function boxGeometry(b: Box): THREE.BoxGeometry {
   const g = new THREE.BoxGeometry(b.w, b.h, b.d), uv = g.getAttribute("uv") as THREE.BufferAttribute;
-  const size: [number, number][] = [[b.d, b.h], [b.d, b.h], [b.w, b.d], [b.w, b.d], [b.w, b.h], [b.w, b.h]];
+  const up = Math.cos(PITCH), top = Math.sin(PITCH);
+  const size: [number, number][] = [[b.d, b.h * up], [b.d, b.h * up], [b.w, b.d * top], [b.w, b.d * top], [b.w, b.h * up], [b.w, b.h * up]];
   for (let face = 0; face < 6; face++) for (let k = 0; k < 4; k++) {
     const i = face * 4 + k, [su, sv] = size[face], upright = face < 2 || face > 3;
-    uv.setXY(i, uv.getX(i) * su + b.x, uv.getY(i) * sv + (upright ? b.y - b.h / 2 : b.z));
+    uv.setXY(i, uv.getX(i) * su + b.x, uv.getY(i) * sv + (upright ? (b.y - b.h / 2) * up : b.z * top));
   }
   return g;
 }
 
-function Parts({ boxes, mats }: { boxes: Box[]; mats: Record<ChestMat, THREE.Material> }) {
+// A box, and its outline: a black copy an art pixel bigger all round, drawn inside out behind it.
+function Solid({ geometry, material, at, size, outline }: { geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[]; at: [number, number, number]; size: [number, number, number]; outline: boolean }) {
+  return (
+    <group position={at}>
+      <mesh geometry={geometry} material={material} />
+      {outline && (
+        <mesh geometry={geometry} scale={size.map((s) => (s + 2 * OUTLINE_U) / s) as [number, number, number]}>
+          <meshBasicMaterial color="#000" side={THREE.BackSide} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function StandIn({ boxes, mats, outline }: { boxes: Box[]; mats: Record<ChestMat, THREE.Material>; outline: boolean }) {
   const geos = useMemo(() => boxes.map(boxGeometry), [boxes]);
   useEffect(() => () => geos.forEach((g) => g.dispose()), [geos]);
-  return <>{boxes.map((b, i) => <mesh key={i} geometry={geos[i]} material={mats[b.mat]} position={[b.x, b.y, b.z]} />)}</>;
+  return <>{boxes.map((b, i) => <Solid key={i} geometry={geos[i]} material={mats[b.mat]} at={[b.x, b.y, b.z]} size={[b.w, b.h, b.d]} outline={outline} />)}</>;
+}
+
+// The painted faces, for the body and the lid (BoxGeometry's faces: east, west, top, bottom, south, north).
+function useArt(edges: boolean) {
+  return useMemo(() => {
+    const F = ART_FACES, lam = (t: THREE.Texture) => new THREE.MeshLambertMaterial({ map: t });
+    const front = painted(F.front.src, edges ? [0, F.front.lid] : []);
+    const top = painted(F.top.src, edges ? [0] : []); // (a box's top shows the picture's top row at the front)
+    const under = painted(F.top.src, [], 0.35);
+    const fw = F.front.w, fh = F.front.h, split = F.front.lid, side = F.front.side;
+    const lidFront = region(front, fw, fh, 0, fw, 0, split), bodyFront = region(front, fw, fh, 0, fw, split, fh);
+    const lidSide = region(front, fw, fh, 0, side, 0, split), bodySide = region(front, fw, fh, 0, side, split, fh);
+    const inside = new THREE.MeshLambertMaterial({ map: standIn("gold") });
+    const dark = new THREE.MeshLambertMaterial({ color: "#141010" });
+    return {
+      lid: [lam(lidSide), lam(lidSide), lam(top), lam(under), lam(lidFront), lam(lidFront)],
+      body: [lam(bodySide), lam(bodySide), inside, dark, lam(bodyFront), lam(bodyFront)],
+    };
+  }, [edges]);
 }
 
 function Scene({ view }: { view: ChestView }) {
@@ -75,6 +149,12 @@ function Scene({ view }: { view: ChestView }) {
   useEffect(() => { setDpr(pix.dpr); }, [pix.dpr, setDpr]);
 
   const chest = useMemo(() => chestParts(view.width), [view.width]);
+  const art = useMemo(() => chestArt(), []);
+  const artMats = useArt(view.edges);
+  const artGeo = useMemo(() => ({
+    body: new THREE.BoxGeometry(art.width, art.body, art.depth),
+    lid: new THREE.BoxGeometry(art.width, art.lid, art.depth),
+  }), [art]);
   const mats = useMemo(() => {
     const m = {} as Record<ChestMat, THREE.Material>;
     for (const k of ["wood", "iron", "gold", "inside"] as ChestMat[]) m[k] = new THREE.MeshLambertMaterial({ map: standIn(k) });
@@ -117,6 +197,7 @@ function Scene({ view }: { view: ChestView }) {
 
   // You, for scale, sized as the game sizes you (WalkView3D), standing on your feet.
   const stretch = uprightStretch(PITCH), heroW = WALK_HERO.cell / KIT_PX, heroH = heroW * stretch, below = (1 - WALK_HERO.feet / WALK_HERO.cell) * heroH;
+  const hinge = view.art ? { y: art.body, z: -art.depth / 2 } : chest.hinge;
   return (
     <>
       <ambientLight color="#9aa6c8" intensity={0.55} />
@@ -135,9 +216,13 @@ function Scene({ view }: { view: ChestView }) {
         <meshLambertMaterial attach="material-5" color="#222" />
       </mesh>
       <group position={[view.old ? -0.9 : 0, 0, 0]}>
-        <Parts boxes={chest.body} mats={mats} />
-        <group ref={lid} position={[0, chest.hinge.y, chest.hinge.z]}>
-          <Parts boxes={chest.lid} mats={mats} />
+        {view.art
+          ? <Solid geometry={artGeo.body} material={artMats.body} at={[0, art.body / 2, 0]} size={[art.width, art.body, art.depth]} outline={view.outline} />
+          : <StandIn boxes={chest.body} mats={mats} outline={view.outline} />}
+        <group ref={lid} position={[0, hinge.y, hinge.z]}>
+          {view.art
+            ? <Solid geometry={artGeo.lid} material={artMats.lid} at={[0, art.lid / 2, art.depth / 2]} size={[art.width, art.lid, art.depth]} outline={view.outline} />
+            : <StandIn boxes={chest.lid} mats={mats} outline={view.outline} />}
         </group>
       </group>
       {view.old && (

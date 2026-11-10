@@ -16,6 +16,23 @@ export const HEIGHT_OF_W = 0.64;  // height for its width (0.8 u at CHEST_W)
 export const BAND = 0.035;        // how far the iron bands and corners stand proud of the wood
 export const OPEN_ANGLE = 1.9;    // radians the lid turns back, open (a little past upright)
 
+// ── The painted chest: two boxes, the body and the lid, with PixelLab's flat faces on them ──
+// The faces are drawn square on screen at 48 art pixels a unit (decision 37): across, 48 a unit;
+// up an upright face, 48 × cos(pitch) a unit; front to back on a top, 48 × sin(pitch). So the boxes'
+// sizes come from the pictures. The front picture is the lid's front edge (its top `lid` rows) over
+// the body's front; the sides take its first `side` columns.
+export const ART_PER_U = 48;
+export const ART_PITCH = Math.PI / 3;
+export const ART_FACES = {
+  front: { src: "/sprites/props/chest3d/front.png", w: 60, h: 19, lid: 6, side: 24 },
+  top: { src: "/sprites/props/chest3d/top.png", w: 60, h: 33 },
+};
+
+export function chestArt() {
+  const F = ART_FACES, up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
+  return { width: F.front.w / ART_PER_U, depth: F.top.h / flat, lid: F.front.lid / up, body: (F.front.h - F.front.lid) / up };
+}
+
 export function chestParts(width = CHEST_W): Chest {
   const W = width, D = W * DEPTH_OF_W, H = W * HEIGHT_OF_W, hb = H * BODY_OF_H, hl = H - hb;
   const b = BAND, bandW = W * 0.07, bandX = W * 0.3, wall = W * 0.06;
