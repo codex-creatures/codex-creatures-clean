@@ -255,6 +255,20 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   stands the 3D view in as it did the 2D one (its golden unchanged) and checks the page hands it
   every prop.
 
+### Draft: a 3D chest (2026-11-11; lab only, to judge)
+
+The first 3D object, to see how one looks before any goes in the dungeon (the user, 2026-11-11).
+`/lab/chest`: the chest built from boxes (lib/render3d/chest3d.ts `chestParts`: a body open at the
+top with gold inside, a lid turning on a hinge along its back top edge, two iron bands, iron corners,
+a lock plate and hasp), 0.8 u tall at `CHEST_W` 1.25 u wide (the chest object's height), on kit F's
+floor in front of a north wall, under the game's camera with art pixels at 48 a unit. Beside it: the
+flat chest as the game draws it now, and you, for scale. Switches: open or shut (the lid swings),
+the test torch moving round it or still, the old chest shown or not, game zoom (15 across) or close
+(7), and the width (1, 1.25, 1.5, 1.75). The wood, iron and gold are plain stand-ins made in code
+(planks and noise, no detail), laid a unit of art to a unit on every face; the real surfaces would
+be flat PixelLab art on the same boxes. Lit by Three.js lights (a warm torch and a dim ambient), not
+yet the game's own light field. The game doesn't use it. Tests: tests/chest3d.test.ts.
+
 ### Done: the grey geometry experiment (2026-11-10)
 
 Camera and geometry only, in flat greys, to judge shape. The user compared side walls A (narrow
