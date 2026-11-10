@@ -344,7 +344,7 @@ others. A new world version (9): runs already made keep today's rules.
   beside them: **half of campfires** have a stash. The new mix: normal rooms, dens 40 → 45 and a
   campfire share of 5 (besides the half of pools drawn as campfires); "?" rooms, the witch,
   librarian and merchant shares (18) go to dens +6, brutes +6 and campfires +6. Smaller rooms are
-  also sometimes empty. ❓ How often is still to set.
+  empty **1 time in 5**.
 - **Candle light:** every wandering person (witches, the merchant, the librarian) gives off a
   candle's light. A witch's goes out once you've played her (won or lost).
 - **The witches:** each has her own game and winnings. Both can give illnesses, and illnesses
@@ -357,8 +357,8 @@ others. A new world version (9): runs already made keep today's rules.
   that they are no longer here…" if they're cut off). So the loop: find the library, maybe free
   books, often the librarian there; if not, the lectern shows where they went.
 - **Broken bookcases** (the user, 2026-11-10): every large library holds **3–5** of them (the
-  battered bookcase art, den/bookcase-2.png), each a loot box to search; some are empty. ❓ Still
-  to set: how many are empty, and what one holds.
+  battered bookcase art, den/bookcase-2.png), each a loot box to search; **30%** are empty. ❓ Still
+  to set: what one holds.
 - **Locators** (rare finds: **5% per chest or stash**, one of the three at random; the merchant
   sells **one**, at **200 gold**):
   - **Merchant map**: where the merchant is;
@@ -368,7 +368,7 @@ others. A new world version (9): runs already made keep today's rules.
   Using one opens the scroll with that person's icon at exactly where they are, among the rooms'
   marks: it shows nothing else (no rooms or tunnels). Opening the scroll again shows where they
   are now, if they've moved. A locator is **used once and then works for the rest of the run**.
-- ❓ **Still to set:** how often a smaller room is empty, and the broken bookcases' loot (above).
+- ❓ **Still to set:** the broken bookcases' loot (above).
 
 ## Later
 
