@@ -280,6 +280,14 @@ pixel bigger, drawn inside out) and **lit top edges** (the top row of each front
 front row, ×1.4, made beforehand as `front-lit.png` and `top-lit.png`; the underside is `under.png`). Each face is its part of a picture by its UVs (a copy of a texture cut before its picture loaded stayed black: the first try of this pass showed a black box). The stand-in's textures are now laid square on screen too (they were square on the
 surface, so its fronts' pixels showed half height).
 
+**The lean (the user, 2026-11-11: "it stands at a height, so you should see some of it from far away,
+like the walls"):** the chest and the lab's wall lean as the game's rock does (decision 36, 0.03,
+in the vertex shader, worked from where each point is in the world), so a chest across the screen
+shows a little of its end, more the further across. Its ends have their own picture (`side.png`,
+38 × 19, Pro, styled on the front). Switches: the chest 0, 2, 4 or 6 units across from you (the old
+flat one as far the other way), and the lean on or off. The flat sprites (you, the old chest) don't
+lean, as in the game.
+
 ### Done: the grey geometry experiment (2026-11-10)
 
 Camera and geometry only, in flat greys, to judge shape. The user compared side walls A (narrow

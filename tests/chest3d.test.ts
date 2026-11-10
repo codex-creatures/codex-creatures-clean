@@ -22,6 +22,8 @@ describe("the 3D chest draft", () => {
     expect(a.width).toBeCloseTo(ART_FACES.top.w / ART_PER_U, 6); // (the top as wide as the front)
     expect((a.lid + a.body) * ART_PER_U * Math.cos(ART_PITCH)).toBeCloseTo(ART_FACES.front.h, 6);
     expect(a.depth * ART_PER_U * Math.sin(ART_PITCH)).toBeCloseTo(ART_FACES.top.h, 6);
+    expect(Math.abs(a.depth * ART_PER_U - ART_FACES.side.w)).toBeLessThan(0.5); // (the ends as deep as the top, within a pixel)
+    expect(ART_FACES.side.h).toBe(ART_FACES.front.h);
     expect(a.lid + a.body).toBeGreaterThan(0.75);
     expect(a.lid + a.body).toBeLessThan(0.85);
   });

@@ -14,10 +14,11 @@ import type { ChestView } from "./ChestScene";
 const ChestScene = dynamic(() => import("./ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 
 const SIZES = [1, CHEST_W, 1.5, 1.75];
+const ACROSS = [0, 2, 4, 6]; // units the chest stands across from you
 const ZOOMS = [{ label: "Game zoom", across: 15 }, { label: "Close", across: 7 }];
 
 export default function ChestLab() {
-  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true });
+  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true });
   const set = (p: Partial<ChestView>) => setView((v) => ({ ...v, ...p }));
   const btn = (on: boolean) => ({ minHeight: 44, padding: "0 12px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
   return (
@@ -34,6 +35,11 @@ export default function ChestLab() {
         <button style={btn(view.moving)} onClick={() => set({ moving: !view.moving })}>Torch {view.moving ? "moving" : "still"}</button>
         <button style={btn(view.old)} onClick={() => set({ old: !view.old })}>Old chest {view.old ? "shown" : "hidden"}</button>
         {ZOOMS.map((z) => <button key={z.across} style={btn(view.across === z.across)} onClick={() => set({ across: z.across })}>{z.label}</button>)}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480, alignItems: "center" }}>
+        <span>Chest across from you:</span>
+        {ACROSS.map((a) => <button key={a} style={btn(view.at === a)} onClick={() => set({ at: a })}>{a}</button>)}
+        <button style={btn(view.lean)} onClick={() => set({ lean: !view.lean })}>Lean {view.lean ? "on" : "off"}</button>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480, alignItems: "center" }}>
         <span>Stand-in width (units):</span>
