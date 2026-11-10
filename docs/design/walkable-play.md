@@ -389,8 +389,8 @@ the walk in `lib/world/walkSim.ts`, what you tap in `walkWorld.ts thingsOf`, dra
   rolled with the run, a chest's as it's opened); the merchant sells **one**, at **200 gold** (in
   his cart's last slot if it's full).
   - **Merchant map**: where the merchant is;
-  - **Crystal ball**: where a witch is (always the closest one you can still reach, as the crow
-    flies, played or not);
+  - **Crystal ball**: where a witch is (the closest one you can still reach and haven't played, as the crow
+    flies: the user, 2026-11-11). Where nobody wanders (scroll-map runs, older walkable runs) a locator reveals the room they keep instead (`locateRoom`). The merchant and librarian use the tavern's 8-frame walks.
   - **Librarian locator**: where the librarian is.
 
   Using one (the bag's "Use it") opens the scroll, free (no look spent), with that person's icon at

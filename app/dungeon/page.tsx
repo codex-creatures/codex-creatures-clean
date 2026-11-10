@@ -54,7 +54,7 @@ import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dung
 import { openWalkSave, recoverWalkSave, canRecover, newWalkRun } from "@/lib/world/migrate";
 import { FLARE_WALK, shutPlan } from "@/lib/dungeon/torch";
 import { layoutFloorplan, type Progress } from "@/lib/dungeon/layout";
-import { locate, locatorFinds } from "@/lib/dungeon/people";
+import { locate, locateRoom, locatorFinds } from "@/lib/dungeon/people";
 import EncounterCards from "@/components/EncounterCards";
 // The walk, drawn in 3D (decision 38): Three.js loads only once you're walking, not for the classic dungeons.
 const WalkView3D = dynamic(() => import("@/components/WalkView3D"), { ssr: false, loading: () => <div style={{ flex: 1, background: "#000" }} /> });
@@ -505,7 +505,7 @@ export default function DungeonPage() {
   // A flare lights up where you stand (and shows you the map); a
   // clairvoyance scroll shows you the map to pick a room to look into.
   // ("view": the Scroll button, just looking at your map again)
-  const [mapOpen, setMapOpen] = useState<"look" | "pick" | "view" | null>(null);
+  const [mapOpen, setMapOpen] = useState<"look" | "pick" | "view" | "found" | null>(null);
   // A Revival Elixir (who: the knocked-out creature): back up with REVIVE_HP of its HP.
   function applyTool(entry: BagEntry, who?: string) {
     const cur = loadDungeon();
@@ -526,15 +526,26 @@ export default function DungeonPage() {
     setMapOpen("look");
   }
   // A locator (or a library's lectern): the scroll opens, showing who it finds (people.ts locate), and
-  // does every time it's opened from now on. Who it finds cut off (or no one wandering here): a word,
-  // and it isn't used up. True: it's working now (a second one of a kind you're using isn't spent).
+  // does every time it's opened from now on. Who it finds cut off: a word, and it isn't used up.
+  // True: it's working now (a second one of a kind you're using isn't spent). Where nobody wanders,
+  // it reveals the room they keep (people.ts locateRoom), as a clairvoyance scroll would, and the map opens.
   function track(kind: LocatorKey): boolean {
     const r = loadDungeon().run, walk = r?.walk;
+    if (r && !walk?.people) {
+      const here = runPosition(r);
+      const finished = (id: string) => r.cleared.includes(id) || !!(id === here ? r.current : walkRoom(r, id))?.done;
+      const id = locateRoom(kind, r.map, here, finished);
+      setSheet(null);
+      if (!id) { setNotes(["It appears that they are no longer here…"]); return false; }
+      updateRun((x) => ({ ...x, seen: [...new Set([...(x.seen ?? []), id])] }));
+      if (walk) { setWalkPanel(false); setWalkScroll(true); } else setMapOpen("found");
+      return true;
+    }
     const plan = walk && layoutFloorplan(walk.layout), p: Progress | undefined = walk && { room: walk.room, line: walk.line ?? Infinity };
-    const found = walk?.people && plan && p && locate(kind, walk.people, walk.at, walk.layout, shutPlan(plan, walk.layout, p), p);
+    const found = walk?.people && plan && p && locate(kind, walk.people, walk.at, walk.layout, shutPlan(plan, walk.layout, p), p, (id) => walkRoom(r, id));
     if (!found) {
       setSheet(null);
-      setNotes([walk?.people ? "It appears that they are no longer here…" : "Nobody wanders this dungeon."]);
+      setNotes(["It appears that they are no longer here…"]);
       return false;
     }
     const fresh = !(walk.tracking ?? []).includes(kind);
@@ -1435,7 +1446,7 @@ export default function DungeonPage() {
         </Sheet>
       )}
       {mapOpen && (
-        <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : mapOpen === "view" ? "📜 Your map" : "🧨 Your map, by torchlight"} onClose={() => setMapOpen(null)}>
+        <Sheet title={mapOpen === "pick" ? "🔮 Pick a room to look into" : mapOpen === "view" ? "📜 Your map" : mapOpen === "found" ? "📍 Your map: found them" : "🧨 Your map, by torchlight"} onClose={() => setMapOpen(null)}>
           {mapOpen === "pick" && <p style={{ fontSize: 13, color: MUTED, margin: "0 0 8px" }}>Tap any room: you&apos;ll see what&apos;s in it, and the rooms around it.</p>}
           {run.walk
             ? <WalkMap key={mapOpen} walk={run.walk} map={run.map} here={runPosition(run)} been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)}

@@ -76,18 +76,22 @@ describe("people who wander", () => {
     expect(stepWanderer(plan, live, layout, p, w, 5, room, rng)).toEqual(w);
   });
 
-  it("locators find the merchant, the librarian, or the closest witch you can reach; none if they're cut off", () => {
+  it("locators find the merchant, the librarian, or the closest witch you can reach and haven't played; none if they're cut off", () => {
     const walk = RUN.walk!, layout = walk.layout, plan = layoutFloorplan(layout), p = startProgress(layout), live = shutPlan(plan, layout, p);
     const people = walk.people!, witches = people.filter((q) => q.kind === "witch");
-    expect(locate("merchant_map", people, walk.at, layout, live, p)?.kind).toBe("merchant");
-    expect(locate("librarian_locator", people, walk.at, layout, live, p)?.kind).toBe("librarian");
+    expect(locate("merchant_map", people, walk.at, layout, live, p, room)?.kind).toBe("merchant");
+    expect(locate("librarian_locator", people, walk.at, layout, live, p, room)?.kind).toBe("librarian");
     const near = (q: { at: { x: number; y: number } }) => Math.hypot(q.at.x - walk.at.x, q.at.y - walk.at.y);
-    expect(locate("crystal_ball", people, walk.at, layout, live, p)?.id).toBe([...witches].sort((a, b) => near(a) - near(b))[0].id);
+    expect(locate("crystal_ball", people, walk.at, layout, live, p, room)?.id).toBe([...witches].sort((a, b) => near(a) - near(b))[0].id);
     // The closer one cut off: the other.
     const [close, far] = [...witches].sort((a, b) => near(a) - near(b));
-    expect(locate("crystal_ball", people.map((q) => (q.id === close.id ? { ...q, stopped: true as const } : q)), walk.at, layout, live, p)?.id).toBe(far.id);
+    expect(locate("crystal_ball", people.map((q) => (q.id === close.id ? { ...q, stopped: true as const } : q)), walk.at, layout, live, p, room)?.id).toBe(far.id);
+    // The closer one played (won, lost or walked away from): the other; both played, none.
+    const played = (ids: string[]) => (id: string) => { const r = room(id); return r && ids.includes(id) ? { ...r, done: true } : r; };
+    expect(locate("crystal_ball", people, walk.at, layout, live, p, played([close.id]))?.id).toBe(far.id);
+    expect(locate("crystal_ball", people, walk.at, layout, live, p, played([close.id, far.id]))).toBeNull();
     const gone = people.map((q) => ({ ...q, stopped: true as const }));
-    expect(locate("merchant_map", gone, walk.at, layout, live, p)).toBeNull();
+    expect(locate("merchant_map", gone, walk.at, layout, live, p, room)).toBeNull();
     expect(cutOff(layout, live, p, gone[0])).toBe(true);
   });
 

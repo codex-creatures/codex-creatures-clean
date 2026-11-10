@@ -38,6 +38,7 @@ import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
 import { Stick, Warmth, WalkScroll } from "@/components/WalkView";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
+import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
 import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
@@ -139,15 +140,15 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
       {W.warming && !scroll && <Warmth team={team} warming={W.warming} />}
       {scroll && <WalkScroll map={play.map} layout={W.layout} plan={plan} known={sim.known} trail={sim.trail} progress={W.progress} cuts={sim.cuts}
         been={been} here={roomAt(plan, sim.me)} at={sim.me} cleared={cleared} lit={lit} seen={seen} onClose={onScrollClose}
-        people={tracked(play.walk.tracking, sim, W.layout, W.live, W.progress)} />}
+        people={tracked(play.walk.tracking, sim, W.layout, W.live, W.progress, play.room)} />}
     </div>
   );
 }
 
 // Who your locators find now (people.ts locate), each once, to show on the scroll where they stand.
-function tracked(kinds: LocatorKey[] | undefined, sim: WalkSim, layout: Layout, live: WalkSim["live"], p: Progress) {
+function tracked(kinds: LocatorKey[] | undefined, sim: WalkSim, layout: Layout, live: WalkSim["live"], p: Progress, room: (id: string) => Room | undefined) {
   const people = sim.people.map(personOf);
-  const found = (kinds ?? []).flatMap((k) => { const q = locate(k, people, sim.me, layout, live, p); return q ? [q] : []; });
+  const found = (kinds ?? []).flatMap((k) => { const q = locate(k, people, sim.me, layout, live, p, room); return q ? [q] : []; });
   return found.filter((q, i) => found.findIndex((o) => o.id === q.id) === i);
 }
 
@@ -333,9 +334,9 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     if (witch?.()) { out.push(<Witch key={t.key} find={witch} stretch={stretch} shade={shade} />); continue; }
     if (!a) continue;
     const b = d.visual.bounds, w = b.left + b.right, h = (b.up + b.down) * stretch;
-    if (person) {
-      out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={shade?.(t.x, t.y)}
-        follow={() => { const q = person() ?? t; return { x: q.x, y: q.y }; }} />);
+    const walking = person && STROLLS[t.def] && artFor(STROLLS[t.def]);
+    if (person && walking) {
+      out.push(<Stroller key={t.key} find={() => person() ?? { ...t, facing: Math.PI, path: [] }} art={walking} w={w} stretch={stretch} shade={shade} />);
       continue;
     }
     const colour = shade?.(t.x, t.y) ?? (t.def === "pool" && t.open ? new THREE.Color(1, 1, 1) : undefined);
@@ -443,6 +444,32 @@ function Witch({ find, stretch, shade }: { find: () => { x: number; y: number; f
     if (shade) mat.color = shade(n.x, n.y);
     m.scale.set(face === "west" ? -size : size, size * stretch, 1);
     m.position.set(n.x, (size * stretch) / 2 - below, n.y + 0.05);
+  });
+  return <mesh ref={mesh} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>;
+}
+
+// The merchant and the librarian walking the dungeon (decision 39): their walk (the tavern's: 8 frames,
+// PixMiniMax) while they move, their still while they stop, drawn `w` u wide (the still's width), feet
+// on the floor; the art faces left, so it's mirrored heading right.
+const STROLLS: Record<string, Parameters<typeof artFor>[0]> = { "merchant-walk": MERCHANT, "librarian-walk": LIBRARIAN };
+const STROLL_FPS = 9; // walk frames a second (the tavern's)
+function Stroller({ find, art, w, stretch, shade }: { find: () => { x: number; y: number; facing: number; path: unknown[] }; art: NonNullable<ReturnType<typeof artFor>>;
+  w: number; stretch: number; shade?: (x: number, y: number) => THREE.Color }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  const walk = art.walk!;
+  const frames = useMemo(() => Array.from({ length: walk.frames }, (_, i) => part(walk.src, i / walk.frames, 0, 1 / walk.frames, 1)), [walk.src, walk.frames]);
+  useFrame(() => {
+    const m = mesh.current, n = find();
+    if (!m) return;
+    const k = w / art.w, moving = n.path.length > 0, right = Math.cos(n.facing) > 0.1, flip = right ? -1 : 1;
+    const mat = m.material as THREE.MeshBasicMaterial;
+    // The still's own size, or a whole walk frame with the still where it sits in it.
+    const [fw, fh, cx, feet] = moving ? [walk.w * k, walk.h * k, (walk.w / 2 - (walk.x + art.w / 2)) * k, (walk.h - walk.y - art.h) * k] : [w, art.h * k, 0, 0];
+    const tex = moving ? frames[Math.floor((performance.now() / 1000) * STROLL_FPS) % walk.frames] : texture(art.src);
+    if (mat.map !== tex) { mat.map = tex; mat.needsUpdate = true; }
+    if (shade) mat.color = shade(n.x, n.y);
+    m.scale.set(flip * fw, fh * stretch, 1);
+    m.position.set(n.x + flip * cx, (fh / 2 - feet) * stretch, n.y + 0.05);
   });
   return <mesh ref={mesh} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>;
 }

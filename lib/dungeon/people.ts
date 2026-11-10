@@ -22,10 +22,10 @@
 //   one, any of the three; the merchant sells one, at LOCATOR_PRICE. Used,
 //   your scroll shows that person's icon where they are now, every time it's
 //   opened, for the rest of the run (the crystal ball: the closest witch you
-//   can still reach). A library's lectern finds the librarian the same way.
+//   can still reach and haven't played). A library's lectern finds the librarian the same way.
 // - Half the campfires have a stash beside them (CAMPFIRE_STASH).
 
-import { makeRoom, hasFight, MERCHANT_SLOTS, type DungeonId, type Room, type SackItem } from "./run";
+import { makeRoom, hasFight, MERCHANT_SLOTS, type DungeonId, type Room, type RoomKind, type SackItem } from "./run";
 import { isOpen, roomCentre, type Layout, type Progress } from "./layout";
 import { findPath, type CanStep } from "./walk";
 import { spawnOf, FOE_SPEED } from "./foes";
@@ -181,14 +181,28 @@ export function personLit(kind: PersonKind, r: Room | undefined): boolean {
 }
 
 // Who a locator finds, as things stand: the merchant, the librarian, or the
-// closest witch you can still reach; null if they're cut off (or none is left
-// to reach). you: where you stand.
-export function locate(kind: LocatorKey, people: Person[], you: Pt, layout: Layout, live: Floorplan, p: Progress): Person | null {
+// closest witch you can still reach and still play (the user, 2026-11-11: not
+// one you've played); null if they're cut off (or no witch is left to find).
+// you: where you stand; room: the run's rooms (a witch's game).
+export function locate(kind: LocatorKey, people: Person[], you: Pt, layout: Layout, live: Floorplan, p: Progress, room: (id: string) => Room | undefined): Person | null {
   const who = LOCATES[kind];
-  const open = people.filter((q) => q.kind === who && !cutOff(layout, live, p, q));
+  const open = people.filter((q) => q.kind === who && !cutOff(layout, live, p, q) && (who !== "witch" || personLit(who, room(q.id))));
   if (open.length === 0) return null;
   return open.reduce((a, b) => (Math.hypot(b.at.x - you.x, b.at.y - you.y) < Math.hypot(a.at.x - you.x, a.at.y - you.y) ? b : a));
 }
 
 // Is this tile in this room's floor? (For tests: someone standing in a room.)
 export const inRoomFloor = (plan: Floorplan, id: string, q: Pt) => plan.rooms[id].some((r) => inRect(r, q));
+
+// Where nobody wanders (the scroll-map dungeons, and a walkable run made before world version 9),
+// a locator reveals the room they keep instead (the user, 2026-11-11): the closest to where you
+// stand of that kind's rooms still to finish (a witch's, one not yet played), or null if there's
+// none. finished: a room you've done with.
+export const KEEPS: Record<LocatorKey, RoomKind> = { merchant_map: "merchant", crystal_ball: "witch", librarian_locator: "librarian" };
+export function locateRoom(kind: LocatorKey, map: DungeonMap, here: string, finished: (id: string) => boolean): string | null {
+  const at = map.nodes[here];
+  const rooms = Object.values(map.nodes).filter((n) => n.kind === KEEPS[kind] && !finished(n.id));
+  if (!at || rooms.length === 0) return null;
+  const d = (n: { x: number; y: number }) => Math.hypot(n.x - at.x, n.y - at.y);
+  return rooms.reduce((a, b) => (d(b) < d(a) ? b : a)).id;
+}
