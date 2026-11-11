@@ -266,7 +266,7 @@ describe("people who wander, on the Labyrinth screen", () => {
     saveDungeon({ meta: { runs: 1, clears: 0, injuries: {}, bag: [lootEntry(ball.id), lootEntry(map.id)], loot: { [ball.id]: ball, [map.id]: map } },
       run: { ...run, walk: { ...walk, people } } });
     await mount();
-    const props = () => walkProps.last as unknown as { onObject: (id: string, st: object) => void; scroll: boolean; busy: boolean };
+    const props = () => walkProps.last as unknown as { onObject: (id: string, st: object) => void; scroll: boolean; busy: boolean; onTapClose?: () => void };
     const state = { at: walk.at, room: walk.room, line: walk.line, people };
     expect(props()).toBeTruthy();
     // Talking to him: you're "in" him, and his cart's window is up.
@@ -274,8 +274,12 @@ describe("people who wander, on the Labyrinth screen", () => {
     expect(runPosition(loadDungeon().run!)).toBe(merchant.id);
     expect(loadDungeon().run!.current?.kind).toBe("merchant");
     expect(text()).toContain("a merchant who smiles too much");
-    expect(props().busy).toBe(true);
-    await tap(document.querySelector("button[aria-label='Close']") as HTMLElement);
+    // Nobody walks while it's up, but a tap on the map shuts it (and walks on: the walk's own doing).
+    expect(props().busy).toBe(false);
+    expect(props().onTapClose).toBeDefined();
+    await act(async () => { props().onTapClose!(); }); await settle();
+    expect(text()).not.toContain("a merchant who smiles too much");
+    expect(props().onTapClose).toBeUndefined();
     // The merchant map: he's cut off, so it says so and stays in the bag.
     const use = async (name: string) => {
       await tap(/^🎒 Bag/);

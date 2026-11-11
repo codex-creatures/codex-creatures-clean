@@ -218,7 +218,9 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   trying one before they're beaten sets them on you; then each opens as you walk up. Walking
   in never opens the room's window now; the room button (top left) opens it any time. It sits at the
   bottom, at most 55% of the view; a shop's (the merchant's cart, the librarian's shelf) takes the
-  whole view, anchored to the top, as it was cut off at the bottom (the user, 2026-11-11).
+  whole view, anchored to the top, as it was cut off at the bottom (the user, 2026-11-11). Nobody
+  walks while it's up, but a tap (or drag) on the map shuts it and carries on: walks there, or
+  opens what you tapped (`onTapClose`, the user, 2026-11-11).
   **Bosses wait** (the user, 2026-11-06; `placeWaiter`, `waitsHere`): the Encampment's
   chief (and the Labyrinth's boss) stands at the top of his room (`WAIT_FROM_TOP` 4 tiles
   down, facing the way in), never wandering, and his fight starts only once you've walked up

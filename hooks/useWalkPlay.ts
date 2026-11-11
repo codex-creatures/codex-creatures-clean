@@ -29,6 +29,8 @@ export type WalkPlayProps = {
   here: string;                        // the room you're in (the run's position)
   room: (id: string) => Room | undefined; // each room as it stands now
   busy: boolean;                       // a window's open over it: nobody moves
+  onTapClose?: () => void;             // a window a tap on the map closes (the room's, at the bottom): nobody moves while
+                                       // it's open, but a tap or a drag shuts it and goes on (walks, opens), the user, 2026-11-11
   scroll: boolean;                     // the scroll is out
   team: Omit<PartyMember, "hp">[];     // who's walking with you (a campfire heals them)
   hp: Record<string, number>;          // …their health, shares of max HP (the run's)
@@ -111,13 +113,14 @@ export function useWalkPlay(P0: WalkPlayProps) {
   const step = (now: number, down = 1): Frame => {
     const P = props.current;
     const S = stick.current ?? (P.scroll ? null : keysPush(keys.current));
-    if (S && Math.hypot(S.x, S.y) >= STICK_DEAD && !P.busy && sim.fired === 0 && !sim.alarm) {
+    const busy = P.busy || !!P.onTapClose;
+    if (S && Math.hypot(S.x, S.y) >= STICK_DEAD && !busy && sim.fired === 0 && !sim.alarm) {
       sim.goal = null;
       sim.wantThing = null;
       let can: CanStep | null = null;
       sim.me = walkStick(live, sim.me, S.x, S.y * down, (a, b) => (can ??= rule(sim.progress))(a, b));
     }
-    const F = stepWalk(sim, { now, busy: P.busy, room: P.room, here: P.here, team: P.team.map((m) => m.id), hp: P.hp, things });
+    const F = stepWalk(sim, { now, busy, room: P.room, here: P.here, team: P.team.map((m) => m.id), hp: P.hp, things });
     for (const e of F.events) {
       if (e.type === "progress") setProgress(e.progress);
       else if (e.type === "enter") P.onEnter(e.room, e.state);
@@ -137,6 +140,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
   // A tap on the floor at `spot`: on (or by) something to loot that you've seen, walk up beside it and it opens; else walk there.
   const tapAt = (spot: Pt) => {
     if (props.current.busy || sim.fired > 0 || sim.alarm) return;
+    props.current.onTapClose?.();
     const can = rule(sim.progress);
     const t = tappedThing(things(), spot, sim.known, plan.w);
     if (t) {
@@ -151,6 +155,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
   // A finger held down and dragged: walk toward the floor under it, again as it moves (never opening things on the way).
   const holdAt = (spot: Pt) => {
     if (props.current.busy || sim.fired > 0 || sim.alarm) return;
+    props.current.onTapClose?.();
     sim.goal = spot;
     sim.wantThing = null;
     sim.me = walkToward(live, sim.me, spot, rule(sim.progress));
@@ -158,7 +163,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
 
   // E: use what you're beside, as tapping it does.
   const use = () => {
-    if (props.current.busy || sim.fired > 0 || sim.alarm || !usable) return;
+    if (props.current.busy || props.current.onTapClose || sim.fired > 0 || sim.alarm || !usable) return;
     openThing(usable, state());
   };
   const useNow = useRef(use);

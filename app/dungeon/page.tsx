@@ -1305,7 +1305,8 @@ export default function DungeonPage() {
   const walkView = walking && (
     <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <WalkView3D walk={run.walk!} map={run.map} dungeon={dungeonOf(run)} here={runPosition(run)} room={(id) => walkRoom(run, id)}
-        busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || !!won || cageShow !== undefined || walkPanel}
+        busy={lootOpen || !!sheet || !!equipAsk || !!viewGear || levelUps.length > 0 || !!won || cageShow !== undefined}
+        onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
         onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onHeal={walkHeal} onKeep={walkSave} />
