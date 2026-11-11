@@ -421,14 +421,14 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, on = glows(c.lit, c.x, c.y);
     const up = c.high ?? 0, cy = up ? c.y + 0.05 : c.y, cx = up ? c.x + CANDLE_AT : c.x;
     out.push(
-      <group key={c.id} position={[0, up, 0]}>
-        <Upright src={KIT_LIGHTS.candles} x={cx} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(c.x, c.y))} />
+      <Mounted key={c.id} x={cx} y={0} up={up}>
+        <Upright src={KIT_LIGHTS.candles} x={0} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(c.x, c.y))} />
         {on && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
-          <mesh key={i} raycast={() => null} position={[cx - w / 2 + wx * k, h - wy * k * stretch + 0.04, cy + 0.06]} scale={[0.05, 0.09, 1]}>
+          <mesh key={i} raycast={() => null} position={[-w / 2 + wx * k, h - wy * k * stretch + 0.04, cy + 0.06]} scale={[0.05, 0.09, 1]}>
             <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
           </mesh>
         ))}
-      </group>,
+      </Mounted>,
     );
   }
   for (const r of rubbleOf(sim.plan, layout, progress).filter(showsRubble)) {
@@ -443,13 +443,23 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     const [tw, th] = KIT_LIGHTS.torchSize, w = tw / ART_PER_U, h = th / ART_PER_U;
     const x = c.x + side * 0.49, z = side ? c.y : c.y - 0.49, rot = side ? -side * (Math.PI / 2) : 0;
     out.push(
-      <group key={c.id} position={[x, 1.05, z]} rotation={[0, rot, 0]}>
+      <Mounted key={c.id} x={x} y={z} up={1.05} rotation={rot}>
         <Sconce w={w} h={h} colour={shade && (() => shade(c.x, c.y))} />
         {glows(c.lit, c.x, c.y) && <mesh raycast={() => null} position={[0, h / 2 - KIT_LIGHTS.head / ART_PER_U, 0.03]} scale={[0.14, 0.2, 1]}><planeGeometry /><meshBasicMaterial color="#ffd27a" /></mesh>}
-      </group>,
+      </Mounted>,
     );
   }
   return <>{out}</>;
+}
+
+// Something mounted `up` u high at (x, y) (a wall torch, a candle on a table), its children placed from
+// there: it moves across with the lean at that height (PROP_LEAN, the rock's and the 3D things'), every
+// frame, so it stays on its wall or table as you walk, instead of drifting off it. The picture itself
+// stays upright (flat sprites don't lean: world/rendering.md).
+function Mounted({ x, y, up, rotation = 0, children }: { x: number; y: number; up: number; rotation?: number; children: React.ReactNode }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(() => { if (group.current) group.current.position.x = x + PROP_LEAN.uLean.value * (x - PROP_LEAN.uCx.value) * up; });
+  return <group ref={group} position={[x, up, y]} rotation={[0, rotation, 0]}>{children}</group>;
 }
 
 // A picture standing upright at (x, y) on the floor, facing the camera's way (south), lit by the

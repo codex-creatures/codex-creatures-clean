@@ -336,7 +336,9 @@ in the vertex shader, worked from where each point is in the world), so a chest 
 shows a little of its end, more the further across. Its ends have their own picture (`side.png`,
 38 × 19, Pro, styled on the front). Switches: the chest 0, 2, 4 or 6 units across from you (the old
 flat one as far the other way), and the lean on or off. The flat sprites (you, the old chest) don't
-lean, as in the game.
+lean, as in the game. Flat pictures mounted at a height (wall torches 1.05 u up, a candle on a table) don't lean
+either, but move across with the lean at their height (WalkView3D `Mounted`), every frame, so they stay on
+their wall or table as you walk (they drifted off them: the user, 2026-11-12).
 
 **A stash and a bookcase too (the user, 2026-11-11):** the lab's buttons pick Chest, Stash or
 Bookcase (lib/render3d/props3d.ts), each beside its flat sprite, with the same outline, lit edges and
