@@ -101,25 +101,27 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   comer, lit as each is hit). Only blood so far. 📌 The user's direction (theorycraft, not decided):
   more of them, interacting, e.g. igniting a poison cloud (extra damage, burns the poison off),
   poison moves hitting harder on creatures standing in blood.
-- ✅ **Move codexes** (decided 2026-10-19): every older move comes as a codex from scans, each
-  teachable only to a creature of that move's style (race-kit codexes: below). Every codex says
-  who can read it ("Underkin melee only", `codexLearners`) at the librarian, in the loot window
-  and on the bookcase, and every move has a description (one without its own just says "A plain melee
-  hit.": the user, 2026-10-27, doesn't want moves spelling out what they're strong against; the
-  race chart is for that). Up to 20 damage (`BASIC_MOVES`, 15 moves)
-  they're Common; above that (`STRONG_MOVES`, 9 moves) they're Rare.
-- ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a basic
-  codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex. Rare
-  is a strong codex or a Healing Potion, half each (`STRONG_CODEX_SHARE`). The Healing Potion is
-  Rare everywhere now (it was Uncommon).
+- ✅ **Move codexes:** since 2026-11-12 (decision 40) only moves that do something come as codexes:
+  the race moves, the special moves and the three cripple moves. The plain moves don't (every
+  creature knows its core moves). Every codex says who can read it ("Beast + 4 more",
+  `codexLearners`) at the librarian, in the loot window and on the bookcase, and every move has a
+  description (one without its own just says "A plain melee hit.": the user, 2026-10-27, doesn't
+  want moves spelling out what they're strong against; the race chart is for that). A codex of a
+  retired move (in a save, a run or a librarian's offer) becomes a codex of the same rarity
+  (`retiredCodexMove`, seeded by its id: the same one every time).
+- ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a Common
+  codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex or an
+  Uncommon special. Rare is a Rare codex or a Healing Potion, half each (`STRONG_CODEX_SHARE`). The
+  Healing Potion is Rare everywhere now (it was Uncommon). ⚠️ Since the cut (decision 40) the only
+  Common codex is Meditate, so half of Common consumables are Meditate until new Common moves are added.
 - Dropped for now (2026-10-19): the **Codex of Stances** (Aerial Assault, Dig In), once a planned
   Cyclops reward. (Meditate is now a special move.)
 - ✅ **Thinking AI** (Monte Carlo) with Easy / Normal / Hard.
-- ✅ **Enemies' moves scale with level** (the user, 2026-10-26; `enemyMoves`, `ENEMY_MOVE_LEVELS`
-  in lib/dungeon/run.ts). From Lv 5 its empty fourth slot holds its race's heavy move; from Lv 12
-  its Neutral light move becomes another move from its kits; from Lv 20 its Neutral priority move
-  does too. It always keeps its race's 30-energy move. 🧪 The levels are Claude's draft. A creature
-  Klutz catches keeps the moves it fought with.
+- ✅ **Enemies' moves** (`enemyMoves`, `ENEMY_MOVE_LEVELS` in lib/dungeon/run.ts): its core moves,
+  as yours (and now and then a rare cripple move it was born with). From Lv 5 a hybrid's empty
+  fourth slot holds its second style's heavy move. (Until 2026-11-12 foes drew more of their race
+  kits as they levelled; the kits are retired, so foes no longer change with level beyond that.)
+  🧪 The level is Claude's draft. A creature Klutz catches keeps the moves it fought with.
 - 🧪 Balance in general: the user tunes by playing, and fights against the AI (the balance lab, /simulator and the sim scripts went 2026-11-04). Their
   goals: rarity raises the ceiling but a Legendary must not always win; well-fitted, well-rolled
   gear should beat raw rarity within a band; good play should matter more than it does now.
@@ -160,24 +162,36 @@ How it came about, round by round: history.md.
   (melee + magic), Spellbow (ranged + magic). An archetype decides which style kits a creature draws
   from. Since the restyles: 6 Bruisers, 5 Bulwarks, 5 Arcanists, 7 Battlemages, 4 Rangers, and 2
   each of Sniper, Skirmisher, Warden and Spellbow.
-- ✅ **Race kits** (lib/creatures/raceKitsV2.ts): per race and style, a 30 and a 50 energy move
-  (15/25 damage), a quick attack (20 energy, 8 damage, always first) and a precise move (30 energy,
-  15 damage, 70% to hit, always precise): 84 race moves (`KIT_RACE_MOVES`). Each style's 20-energy
-  light move is one shared **Neutral** move (Strike, Shot, Zap; `RETIRED_KIT_MOVES` maps the old
-  names). Plus the **Neutral priority moves** (`NEUTRAL_QUICK_MOVES`: Rush, Quickshot, Blink; 15
-  damage, 50 energy, always first; two in one round: the faster goes first). The old haste spell
-  Blink is now **Quickcast**. 🧪 Move names are Claude's; the user will add more moves.
-- ✅ **Starting moves** (`STARTING_MOVES`): every creature is born with 3, all in its main style:
-  Neutral 20, its race's 30, and the Neutral priority move. The fourth slot needs a codex. Klutz
-  still starts with 4. Saves from before this went back to their 3 once (`upgradeMoveSet`, `moveSet`
-  = 2; codex-learned moves kept): the user chose this over keeping their 4.
-- ✅ **Race-kit codexes:** only a creature with that move in its kits can read one (`movesAvailableTo`:
-  born + learned). From scans by the usual split (`KIT_BASIC_CODEXES` Common / `KIT_STRONG_CODEXES`
-  Rare), and librarians, chests and the Cyclops alongside the older race codexes
-  (`RACE_CODEX_MOVES`). 🧪 A librarian's kit codex costs 200 (`LEARNABLE_CODEX_PRICE`).
+- ✅ **Core moves** (the user, 2026-11-12, decision 40; lib/creatures/raceKitsV2.ts `CORE_MOVES`):
+  every creature knows 3 moves in each style it fights in (a hybrid: both styles', 6):
+
+  | | Melee | Ranged | Magic |
+  |---|---|---|---|
+  | Light (10 dmg, 20⚡) | Strike | Shot | Zap |
+  | Heavy (25 dmg, 50⚡) | Smash | Power Shot | Blast |
+  | First (15 dmg, 50⚡, always first) | Rush | Quickshot | Blink |
+
+  They have no race of their own: each lands as its creature's **main race** (`asRace`, its first
+  race), with the match bonus, so the race chart decides every hit. Klutz knows all 9 and lands
+  neutral. Two first-strike moves in one round: the faster goes first. 🧪 The heavy names are
+  Claude's placeholders. Everything else comes from codexes; the user adds new moves next.
+- ✅ **Retired 2026-11-12:** the race kits (84 moves: a 30 and 50 energy move, a quick attack and a
+  precise move per race and style), the 24 older plain moves (Slash, Fireball…) and the dash and
+  precise learnables (6). A saved creature that knows one has it replaced by its **closest core
+  move** (light for up to 20 damage or precise, heavy above, first-strike for quick and dash; if it
+  already has that one, the next core move it doesn't, so it keeps as many moves: `replaceRetired`,
+  `RETIRED_MOVES`), once, when the save loads; retired ones it learned from codexes are dropped.
+  Their codexes become others of the same rarity. The older moves stay in the code for the old
+  species in tests (`PRE_V2_SPECIES`). The old haste spell Blink was renamed **Quickcast** (now retired).
+- ✅ **Starting moves** (`STARTING_MOVES`): every creature is born with its main style's 3 core moves
+  (light, heavy, first). The fourth slot needs a codex. Klutz starts with 4 (Strike, Smash, Rush, Shot).
+  Saves from before 2026-10-26 went back to their 3 once (`upgradeMoveSet`, `moveSet` = 2).
+- 🧪 Sim (2026-11-12, one-on-one at Lv 15, no gear, starting moves, 4,200 fights): fights went from
+  7.1 rounds to 5.2 (the heavy move is now a starting move, and every hit gets the match bonus);
+  6.1 with no match bonus. The side whose race beats the other's wins about 94% (97% before).
 - ✅ **Guided first fight** teaches races (the user, 2026-10-31): your creature fights with its own
-  moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`; Humanoid
-  if it has no race moves). Klutz names its race and has you hit it with that move (it glows), then
+  moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`: since
+  2026-11-12, one its own race beats, as its core moves land as it; Humanoid if none). Klutz names its race and has you hit it with that move (it glows), then
   points you to the ▲▼ race chart (it glows) and lets you finish it. Sim: 3–8 rounds (about 6), never a loss.
   Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
 - ✅ **UI:** moves show their race; tablets are cut in their race's stone with a big style icon
@@ -193,8 +207,8 @@ How it came about, round by round: history.md.
 - 🧪 Soul stone pools for the six new Rare+ creatures are Claude's drafts.
 - 🧪 Sim of the live roster (2026-10-26): spread within a rarity 3.3 (was 6.3); the race edge wins
   72% of even duels; swapping no longer pays (50%).
-- ❓ `MOVE_RACES` gives the older moves (codexes, Klutz's, learnable ones) draft races. Race move
-  rules beyond the kits are open.
+- ❓ `MOVE_RACES` gives the cripple moves draft races (Cripple Beast, Crippling Shot Humanoid,
+  Hobble Hex Toxic). Race move rules beyond the core moves are open.
 
 ### Planned
 

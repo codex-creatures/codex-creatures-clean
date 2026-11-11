@@ -10,7 +10,7 @@ import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, MOVE_BY_NAME } from "../l
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 
 // A sturdy player creature with plain moves.
-const hero = (hp = 5000) => ({ ...buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, { mDef: 10, rDef: 10, magDef: 10 }, ["Slash", "Heavy Blow", "Crush", "Jab"]), hp, maxHp: hp });
+const hero = (hp = 5000) => ({ ...buildFighter(CREATURE_BY_ID.ironhide, { melee: 30, ranged: 30 }, { mDef: 10, rDef: 10, magDef: 10 }, ["Slash", "Heavy Blow", "Crush", "Devastator"]), hp, maxHp: hp });
 const pass = { kind: "pass" } as const;
 const fight = () => createBattle([hero(), hero(), hero()], cyclopsTeam(), {}, "cyclops");
 
@@ -118,7 +118,7 @@ describe("the Hydra", () => {
     for (const f of s.sides.B.team) { f.hp = 99999; f.maxHp = 99999; }
     return s;
   };
-  const slash = (target?: number) => ({ kind: "attack" as const, skillName: "Jab", target });
+  const slash = (target?: number) => ({ kind: "attack" as const, skillName: "Slash", target });
   const headTurns = (s: BattleState, from: number) => s.log.slice(from)
     .flatMap((e) => (e.type === "attack" && e.side === "B" ? [e.attackerIndex] : e.type === "effect" && e.side === "B" && e.kind === "self" ? [e.index] : []));
 

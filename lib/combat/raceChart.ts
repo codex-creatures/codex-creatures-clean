@@ -12,7 +12,6 @@
 
 import type { Skill } from "../creatures/creatureData";
 import { MOVE_RACES, type RaceV2 } from "../creatures/racesV2";
-import { KIT_MOVE_RACE } from "../creatures/raceKitsV2";
 
 export const RACE_EFFECT = { strong: 1.25, resisted: 0.8 }; // the user's option B for playtesting, 2026-10-26 (was 1.4 / 0.75)
 export const MATCH_BONUS = 1.15;
@@ -45,9 +44,10 @@ export type MoveRaceMode = "own" | "drafted";
 
 type Side = { races?: RaceV2[] };
 
-// A move's own race: a race-kit move's, or the draft race of an older move
-// (MOVE_RACES); none for the bosses' moves.
-export const raceOfMove = (skill: { name: string }): RaceV2 | undefined => MOVE_RACES[skill.name] ?? KIT_MOVE_RACE[skill.name];
+// A move's race: the draft race of an older move (MOVE_RACES), or for a core
+// move the race it lands as, its creature's main race (asRace: the user,
+// 2026-11-12); none for the bosses' moves and Klutz's.
+export const raceOfMove = (skill: { name: string; asRace?: RaceV2 }): RaceV2 | undefined => MOVE_RACES[skill.name] ?? skill.asRace;
 
 // The move's race in this matchup, or none.
 export function moveRace(skill: Skill, attacker: Side, defender: Side, mode: MoveRaceMode): RaceV2 | undefined {

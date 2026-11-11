@@ -7,7 +7,7 @@ import { buildFighter } from "../combat/loadout";
 import { wornArmor } from "../items/armor";
 import type { ItemKey } from "../items/ceilings";
 import { RESTYLED_SPECIES } from "./rosterV2";
-import { defaultMoveNames, resolveMoves, startingMoveCount, STARTING_MOVES, type CreatureProficiency, type CreatureTemplate, type Skill } from "./creatureData";
+import { defaultMoveNames, isRetiredMove, renamedMove, replaceRetired, resolveMoves, startingMoveCount, STARTING_MOVES, type CreatureProficiency, type CreatureTemplate, type Skill } from "./creatureData";
 
 type Stats = Record<string, number> | undefined;
 
@@ -26,6 +26,17 @@ export function upgradeMoveSet(c: CreatureOrItemDrop, t?: CreatureTemplate): boo
   c.moveSet = MOVE_SET;
   return true;
 }
+
+// The plain moves were cut to the core ones on 2026-11-12 (the user): a
+// creature that knows a retired move has it replaced by its closest core
+// move, keeping as many moves as it had (replaceRetired). Ones it learned
+// from codexes are dropped: it knows its core moves anyway.
+// Returns the list with them replaced (the same list if none were).
+export function retireMoves(names: string[] | undefined, t: CreatureTemplate): string[] | undefined {
+  if (!names?.some((n) => isRetiredMove(renamedMove(n)) && !t.skills.some((m) => m.name === n))) return names;
+  return replaceRetired(t, names.map(renamedMove));
+}
+export const retireLearned = (learned: string[] | undefined) => learned?.map(renamedMove).filter((n) => !isRetiredMove(n));
 
 // Six species changed style on 2026-10-27 (RESTYLED_SPECIES). One you
 // already own (no styleSet) moves over once when the save loads: its defence

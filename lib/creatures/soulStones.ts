@@ -79,7 +79,7 @@ export function rollSoulStone(t: CreatureTemplate, rng: () => number = Math.rand
 
 // A small seeded random (so a creature from before soul stones always rolls
 // the same stone, whichever screen loads it first).
-function seeded(text: string): () => number {
+export function seeded(text: string): () => number {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
   return () => {

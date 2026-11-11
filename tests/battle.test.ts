@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, defaultMoveNames } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, MOVE_BY_NAME, PRE_V2_SPECIES, defaultMoveNames } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { effectiveAgil } from "../lib/combat/engine";
@@ -64,20 +64,26 @@ describe("creature type labels", () => {
 
 describe("move slots and learnable moves", () => {
   const mv = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], undefined, undefined, moves);
+  // The dash and precise moves were retired on 2026-11-12, so no creature can
+  // pick them; their mechanics stay in the engine, tested with these fighters.
+  const raw = (id: string, moves: string[], weapon?: Record<string, number>) =>
+    ({ ...buildFighter(CREATURE_BY_ID[id], weapon), skills: moves.map((n) => MOVE_BY_NAME[n]) });
 
   it("a creature fights with 4 moves: its first 4 by default, learnable moves allowed", () => {
     expect(buildFighter(CREATURE_BY_ID.void_serpent).skills.map((s) => s.name))
       .toEqual(["Starfall", "Soul Drain", "Hex", "Devastator"]);
-    expect(mv("dire_wolf", ["Crush", "Cripple", "Dash Lash", "Precise Slice", "Slash"]).skills.map((s) => s.name))
-      .toEqual(["Crush", "Cripple", "Dash Lash", "Precise Slice"]);
-    expect(mv("dire_wolf", ["Annihilator"]).skills.map((s) => s.name)).toEqual(defaultMoveNames(CREATURE_BY_ID.dire_wolf));
+    expect(mv("dire_wolf", ["Crush", "Cripple", "Heavy Blow", "Slash", "Devastator"]).skills.map((s) => s.name))
+      .toEqual(["Crush", "Cripple", "Heavy Blow", "Slash"]);
+    // A retired move (Dash Lash) gives way to one of its own.
+    expect(mv("dire_wolf", ["Crush", "Dash Lash"]).skills.map((s) => s.name)).not.toContain("Dash Lash");
+    expect(mv("dire_wolf", ["No Such Move"]).skills.map((s) => s.name)).toEqual(defaultMoveNames(CREATURE_BY_ID.dire_wolf));
   });
 
   it("precise moves hit 70% of the time, and every hit is precise", () => {
     let hits = 0;
     const N = 4000;
     for (let i = 0; i < N; i++) {
-      const s = createBattle([mv("dire_wolf", ["Precise Slice"])], [mv("crystal_golem", ["Jab"])]);
+      const s = createBattle([raw("dire_wolf", ["Precise Slice"])], [mv("crystal_golem", ["Jab"])]);
       resolveRound(s, { A: { kind: "attack", skillName: "Precise Slice" }, B: { kind: "attack", skillName: "Jab" } });
       const e = s.log.find((x) => x.type === "attack" && x.side === "A");
       if (e?.type === "attack" && !e.missed) { hits++; expect(e.precise).toBe(true); }
@@ -126,7 +132,7 @@ describe("move slots and learnable moves", () => {
 
   it("a dash move doubles your agility this round only", () => {
     // The Shambler has +4% agility: A = 104, B = 114.4 — B is faster unless A dashes.
-    const a = buildFighter(CREATURE_BY_ID.shambler, { agility: 100 }, undefined, ["Dash Lash", "Jab"]); // 104 agility
+    const a = raw("shambler", ["Dash Lash", "Jab"], { agility: 100 }); // 104 agility
     const b = buildFighter(CREATURE_BY_ID.shambler, { agility: 110 }, undefined, ["Jab"]);              // 114.4 agility
     const first = (skill: string) => {
       const s = createBattle([a], [b]);
@@ -145,7 +151,7 @@ describe("move slots and learnable moves", () => {
   });
 
   it("the AI only dashes for a knockout it would otherwise not live to land", () => {
-    const a = activeOf(createBattle([buildFighter(CREATURE_BY_ID.shambler, { agility: 100 }, undefined, ["Dash Lash", "Crush"])], [f("shambler")]).sides.A);
+    const a = activeOf(createBattle([raw("shambler", ["Dash Lash", "Crush"], { agility: 100 })], [f("shambler")]).sides.A);
     const b = activeOf(createBattle([buildFighter(CREATURE_BY_ID.shambler, { agility: 110 }, undefined, ["Jab"])], [f("shambler")]).sides.A);
     expect(aiChooseSkill(a, b)?.name).toBe("Crush");                // healthy foe: the bigger hit
     expect(aiChooseSkill(a, { ...b, hp: 5 })?.name).toBe("Dash Lash"); // either move kills; only the dash lands first

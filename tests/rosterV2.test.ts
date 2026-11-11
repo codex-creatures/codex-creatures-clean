@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { BALANCED_MOVES, KIT_MOVES, KIT_MOVE_RACE, KIT_NUMBERS, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, kitFor, kitMoveFor } from "../lib/creatures/raceKitsV2";
+import { BALANCED_MOVES, CORE_MOVES, CORE_NUMBERS, HEAVY_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES, coreFor } from "../lib/creatures/raceKitsV2";
 import { rollMoves } from "../lib/creatures/creatureRoll";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "../lib/creatures/rosterV2";
 import { CREATURE_TEMPLATES as ROSTER_V2 } from "../lib/creatures/creatureData";
@@ -16,62 +16,47 @@ afterEach(() => setCombatRules(LIVE_RULES));
 const RARITIES = ["common", "uncommon", "rare", "epic", "legendary"];
 const v2 = (id: string) => ROSTER_V2.find((c) => c.id === id)!;
 
-describe("Combat V2 race kits", () => {
-  it("4 race moves per race in each style, plus 2 Neutral moves per style: 90, all new names", () => {
-    expect(KIT_MOVES).toHaveLength(7 * 3 * 4 + 6);
-    expect(new Set(KIT_MOVES.map((m) => m.name)).size).toBe(90);
-    for (const m of KIT_MOVES) expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
-    expect(new Set([...KIT_MOVES.map((m) => m.name), ...ALL_SKILLS.map((m) => m.name), ...LEARNABLE_MOVES.map((m) => m.name)]).size)
-      .toBe(90 + ALL_SKILLS.length + LEARNABLE_MOVES.length);
-    expect(KIT_RACE_MOVES).toHaveLength(7 * 3 * 4);
-  });
-
-  it("the Neutral priority moves: no race, 15 damage for 50 energy, always first", () => {
-    for (const m of Object.values(NEUTRAL_QUICK_MOVES)) {
-      expect([m.damage, m.energyCost, m.effect?.kind]).toEqual([15, 50, "quick"]);
-      expect(KIT_MOVE_RACE[m.name]).toBeUndefined();
-      expect(raceOfMove(m)).toBeUndefined();
+describe("Combat V2 core moves (the user, 2026-11-12)", () => {
+  it("3 per style: a light (10/20), a heavy (25/50) and a first-strike move (15/50); 9 in all, none with a race", () => {
+    expect(CORE_MOVES.map((m) => m.name)).toEqual(["Strike", "Smash", "Rush", "Shot", "Power Shot", "Quickshot", "Zap", "Blast", "Blink"]);
+    for (const m of CORE_MOVES) {
+      expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
+      expect(raceOfMove(m), m.name).toBeUndefined();
     }
-    expect(Object.values(NEUTRAL_QUICK_MOVES).map((m) => m.name)).toEqual(["Rush", "Quickshot", "Blink"]);
-  });
-
-  it("the light move is Balanced: the same in every kit of a style, with no race", () => {
     for (const style of ["melee", "ranged", "magic"] as const) {
-      for (const race of RACES_V2) expect(kitMoveFor(race, style, "light")).toBe(BALANCED_MOVES[style]);
-      expect(raceOfMove(BALANCED_MOVES[style])).toBeUndefined();
-      expect(raceMultiplier(BALANCED_MOVES[style], { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBe(1);
+      expect([BALANCED_MOVES[style], HEAVY_MOVES[style], NEUTRAL_QUICK_MOVES[style]].map((m) => [m.damage, m.energyCost])).toEqual([[10, 20], [25, 50], [15, 50]]);
+      expect(NEUTRAL_QUICK_MOVES[style].effect?.kind).toBe("quick");
     }
+    expect(CORE_NUMBERS.heavy).toEqual({ damage: 25, energyCost: 50 });
+    // None of the older moves' names is reused.
+    expect(new Set([...CORE_MOVES.map((m) => m.name), ...ALL_SKILLS.map((m) => m.name), ...LEARNABLE_MOVES.map((m) => m.name)]).size)
+      .toBe(CORE_MOVES.length + ALL_SKILLS.length + LEARNABLE_MOVES.length);
   });
 
-  it("a creature that still knows a retired light move gets its Balanced move", () => {
-    expect(resolveMoves(v2("moss_wolf"), ["Claw Swipe", "Gore"]).map((m) => m.name)).toEqual(["Strike", "Gore"]);
+  it("a creature's core moves land as its main race (with the match bonus); Klutz's as no race", () => {
+    for (const t of ROSTER_V2) expect(t.skills.every((m) => m.asRace === t.races![0]), t.id).toBe(true);
+    const smash = v2("moss_wolf").skills.find((m) => m.name === "Smash")!;
+    expect(raceOfMove(smash)).toBe("beast");
+    // Beast beats Humanoid, and the wolf is a Beast: effective plus the match bonus.
+    expect(raceMultiplier(smash, { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
+    // A two-race creature: its first race.
+    expect(raceOfMove(v2("bellow_toad").skills[0])).toBe("beast");
+    expect(raceMultiplier(MOVE_BY_NAME.Smash, { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBe(1);
+  });
+
+  it("the 105 retired race-kit moves each become their closest core move", () => {
+    expect(Object.keys(RETIRED_KIT_MOVES)).toHaveLength(105);
+    expect(["Claw Swipe", "Gore", "Maul", "Lunge", "Throat Bite"].map((n) => RETIRED_KIT_MOVES[n])).toEqual(["Strike", "Strike", "Smash", "Rush", "Strike"]);
+    expect(resolveMoves(v2("moss_wolf"), ["Claw Swipe", "Maul"]).map((m) => m.name)).toEqual(["Strike", "Smash"]);
     expect(MOVE_BY_NAME["Claw Swipe"]).toBe(BALANCED_MOVES.melee);
   });
 
-  it("every kit is a 20, 30 and 50 energy move, a quick attack and a precise move", () => {
-    for (const race of RACES_V2) for (const style of ["melee", "ranged", "magic"] as const) {
-      const [light, medium, heavy, quick, precise] = kitFor(race, style);
-      expect([light, medium, heavy].map((m) => m.energyCost)).toEqual([20, 30, 50]);
-      expect(quick.effect?.kind).toBe("quick");
-      expect(precise.effect).toEqual({ kind: "precise", hitChance: 0.7 });
-      expect(kitFor(race, style).every((m) => m.type === style)).toBe(true);
-      expect([medium, heavy, quick, precise].every((m) => KIT_MOVE_RACE[m.name] === race)).toBe(true);
-    }
-    expect(KIT_NUMBERS.heavy).toEqual({ damage: 25, energyCost: 50 });
-  });
-
-  it("kit moves count as their race on the chart", () => {
-    const gore = kitMoveFor("beast", "melee", "medium");
-    // Beast beats Humanoid, and the wolf is a Beast: effective plus the match bonus.
-    expect(raceMultiplier(gore, { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
-  });
-
-  it("the quick attack strikes first even when slower", () => {
+  it("the first-strike move strikes first even when slower", () => {
     const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName });
-    const slow = buildFighter(v2("ironhide"), { melee: 20 }, { mDef: 5, rDef: 5 }, ["Lunge", "Gore"]);   // agility 10%
-    const fast = buildFighter(v2("amber_wasp"), { ranged: 20 }, { mDef: 5, rDef: 5 });                    // agility 22%
+    const slow = buildFighter(v2("ironhide"), { melee: 20 }, { mDef: 5, rDef: 5 }, ["Rush", "Strike"]); // agility 10%
+    const fast = buildFighter(v2("amber_wasp"), { ranged: 20 }, { mDef: 5, rDef: 5 });                 // agility 22%
     const s = createBattle([slow], [fast]);
-    resolveRound(s, { A: hit("Lunge"), B: hit(fast.skills[0].name) });
+    resolveRound(s, { A: hit("Rush"), B: hit("Strike") });
     const first = s.log.find((e) => e.type === "attack");
     expect(first?.type === "attack" && first.attacker).toBe("Ironhide");
   });
@@ -126,12 +111,13 @@ describe("Combat V2 roster", () => {
     }
   });
 
-  it("starting moves: Neutral 20, race 30 and the Neutral priority move, all in its main style; the fourth slot is empty", () => {
+  it("starting moves: its main style's core moves (light, heavy, first); the fourth slot is empty", () => {
     const wolf = v2Moves(v2("moss_wolf")).slice(0, STARTING_MOVES);
-    expect(wolf.map((m) => m.name)).toEqual(["Strike", "Gore", "Rush"]);
-    expect(wolf.map((m) => m.energyCost)).toEqual([20, 30, 50]);
-    const angler = v2Moves(v2("deep_angler")).slice(0, STARTING_MOVES); // Underkin Battlemage: melee
-    expect(angler.map((m) => m.name)).toEqual(["Strike", "Tunnel Rush", "Rush"]);
+    expect(wolf.map((m) => m.name)).toEqual(["Strike", "Smash", "Rush"]);
+    expect(wolf.map((m) => m.energyCost)).toEqual([20, 50, 50]);
+    const angler = v2Moves(v2("deep_angler")); // Underkin Battlemage: melee, then magic
+    expect(angler.map((m) => m.name)).toEqual(["Strike", "Smash", "Rush", "Zap", "Blast", "Blink"]);
+    expect(coreFor("magic").map((m) => m.name)).toEqual(["Zap", "Blast", "Blink"]);
     for (const t of ROSTER_V2) {
       expect(defaultMoveNames(t), t.id).toHaveLength(3);
       expect(rollMoves(t, () => 0.99), t.id).toEqual(defaultMoveNames(t)); // no rare move: still 3

@@ -4,12 +4,12 @@
 // built in creatureData.ts (CREATURE_TEMPLATES) from the pieces here.
 //
 // Every creature has an archetype. The archetype says which style(s) it
-// fights in, so which race kits it draws its moves from: a hybrid (a
+// fights in, so which styles' core moves it knows: a hybrid (a
 // Battlemage, a Spellbow) gets moves in two styles, and its %s back both.
 
 import type { CombatClass, CreatureTemplate, Skill } from "./creatureData";
 import { SPECIES_RACES } from "./racesV2";
-import { kitFor, kitMoveFor, NEUTRAL_QUICK_MOVES } from "./raceKitsV2";
+import { coreFor } from "./raceKitsV2";
 
 export type Archetype =
   | "bruiser" | "bulwark"       // melee
@@ -76,20 +76,15 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
     flavour: "A rider on a rotting horse, scythe in one hand and a plague in the other. Where it rides, nothing grows." },
 ];
 
-// A creature's V2 moves. The first 3 are its starting moves (the user,
-// 2026-10-26), all in its main style: the Neutral light move (20 energy), its
-// race's medium move (30) and the Neutral priority move (50). Its fourth slot
-// stays empty until it reads a codex.
-// The rest of its kits follow: those it can learn from codexes.
+// A creature's V2 moves (the user, 2026-11-12): the core moves of its main
+// style (light, heavy, first; the 3 it starts with), then a hybrid's second
+// style's. They land as its main race. Its fourth slot stays empty until it
+// reads a codex.
 export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
-  const [r1, r2] = SPECIES_RACES[c.id] ?? [];
-  if (!r1) return [];
-  const styles = ARCHETYPE_INFO[SPECIES_ARCHETYPE[c.id] ?? "bruiser"].styles;
-  const main = c.cls;
-  const second = styles.find((s) => s !== main);
-  const start: Skill[] = [kitMoveFor(r1, main, "light"), kitMoveFor(r1, main, "medium"), NEUTRAL_QUICK_MOVES[main]];
-  const rest = [r1, r2].filter(Boolean).flatMap((r) => [main, ...(second ? [second] : [])].flatMap((s) => kitFor(r!, s)));
-  return [...new Map([...start, ...rest].map((m) => [m.name, m])).values()];
+  const [race] = SPECIES_RACES[c.id] ?? [];
+  if (!race) return [];
+  const second = ARCHETYPE_INFO[SPECIES_ARCHETYPE[c.id] ?? "bruiser"].styles.find((s) => s !== c.cls);
+  return [...coreFor(c.cls, race), ...(second ? coreFor(second, race) : [])];
 }
 
 // Today's creatures that fight in another style in V2 (the user and Claude,

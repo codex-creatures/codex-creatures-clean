@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { BASIC_MOVES, STRONG_MOVES, CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, isRetiredMove, PRE_V2_SPECIES, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { codexDrop, dropFromOutcome, RACE_CODEX_MOVES } from "../lib/drops";
-import { upgradeMoveSet } from "../lib/creatures/instance";
+import { retireLearned, retireMoves, upgradeMoveSet } from "../lib/creatures/instance";
 import { makeCreatureDrop } from "../lib/creatures/summon";
 import { KLUTZ, renamedMove } from "../lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "../lib/types";
@@ -14,25 +14,27 @@ const hit = (skillName: string): BattleAction => ({ kind: "attack", skillName })
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20 }, { mDef: 5, rDef: 5 }, moves);
 
 describe("what a creature can use and learn", () => {
-  it("its own (rolled) moves and what it learned from codexes: the rest of its race kit needs codexes", () => {
-    const wolf = LIVE_BY_ID.moss_wolf; // Beast, melee: the Beast melee kit
+  it("its own (rolled) moves and what it learned from codexes: its core moves are its own", () => {
+    const wolf = LIVE_BY_ID.moss_wolf; // Beast, melee
     const names = (own: string[], learned: string[] = []) => movesAvailableTo(wolf, learned, own).map((m) => m.name);
-    expect(names([])).toEqual(["Strike", "Gore", "Rush"]);
+    expect(names([])).toEqual(["Strike", "Smash", "Rush"]);
     expect(names([LEARNABLE_MOVES[1].name])).toEqual([LEARNABLE_MOVES[1].name]);
-    // Its kit's Maul and a learnable move, once learned; Pounce (Beast) too; Mirage isn't Beast.
-    expect(names(["Strike", "Gore", "Rush"], ["Maul", LEARNABLE_MOVES[0].name, "Pounce", "Mirage"]))
-      .toEqual(["Strike", "Gore", "Rush", "Maul", LEARNABLE_MOVES[0].name, "Pounce"]);
+    // A learnable move and Pounce (Beast), once learned; Mirage isn't Beast; Maul is retired.
+    expect(names(["Strike", "Smash", "Rush"], ["Maul", LEARNABLE_MOVES[0].name, "Pounce", "Mirage"]))
+      .toEqual(["Strike", "Smash", "Rush", LEARNABLE_MOVES[0].name, "Pounce"]);
+    // Its core moves land as its race.
+    expect(movesAvailableTo(wolf).every((m) => m.asRace === "beast")).toBe(true);
   });
 
-  it("race-kit codexes: only a creature with that move in its kits (its race, in its style)", () => {
-    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Maul")).toBe(true);        // Beast melee
-    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Tunnel Rush")).toBe(false); // Underkin
-    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Horn Hurl")).toBe(false);   // Beast, but ranged
-    const maul = codexDrop("Maul") as CreatureOrItemDrop, lunge = codexDrop("Lunge") as CreatureOrItemDrop;
-    expect([maul.rarity, lunge.rarity]).toEqual(["rare", "common"]);            // heavy: Rare; light: Common
-    expect(maul.desc).toContain("one Beast Melee creature");
-    expect(RACE_CODEX_MOVES.map((m) => m.name)).toEqual(expect.arrayContaining(["Pounce", "Maul", "Lunge", "Gore"]));
-    expect(RACE_CODEX_MOVES.map((m) => m.name)).not.toContain("Strike");
+  it("the race kits are retired (2026-11-12): no one learns them, and their codexes become others of the same rarity", () => {
+    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Maul")).toBe(false);
+    expect(canLearnFromCodex(LIVE_BY_ID.moss_wolf, "Heavy Blow")).toBe(false);
+    const maul = codexDrop("Maul", "123") as CreatureOrItemDrop, lunge = codexDrop("Lunge", "123") as CreatureOrItemDrop;
+    expect([maul.rarity, lunge.rarity]).toEqual(["rare", "common"]); // heavy: Rare; light: Common, as they were
+    expect(isRetiredMove(maul.codexMove!) || isRetiredMove(lunge.codexMove!)).toBe(false);
+    expect((codexDrop("Maul", "123") as CreatureOrItemDrop).codexMove).toBe(maul.codexMove); // the same every time
+    expect(RACE_CODEX_MOVES.map((m) => m.name)).toEqual(expect.arrayContaining(["Pounce", "Mirage"]));
+    for (const n of ["Strike", "Smash", "Maul", "Gore"]) expect(RACE_CODEX_MOVES.map((m) => m.name)).not.toContain(n);
   });
 
   it("learnable codexes work on anyone; race codexes only on that race", () => {
@@ -66,7 +68,7 @@ describe("what a creature can use and learn", () => {
     expect([...lengths].sort()).toEqual([3, 4, 5]);
   });
 
-  it("consumables: Common a Lesser Potion or basic codex, Uncommon a learnable codex, Rare a Healing Potion or strong codex", () => {
+  it("consumables: Common a Lesser Potion or a Common codex, Uncommon an Uncommon codex, Rare a Healing Potion or a Rare codex", () => {
     const random = vi.spyOn(Math, "random");
     random.mockReturnValue(0.99); // past the codex share: the potion
     const potion = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity: "common" });
@@ -79,36 +81,21 @@ describe("what a creature can use and learn", () => {
     random.mockRestore();
     expect(healing && "potion" in healing && healing.potion).toBe("potion");
     expect(healing && "rarity" in healing && healing.rarity).toBe("rare");
-    expect(strong && "codexMove" in strong && STRONG_MOVES.some((m) => m.name === strong.codexMove)).toBe(true);
+    expect(strong && "codexMove" in strong && !!strong.codexMove).toBe(true);
     expect(strong && "rarity" in strong && strong.rarity).toBe("rare");
     expect(potion && "potion" in potion && potion.potion).toBe("lesser");
-    expect(basic && "codexMove" in basic && BASIC_MOVES.some((m) => m.name === basic.codexMove)).toBe(true);
+    expect(basic && "codexMove" in basic && !!basic.codexMove).toBe(true);
     expect(basic && "rarity" in basic && basic.rarity).toBe("common");
     expect(codex && "codexMove" in codex && LEARNABLE_MOVES.some((m) => m.name === codex.codexMove)).toBe(true);
   });
 
-  it("basic codexes: the natural moves up to 20 damage, for creatures of that class", () => {
-    expect(BASIC_MOVES).toHaveLength(15);
-    expect(BASIC_MOVES.every((m) => m.damage <= 20 && !m.effect)).toBe(true);
-    expect(BASIC_MOVES.map((m) => m.name)).not.toContain("Devastator");
-    const wolf = CREATURE_BY_ID.moss_wolf; // melee
-    expect(wolf.cls).toBe("melee");
-    expect(canLearnFromCodex(wolf, "Heavy Blow")).toBe(true);
-    expect(canLearnFromCodex(wolf, "Ice Lance")).toBe(false);  // magic
-    // Once learned, it can go in a slot and is kept there.
-    const usable = movesAvailableTo(wolf, ["Heavy Blow", "Ice Lance"], ["Slash"]).map((m) => m.name);
-    expect(usable).toContain("Heavy Blow");
-    expect(usable).not.toContain("Ice Lance");
-    expect(resolveMoves(wolf, ["Slash", "Heavy Blow"]).map((m) => m.name)).toEqual(["Slash", "Heavy Blow"]);
-  });
-
-  it("strong codexes: the rest of the natural moves, also for creatures of that class", () => {
-    expect(STRONG_MOVES).toHaveLength(9); // (the old melee Impale was retired, 2026-10-27)
-    expect(STRONG_MOVES.every((m) => m.damage > 20)).toBe(true);
-    const wolf = CREATURE_BY_ID.moss_wolf; // melee
-    expect(canLearnFromCodex(wolf, "Devastator")).toBe(true);
-    expect(canLearnFromCodex(wolf, "Starfall")).toBe(false); // magic
-    expect(resolveMoves(wolf, ["Slash", "Devastator"]).map((m) => m.name)).toEqual(["Slash", "Devastator"]);
+  it("scans never give a codex of a retired move", () => {
+    const bad: string[] = [];
+    for (let i = 0; i < 300; i++) for (const rarity of ["common", "uncommon", "rare"] as const) {
+      const d = dropFromOutcome({ outcome: "item", itemCategory: "consumable", rarity }) as CreatureOrItemDrop | null;
+      if (d?.codexMove && isRetiredMove(d.codexMove)) bad.push(d.codexMove);
+    }
+    expect(bad).toEqual([]);
   });
 });
 
@@ -230,11 +217,29 @@ describe("saves from before the 3 starting moves", () => {
     const t = LIVE_BY_ID.moss_wolf;
     const c = { id: "x", dropType: "creature", creatureId: t.id, moves: ["Strike", "Gore", "Maul", "Lunge"], learned: ["Pounce"] } as CreatureOrItemDrop;
     expect(upgradeMoveSet(c, t)).toBe(true);
-    expect(c.moves).toEqual(["Strike", "Gore", "Rush"]);
+    expect(c.moves).toEqual(["Strike", "Smash", "Rush"]);
     expect(c.learned).toEqual(["Pounce"]);
-    c.moves = ["Strike", "Gore", "Rush", "Pounce"];
+    c.moves = ["Strike", "Smash", "Rush", "Pounce"];
     expect(upgradeMoveSet(c, t)).toBe(false); // only once
     expect(c.moves).toHaveLength(4);
+  });
+
+  it("the retired plain moves (2026-11-12): each becomes its closest core move, keeping as many moves", () => {
+    const wolf = LIVE_BY_ID.moss_wolf;
+    // Gore (15) → Strike; Maul (25) → Smash; Lunge (quick) → Rush; Pounce stays.
+    expect(retireMoves(["Gore", "Maul", "Lunge", "Pounce"], wolf)).toEqual(["Strike", "Smash", "Rush", "Pounce"]);
+    // Two that map to the same core move: the second takes the next one it doesn't have.
+    expect(retireMoves(["Strike", "Gore", "Rush", "Throat Bite"], wolf)).toEqual(["Strike", "Smash", "Rush"]);
+    expect(retireMoves(["Strike", "Gore", "Maul"], wolf)).toEqual(["Strike", "Smash", "Rush"]);
+    // An older plain move and a retired learnable.
+    expect(retireMoves(["Devastator", "Dash Lash", "Cripple"], wolf)).toEqual(["Smash", "Rush", "Cripple"]);
+    // Nothing retired: the same list.
+    const same = ["Strike", "Smash", "Rush"];
+    expect(retireMoves(same, wolf)).toBe(same);
+    // A hybrid's second style: Bellow Toad (a melee Ranger) keeps a ranged one as ranged.
+    expect(retireMoves(["Strike", "Spine Volley"], LIVE_BY_ID.bellow_toad)).toEqual(["Strike", "Shot"]);
+    // What it learned from codexes: retired ones go (it knows its core moves).
+    expect(retireLearned(["Maul", "Pounce", "Precise Slice", "Blink"])).toEqual(["Pounce"]);
   });
 
   it("new creatures are already on it; Klutz and the old species are left alone", () => {

@@ -79,7 +79,7 @@ const BASICS_END: TourStep = { path: "/", say: "That's the basics! Ask me about 
 const COMBAT: TourStep[] = [
   { path: "/", target: den(OBJ.arch), say: "Now, fights. In the Labyrinth your team of 3 takes on theirs, one creature out on each side. Each turn you pick a move, swap, or use an item." },
   { path: "/", show: "races", say: "Every creature has a race (some have two), and every race has its own colour. Learn the colours: they're the key to every fight." },
-  { path: "/", show: "tablets", say: "Moves are stone tablets in their race's colour. A grey one is Neutral: it has no race, so it hits everyone the same." },
+  { path: "/", show: "tablets", say: "Moves are stone tablets in their race's colour. A creature's own moves take its race, so a Beast's Strike is a Beast hit." },
   { path: "/", show: "styles", say: "The mark carved behind the name is the move's style. An impact is melee, an arrow is ranged, a bolt is magic." },
   { path: "/", show: "styles", say: "The style picks the stats: a melee move uses your melee attack against their melee defence. Same for ranged and magic." },
   { path: "/", show: "flip", say: "Tap the i on a tablet to flip it over: its power, its cost and what it does. Go on, try it! (Tap anywhere else to carry on.)" },

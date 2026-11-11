@@ -63,7 +63,9 @@ describe("combat rules switch", () => {
 
   it("the live game is Combat V2: each move's own race, no triangle, no damage types", () => {
     expect(LIVE_RULES).toEqual({ triangle: false, races: "drafted", damageTypes: false });
-    const gore = CREATURE_BY_ID.moss_wolf.skills.find((m) => m.name === "Gore")!; // a Beast kit move
+    // A core move lands as its creature's main race: the Moss Wolf's Smash is a Beast hit.
+    const gore = CREATURE_BY_ID.moss_wolf.skills.find((m) => m.name === "Smash")!;
+    expect(gore.asRace).toBe("beast");
     const live = calcDamage(gore, wolf, archer, false).damage;
     setCombatRules({ triangle: false, races: null, damageTypes: false });
     const plain = calcDamage(gore, wolf, archer, false).damage;

@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { defaultMoveNames, findCreatureTemplate, MOVE_BY_NAME, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { defaultMoveNames, findCreatureTemplate, moveOf, type CreatureProficiency, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { creatureTypeLabel } from "@/lib/creatures/creatureType";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { MoveInfo } from "./MoveSlots";
@@ -65,7 +65,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <p style={{ color: MUTED, fontSize: 13, margin: "6px 0 14px" }}>It&apos;s now in your Creatures — equip it in the Pit.</p>
             <SoulStoneTag stone={result.soulStone} />
             <RollTable p={result.proficiency ?? t.proficiency} base={t.proficiency} />
-            <Moves names={result.moves ?? []} own={t.skills.map((s) => s.name)} />
+            <Moves names={result.moves ?? []} t={t} />
             <button className="pixel-btn" style={{ marginTop: 14 }} onClick={onClose}>Done</button>
           </div>
         ) : (
@@ -81,7 +81,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <SoulStoneTag stone={card.soulStone} />
             <RollTable p={card.proficiency ?? t.proficiency} base={t.proficiency} />
             <Section>Moves on this card</Section>
-            <Moves names={card.moves ?? defaultMoveNames(t)} own={t.skills.map((s) => s.name)} />
+            <Moves names={card.moves ?? defaultMoveNames(t)} t={t} />
 
             <Section>Summon</Section>
             {!canSummon ? (
@@ -156,12 +156,13 @@ function DiffLine({ p, base }: { p: CreatureProficiency; base: CreatureProficien
   return <span>{parts.length > 0 ? parts : <span style={{ color: MUTED }}>standard %s</span>}</span>;
 }
 
-function Moves({ names, own }: { names: string[]; own: string[] }) {
+function Moves({ names, t }: { names: string[]; t: CreatureTemplate }) {
+  const own = t.skills.map((s) => s.name);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "left" }}>
-      {names.map((n) => MOVE_BY_NAME[n] && (
+      {names.map((n) => moveOf(t, n) && (
         <div key={n} style={{ fontSize: 13, padding: "5px 8px", background: "#12131a", borderLeft: own.includes(n) ? "3px solid #3a3e4b" : "3px solid #ffd66e" }}>
-          <MoveInfo m={MOVE_BY_NAME[n]} />
+          <MoveInfo m={moveOf(t, n)} />
           {!own.includes(n) && <span style={{ fontSize: 11, color: "#ffd66e", marginLeft: 6 }}>RARE</span>}
         </div>
       ))}

@@ -15,7 +15,7 @@ import ClassBadge, { MoveKind, moveKind } from "@/components/ClassBadge";
 import Glyph, { RaceIcon } from "@/components/Glyph";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
-  ALL_SKILLS, SPECIAL_MOVES, BASIC_CODEX_MAX_DAMAGE, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
+  SPECIAL_MOVES, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
   STEADY_MAX_ENERGY, learnRacesOf, raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type Race, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
@@ -31,6 +31,7 @@ import { CYCLOPS_SOUL_STONE, WARDEN_SOUL_STONE } from "@/lib/dungeon/run";
 import { RARE_MOVE_CHANCE, ROLL_SPREAD_SHARE, ROLL_SPREAD_MIN } from "@/lib/creatures/creatureRoll";
 import { ITEM_CEILINGS, ITEM_KEYS, STAT_KEYS, WEAPON_AFFINITY, type ItemKey } from "@/lib/items/ceilings";
 import { ITEM_META } from "@/lib/items/metadata";
+import { CORE_MOVES } from "@/lib/creatures/raceKitsV2";
 import { PRIMARY_STATS_BY_ITEMKEY } from "@/lib/items/itemPrimaries";
 import { ARMOR_CEILINGS, ARMOR_KEYS, ARMOR_META, ARMOR_STAT_KEYS, SET_BONUS } from "@/lib/items/armor";
 import { RARITY_BUDGETS, type Rarity } from "@/lib/items/budgets";
@@ -85,7 +86,7 @@ function Combat() {
   return (
     <div>
       <H>Races</H>
-      <P>Every creature has one or two <b>races</b>. Most moves have one race too; <b>Neutral</b> moves have none and land the same on everyone. A move&apos;s race against the target&apos;s races:
+      <P>Every creature has one or two <b>races</b>. Every move lands as a race too: the core moves (Strike, Smash, Rush…) as the creature&apos;s main race, codex moves as their own (a few have none and land the same on everyone). A move&apos;s race against the target&apos;s races:
         effective does <b>{signed(RACE_EFFECT.strong - 1)}</b> damage, resisted <b>{signed(RACE_EFFECT.resisted - 1)}</b>, anything else normal.
         Against two races both count (a double weakness is ×{(RACE_EFFECT.strong ** 2).toFixed(2)}). A move of one of the attacker&apos;s own races does
         another <b>{signed(MATCH_BONUS - 1)}</b>.</P>
@@ -106,9 +107,9 @@ function Combat() {
 
       <H>Turn order, energy and the rest</H>
       <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18, margin: "4px 0" }}>
-        <li><b>Turn order</b>: swaps and items come first, then attacks. <b>Priority moves</b> (Rush, Quickshot, Blink, the race kits&apos; quick attacks, Pounce) always go before the rest; between two of them, or two ordinary moves, the higher <b>agility</b> goes first. Agility does nothing else.</li>
+        <li><b>Turn order</b>: swaps and items come first, then attacks. <b>Priority moves</b> (Rush, Quickshot, Blink, Pounce) always go before the rest; between two of them, or two ordinary moves, the higher <b>agility</b> goes first. Agility does nothing else.</li>
         <li><b>Energy</b>: everyone starts on {MAX_ENERGY}. Moves cost energy; you get {ENERGY_REGEN} back after each attack, so energy never drops below {ENERGY_REGEN}. Every creature keeps at least one move of {STEADY_MAX_ENERGY} energy or less, so it can always attack: there&apos;s no resting.</li>
-        <li><b>Moves</b>: a creature is born with 3 (a Neutral move, its race&apos;s move and a Neutral priority move), sometimes a rare 4th. Codexes teach the rest of its race kits and more. Enemies learn more of their kits as they level.</li>
+        <li><b>Moves</b>: every creature knows 3 core moves in each style it fights in: a light one, a heavy one and one that always goes first. It&apos;s born with its main style&apos;s 3, sometimes a rare 4th; codexes teach the rest.</li>
         <li><b>Precise hits</b>: {pct(PRECISE_CHANCE)} of hits are precise: they do {PRECISE_DAMAGE}× damage and ignore {pct(PRECISE_IGNORE)} of the defence.</li>
         <li><b>Cripple</b>: for {CRIPPLE_ROUNDS} rounds, −{pct(CRIPPLE_AGILITY_LOSS)} agility and a {pct(CRIPPLE.stumble)} chance to stumble and lose each attack (no energy spent). <b>Haste</b>: double agility this round only, to strike first.</li>
         <li><b>Stances</b> (the Cyclops&apos;s Eye floats): floating takes +10% from ranged, −10% from melee; entrenched the other way round.</li>
@@ -142,9 +143,9 @@ function Calculator() {
   const [hp, setHp] = useState(150);
   const [rel, setRel] = useState<"double" | "strong" | "even" | "weak">("even");
   const [own, setOwn] = useState(false);
-  // A Beast kit move (Gore) against a target its race beats, or not.
+  // A Beast creature's heavy move against a target its race beats, or not.
   const target: Race[] = rel === "double" ? ["humanoid", "underkin"] : rel === "strong" ? ["humanoid"] : rel === "weak" ? ["geo"] : ["beast"];
-  const skill: Skill = { ...MOVE_BY_NAME.Gore, damage: power };
+  const skill: Skill = { ...MOVE_BY_NAME.Smash, asRace: "beast", damage: power };
   const a = { ...dummy("melee", 100, { atk: attack }, {}), races: [own ? "beast" : "divine"] as Race[] };
   const d = { ...dummy("melee", hp, {}, { mdef: defence }), races: target };
   const dmg = calcDamage(skill, a, d, false).damage;
@@ -298,11 +299,11 @@ function Moves({ seen }: { seen: Set<string> }) {
   );
   return (
     <div>
-      <P>Each creature has its own move pool and takes 4 into battle. Learnable moves can go in any slot; race moves come from codexes.</P>
+      <P>Every creature knows the core moves of its styles and takes 4 moves into battle. Core moves land as its main race. Everything else comes from codexes.</P>
       {COMBAT_CLASSES.map((c) => (
         <section key={c}>
           <H><span style={{ color: CLASS_INFO[c].color }}>{CLASS_INFO[c].icon} {CLASS_INFO[c].name} moves</span></H>
-          {ALL_SKILLS.filter((m) => m.type === c).map((m) => {
+          {CORE_MOVES.filter((m) => m.type === c).map((m) => {
             const who = knownBy.get(m.name) ?? [];
             const met = who.filter((t) => seen.has(t.id)), hidden = who.length - met.length;
             return row(m, who.length === 0 ? "No creature knows this yet."
@@ -313,8 +314,6 @@ function Moves({ seen }: { seen: Set<string> }) {
       <H>Learnable moves</H>
       <P>Any creature can put these in a slot. Each slot also has a {pct(RARE_MOVE_CHANCE)} chance to be born with one of its own class.</P>
       {LEARNABLE_MOVES.map((m) => row(m, `${CLASS_INFO[m.type].icon} Rolls on ${CLASS_INFO[m.type].name} creatures`))}
-      <H>Move codexes</H>
-      <P>Every {CLASS_INFO.melee.name}, {CLASS_INFO.ranged.name} and {CLASS_INFO.magic.name} move above also comes as a codex, from scans: Common for up to {BASIC_CODEX_MAX_DAMAGE} damage, Rare above that. It teaches a creature of that move&apos;s class (Klutz can learn any).</P>
       <H>Race moves (codexes)</H>
       {RACE_MOVES.map((m) => row(m, <>Only <RaceTag races={learnRacesOf(m)} /> creatures{m.alsoLearners?.length ? ` (and ${m.alsoLearners.length} others)` : ""} can learn it, from a codex.</>))}
       <H>Special moves (codexes)</H>

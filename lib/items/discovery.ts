@@ -9,8 +9,7 @@ import type { Drop } from "../types";
 import { ITEM_KEYS } from "./ceilings";
 import { ARMOR_KEYS } from "./armor";
 import { MATERIAL_KEYS, type Materials } from "./materials";
-import { BASIC_MOVES, STRONG_MOVES, LEARNABLE_MOVES, RACE_MOVES } from "../creatures/creatureData";
-import { KIT_RACE_MOVES } from "../creatures/raceKitsV2";
+import { LEARNABLE_MOVES, RACE_MOVES } from "../creatures/creatureData";
 
 const POTION_KINDS = ["lesser", "potion"] as const;
 
@@ -20,7 +19,8 @@ export const DISCOVERABLE_ITEMS: ReadonlySet<string> = new Set([
   ...ARMOR_KEYS.map((k) => `a:${k}`),
   ...MATERIAL_KEYS.map((k) => `m:${k}`),
   ...POTION_KINDS.map((k) => `p:${k}`),
-  ...[...BASIC_MOVES, ...STRONG_MOVES, ...LEARNABLE_MOVES, ...RACE_MOVES, ...KIT_RACE_MOVES].map((m) => `c:${m.name}`),
+  // (Codexes of the retired plain moves are gone since 2026-11-12, and drop out of what you've found.)
+  ...[...LEARNABLE_MOVES, ...RACE_MOVES].map((m) => `c:${m.name}`),
 ]);
 export const TOTAL_DISCOVERABLE_ITEMS = DISCOVERABLE_ITEMS.size;
 

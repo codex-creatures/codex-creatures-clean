@@ -32,7 +32,7 @@ export default function RaceChart() {
           ))}
         </tbody>
       </table>
-      <div style={{ fontSize: 11, color: MUTED, textAlign: "center", marginTop: 4 }}>▲ effective · ▼ resisted · Neutral moves have no race</div>
+      <div style={{ fontSize: 11, color: MUTED, textAlign: "center", marginTop: 4 }}>▲ effective · ▼ resisted · core moves land as their creature&apos;s race</div>
     </div>
   );
 }

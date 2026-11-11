@@ -36,7 +36,7 @@ user) and [roadmap.md](roadmap.md) (everything decided but not built, open, shel
 
 ## Where things stand (2026-11-09)
 
-- **Live:** Combat V2 (7 races, 35 creatures, race kits, codexes), soul stones, the Encampment,
+- **Live:** Combat V2 (7 races, 35 creatures, core moves, codexes), soul stones, the Encampment,
   Labyrinth (the Cyclops), Deep Labyrinth (the Hydra) and Abyss; **walkable "🔥 New" runs** of the
   Encampment and the Cyclops (world version 8: [design/walkable-play.md](design/walkable-play.md));
   Klutz and his hunts, the tavern questline (stages 1–9), the pits, the collector, daily quests;

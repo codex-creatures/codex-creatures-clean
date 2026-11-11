@@ -1,7 +1,7 @@
 // lib/creatures/creatureData.ts
 
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
-import { KIT_MOVES, KIT_MOVE_RACE, KIT_RACE_MOVES, NEUTRAL_QUICK_MOVES, RETIRED_KIT_MOVES } from "./raceKitsV2";
+import { CORE_MOVES, CORE_MOVE_NAMES, RETIRED_KIT_MOVES } from "./raceKitsV2";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "./rosterV2";
 
 export type CreatureProficiency = {
@@ -73,6 +73,7 @@ export type Skill = {
   self?: boolean;    // a utility move used on yourself: no target, no damage
   cooldown?: number; // rounds before it can be used again
   race?: Race;       // a race move: its race (only that race can learn it, from a codex, unless learnRaces says otherwise)
+  asRace?: Race;     // a core move (no race of its own): the race it lands as, its creature's main race
   learnRaces?: Race[]; // a race move several races can learn (Rabid Bite)
   learners?: string[]; // a special move only these species can learn (missing: anyone, unless learnStyles)
   learnStyles?: CombatClass[]; // a special move any creature fighting in one of these styles can learn (its archetype's)
@@ -153,9 +154,11 @@ export const ALL_SKILLS: Skill[] = [
   { name: "Starfall",      damage: 40, energyCost: 80, type: "magic",  dmgType: "force"  },
 ];
 
-// Moves any creature can learn into one of its move slots. For now they're
-// all available to test; later they'll come from encounters, drops and quests.
-export const LEARNABLE_MOVES: Skill[] = [
+// Moves any creature can learn into one of its move slots, from a codex.
+// (The dash and precise ones were retired on 2026-11-12: the core moves'
+// first-strike move does the dash's job, and RETIRED_LEARNABLES turns them
+// over to their closest core move.)
+const OLD_LEARNABLES: Skill[] = [
   { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  dmgType: "force",  effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
   { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
   { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
@@ -166,6 +169,8 @@ export const LEARNABLE_MOVES: Skill[] = [
   { name: "Precise Shot",   damage: 15, energyCost: 30, type: "ranged", dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
   { name: "Seeker Spark",   damage: 15, energyCost: 30, type: "magic",  dmgType: "pierce", effect: { kind: "precise", hitChance: 0.7 }, desc: "70% chance to hit, but every hit is a precise hit." },
 ];
+export const LEARNABLE_MOVES: Skill[] = OLD_LEARNABLES.filter((m) => m.effect?.kind === "cripple");
+const RETIRED_LEARNABLES: Skill[] = OLD_LEARNABLES.filter((m) => m.effect?.kind !== "cripple");
 
 // Race moves: each is taught by a single-use codex (bought from wandering
 // librarians or found in dungeon chests), and only creatures of its race
@@ -248,17 +253,16 @@ export const stylesOf = (c: Pick<CreatureTemplate, "id">): CombatClass[] => ARCH
 const canLearnSpecial = (c: CreatureTemplate, m: Skill) =>
   m.learnStyles ? stylesOf(c).some((st) => m.learnStyles!.includes(st)) : !m.learners || m.learners.includes(c.id);
 
-// Every move creatures are born with also comes as a codex (from scans), which
-// teaches it to a creature of the move's own class. Basic moves (up to this
-// much damage) are Common codexes; the stronger ones are Rare.
-export const BASIC_CODEX_MAX_DAMAGE = 20;
-export const BASIC_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage <= BASIC_CODEX_MAX_DAMAGE);
-export const STRONG_MOVES: Skill[] = ALL_SKILLS.filter((m) => m.damage > BASIC_CODEX_MAX_DAMAGE);
-// Combat V2's race-kit moves come as codexes too (the user, 2026-10-26): from
-// scans by the same split (light ones Common, heavy ones Rare), and from librarians.
-export const KIT_BASIC_CODEXES: Skill[] = KIT_RACE_MOVES.filter((m) => m.damage <= BASIC_CODEX_MAX_DAMAGE);
-export const KIT_STRONG_CODEXES: Skill[] = KIT_RACE_MOVES.filter((m) => m.damage > BASIC_CODEX_MAX_DAMAGE);
-const classMovesFor = (c: CreatureTemplate): Skill[] => ALL_SKILLS.filter((m) => c.neutral || m.type === c.cls);
+// The older plain moves (ALL_SKILLS) and the race kits' no longer come as
+// codexes (the user, 2026-11-12): every creature knows its core moves.
+// Each older one's closest core move: up to this much damage the light one,
+// more the heavy one; a dash move the first-strike one.
+const LIGHT_MAX_DAMAGE = 20;
+const closestCore = (m: Skill): Skill => CORE_MOVES.filter((c) => c.type === m.type)[m.effect?.kind === "dash" ? 2 : m.damage >= LIGHT_MAX_DAMAGE ? 1 : 0];
+export const RETIRED_MOVES: Record<string, string> = {
+  ...RETIRED_KIT_MOVES,
+  ...Object.fromEntries([...ALL_SKILLS, ...RETIRED_LEARNABLES].map((m) => [m.name, closestCore(m).name])),
+};
 
 // Boss-only moves (see lib/creatures/bosses.ts). Never learnable.
 export const BOSS_MOVES: Skill[] = [
@@ -283,12 +287,14 @@ export const BOSS_MOVES: Skill[] = [
 ];
 
 export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
-// (With the race kits' moves, lib/creatures/raceKitsV2.ts, the moves creatures are born with.)
-export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RACE_MOVES, ...BOSS_MOVES, ...KIT_MOVES, ...SPECIAL_MOVES].map((m) => [m.name, m]));
-// (A retired kit light move, still in some saves, finds its Balanced move.)
+// (With the core moves, lib/creatures/raceKitsV2.ts, the moves creatures are born with.)
+// (The older plain moves and the retired learnables stay in it, for the old
+// species in tests: PRE_V2_SPECIES.)
+export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RETIRED_LEARNABLES, ...RACE_MOVES, ...BOSS_MOVES, ...CORE_MOVES, ...SPECIAL_MOVES].map((m) => [m.name, m]));
+// (A retired kit move, still in some saves, finds its core move.)
 for (const [old, now] of Object.entries(RETIRED_KIT_MOVES)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
 
-// Moves without a note of their own (the race kits' plain hits, the older
+// Moves without a note of their own (the core moves' plain hits, the older
 // moves) get a plain one so they read like the rest. It never says what the
 // race is strong against: working that out is the player's job (the race
 // chart is there for it). Bosses' moves don't need one.
@@ -304,9 +310,6 @@ export function codexLearners(moveName: string): { text: string; color: string }
   const races = m ? learnRacesOf(m) : [];
   const also = m?.alsoLearners?.length ? ` + ${m.alsoLearners.length} more` : " only";
   if (races.length) return { text: `${races.map((r) => RACE_INFO[r].name).join(" / ")}${also}`, color: RACE_INFO[races[0]].color };
-  const kit = KIT_MOVE_RACE[moveName];
-  if (kit && m) return { text: `${RACE_INFO[kit].name} ${CLASS_INFO[m.type].name.toLowerCase()} only`, color: RACE_INFO[kit].color };
-  if (m && ALL_SKILLS.some((x) => x.name === moveName)) return { text: `${CLASS_INFO[m.type].name} only`, color: CLASS_INFO[m.type].color };
   return { text: "any creature", color: "rgba(255,255,255,0.5)" };
 }
 
@@ -377,14 +380,14 @@ export const PRE_V2_SPECIES: Record<string, CreatureTemplate> = Object.fromEntri
 // Klutz: the dopey goblin who drags you into the Den. He's your helper, not
 // one of your creatures: gear him up and he'll hunt in the Labyrinth for
 // you (lib/klutz.ts). He's a Rare.
-// He's neutral ("Balanced": any class's codex; no races, so he deals and takes neutral damage). His %s
+// He's neutral (any style's core moves; no races, so he deals and takes neutral damage). His %s
 // start at 0 and are the points you spend on him as he levels (lib/klutz.ts
 // POINTS_PER_LEVEL), so you, his weapon and the codexes you teach him decide
 // how he fights. He starts as a brawler; other styles come from codexes.
 export const KLUTZ: CreatureTemplate = {
   id: "klutz", name: "Klutz", rarity: "rare", baseHp: 80, companion: true, cls: "melee", neutral: true,
   proficiency: { atk: 0, rng: 0, mag: 0, agil: 0, mdef: 0, rdef: 0, magdef: 0 },
-  skills: s("Slash", "Heavy Blow", "Jab", "Stone Throw"),
+  skills: CORE_MOVES, // all 9 (no race: they land neutral); he starts with the first 4
   flavour: "A pot-bellied goblin with enormous eyes — all the better to see in the labyrinth. Pay him, gear him, and he'll go hunting for you.",
 };
 
@@ -445,17 +448,35 @@ export const MOVE_SLOTS = 4;
 
 // Combat V2 creatures start with 3 moves; a codex fills the fourth slot
 // (the user, 2026-10-26). Klutz and the old species (PRE_V2_SPECIES, for
-// tests) still start with 4. A race-kit creature: its third move is Neutral priority.
+// tests) still start with 4. A V2 creature: its main style's core moves.
 export const STARTING_MOVES = 3;
-const NEUTRAL_QUICK_NAMES = new Set(Object.values(NEUTRAL_QUICK_MOVES).map((m) => m.name));
-export const startingMoveCount = (c: CreatureTemplate) => (NEUTRAL_QUICK_NAMES.has(c.skills[STARTING_MOVES - 1]?.name) ? STARTING_MOVES : MOVE_SLOTS);
+export const startingMoveCount = (c: CreatureTemplate) => (!c.neutral && CORE_MOVE_NAMES.has(c.skills[0]?.name) ? STARTING_MOVES : MOVE_SLOTS);
 export function defaultMoveNames(c: CreatureTemplate): string[] {
   return c.skills.slice(0, startingMoveCount(c)).map((m) => m.name);
 }
 
-// A saved move's name today: a retired kit light move is now its style's
-// Balanced move (lib/creatures/raceKitsV2.ts).
-export const currentMoveName = (name: string) => RETIRED_KIT_MOVES[name] ?? name;
+// A saved move's name today: a retired move is its closest core move
+// (RETIRED_MOVES).
+export const currentMoveName = (name: string) => RETIRED_MOVES[name] ?? name;
+export const isRetiredMove = (name: string) => name in RETIRED_MOVES;
+
+// A creature's saved moves with each retired one replaced by its closest
+// core move (the user, 2026-11-12). If that's one it already has, the next
+// of its core moves it doesn't (so it keeps as many moves as it had).
+export function replaceRetired(c: CreatureTemplate, names: string[]): string[] {
+  const out: string[] = [];
+  const own = (n: string) => c.skills.some((m) => m.name === n);
+  for (const n of names) {
+    if (own(n) || !isRetiredMove(n)) { if (!out.includes(n)) out.push(n); continue; }
+    const now = currentMoveName(n);
+    const style = MOVE_BY_NAME[now]?.type;
+    const free = (m: Skill) => !out.includes(m.name) && !names.includes(m.name);
+    const pick = own(now) && !out.includes(now) ? now
+      : (c.skills.find((m) => m.type === style && free(m)) ?? c.skills.find(free))?.name;
+    if (pick) out.push(pick);
+  }
+  return out;
+}
 
 // Moves that were renamed after a new move took the name (the user,
 // 2026-10-26: Blink is now the Neutral priority magic move; the older haste
@@ -466,32 +487,34 @@ export const RENAMED_MOVES: Record<string, string> = { Blink: "Quickcast" };
 export const renamedMove = (name: string) => RENAMED_MOVES[name] ?? name;
 
 // Can this creature learn a move from a codex? Learnable moves: anyone.
-// Race moves: only creatures of that race. Race-kit moves: those in its own
-// kits (its races, in its styles). Basic and strong moves: only
-// creatures of that move's class (a neutral one, Klutz: any class,
-// but no race moves).
+// Race moves: only creatures of that race (or named on the move; never
+// Klutz). Special moves: their own lists. (The retired moves: no one.)
 export function canLearnFromCodex(c: CreatureTemplate, moveName: string): boolean {
   if (isSpecialMove(moveName)) return canLearnSpecial(c, MOVE_BY_NAME[moveName]);
   if (LEARNABLE_MOVES.some((m) => m.name === moveName)) return true;
   if (c.neutral && RACE_MOVES.some((m) => m.name === moveName)) return false;
-  return [...raceMovesFor(c), ...classMovesFor(c), ...c.skills].some((m) => m.name === moveName);
+  return [...raceMovesFor(c), ...c.skills].some((m) => m.name === moveName);
 }
 
 // The moves a creature can put in its slots: the ones it was born with (its
 // rolled moves; its species' starting moves if it has none saved) and any it
-// has learned from codexes. (The rest of its race kits need codexes too: the
-// user, 2026-10-26.)
+// has learned from codexes.
 export function movesAvailableTo(c: CreatureTemplate, learned: string[] = [], own?: string[]): Skill[] {
   const names = [...new Set([...(own?.length ? own.map(currentMoveName) : defaultMoveNames(c)), ...learned.filter((n) => canLearnFromCodex(c, n))])];
-  return names.map((n) => MOVE_BY_NAME[n]).filter(Boolean);
+  return names.map((n) => moveOf(c, n)).filter(Boolean);
 }
+
+// A move as this creature knows it: one of its own (a core move lands as its
+// race), else the move itself.
+export const moveOf = (c: CreatureTemplate, name: string): Skill => c.skills.find((m) => m.name === name) ?? MOVE_BY_NAME[name];
 
 // The 4 moves a creature fights with. Unknown or duplicate names are
 // dropped; an empty selection falls back to the defaults. (Race and class
 // codex moves are only offered once learned, so a saved one is trusted here.)
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
-  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...classMovesFor(c), ...LEARNABLE_MOVES, ...SPECIAL_MOVES.filter((m) => canLearnSpecial(c, m))].map((m) => m.name));
-  const picked = [...new Set((names ?? []).map(currentMoveName))].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
+  const allowed = new Set([...c.skills, ...raceMovesFor(c), ...LEARNABLE_MOVES, ...SPECIAL_MOVES.filter((m) => canLearnSpecial(c, m))].map((m) => m.name));
+  // (A move of its own keeps its name: the old species in tests know the older moves.)
+  const picked = [...new Set(replaceRetired(c, names ?? []))].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   // A species' own moves first: Combat V2's kit moves aren't in MOVE_BY_NAME.
   const moves = (picked.length > 0 ? picked : defaultMoveNames(c)).map((n) => c.skills.find((m) => m.name === n) ?? MOVE_BY_NAME[n]);
   // There's no resting, so every set keeps a steady move. One without (a

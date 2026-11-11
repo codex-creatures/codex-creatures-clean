@@ -52,8 +52,8 @@ export function rollProficiency(base: CreatureProficiency, rng: Rng = Math.rando
 }
 
 export function rollMoves(c: CreatureTemplate, rng: Rng = Math.random): string[] {
-  // Its species' starting moves (Combat V2: the first 3 of its race kits;
-  // the rest of its kits come from codexes).
+  // Its species' starting moves (Combat V2: its main style's 3 core moves;
+  // the rest come from codexes).
   const own = defaultMoveNames(c);
   // A rare move fills the empty slot, never replacing a starting move (the
   // user, 2026-10-26). Older species (all 4 slots full) have no room for one.

@@ -13,8 +13,7 @@ import { useState } from "react";
 import CodexMove from "./CodexMove";
 import { MoveTile } from "./MoveTile";
 import PixelSprite, { creatureSprite } from "./PixelSprite";
-import { MOVE_BY_NAME, MOVE_SLOTS, canLearnFromCodex, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
-import { KIT_MOVE_RACE } from "@/lib/creatures/raceKitsV2";
+import { MOVE_BY_NAME, MOVE_SLOTS, moveOf, canLearnFromCodex, findCreatureTemplate, isSpecialMove, hasSteadyMove, learnRacesOf, resolveMoves, STEADY_MAX_ENERGY } from "@/lib/creatures/creatureData";
 import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
 import { NAME } from "./ContainerLoot";
@@ -49,7 +48,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
   const why = (x: CreatureOrItemDrop) => {
     const t = findCreatureTemplate(x.creatureId, x.name);
     if (!t || !move) return "Can't learn it";
-    if (!canLearnFromCodex(t, move)) return isSpecialMove(move) ? "Not on its list" : raceLocked ? "Wrong race" : KIT_MOVE_RACE[move] ? "Not its kit" : "Wrong style";
+    if (!canLearnFromCodex(t, move)) return isSpecialMove(move) ? "Not on its list" : raceLocked ? "Wrong race" : "Can't learn it";
     if (x.learned?.includes(move) || slotsOf(x).includes(move)) return "Knows it";
     return undefined;
   };
@@ -65,6 +64,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
     else setForgetting(x.id);
   };
   const forgetter = creatures.find((x) => x.id === forgetting);
+  const forgetterT = forgetter && findCreatureTemplate(forgetter.creatureId, forgetter.name);
 
   return (
     <>
@@ -114,7 +114,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
                     // It must keep a move it can always afford (no resting).
                     const keeps = hasSteadyMove(all.map((x, j) => MOVE_BY_NAME[j === i ? move! : x]).filter(Boolean));
                     return MOVE_BY_NAME[n] && (
-                      <MoveTile key={n} m={MOVE_BY_NAME[n]} selected={dropSlot === i} disabled={!keeps}
+                      <MoveTile key={n} m={forgetterT ? moveOf(forgetterT, n) : MOVE_BY_NAME[n]} selected={dropSlot === i} disabled={!keeps}
                         note={keeps ? undefined : { text: `its last ≤${STEADY_MAX_ENERGY}⚡ move`, color: "#ff8a80" }}
                         onClick={() => setDropSlot(dropSlot === i ? null : i)} />
                     );

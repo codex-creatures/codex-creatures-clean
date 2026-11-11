@@ -8,17 +8,17 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { ownedSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
-import { codexDrop, potionDrop } from "@/lib/drops";
+import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
-import { fighterFor, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
+import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { collectorCreatures, creaturePrice, tradeUpCard } from "@/lib/collector";
 import { buildPit, claimPlans, hasPit, logTrained, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
@@ -137,19 +137,27 @@ export function loadSave(): SaveState | null {
     delete c.ability;
     if (upgradeMoveSet(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
     if (upgradeStyle(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
-    if (c.learned) c.learned = c.learned.map(renamedMove);
+    if (c.learned) c.learned = retireLearned(c.learned);
+    // The retired plain moves (2026-11-12): each one's closest core move.
+    if (t) {
+      c.moves = retireMoves(c.moves, t);
+      const eq = equipment[c.id];
+      if (eq?.moves) equipment[c.id] = { ...eq, moves: retireMoves(eq.moves, t) };
+    }
   }
   // Codexes of a renamed move (RENAMED_MOVES) carry its new name, and an old
   // Impale codex (that move was retired, 2026-10-27) is the new Impale's.
   for (const d of [...inventory, ...caches, ...(Array.isArray(parsed.crate) ? parsed.crate as Drop[] : [])]) {
     const x = d as CreatureOrItemDrop;
     if (x.codexMove && (renamedMove(x.codexMove) !== x.codexMove || (x.codexMove === "Impale" && x.rarity !== "epic"))) Object.assign(x, codexDrop(renamedMove(x.codexMove), x.barcode), { id: x.id, createdAt: x.createdAt });
+    // A codex of a retired plain move (2026-11-12) becomes one of the same rarity.
+    if (x.codexMove && isRetiredMove(x.codexMove)) Object.assign(x, codexDrop(retiredCodexMove(x.codexMove, x.id), x.barcode), { id: x.id, createdAt: x.createdAt });
   }
   // Klutz can't use the new Blink, so his old one is Quickcast too.
   const klutz = obj(parsed.klutz) as KlutzState;
-  if (klutz.learned) klutz.learned = klutz.learned.map(renamedMove);
+  if (klutz.learned) klutz.learned = retireLearned(klutz.learned);
   const kl = equipment[KLUTZ_DROP_ID];
-  if (kl?.moves) equipment[KLUTZ_DROP_ID] = { ...kl, moves: kl.moves.map(renamedMove) };
+  if (kl?.moves) equipment[KLUTZ_DROP_ID] = { ...kl, moves: retireMoves(kl.moves.map(renamedMove), KLUTZ) };
   return {
     gold:       typeof parsed.gold === "number" ? parsed.gold : 0,
     inventory,

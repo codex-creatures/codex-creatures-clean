@@ -51,7 +51,7 @@ describe("Brace", () => {
       const ev = s.log.filter((e) => e.type === "effect" || e.type === "attack");
       if (ev[0]?.type !== "effect") fails.push("brace not first");
       const hit = ev.find((e) => e.type === "attack");
-      const plain = calcDamage(MOVE_BY_NAME.Strike, b, a, false).damage;
+      const plain = calcDamage(b.skills.find((m) => m.name === "Strike")!, b, a, false).damage; // (as the Wasp knows it: a Beast hit)
       if (hit?.type !== "attack" || !hit.braced || hit.damage > Math.max(1, Math.ceil(plain * 1.05 * 1.75 * 0.1))) fails.push(`hit ${hit?.type === "attack" ? hit.damage : "?"} vs ${plain}`);
       if (s.sides.A.team[0].statuses.some((x) => x.id === "brace")) fails.push("brace left over");
     }

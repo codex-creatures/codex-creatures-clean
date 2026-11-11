@@ -224,13 +224,19 @@ describe("Klutz is neutral (the old triangle rules)", () => {
     expect(triangleFor("melee", foe("melee"), foe("magic"))).toBe(0.5);
   });
 
-  it("he's a Rare whose %s start at 0, starts with 3 melee moves and Stone Throw, and can learn any class's codex but not other races' moves", () => {
+  it("he's a Rare whose %s start at 0, knows every style's core moves (starting with 3 melee and Shot), and no race moves", () => {
     expect(KLUTZ.rarity).toBe("rare");
     expect(Object.values(KLUTZ.proficiency).every((v) => v === 0)).toBe(true);
-    expect(defaultMoveNames(KLUTZ)).toEqual(["Slash", "Heavy Blow", "Jab", "Stone Throw"]);
-    for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(true);
+    expect(defaultMoveNames(KLUTZ)).toEqual(["Strike", "Smash", "Rush", "Shot"]);
+    // The older plain moves are retired: no codexes of them for anyone.
+    for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
     for (const m of ["Pounce", "Barrage", "Mirage", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
-    expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Firebolt")).toBe(false);
-    expect(resolveMoves(KLUTZ, ["Firebolt", "Bolt"]).map((m) => m.name)).toEqual(["Firebolt", "Bolt"]);
+    expect(canLearnFromCodex(KLUTZ, "Cripple")).toBe(true);
+    // Any style's core moves, with no race (he lands neutral).
+    const picked = resolveMoves(KLUTZ, ["Blast", "Zap"]);
+    expect(picked.map((m) => m.name)).toEqual(["Blast", "Zap"]);
+    expect(picked.every((m) => !m.asRace)).toBe(true);
+    // A save from before: his old moves become their closest core ones, keeping 4.
+    expect(resolveMoves(KLUTZ, ["Slash", "Heavy Blow", "Jab", "Stone Throw"]).map((m) => m.name)).toEqual(["Strike", "Smash", "Rush", "Shot"]);
   });
 });
