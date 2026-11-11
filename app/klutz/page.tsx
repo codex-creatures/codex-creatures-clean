@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { startTour } from "@/lib/tour";
+import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
 import { LevelBar } from "@/components/CreatureDetailModal";
@@ -66,9 +66,12 @@ export default function KlutzPage() {
 
       <QuestTalk game={game} />
       <ScanTip game={game} />
-      {/* His tour of the Den (lib/tour.ts), again: once the box is open and he's offered it. */}
+      {/* His tours (lib/tour.ts), again: once the box is open and he's offered them. */}
       {(game.quest.stage === "lend" || game.quest.stage === "done") && (
-        <button className="chip" style={{ marginTop: 12 }} onClick={startTour}>🗺️ Show me round again</button>
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 13, color: MUTED, marginBottom: 6 }}>🗺️ Show me round again:</div>
+          <TourChoices chip />
+        </div>
       )}
 
       {helping && (
@@ -186,6 +189,19 @@ function ScanTip({ game }: { game: ReturnType<typeof useGameState> }) {
 
 // Klutz's lines for the first quest (his stolen box): short, with the
 // action you take next.
+// Klutz's tours to choose from (lib/tour.ts), two by two: the full one
+// glowing for a new player; as chips once you've had one.
+function TourChoices({ chip }: { chip?: boolean }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {TOUR_CHOICES.map((c) => (
+        <button key={c.id} className={chip ? "chip" : `pixel-btn${c.id === "full" ? " tutorial-pulse" : ""}`}
+          style={chip ? { minHeight: 44 } : undefined} onClick={() => startTour(c.id)}>{c.label}</button>
+      ))}
+    </div>
+  );
+}
+
 function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   const q = game.quest;
   const [opening, setOpening] = useState(false);
@@ -232,9 +248,9 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
   }
   if (q.stage === "stash") {
     return say(
-      <>&ldquo;There — it&apos;s all in your Inventory. Want me to show you round?&rdquo;</>,
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button className="pixel-btn tutorial-pulse" onClick={startTour}>🗺️ Show me round</button>
+      <>&ldquo;There — it&apos;s all in your Inventory. Want me to show you round? The basics, how fights work, how gear works, or the lot?&rdquo;</>,
+      <div style={{ display: "grid", gap: 8 }}>
+        <TourChoices />
         <button className="pixel-btn" onClick={game.questSkipTutorial}>Skip the tutorial</button>
       </div>,
     );

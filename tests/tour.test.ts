@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { TOUR, TOUR_FIELD, tourStep, startTour, nextTourStep, endTour, tourDenTarget } from "../lib/tour";
+import { TOURS, TOUR_CHOICES, TOUR_FIELD, tourAt, startTour, nextTourStep, endTour, tourDenTarget, type TourId } from "../lib/tour";
 import { OBJ } from "../lib/den/scene";
 import { OWN_FIELDS, writeMainSave, readSave } from "../lib/save";
 
@@ -26,20 +26,29 @@ function marks(dir: string, found = new Set<string>()): Set<string> {
 }
 
 // The Den place you're shown before going into each screen.
-const PLACE_OF: Record<string, number> = { "/altar": OBJ.altar, "/pit": OBJ.pit, "/bag": OBJ.bag, "/klutz": OBJ.klutz, "/chest": OBJ.chest };
+const PLACE_OF: Record<string, number> = { "/altar": OBJ.altar, "/pit": OBJ.pit, "/bag": OBJ.bag, "/klutz": OBJ.klutz, "/chest": OBJ.chest, "/guide": OBJ.scroll };
+const IDS = Object.keys(TOURS) as TourId[];
 
-describe("Klutz's tour", () => {
-  it("starts in the Den and ends in the Inventory, with the box's gear", () => {
-    expect(TOUR[0].path).toBe("/");
-    expect(TOUR[TOUR.length - 1].path).toBe("/chest");
+describe("Klutz's tours", () => {
+  it("are all on offer, and each starts in the Den", () => {
+    expect(TOUR_CHOICES.map((c) => c.id).sort()).toEqual([...IDS].sort());
+    for (const id of IDS) expect(TOURS[id][0].path).toBe("/");
+  });
+
+  it("the full tour is the other three's steps, and ends in the Inventory with the box's gear", () => {
+    const full = TOURS.full;
+    expect(full[full.length - 1].path).toBe("/chest");
+    const parts = new Set([...TOURS.basics, ...TOURS.combat, ...TOURS.items]);
+    expect(full.filter((s) => !parts.has(s))).toEqual([]);
+    expect(full.length).toBeGreaterThan(TOURS.combat.length + TOURS.items.length);
   });
 
   it("shows you each place in the Den before taking you into it", () => {
     const bad: string[] = [];
-    TOUR.forEach((s, i) => {
-      if (i === 0 || s.path === "/" || s.path === TOUR[i - 1].path) return;
-      if (!(s.path in PLACE_OF)) bad.push(`step ${i}: no Den place for ${s.path}`);
-      else if (tourDenTarget(i - 1) !== PLACE_OF[s.path]) bad.push(`step ${i}: ${s.path} without its place lit up first`);
+    for (const id of IDS) TOURS[id].forEach((s, i, steps) => {
+      if (i === 0 || s.path === "/" || s.path === steps[i - 1].path) return;
+      if (!(s.path in PLACE_OF)) bad.push(`${id} ${i}: no Den place for ${s.path}`);
+      else if (tourDenTarget({ id, step: i - 1 }) !== PLACE_OF[s.path]) bad.push(`${id} ${i}: ${s.path} without its place lit up first`);
     });
     expect(bad).toEqual([]);
   });
@@ -47,32 +56,35 @@ describe("Klutz's tour", () => {
   it("only lights up things the screens mark, and Den places that exist", () => {
     const have = new Set([...marks(join(__dirname, "../app")), ...marks(join(__dirname, "../components"))]);
     const places = new Set<number>(Object.values(OBJ));
-    const bad = TOUR.flatMap((s, i) => {
+    const bad = IDS.flatMap((id) => TOURS[id].flatMap((s, i) => {
       if (!s.target) return [];
-      if (s.target.startsWith("den-")) return places.has(Number(s.target.slice(4))) && s.path === "/" ? [] : [`step ${i}: ${s.target}`];
-      return have.has(s.target) ? [] : [`step ${i}: no data-tour="${s.target}"`];
-    });
+      if (s.target.startsWith("den-")) return places.has(Number(s.target.slice(4))) && s.path === "/" ? [] : [`${id} ${i}: ${s.target}`];
+      return have.has(s.target) ? [] : [`${id} ${i}: no data-tour="${s.target}"`];
+    }));
     expect(bad).toEqual([]);
   });
 
   it("keeps Klutz's lines short", () => {
-    expect(TOUR.filter((s) => s.say.length > 180).map((s) => s.say)).toEqual([]);
+    expect(IDS.flatMap((id) => TOURS[id].filter((s) => s.say.length > 180).map((s) => s.say))).toEqual([]);
   });
 
   it("goes a step at a time, ends after the last, and survives the main save being written", () => {
-    startTour();
-    expect(tourStep()).toBe(0);
+    startTour("combat");
+    expect(tourAt()).toEqual({ id: "combat", step: 0 });
     nextTourStep();
-    expect(tourStep()).toBe(1);
+    expect(tourAt()).toEqual({ id: "combat", step: 1 });
     expect(OWN_FIELDS).toContain(TOUR_FIELD);
     writeMainSave({ gold: 5 });
-    expect(tourStep()).toBe(1);
-    for (let i = 1; i < TOUR.length; i++) nextTourStep();
-    expect(tourStep()).toBeNull();
+    expect(tourAt()).toEqual({ id: "combat", step: 1 });
+    for (let i = 1; i < TOURS.combat.length; i++) nextTourStep();
+    expect(tourAt()).toBeNull();
     expect(TOUR_FIELD in readSave()).toBe(false);
     startTour();
+    expect(tourAt()?.id).toBe("full");
     endTour();
-    expect(tourStep()).toBeNull();
-    expect(tourStep({ [TOUR_FIELD]: { step: 999 } })).toBeNull();
+    expect(tourAt()).toBeNull();
+    expect(tourAt({ [TOUR_FIELD]: { step: 999 } })).toBeNull();
+    // A tour saved before there were several: the full one.
+    expect(tourAt({ [TOUR_FIELD]: { step: 3 } })).toEqual({ id: "full", step: 3 });
   });
 });

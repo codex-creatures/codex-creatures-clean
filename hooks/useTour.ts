@@ -1,18 +1,22 @@
 "use client";
 // hooks/useTour.ts
-// Which step of Klutz's tour you're on (lib/tour.ts), or null: kept up to
-// date whenever the save is written.
+// Which of Klutz's tours you're on, and which step of it (lib/tour.ts), or
+// null: kept up to date whenever the save is written.
 
 import { useEffect, useState } from "react";
 import { onSaveWritten } from "@/lib/save";
-import { tourStep } from "@/lib/tour";
+import { tourAt, type TourAt } from "@/lib/tour";
 
-export function useTour(): number | null {
-  const [step, setStep] = useState<number | null>(null);
+export function useTour(): TourAt | null {
+  const [at, setAt] = useState<TourAt | null>(null);
   useEffect(() => {
-    const read = () => setStep(tourStep());
+    // (Only a new object when it's moved on, so a save write elsewhere doesn't re-run what hangs off it.)
+    const read = () => setAt((was) => {
+      const now = tourAt();
+      return now && was && now.id === was.id && now.step === was.step ? was : now;
+    });
     read();
     return onSaveWritten(read);
   }, []);
-  return step;
+  return at;
 }

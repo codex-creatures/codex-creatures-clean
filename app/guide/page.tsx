@@ -89,7 +89,7 @@ function Combat() {
         effective does <b>{signed(RACE_EFFECT.strong - 1)}</b> damage, resisted <b>{signed(RACE_EFFECT.resisted - 1)}</b>, anything else normal.
         Against two races both count (a double weakness is ×{(RACE_EFFECT.strong ** 2).toFixed(2)}). A move of one of the attacker&apos;s own races does
         another <b>{signed(MATCH_BONUS - 1)}</b>.</P>
-      <RaceChart />
+      <div data-tour="race-chart"><RaceChart /></div>
       <P>Mix your team: a team weak to the same race loses badly. Swap out of a bad matchup — swapping uses your turn, the
         opponent gets a free hit on the creature coming in, and the one going out recovers {pct(SWAP_ENERGY_RESTORE)} of its missing energy.</P>
 
