@@ -31,7 +31,7 @@
 // The numbers are 🧪 (Claude's, for the user to judge in the lab).
 
 import { ROCK, type Floorplan, type Pt, type Rect } from "./floorplan";
-import { findPath } from "./walk";
+import { findPath, type CanStep } from "./walk";
 import type { RoomKind } from "./run";
 
 type Rng = () => number;
@@ -119,11 +119,12 @@ export const ALARM_MAX = 4;       // …and, whatever else, this long after they
 export const FADE_TIME = 0.6;     // seconds fading into the fight
 export const ALARM_LIGHT = 2.5;   // tiles a foe that's seen you lights round it
 
-// The way a foe comes at you: the shortest way to you, stopping a tile short.
+// The way a foe comes at you: the shortest way to you, stopping a tile short; round anything solid
+// (`clear`: walkSim's foeClear), or straight over it if that's the only way (so the fight still starts).
 // [] if it's next to you already, or can't get to you (it stays where it is).
-export function chargePath(fp: Floorplan, from: Pt, you: Pt): Pt[] {
+export function chargePath(fp: Floorplan, from: Pt, you: Pt, clear?: CanStep): Pt[] {
   const start = { x: Math.round(from.x), y: Math.round(from.y) }, end = { x: Math.round(you.x), y: Math.round(you.y) };
-  const way = findPath(fp, start, end);
+  const way = (clear && findPath(fp, start, end, clear)) || findPath(fp, start, end);
   return way ? way.slice(0, -1) : [];
 }
 
@@ -163,7 +164,8 @@ function guardSpot(fp: Floorplan, floors: Rect[], chest: Pt, at: Pt, rng: Rng): 
 // A foe `seconds` later: a still one turns when it's looked long enough; a
 // walker walks to a spot in its room, faces the way it's going, pauses there,
 // then picks another.
-export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Math.random): Foe {
+// `clear`: where it may step (round anything solid: walkSim's foeClear).
+export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Math.random, clear?: CanStep): Foe {
   if (foe.waits) return foe;
   if (!foe.walks || foe.path.length === 0) {
     const wait = foe.wait - seconds;
@@ -183,7 +185,7 @@ export function stepFoe(fp: Floorplan, foe: Foe, seconds: number, rng: Rng = Mat
       to = { x: Math.round(foe.x), y: Math.round(foe.y) };
     }
     const from = { x: Math.round(foe.x), y: Math.round(foe.y) };
-    const path = findPath(fp, from, to, (_, q) => inRects(floors, q.x, q.y)) ?? [];
+    const path = findPath(fp, from, to, (p, q) => inRects(floors, q.x, q.y) && (!clear || clear(p, q))) ?? [];
     return { ...foe, path, wait: between(rng, PAUSE_TIME) };
   }
   let { x, y } = foe;

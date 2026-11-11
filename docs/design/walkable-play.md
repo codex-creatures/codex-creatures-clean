@@ -209,7 +209,9 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   or into the chief's camp, that room's fight starts, but not at once (the user, 2026-11-06;
   `fightReady` and the numbers in foes.ts, 🧪): every foe of the room lights up like your torch
   (`ALARM_LIGHT` 2.5 tiles) with a "!" over it, half a second later they all come at you
-  (`CHARGE_SPEED` 4 tiles a second), and it fades to black into the fight (`FADE_TIME` 0.6 s)
+  (`CHARGE_SPEED` 4 tiles a second; round tables, chests and anything else solid, as you walk, or
+  over it only if there's no other way: walkSim `foeClear`, the user, 2026-11-12; wandering foes and
+  the witch keep round them too), and it fades to black into the fight (`FADE_TIME` 0.6 s)
   once they've all reached you, or a second after the first has (`LATE_GRACE`), or 4 s after
   they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. (`/lab/walk` still
   starts its fights at once.) Tap a chest, stash or a fight's sack

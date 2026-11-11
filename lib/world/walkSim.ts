@@ -21,7 +21,7 @@ import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_
 import { hasFight, type Room } from "../dungeon/run";
 import type { WalkRun } from "../dungeon/walkRun";
 import { ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
-import { inReach, approach, toRuns, type Thing } from "./walkWorld";
+import { inReach, approach, toRuns, solidCells, type Thing } from "./walkWorld";
 import { stepWanderer, wandererOf, personOf, personLit, PERSON_LIGHT, type Wanderer } from "../dungeon/people";
 
 export const NPC_STILL = 4;      // u: a wanderer stops to let you come up to it
@@ -72,7 +72,15 @@ type Loop = {
 // How an NPC walks (world-spec §5.7): its own rule, kept apart from the foes'
 // and yours so wandering NPCs can change it alone. Today, the card witch's: a
 // foe's wandering in her own room, at NPC_SPEED of its pace.
-export const stepNpc = (fp: Floorplan, n: Foe, seconds: number, rng: () => number): Foe => stepFoe(fp, n, seconds * NPC_SPEED, rng);
+export const stepNpc = (fp: Floorplan, n: Foe, seconds: number, rng: () => number, clear?: CanStep): Foe => stepFoe(fp, n, seconds * NPC_SPEED, rng, clear);
+// Where foes (and the witch) may step: never into anything solid (a table, a chest, a campfire: the
+// cells you can't walk into, walkWorld solidCells), nor diagonally past one's corner, so they walk
+// round things instead of over them (the user, 2026-11-12). Worked out the first time it's asked.
+export function foeClear(things: () => Thing[], fires: Campfire[]): CanStep {
+  let solid: Set<string> | null = null;
+  const has = (x: number, y: number) => (solid ??= solidCells(things(), fires, [])).has(`${x},${y}`);
+  return (p, q) => !has(q.x, q.y) && (p.x === q.x || p.y === q.y || (!has(q.x, p.y) && !has(p.x, q.y)));
+}
 
 export function startWalk(walk: WalkRun, plan: Floorplan, live: Floorplan, placed: { sconces: Sconce[]; candles: Candle[]; foes: Foe[]; npcs: Foe[] }, known: Uint8Array): WalkSim {
   return {
@@ -230,6 +238,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
   sim.foes = sim.foes.filter((f) => awake(f.room) || !isOpen(layout, p, parentOf(f.room)));
   const frame = (draw: boolean): Frame => ({ draw, busy, alarm: A, reachNow, candlesSeen, fireSeen, alarmed, foeLight, giving, peopleLit, events });
   const giving: string[] = [];
+  const clear = foeClear(things, sim.fires);
   if (!busy && A) {
     // Seen: a "!" a moment, then they come at you; it fades into the fight once they're there.
     const t = (now - A.at) / 1000;
@@ -238,7 +247,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
       let g = f;
       if (t < ALARM_PAUSE) g = { ...g, facing: Math.atan2(sim.me.y - g.y, sim.me.x - g.x) };
       else {
-        if (!A.going.has(f.index)) { A.going.add(f.index); g = { ...g, path: chargePath(live, g, sim.me) }; }
+        if (!A.going.has(f.index)) { A.going.add(f.index); g = { ...g, path: chargePath(live, g, sim.me, clear) }; }
         g = chargeFoe(g, dt);
         if (Math.hypot(g.x - sim.me.x, g.y - sim.me.y) <= ARRIVE || g.path.length === 0) A.arrived.set(f.index, t);
       }
@@ -252,10 +261,10 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
       events.push({ type: "spotted", room: A.room, state: walkState(sim) });
     }
   } else if (!busy) {
-    sim.foes = sim.foes.map((f) => stepFoe(live, f, dt, rng));
+    sim.foes = sim.foes.map((f) => stepFoe(live, f, dt, rng, clear));
     // The witch wanders, slowly, and stops (facing you) to let you come up to her.
     sim.npcs = sim.npcs.map((n) => (Math.hypot(n.x - sim.me.x, n.y - sim.me.y) <= NPC_STILL
-      ? { ...n, path: [], facing: Math.atan2(sim.me.y - n.y, sim.me.x - n.x) } : stepNpc(live, n, dt, rng)));
+      ? { ...n, path: [], facing: Math.atan2(sim.me.y - n.y, sim.me.x - n.x) } : stepNpc(live, n, dt, rng, clear)));
     // People who wander the dungeon (people.ts) stop for you the same way, picking up where they were going after.
     sim.people = sim.people.map((w) => (!w.stopped && Math.hypot(w.x - sim.me.x, w.y - sim.me.y) <= NPC_STILL
       ? { ...w, facing: Math.atan2(sim.me.y - w.y, sim.me.x - w.x) } : stepWanderer(plan, live, layout, p, w, dt, room, rng)));

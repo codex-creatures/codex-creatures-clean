@@ -174,6 +174,14 @@ describe("seen: they come at you", () => {
     expect(way[way.length - 1]).toEqual({ x: 2, y: 1 });
     expect(chargePath(room, { x: 2, y: 1 }, { x: 1, y: 1 })).toEqual([]);
   });
+  it("goes round anything solid in the way (a table: foeClear), or over it if there's no other way", () => {
+    const table = new Set(["4,1", "5,1"]), clear = (_: unknown, q: { x: number; y: number }) => !table.has(`${q.x},${q.y}`);
+    const way = chargePath(room, { x: 8, y: 1 }, { x: 1, y: 1 }, clear);
+    expect(way.some((p) => table.has(`${p.x},${p.y}`))).toBe(false);
+    expect(way[way.length - 1]).toEqual({ x: 2, y: 1 });
+    const wall = (_: unknown, q: { x: number; y: number }) => q.x !== 5;
+    expect(chargePath(room, { x: 8, y: 1 }, { x: 1, y: 1 }, wall)).toEqual(chargePath(room, { x: 8, y: 1 }, { x: 1, y: 1 }));
+  });
   it("comes at CHARGE_SPEED, facing you", () => {
     const foe: Foe = { room: "a", index: 0, x: 8, y: 1, facing: 0, walks: false, path: chargePath(room, { x: 8, y: 1 }, { x: 1, y: 1 }), wait: 0 };
     const later = chargeFoe(foe, 1);

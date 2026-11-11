@@ -10,6 +10,7 @@ import { advance, roomAt, type Walker } from "../lib/dungeon/walk";
 import { facingOf, type Facing } from "../lib/dungeon/tileArt";
 import { torchLit, rubbleOf, fallenIn, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../lib/dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "../lib/dungeon/campfire";
+import { foeClear } from "../lib/world/walkSim";
 import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "../lib/dungeon/foes";
 import { hasFight, type Room } from "../lib/dungeon/run";
 import { ROCK, type Floorplan, type Pt } from "../lib/dungeon/floorplan";
@@ -131,6 +132,8 @@ export function oldWalk(o: {
     const p = progressRef.current;
     const awake = (id: string) => { const r = P.room(id); return !!r && hasFight(r) && !r.done && isOpen(layout, p, parentOf(id)); };
     foes.current = foes.current.filter((f) => awake(f.room) || !isOpen(layout, p, parentOf(f.room)));
+    // (Since: foes keep round anything solid, the user, 2026-11-12: the sim's foeClear, the one change made here.)
+    const clear = foeClear(things, fires.current);
     if (!busy && A) {
       const t = (now - A.at) / 1000;
       foes.current = foes.current.map((f) => {
@@ -138,7 +141,7 @@ export function oldWalk(o: {
         let g = f;
         if (t < ALARM_PAUSE) g = { ...g, facing: Math.atan2(me.current.y - g.y, me.current.x - g.x) };
         else {
-          if (!A.going.has(f.index)) { A.going.add(f.index); g = { ...g, path: chargePath(live, g, me.current) }; }
+          if (!A.going.has(f.index)) { A.going.add(f.index); g = { ...g, path: chargePath(live, g, me.current, clear) }; }
           g = chargeFoe(g, dt);
           if (Math.hypot(g.x - me.current.x, g.y - me.current.y) <= ARRIVE || g.path.length === 0) A.arrived.set(f.index, t);
         }
@@ -152,9 +155,9 @@ export function oldWalk(o: {
         events.push({ type: "spotted", room: A.room, state: state() });
       }
     } else if (!busy) {
-      foes.current = foes.current.map((f) => stepFoe(live, f, dt));
+      foes.current = foes.current.map((f) => stepFoe(live, f, dt, undefined, clear));
       npcs.current = npcs.current.map((n) => (Math.hypot(n.x - me.current.x, n.y - me.current.y) <= NPC_STILL
-        ? { ...n, path: [], facing: Math.atan2(me.current.y - n.y, me.current.x - n.x) } : stepFoe(live, n, dt * NPC_SPEED)));
+        ? { ...n, path: [], facing: Math.atan2(me.current.y - n.y, me.current.x - n.x) } : stepFoe(live, n, dt * NPC_SPEED, undefined, clear)));
       const by = spottedBy(live, foes.current, me.current, awake);
       if (by) {
         alarm.current = { room: by, at: now, going: new Set(), arrived: new Map(), fadeAt: null };
