@@ -38,17 +38,37 @@ export const sackOutline = (): [number, number][] => SACK_OUTLINE.map(([r, y]) =
 const SACK_OPEN_OUTLINE: [number, number][] = [...SACK_OUTLINE.slice(0, 8), [0.11, 0.53], [0.13, 0.55]];
 export const sackOpenOutline = (): [number, number][] => SACK_OPEN_OUTLINE.map(([r, y]) => [r, y]);
 
+// ── The rickety table (world version 12, the user, 2026-11-11): a top slab on four legs, PixelLab's
+// faces as the chest's (48 a unit, square on screen). The front picture is the whole table seen from the
+// front (the 2D view's picture of it): its edge band is the slab's front and sides, a front leg's column
+// each leg. The deck of cards lies on top, face down.
+export const TABLE_V = 1;
+export const TABLE_FACES = {
+  front: { src: `/sprites/props/table3d/front.png?v=${TABLE_V}`, w: 40, h: 24, edge: [7, 11], leg: { x: [4, 8], y: [11, 23] }, across: [1, 39] },
+  top: { src: `/sprites/props/table3d/top.png?v=${TABLE_V}`, w: 38, h: 20 },
+  deck: { src: `/sprites/props/table3d/deck.png?v=${TABLE_V}`, w: 10, h: 14 },
+};
+export const DECK_TALL = 0.05; // u: the deck's thickness
+export const LEG_IN = 0.06;    // u: each leg in from the slab's corner
+export function tableArt() {
+  const F = TABLE_FACES, up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
+  const slab = (F.front.edge[1] - F.front.edge[0]) / up, legs = (F.front.leg.y[1] - F.front.leg.y[0]) / up;
+  return {
+    width: (F.front.across[1] - F.front.across[0]) / ART_PER_U, depth: F.top.h / flat, slab, legs, top: slab + legs,
+    leg: (F.front.leg.x[1] - F.front.leg.x[0]) / ART_PER_U,
+    deck: { width: F.deck.w / ART_PER_U, depth: F.deck.h / flat },
+  };
+}
+// The glow of the rarest card in a deck lying on a table (the user, 2026-11-11): its rarity's colour, out
+// to half a candle's reach, half as bright.
+export const DECK_GLOW = { share: 0.5, strength: 0.5 };
+
 // ── In the game (the user, 2026-11-11: "getting the 3d items into the dungeon") ──
 // Which objects the walk view draws in 3D instead of their flat pictures. Every chest is the treasure
 // chest for now (the user, 2026-11-11): a storehouse's rickety one, and a mini boss's or boss's loot,
 // till they get their own painted faces.
-export type Prop3DKind = "chest" | "stash" | "bookcase";
-export const PROPS_3D: Record<string, Prop3DKind> = { chest: "chest", "rickety-chest": "chest", "loot-chest": "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase" };
+// A cards room's deck is drawn on a table (the user, 2026-11-11), in runs of every world version.
+export type Prop3DKind = "chest" | "stash" | "bookcase" | "table";
+export const PROPS_3D: Record<string, Prop3DKind> = { chest: "chest", "rickety-chest": "chest", "loot-chest": "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase", table: "table", "card-deck": "table" };
 export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
 
-// Where one stands: in the middle of its footprint (lib/world/grid.ts footprintCells: an even depth
-// reaches one subcell further back than forward), so its box sits on the floor it takes up.
-export function propSpot(t: { x: number; y: number }, footprint: { w: number; d: number }, subcells: number): { x: number; z: number } {
-  const off = (n: number) => (n % 2 ? 0 : -0.5 / subcells);
-  return { x: t.x + off(footprint.w), z: t.y + off(footprint.d) };
-}

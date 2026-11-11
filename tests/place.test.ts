@@ -321,3 +321,64 @@ describe("a guarded storehouse (world version 11)", () => {
     expect(at(10).p.report.problems.map((q) => q.what)).toEqual([`no way to ${id}:loot`]);
   }, 60_000);
 });
+
+describe("tables (world version 12)", () => {
+  // (The user, 2026-11-11: a rickety table, as furniture, now and then; 70% with a candle on. The deck of
+  // cards lies on a table of its own: the cards room's feature, drawn as a table.)
+  const runs = Array.from({ length: 12 }, (_, i) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(i * 7919 + 5), 0, false, false));
+  const at = (run: DungeonRun, v: number) => {
+    const walk = { ...run.walk!, v };
+    return { walk, ...placeWalk(walk, run.map, dungeonOf(run), (k) => walkRoom(run, k)) };
+  };
+  it("version 11 has none", () => {
+    for (const run of runs.slice(0, 3)) expect(at(run, 11).placed.filter((i) => i.def === "table")).toEqual([]);
+  });
+  it("some rooms have one, never the entrance, the boss's or a kind not listed; mostly with a candle; nothing kept is blocked", async () => {
+    const { TABLE_ROOMS, TABLE_CHANCE, TABLE_CANDLE } = await import("../lib/world/place");
+    const { TABLE_TOP } = await import("../lib/world/objects");
+    const bad: string[] = [];
+    let rooms = 0, tables = 0, lit = 0;
+    for (const [n, run] of runs.entries()) {
+      const { walk, placed, report, occupancy: o } = at(run, 12), layout = walk.layout, plan = layoutFloorplan(layout);
+      if (report.problems.length) bad.push(`${n}: ${report.problems.map((q) => q.what).join("; ")}`);
+      const ts = placed.filter((i) => i.def === "table");
+      for (const id of Object.keys(layout.rooms)) {
+        const kind = walkRoom(run, id)?.kind ?? "";
+        if (id !== layout.start && id !== layout.boss && TABLE_ROOMS.has(kind)) rooms++;
+        const mine = ts.filter((t) => t.room === id);
+        if (mine.length > 1) bad.push(`${n} ${id}: ${mine.length} tables`);
+        if (mine.length && (id === layout.start || id === layout.boss || !TABLE_ROOMS.has(kind))) bad.push(`${n} ${id}: a table in a ${kind}`);
+        // Every door still reaches the others, and every panel round a thing you use is reachable or it's beside one.
+        const reach = reachableIn(o, plan.rooms[id], id);
+        for (const d of plan.doors.filter((q) => q.room === id)) for (const s of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+          const p = { x: d.x + s[0], y: d.y + s[1] };
+          if (plan.rooms[id].some((r) => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h) && !navBlocked(o, p) && !reach.has(panelKey(p))) bad.push(`${n} ${id}: door ${d.x},${d.y} cut off`);
+        }
+      }
+      tables += ts.length;
+      lit += ts.filter((t) => t.holds === "candle").length;
+      expect(placedProblem(placed, 12)).toBeNull();
+      const placements = placementsFrom(placed, walk);
+      for (const t of ts) {
+        const c = placements.candles.find((q) => q.id === `${t.id}:candle`);
+        if (!!c !== (t.holds === "candle")) bad.push(`${n} ${t.id}: candle ${!!c}, holds ${t.holds}`);
+        if (c && (c.high !== TABLE_TOP || c.lit)) bad.push(`${n} ${t.id}: its candle ${JSON.stringify(c)}`);
+        const thing = thingsOf(layout, placements, [t.room], (k) => walkRoom(run, k), [], undefined, 0).find((q) => q.key === t.id);
+        if (!thing?.solid || !thing.inert) bad.push(`${n} ${t.id}: as a thing ${JSON.stringify(thing)}`);
+      }
+    }
+    expect(bad).toEqual([]);
+    expect(tables / rooms).toBeGreaterThan(TABLE_CHANCE / 2);
+    expect(tables / rooms).toBeLessThan(TABLE_CHANCE * 1.6);
+    expect(lit / tables).toBeGreaterThan(TABLE_CANDLE - 0.3);
+    expect(lit / tables).toBeLessThan(Math.min(1, TABLE_CANDLE + 0.3) + 1e-9);
+  }, 60_000);
+  it("is refused in a run of an older version, and nothing but a table holds a candle", () => {
+    const t: Instance = { id: "table:r", def: "table", room: "r", sx: 3, sy: 3, size: { w: 3, d: 2 } };
+    expect(placedProblem([t], 11)).toMatch(/table in a world version 11 run/);
+    expect(placedProblem([t], 12)).toBeNull();
+    expect(placedProblem([{ ...t, holds: "candle" }], 12)).toBeNull();
+    expect(placedProblem([{ ...t, def: "chest", holds: "candle" }], 12)).toMatch(/unknown thing on it/);
+    expect(placedProblem([{ ...t, holds: "lamp" as never }], 12)).toMatch(/unknown thing on it/);
+  });
+});

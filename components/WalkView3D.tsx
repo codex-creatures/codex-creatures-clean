@@ -22,11 +22,12 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { Pt } from "@/lib/dungeon/floorplan";
 import * as THREE from "three";
 import { roomAt } from "@/lib/dungeon/walk";
-import { torchReach, rubbleOf, showsRubble, TORCH_RADIUS, SCONCE_RADIUS, CANDLE_RADIUS, type Rubble } from "@/lib/dungeon/torch";
+import { torchReach, rubbleOf, showsRubble, fireInSight, TORCH_RADIUS, SCONCE_RADIUS, CANDLE_RADIUS, type Rubble } from "@/lib/dungeon/torch";
 import { CAMPFIRE_LIGHT } from "@/lib/dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "@/lib/dungeon/foes";
 import { FACINGS, facingOf, walkFrame } from "@/lib/dungeon/tileArt";
-import type { Room } from "@/lib/dungeon/run";
+import { deckRarity, type Room } from "@/lib/dungeon/run";
+import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isPerson, locate, personOf, PERSON_LIGHT } from "@/lib/dungeon/people";
 import type { LocatorKey } from "@/lib/items/materials";
 import type { Layout, Progress } from "@/lib/dungeon/layout";
@@ -41,8 +42,7 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
-import { prop3dOf, propSpot } from "@/lib/render3d/props3d";
-import { SUBCELLS } from "@/lib/world/grid";
+import { prop3dOf } from "@/lib/render3d/props3d";
 import { Prop3D, PROP_LEAN } from "@/components/Props3D";
 import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
@@ -376,11 +376,14 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
       out.push(<Stroller key={t.key} find={() => person() ?? { ...t, facing: Math.PI, path: [] }} art={walking} w={w} stretch={stretch} shade={shade} />);
       continue;
     }
-    // A chest, a stash's sack or a bookcase: built in 3D, standing on its footprint (Props3D).
+    // A chest, a stash's sack, a bookcase or a table: built in 3D, standing on its footprint (Props3D): where
+    // the thing stands is already its footprint's middle (placements.ts spotOf). A cards room's table has
+    // the deck on it till it's turned over, glowing the colour of its rarest card while it's in your sight.
     const kind = prop3dOf(t.def);
     if (kind) {
-      const at = propSpot(t, d.footprint, SUBCELLS);
-      out.push(<group key={t.key} position={[at.x, 0, at.z]}><Prop3D kind={kind} open={t.open} colour={shade?.(t.x, t.y)} /></group>);
+      const deck = t.def === "card-deck" && !t.open, rarest = deck ? deckRarity(room(t.room)?.deck) : undefined;
+      const glow = rarest && fireInSight(live, t, sim.me) ? RARITY_COLORS[rarest].text : undefined;
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade?.(t.x, t.y)} deck={deck} glow={glow} /></group>);
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }
@@ -412,12 +415,14 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
   for (const c of sim.candles) {
     if (!seen(c.x, c.y)) continue;
     // The kit's candles, the 2D view's size against the walls' art (CANDLE_ART 0.85), a flame on each wick when lit.
+    // (One on a table, world version 12, stands on its top: `high` up, a little in front of its middle.)
     const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, on = glows(c.lit, c.x, c.y);
+    const up = c.high ?? 0, cy = up ? c.y + 0.05 : c.y;
     out.push(
-      <group key={c.id}>
-        <Upright src={KIT_LIGHTS.candles} x={c.x} y={c.y} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
+      <group key={c.id} position={[0, up, 0]}>
+        <Upright src={KIT_LIGHTS.candles} x={c.x} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
         {on && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
-          <mesh key={i} raycast={() => null} position={[c.x - w / 2 + wx * k, h - wy * k * stretch + 0.04, c.y + 0.06]} scale={[0.05, 0.09, 1]}>
+          <mesh key={i} raycast={() => null} position={[c.x - w / 2 + wx * k, h - wy * k * stretch + 0.04, cy + 0.06]} scale={[0.05, 0.09, 1]}>
             <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
           </mesh>
         ))}

@@ -192,6 +192,9 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       const at = guards ? guardedSpot(layout, placed, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
       out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
     }
+    // (World version 12) A table, as furniture: in the way, but nothing to use (inert: a tap by it walks).
+    const table = placed.spot(`table:${id}`);
+    if (table) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "table", open: false, inert: true }));
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
     // Till they're beaten, its guards are round them: trying one sets them on you, as a guarded chest does.
     r.cages?.forEach((cage, i) => {

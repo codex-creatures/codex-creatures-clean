@@ -291,7 +291,13 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   stone ring of glowing water (PixelLab, a very faint pulsing glow), tapped for the room's
   window. **The card witch** walks about her room (PixelLab, a 4-way walk), stopping to
   face you as you come near; tap her for her game. The merchant, the librarian and a deck
-  of cards stand in their rooms, tapped for the room's window. (From world version 9 the
+  of cards stand in their rooms, tapped for the room's window. **The deck of cards** lies on a
+  rickety table (the user, 2026-11-11), glowing the colour of its rarest card: its `DECK_CARDS` 5
+  cards are rolled with the room (`Room.deck`, `rollDeck`: the same odds as before, only earlier; a
+  room from before has none, no glow, and rolls them as you turn them over). Turned over, the cards
+  show smaller than before (60%, so you see the room round them) and a tap off them closes the window
+  (they're already yours). From world version 12 other rooms have a table now and then, most with a
+  candle on (lit as a floor candle, by walking near): furniture, in the way, nothing to use. (From world version 9 the
   witches, merchant and librarian wander the dungeon instead: §8.) Walking into a room ticks the
   witch's illness, and walking out mid-game leaves with your winnings, as down a tunnel.
   **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).

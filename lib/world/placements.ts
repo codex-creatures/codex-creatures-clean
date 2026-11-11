@@ -18,7 +18,7 @@ import type { Foe } from "../dungeon/foes";
 import type { WalkRun } from "../dungeon/walkRun";
 import type { Pt } from "../dungeon/floorplan";
 import { anchorPoint, footprintCells, SUBCELLS } from "./grid";
-import type { Instance } from "./objects";
+import { TABLE_TOP, type Instance } from "./objects";
 
 export type Placements = {
   sconces: Sconce[];
@@ -67,6 +67,9 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
       candles.push({ id: i.id, room: i.room, ...p, lit: i.start === "lit" || lit.has(i.id) });
     } else if (i.def === "floor-candle") {
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
+    } else if (i.def === "table" && i.holds === "candle") {
+      // (v12) A candle on a table: a candle like a floor one (walk near and it lights), up on the table.
+      candles.push({ id: `${i.id}:candle`, room: i.room, ...p, lit: lit.has(`${i.id}:candle`), high: TABLE_TOP });
     } else if (i.def === "witch") {
       witches.push({ room: i.room, index: 0, ...p, facing: i.facing ?? 0, walks: true, path: [], wait: 1 });
     } else if (i.def === "foe" && i.foe) {

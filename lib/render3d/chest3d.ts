@@ -37,6 +37,19 @@ export function chestArt() {
   return { width: F.front.w / ART_PER_U, depth: F.top.h / flat, lid: F.front.lid / up, body: (F.front.h - F.front.lid) / up };
 }
 
+// How far the lid reaches behind the chest's back, open at `angle` (its far top corner, turned past
+// upright): about 0.5 u, further back than the floor behind the chest's own panel starts.
+export function lidReachBack(angle = OPEN_ANGLE): number {
+  const a = chestArt();
+  return Math.max(0, a.lid * Math.sin(angle) - a.depth * Math.cos(angle), a.lid * Math.sin(angle), -a.depth * Math.cos(angle));
+}
+// So you, standing on the panel behind an open chest, are drawn behind its lid, not over its top
+// edge (the user, 2026-11-11: you were "on top of the lid"): the chest is drawn this much nearer the
+// camera (u along the view) than it stands. Only its depth: it's drawn where it was. Enough for the
+// lid's reach past you, there (tests/chest3d.test.ts), and far short of a panel, so you in front of
+// it or beside it still are.
+export const CHEST_NUDGE = 0.35;
+
 export function chestParts(width = CHEST_W): Chest {
   const W = width, D = W * DEPTH_OF_W, H = W * HEIGHT_OF_W, hb = H * BODY_OF_H, hl = H - hb;
   const b = BAND, bandW = W * 0.07, bandX = W * 0.3, wall = W * 0.06;

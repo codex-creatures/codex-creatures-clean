@@ -23,7 +23,7 @@ import { placementsFrom } from "../lib/world/placements";
 // where floor candles go, 6's before v7 retuned the candles for smaller rooms, 7's before v8 made
 // the wall candles wall torches, 8's before v9 brought people who wander (decision 39), and 9's
 // before v10 kept a library's bookcases clear of its doorways, and 10's before v11 made a guarded
-// storehouse's guard keep its own chest (no second one in the middle).
+// storehouse's guard keep its own chest (no second one in the middle), and 11's before v12 brought tables (some with a candle on, the deck of cards on one).
 
 const GOLDEN = path.join(__dirname, "golden", "walk");
 // (Each from its saved run, tests/pinnedRuns.ts, so rolling layouts differently can't move it.)
@@ -58,7 +58,7 @@ const lightsOf = (run: DungeonRun, placed: ReturnType<typeof placeWalk>["placed"
   ];
 };
 
-for (const v of [4, 5, 6, 7, 8, 9, 10]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
+for (const v of [4, 5, 6, 7, 8, 9, 10, 11]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
   // (The Cyclops's runs take seconds each: test:all runs them.)
   for (const [d, s] of CASES) (d === 0 ? it : slowIt)(`dungeon ${d} seed ${s}`, () => {
     const run = made(d, s, v);

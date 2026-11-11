@@ -108,7 +108,8 @@ too) unless said.
 | chest (and a boss's loot chest) | 3 × 2 | solid (loot: walk-over, as now) | 1 in front | 0.8 | 1.75 × 1.75 | the user's own example; fits its panel |
 | sack (stash, a fight's loot sack) | 2 × 2 | solid (loot: walk-over) | 0 | 0.6 | 1.0 × 1.04 | |
 | rickety chest (storehouse stores) | 3 × 2 | solid | 1 in front | 0.8 | 1.75 × 1.66 | |
-| deck of cards (on its table) | 3 × 2 | solid | 1 in front | 0.8 | 1.75 × 1.85 | |
+| deck of cards (on its table) | 3 × 2 | solid | 1 in front | 0.8 | 1.75 × 1.85 | the 3D view draws it on a table (rendering.md §4.8) |
+| table (world version 12) | 3 × 2 | solid | 1 all round | 0.67 | 0.79 × 0.67 (3D) | furniture, nothing to use (`inert`); `holds: "candle"`: a candle on it (`table:<room>:candle`), lit as a floor one |
 | healing pool | 3 × 3 | solid | 1 all round | 0.3 | 2.5 × 1.88 | one panel, as today (the user); its picture stays wider than it |
 | cage | 3 × 3 | solid | 0 | 1.2 | 1.38 × 1.38 | a whole panel, as today |
 | campfire | 2 × 2 | solid | 1 all round, kept clear of candles too (§5.6) | 0.6 | 1.5 × 1.49 | fits its panel |

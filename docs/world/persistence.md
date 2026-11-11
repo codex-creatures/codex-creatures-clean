@@ -131,7 +131,7 @@ Moved here word for word from world-spec.md on 2026-11-09 (the original is in [a
 Distilled on 2026-11-09 from world-spec §8 (kept word for word in
 [archive/2026-11-09/world-spec.md](../archive/2026-11-09/world-spec.md), §8). A walkable run's
 version is `walk.v`; the newest this client understands is `WALK_V` (lib/world/version.ts, now
-**11**), and new runs are placed at `PLACED_V` (lib/world/place.ts, 11). **v3 onward, each version
+**12**), and new runs are placed at `PLACED_V` (lib/world/place.ts, 12). **v3 onward, each version
 is a new generator for new runs only: nothing migrates to it, so a run's rooms never change.** Only
 v0 → v1 → v2 are migrations.
 
@@ -149,8 +149,9 @@ v0 → v1 → v2 are migrations.
 | 9 | decision 39 (the user, 2026-11-10) | people who wander (`walk.people`, `walk.tracking`; the Cyclops's witches, merchant and librarian are rooms `person~…` with no place in the layout); a library's broken bookcases (`<library>~b<i>`: `bookcase`) and its `lectern`; a `sack` beside half the campfires. The Encampment's runs are placed as at v8 |
 | 10 | the user's play-test (2026-11-11) | a library's broken bookcases kept clear of its doorways (`BOOKCASE_DOOR_GAP`); nothing else differs |
 | 11 | the user (2026-11-11) | a guarded storehouse's guard keeps the storehouse's own chest (`guardedSpot`): no second chest spot in the room's middle, which could stand on the first with no way kept to it. Made with the Cyclops's 60-room, 15-to-the-lair layouts (`WALK_LABYRINTH`; versions up to 10 were made at 30 rooms, `WALK_LABYRINTH_30`, which their tests roll) |
+| 12 | the user (2026-11-11) | tables (`table:<room>`, refused below v12), now and then, most with a candle on (`holds: "candle"`; its candle `table:<room>:candle`) |
 
-**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v10 (tests/placeV4Pinned.test.ts,
+**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v11 (tests/placeV4Pinned.test.ts,
 saved runs in tests/fixtures/pins/), each fixture's `tests/golden/walk/<fixture>.placed.json`, and the
 phase-0/1 goldens. **Before changing placement rules, pin the current version; new rules mean a new
 world version.**

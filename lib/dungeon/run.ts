@@ -872,6 +872,7 @@ export type Room = {
   quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
   witch?: WitchGame;   // the card witch's game (lib/dungeon/witch.ts)
+  deck?: string[];     // a deck of cards: its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
   done: boolean;
 };
 
@@ -1032,9 +1033,20 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       }
       return { kind, offers, bought: [], done: false };
     }
+    case "cards":
+      return { kind, deck: rollDeck(), done: false };
     default:
       return { kind, done: false };
   }
+}
+
+// A deck of cards: DECK_CARDS creature cards, each rolled like a scan (rarity at the usual odds, then
+// one of its creatures), as turning the deck over always rolled them.
+export const rollDeck = (): string[] => Array.from({ length: DECK_CARDS }, () => pickCreatureId(pickRarity("", "random")));
+// The rarest card in a deck (its glow on the table: the user, 2026-11-11).
+export function deckRarity(deck: string[] | undefined): Rarity | undefined {
+  const ranks = (deck ?? []).map((id) => RARITIES.indexOf(CREATURE_BY_ID[id]?.rarity)).filter((n) => n >= 0);
+  return ranks.length ? RARITIES[Math.max(...ranks)] : undefined;
 }
 
 // ── A run ────────────────────────────────────────────────────────────

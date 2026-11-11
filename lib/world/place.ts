@@ -74,7 +74,13 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 11;         // the world version a new run is placed at (a guarded storehouse's guard keeps its own chest; version.ts)
+export const PLACED_V = 12;         // the world version a new run is placed at (tables, some with a candle on; version.ts)
+// (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
+// entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
+export const TABLE_CHANCE = 0.25;
+export const TABLE_CANDLE = 0.7;
+export const TABLE_ROOMS = new Set(["easy", "hard", "miniboss", "chest", "stash", "pool", "campfire", "treasure", "merchant", "librarian", "library", "witch", "storehouse", "encampment"]);
+const TABLE_PASS = 61;              // (v12) the tables' own random numbers, so nothing else can move
 export const BOOKCASE_DOOR_GAP = 2;  // (v10) panels: no broken bookcase this close to the panel inside a door (either way)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
@@ -608,6 +614,28 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       done = true;
     }
     if (!done) report.omitted.push({ id: cid, room: id, what: "no valid spot" });
+  }
+
+  // 6b. (v12) Tables: now and then a room has one, as furniture, mostly with a candle on it (the user,
+  // 2026-11-11). Off the doors, the kept paths and spots, and the panels in front of a wall torch; every
+  // valid panel tried, in a random order, before it's left out. (A cards room's deck stands on its own table.)
+  const table = objectDef("table");
+  for (const id of v >= 12 ? parents : []) {
+    const r = room(id), rng = passRng(walk.seed, id, TABLE_PASS);
+    if (id === layout.start || id === layout.boss || !r || !TABLE_ROOMS.has(r.kind) || rng() >= TABLE_CHANCE) continue;
+    const doors = fp.doors.filter((d) => d.room === id);
+    const torches = placed.filter((i) => i.room === id && (i.def === "sconce" || i.def === "sconce-side")).map((i) => ({ x: panelOfSubcell(i.sx), y: panelOfSubcell(i.sy) }));
+    const list = roomPanels(fp.rooms[id]).filter((p) => !doors.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANDLE_CLEAR)
+      && !torches.some((q) => q.x === p.x && q.y === p.y));
+    const tid = `table:${id}`;
+    let at: Sub | null = null;
+    while (list.length && !at) {
+      const p = list.splice(Math.floor(rng() * list.length), 1)[0];
+      at = spotsIn(fp, table, p).find((a) => tryAt(table, a, tid, id)) ?? null;
+    }
+    if (!at) { report.omitted.push({ id: tid, room: id, what: "no valid spot for a table" }); continue; }
+    put(table, at, tid);
+    placed.push({ id: tid, def: "table", room: id, ...at, size: { ...table.footprint }, ...(rng() < TABLE_CANDLE ? { holds: "candle" as const } : {}) });
   }
 
   // 7. Spawns: every fight room's foes, and the card witch.

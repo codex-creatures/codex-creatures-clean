@@ -10,8 +10,9 @@
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U } from "@/lib/render3d/chest3d";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, type Prop3DKind } from "@/lib/render3d/props3d";
+import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U, CHEST_NUDGE } from "@/lib/render3d/chest3d";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_GLOW, type Prop3DKind } from "@/lib/render3d/props3d";
+import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
 const LID_EASE = 0.15;           // of the way the lid swings to where it's going, each frame
@@ -22,16 +23,20 @@ const DARK = "#141010";          // the undersides and the chest's bottom
 // do. Worked out from where the point is in the world, so a thing turned round still leans across
 // the screen. Whoever draws them sets these each frame (the lean, and the camera's x).
 export const PROP_LEAN = { uLean: { value: 0 }, uCx: { value: 0 } };
-export function leaned<M extends THREE.Material>(m: M): M {
+// `nudge` (u): drawn that much nearer the camera in depth only, where it shows unchanged (the chest: CHEST_NUDGE).
+export function leaned<M extends THREE.Material>(m: M, nudge = 0): M {
+  const near = nudge ? `vec4 nearer = projectionMatrix * (mvPosition + vec4(0.0, 0.0, ${nudge.toFixed(3)}, 0.0));\ngl_Position.z = nearer.z / nearer.w * gl_Position.w;\n` : "";
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, PROP_LEAN);
     sh.vertexShader = "uniform float uLean;\nuniform float uCx;\n" + sh.vertexShader.replace("#include <project_vertex>",
       "vec4 mvPosition = modelMatrix * vec4(transformed, 1.0);\nmvPosition.x += uLean * (mvPosition.x - uCx) * mvPosition.y;\n" +
-      "mvPosition = viewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;");
+      "mvPosition = viewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;\n" + near);
   };
+  m.customProgramCacheKey = () => `leaned${nudge}`;
   return m;
 }
-const HULL = leaned(new THREE.MeshBasicMaterial({ color: "#000", side: THREE.BackSide }));
+const hull = (nudge = 0) => leaned(new THREE.MeshBasicMaterial({ color: "#000", side: THREE.BackSide }), nudge);
+const HULL = hull(), CHEST_HULL = hull(CHEST_NUDGE);
 
 export function sharp(t: THREE.Texture) {
   t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
@@ -68,21 +73,21 @@ function paintedBox(w: number, h: number, d: number, parts: Part[]): THREE.BoxGe
 }
 
 // A shape, and its outline: a black copy an art pixel bigger all round, drawn inside out behind it.
-export function Solid({ geometry, material, at, size, outline }: { geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[]; at: [number, number, number]; size: [number, number, number]; outline: boolean }) {
+export function Solid({ geometry, material, at, size, outline, hull = HULL }: { geometry: THREE.BufferGeometry; material: THREE.Material | THREE.Material[]; at: [number, number, number]; size: [number, number, number]; outline: boolean; hull?: THREE.Material }) {
   return (
     <group position={at}>
       <mesh geometry={geometry} material={material} raycast={() => null} />
       {outline && (
-        <mesh geometry={geometry} material={HULL} raycast={() => null} scale={size.map((s) => (s + 2 * OUTLINE_U) / s) as [number, number, number]} />
+        <mesh geometry={geometry} material={hull} raycast={() => null} scale={size.map((s) => (s + 2 * OUTLINE_U) / s) as [number, number, number]} />
       )}
     </group>
   );
 }
 
 // The faces' material: lit (the lab), or plain and tinted by the light where it stands (the game).
-type Make = (o: { map?: THREE.Texture; color?: string; flatShading?: boolean; side?: THREE.Side }) => THREE.Material;
-const makeLit: Make = (o) => leaned(new THREE.MeshLambertMaterial(o));
-const makeFlat: Make = (o) => leaned(new THREE.MeshBasicMaterial({ map: o.map, color: o.color, side: o.side })); // (unlit: no shading to flatten)
+type Make = (o: { map?: THREE.Texture; color?: string; flatShading?: boolean; side?: THREE.Side }, nudge?: number) => THREE.Material;
+const makeLit: Make = (o, nudge) => leaned(new THREE.MeshLambertMaterial(o), nudge);
+const makeFlat: Make = (o, nudge) => leaned(new THREE.MeshBasicMaterial({ map: o.map, color: o.color, side: o.side }), nudge); // (unlit: no shading to flatten)
 const lit = (src: string, edges: boolean) => (edges ? src.replace(".png", "-lit.png") : src);
 
 function tint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, colour?: THREE.Color) {
@@ -95,7 +100,9 @@ function bases(mats: THREE.Material[]) {
   return new Map(mats.flatMap((m) => (m instanceof THREE.MeshBasicMaterial ? [[m, m.color.clone()] as const] : [])));
 }
 
-export function Prop3D({ kind, open = false, colour, outline = true, edges = true }: { kind: Prop3DKind; open?: boolean; colour?: THREE.Color; outline?: boolean; edges?: boolean }) {
+// `deck`: a table with the deck of cards on it; `glow`: the colour of the rarest card in it (a CSS colour).
+export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow }: { kind: Prop3DKind; open?: boolean; colour?: THREE.Color; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string }) {
+  if (kind === "table") return <Table colour={colour} outline={outline} deck={deck} glow={glow} />;
   if (kind === "bookcase") return <Bookcase colour={colour} outline={outline} edges={edges} />;
   if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} />;
   return <Chest open={open} colour={colour} outline={outline} edges={edges} />;
@@ -119,7 +126,7 @@ function Chest({ open, colour, outline, edges }: { open: boolean; colour?: THREE
   }, [art]);
   const flat = !!colour;
   const mats = useMemo(() => {
-    const make = flat ? makeFlat : makeLit, pic = (src: string) => make({ map: loaded(src) });
+    const make: Make = (o) => (flat ? makeFlat : makeLit)(o, CHEST_NUDGE), pic = (src: string) => make({ map: loaded(src) });
     const front = pic(lit(ART_FACES.front.src, edges)), side = pic(lit(ART_FACES.side.src, edges)), top = pic(lit(ART_FACES.top.src, edges));
     const under = pic(ART_FACES.top.src.replace("top.png", "under.png")), inside = pic(ART_FACES.inside.src), dark = make({ color: DARK });
     const all = [front, side, top, under, inside, dark];
@@ -135,9 +142,9 @@ function Chest({ open, colour, outline, edges }: { open: boolean; colour?: THREE
   });
   return (
     <>
-      <Solid geometry={geo.body} material={mats.body} at={[0, art.body / 2, 0]} size={[art.width, art.body, art.depth]} outline={outline} />
+      <Solid geometry={geo.body} material={mats.body} at={[0, art.body / 2, 0]} size={[art.width, art.body, art.depth]} outline={outline} hull={CHEST_HULL} />
       <group ref={lid} position={[0, art.body, -art.depth / 2]} rotation={[open ? -OPEN_ANGLE : 0, 0, 0]}>
-        <Solid geometry={geo.lid} material={mats.lid} at={[0, art.lid / 2, art.depth / 2]} size={[art.width, art.lid, art.depth]} outline={outline} />
+        <Solid geometry={geo.lid} material={mats.lid} at={[0, art.lid / 2, art.depth / 2]} size={[art.width, art.lid, art.depth]} outline={outline} hull={CHEST_HULL} />
       </group>
     </>
   );
@@ -156,6 +163,71 @@ function Bookcase({ colour, outline, edges }: { colour?: THREE.Color; outline: b
   }, [flat, edges]);
   tint(mats.all, mats.base, colour);
   return <Solid geometry={geo} material={mats.faces} at={[0, b.height / 2, 0]} size={[b.width, b.height, b.depth]} outline={outline} />;
+}
+
+// The table: a slab on four legs, each a painted box cut from the front picture (props3d.ts TABLE_FACES),
+// the deck of cards lying face down on top, and the glow of its rarest card round it.
+function Table({ colour, outline, deck, glow }: { colour?: THREE.Color; outline: boolean; deck: boolean; glow?: string }) {
+  const t = useMemo(() => tableArt(), []);
+  const geo = useMemo(() => {
+    const F = TABLE_FACES.front, [e0, e1] = F.edge, [a0, a1] = F.across, sideW = Math.round(t.depth * ART_PER_U);
+    const front: Part = { w: F.w, h: F.h, x0: a0, x1: a1, y0: e0, y1: e1 };
+    const side: Part = { w: F.w, h: F.h, x0: a0, x1: a0 + sideW, y0: e0, y1: e1 };
+    const top: Part = { w: TABLE_FACES.top.w, h: TABLE_FACES.top.h, x0: 0, x1: TABLE_FACES.top.w, y0: 0, y1: TABLE_FACES.top.h };
+    const leg: Part = { w: F.w, h: F.h, x0: F.leg.x[0], x1: F.leg.x[1], y0: F.leg.y[0], y1: F.leg.y[1] };
+    const deckTop: Part = { w: TABLE_FACES.deck.w, h: TABLE_FACES.deck.h, x0: 0, x1: TABLE_FACES.deck.w, y0: 0, y1: TABLE_FACES.deck.h };
+    return {
+      slab: paintedBox(t.width, t.slab, t.depth, [side, side, top, top, front, front]),
+      leg: paintedBox(t.leg, t.legs, t.leg, [leg, leg, leg, leg, leg, leg]),
+      deck: paintedBox(t.deck.width, DECK_TALL, t.deck.depth, [deckTop, deckTop, deckTop, deckTop, deckTop, deckTop]),
+    };
+  }, [t]);
+  const flat = !!colour;
+  const mats = useMemo(() => {
+    const make = flat ? makeFlat : makeLit, pic = (src: string) => make({ map: loaded(src) });
+    const front = pic(TABLE_FACES.front.src), top = pic(TABLE_FACES.top.src), dark = make({ color: DARK }), cards = pic(TABLE_FACES.deck.src);
+    const all = [front, top, dark, cards];
+    return { slab: [front, front, top, dark, front, front], leg: [front, front, dark, dark, front, front], deck: [cards, cards, cards, dark, cards, cards], all, base: bases(all) };
+  }, [flat]);
+  tint(mats.all, mats.base, colour);
+  const lx = t.width / 2 - LEG_IN - t.leg / 2, lz = t.depth / 2 - LEG_IN - t.leg / 2;
+  return (
+    <>
+      {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => (
+        <Solid key={`${sx}${sz}`} geometry={geo.leg} material={mats.leg} at={[sx * lx, t.legs / 2, sz * lz]} size={[t.leg, t.legs, t.leg]} outline={outline} />
+      )))}
+      <Solid geometry={geo.slab} material={mats.slab} at={[0, t.legs + t.slab / 2, 0]} size={[t.width, t.slab, t.depth]} outline={outline} />
+      {deck && <Solid geometry={geo.deck} material={mats.deck} at={[0, t.top + DECK_TALL / 2, 0]} size={[t.deck.width, DECK_TALL, t.deck.depth]} outline={outline} />}
+      {deck && glow && <Glow colour={glow} radius={CANDLE_RADIUS * DECK_GLOW.share} strength={DECK_GLOW.strength} />}
+      {deck && glow && <Glow colour={glow} radius={t.deck.depth} strength={DECK_GLOW.strength} y={t.top + DECK_TALL + 0.005} />}
+    </>
+  );
+}
+
+// A soft round glow on the floor (added to what's there, so it shows in the dark), as a candle's light
+// pools: full in the middle, fading out to `radius`. Gently pulsing.
+const GLOW_TEX = (() => {
+  let t: THREE.Texture | null = null;
+  return () => {
+    if (t) return t;
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d")!, r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.4, "rgba(255,255,255,0.55)"); r.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+    t = new THREE.CanvasTexture(c);
+    return t;
+  };
+})();
+function Glow({ colour, radius, strength, y = 0.01 }: { colour: string; radius: number; strength: number; y?: number }) {
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  useFrame(() => { if (mat.current) mat.current.opacity = strength * (0.85 + 0.15 * Math.sin(performance.now() / 400)); });
+  return (
+    <mesh raycast={() => null} position={[0, y, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[radius * 2, radius * 2, 1]}>
+      <planeGeometry />
+      <meshBasicMaterial ref={mat} map={GLOW_TEX()} color={colour} transparent opacity={strength} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+  );
 }
 
 // The sack: its outline turned round (flat-shaded, so its few sides show as facets), in burlap laid

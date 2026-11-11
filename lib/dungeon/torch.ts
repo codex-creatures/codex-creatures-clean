@@ -185,7 +185,7 @@ export const CANDLE_NEAR = [2, 5];  // tiles from the room's middle (its chest, 
 export const CANDLE_CLEAR = 3;      // tiles from its doors, at least
 // (no wall: it stands on the floor, or, from world version 5, it's fixed to a wall or pillar and
 // stands at the floor by it). Walk near any unlit one and it lights.
-export type Candle = Sconce;
+export type Candle = Sconce & { high?: number }; // high: u above the floor (world version 12: one on a table)
 // (Where candles go: lib/world/place.ts, and compat/v0Placers.ts for older runs.)
 
 // World version 5's candles (docs/world-spec.md §8 2b-2 stage B; placed by

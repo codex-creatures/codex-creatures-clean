@@ -206,13 +206,18 @@ Distilled on 2026-11-09 from the phase designs in world-spec §8 (kept word for 
 [archive/2026-11-09/world-spec.md](../archive/2026-11-09/world-spec.md), §8). This is what the code
 does now; the archive holds why, the options weighed and the approval gates. Each world version is
 for new runs only: **a run keeps the rules it was made with for good** (see
-[persistence.md](persistence.md#world-versions)). New runs are made at `PLACED_V` 11
+[persistence.md](persistence.md#world-versions)). New runs are made at `PLACED_V` 12
 (lib/world/place.ts). (v9, decision 39: a library's broken bookcases in a row along its top, its
 lectern at its middle, a campfire's stash two tiles east of the fire; the people who wander aren't
 placed: lib/dungeon/people.ts starts them. v10, the user's play-test, 2026-11-11, after one stood in
 front of a tunnel: each bookcase moves to the nearest panel more than `BOOKCASE_DOOR_GAP` 2 panels
 from every door's inside panel, and not touching another bookcase. v11, the user, 2026-11-11: a
-guarded storehouse has no `<room>:loot` spot; its guard keeps the storehouse's chest, `<room>:stores`.)
+guarded storehouse has no `<room>:loot` spot; its guard keeps the storehouse's chest, `<room>:stores`.
+v12, the user, 2026-11-11: pass 6b, tables: in a room of the kinds in `TABLE_ROOMS` (not the entrance
+or the boss's; a cards room's deck has its feature's own table), `TABLE_CHANCE` 25% a room on its own
+stream (pass 61), one table, `table:<room>`, on a random valid panel off the doors (`CANDLE_CLEAR`), the
+kept paths and spots and the panels in front of a wall torch, left out if none is; `TABLE_CANDLE` 70% of
+them hold a candle (`holds: "candle"`). About 4.7 a 21-room Encampment run, two thirds with a candle.)
 
 ### Modules
 

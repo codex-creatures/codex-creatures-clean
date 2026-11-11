@@ -26,7 +26,8 @@
 //    play-test, 2026-11-11: one stood in front of a tunnel): new runs only.
 // 11: a guarded storehouse's guard keeps the storehouse's own chest, with no second chest in
 //    the room's middle that could stand on it (the user, 2026-11-11): new runs only.
-export const WALK_V = 11;
+// 12: tables now and then, some with a candle on (the user, 2026-11-11): new runs only.
+export const WALK_V = 12;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

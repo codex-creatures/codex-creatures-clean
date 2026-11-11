@@ -57,15 +57,16 @@ export default function CardStack({ piles, faded }: { piles: CardPile[]; faded?:
 
 const sortPiles = (piles: CardPile[]) => [...piles].sort((a, b) => RANK.indexOf(a.t.rarity) - RANK.indexOf(b.t.rarity));
 
-// The cards themselves, big, to flick through (rarest first): the stack opened,
-// or straight away when they're turned over (the deck room).
+// The cards themselves, to flick through (rarest first): the stack opened, or straight away when
+// they're turned over (the deck room). Small enough to see the room round them (the user, 2026-11-11:
+// 60% of the size it was), and a tap off them closes it (the cards are already yours).
 export function CardsFan({ piles, title, onClose }: { piles: CardPile[]; title?: string; onClose: () => void }) {
   const sorted = sortPiles(piles);
   const total = sorted.reduce((n, p) => n + p.n, 0);
   return (
-    <CardFan count={sorted.length} label="The cards you got" onClose={onClose}
+    <CardFan count={sorted.length} label="The cards you got" onClose={onClose} closeOutside
       title={title ?? (total === 1 ? "1 card" : `${total} cards`)}
-      size={{ width: "min(300px, 78cqw, 47cqh)", height: "min(420px, 109.2cqw, 65.8cqh)" }}
+      size={{ width: "min(180px, 46.8cqw, 28.2cqh)", height: "min(252px, 65.5cqw, 39.5cqh)" }}
       render={(i) => {
         const p = sorted[i];
         return <CardFace t={p.t} creatureId={p.x.creatureId ?? p.t.id} soulStone={p.x.soulStone} badge={p.n > 1 ? `×${p.n}` : undefined} />;

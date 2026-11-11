@@ -31,9 +31,10 @@ export default function EncounterCards({ creatureIds, races, onClose, onFight }:
 
 // The viewer: count cards, drawn by render(i), in a box of the given size.
 // action: the main button (otherwise "Got it", which just closes).
-export function CardFan({ count: n, title, label, size, render, onClose, action }: {
+// `closeOutside`: a tap off the cards (on the dimmed room round them) closes it too.
+export function CardFan({ count: n, title, label, size, render, onClose, action, closeOutside = false }: {
   count: number; title: string; label: string; size: { width: string; height: string };
-  render: (i: number) => React.ReactNode; onClose: () => void; action?: { label: string; onClick: () => void };
+  render: (i: number) => React.ReactNode; onClose: () => void; action?: { label: string; onClick: () => void }; closeOutside?: boolean;
 }) {
   const [at, setAt] = useState(0);
   const step = (d: number) => setAt((i) => (i + d + n) % n);
@@ -51,6 +52,7 @@ export function CardFan({ count: n, title, label, size, render, onClose, action 
 
   return (
     <div role="dialog" aria-label={label}
+      onClick={closeOutside ? (e) => { if (e.target === e.currentTarget) onClose(); } : undefined}
       onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
       onTouchEnd={(e) => {
         const dx = touchX.current === null ? 0 : e.changedTouches[0].clientX - touchX.current;

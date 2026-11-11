@@ -28,16 +28,17 @@ describe("the 3D props in the dungeon", () => {
     expect(["chest", "rickety-chest", "loot-chest", "sack", "loot-sack", "bookcase"].map(prop3dOf)).toEqual(["chest", "chest", "chest", "stash", "stash", "bookcase"]);
     expect(["pool", "cage"].map(prop3dOf)).toEqual([undefined, undefined]);
   });
-  it("each stands in the middle of its footprint", async () => {
-    const { propSpot } = await import("../lib/render3d/props3d");
+  it("each stands where its thing stands: already its footprint's middle (the 3D view draws it there, unmoved)", async () => {
+    const { placementsFrom } = await import("../lib/world/placements");
     const { objectDef } = await import("../lib/world/objects");
-    const { footprintCells, subcellAt, subcellCentre, SUBCELLS } = await import("../lib/world/grid");
-    for (const def of ["chest", "sack", "bookcase"]) {
-      const at = { x: 4, y: 7 + 1 / 3 }, f = objectDef(def).footprint, s = propSpot(at, f, SUBCELLS);
-      const cells = footprintCells({ sx: subcellAt(at.x), sy: subcellAt(at.y) }, f);
+    const { footprintCells, subcellCentre } = await import("../lib/world/grid");
+    for (const def of ["chest", "sack", "bookcase", "table"]) {
+      const f = objectDef(def).footprint, i = { id: "r:x", def, room: "r", sx: 12, sy: 22, size: f };
+      const s = placementsFrom([i], { layout: { rooms: {} } as never, v: 12 }).spot("r:x")!;
+      const cells = footprintCells(i, f);
       const mid = (k: "sx" | "sy") => cells.reduce((n, c) => n + subcellCentre(c[k]), 0) / cells.length;
       expect(s.x).toBeCloseTo(mid("sx"), 6);
-      expect(s.z).toBeCloseTo(mid("sy"), 6);
+      expect(s.y).toBeCloseTo(mid("sy"), 6);
     }
   });
   it("an opened sack is untied: open at the top, no higher than the tie's tuft", async () => {
@@ -46,5 +47,21 @@ describe("the 3D props in the dungeon", () => {
     expect(o[0][0]).toBe(0);
     expect(o[o.length - 1][0]).toBeGreaterThan(SACK_NECK.r);
     expect(Math.max(...o.map(([, y]) => y))).toBeLessThan(SACK_TALL);
+  });
+});
+
+describe("the 3D table (world version 12)", () => {
+  it("stands as high as the object says (a candle on it stands there), inside its footprint, and a cards room's deck is drawn on one", async () => {
+    const { tableArt, prop3dOf } = await import("../lib/render3d/props3d");
+    const { objectDef, TABLE_TOP } = await import("../lib/world/objects");
+    const { SUBCELLS } = await import("../lib/world/grid");
+    const t = tableArt(), f = objectDef("table").footprint;
+    expect(t.top).toBeCloseTo(TABLE_TOP, 2);
+    expect(objectDef("table").height).toBe(TABLE_TOP);
+    expect(t.width).toBeLessThanOrEqual(f.w / SUBCELLS);
+    expect(t.depth).toBeLessThanOrEqual(f.d / SUBCELLS);
+    expect(t.deck.width).toBeLessThan(t.width);
+    expect(t.deck.depth).toBeLessThan(t.depth);
+    expect(["table", "card-deck"].map(prop3dOf)).toEqual(["table", "table"]);
   });
 });

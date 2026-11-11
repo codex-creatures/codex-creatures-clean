@@ -595,3 +595,25 @@ describe("entry fees", () => {
     expect(ENTRY_FEES).toEqual({ 0: 50, 1: 100, 2: 200, 3: 500 });
   });
 });
+
+describe("a deck of cards (the user, 2026-11-11: its glow on the table shows the rarest card)", () => {
+  it("is rolled with its room: DECK_CARDS real creatures", async () => {
+    const { DECK_CARDS } = await import("../lib/dungeon/run");
+    const { CREATURE_BY_ID } = await import("../lib/creatures/creatureData");
+    for (let i = 0; i < 20; i++) {
+      const r = makeRoom("cards");
+      expect(r.deck).toHaveLength(DECK_CARDS);
+      expect(r.deck!.every((id) => !!CREATURE_BY_ID[id])).toBe(true);
+    }
+  });
+  it("its glow is its rarest card's rarity; a room from before (no deck) has none", async () => {
+    const { deckRarity } = await import("../lib/dungeon/run");
+    const { CREATURES_BY_RARITY } = await import("../lib/creatures/creatureData");
+    const one = (r: keyof typeof CREATURES_BY_RARITY) => CREATURES_BY_RARITY[r][0].id;
+    expect(deckRarity([one("common"), one("epic"), one("uncommon")])).toBe("epic");
+    expect(deckRarity([one("common"), one("common")])).toBe("common");
+    expect(deckRarity([one("rare"), one("legendary")])).toBe("legendary");
+    expect(deckRarity(undefined)).toBeUndefined();
+    expect(deckRarity([])).toBeUndefined();
+  });
+});

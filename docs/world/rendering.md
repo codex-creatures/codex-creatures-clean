@@ -245,8 +245,9 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   dungeon"): the treasure chest, a stash's sack, a beaten room's loot sack and the library's
   bookcases are drawn as the lab's 3D drafts (components/Props3D.tsx, shared with /lab/chest), in
   place of their flat pictures (lib/render3d/props3d.ts `PROPS_3D`): PixelLab faces, the outline, the
-  lit edges, and the rock's lean about the camera. Each stands in the middle of its footprint
-  (`propSpot`), facing south, unlit and tinted by the light where it stands as the sprites are. A chest
+  lit edges, and the rock's lean about the camera. Each stands in the middle of its footprint (where
+  its thing stands, placements.ts `spotOf`: until 2026-11-11 the view moved it a sixth of a unit
+  further back, `propSpot`, now gone), facing south, unlit and tinted by the light where it stands as the sprites are. A chest
   opened swings its lid back and shows the gold inside; a sack opened is untied (no rope, its mouth
   open: `sackOpenOutline`). Drawing only: footprints, sight, taps and saves are unchanged. ⚠️ They're
   the lab's sizes, not the footprints': the chest (1.25 × 0.79 u) is wider and deeper than its 1 ×
@@ -254,6 +255,20 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   broken one the flat picture showed. Every chest is the treasure chest for now (the user, 2026-11-11):
   a storehouse's rickety one and a boss's or mini boss's loot too (`rickety-chest`, `loot-chest`),
   till they get their own faces.
+  An open chest's lid reaches about 0.29 u back past where you stand on the panel behind it, so you
+  were drawn over its top edge (the user, 2026-11-11: "you are seen on top of the lid"). The chest is
+  drawn `CHEST_NUDGE` (0.35 u along the view) nearer the camera than it stands, in depth only
+  (`leaned(m, nudge)`: it shows where it was), so the lid is in front of you there; in front of it or
+  beside it you're far further off than that (tests/chest3d.test.ts).
+- **Tables** (world version 12, the user, 2026-11-11): a rickety table, a slab on four legs (Props3D
+  `Table`, props3d.ts `tableArt`: 0.79 × 0.48 u, its top 0.67 u up, `TABLE_TOP`), PixelLab's faces
+  (public/sprites/props/table3d: the front, whose edge band is the slab's front and sides and a front
+  leg's column every leg; the top). A candle on one stands on its top (`Candle.high`). A cards room's
+  deck is drawn on a table in runs of every version (`card-deck` → `table`), lying face down till it's
+  turned over; while it's in your sight it glows the colour of its rarest card (`deckRarity`,
+  `RARITY_COLORS`): a soft disc on the floor out to half a candle's reach and on the deck, half as
+  strong (`DECK_GLOW`), added to what's there so it shows in the dark. Drawing only: the glow lights
+  nothing in the sim. The 2D view shows a table as its front picture (and a table's candle on the floor).
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
   couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,
