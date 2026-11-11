@@ -74,18 +74,24 @@ export const ROCK_MARGIN = 24;
 
 // Tunnels up are one-way (layout.ts stepRule: an up tunnel's top door is entered only from inside
 // it), but one you've come up stays open behind you until its lower room closes. So it isn't seen as
-// a way back, its top door is shown shut (rock, with rubble) except from inside the tunnel or the room
-// below it (the user, 2026-11-10: it showed open, though you couldn't go down it). Drawing only:
-// walking, sight and light still go by the floorplan. Each such tunnel, and its top door's open tiles.
+// a way back, it's shown fallen in (rock, as a closed tunnel is: shutPlan) except from inside the
+// tunnel or the room below it (the user, 2026-11-10: it showed open, though you couldn't go down it).
+// The whole tunnel, not just its top door: with the door alone shut, the tunnel's open floor south of
+// it stood a full wall face in the room's low south rim (the user, 2026-11-12: "a random wall that
+// doesn't fit"). Drawing only: walking, sight and light still go by the floorplan. Each such tunnel,
+// and its open tiles (doors included; none another tunnel still shown open shares).
 export function oneWayDoors(layout: Layout, fp: Floorplan, me: Pt, here: string | null): { key: string; tiles: Pt[] }[] {
   const out: { key: string; tiles: Pt[] }[] = [];
   const x = Math.round(me.x), y = Math.round(me.y);
-  for (const t of layout.tunnels) {
-    if (!t.up || t.a === here) continue;
+  const shut = layout.tunnels.filter((t) => {
+    if (!t.up || t.a === here) return false;
     const r = t.rect;
-    if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) continue;
-    const tiles: Pt[] = [];
-    for (let q = r.x; q < r.x + r.w; q++) if (walkable(fp, q, r.y)) tiles.push({ x: q, y: r.y });
+    return !(x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+  });
+  const keep = new Set<number>();
+  for (const t of layout.tunnels) if (!shut.includes(t)) for (const q of fp.tunnels[t.key] ?? []) keep.add(q.y * fp.w + q.x);
+  for (const t of shut) {
+    const tiles = (fp.tunnels[t.key] ?? []).filter((q) => walkable(fp, q.x, q.y) && !keep.has(q.y * fp.w + q.x));
     if (tiles.length > 0) out.push({ key: t.key, tiles });
   }
   return out;

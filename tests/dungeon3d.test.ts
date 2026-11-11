@@ -132,8 +132,16 @@ describe("oneWayDoors: a tunnel up shown shut from above (drawing only)", () => 
       const t = L.tunnels.find((q) => q.key === d.key)!;
       expect(t.up).toBe(true);
       expect(t.a).not.toBe(here);
-      for (const q of d.tiles) { expect(q.y).toBe(t.rect.y); expect(live.tiles[q.y * live.w + q.x]).not.toBe(ROCK); }
+      for (const q of d.tiles) expect(live.tiles[q.y * live.w + q.x]).not.toBe(ROCK);
+      // The whole tunnel, its top door included, so it shows as a closed one does.
+      const own = (plan.tunnels[t.key] ?? []).filter((q) => live.tiles[q.y * live.w + q.x] !== ROCK);
+      expect(d.tiles.length).toBe(own.length);
+      expect(d.tiles.some((q) => q.y === t.rect.y)).toBe(true);
     }
+    // Shut, the room's south rim stays low over the top door: no full wall face stood in it.
+    const plugs = new Set(shut.flatMap((d) => d.tiles.map((q) => q.y * live.w + q.x)));
+    const h = rockHeights(live, (i) => live.tiles[i] !== ROCK && !plugs.has(i), WALL_HEIGHT, true);
+    for (const d of shut) for (const q of d.tiles) if (q.y === L.tunnels.find((u) => u.key === d.key)!.rect.y) expect(h[q.y * live.w + q.x]).toBe(SOUTH_LIP);
     // Standing in a tunnel's bottom room, or inside it: that one shows open.
     const t = L.tunnels.find((q) => q.key === shut[0].key)!;
     const inside = { x: t.rect.x, y: t.rect.y + 1 };

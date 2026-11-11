@@ -261,7 +261,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
     // Your torch, held up.
     torch.current?.position.set(sim.me.x + 0.25, TORCH.height, sim.me.y - 0.1); // (held up beside you, not in front of your face)
     // The nearest lit lights you've seen get the pool's real lights.
-    const lit = litLights(sim, live, frame.current, closed);
+    const lit = litLights(sim, live, layout, frame.current, closed);
     pool.current.forEach((pl, i) => {
       if (!pl) return;
       const l = lit[i];
@@ -333,12 +333,15 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
 // explored stays lit round the corner; drawing only, the sim counts their light only while you can
 // see them); and, while in sight, the foes that have seen you (lit up like your torch: the sim's
 // ALARM_LIGHT) and the people carrying a light.
-function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null, closed: Uint8Array): { x: number; y: number; r: number }[] {
+// The tunnels up drawn fallen in from where you are (dungeon3d.ts oneWayDoors): their wall torches go with them.
+const shownShut = (sim: WalkSim, live: WalkSim["live"], layout: Layout) => new Set(oneWayDoors(layout, live, sim.me, roomAt(sim.plan, sim.me)).map((d) => d.key));
+function litLights(sim: WalkSim, live: WalkSim["live"], layout: Layout, F: Frame | null, closed: Uint8Array): { x: number; y: number; r: number }[] {
+  const gone = shownShut(sim, live, layout);
   const at = (l: { x: number; y: number }) => Math.round(l.y) * live.w + Math.round(l.x);
   const kept = (l: { x: number; y: number }) => sim.known[at(l)] === 1 && !closed[at(l)];
   return [
     ...[
-      ...sim.sconces.filter((c) => c.lit && torchThere(sim, c)).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
+      ...sim.sconces.filter((c) => c.lit && torchThere(sim, c) && !gone.has(c.room)).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
       ...sim.candles.filter((c) => c.lit).map((c) => ({ x: c.x, y: c.y, r: CANDLE_RADIUS })),
       ...sim.fires.map((f) => ({ x: f.x, y: f.y, r: f.left > 0 ? CAMPFIRE_LIGHT : CAMPFIRE_LIGHT / 2 })),
     ].filter(kept),
@@ -451,8 +454,9 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
   }
   // (A tunnel up's top door, seen from above, is plain rock: the carved mesh shuts it, dungeon3d.ts
   // oneWayDoors. Its rubble heap looked like a broken placeholder: the user, 2026-11-11.)
+  const gone = shownShut(sim, live, layout);
   for (const c of sconces ? sim.sconces : []) {
-    if (!seen(c.x, c.y) || !torchThere(sim, c)) continue;
+    if (!seen(c.x, c.y) || !torchThere(sim, c) || gone.has(c.room)) continue;
     const side = c.wall === "left" ? -1 : c.wall === "right" ? 1 : 0;
     const [tw, th] = KIT_LIGHTS.torchSize, w = tw / ART_PER_U, h = th / ART_PER_U;
     const x = c.x + side * 0.49, z = side ? c.y : c.y - 0.49, rot = side ? -side * (Math.PI / 2) : 0;
@@ -840,7 +844,7 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
     if (now - last.current.light > 33) {
       last.current.light = now;
       const torch: Light3D = { x: sim.me.x, y: sim.me.y, r: torchReach(sim.flareLeft), power: 1 };
-      const lights = litLights(sim, live, frame.current, closed).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
+      const lights = litLights(sim, live, layout, frame.current, closed).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
       const f = fieldRef.current = lightField(live, sim.lightNow, torch, lights, sim.me.x, sim.me.y, WINDOW, fieldRef.current ?? undefined, remembered(sim, closed, rememberRef));
       fillGrid(tex.light, f.torch, f.other);
       u.uWin.value.set(f.x0 - 0.5, f.y0 - 0.5, f.size);
