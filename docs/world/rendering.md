@@ -275,18 +275,24 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   nothing in the sim. The 2D view shows a table as its front picture (and a table's candle on the floor).
   To look at it: /lab/chest's **Table** (its candle on or off) and **Deck** (the rarest card's rarity for the
   glow; "Turn them over" takes the deck off), beside the old flat picture and you for scale.
-- **🧪 Drafts of the rest, lab only** (the user, 2026-11-11: bring what's found in the dungeon up to the
-  tables' level; components/Drafts3D.tsx, /lab/chest's "Drafts" row, each beside its old picture). Painted,
-  PixelLab samples in the dungeon palette styled on the old pictures (public/sprites/walk/samples/3d/): the
-  storehouse's **rickety chest** (the chest's boxes with its own front, side and lid), the library's
-  **broken bookcase** (the bookcase's box with a broken front), the **healing pool** (a low ring of stone,
-  its top the pool seen from above, a faint glow) and the **campfire** (a ring of the pool's stones round its
-  pit, flames standing up in it, its glow; lit or out). Shape only, plain palette colours, to judge size and
-  form before any art: the **cage** (posts, frame, bars; its front swings open), the **lectern** (an open
-  book on a sloping top), **candles** (three, a flame each), the **wall torch** (on the lab's wall) and
-  **rubble**. Nothing in the game draws them until the user approves each.
+- **The broken bookcase and the campfire** (the user's review, 2026-11-11): about half a library's
+  bookcases are drawn broken (props3d.ts `bookcaseBroken`, fixed by each one's id; `BROKEN_BOOKCASE_FACES`:
+  the bookcase's box with a broken front, sagging shelves and books spilled, 54 × 44). The campfire is built
+  in 3D (Props3D `Campfire`): a low ring of stones round its pit (PixelLab's pit from above: ash, embers,
+  crossed logs; public/sprites/props/campfire3d), in the middle of its 2 × 2 footprint, flames standing up
+  in it and its warm glow while it burns; tinted by the light where it stands, full bright while it burns
+  in sight, as the flat picture was. Drawing only.
+- **🧪 Drafts, lab only** (components/Drafts3D.tsx, /lab/chest's "Drafts" row, each beside its old picture;
+  the user's review, 2026-11-11): the **strongbox** for the mini boss's and storehouse's loot (the chest's
+  boxes, half as big again, PixelLab iron-bound faces styled on the Warden's strongbox, a faint gold glow);
+  the **healing gem** in place of the dungeon's pools (a crystal floating and turning over a stone plinth,
+  glowing; dark and still once used; the Den keeps its pool); the **cage**, 1.5 u across and 2 u tall in
+  rusty iron (bigger than its 1 u footprint: a bigger footprint would be a new world version); the
+  **lectern** (a carved post and an open book on its desk, PixelLab's); a **floor torch** (a stand with a
+  bowl of fire) in place of the floor candles; the **wall torch**, redone bigger; and a 3D **candle on a
+  table** (the flat one hung off a turned table). Nothing in the game draws these until the user approves each.
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
-  couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
+  couldn't go down it): a tunnel up's top door shows as plain rock (no rubble heap since 2026-11-11: it looked broken), except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,
   sight and light are unchanged. (The 2D view showed these open too.)
 - **Taps:** the floor under the tap (where the ray from the camera meets it), as the 2D view's

@@ -16,12 +16,12 @@ const ChestScene = dynamic(() => import("./ChestScene"), { ssr: false, loading: 
 
 const SIZES = [1, CHEST_W, 1.5, 1.75];
 const THINGS: { thing: Thing3D; label: string }[] = [{ thing: "chest", label: "Chest" }, { thing: "stash", label: "Stash" }, { thing: "bookcase", label: "Bookcase" }, { thing: "table", label: "Table" }, { thing: "deck", label: "Deck" }];
-// Drafts of the dungeon's other things (components/Drafts3D.tsx): the first four painted, the rest shape only.
+// Drafts of the dungeon's other things (components/Drafts3D.tsx; the broken bookcase and the campfire are in the game).
 const DRAFTS: { thing: Thing3D; label: string }[] = [
-  { thing: "rickety", label: "Rickety chest" }, { thing: "broken", label: "Broken bookcase" }, { thing: "pool", label: "Pool" }, { thing: "campfire", label: "Campfire" },
-  { thing: "cage", label: "Cage" }, { thing: "lectern", label: "Lectern" }, { thing: "candles", label: "Candles" }, { thing: "torch", label: "Wall torch" }, { thing: "rubble", label: "Rubble" },
+  { thing: "strongbox", label: "Strongbox" }, { thing: "broken", label: "Broken bookcase ✓" }, { thing: "gem", label: "Healing gem" }, { thing: "campfire", label: "Campfire ✓" },
+  { thing: "cage", label: "Cage" }, { thing: "lectern", label: "Lectern" }, { thing: "floortorch", label: "Floor torch" }, { thing: "torch", label: "Wall torch" },
 ];
-const LIGHTS: Thing3D[] = ["campfire", "candles", "torch"];
+const LIGHTS: Thing3D[] = ["campfire", "floortorch", "torch"];
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const ACROSS = [0, 2, 4, 6]; // units the chest stands across from you
 const ZOOMS = [{ label: "Game zoom", across: 15 }, { label: "Close", across: 7 }];

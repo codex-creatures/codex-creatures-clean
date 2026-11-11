@@ -11,7 +11,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U, CHEST_NUDGE, type ChestFaces } from "@/lib/render3d/chest3d";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
 import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
@@ -100,10 +100,11 @@ function bases(mats: THREE.Material[]) {
   return new Map(mats.flatMap((m) => (m instanceof THREE.MeshBasicMaterial ? [[m, m.color.clone()] as const] : [])));
 }
 
-// `deck`: a table with the deck of cards on it; `glow`: the colour of the rarest card in it (a CSS colour).
-export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow }: { kind: Prop3DKind; open?: boolean; colour?: THREE.Color; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string }) {
+// `deck`: a table with the deck of cards on it; `glow`: the colour of the rarest card in it (a CSS colour);
+// `broken`: a broken bookcase.
+export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false }: { kind: Prop3DKind; open?: boolean; colour?: THREE.Color; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean }) {
   if (kind === "table") return <Table colour={colour} outline={outline} deck={deck} glow={glow} />;
-  if (kind === "bookcase") return <Bookcase colour={colour} outline={outline} edges={edges} />;
+  if (kind === "bookcase") return broken ? <Bookcase colour={colour} outline={outline} edges={false} faces={BROKEN_BOOKCASE_FACES} /> : <Bookcase colour={colour} outline={outline} edges={edges} />;
   if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} />;
   return <Chest open={open} colour={colour} outline={outline} edges={edges} />;
 }
@@ -237,6 +238,68 @@ export function Glow({ colour, radius, strength, y = 0.01 }: { colour: string; r
       <planeGeometry />
       <meshBasicMaterial ref={mat} map={GLOW_TEX()} color={colour} transparent opacity={strength} depthWrite={false} blending={THREE.AdditiveBlending} />
     </mesh>
+  );
+}
+
+// ── The campfire (the user, 2026-11-11): a low ring of stones (the rim picture laid round it) round its pit
+// (the pit seen from above: ash, embers, crossed logs), flames standing up in it while it burns, and its
+// warm glow on the floor. PixelLab's, in public/sprites/props/campfire3d.
+export const CAMPFIRE_3D = { top: "/sprites/props/campfire3d/top.png?v=1", rim: "/sprites/props/campfire3d/rim.png?v=1", rimPx: [48, 16] as const, wide: 0.9, tall: 0.12 };
+export function Campfire({ lit, colour }: { lit: boolean; colour?: THREE.Color }) {
+  const F = CAMPFIRE_3D;
+  return (
+    <>
+      <Ring wide={F.wide} tall={F.tall} top={F.top} rim={F.rim} rimPx={F.rimPx} sides={12} colour={colour} />
+      {lit && <Flame at={[0, F.tall, 0.05]} size={0.42} />}
+      {lit && <Glow colour="#ff9632" radius={1.4} strength={0.35} />}
+    </>
+  );
+}
+
+// A low round wall (`rim` laid round it, a unit of art to a unit, as many of its rows as fit square on
+// screen), its top `top` seen from above. `colour`: tinted by the light where it stands (the game's Stone).
+export function Ring({ wide, tall, top, rim, rimPx, sides = 16, colour }: { wide: number; tall: number; top: string; rim: string; rimPx: readonly [number, number]; sides?: number; colour?: THREE.Color }) {
+  const r = wide / 2, flat = !!colour;
+  const mats = useMemo(() => {
+    const side = loaded(rim).clone();
+    sharp(side);
+    side.wrapS = side.wrapT = THREE.RepeatWrapping;
+    const rows = (tall * ART_PER_U * Math.cos(Math.PI / 3)) / rimPx[1];
+    side.repeat.set(Math.max(1, Math.round((Math.PI * wide * ART_PER_U) / rimPx[0])), rows);
+    side.offset.set(0, 1 - rows);
+    side.needsUpdate = true;
+    const make = flat ? makeFlat : makeLit, s = make({ map: side }), t = make({ map: loaded(top) });
+    t.transparent = true; t.alphaTest = 0.5;
+    const all = [s, t];
+    return { side: s, top: t, all, base: bases(all) };
+  }, [rim, top, tall, wide, rimPx, flat]);
+  tint(mats.all, mats.base, colour);
+  return (
+    <>
+      <mesh material={mats.side} position={[0, tall / 2, 0]} raycast={() => null}><cylinderGeometry args={[r, r, tall, sides, 1, true]} /></mesh>
+      <mesh material={mats.top} position={[0, tall + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><circleGeometry args={[r, sides * 2]} /></mesh>
+    </>
+  );
+}
+
+// A flame: two flat shapes (the outer orange, the core yellow) facing you, flickering. Always full bright.
+const FLAME_SHAPE = (() => {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0); s.quadraticCurveTo(0.5, 0.1, 0.32, 0.55); s.quadraticCurveTo(0.2, 0.8, 0, 1);
+  s.quadraticCurveTo(-0.2, 0.8, -0.32, 0.55); s.quadraticCurveTo(-0.5, 0.1, 0, 0);
+  return new THREE.ShapeGeometry(s, 4);
+})();
+export function Flame({ at, size }: { at: [number, number, number]; size: number }) {
+  const g = useRef<THREE.Group>(null);
+  useFrame(() => {
+    const t = performance.now() / 120;
+    if (g.current) g.current.scale.set(size * (0.92 + 0.08 * Math.sin(t * 1.3)), size * (0.9 + 0.12 * Math.sin(t)), 1);
+  });
+  return (
+    <group ref={g} position={at}>
+      <mesh geometry={FLAME_SHAPE} raycast={() => null}><meshBasicMaterial color="#f4a034" /></mesh>
+      <mesh geometry={FLAME_SHAPE} position={[0, 0.02, 0.01]} scale={[0.55, 0.6, 1]} raycast={() => null}><meshBasicMaterial color="#fcd678" /></mesh>
+    </group>
   );
 }
 

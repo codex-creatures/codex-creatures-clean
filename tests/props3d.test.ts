@@ -70,3 +70,15 @@ describe("the 3D table (world version 12)", () => {
     expect(["table", "card-deck"].map(prop3dOf)).toEqual(["table", "table"]);
   });
 });
+
+describe("a library's bookcases (the user, 2026-11-11: some broken, for variety)", () => {
+  it("about half are broken, each the same every time (by its id)", async () => {
+    const { bookcaseBroken } = await import("../lib/render3d/props3d");
+    const { bookcaseOf } = await import("../lib/dungeon/walkRun");
+    const ids = Array.from({ length: 40 }, (_, r) => Array.from({ length: 5 }, (_, i) => bookcaseOf(`n${r}`, i))).flat();
+    const broken = ids.filter(bookcaseBroken).length;
+    expect(broken).toBeGreaterThan(ids.length * 0.3);
+    expect(broken).toBeLessThan(ids.length * 0.7);
+    expect(ids.map(bookcaseBroken)).toEqual(ids.map(bookcaseBroken));
+  });
+});

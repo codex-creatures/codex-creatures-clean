@@ -14,6 +14,19 @@ export const BOOKCASE_FACES = {
   side: { src: `/sprites/props/bookcase3d/side.png?v=${BOOKCASE_V}`, w: 24, h: 48 },
   top: { src: `/sprites/props/bookcase3d/top.png?v=${BOOKCASE_V}`, w: 60, h: 21 },
 };
+// A broken one (the user, 2026-11-11: some of a library's bookcases, for variety): the same box and sides,
+// its front broken (sagging shelves, books spilled), 54 × 44 (so a little smaller than a whole one).
+export const BROKEN_BOOKCASE_FACES = {
+  front: { src: `/sprites/props/bookcase3d/broken-front.png?v=1`, w: 54, h: 44 },
+  side: BOOKCASE_FACES.side,
+  top: BOOKCASE_FACES.top,
+};
+// Which of a library's bookcases are broken: about half, fixed for each by its id, so it never changes.
+export function bookcaseBroken(id: string): boolean {
+  let h = 0;
+  for (const ch of id) h = (Math.imul(h, 31) + ch.charCodeAt(0)) | 0;
+  return ((h >>> 0) % 2) === 0;
+}
 export type BookcaseFaces = { front: { src: string; w: number; h: number }; side: { src: string; w: number; h: number }; top: { src: string; w: number; h: number } };
 export function bookcaseArt(F: BookcaseFaces = BOOKCASE_FACES) {
   const up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);

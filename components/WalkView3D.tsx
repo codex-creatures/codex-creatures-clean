@@ -42,8 +42,8 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
-import { prop3dOf, CANDLE_AT } from "@/lib/render3d/props3d";
-import { Prop3D, PROP_LEAN } from "@/components/Props3D";
+import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
+import { Prop3D, Campfire, PROP_LEAN } from "@/components/Props3D";
 import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -347,7 +347,6 @@ function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: n
 // used pool dimmed, a "!" over each cage you can open; foes while lit, or all of a room that's seen you,
 // with a "!" over each; the card witch walking about, and the people who wander; campfires and candles; rubble where a tunnel fell.
 // Foes, the witch and the people follow the sim every frame (the list itself is shown again now and then).
-const CAMPFIRE = objectDef("campfire");
 const FLAME_COLOUR = "#ffd27a";
 const DIM_POOL = 0.6;                  // a used pool's picture, this bright (the 2D view's)
 const SHAKE_U = 0.09;                  // u: the picture's shake as a tunnel falls in (the 2D view's 3 art pixels at 32 a unit)
@@ -383,7 +382,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     if (kind) {
       const deck = t.def === "card-deck" && !t.open, rarest = deck ? deckRarity(room(t.room)?.deck) : undefined;
       const glow = rarest && fireInSight(live, t, sim.me) ? RARITY_COLORS[rarest].text : undefined;
-      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade?.(t.x, t.y)} deck={deck} glow={glow} /></group>);
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade?.(t.x, t.y)} deck={deck} glow={glow} broken={kind === "bookcase" && bookcaseBroken(t.key)} /></group>);
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }
@@ -407,10 +406,12 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
   }
   for (const f of sim.fires) {
     if (!seen(f.x, f.y)) continue;
-    // A fire glows whatever's round it: drawn full bright while it burns, its embers lit as the rest.
-    const a = artOf(CAMPFIRE, f.left > 0 ? "lit" : "out")!, b = CAMPFIRE.visual.bounds;
-    out.push(<Upright key={`fire:${f.room}`} src={a.src} x={f.x} y={f.y} w={b.left + b.right} h={(b.up + b.down) * stretch} below={b.down * stretch}
-      colour={glows(f.left > 0, f.x, f.y) ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(f.x, f.y)} />);
+    // A fire glows whatever's round it: drawn full bright while it burns, its embers lit as the rest. Built in
+    // 3D (Props3D Campfire, the user, 2026-11-11), in the middle of its 2 × 2 footprint, its flames only while it burns.
+    const burns = f.left > 0, mid = 1 / (2 * SUB);
+    out.push(<group key={`fire:${f.room}`} position={[f.x - mid, 0, f.y - mid]}>
+      <Campfire lit={burns} colour={glows(burns, f.x, f.y) ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(f.x, f.y)} />
+    </group>);
   }
   for (const c of sim.candles) {
     if (!seen(c.x, c.y)) continue;
@@ -433,11 +434,8 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     if (!sim.falls.has(r.key) && !r.tiles.some((q) => sim.known[q.y * live.w + q.x])) continue; // never seen: just rock
     out.push(<RubbleHeap key={r.key} sim={sim} r={r} shade={shade} />);
   }
-  // A tunnel up's top door, seen from above: shut, with rubble (dungeon3d.ts oneWayDoors).
-  for (const d of oneWayDoors(layout, live, sim.me, roomAt(sim.plan, sim.me))) {
-    if (!d.tiles.some((q) => sim.known[q.y * live.w + q.x])) continue;
-    out.push(<RubbleHeap key={`up:${d.key}`} sim={sim} r={{ key: `up:${d.key}`, room: "", tiles: d.tiles, wall: "bottom" }} shade={shade} />);
-  }
+  // (A tunnel up's top door, seen from above, is plain rock: the carved mesh shuts it, dungeon3d.ts
+  // oneWayDoors. Its rubble heap looked like a broken placeholder: the user, 2026-11-11.)
   for (const c of sconces ? sim.sconces : []) {
     if (!seen(c.x, c.y) || !torchThere(sim, c)) continue;
     const side = c.wall === "left" ? -1 : c.wall === "right" ? 1 : 0;
