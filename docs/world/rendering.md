@@ -401,8 +401,13 @@ The art standard itself is still to write, from samples drawn to these picks.
 - **The unexplored:** what you've seen fades to black over 1.5 tiles towards places you haven't
   found, or ends hard. The fade dims only what already shows; black stays black, so it never
   gives a layout away.
-- **Sprites** take the light where they stand (you stay unlit, as in the other modes). The tuning
-  numbers are `STONE` in components/WalkView3D.tsx.
+- **Sprites and 3D things** take the light where they stand, worked out as the floor under them is
+  (lib/render3d/stone.ts `shadeAt`): as bright (the same gain, not capped below the floor's), the
+  same warmth (your torch's colour or the fires', by their shares), dimmed with the floor where
+  what you've seen fades out and in a room cut off behind you, and read again every frame, so they
+  follow your torch and the fires' flicker with the rock. You stay unlit, as in the other modes.
+  Lit flames, candles and fires stay full bright. The tuning numbers are `STONE` in
+  components/WalkView3D.tsx.
 
 **Limits:** stand-in art (above); you and the objects are 32 a unit, so at 48 they're blown up
 unevenly; no shadows from objects or creatures, and no contact shadows or darkening where floor

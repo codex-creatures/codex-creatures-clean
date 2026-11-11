@@ -90,9 +90,18 @@ const makeLit: Make = (o, nudge) => leaned(new THREE.MeshLambertMaterial(o), nud
 const makeFlat: Make = (o, nudge) => leaned(new THREE.MeshBasicMaterial({ map: o.map, color: o.color, side: o.side }), nudge); // (unlit: no shading to flatten)
 const lit = (src: string, edges: boolean) => (edges ? src.replace(".png", "-lit.png") : src);
 
-function tint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, colour?: THREE.Color) {
+// `colour`: the light's colour, or (the game) where to read it each frame, so a thing follows the
+// light as the floor round it does (your torch as you walk, a fire's flicker), not only when the
+// list of things is drawn again.
+export type Tint = THREE.Color | (() => THREE.Color);
+function tint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, colour?: Tint) {
   if (!colour) return;
-  for (const m of mats) if (m instanceof THREE.MeshBasicMaterial) m.color.copy(base.get(m) ?? WHITE).multiply(colour);
+  const c = typeof colour === "function" ? colour() : colour;
+  for (const m of mats) if (m instanceof THREE.MeshBasicMaterial) m.color.copy(base.get(m) ?? WHITE).multiply(c);
+}
+function useTint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, colour?: Tint) {
+  tint(mats, base, colour);
+  useFrame(() => { if (typeof colour === "function") tint(mats, base, colour); });
 }
 const WHITE = new THREE.Color(1, 1, 1);
 // (Each material's own colour, kept to tint from.)
@@ -102,7 +111,7 @@ function bases(mats: THREE.Material[]) {
 
 // `deck`: a table with the deck of cards on it; `glow`: the colour of the rarest card in it (a CSS colour);
 // `broken`: a broken bookcase.
-export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false }: { kind: Prop3DKind; open?: boolean; colour?: THREE.Color; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean }) {
+export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false }: { kind: Prop3DKind; open?: boolean; colour?: Tint; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean }) {
   if (kind === "table") return <Table colour={colour} outline={outline} deck={deck} glow={glow} />;
   if (kind === "bookcase") return broken ? <Bookcase colour={colour} outline={outline} edges={false} faces={BROKEN_BOOKCASE_FACES} /> : <Bookcase colour={colour} outline={outline} edges={edges} />;
   if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} />;
@@ -115,7 +124,7 @@ export function Prop3D({ kind, open = false, colour, outline = true, edges = tru
 // `under` pictures beside the others.
 // (`faces`: another chest's pictures, the lab's drafts: the rickety chest. Each has its `under` and, with
 // `edges`, its `-lit` pictures beside them.)
-export function Chest({ open, colour, outline, edges, faces = ART_FACES }: { open: boolean; colour?: THREE.Color; outline: boolean; edges: boolean; faces?: ChestFaces }) {
+export function Chest({ open, colour, outline, edges, faces = ART_FACES }: { open: boolean; colour?: Tint; outline: boolean; edges: boolean; faces?: ChestFaces }) {
   const art = useMemo(() => chestArt(faces), [faces]);
   const geo = useMemo(() => {
     const F = faces, fw = F.front.w, fh = F.front.h, split = F.front.lid;
@@ -135,7 +144,7 @@ export function Chest({ open, colour, outline, edges, faces = ART_FACES }: { ope
     const all = [front, side, top, under, inside, dark];
     return { lid: [side, side, top, under, front, front], body: [side, side, inside, dark, front, front], all, base: bases(all) };
   }, [flat, edges, faces]);
-  tint(mats.all, mats.base, colour);
+  useTint(mats.all, mats.base, colour);
   const lid = useRef<THREE.Group>(null);
   useFrame(() => {
     const g = lid.current;
@@ -154,7 +163,7 @@ export function Chest({ open, colour, outline, edges, faces = ART_FACES }: { ope
 }
 
 // The bookcase: one box, its faces PixelLab's (lit edges made beforehand, as the chest's).
-export function Bookcase({ colour, outline, edges, faces = BOOKCASE_FACES }: { colour?: THREE.Color; outline: boolean; edges: boolean; faces?: BookcaseFaces }) {
+export function Bookcase({ colour, outline, edges, faces = BOOKCASE_FACES }: { colour?: Tint; outline: boolean; edges: boolean; faces?: BookcaseFaces }) {
   const b = useMemo(() => bookcaseArt(faces), [faces]);
   const geo = useMemo(() => new THREE.BoxGeometry(b.width, b.height, b.depth), [b]);
   const flat = !!colour;
@@ -164,13 +173,13 @@ export function Bookcase({ colour, outline, edges, faces = BOOKCASE_FACES }: { c
     const all = [front, side, top, dark];
     return { faces: [side, side, top, dark, front, front], all, base: bases(all) };
   }, [flat, edges, faces]);
-  tint(mats.all, mats.base, colour);
+  useTint(mats.all, mats.base, colour);
   return <Solid geometry={geo} material={mats.faces} at={[0, b.height / 2, 0]} size={[b.width, b.height, b.depth]} outline={outline} />;
 }
 
 // The table: a slab on four legs, each a painted box cut from the front picture (props3d.ts TABLE_FACES),
 // the deck of cards lying face down on top, and the glow of its rarest card round it.
-function Table({ colour, outline, deck, glow }: { colour?: THREE.Color; outline: boolean; deck: boolean; glow?: string }) {
+function Table({ colour, outline, deck, glow }: { colour?: Tint; outline: boolean; deck: boolean; glow?: string }) {
   const t = useMemo(() => tableArt(), []);
   const geo = useMemo(() => {
     const F = TABLE_FACES.front, [e0, e1] = F.edge, [a0, a1] = F.across, sideW = Math.round(t.depth * ART_PER_U);
@@ -197,7 +206,7 @@ function Table({ colour, outline, deck, glow }: { colour?: THREE.Color; outline:
     const all = [front, top, dark, cards, see];
     return { brace: [see, see, see, see, see, see], slab: [front, front, top, dark, front, front], leg: [front, front, dark, dark, front, front], deck: [cards, cards, cards, dark, cards, cards], all, base: bases(all) };
   }, [flat]);
-  tint(mats.all, mats.base, colour);
+  useTint(mats.all, mats.base, colour);
   const lx = t.width / 2 - LEG_IN - t.leg / 2, lz = t.depth / 2 - LEG_IN - t.leg / 2;
   return (
     <>
@@ -245,7 +254,7 @@ export function Glow({ colour, radius, strength, y = 0.01 }: { colour: string; r
 // (the pit seen from above: ash, embers, crossed logs), flames standing up in it while it burns, and its
 // warm glow on the floor. PixelLab's, in public/sprites/props/campfire3d.
 export const CAMPFIRE_3D = { top: "/sprites/props/campfire3d/top.png?v=1", rim: "/sprites/props/campfire3d/rim.png?v=1", rimPx: [48, 16] as const, wide: 0.9, tall: 0.12 };
-export function Campfire({ lit, colour }: { lit: boolean; colour?: THREE.Color }) {
+export function Campfire({ lit, colour }: { lit: boolean; colour?: Tint }) {
   const F = CAMPFIRE_3D;
   return (
     <>
@@ -258,7 +267,7 @@ export function Campfire({ lit, colour }: { lit: boolean; colour?: THREE.Color }
 
 // A low round wall (`rim` laid round it, a unit of art to a unit, as many of its rows as fit square on
 // screen), its top `top` seen from above. `colour`: tinted by the light where it stands (the game's Stone).
-export function Ring({ wide, tall, top, rim, rimPx, sides = 16, colour }: { wide: number; tall: number; top: string; rim: string; rimPx: readonly [number, number]; sides?: number; colour?: THREE.Color }) {
+export function Ring({ wide, tall, top, rim, rimPx, sides = 16, colour }: { wide: number; tall: number; top: string; rim: string; rimPx: readonly [number, number]; sides?: number; colour?: Tint }) {
   const r = wide / 2, flat = !!colour;
   const mats = useMemo(() => {
     const side = loaded(rim).clone();
@@ -273,7 +282,7 @@ export function Ring({ wide, tall, top, rim, rimPx, sides = 16, colour }: { wide
     const all = [s, t];
     return { side: s, top: t, all, base: bases(all) };
   }, [rim, top, tall, wide, rimPx, flat]);
-  tint(mats.all, mats.base, colour);
+  useTint(mats.all, mats.base, colour);
   return (
     <>
       <mesh material={mats.side} position={[0, tall / 2, 0]} raycast={() => null}><cylinderGeometry args={[r, r, tall, sides, 1, true]} /></mesh>
@@ -306,7 +315,7 @@ export function Flame({ at, size }: { at: [number, number, number]; size: number
 // The sack: its outline turned round (flat-shaded, so its few sides show as facets), in burlap laid
 // about a unit of cloth to a unit round it, and a rope round its neck. Opened, it's untied: no rope,
 // its mouth open (both sides of the cloth drawn, so you see into it).
-function Sack({ open, colour, outline }: { open: boolean; colour?: THREE.Color; outline: boolean }) {
+function Sack({ open, colour, outline }: { open: boolean; colour?: Tint; outline: boolean }) {
   const geo = useMemo(() => new THREE.LatheGeometry((open ? sackOpenOutline() : sackOutline()).map(([r, y]) => new THREE.Vector2(r, y)), SACK_SIDES), [open]);
   const rope = useMemo(() => new THREE.TorusGeometry(SACK_NECK.r + SACK_NECK.rope / 2, SACK_NECK.rope, 4, SACK_SIDES), []);
   const flat = !!colour;
@@ -316,7 +325,7 @@ function Sack({ open, colour, outline }: { open: boolean; colour?: THREE.Color; 
     const all = [make({ map: cloth, flatShading: true, side: open ? THREE.DoubleSide : THREE.FrontSide }), make({ color: "#8a6a44", flatShading: true })];
     return { cloth: all[0], rope: all[1], all, base: bases(all) };
   }, [flat, open]);
-  tint(mats.all, mats.base, colour);
+  useTint(mats.all, mats.base, colour);
   const wide = 2 * Math.max(...sackOutline().map(([r]) => r));
   return (
     <>

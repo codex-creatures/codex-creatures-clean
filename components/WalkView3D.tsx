@@ -43,8 +43,8 @@ import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
 import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
-import { Prop3D, Campfire, PROP_LEAN } from "@/components/Props3D";
-import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
+import { Prop3D, Campfire, PROP_LEAN, type Tint } from "@/components/Props3D";
+import { texelsPerU, pixelScale, lightField, shadeAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
 // solid rock in flat grey under one plain light, no art; `lean` (orthographic's side-wall candidate)
@@ -222,6 +222,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   const snapped = view.pixels !== "device" && !view.perspective && !(view.grey && !view.stone);
   const centre = useRef({ x: 0, z: 0 });
   const field = useRef<LightField | null>(null); // (Stone: the light grid, for the sprites standing in it)
+  const fade = useRef<Float32Array | null>(null); // (Stone: what you've seen, faded, a tile: the same, as the floor is dimmed)
 
   const torch = useRef<THREE.PointLight>(null);
   const pool = useRef<(THREE.PointLight | null)[]>([]);
@@ -298,10 +299,10 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   const others = { sim, live, layout, progress, frame, things: things(), room, stretch };
   if (view.stone) return (
     <>
-      <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} />
+      <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} fadeRef={fade} />
       {/* You, unlit, as in the other modes. */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
-      <Sprites {...others} shade={(x, y) => stoneShade(field.current, x, y)} />
+      <Sprites {...others} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
     </>
   );
   if (view.grey) return (
@@ -382,12 +383,12 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     if (kind) {
       const deck = t.def === "card-deck" && !t.open, rarest = deck ? deckRarity(room(t.room)?.deck) : undefined;
       const glow = rarest && fireInSight(live, t, sim.me) ? RARITY_COLORS[rarest].text : undefined;
-      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade?.(t.x, t.y)} deck={deck} glow={glow} broken={kind === "bookcase" && bookcaseBroken(t.key)} /></group>);
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade && (() => shade(t.x, t.y))} deck={deck} glow={glow} broken={kind === "bookcase" && bookcaseBroken(t.key)} /></group>);
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }
-    const colour = shade?.(t.x, t.y) ?? (t.def === "pool" && t.open ? new THREE.Color(1, 1, 1) : undefined);
-    if (t.def === "pool" && t.open) colour?.multiplyScalar(DIM_POOL);
+    const used = t.def === "pool" && t.open ? DIM_POOL : 1;
+    const colour: Tint | undefined = shade ? () => shade(t.x, t.y).multiplyScalar(used) : used < 1 ? new THREE.Color(used, used, used) : undefined;
     out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={colour} />);
     if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
   }
@@ -400,7 +401,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     const tall = FOE_U * (f.waits ? (r?.boss ? BOSS_SCALE : CHIEF_SCALE) : 1) * stretch, wd = (tall / stretch) * (a.w / a.h);
     // (The sim swaps a foe for a moved copy each step: find it again by its room and place in it.)
     const now = () => sim.foes.find((g) => g.room === f.room && g.index === f.index) ?? f;
-    out.push(<Upright key={`foe:${f.room}:${f.index}`} src={a.src} x={f.x} y={f.y} w={wd} h={tall} below={0} colour={shade?.(f.x, f.y)}
+    out.push(<Upright key={`foe:${f.room}:${f.index}`} src={a.src} x={f.x} y={f.y} w={wd} h={tall} below={0} colour={shade && (() => { const g = now(); return shade(g.x, g.y); })}
       follow={() => { const g = now(); return { x: g.x, y: g.y, flip: (Math.cos(g.facing) > 0.1) !== (a.faces === "right") }; }} />);
     if (alarmed) out.push(<Mark key={`!foe:${f.room}:${f.index}`} at={now} up={tall + 0.25} pop={A!.at} />);
   }
@@ -410,7 +411,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     // 3D (Props3D Campfire, the user, 2026-11-11), in the middle of its 2 × 2 footprint, its flames only while it burns.
     const burns = f.left > 0, mid = 1 / (2 * SUB);
     out.push(<group key={`fire:${f.room}`} position={[f.x - mid, 0, f.y - mid]}>
-      <Campfire lit={burns} colour={glows(burns, f.x, f.y) ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(f.x, f.y)} />
+      <Campfire lit={burns} colour={glows(burns, f.x, f.y) ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(f.x, f.y))} />
     </group>);
   }
   for (const c of sim.candles) {
@@ -421,7 +422,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     const up = c.high ?? 0, cy = up ? c.y + 0.05 : c.y, cx = up ? c.x + CANDLE_AT : c.x;
     out.push(
       <group key={c.id} position={[0, up, 0]}>
-        <Upright src={KIT_LIGHTS.candles} x={cx} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
+        <Upright src={KIT_LIGHTS.candles} x={cx} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(c.x, c.y))} />
         {on && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
           <mesh key={i} raycast={() => null} position={[cx - w / 2 + wx * k, h - wy * k * stretch + 0.04, cy + 0.06]} scale={[0.05, 0.09, 1]}>
             <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
@@ -443,9 +444,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
     const x = c.x + side * 0.49, z = side ? c.y : c.y - 0.49, rot = side ? -side * (Math.PI / 2) : 0;
     out.push(
       <group key={c.id} position={[x, 1.05, z]} rotation={[0, rot, 0]}>
-        <mesh raycast={() => null} position={[0, 0, 0.01]} scale={[w, h, 1]}><planeGeometry />{shade
-          ? <meshBasicMaterial map={texture(KIT_LIGHTS.torch)} alphaTest={0.5} color={shade(c.x, c.y)} />
-          : <meshLambertMaterial map={texture(KIT_LIGHTS.torch)} alphaTest={0.5} />}</mesh>
+        <Sconce w={w} h={h} colour={shade && (() => shade(c.x, c.y))} />
         {glows(c.lit, c.x, c.y) && <mesh raycast={() => null} position={[0, h / 2 - KIT_LIGHTS.head / ART_PER_U, 0.03]} scale={[0.14, 0.2, 1]}><planeGeometry /><meshBasicMaterial color="#ffd27a" /></mesh>}
       </group>,
     );
@@ -456,11 +455,12 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
 // A picture standing upright at (x, y) on the floor, facing the camera's way (south), lit by the
 // lights, or (`colour`, Stone) tinted by the light where it stands.
 // `follow`: where it stands now (and whether it's turned round), read every frame, for one that walks.
-function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: number; y: number; w: number; h: number; below: number; colour?: THREE.Color;
+function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: number; y: number; w: number; h: number; below: number; colour?: Tint;
   follow?: () => { x: number; y: number; flip?: boolean } }) {
   const mesh = useRef<THREE.Mesh>(null);
   useFrame(() => {
     const m = mesh.current, at = follow?.();
+    if (m && typeof colour === "function") (m.material as THREE.MeshBasicMaterial).color.copy(colour());
     if (!m || !at) return;
     m.position.set(at.x, h / 2 - below, at.y + 0.05);
     m.scale.x = at.flip ? -w : w;
@@ -469,9 +469,20 @@ function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: n
     <mesh ref={mesh} raycast={() => null} position={[x, h / 2 - below, y + 0.05]} scale={[w, h, 1]}>
       <planeGeometry />
       {colour
-        ? <meshBasicMaterial map={texture(src)} alphaTest={0.5} side={THREE.DoubleSide} color={colour} />
+        ? <meshBasicMaterial map={texture(src)} alphaTest={0.5} side={THREE.DoubleSide} color={typeof colour === "function" ? colour() : colour} />
         : <meshLambertMaterial map={texture(src)} alphaTest={0.5} side={THREE.DoubleSide} />}
     </mesh>
+  );
+}
+
+// A wall torch's picture on its wall, lit by the lights, or (`colour`, Stone) tinted by the light in front of it, each frame.
+function Sconce({ w, h, colour }: { w: number; h: number; colour?: () => THREE.Color }) {
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  useFrame(() => { if (mat.current && colour) mat.current.color.copy(colour()); });
+  return (
+    <mesh raycast={() => null} position={[0, 0, 0.01]} scale={[w, h, 1]}><planeGeometry />{colour
+      ? <meshBasicMaterial ref={mat} map={texture(KIT_LIGHTS.torch)} alphaTest={0.5} color={colour()} />
+      : <meshLambertMaterial map={texture(KIT_LIGHTS.torch)} alphaTest={0.5} />}</mesh>
   );
 }
 
@@ -766,9 +777,9 @@ void main() {
   gl_FragColor = vec4(tex * colour * (I > 0.0 ? Q / I : 0.0), 1.0);
 }`;
 
-function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef }: {
+function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, fadeRef }: {
   sim: WalkSim; live: WalkSim["live"]; layout: Layout; view: View3D; closed: Uint8Array; frame: React.RefObject<Frame | null>;
-  centre: React.RefObject<{ x: number; z: number }>; fieldRef: React.RefObject<LightField | null>;
+  centre: React.RefObject<{ x: number; z: number }>; fieldRef: React.RefObject<LightField | null>; fadeRef: React.RefObject<Float32Array | null>;
 }) {
   const geo = useCarved(sim, live, layout, view);
   // The light grid and what you've seen, as textures (written into each frame, so kept in a ref).
@@ -818,6 +829,7 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef }:
       // Rooms cut off behind you, dimmed (as the 2D view's).
       if (closed.length === s.fade.length) for (let i = 0; i < closed.length; i++) if (closed[i]) s.fade[i] *= CLOSED_DIM;
       fillGrid(tex.seen, s.fade, s.shown);
+      fadeRef.current = s.fade;
     }
   });
   if (!geo) return null;
@@ -838,9 +850,8 @@ function stoneUniforms() {
   };
 }
 
-// The light's colour where a sprite stands (Stone), as the rock's: a plain dim, warmed by the light.
-function stoneShade(f: LightField | null, x: number, y: number): THREE.Color {
-  const l = f ? lightAt(f, x, y) * STONE.gain : 0;
-  const [r, g, b] = STONE.warm.map((w) => Math.min(1, STONE.remember + l * w));
+// The light's colour where a sprite stands (Stone), as the floor under it (stone.ts shadeAt).
+function stoneShade(f: LightField | null, fade: Float32Array | null, w: number, x: number, y: number): THREE.Color {
+  const [r, g, b] = shadeAt(f, fade, w, x, y, STONE);
   return new THREE.Color().setRGB(r, g, b, THREE.SRGBColorSpace);
 }

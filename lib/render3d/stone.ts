@@ -121,6 +121,25 @@ export function lightAt(f: LightField, x: number, y: number): number {
   return 1 - (1 - f.torch[k]) * (1 - f.other[k]);
 }
 
+// The colour a sprite or a 3D thing standing at (x, y) is tinted, worked out as the rock's shader
+// does for the floor under it, so a thing never looks brighter, darker or a different warmth than
+// the floor it stands on: the two kinds of light added and scaled by `gain` (not capped at 1: the
+// floor isn't), coloured `warm` by your torch's share and `flame` by the others', over `remember`;
+// then dimmed by `fade` (what you've seen, 0–1 a tile, a room cut off behind you already dimmed in
+// it: seenField), as the floor is. (`w`: the floorplan's width, for `fade`; without it, no fade.)
+export type Rgb = readonly [number, number, number];
+export type Shading = { remember: number; gain: number; warm: Rgb; flame: Rgb };
+export function shadeAt(f: LightField | null, fade: ArrayLike<number> | null, w: number, x: number, y: number, s: Shading): [number, number, number] {
+  let torch = 0, other = 0;
+  if (f) {
+    const n = f.size * SUB, i = Math.floor((x - f.x0 + 0.5) * SUB), j = Math.floor((y - f.y0 + 0.5) * SUB);
+    if (i >= 0 && j >= 0 && i < n && j < n) { torch = f.torch[j * n + i]; other = f.other[j * n + i]; }
+  }
+  const lit = (torch + other) * s.gain, share = torch / Math.max(torch + other, 0.0001);
+  const k = Math.round(y) * w + Math.round(x), dim = fade && k >= 0 && k < fade.length ? fade[k] : 1;
+  return [0, 1, 2].map((c) => (s.remember + lit * (s.flame[c] + (s.warm[c] - s.flame[c]) * share)) * dim) as [number, number, number];
+}
+
 // ── What you've seen, and the fade into the unexplored ──
 
 // How unfound places show (the lab's switch): carved but black, as solid rock, or shown.

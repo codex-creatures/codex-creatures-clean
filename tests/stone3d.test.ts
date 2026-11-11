@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { texelsPerU, pixelScale, lightField, lightAt, lightCurve, seenField, SUB, CORE } from "../lib/render3d/stone";
+import { texelsPerU, pixelScale, lightField, lightAt, lightCurve, seenField, shadeAt, SUB, CORE } from "../lib/render3d/stone";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 
 // The Stone experiment's rules (lib/render3d/stone.ts).
@@ -70,6 +70,17 @@ describe("lightField", () => {
     expect(Math.max(...f.other)).toBeLessThanOrEqual(1);
     expect(lightAt(f, 6, 2)).toBe(1);
     expect(lightAt(f, 2, 2)).toBe(0);
+  });
+  it("tints a thing as the rock's shader lights the floor under it", () => {
+    const S = { remember: 0.2, gain: 1.25, warm: [1, 0.8, 0.6] as const, flame: [1, 0.5, 0.25] as const };
+    const mine = lightField(fp, all(fp), torch, [], 2, 2, 16), fire = lightField(fp, all(fp), null, [{ x: 6, y: 2, r: 3, power: 1 }], 6, 2, 16);
+    // Full light is brighter than the art (gain, uncapped, as the floor), in the light's own colour.
+    expect(shadeAt(mine, null, fp.w, 2, 2, S)).toEqual([1.45, 0.2 + 1.25 * 0.8, 0.2 + 1.25 * 0.6]);
+    expect(shadeAt(fire, null, fp.w, 6, 2, S)[2]).toBeCloseTo(0.2 + 1.25 * 0.25);
+    // Unlit, the plain dim you remember by; and dimmed with the floor where what you've seen fades out.
+    expect(shadeAt(null, null, fp.w, 2, 2, S)).toEqual([0.2, 0.2, 0.2]);
+    const fade = new Float32Array(fp.w * fp.h).fill(1); fade[2 * fp.w + 2] = 0.5;
+    expect(shadeAt(null, fade, fp.w, 2.2, 1.8, S)).toEqual([0.1, 0.1, 0.1]);
   });
   it("reuses last frame's grid, cleared", () => {
     const a = lightField(fp, all(fp), torch, [], 2, 2, 16);
