@@ -177,7 +177,7 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
     const first = a();
     expect(b()).toBe(first);
     expect(c()).not.toBe(first);
-  });
+  }, 120_000); // (new Cyclops runs take about 3 s each to roll, since its 60-room climb, 2026-11-11)
 
   it("keeps today's fixed spots: rooms' wall torches, features, stores and cages where the old rules put them", () => {
     for (const [d, s] of [[0, 21], [1, 23]] as const) {
@@ -297,3 +297,27 @@ function simAgainstOld(runs: number) {
 slowIt("the sim: counts per room, against the old rules (40 runs a dungeon)", () => simAgainstOld(40), 900_000);
 // …and the bigger one, as a stress test of its own: `npm run test:stress` (not part of test:all, to keep that within its time).
 stressIt("the sim, 200 runs a dungeon (stress)", () => simAgainstOld(200), 3_600_000);
+
+describe("a guarded storehouse (world version 11)", () => {
+  // (The user, 2026-11-11: its guard keeps the storehouse's own chest. Before, the guard's chest
+  // went in the room's middle, often on the storehouse's chest, with no way kept to it. This run's
+  // large room is a guarded storehouse.)
+  const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(2 * 7919 + 13), 1, false, false);
+  const id = Object.keys(run.walk!.layout.rooms).find((k) => walkRoom(run, k)?.kind === "storehouse")!;
+  const at = (v: number) => {
+    const walk = { ...run.walk!, v }, p = placeWalk(walk, run.map, dungeonOf(run), (k) => walkRoom(run, k));
+    return { p, placements: placementsFrom(p.placed, walk) };
+  };
+  it("has one chest, its own, guarded where it stands, with a way kept to it", () => {
+    expect(hasFight(walkRoom(run, id)!)).toBe(true);
+    const { p, placements } = at(WALK_V);
+    expect(p.report.problems).toEqual([]);
+    const chests = thingsOf(run.walk!.layout, placements, [id], (k) => walkRoom(run, k), [], undefined, 1).filter((t) => t.def.includes("chest"));
+    expect(chests).toHaveLength(1);
+    expect(chests[0].guarded).toBe(true);
+    expect({ x: chests[0].x, y: chests[0].y }).toEqual(placements.spot(`${id}:stores`));
+  });
+  it("version 10 keeps its own rule: the guard's chest in the middle", () => {
+    expect(at(10).p.report.problems.map((q) => q.what)).toEqual([`no way to ${id}:loot`]);
+  }, 60_000);
+});

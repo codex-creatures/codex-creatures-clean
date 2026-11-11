@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+// These are the old versions' rules, on Cyclops runs of the size they were made at (30 rooms, 10 to
+// the lair: it grew to 60 and 15 on 2026-11-11, at world version 11).
+vi.mock("../lib/dungeon/layout", async (real) => { const m = await real<typeof import("../lib/dungeon/layout")>(); return { ...m, WALK_LABYRINTH: m.WALK_LABYRINTH_30 }; });
 import fs from "node:fs";
 import path from "node:path";
 import { slowIt, stressIt } from "./slow";

@@ -251,8 +251,9 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   open: `sackOpenOutline`). Drawing only: footprints, sight, taps and saves are unchanged. ⚠️ They're
   the lab's sizes, not the footprints': the chest (1.25 × 0.79 u) is wider and deeper than its 1 ×
   0.67 u footprint, and the bookcase (2 u tall, whole) is taller than its object's 1.4 and isn't the
-  broken one the flat picture showed. The rickety chests (a boss's or mini boss's loot, and the
-  rickety ones) stay flat: they'd need their own faces.
+  broken one the flat picture showed. Every chest is the treasure chest for now (the user, 2026-11-11):
+  a storehouse's rickety one and a boss's or mini boss's loot too (`rickety-chest`, `loot-chest`),
+  till they get their own faces.
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
   couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,

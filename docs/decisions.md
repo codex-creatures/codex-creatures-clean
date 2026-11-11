@@ -122,7 +122,7 @@ Settled by the user on 2026-11-09, or by the code and approved decisions; the fi
 5. **The palette's source:** per §6.1 and sign-off decision 4, the reference is a target, not a
    source; the palette as built comes from kit E's walls. Phase 3's "from the reference" wording
    was archive-only.
-6. **The walkable Cyclops's size:** 30 rooms, route 10 are the current settings, not a fixed
+6. **The walkable Cyclops's size:** 60 rooms, 5 across, route 15 (30 and 10 until 2026-11-11) are the current settings, not a fixed
    constraint; guided rolling documented as built. ([design/walkable-layout.md](design/walkable-layout.md#size-and-guided-rolling))
 7. **Stale status tags:** the bookcase (built: 10 planks + 5 nails, 20 codexes, per
    lib/items/materials.ts), the tavern (outside, repair, visitors and pits built; interior not), the

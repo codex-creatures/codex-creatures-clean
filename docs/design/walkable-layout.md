@@ -105,11 +105,13 @@ layout comes first and the scroll is made from it (`layoutMap`), not the other w
 
 **Now** (lib/dungeon/layout.ts): both walkable dungeons are rolled guided (`guided: true`) at
 2-tile blocks (`BLOCK`): the Encampment as `WALK_SPEC` (19 rooms, a shortest route of
-`CAMP_ROUTE`, no large room), the Cyclops as `WALK_LABYRINTH` (30 rooms, a shortest route of 10,
-1 large room). These are the current settings, **not a fixed design constraint** (the user,
+`CAMP_ROUTE`, no large room), the Cyclops as `WALK_LABYRINTH` (60 rooms, 5 across, a shortest route of 15 as the
+scroll map's, 1 large room; 30 rooms and 10 until 2026-11-11, when the user found 10 too quick to
+get through: about 2.7 s a layout, 4.2 s at worst on the PC, rolled on the "Lighting the torches…"
+screen; 56 rooms took 3.9 s, 13 s at worst). These are the current settings, **not a fixed design constraint** (the user,
 2026-11-09): guided rolling (below) makes bigger layouts quick, and a dungeon's size follows the
 bench rule below. The scroll map's Labyrinth is 36 rooms, 15 to the lair. What follows is how the
-size came to be held at 30, then the guided rolling that lifted the limit.
+size came to be held at 30 for a while, then the guided rolling that lifted the limit.
 
 **Why it was held at 30 rooms** (2026-11-06, before guided rolling): the scroll map's Labyrinth is 36 rooms, 15 to the lair, but with
 `ROUTES` (3) separate ways of 15 that needs 44+ rooms, and those layouts take ~15 s to

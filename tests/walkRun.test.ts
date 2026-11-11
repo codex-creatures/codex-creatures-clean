@@ -182,7 +182,7 @@ describe("the walkable Labyrinth (New: the Cyclops)", () => {
       expect(JSON.parse(JSON.stringify(run))).toEqual(run);
     }
     expect(problems).toEqual([]);
-  });
+  }, 120_000); // (new Cyclops runs take about 3 s each to roll, since its 60-room climb, 2026-11-11)
 });
 
 describe("flares, walking", () => {

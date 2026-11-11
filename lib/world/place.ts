@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 10;         // the world version a new run is placed at (a library's bookcases clear of its doorways; version.ts)
+export const PLACED_V = 11;         // the world version a new run is placed at (a guarded storehouse's guard keeps its own chest; version.ts)
 export const BOOKCASE_DOOR_GAP = 2;  // (v10) panels: no broken bookcase this close to the panel inside a door (either way)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
@@ -216,7 +216,9 @@ function pointsOf(layoutRoom: WalkRun["layout"]["rooms"][string], floors: Rect[]
   if (f) out.push({ at: roomCentre(layoutRoom), owner: `${id}:${f.key}`, room: id, def: f.def, solid: objectDef(f.def).collision === "solid" });
   cageRow(floors, r.cages?.length ?? 0).forEach((at, i) => out.push({ at, owner: `${id}#${i}`, room: id, def: "cage", solid: true }));
   if (waitsHere(r, dungeon)) out.push({ at: standOf(floors), owner: `${id}:foe:0`, room: id, solid: false });
-  if ((hasFight(r) || fightsLater(r)) && fightContainer(r, dungeon) !== "sack") out.push({ at: guardedChestSpot(walk.layout, id, r, dungeon), owner: `${id}:loot`, room: id, solid: false });
+  // (v11) A guarded storehouse's guard keeps the storehouse's chest (its stores, above): no second spot.
+  const ownChest = r.kind === "storehouse" && (walk.v ?? PLACED_V) >= 11;
+  if ((hasFight(r) || fightsLater(r)) && fightContainer(r, dungeon) !== "sack" && !ownChest) out.push({ at: guardedChestSpot(walk.layout, id, r, dungeon), owner: `${id}:loot`, room: id, solid: false });
   return out;
 }
 

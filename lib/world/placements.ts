@@ -26,6 +26,7 @@ export type Placements = {
   witches: Foe[];                        // where each card witch starts (she walks about from there, this visit only)
   foes: Foe[];                           // where each foe starts, beaten or not (walkWorld.ts foeStarts picks the rooms still to beat)
   spot: (id: string) => Pt | undefined;  // where an instance stands (a room's feature, a cage), by id
+  v?: number;                            // the world version they were placed by
 };
 
 // (Torches are never on a south wall; v5's candles there are read as candles, below.)
@@ -74,5 +75,5 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
         ...(f.waits ? { waits: true } : {}), ...(f.end !== undefined ? { end: f.end } : {}) });
     }
   }
-  return { sconces, candles, witches, foes, spot: (id) => spots.get(id) };
+  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), v: walk.v ?? 0 };
 }

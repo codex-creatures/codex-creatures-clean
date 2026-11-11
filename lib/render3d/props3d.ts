@@ -39,11 +39,11 @@ const SACK_OPEN_OUTLINE: [number, number][] = [...SACK_OUTLINE.slice(0, 8), [0.1
 export const sackOpenOutline = (): [number, number][] => SACK_OPEN_OUTLINE.map(([r, y]) => [r, y]);
 
 // ── In the game (the user, 2026-11-11: "getting the 3d items into the dungeon") ──
-// Which objects the walk view draws in 3D instead of their flat pictures. The rickety chests (a
-// mini boss's or boss's loot, and the rickety ones) stay flat: their look isn't the treasure chest's,
-// and they'd need their own painted faces.
+// Which objects the walk view draws in 3D instead of their flat pictures. Every chest is the treasure
+// chest for now (the user, 2026-11-11): a storehouse's rickety one, and a mini boss's or boss's loot,
+// till they get their own painted faces.
 export type Prop3DKind = "chest" | "stash" | "bookcase";
-export const PROPS_3D: Record<string, Prop3DKind> = { chest: "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase" };
+export const PROPS_3D: Record<string, Prop3DKind> = { chest: "chest", "rickety-chest": "chest", "loot-chest": "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase" };
 export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
 
 // Where one stands: in the middle of its footprint (lib/world/grid.ts footprintCells: an even depth

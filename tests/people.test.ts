@@ -146,14 +146,14 @@ describe("people who wander", () => {
     expect(empty / small).toBeGreaterThan(0.08);
     expect(empty / small).toBeLessThan(0.35);
     expect(librarianThere).toBe(libraries);
-  }, 60_000);
+  }, 180_000); // (the Cyclops's 60-room layouts, 2026-11-11: about 3 s each to roll)
 });
 
 describe("a library's broken bookcases", () => {
   // (World version 10, the user's play-test, 2026-11-11: one stood in front of a tunnel. Seed 4's library has a door in its top wall.)
   it("stand clear of the library's doorways", () => {
     const run = cyclops(4), walk = run.walk!;
-    expect(walk.v).toBe(10);
+    expect(walk.v).toBeGreaterThanOrEqual(10);
     const plan = layoutFloorplan(walk.layout);
     const { placed } = placeWalk(walk, run.map, dungeonOf(run), (id) => walkRoom(run, id));
     const libraries = Object.keys(walk.layout.rooms).filter((id) => walkRoom(run, id)?.kind === "library");

@@ -42,10 +42,10 @@ const made = (dungeon: 0 | 1, seed: number, v: number): DungeonRun => {
   }
   return structuredClone(cache.get(k)!);
 };
-// Two runs that hold, between them, every kind of thing you use (d1 s44 since the Cyclops's rooms
+// Two runs that hold, between them, every kind of thing you use (d1 s2 since its 15-room climb, 2026-11-11; s44 since the Cyclops's rooms
 // went to 2-tile blocks, 2026-11-09; s45 before: chests, a rickety
 // chest, sacks, a deck, the merchant and the librarian; d0 s41: the other dungeon's chests and sacks).
-const CASES = [[0, 41], [1, 44]] as const;
+const CASES = [[0, 41], [1, 2]] as const;
 const USED = ["chest", "rickety-chest", "sack", "card-deck", "merchant", "librarian"];
 const FIXTURES = path.join(__dirname, "fixtures", "walk");
 const fixture = (name: string): DungeonRun => JSON.parse(fs.readFileSync(path.join(FIXTURES, `${name}.json`), "utf8"));

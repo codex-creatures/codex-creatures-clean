@@ -93,7 +93,7 @@ describe("phase 2a: saved placements build the same rooms (world-spec §8)", () 
     const bad: string[] = [];
     for (const dungeon of [0, 1] as const) for (let seed = 1; seed <= 5; seed++) bad.push(...differences(`dungeon ${dungeon} seed ${seed}`, rolled(dungeon, seed * 7919)));
     expect(bad).toEqual([]);
-  });
+  }, 120_000); // (new Cyclops runs take about 3 s each to roll, since its 60-room climb, 2026-11-11)
 });
 
 describe("what's saved, and how (world-spec §3, §7)", () => {

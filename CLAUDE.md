@@ -52,7 +52,7 @@ own: everything else runs in the browser.
      card's `soulStone`, where missing means "roll it on load" and `null` means none).
    - Exported save files must stay importable: bump `SAVE_FILE_VERSION` (lib/saveFile.ts) only
      together with a reader for the older version.
-   - **Walkable runs carry a world version** (`WALK_V`, now 10). A run keeps the placement rules it
+   - **Walkable runs carry a world version** (`WALK_V`, now 11). A run keeps the placement rules it
      was made with for good: pin the current version before changing placement rules, and make new
      rules a new world version ([docs/world/persistence.md](docs/world/persistence.md)).
    - **Never write saves on the user's real addresses** while testing: http://localhost:3000, the

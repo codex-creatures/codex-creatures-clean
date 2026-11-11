@@ -82,7 +82,7 @@ export function guarding(foes: Foe[], layout: Layout, room: (id: string) => Room
     const cages = placed ? cageGuardSpot(placed, f.room, r) : undefined;
     if (cages) return { ...f, walks: true, guard: cages };
     if (fightContainer(r, dungeon) === "sack") return f;
-    return { ...f, walks: true, guard: guardedChestSpot(layout, f.room, r, dungeon) };
+    return { ...f, walks: true, guard: guardedSpot(layout, placed, f.room, r, dungeon) };
   });
 }
 
@@ -133,6 +133,12 @@ export function guardedChestSpot(layout: Layout, id: string, r: Room, dungeon: D
   const inStone = (lr.inner ?? []).some((q) => at.x >= q.x && at.x < q.x + q.w && at.y >= q.y && at.y < q.y + q.h);
   return at.y < top.y || inStone ? centre : at;
 }
+// (World version 11) A guarded storehouse's guard keeps the storehouse's own chest, where it was placed
+// (the user, 2026-11-11): one chest, not a second in the middle that could stand on the first.
+export function guardedSpot(layout: Layout, placed: Placements | undefined, id: string, r: Room, dungeon: DungeonId): Pt {
+  const stores = r.kind === "storehouse" && (placed?.v ?? 0) >= 11 ? placed!.spot(`${id}:stores`) : undefined;
+  return stores ?? guardedChestSpot(layout, id, r, dungeon);
+}
 
 // The things to tap, as the rooms stand now (`room`): each where it was placed
 // (lib/world/placements.ts), the witch where she's got to, a beaten room's sack
@@ -181,9 +187,9 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     }
     const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;
     if (guards && !r.done) {
-      out.push(thingOf({ key: id, room: id, ...guardedChestSpot(layout, id, r, dungeon), def: "loot-chest", state: "shut", open: false, guarded: true }));
+      out.push(thingOf({ key: id, room: id, ...guardedSpot(layout, placed, id, r, dungeon), def: "loot-chest", state: "shut", open: false, guarded: true }));
     } else if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
-      const at = guards ? guardedChestSpot(layout, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
+      const at = guards ? guardedSpot(layout, placed, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
       out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
     }
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).

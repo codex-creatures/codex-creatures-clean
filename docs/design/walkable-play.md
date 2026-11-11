@@ -236,11 +236,13 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   `endRun`).
   **Guarded chests** (the user, 2026-11-07): a mini boss's or boss's chest (`fightContainer`
   not a sack) is on the ground from the start, shut: behind a boss waiting at the top (beside
-  him, a little behind, where cages stand), else the room's middle (walkWorld.ts
+  him, a little behind, where cages stand), a guarded storehouse's own chest where it was placed
+  (world version 11, the user, 2026-11-11), else the room's middle (walkWorld.ts `guardedSpot`,
   `guardedChestSpot`, from the layout). Its guards patrol close round it (`guarding`, foes.ts
   `GUARD_REACH` 2 tiles 🧪; a waiting boss still stands). You can tap it before they're beaten,
-  but trying to open it sets them on you (`soundAlarm`: as if seen); win, and Loot opens it
-  (the user, 2026-11-09). An ordinary fight's sack still lies where you stood.
+  but trying to open it sets them on you (`soundAlarm`: as if seen); win, and it stays shut:
+  walk up and open it (the user, 2026-11-11; the Victory window has no Loot for a chest while
+  walking, only for a sack). An ordinary fight's sack still lies where you stood.
   **The campfire window** (the user, 2026-11-06: the long bars were too big; 2026-11-09: out
   of the way): a thin bar of what the fire has left, then your team in a column down from the
   top left, small (56 px), a health bar under each.

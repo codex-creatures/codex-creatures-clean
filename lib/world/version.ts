@@ -24,7 +24,9 @@
 //    broken bookcases and lectern, a stash by half the campfires: new runs only.
 // 10: a library's broken bookcases kept clear of its doorways (the user's
 //    play-test, 2026-11-11: one stood in front of a tunnel): new runs only.
-export const WALK_V = 10;
+// 11: a guarded storehouse's guard keeps the storehouse's own chest, with no second chest in
+//    the room's middle that could stand on it (the user, 2026-11-11): new runs only.
+export const WALK_V = 11;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

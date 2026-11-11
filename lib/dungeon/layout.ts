@@ -112,7 +112,13 @@ export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0, block: BLO
 // Since 2026-11-09 (the user: the Encampment's narrower rooms are more fun to explore) its rooms are
 // the Encampment's size (2-tile blocks, its large room a large shape still), rolled guided: about
 // 0.4 s a layout, 1.3 s at worst; unguided, a third of them couldn't be rolled at all.
-export const WALK_LABYRINTH = { rooms: 30, minRoute: 10, large: 1, block: BLOCK, guided: true };
+// Since 2026-11-11 (the user: 10 was too quick to get through) 15 rooms to the lair again, as the
+// scroll map: 5 rooms across and 60 rooms (the size rule, walkable-layout.md), about 2.7 s a layout,
+// 4.2 s at worst on the PC (56 rooms: 3.9 s, 13 s at worst). Runs already made keep their layouts.
+export const WALK_LABYRINTH = { rooms: 60, minRoute: 15, large: 1, block: BLOCK, across: 5, guided: true };
+// Its size before (30 rooms, 10 to the lair): runs made at world versions up to 10 had it, and the
+// tests of those versions' rules roll it.
+export const WALK_LABYRINTH_30 = { rooms: 30, minRoute: 10, large: 1, block: BLOCK, guided: true };
 
 export type Corner = "ne" | "nw" | "se" | "sw";
 const CORNERS: Corner[] = ["ne", "nw", "se", "sw"];

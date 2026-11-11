@@ -1114,7 +1114,8 @@ export default function DungeonPage() {
       return top ? leaveRoom(leavePending(done)) : done;
     });
     setNotes([...xpNotes, ...winds]);
-    if (!top) setWon({ rows: wonRows, ups: wonUps, loot: sack.length > 0 });
+    // (Walking, a chest stays shut where it's guarded: you walk up and open it. The user, 2026-11-11.)
+    if (!top) setWon({ rows: wonRows, ups: wonUps, loot: sack.length > 0 && !(r.walk && container !== "sack") });
     // The rugged backpack (the Cyclops' first chest) goes straight on: more room to sort the haul.
     const pack = top ? sack.findIndex((x) => "backpack" in x) : -1;
     if (pack >= 0) takeFromSack(pack);

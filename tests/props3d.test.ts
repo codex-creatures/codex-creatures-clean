@@ -23,10 +23,10 @@ describe("the 3D bookcase and sack drafts", () => {
 });
 
 describe("the 3D props in the dungeon", () => {
-  it("the treasure chest, the sacks and the bookcases go 3D; the rickety chests stay flat", async () => {
+  it("every chest (the rickety and loot ones too), the sacks and the bookcases go 3D", async () => {
     const { prop3dOf } = await import("../lib/render3d/props3d");
-    expect(["chest", "sack", "loot-sack", "bookcase"].map(prop3dOf)).toEqual(["chest", "stash", "stash", "bookcase"]);
-    expect(["rickety-chest", "loot-chest", "pool", "cage"].map(prop3dOf)).toEqual([undefined, undefined, undefined, undefined]);
+    expect(["chest", "rickety-chest", "loot-chest", "sack", "loot-sack", "bookcase"].map(prop3dOf)).toEqual(["chest", "chest", "chest", "stash", "stash", "bookcase"]);
+    expect(["pool", "cage"].map(prop3dOf)).toEqual([undefined, undefined]);
   });
   it("each stands in the middle of its footprint", async () => {
     const { propSpot } = await import("../lib/render3d/props3d");
