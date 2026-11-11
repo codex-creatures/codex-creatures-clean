@@ -43,7 +43,7 @@ import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
 import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
-import { Prop3D, Campfire, PROP_LEAN, type Tint } from "@/components/Props3D";
+import { Prop3D, Campfire, HealingGem, PROP_LEAN, type Tint } from "@/components/Props3D";
 import { texelsPerU, pixelScale, lightField, shadeAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -352,11 +352,11 @@ function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null, closed:
 // Things, foes and wall torches: upright pictures, sized from their definitions (lib/world/objects.ts).
 // `shade` (Stone): the colour of the light where each stands, as there are no Three.js lights to light them.
 // As the 2D view (lib/render/scene.ts): things you've seen (people only while lit, unless solid), a
-// used pool dimmed, a "!" over each cage you can open; foes while lit, or all of a room that's seen you,
+// pool as the healing gem (dark once used), a "!" over each cage you can open; foes while lit, or all of a room that's seen you,
 // with a "!" over each; the card witch walking about, and the people who wander; campfires and candles; rubble where a tunnel fell.
 // Foes, the witch and the people follow the sim every frame (the list itself is shown again now and then).
 const FLAME_COLOUR = "#ffd27a";
-const DIM_POOL = 0.6;                  // a used pool's picture, this bright (the 2D view's)
+const GEM_UP = 1.3;                    // u: a "!" over the healing gem
 const SHAKE_U = 0.09;                  // u: the picture's shake as a tunnel falls in (the 2D view's 3 art pixels at 32 a unit)
 const RUBBLE = { colours: ["#5b5560", "#6f6872", "#48434d"], size: 0.22, drop: 3 }; // the 2D view's stones; fallen from `drop` u up
 function Sprites({ sim, live, layout, progress, frame, things, room, stretch, closed, sconces = true, shade }: {
@@ -395,9 +395,15 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }
-    const used = t.def === "pool" && t.open ? DIM_POOL : 1;
-    const colour: Tint | undefined = shade ? () => shade(t.x, t.y).multiplyScalar(used) : used < 1 ? new THREE.Color(used, used, used) : undefined;
-    out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={colour} />);
+    // A pool is the healing gem (Props3D, the user, 2026-11-12), in the middle of its footprint: glowing full
+    // bright till you've drunk from it (dark as the room round it if it's cut off behind you), then dark.
+    if (t.def === "pool") {
+      const shine = glows(!t.open, t.x, t.y) ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(t.x, t.y));
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><HealingGem used={t.open} colour={shade && (() => shade(t.x, t.y))} shine={shine} /></group>);
+      if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={GEM_UP} />);
+      continue;
+    }
+    out.push(<Upright key={t.key} src={a.src} x={t.x} y={t.y} w={w} h={h} below={b.down * stretch} colour={shade && (() => shade(t.x, t.y))} />);
     if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
   }
   for (const f of sim.foes) {

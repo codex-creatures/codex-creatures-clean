@@ -2,7 +2,7 @@
 // components/Drafts3D.tsx — 🧪 drafts of the walkable dungeon's other things in 3D, for /lab/chest only (the
 // user, 2026-11-11: "get the current things found in the dungeon up to the level of the tables and
 // bookcases"). Nothing in the game draws these yet; each waits for the user's say-so in the lab. (Approved
-// and in the game: the broken bookcase and the campfire, in Props3D.)
+// and in the game: the broken bookcase, the campfire and the healing gem, in Props3D.)
 // The user's review, 2026-11-11, gave the second round:
 // - the strongbox: the mini boss's and storehouse's loot, half as big again as the chest, iron-bound (PixelLab,
 //   styled on the Warden's strongbox), with a faint glow (it's guarded, so it spoils no surprise);
@@ -13,10 +13,9 @@
 // - the wall torch, redone bigger.
 // Units as Props3D: x across, y up, z towards you; each stands on y = 0, centred, facing south.
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
-import { Chest, Bookcase, Glow, Campfire, Ring, Flame, CAMPFIRE_3D, leaned, loaded } from "@/components/Props3D";
+import { Chest, Bookcase, Glow, Campfire, HealingGem, Flame, leaned, loaded } from "@/components/Props3D";
 import { ART_FACES, ART_PER_U, ART_PITCH, type ChestFaces } from "@/lib/render3d/chest3d";
 import { BROKEN_BOOKCASE_FACES } from "@/lib/render3d/props3d";
 
@@ -24,11 +23,10 @@ export type DraftKind = "strongbox" | "broken" | "gem" | "campfire" | "cage" | "
 
 const SAMPLES = "/sprites/walk/samples/3d";
 const V = 1; // (a new address when a picture changes)
-// The palette's colours these use (art/palettes/dungeon.json), and the gem's own.
+// The palette's colours these use (art/palettes/dungeon.json).
 const C = {
   iron: "#3b352f", ironLit: "#5e5248", ironDark: "#2a2723", rust: ["#563e2d", "#6d452d", "#844c2c", "#3b352f", "#4c433b"],
   wood: "#483522", woodDark: "#33271a", woodLit: "#5e432a", cloth: "#22221e", wax: "#d5cbb1",
-  gem: "#5fe0d0", gemCore: "#c8fff4", gemDark: "#3a4a48",
 };
 const lambert = (color: string) => leaned(new THREE.MeshLambertMaterial({ color, flatShading: true }));
 
@@ -68,35 +66,6 @@ function Block({ material, at, size, turn }: { material: THREE.Material | THREE.
       <mesh geometry={BOX} material={material} scale={size} raycast={() => null} />
       <mesh geometry={BOX} material={HULL} scale={size.map((v) => v + 2 / ART_PER_U) as [number, number, number]} raycast={() => null} />
     </group>
-  );
-}
-
-// ── The healing gem: a crystal floating over a stone plinth, turning slowly and bobbing, glowing; once
-// you've drunk from it, it's dark and still. 0.8 u up at its middle.
-function HealingGem({ used }: { used: boolean }) {
-  const g = useRef<THREE.Group>(null);
-  const geo = useMemo(() => new THREE.OctahedronGeometry(0.2, 0), []);
-  const mats = useMemo(() => ({
-    gem: new THREE.MeshLambertMaterial({ color: C.gem, emissive: C.gem, emissiveIntensity: 0.6, flatShading: true }),
-    dark: new THREE.MeshLambertMaterial({ color: C.gemDark, flatShading: true }),
-    core: new THREE.MeshBasicMaterial({ color: C.gemCore }),
-  }), []);
-  useFrame(() => {
-    if (!g.current) return;
-    const t = performance.now() / 1000;
-    g.current.position.y = used ? 0.62 : 0.8 + 0.05 * Math.sin(t * 1.6);
-    if (!used) g.current.rotation.y = t * 0.6;
-  });
-  return (
-    <>
-      <Ring wide={0.5} tall={0.3} top={CAMPFIRE_3D.rim} rim={CAMPFIRE_3D.rim} rimPx={CAMPFIRE_3D.rimPx} sides={8} />
-      <group ref={g}>
-        <mesh geometry={geo} material={used ? mats.dark : mats.gem} scale={[1, 1.6, 1]} raycast={() => null} />
-        {!used && <mesh geometry={geo} material={mats.core} scale={[0.35, 0.6, 0.35]} raycast={() => null} />}
-      </group>
-      {!used && <Glow colour={C.gem} radius={1.1} strength={0.4} />}
-      {!used && <Glow colour={C.gem} radius={0.3} strength={0.5} y={0.305} />}
-    </>
   );
 }
 

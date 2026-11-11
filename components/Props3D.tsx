@@ -265,6 +265,53 @@ export function Campfire({ lit, colour }: { lit: boolean; colour?: Tint }) {
   );
 }
 
+// ── The healing gem (the user, 2026-11-12: in place of the dungeon's pools; the Den keeps its pool): a
+// crystal floating over a stone plinth (the campfire's stones), turning slowly and bobbing, glowing; once
+// you've drunk from it, it's dark and still, resting lower. 0.8 u up at its middle. `colour` (the game's
+// Stone): the plinth and a used gem are tinted by the light where it stands; `shine`, the glowing gem's
+// (full bright, unless the room's cut off behind you). Without them (the lab), lit by Three.js lights.
+export const GEM_3D = { colour: "#5fe0d0", core: "#c8fff4", dark: "#3a4a48", up: 0.8, rest: 0.62, wide: 0.5, tall: 0.3 };
+const GEM_LIGHT = new THREE.Vector3(-0.4, 0.8, 0.5).normalize();
+// (Unlit in the game, so its facets are shaded beforehand, each by how it faces a light up and to the left.)
+const GEM_GEO = (() => {
+  const g = new THREE.OctahedronGeometry(0.2, 0), n = g.getAttribute("normal"), cols: number[] = [];
+  for (let i = 0; i < n.count; i++) {
+    const s = 0.7 + 0.3 * Math.max(0, n.getX(i) * GEM_LIGHT.x + n.getY(i) * GEM_LIGHT.y + n.getZ(i) * GEM_LIGHT.z);
+    cols.push(s, s, s);
+  }
+  g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+  return g;
+})();
+export function HealingGem({ used, colour, shine }: { used: boolean; colour?: Tint; shine?: Tint }) {
+  const g = useRef<THREE.Group>(null), flat = !!colour;
+  const mats = useMemo(() => {
+    const gem = flat ? leaned(new THREE.MeshBasicMaterial({ color: GEM_3D.colour, vertexColors: true }))
+      : leaned(new THREE.MeshLambertMaterial({ color: GEM_3D.colour, emissive: GEM_3D.colour, emissiveIntensity: 0.6, flatShading: true }));
+    const dark = flat ? leaned(new THREE.MeshBasicMaterial({ color: GEM_3D.dark, vertexColors: true })) : leaned(new THREE.MeshLambertMaterial({ color: GEM_3D.dark, flatShading: true }));
+    const core = leaned(new THREE.MeshBasicMaterial({ color: GEM_3D.core }));
+    return { gem, dark, core, base: bases([gem, dark, core]) };
+  }, [flat]);
+  useTint([mats.dark], mats.base, colour);
+  useTint([mats.gem, mats.core], mats.base, shine);
+  useFrame(() => {
+    if (!g.current) return;
+    const t = performance.now() / 1000;
+    g.current.position.y = used ? GEM_3D.rest : GEM_3D.up + 0.05 * Math.sin(t * 1.6);
+    if (!used) g.current.rotation.y = t * 0.6;
+  });
+  return (
+    <>
+      <Ring wide={GEM_3D.wide} tall={GEM_3D.tall} top={CAMPFIRE_3D.rim} rim={CAMPFIRE_3D.rim} rimPx={CAMPFIRE_3D.rimPx} sides={8} colour={colour} />
+      <group ref={g}>
+        <mesh geometry={GEM_GEO} material={used ? mats.dark : mats.gem} scale={[1, 1.6, 1]} raycast={() => null} />
+        {!used && <mesh geometry={GEM_GEO} material={mats.core} scale={[0.35, 0.6, 0.35]} raycast={() => null} />}
+      </group>
+      {!used && <Glow colour={GEM_3D.colour} radius={1.1} strength={0.4} />}
+      {!used && <Glow colour={GEM_3D.colour} radius={0.3} strength={0.5} y={GEM_3D.tall + 0.005} />}
+    </>
+  );
+}
+
 // A low round wall (`rim` laid round it, a unit of art to a unit, as many of its rows as fit square on
 // screen), its top `top` seen from above. `colour`: tinted by the light where it stands (the game's Stone).
 export function Ring({ wide, tall, top, rim, rimPx, sides = 16, colour }: { wide: number; tall: number; top: string; rim: string; rimPx: readonly [number, number]; sides?: number; colour?: Tint }) {

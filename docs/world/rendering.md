@@ -284,11 +284,16 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   crossed logs; public/sprites/props/campfire3d), in the middle of its 2 × 2 footprint, flames standing up
   in it and its warm glow while it burns; tinted by the light where it stands, full bright while it burns
   in sight, as the flat picture was. Drawing only.
+- **The healing gem** in place of the dungeon's pools (the user, 2026-11-12; the Den keeps its pool):
+  Props3D `HealingGem`, a crystal floating and turning over a low stone plinth (the campfire's stones) in the
+  middle of the pool's footprint, glowing, its facets shaded beforehand (Stone has no lights to shade them);
+  full bright till you drink from it (dark as the room if it's cut off behind you), then dark and still,
+  resting lower, tinted by the light where it stands. Drawing only: the pool's footprint, placement and
+  window are unchanged. (The 2D view still draws the pool.)
 - **🧪 Drafts, lab only** (components/Drafts3D.tsx, /lab/chest's "Drafts" row, each beside its old picture;
   the user's review, 2026-11-11): the **strongbox** for the mini boss's and storehouse's loot (the chest's
   boxes, half as big again, PixelLab iron-bound faces styled on the Warden's strongbox, a faint gold glow);
-  the **healing gem** in place of the dungeon's pools (a crystal floating and turning over a stone plinth,
-  glowing; dark and still once used; the Den keeps its pool); the **cage**, 1.5 u across and 2 u tall in
+  the **cage**, 1.5 u across and 2 u tall in
   rusty iron (bigger than its 1 u footprint: a bigger footprint would be a new world version); the
   **lectern** (a carved post and an open book on its desk, PixelLab's); a **floor torch** (a stand with a
   bowl of fire) in place of the floor candles; the **wall torch**, redone bigger; and a 3D **candle on a
