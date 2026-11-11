@@ -238,9 +238,11 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   rooms cut off behind you dimmed; a used pool dimmed; rubble falling where a tunnel fell in, with
   the shake; the witch walking (her sheet); campfires (full bright while burning) and the kit's
   candles with a flame on each lit wick.
-  A fire, candle or wall torch glows (full bright, its flame, a light of the pool) only while it's
-  in sight (the sim's `lightNow` where it stands, as the sim counts its light): out of sight, round a
-  corner or cut off, it's drawn as dark as what's round it (the user, 2026-11-11).
+  A lit fire, candle or wall torch glows (full bright, its flame, a light of the pool, its light on
+  the floor round it) wherever you've seen it, round a corner too (the user, 2026-11-12: "in a room
+  you've explored, they should stay on"); its light still never goes through rock (`lightField`'s
+  `othersOn`: what the sim lights now and what you've seen). Cut off behind you, it's drawn as dark as
+  what's round it. Drawing only: the sim counts its light only while you can see it.
 - **The chest, stashes and bookcases are 3D** (the user, 2026-11-11: "getting the 3d items into the
   dungeon"): the treasure chest, a stash's sack, a beaten room's loot sack and the library's
   bookcases are drawn as the lab's 3D drafts (components/Props3D.tsx, shared with /lab/chest), in

@@ -88,28 +88,28 @@ export function lightCurve(d: number, r: number): number {
 }
 
 // The light grid round tile (cx, cy). Each light adds to it (lights together are brighter, never
-// past 1), only on tiles the sim lit this frame, and only along a clear line. (`into`: last
-// frame's grid, reused, so a frame makes no garbage.)
-export function lightField(fp: Floorplan, lightNow: Uint8Array, torch: Light3D | null, lights: Light3D[], cx: number, cy: number, size = WINDOW, into?: LightField): LightField {
+// past 1), only on tiles the sim lit this frame (`othersOn`: where the other lights may fall, if not
+// those), and only along a clear line. (`into`: last frame's grid, reused, so a frame makes no garbage.)
+export function lightField(fp: Floorplan, lightNow: Uint8Array, torch: Light3D | null, lights: Light3D[], cx: number, cy: number, size = WINDOW, into?: LightField, othersOn = lightNow): LightField {
   const x0 = Math.round(cx) - size / 2, y0 = Math.round(cy) - size / 2, n = size * SUB;
   const out: LightField = into && into.size === size
     ? Object.assign(into, { x0, y0 }) : { x0, y0, size, torch: new Float32Array(n * n), other: new Float32Array(n * n) };
   if (into === out) { out.torch.fill(0); out.other.fill(0); }
-  const add = (l: Light3D, into: Float32Array) => {
+  const add = (l: Light3D, into: Float32Array, on: Uint8Array) => {
     const i0 = Math.max(0, Math.floor((l.x - l.r - x0 + 0.5) * SUB)), i1 = Math.min(n - 1, Math.ceil((l.x + l.r - x0 + 0.5) * SUB));
     const j0 = Math.max(0, Math.floor((l.y - l.r - y0 + 0.5) * SUB)), j1 = Math.min(n - 1, Math.ceil((l.y + l.r - y0 + 0.5) * SUB));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const x = x0 - 0.5 + (i + 0.5) / SUB, y = y0 - 0.5 + (j + 0.5) / SUB;
       const tx = Math.round(x), ty = Math.round(y);
-      if (tx < 0 || ty < 0 || tx >= fp.w || ty >= fp.h || !lightNow[ty * fp.w + tx]) continue;
+      if (tx < 0 || ty < 0 || tx >= fp.w || ty >= fp.h || !on[ty * fp.w + tx]) continue;
       const v = l.power * lightCurve(Math.hypot(x - l.x, y - l.y), l.r);
       if (v <= 0 || !clearLine(fp, l, x, y)) continue;
       const k = j * n + i;
       into[k] = 1 - (1 - into[k]) * (1 - v);
     }
   };
-  if (torch) add(torch, out.torch);
-  for (const l of lights) add(l, out.other);
+  if (torch) add(torch, out.torch, lightNow);
+  for (const l of lights) add(l, out.other, othersOn);
   return out;
 }
 

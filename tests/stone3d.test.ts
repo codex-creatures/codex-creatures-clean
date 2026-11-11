@@ -82,6 +82,14 @@ describe("lightField", () => {
     const fade = new Float32Array(fp.w * fp.h).fill(1); fade[2 * fp.w + 2] = 0.5;
     expect(shadeAt(null, fade, fp.w, 2.2, 1.8, S)).toEqual([0.1, 0.1, 0.1]);
   });
+  it("the other lights can fall where you remember (othersOn), your torch only where the sim lights now", () => {
+    const none = new Uint8Array(fp.w * fp.h), fire = { x: 6, y: 2, r: 3, power: 1 };
+    const f = lightField(fp, none, { x: 6, y: 2, r: 3, power: 1 }, [fire], 6, 2, 16, undefined, all(fp));
+    expect(sample(f, "other", 6, 2)).toBe(1);
+    expect(sample(f, "torch", 6, 2)).toBe(0);
+    expect(sample(f, "other", 2, 2)).toBe(0); // (still never through rock)
+    expect(sample(lightField(fp, none, null, [fire], 6, 2, 16), "other", 6, 2)).toBe(0); // (without it, as the sim lights now)
+  });
   it("reuses last frame's grid, cleared", () => {
     const a = lightField(fp, all(fp), torch, [], 2, 2, 16);
     const b = lightField(fp, all(fp), null, [], 6, 2, 16, a);

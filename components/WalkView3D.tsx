@@ -261,7 +261,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
     // Your torch, held up.
     torch.current?.position.set(sim.me.x + 0.25, TORCH.height, sim.me.y - 0.1); // (held up beside you, not in front of your face)
     // The nearest lit lights you've seen get the pool's real lights.
-    const lit = litLights(sim, live, frame.current);
+    const lit = litLights(sim, live, frame.current, closed);
     pool.current.forEach((pl, i) => {
       if (!pl) return;
       const l = lit[i];
@@ -296,7 +296,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
     state.gl.info.reset();
   });
 
-  const others = { sim, live, layout, progress, frame, things: things(), room, stretch };
+  const others = { sim, live, layout, progress, frame, things: things(), room, stretch, closed };
   if (view.stone) return (
     <>
       <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} fadeRef={fade} />
@@ -328,18 +328,25 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   );
 }
 
-// The lit lights in sight now (wall torches, candles, campfires: the sim counts their light only
-// while you can see them), and the foes that have seen you (lit up like your torch: the sim's
-// ALARM_LIGHT), nearest you first.
-function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null): { x: number; y: number; r: number }[] {
+// The lit lights to draw, nearest you first: wall torches, candles and campfires wherever you've seen
+// them, in sight or not, unless cut off behind you (the user, 2026-11-12: a lit torch in a room you've
+// explored stays lit round the corner; drawing only, the sim counts their light only while you can
+// see them); and, while in sight, the foes that have seen you (lit up like your torch: the sim's
+// ALARM_LIGHT) and the people carrying a light.
+function litLights(sim: WalkSim, live: WalkSim["live"], F: Frame | null, closed: Uint8Array): { x: number; y: number; r: number }[] {
+  const at = (l: { x: number; y: number }) => Math.round(l.y) * live.w + Math.round(l.x);
+  const kept = (l: { x: number; y: number }) => sim.known[at(l)] === 1 && !closed[at(l)];
   return [
-    ...sim.sconces.filter((c) => c.lit && torchThere(sim, c)).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
-    ...sim.candles.filter((c) => c.lit).map((c) => ({ x: c.x, y: c.y, r: CANDLE_RADIUS })),
-    ...sim.fires.map((f) => ({ x: f.x, y: f.y, r: f.left > 0 ? CAMPFIRE_LIGHT : CAMPFIRE_LIGHT / 2 })),
-    ...(F?.alarmed ?? []).map((f) => ({ x: f.x, y: f.y, r: ALARM_LIGHT })),
-    ...(F?.peopleLit ?? []).map((w) => ({ x: w.x, y: w.y, r: PERSON_LIGHT })),
-  ].filter((l) => sim.lightNow[Math.round(l.y) * live.w + Math.round(l.x)])
-    .sort((a, b) => Math.hypot(a.x - sim.me.x, a.y - sim.me.y) - Math.hypot(b.x - sim.me.x, b.y - sim.me.y));
+    ...[
+      ...sim.sconces.filter((c) => c.lit && torchThere(sim, c)).map((c) => ({ x: c.x, y: c.y - (c.wall === "top" || !c.wall ? 0.4 : 0), r: SCONCE_RADIUS })),
+      ...sim.candles.filter((c) => c.lit).map((c) => ({ x: c.x, y: c.y, r: CANDLE_RADIUS })),
+      ...sim.fires.map((f) => ({ x: f.x, y: f.y, r: f.left > 0 ? CAMPFIRE_LIGHT : CAMPFIRE_LIGHT / 2 })),
+    ].filter(kept),
+    ...[
+      ...(F?.alarmed ?? []).map((f) => ({ x: f.x, y: f.y, r: ALARM_LIGHT })),
+      ...(F?.peopleLit ?? []).map((w) => ({ x: w.x, y: w.y, r: PERSON_LIGHT })),
+    ].filter((l) => sim.lightNow[at(l)]),
+  ].sort((a, b) => Math.hypot(a.x - sim.me.x, a.y - sim.me.y) - Math.hypot(b.x - sim.me.x, b.y - sim.me.y));
 }
 
 // Things, foes and wall torches: upright pictures, sized from their definitions (lib/world/objects.ts).
@@ -352,14 +359,15 @@ const FLAME_COLOUR = "#ffd27a";
 const DIM_POOL = 0.6;                  // a used pool's picture, this bright (the 2D view's)
 const SHAKE_U = 0.09;                  // u: the picture's shake as a tunnel falls in (the 2D view's 3 art pixels at 32 a unit)
 const RUBBLE = { colours: ["#5b5560", "#6f6872", "#48434d"], size: 0.22, drop: 3 }; // the 2D view's stones; fallen from `drop` u up
-function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sconces = true, shade }: {
-  sim: WalkSim; live: WalkSim["live"]; layout: Layout; progress: Progress; frame: React.RefObject<Frame | null>; things: Thing[];
+function Sprites({ sim, live, layout, progress, frame, things, room, stretch, closed, sconces = true, shade }: {
+  sim: WalkSim; live: WalkSim["live"]; layout: Layout; progress: Progress; frame: React.RefObject<Frame | null>; things: Thing[]; closed: Uint8Array;
   room: (id: string) => Room | undefined; stretch: number; sconces?: boolean; shade?: (x: number, y: number) => THREE.Color;
 }) {
   const seen = (x: number, y: number) => sim.known[Math.round(y) * live.w + Math.round(x)] === 1;
   const lightNow = (x: number, y: number) => sim.lightNow[Math.round(y) * live.w + Math.round(x)] === 1;
-  // A flame glows only while it's in sight: out of it (round a corner, or cut off), it's as dark as what's round it.
-  const glows = (lit: boolean, x: number, y: number) => lit && lightNow(x, y);
+  // A lit flame glows wherever you've seen it, round a corner too (the user, 2026-11-12); cut off behind
+  // you, it's as dark as what's round it.
+  const glows = (lit: boolean, x: number, y: number) => lit && seen(x, y) && !closed[Math.round(y) * live.w + Math.round(x)];
   const A = frame.current?.alarm ?? sim.alarm;
   const out: React.ReactNode[] = [];
   for (const t of things) {
@@ -792,6 +800,7 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
   centre: React.RefObject<{ x: number; z: number }>; fieldRef: React.RefObject<LightField | null>; fadeRef: React.RefObject<Float32Array | null>;
 }) {
   const geo = useCarved(sim, live, layout, view);
+  const rememberRef = useRef<Uint8Array | null>(null);
   // The light grid and what you've seen, as textures (written into each frame, so kept in a ref).
   const grids = useRef<{ light: THREE.DataTexture; seen: THREE.DataTexture } | null>(null);
   useEffect(() => () => { grids.current?.light.dispose(); grids.current?.seen.dispose(); }, []);
@@ -825,8 +834,8 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
     if (now - last.current.light > 33) {
       last.current.light = now;
       const torch: Light3D = { x: sim.me.x, y: sim.me.y, r: torchReach(sim.flareLeft), power: 1 };
-      const lights = litLights(sim, live, frame.current).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
-      const f = fieldRef.current = lightField(live, sim.lightNow, torch, lights, sim.me.x, sim.me.y, WINDOW, fieldRef.current ?? undefined);
+      const lights = litLights(sim, live, frame.current, closed).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
+      const f = fieldRef.current = lightField(live, sim.lightNow, torch, lights, sim.me.x, sim.me.y, WINDOW, fieldRef.current ?? undefined, remembered(sim, closed, rememberRef));
       fillGrid(tex.light, f.torch, f.other);
       u.uWin.value.set(f.x0 - 0.5, f.y0 - 0.5, f.size);
       u.uTorch.value.set(sim.me.x, STONE.torchHeight, sim.me.y);
@@ -844,6 +853,14 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
   });
   if (!geo) return null;
   return <mesh ref={mesh} geometry={geo} raycast={() => null} />;
+}
+
+// Where the wall torches', candles' and fires' light falls: what the sim lights now, and what you've
+// seen that isn't cut off behind you (so their light stays round the corner: litLights). `into`: reused.
+function remembered(sim: WalkSim, closed: Uint8Array, into: React.RefObject<Uint8Array | null>): Uint8Array {
+  const n = sim.known.length, out = into.current?.length === n ? into.current : (into.current = new Uint8Array(n));
+  for (let i = 0; i < n; i++) out[i] = sim.lightNow[i] || (sim.known[i] && !closed[i]) ? 1 : 0;
+  return out;
 }
 
 // The shader's settings, filled in each frame from the view (STONE's numbers to start).
