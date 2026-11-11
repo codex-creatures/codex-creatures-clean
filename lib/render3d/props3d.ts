@@ -39,17 +39,22 @@ const SACK_OPEN_OUTLINE: [number, number][] = [...SACK_OUTLINE.slice(0, 8), [0.1
 export const sackOpenOutline = (): [number, number][] => SACK_OPEN_OUTLINE.map(([r, y]) => [r, y]);
 
 // ── The rickety table (world version 12, the user, 2026-11-11): a top slab on four legs, PixelLab's
-// faces as the chest's (48 a unit, square on screen). The front picture is the whole table seen from the
-// front (the 2D view's picture of it): its edge band is the slab's front and sides, a front leg's column
-// each leg. The deck of cards lies on top, face down.
-export const TABLE_V = 1;
+// faces as the chest's (48 a unit, square on screen), as big as the chest (1.25 × 0.79 u: room on top
+// for a candle and the deck), in the dungeon's palette and styled on the chest's faces. The front picture
+// is the whole table seen from the front (the 2D view's picture of it): its edge band is the slab's front
+// and sides, a front leg's column every leg, and what's below the slab (the cross brace, see-through
+// between) stands between the front legs and the back ones. The deck of cards lies on top, face down,
+// to one side, a candle (if there is one) to the other.
+export const TABLE_V = 2;
 export const TABLE_FACES = {
-  front: { src: `/sprites/props/table3d/front.png?v=${TABLE_V}`, w: 40, h: 24, edge: [7, 11], leg: { x: [4, 8], y: [11, 23] }, across: [1, 39] },
-  top: { src: `/sprites/props/table3d/top.png?v=${TABLE_V}`, w: 38, h: 20 },
-  deck: { src: `/sprites/props/table3d/deck.png?v=${TABLE_V}`, w: 10, h: 14 },
+  front: { src: `/sprites/props/table3d/front.png?v=${TABLE_V}`, w: 60, h: 20, edge: [0, 5], leg: { x: [2, 8], y: [5, 20] }, across: [0, 60] },
+  top: { src: `/sprites/props/table3d/top.png?v=${TABLE_V}`, w: 60, h: 33 },
+  deck: { src: `/sprites/props/table3d/deck.png?v=${TABLE_V}`, w: 16, h: 20 },
 };
 export const DECK_TALL = 0.05; // u: the deck's thickness
-export const LEG_IN = 0.06;    // u: each leg in from the slab's corner
+export const LEG_IN = 2 / ART_PER_U; // u: each leg in from the slab's end (as the front picture has it)
+export const DECK_AT = 0.28;         // u: the deck, right of the table's middle
+export const CANDLE_AT = -0.3;       // u: a candle on a table, left of its middle (WalkView3D)
 export function tableArt() {
   const F = TABLE_FACES, up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
   const slab = (F.front.edge[1] - F.front.edge[0]) / up, legs = (F.front.leg.y[1] - F.front.leg.y[0]) / up;

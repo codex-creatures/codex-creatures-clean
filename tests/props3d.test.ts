@@ -51,17 +51,22 @@ describe("the 3D props in the dungeon", () => {
 });
 
 describe("the 3D table (world version 12)", () => {
-  it("stands as high as the object says (a candle on it stands there), inside its footprint, and a cards room's deck is drawn on one", async () => {
+  it("is as big as the chest (room for a candle and the deck), as high as the object says (a candle on it stands there), and a cards room's deck is drawn on one", async () => {
     const { tableArt, prop3dOf } = await import("../lib/render3d/props3d");
     const { objectDef, TABLE_TOP } = await import("../lib/world/objects");
-    const { SUBCELLS } = await import("../lib/world/grid");
-    const t = tableArt(), f = objectDef("table").footprint;
+    const { chestArt } = await import("../lib/render3d/chest3d");
+    const t = tableArt(), c = chestArt();
     expect(t.top).toBeCloseTo(TABLE_TOP, 2);
     expect(objectDef("table").height).toBe(TABLE_TOP);
-    expect(t.width).toBeLessThanOrEqual(f.w / SUBCELLS);
-    expect(t.depth).toBeLessThanOrEqual(f.d / SUBCELLS);
-    expect(t.deck.width).toBeLessThan(t.width);
+    expect(objectDef("table").footprint).toEqual(objectDef("chest").footprint);
+    expect(t.width).toBeCloseTo(c.width, 6);
+    expect(t.depth).toBeCloseTo(c.depth, 6);
+    // The deck to one side, a candle to the other, both on the top.
+    const { DECK_AT, CANDLE_AT } = await import("../lib/render3d/props3d");
+    expect(DECK_AT + t.deck.width / 2).toBeLessThan(t.width / 2);
     expect(t.deck.depth).toBeLessThan(t.depth);
+    expect(Math.sign(CANDLE_AT)).toBe(-Math.sign(DECK_AT));
+    expect(Math.abs(CANDLE_AT)).toBeLessThan(t.width / 2 - 0.1);
     expect(["table", "card-deck"].map(prop3dOf)).toEqual(["table", "table"]);
   });
 });

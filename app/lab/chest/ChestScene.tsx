@@ -16,6 +16,7 @@ import { pixelScale } from "@/lib/render3d/stone";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS } from "@/lib/sprites/walk";
 import { TABLE_ART, TABLE_TOP, OBJECT_U } from "@/lib/world/objects";
+import { CANDLE_AT } from "@/lib/render3d/props3d";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
@@ -29,7 +30,7 @@ const OLD: Record<Thing3D, { shut: string; open: string; w: number; tall: number
   chest: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
   stash: { shut: "/sprites/props/burlap_sack.png", open: "/sprites/props/burlap_sack_open.png", w: legacyU(16), tall: 1 },
   bookcase: { shut: "/sprites/den/bookcase-2.png", open: "/sprites/den/bookcase-2.png", w: legacyU(30), tall: 86 / 76 },
-  table: { shut: TABLE_ART.src, open: TABLE_ART.src, w: OBJECT_U * 0.8, tall: TABLE_ART.h / TABLE_ART.w },
+  table: { shut: TABLE_ART.src, open: TABLE_ART.src, w: OBJECT_U, tall: TABLE_ART.h / TABLE_ART.w },
   deck: { shut: "/sprites/props/card_deck.png", open: "/sprites/props/card_deck.png", w: OBJECT_U, tall: 58 / 55 },
 };
 const PATCH = 17;                // units of floor and wall across (the screen is 15 at game zoom)
@@ -157,7 +158,7 @@ function Scene({ view }: { view: ChestView }) {
             ? <Prop3D kind="table" outline={view.outline} deck={view.thing === "deck" && !view.open} glow={RARITY_COLORS[view.rarity].text} />
             : <Prop3D kind={view.thing} open={view.open} outline={view.outline} edges={view.edges} />}
       </group>
-      {view.thing === "table" && view.candle && <TableCandle x={chestX} stretch={stretch} />}
+      {view.thing === "table" && view.candle && <TableCandle x={chestX + CANDLE_AT} stretch={stretch} />}
       {view.old && (
         <mesh position={[oldX, (o.w * o.tall * stretch) / 2, 0.4]} scale={[o.w, o.w * o.tall * stretch, 1]}>
           <planeGeometry />

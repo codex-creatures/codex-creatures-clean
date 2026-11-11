@@ -42,7 +42,7 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
-import { prop3dOf } from "@/lib/render3d/props3d";
+import { prop3dOf, CANDLE_AT } from "@/lib/render3d/props3d";
 import { Prop3D, PROP_LEAN } from "@/components/Props3D";
 import { texelsPerU, pixelScale, lightField, lightAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
@@ -415,14 +415,14 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, sc
   for (const c of sim.candles) {
     if (!seen(c.x, c.y)) continue;
     // The kit's candles, the 2D view's size against the walls' art (CANDLE_ART 0.85), a flame on each wick when lit.
-    // (One on a table, world version 12, stands on its top: `high` up, a little in front of its middle.)
+    // (One on a table, world version 12, stands on its top: `high` up, to the left of its middle.)
     const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, on = glows(c.lit, c.x, c.y);
-    const up = c.high ?? 0, cy = up ? c.y + 0.05 : c.y;
+    const up = c.high ?? 0, cy = up ? c.y + 0.05 : c.y, cx = up ? c.x + CANDLE_AT : c.x;
     out.push(
       <group key={c.id} position={[0, up, 0]}>
-        <Upright src={KIT_LIGHTS.candles} x={c.x} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
+        <Upright src={KIT_LIGHTS.candles} x={cx} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade?.(c.x, c.y)} />
         {on && KIT_LIGHTS.wicks.map(([wx, wy], i) => (
-          <mesh key={i} raycast={() => null} position={[c.x - w / 2 + wx * k, h - wy * k * stretch + 0.04, cy + 0.06]} scale={[0.05, 0.09, 1]}>
+          <mesh key={i} raycast={() => null} position={[cx - w / 2 + wx * k, h - wy * k * stretch + 0.04, cy + 0.06]} scale={[0.05, 0.09, 1]}>
             <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
           </mesh>
         ))}

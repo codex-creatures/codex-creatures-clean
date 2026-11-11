@@ -128,8 +128,8 @@ const WALK_OVER = { collision: "walk-over" as const, height: 0.3, sortDy: -0.6 }
 
 // A rickety table (world version 12, the user, 2026-11-11): furniture, some with a candle on, and the deck
 // of cards on one. Drawn in 3D (components/Props3D.tsx); its front picture stands in for it in the 2D view.
-export const TABLE_ART: ArtRef = { src: "/sprites/props/table3d/front.png?v=1", w: 40, h: 24 };
-export const TABLE_TOP = 0.67; // u: how high its top is (props3d.ts tableArt; a candle on it stands there)
+export const TABLE_ART: ArtRef = { src: "/sprites/props/table3d/front.png?v=2", w: 60, h: 20 };
+export const TABLE_TOP = 0.83; // u: how high its top is (props3d.ts tableArt; a candle on it stands there)
 
 const DEFS: ObjectDef[] = [
   // Things you use.
@@ -139,7 +139,7 @@ const DEFS: ObjectDef[] = [
   // A beaten room's loot: a sack dropped where the fight was, which you walk over; a chest (a mini boss's or boss's), solid.
   def("loot-sack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("open") }), legacyVisual({ shut: propRef(BURLAP_SACK), open: propRef(BURLAP_SACK_OPEN) }, { width: SACK_U })),
   def("loot-chest", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", interact: usable("open") }), legacyVisual({ shut: propRef(RICKETY_CHEST), open: propRef(RICKETY_CHEST_OPEN) }, { width: OBJECT_U })),
-  def("table", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, height: TABLE_TOP }), legacyVisual({ base: TABLE_ART }, { width: OBJECT_U * 0.8 })),
+  def("table", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, height: TABLE_TOP }), legacyVisual({ base: TABLE_ART }, { width: OBJECT_U })),
   def("card-deck", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "interactable", interact: usable("play") }), legacyVisual({ base: propRef(CARD_DECK) }, { width: OBJECT_U })),
   def("pool", floorThing({ footprint: { w: 3, d: 3 }, clearance: 1, kind: "interactable", height: 0.3, interact: usable("drink") }), legacyVisual({ base: ref(WALK_POOL) }, { width: legacyU(WALK_POOL.size), lift: 0.35 })),
   // (World version 9, decision 39) a library's broken bookcases, searched like a stash, and its locator lectern.

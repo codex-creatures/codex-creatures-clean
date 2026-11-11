@@ -261,9 +261,13 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   (`leaned(m, nudge)`: it shows where it was), so the lid is in front of you there; in front of it or
   beside it you're far further off than that (tests/chest3d.test.ts).
 - **Tables** (world version 12, the user, 2026-11-11): a rickety table, a slab on four legs (Props3D
-  `Table`, props3d.ts `tableArt`: 0.79 × 0.48 u, its top 0.67 u up, `TABLE_TOP`), PixelLab's faces
-  (public/sprites/props/table3d: the front, whose edge band is the slab's front and sides and a front
-  leg's column every leg; the top). A candle on one stands on its top (`Candle.high`). A cards room's
+  `Table`, props3d.ts `tableArt`): as big as the chest (1.25 × 0.79 u, its top 0.83 u up, `TABLE_TOP`;
+  the user: room for a candle and the deck), PixelLab's faces in the dungeon palette, styled on the
+  chest's (public/sprites/props/table3d: the front, whose edge band is the slab's front and sides, a
+  front leg's column every leg, and what's under the slab a see-through cross brace between the front
+  legs and between the back ones; the top). A candle on one stands on its top to the left (`Candle.high`,
+  `CANDLE_AT`), the deck to the right (`DECK_AT`). (The first faces, warm brown and smaller, made
+  without the art standard, were replaced the same day.) A cards room's
   deck is drawn on a table in runs of every version (`card-deck` → `table`), lying face down till it's
   turned over; while it's in your sight it glows the colour of its rarest card (`deckRarity`,
   `RARITY_COLORS`): a soft disc on the floor out to half a candle's reach and on the deck, half as

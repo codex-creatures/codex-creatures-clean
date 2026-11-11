@@ -75,9 +75,9 @@ the PNG here.
 | props/bookcase3d/top.png | pro job add29372-497b-45fc-80a1-f44b7fafc807, asset e1dd1b27-4653-5e1d-bb5f-33b6dedbefbd: candidate 0 of 16, resized to 60 × 21 and turned browner (hue +11, ×1.06) |
 | props/bookcase3d/*-lit.png | made from those: the top row of the front and side, and the top's front (last) row, ×1.4 |
 | props/sack3d/burlap.png | pro job 838108d6-42b2-46d1-892e-6f3c89bf0adf, asset c8cc9e27-0fe3-5efe-a5ef-f5f4145c7534: candidate 0 of 25 (the 3D sack's cloth, repeated round it) |
-| props/table3d/front.png | pro job ced3b8ff-343a-4e89-96b0-55f207552521, asset 807b510a-3366-57ec-8daa-0ec86262868a: candidate 0 of 36, its first 40 columns (the rickety table from the front, styled on bookcase3d/front.png; the 3D table's slab edge and legs, and the 2D view's picture) |
-| props/table3d/top.png | pro job 43e46f4c-f337-42d9-9810-3b1c63b7ccc9, asset 8a26d7e7-2963-588a-bc47-fd8ef6c42f23: candidate 7 of 64, its plank top cut out (35 × 18, without the leg stubs drawn below it) and widened to 38 × 20 (nearest neighbour; the planks run across) |
-| props/table3d/deck.png | pro job 56c0c996-3507-4476-a2ff-73e27abc8c49, asset 0d726392-3674-5eee-a8b5-f3cb91d050f3: candidate 0 of 64, trimmed to 10 × 14 (the deck of cards lying face down on the table) |
+| props/table3d/front.png | pro job 34326a4c-c7c3-4b57-b211-c4bd1241b877, asset d5e1ab9f-a41d-5632-9e77-264a9fd7ad07: candidate 0 of 16 (the table from the front, its X-braced legs; the dungeon palette, chest3d/front.png as the style image; the 3D table's slab edge, legs and brace, and the 2D view's picture) |
+| props/table3d/top.png | pro job 569aeb76-cb67-4530-80f0-3d109ce9f007, asset dabc180e-e744-51c1-b330-7cdc972495a7: candidate 11 of 25 (the table's top, iron-banded planks; the dungeon palette, chest3d/top.png as the style image) |
+| props/table3d/deck.png | pro job f2cf8649-4e2a-456e-86fa-8534cfe315d3, asset 6ed014e3-7b8d-5665-8f6f-1a3215bf54fc: candidate 1 of 64, trimmed to 16 × 20 (the deck face down, purple and bronze; props/card_deck.png as the style image) |
 | props/klutz_box.png | gallery:2b204dad-def9-42f7-9e8b-6c13e649ad52 |
 | den/pit.png | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
 | den/bookcase-2.png | gallery:7c56b09e-b67f-46ae-abe7-e2ab98275292 |

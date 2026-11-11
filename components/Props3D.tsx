@@ -11,7 +11,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U, CHEST_NUDGE } from "@/lib/render3d/chest3d";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_GLOW, type Prop3DKind } from "@/lib/render3d/props3d";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, type Prop3DKind } from "@/lib/render3d/props3d";
 import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
@@ -176,7 +176,10 @@ function Table({ colour, outline, deck, glow }: { colour?: THREE.Color; outline:
     const top: Part = { w: TABLE_FACES.top.w, h: TABLE_FACES.top.h, x0: 0, x1: TABLE_FACES.top.w, y0: 0, y1: TABLE_FACES.top.h };
     const leg: Part = { w: F.w, h: F.h, x0: F.leg.x[0], x1: F.leg.x[1], y0: F.leg.y[0], y1: F.leg.y[1] };
     const deckTop: Part = { w: TABLE_FACES.deck.w, h: TABLE_FACES.deck.h, x0: 0, x1: TABLE_FACES.deck.w, y0: 0, y1: TABLE_FACES.deck.h };
+    // (The brace: what's under the slab, the width of the table, see-through between its boards.)
+    const brace = paintedBox(t.width, t.legs, 0, [front, front, front, front, { w: F.w, h: F.h, x0: a0, x1: a1, y0: e1, y1: F.h }, { w: F.w, h: F.h, x0: a0, x1: a1, y0: e1, y1: F.h }]);
     return {
+      brace,
       slab: paintedBox(t.width, t.slab, t.depth, [side, side, top, top, front, front]),
       leg: paintedBox(t.leg, t.legs, t.leg, [leg, leg, leg, leg, leg, leg]),
       deck: paintedBox(t.deck.width, DECK_TALL, t.deck.depth, [deckTop, deckTop, deckTop, deckTop, deckTop, deckTop]),
@@ -186,8 +189,10 @@ function Table({ colour, outline, deck, glow }: { colour?: THREE.Color; outline:
   const mats = useMemo(() => {
     const make = flat ? makeFlat : makeLit, pic = (src: string) => make({ map: loaded(src) });
     const front = pic(TABLE_FACES.front.src), top = pic(TABLE_FACES.top.src), dark = make({ color: DARK }), cards = pic(TABLE_FACES.deck.src);
-    const all = [front, top, dark, cards];
-    return { slab: [front, front, top, dark, front, front], leg: [front, front, dark, dark, front, front], deck: [cards, cards, cards, dark, cards, cards], all, base: bases(all) };
+    const see = make({ map: loaded(TABLE_FACES.front.src), side: THREE.DoubleSide });
+    see.alphaTest = 0.5;
+    const all = [front, top, dark, cards, see];
+    return { brace: [see, see, see, see, see, see], slab: [front, front, top, dark, front, front], leg: [front, front, dark, dark, front, front], deck: [cards, cards, cards, dark, cards, cards], all, base: bases(all) };
   }, [flat]);
   tint(mats.all, mats.base, colour);
   const lx = t.width / 2 - LEG_IN - t.leg / 2, lz = t.depth / 2 - LEG_IN - t.leg / 2;
@@ -196,10 +201,13 @@ function Table({ colour, outline, deck, glow }: { colour?: THREE.Color; outline:
       {[-1, 1].flatMap((sx) => [-1, 1].map((sz) => (
         <Solid key={`${sx}${sz}`} geometry={geo.leg} material={mats.leg} at={[sx * lx, t.legs / 2, sz * lz]} size={[t.leg, t.legs, t.leg]} outline={outline} />
       )))}
+      {[-1, 1].map((sz) => <mesh key={sz} geometry={geo.brace} material={mats.brace} position={[0, t.legs / 2, sz * lz]} raycast={() => null} />)}
       <Solid geometry={geo.slab} material={mats.slab} at={[0, t.legs + t.slab / 2, 0]} size={[t.width, t.slab, t.depth]} outline={outline} />
-      {deck && <Solid geometry={geo.deck} material={mats.deck} at={[0, t.top + DECK_TALL / 2, 0]} size={[t.deck.width, DECK_TALL, t.deck.depth]} outline={outline} />}
-      {deck && glow && <Glow colour={glow} radius={CANDLE_RADIUS * DECK_GLOW.share} strength={DECK_GLOW.strength} />}
-      {deck && glow && <Glow colour={glow} radius={t.deck.depth} strength={DECK_GLOW.strength} y={t.top + DECK_TALL + 0.005} />}
+      {deck && <Solid geometry={geo.deck} material={mats.deck} at={[DECK_AT, t.top + DECK_TALL / 2, 0]} size={[t.deck.width, DECK_TALL, t.deck.depth]} outline={outline} />}
+      {deck && glow && <group position={[DECK_AT, 0, 0]}>
+        <Glow colour={glow} radius={CANDLE_RADIUS * DECK_GLOW.share} strength={DECK_GLOW.strength} />
+        <Glow colour={glow} radius={t.deck.depth} strength={DECK_GLOW.strength} y={t.top + DECK_TALL + 0.005} />
+      </group>}
     </>
   );
 }
