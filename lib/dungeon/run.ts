@@ -23,7 +23,7 @@ import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META, wornArmor } from "../items/armor";
-import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
+import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, isRetiredMove, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
 import { coreMove } from "../creatures/raceKitsV2";
 import { SPECIES_RACES, type RaceV2 } from "../creatures/racesV2";
 import { rollCreature } from "../creatures/creatureRoll";
@@ -41,7 +41,7 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
 import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, randomCodexOfRarity, RACE_CODEX_MOVES } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, randomCodexOfRarity, retiredCodexMove, RACE_CODEX_MOVES } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
 import { unsupportedRun } from "../world/version";
@@ -1313,10 +1313,33 @@ export function loadDungeon(): DungeonSave {
     if (unsupportedRun(save.run)) return { ...save, held: "newer" };
     // A run from before the map (hidden doors) can't carry on: the party comes home.
     if (save.run && !save.run.map?.start) return endRun({ ...save, run: { ...save.run, status: "retreated" } });
-    return save;
+    return save.run ? { ...save, run: retireRunCodexes(save.run) } : save;
   } catch {
     return EMPTY;
   }
+}
+
+// A run under way when the plain moves were retired (2026-11-12, decision 40): a librarian's
+// codexes for sale, and codexes lying in its rooms' chests and sacks, of a retired move become
+// codexes of the same rarity (the same ones every time: seeded by the run and the move), as the
+// ones in your storage do. Unchanged if there are none.
+export function retireRunCodexes(run: DungeonRun): DungeonRun {
+  const now = (n: string) => (isRetiredMove(n) ? retiredCodexMove(n, `${run.id}:${n}`) : n);
+  const fixRoom = (r: Room | null | undefined): Room | null | undefined => {
+    if (!r) return r;
+    const offers = r.offers?.some(isRetiredMove) ? [...new Set(r.offers.map(now))] : r.offers;
+    const bought = r.bought?.some(isRetiredMove) ? r.bought.map(now) : r.bought;
+    const old = (x: SackItem) => { const m = "gear" in x ? (x.gear as { codexMove?: string }).codexMove : undefined; return m && isRetiredMove(m) ? m : undefined; };
+    const sack = r.sack?.some(old)
+      ? r.sack.map((x) => { const m = old(x); return m && "gear" in x ? { gear: { ...codexDrop(now(m)), id: x.gear.id } } : x; })
+      : r.sack;
+    return offers === r.offers && bought === r.bought && sack === r.sack ? r : { ...r, offers, bought, sack };
+  };
+  const current = fixRoom(run.current) ?? null;
+  const rooms = run.walk && Object.fromEntries(Object.entries(run.walk.rooms).map(([id, r]) => [id, fixRoom(r)!]));
+  const walkChanged = !!run.walk && Object.entries(rooms!).some(([id, r]) => r !== run.walk!.rooms[id]);
+  if (current === run.current && !walkChanged) return run;
+  return { ...run, current, ...(walkChanged ? { walk: { ...run.walk!, rooms: rooms! } } : {}) };
 }
 
 // Never over a run from a newer version of the game: whatever this copy of the game

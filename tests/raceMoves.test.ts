@@ -259,3 +259,28 @@ describe("renamed moves", () => {
     expect(RACE_CODEX_MOVES.map((m) => m.name)).not.toContain("Blink"); // so a Blink codex is always the old one
   });
 });
+
+describe("a run under way when the plain moves were retired (2026-11-12)", () => {
+  it("its librarian's offers and the codexes in its rooms become codexes of the same rarity, the same every time", async () => {
+    const { retireRunCodexes } = await import("../lib/dungeon/run");
+    const old = codexDrop("Maul", "x") as CreatureOrItemDrop; // (already converted on its way out: make it a retired one again)
+    const run = {
+      id: "run1", current: { kind: "librarian", offers: ["Gore", "Pounce"], bought: ["Gore"], done: false },
+      walk: { rooms: { a: { kind: "chest", sack: [{ gear: { ...old, codexMove: "Maul", name: "Codex: Maul" } }, { gold: 5 }] }, b: { kind: "pool" } } },
+    } as unknown as Parameters<typeof retireRunCodexes>[0];
+    const next = retireRunCodexes(run);
+    const offers = next.current!.offers!;
+    expect(offers).toContain("Pounce");
+    expect(offers.some(isRetiredMove)).toBe(false);
+    expect(next.current!.bought).toEqual([offers[0]]); // (bought keeps naming the same codex)
+    const sack = next.walk!.rooms.a.sack!;
+    const codex = (sack[0] as { gear: CreatureOrItemDrop }).gear;
+    expect(isRetiredMove(codex.codexMove!)).toBe(false);
+    expect(codex.rarity).toBe("rare");
+    expect(codex.id).toBe(old.id);
+    expect(sack[1]).toEqual({ gold: 5 });
+    expect(next.walk!.rooms.b).toBe(run.walk!.rooms.b);
+    expect(retireRunCodexes(run).current!.offers).toEqual(offers); // the same every time
+    expect(retireRunCodexes(next)).toBe(next); // nothing left to change
+  });
+});

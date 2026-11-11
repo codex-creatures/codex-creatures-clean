@@ -60,9 +60,9 @@ export const CHEST_ODDS: DropOdds = { creature: 20, weapon: 12, armor: 24, consu
 // copy of this (supabase/migrations: the latest registry_rules), so after
 // changing any of it run `npm run registry:rules` and apply the new
 // migration; a test fails until the copy matches.
-// Consumables are Common (a Lesser Potion or a basic codex), Uncommon (a
-// learnable codex) or Rare (a Healing Potion or a strong codex), at the usual
-// odds between those three rarities.
+// Consumables are Common (a Lesser Potion or a Common codex), Uncommon (a
+// learnable or Uncommon codex) or Rare (a Healing Potion or a Rare codex), at
+// the usual odds between those three rarities.
 export type RegistryRules = {
   odds: Record<string, number>;
   rarity: Record<string, number>;

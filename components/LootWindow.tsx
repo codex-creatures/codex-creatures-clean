@@ -38,6 +38,7 @@ import { BAG_MAX, POTIONS, type SackItem } from "@/lib/dungeon/run";
 import { GEAR_STATS, GearStatIcon } from "./GearCompare";
 import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
+import { TOOLS, isLocator } from "@/lib/items/materials";
 import CodexMove from "./CodexMove";
 import { codexLearners } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
@@ -142,8 +143,8 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
     const u = purposeOf(x);
     const done = () => { setSeen(null); setPicked(null); };
     if (u === "tool") {
-      const flare = !!x && "gear" in x && (x.gear as CreatureOrItemDrop).tool === "flare";
-      return onUseTool && <button className="chip" onClick={() => { onUseTool(from, i); done(); }}>{flare ? "🧨 Light it" : "🔮 Read it"}</button>;
+      const tool = x && "gear" in x ? (x.gear as CreatureOrItemDrop).tool : undefined;
+      return onUseTool && <button className="chip" onClick={() => { onUseTool(from, i); done(); }}>{tool === "flare" ? "🧨 Light it" : tool && isLocator(tool) ? `${TOOLS[tool].icon} Use it` : "🔮 Read it"}</button>;
     }
     const fn = giver(from, u);
     if (!fn || (from === "loot" && u === "gear")) return null; // (gear in the chest: drag it onto someone to compare)

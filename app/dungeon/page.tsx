@@ -738,15 +738,17 @@ export default function DungeonPage() {
       return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency }] : [];
     }));
   }
-  // A flare or a clairvoyance scroll, used from your bag or straight out of the chest.
+  // A flare, a clairvoyance scroll or a locator, used from your bag or straight out of the chest
+  // (as from the bag: a locator tracks, and is used up only if it found them; a flare lights the walk too).
   function toolFrom(from: "loot" | "bag", i: number) {
     const it = thingAt(from, i);
     if (!it?.tool || it.tool === "revival") return;
     setLootOpen(false);
     if (from === "bag") { applyTool(loadDungeon().meta.bag[i]); return; }
     if (it.tool === "clairvoyance") { setSeer(it.id); setMapOpen("pick"); return; }
+    if (isLocator(it.tool)) { if (track(it.tool)) takeOutOfSack(i); return; }
     takeOutOfSack(i);
-    updateRun((r) => ({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }));
+    updateRun((r) => walkKeep({ ...r, lit: [...new Set([...(r.lit ?? []), runPosition(r)])] }, { flare: FLARE_WALK, flares: (r.walk?.flares ?? 0) + 1 }));
     setMapOpen("look");
   }
   function drinkFromSack(index: number, id: string) {
