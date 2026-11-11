@@ -14,7 +14,10 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { chestParts, OPEN_ANGLE, type Box, type ChestMat } from "@/lib/render3d/chest3d";
 import { pixelScale } from "@/lib/render3d/stone";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
-import { WALK_KIT, WALK_HERO, KIT_PX } from "@/lib/sprites/walk";
+import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS } from "@/lib/sprites/walk";
+import { TABLE_ART, TABLE_TOP, OBJECT_U } from "@/lib/world/objects";
+import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
 import { Prop3D, Solid, leaned, sharp, loaded, PROP_LEAN } from "@/components/Props3D";
 
@@ -26,12 +29,15 @@ const OLD: Record<Thing3D, { shut: string; open: string; w: number; tall: number
   chest: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
   stash: { shut: "/sprites/props/burlap_sack.png", open: "/sprites/props/burlap_sack_open.png", w: legacyU(16), tall: 1 },
   bookcase: { shut: "/sprites/den/bookcase-2.png", open: "/sprites/den/bookcase-2.png", w: legacyU(30), tall: 86 / 76 },
+  table: { shut: TABLE_ART.src, open: TABLE_ART.src, w: OBJECT_U * 0.8, tall: TABLE_ART.h / TABLE_ART.w },
+  deck: { shut: "/sprites/props/card_deck.png", open: "/sprites/props/card_deck.png", w: OBJECT_U, tall: 58 / 55 },
 };
 const PATCH = 17;                // units of floor and wall across (the screen is 15 at game zoom)
 
 export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean;
-  at: number; lean: boolean; thing: Thing3D; turned: boolean };
-export type Thing3D = "chest" | "stash" | "bookcase";
+  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity };
+// table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour.
+export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck";
 
 // The walls' lean (decision 36, WalkView3D's at GAME_VIEW's 0.03), on the chest and the wall here
 // (Props3D's PROP_LEAN, about you at x = 0).
@@ -147,8 +153,11 @@ function Scene({ view }: { view: ChestView }) {
             <StandIn boxes={chest.body} mats={mats} outline={view.outline} />
             <group ref={lid} position={[0, chest.hinge.y, chest.hinge.z]}><StandIn boxes={chest.lid} mats={mats} outline={view.outline} /></group>
           </>)
-          : <Prop3D kind={view.thing} open={view.open} outline={view.outline} edges={view.edges} />}
+          : view.thing === "table" || view.thing === "deck"
+            ? <Prop3D kind="table" outline={view.outline} deck={view.thing === "deck" && !view.open} glow={RARITY_COLORS[view.rarity].text} />
+            : <Prop3D kind={view.thing} open={view.open} outline={view.outline} edges={view.edges} />}
       </group>
+      {view.thing === "table" && view.candle && <TableCandle x={chestX} stretch={stretch} />}
       {view.old && (
         <mesh position={[oldX, (o.w * o.tall * stretch) / 2, 0.4]} scale={[o.w, o.w * o.tall * stretch, 1]}>
           <planeGeometry />
@@ -160,6 +169,22 @@ function Scene({ view }: { view: ChestView }) {
         <meshLambertMaterial map={hero} alphaTest={0.5} />
       </mesh>
     </>
+  );
+}
+
+// A candle on the table, lit, drawn as the game draws one (WalkView3D: the kit's candles, a flame on each
+// wick, `high` up on the table's top), with a little warm light of its own here.
+function TableCandle({ x, stretch }: { x: number; stretch: number }) {
+  const tex = useMemo(() => loaded(KIT_LIGHTS.candles), []);
+  const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, z = 0.05;
+  return (
+    <group position={[0, TABLE_TOP, 0]}>
+      <mesh position={[x, h / 2, z]} scale={[w, h, 1]}><planeGeometry /><meshBasicMaterial map={tex} alphaTest={0.5} /></mesh>
+      {KIT_LIGHTS.wicks.map(([wx, wy], i) => (
+        <mesh key={i} position={[x - w / 2 + wx * k, h - wy * k * stretch + 0.04, z + 0.06]} scale={[0.05, 0.09, 1]}><planeGeometry /><meshBasicMaterial color="#ffd27a" /></mesh>
+      ))}
+      <pointLight color="#ffbe5a" intensity={3} distance={3} decay={1.6} position={[x, h + 0.2, z + 0.2]} />
+    </group>
   );
 }
 

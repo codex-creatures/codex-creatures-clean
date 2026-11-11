@@ -269,6 +269,8 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   `RARITY_COLORS`): a soft disc on the floor out to half a candle's reach and on the deck, half as
   strong (`DECK_GLOW`), added to what's there so it shows in the dark. Drawing only: the glow lights
   nothing in the sim. The 2D view shows a table as its front picture (and a table's candle on the floor).
+  To look at it: /lab/chest's **Table** (its candle on or off) and **Deck** (the rarest card's rarity for the
+  glow; "Turn them over" takes the deck off), beside the old flat picture and you for scale.
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
   couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,
