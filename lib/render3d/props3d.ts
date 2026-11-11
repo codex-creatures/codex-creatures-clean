@@ -14,8 +14,9 @@ export const BOOKCASE_FACES = {
   side: { src: `/sprites/props/bookcase3d/side.png?v=${BOOKCASE_V}`, w: 24, h: 48 },
   top: { src: `/sprites/props/bookcase3d/top.png?v=${BOOKCASE_V}`, w: 60, h: 21 },
 };
-export function bookcaseArt() {
-  const F = BOOKCASE_FACES, up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
+export type BookcaseFaces = { front: { src: string; w: number; h: number }; side: { src: string; w: number; h: number }; top: { src: string; w: number; h: number } };
+export function bookcaseArt(F: BookcaseFaces = BOOKCASE_FACES) {
+  const up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
   return { width: F.front.w / ART_PER_U, height: F.front.h / up, depth: F.top.h / flat };
 }
 

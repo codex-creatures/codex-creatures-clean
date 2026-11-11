@@ -78,6 +78,12 @@ the PNG here.
 | props/table3d/front.png | pro job 34326a4c-c7c3-4b57-b211-c4bd1241b877, asset d5e1ab9f-a41d-5632-9e77-264a9fd7ad07: candidate 0 of 16 (the table from the front, its X-braced legs; the dungeon palette, chest3d/front.png as the style image; the 3D table's slab edge, legs and brace, and the 2D view's picture) |
 | props/table3d/top.png | pro job 569aeb76-cb67-4530-80f0-3d109ce9f007, asset dabc180e-e744-51c1-b330-7cdc972495a7: candidate 11 of 25 (the table's top, iron-banded planks; the dungeon palette, chest3d/top.png as the style image) |
 | props/table3d/deck.png | pro job f2cf8649-4e2a-456e-86fa-8534cfe315d3, asset 6ed014e3-7b8d-5665-8f6f-1a3215bf54fc: candidate 1 of 64, trimmed to 16 × 20 (the deck face down, purple and bronze; props/card_deck.png as the style image) |
+| walk/samples/3d/rickety/front.png, side.png | pro job dc0745ee-8743-46c5-add4-38bcf77b510c, asset 608ccb02-9981-5cd8-bf1d-64dcc1d7c37d: candidate 1 of 16 (the rickety chest's front; the dungeon palette, props/rickety_chest.png as the style image); side.png its first 38 columns. Lab draft |
+| walk/samples/3d/rickety/top.png, under.png | pro job defa133f-c57d-4344-a352-f9ff1a996aed, asset 5270df6b-4557-5858-a017-c45ce3611fa0: candidate 0 of 25 (its lid's top); under.png the top ×0.35. Lab draft |
+| walk/samples/3d/broken-bookcase/front.png | pro job acc38b99-8ae1-4b8d-85a5-e89db3ccb0da, asset caca05fd-33f6-5997-96b6-b66390fbe327: candidate 14 of 16, trimmed to 54 × 44 and set on the bookcase's dark back (bookcase3d/front.png as the style image). Lab draft |
+| walk/samples/3d/pool/top.png | pro job 2ae9baa9-c42f-43be-9702-fc918ff1529b, asset d9e13247-870b-5063-91b7-e62017ab93fc: candidate 0 of 25 (the healing pool from above; walk/healing-pool.png as the style image). Lab draft |
+| walk/samples/3d/pool/rim.png | pro job 6f315d82-f074-4f25-b036-ea7424675144, asset 6a75356b-d9c3-5a2a-9a74-b566f15490be: candidate 0 of 64 (the stone rim, laid round the pool and the campfire; the palette's stones). Lab draft |
+| walk/samples/3d/campfire/top.png | pro job e42d7009-8d81-4df9-880a-51ff102a303c, asset 7fbd9b74-3004-5c9f-bf0e-c747434de3a9: candidate 0 of 25 (the fire pit from above, no flames; walk/campfire.png as the style image). Lab draft |
 | props/klutz_box.png | gallery:2b204dad-def9-42f7-9e8b-6c13e649ad52 |
 | den/pit.png | gallery:327af24a-1fd8-4dcc-b3dc-8c0aa111d955 |
 | den/bookcase-2.png | gallery:7c56b09e-b67f-46ae-abe7-e2ab98275292 |

@@ -16,12 +16,18 @@ const ChestScene = dynamic(() => import("./ChestScene"), { ssr: false, loading: 
 
 const SIZES = [1, CHEST_W, 1.5, 1.75];
 const THINGS: { thing: Thing3D; label: string }[] = [{ thing: "chest", label: "Chest" }, { thing: "stash", label: "Stash" }, { thing: "bookcase", label: "Bookcase" }, { thing: "table", label: "Table" }, { thing: "deck", label: "Deck" }];
+// Drafts of the dungeon's other things (components/Drafts3D.tsx): the first four painted, the rest shape only.
+const DRAFTS: { thing: Thing3D; label: string }[] = [
+  { thing: "rickety", label: "Rickety chest" }, { thing: "broken", label: "Broken bookcase" }, { thing: "pool", label: "Pool" }, { thing: "campfire", label: "Campfire" },
+  { thing: "cage", label: "Cage" }, { thing: "lectern", label: "Lectern" }, { thing: "candles", label: "Candles" }, { thing: "torch", label: "Wall torch" }, { thing: "rubble", label: "Rubble" },
+];
+const LIGHTS: Thing3D[] = ["campfire", "candles", "torch"];
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const ACROSS = [0, 2, 4, 6]; // units the chest stands across from you
 const ZOOMS = [{ label: "Game zoom", across: 15 }, { label: "Close", across: 7 }];
 
 export default function ChestLab() {
-  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true, thing: "chest", turned: false, candle: true, rarity: "epic" });
+  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true, thing: "chest", turned: false, candle: true, rarity: "epic", lit: true });
   const set = (p: Partial<ChestView>) => setView((v) => ({ ...v, ...p }));
   const btn = (on: boolean) => ({ minHeight: 44, padding: "0 12px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
   return (
@@ -34,6 +40,15 @@ export default function ChestLab() {
         {THINGS.map((k) => <button key={k.thing} style={btn(view.thing === k.thing)} onClick={() => set({ thing: k.thing })}>{k.label}</button>)}
         <button style={btn(view.turned)} onClick={() => set({ turned: !view.turned })}>{view.turned ? "Turned (end on)" : "Facing you"}</button>
       </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480, alignItems: "center" }}>
+        <span>Drafts:</span>
+        {DRAFTS.map((k) => <button key={k.thing} style={btn(view.thing === k.thing)} onClick={() => set({ thing: k.thing })}>{k.label}</button>)}
+      </div>
+      {LIGHTS.includes(view.thing) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480 }}>
+          <button style={btn(view.lit)} onClick={() => set({ lit: !view.lit })}>{view.lit ? "Lit" : "Out"}</button>
+        </div>
+      )}
       {view.thing === "table" && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480 }}>
           <button style={btn(view.candle)} onClick={() => set({ candle: !view.candle })}>Candle {view.candle ? "on" : "off"}</button>

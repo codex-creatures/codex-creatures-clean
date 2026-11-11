@@ -275,6 +275,16 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   nothing in the sim. The 2D view shows a table as its front picture (and a table's candle on the floor).
   To look at it: /lab/chest's **Table** (its candle on or off) and **Deck** (the rarest card's rarity for the
   glow; "Turn them over" takes the deck off), beside the old flat picture and you for scale.
+- **🧪 Drafts of the rest, lab only** (the user, 2026-11-11: bring what's found in the dungeon up to the
+  tables' level; components/Drafts3D.tsx, /lab/chest's "Drafts" row, each beside its old picture). Painted,
+  PixelLab samples in the dungeon palette styled on the old pictures (public/sprites/walk/samples/3d/): the
+  storehouse's **rickety chest** (the chest's boxes with its own front, side and lid), the library's
+  **broken bookcase** (the bookcase's box with a broken front), the **healing pool** (a low ring of stone,
+  its top the pool seen from above, a faint glow) and the **campfire** (a ring of the pool's stones round its
+  pit, flames standing up in it, its glow; lit or out). Shape only, plain palette colours, to judge size and
+  form before any art: the **cage** (posts, frame, bars; its front swings open), the **lectern** (an open
+  book on a sloping top), **candles** (three, a flame each), the **wall torch** (on the lab's wall) and
+  **rubble**. Nothing in the game draws them until the user approves each.
 - **Tunnels up are shown one-way** (the user, 2026-11-10: one stayed open behind them, though they
   couldn't go down it): a tunnel up's top door shows as rock with a rubble heap, except from inside
   the tunnel or the room below it (lib/render3d/dungeon3d.ts `oneWayDoors`). Drawing only: walking,

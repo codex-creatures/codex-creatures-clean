@@ -17,6 +17,7 @@ import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS } from "@/lib/sprites/walk";
 import { TABLE_ART, TABLE_TOP, OBJECT_U } from "@/lib/world/objects";
 import { CANDLE_AT } from "@/lib/render3d/props3d";
+import { Draft3D, type DraftKind } from "@/components/Drafts3D";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
@@ -26,19 +27,29 @@ const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
 const OLD_W = legacyU(28);       // the flat chest as the game draws it now (OBJECT_U)
 // The flat sprites as the game draws them now, beside each: picture, width (units) and height for width.
-const OLD: Record<Thing3D, { shut: string; open: string; w: number; tall: number }> = {
+const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall: number }>> = {
   chest: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
   stash: { shut: "/sprites/props/burlap_sack.png", open: "/sprites/props/burlap_sack_open.png", w: legacyU(16), tall: 1 },
   bookcase: { shut: "/sprites/den/bookcase-2.png", open: "/sprites/den/bookcase-2.png", w: legacyU(30), tall: 86 / 76 },
   table: { shut: TABLE_ART.src, open: TABLE_ART.src, w: OBJECT_U, tall: TABLE_ART.h / TABLE_ART.w },
   deck: { shut: "/sprites/props/card_deck.png", open: "/sprites/props/card_deck.png", w: OBJECT_U, tall: 58 / 55 },
+  // The drafts' old pictures (Drafts3D), as the game draws them now. (Rubble has none: it's drawn in code.)
+  rickety: { shut: "/sprites/props/rickety_chest.png", open: "/sprites/props/rickety_chest_open.png", w: OBJECT_U, tall: 53 / 56 },
+  broken: { shut: "/sprites/den/bookcase-2.png", open: "/sprites/den/bookcase-2.png", w: legacyU(30), tall: 86 / 76 },
+  pool: { shut: "/sprites/walk/healing-pool.png", open: "/sprites/walk/healing-pool.png", w: legacyU(40), tall: 48 / 64 },
+  campfire: { shut: "/sprites/walk/campfire.png", open: "/sprites/walk/campfire-out.png", w: legacyU(24), tall: 1 },
+  cage: { shut: "/sprites/walk/cage.png", open: "/sprites/walk/cage-open.png", w: legacyU(22), tall: 1 },
+  lectern: { shut: "/sprites/den/lectern.png", open: "/sprites/den/lectern.png", w: legacyU(20), tall: 56 / 48 },
+  candles: { shut: KIT_LIGHTS.candles, open: KIT_LIGHTS.candles, w: (KIT_LIGHTS.candleSize[0] * 0.85) / 48, tall: KIT_LIGHTS.candleSize[1] / KIT_LIGHTS.candleSize[0] },
 };
+const DRAFTS: Thing3D[] = ["rickety", "broken", "pool", "campfire", "cage", "lectern", "candles", "torch", "rubble"];
 const PATCH = 17;                // units of floor and wall across (the screen is 15 at game zoom)
 
 export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean;
-  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity };
-// table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour.
-export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck";
+  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean };
+// table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
+// the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
+export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | DraftKind;
 
 // The walls' lean (decision 36, WalkView3D's at GAME_VIEW's 0.03), on the chest and the wall here
 // (Props3D's PROP_LEAN, about you at x = 0).
@@ -108,7 +119,7 @@ function Scene({ view }: { view: ChestView }) {
     t.repeat.set(1 / cols, 1 / 4); t.offset.set(0, 3 / 4); // standing, facing south
     return t;
   }, []);
-  const old = useMemo(() => Object.fromEntries((Object.keys(OLD) as Thing3D[]).map((k) => [k, [loaded(OLD[k].shut), loaded(OLD[k].open)]])) as Record<Thing3D, THREE.Texture[]>, []);
+  const old = useMemo(() => Object.fromEntries((Object.keys(OLD) as Thing3D[]).map((k) => [k, [loaded(OLD[k]!.shut), loaded(OLD[k]!.open)]])) as Partial<Record<Thing3D, THREE.Texture[]>>, []);
 
   // You stand in the middle (the camera's on you); the chest `at` units across, the old one as far the other way.
   const chestX = view.at || 1, oldX = -(view.at || 1.3);
@@ -154,15 +165,17 @@ function Scene({ view }: { view: ChestView }) {
             <StandIn boxes={chest.body} mats={mats} outline={view.outline} />
             <group ref={lid} position={[0, chest.hinge.y, chest.hinge.z]}><StandIn boxes={chest.lid} mats={mats} outline={view.outline} /></group>
           </>)
+          : DRAFTS.includes(view.thing)
+            ? <Draft3D kind={view.thing as DraftKind} open={view.open} outline={view.outline} lit={view.lit} />
           : view.thing === "table" || view.thing === "deck"
             ? <Prop3D kind="table" outline={view.outline} deck={view.thing === "deck" && !view.open} glow={RARITY_COLORS[view.rarity].text} />
-            : <Prop3D kind={view.thing} open={view.open} outline={view.outline} edges={view.edges} />}
+            : <Prop3D kind={view.thing as "chest" | "stash" | "bookcase"} open={view.open} outline={view.outline} edges={view.edges} />}
       </group>
       {view.thing === "table" && view.candle && <TableCandle x={chestX + CANDLE_AT} stretch={stretch} />}
-      {view.old && (
+      {view.old && o && (
         <mesh position={[oldX, (o.w * o.tall * stretch) / 2, 0.4]} scale={[o.w, o.w * o.tall * stretch, 1]}>
           <planeGeometry />
-          <meshLambertMaterial map={old[view.thing][view.open ? 1 : 0]} alphaTest={0.5} transparent />
+          <meshLambertMaterial map={old[view.thing]![view.thing === "campfire" ? (view.lit ? 0 : 1) : view.open ? 1 : 0]} alphaTest={0.5} transparent />
         </mesh>
       )}
       <mesh position={[0, heroH / 2 - below, 1.5]} scale={[heroW, heroH, 1]}>

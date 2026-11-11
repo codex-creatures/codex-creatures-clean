@@ -10,8 +10,8 @@
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U, CHEST_NUDGE } from "@/lib/render3d/chest3d";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, type Prop3DKind } from "@/lib/render3d/props3d";
+import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U, CHEST_NUDGE, type ChestFaces } from "@/lib/render3d/chest3d";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
 import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
@@ -112,10 +112,12 @@ export function Prop3D({ kind, open = false, colour, outline = true, edges = tru
 // edge. Open, the body's top is its inside (gold and gems). The lit edges (the top row of each front,
 // the lid top's front row) and the lid's darker underside are made beforehand, in the `-lit` and
 // `under` pictures beside the others.
-function Chest({ open, colour, outline, edges }: { open: boolean; colour?: THREE.Color; outline: boolean; edges: boolean }) {
-  const art = useMemo(() => chestArt(), []);
+// (`faces`: another chest's pictures, the lab's drafts: the rickety chest. Each has its `under` and, with
+// `edges`, its `-lit` pictures beside them.)
+export function Chest({ open, colour, outline, edges, faces = ART_FACES }: { open: boolean; colour?: THREE.Color; outline: boolean; edges: boolean; faces?: ChestFaces }) {
+  const art = useMemo(() => chestArt(faces), [faces]);
   const geo = useMemo(() => {
-    const F = ART_FACES, fw = F.front.w, fh = F.front.h, split = F.front.lid;
+    const F = faces, fw = F.front.w, fh = F.front.h, split = F.front.lid;
     const front = (y0: number, y1: number): Part => ({ w: fw, h: fh, x0: 0, x1: fw, y0, y1 });
     const side = (y0: number, y1: number): Part => ({ w: F.side.w, h: F.side.h, x0: 0, x1: F.side.w, y0, y1 });
     const top: Part = { w: F.top.w, h: F.top.h, x0: 0, x1: F.top.w, y0: 0, y1: F.top.h };
@@ -123,15 +125,15 @@ function Chest({ open, colour, outline, edges }: { open: boolean; colour?: THREE
       lid: paintedBox(art.width, art.lid, art.depth, [side(0, split), side(0, split), top, top, front(0, split), front(0, split)]),
       body: paintedBox(art.width, art.body, art.depth, [side(split, fh), side(split, fh), top, top, front(split, fh), front(split, fh)]),
     };
-  }, [art]);
+  }, [art, faces]);
   const flat = !!colour;
   const mats = useMemo(() => {
     const make: Make = (o) => (flat ? makeFlat : makeLit)(o, CHEST_NUDGE), pic = (src: string) => make({ map: loaded(src) });
-    const front = pic(lit(ART_FACES.front.src, edges)), side = pic(lit(ART_FACES.side.src, edges)), top = pic(lit(ART_FACES.top.src, edges));
-    const under = pic(ART_FACES.top.src.replace("top.png", "under.png")), inside = pic(ART_FACES.inside.src), dark = make({ color: DARK });
+    const front = pic(lit(faces.front.src, edges)), side = pic(lit(faces.side.src, edges)), top = pic(lit(faces.top.src, edges));
+    const under = pic(faces.top.src.replace("top.png", "under.png")), inside = pic(faces.inside.src), dark = make({ color: DARK });
     const all = [front, side, top, under, inside, dark];
     return { lid: [side, side, top, under, front, front], body: [side, side, inside, dark, front, front], all, base: bases(all) };
-  }, [flat, edges]);
+  }, [flat, edges, faces]);
   tint(mats.all, mats.base, colour);
   const lid = useRef<THREE.Group>(null);
   useFrame(() => {
@@ -151,16 +153,16 @@ function Chest({ open, colour, outline, edges }: { open: boolean; colour?: THREE
 }
 
 // The bookcase: one box, its faces PixelLab's (lit edges made beforehand, as the chest's).
-function Bookcase({ colour, outline, edges }: { colour?: THREE.Color; outline: boolean; edges: boolean }) {
-  const b = useMemo(() => bookcaseArt(), []);
+export function Bookcase({ colour, outline, edges, faces = BOOKCASE_FACES }: { colour?: THREE.Color; outline: boolean; edges: boolean; faces?: BookcaseFaces }) {
+  const b = useMemo(() => bookcaseArt(faces), [faces]);
   const geo = useMemo(() => new THREE.BoxGeometry(b.width, b.height, b.depth), [b]);
   const flat = !!colour;
   const mats = useMemo(() => {
-    const F = BOOKCASE_FACES, make = flat ? makeFlat : makeLit, pic = (src: string) => make({ map: loaded(src) });
+    const F = faces, make = flat ? makeFlat : makeLit, pic = (src: string) => make({ map: loaded(src) });
     const front = pic(lit(F.front.src, edges)), side = pic(lit(F.side.src, edges)), top = pic(lit(F.top.src, edges)), dark = make({ color: DARK });
     const all = [front, side, top, dark];
     return { faces: [side, side, top, dark, front, front], all, base: bases(all) };
-  }, [flat, edges]);
+  }, [flat, edges, faces]);
   tint(mats.all, mats.base, colour);
   return <Solid geometry={geo} material={mats.faces} at={[0, b.height / 2, 0]} size={[b.width, b.height, b.depth]} outline={outline} />;
 }
@@ -227,7 +229,7 @@ const GLOW_TEX = (() => {
     return t;
   };
 })();
-function Glow({ colour, radius, strength, y = 0.01 }: { colour: string; radius: number; strength: number; y?: number }) {
+export function Glow({ colour, radius, strength, y = 0.01 }: { colour: string; radius: number; strength: number; y?: number }) {
   const mat = useRef<THREE.MeshBasicMaterial>(null);
   useFrame(() => { if (mat.current) mat.current.opacity = strength * (0.85 + 0.15 * Math.sin(performance.now() / 400)); });
   return (

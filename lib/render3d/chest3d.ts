@@ -32,8 +32,9 @@ export const ART_FACES = {
   top: { src: `/sprites/props/chest3d/top.png?v=${ART_V}`, w: 60, h: 33 },
 };
 
-export function chestArt() {
-  const F = ART_FACES, up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
+export type ChestFaces = { front: { src: string; w: number; h: number; lid: number }; side: { src: string; w: number; h: number }; inside: { src: string; w: number; h: number }; top: { src: string; w: number; h: number } };
+export function chestArt(F: ChestFaces = ART_FACES) {
+  const up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);
   return { width: F.front.w / ART_PER_U, depth: F.top.h / flat, lid: F.front.lid / up, body: (F.front.h - F.front.lid) / up };
 }
 
