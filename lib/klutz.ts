@@ -29,8 +29,9 @@
 // to level 2), each piece of gear he brings home (a catch's or a find) gives
 // FIND_XP, and XP scrolls work on him too. His
 // level makes him stronger, and decides what he meets:
-// - wild creatures are around his level (HUNT_BELOW under to HUNT_ABOVE over),
-//   and a catch keeps its level;
+// - wild creatures are around his level (HUNT_BELOW under to HUNT_ABOVE over);
+//   a catch comes home at its level, but no higher than CATCH_MAX_LEVEL (the
+//   user, 2026-11-13: a Lv 30 Klutz was bringing home Lv 30 creatures);
 // - rarities open up with his level as they do for scans (SCAN_UNLOCK): until
 //   then, a rarer roll is met as the best rarity he can handle;
 // - his finds come at his own piece's rarity more often (FIND_SAME_PER_LEVEL).
@@ -65,7 +66,8 @@ export const FIND_CHANCE = 0.35;       // each walk: a piece of gear like one he
 export const SAME_RARITY_CHANCE = 0.05; // …the same rarity as his piece (otherwise lower)
 export const COMMON_STEP_UP = 0.5;     // in Common gear: Uncommon half the time
 export const HUNT_BELOW = 2;           // what he meets is his level, up to this many under…
-export const HUNT_ABOVE = 1;           // …or this many over (and a catch keeps its level)
+export const HUNT_ABOVE = 1;           // …or this many over
+export const CATCH_MAX_LEVEL = 5;      // the highest level a catch comes home at (it fought at its own)
 export const FIND_SAME_PER_LEVEL = 0.01; // each level over 1: this much likelier a same-rarity find
 export const FIND_SAME_MAX = 0.3;
 export const CAPTURE_XP = 50;          // on top of the KO's XP, for bringing a creature home
@@ -172,7 +174,7 @@ const oneLower = (r: Rarity): Rarity => RARITIES[Math.max(0, RARITIES.indexOf(r)
 // A won encounter's loot: the creature itself, its weapon and one armour piece.
 function lootFrom(e: Enemy): Drop[] {
   const t = CREATURE_BY_ID[e.creatureId];
-  const creature = { ...makeCreatureDrop(t, "creature", "", { proficiency: e.proficiency, moves: e.moves, soulStone: e.soulStone ?? null }), level: e.level ?? 1 };
+  const creature = { ...makeCreatureDrop(t, "creature", "", { proficiency: e.proficiency, moves: e.moves, soulStone: e.soulStone ?? null }), level: Math.min(e.level ?? 1, CATCH_MAX_LEVEL) };
   const gear = e.gear.map((p) => {
     if (p.slot === "weapon") return weaponDrop(p.key as ItemKey, p.rarity, "", p.stats);
     const slot = randomArmorSlot();

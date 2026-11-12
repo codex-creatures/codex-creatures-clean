@@ -9,7 +9,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ A clumsy goblin **helper, not a party creature.** He's easily bribed with gold into serving
   you, wanders the Den, and you tap him for /klutz. (lib/klutz.ts)
 - ✅ **Hunts** (until beaten, decided 2026-10-20): every 20–60 minutes (🧪 Claude's range) he meets a
-  creature (his level −2 to +1) and fights it 1v1, and he keeps going until one beats him. He
+  creature (his level −2 to +1; ✅ what he catches comes home at Lv 5 at most, `CATCH_MAX_LEVEL`, the user, 2026-11-13) and fights it 1v1, and he keeps going until one beats him. He
   doesn't heal between fights. Past 6 hours out, what he meets is a level tougher for every hour
   past it (🧪). You can see his HP while he's away and **call him back** at any time (he comes home
   with what he's won so far). A safety stop brings him home after 60 fights. The user's aim: send

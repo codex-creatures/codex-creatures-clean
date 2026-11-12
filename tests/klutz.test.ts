@@ -41,6 +41,14 @@ describe("Klutz's expeditions", () => {
     expect(ex.encounters.every((e) => e.won)).toBe(true);
   });
 
+  it("a Lv 30 Klutz fights creatures around his level, but brings them home at Lv 5 at most", () => {
+    const ex = planExpedition(mighty(), t0, seeded(5), [], 30);
+    const caught = ex.encounters.flatMap((e) => e.loot).filter((d) => d.dropType === "creature") as { level?: number }[];
+    expect(caught.length).toBeGreaterThan(0);
+    expect(caught.every((c) => (c.level ?? 1) <= CATCH_MAX_LEVEL)).toBe(true);
+    expect(CATCH_MAX_LEVEL).toBe(5);
+  });
+
   it("past TOUGHER_AFTER_MS what he meets gets a level tougher every hour", () => {
     expect(toughening(TOUGHER_AFTER_MS)).toBe(0);
     expect(toughening(TOUGHER_AFTER_MS + 1)).toBe(1);
@@ -155,7 +163,7 @@ describe("Klutz's finds", () => {
   });
 });
 
-import { klutzGainXp, CAPTURE_XP } from "../lib/klutz";
+import { klutzGainXp, CAPTURE_XP, CATCH_MAX_LEVEL } from "../lib/klutz";
 import { xpForEnemy, xpToNext } from "../lib/creatures/levels";
 describe("Klutz's levels", () => {
   it("his first catch (the weakest there is) takes him to level 2", () => {
