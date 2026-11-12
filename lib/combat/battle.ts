@@ -45,11 +45,15 @@ export const MAX_ROUNDS = 100;
 // stumble and lose that attack. Re-crippling refreshes the duration; it
 // doesn't stack. It keeps counting down while the creature is on the bench.
 export const CRIPPLE_AGILITY_LOSS = 0.5;
-export const CRIPPLE_ROUNDS = 3;
-// How long a cripple lasts: CRIPPLE_ROUNDS, or a roll in the move's own range (Erupt: 3–5).
-const crippleRounds = (fx: { minRounds?: number; maxRounds?: number }) =>
-  fx.minRounds && fx.maxRounds ? fx.minRounds + Math.floor(Math.random() * (fx.maxRounds - fx.minRounds + 1)) : CRIPPLE_ROUNDS;
-export const CRIPPLE = { stumble: 0.25 }; // chance a crippled creature loses its attack (no energy spent)
+// The user, 2026-11-13: 3–5 rounds and a 50% stumble (were 3 rounds and 25%).
+export const CRIPPLE_ROUNDS = 3;     // (the fewest; the shortest a cripple shows)
+export const CRIPPLE_ROUNDS_MAX = 5;
+// How long a cripple lasts: CRIPPLE_ROUNDS–CRIPPLE_ROUNDS_MAX, or a roll in the move's own range (Enfeeble: 3).
+const crippleRounds = (fx: { minRounds?: number; maxRounds?: number }) => {
+  const min = fx.minRounds ?? CRIPPLE_ROUNDS, max = fx.maxRounds ?? CRIPPLE_ROUNDS_MAX;
+  return min + Math.floor(Math.random() * (max - min + 1));
+};
+export const CRIPPLE = { stumble: 0.5 }; // chance a crippled creature loses its attack (no energy spent)
 
 // Haste (from Dash Lash / Quick Bolt / Quickcast): extra agility for this
 // round's turn order only, so it can strike first. Nothing carries over.
@@ -642,12 +646,13 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
       let damage = missed ? 0 : calcDamage(skill, actor, target, precise, PRECISE_IGNORE, rollDamage()).damage;
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
+      let burnt: Extract<GroundEffect, { kind: "cloud" }> | undefined; // Emulate: the cloud it set alight
       if (!missed && damage > 0) {
         let m = 1;
         if (fx?.kind === "execute" && target.hp < target.maxHp * fx.below) m *= 1 + fx.bonus;
         if (fx?.kind === "ambush" && target.hp >= target.maxHp) m *= 1 + fx.bonus;
         if (fx?.kind === "septic" && (target.statuses.some((s) => s.id === "bleed") || groundOf(foe, "blood") || groundOf(foe, "gore"))) m *= fx.mult;
-        if (fx?.kind === "ignite" && groundOf(foe, "cloud")) { m *= fx.mult; clearGroundLogged(state, foeKey, ["cloud"]); }
+        if (fx?.kind === "ignite" && groundOf(foe, "cloud")) { m *= fx.mult; burnt = groundOf(foe, "cloud"); clearGroundLogged(state, foeKey, ["cloud"]); }
         if (fx?.kind === "chain") m *= 1 + Math.min(fx.cap, fx.step * (streak.hits - 1));
         const gore = groundOf(foe, "gore");
         if (gore && !cannotBleed(target) && raceOfMove(skill) === "toxic") m *= 1 + gore.amp;
@@ -711,6 +716,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       if (soaked) {
         target.defenceCut = soaked;
         target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: soaked }];
+      }
+      // Emulate: the cloud goes up in flames, one more tick of it as fire (so Toxic too).
+      if (burnt && target.hp > 0) {
+        const fire = Math.min(target.hp - bossMinHp(state, foeKey, targetIdx), Math.max(1, Math.round(target.maxHp * burnt.tick * (burnt.boost ?? 1))));
+        if (fire > 0) {
+          target.hp -= fire;
+          state.log.push({ type: "effect", side: foeKey, index: targetIdx, name: target.name, text: `is caught as the cloud goes up in flames (${fire} damage)`, hp: target.hp, statuses: target.statuses.map((s) => ({ ...s })), kind: "burst", damage: fire });
+          if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
+        }
       }
       // The 2026-11 codex moves (numbers on the moves: lib/creatures/codexMoves.ts).
       const changed: string[] = [];

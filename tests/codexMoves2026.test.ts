@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { createBattle, resolveRound, sendInReplacement, activeOf, poisonWith, type BattleAction, type Combatant } from "../lib/combat/battle";
+import { createBattle, resolveRound, sendInReplacement, activeOf, poisonWith, CRIPPLE, CRIPPLE_ROUNDS, CRIPPLE_ROUNDS_MAX, type BattleAction, type Combatant } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
 import { CREATURE_BY_ID, CREATURE_TEMPLATES, MOVE_BY_NAME, SPECIAL_MOVES, canLearnFromCodex, isRetiredMove, REUSED_NAMES } from "../lib/creatures/creatureData";
@@ -111,8 +111,22 @@ describe("the 2026-11 codex moves in a fight", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5); // (no precise hit, the middle damage roll)
     const hp = wolf.hp;
     resolveRound(s, { A: attack("Emulate"), B: attack("Strike") });
-    expect(hp - wolf.hp).toBeGreaterThanOrEqual(plain * 2 - 2);
+    expect(hp - wolf.hp).toBeGreaterThanOrEqual(plain * 2 - 2 + Math.round(999 * 0.1)); // ×2, and one more tick as it burns
+    expect(s.log.some((e) => e.type === "effect" && e.text.includes("goes up in flames"))).toBe(true);
     expect(s.sides.B.ground).toEqual([]);
+  });
+
+  it("cripple lasts 3–5 rounds with a 50% stumble (the user, 2026-11-13); Enfeeble a sure 3", () => {
+    expect([CRIPPLE_ROUNDS, CRIPPLE_ROUNDS_MAX, CRIPPLE.stumble]).toEqual([3, 5, 0.5]);
+    const seen = new Set<number>();
+    for (let i = 0; i < 60; i++) {
+      const s = createBattle([big(fighter("thicket_archer", ["Shot", "Bolas Shot"]))], [big(fighter("moss_wolf", ["Strike"]))]);
+      resolveRound(s, { A: attack("Bolas Shot"), B: attack("Strike") });
+      const c = activeOf(s.sides.B).statuses.find((x) => x.id === "cripple");
+      if (c) seen.add(c.rounds);
+    }
+    expect([...seen].sort()).toEqual([3, 4, 5]); // (after this round's tick: 3–5 more)
+    expect(MOVE_BY_NAME.Enfeeble.effect).toMatchObject({ chance: 1, minRounds: 3, maxRounds: 3 });
   });
 
   it("poison doesn't stack: the one with more left stays", () => {

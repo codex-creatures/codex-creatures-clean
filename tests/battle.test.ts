@@ -114,7 +114,7 @@ describe("move slots and learnable moves", () => {
     }
   });
 
-  it("a crippled creature stumbles and loses about a quarter of its attacks, spending no energy", () => {
+  it("a crippled creature stumbles and loses about half its attacks (CRIPPLE.stumble: 25% until 2026-11-13), spending no energy", () => {
     let tries = 0, lost = 0;
     for (let i = 0; i < 3000; i++) {
       const s = createBattle([mv("crystal_golem", ["Jab"])], [mv("ironhide", ["Slash"])]);
@@ -126,8 +126,8 @@ describe("move slots and learnable moves", () => {
       if (stumbled) { lost++; expect(b.energy).toBe(100); }
       expect(s.log.some((e) => e.type === "attack" && e.side === "B")).toBe(!stumbled);
     }
-    expect(lost / tries).toBeGreaterThan(0.21);
-    expect(lost / tries).toBeLessThan(0.29);
+    expect(lost / tries).toBeGreaterThan(0.45);
+    expect(lost / tries).toBeLessThan(0.55);
   });
 
   it("a dash move doubles your agility this round only", () => {

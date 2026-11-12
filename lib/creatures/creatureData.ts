@@ -184,9 +184,9 @@ export const ALL_SKILLS: Skill[] = [
 // first-strike move does the dash's job, and RETIRED_LEARNABLES turns them
 // over to their closest core move.)
 const OLD_LEARNABLES: Skill[] = [
-  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  dmgType: "force",  effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
-  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
-  { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
+  { name: "Cripple",        damage: 15, energyCost: 60, type: "melee",  dmgType: "force",  effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 50% chance to stumble and lose each attack." },
+  { name: "Crippling Shot", damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 50% chance to stumble and lose each attack." },
+  { name: "Hobble Hex",     damage: 15, energyCost: 60, type: "magic",  dmgType: "arcane", effect: { kind: "cripple", chance: 0.5 },    desc: "50% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 50% chance to stumble and lose each attack." },
   { name: "Dash Lash",      damage: 15, energyCost: 60, type: "melee",  dmgType: "pierce", effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
   { name: "Quick Bolt",     damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
   { name: "Quickcast",      damage: 15, energyCost: 60, type: "magic",  dmgType: "force",  effect: { kind: "dash", agilityBonus: 1 }, desc: "Double agility this round (so it can strike first)." },
@@ -219,7 +219,7 @@ export const RACE_MOVES: Skill[] = [
   // Geo's race move (the user, 2026-10-31).
   { name: "Erupt",      damage: 25, energyCost: 70, type: "magic",  dmgType: "force",  race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 },
     alsoLearners: ["swamp_witch", "mr_shadows", "ironhide"],
-    desc: "25% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 25% chance to stumble and lose each attack." },
+    desc: "25% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 50% chance to stumble and lose each attack." },
 ];
 
 // Special moves (the user, 2026-10-27): each comes as a codex of its own
@@ -300,7 +300,7 @@ export const RETIRED_MOVES: Record<string, string> = {
 export const BOSS_MOVES: Skill[] = [
   { name: "Club Smash",    damage: 20, energyCost: 40, type: "melee", dmgType: "force"  },
   { name: "Backhand",      damage: 10, energyCost: 20, type: "melee", dmgType: "force"  },
-  { name: "Stomp",         damage: 12, energyCost: 40, type: "melee", dmgType: "force",  effect: { kind: "cripple", chance: 0.5, agilityLoss: 0.5 }, desc: "50% chance to cripple: −50% agility, and a 25% chance to stumble and lose each attack, for a few rounds." },
+  { name: "Stomp",         damage: 12, energyCost: 40, type: "melee", dmgType: "force",  effect: { kind: "cripple", chance: 0.5, agilityLoss: 0.5, minRounds: 3, maxRounds: 3 }, desc: "50% chance to cripple: −50% agility, and a 50% chance to stumble and lose each attack, for 3 rounds." },
   { name: "Eye Laser",     damage: 30, energyCost: 70, type: "magic", dmgType: "arcane" },
   { name: "Claw Rake",     damage: 15, energyCost: 30, type: "melee", dmgType: "pierce" },
   { name: "Crushing Grip", damage: 25, energyCost: 50, type: "melee", dmgType: "force"  },

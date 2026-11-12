@@ -35,9 +35,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **Stances:** neutral, float, entrench (engine.ts). Float takes −10% from melee and +10% from
   ranged, and deals +10% ranged; Entrench is the mirror image (melee). The stance rules are
   provisional in the original design, and there's no elemental type chart.
-- ✅ **Utility moves** (learnable): Cripple (−50% agility for 3 rounds, plus a 25% chance each
-  attack is lost), Haste/Quickcast (double agility this round only, 15 power, 60 energy), Precise (70% to hit,
-  always precise).
+- ✅ **Cripple** (the user, 2026-11-13; was 3 rounds and a 25% stumble): −50% agility for 3–5 rounds
+  (`CRIPPLE_ROUNDS`–`CRIPPLE_ROUNDS_MAX`, or the move's own range: Enfeeble and the Cyclops's Stomp 3),
+  and a 50% chance each attack is lost (`CRIPPLE.stumble`, for every cripple, Stomp's too).
+- ✅ **Learnable moves:** Cripple, Crippling Shot, Hobble Hex (15 power, 60 energy, a 50% chance to
+  cripple). (Haste/Quickcast and the precise moves were retired 2026-11-12.)
 - ✅ **Race moves:** single-use codexes, learnable by that race (either of a creature's two), plus
   the species the user named (`alsoLearners`), minus any left out (`notLearners`) (the user,
   2026-10-31). The codex window no longer says who can learn it: tapping one greys out the rest.
@@ -235,7 +237,7 @@ power counts for less as attack grows.
   rounds. Toxic creatures and warded ones (Crystal Armour) aren't touched. Clouds don't stack (a new
   one replaces the old). Blood under a cloud (a Blood Sacrifice pool, Haemorrhage's) is soaked up: the
   blood goes and the cloud is 50% stronger. Cleansing Water washes the cloud under your team away,
-  Flame Body burns only your own team's, Emulate burns the one under the target (and hits double).
+  Flame Body burns only your own team's, Emulate burns the one under the target: it hits double, and the cloud goes up in flames for one more tick of it, as fire (so Toxic creatures take it too; the user, 2026-11-13).
 - **Poison** keeps whichever has the most left (dose × rounds); a new one never shortens it.
 - **Bleed** (Obsidian, Razor Arrows): until it leaves the field; Undead don't bleed. **Weaken**
   (Nullifying Voice, Haunting Scream's fallback): an attack style, or all, down. **Ward** (Crystal
@@ -249,7 +251,7 @@ power counts for less as attack grows.
   (`wipeReusedNames`, `codexSet`), its slot getting its next core move; the names are the new moves'.
 - 🧪 Round 2 (core moves neutral): Healing Blessing +21, Rabid Bite +13 at 50 energy (+8 at 70),
   Obsidian Arrows +10, Implode +7; Choking Smog as first drafted +35 (the user's foe-only version is
-  built, not yet simmed). Cripple is weak (Cripple 0, Bolas +3, Enfeeble −2): ❓ options with the user.
+  built, not yet simmed). Cripple was weak (Cripple 0, Bolas +3, Enfeeble −2); at a 50% stumble +2 to +4 over 3 rounds, so the user made it 3–5 rounds at 50% (Enfeeble kept to 3, Erupt's chance kept at 25%).
 
 ### Planned
 
