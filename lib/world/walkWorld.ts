@@ -112,7 +112,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // key: the room, or "<room>#<cage>". def: what it is (objects.ts), state:
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
-  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean }; // inert: drawn, not tapped; guarded: opening it sets its guards on you
+  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true }; // inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13)
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -193,8 +193,10 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
     }
     // (World version 12) A table, as furniture: in the way, but nothing to use (inert: a tap by it walks).
+    // (13) One with a deck of cards on it is the deck, to turn over, till it has been.
     const table = placed.spot(`table:${id}`);
-    if (table) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "table", open: false, inert: true }));
+    if (table && placed.decks?.has(`table:${id}`) && !r.deckTaken) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "card-deck", open: false, deck: true }));
+    else if (table) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "table", open: false, inert: true }));
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
     // Till they're beaten, its guards are round them: trying one sets them on you, as a guarded chest does.
     r.cages?.forEach((cage, i) => {

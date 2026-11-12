@@ -23,7 +23,7 @@ import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/
 import { collectorCreatures, creaturePrice, tradeUpCard } from "@/lib/collector";
 import { buildPit, claimPlans, hasPit, logTrained, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
 import { starterCreature } from "@/lib/creatures/starter";
-import { SCHEMATICS, STORAGE_PLANS, MATERIAL_KEYS, BOOKCASE_BUILT, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
+import { SCHEMATICS, STORAGE_PLANS, STORAGE_TIER, MATERIAL_KEYS, BOOKCASE_BUILT, BOOKCASE_REINFORCED, BOOKCASE_UPGRADE_COST, bookcaseSize, cageSize, canAfford, addMaterials, countMaterial, materialDrop, type MaterialKey, type Materials, type StoragePlan } from "@/lib/items/materials";
 
 // Klutz is your helper, not one of your creatures (lib/klutz.ts). This
 // stand-in drop is what his gear and moves are stored under (equipment
@@ -44,7 +44,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 import { readSave, writeMainSave } from "@/lib/save";
 import { clearPlayTime } from "@/lib/playTime";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
-import { fitInBoxes, forFullBox, type CappedBox } from "@/lib/items/storage";
+import { fitInBoxes, forFullBox, boxTier, buildBox, type CappedBox } from "@/lib/items/storage";
 import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
 import { readTeams, toggleInTeam, type Teams } from "@/lib/teams";
 import { readPvpTeams, togglePvpTeam, type PvpTeams } from "@/lib/pvp/teams";
@@ -957,13 +957,14 @@ export function useGameState(initialTab: TabKey = "all") {
   // (at home, or in your bag) or built the cage.
   const hasCagePlan = (d: Drop) => d.dropType === "item" && d.schematic === "iron_cage";
   const wantsCagePlan = () => cage < 2 && !inventory.some(hasCagePlan) && !Object.values(loadDungeon().meta.loot ?? {}).some(hasCagePlan);
-  // The storage schematics you have (at home, or in your bag) or have built:
-  // the merchant stops offering those.
+  // The storage schematics you have (at home, or in your bag) or have built,
+  // or can't build yet (a second one, before its box's first is built): the
+  // merchant doesn't offer those.
   const heldStoragePlans = (): StoragePlan[] => {
     const lab = loadDungeon().meta;
     const inBag = lab.bag.map(lootIdOf).flatMap((id) => (id && lab.loot?.[id] ? [lab.loot[id]] : []));
-    return (Object.keys(STORAGE_PLANS) as StoragePlan[]).filter((p) => storage.includes(STORAGE_PLANS[p])
-      || [...inventory, ...inBag].some((d) => d.dropType === "item" && d.schematic === p));
+    const held = (p: StoragePlan) => [...inventory, ...inBag].some((d) => d.dropType === "item" && d.schematic && STORAGE_PLANS[d.schematic as StoragePlan] === STORAGE_PLANS[p]);
+    return (Object.keys(STORAGE_PLANS) as StoragePlan[]).filter((p) => boxTier(STORAGE_PLANS[p], storage) !== STORAGE_TIER[p] - 1 || held(p));
   };
 
   // Build what a schematic shows, if you have the materials: the schematic
@@ -980,7 +981,15 @@ export function useGameState(initialTab: TabKey = "all") {
     setMaterials((m) => addMaterials(m, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n]))));
     if (key === "crooked_bookcase") setBookcase((b) => (b < 2 ? BOOKCASE_BUILT : b));
     if (key === "iron_cage") setCage((c) => Math.max(c, 2));
-    if (key === "weapon_storage" || key === "armor_storage") setStorage((s) => [...new Set([...s, STORAGE_PLANS[key]])]);
+    if (key in STORAGE_PLANS) setStorage((s) => buildBox(s, STORAGE_PLANS[key as StoragePlan], STORAGE_TIER[key as StoragePlan]));
+    return true;
+  }
+
+  // The crooked bookcase built up to the iron-bound one: materials only, no schematic.
+  function upgradeBookcase(): boolean {
+    if (bookcase < 2 || bookcase >= BOOKCASE_REINFORCED || !canAfford(materials, BOOKCASE_UPGRADE_COST)) return false;
+    setMaterials((m) => addMaterials(m, Object.fromEntries(Object.entries(BOOKCASE_UPGRADE_COST).map(([k, n]) => [k, -n]))));
+    setBookcase(BOOKCASE_REINFORCED);
     return true;
   }
 
@@ -1152,7 +1161,7 @@ export function useGameState(initialTab: TabKey = "all") {
     discoveredCreatures, discoveredItems, speciesOwned, itemKinds,
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
-    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
+    addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };

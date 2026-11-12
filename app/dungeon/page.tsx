@@ -767,9 +767,10 @@ export default function DungeonPage() {
   // glow on the table shows the rarest; a room from before is rolled now). They're turned over in the
   // card viewer, so you see what you got.
   const [deckShow, setDeckShow] = useState<Drop[] | null>(null);
-  function openDeck() {
+  // (World version 13) a deck lying on a room's table: turned over the same way, and the room's left as it was.
+  function openDeck(onTable = false) {
     const drops = (loadDungeon().run?.current?.deck ?? rollDeck()).map((id) => makeCreatureDrop(CREATURE_BY_ID[id], "card", ""));
-    give(drops, markDone);
+    give(drops, onTable ? (r) => (r.current ? { ...r, current: { ...r.current, deckTaken: true } } : r) : markDone);
     setDeckShow(drops);
   }
 
@@ -945,6 +946,13 @@ export default function DungeonPage() {
     else if ((c.kind === "storehouse" || c.kind === "library") && !hasFight(c) && c.sack && !c.opened) openSack();
     // Someone to talk to, or a pool or a deck to use: the room's window, as in a room.
     else if (["pool", "merchant", "witch", "librarian", "cards", "library"].includes(c.kind)) setWalkPanel(true);
+  }
+  // Walked up to a deck of cards on a table (world version 13): turn it over.
+  function walkDeck(id: string, st: WalkState) {
+    battle.clear();
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    const c = loadDungeon().run?.current;
+    if (c?.deck && !c.deckTaken) openDeck(true);
   }
   // Walked up to a camp's cage: open it (once its guards are beaten; an ambush springs).
   function walkCage(id: string, i: number, st: WalkState) {
@@ -1315,7 +1323,7 @@ export default function DungeonPage() {
     <RoomScreen
       run={run} room={run.current} notes={notes} byId={byId}
       gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={openDeck} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
+      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={() => openDeck()} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
       bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
       onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
     />
@@ -1329,7 +1337,7 @@ export default function DungeonPage() {
         onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onHeal={walkHeal} onKeep={walkSave} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onHeal={walkHeal} onKeep={walkSave} />
       {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
         <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
       )}

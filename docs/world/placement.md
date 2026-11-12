@@ -218,6 +218,8 @@ or the boss's; a cards room's deck has its feature's own table), `TABLE_CHANCE` 
 stream (pass 61), one table, `table:<room>`, on a random valid panel off the doors (`CANDLE_CLEAR`), the
 kept paths and spots and the panels in front of a wall torch, left out if none is; `TABLE_CANDLE` 70% of
 them hold a candle (`holds: "candle"`). About 4.7 a 21-room Encampment run, two thirds with a candle.)
+v13, the user, 2026-11-13: the same tables, and then, on the same stream, `TABLE_DECK` 5% of them have a
+deck of cards on (`deck: true`): the walkable Labyrinth's "?" rooms no longer hold a cards room.
 
 ### Modules
 

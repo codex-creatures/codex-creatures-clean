@@ -4,19 +4,27 @@
 // home even into a full box (it can go over), but you can't go back into
 // the Labyrinth until every box has space again. A scan for a full box is
 // kept as a Code Cache at the altar instead, and opens once there's room.
-// The weapon and armour boxes can be built bigger (BIG_BOX_CAP) from the
-// merchant's storage schematics; `big` is the boxes you've built up.
+// The weapon and armour boxes can be built bigger (BIG_BOX_CAP, then
+// BIGGER_BOX_CAP) from the merchant's storage schematics; `big` is the boxes
+// you've built up, each once for every time it's been built up (so a box
+// built twice is in it twice: older saves, built once, read as they were).
 
 import type { Drop } from "../types";
 
 export const BOX_CAP = 50;
 export const BIG_BOX_CAP = 75;
+export const BIGGER_BOX_CAP = 100; // the second storage schematics (the user, 2026-11-13)
+const BOX_CAPS = [BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP];
 export const CAPPED_BOXES = ["weapon", "armor", "consumable"] as const;
 export type CappedBox = (typeof CAPPED_BOXES)[number];
 export const BOX_NAMES: Record<CappedBox, string> = { weapon: "weapons", armor: "armour", consumable: "consumables" };
 
-// How much one box holds.
-export const boxCap = (b: CappedBox, big: readonly CappedBox[] = []) => (big.includes(b) ? BIG_BOX_CAP : BOX_CAP);
+// How many times a box has been built up, and how much it holds.
+export const boxTier = (b: CappedBox, big: readonly CappedBox[] = []) => Math.min(BOX_CAPS.length - 1, big.filter((x) => x === b).length);
+export const boxCap = (b: CappedBox, big: readonly CappedBox[] = []) => BOX_CAPS[boxTier(b, big)];
+// Built up once more (by a storage schematic of this tier: a plan built twice changes nothing).
+export const buildBox = (big: readonly CappedBox[], b: CappedBox, tier: number): CappedBox[] =>
+  boxTier(b, big) >= tier ? [...big] : [...big.filter((x) => x !== b), ...Array<CappedBox>(tier).fill(b)];
 
 // Which box a drop goes in, if any (creatures, cards, gold and materials don't).
 export function boxOf(d: Drop): CappedBox | undefined {

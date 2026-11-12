@@ -47,7 +47,7 @@ import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCode
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
 import { unsupportedRun } from "../world/version";
-import { TOOLS, MATERIALS, SCHEMATICS, STORAGE_PLANS, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
+import { TOOLS, MATERIALS, SCHEMATICS, NEXT_STORAGE_PLAN, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
 export const PARTY_SIZE = 5;
 export const TEAM_SIZE = 3;
@@ -252,9 +252,11 @@ export const MYSTERY_MIX: [RoomKind, number][] = [
 export const WALK_ROOM_MIX: [RoomKind, number][] = [
   ["easy", 45], ["pool", 20], ["hard", 10], ["chest", 10], ["stash", 10], ["campfire", 5],
 ];
+// (No cards rooms since 2026-11-13, the user: a deck of cards lies on a table now and then instead,
+// place.ts TABLE_DECK. Their 5 went to chests.)
 export const WALK_MYSTERY_MIX: [RoomKind, number][] = [
-  ["miniboss", 45], ["cards", 5], ["campfire", 6],
-  ["easy", 13], ["pool", 7], ["hard", 12], ["chest", 6], ["stash", 6],
+  ["miniboss", 45], ["campfire", 6],
+  ["easy", 13], ["pool", 7], ["hard", 12], ["chest", 11], ["stash", 6],
 ];
 
 export const ROOM_INFO: Record<RoomKind, { name: string; icon: string }> = {
@@ -576,7 +578,8 @@ const STORE_RARITY: [Rarity, number][] = [["common", 50], ["uncommon", 30], ["ra
 // 2. rare wares, each rolled on its own: the rugged backpack until you've got
 //    it (always), or once you have, a backpack upgrade (BAG_UPGRADE_CHANCE);
 //    each storage schematic (STORAGE_PLAN_CHANCE, until you have it or built
-//    it); a Revival Elixir (REVIVAL_CHANCE); an XP scroll
+//    it; once it's built, its second one instead, at STORAGE_PLAN_2_PRICE:
+//    waresFor); a Revival Elixir (REVIVAL_CHANCE); an XP scroll
 //    (MERCHANT_SCROLL_CHANCE) and a clairvoyance scroll (MERCHANT_CLAIRVOYANCE);
 // then materials fill what's left (one stack of each kind).
 // (Gear on the cart, the plan's step 3, isn't in yet.)
@@ -590,6 +593,7 @@ export const BAG_UPGRADE_CHANCE = 0.2;
 export const bagUpgradePrice = (size: number) => BAG_UPGRADE_PRICES[size - BACKPACK];
 export const STORAGE_PLAN_CHANCE = 0.2;
 export const STORAGE_PLAN_PRICE = 2000;
+export const STORAGE_PLAN_2_PRICE = 4000; // the second storage schematics (the user, 2026-11-13)
 export const REVIVAL_CHANCE = 0.25;
 // The Revival Elixir brings a knocked-out creature back with this share of
 // its HP, between rooms. Also in mini-boss and boss chests.
@@ -625,7 +629,7 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
     { key: "flare", tool: "flare", price: TOOLS.flare.price },
   ];
   if (!backpack && rng() < BAG_UPGRADE_CHANCE) wares.push({ key: "bag_up", bagUp: true, price: BAG_UPGRADE_PRICES[0] });
-  for (const plan of Object.keys(STORAGE_PLANS) as StoragePlan[])
+  for (const plan of Object.keys(NEXT_STORAGE_PLAN) as StoragePlan[]) // (a first one: waresFor offers its second)
     if (rng() < STORAGE_PLAN_CHANCE) wares.push({ key: plan, schematic: plan, price: STORAGE_PLAN_PRICE });
   if (rng() < REVIVAL_CHANCE) wares.push({ key: "revival", tool: "revival", price: TOOLS.revival.price });
   if (rng() < MERCHANT_SCROLL_CHANCE) wares.push({ key: "scroll", scroll: true, price: SCROLL_PRICE });
@@ -640,13 +644,18 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
 // What's on a cart for you: not the backpack once you've got one (a cart
 // rolled before you found it elsewhere); an upgrade only while the backpack
 // can grow, priced for your bag's size; not a storage schematic you already
-// have or have built (plans: those).
+// have or have built, nor one you can't build yet (plans: those). A first
+// storage schematic you've built is offered as its second one, dearer.
 export function waresFor(wares: Ware[], meta: { bagSize?: number }, plans: readonly StoragePlan[] = []): Ware[] {
   const size = bagSize(meta);
   return wares.flatMap((w): Ware[] => {
     if ("backpack" in w) return onBindle(meta) ? [w] : [];
     if ("bagUp" in w) return size >= BACKPACK && size < BAG_MAX ? [{ ...w, price: bagUpgradePrice(size) }] : [];
-    if ("schematic" in w) return plans.includes(w.schematic) ? [] : [w];
+    if ("schematic" in w) {
+      if (!plans.includes(w.schematic)) return [w];
+      const next = NEXT_STORAGE_PLAN[w.schematic];
+      return next && !plans.includes(next) ? [{ key: next, schematic: next, price: STORAGE_PLAN_2_PRICE }] : [];
+    }
     return [w];
   });
 }
@@ -866,7 +875,8 @@ export type Room = {
   quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
   witch?: WitchGame;   // the card witch's game (lib/dungeon/witch.ts)
-  deck?: string[];     // a deck of cards: its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
+  deckTaken?: boolean; // (world version 13) the deck of cards on this room's table has been turned over
+  deck?: string[];     // a deck of cards (a cards room's, or one on a table: world version 13): its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
   done: boolean;
 };
 

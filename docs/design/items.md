@@ -65,6 +65,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   (`weapon_storage`, `armor_storage`) build that box up to 75 (`BIG_BOX_CAP`; consumables stay at
   50). Built from the Inventory (a panel above the list) for 10 planks, 10 nails, 1 stone.
   The save remembers which boxes are built (`storage`, optional, default none).
+  ✅ **Reinforced storage schematics** (the user, 2026-11-13): once a box's first schematic is built,
+  the merchant's same 20% roll offers its second one instead (`weapon_storage_2`, `armor_storage_2`,
+  Legendary) for 4,000 gold (`STORAGE_PLAN_2_PRICE`). Built the same way, for 10 metal bars, 5 stone and
+  2 essence stones: that box holds 100 (`BIGGER_BOX_CAP`). In the save a box built twice is in
+  `storage` twice (`boxTier`; older saves read as before).
 - ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
   found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
   wandering merchant's cart, Labyrinth or tavern, for 1,000 gold (`BACKPACK_PRICE`; it takes one of
@@ -83,6 +88,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   from the tavern questline (§9, step 8) and costs 10 planks + 5 nails (`crooked_bookcase`,
   lib/items/materials.ts). (It was an epic drop for 20 planks + 10 nails, holding 25; a bookcase
   built then keeps its 25: `BOOKCASE_LEVELS`.)
+  ✅ **Iron-bound bookcase** (the user, 2026-11-13): the crooked bookcase builds up again, with no
+  schematic, for 10 metal bars, 5 stone and 2 essence stones (`BOOKCASE_UPGRADE_COST`): it holds 30
+  (`BOOKCASE_REINFORCED`, level 4). It keeps the crooked bookcase's art for now.
 - ✅ **Selling codexes** (the user, 2026-11-12; was throwing out, for no gold, since 2026-10-25): tap a
   codex on the bookcase, then Sell and Yes, for what a merchant pays (`codexSellPrice`: half a
   librarian's price, `MERCHANT_BUYBACK`; so 100 gold for most, 250 for a race or Epic codex). It

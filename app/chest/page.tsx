@@ -16,8 +16,8 @@ import SellConfirmModal from "@/components/SellConfirmModal";
 import KlutzGear from "@/components/KlutzGear";
 import { klutzHelping } from "@/lib/quest";
 import { MaterialIcon } from "@/components/PixelSprite";
-import { MATERIALS, SCHEMATICS, STORAGE_PLANS, canAfford, countMaterial, type MaterialKey, type StoragePlan } from "@/lib/items/materials";
-import { BIG_BOX_CAP, BOX_NAMES } from "@/lib/items/storage";
+import { MATERIALS, SCHEMATICS, STORAGE_PLANS, STORAGE_TIER, canAfford, countMaterial, type MaterialKey, type StoragePlan } from "@/lib/items/materials";
+import { BIG_BOX_CAP, BIGGER_BOX_CAP, BOX_NAMES } from "@/lib/items/storage";
 
 type Part = "items" | "creatures";
 const PART_TABS: Record<Part, TabKey[]> = {
@@ -26,7 +26,8 @@ const PART_TABS: Record<Part, TabKey[]> = {
 };
 
 // A storage schematic you've got (from the merchant), to build here: the
-// box it's for holds BIG_BOX_CAP from then on. (One at a time: the first.)
+// box it's for holds BIG_BOX_CAP from then on (BIGGER_BOX_CAP, a second
+// schematic's). (One at a time: the first.)
 function StorageBuild({ game }: { game: ReturnType<typeof useGameState> }) {
   const plan = game.inventory.find((d) => d.dropType === "item" && d.schematic && d.schematic in STORAGE_PLANS);
   if (!plan || plan.dropType !== "item") return null;
@@ -34,7 +35,7 @@ function StorageBuild({ game }: { game: ReturnType<typeof useGameState> }) {
   const cost = SCHEMATICS[key].cost;
   return (
     <div className="stone-panel" style={{ marginBottom: 10, padding: "8px 10px" }}>
-      <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 <b>{SCHEMATICS[key].name}</b>: your {BOX_NAMES[STORAGE_PLANS[key]]} box holds {BIG_BOX_CAP}.</div>
+      <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 <b>{SCHEMATICS[key].name}</b>: your {BOX_NAMES[STORAGE_PLANS[key]]} box holds {STORAGE_TIER[key] > 1 ? BIGGER_BOX_CAP : BIG_BOX_CAP}.</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 6 }}>
         {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
           const have = countMaterial(game.materials, k);

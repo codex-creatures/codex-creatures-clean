@@ -387,3 +387,48 @@ describe("tables (world version 12)", () => {
     expect(placedProblem([{ ...t, holds: "lamp" as never }], 12)).toMatch(/unknown thing on it/);
   });
 });
+
+describe("a deck of cards on a table (world version 13)", () => {
+  // (The user, 2026-11-13: no more cards rooms in the walkable Labyrinth; a table has a deck on it now and then.)
+  const runs = Array.from({ length: 6 }, (_, i) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(i * 7919 + 5), 0, false, false));
+  const at = (run: DungeonRun, v: number) => {
+    const walk = { ...run.walk!, v };
+    return { walk, ...placeWalk(walk, run.map, dungeonOf(run), (k) => walkRoom(run, k)) };
+  };
+  slowIt("puts the tables (and their candles) where version 12 did; only the deck is new, and never before 13", () => {
+    for (const run of runs) {
+      const v12 = at(run, 12).placed, v13 = at(run, 13).placed;
+      expect(v12.some((i) => i.deck)).toBe(false);
+      expect(v13.map((i) => { const c = { ...i }; delete c.deck; return c; })).toEqual(v12);
+    }
+  });
+  it("is the deck to turn over, glowing, till it has been; then the table again", async () => {
+    const { WALK_MYSTERY_MIX } = await import("../lib/dungeon/run");
+    expect(WALK_MYSTERY_MIX.some(([k]) => k === "cards")).toBe(false);
+    const run = runs.find((r) => at(r, 13).placed.some((i) => i.def === "table"))!;
+    const { walk, placed } = at(run, 13);
+    const t = placed.find((i) => i.def === "table")!;
+    const withDeck = placed.map((i) => (i === t ? { ...i, deck: true as const } : i));
+    expect(placedProblem(withDeck, 13)).toBeNull();
+    expect(placedProblem(withDeck, 12)).toMatch(/deck of cards/);
+    expect(placedProblem([{ ...t, def: "chest", deck: true }], 13)).toMatch(/deck of cards/);
+    const placements = placementsFrom(withDeck, walk);
+    const thing = (r: Room | undefined) => thingsOf(walk.layout, placements, [t.room], () => r, [], undefined, 0).find((q) => q.key === t.id);
+    const room = walkRoom(run, t.room)!;
+    expect(thing(room)).toMatchObject({ def: "card-deck", deck: true, open: false, solid: true });
+    expect(thing(room)?.inert).toBeUndefined();
+    expect(thing({ ...room, deckTaken: true })).toMatchObject({ def: "table", inert: true });
+  });
+  slowIt("is dealt with the run: a new run's tables with a deck have its cards on their room", () => {
+    let decks = 0;
+    for (let s = 0; s < 40; s++) {
+      const run = newWalkRun(startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 1 }, 4, [], false, seeded(s * 131 + 1), 0, false, false));
+      expect(run.walk!.v).toBe(WALK_V);
+      for (const i of run.walk!.placed!) {
+        if (i.def === "table") expect(!!run.walk!.rooms[i.room]?.deck).toBe(!!i.deck);
+        if (i.deck) decks++;
+      }
+    }
+    expect(decks).toBeGreaterThan(0);
+  }, 120_000);
+});

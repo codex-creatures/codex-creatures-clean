@@ -58,7 +58,7 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
                        desc: "Use it in the Labyrinth: your scroll shows where the librarian is, for the rest of the run." },
 };
 
-export type SchematicKey = "crooked_bookcase" | "iron_cage" | "weapon_storage" | "armor_storage";
+export type SchematicKey = "crooked_bookcase" | "iron_cage" | "weapon_storage" | "armor_storage" | "weapon_storage_2" | "armor_storage_2";
 export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; cost: Partial<Record<MaterialKey, number>>; desc: string }> = {
   crooked_bookcase: { name: "Crooked Bookcase Schematic", rarity: "epic", cost: { planks: 10, nails: 5 },
                       desc: "Plans for a taller, leaning bookcase: it holds 20 codexes instead of 10." },
@@ -69,10 +69,19 @@ export const SCHEMATICS: Record<SchematicKey, { name: string; rarity: Rarity; co
                       desc: "Plans for a bigger weapon box: it holds 75 weapons instead of 50." },
   armor_storage:    { name: "Armour Storage Schematic", rarity: "epic", cost: { planks: 10, nails: 10, essence_stones: 1 },
                       desc: "Plans for a bigger armour box: it holds 75 pieces instead of 50." },
+  // …and the second ones (the user, 2026-11-13): once the first is built, the merchant offers these
+  // instead, dearer (STORAGE_PLAN_2_PRICE), and they take rarer materials: each box 75 → 100.
+  weapon_storage_2: { name: "Reinforced Weapon Storage Schematic", rarity: "legendary", cost: { metal_bars: 10, essence_stones: 5, essence: 2 },
+                      desc: "Plans for an iron-bound weapon box: it holds 100 weapons instead of 75." },
+  armor_storage_2:  { name: "Reinforced Armour Storage Schematic", rarity: "legendary", cost: { metal_bars: 10, essence_stones: 5, essence: 2 },
+                      desc: "Plans for an iron-bound armour box: it holds 100 pieces instead of 75." },
 };
-// Which box each storage schematic makes bigger.
-export const STORAGE_PLANS = { weapon_storage: "weapon", armor_storage: "armor" } as const;
+// Which box each storage schematic makes bigger, and to which size (STORAGE_TIER: 1, then 2).
+export const STORAGE_PLANS = { weapon_storage: "weapon", armor_storage: "armor", weapon_storage_2: "weapon", armor_storage_2: "armor" } as const;
 export type StoragePlan = keyof typeof STORAGE_PLANS;
+export const STORAGE_TIER: Record<StoragePlan, number> = { weapon_storage: 1, armor_storage: 1, weapon_storage_2: 2, armor_storage_2: 2 };
+// The second plan for the box a first one's for (the merchant offers it once the first is built).
+export const NEXT_STORAGE_PLAN: Partial<Record<StoragePlan, StoragePlan>> = { weapon_storage: "weapon_storage_2", armor_storage: "armor_storage_2" };
 
 // The cage: how many creatures it holds at each level. 1: the cell you start
 // with; 2: built from the Iron Cage Schematic (a mini boss's chest, until
@@ -84,8 +93,12 @@ export const cageSize = (level = 1) => CAGE_LEVELS[Math.min(CAGE_LEVELS.length, 
 // you start with; 3: the crooked bookcase (BOOKCASE_BUILT), from the tavern's
 // schematic. 2 is the crooked bookcase as built before the tavern questline:
 // those saves keep their 25. Level 2 or more is the crooked bookcase.
-export const BOOKCASE_LEVELS = [10, 25, 20];
+// 4: the iron-bound bookcase (BOOKCASE_REINFORCED, the user, 2026-11-13), built
+// on the crooked one with rarer materials (BOOKCASE_UPGRADE_COST), no schematic.
+export const BOOKCASE_LEVELS = [10, 25, 20, 30];
 export const BOOKCASE_BUILT = 3;
+export const BOOKCASE_REINFORCED = 4;
+export const BOOKCASE_UPGRADE_COST: Partial<Record<MaterialKey, number>> = { metal_bars: 10, essence_stones: 5, essence: 2 };
 export const bookcaseSize = (level = 1) => BOOKCASE_LEVELS[Math.min(BOOKCASE_LEVELS.length, Math.max(1, level)) - 1];
 
 const now = () => new Date().toISOString();

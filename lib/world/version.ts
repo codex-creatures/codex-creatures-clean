@@ -27,7 +27,9 @@
 // 11: a guarded storehouse's guard keeps the storehouse's own chest, with no second chest in
 //    the room's middle that could stand on it (the user, 2026-11-11): new runs only.
 // 12: tables now and then, some with a candle on (the user, 2026-11-11): new runs only.
-export const WALK_V = 12;
+// 13: a deck of cards now and then on a table (TABLE_DECK), instead of a "?" room of its own
+//    (the user, 2026-11-13): new runs only.
+export const WALK_V = 13;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

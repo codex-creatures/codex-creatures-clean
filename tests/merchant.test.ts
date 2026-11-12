@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
   rollWares, waresFor, priceUp, wareDrop, minibossExtras, bagUpgradePrice,
-  BACKPACK, BAG_MAX, BAG_UPGRADE_PRICES, STORAGE_PLAN_PRICE, MERCHANT_SLOTS, type Ware,
+  BACKPACK, BAG_MAX, BAG_UPGRADE_PRICES, STORAGE_PLAN_PRICE, STORAGE_PLAN_2_PRICE, MERCHANT_SLOTS, type Ware,
 } from "../lib/dungeon/run";
 import { TOOLS } from "../lib/items/materials";
-import { BOX_CAP, BIG_BOX_CAP, boxCap, fullBoxes, forFullBox, fitInBoxes } from "../lib/items/storage";
+import { BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP, boxCap, buildBox, fullBoxes, forFullBox, fitInBoxes } from "../lib/items/storage";
 import { weaponDrop, armorDrop } from "../lib/drops";
 
 // The bigger merchant (the user, 2026-10-23): steps 1 and 2 of the cart plan.
@@ -64,8 +64,15 @@ describe("what the cart shows you", () => {
 
   it("a storage schematic you have (or built) isn't offered", () => {
     expect(waresFor([plan], { bagSize: 5 })).toHaveLength(1);
-    expect(waresFor([plan], { bagSize: 5 }, ["weapon_storage"])).toEqual([]);
+    expect(waresFor([plan], { bagSize: 5 }, ["weapon_storage", "weapon_storage_2"])).toEqual([]);
     expect(waresFor([plan], { bagSize: 5 }, ["armor_storage"])).toHaveLength(1);
+  });
+
+  it("once the first storage schematic's built, its second one is offered instead, dearer", () => {
+    const [w] = waresFor([plan], { bagSize: 5 }, ["weapon_storage"]);
+    expect(w).toMatchObject({ key: "weapon_storage_2", schematic: "weapon_storage_2", price: STORAGE_PLAN_2_PRICE });
+    expect(STORAGE_PLAN_2_PRICE).toBeGreaterThan(STORAGE_PLAN_PRICE);
+    expect(rollWares(() => 0).some((x) => "schematic" in x && x.schematic.endsWith("_2"))).toBe(false); // (the cart rolls only the first ones)
   });
 
   it("an upgrade needs no bag slot; a schematic or elixir does", () => {
@@ -102,5 +109,14 @@ describe("bigger storage boxes", () => {
     expect(forFullBox(swords(60), weaponDrop("void_scythe", "common"))).toBe(true);
     const armour = Array.from({ length: 3 }, () => armorDrop("frontiers_mail", "common"));
     expect(fitInBoxes(swords(70), [...swords(10), ...armour], ["weapon"]).fit).toHaveLength(5 + 3);
+  });
+  it("a box built up twice holds 100; a plan built again changes nothing", () => {
+    const once = buildBox([], "weapon", 1), twice = buildBox(once, "weapon", 2);
+    expect(boxCap("weapon", once)).toBe(BIG_BOX_CAP);
+    expect(boxCap("weapon", twice)).toBe(BIGGER_BOX_CAP);
+    expect(boxCap("weapon", [...twice, "weapon"])).toBe(BIGGER_BOX_CAP);
+    expect(buildBox(twice, "weapon", 1)).toEqual(twice);
+    expect(boxCap("armor", buildBox(twice, "armor", 1))).toBe(BIG_BOX_CAP);
+    expect(fullBoxes(swords(BIG_BOX_CAP), twice)).toEqual([]);
   });
 });

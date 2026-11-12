@@ -74,11 +74,13 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 12;         // the world version a new run is placed at (tables, some with a candle on; version.ts)
+export const PLACED_V = 13;         // the world version a new run is placed at (a deck of cards on some tables; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
 export const TABLE_CANDLE = 0.7;
+// (v13) …and that a deck of cards lies on it (the user, 2026-11-13: no more cards rooms in the walkable Labyrinth).
+export const TABLE_DECK = 0.05;
 export const TABLE_ROOMS = new Set(["easy", "hard", "miniboss", "chest", "stash", "pool", "campfire", "treasure", "merchant", "librarian", "library", "witch", "storehouse", "encampment"]);
 const TABLE_PASS = 61;              // (v12) the tables' own random numbers, so nothing else can move
 export const BOOKCASE_DOOR_GAP = 2;  // (v10) panels: no broken bookcase this close to the panel inside a door (either way)
@@ -635,7 +637,8 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     }
     if (!at) { report.omitted.push({ id: tid, room: id, what: "no valid spot for a table" }); continue; }
     put(table, at, tid);
-    placed.push({ id: tid, def: "table", room: id, ...at, size: { ...table.footprint }, ...(rng() < TABLE_CANDLE ? { holds: "candle" as const } : {}) });
+    placed.push({ id: tid, def: "table", room: id, ...at, size: { ...table.footprint }, ...(rng() < TABLE_CANDLE ? { holds: "candle" as const } : {}),
+      ...(v >= 13 && rng() < TABLE_DECK ? { deck: true as const } : {}) });
   }
 
   // 7. Spawns: every fight room's foes, and the card witch.

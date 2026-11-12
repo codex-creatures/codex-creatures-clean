@@ -125,7 +125,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - **The bigger merchant** (the user, 2026-10-23; the Labyrinth's and the tavern's alike; the user
   wants him to keep growing). ✅ Built: the 10-slot cart (`MERCHANT_SLOTS`, always 10 spaces shown):
   always a Healing Potion, Lesser Potion and Torch; rare wares rolled one by one (backpack or, once
-  owned, a backpack upgrade 20%; each storage schematic 20% until bought; Revival Elixir 25%; XP
+  owned, a backpack upgrade 20%; each storage schematic 20% until bought (once built, its dearer second one); Revival Elixir 25%; XP
   scroll 20%; clairvoyance scroll 40%); materials fill the rest.
   🧪 **Tavern material prices** (the user, 2026-11-02: at the Labyrinth's prices you'd buy the lot
   every time; 500 for an essence stone is the benchmark): planks ×5 150, nails ×5 100, metal bars

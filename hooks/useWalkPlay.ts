@@ -38,6 +38,7 @@ export type WalkPlayProps = {
   onSpotted: (id: string, state: WalkState) => void;
   onObject: (id: string, state: WalkState) => void;
   onCage?: (id: string, cage: number, state: WalkState) => void;
+  onDeck?: (id: string, state: WalkState) => void; // walked up to a deck of cards on a room's table (world version 13)
   onHeal: (gains: Record<string, number>, state: WalkState) => void;
   onKeep: (state: WalkState) => void;
   seeAll?: boolean;                    // the lab: everything shown as seen (to judge a room)
@@ -97,7 +98,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
 
   // Tapped (and walked up to) a thing: a cage opens as a cage; a chest or cage still guarded sets its guards on you; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.guarded ? soundAlarm(sim, t.room, performance.now())
-    : t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : props.current.onObject(t.room, st));
+    : t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : t.deck ? props.current.onDeck?.(t.room, st) : props.current.onObject(t.room, st));
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.
   const rule = (p: Progress): CanStep => walkRule(layout, plan, p, sim.known, solidCells(things(), sim.fires, []));

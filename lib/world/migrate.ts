@@ -27,7 +27,7 @@
 // - repaired: a damaged run mended, at the player's say-so;
 // - none: not a walkable run.
 
-import { dungeonOf, type DungeonId, type DungeonRun, type DungeonSave, type Room } from "../dungeon/run";
+import { dungeonOf, rollDeck, type DungeonId, type DungeonRun, type DungeonSave, type Room } from "../dungeon/run";
 import { walkRoom, type WalkRun } from "../dungeon/walkRun";
 import type { DungeonMap } from "../dungeon/map";
 import { legacyPlacements, legacyFoePlacements } from "./compat/v0";
@@ -57,6 +57,7 @@ const whole = (n: unknown) => typeof n === "number" && Number.isInteger(n);
 const CANDLES_V = 5, MOUNTED = new Set(MOUNTED_DEFS);
 const NO_WALL_CANDLES_V = 8; // (wall torches instead: place.ts)
 const TABLES_V = 12;         // (tables, and a candle standing on one)
+const DECKS_V = 13;          // (a deck of cards on a table)
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
 // of instances, each with a string id (no two the same), a known definition, a
@@ -83,6 +84,7 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (p.def === "floor-candle" && p.start !== undefined) return `${p.id}: a floor candle that starts lit`;
     if (p.def === "table" && v < TABLES_V) return `${p.id}: a table in a world version ${v} run`;
     if (p.holds !== undefined && (p.def !== "table" || p.holds !== "candle")) return `${p.id}: unknown thing on it`;
+    if (p.deck !== undefined && (p.def !== "table" || p.deck !== true || v < DECKS_V)) return `${p.id}: a deck of cards it can't have`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
     if (p.wall !== undefined && !(v >= FIRST_PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
@@ -240,7 +242,18 @@ export function newWalkRun(run: DungeonRun): DungeonRun {
   if (!walk || walk.v !== undefined || walk.placed !== undefined) return placedRun(run);
   const m = made({ ...run, walk: { ...walk, v: PLACED_V } }, "migrated");
   if (m.outcome === "damaged") console.warn(`Walkable run ${run.id}: ${m.problem}`);
-  return m.run;
+  return withDecks(m.run);
+}
+
+// (World version 13) Each deck of cards lying on a table: its cards rolled now, with the run, so its
+// glow shows the rarest (as a cards room's are), and kept on its room (Room.deck).
+function withDecks(run: DungeonRun): DungeonRun {
+  const walk = run.walk;
+  const tables = (walk?.placed ?? []).filter((i) => i.def === "table" && i.deck && walk!.rooms[i.room]);
+  if (!walk || tables.length === 0) return run;
+  const rooms = { ...walk.rooms };
+  for (const t of tables) rooms[t.room] = { ...rooms[t.room], deck: rollDeck() };
+  return { ...run, walk: { ...walk, rooms } };
 }
 
 // The Labyrinth's save as it's opened to be played: a run from before phase 2a

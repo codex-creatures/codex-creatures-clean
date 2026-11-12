@@ -4,6 +4,8 @@
 // shelf holding 10; the Crooked Bookcase Schematic (the tavern's Cyclops
 // bounty: lib/tavern.ts) builds it up to 20, with planks and nails
 // (lib/items/materials.ts). Saves that built it before the tavern keep 25.
+// The crooked bookcase builds up to the iron-bound one (30) with rarer
+// materials, no schematic (BOOKCASE_UPGRADE_COST).
 // A codex is read from a creature's page (only creatures of its race can
 // learn a race codex). One you don't want can be thrown out to make room.
 
@@ -12,7 +14,7 @@ import CodexShelf from "@/components/CodexShelf";
 import Help from "@/components/Help";
 import { useGameState } from "@/hooks/useGameState";
 import { MaterialIcon } from "@/components/PixelSprite";
-import { BOOKCASE_BUILT, MATERIALS, SCHEMATICS, bookcaseSize, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
+import { BOOKCASE_BUILT, BOOKCASE_REINFORCED, BOOKCASE_UPGRADE_COST, MATERIALS, SCHEMATICS, bookcaseSize, canAfford, countMaterial, type MaterialKey } from "@/lib/items/materials";
 import { tavernPlan } from "@/lib/tavern";
 import type { CreatureOrItemDrop } from "@/lib/types";
 
@@ -28,14 +30,17 @@ export default function BookcasePage() {
     ? (game.inventory.find((d) => d.dropType === "item" && d.schematic === "crooked_bookcase") as CreatureOrItemDrop | undefined)
     : undefined;
   const plan = found ?? (tavernPlan(game.tavern, game.bookcase) ? { id: undefined, name: SCHEMATICS.crooked_bookcase.name } : undefined);
-  const cost = SCHEMATICS.crooked_bookcase.cost;
+  // …or, once it's the crooked bookcase, its upgrade (materials only).
+  const upgrade = !plan && game.bookcase >= 2 && game.bookcase < BOOKCASE_REINFORCED;
+  const cost = upgrade ? BOOKCASE_UPGRADE_COST : SCHEMATICS.crooked_bookcase.cost;
+  const name = game.bookcase >= BOOKCASE_REINFORCED ? "Iron-bound bookcase" : game.bookcase >= 2 ? "Crooked bookcase" : "Broken shelf";
 
   return (
     <DenFrame title="Bookcase" icon="📚">
       <div className="stone-panel">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <div className="pixel-font" style={{ fontSize: 17, color: "#f1d9a0" }}>
-            {game.bookcase >= 2 ? "Crooked bookcase" : "Broken shelf"} · holds {game.bookcaseSize}
+            {name} · holds {game.bookcaseSize}
           </div>
           <Help title="The bookcase">
             <ul>
@@ -43,12 +48,13 @@ export default function BookcasePage() {
               <li>Read a codex from a creature&apos;s <b>Moves</b> tab. Race codexes only work on that race.</li>
               <li>Don&apos;t want one? Tap it, then <b>Sell</b>: you get what a merchant would pay (half a librarian&apos;s price), and it makes room.</li>
               <li>The <b>Crooked Bookcase Schematic</b> (the tavern&apos;s Cyclops bounty) builds it up to <b>{bookcaseSize(BOOKCASE_BUILT)}</b>: {SCHEMATICS.crooked_bookcase.cost.planks} planks and {SCHEMATICS.crooked_bookcase.cost.nails} nails.</li>
+              <li>Then it can be built up to the <b>iron-bound bookcase</b>, holding <b>{bookcaseSize(BOOKCASE_REINFORCED)}</b>: {BOOKCASE_UPGRADE_COST.metal_bars} metal bars, {BOOKCASE_UPGRADE_COST.essence_stones} stone and {BOOKCASE_UPGRADE_COST.essence} essence stones.</li>
             </ul>
           </Help>
         </div>
-        {plan && (
+        {(plan || upgrade) && (
           <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 13, color: "#d8d4c8" }}>📐 You have the <b>{plan.name}</b>.</div>
+            <div style={{ fontSize: 13, color: "#d8d4c8" }}>{plan ? <>📐 You have the <b>{plan.name}</b>.</> : <>Build it up to the <b>iron-bound bookcase</b> (holds {bookcaseSize(BOOKCASE_REINFORCED)}).</>}</div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap", margin: "6px 0 8px" }}>
               {(Object.entries(cost) as [MaterialKey, number][]).map(([k, n]) => {
                 const have = countMaterial(game.materials, k);
@@ -59,7 +65,7 @@ export default function BookcasePage() {
                 );
               })}
             </div>
-            <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => game.buildSchematic(plan.id)}>🔨 Build it</button>
+            <button className="pixel-btn" disabled={!canAfford(game.materials, cost)} onClick={() => (plan ? game.buildSchematic(plan.id) : game.upgradeBookcase())}>🔨 Build it</button>
           </div>
         )}
       </div>

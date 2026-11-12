@@ -76,6 +76,7 @@ export type Instance = {
   size?: { w: number; d: number };           // the footprint it was placed with, unturned (world version 3 on; missing: its definition's)
   legacy?: "panel";                         // placed by the old panel rules: exactly today's behaviour (world-spec §3)
   holds?: "candle";                          // a table (world version 12): what stands on it
+  deck?: true;                               // a table (world version 13): a deck of cards lies on it (the room's `deck`)
 };
 
 // How a foe starts out, as generation rolled it (lib/dungeon/foes.ts): it

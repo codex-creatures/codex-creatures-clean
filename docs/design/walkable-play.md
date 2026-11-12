@@ -299,7 +299,10 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   room from before has none, no glow, and rolls them as you turn them over). Turned over, the cards
   show smaller than before (60%, so you see the room round them) and a tap off them closes the window
   (they're already yours). From world version 12 other rooms have a table now and then, most with a
-  candle on (lit as a floor candle, by walking near): furniture, in the way, nothing to use. (From world version 9 the
+  candle on (lit as a floor candle, by walking near): furniture, in the way, nothing to use. From world
+  version 13 (the user, 2026-11-13) there are no cards rooms: instead 5% of tables (`TABLE_DECK`) have a
+  deck of cards on, in whatever room they stand, rolled and glowing the same way; walk up to it to turn
+  it over (`Room.deckTaken`; the room is otherwise untouched). Their "?" share went to chests. (From world version 9 the
   witches, merchant and librarian wander the dungeon instead: §8.) Walking into a room ticks the
   witch's illness, and walking out mid-game leaves with your winnings, as down a tunnel.
   **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).
