@@ -6,6 +6,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 7. The Labyrinth
 
+- ✅ **The dungeon picker** (the user, 2026-11-13; components/dungeon/Entrance.tsx): a toggle at the top, **Dungeon Crawling** (the walkable runs, by torchlight; the default) or **Speed Scroll** (the scroll map), then one row each: Encampment, Cyclops, Hydra, Minotaur (to come, greyed), Abyss, with its price (FREE or the gold) or "locked", and an (i) with the details (rooms to the boss, foe levels, team size, free runs left, foes' codexes, times beaten). Dungeon Crawling is built for the Encampment and the Cyclops; the Hydra and the Abyss say "Speed Scroll only" there. (It replaced the cards and the two "🔥 New" cards.)
 - ✅ **The entrance** (the user, 2026-11-01): pick the dungeon, with its Enter button straight under it (the "?" beside it explains a run; the user, 2026-11-03), then two tabs. **Party**: Free pick
   (the default; it starts empty every time: tap the creatures that go in, up to the dungeon's team
   size) or one of **3 teams** (`TEAM_SLOTS`, lib/teams.ts: saved line-ups, up to a full

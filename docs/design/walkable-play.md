@@ -276,8 +276,8 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   applies once the walkable run reaches the Labyrinth: half each (pools 10, campfires 10 of
   `ROOM_MIX`'s 20; the user, 2026-11-06), 🧪 to adjust, as walking sideways likely finds
   more of them than the scroll's tunnels did.
-- **The walkable Labyrinth** (the Cyclops; ✅ the user, 2026-11-06: live as a second New at
-  the Labyrinth's entrance, "🔥 New: the Cyclops", locked till the Labyrinth opens; the old
+- **The walkable Labyrinth** (the Cyclops; ✅ the user, 2026-11-06: live at the Labyrinth's entrance,
+  since 2026-11-13 as the Cyclops under Dungeon Crawling (labyrinth.md: the dungeon picker), locked till the Labyrinth opens; the old
   Labyrinth stays as it is, and Klutz's quest runs are still the old one's;
   `/lab/newrun` → Labyrinth shows it without a save): `startWalkRun(…, dungeon 1)`, a
   Labyrinth run (its fee, run and clear counts, first clear, the Cyclops). Rolling its layout
