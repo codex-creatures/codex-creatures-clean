@@ -17,9 +17,9 @@
 import { routeLength, type DungeonMap } from "./map";
 import {
   makeRoom, campCages, minibossExtras, capSack, toolFinds, droppedPieceStats,
-  CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, type Room, type SackItem, type DungeonId,
+  CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, GOLDEN_DROPS, type Room, type SackItem, type DungeonId,
 } from "./run";
-import { CHEST_ODDS, rollBarcodeOutcome } from "../barcodeRegistry";
+import { CHEST_ODDS, REGISTRY_RULES, rollBarcodeOutcome, rollFromRules } from "../barcodeRegistry";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "../drops";
 import type { Drop } from "../types";
 import type { ItemKey } from "../items/ceilings";
@@ -77,6 +77,26 @@ export function fightSack(room: Room, rng: Rng = Math.random): SackItem[] {
   const sack: SackItem[] = drops.map((d) => (d.dropType === "reward" ? { gold: d.amount } : { gear: d }));
   if (room.kind === "encampment") sack.push(...minibossExtras(rng, false));
   return sack;
+}
+
+// A golden chest's finds: GOLDEN_DROPS rolled like a chest's, but each Rare or better (the rarities at
+// their usual odds between Rare, Epic and Legendary; a consumable a Healing Potion or a Rare codex) and
+// never plain gold. (A rare roll's materials can be planks or metal bars: those are rolled again, so
+// its materials are stone or essence stones.)
+const RARE_UP = ["rare", "epic", "legendary"];
+const GOLDEN_RULES = {
+  ...REGISTRY_RULES,
+  odds: Object.fromEntries(Object.entries(CHEST_ODDS).filter(([k]) => k !== "gold")),
+  rarity: Object.fromEntries(Object.entries(REGISTRY_RULES.rarity).filter(([k]) => RARE_UP.includes(k))),
+  consumableRarity: { rare: 1 },
+};
+export function goldenDrops(rng: () => number = Math.random): Drop[] {
+  const drops: Drop[] = [];
+  while (drops.length < GOLDEN_DROPS) {
+    const d = dropFromOutcome(rollFromRules(GOLDEN_RULES, rng));
+    if (d && d.dropType !== "reward" && RARE_UP.includes(d.rarity)) drops.push(d);
+  }
+  return drops;
 }
 
 // A chest, opened (the Labyrinth screen's openChest): CHEST_DROPS scan-style

@@ -32,6 +32,7 @@ import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import { damageTypesOn } from "@/lib/combat/engine";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
+import { goldenDrops } from "@/lib/dungeon/walkRooms";
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
@@ -577,8 +578,15 @@ export default function DungeonPage() {
     setMapOpen("look");
   }
 
-  // A stash: open the sack…
+  // A stash: open the sack… (A golden chest only with a Gold Key from your bag, used up.)
   function openSack() {
+    const c = loadDungeon().run?.current;
+    if (c?.golden && !c.opened) {
+      const key = (loadDungeon().meta.bag ?? []).find((e) => itemOf(e)?.tool === "gold_key");
+      if (!key) { setNotes(["🔒 The golden chest is locked. You need a Gold Key in your bag."]); return; }
+      spendTool(key);
+      setNotes(["🔑 The Gold Key turns, and the golden chest opens."]);
+    }
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, opened: true, done: true } } : r));
     setLootOpen(true);
   }
@@ -1102,9 +1110,11 @@ export default function DungeonPage() {
     const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded) || (dungeonOf(r) === 0 && room.kind === "encampment");
     // A mini boss's chest: potions (and now and then a clairvoyance scroll, or the cage schematic,
     // though never from the Encampment's chief).
-    if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan() && dungeonOf(r) !== 0));
+    // (A golden chest: GOLDEN_DROPS finds, each Rare or better, instead.)
+    if (room.golden) sack.push(...goldenDrops().map((d): SackItem => ({ gear: d })));
+    else if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan() && dungeonOf(r) !== 0));
     // Mini boss and boss chests sometimes hold an XP scroll.
-    if (Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
+    if (!room.golden && Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });
     // …and a boss's chest sometimes a Revival Elixir (a mini boss's: minibossExtras).
     if (room.kind === "boss" && Math.random() < BOSS_REVIVAL) sack.push({ gear: toolDrop("revival") });
     // …and now and then a soul stone (the Cyclops 2%, the Hydra and the Warden 5%).
@@ -1125,7 +1135,7 @@ export default function DungeonPage() {
     });
     setNotes([...xpNotes, ...winds]);
     // (Walking, a chest stays shut where it's guarded: you walk up and open it. The user, 2026-11-11.)
-    if (!top) setWon({ rows: wonRows, ups: wonUps, loot: sack.length > 0 && !(r.walk && container !== "sack") });
+    if (!top) setWon({ rows: wonRows, ups: wonUps, loot: sack.length > 0 && !(r.walk && container !== "sack") && !room.golden });
     // The rugged backpack (the Cyclops' first chest) goes straight on: more room to sort the haul.
     const pack = top ? sack.findIndex((x) => "backpack" in x) : -1;
     if (pack >= 0) takeFromSack(pack);

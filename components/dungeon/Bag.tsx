@@ -115,7 +115,7 @@ export default function Bag({ run, bag, slots, name, itemOf, slotOf, byId, wornI
               )}
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                 {slot && standing.map((id) => chip(id, `Equip on ${byId(id)!.name}`, done(() => onEquip(e, id)), {}, teaching))}
-                {it.tool && it.tool !== "revival" && onTool && chip("use", it.tool === "flare" ? "🧨 Light it" : isLocator(it.tool) ? `${TOOLS[it.tool].icon} Use it` : "🔮 Read it", done(() => onTool(e)))}
+                {it.tool && it.tool !== "revival" && it.tool !== "gold_key" && onTool && chip("use", it.tool === "flare" ? "🧨 Light it" : isLocator(it.tool) ? `${TOOLS[it.tool].icon} Use it` : "🔮 Read it", done(() => onTool(e)))}
                 {it.tool === "revival" && onTool && downed.map((id) => chip(id, `💖 Revive ${byId(id)!.name}`, done(() => onTool(e, id))))}
                 {it.tool === "revival" && downed.length === 0 && <span style={{ fontSize: 12, color: MUTED }}>Nobody&apos;s knocked out.</span>}
                 {it.scroll && onRead && run.party.filter((id) => byId(id)).map((id) => chip(id, `📜 Read on ${byId(id)!.name}`, done(() => onRead(e, id))))}

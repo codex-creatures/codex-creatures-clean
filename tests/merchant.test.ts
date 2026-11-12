@@ -120,3 +120,33 @@ describe("bigger storage boxes", () => {
     expect(fullBoxes(swords(BIG_BOX_CAP), twice)).toEqual([]);
   });
 });
+
+describe("golden chests and Gold Keys (the user, 2026-11-13)", () => {
+  it("about 1 mini boss in 10 guards a golden chest; no other room does", async () => {
+    const { makeRoom, GOLDEN_CHEST } = await import("../lib/dungeon/run");
+    let n = 0;
+    for (let i = 0; i < 2000; i++) if (makeRoom("miniboss").golden) n++;
+    expect(n / 2000).toBeGreaterThan(GOLDEN_CHEST * 0.6);
+    expect(n / 2000).toBeLessThan(GOLDEN_CHEST * 1.4);
+    for (const k of ["easy", "hard", "chest", "stash"] as const) expect(makeRoom(k).golden).toBeUndefined();
+  });
+  it("holds 5 finds, each Rare or better, never plain gold", async () => {
+    const { goldenDrops } = await import("../lib/dungeon/walkRooms");
+    const { GOLDEN_DROPS } = await import("../lib/dungeon/run");
+    const bad: string[] = [];
+    for (let i = 0; i < 300; i++) {
+      const ds = goldenDrops();
+      if (ds.length !== GOLDEN_DROPS) bad.push(`${ds.length} finds`);
+      for (const d of ds) if (d.dropType === "reward" || !["rare", "epic", "legendary"].includes(d.rarity)) bad.push(JSON.stringify(d));
+    }
+    expect(bad).toEqual([]);
+  });
+  it("a chest holds a Gold Key now and then (an Epic tool); a stash never does", async () => {
+    const { toolFinds, CHEST_TOOLS, STASH_TOOLS } = await import("../lib/dungeon/run");
+    const keys = (odds: typeof CHEST_TOOLS | typeof STASH_TOOLS) => Array.from({ length: 4000 }, () => toolFinds(odds))
+      .filter((s) => s.some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.tool === "gold_key")).length / 4000;
+    expect(keys(CHEST_TOOLS)).toBeCloseTo(CHEST_TOOLS.gold_key, 1);
+    expect(keys(STASH_TOOLS)).toBe(0);
+    expect(TOOLS.gold_key.rarity).toBe("epic");
+  });
+});

@@ -368,10 +368,12 @@ export const STASH_GOLD: [number, number] = [100, 250];
 // The odds of a flare, and of a clairvoyance scroll, on top of what's in a
 // stash or a chest (the user, 2026-10-20).
 export const STASH_TOOLS = { flare: 0.1, clairvoyance: 0.05 };
-export const CHEST_TOOLS = { flare: 0.2, clairvoyance: 0.1 };
-export const toolFinds = (odds: { flare: number; clairvoyance: number }, rng: Rng = Math.random): SackItem[] => [
+// (A chest also holds a Gold Key now and then: the user, 2026-11-13, GOLDEN_CHEST below.)
+export const CHEST_TOOLS = { flare: 0.2, clairvoyance: 0.1, gold_key: 0.1 };
+export const toolFinds = (odds: { flare: number; clairvoyance: number; gold_key?: number }, rng: Rng = Math.random): SackItem[] => [
   ...(rng() < odds.flare ? [{ gear: toolDrop("flare") }] : []),
   ...(rng() < odds.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
+  ...(odds.gold_key && rng() < odds.gold_key ? [{ gear: toolDrop("gold_key") }] : []),
 ];
 // The Cyclops' chest: CYCLOPS_GEAR rolls on the weapon & armour table,
 // CYCLOPS_ITEMS on the item table and CYCLOPS_POTIONS on the potion table,
@@ -486,6 +488,11 @@ export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
 // from bosses and storehouses too; now only the tavern's bounty gives it:
 // lib/tavern.ts.)
 export const MINIBOSS_POTIONS: [number, number] = [1, 2];
+// A golden chest (the user, 2026-11-13): GOLDEN_CHEST of mini bosses guard one instead. It opens only
+// with a Gold Key in your bag (used up), and holds GOLDEN_DROPS scan-style finds, each Rare or better
+// (walkRooms.ts goldenDrops), in place of the potions and extras (its gold and the foe's gear as ever).
+export const GOLDEN_CHEST = 0.1;
+export const GOLDEN_DROPS = 5;
 export const MINIBOSS_CLAIRVOYANCE = 0.1;
 export const CAGE_PLAN_CHANCE = 0.2; // …and the Iron Cage Schematic, until you've found one
 // cagePlan: you haven't got the cage schematic yet (nor built the cage).
@@ -871,6 +878,7 @@ export type Room = {
   dynamite?: boolean;  // …Klutz's dynamite is among its crates, still to take (lib/tavern.ts)
   sack?: SackItem[];   // a stash, or a beaten fight's loot: what's (still) inside
   opened?: boolean;    // …and you've opened it
+  golden?: boolean;    // a mini boss's golden chest (GOLDEN_CHEST): locked till a Gold Key opens it
   container?: "sack" | "chest" | "strongbox"; // a beaten fight's loot: a sack (ordinary fights), a rickety chest (mini bosses, the Cyclops) or a strongbox (the Hydra, the Warden)
   quest?: "club" | "thief"; // part of the first quest (lib/quest.ts)
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
@@ -925,6 +933,7 @@ export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinit
   const room = rollRoom(kind, rng, depth, dungeon, backpack);
   if (room.enemies) rollEnemyDrops(room.enemies, rng);
   if (room.enemies) foeCodexes(room.enemies, dungeon);
+  if (kind === "miniboss" && rng() < GOLDEN_CHEST) room.golden = true; // (rolled last, so nothing else in the room moves)
   return room;
 }
 

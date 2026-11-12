@@ -112,7 +112,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // key: the room, or "<room>#<cage>". def: what it is (objects.ts), state:
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
-  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true }; // inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13)
+  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true }; // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13)
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -187,10 +187,10 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     }
     const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;
     if (guards && !r.done) {
-      out.push(thingOf({ key: id, room: id, ...guardedSpot(layout, placed, id, r, dungeon), def: "loot-chest", state: "shut", open: false, guarded: true }));
+      out.push(thingOf({ key: id, room: id, ...guardedSpot(layout, placed, id, r, dungeon), def: "loot-chest", state: "shut", open: false, guarded: true, ...(r.golden ? { golden: true as const } : {}) }));
     } else if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
       const at = guards ? guardedSpot(layout, placed, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
-      out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened }));
+      out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened, ...(r.golden ? { golden: true as const } : {}) }));
     }
     // (World version 12) A table, as furniture: in the way, but nothing to use (inert: a tap by it walks).
     // (13) One with a deck of cards on it is the deck, to turn over, till it has been.

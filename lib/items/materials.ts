@@ -37,7 +37,7 @@ export const MATERIALS: Record<MaterialKey, { name: string; icon: string; rarity
 };
 export const MATERIAL_KEYS = Object.keys(MATERIALS) as MaterialKey[];
 
-export type ToolKey = "flare" | "clairvoyance" | "revival" | LocatorKey;
+export type ToolKey = "flare" | "clairvoyance" | "revival" | "gold_key" | LocatorKey;
 export type LocatorKey = "merchant_map" | "crystal_ball" | "librarian_locator";
 export const LOCATORS: LocatorKey[] = ["merchant_map", "crystal_ball", "librarian_locator"];
 export const isLocator = (k: ToolKey | undefined): k is LocatorKey => !!k && (LOCATORS as string[]).includes(k);
@@ -49,6 +49,10 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
   // Between rooms, or in a fight on a knocked-out teammate (it takes your turn): see REVIVE_HP in lib/dungeon/run.ts.
   revival:      { name: "Revival Elixir",      icon: "💖", rarity: "epic",     price: 500,
                   desc: "In the Labyrinth, between rooms or in a fight (it takes your turn): brings a knocked-out creature back with half its HP." },
+  // A golden chest's key (the user, 2026-11-13): found in chests (CHEST_TOOLS), used up opening a mini boss's
+  // golden chest (GOLDEN_CHEST in lib/dungeon/run.ts). Not for sale; its price is what selling it is worth.
+  gold_key:     { name: "Gold Key",            icon: "🔑", rarity: "epic",     price: 400,
+                  desc: "Opens a golden chest in the Labyrinth (it's used up). It has to be in your bag." },
   // The locators (lib/dungeon/people.ts: LOCATOR_PRICE is the merchant's price).
   merchant_map:      { name: "Merchant Map",      icon: "🗺️", rarity: "rare", price: 200,
                        desc: "Use it in the Labyrinth: your scroll shows where the wandering merchant is, for the rest of the run." },

@@ -62,7 +62,7 @@ const purposeOf = (x?: SackItem): Use | undefined => {
   if (g.itemCategory === "weapon" || (g.itemCategory === "armor" && g.armorSlot)) return "gear";
   if (g.scroll) return "scroll";
   if (g.tool === "revival") return "revival";
-  return g.tool ? "tool" : undefined;
+  return g.tool && g.tool !== "gold_key" ? "tool" : undefined; // (a Gold Key opens a golden chest: nothing to use it on here)
 };
 const standing = (c: TeamMember) => (c.hp ?? 1) > 0;
 // Can a potion help them? (standing, but not at full health)

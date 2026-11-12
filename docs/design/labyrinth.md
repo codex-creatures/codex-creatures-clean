@@ -115,6 +115,16 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   10% of chests (`STASH_TOOLS`, `CHEST_TOOLS`), on top of what they already hold. A chest holds at
   most 5 things (`CHEST_SLOTS`, `capSack`): rolled more, the least rare fall out (gold first, then
   Common, Uncommon…).
+- ✅ **Golden chests and Gold Keys** (the user, 2026-11-13): 10% of mini bosses (`GOLDEN_CHEST`,
+  room kind `miniboss` only, rolled with the room as `Room.golden`) guard a golden chest instead of
+  the rickety one. It opens only with a **Gold Key** in your bag, which is used up (no key: it stays
+  locked, and it isn't in the haul). Inside: the mini boss's gold and dropped gear as usual, and,
+  instead of its potions, extras and XP scroll, 5 finds rolled like a chest's but each Rare or better,
+  never plain gold (`GOLDEN_DROPS`, walkRooms.ts `goldenDrops`; materials there are stone or essence
+  stones). The Gold Key is an Epic tool (`gold_key`) in 10% of chests (`CHEST_TOOLS`); it takes a bag
+  slot, stays in your bag between runs as tools do, and isn't sold by merchants (they buy it for 200).
+  Walking, the chest is drawn gilded (the chest's art tinted gold, and the key a stand-in icon, till
+  PixelLab art).
 - ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room,
   or Use it (opens it in your bag: drink, equip…). In the merchant's or a librarian's room, your bag also has a
   Sell button, at the same prices (`buysHere`; selling to a librarian is Claude's default, 2026-10-23). A codex

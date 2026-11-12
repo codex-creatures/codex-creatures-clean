@@ -39,9 +39,9 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
   const fightLoot = room.container && (room.opened ? sackPanel : (
     <div style={{ marginTop: 8 }}>
       <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 8px" }}>
-        {room.container === "strongbox" ? `${room.boss === "hydra" ? "Under the Hydra's coils lies" : "Behind the Warden's throne sits"} a strongbox: black iron, chains, and a lock that glows cold.` : room.container === "chest" ? "It leaves a rickety old chest behind, its lid hanging loose." : "It leaves a grubby sack behind."}
+        {room.container === "strongbox" ? `${room.boss === "hydra" ? "Under the Hydra's coils lies" : "Behind the Warden's throne sits"} a strongbox: black iron, chains, and a lock that glows cold.` : room.golden ? "It was guarding a golden chest. It's locked: it takes a Gold Key from your bag." : room.container === "chest" ? "It leaves a rickety old chest behind, its lid hanging loose." : "It leaves a grubby sack behind."}
       </p>
-      <button className="pixel-btn" onClick={onOpenSack}>{room.container === "strongbox" ? "🗝️ Open the strongbox" : room.container === "chest" ? "🧰 Loot the chest" : "💰 Loot the sack"}</button>
+      <button className="pixel-btn" onClick={onOpenSack}>{room.golden ? "🔑 Unlock the golden chest" : room.container === "strongbox" ? "🗝️ Open the strongbox" : room.container === "chest" ? "🧰 Loot the chest" : "💰 Loot the sack"}</button>
     </div>
   ));
   // The club on the floor: not looked at yet, or still lying there.
