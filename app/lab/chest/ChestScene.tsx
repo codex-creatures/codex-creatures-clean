@@ -109,7 +109,7 @@ const RAT_RUN = 5, RAT_HIDE = 2; // seconds along the wall, then in the hole
 // material shows nothing there): a soft glint of the light's colour where a mirror on the floor would
 // show it (the light's spot, nearer you by its height ÷ tan(pitch)), shimmering a little, and a faint
 // sheen as it comes near. Only on the water: pixels bluer than they're red or green.
-const GLINT = { radius: 0.32, strength: 1.1, sheen: 0.18, sheenReach: 2 };
+const GLINT = { radius: 0.4, strength: 1.2, sheen: 0.3, sheenReach: 1.6 };
 // Ripples (the user, 2026-11-13: when you walk in it): three rings spreading from where you stepped,
 // RIPPLE.speed u a second, fading out over RIPPLE.life seconds, lighter on the water (and bending the glint).
 // In the lab a step is the button (at the middle) or every RIPPLE.every seconds a small one somewhere.
@@ -169,7 +169,7 @@ function PuddleGlint({ map, light, size, at, splash }: { map: THREE.Texture; lig
 function FloorLife({ light, splash }: { light: React.RefObject<THREE.PointLight | null>; splash: number }) {
   const tex = useMemo(() => ({ puddle: loaded(`${LIFE}/puddle.png`), rat: loaded(`${LIFE}/rat.png`), hole: loaded(`${LIFE}/mouse-hole-cut.png`) }), []);
   const rat = useRef<THREE.Group>(null);
-  const puddleSize = useMemo((): [number, number] => [64 / 48, 48 / 48 / Math.sin(PITCH)], []), puddleAt = useMemo((): [number, number, number] => [3, 0.01, 1], []);
+  const puddleSize = useMemo((): [number, number] => [64 / 48, 48 / 48 / Math.sin(PITCH)], []), puddleAt = useMemo((): [number, number, number] => [1.8, 0.01, 2.3], []);
   useFrame((state) => {
     const g = rat.current;
     if (!g) return;
