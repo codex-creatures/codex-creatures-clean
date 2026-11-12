@@ -113,7 +113,7 @@ const GLINT = { radius: 0.4, strength: 1.2, sheen: 0.3, sheenReach: 1.6 };
 // Ripples (the user, 2026-11-13: when you walk in it): three rings spreading from where you stepped,
 // RIPPLE.speed u a second, fading out over RIPPLE.life seconds, lighter on the water (and bending the glint).
 // In the lab a step is the button (at the middle) or every RIPPLE.every seconds a small one somewhere.
-const RIPPLE = { speed: 0.55, life: 1.6, width: 0.05, rings: 3, gap: 0.12, light: 0.35, every: 3.5 };
+const RIPPLE = { speed: 0.55, life: 1.6, width: 0.09, rings: 3, gap: 0.16, light: 0.8, every: 3.5 };
 const GLINT_VERT = `varying vec2 vUv; varying vec3 vWorld;
 void main() { vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
 const GLINT_FRAG = `uniform sampler2D map; uniform vec3 uLight; uniform vec3 uColour; uniform float uTime; uniform float uTan;
