@@ -6,7 +6,8 @@
 
 import { useEffect, useState } from "react";
 
-export default function Help({ title, children, label }: { title: string; children: React.ReactNode; label?: string }) {
+// icon: what the button shows ("?" by default; "i" for a thing's details).
+export default function Help({ title, children, label, icon = "?" }: { title: string; children: React.ReactNode; label?: string; icon?: "?" | "i" }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -18,7 +19,8 @@ export default function Help({ title, children, label }: { title: string; childr
 
   return (
     <>
-      <button className="help-btn" onClick={() => setOpen(true)} aria-label={label ?? `How ${title} works`} title={label ?? `How ${title} works`}>?</button>
+      <button className="help-btn" onClick={() => setOpen(true)} aria-label={label ?? `How ${title} works`} title={label ?? `How ${title} works`}
+        style={icon === "i" ? { fontFamily: "Georgia, serif", fontStyle: "italic" } : undefined}>{icon}</button>
       {open && (
         <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 220, background: "rgba(4,5,9,0.8)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
           <div role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()} className="stone-panel help-panel">

@@ -140,6 +140,7 @@ const note = (step: string) => trace.push({ step, screen: text().slice(0, 1200),
 // home at the end (the haul after the chief, or retreating if it ends early).
 async function playEncampment() {
   await mount(); note("entrance");
+  await tap("📜 Speed Scroll"); // (Dungeon Crawling is the default)
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/); // (each creature's button starts with its level)
   note("party picked");
   await tap(/Enter the Encampment/); note("entered: the map");
@@ -188,6 +189,7 @@ async function playEncampment() {
 async function playDefeat() {
   outcome.next = "B";
   await mount();
+  await tap("📜 Speed Scroll");
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/);
   await tap(/Enter the Encampment/);
   await tap("Put the map away and step inside"); note("inside");
@@ -207,9 +209,9 @@ async function playDefeat() {
 // stood in for), a reload, and a retreat.
 async function playWalk() {
   await mount();
-  await tap(/^🔥 NewThe Encampment/); // (the "🔥 New" Encampment)
+  // (Dungeon Crawling, the default, and the Encampment)
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/);
-  await tap(/Enter the new Encampment/);
+  await tap(/Enter the Encampment/);
   await act(async () => { await new Promise((r) => setTimeout(r, 120)); }); await settle(); // ("Lighting the torches…")
   note("the scroll's first look");
   await tap("Put the scroll away and begin"); note("walking");

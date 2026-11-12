@@ -9,13 +9,19 @@ import { useGameState } from "@/hooks/useGameState";
 import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
 import BagPacker from "@/components/BagPacker";
 import CreaturePortrait from "@/components/CreaturePortrait";
-import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, DUNGEON_IDS, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE } from "@/lib/dungeon/run";
+import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE } from "@/lib/dungeon/run";
 import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import Help from "@/components/Help";
 import { gearMarks } from "@/components/CreatureMarks";
 import { BOX_NAMES, type CappedBox } from "@/lib/items/storage";
 
 const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑" };
+// The picker's rows (the user, 2026-11-13): the dungeons in order, with the Minotaur to come.
+const ROWS: (DungeonId | "minotaur")[] = [0, 1, 2, "minotaur", 3];
+// Dungeon Crawling (walk it yourself, by torchlight: lib/dungeon/walkRun.ts) is built for these so far;
+// the rest are Speed Scroll only (the scroll map: pick room by room).
+const CRAWLABLE: DungeonId[] = [0, 1];
+const BOSS: Record<DungeonId, string> = { 0: "the camp's chief", 1: "the Cyclops", 2: "the Hydra", 3: "the Warden and his guards" };
 
 // ── The entrance: choose your party ─────────────────────────────────
 // quest: Klutz's box is still to fetch (the quest's short run, in the Labyrinth). scans: barcodes scanned.
@@ -43,18 +49,21 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
     onSave({ ...lab, meta });
   };
   const team = pick === null ? null : teamMembers(game.teams, pick, ownedIds);
-  // The Deep Labyrinth opens once you've beaten the Cyclops.
+  // The Hydra opens once you've beaten the Cyclops.
   const deepOpen = lab.meta.clears > 0;
   // The Labyrinth opens once you've beaten the Encampment (or scanned plenty: labyrinthOpen);
-  // until then it's shown, locked. The Abyss opens once you've beaten the Deep Labyrinth.
+  // until then it's shown, locked. The Abyss opens once you've beaten the Hydra.
   const labOpen = labyrinthOpen(lab.meta, scans);
-  const open = DUNGEON_IDS.filter((d) => d <= 1 || (d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0));
   const [picked, setDungeon] = useState<DungeonId>(labOpen && (lab.meta.campClears ?? 0) > 0 ? 1 : 0);
-  // "New": the Encampment or the Labyrinth, walked round by torchlight (lib/dungeon/walkRun.ts),
-  // its runs that dungeon's. (The quest's run is the old Labyrinth's.)
-  const [walkPick, setWalkPick] = useState<0 | 1 | null>(null);
-  const dungeon: DungeonId = quest ? 1 : walkPick !== null ? (walkPick === 1 && !labOpen ? 0 : walkPick) : picked === 1 && !labOpen ? 0 : picked;
-  const walking = !quest && walkPick !== null;
+  // Dungeon Crawling (the default) or Speed Scroll. (The quest's run is the old Labyrinth's.)
+  const [mode, setMode] = useState<"crawl" | "scroll">("crawl");
+  const unlocked = (d: DungeonId) => d === 0 || (d === 1 ? labOpen : d === 2 ? deepOpen : (lab.meta.deepClears ?? 0) > 0);
+  const dungeon: DungeonId = quest ? 1 : unlocked(picked) ? picked : 0;
+  const walking = !quest && mode === "crawl";
+  const notBuilt = walking && !CRAWLABLE.includes(dungeon); // Dungeon Crawling isn't there yet
+  const beaten = (d: DungeonId) => (d === 0 ? lab.meta.campClears : d === 1 ? lab.meta.clears : d === 2 ? lab.meta.deepClears : lab.meta.abyssClears) ?? 0;
+  const lockedWhy = (d: DungeonId) => (d === 1 ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : d === 2 ? "Beat the Cyclops first" : "Beat the Hydra first");
+  const priceOf = (d: DungeonId) => { const f = entryFee(d, lab.meta, false); return d === 0 && freeRunsLeft(lab.meta) > 0 ? "FREE" : f === 0 ? "FREE" : `${f} gold`; };
   // Who goes in: the dungeon's team size (3; 5 in the Abyss), picked here. A
   // bigger team sends its first ones (the rest are shown waiting).
   const cap = squadsOf(dungeon).team;
@@ -79,36 +88,55 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   return (
     <>
       {!quest && (
-        <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-          {open.map((d) => (
-            <button key={d} className="card-btn" onClick={() => { setDungeon(d); setWalkPick(null); }} disabled={d === 1 && !labOpen}
-              title={d === 1 && !labOpen ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : undefined}
-              style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: d === 1 && !labOpen ? 0.5 : 1, borderColor: dungeon === d && !walking ? "#f1d9a0" : undefined, background: dungeon === d && !walking ? "rgba(241,217,160,0.1)" : undefined }}>
-              <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{d === 1 && !labOpen ? "🔒" : DUNGEON_ICONS[d]} {DUNGEONS[d].name}</b>
-              <span style={{ display: "block", fontSize: 12, color: MUTED }}>
-                {d === 0 ? `${CAMP_ROUTE} rooms · its chief, Lv ${DUNGEONS[0].maxLevel} · free${lab.meta.campClears ? ` · beaten ${lab.meta.campClears}×` : ""}`
-                  : d === 1 ? (labOpen ? `${DUNGEONS[1].spec.minRoute} rooms · Lv 1–${DUNGEONS[1].maxLevel}` : "Beat the Encampment first")
-                  : `${DEEP_ROUTE} rooms deep · Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel}${d === 3 ? " · the Warden" : ""}`}
-                {d === 1 && labOpen ? ` · beaten ${lab.meta.clears}×` : d === 2 ? ` · beaten ${lab.meta.deepClears ?? 0}×` : d === 3 ? ` · beaten ${lab.meta.abyssClears ?? 0}×` : ""}
-              </span>
-            </button>
-          ))}
-          {([0, 1] as const).map((d) => {
-            const on = walking && dungeon === d, locked = d === 1 && !labOpen;
+        <div style={{ display: "grid", gap: 6, marginBottom: 10 }}>
+          {/* Dungeon Crawling (the default) or Speed Scroll. */}
+          <div role="tablist" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {([["crawl", "🔥 Dungeon Crawling"], ["scroll", "📜 Speed Scroll"]] as const).map(([m, label]) => (
+              <button key={m} role="tab" aria-selected={mode === m} className="chip" data-active={mode === m} onClick={() => setMode(m)}
+                style={{ minHeight: 44, textTransform: "none", fontSize: 14 }}>{label}</button>
+            ))}
+          </div>
+          {ROWS.map((row) => {
+            if (row === "minotaur") return (
+              <div key="minotaur" className="card-btn" aria-disabled style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 48, opacity: 0.45 }}>
+                <b className="pixel-font" style={{ flex: 1, fontSize: 16, color: "#f1d9a0" }}>🐂 Minotaur</b>
+                <span style={{ fontSize: 12, color: MUTED }}>to come</span>
+              </div>
+            );
+            const d = row, locked = !unlocked(d), on = dungeon === d && !locked;
+            const soon = mode === "crawl" && !CRAWLABLE.includes(d);
+            const name = DUNGEONS[d].name.replace(/^The /, "");
             return (
-              <button key={`new${d}`} className="card-btn" onClick={() => setWalkPick(d)} disabled={locked}
-                style={{ flex: "1 1 40%", display: "block", textAlign: "center", opacity: locked ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
-                <b className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{locked ? "🔒" : "🔥"} New{d === 1 ? ": the Cyclops" : ""}</b>
-                <span style={{ display: "block", fontSize: 12, color: MUTED }}>{d === 0 ? "The Encampment" : "The Labyrinth"} by torchlight · walk it yourself</span>
-              </button>
+              <div key={d} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button className="card-btn" onClick={() => setDungeon(d)} disabled={locked} title={locked ? lockedWhy(d) : undefined} aria-pressed={on}
+                  style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 48, textAlign: "left",
+                    opacity: locked || soon ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
+                  <b className="pixel-font" style={{ flex: 1, minWidth: 0, fontSize: 16, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locked ? "🔒" : DUNGEON_ICONS[d]} {name}</b>
+                  <span className="pixel-font" style={{ fontSize: 13, color: locked || soon ? MUTED : priceOf(d) === "FREE" ? "#7CFC9A" : "#f1d9a0", whiteSpace: "nowrap" }}>
+                    {locked ? "locked" : soon ? "Speed Scroll only" : priceOf(d)}
+                  </span>
+                </button>
+                <Help title={name} label={`About ${name}`} icon="i">
+                  <ul>
+                    {locked && <li><b>{lockedWhy(d)}.</b></li>}
+                    <li><b>{d === 0 ? CAMP_ROUTE : d === 1 ? DUNGEONS[1].spec.minRoute : DEEP_ROUTE} rooms</b> to {BOSS[d]} at the top.</li>
+                    <li>Foes <b>Lv {DUNGEONS[d].levels[0][1]}–{DUNGEONS[d].maxLevel}</b>.</li>
+                    <li>Take <b>{squadsOf(d).team} creatures</b> in.</li>
+                    <li>Entry: <b>{priceOf(d)}</b>{d === 0 && freeRunsLeft(lab.meta) > 0 ? ` (${freeRunsLeft(lab.meta)} free run${freeRunsLeft(lab.meta) === 1 ? "" : "s"} left)` : ""}.</li>
+                    {d > 0 && <li>Foes carry codex moves of their race (up to {d === 1 ? "Uncommon" : d === 2 ? "Rare" : "Epic"}).</li>}
+                    <li>Beaten <b>{beaten(d)}×</b>.</li>
+                    <li>{CRAWLABLE.includes(d) ? "Dungeon Crawling: walk it yourself by torchlight. Speed Scroll: pick your way room by room on the map." : "Speed Scroll only for now: pick your way room by room on the map."}</li>
+                  </ul>
+                </Help>
+              </div>
             );
           })}
         </div>
       )}
       {/* Enter, with what's inside behind the "?". */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button onClick={enter} disabled={!canPay || full.length > 0} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
-          {walking ? `🔥 Enter the new ${dungeon === 0 ? "Encampment" : "Labyrinth"}` : `${DUNGEON_ICONS[dungeon]} Enter ${DUNGEONS[dungeon].name.replace("The", "the")}`} {freeLeft > 0 ? `(free · ${freeLeft} free run${freeLeft === 1 ? "" : "s"} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}
+        <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
+          {notBuilt ? "Speed Scroll only for now" : <>{walking ? "🔥" : DUNGEON_ICONS[dungeon]} Enter {DUNGEONS[dungeon].name.replace("The", "the")} {freeLeft > 0 ? `(free · ${freeLeft} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}</>}
         </button>
         <Help title="The labyrinth">
           <ul>
