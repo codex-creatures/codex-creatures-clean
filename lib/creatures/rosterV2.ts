@@ -78,13 +78,13 @@ export const NEW_SPECIES_V2: NewSpecies[] = [
 
 // A creature's V2 moves (the user, 2026-11-12): the core moves of its main
 // style (light, heavy, first; the 3 it starts with), then a hybrid's second
-// style's. They land as its main race. Its fourth slot stays empty until it
+// style's. They're neutral (no race: 2026-11-12). Its fourth slot stays empty until it
 // reads a codex.
 export function v2Moves(c: { id: string; cls: CombatClass }): Skill[] {
   const [race] = SPECIES_RACES[c.id] ?? [];
   if (!race) return [];
   const second = ARCHETYPE_INFO[SPECIES_ARCHETYPE[c.id] ?? "bruiser"].styles.find((s) => s !== c.cls);
-  return [...coreFor(c.cls, race), ...(second ? coreFor(second, race) : [])];
+  return [...coreFor(c.cls), ...(second ? coreFor(second) : [])];
 }
 
 // Today's creatures that fight in another style in V2 (the user and Claude,

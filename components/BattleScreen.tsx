@@ -72,7 +72,9 @@ export function tutorialSteps(me: Combatant, them: Combatant): TutorialStep[] {
         ? `Right: that thief's a ${theirs}, and ${RACE_INFO[goodRace].name} moves are effective against ${theirs}s. Your ${me.name} knows one: hit it with ${good.name}!`
         : "Right: that's a big lump of a thief. Hit it!",
       allow: good ? (s) => effectiveOn(s, races) : null },
-    { say: `${good ? "EFFECTIVE! " : ""}Every creature has a race or two, and so does every move: pick moves its races are weak to. Not sure what beats what? Tap ▲▼ below for the race chart. Now finish it off — your call!`,
+    { say: good
+        ? `EFFECTIVE! Every creature has a race or two, and so does every codex move: pick ones its races are weak to. Not sure what beats what? Tap ▲▼ below for the race chart. Now finish it off — your call!`
+        : `Every creature has a race or two. Your own moves are neutral: they land the same on everyone. Moves from codexes carry a race, and that's where the race chart (▲▼ below) comes in. Now finish it off — your call!`,
       allow: null, chart: true },
   ];
 }
@@ -655,6 +657,31 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   if (fx?.kind === "brace") tags.push(`goes first · next hit −${Math.round(fx.cut * 100)}%`);
   if (fx?.kind === "empower") tags.push(me.boost?.[fx.style] ? "already blessed" : `+${Math.round(fx.boost * 100)}% ${fx.style} attack while it stays out`);
   if (fx?.kind === "blood") tags.push(`costs ${Math.round(fx.cost * 100)}% HP · blood under the foes`);
+  // The 2026-11 codex moves.
+  const pc = (x: number) => `${Math.round(x * 100)}%`;
+  if (sk.mult && sk.mult !== 1) tags.push(`${sk.mult}× damage`);
+  if (fx?.kind === "agility") tags.push(`then +${pc(fx.gain)} agility for the fight`);
+  if (fx?.kind === "weaken") tags.push(fx.forceSwap ? `${pc(fx.forceSwap)}: they flee · else attacks −${pc(fx.loss)}` : `their ${fx.style ?? "attacks"} −${pc(fx.loss)} while out`);
+  if (fx?.kind === "smoke") tags.push("strikes first, then swaps out");
+  if (fx?.kind === "lifesteal") tags.push(`heals ${pc(fx.share)} of the damage`);
+  if (fx?.kind === "chain") tags.push(`+${pc(fx.step)} each time in a row${run > 1 ? ` (now +${pc(Math.min(fx.cap, fx.step * (run - 1)))})` : ""}`);
+  if (fx?.kind === "ward") tags.push(`no status effects for ${fx.rounds} rounds`);
+  if (fx?.kind === "bleed") tags.push(`${fx.chance < 1 ? `${pc(fx.chance)}: ` : ""}bleeds ${pc(fx.tick)} a round while out`);
+  if (fx?.kind === "caltrops") tags.push(`each comer loses ${pc(fx.entry)} HP`);
+  if (fx?.kind === "cleanse") tags.push("washes your team clean");
+  if (fx?.kind === "septic") tags.push(`×${fx.mult} if they bleed or stand in blood`);
+  if (fx?.kind === "execute") tags.push(`+${pc(fx.bonus)} below ${pc(fx.below)} HP${them.hp < them.maxHp * fx.below ? "!" : ""}`);
+  if (fx?.kind === "cloud") tags.push(`poison cloud: ${pc(fx.tick)} a round, ${fx.minRounds}–${fx.maxRounds} rounds`);
+  if (fx?.kind === "ignite") tags.push(`×${fx.mult} on a cloud, and burns it`);
+  if (fx?.kind === "ambush") tags.push(`strikes first · +${pc(fx.bonus)} at full HP${them.hp >= them.maxHp ? "!" : ""}`);
+  if (fx?.kind === "surge") tags.push(me.surge ? "already surging" : `then +${pc(fx.gain)} magic damage for the fight`);
+  if (fx?.kind === "poison") tags.push(`${pc(fx.chance)}: poison ${pc(fx.tick)} a round`);
+  if (fx?.kind === "implode") tags.push("goes last · it falls · poison cloud");
+  if (fx?.kind === "flamebody") tags.push(`melee attackers take ${pc(fx.reflect)} for ${fx.rounds} rounds`);
+  if (fx?.kind === "gore") tags.push(`blood: toxic damage +${pc(fx.amp)} on them`);
+  if (fx?.kind === "recoil") tags.push(`it takes ${pc(fx.share)} of the damage`);
+  if (fx?.kind === "slap") tags.push(`${pc(fx.chance)}: wipes their stat changes`);
+  if (fx?.kind === "charge") tags.push(me.statuses.some((s) => s.id === "charged") ? "wound up: strike now!" : "winds up, strikes next turn");
   const cooling = me.cooldowns?.[sk.name] ?? 0;
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
   const note = cooling > 0 ? { text: `recharging: ${cooling} round${cooling === 1 ? "" : "s"}`, color: "#ff8a80" }
@@ -897,6 +924,11 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
     [has("soak"), "🫧"],
     [has("brace"), "🧱"],
     [f.statuses.some((s) => s.id === "boost"), "💪"],
+    [has("bleed"), "🩸"],
+    [has("weaken"), "🔻"],
+    [has("ward"), "💎"],
+    [has("flame"), "🔥"],
+    [has("charged"), "💢"],
   ];
   const shown = marks.filter(([on]) => on).map(([, m]) => m);
   const icons = shown.length ? <>{shown.map((m, i) => <span key={i}>{i > 0 && " "}{m}</span>)}</> : null;

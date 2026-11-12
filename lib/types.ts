@@ -26,6 +26,7 @@ export type CreatureOrItemDrop = {
   moves?: string[];
   learned?: string[];   // creatures: race moves learned from codexes
   moveSet?: number;     // creatures/cards: MOVE_SET (lib/creatures/instance.ts) once on Combat V2's 3 starting moves; missing: reset on load
+  codexSet?: number;   // creatures/cards: CODEX_SET (lib/creatures/instance.ts) once an old Smite or Ambush is wiped; missing: checked on load
   styleSet?: number;    // creatures/cards: STYLE_SET (lib/creatures/instance.ts) once moved over to its species' current style; missing: checked on load
   level?: number;       // creatures: level (lib/creatures/levels.ts); missing = 1
   xp?: number;          // …and XP towards the next one

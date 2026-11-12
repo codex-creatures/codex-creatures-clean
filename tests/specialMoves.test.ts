@@ -50,7 +50,8 @@ describe("special moves: who can learn them", () => {
 
 describe("seals: the target can't swap out", () => {
   it("Dark Seal: 3 rounds, even if the attacker swaps; then it can", () => {
-    const s = createBattle([fighter("dreadpox", ["Dark Seal", "Zap"]), fighter("moss_wolf", ["Strike"])],
+    // (Big: a lucky precise hit mustn't knock either out mid-test.)
+    const s = createBattle([big(fighter("dreadpox", ["Dark Seal", "Zap"])), big(fighter("moss_wolf", ["Strike"]))],
       [big(fighter("moss_wolf", ["Strike"])), fighter("rattlebones", ["Strike"])]);
     resolveRound(s, { A: attack("Dark Seal"), B: attack("Strike") });
     expect(isSealed(activeOf(s.sides.B))).toBe(true);

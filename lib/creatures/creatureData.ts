@@ -2,6 +2,7 @@
 
 import { RACES_V2, SPECIES_RACES, type RaceV2 } from "./racesV2";
 import { CORE_MOVES, CORE_MOVE_NAMES, RETIRED_KIT_MOVES } from "./raceKitsV2";
+import { CODEX_MOVES_2026 } from "./codexMoves";
 import { ARCHETYPE_INFO, NEW_SPECIES_V2, SPECIES_ARCHETYPE, V2_RESTYLE, v2Moves } from "./rosterV2";
 
 export type CreatureProficiency = {
@@ -60,7 +61,30 @@ export type MoveEffect =
   // A blood pool under the foes (lib/combat/battle.ts: ground effects): cost, its share of max HP
   // paid; tick, each round to whoever's on their field; entry, to each that comes in; the
   // entries'th entry bursts for a burst-power magic hit; leech, the share your creature on the field heals.
-  | { kind: "blood"; cost: number; tick: number; entry: number; entries: number; burst: number; leech: number };
+  | { kind: "blood"; cost: number; tick: number; entry: number; entries: number; burst: number; leech: number }
+  // The 2026-11 codex moves (lib/creatures/codexMoves.ts; how they play: lib/combat/battle.ts).
+  | { kind: "agility"; gain: number }                    // a hit, then its agility is this share higher for the rest of the fight
+  | { kind: "weaken"; loss: number; style?: CombatClass; rounds?: number; chance?: number; forceSwap?: number } // the target's attack (one style, or all) is down; forceSwap: first, a chance it's driven out instead
+  | { kind: "smoke" }                                    // goes first, a small hit, then it swaps out
+  | { kind: "lifesteal"; share: number }                 // heals this share of the damage it did
+  | { kind: "chain"; step: number; cap: number }         // each use in a row hits this much harder (up to cap)
+  | { kind: "ward"; rounds: number }                     // self: clears its status effects, and is immune to new ones (and clouds) for a few rounds
+  | { kind: "bleed"; chance: number; tick: number }      // a chance the target bleeds this share of max HP a round until it leaves the field (not Undead)
+  | { kind: "caltrops"; entry: number }                  // under the foes: each creature that comes in loses this share of max HP
+  | { kind: "cleanse" }                                  // self: your team loses venom, poison and bleed; clouds and blood under your team go
+  | { kind: "septic"; mult: number }                     // more damage if the target bleeds or blood lies under it
+  | { kind: "execute"; below: number; bonus: number }    // more damage if the target is below this share of HP
+  | { kind: "cloud"; tick: number; minRounds: number; maxRounds: number; tailMin: number; tailMax: number } // a poison cloud under the foes (see battle.ts: clouds)
+  | { kind: "ignite"; mult: number }                     // more damage if a cloud lies under the target, and the cloud burns away
+  | { kind: "ambush"; bonus: number }                    // goes first; more damage if the target is at full HP
+  | { kind: "surge"; gain: number }                      // a hit, then its magic damage is this share higher for the rest of the fight
+  | { kind: "poison"; chance: number; tick: number; minRounds: number; maxRounds: number } // a chance to poison the target
+  | { kind: "implode"; tick: number; minRounds: number; maxRounds: number; tailMin: number; tailMax: number } // goes last; a big hit, the user falls, and a cloud lies under the foes
+  | { kind: "flamebody"; reflect: number; rounds: number } // self: burns away the cloud under your team; melee attackers take this share of their hit for a few rounds
+  | { kind: "gore"; rounds: number; amp: number }        // blood under the foes for a few rounds: toxic damage on them is this share higher (not Undead)
+  | { kind: "recoil"; share: number }                    // the user takes this share of the damage it did
+  | { kind: "slap"; chance: number }                     // a chance to wipe the target's stat changes
+  | { kind: "charge" };                                  // winds up (pays its energy), then strikes next turn for mult× (no cost, still regains energy)
 
 export type Skill = {
   name: string;
@@ -80,6 +104,7 @@ export type Skill = {
   alsoLearners?: string[]; // a race move these species can learn too, whatever their race
   notLearners?: string[];  // a race move these species can't learn, though of its race (Ironhide: Pounce)
   codexRarity?: "common" | "uncommon" | "rare" | "epic"; // a special move's codex rarity
+  mult?: number;     // its damage is this many times a hit of its power (big hits: power fades as attack grows, a multiplier doesn't)
 };
 
 // Every creature has one or two races (Combat V2, lib/creatures/racesV2.ts).
@@ -180,7 +205,7 @@ export const RACE_MOVES: Skill[] = [
     // The user, 2026-10-31: these non-Beasts can learn it too, and Ironhide can't.
     alsoLearners: ["void_serpent", "deep_angler", "veilstalker", "cave_bat"], notLearners: ["ironhide"],
     desc: "Always strikes first this round, whatever its agility. +50% damage if the target is below half HP." },
-  { name: "Rabid Bite", damage: 15, energyCost: 50, type: "melee",  dmgType: "pierce", race: "toxic", learnRaces: ["beast", "underkin", "toxic"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
+  { name: "Rabid Bite", damage: 15, energyCost: 70, type: "melee",  dmgType: "pierce", race: "toxic", learnRaces: ["beast", "underkin", "toxic"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
     desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench. Toxic creatures are immune." },
   { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
     alsoLearners: ["dust_sprite", "dustwraith", "swamp_witch", "mr_shadows", "dreadpox", "thunderhead", "pale_rider", "storm_phoenix"],
@@ -244,6 +269,8 @@ export const SPECIAL_MOVES: Skill[] = [
     effect: { kind: "blood", cost: 0.25, tick: 0.05, entry: 0.2, entries: 3, burst: 25, leech: 0.5 },
     learners: DARK_SEAL_LEARNERS,
     desc: "Costs 25% of its max HP. Blood pools under the foes: 5% max HP a round to the one out, 20% to each that comes in, and the third bursts for a 25-power magic hit. Whoever you have out heals half of it. Undead are untouched." },
+  // The 2026-11 codex moves (the user's 29; lib/creatures/codexMoves.ts).
+  ...CODEX_MOVES_2026,
 ];
 const SPECIAL_MOVE_NAMES = new Set(SPECIAL_MOVES.map((m) => m.name));
 export const isSpecialMove = (name: string) => SPECIAL_MOVE_NAMES.has(name);
@@ -259,8 +286,13 @@ const canLearnSpecial = (c: CreatureTemplate, m: Skill) =>
 // more the heavy one; a dash move the first-strike one.
 const LIGHT_MAX_DAMAGE = 20;
 const closestCore = (m: Skill): Skill => CORE_MOVES.filter((c) => c.type === m.type)[m.effect?.kind === "dash" ? 2 : m.damage >= LIGHT_MAX_DAMAGE ? 1 : 0];
+// Two retired kit moves' names were taken by 2026-11 codex moves (the user,
+// 2026-11-12: the old ones are wiped and the names are the new moves'). An
+// old one still in a save is wiped once (wipeReusedNames, instance.ts).
+export const REUSED_NAMES: Record<string, string> = { Smite: RETIRED_KIT_MOVES.Smite, Ambush: RETIRED_KIT_MOVES.Ambush };
+const KIT_MOVES_STILL_RETIRED = Object.fromEntries(Object.entries(RETIRED_KIT_MOVES).filter(([n]) => !(n in REUSED_NAMES)));
 export const RETIRED_MOVES: Record<string, string> = {
-  ...RETIRED_KIT_MOVES,
+  ...KIT_MOVES_STILL_RETIRED,
   ...Object.fromEntries([...ALL_SKILLS, ...RETIRED_LEARNABLES].map((m) => [m.name, closestCore(m).name])),
 };
 
@@ -292,7 +324,7 @@ export const ALL_MOVES: Skill[] = [...ALL_SKILLS, ...LEARNABLE_MOVES];
 // species in tests: PRE_V2_SPECIES.)
 export const MOVE_BY_NAME: Record<string, Skill> = Object.fromEntries([...ALL_MOVES, ...RETIRED_LEARNABLES, ...RACE_MOVES, ...BOSS_MOVES, ...CORE_MOVES, ...SPECIAL_MOVES].map((m) => [m.name, m]));
 // (A retired kit move, still in some saves, finds its core move.)
-for (const [old, now] of Object.entries(RETIRED_KIT_MOVES)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
+for (const [old, now] of Object.entries(KIT_MOVES_STILL_RETIRED)) MOVE_BY_NAME[old] = MOVE_BY_NAME[now];
 
 // Moves without a note of their own (the core moves' plain hits, the older
 // moves) get a plain one so they read like the rest. It never says what the
@@ -463,12 +495,12 @@ export const isRetiredMove = (name: string) => name in RETIRED_MOVES;
 // A creature's saved moves with each retired one replaced by its closest
 // core move (the user, 2026-11-12). If that's one it already has, the next
 // of its core moves it doesn't (so it keeps as many moves as it had).
-export function replaceRetired(c: CreatureTemplate, names: string[]): string[] {
+export function replaceRetired(c: CreatureTemplate, names: string[], retired: Record<string, string> = RETIRED_MOVES): string[] {
   const out: string[] = [];
   const own = (n: string) => c.skills.some((m) => m.name === n);
   for (const n of names) {
-    if (own(n) || !isRetiredMove(n)) { if (!out.includes(n)) out.push(n); continue; }
-    const now = currentMoveName(n);
+    if (own(n) || !(n in retired)) { if (!out.includes(n)) out.push(n); continue; }
+    const now = retired[n];
     const style = MOVE_BY_NAME[now]?.type;
     const free = (m: Skill) => !out.includes(m.name) && !names.includes(m.name);
     const pick = own(now) && !out.includes(now) ? now

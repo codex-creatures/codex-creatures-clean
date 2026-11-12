@@ -33,15 +33,13 @@ describe("Combat V2 core moves (the user, 2026-11-12)", () => {
       .toBe(CORE_MOVES.length + ALL_SKILLS.length + LEARNABLE_MOVES.length);
   });
 
-  it("a creature's core moves land as its main race (with the match bonus); Klutz's as no race", () => {
-    for (const t of ROSTER_V2) expect(t.skills.every((m) => m.asRace === t.races![0]), t.id).toBe(true);
+  it("core moves are neutral (the user, 2026-11-12): no race, no match bonus, for everyone", () => {
+    for (const t of ROSTER_V2) expect(t.skills.every((m) => m.asRace === undefined), t.id).toBe(true);
     const smash = v2("moss_wolf").skills.find((m) => m.name === "Smash")!;
-    expect(raceOfMove(smash)).toBe("beast");
-    // Beast beats Humanoid, and the wolf is a Beast: effective plus the match bonus.
-    expect(raceMultiplier(smash, { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
-    // A two-race creature: its first race.
-    expect(raceOfMove(v2("bellow_toad").skills[0])).toBe("beast");
-    expect(raceMultiplier(MOVE_BY_NAME.Smash, { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBe(1);
+    expect(raceOfMove(smash)).toBe(undefined);
+    expect(raceMultiplier(smash, { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBe(1);
+    // A codex move of the creature's own race still gets the match bonus.
+    expect(raceMultiplier(MOVE_BY_NAME["Mega Smash"], { races: ["beast"] }, { races: ["humanoid"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
   });
 
   it("the 105 retired race-kit moves each become their closest core move", () => {

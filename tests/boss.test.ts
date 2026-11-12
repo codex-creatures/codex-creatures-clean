@@ -180,7 +180,7 @@ describe("the Hydra", () => {
     }
   });
 
-  it("the cloud poisons whoever comes in while it hangs (not one already poisoned); after it clears, nobody", () => {
+  it("the cloud poisons whoever comes in while it hangs (one already poisoned keeps whichever has more left); after it clears, nobody", () => {
     const s = hydra();
     s.sides.B.boss!.breathAt = 1;
     resolveRound(s, { A: slash(), B: pass }); // round 1: it breathes; the cloud hangs over rounds 2–4
@@ -190,8 +190,8 @@ describe("the Hydra", () => {
     const ticks = s.sides.A.team[0].statuses.find((x) => x.id === "poison")!.rounds;
     resolveRound(s, { A: { kind: "swap", to: 1 }, B: pass }); // round 2: in comes number 2…
     expect(s.sides.A.team[1].statuses.some((x) => x.id === "poison")).toBe(true);
-    resolveRound(s, { A: { kind: "swap", to: 0 }, B: pass }); // …and back comes the first: not poisoned afresh
-    expect(s.sides.A.team[0].statuses.find((x) => x.id === "poison")!.rounds).toBe(ticks - 2);
+    resolveRound(s, { A: { kind: "swap", to: 0 }, B: pass }); // …and back comes the first: a fresh dose has more left (2026-11-12: poison keeps the one with most left)
+    expect(s.sides.A.team[0].statuses.find((x) => x.id === "poison")!.rounds).toBe(ticks);
     resolveRound(s, { A: slash(), B: pass }); // round 4: the cloud's last
     resolveRound(s, { A: { kind: "swap", to: 2 }, B: pass }); // round 5: it's gone
     expect(s.sides.A.team[2].statuses.some((x) => x.id === "poison")).toBe(false);

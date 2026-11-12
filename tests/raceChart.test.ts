@@ -3,7 +3,7 @@ import { MATCH_BONUS, RACE_BEATS, RACE_EFFECT, raceMultiplier, raceVs, raceVsAll
 import { RACES_V2, SPECIES_RACES, MOVE_RACES } from "../lib/creatures/racesV2";
 import { calcDamage, LIVE_RULES, setCombatRules, TRIANGLE, TRIANGLE_RULES } from "../lib/combat/engine";
 import { buildFighter } from "../lib/combat/loadout";
-import { ALL_SKILLS, CREATURE_BY_ID, CREATURE_TEMPLATES, LEARNABLE_MOVES, RACE_MOVES } from "../lib/creatures/creatureData";
+import { ALL_SKILLS, CREATURE_BY_ID, CREATURE_TEMPLATES, LEARNABLE_MOVES, MOVE_BY_NAME, RACE_MOVES } from "../lib/creatures/creatureData";
 
 afterEach(() => setCombatRules(LIVE_RULES));
 
@@ -63,14 +63,15 @@ describe("combat rules switch", () => {
 
   it("the live game is Combat V2: each move's own race, no triangle, no damage types", () => {
     expect(LIVE_RULES).toEqual({ triangle: false, races: "drafted", damageTypes: false });
-    // A core move lands as its creature's main race: the Moss Wolf's Smash is a Beast hit.
-    const gore = CREATURE_BY_ID.moss_wolf.skills.find((m) => m.name === "Smash")!;
-    expect(gore.asRace).toBe("beast");
-    const live = calcDamage(gore, wolf, archer, false).damage;
+    // Core moves are neutral (2026-11-12): the Moss Wolf's Smash lands the same on everyone.
+    const smash = CREATURE_BY_ID.moss_wolf.skills.find((m) => m.name === "Smash")!;
+    expect(smash.asRace).toBe(undefined);
+    expect(calcDamage(smash, wolf, archer, false).damage).toBe(calcDamage(smash, wolf, { ...archer, races: [] }, false).damage);
+    // A codex move lands as its own race: Ambush (Underkin) on a Humanoid is resisted.
+    const ambush = { ...MOVE_BY_NAME.Ambush, effect: undefined };
+    const live = calcDamage(ambush, wolf, archer, false).damage;
     setCombatRules({ triangle: false, races: null, damageTypes: false });
-    const plain = calcDamage(gore, wolf, archer, false).damage;
-    // Beast beats Humanoid, plus the match bonus.
-    expect(live / plain).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS, 1);
+    expect(live / calcDamage(ambush, wolf, archer, false).damage).toBeCloseTo(RACE_EFFECT.resisted, 1);
   });
 
   it("V2 drops the triangle and uses races", () => {

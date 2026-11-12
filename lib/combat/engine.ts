@@ -61,7 +61,19 @@ export type Fighter = {
   defenceCut?: number; // share of its defences lost (Corrosive Soak), until it leaves the field
   boost?: Partial<Record<CombatClass, number>>; // share added to its attack in a style (Divine Strength and the like), until it leaves the field
   weakTo?: CombatClass; // a boss part's weak spot: moves of this style hit it WEAK_SPOT harder (the Hydra's heads)
+  agilityUp?: number; // share added to its agility for the rest of the fight (Whiplash)
+  surge?: number;     // share added to its magic damage for the rest of the fight (Voltage Surge)
 };
+
+// Status effects that change damage live on the battle's creatures
+// (lib/combat/battle.ts Combatant.statuses); a plain Fighter has none.
+type StatusLike = { id: string; loss?: number; style?: CombatClass };
+const statusesOf = (f: Fighter): StatusLike[] => (f as Fighter & { statuses?: StatusLike[] }).statuses ?? [];
+// How much of its attack in this style a weaken takes (Nullifying Voice: one style; Haunting Scream: all).
+export const weakenOf = (f: Fighter, style: CombatClass) =>
+  Math.max(0, ...statusesOf(f).filter((s) => s.id === "weaken" && (!s.style || s.style === style)).map((s) => s.loss ?? 0));
+// A charge move (Mega Smash) does its damage only once wound up.
+export const isWoundUp = (f: Fighter) => statusesOf(f).some((s) => s.id === "charged");
 
 function stanceDamageDealt(stance: Stance, moveType: CombatClass): number {
   if (stance === "entrench" && moveType === "melee")  return 1.10;
@@ -142,7 +154,7 @@ export const ATTACK_STAT: Record<CombatClass, "atk" | "rng" | "mag"> = { melee: 
 export const DEFENCE_STAT: Record<CombatClass, "mdef" | "rdef" | "magdef"> = { melee: "mdef", ranged: "rdef", magic: "magdef" };
 
 export function effectiveAgil(f: Fighter): number {
-  return withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil);
+  return withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil) * (1 + (f.agilityUp ?? 0));
 }
 
 export function effectiveStats(f: Fighter) {
@@ -150,7 +162,7 @@ export function effectiveStats(f: Fighter) {
     atk:    withProf(f.weapon.atk,  f.proficiency.atk) * (1 + (f.boost?.melee ?? 0)),
     rng:    withProf(f.weapon.rng,  f.proficiency.rng) * (1 + (f.boost?.ranged ?? 0)),
     mag:    withProf(f.weapon.mag ?? 0, f.proficiency.mag) * (1 + (f.boost?.magic ?? 0)),
-    agil:   withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil),
+    agil:   withProf(f.weapon.agil + f.armor.agil, f.proficiency.agil) * (1 + (f.agilityUp ?? 0)),
     mdef:   withProf(f.armor.mdef,  f.proficiency.mdef) * (1 - (f.defenceCut ?? 0)),
     rdef:   withProf(f.armor.rdef,  f.proficiency.rdef) * (1 - (f.defenceCut ?? 0)),
     magdef: withProf(f.armor.magdef ?? 0, f.proficiency.magdef) * (1 - (f.defenceCut ?? 0)),
@@ -168,7 +180,7 @@ export function calcDamage(
   roll = 1,
 ): { damage: number; braceBlocked: boolean; braceFailed: boolean } {
   // A move with no damage (Corrosive Soak, the utility moves) does none.
-  if (isBraceSkill(skill) || skill.damage <= 0) {
+  if (isBraceSkill(skill) || skill.damage <= 0 || (skill.effect?.kind === "charge" && !isWoundUp(attacker))) {
     return { damage: 0, braceBlocked: false, braceFailed: false };
   }
 
@@ -189,7 +201,7 @@ export function calcDamage(
   const typed = rules.damageTypes !== false;
   const dmgType = typed ? DAMAGE_TYPES[skill.dmgType ?? "force"] : PLAIN_DAMAGE;
   const atkKey = ATTACK_STAT[moveType], defKey = DEFENCE_STAT[moveType];
-  const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]) * (1 + (attacker.boost?.[moveType] ?? 0));
+  const effectiveAtk = withProf(attacker.weapon[atkKey] ?? 0, attacker.proficiency[atkKey]) * (1 + (attacker.boost?.[moveType] ?? 0)) * (1 - weakenOf(attacker, moveType));
   const affinity     = typed && attacker.weapon.affinity && attacker.weapon.affinity === skill.dmgType ? 1 + AFFINITY_BONUS : 1;
   const raw          = (skill.damage + effectiveAtk) * roll;
 
@@ -211,7 +223,8 @@ export function calcDamage(
   const arcane = Math.min(ARCANE_CAP * (defender.hpMult ?? 1), defender.maxHp * dmgType.maxHp * (skill.damage / ARCANE_REF_POWER));
 
   const preciseMult = precise ? PRECISE_DAMAGE : 1;
-  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * race * weakSpot * preciseMult));
+  const mult = (skill.mult ?? 1) * (moveType === "magic" ? 1 + (attacker.surge ?? 0) : 1);
+  let finalDmg = Math.max(1, Math.round((afterArmor * dmgType.mult * affinity + arcane) * atkStance * defStance * elemental * triangle * race * weakSpot * preciseMult * mult));
   if (braceBlocked) finalDmg = Math.max(1, Math.floor(finalDmg * 0.5));
 
   return { damage: finalDmg, braceBlocked, braceFailed };

@@ -86,7 +86,7 @@ function Combat() {
   return (
     <div>
       <H>Races</H>
-      <P>Every creature has one or two <b>races</b>. Every move lands as a race too: the core moves (Strike, Smash, Rush…) as the creature&apos;s main race, codex moves as their own (a few have none and land the same on everyone). A move&apos;s race against the target&apos;s races:
+      <P>Every creature has one or two <b>races</b>. The core moves (Strike, Smash, Rush…) are neutral: they land the same on everyone. Codex moves carry a race (a few have none). A move&apos;s race against the target&apos;s races:
         effective does <b>{signed(RACE_EFFECT.strong - 1)}</b> damage, resisted <b>{signed(RACE_EFFECT.resisted - 1)}</b>, anything else normal.
         Against two races both count (a double weakness is ×{(RACE_EFFECT.strong ** 2).toFixed(2)}). A move of one of the attacker&apos;s own races does
         another <b>{signed(MATCH_BONUS - 1)}</b>.</P>
@@ -299,7 +299,7 @@ function Moves({ seen }: { seen: Set<string> }) {
   );
   return (
     <div>
-      <P>Every creature knows the core moves of its styles and takes 4 moves into battle. Core moves land as its main race. Everything else comes from codexes.</P>
+      <P>Every creature knows the core moves of its styles and takes 4 moves into battle. Core moves are neutral. Everything else comes from codexes, and carries a race.</P>
       {COMBAT_CLASSES.map((c) => (
         <section key={c}>
           <H><span style={{ color: CLASS_INFO[c].color }}>{CLASS_INFO[c].icon} {CLASS_INFO[c].name} moves</span></H>

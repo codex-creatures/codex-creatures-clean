@@ -44,9 +44,9 @@ export type MoveRaceMode = "own" | "drafted";
 
 type Side = { races?: RaceV2[] };
 
-// A move's race: the draft race of an older move (MOVE_RACES), or for a core
-// move the race it lands as, its creature's main race (asRace: the user,
-// 2026-11-12); none for the bosses' moves and Klutz's.
+// A move's race: the draft race of an older move (MOVE_RACES), or the race a
+// codex move lands as (asRace); none for the core moves (neutral since
+// 2026-11-12), the bosses' moves and Klutz's.
 export const raceOfMove = (skill: { name: string; asRace?: RaceV2 }): RaceV2 | undefined => MOVE_RACES[skill.name] ?? skill.asRace;
 
 // The move's race in this matchup, or none.

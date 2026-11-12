@@ -22,8 +22,8 @@ describe("what a creature can use and learn", () => {
     // A learnable move and Pounce (Beast), once learned; Mirage isn't Beast; Maul is retired.
     expect(names(["Strike", "Smash", "Rush"], ["Maul", LEARNABLE_MOVES[0].name, "Pounce", "Mirage"]))
       .toEqual(["Strike", "Smash", "Rush", LEARNABLE_MOVES[0].name, "Pounce"]);
-    // Its core moves land as its race.
-    expect(movesAvailableTo(wolf).every((m) => m.asRace === "beast")).toBe(true);
+    // Its core moves are neutral (2026-11-12).
+    expect(movesAvailableTo(wolf).every((m) => m.asRace === undefined)).toBe(true);
   });
 
   it("the race kits are retired (2026-11-12): no one learns them, and their codexes become others of the same rarity", () => {

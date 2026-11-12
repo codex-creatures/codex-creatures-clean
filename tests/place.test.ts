@@ -302,8 +302,13 @@ describe("a guarded storehouse (world version 11)", () => {
   // (The user, 2026-11-11: its guard keeps the storehouse's own chest. Before, the guard's chest
   // went in the room's middle, often on the storehouse's chest, with no way kept to it. This run's
   // large room is a guarded storehouse.)
-  const run = startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(2 * 7919 + 13), 1, false, false);
-  const id = Object.keys(run.walk!.layout.rooms).find((k) => walkRoom(run, k)?.kind === "storehouse")!;
+  // (The first seed whose run has a guarded storehouse: what the rolls give changes whenever a
+  // pool they pick from does, e.g. the codexes, so the seed is found rather than pinned.)
+  const rollRun = (i: number) => startWalkRun(["a", "b"], ["a", "b"], { a: 1, b: 0.5 }, 4, [], false, seeded(i * 7919 + 13), 1, false, false);
+  const storehouseOf = (r: ReturnType<typeof rollRun>) => Object.keys(r.walk!.layout.rooms).find((k) => walkRoom(r, k)?.kind === "storehouse" && hasFight(walkRoom(r, k)!));
+  const seed = Array.from({ length: 200 }, (_, i) => i + 1).find((i) => storehouseOf(rollRun(i)))!;
+  const run = rollRun(seed);
+  const id = storehouseOf(run)!;
   const at = (v: number) => {
     const walk = { ...run.walk!, v }, p = placeWalk(walk, run.map, dungeonOf(run), (k) => walkRoom(run, k));
     return { p, placements: placementsFrom(p.placed, walk) };

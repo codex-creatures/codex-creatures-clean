@@ -242,6 +242,15 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .ground-blood-drops { display: flex; justify-content: center; gap: 4px; margin-top: 2px; }
 .ground-blood-drops span { width: 7px; height: 9px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: rgba(60, 8, 12, 0.9); border: 1px solid #ff4d5e; }
 .ground-blood-drops span.on { background: #ff4d5e; box-shadow: 0 0 4px #ff4d5e; }
+/* Haemorrhage's blood, a poison cloud (with its rounds left) and caltrops, under a side. */
+.ground-gore { position: absolute; bottom: 10%; width: 30%; aspect-ratio: 4; transform: translateX(-50%); pointer-events: none; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(150,16,26,0.75) 0 40%, rgba(90,10,16,0.5) 40% 62%, transparent 68%); }
+.ground-cloud { position: absolute; bottom: 4%; width: 44%; aspect-ratio: 2.2; transform: translateX(-50%); pointer-events: none; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 60%, rgba(120,210,60,0.42), transparent 70%); animation: boss-cloud 2.8s ease-in-out infinite alternate;
+  display: flex; align-items: flex-end; justify-content: center; }
+.ground-cloud span { font-size: 11px; color: #9be15d; text-shadow: 0 1px 0 #000; }
+.ground-caltrops { position: absolute; bottom: 9%; width: 34%; aspect-ratio: 5; transform: translateX(-50%); pointer-events: none; opacity: 0.9;
+  background-image: radial-gradient(circle, #c9c5b8 0 1.5px, transparent 2px); background-size: 14px 9px; mask-image: radial-gradient(ellipse, #000 55%, transparent 72%); }
 .boss-cloud-tag { position: absolute; left: 6px; top: 6px; z-index: 3; padding: 2px 6px; font-size: 12px; color: #9be15d;
   background: rgba(10,8,8,0.82); border: 1px solid #9be15d; white-space: nowrap; }
 .boss-clue {

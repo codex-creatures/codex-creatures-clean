@@ -42,7 +42,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   the species the user named (`alsoLearners`), minus any left out (`notLearners`) (the user,
   2026-10-31). The codex window no longer says who can learn it: tapping one greys out the rest.
   - Pounce (Beast; also Void Serpent, Deep Angler, Veilstalker, Cave Goblin; not Ironhide).
-  - Rabid Bite (Beast, Underkin and Toxic: `learnRaces`; it hits as Toxic; venom ticks even on
+  - Rabid Bite (70 energy since 2026-11-12, was 50; Beast, Underkin and Toxic: `learnRaces`; it hits as Toxic; venom ticks even on
     the bench; Toxic creatures are immune).
   - Mirage (Divine; also Dust Sprite, Dustwraith, Swamp Witch, Mr. Shadows, Dreadpox, Thunderhead,
     Pale Rider, Skull Raven).
@@ -173,7 +173,9 @@ How it came about, round by round: history.md.
   | Heavy (25 dmg, 50⚡) | Smash | Power Shot | Blast |
   | First (15 dmg, 50⚡, always first) | Rush | Quickshot | Blink |
 
-  They have no race of their own: each lands as its creature's **main race** (`asRace`, its first
+  ✅ **Since 2026-11-12 (decision 41) they're neutral:** no race and no own-race bonus, so the race
+  chart counts only for codex moves (the guided first fight's thief is Humanoid, and Klutz's tour
+  and the Bestiary say so). Until then: each landed as its creature's **main race** (`asRace`, its first
   race), with the match bonus, so the race chart decides every hit. Klutz knows all 9 and lands
   neutral. Two first-strike moves in one round: the faster goes first. 🧪 The heavy names are
   Claude's placeholders. Everything else comes from codexes; the user adds new moves next.
@@ -211,6 +213,43 @@ How it came about, round by round: history.md.
   72% of even duels; swapping no longer pays (50%).
 - ❓ `MOVE_RACES` gives the cripple moves draft races (Cripple Beast, Crippling Shot Humanoid,
   Hobble Hex Toxic). Race move rules beyond the core moves are open.
+
+### The 2026-11 codex moves (decision 41)
+
+✅ Built 2026-11-13. The user's 29 moves (names and what they do); Claude's numbers and learners, by
+race and by how the creature looks (not race-locked), in `lib/creatures/codexMoves.ts`; they're
+special moves, so their codexes come from scans, chests and librarians by rarity. Each lands as its
+own race (`asRace`) and gets the own-race bonus for a creature of that race. 🧪 Numbers are Claude's,
+from two sim rounds (3v3, Lv 5–30, Normal AI; the reports were published pages): most move a fight
+by −3 to +5 points of win rate. Big hits use a damage multiplier (`mult`), not big power, because
+power counts for less as attack grows.
+
+- **Rarity:** Common: Whiplash, Nibble, Crystal Armour, Poison Dart, Headbutt, Slap. Uncommon:
+  Nullifying Voice, Vampiric Bite, Bone Javelin, Caltrops, Cleansing Water, Ambush, Soul Snatch,
+  Bolas Shot, Enfeeble, Razor Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Smite, Mega
+  Smash, Emulate, Voltage Surge, Flame Body, Haemorrhage. Epic: Haunting Scream, Choking Smog,
+  Implode, Fissure. (A Legendary codex tier was floated for Choking Smog and Blood Sacrifice: ❓ open.)
+- **Clouds** (`GroundEffect` "cloud", lib/combat/battle.ts): Choking Smog, Implode and the Hydra's
+  breath. Whoever stands in one is poisoned (10% a round for Smog and Implode), and keeps it 1–3
+  rounds after it leaves or the cloud clears; the Hydra's poisons only as a creature comes in, for 20
+  rounds. Toxic creatures and warded ones (Crystal Armour) aren't touched. Clouds don't stack (a new
+  one replaces the old). Blood under a cloud (a Blood Sacrifice pool, Haemorrhage's) is soaked up: the
+  blood goes and the cloud is 50% stronger. Cleansing Water washes the cloud under your team away,
+  Flame Body burns only your own team's, Emulate burns the one under the target (and hits double).
+- **Poison** keeps whichever has the most left (dose × rounds); a new one never shortens it.
+- **Bleed** (Obsidian, Razor Arrows): until it leaves the field; Undead don't bleed. **Weaken**
+  (Nullifying Voice, Haunting Scream's fallback): an attack style, or all, down. **Ward** (Crystal
+  Armour): clears its statuses, then none stick (cripple, poison, venom, bleed, seal, weaken, soak,
+  fear) for 3 rounds. **Haunting Scream:** 70% the target flees for a random teammate, who doesn't
+  act that round. **Smoke Bomb:** after its hit it swaps to its best matchup (in the game the player
+  will pick: 🧪 for now it's chosen for you). **Mega Smash** winds up (paying 50), then can only
+  strike or swap; the strike is free and still regains 30. **Fissure** hits every foe on the field
+  (like Barrage). **Implode** goes last; if it acts, the user falls.
+- **Smite and Ambush** were retired kit moves' names: an old one in a save is wiped once
+  (`wipeReusedNames`, `codexSet`), its slot getting its next core move; the names are the new moves'.
+- 🧪 Round 2 (core moves neutral): Healing Blessing +21, Rabid Bite +13 at 50 energy (+8 at 70),
+  Obsidian Arrows +10, Implode +7; Choking Smog as first drafted +35 (the user's foe-only version is
+  built, not yet simmed). Cripple is weak (Cripple 0, Bolas +3, Enfeeble −2): ❓ options with the user.
 
 ### Planned
 

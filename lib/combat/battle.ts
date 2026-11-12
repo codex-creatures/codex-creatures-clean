@@ -26,13 +26,14 @@
 // (cripple, fear, blind, …) live in Combatant.statuses with a duration.
 
 import {
-  calcDamage, effectiveAgil, poisonImmune, rollDamage,
+  calcDamage, effectiveAgil, effectiveStats, poisonImmune, rollDamage,
   MAX_ENERGY, ENERGY_REGEN, PRECISE_CHANCE, PRECISE_IGNORE,
   type Fighter,
   type CombatItem,
 } from "./engine";
 import type { CombatClass, Skill } from "../creatures/creatureData";
-import { bossActions, bossCloudOnEntry, bossEndOfRound, bossMinHp, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
+import { raceOfMove, raceVsAll } from "./raceChart";
+import { bossActions, bossEndOfRound, bossMinHp, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
 import { HAUNT_CHANCE, PERFECTIONIST_STEP, REVITALISE_HEAL, SOUL_STONES, TOXIC_SKIN, type SoulStoneKey } from "../creatures/soulStones";
 
@@ -90,7 +91,76 @@ export const isSealed = (f: Combatant) => f.statuses.some((s) => s.id === "seal"
 //   are untouched, and an Undead coming in doesn't count. Whoever the caster's
 //   side has on the field heals leech of all of it.
 //   Casting it again replaces the pool (the count starts over).
-export type GroundEffect = { kind: "blood"; move: string; by: number; count: number; tick: number; entry: number; entries: number; burst: number; leech: number };
+// - Cloud (Choking Smog, Implode, the Hydra's breath): for some rounds,
+//   whoever is on that side's field is poisoned (tick of its max HP a
+//   round), and keeps it tailMin–tailMax rounds after it leaves or the
+//   cloud clears (onEntry: only as it comes in, the Hydra's). Toxic creatures and warded ones (Crystal Armour) aren't
+//   poisoned. Clouds don't stack: a new one replaces the old. Blood (a pool
+//   or Haemorrhage's) under a cloud is soaked up: the blood goes and the
+//   cloud's poison is CLOUD_BLOOD_BOOST stronger.
+// - Caltrops: each creature that comes in loses entry of its max HP.
+// - Gore (Haemorrhage): for some rounds, toxic damage on that side (toxic
+//   moves, venom, poison) is amp higher; Undead are untouched.
+export type GroundEffect =
+  | { kind: "blood"; move: string; by: number; count: number; tick: number; entry: number; entries: number; burst: number; leech: number }
+  | { kind: "cloud"; move: string; rounds: number; tick: number; tailMin: number; tailMax: number; boost?: number; onEntry?: boolean }
+  | { kind: "caltrops"; move: string; entry: number }
+  | { kind: "gore"; move: string; rounds: number; amp: number };
+export const CLOUD_BLOOD_BOOST = 0.5;
+type BloodPool = Extract<GroundEffect, { kind: "blood" }>;
+type GroundKind = GroundEffect["kind"];
+const groundOf = <K extends GroundKind>(s: BattleSide, kind: K) => s.ground?.find((g): g is Extract<GroundEffect, { kind: K }> => g.kind === kind);
+const clearGround = (s: BattleSide, kinds: GroundKind[]) => { s.ground = (s.ground ?? []).filter((g) => !kinds.includes(g.kind)); };
+function layGround(state: BattleState, key: SideKey, g: GroundEffect) {
+  const s = state.sides[key];
+  clearGround(s, [g.kind]);
+  s.ground = [...(s.ground ?? []), g];
+  // Blood under a cloud is soaked up, and the cloud grows stronger.
+  const cloud = groundOf(s, "cloud");
+  if (cloud && (groundOf(s, "blood") || groundOf(s, "gore"))) {
+    clearGround(s, ["blood", "gore"]);
+    cloud.boost = 1 + CLOUD_BLOOD_BOOST;
+  }
+  state.log.push({ type: "ground", side: key, ground: s.ground.map((x) => ({ ...x })) });
+}
+export function clearGroundLogged(state: BattleState, key: SideKey, kinds: GroundKind[]) {
+  const s = state.sides[key];
+  if (!s.ground?.some((g) => kinds.includes(g.kind))) return;
+  clearGround(s, kinds);
+  state.log.push({ type: "ground", side: key, ground: s.ground!.map((x) => ({ ...x })) });
+}
+// Poison doesn't stack: a new one replaces the old only if it has more to give (the user, 2026-11-12).
+export function poisonWith(f: Combatant, dmg: number, rounds: number): boolean {
+  const old = f.statuses.find((s) => s.id === "poison");
+  if (old && (old.dmg ?? 0) * old.rounds >= dmg * rounds) return false;
+  f.statuses = [...f.statuses.filter((s) => s.id !== "poison"), { id: "poison", rounds, dmg }];
+  return true;
+}
+// Warded (Crystal Armour): no new status effects, and clouds don't touch it.
+export const WARD_BLOCKS = ["cripple", "venom", "poison", "bleed", "seal", "weaken", "soak", "fear"];
+export const isWarded = (f: Combatant) => f.statuses.some((s) => s.id === "ward");
+const cannotBleed = (f: Fighter) => !!f.races?.includes("undead");
+const roll = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
+// A cloud under side key poisons creature index (not Toxic, not warded).
+function cloudPoison(state: BattleState, key: SideKey, index: number) {
+  const s = state.sides[key];
+  const cloud = groundOf(s, "cloud");
+  const f = s.team[index];
+  if (!cloud || !f || f.hp <= 0 || f.hidden || poisonImmune(f) || isWarded(f)) return;
+  // +1: the round it's applied in ticks too.
+  if (poisonWith(f, Math.max(1, Math.round(f.maxHp * cloud.tick * (cloud.boost ?? 1))), roll(cloud.tailMin, cloud.tailMax) + 1))
+    state.log.push({ type: "effect", side: key, index, name: f.name, text: "breathes in the poison cloud", hp: f.hp, statuses: f.statuses.map((x) => ({ ...x })), kind: "poisoned" });
+}
+// Smoke Bomb: the teammate it swaps to (the best matchup, then the most HP).
+function smokeSwapTo(state: BattleState, key: SideKey): number | undefined {
+  const s = state.sides[key];
+  const them = activeOf(state.sides[other(key)]);
+  const options = swapTargets(s);
+  if (options.length === 0) return undefined;
+  const edge = (f: Combatant) => (f.races?.[0] && them?.races?.length ? raceVsAll(f.races[0], them.races) : 1) / (them?.races?.[0] && f.races?.length ? raceVsAll(them.races[0], f.races) : 1);
+  const score = (i: number) => edge(s.team[i]) + 0.5 * (s.team[i].hp / s.team[i].maxHp);
+  return options.reduce((a, b) => (score(b) > score(a) ? b : a));
+}
 const untouchedByBlood = (f: Fighter) => !!f.races?.includes("undead");
 
 // Armour set mechanics (a full helmet + chest + legs of one armour; see
@@ -151,7 +221,10 @@ export type BattleAction =
 // hp: corpsify's share of HP to come back with.
 // seal: can't swap out. soak: loss = its share of defences lost.
 // brace: loss = the share the next hit loses. boost: gain = its attack's share up, in style.
-export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number; style?: CombatClass };
+// bleed: dmg a round until it leaves the field. weaken: loss of its attack (one style, or all).
+// ward: no new statuses (Crystal Armour). flame: melee attackers take loss of their hit (Flame Body).
+// charged: wound up for move (Mega Smash).
+export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number; style?: CombatClass; move?: string };
 
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
 // cooldowns: move name → rounds until it can be used again.
@@ -187,7 +260,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal" | "poisoned" | "regrow" | "blood" | "burst"; damage?: number }
+      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal" | "poisoned" | "regrow" | "blood" | "burst" | "bleed"; damage?: number }
   // What lies under a side's field now (after a change).
   | { type: "ground"; side: SideKey; ground: GroundEffect[] }
   // A boss changes who's on the field (new phase), or a partner takes over.
@@ -281,6 +354,8 @@ export function turnAgility(f: Combatant, action: BattleAction): number {
 
 // ── What a side is allowed to do right now ─────────────────────────
 export function affordableSkills(f: Combatant): Skill[] {
+  const wound = f.statuses.find((s) => s.id === "charged");
+  if (wound) return f.skills.filter((s) => s.name === wound.move);
   return f.skills.filter((s) => s.energyCost <= f.energy && (f.cooldowns?.[s.name] ?? 0) <= 0);
 }
 
@@ -349,7 +424,6 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     s.swaps++;
     s.lastSwapRound = state.round;
     state.log.push({ type: "swap", side: k, from: leaving.name, to: activeOf(s).name, toIndex: a.to, energyRestored: restored });
-    state.log.push(...bossCloudOnEntry(state, k, a.to, state.round)); // into the Hydra's poison cloud?
     groundOnEntry(state, k, a.to); // into a blood pool?
     cameIn.push(k);
     // Revitalise: swapping out restores some HP.
@@ -410,7 +484,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   const pounces = (f: Combatant, a: BattleAction) => {
     const sk = a.kind === "attack" ? f.skills.find((s) => s.name === a.skillName) : undefined;
     if (sk?.self && hasStone(f, "trickster")) return 2;
-    return sk?.effect?.kind === "pounce" || sk?.effect?.kind === "quick" || sk?.effect?.kind === "brace" || quick(f, a) ? 1 : 0;
+    const k = sk?.effect?.kind;
+    if (k === "implode") return -1; // Implode goes last
+    return k === "pounce" || k === "quick" || k === "brace" || k === "smoke" || k === "ambush" || quick(f, a) ? 1 : 0;
   };
   const attackers = turns
     .map((t) => {
@@ -422,6 +498,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   const leader = attackers.find((t) => t.action.kind === "attack")?.actor; // for First Strike!
   for (const { key, index: actorIdx, actor, action } of attackers) {
     if (actor.hp <= 0) continue; // fainted before acting
+    if (!state.sides[key].boss && !fieldOf(state.sides[key]).includes(actorIdx)) continue; // driven off the field this round (Haunting Scream)
     if (action.kind === "pass") {
       // Resting recovers the usual energy, so a creature whose cheapest move
       // costs more than it has can't get stuck.
@@ -450,7 +527,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     if (quickscale) actor.setUsed = true;
     const skill = actor.skills.find((sk) => sk.name === action.skillName)!;
     const fx = skill.effect;
-    actor.energy = Math.min(MAX_ENERGY, actor.energy - skill.energyCost + ENERGY_REGEN);
+    const woundUp = fx?.kind === "charge" && actor.statuses.some((s) => s.id === "charged");
+    actor.energy = Math.min(MAX_ENERGY, actor.energy - (woundUp ? 0 : skill.energyCost) + ENERGY_REGEN);
+    // Mega Smash: the first use winds up (and pays); the next strikes.
+    if (fx?.kind === "charge" && !woundUp) {
+      actor.streak = undefined;
+      actor.statuses = [...actor.statuses, { id: "charged", rounds: 3, move: skill.name }];
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `winds up ${skill.name}`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
+      continue;
+    }
     if (skill.cooldown) actor.cooldowns = { ...actor.cooldowns, [skill.name]: skill.cooldown + 1 }; // +1: ticks at the end of this round
 
     // Utility moves used on yourself.
@@ -483,10 +568,30 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         actor.statuses = [...actor.statuses.filter((s) => !(s.id === "boost" && s.style === fx.style)), { id: "boost", rounds: SOAK_ROUNDS, gain: fx.boost, style: fx.style }];
         text += ` — +${Math.round(fx.boost * 100)}% ${fx.style} attack while it stays on the field`;
       }
+      if (fx?.kind === "ward") {
+        actor.statuses = [...actor.statuses.filter((s) => !WARD_BLOCKS.includes(s.id) && s.id !== "ward"), { id: "ward", rounds: fx.rounds + 1 }];
+        actor.defenceCut = undefined;
+        text += ` — no status effects for ${fx.rounds} rounds`;
+      }
+      if (fx?.kind === "cleanse") {
+        state.sides[key].team.forEach((f, i) => {
+          if (!f.statuses.some((s) => s.id === "venom" || s.id === "poison" || s.id === "bleed")) return;
+          f.statuses = f.statuses.filter((s) => s.id !== "venom" && s.id !== "poison" && s.id !== "bleed");
+          if (i !== actorIdx) state.log.push({ type: "effect", side: key, index: i, name: f.name, text: "is washed clean", hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "heal" });
+        });
+        clearGroundLogged(state, key, ["cloud", "blood", "gore"]);
+        text += " — your team is washed clean";
+      }
+      if (fx?.kind === "flamebody") {
+        actor.statuses = [...actor.statuses.filter((s) => s.id !== "flame"), { id: "flame", rounds: fx.rounds + 1, loss: fx.reflect }];
+        clearGroundLogged(state, key, ["cloud"]); // only the cloud under its own team (the user, 2026-11-12)
+        text += ` — melee attackers get burned for ${fx.rounds} rounds`;
+      }
       const bossMove = state.sides[key].boss ? bossSelfMove(state, key, skill.name) : undefined; // the Hydra's breath
       text += bossMove?.text ?? "";
       state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "self" });
       state.log.push(...(bossMove?.events ?? []));
+      if (bossMove?.cloud) { layGround(state, other(key), bossMove.cloud); cloudPoison(state, other(key), state.sides[other(key)].active); }
       continue;
     }
 
@@ -496,12 +601,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       actor.streak = undefined;
       const paid = Math.min(actor.hp, Math.round(actor.maxHp * fx.cost));
       actor.hp -= paid;
-      const s = state.sides[other(key)];
-      const pool: GroundEffect = { kind: "blood", move: skill.name, by: actorIdx, count: 0, tick: fx.tick, entry: fx.entry, entries: fx.entries, burst: fx.burst, leech: fx.leech };
-      s.ground = [...(s.ground ?? []).filter((g) => g.kind !== "blood"), pool];
       state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `uses ${skill.name} — gives ${paid} HP, and blood pools under the foes`,
         hp: actor.hp, statuses: actor.statuses.map((x) => ({ ...x })), kind: "self", damage: paid });
-      state.log.push({ type: "ground", side: other(key), ground: s.ground.map((g) => ({ ...g })) });
+      layGround(state, other(key), { kind: "blood", move: skill.name, by: actorIdx, count: 0, tick: fx.tick, entry: fx.entry, entries: fx.entries, burst: fx.burst, leech: fx.leech }); // (into a cloud: soaked up)
       if (actor.hp <= 0) knockedOut(state, key, actorIdx);
       continue;
     }
@@ -540,6 +642,18 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
       let damage = missed ? 0 : calcDamage(skill, actor, target, precise, PRECISE_IGNORE, rollDamage()).damage;
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
+      if (!missed && damage > 0) {
+        let m = 1;
+        if (fx?.kind === "execute" && target.hp < target.maxHp * fx.below) m *= 1 + fx.bonus;
+        if (fx?.kind === "ambush" && target.hp >= target.maxHp) m *= 1 + fx.bonus;
+        if (fx?.kind === "septic" && (target.statuses.some((s) => s.id === "bleed") || groundOf(foe, "blood") || groundOf(foe, "gore"))) m *= fx.mult;
+        if (fx?.kind === "ignite" && groundOf(foe, "cloud")) { m *= fx.mult; clearGroundLogged(state, foeKey, ["cloud"]); }
+        if (fx?.kind === "chain") m *= 1 + Math.min(fx.cap, fx.step * (streak.hits - 1));
+        const gore = groundOf(foe, "gore");
+        if (gore && !cannotBleed(target) && raceOfMove(skill) === "toxic") m *= 1 + gore.amp;
+        damage = Math.round(damage * m);
+      }
+      if (woundUp) actor.statuses = actor.statuses.filter((s) => s.id !== "charged");
       if (!missed && perfect > 1) {
         damage = Math.round(damage * perfect);
         armorFx.push(`${SOUL_STONES.perfectionist.name}: +${Math.round((perfect - 1) * 100)}%`);
@@ -568,6 +682,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
       target.hp = Math.max(bossMinHp(state, foeKey, targetIdx), target.hp - damage);
 
+      const statusesBefore = new Set(target.statuses), cutBefore = target.defenceCut;
       // Cripple lasts for the next CRIPPLE_ROUNDS rounds (+1: it ticks at the end of this one).
       const unstoppable = fx?.kind === "cripple" && !missed && hasStone(target, "unstoppable_force");
       const steadfast = fx?.kind === "cripple" && !missed && (unstoppable || hasSet(target, "polished_chainbolster"));
@@ -597,13 +712,74 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         target.defenceCut = soaked;
         target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: soaked }];
       }
+      // The 2026-11 codex moves (numbers on the moves: lib/creatures/codexMoves.ts).
+      const changed: string[] = [];
+      if (!missed) {
+        if (fx?.kind === "lifesteal" && damage > 0 && actor.hp > 0) {
+          const healed = Math.min(actor.maxHp - actor.hp, Math.round(damage * fx.share));
+          if (healed > 0) { actor.hp += healed; state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `drains ${healed} HP`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "heal", damage: healed }); }
+        }
+        if (fx?.kind === "agility") actor.agilityUp = Math.max(actor.agilityUp ?? 0, fx.gain);
+        if (fx?.kind === "surge") actor.surge = Math.max(actor.surge ?? 0, fx.gain);
+        if (target.hp > 0) {
+          if (fx?.kind === "weaken" && fx.forceSwap !== undefined && !isWarded(target) && !foe.boss && !isSealed(target) && swapTargets(foe).length > 0 && Math.random() < fx.forceSwap) {
+            // Haunting Scream: it flees for a random teammate (who doesn't act this round).
+            const bench = swapTargets(foe), to = bench[Math.floor(Math.random() * bench.length)];
+            changeActive(state, foeKey, to);
+            state.log.push({ type: "swap", side: foeKey, from: target.name, to: activeOf(foe).name, toIndex: to, energyRestored: 0 });
+            groundOnEntry(state, foeKey, to);
+          } else if (fx?.kind === "weaken" && (fx.chance === undefined || Math.random() < fx.chance)) {
+            target.statuses = [...target.statuses.filter((s) => !(s.id === "weaken" && s.style === fx.style)), { id: "weaken", rounds: fx.rounds ? fx.rounds + 1 : SOAK_ROUNDS, loss: fx.loss, style: fx.style }];
+            changed.push("WEAKENED");
+          }
+          if (fx?.kind === "bleed" && !cannotBleed(target) && Math.random() < fx.chance) {
+            target.statuses = [...target.statuses.filter((s) => s.id !== "bleed"), { id: "bleed", rounds: SOAK_ROUNDS, dmg: Math.max(1, Math.round(target.maxHp * fx.tick)) }];
+            changed.push("BLEEDING");
+          }
+          if (fx?.kind === "poison" && !poisonImmune(target) && Math.random() < fx.chance && poisonWith(target, Math.max(1, Math.round(target.maxHp * fx.tick)), roll(fx.minRounds, fx.maxRounds))) changed.push("POISONED");
+          if (fx?.kind === "slap" && Math.random() < fx.chance) {
+            target.boost = undefined; target.defenceCut = undefined; target.agilityUp = undefined; target.surge = undefined;
+            target.statuses = target.statuses.filter((s) => !["soak", "boost", "weaken", "haste"].includes(s.id));
+            changed.push("SLAPPED CLEAN");
+          }
+        }
+        if (fx?.kind === "caltrops") layGround(state, foeKey, { kind: "caltrops", move: skill.name, entry: fx.entry });
+        if (fx?.kind === "gore") layGround(state, foeKey, { kind: "gore", move: skill.name, rounds: fx.rounds + 1, amp: fx.amp });
+        if (fx?.kind === "cloud") layGround(state, foeKey, { kind: "cloud", move: skill.name, rounds: roll(fx.minRounds, fx.maxRounds) + 1, tick: fx.tick, tailMin: fx.tailMin, tailMax: fx.tailMax });
+        if (fx?.kind === "cloud") cloudPoison(state, foeKey, foe.active);
+      }
+      // Warded: none of this hit's status effects stick.
+      if (isWarded(target)) {
+        target.statuses = target.statuses.filter((s) => statusesBefore.has(s) || !WARD_BLOCKS.includes(s.id));
+        target.defenceCut = cutBefore;
+        changed.length = 0;
+      }
+      if (changed.length) state.log.push({ type: "effect", side: foeKey, index: targetIdx, name: target.name, text: changed.join(" · ").toLowerCase(), hp: target.hp, statuses: target.statuses.map((s) => ({ ...s })), kind: "ability" });
+      // Flame Body: a melee attacker takes a share of its hit (before armour).
+      const flame = target.statuses.find((s) => s.id === "flame");
+      if (flame && !missed && skill.type === "melee" && skill.damage > 0 && actor.hp > 0) {
+        const raw = (skill.damage + effectiveStats(actor).atk) * (skill.mult ?? 1);
+        const back = Math.min(actor.hp - bossMinHp(state, key, actorIdx), Math.max(1, Math.round(raw * (flame.loss ?? 0))));
+        if (back > 0) {
+          actor.hp -= back;
+          state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `is burned by ${target.name}'s flames (${back} damage)`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "ability", damage: back });
+          if (actor.hp <= 0) knockedOut(state, key, actorIdx);
+        }
+      }
+      // Headbutt: the user takes a share of the damage.
+      if (fx?.kind === "recoil" && !missed && damage > 0 && actor.hp > 0) {
+        const back = Math.min(actor.hp, Math.max(1, Math.round(damage * fx.share)));
+        actor.hp -= back;
+        state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `takes ${back} recoil damage`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "ability", damage: back });
+        if (actor.hp <= 0) knockedOut(state, key, actorIdx);
+      }
       // Toxic Skin: a melee hit may poison the attacker (a fresh 3–5 turns, replacing any poison it had).
       let poisoned: StatusEffect | undefined;
       if (!missed && skill.type === "melee" && hasStone(target, "toxic_skin") && actor.hp > 0 && !poisonImmune(actor) && Math.random() < TOXIC_SKIN.chance) {
         const rounds = TOXIC_SKIN.minRounds + Math.floor(Math.random() * (TOXIC_SKIN.maxRounds - TOXIC_SKIN.minRounds + 1));
         poisoned = { id: "poison", rounds, dmg: Math.max(1, Math.round(actor.maxHp * TOXIC_SKIN.tick)) };
-        actor.statuses = [...actor.statuses.filter((s) => s.id !== "poison"), poisoned];
-        armorFx.push(`${SOUL_STONES.toxic_skin.name}: poisoned for ${rounds} turns`);
+        if (!poisonWith(actor, poisoned.dmg!, rounds)) poisoned = undefined;
+        if (poisoned) armorFx.push(`${SOUL_STONES.toxic_skin.name}: poisoned for ${rounds} turns`);
       }
       state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
         streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, crippleRounds: crippledFor, hasted,
@@ -619,6 +795,29 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
             hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "set", damage: back });
           if (actor.hp <= 0) { knockedOut(state, key, actorIdx); break; }
         }
+      }
+    }
+    // Implode: the user falls, and a cloud lies under the foes.
+    if (fx?.kind === "implode" && actor.hp > 0) {
+      actor.hp = 0;
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: "bursts", hp: 0, statuses: actor.statuses.map((s) => ({ ...s })), kind: "ability" });
+      knockedOut(state, key, actorIdx);
+      layGround(state, foeKey, { kind: "cloud", move: skill.name, rounds: roll(fx.minRounds, fx.maxRounds) + 1, tick: fx.tick, tailMin: fx.tailMin, tailMax: fx.tailMax });
+      cloudPoison(state, foeKey, foe.active);
+    }
+    // Smoke Bomb: then it swaps out (as a swap: its energy back, and the one coming in takes their hit).
+    if (fx?.kind === "smoke" && actor.hp > 0) {
+      const to = smokeSwapTo(state, key);
+      if (to !== undefined) {
+        const s = state.sides[key];
+        const restored = Math.round((MAX_ENERGY - actor.energy) * SWAP_ENERGY_RESTORE);
+        actor.energy = Math.min(MAX_ENERGY, actor.energy + restored);
+        changeActive(state, key, to);
+        s.swaps++;
+        s.lastSwapRound = state.round;
+        state.log.push({ type: "swap", side: key, from: actor.name, to: activeOf(s).name, toIndex: to, energyRestored: restored });
+        groundOnEntry(state, key, to);
+        haunt(state, key);
       }
     }
   }
@@ -643,19 +842,22 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   //    The witch's illness works the same way (lib/dungeon/run.ts: curse), each
   //    one a creature has biting on its own (they stack: decision 39).
   for (const k of ["A", "B"] as SideKey[]) {
-    const pool = state.sides[k].ground?.find((g) => g.kind === "blood");
+    const pool = groundOf(state.sides[k], "blood");
     if (!pool) continue;
     for (const i of fieldOf(state.sides[k])) bloodHit(state, k, i, pool, pool.tick);
   }
+  for (const k of ["A", "B"] as SideKey[]) if (!groundOf(state.sides[k], "cloud")?.onEntry) for (const i of fieldOf(state.sides[k])) cloudPoison(state, k, i);
   for (const k of ["A", "B"] as SideKey[]) {
+    const gore = groundOf(state.sides[k], "gore");
     state.sides[k].team.forEach((f, i) => {
-      const biting = (["venom", "poison", "illness"] as const).flatMap((id) => {
+      const biting = (["venom", "poison", "illness", "bleed"] as const).flatMap((id) => {
         const all = f.statuses.filter((s) => s.id === id);
         return (id === "illness" ? all : all.slice(0, 1)).map((st) => ({ id, st }));
       });
       for (const { id, st } of biting) {
         if (f.hp <= 0 || f.hidden) continue;
-        const damage = Math.min(f.hp - bossMinHp(state, k, i), st.dmg ?? 0);
+        const toxic = gore && (id === "venom" || id === "poison") && !cannotBleed(f) ? 1 + gore.amp : 1;
+        const damage = Math.min(f.hp - bossMinHp(state, k, i), Math.round((st.dmg ?? 0) * toxic));
         if (damage <= 0) continue;
         f.hp -= damage;
         state.log.push({ type: "effect", side: k, index: i, name: f.name, text: id === "illness" ? `suffers an illness (${damage} damage)` : `takes ${damage} ${id} damage`,
@@ -668,6 +870,13 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     for (const f of state.sides[k].team) {
       f.statuses = f.statuses.map((st) => ({ ...st, rounds: st.rounds - 1 })).filter((st) => st.rounds > 0);
       if (f.cooldowns) f.cooldowns = Object.fromEntries(Object.entries(f.cooldowns).map(([m, r]) => [m, r - 1]).filter(([, r]) => (r as number) > 0));
+    }
+    // Clouds and gore last a few rounds.
+    const s = state.sides[k];
+    if (s.ground?.some((g) => "rounds" in g)) {
+      const before = s.ground.length;
+      s.ground = s.ground.map((g) => ("rounds" in g ? { ...g, rounds: g.rounds - 1 } : g)).filter((g) => !("rounds" in g) || g.rounds > 0);
+      if (s.ground.length !== before) state.log.push({ type: "ground", side: k, ground: s.ground.map((x) => ({ ...x })) });
     }
   }
 
@@ -706,7 +915,7 @@ function knockedOut(state: BattleState, key: SideKey, index: number) {
 
 // The blood under side `key` takes share of creature `index`'s max HP (not
 // an Undead's), and the caster's side heals some of it. Returns the damage.
-function bloodHit(state: BattleState, key: SideKey, index: number, pool: GroundEffect, share: number, text = "bleeds in the blood pool"): number {
+function bloodHit(state: BattleState, key: SideKey, index: number, pool: BloodPool, share: number, text = "bleeds in the blood pool"): number {
   const f = state.sides[key].team[index];
   if (!f || f.hp <= 0 || f.hidden || untouchedByBlood(f)) return 0;
   const damage = Math.min(f.hp - bossMinHp(state, key, index), Math.max(1, Math.round(f.maxHp * share)));
@@ -718,7 +927,7 @@ function bloodHit(state: BattleState, key: SideKey, index: number, pool: GroundE
   return damage;
 }
 // Whoever the caster's side has on the field heals pool.leech of the damage.
-function bloodLeech(state: BattleState, key: SideKey, pool: GroundEffect, damage: number) {
+function bloodLeech(state: BattleState, key: SideKey, pool: BloodPool, damage: number) {
   const s = state.sides[key];
   const me = activeOf(s);
   const healed = Math.min(me.maxHp - me.hp, Math.round(damage * pool.leech));
@@ -732,8 +941,18 @@ function bloodLeech(state: BattleState, key: SideKey, pool: GroundEffect, damage
 // and doesn't count); the last comer sets off the burst, and the pool's gone.
 function groundOnEntry(state: BattleState, key: SideKey, index: number) {
   const s = state.sides[key];
-  const pool = s.ground?.find((g) => g.kind === "blood");
   const f = s.team[index];
+  const trops = groundOf(s, "caltrops");
+  if (trops && f && f.hp > 0 && !f.hidden) {
+    const damage = Math.min(f.hp - bossMinHp(state, key, index), Math.max(1, Math.round(f.maxHp * trops.entry)));
+    if (damage > 0) {
+      f.hp -= damage;
+      state.log.push({ type: "effect", side: key, index, name: f.name, text: `steps on the caltrops (${damage} damage)`, hp: f.hp, statuses: f.statuses.map((x) => ({ ...x })), kind: "blood", damage });
+      if (f.hp <= 0) knockedOut(state, key, index);
+    }
+  }
+  cloudPoison(state, key, index);
+  const pool = groundOf(s, "blood");
   if (!pool || !f || f.hp <= 0 || untouchedByBlood(f)) return;
   bloodHit(state, key, index, pool, pool.entry, "steps into the blood pool");
   const count = pool.count + 1;
@@ -762,7 +981,7 @@ export function changeActive(state: BattleState, key: SideKey, index: number) {
   leaving.streak = undefined;
   leaving.defenceCut = undefined;
   leaving.boost = undefined;
-  leaving.statuses = leaving.statuses.filter((st) => st.id !== "soak" && st.id !== "boost");
+  leaving.statuses = leaving.statuses.filter((st) => !["soak", "boost", "bleed", "weaken", "charged"].includes(st.id));
   s.active = index;
   activeOf(s).streak = undefined;
 }
@@ -772,10 +991,10 @@ export function sendInReplacement(state: BattleState, key: SideKey, index: numbe
   if (!state.needsReplacement.includes(key)) return state;
   if (index === s.active || !s.team[index] || s.team[index].hp <= 0) throw new Error(`Invalid replacement ${index} for side ${key}`);
   changeActive(state, key, index);
-  s.arrived = index; // (a blood pool greets it as the next round starts)
+  s.arrived = index; // (a blood pool or caltrops greet it as the next round starts)
+  cloudPoison(state, key, index); // (a cloud, at once)
   state.needsReplacement = state.needsReplacement.filter((k) => k !== key);
   state.log.push({ type: "sendIn", side: key, name: activeOf(s).name, index });
-  state.log.push(...bossCloudOnEntry(state, key, index, state.round + 1)); // it fights next round: into the Hydra's poison cloud?
   return state;
 }
 

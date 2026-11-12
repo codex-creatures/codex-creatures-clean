@@ -2,8 +2,8 @@
 // Combat V2's core moves (the user, 2026-11-12). Every creature fights with
 // the same three plain moves in each of its styles: a light one, a heavy one
 // and one that always strikes first. They have no race of their own: each
-// lands as its creature's main race (asRace), so the race chart still decides
-// every hit. Everything else comes from codexes (race and special moves).
+// is neutral: it lands the same on every race (the user, 2026-11-12; until
+// then they landed as their creature's main race). Races come from codex moves. Everything else comes from codexes (race and special moves).
 //
 // Until 2026-11-12 each race had a kit of 5 moves per style (105 in all).
 // Those are retired: RETIRED_KIT_MOVES turns each over to its closest core move.
@@ -54,9 +54,8 @@ const STYLES: CombatClass[] = ["melee", "ranged", "magic"];
 export const CORE_MOVES: Skill[] = STYLES.flatMap((s) => CORE_SLOTS.map((slot) => CORE[slot][s]));
 export const CORE_MOVE_NAMES = new Set(CORE_MOVES.map((m) => m.name));
 export const coreMove = (style: CombatClass, slot: CoreSlot): Skill => CORE[slot][style];
-// A style's core moves, landing as this race (none: neutral, as Klutz's do).
-export const coreFor = (style: CombatClass, race?: RaceV2): Skill[] =>
-  CORE_SLOTS.map((slot) => (race ? { ...CORE[slot][style], asRace: race } : CORE[slot][style]));
+// A style's core moves (neutral: no race, so no race multiplier and no own-race bonus).
+export const coreFor = (style: CombatClass): Skill[] => CORE_SLOTS.map((slot) => CORE[slot][style]);
 
 // The retired race kits' names, in slot order (light, medium, heavy, quick,
 // precise), kept so saves that know one find its core move.

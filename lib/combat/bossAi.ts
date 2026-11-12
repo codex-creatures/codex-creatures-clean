@@ -21,15 +21,15 @@
 //   it is breathes instead of attacking. The cloud hangs for the next
 //   CLOUD_ROUNDS rounds: your creature on the field is poisoned, and so is
 //   any creature that comes in while it hangs there (a swap or a
-//   replacement). A creature that's already poisoned isn't poisoned again.
+//   replacement). It's a cloud like Choking Smog's (lib/combat/battle.ts:
+//   ground effects), so Cleansing Water, Flame Body and Emulate clear it.
 //   Once a cloud has cleared, each turn has a REBREATH chance of another.
 // - Heads grow back: REGROW_ROUNDS rounds after a head goes down, unless
 //   another goes down first (that starts the count again). Then every head
 //   that's down comes back: one with 75% of its HP, two with 50% each.
 //   Beat all three before that and the Hydra is dead.
 
-import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, SideKey } from "./battle";
-import { poisonImmune } from "./engine";
+import type { BattleAction, BattleEvent, BattleSide, BattleState, Combatant, GroundEffect, SideKey } from "./battle";
 
 export type BossKind = "cyclops" | "hydra";
 // The Hydra's: next: the head whose turn is next. breathAt: the round of its
@@ -146,38 +146,20 @@ function breathes(state: BattleState, boss: BossState): boolean {
 
 // A boss's move used on itself (the Hydra's breath): the end of the move's
 // log line, and anything it causes.
-export function bossSelfMove(state: BattleState, key: SideKey, skillName: string): { text: string; events: BattleEvent[] } {
+// cloud: a cloud it lays under the foes (battle.ts lays it).
+export function bossSelfMove(state: BattleState, key: SideKey, skillName: string): { text: string; events: BattleEvent[]; cloud?: GroundEffect } {
   const boss = state.sides[key].boss;
   if (boss?.kind !== "hydra" || skillName !== "Toxic Breath") return { text: "", events: [] };
   boss.cloudUntil = state.round + HYDRA.CLOUD_ROUNDS;
-  const foeKey: SideKey = key === "A" ? "B" : "A";
-  const foe = state.sides[foeKey];
-  const ev = poisonByCloud(foe, foeKey, foe.active);
-  return { text: ` — a poison cloud fills the lair for ${HYDRA.CLOUD_ROUNDS} rounds`, events: ev ? [ev] : [] };
+  // (+1: the clouds tick down at the end of this round too; the poison it gives lasts POISON_ROUNDS.)
+  const cloud: GroundEffect = { kind: "cloud", move: skillName, rounds: HYDRA.CLOUD_ROUNDS + 1, tick: HYDRA.POISON_TICK, tailMin: HYDRA.POISON_ROUNDS - 1, tailMax: HYDRA.POISON_ROUNDS - 1, onEntry: true };
+  return { text: ` — a poison cloud fills the lair for ${HYDRA.CLOUD_ROUNDS} rounds`, events: [], cloud };
 }
 
-// Side `key`'s creature at `index` has just come in to fight in `round`: if
-// the other side is a Hydra whose cloud hangs then, it's poisoned.
-export function bossCloudOnEntry(state: BattleState, key: SideKey, index: number, round: number): BattleEvent[] {
-  const boss = state.sides[key === "A" ? "B" : "A"].boss;
-  if (boss?.kind !== "hydra" || boss.cloudUntil === undefined || round > boss.cloudUntil) return [];
-  const ev = poisonByCloud(state.sides[key], key, index);
-  return ev ? [ev] : [];
-}
-
-// The cloud's poison, unless it's already poisoned (or Toxic: immune).
-function poisonByCloud(side: BattleSide, key: SideKey, index: number): BattleEvent | undefined {
-  const f = side.team[index];
-  if (!f || f.hp <= 0 || poisonImmune(f) || f.statuses.some((s) => s.id === "poison")) return undefined;
-  f.statuses = [...f.statuses, { id: "poison", rounds: HYDRA.POISON_ROUNDS, dmg: Math.max(1, Math.round(f.maxHp * HYDRA.POISON_TICK)) }];
-  return { type: "effect", side: key, index, name: f.name, text: `breathes in the poison cloud — poisoned for ${HYDRA.POISON_ROUNDS} rounds`,
-    hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "poisoned" };
-}
-
-// How many more rounds the Hydra's cloud hangs over (0: none).
+// How many more rounds a cloud hangs over the side facing boss side `key` (0: none).
 export function cloudLeft(state: BattleState, key: SideKey): number {
-  const boss = state.sides[key].boss;
-  return boss?.cloudUntil === undefined ? 0 : Math.max(0, boss.cloudUntil - state.round);
+  const cloud = state.sides[key === "A" ? "B" : "A"].ground?.find((g) => g.kind === "cloud");
+  return cloud && "rounds" in cloud ? cloud.rounds : 0;
 }
 
 // The lowest HP a hit can leave this boss creature on (the body can't be

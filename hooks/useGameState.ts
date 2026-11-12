@@ -8,7 +8,7 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { ownedSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
-import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
+import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
@@ -18,7 +18,7 @@ import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/qu
 import { endTour } from "@/lib/tour";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
-import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle } from "@/lib/creatures/instance";
+import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { collectorCreatures, creaturePrice, tradeUpCard } from "@/lib/collector";
 import { buildPit, claimPlans, hasPit, logTrained, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
@@ -143,6 +143,8 @@ export function loadSave(): SaveState | null {
       c.moves = retireMoves(c.moves, t);
       const eq = equipment[c.id];
       if (eq?.moves) equipment[c.id] = { ...eq, moves: retireMoves(eq.moves, t) };
+      // An old Smite or Ambush (the names now the 2026-11 codex moves'): wiped once.
+      if (wipeReusedNames(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
     }
   }
   // Codexes of a renamed move (RENAMED_MOVES) carry its new name, and an old
@@ -158,6 +160,10 @@ export function loadSave(): SaveState | null {
   if (klutz.learned) klutz.learned = retireLearned(klutz.learned);
   const kl = equipment[KLUTZ_DROP_ID];
   if (kl?.moves) equipment[KLUTZ_DROP_ID] = { ...kl, moves: retireMoves(kl.moves.map(renamedMove), KLUTZ) };
+  // (Klutz can't learn the new Smite or Ambush, so any he has is an old one.)
+  if (klutz.learned) klutz.learned = klutz.learned.filter((n) => !(n in REUSED_NAMES));
+  const kl2 = equipment[KLUTZ_DROP_ID];
+  if (kl2?.moves?.some((n) => n in REUSED_NAMES)) equipment[KLUTZ_DROP_ID] = { ...kl2, moves: replaceRetired(KLUTZ, kl2.moves, REUSED_NAMES) };
   return {
     gold:       typeof parsed.gold === "number" ? parsed.gold : 0,
     inventory,

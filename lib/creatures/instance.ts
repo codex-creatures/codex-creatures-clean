@@ -7,7 +7,7 @@ import { buildFighter } from "../combat/loadout";
 import { wornArmor } from "../items/armor";
 import type { ItemKey } from "../items/ceilings";
 import { RESTYLED_SPECIES } from "./rosterV2";
-import { defaultMoveNames, isRetiredMove, renamedMove, replaceRetired, resolveMoves, startingMoveCount, STARTING_MOVES, type CreatureProficiency, type CreatureTemplate, type Skill } from "./creatureData";
+import { defaultMoveNames, isRetiredMove, renamedMove, replaceRetired, resolveMoves, REUSED_NAMES, startingMoveCount, STARTING_MOVES, type CreatureProficiency, type CreatureTemplate, type Skill } from "./creatureData";
 
 type Stats = Record<string, number> | undefined;
 
@@ -37,6 +37,20 @@ export function retireMoves(names: string[] | undefined, t: CreatureTemplate): s
   return replaceRetired(t, names.map(renamedMove));
 }
 export const retireLearned = (learned: string[] | undefined) => learned?.map(renamedMove).filter((n) => !isRetiredMove(n));
+
+// Smite and Ambush were retired kit moves, and are now 2026-11 codex moves
+// (REUSED_NAMES). A creature saved before those (no codexSet) has any old one
+// wiped once, as the cut did (its closest core move); after that, a Smite or
+// Ambush it knows is the new one. Returns whether its moves changed.
+export const CODEX_SET = 1;
+export function wipeReusedNames(c: { moves?: string[]; learned?: string[]; codexSet?: number }, t: CreatureTemplate): boolean {
+  if (c.codexSet === CODEX_SET) return false;
+  c.codexSet = CODEX_SET;
+  if (c.learned) c.learned = c.learned.filter((n) => !(n in REUSED_NAMES));
+  if (!c.moves?.some((n) => n in REUSED_NAMES)) return false;
+  c.moves = replaceRetired(t, c.moves, REUSED_NAMES);
+  return true;
+}
 
 // Six species changed style on 2026-10-27 (RESTYLED_SPECIES). One you
 // already own (no styleSet) moves over once when the save loads: its defence
