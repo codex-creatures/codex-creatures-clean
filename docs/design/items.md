@@ -83,7 +83,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   from the tavern questline (§9, step 8) and costs 10 planks + 5 nails (`crooked_bookcase`,
   lib/items/materials.ts). (It was an epic drop for 20 planks + 10 nails, holding 25; a bookcase
   built then keeps its 25: `BOOKCASE_LEVELS`.)
-- ✅ **Throwing out codexes** (2026-10-25): tap a codex on the bookcase, then Throw out and Yes. It
-  is gone for good (no gold), to free the shelf without having to teach it.
+- ✅ **Selling codexes** (the user, 2026-11-12; was throwing out, for no gold, since 2026-10-25): tap a
+  codex on the bookcase, then Sell and Yes, for what a merchant pays (`codexSellPrice`: half a
+  librarian's price, `MERCHANT_BUYBACK`; so 100 gold for most, 250 for a race or Epic codex). It
+  counts towards the daily selling quest. Merchants in the Labyrinth and at the tavern pay the same.
 - 📌 More schematics and furniture later, e.g. a fireplace in the Den for faster healing.
 - ❓ A 10-item battle bag and bags for Klutz have been mentioned, but neither is designed.

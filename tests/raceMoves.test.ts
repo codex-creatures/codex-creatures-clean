@@ -284,3 +284,15 @@ describe("a run under way when the plain moves were retired (2026-11-12)", () =>
     expect(retireRunCodexes(next)).toBe(next); // nothing left to change
   });
 });
+
+describe("selling codexes (the user, 2026-11-12)", () => {
+  it("a codex sells for half what a librarian asks, from the bookcase or to a merchant", async () => {
+    const { codexSellPrice, codexPrice, merchantOffer, lootEntry } = await import("../lib/dungeon/run");
+    for (const m of ["Meditate", "Pounce", "Cripple", "Impale"]) {
+      expect(codexSellPrice(m)).toBe(Math.floor(codexPrice(m) / 2));
+      const d = codexDrop(m) as CreatureOrItemDrop;
+      expect(merchantOffer(lootEntry(d.id), d, () => 0)).toBe(codexSellPrice(m));
+    }
+    expect(codexSellPrice("Pounce")).toBeGreaterThan(codexSellPrice("Meditate")); // a race codex is dearer
+  });
+});

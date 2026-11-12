@@ -11,7 +11,7 @@ import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, type CreatureProficiency } from "@/lib/creatures/creatureData";
 import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice } from "@/lib/scanReveal";
-import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
+import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
@@ -822,6 +822,16 @@ export function useGameState(initialTab: TabKey = "all") {
   // Selling to the tavern's merchant: anything he'll take from your Inventory
   // (lib/tavern.ts tavernSellables), or materials one at a time.
   const tavernSells = () => tavernSellables(inventory, lockedIds, crateSellValue);
+  // A codex sold from your bookcase (the user, 2026-11-12): what a merchant would pay.
+  function sellCodex(id: string): number {
+    const d = inventory.find((x) => x.id === id);
+    if (!d || d.dropType !== "item" || !d.codexMove) return 0;
+    const price = codexSellPrice(d.codexMove);
+    removeDrop(id);
+    setGold((g) => g + price);
+    countDaily("sell", price);
+    return price;
+  }
   function sellToTavern(id: string): boolean {
     const offer = loadTavern().visitor === "merchant" && tavernSells().find((x) => x.drop.id === id);
     if (!offer) return false;
@@ -1127,7 +1137,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

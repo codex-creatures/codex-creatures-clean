@@ -691,9 +691,11 @@ export function merchantOffer(entry: BagEntry, item: Drop | undefined, gearValue
   }
   if (item.scroll) return half(SCROLL_PRICE);
   if (item.tool) return half(TOOLS[item.tool].price);
-  if (item.codexMove) return half(codexPrice(item.codexMove));
+  if (item.codexMove) return codexSellPrice(item.codexMove);
   return 0;
 }
+// A codex sold (to a merchant, or from your bookcase: the user, 2026-11-12): half what a librarian asks.
+export const codexSellPrice = (move: string) => Math.floor(codexPrice(move) * MERCHANT_BUYBACK);
 
 type Rng = () => number;
 // A weighted pick from [thing, weight] pairs.

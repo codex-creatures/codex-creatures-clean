@@ -102,6 +102,7 @@ export default function DungeonPage() {
   const [sheet, setSheet] = useState<"roster" | "bag" | null>(null);
   const [bagStart, setBagStart] = useState<number | undefined>(undefined); // the bag opened on this slot (the merchant's Use)
   const [retreatArmed, setRetreatArmed] = useState(false);
+  const [giveUpArmed, setGiveUpArmed] = useState(false); // a run that can't be opened: tap twice to give it up
   const [leaveAsk, setLeaveAsk] = useState(false); // tapped back to the Den mid-run: it ends the run, so a word first
   // Bumped to shake the screen (the witch's stab, and the illness after it).
   const [shake, setShake] = useState(0);
@@ -1144,6 +1145,23 @@ export default function DungeonPage() {
             }}>🔧 Mend its rooms</button>
           </div>
         )}
+        {/* Or give it up, as the crash screen lets you (app/error.tsx): the party comes home as if it had
+            retreated, so the dungeons can be played again (the user, 2026-11-12). Also the player's choice. A run
+            saved by a newer version isn't given up here: reloading brings the update that plays it. */}
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          {lab.held === "newer" ? (
+            <button className="pixel-btn" style={{ minHeight: 44 }} onClick={() => window.location.reload()}>♻️ Reload</button>
+          ) : (
+            <button className="pixel-btn" style={{ minHeight: 44, color: giveUpArmed ? "#1a1a1a" : "#ff8a80", background: giveUpArmed ? "#ff8a80" : undefined }} onClick={() => {
+              if (!giveUpArmed) { setGiveUpArmed(true); window.setTimeout(() => setGiveUpArmed(false), 4000); return; }
+              const cur = loadDungeon();
+              try { saveDungeon(endRun({ ...cur, run: cur.run && { ...cur.run, status: "retreated" } })); }
+              catch { saveDungeon({ ...cur, run: null }); } // (the run itself is what's broken: drop it, keep the rest)
+              setGiveUpArmed(false);
+              setLab(loadDungeon());
+            }}>{giveUpArmed ? "Tap again: the run ends" : "🏳️ Give up this run"}</button>
+          )}
+        </div>
       </DenFrame>
     );
   }

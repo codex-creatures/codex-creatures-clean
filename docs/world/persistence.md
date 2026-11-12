@@ -184,8 +184,11 @@ thing that needs one, such as levers or traps).
   `recoverWalkSave`): made again by that run's own version's rules, so the same ids and spots
   (for a v1 or v2 run, its foes come out as first made if no room's been beaten since, otherwise as
   the game would show them now); what you've done in it is kept;
+- **given up:** a damaged run can also be ended by the player (**"Give up this run"**, tapped
+  twice; the user, 2026-11-12), as the crash screen's does: the party comes home as if it had
+  retreated, so the dungeons can be played again. Never on its own;
 - **unsupported:** a run from a newer world version: left exactly as stored (§7, forward
-  compatibility).
+  compatibility). The Labyrinth offers **Reload** (the update that plays it), not giving it up.
 
 ## The test safety net
 

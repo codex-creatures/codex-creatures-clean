@@ -6,7 +6,7 @@
 // codex), then the move it teaches (CodexMove). Teach shows your creatures,
 // greyed out where one can't learn it; tap one to teach it (if its move
 // slots are full, you pick a move for it to forget). The codex is used up.
-// Throw out gets rid of one you don't want (after a Yes), to free the shelf.
+// Sell gets rid of one you don't want (after a Yes), for what a merchant pays, to free the shelf.
 // The box on top keeps its size whatever's picked, so nothing moves.
 
 import { useState } from "react";
@@ -18,6 +18,7 @@ import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { sortByRarity } from "./TileGrid";
 import { NAME } from "./ContainerLoot";
 import type { CreatureOrItemDrop, Drop } from "@/lib/types";
+import { codexSellPrice } from "@/lib/dungeon/run";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
@@ -26,7 +27,7 @@ const GOLD = "#f1d9a0";
 // creature's current move slots (its loadout's, if set).
 type Teach = { onLearn: (creatureId: string, codexId: string) => void; onSetMoves: (creatureId: string, moves: string[]) => void; movesOf: (creatureId: string) => string[] | undefined };
 
-export default function CodexShelf({ inventory, size, teach, onDiscard }: { inventory: Drop[]; size: number; teach?: Teach; onDiscard?: (codexId: string) => void }) {
+export default function CodexShelf({ inventory, size, teach, onSell }: { inventory: Drop[]; size: number; teach?: Teach; onSell?: (codexId: string) => void }) {
   const codexes = sortByRarity(inventory.filter((d) => d.dropType === "item" && d.codexMove) as CreatureOrItemDrop[]);
   const creatures = inventory.filter((d) => d.dropType === "creature") as CreatureOrItemDrop[];
   const [pickedId, setPickedId] = useState<string | null>(null);
@@ -34,7 +35,7 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
   const [forgetting, setForgetting] = useState<string | null>(null); // that creature's slots are full: which move goes
   const [taught, setTaught] = useState<string | null>(null);         // "X learned Y!"
   const [dropSlot, setDropSlot] = useState<number | null>(null);     // the move picked to forget, awaiting Confirm
-  const [discarding, setDiscarding] = useState(false);               // "Throw it out?" awaiting Yes / No
+  const [discarding, setDiscarding] = useState(false);               // "Sell it?" awaiting Yes / No
   const picked = codexes.find((c) => c.id === pickedId);
   const move = picked?.codexMove;
   const raceLocked = !!move && !!MOVE_BY_NAME[move] && learnRacesOf(MOVE_BY_NAME[move]).length > 0;
@@ -82,20 +83,20 @@ export default function CodexShelf({ inventory, size, teach, onDiscard }: { inve
                     textDecoration: "underline", textUnderlineOffset: 4, textDecorationThickness: 1 }}>{picked.name}</span>
                 </div>
                 <CodexMove move={move!} />
-                <div style={{ display: "flex", alignItems: "center", gap: 6, visibility: teach || onDiscard ? "visible" : "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, visibility: teach || onSell ? "visible" : "hidden" }}>
                   {discarding ? (
                     <>
-                      <span className="pixel-font" style={{ fontSize: 14, color: GOLD }}>Throw it out?</span>
+                      <span className="pixel-font" style={{ fontSize: 14, color: GOLD }}>Sell it for {codexSellPrice(move!)} gold?</span>
                       <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                        onClick={() => { const name = picked.name; onDiscard!(picked.id); pick(null); setTaught(`Threw out ${name}.`); }}>Yes</button>
+                        onClick={() => { const name = picked.name, price = codexSellPrice(move!); onSell!(picked.id); pick(null); setTaught(`Sold ${name} for ${price} gold.`); }}>Yes</button>
                       <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }} onClick={() => setDiscarding(false)}>No</button>
                     </>
                   ) : (
                     <>
                       {teach && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
                         onClick={() => { setTeaching((v) => !v); setForgetting(null); setDropSlot(null); }}>{teaching ? "Cancel" : "📖 Teach"}</button>}
-                      {onDiscard && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
-                        onClick={() => { setDiscarding(true); setTeaching(false); setForgetting(null); setDropSlot(null); }}>🗑 Throw out</button>}
+                      {onSell && <button className="pixel-btn" style={{ fontSize: 14, padding: "6px 14px", minHeight: 40 }}
+                        onClick={() => { setDiscarding(true); setTeaching(false); setForgetting(null); setDropSlot(null); }}>🪙 Sell · {codexSellPrice(move!)}</button>}
                     </>
                   )}
                 </div>
