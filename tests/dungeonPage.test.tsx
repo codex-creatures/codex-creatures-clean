@@ -144,7 +144,7 @@ async function playEncampment() {
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/); // (each creature's button starts with its level)
   note("party picked");
   await tap(/Enter the Encampment/); note("entered: the map");
-  await tap("Put the map away and step inside"); note("inside");
+  await tap(/^Enter$/); note("inside");
   for (let room = 1; room <= 9; room++) {
     const run = loadDungeon().run!;
     if (run.status !== "exploring") break;
@@ -192,7 +192,7 @@ async function playDefeat() {
   await tap("📜 Speed Scroll");
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/);
   await tap(/Enter the Encampment/);
-  await tap("Put the map away and step inside"); note("inside");
+  await tap(/^Enter$/); note("inside");
   for (let room = 1; room <= 6 && !find("⚔️ Fight!"); room++) {
     const way = document.querySelector("button[data-way]") as HTMLButtonElement | null;
     if (!way) break;
@@ -214,7 +214,7 @@ async function playWalk() {
   await tap(/Enter the Encampment/);
   await act(async () => { await new Promise((r) => setTimeout(r, 120)); }); await settle(); // ("Lighting the torches…")
   note("the scroll's first look");
-  await tap("Put the scroll away and begin"); note("walking");
+  await tap(/^Enter$/); note("walking");
   expect(document.querySelector("[data-stub='walk']")).not.toBeNull();
   // The 3D walk is handed everything the 2D one was: the run, the rooms, the windows over it, and each callback.
   for (const k of ["walk", "map", "here", "room", "busy", "been", "cleared", "scroll", "team", "hp", "onScrollClose", "onEnter", "onSpotted", "onObject", "onCage", "onHeal", "onKeep"]) expect(walkProps.last?.[k], k).toBeDefined();

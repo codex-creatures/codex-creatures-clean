@@ -36,7 +36,7 @@
   },
   {
    "step": "entered: the map",
-   "screen": "← Den🌀 The Encampment500Your map of the labyrinth?Remember the way to the lair: it's too dark to read inside.🚪⛺encampment??????the campentranceNUnknown room (north-east)StashTeamleadsCave GoblinEmptyEmptyTap a creature to make it lead, or drag it to swap places.🔥 Put the map away and step inside🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500Labyrinth Map?🚪⛺encampment??????the campentranceNUnknown room (north-east)StashEnterTeamleadsCave GoblinEmptyEmptyTap a creature to make it lead, or drag it to swap places.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
@@ -1772,7 +1772,7 @@
  "walk": [
   {
    "step": "the scroll's first look",
-   "screen": "← Den🌀 The Encampment500Your map of the labyrinth?Remember the way to the lair: it's too dark to read inside.📜 Put the scroll away and beginTeamleadsCave GoblinEmptyEmptyTap a creature to make it lead, or drag it to swap places.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "← Den🌀 The Encampment500Labyrinth Map?EnterTeamleadsCave GoblinEmptyEmptyTap a creature to make it lead, or drag it to swap places.🐾 Party 1/1🎒 Bag 0/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 500,
     "creatures": [
