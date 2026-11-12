@@ -27,7 +27,7 @@ const ACROSS = [0, 2, 4, 6]; // units the chest stands across from you
 const ZOOMS = [{ label: "Game zoom", across: 15 }, { label: "Close", across: 7 }];
 
 export default function ChestLab() {
-  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true, thing: "chest", turned: false, candle: true, rarity: "epic", lit: true });
+  const [view, setView] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true, thing: "chest", turned: false, candle: true, rarity: "epic", lit: true, life: true });
   const set = (p: Partial<ChestView>) => setView((v) => ({ ...v, ...p }));
   const btn = (on: boolean) => ({ minHeight: 44, padding: "0 12px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
   return (
@@ -67,6 +67,7 @@ export default function ChestLab() {
         <button style={btn(view.edges)} onClick={() => set({ edges: !view.edges })}>Lit edges {view.edges ? "on" : "off"}</button>
         <button style={btn(view.moving)} onClick={() => set({ moving: !view.moving })}>Torch {view.moving ? "moving" : "still"}</button>
         <button style={btn(view.old)} onClick={() => set({ old: !view.old })}>Old chest {view.old ? "shown" : "hidden"}</button>
+        <button style={btn(view.life)} onClick={() => set({ life: !view.life })}>Floor life {view.life ? "shown" : "hidden"}</button>
         {ZOOMS.map((z) => <button key={z.across} style={btn(view.across === z.across)} onClick={() => set({ across: z.across })}>{z.label}</button>)}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480, alignItems: "center" }}>

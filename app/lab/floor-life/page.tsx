@@ -16,7 +16,7 @@ export default function FloorLifeLab() {
   return (
     <main style={{ minHeight: "100vh", background: "#0a0a12", color: "#eee", padding: 16 }}>
       <h1 className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>Floor life: samples</h1>
-      <p style={{ fontSize: 13, opacity: 0.7 }}>PixelLab samples on the dungeon floor, at 1×, 3× and 6×.</p>
+      <p style={{ fontSize: 13, opacity: 0.7 }}>PixelLab samples on the dungeon floor, at 1×, 3× and 6×. In 3D, under the game's camera: /lab/chest (Floor life).</p>
       {SAMPLES.map((s) => (
         <section key={s.file} style={{ margin: "18px 0" }}>
           <h2 className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0", margin: "0 0 4px" }}>{s.name}</h2>

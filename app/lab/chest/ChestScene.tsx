@@ -46,7 +46,7 @@ const DRAFTS: Thing3D[] = ["strongbox", "broken", "gem", "campfire", "cage", "le
 const PATCH = 17;                // units of floor and wall across (the screen is 15 at game zoom)
 
 export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean;
-  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean };
+  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean };
 // table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
 // the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
 export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | DraftKind;
@@ -95,6 +95,50 @@ function StandIn({ boxes, mats, outline }: { boxes: Box[]; mats: Record<ChestMat
   const geos = useMemo(() => boxes.map(boxGeometry), [boxes]);
   useEffect(() => () => geos.forEach((g) => g.dispose()), [geos]);
   return <>{boxes.map((b, i) => <Solid key={i} geometry={geos[i]} material={mats[b.mat]} at={[b.x, b.y, b.z]} size={[b.w, b.h, b.d]} outline={outline} />)}</>;
+}
+
+// 🧪 Floor life (the user, 2026-11-13): PixelLab samples (public/sprites/walk/samples/floor-life) on
+// the floor and wall. A wet puddle, flat on the floor and shiny, so the torch glints off it as it moves;
+// a mouse hole at the foot of the wall; and a rat that runs along the wall and dives into the hole,
+// then comes out again. Samples only: the game doesn't draw them.
+const LIFE = "/sprites/walk/samples/floor-life";
+const WALL_FRONT = -2;          // the wall's face (its box stands at z -3, 2 deep)
+const HOLE_X = 3.5, RAT_LONG = 0.6;
+const RAT_RUN = 5, RAT_HIDE = 2; // seconds along the wall, then in the hole
+function FloorLife() {
+  const tex = useMemo(() => ({ puddle: loaded(`${LIFE}/puddle.png`), rat: loaded(`${LIFE}/rat.png`), hole: loaded(`${LIFE}/mouse-hole-cut.png`) }), []);
+  const rat = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    const g = rat.current;
+    if (!g) return;
+    // Along the wall from the left to the hole, then into it (out of sight), and round again.
+    const t = state.clock.elapsedTime % (RAT_RUN + RAT_HIDE), lane = WALL_FRONT + 0.45;
+    g.visible = t < RAT_RUN + 0.3;
+    if (t < RAT_RUN) { g.position.set(-6 + (HOLE_X + 6) * (t / RAT_RUN), 0.02, lane); g.rotation.y = Math.PI / 2; }
+    else { g.position.set(HOLE_X, 0.02, lane - ((t - RAT_RUN) / 0.3) * 0.45); g.rotation.y = Math.PI; }
+  });
+  const stretch = uprightStretch(PITCH);
+  return (
+    <>
+      {/* The puddle: 64 × 48 art, a unit to 48 px, laid flat; shiny, so the torch shows in it. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[3, 0.01, 1]}>
+        <planeGeometry args={[64 / 48, 48 / 48 / Math.sin(PITCH)]} />
+        <meshPhongMaterial map={tex.puddle} transparent alphaTest={0.1} specular="#fff2d0" shininess={80} />
+      </mesh>
+      {/* The mouse hole: its 24 px cut, half a unit, at the foot of the wall. */}
+      <mesh position={[HOLE_X, (0.5 * stretch) / 2, WALL_FRONT + 0.01]} scale={[0.5, 0.5 * stretch, 1]}>
+        <planeGeometry />
+        <meshLambertMaterial map={tex.hole} />
+      </mesh>
+      {/* The rat: its picture is from above (head down the picture), so it lies on the floor and turns the way it runs. */}
+      <group ref={rat}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+          <planeGeometry args={[RAT_LONG * (48 / 36), RAT_LONG]} />
+          <meshLambertMaterial map={tex.rat} transparent alphaTest={0.5} />
+        </mesh>
+      </group>
+    </>
+  );
 }
 
 function Scene({ view }: { view: ChestView }) {
@@ -180,6 +224,7 @@ function Scene({ view }: { view: ChestView }) {
           <meshLambertMaterial map={old[view.thing]![view.thing === "campfire" ? (view.lit ? 0 : 1) : view.open ? 1 : 0]} alphaTest={0.5} transparent />
         </mesh>
       )}
+      {view.life && <FloorLife />}
       <mesh position={[0, heroH / 2 - below, 1.5]} scale={[heroW, heroH, 1]}>
         <planeGeometry />
         <meshLambertMaterial map={hero} alphaTest={0.5} />
