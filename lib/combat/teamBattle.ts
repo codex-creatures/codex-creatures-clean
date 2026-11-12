@@ -6,7 +6,7 @@
 // The AI swaps when its matchup is clearly losing and a teammate would
 // clearly win it, even after taking the free hit.
 
-import { ENERGY_REGEN, calcDamage, chooseSkill, effectiveAgil, type Fighter } from "./engine";
+import { ENERGY_REGEN, OFF_RACE_USE, calcDamage, chooseSkill, effectiveAgil, type Fighter } from "./engine";
 import {
   activeOf, affordableSkills, attackTargets, currentAgility, isCrippled, other, swapTargets,
   CRIPPLE_AGILITY_LOSS,
@@ -101,7 +101,8 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
 // - Dash: worth their whole next hit when going first lets me knock them out before it lands.
 export function aiChooseSkill(me: Combatant, them: Combatant): Skill | undefined {
   // Utility moves (Mirage, Corpsify) are left to the thinking AI's lookahead.
-  const usable = affordableSkills(me);
+  // (A foe's off-race codex move: it doesn't always think of it.)
+  const usable = affordableSkills(me).filter((s) => s.name !== me.offRace || Math.random() < OFF_RACE_USE);
   if (usable.length === 0) return undefined;
   const attacks = usable.filter((s) => !s.self);
   const affordable = attacks.length > 0 ? attacks : usable;

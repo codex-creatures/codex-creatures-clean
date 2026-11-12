@@ -63,7 +63,10 @@ export type Fighter = {
   weakTo?: CombatClass; // a boss part's weak spot: moves of this style hit it WEAK_SPOT harder (the Hydra's heads)
   agilityUp?: number; // share added to its agility for the rest of the fight (Whiplash)
   surge?: number;     // share added to its magic damage for the rest of the fight (Voltage Surge)
+  offRace?: string;   // a foe's codex move of another race, which the AI doesn't always think to use (lib/dungeon/run.ts foeCodexes)
 };
+// How often an AI-played foe considers its offRace move on a turn.
+export const OFF_RACE_USE = 0.5;
 
 // Status effects that change damage live on the battle's creatures
 // (lib/combat/battle.ts Combatant.statuses); a plain Fighter has none.

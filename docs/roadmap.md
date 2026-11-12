@@ -46,8 +46,8 @@ interesting situations, real decisions, progression and surprises, not feel they
   2. ❓ Elite foes: a den or brute foe now and then with one modifier (e.g. venomous, armoured,
      swift, vampiric) built from existing effects, shown as a word or badge, with better loot.
      New proposal.
-  3. The planned combat effects (📌 below: vampirism, curse/blind, fear), as codexes for you and
-     as moves foes use.
+  3. ✅ Built 2026-11-13: the planned combat effects came with the 29 codex moves (decision 41:
+     life-steal, weakens, forced swaps, cripple, bleed, clouds), and foes carry codexes (decision 43).
   4. Goals after the tavern questline: bounties for the Hydra and the Abyss on the quest board
      (the Cyclops bounty's machinery), and Den upgrades as material and gold sinks (the fireplace,
      📌 below; its art waits for PixelLab).
@@ -63,7 +63,7 @@ interesting situations, real decisions, progression and surprises, not feel they
   unsolved (manual entry, no camera, app-store review). [design/scanning.md](design/scanning.md) §2
 - **More soul stones**, and **cosmetic variants** (1 in 500 real-creature drops, first scanner
   only, for trading). [design/creatures.md](design/creatures.md) §4
-- **More combat effects**: vampirism, curse/blind, fear (blocks swapping); more moves from
+- ✅ **More combat effects** (built 2026-11-13, decisions 41 and 43; the user adds three more Uncommon codexes, Beast, Divine and Geo): vampirism, curse/blind, fear (blocks swapping); more moves from
   encounters, drops or daily quests. More **ground effects** that interact (the user's direction,
   theorycraft only). [design/combat.md](design/combat.md) §6
 - **More schematics and furniture**, e.g. a Den fireplace for faster healing.

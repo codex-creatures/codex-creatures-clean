@@ -126,6 +126,17 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   fourth slot holds its second style's heavy move. (Until 2026-11-12 foes drew more of their race
   kits as they levelled; the kits are retired, so foes no longer change with level beyond that.)
   🧪 The level is Claude's draft. A creature Klutz catches keeps the moves it fought with.
+- ✅ **Foes' codex moves** (the user, 2026-11-13, decision 43; `foeCodexes`, `FOE_CODEX` in
+  lib/dungeon/run.ts): from the Labyrinth on, every foe carries a codex move of its own race in its
+  fourth slot, if it can learn one at the dungeon's rarity (the Labyrinth up to Uncommon, the Deep
+  Labyrinth up to Rare, the Abyss up to Epic; rarer ones rarer, by the item weights). Some also carry
+  one of another race, in place of their first-strike move (🧪 a third, half, two thirds), which the
+  AI thinks of only half the time (`OFF_RACE_USE`) so foes don't play too sharply. Never Healing
+  Blessing or Blood Sacrifice; at most one Choking Smog a room. None in the Encampment. Foes play
+  their race move where it lands well and a core move where it's resisted, so you can read them
+  (their moves aren't shown). Picks are seeded by the foe's own rolls. ⚠️ Divine and Geo have no
+  codex at Common or Uncommon yet, so their Labyrinth foes carry none of their own race (the user
+  adds three Uncommon moves, Beast, Divine and Geo, later; the Beast cripple fills Beast's gap for now).
 - 🧪 Balance in general: the user tunes by playing, and fights against the AI (the balance lab, /simulator and the sim scripts went 2026-11-04). Their
   goals: rarity raises the ceiling but a Legendary must not always win; well-fitted, well-rolled
   gear should beat raw rarity within a band; good play should matter more than it does now.

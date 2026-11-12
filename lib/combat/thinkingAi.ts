@@ -18,6 +18,7 @@ import {
   type BattleAction, type BattleState, type SideKey,
 } from "./battle";
 import { aiChooseAction, aiChooseReplacement } from "./teamBattle";
+import { OFF_RACE_USE } from "./engine";
 
 export type AiLevel = "easy" | "normal" | "hard";
 
@@ -42,7 +43,10 @@ export function chooseAiReplacement(state: BattleState, key: SideKey, level: AiL
 // ── Lookahead ─────────────────────────────────────────────────────
 function candidates(state: BattleState, key: SideKey): BattleAction[] {
   const side = state.sides[key];
-  const moves = affordableSkills(activeOf(side));
+  // (A foe's off-race codex move: it doesn't always think of it; if it's all it can afford, it does.)
+  const me = activeOf(side);
+  const all = affordableSkills(me), others = all.filter((s) => s.name !== me.offRace);
+  const moves = others.length && all.length > others.length && Math.random() >= OFF_RACE_USE ? others : all;
   // Two enemies on the field: every move against each of them.
   const targets = attackTargets(state, key);
   const acts: BattleAction[] = targets.length > 1

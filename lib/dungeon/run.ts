@@ -23,7 +23,9 @@ import type { ItemKey } from "../items/ceilings";
 import type { ArmorKey, ArmorSlot } from "../items/armor";
 import { ITEM_META } from "../items/metadata";
 import { ARMOR_META, wornArmor } from "../items/armor";
-import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, isRetiredMove, type CreatureProficiency, type CreatureTemplate } from "../creatures/creatureData";
+import { CREATURES_BY_RARITY, CREATURE_BY_ID, MOVE_BY_NAME, MOVE_SLOTS, RACE_MOVES, canLearnFromCodex, isRetiredMove, type CreatureProficiency, type CreatureTemplate, type Skill } from "../creatures/creatureData";
+import { raceOfMove } from "../combat/raceChart";
+import { RARITY_WEIGHTS } from "../items/budgets";
 import { coreMove } from "../creatures/raceKitsV2";
 import { SPECIES_RACES, type RaceV2 } from "../creatures/racesV2";
 import { rollCreature } from "../creatures/creatureRoll";
@@ -41,7 +43,7 @@ import { ITEM_KEYS } from "../items/ceilings";
 import { ARMOR_KEYS, ARMOR_SLOTS, ARMOR_V2 } from "../items/armor";
 import { rollArmorPiece } from "../items/rollArmorStats";
 import { pickRarity, pickCreatureId } from "../items/gameHelpers";
-import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, randomCodexOfRarity, retiredCodexMove, RACE_CODEX_MOVES } from "../drops";
+import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCodexMove, randomLearnableMove, randomCodexOfRarity, retiredCodexMove, RACE_CODEX_MOVES, codexRarityOf } from "../drops";
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
 import { unsupportedRun } from "../world/version";
@@ -750,7 +752,8 @@ export function lightenGear(e: Enemy, depth: number, rng: Rng = Math.random): En
 // hpMult: its HP is multiplied (an encampment's potion-drunk foes).
 // soulStone: rolled like anyone's (lib/creatures/soulStones.ts); missing = none (and runs saved before enemies had them).
 // gentle: its hits never knock anyone out (the guided first fight's thief).
-export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey; gentle?: boolean; races?: RaceV2[] /* in place of its species' (the first quest's thief) */ };
+// offRace: a codex move of another race it carries, which it doesn't always think to use (foeCodexes).
+export type Enemy = { creatureId: string; proficiency: CreatureProficiency; moves: string[]; gear: GearPiece[]; level?: number; hpMult?: number; soulStone?: SoulStoneKey; gentle?: boolean; races?: RaceV2[] /* in place of its species' (the first quest's thief) */; offRace?: string };
 
 // Enemies start with their core moves, as yours do (light, heavy, first:
 // the user, 2026-11-12). From ENEMY_MOVE_LEVELS.heavy, a hybrid's empty fourth
@@ -825,7 +828,7 @@ export function enemyFighter(e: Enemy): Fighter {
   const w = e.gear.find((p) => p.slot === "weapon");
   const a = e.gear.find((p) => p.slot === "armor");
   const built = buildFighter(t, w?.stats, a?.stats, e.moves, e.proficiency, undefined, w?.key as ItemKey | undefined, e.level ?? REF_LEVEL);
-  const f = { ...built, ...(e.soulStone ? { soulStone: e.soulStone } : {}), ...(e.gentle ? { gentle: true } : {}), ...(e.races ? { races: e.races } : {}) };
+  const f = { ...built, ...(e.soulStone ? { soulStone: e.soulStone } : {}), ...(e.gentle ? { gentle: true } : {}), ...(e.races ? { races: e.races } : {}), ...(e.offRace ? { offRace: e.offRace } : {}) };
   if (!e.hpMult) return f;
   const maxHp = Math.round(f.maxHp * e.hpMult);
   return { ...f, maxHp, hp: maxHp, hpMult: e.hpMult };
@@ -911,7 +914,73 @@ export function rollEnemyDrops(enemies: Enemy[], rng: Rng = Math.random) {
 export function makeRoom(kind: RoomKind, rng: Rng = Math.random, depth = Infinity, dungeon: DungeonId = 1, backpack = false): Room {
   const room = rollRoom(kind, rng, depth, dungeon, backpack);
   if (room.enemies) rollEnemyDrops(room.enemies, rng);
+  if (room.enemies) foeCodexes(room.enemies, dungeon);
   return room;
+}
+
+// ── Foes' codex moves (the user, 2026-11-13) ─────────────────────────
+// From the Labyrinth on, every foe carries a codex move of its own race (in
+// its fourth slot), up to FOE_CODEX's rarity for the dungeon; rarer ones
+// are rarer (RARITY_WEIGHTS). Some also carry one of another race in place
+// of their first-strike move (offRace), which they don't always think to use
+// (OFF_RACE_USE), so they don't play too sharply. A species with no codex of
+// its own race at that rarity carries none of its own. Healing Blessing and
+// Blood Sacrifice are never on foes; Choking Smog, at most one a room.
+// The picks are seeded by the foe's own rolls, so they don't shift the run's
+// other rolls (and the same room always rolls the same).
+export const FOE_CODEX: Record<DungeonId, { upTo: Rarity; offRace: number } | null> = {
+  0: null,                                 // the Encampment: none
+  1: { upTo: "uncommon", offRace: 1 / 3 }, // the Labyrinth
+  2: { upTo: "rare", offRace: 1 / 2 },     // the Deep Labyrinth
+  3: { upTo: "epic", offRace: 2 / 3 },     // the Abyss
+};
+export const NOT_ON_FOES = ["Healing Blessing", "Blood Sacrifice"];
+export const ONE_A_ROOM = ["Choking Smog"];
+const CODEX_RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic"];
+const FOE_CODEXES = (): Skill[] => [...RACE_CODEX_MOVES, ...LEARNABLE_MOVES].filter((m) => !NOT_ON_FOES.includes(m.name));
+// A seed from what was rolled for it (its species, level and %s; not its gear, which is rolled unseeded): the same foe, the same picks.
+function foeSeed(e: Enemy): number {
+  const text = JSON.stringify([e.creatureId, e.level, e.proficiency]);
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+function seededRng(seed: number): Rng {
+  let s = seed % 2147483647 || 1;
+  return () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
+}
+function weightedMove(list: Skill[], rng: Rng): Skill | undefined {
+  const total = list.reduce((n, m) => n + RARITY_WEIGHTS[codexRarityOf(m.name)], 0);
+  let roll = rng() * total;
+  for (const m of list) if ((roll -= RARITY_WEIGHTS[codexRarityOf(m.name)]) < 0) return m;
+  return list[list.length - 1];
+}
+export function foeCodexes(enemies: Enemy[], dungeon: DungeonId) {
+  const rule = FOE_CODEX[dungeon];
+  if (!rule) return;
+  const cap = CODEX_RARITY_ORDER.indexOf(rule.upTo);
+  const taken: string[] = [];
+  for (const e of enemies) {
+    const t = CREATURE_BY_ID[e.creatureId];
+    const races = e.races ?? SPECIES_RACES[e.creatureId] ?? [];
+    if (!t || !races.length) continue; // (bosses, the thief)
+    const rng = seededRng(foeSeed(e));
+    const can = FOE_CODEXES().filter((m) => CODEX_RARITY_ORDER.indexOf(codexRarityOf(m.name)) <= cap && canLearnFromCodex(t, m.name)
+      && !e.moves.includes(m.name) && !(ONE_A_ROOM.includes(m.name) && taken.includes(m.name)));
+    const ownRace = (m: Skill) => { const r = raceOfMove(m); return !!r && races.includes(r); };
+    const own = weightedMove(can.filter(ownRace), rng);
+    const off = rng() < rule.offRace ? weightedMove(can.filter((m) => !ownRace(m) && m !== own), rng) : undefined;
+    const moves = [...e.moves];
+    if (own) moves.length >= MOVE_SLOTS ? (moves[MOVE_SLOTS - 1] = own.name) : moves.push(own.name);
+    if (off) {
+      // In place of its first-strike move (never its light one: it must keep a move it can always afford).
+      const quick = moves.findIndex((n) => MOVE_BY_NAME[n]?.effect?.kind === "quick");
+      if (quick >= 0) moves[quick] = off.name; else if (moves.length < MOVE_SLOTS) moves.push(off.name);
+      if (moves.includes(off.name)) e.offRace = off.name;
+    }
+    e.moves = moves;
+    taken.push(...moves);
+  }
 }
 
 function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, backpack: boolean): Room {
