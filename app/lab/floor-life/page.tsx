@@ -5,7 +5,7 @@
 
 const DIR = "/sprites/walk/samples/floor-life";
 const SAMPLES = [
-  { file: "puddle.png", name: "Wet puddle", note: "On the floor. The torch light on it would be drawn in code, so it shines when you walk near." },
+  { file: "puddle.png", name: "Wet puddle", note: "A sewer puddle on the floor. In 3D (/lab/chest) the torch glints on its water and it ripples when stepped in." },
   { file: "rat.png", name: "Rat", note: "Scurries along the walls, not fightable. A still for now: its running animation comes once the look's approved." },
   { file: "mouse-hole.png", name: "Mouse hole", note: "At the foot of a wall: rats dive into it. (Only the hole and its stones would be used, not the whole wall tile.)" },
   { file: "gold-key.png", name: "Gold Key", note: "Its icon in your bag (the gold coin stands in for it now)." },

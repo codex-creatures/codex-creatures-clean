@@ -46,7 +46,7 @@ const DRAFTS: Thing3D[] = ["strongbox", "broken", "gem", "campfire", "cage", "le
 const PATCH = 17;                // units of floor and wall across (the screen is 15 at game zoom)
 
 export type ChestView = { open: boolean; across: number; width: number; moving: boolean; old: boolean; art: boolean; outline: boolean; edges: boolean;
-  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean };
+  at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean; splash: number };
 // table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
 // the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
 export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | DraftKind;
@@ -105,9 +105,71 @@ const LIFE = "/sprites/walk/samples/floor-life";
 const WALL_FRONT = -2;          // the wall's face (its box stands at z -3, 2 deep)
 const HOLE_X = 3.5, RAT_LONG = 0.6;
 const RAT_RUN = 5, RAT_HIDE = 2; // seconds along the wall, then in the hole
-function FloorLife() {
+// The puddle's reflection, drawn by hand (the game lights nothing with Three's lights, so a shiny
+// material shows nothing there): a soft glint of the light's colour where a mirror on the floor would
+// show it (the light's spot, nearer you by its height ÷ tan(pitch)), shimmering a little, and a faint
+// sheen as it comes near. Only on the water: pixels bluer than they're red or green.
+const GLINT = { radius: 0.32, strength: 1.1, sheen: 0.18, sheenReach: 2 };
+// Ripples (the user, 2026-11-13: when you walk in it): three rings spreading from where you stepped,
+// RIPPLE.speed u a second, fading out over RIPPLE.life seconds, lighter on the water (and bending the glint).
+// In the lab a step is the button (at the middle) or every RIPPLE.every seconds a small one somewhere.
+const RIPPLE = { speed: 0.55, life: 1.6, width: 0.05, rings: 3, gap: 0.12, light: 0.35, every: 3.5 };
+const GLINT_VERT = `varying vec2 vUv; varying vec3 vWorld;
+void main() { vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
+const GLINT_FRAG = `uniform sampler2D map; uniform vec3 uLight; uniform vec3 uColour; uniform float uTime; uniform float uTan;
+uniform float uRadius; uniform float uStrength; uniform float uSheen; uniform float uReach;
+uniform vec3 uStep; uniform float uSpeed; uniform float uLife; uniform float uWidth; uniform float uGap; uniform float uLit;
+varying vec2 vUv; varying vec3 vWorld;
+void main() {
+  vec4 c = texture2D(map, vUv);
+  float water = smoothstep(0.02, 0.09, c.b - max(c.r, c.g)) * step(0.5, c.a);
+  // Rings from the last step (uStep: x, z, when): each a thin band moving out, fading as it goes.
+  float age = uTime - uStep.z, rings = 0.0;
+  if (age >= 0.0 && age < uLife) {
+    float from = distance(vWorld.xz, uStep.xy);
+    for (int i = 0; i < ${RIPPLE.rings}; i++) {
+      float r = age * uSpeed - float(i) * uGap;
+      if (r > 0.0) rings += exp(-pow((from - r) / uWidth, 2.0)) * (1.0 - age / uLife);
+    }
+  }
+  vec2 mirror = vec2(uLight.x, uLight.z + uLight.y / uTan);
+  float d = distance(vWorld.xz, mirror) - rings * 0.06;
+  float shimmer = 0.75 + 0.25 * sin(vWorld.x * 23.0 + uTime * 2.7) * sin(vWorld.z * 19.0 - uTime * 2.1);
+  float glint = exp(-d * d / (uRadius * uRadius)) * uStrength * shimmer;
+  float near = distance(vWorld.xz, uLight.xz);
+  float sheen = uSheen * exp(-near * near / (uReach * uReach));
+  gl_FragColor = vec4(uColour * (glint + sheen + rings * uLit) * water, 1.0);
+}`;
+function PuddleGlint({ map, light, size, at, splash }: { map: THREE.Texture; light: React.RefObject<THREE.PointLight | null>; size: [number, number]; at: [number, number, number]; splash: number }) {
+  const mat = useMemo(() => new THREE.ShaderMaterial({
+    vertexShader: GLINT_VERT, fragmentShader: GLINT_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { map: { value: map }, uLight: { value: new THREE.Vector3() }, uColour: { value: new THREE.Color("#ffc68a") }, uTime: { value: 0 },
+      uTan: { value: Math.tan(PITCH) }, uRadius: { value: GLINT.radius }, uStrength: { value: GLINT.strength }, uSheen: { value: GLINT.sheen }, uReach: { value: GLINT.sheenReach },
+      uStep: { value: new THREE.Vector3(at[0], at[2], -99) }, uSpeed: { value: RIPPLE.speed }, uLife: { value: RIPPLE.life },
+      uWidth: { value: RIPPLE.width }, uGap: { value: RIPPLE.gap }, uLit: { value: RIPPLE.light } },
+  }), [map, at]);
+  // A step: the button's (at the middle), or now and then a small one somewhere on the water.
+  // (Its uniforms change each frame through a ref: React's rules keep the memo itself unchanged.)
+  const stepped = useRef(splash), last = useRef(0), live = useRef(mat);
+  useEffect(() => { live.current = mat; }, [mat]);
+  useFrame((state) => {
+    const u = live.current.uniforms, now = state.clock.elapsedTime, step = u.uStep.value as THREE.Vector3;
+    if (light.current) u.uLight.value.copy(light.current.position);
+    u.uTime.value = now;
+    if (stepped.current !== splash) { stepped.current = splash; step.set(at[0], at[2], now); last.current = now; }
+    else if (now - last.current > RIPPLE.every) { step.set(at[0] + (Math.random() - 0.5) * size[0] * 0.5, at[2] + (Math.random() - 0.5) * size[1] * 0.4, now); last.current = now; }
+  });
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[at[0], at[1] + 0.005, at[2]]} material={mat}>
+      <planeGeometry args={size} />
+    </mesh>
+  );
+}
+
+function FloorLife({ light, splash }: { light: React.RefObject<THREE.PointLight | null>; splash: number }) {
   const tex = useMemo(() => ({ puddle: loaded(`${LIFE}/puddle.png`), rat: loaded(`${LIFE}/rat.png`), hole: loaded(`${LIFE}/mouse-hole-cut.png`) }), []);
   const rat = useRef<THREE.Group>(null);
+  const puddleSize = useMemo((): [number, number] => [64 / 48, 48 / 48 / Math.sin(PITCH)], []), puddleAt = useMemo((): [number, number, number] => [3, 0.01, 1], []);
   useFrame((state) => {
     const g = rat.current;
     if (!g) return;
@@ -120,11 +182,12 @@ function FloorLife() {
   const stretch = uprightStretch(PITCH);
   return (
     <>
-      {/* The puddle: 64 × 48 art, a unit to 48 px, laid flat; shiny, so the torch shows in it. */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[3, 0.01, 1]}>
-        <planeGeometry args={[64 / 48, 48 / 48 / Math.sin(PITCH)]} />
-        <meshPhongMaterial map={tex.puddle} transparent alphaTest={0.1} specular="#fff2d0" shininess={80} />
+      {/* The puddle: 64 × 48 art, a unit to 48 px, laid flat, and the light's glint on its water. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={puddleAt}>
+        <planeGeometry args={puddleSize} />
+        <meshLambertMaterial map={tex.puddle} transparent alphaTest={0.1} />
       </mesh>
+      <PuddleGlint map={tex.puddle} light={light} size={puddleSize} at={puddleAt} splash={splash} />
       {/* The mouse hole: its 24 px cut, half a unit, at the foot of the wall. */}
       <mesh position={[HOLE_X, (0.5 * stretch) / 2, WALL_FRONT + 0.01]} scale={[0.5, 0.5 * stretch, 1]}>
         <planeGeometry />
@@ -224,7 +287,7 @@ function Scene({ view }: { view: ChestView }) {
           <meshLambertMaterial map={old[view.thing]![view.thing === "campfire" ? (view.lit ? 0 : 1) : view.open ? 1 : 0]} alphaTest={0.5} transparent />
         </mesh>
       )}
-      {view.life && <FloorLife />}
+      {view.life && <FloorLife light={torch} splash={view.splash} />}
       <mesh position={[0, heroH / 2 - below, 1.5]} scale={[heroW, heroH, 1]}>
         <planeGeometry />
         <meshLambertMaterial map={hero} alphaTest={0.5} />
