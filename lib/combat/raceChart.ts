@@ -44,10 +44,11 @@ export type MoveRaceMode = "own" | "drafted";
 
 type Side = { races?: RaceV2[] };
 
-// A move's race: the draft race of an older move (MOVE_RACES), or the race a
-// codex move lands as (asRace); none for the core moves (neutral since
-// 2026-11-12), the bosses' moves and Klutz's.
-export const raceOfMove = (skill: { name: string; asRace?: RaceV2 }): RaceV2 | undefined => MOVE_RACES[skill.name] ?? skill.asRace;
+// A move's race: the draft race of an older move (MOVE_RACES), the race a
+// codex move lands as (asRace), or its own (race: the special moves, e.g.
+// Dark Seal, Impale; they landed neutral until 2026-11-13); none for the core
+// moves (neutral since 2026-11-12), the bosses' moves and Klutz's.
+export const raceOfMove = (skill: { name: string; asRace?: RaceV2; race?: RaceV2 }): RaceV2 | undefined => MOVE_RACES[skill.name] ?? skill.asRace ?? skill.race;
 
 // The move's race in this matchup, or none.
 export function moveRace(skill: Skill, attacker: Side, defender: Side, mode: MoveRaceMode): RaceV2 | undefined {

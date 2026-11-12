@@ -7,6 +7,7 @@ import { CODEX_MOVES_2026 } from "../lib/creatures/codexMoves";
 import { codexesOfRarity, codexRarityOf } from "../lib/drops";
 import { wipeReusedNames } from "../lib/creatures/instance";
 import { HYDRA } from "../lib/combat/bossAi";
+import { raceOfMove, raceMultiplier, RACE_EFFECT, MATCH_BONUS } from "../lib/combat/raceChart";
 
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20, magic: 20 }, { mDef: 5, rDef: 5, magDef: 5 }, moves);
 const big = <T extends { maxHp: number; hp: number }>(f: T) => ({ ...f, maxHp: 999, hp: 999 });
@@ -30,6 +31,11 @@ describe("the 2026-11 codex moves: who, what rarity, where they come from", () =
     // By race and look, not race-locked: the Deep Angler (Underkin) learns Cleansing Water (Geo).
     expect(canLearnFromCodex(CREATURE_BY_ID.deep_angler, "Cleansing Water")).toBe(true);
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Cleansing Water")).toBe(false);
+  });
+  it("the older special moves land as their own race (2026-11-13; they landed neutral before)", () => {
+    expect(["Dark Seal", "Impale", "Pin Down", "Blood Sacrifice"].map((n) => raceOfMove(MOVE_BY_NAME[n]))).toEqual(["undead", "underkin", "humanoid", "undead"]);
+    // Underkin beats Toxic: Impale is effective on a Toxic creature, and an Underkin using it gets its own-race bonus.
+    expect(raceMultiplier(MOVE_BY_NAME.Impale, { races: ["underkin"] }, { races: ["toxic"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
   });
   it("Smite and Ambush are the new moves now; an old one in a save is wiped once", () => {
     expect(isRetiredMove("Smite")).toBe(false);

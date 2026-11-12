@@ -53,7 +53,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     Hollow Matriarch; Leafblade Scout, Aurelius and Sylvaran are already Humanoid).
   - Erupt (Geo; also Swamp Witch, Mr. Shadows, Ironhide): magic, 25 damage, 70 energy, a 25%
     chance to cripple for 3–5 rounds.
-- ✅ **Special moves** (the user's, 2026-10-27; `SPECIAL_MOVES` in creatureData.ts). Each has its
+- ✅ **Special moves** (the user's, 2026-10-27; `SPECIAL_MOVES` in creatureData.ts). Since 2026-11-13 each
+  lands as its own race (`raceOfMove` reads `race`; before, they landed neutral). Each has its
   own codex rarity and a list of the species that can learn it (`learners`; not race-locked:
   the list is the user's pick). Their codexes come from librarians, chests, library rooms and the
   Cyclops (with the race codexes), and from scans at their rarity (Common / Uncommon / Rare pools;
