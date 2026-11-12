@@ -114,6 +114,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   want moves spelling out what they're strong against; the race chart is for that). A codex of a
   retired move (in a save, a run or a librarian's offer) becomes a codex of the same rarity
   (`retiredCodexMove`, seeded by its id: the same one every time).
+- ✅ **A codex at a glance** (the user, 2026-11-13; components/CodexMove.tsx): its tablet, then three
+  fixed lines: style and race; power (or "No damage"), energy and cooldown; its ability in a word or two
+  (`abilityOf`, lib/creatures/moveAbility.ts: Venom, Bleed, Poison cloud…). Its "?" opens the full move
+  card (MoveCard: "Power", not "Damage") and who can learn it. Shown on the bookcase, in the creature
+  window, the loot window and at the librarian (whose own "?" it replaced). ⚠️ The bookcase still doesn't
+  show who can read a codex before you tap Teach (the snapshot's "?" does).
 - ✅ **Consumables from scans** (decided 2026-10-19) roll Common : Uncommon : Rare at 40 : 30 : 20. Common is a Common
   codex or a Lesser Potion, half each (`BASIC_CODEX_SHARE`). Uncommon is a learnable codex or an
   Uncommon special. Rare is a Rare codex or a Healing Potion, half each (`STRONG_CODEX_SHARE`). The

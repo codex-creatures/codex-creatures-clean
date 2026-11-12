@@ -52,7 +52,7 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
         {m.self ? pill("Utility", "#c7b8ff") : <>{pill(`${style.icon} ${style.name}`, style.color)}{pill(<><Glyph icon={dtype.icon} art={dtype.art} /> {dtype.name}</>, dtype.color)}</>}
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-        {!m.self && <span style={{ fontSize: 13, color: MUTED }}>Damage <span style={{ ...NUM, fontSize: 17, color: "#ff9f7a" }}>{m.damage}</span></span>}
+        {!m.self && <span style={{ fontSize: 13, color: MUTED }}>Power <span style={{ ...NUM, fontSize: 17, color: "#ff9f7a" }}>{m.damage}</span></span>}
         <span style={{ fontSize: 13, color: MUTED }}>Energy <span style={{ ...NUM, fontSize: 17, color: "#7fc4ff" }}>{m.energyCost}</span></span>
         {m.cooldown && <span style={{ fontSize: 13, color: MUTED }}>Cooldown <span style={{ ...NUM, fontSize: 17 }}>{m.cooldown}</span></span>}
       </div>

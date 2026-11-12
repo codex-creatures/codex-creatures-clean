@@ -2,11 +2,12 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, activeOf, poisonWith, CRIPPLE, CRIPPLE_ROUNDS, CRIPPLE_ROUNDS_MAX, type BattleAction, type Combatant } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
-import { CREATURE_BY_ID, CREATURE_TEMPLATES, MOVE_BY_NAME, SPECIAL_MOVES, canLearnFromCodex, isRetiredMove, REUSED_NAMES } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID, CREATURE_TEMPLATES, MOVE_BY_NAME, SPECIAL_MOVES, RACE_MOVES, LEARNABLE_MOVES, canLearnFromCodex, isRetiredMove, REUSED_NAMES } from "../lib/creatures/creatureData";
 import { CODEX_MOVES_2026 } from "../lib/creatures/codexMoves";
 import { codexesOfRarity, codexRarityOf } from "../lib/drops";
 import { wipeReusedNames } from "../lib/creatures/instance";
 import { HYDRA } from "../lib/combat/bossAi";
+import { abilityOf } from "../lib/creatures/moveAbility";
 import { raceOfMove, raceMultiplier, RACE_EFFECT, MATCH_BONUS } from "../lib/combat/raceChart";
 
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20, magic: 20 }, { mDef: 5, rDef: 5, magDef: 5 }, moves);
@@ -31,6 +32,15 @@ describe("the 2026-11 codex moves: who, what rarity, where they come from", () =
     // By race and look, not race-locked: the Deep Angler (Underkin) learns Cleansing Water (Geo).
     expect(canLearnFromCodex(CREATURE_BY_ID.deep_angler, "Cleansing Water")).toBe(true);
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Cleansing Water")).toBe(false);
+  });
+  it("every codex move has an ability in a word or two for its snapshot (CodexMove)", () => {
+    for (const m of [...SPECIAL_MOVES, ...RACE_MOVES, ...LEARNABLE_MOVES]) {
+      const a = abilityOf(m);
+      expect(a, m.name).toBeTruthy();
+      expect(a!.length, m.name).toBeLessThanOrEqual(16);
+    }
+    expect(abilityOf(MOVE_BY_NAME["Rabid Bite"])).toBe("Venom");
+    expect(abilityOf(MOVE_BY_NAME["Haunting Scream"])).toBe("Scare off");
   });
   it("the older special moves land as their own race (2026-11-13; they landed neutral before)", () => {
     expect(["Dark Seal", "Impale", "Pin Down", "Blood Sacrifice"].map((n) => raceOfMove(MOVE_BY_NAME[n]))).toEqual(["undead", "underkin", "humanoid", "undead"]);

@@ -3,15 +3,13 @@
 // A librarian's codexes (the tavern's and the Labyrinth's), as an inventory to look through (like the
 // merchant's cart): each codex in a slot, in its rarity's colours, with its
 // price under it. Tap one to see it in the box on top (its move as a tablet,
-// what it does, who can read it) and Buy it from there; the "?" shows the
+// a snapshot of it and who can read it) and Buy it from there; the snapshot's "?" shows the
 // move in full. The box keeps its size whatever's picked, and empty slots
 // keep the shelf the same size, so nothing moves.
 
 import { useMemo, useState } from "react";
 import { Coin } from "./GoldCount";
 import CodexMove from "./CodexMove";
-import Help from "./Help";
-import { MoveCard } from "./MoveSlots";
 import PixelSprite from "./PixelSprite";
 import { ICON } from "./ContainerLoot";
 import { codexLearners, MOVE_BY_NAME } from "@/lib/creatures/creatureData";
@@ -49,10 +47,6 @@ export default function LibrarianShelf({ offers, bought = [], price, gold, full,
             <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
               <b className="pixel-font" title={`Codex: ${picked}`} style={{ flex: 1, minWidth: 0, fontSize: 15, color: RARITY_COLORS[rarity[picked]].text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{picked}</b>
               <span style={{ fontSize: 12, color: learners!.color, whiteSpace: "nowrap" }}>{learners!.text}</span>
-              <Help title={`Codex: ${picked}`} label={`What ${picked} does`}>
-                <MoveCard m={move} />
-                <p style={{ color: learners!.color }}>{learners!.text}</p>
-              </Help>
             </div>
             <CodexMove move={picked} />
             <button className="pixel-btn" disabled={!!why} onClick={() => onBuy(picked)} style={{ width: "100%", minHeight: 44 }}>
