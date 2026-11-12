@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, swapTargets, activeOf, isSealed } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
+import { aiChooseAction } from "../lib/combat/teamBattle";
+import { chooseAiAction } from "../lib/combat/thinkingAi";
 import {
   ALL_SKILLS, CREATURE_BY_ID, CREATURE_TEMPLATES, KLUTZ, MOVE_BY_NAME, SPECIAL_MOVES, canLearnFromCodex, defaultMoveNames,
 } from "../lib/creatures/creatureData";
@@ -60,6 +62,18 @@ describe("seals: the target can't swap out", () => {
     expect(swapTargets(s.sides.B)).toEqual([]);
     resolveRound(s, { A: attack("Strike"), B: attack("Strike") }); // round 4: free again
     expect(swapTargets(s.sides.B)).toEqual([1]);
+  });
+  it("a sealed creature's AI never tries to swap out, even when losing badly (that used to crash the fight)", () => {
+    const s = createBattle([big(fighter("dreadpox", ["Dark Seal", "Zap"]))],
+      [fighter("moss_wolf", ["Strike"]), big(fighter("rattlebones", ["Strike"]))]);
+    resolveRound(s, { A: attack("Dark Seal"), B: attack("Strike") });
+    activeOf(s.sides.B).hp = 1; // losing: it would swap if it could
+    expect(aiChooseAction(s, "B", { canSwap: true }).kind).toBe("attack");
+    // The thinking AI plays the sealed side in its look-ahead too, from either side.
+    for (let i = 0; i < 5; i++) {
+      expect(() => chooseAiAction(s, "A", "normal")).not.toThrow();
+      expect(chooseAiAction(s, "B", "normal").kind).toBe("attack");
+    }
   });
   it("Dark Seal has a 5-round cooldown", () => {
     const s = createBattle([big(fighter("dreadpox", ["Dark Seal", "Zap"]))], [big(fighter("moss_wolf", ["Strike"]))]);

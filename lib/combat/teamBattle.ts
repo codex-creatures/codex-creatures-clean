@@ -8,7 +8,7 @@
 
 import { ENERGY_REGEN, calcDamage, chooseSkill, effectiveAgil, type Fighter } from "./engine";
 import {
-  activeOf, affordableSkills, attackTargets, currentAgility, isCrippled, other,
+  activeOf, affordableSkills, attackTargets, currentAgility, isCrippled, other, swapTargets,
   CRIPPLE_AGILITY_LOSS,
   type BattleAction, type BattleSide, type BattleState, type Combatant, type SideKey,
 } from "./battle";
@@ -82,8 +82,9 @@ export function aiChooseAction(state: BattleState, key: SideKey, opts: AiOptions
   const them = targetIdx !== undefined ? foe.team[targetIdx] : activeOf(foe);
 
   // A creature that just came in stays at least one round (stops ping-ponging).
+  // A sealed one (Dark Seal, Pin Down, Impale) can't swap out at all.
   const justSwapped = s.lastSwapRound === state.round;
-  if (opts.canSwap && !justSwapped && matchupAdvantage(me, them) < (opts.swapWhenBelow ?? SWAP_WHEN_ADVANTAGE_BELOW)) {
+  if (opts.canSwap && !justSwapped && swapTargets(s).length > 0 && matchupAdvantage(me, them) < (opts.swapWhenBelow ?? SWAP_WHEN_ADVANTAGE_BELOW)) {
     const best = bestReplacement(s, them, true);
     if (best && best.adv >= (opts.swapToAtLeast ?? SWAP_TO_ADVANTAGE_AT_LEAST)) return { kind: "swap", to: best.index };
   }

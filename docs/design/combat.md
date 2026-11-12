@@ -77,6 +77,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     can't swap out for 2 rounds, and 30% of the time a third. Thicket Archer, Aurelius, Skull
     Raven, Sylvaran, Hollow Matriarch, Rotgut Fly.
   - A sealed creature still gets replaced when it's knocked out: a seal only stops swaps.
+    The AI knows a sealed creature can't swap out (until 2026-11-12 the simple AI, and the
+    thinking AI's look-ahead, could try to, which crashed the fight).
   - **Brace** (Neutral, utility, Rare; the user, 2026-11-03): 50 energy, always goes first; the next
     attack that lands on it this round does 90% less (at least 1). Anyone, Klutz too. 🧪 Claude's
     reading: it lasts that round only, and covers one hit (a barrage's second target isn't it).
