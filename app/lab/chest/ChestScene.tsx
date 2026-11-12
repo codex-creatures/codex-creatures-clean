@@ -150,7 +150,7 @@ function PuddleGlint({ map, light, size, at, splash }: { map: THREE.Texture; lig
   }), [map, at]);
   // A step: the button's (at the middle), or now and then a small one somewhere on the water.
   // (Its uniforms change each frame through a ref: React's rules keep the memo itself unchanged.)
-  const stepped = useRef(splash), last = useRef(0), live = useRef(mat);
+  const stepped = useRef(splash), last = useRef(-RIPPLE.every), live = useRef(mat); // (the first one straight away)
   useEffect(() => { live.current = mat; }, [mat]);
   useFrame((state) => {
     const u = live.current.uniforms, now = state.clock.elapsedTime, step = u.uStep.value as THREE.Vector3;
