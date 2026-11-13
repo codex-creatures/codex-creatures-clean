@@ -163,7 +163,10 @@ describe("new runs are placed by phase 2b's rules (world version 3)", () => {
       for (let s = 100; rooms < 300; s++) {
         const run = newV3(made(d, s));
         rooms += Object.keys(run.walk!.layout.rooms).length;
-        bad.push(...problems(`dungeon ${d} seed ${s}`, run));
+        // (Rules before world version 11 can leave a guarded storehouse's loot spot with no way to it: a known
+        // limitation, fixed by v11 and pinned in "a guarded storehouse (world version 11)" below.)
+        const known = (q: string) => { const m = /no way to (r\d+):loot/.exec(q); const r = m ? walkRoom(run, m[1]) : undefined; return r?.kind === "storehouse" && !!r.guarded; };
+        bad.push(...problems(`dungeon ${d} seed ${s}`, run).filter((q) => !known(q)));
       }
     }
     expect(bad).toEqual([]);

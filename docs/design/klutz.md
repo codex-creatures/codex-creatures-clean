@@ -8,17 +8,37 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 - ✅ A clumsy goblin **helper, not a party creature.** He's easily bribed with gold into serving
   you, wanders the Den, and you tap him for /klutz. (lib/klutz.ts)
-- ✅ **Hunts** (until beaten, decided 2026-10-20): every 20–60 minutes (🧪 Claude's range) he meets a
-  creature (his level −2 to +1; ✅ what he catches comes home at Lv 5 at most, `CATCH_MAX_LEVEL`, the user, 2026-11-13) and fights it 1v1, and he keeps going until one beats him. He
-  doesn't heal between fights. Past 6 hours out, what he meets is a level tougher for every hour
-  past it (🧪). You can see his HP while he's away and **call him back** at any time (he comes home
-  with what he's won so far). A safety stop brings him home after 60 fights. The user's aim: send
-  him off at bedtime and wake up to creatures and gear. Sim (400 trips a level, gear at his rarity):
-  trips last about 2 h on average (2–4 fights, 1–3 wins; 90% are under 3–5 h), so the 6-hour
-  toughening rarely comes into it. **Open:** longer walks would make trips last overnight.
-  - **Each win:** the creature goes to the cage, and its weapon plus one armour piece to his crate.
-  - **Beaten:** he comes home with everything and heals in the pool (1 HP every 10 s) before he can
-    go out again.
+- ✅ **Expeditions (v2)** (the user, 2026-11-14, after the Klutz audit; built 2026-11-14, lib/klutz.ts). Sims in the
+  audit (claude.ai doc "Klutz audit"): a keen player's month gives about 7 Epic creatures and a first Legendary for
+  13% of players; a struggling player (no Cyclops kill) gets Rare creatures and Rare gear, no Epics.
+  - **Where:** a dungeon you've beaten the boss of (the Encampment from the start): `KLUTZ_DESTS`. Each costs half
+    your entry fee (`destCost`; the Encampment is free) and sets the best rarity (Encampment Rare, Cyclops Epic,
+    Hydra and Abyss Legendary; the Abyss rolls a rarity up 30% of the time), how many levels tougher its creatures
+    are (0 to +3) and how many strike first (10% to 40%: they use their style's first-strike move, so a glass cannon
+    takes chip damage). 🧪 Those numbers are Claude's.
+  - **Every 20 minutes** (`FIND_EVERY_MS`) he finds something: a creature 30%, a codex 10%, a material or potion 20%,
+    a weapon or armour piece 40% (`FIND_MIX`). Rarities at the usual split, capped by the dungeon, by his level
+    (`SCAN_UNLOCK`) and by your explorer level (`capRarity`). The old "never rarer than his piece" rule is gone.
+  - **Creatures:** he fights it (no healing on the way); beaten, it's caught at `CATCH_CHANCE` (Common 100%,
+    Uncommon 90%, Rare 70%, Epic 40%, Legendary 15%; 🧪), plus Trapping. Caught ones go to the cage (spares let go,
+    as before); a beaten one drops a piece of its gear 20% of the time (`GEAR_DROP_CHANCE`). Legendaries come home
+    as creatures.
+  - **Home** when his pack is full, when he's down to 10% HP (`HOME_AT`), or when something beats him: no penalty, he
+    keeps everything. Call him back any time. He can set off from 40% HP (`SEND_AT`; the pool still heals 1 HP every
+    10 s), not while his chest is full, and not without the gold. A safety stop after 100 finds (about 33 h).
+  - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (Lv 5, 1,000 gold, +4) and **Pack
+    Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at 500 rising to 4,000: `KLUTZ_PACK_PRICES`),
+    sewn on from his Skills tab.
+  - **His chest** (the crate) takes codexes, potions and gear; materials go straight to your tally. It holds 30
+    (`CHEST_START`), +10 an upgrade for 500 to 5,000 gold; full, he won't set off (a trip can overfill it).
+  - **Skills** (a point a level over 1, each up to 10): **Trapping** (+2% catch chance a level), **Armourer**,
+    **Scavenger**, **Scholar** (each +3% a level: an extra weapon or armour, material or potion, or codex in each
+    20-minute window). 🧪 The steps are Claude's. A re-spec hands them back with his % points.
+  - **Traits:** Bigger Pack (above); **Selective** (Lv 10: he leaves things below a rarity you pick); **cage filter**
+    (Lv 15: he only cages creatures of a rarity you pick or better).
+  - **Screens:** his page has three tabs under his card: Send (the dungeons as fixed rows, best rarity and cost, one
+    button that says why he can't go; while he's out, HP, pack and a log), Skills, and Chest (its fill and upgrade).
+  - Trips planned before v2 keep their own rules (fights with a find each) and still hand over what they held.
   - His gear is locked while he's away.
 - ✅ **The cage** holds 1. The **Iron Cage Schematic** (rare) is in a mini boss's chest 20% of the
   time until you have one (at home or in your bag) or have built it; with 10 metal bars it builds
@@ -31,18 +51,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   he should get something in place of his old counter bonus is open. His badge reads a grey
   "⚖️ Neutral", and he shows no race (the user, 2026-10-26).
 - ✅ **Codexes** (2026-10-23): Klutz reads codexes you own from his Equip window → Moves (not while
-  he's away). Any class's moves and the learnable ones, but **no race moves**, not even his own
-  race's. What he's learned is kept in `KlutzState.learned`.
+  he's away). Since v2 (the user, 2026-11-14) **any codex there is**, race and special moves included. What he's learned is kept in `KlutzState.learned`.
   - **Skill points** (decided 2026-10-20, replacing the even 9s): he's a **Rare**, his %s start at 0,
     and he earns 6 points a level over 1 (84 at Lv 15, about a Rare's total; `POINTS_PER_LEVEL`).
     In his stats window, tap a stat to add 1% (attacks on the top row beside the points left;
     defences and agility below), then Confirm or Cancel; the stat bars preview it. A re-spec gives
     every point back for 1000 gold. His weapon and the codexes you teach him still decide most of
     how he fights. He starts with Slash, Heavy Blow, Jab and Stone Throw. (A pre-V2 sim: history.md.)
-- ✅ **Finds:** 35% of walks (each fight's) bring home gear for a slot he wears. It's **never rarer than his own
-  piece** (the same rarity only 5%, rising slightly with his level).
-- ✅ **Levels:** a won hunt gives the KO's XP + 50, and every piece of gear he brings home gives 20
-  (a catch's weapon and armour, and a find; 2026-10-20, to make him level faster). A first catch
+- ✅ **Levels:** a catch gives the KO's XP + 50 and everything he brings home 20, all halved since v2 (`XP_SHARE`,
+  the user, 2026-11-14: "so you use more books"). A first catch
   reaches Lv 2. The crate shows a ❗ in the Den while it holds loot. Scrolls work on
   him, and the user wants that to feel worthwhile ("the closest thing to you").
 - ✅ **A new game starts at Klutz:** he dragged you in out of the Labyrinth and, because you were kind

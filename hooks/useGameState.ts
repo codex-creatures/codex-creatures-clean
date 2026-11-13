@@ -13,7 +13,8 @@ import { summonFromCards } from "@/lib/creatures/summon";
 import { findPrice } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
-import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, type KlutzState } from "@/lib/klutz";
+import type { Rarity } from "@/lib/items/budgets";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, destCost, spendSkill, canBuyPackTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type BossClears, type SendBlock } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
@@ -520,16 +521,57 @@ export function useGameState(initialTab: TabKey = "all") {
     return true;
   }
 
-  function sendKlutzOff() {
-    // What he's wearing decides what he might find.
-    const l = equipment[KLUTZ_DROP_ID];
-    const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
-    const worn = EQUIP_SLOTS.flatMap((slot) => {
-      const it = l?.[SLOT_FIELD[slot]] ? byId.get(l[SLOT_FIELD[slot]]!) : undefined;
-      return it ? [{ slot, rarity: it.rarity }] : [];
-    });
-    setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, worn));
+  // (v2) Which dungeons he can go to: the bosses you've beaten (lib/klutz.ts destOpen).
+  const klutzClears = (): BossClears => {
+    const m = loadDungeon().meta;
+    return { cyclops: m.clears ?? 0, hydra: m.deepClears ?? 0, abyss: m.abyssClears ?? 0 };
+  };
+  // Why he can't go there now (or null).
+  const klutzSendBlock = (dest: KlutzDest, now = Date.now()): SendBlock | null =>
+    sendBlock(klutz, klutzFighter.maxHp, crate.length, dest, klutzClears(), gold, now);
+  // Send him to a dungeon: its cost paid, the trip planned with your explorer level. Returns why not, or null.
+  function sendKlutzOff(dest: KlutzDest = 0): SendBlock | null {
+    const block = klutzSendBlock(dest);
+    if (block) return block;
+    if (destCost(dest) > 0 && !spendGold(destCost(dest))) return "gold";
+    setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, dest, clampLevel(player.level)));
     countDaily("klutz");
+    return null;
+  }
+  // His skills and traits (v2, his Skills tab).
+  const spendKlutzSkill = (s: SkillKey) => setKlutz((k) => spendSkill(k, s));
+  function buyKlutzPackTrait(): boolean {
+    if (!canBuyPackTrait(klutz) || !spendGold(PACK_TRAIT.cost)) return false;
+    setKlutz((k) => ({ ...k, traits: { ...k.traits, pack: true } }));
+    return true;
+  }
+  // Selective: leave things below this rarity (null: take everything). The cage filter: only cage creatures of this rarity or better.
+  const setKlutzSelective = (r: Rarity | null) => { if (selectiveOpen(klutz)) setKlutz((k) => ({ ...k, traits: { ...k.traits, selective: r } })); };
+  const setKlutzCageFilter = (r: Rarity | null) => { if (cageFilterOpen(klutz)) setKlutz((k) => ({ ...k, traits: { ...k.traits, cageFilter: r } })); };
+  // His chest: bigger for gold (CHEST_PRICES).
+  function upgradeKlutzChest(): boolean {
+    const price = chestUpgradePrice(klutz);
+    if (price === undefined || !spendGold(price)) return false;
+    setKlutz((k) => ({ ...k, chestUps: (k.chestUps ?? 0) + 1 }));
+    return true;
+  }
+  // A Pack Upgrade (a merchant's, or a chest's find) sewn onto his pack: +1 slot. From your Inventory or your bag.
+  const packUpgradesHeld = (): { id: string; inBag: boolean }[] => {
+    const lab = loadDungeon().meta;
+    const inBag = lab.bag.map(lootIdOf).flatMap((id) => (id && lab.loot?.[id]?.dropType === "item" && (lab.loot[id] as CreatureOrItemDrop).tool === "klutz_pack" ? [{ id, inBag: true }] : []));
+    return [...inventory.filter((d) => d.dropType === "item" && d.tool === "klutz_pack").map((d) => ({ id: d.id, inBag: false })), ...inBag];
+  };
+  function sewKlutzPack(): boolean {
+    const held = packUpgradesHeld()[0];
+    if (!held || packSize(klutz) >= PACK_MAX) return false;
+    if (held.inBag) {
+      const lab = loadDungeon();
+      const loot = { ...(lab.meta.loot ?? {}) };
+      delete loot[held.id];
+      saveDungeon({ ...lab, meta: { ...lab.meta, loot, bag: lab.meta.bag.filter((e) => lootIdOf(e) !== held.id) } });
+    } else setInventory((prev) => prev.filter((d) => d.id !== held.id));
+    setKlutz((k) => ({ ...k, packs: (k.packs ?? 0) + 1 }));
+    return true;
   }
 
   // Spend % points on him (from his stats window).
@@ -538,7 +580,8 @@ export function useGameState(initialTab: TabKey = "all") {
   }
   // A re-spec: all his points back, for RESPEC_COST gold. Returns whether it happened.
   function respecKlutzPoints(): boolean {
-    if (!klutz.points || Object.values(klutz.points).every((v) => !v) || !spendGold(RESPEC_COST)) return false;
+    const spent = Object.values(klutz.points ?? {}).some((v) => v) || Object.values(klutz.skills ?? {}).some((v) => v);
+    if (!spent || !spendGold(RESPEC_COST)) return false;
     setKlutz((k) => respecKlutz(k));
     return true;
   }
@@ -564,7 +607,8 @@ export function useGameState(initialTab: TabKey = "all") {
       const ex = k.expedition;
       if (ex && !ex.collected && Date.now() < ex.endsAt) {
         const by = ex.endsAt - Date.now() + 1;
-        return { ...k, expedition: { ...ex, startedAt: ex.startedAt - by, endsAt: ex.endsAt - by, encounters: ex.encounters.map((e) => ({ ...e, at: e.at - by })) } };
+        return { ...k, expedition: { ...ex, startedAt: ex.startedAt - by, endsAt: ex.endsAt - by, encounters: ex.encounters.map((e) => ({ ...e, at: e.at - by })),
+          ...(ex.finds ? { finds: ex.finds.map((x) => ({ ...x, at: x.at - by })) } : {}) } };
       }
       return { ...k, hp: undefined, hpAt: undefined };
     });
@@ -593,7 +637,12 @@ export function useGameState(initialTab: TabKey = "all") {
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);
       setCaged((prev) => [...prev, ...caught.slice(0, Math.max(0, size - prev.length))]);
-      setCrate((prev) => [...loot.filter((d) => !isCreatureDrop(d)), ...prev]); // his gear goes in his crate
+      // Materials join your tally; everything else goes in his chest (it may go over its size: lib/klutz.ts chestSize).
+      const isMaterial = (d: Drop) => d.dropType === "item" && !!d.material;
+      const more: Materials = {};
+      for (const d of loot) if (d.dropType === "item" && d.material) more[d.material] = (more[d.material] ?? 0) + (d.qty ?? 1);
+      if (Object.keys(more).length) setMaterials((m) => addMaterials(m, more));
+      setCrate((prev) => [...loot.filter((d) => !isCreatureDrop(d) && !isMaterial(d)), ...prev]);
     };
     check();
     const timer = window.setInterval(check, 5000);
@@ -810,9 +859,11 @@ export function useGameState(initialTab: TabKey = "all") {
   }
 
   // Klutz's crate: keep a piece (it joins your storage) or sell it.
-  const crateSellValue = (d: Drop) => (isSellableItem(d)
+  // (Gear for what the Inventory pays; a codex or potion from his chest for what the merchant would pay.)
+  const gearSellValue = (d: Drop) => (isSellableItem(d)
     ? computeSellGold({ drop: d as any, getStatCapForDrop: (drop: any, statKey: string) => getStatCapForDrop(drop, statKey) ?? 0 })
     : 0);
+  const crateSellValue = (d: Drop) => (d.dropType === "item" && (d.itemCategory === "weapon" || d.itemCategory === "armor") ? gearSellValue(d) : findPrice(d, gearSellValue));
   function keepFromCrate(ids: string[]) {
     const kept = crate.filter((d) => ids.includes(d.id));
     setCrate((prev) => prev.filter((d) => !ids.includes(d.id)));
@@ -1163,6 +1214,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, buyKlutzPackTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

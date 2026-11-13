@@ -30,7 +30,7 @@ describe("special moves: who can learn them", () => {
     for (const [move, ids] of Object.entries(LISTS)) {
       for (const id of ids) expect(CREATURE_BY_ID[id], id).toBeTruthy();
       for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, move), `${move} ${t.id}`).toBe(ids.includes(t.id));
-      expect(canLearnFromCodex(KLUTZ, move)).toBe(false);
+      expect(canLearnFromCodex(KLUTZ, move)).toBe(true); // (Klutz can learn any codex: the user, 2026-11-14)
     }
   });
   it("Meditate: anyone, Klutz too", () => {

@@ -21,14 +21,14 @@ import { type StoragePlan } from "@/lib/items/materials";
 import EncampmentPanel from "./EncampmentPanel";
 import WitchTable from "./WitchTable";
 
-export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite, onLectern }: {
+export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagSlots, stacks, onLook, onTreasure, onClub, clubEntry, onTakeBox, onTakeBoxHome, onChest, onDeck, onOpenSack, onBuyWares, plans, klutzPacks, onCage, onHeal, onBuy, onNext, onWitch, onWitchSit, onWitchLeave, bagLooks, bagOffers, onSell, onUseBag, onDynamite, onLectern }: {
   plans: StoragePlan[]; // storage schematics you have or built (the merchant won't offer them)
   onWitch: (g: Guess) => void; onWitchSit: () => void; onWitchLeave: () => void; onLook: () => void; onDynamite: () => void;
   onLectern?: () => void; // a walkable library's lectern (world version 9): find the librarian
   bagLooks: (SlotLook | null)[]; bagOffers: number[]; onSell: (bagIndex: number) => void; onUseBag: (bagIndex: number) => void;
   run: DungeonRun; room: Room; notes: string[]; byId: (id: string) => OwnedCreature | undefined; gold: number;
   onTreasure: (r: Room) => void; onClub: () => void; clubEntry?: BagEntry;
-  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyWares: (ws: Ware[]) => void; onCage: (i: number) => void; bagUsed: number; bagSlots: number; stacks: string[]; onHeal: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
+  onTakeBox: () => void; onTakeBoxHome: () => void; onChest: () => void; onDeck: () => void; onOpenSack: () => void; onBuyWares: (ws: Ware[]) => void; klutzPacks?: number; onCage: (i: number) => void; bagUsed: number; bagSlots: number; stacks: string[]; onHeal: (id: string) => void; onBuy: (move: string) => void; onNext: () => void;
 }) {
   const info = room.quest === "club" ? { name: "A dropped club", icon: "🏏" } : room.quest === "thief" ? { name: "The thief", icon: "💀" } : ROOM_INFO[room.kind];
   // What's in a sack or chest (a stash, or a beaten fight's loot): tap to take.
@@ -188,7 +188,7 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
           <p style={{ fontSize: 13, color: "#d8d4c8" }}>
             A cart piled with odds and ends, and a merchant who smiles too much. &ldquo;One of each, friend. Everything takes a slot in your bag — the timber stacks, mind.&rdquo;
           </p>
-          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots }, plans)} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
+          <MerchantCart key={run.path.length} wares={waresFor(room.wares ?? [], { bagSize: bagSlots }, plans, klutzPacks)} bought={room.bought} gold={gold} bagUsed={bagUsed} bagSlots={bagSlots} stacks={stacks} onBuy={onBuyWares} />
           <MerchantBag key={`bag${run.path.length}`} slots={bagSlots} looks={bagLooks} offers={bagOffers} onSell={onSell} onUse={onUseBag} />
           {next}
         </>

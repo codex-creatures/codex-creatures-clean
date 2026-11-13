@@ -1,8 +1,9 @@
 "use client";
 // app/crate/page.tsx
-// Klutz's crate, beside the cage: the weapons and armour he brings home from
-// his trips (what his catches were wearing, and anything he picks up on the
-// way). Keep a piece (it goes into your Inventory) or sell it for gold.
+// Klutz's crate (his chest), beside the cage: what he brings home from his
+// trips that isn't a creature or a material: codexes, potions, weapons and
+// armour. Keep a thing (it goes into your Inventory) or sell it for gold. It
+// holds chestSize (lib/klutz.ts): full, he won't set off (a trip can overfill it).
 
 import { Coin } from "@/components/GoldCount";
 import { useState } from "react";
@@ -13,6 +14,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import type { CreatureOrItemDrop } from "@/lib/types";
+import { chestSize } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f5c542";
@@ -34,8 +36,8 @@ export default function CratePage() {
     <DenFrame title="Klutz's Crate" icon="📦" gold={game.gold}>
       <div className="stone-panel">
         <p style={{ fontSize: 13, color: "#c8c4b8", lineHeight: 1.5, margin: 0 }}>
-          Whatever <Link href="/klutz" style={{ textDecoration: "underline" }}>Klutz</Link> drags home goes in here: the gear his catches were
-          wearing, and anything he picks up along the way. Keep what you want — it goes into your Inventory — and sell the rest.
+          What <Link href="/klutz" style={{ textDecoration: "underline" }}>Klutz</Link> drags home waits in here: codexes, potions, weapons and armour.
+          Keep what you want (it goes into your Inventory) and sell the rest. <b style={{ color: items.length >= chestSize(game.klutz) ? "#ff8a80" : GOLD }}>{items.length}/{chestSize(game.klutz)}</b>{items.length >= chestSize(game.klutz) ? ": full, so he won't set off." : ""}
         </p>
       </div>
 
@@ -65,7 +67,7 @@ export default function CratePage() {
                   <span style={{ flex: "1 1 150px", minWidth: 0 }}>
                     <b style={{ color: rc.text }}>{it.name}</b>
                     <span style={{ display: "block", fontSize: 12, color: MUTED, textTransform: "capitalize" }}>
-                      {it.rarity} {it.itemCategory === "weapon" ? "weapon" : it.armorSlot ? ARMOR_SLOT_INFO[it.armorSlot].name.toLowerCase() : "item"}
+                      {it.rarity} {it.itemCategory === "weapon" ? "weapon" : it.armorSlot ? ARMOR_SLOT_INFO[it.armorSlot].name.toLowerCase() : it.codexMove ? "codex" : it.potion ? "potion" : "item"}
                     </span>
                     <span style={{ display: "block", fontSize: 12, color: "#c9b48a" }}>{statLine(it)}</span>
                   </span>

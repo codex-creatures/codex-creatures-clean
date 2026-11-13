@@ -2,9 +2,13 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, setCombatRules, LIVE_RULES, TRIANGLE_RULES, type Fighter } from "../lib/combat/engine";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, rollFind, WALK_MIN_MS, WALK_MAX_MS, HEAL_MS_PER_HP, FIND_CHANCE, FIND_XP, SAME_RARITY_CHANCE, findRarity, gearCount, recallKlutz, toughening, MAX_ENCOUNTERS, TOUGHER_AFTER_MS, type KlutzState,
-  pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST } from "../lib/klutz";
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
+  pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST,
+  FIND_EVERY_MS, FIND_MIX, HOME_AT, SEND_AT, XP_SHARE, CATCH_CHANCE, catchChance, TRAP_STEP, SKILL_STEP, SKILL_MAX, PACK_START, PACK_TRAIT, packSize, chestSize, CHEST_START,
+  destCost, destOpen, capRarity, sendBlock, readyAt, sendHp, spendSkill, skillPointsFree, MAX_WINDOWS, type TripPlan } from "../lib/klutz";
+import { ENTRY_FEES } from "../lib/dungeon/run";
 import { xpToReach } from "../lib/creatures/levels";
+import type { Rarity } from "../lib/items/budgets";
 
 // A small seeded random number generator, so expeditions are repeatable.
 function seeded(seed: number) {
@@ -13,153 +17,177 @@ function seeded(seed: number) {
 const t0 = Date.parse("2026-10-15T12:00:00Z");
 const plain = () => buildFighter(KLUTZ);
 const mighty = () => ({ ...buildFighter(KLUTZ, { melee: 400, agility: 300 }, { mDef: 300, rDef: 300, magDef: 300, hp: 2000 }) });
+const R: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
+const ri = (r: Rarity) => R.indexOf(r);
+const rarityOf = (d: { rarity?: Rarity }) => d.rarity ?? "common";
+const top: TripPlan = { dest: 3, explorer: 30, level: 30 };
 
-describe("Klutz's expeditions", () => {
-  it("he meets a creature every 20–60 minutes, and hunts on until one beats him, without healing", () => {
+describe("Klutz's expeditions (v2, the user, 2026-11-14)", () => {
+  it("he finds something every 20 minutes, and comes home when his pack is full, he's down to 10% HP, or something beats him", () => {
+    for (let s = 1; s < 60; s++) {
+      const f = s % 2 ? plain() : mighty();
+      const ex = planExpedition(f, t0, seeded(s), { ...top, level: 10 });
+      expect(ex.v).toBe(2);
+      const times = [...ex.encounters.map((e) => e.at), ...ex.finds!.map((x) => x.at)];
+      for (const at of times) expect((at - t0) % FIND_EVERY_MS).toBe(0);
+      let hp = ex.startHp!;
+      for (const e of ex.encounters) { expect(e.hpAfter).toBeLessThanOrEqual(hp); hp = e.hpAfter; } // he never heals on the way
+      const last = ex.encounters.at(-1);
+      if (ex.home === "ko") expect(last?.won).toBe(false);
+      if (ex.home === "pack") expect(ex.finds!.length).toBe(PACK_START);
+      if (ex.home === "hurt") expect(last!.hpAfter).toBeLessThanOrEqual(HOME_AT * ex.maxHp);
+      expect(ex.encounters.filter((e) => !e.won).length).toBeLessThanOrEqual(1);
+      expect(ex.finds!.length).toBeLessThanOrEqual(PACK_START);
+    }
+  });
+
+  it("a find is a creature 30%, a codex 10%, a material or consumable 20%, a weapon or armour 40%", () => {
+    const n = { creature: 0, codex: 0, goods: 0, gear: 0 };
+    for (let s = 1; s < 300; s++) {
+      const ex = planExpedition(mighty(), t0, seeded(s), { ...top, pack: 20 });
+      n.creature += ex.encounters.length;
+      for (const { drop: d, skill } of ex.finds!) {
+        if (skill) continue;
+        if (d.dropType !== "item") continue;
+        if (d.codexMove) n.codex++;
+        else if (d.material || d.potion) n.goods++;
+        else if (d.itemCategory === "weapon" || d.itemCategory === "armor") n.gear++;
+      }
+    }
+    // (A beaten creature's dropped gear counts as gear: GEAR_DROP_CHANCE of the creature share.)
+    const all = n.creature + n.codex + n.goods + n.gear;
+    expect(n.creature / all).toBeCloseTo(FIND_MIX.creature / (1 + FIND_MIX.creature * 0.2), 1);
+    expect(n.codex / all).toBeCloseTo(FIND_MIX.codex, 1);
+    expect(n.goods / all).toBeCloseTo(FIND_MIX.goods, 1);
+  });
+
+  it("rarities are capped by the dungeon, by his level and by your explorer level", () => {
+    expect(capRarity("legendary", 0, 30, 30)).toBe("rare");     // the Encampment
+    expect(capRarity("legendary", 1, 30, 30)).toBe("epic");     // the Cyclops
+    expect(capRarity("legendary", 2, 30, 30)).toBe("legendary"); // the Hydra
+    expect(capRarity("legendary", 2, 8, 30)).toBe("epic");      // his level opens Legendary at 12
+    expect(capRarity("legendary", 2, 30, 5)).toBe("rare");      // your explorer level opens Epic at 6
+    for (let s = 1; s < 80; s++) {
+      const ex = planExpedition(mighty(), t0, seeded(s), { dest: 0, explorer: 30, level: 30, pack: 20 });
+      for (const e of ex.encounters) expect(ri(e.rarity)).toBeLessThanOrEqual(ri("rare"));
+      for (const { drop } of ex.finds!) expect(ri(rarityOf(drop as never))).toBeLessThanOrEqual(ri("rare"));
+    }
+  });
+
+  it("a beaten creature is caught at its rarity's chance (Trapping adds to it); the cage filter lets lesser ones go", () => {
+    expect(catchChance("legendary")).toBe(CATCH_CHANCE.legendary);
+    expect(catchChance("epic", 5)).toBeCloseTo(CATCH_CHANCE.epic + 5 * TRAP_STEP);
+    expect(catchChance("common", SKILL_MAX)).toBe(1);
+    let won = 0, caught = 0, filtered = true;
+    for (let s = 1; s < 200; s++) {
+      const ex = planExpedition(mighty(), t0, seeded(s), { ...top, dest: 0, pack: 20, traits: { cageFilter: "uncommon" } });
+      for (const e of ex.encounters.filter((x) => x.won)) {
+        won++;
+        if (e.caught) caught++;
+        if (e.caught && e.rarity === "common") filtered = false;
+        expect(e.loot.some((d) => d.dropType === "creature")).toBe(!!e.caught);
+      }
+    }
+    expect(filtered).toBe(true);
+    expect(caught / won).toBeLessThan(0.75); // Commons let go by the filter, the rest at their chances
+  });
+
+  it("Selective leaves things below its rarity behind; his skills bring extra finds", () => {
     for (let s = 1; s < 40; s++) {
-      const ex = planExpedition(plain(), t0, seeded(s));
-      let from = t0, hp = ex.maxHp;
-      ex.encounters.forEach((e, i) => {
-        expect(e.at - from).toBeGreaterThanOrEqual(WALK_MIN_MS);
-        expect(e.at - from).toBeLessThanOrEqual(WALK_MAX_MS);
-        expect(e.hpAfter).toBeLessThanOrEqual(hp); // he never heals on the way
-        expect(e.won).toBe(i < ex.encounters.length - 1); // every fight a win, bar the last
-        from = e.at; hp = e.hpAfter;
-        // The loot: the creature, then its weapon and an armour piece one tier below it.
-        if (e.won) {
-          expect(e.loot[0]).toMatchObject({ dropType: "creature", creatureId: e.creatureId });
-          expect(e.loot.slice(1).every((d) => d.dropType === "item" && (d as { rarity: string }).rarity === e.gearRarity)).toBe(true);
-        }
-      });
-      expect(ex.endsAt).toBe(from);
+      const ex = planExpedition(mighty(), t0, seeded(s), { ...top, traits: { selective: "rare" } });
+      for (const { drop } of ex.finds!) expect(ri(rarityOf(drop as never))).toBeGreaterThanOrEqual(ri("rare"));
     }
+    let extra = 0;
+    for (let s = 1; s < 100; s++) extra += planExpedition(mighty(), t0, seeded(s), { ...top, skills: { armourer: SKILL_MAX, scavenger: SKILL_MAX, scholar: SKILL_MAX } }).finds!.filter((x) => x.skill).length;
+    expect(extra).toBeGreaterThan(0);
+    expect(SKILL_STEP * SKILL_MAX).toBeCloseTo(0.3);
   });
 
-  it("a Klutz nothing can beat comes home after MAX_ENCOUNTERS fights", () => {
-    const ex = planExpedition(mighty(), t0, seeded(5));
-    expect(ex.encounters).toHaveLength(MAX_ENCOUNTERS);
-    expect(ex.encounters.every((e) => e.won)).toBe(true);
-  });
-
-  it("a Lv 30 Klutz fights creatures around his level, but brings them home at Lv 5 at most", () => {
-    const ex = planExpedition(mighty(), t0, seeded(5), [], 30);
-    const caught = ex.encounters.flatMap((e) => e.loot).filter((d) => d.dropType === "creature") as { level?: number }[];
-    expect(caught.length).toBeGreaterThan(0);
-    expect(caught.every((c) => (c.level ?? 1) <= CATCH_MAX_LEVEL)).toBe(true);
-    expect(CATCH_MAX_LEVEL).toBe(5);
-  });
-
-  it("past TOUGHER_AFTER_MS what he meets gets a level tougher every hour", () => {
-    expect(toughening(TOUGHER_AFTER_MS)).toBe(0);
-    expect(toughening(TOUGHER_AFTER_MS + 1)).toBe(1);
-    expect(toughening(TOUGHER_AFTER_MS + 2.5 * 3_600_000)).toBe(3);
-  });
-
-  it("while he's away you can see his HP, and call him back with what he's won so far", () => {
-    const ex = planExpedition(mighty(), t0, seeded(9));
+  it("while he's away you can see his HP, and call him back with what he's found so far", () => {
+    const ex = planExpedition(mighty(), t0, seeded(9), { ...top, pack: 20 });
     const k: KlutzState = { expedition: ex };
-    expect(klutzStatus(k, ex.maxHp, t0 + 1).kind === "away" && klutzStatus(k, ex.maxHp, t0 + 1)).toMatchObject({ hp: ex.maxHp });
-    const third = ex.encounters[2];
-    expect(klutzStatus(k, ex.maxHp, third.at)).toMatchObject({ kind: "away", hp: third.hpAfter });
-    const back = recallKlutz(k, third.at + 1);
-    expect(back.expedition).toMatchObject({ endsAt: third.at + 1, recalled: true });
-    expect(back.expedition!.encounters).toHaveLength(3);
-    const { loot } = collectKlutz(back, third.at + 1);
-    expect(loot.filter((d) => d.dropType === "creature")).toHaveLength(3);
-    expect(recallKlutz(back, third.at + 2)).toBe(back); // already home
+    expect(klutzStatus(k, ex.maxHp, t0 + 1)).toMatchObject({ kind: "away", hp: ex.maxHp });
+    const mid = t0 + 4 * FIND_EVERY_MS;
+    const back = recallKlutz(k, mid + 1);
+    expect(back.expedition).toMatchObject({ endsAt: mid + 1, recalled: true });
+    expect(back.expedition!.finds!.every((x) => x.at <= mid)).toBe(true);
+    const { loot } = collectKlutz(back, mid + 1);
+    expect(loot.length).toBe(back.expedition!.finds!.length + back.expedition!.encounters.flatMap((e) => e.loot).length);
+    expect(recallKlutz(back, mid + 2)).toBe(back); // already home
   });
 
-  it("a loss ends the trip early, and he heals 1 HP every 10 seconds in the pool", () => {
-    // Find a seed where an ungeared Klutz loses.
-    let ex = null;
-    for (let s = 1; s < 200 && !ex; s++) {
-      const e = planExpedition(plain(), t0, seeded(s));
-      if (e.encounters.some((x) => !x.won)) ex = e;
-    }
-    expect(ex).not.toBeNull();
-    const lost = ex!.encounters[ex!.encounters.length - 1];
-    expect(lost.won).toBe(false);
-    expect(ex!.endsAt).toBe(lost.at);
-
-    const k: KlutzState = { expedition: ex! };
-    expect(klutzStatus(k, ex!.maxHp, lost.at - 1).kind).toBe("away");
-    const { state } = collectKlutz(k, lost.at);
-    expect(state.hp).toBe(0);
-    expect(currentHp(state, ex!.maxHp, lost.at + 5 * HEAL_MS_PER_HP)).toBe(5);
-    expect(klutzStatus(state, ex!.maxHp, lost.at + 5 * HEAL_MS_PER_HP).kind).toBe("healing");
-    expect(klutzStatus(state, ex!.maxHp, lost.at + ex!.maxHp * HEAL_MS_PER_HP).kind).toBe("home");
-    // He can't be sent off while healing.
-    expect(sendKlutz(state, plain(), lost.at + 1000)).toBe(state);
-  });
-
-  it("hands over the loot once", () => {
-    const ex = planExpedition(mighty(), t0, seeded(7));
+  it("hands over the loot once, with half the old XP", () => {
+    const ex = planExpedition(mighty(), t0, seeded(7), top);
     const k: KlutzState = { expedition: ex };
     expect(collectKlutz(k, t0 + 1000).loot).toEqual([]); // still away
     const first = collectKlutz(k, ex.endsAt);
-    expect(first.loot.length).toBe(3 * MAX_ENCOUNTERS);
+    expect(first.loot.length).toBeGreaterThan(0);
+    const fights = ex.encounters.reduce((n, e) => n + (e.xp ?? 0), 0);
+    expect(xpToReach(first.state.level ?? 1) + (first.state.xp ?? 0)).toBe(fights + Math.round(FIND_XP * XP_SHARE) * gearCount(first.loot));
     expect(collectKlutz(first.state, ex.endsAt + 1).loot).toEqual([]);
   });
 
-  it("gives FIND_XP for every piece of gear he brings home, on top of the fight's XP", () => {
-    for (let s = 1; s <= 60; s++) {
-      const ex = planExpedition(plain(), t0, seeded(s), [{ slot: "weapon", rarity: "common" }]);
-      const { state, loot } = collectKlutz({ expedition: ex }, ex.endsAt);
-      const fights = ex.encounters.reduce((n, e) => n + (e.xp ?? 0), 0);
-      expect(gearCount(loot)).toBe(loot.filter((d) => d.dropType !== "creature").length);
-      expect(xpToReach(state.level ?? 1) + (state.xp ?? 0)).toBe(fights + FIND_XP * gearCount(loot));
-    }
+  it("an older trip (planned before v2) still hands over what it held", () => {
+    const find = { id: "f", barcode: "", dropType: "item", itemCategory: "weapon", rarity: "common", roll: 0, createdAt: "" } as never;
+    const old: Expedition = { startedAt: t0, endsAt: t0 + 1000, maxHp: 80, collected: false, find,
+      encounters: [{ at: t0 + 1000, creatureId: "moss_wolf", rarity: "common", gearRarity: "common", won: false, rounds: 3, hpAfter: 0, loot: [] }] };
+    const { loot, state } = collectKlutz({ expedition: old }, t0 + 1000);
+    expect(loot).toContain(find);
+    expect(state.hp).toBe(0);
   });
 });
 
-describe("Klutz's finds", () => {
-  it("are for a slot he's wearing, and never rarer than his piece there", () => {
-    expect(rollFind([])).toBeUndefined();
-    for (let i = 0; i < 300; i++) {
-      const d = rollFind([{ slot: "helmet", rarity: "rare" }]) as { itemCategory: string; armorSlot: string; rarity: string };
-      expect(d).toMatchObject({ itemCategory: "armor", armorSlot: "helmet" });
-      expect(["common", "uncommon", "rare"]).toContain(d.rarity);
-    }
-    expect(rollFind([{ slot: "weapon", rarity: "epic" }])).toMatchObject({ itemCategory: "weapon" });
+describe("sending Klutz (v2)", () => {
+  const clears = { cyclops: 1, hydra: 0, abyss: 0 };
+  it("each dungeon opens when you've beaten its boss, and costs half your entry fee (the Encampment is free)", () => {
+    expect(destCost(0)).toBe(0);
+    expect(destCost(1)).toBe(ENTRY_FEES[1] / 2);
+    expect(destCost(2)).toBe(ENTRY_FEES[2] / 2);
+    expect(destOpen(0, { cyclops: 0, hydra: 0, abyss: 0 })).toBe(true);
+    expect(destOpen(1, clears)).toBe(true);
+    expect(destOpen(2, clears)).toBe(false);
   });
 
-  it("rarity: 5% the same as his piece, otherwise lower and evenly spread; in Common gear, Common or Uncommon 50/50", () => {
-    const N = 6000;
-    const count = (worn: "common" | "rare" | "legendary") => {
-      const c: Record<string, number> = {};
-      for (let i = 0; i < N; i++) { const r = findRarity(worn); c[r] = (c[r] ?? 0) + 1; }
-      return c;
-    };
-    const rare = count("rare");
-    expect(Math.abs(rare.rare / N - SAME_RARITY_CHANCE)).toBeLessThan(0.015);
-    expect(rare.epic ?? 0).toBe(0);
-    expect(Math.abs(rare.common / N - 0.475)).toBeLessThan(0.03);
-    expect(Math.abs(rare.uncommon / N - 0.475)).toBeLessThan(0.03);
-    const legendary = count("legendary");
-    expect(Math.abs(legendary.legendary / N - SAME_RARITY_CHANCE)).toBeLessThan(0.015);
-    const common = count("common");
-    expect(Math.abs(common.uncommon / N - 0.5)).toBeLessThan(0.03);
-    expect(Object.keys(common).sort()).toEqual(["common", "uncommon"]);
+  it("he can go from 40% HP, not while away, not with his chest full, nor without the gold", () => {
+    const max = 100;
+    expect(sendHp(max)).toBe(SEND_AT * max);
+    const hurt: KlutzState = { hp: 30, hpAt: t0 };
+    expect(sendBlock(hurt, max, 0, 0, clears, 0, t0)).toBe("hurt");
+    expect(readyAt(hurt, max, t0)).toBe(t0 + 10 * HEAL_MS_PER_HP);
+    expect(sendBlock(hurt, max, 0, 0, clears, 0, t0 + 10 * HEAL_MS_PER_HP)).toBeNull();
+    expect(sendBlock({}, max, CHEST_START, 0, clears, 0, t0)).toBe("chest");
+    expect(sendBlock({ chestUps: 1 }, max, CHEST_START, 0, clears, 0, t0)).toBeNull();
+    expect(sendBlock({}, max, 0, 2, clears, 999, t0)).toBe("closed");
+    expect(sendBlock({}, max, 0, 1, clears, destCost(1) - 1, t0)).toBe("gold");
   });
 
-  it("turn up on about 35% of walks (win or lose) and come home with the loot", () => {
-    let found = 0, walks = 0;
-    for (let s = 1; s <= 400; s++) {
-      const ex = planExpedition(plain(), t0, seeded(s), [{ slot: "weapon", rarity: "common" }]);
-      const loot = collectKlutz({ expedition: ex }, ex.endsAt).loot;
-      for (const e of ex.encounters) {
-        walks++;
-        if (e.find) { found++; expect(loot).toContain(e.find); }
-      }
-    }
-    expect(Math.abs(found / walks - FIND_CHANCE)).toBeLessThan(0.05);
-    expect(planExpedition(plain(), t0, seeded(3)).encounters.some((e) => e.find)).toBe(false); // wearing nothing: nothing to find
+  it("sets off on the HP he has, and keeps everything about him", () => {
+    const k: KlutzState = { level: 3, points: { atk: 3 }, learned: ["Cripple"], soulStone: "toxic_skin", skills: { armourer: 1 }, hp: 50, hpAt: t0 };
+    const sent = sendKlutz(k, plain(), t0, seeded(1), 0, 30);
+    expect(sent).toMatchObject({ points: k.points, learned: k.learned, soulStone: k.soulStone, skills: k.skills, dest: 0 });
+    expect(sent.expedition!.startHp).toBe(50);
+    expect(sent.hp).toBeUndefined();
   });
 
-  it("an older save's trip (one find for the whole trip) still hands it over", () => {
-    const ex = planExpedition(plain(), t0, seeded(4));
-    const find = rollFind([{ slot: "weapon", rarity: "common" }])!;
-    expect(collectKlutz({ expedition: { ...ex, find } }, ex.endsAt).loot).toContain(find);
+  it("his pack starts at 8; the Bigger Pack trait and pack upgrades add to it; his chest grows with upgrades", () => {
+    expect(packSize({})).toBe(PACK_START);
+    expect(packSize({ traits: { pack: true }, packs: 2 })).toBe(PACK_START + PACK_TRAIT.slots + 2);
+    expect(PACK_TRAIT).toMatchObject({ level: 5, cost: 1000 });
+    expect(chestSize({ chestUps: 2 })).toBe(CHEST_START + 20);
+  });
+
+  it("skill points: one a level over 1, each skill up to SKILL_MAX; a re-spec hands them back", () => {
+    let k: KlutzState = { level: 3 };
+    expect(skillPointsFree(k)).toBe(2);
+    k = spendSkill(spendSkill(k, "trapping"), "trapping");
+    expect(skillPointsFree(k)).toBe(0);
+    expect(spendSkill(k, "scholar")).toBe(k);
+    expect(skillPointsFree(respecKlutz(k))).toBe(2);
+  });
+
+  it("a trip that never ends on its own stops after MAX_WINDOWS", () => {
+    const ex = planExpedition(mighty(), t0, seeded(3), { ...top, pack: 999 });
+    expect(ex.endsAt - t0).toBeLessThanOrEqual(MAX_WINDOWS * FIND_EVERY_MS);
   });
 });
 
@@ -200,10 +228,6 @@ describe("Klutz's skill points", () => {
     expect(RESPEC_COST).toBe(1000);
   });
 
-  it("sending him off keeps his points", () => {
-    const k = spendPoints({ level: 3 }, { atk: 3 });
-    expect(sendKlutz(k, plain(), t0, seeded(1)).points).toEqual(k.points);
-  });
 });
 
 // The old rules only: Combat V2 has no triangle to be outside of.
@@ -232,13 +256,13 @@ describe("Klutz is neutral (the old triangle rules)", () => {
     expect(triangleFor("melee", foe("melee"), foe("magic"))).toBe(0.5);
   });
 
-  it("he's a Rare whose %s start at 0, knows every style's core moves (starting with 3 melee and Shot), and no race moves", () => {
+  it("he's a Rare whose %s start at 0, knows every style's core moves (starting with 3 melee and Shot), and can learn any codex", () => {
     expect(KLUTZ.rarity).toBe("rare");
     expect(Object.values(KLUTZ.proficiency).every((v) => v === 0)).toBe(true);
     expect(defaultMoveNames(KLUTZ)).toEqual(["Strike", "Smash", "Rush", "Shot"]);
     // The older plain moves are retired: no codexes of them for anyone.
     for (const m of ["Firebolt", "Starfall", "Bolt", "Devastator"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
-    for (const m of ["Pounce", "Barrage", "Mirage", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(false);
+    for (const m of ["Pounce", "Barrage", "Mirage", "Rabid Bite"]) expect(canLearnFromCodex(KLUTZ, m)).toBe(true); // (any codex there is: the user, 2026-11-14)
     expect(canLearnFromCodex(KLUTZ, "Cripple")).toBe(true);
     // Any style's core moves, with no race (he lands neutral).
     const picked = resolveMoves(KLUTZ, ["Blast", "Zap"]);

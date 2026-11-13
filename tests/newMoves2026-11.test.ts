@@ -24,7 +24,7 @@ describe("who can learn the new codexes", () => {
       const learners = CREATURE_TEMPLATES.filter((t) => canLearnFromCodex(t, move));
       expect(learners.length, move).toBeGreaterThan(5);
       for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, move), `${move} ${t.id}`).toBe(stylesOf(t).includes(style));
-      expect(canLearnFromCodex(KLUTZ, move)).toBe(false);
+      expect(canLearnFromCodex(KLUTZ, move)).toBe(true); // (Klutz can learn any codex: the user, 2026-11-14)
       expect((codexDrop(move) as CreatureOrItemDrop).rarity).toBe("epic");
       expect(MOVE_BY_NAME[move]).toMatchObject({ energyCost: 50, cooldown: 5, race: "divine", self: true });
     }

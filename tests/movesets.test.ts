@@ -19,7 +19,7 @@ describe("Klutz and race moves", () => {
       const can = (t.races ?? []).some((r) => ["beast", "underkin", "toxic"].includes(r));
       expect(canLearnFromCodex(t, "Rabid Bite"), t.id).toBe(can);
     }
-    expect(canLearnFromCodex(KLUTZ, "Rabid Bite")).toBe(false);
+    expect(canLearnFromCodex(KLUTZ, "Rabid Bite")).toBe(true); // (Klutz can learn any codex: the user, 2026-11-14)
   });
 });
 

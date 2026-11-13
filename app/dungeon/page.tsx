@@ -1333,7 +1333,7 @@ export default function DungeonPage() {
     <RoomScreen
       run={run} room={run.current} notes={notes} byId={byId}
       gold={game.gold} onTreasure={takeTreasure} onClub={takeClub} onChest={openChest}
-      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={() => openDeck()} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
+      clubEntry={clubEntry} onTakeBox={takeBox} onTakeBoxHome={boxHome} onDeck={() => openDeck()} onOpenSack={openSack} onBuyWares={(ws) => ws.forEach(buyWare)} plans={game.heldStoragePlans()} klutzPacks={game.klutz.packs ?? 0} onCage={openCage} bagUsed={(lab.meta.bag ?? []).length} bagSlots={bagSize(lab.meta)} stacks={(lab.meta.bag ?? []).flatMap((e) => { const x = itemOf(e); return x?.material ? [x.material] : []; })} onHeal={healOne} onBuy={buyCodex} onNext={nextRoom} onWitch={witchPlay} onWitchSit={witchSit} onWitchLeave={witchLeave} onLook={() => setLootOpen(true)} onDynamite={grabDynamite} onLectern={() => track("librarian_locator")}
       bagLooks={(lab.meta.bag ?? []).map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))} bagOffers={(lab.meta.bag ?? []).map((e) => offerFor(e))} onSell={sellToMerchant}
       onUseBag={(i) => { setBagStart(i); setSheet("bag"); }}
     />

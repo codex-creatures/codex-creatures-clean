@@ -369,11 +369,12 @@ export const STASH_GOLD: [number, number] = [100, 250];
 // stash or a chest (the user, 2026-10-20).
 export const STASH_TOOLS = { flare: 0.1, clairvoyance: 0.05 };
 // (A chest also holds a Gold Key now and then: the user, 2026-11-13, GOLDEN_CHEST below.)
-export const CHEST_TOOLS = { flare: 0.2, clairvoyance: 0.1, gold_key: 0.1 };
-export const toolFinds = (odds: { flare: number; clairvoyance: number; gold_key?: number }, rng: Rng = Math.random): SackItem[] => [
+export const CHEST_TOOLS = { flare: 0.2, clairvoyance: 0.1, gold_key: 0.1, klutz_pack: 0.05 };
+export const toolFinds = (odds: { flare: number; clairvoyance: number; gold_key?: number; klutz_pack?: number }, rng: Rng = Math.random): SackItem[] => [
   ...(rng() < odds.flare ? [{ gear: toolDrop("flare") }] : []),
   ...(rng() < odds.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
   ...(odds.gold_key && rng() < odds.gold_key ? [{ gear: toolDrop("gold_key") }] : []),
+  ...(odds.klutz_pack && rng() < odds.klutz_pack ? [{ gear: toolDrop("klutz_pack") }] : []),
 ];
 // The Cyclops' chest: CYCLOPS_GEAR rolls on the weapon & armour table,
 // CYCLOPS_ITEMS on the item table and CYCLOPS_POTIONS on the potion table,
@@ -601,6 +602,9 @@ export const bagUpgradePrice = (size: number) => BAG_UPGRADE_PRICES[size - BACKP
 export const STORAGE_PLAN_CHANCE = 0.2;
 export const STORAGE_PLAN_PRICE = 2000;
 export const STORAGE_PLAN_2_PRICE = 4000; // the second storage schematics (the user, 2026-11-13)
+// A Pack Upgrade for Klutz on the cart (the user, 2026-11-14), priced by how many he has (waresFor).
+export const KLUTZ_PACK_CHANCE = 0.2;
+export const KLUTZ_PACK_PRICES = [500, 750, 1000, 1500, 2000, 2500, 3000, 4000]; // (lib/klutz.ts PACK_UPGRADE_PRICES: the same)
 export const REVIVAL_CHANCE = 0.25;
 // The Revival Elixir brings a knocked-out creature back with this share of
 // its HP, between rooms. Also in mini-boss and boss chests.
@@ -639,6 +643,7 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
   for (const plan of Object.keys(NEXT_STORAGE_PLAN) as StoragePlan[]) // (a first one: waresFor offers its second)
     if (rng() < STORAGE_PLAN_CHANCE) wares.push({ key: plan, schematic: plan, price: STORAGE_PLAN_PRICE });
   if (rng() < REVIVAL_CHANCE) wares.push({ key: "revival", tool: "revival", price: TOOLS.revival.price });
+  if (rng() < KLUTZ_PACK_CHANCE) wares.push({ key: "klutz_pack", tool: "klutz_pack", price: KLUTZ_PACK_PRICES[0] });
   if (rng() < MERCHANT_SCROLL_CHANCE) wares.push({ key: "scroll", scroll: true, price: SCROLL_PRICE });
   if (rng() < MERCHANT_CLAIRVOYANCE) wares.push({ key: "clairvoyance", tool: "clairvoyance", price: TOOLS.clairvoyance.price });
   const mats = MERCHANT_MATERIALS.filter((m) => m.chance === undefined || rng() < m.chance);
@@ -653,9 +658,11 @@ export function rollWares(rng: Rng = Math.random, backpack = false): Ware[] {
 // can grow, priced for your bag's size; not a storage schematic you already
 // have or have built, nor one you can't build yet (plans: those). A first
 // storage schematic you've built is offered as its second one, dearer.
-export function waresFor(wares: Ware[], meta: { bagSize?: number }, plans: readonly StoragePlan[] = []): Ware[] {
+// klutzPacks: the Pack Upgrades Klutz has had (a cart's is priced by them; none once his pack's full).
+export function waresFor(wares: Ware[], meta: { bagSize?: number }, plans: readonly StoragePlan[] = [], klutzPacks?: number): Ware[] {
   const size = bagSize(meta);
   return wares.flatMap((w): Ware[] => {
+    if ("tool" in w && w.tool === "klutz_pack") return klutzPacks === undefined ? [w] : klutzPacks >= KLUTZ_PACK_PRICES.length ? [] : [{ ...w, price: KLUTZ_PACK_PRICES[klutzPacks] }];
     if ("backpack" in w) return onBindle(meta) ? [w] : [];
     if ("bagUp" in w) return size >= BACKPACK && size < BAG_MAX ? [{ ...w, price: bagUpgradePrice(size) }] : [];
     if ("schematic" in w) {
