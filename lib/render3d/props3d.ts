@@ -81,6 +81,9 @@ export function tableArt() {
 // The glow of the rarest card in a deck lying on a table (the user, 2026-11-11): its rarity's colour, out
 // to half a candle's reach, half as bright.
 export const DECK_GLOW = { share: 0.5, strength: 0.5 };
+// …and on the table top round the deck: as wide as the deck is deep, but never past the table's edges (a
+// wider disc hung in the air beside the table, glowing over the floor behind it).
+export const deckGlowRadius = (t: ReturnType<typeof tableArt>) => Math.min(t.deck.depth, t.width / 2 - DECK_AT, t.depth / 2);
 
 // ── In the game (the user, 2026-11-11: "getting the 3d items into the dungeon") ──
 // Which objects the walk view draws in 3D instead of their flat pictures. Every chest is the treasure

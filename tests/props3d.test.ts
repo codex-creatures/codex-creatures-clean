@@ -69,6 +69,13 @@ describe("the 3D table (world version 12)", () => {
     expect(Math.abs(CANDLE_AT)).toBeLessThan(t.width / 2 - 0.1);
     expect(["table", "card-deck"].map(prop3dOf)).toEqual(["table", "table"]);
   });
+  it("the deck's glow on the top stays on the table", async () => {
+    const { tableArt, deckGlowRadius, DECK_AT } = await import("../lib/render3d/props3d");
+    const t = tableArt(), r = deckGlowRadius(t);
+    expect(DECK_AT + r).toBeLessThanOrEqual(t.width / 2);
+    expect(r).toBeLessThanOrEqual(t.depth / 2);
+    expect(r).toBeGreaterThan(t.deck.width / 2);
+  });
 });
 
 describe("a library's bookcases (the user, 2026-11-11: some broken, for variety)", () => {

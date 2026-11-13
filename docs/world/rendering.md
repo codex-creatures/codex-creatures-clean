@@ -273,7 +273,7 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   deck is drawn on a table in runs of every version (`card-deck` → `table`), lying face down till it's
   turned over; while it's in your sight it glows the colour of its rarest card (`deckRarity`,
   `RARITY_COLORS`): a soft disc on the floor out to half a candle's reach and on the deck, half as
-  strong (`DECK_GLOW`), added to what's there so it shows in the dark. Drawing only: the glow lights
+  strong (`DECK_GLOW`; the deck's disc kept within the table top, `deckGlowRadius`), added to what's there so it shows in the dark. Drawing only: the glow lights
   nothing in the sim. The 2D view shows a table as its front picture (and a table's candle on the floor).
   To look at it: /lab/chest's **Table** (its candle on or off) and **Deck** (the rarest card's rarity for the
   glow; "Turn them over" takes the deck off), beside the old flat picture and you for scale.

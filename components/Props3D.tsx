@@ -11,7 +11,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { chestArt, OPEN_ANGLE, ART_FACES, ART_PER_U, CHEST_NUDGE, type ChestFaces } from "@/lib/render3d/chest3d";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
+import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, deckGlowRadius, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
 import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
@@ -221,7 +221,7 @@ function Table({ colour, outline, deck, glow }: { colour?: Tint; outline: boolea
       {deck && <Solid geometry={geo.deck} material={mats.deck} at={[DECK_AT, t.top + DECK_TALL / 2, 0]} size={[t.deck.width, DECK_TALL, t.deck.depth]} outline={outline} />}
       {deck && glow && <group position={[DECK_AT, 0, 0]}>
         <Glow colour={glow} radius={CANDLE_RADIUS * DECK_GLOW.share} strength={DECK_GLOW.strength} />
-        <Glow colour={glow} radius={t.deck.depth} strength={DECK_GLOW.strength} y={t.top + DECK_TALL + 0.005} />
+        <Glow colour={glow} radius={deckGlowRadius(t)} strength={DECK_GLOW.strength} y={t.top + DECK_TALL + 0.005} />
       </group>}
     </>
   );
