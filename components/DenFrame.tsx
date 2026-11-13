@@ -10,7 +10,7 @@
 // - an optional dock along the bottom, built into the screen (`dock`).
 
 import Link from "next/link";
-import GoldCount from "./GoldCount";
+import GoldCount, { Coin } from "./GoldCount";
 import { MaterialIcon } from "./PixelSprite";
 import { MATERIALS, MATERIAL_KEYS, type Materials } from "@/lib/items/materials";
 
@@ -37,10 +37,16 @@ export default function DenFrame({
           : onBack
           ? <button onClick={onBack} className="pixel-font" style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", color: "#c9b48a", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</button>
           : <Link href={back} className="pixel-font" style={{ color: "#c9b48a", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</Link>}
-        <h1 className="pixel-font" style={{ margin: 0, fontSize: 19, color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60cqw" }}>
+        {/* On a narrow phone the title shrinks a little and your gold stands with the coin
+            over the number (as on the Den's bar), so the back button keeps its words. */}
+        <h1 className="pixel-font" style={{ margin: 0, fontSize: "clamp(15px, 4.8cqw, 19px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60cqw" }}>
           {icon ? `${icon} ` : ""}{title}
         </h1>
-        <span style={{ textAlign: "right" }}>{gold !== undefined && !materials && <GoldCount gold={gold} />}</span>
+        <span style={{ display: "flex", justifyContent: "flex-end" }}>{gold !== undefined && !materials && (
+          <span className="pixel-font" title="Gold" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, lineHeight: 1, fontSize: 14, color: "#f5c542", whiteSpace: "nowrap" }}>
+            <Coin size={13} />{gold.toLocaleString()}
+          </span>
+        )}</span>
       </header>
       {materials && (
         <div className="screen-wallet pixel-font">

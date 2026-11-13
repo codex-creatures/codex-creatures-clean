@@ -91,16 +91,17 @@ export default function TavernPage() {
           ? <>The {VISITOR_NAME[visitor]}&apos;s in the room. Tap them there to trade.</>
           : <>Nobody&apos;s in. Travellers call when you&apos;re back from a run.</>}</p>}
 
-        {/* Sending for someone: a second tap pays (and sends whoever's in on their way). */}
+        {/* Sending for someone: a second tap pays (and sends whoever's in on their way).
+            The three share the panel's width, under their label, so they fit a phone. */}
+        {t.repaired && <div style={{ marginTop: 10, fontSize: 12, color: MUTED }}>Send for:</div>}
         {t.repaired && (
-          <div style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}>
-            <span style={{ fontSize: 12, color: MUTED }}>Send for:</span>
+          <div style={{ marginTop: 4, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
             {(["merchant", "librarian", "collector"] as const).map((who) => {
               const on = summoning === who;
               return (
                 <button key={who} className="chip" disabled={game.gold < SUMMON_PRICE}
                   onClick={() => { if (!on) { setSummoning(who); return; } setSummoning(null); game.summonTavernVisitor(who); }}
-                  style={{ minHeight: 44, flex: 1, background: on ? "#6e1f18" : undefined }}>
+                  style={{ minHeight: 44, minWidth: 0, background: on ? "#6e1f18" : undefined }}>
                   {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{visitor === who ? `A new ${who}` : who[0].toUpperCase() + who.slice(1)} <Coin /> {SUMMON_PRICE}</>}
                 </button>
               );
