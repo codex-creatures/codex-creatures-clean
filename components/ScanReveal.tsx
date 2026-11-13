@@ -32,6 +32,11 @@ const FIRST_GLOW = "#e6e9ef";
 const RATTLE = { common: { px: 3, deg: 4, s: 0.16 }, uncommon: { px: 5, deg: 7, s: 0.13 }, rare: { px: 7, deg: 10, s: 0.11 },
   epic: { px: 9, deg: 13, s: 0.09 }, legendary: { px: 12, deg: 17, s: 0.07 } } as const;
 const SPARK_COLORS = ["#ffd66e", "#f1d9a0", "#fff4c2"];
+// Everything under the stage (name, line, stats panel, buttons, gaps, bottom
+// padding) is about 314px. On a short screen (a phone browser with its bars
+// showing) the gap at the top, then the stage, give way so Keep / Sell still fit.
+const REVEAL_TOP = "clamp(12px, 100cqh - 516px, 14cqh)";
+const REVEAL_STAGE = "clamp(120px, 100cqh - 338px, 190px)";
 // Where each spark falls from, how fast and when: a fixed scatter, the same every time.
 const scatter = (i: number, k: number) => { const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return x - Math.floor(x); };
 const SPARK_LIST = Array.from({ length: BIG_SPARKS }, (_, i) => ({
@@ -79,13 +84,13 @@ export default function ScanReveal({ drop, line, isNew, sellValue, onKeep, onSel
   const stop = (f: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); f(); };
 
   return (
-    <div onClick={tap} style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 30%, #141826 0%, #040509 70%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "14cqh 12px 12px", overflow: "hidden" }}>
+    <div onClick={tap} style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 30%, #141826 0%, #040509 70%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: `${REVEAL_TOP} 12px 12px`, overflow: "hidden" }}>
       {open && <RevealFlash tier={tier} glow={glow} />}
 
       <div role="dialog" aria-label={open ? look.name : "A Code Cache opens"} className={open && tier === "explosion" ? "reveal-jolt-big" : open && tier === "shower" ? "reveal-jolt" : undefined}
         style={{ position: "relative", width: "100%", maxWidth: 400, display: "grid", gap: 10, textAlign: "center", justifyItems: "center" }}>
-        {/* The stage: a fixed height, the cache before and the find after. */}
-        <div style={{ position: "relative", height: 190, width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* The stage: a fixed height (less on a short screen), the cache before and the find after. */}
+        <div style={{ position: "relative", height: REVEAL_STAGE, width: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {!open ? (
             // Keyed by stage, so each new colour starts with a flare and its own rattle.
             <span key={stage} className={now.pause ? "reveal-still" : "reveal-rattle"}

@@ -51,8 +51,10 @@ export default function Home() {
   return (
     <main className="screen-page">
       <header className="screen-header" style={{ gridTemplateColumns: "1fr auto" }}>
-        <h1 className="pixel-font" style={{ margin: 0, fontSize: 18, color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap" }}>Codex Creatures</h1>
-        <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+        {/* On a narrow phone the title and the gaps shrink (and at worst the title ends in "…"),
+            so your counts and ⚙️ always fit on the bar. */}
+        <h1 className="pixel-font" style={{ margin: 0, minWidth: 0, fontSize: "clamp(13px, 4.2cqw, 18px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Codex Creatures</h1>
+        <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 2cqw, 10px)", fontSize: 13 }}>
           <GoldCount gold={game.gold} size={13} />
           <span style={{ color: "#8fc1ff" }} title="Creatures discovered">🐾 {game.discoveredCreatures}/{TOTAL_CREATURES}</span>
           <span style={{ color: "#ffd98a" }} title="Items discovered">⚔️ {game.discoveredItems}/{TOTAL_ITEMS}</span>
