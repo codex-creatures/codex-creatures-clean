@@ -20,6 +20,17 @@ describe("screen size", () => {
     writeUiScale(s, 1);
     expect(readUiScale(s, true)).toBe(1);
   });
+  it("starts a short phone screen smaller (not below 80%), until you pick a size", () => {
+    const s = memory();
+    expect(readUiScale(s, false, 844)).toBe(1);
+    expect(readUiScale(s, false, 664)).toBe(1);
+    expect(readUiScale(s, false, 600)).toBe(0.9);
+    expect(readUiScale(s, false, 548)).toBe(0.9);
+    expect(readUiScale(s, false, 480)).toBe(0.8);
+    expect(readUiScale(s, true, 480)).toBe(LAPTOP_UI_SCALE); // (a laptop's short window: still the laptop's size)
+    writeUiScale(s, 1);
+    expect(readUiScale(s, false, 480)).toBe(1);
+  });
   it("snaps to the nearest allowed size", () => {
     expect(clampUiScale(1.3)).toBe(1.25);
     expect(clampUiScale(9)).toBe(2);
