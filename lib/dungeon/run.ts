@@ -490,10 +490,15 @@ export const BOSS_SCROLL_CHANCE = 0.5;      // …and a boss's
 // lib/tavern.ts.)
 export const MINIBOSS_POTIONS: [number, number] = [1, 2];
 // A golden chest (the user, 2026-11-13): GOLDEN_CHEST of mini bosses guard one instead. It opens only
-// with a Gold Key in your bag (used up), and holds GOLDEN_DROPS scan-style finds, each Rare or better
-// (walkRooms.ts goldenDrops), in place of the potions and extras (its gold and the foe's gear as ever).
+// with a Gold Key in your bag (used up), and holds GOLDEN_DROPS weapons and armour at GOLDEN_RARITY
+// (walkRooms.ts goldenDrops; Legendary only from GOLDEN_LEGENDARY_FROM, the Hydra, on) and GOLDEN_GOLD
+// gold, in place of the mini boss's gold, potions and extras (the foe's dropped gear as ever).
+// (The user, 2026-11-14: keys are meant to be carried into runs, waiting for a golden chest.)
 export const GOLDEN_CHEST = 0.1;
 export const GOLDEN_DROPS = 5;
+export const GOLDEN_RARITY = { rare: 65, epic: 30, legendary: 5 };
+export const GOLDEN_LEGENDARY_FROM: DungeonId = 2;
+export const GOLDEN_GOLD: [number, number] = [500, 1000];
 export const MINIBOSS_CLAIRVOYANCE = 0.1;
 export const CAGE_PLAN_CHANCE = 0.2; // …and the Iron Cage Schematic, until you've found one
 // cagePlan: you haven't got the cage schematic yet (nor built the cage).

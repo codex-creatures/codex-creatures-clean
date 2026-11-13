@@ -17,7 +17,7 @@
 import { routeLength, type DungeonMap } from "./map";
 import {
   makeRoom, campCages, minibossExtras, capSack, toolFinds, droppedPieceStats,
-  CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, GOLDEN_DROPS, type Room, type SackItem, type DungeonId,
+  CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, GOLDEN_DROPS, GOLDEN_RARITY, GOLDEN_LEGENDARY_FROM, type Room, type SackItem, type DungeonId,
 } from "./run";
 import { CHEST_ODDS, REGISTRY_RULES, rollBarcodeOutcome, rollFromRules } from "../barcodeRegistry";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "../drops";
@@ -79,22 +79,19 @@ export function fightSack(room: Room, rng: Rng = Math.random): SackItem[] {
   return sack;
 }
 
-// A golden chest's finds: GOLDEN_DROPS rolled like a chest's, but each Rare or better (the rarities at
-// their usual odds between Rare, Epic and Legendary; a consumable a Healing Potion or a Rare codex) and
-// never plain gold. (A rare roll's materials can be planks or metal bars: those are rolled again, so
-// its materials are stone or essence stones.)
-const RARE_UP = ["rare", "epic", "legendary"];
-const GOLDEN_RULES = {
-  ...REGISTRY_RULES,
-  odds: Object.fromEntries(Object.entries(CHEST_ODDS).filter(([k]) => k !== "gold")),
-  rarity: Object.fromEntries(Object.entries(REGISTRY_RULES.rarity).filter(([k]) => RARE_UP.includes(k))),
-  consumableRarity: { rare: 1 },
-};
-export function goldenDrops(rng: () => number = Math.random): Drop[] {
+// A golden chest's finds: GOLDEN_DROPS weapons and armour (as often as each turns up in a chest), at
+// GOLDEN_RARITY. Before the Hydra (GOLDEN_LEGENDARY_FROM) Legendary is left out, so Rare and Epic
+// share its odds.
+export function goldenDrops(dungeon: DungeonId, rng: Rng = Math.random): Drop[] {
+  const rules = {
+    ...REGISTRY_RULES,
+    odds: { weapon: CHEST_ODDS.weapon, armor: CHEST_ODDS.armor },
+    rarity: Object.fromEntries(Object.entries(GOLDEN_RARITY).filter(([k]) => k !== "legendary" || dungeon >= GOLDEN_LEGENDARY_FROM)),
+  };
   const drops: Drop[] = [];
   while (drops.length < GOLDEN_DROPS) {
-    const d = dropFromOutcome(rollFromRules(GOLDEN_RULES, rng));
-    if (d && d.dropType !== "reward" && RARE_UP.includes(d.rarity)) drops.push(d);
+    const d = dropFromOutcome(rollFromRules(rules, rng));
+    if (d) drops.push(d);
   }
   return drops;
 }

@@ -118,10 +118,13 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **Golden chests and Gold Keys** (the user, 2026-11-13): 10% of mini bosses (`GOLDEN_CHEST`,
   room kind `miniboss` only, rolled with the room as `Room.golden`) guard a golden chest instead of
   the rickety one. It opens only with a **Gold Key** in your bag, which is used up (no key: it stays
-  locked, and it isn't in the haul). Inside: the mini boss's gold and dropped gear as usual, and,
-  instead of its potions, extras and XP scroll, 5 finds rolled like a chest's but each Rare or better,
-  never plain gold (`GOLDEN_DROPS`, walkRooms.ts `goldenDrops`; materials there are stone or essence
-  stones). The Gold Key is an Epic tool (`gold_key`) in 10% of chests (`CHEST_TOOLS`); it takes a bag
+  locked, and it isn't in the haul). Inside: the mini boss's dropped gear as usual, and, instead of
+  its gold, potions, extras (the cage schematic included) and XP scroll, 500–1000 gold (`GOLDEN_GOLD`)
+  and 5 weapons and armour (`GOLDEN_DROPS`, walkRooms.ts `goldenDrops`; weapon and armour as often as
+  in a chest) at Rare 65 / Epic 30 / Legendary 5 (`GOLDEN_RARITY`), Legendary only from the Hydra on
+  (`GOLDEN_LEGENDARY_FROM`; in the Cyclops Rare and Epic share its odds, about 68 / 32). Keys are
+  rare on purpose: the idea is to carry one into runs, waiting for a golden chest (the user,
+  2026-11-14). The Gold Key is an Epic tool (`gold_key`) in 10% of chests (`CHEST_TOOLS`); it takes a bag
   slot, stays in your bag between runs as tools do, and isn't sold by merchants (they buy it for 200).
   Walking, the chest is drawn gilded (the chest's art tinted gold, and the key a stand-in icon, till
   PixelLab art).

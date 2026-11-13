@@ -40,7 +40,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -1094,7 +1094,9 @@ export default function DungeonPage() {
       else setLevelUps(wonUps);
       return;
     }
-    const drops: Drop[] = [goldOnly(room.gold ?? 0)];
+    // (A golden chest holds GOLDEN_GOLD in place of the mini boss's own gold.)
+    const gold = room.golden ? GOLDEN_GOLD[0] + Math.floor(Math.random() * (GOLDEN_GOLD[1] - GOLDEN_GOLD[0] + 1)) : room.gold ?? 0;
+    const drops: Drop[] = [goldOnly(gold)];
     for (const e of room.enemies ?? []) {
       for (const p of e.gear) {
         if (!p.drops) continue;
@@ -1110,8 +1112,8 @@ export default function DungeonPage() {
     const miniboss = room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded) || (dungeonOf(r) === 0 && room.kind === "encampment");
     // A mini boss's chest: potions (and now and then a clairvoyance scroll, or the cage schematic,
     // though never from the Encampment's chief).
-    // (A golden chest: GOLDEN_DROPS finds, each Rare or better, instead.)
-    if (room.golden) sack.push(...goldenDrops().map((d): SackItem => ({ gear: d })));
+    // (A golden chest: GOLDEN_DROPS weapons and armour, Rare or better, instead.)
+    if (room.golden) sack.push(...goldenDrops(dungeonOf(r)).map((d): SackItem => ({ gear: d })));
     else if (miniboss) sack.push(...minibossExtras(Math.random, game.wantsCagePlan() && dungeonOf(r) !== 0));
     // Mini boss and boss chests sometimes hold an XP scroll.
     if (!room.golden && Math.random() < (room.kind === "boss" ? BOSS_SCROLL_CHANCE : miniboss ? MINIBOSS_SCROLL_CHANCE : 0)) sack.push({ gear: scrollDrop() });

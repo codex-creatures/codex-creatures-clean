@@ -130,16 +130,30 @@ describe("golden chests and Gold Keys (the user, 2026-11-13)", () => {
     expect(n / 2000).toBeLessThan(GOLDEN_CHEST * 1.4);
     for (const k of ["easy", "hard", "chest", "stash"] as const) expect(makeRoom(k).golden).toBeUndefined();
   });
-  it("holds 5 finds, each Rare or better, never plain gold", async () => {
+  it("holds 5 weapons and armour, Rare 65 / Epic 30 / Legendary 5, Legendary only from the Hydra on (the user, 2026-11-14)", async () => {
     const { goldenDrops } = await import("../lib/dungeon/walkRooms");
     const { GOLDEN_DROPS } = await import("../lib/dungeon/run");
     const bad: string[] = [];
-    for (let i = 0; i < 300; i++) {
-      const ds = goldenDrops();
-      if (ds.length !== GOLDEN_DROPS) bad.push(`${ds.length} finds`);
-      for (const d of ds) if (d.dropType === "reward" || !["rare", "epic", "legendary"].includes(d.rarity)) bad.push(JSON.stringify(d));
-    }
+    const count = (dungeon: 1 | 2) => {
+      const n: Record<string, number> = { rare: 0, epic: 0, legendary: 0 };
+      for (let i = 0; i < 1000; i++) {
+        const ds = goldenDrops(dungeon);
+        if (ds.length !== GOLDEN_DROPS) bad.push(`${ds.length} finds`);
+        for (const d of ds) {
+          if (d.dropType !== "item" || (d.itemCategory !== "weapon" && d.itemCategory !== "armor")) bad.push(JSON.stringify(d));
+          else n[d.rarity] = (n[d.rarity] ?? 0) + 1 / (1000 * GOLDEN_DROPS);
+        }
+      }
+      return n;
+    };
+    const cyclops = count(1), hydra = count(2);
     expect(bad).toEqual([]);
+    expect(cyclops.legendary).toBe(0);
+    expect(cyclops.rare).toBeCloseTo(65 / 95, 1);
+    expect(hydra.rare).toBeCloseTo(0.65, 1);
+    expect(hydra.epic).toBeCloseTo(0.3, 1);
+    expect(hydra.legendary).toBeGreaterThan(0.03);
+    expect(hydra.legendary).toBeLessThan(0.07);
   });
   it("a chest holds a Gold Key now and then (an Epic tool); a stash never does", async () => {
     const { toolFinds, CHEST_TOOLS, STASH_TOOLS } = await import("../lib/dungeon/run");
