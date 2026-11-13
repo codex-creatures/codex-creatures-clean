@@ -83,8 +83,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   board, Bestiary and the Labyrinth are explained from the Den. It ends in the Inventory with the
   box's gear and how to equip it, then the quest carries on (armour on, then "Deal"). The aim: a new
   player understands ~70% of the game. Skip tour any time; it resumes where you left it (its own
-  save field, `tour`, with which tour it is: none means the full one); "Show me round again" on
-  Klutz's page.
+  save field, `tour`, with which tour it is: none means the full one); a "Tutorial" button beside Equip on
+  Klutz's page opens the tours again in a pop-up window.
   - ✅ **Four tours** (the user, 2026-11-12; `TOURS`): **The basics** (round the Den, a line a
     place), **Combat** (races and their colours, a tablet's colour = its race and its carved mark
     = its style, the (i), energy and how it comes back, the race chart with pictures in Klutz's

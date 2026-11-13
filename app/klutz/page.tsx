@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEscape } from "@/hooks/useEscape";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
 import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
@@ -61,6 +62,7 @@ export default function KlutzPage() {
   const game = useGameState();
   const [now, setNow] = useState(() => Date.now());
   const [gearOpen, setGearOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [recallArmed, setRecallArmed] = useState(false);
   const [tab, setTab] = useState<Tab>("send");
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
@@ -75,6 +77,7 @@ export default function KlutzPage() {
   const helping = klutzHelping(game.quest);
   const klutzLv = clampLevel(game.klutz.level);
   const skillsFree = skillPointsFree(game.klutz);
+  const toursOpen = game.quest.stage === "lend" || game.quest.stage === "done";
 
   return (
     <DenFrame title="Klutz" icon="👺" gold={game.gold}>
@@ -92,20 +95,21 @@ export default function KlutzPage() {
 
       <QuestTalk game={game} />
       <ScanTip game={game} />
-      {/* His tours (lib/tour.ts), again: once the box is open and he's offered them. */}
-      {(game.quest.stage === "lend" || game.quest.stage === "done") && (
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 13, color: MUTED, marginBottom: 6 }}>🗺️ Show me round again:</div>
-          <TourChoices chip />
+      {(helping || toursOpen) && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+          {/* (Open while he's away too, to look: his gear's with him, so no swapping.) */}
+          {helping && (
+            <button className={`pixel-btn${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} onClick={() => setGearOpen(true)}>
+              ⚔️ Equip{pointsFree(game.klutz) > 0 && <> · <b>{pointsFree(game.klutz)}</b> points to spend</>}
+            </button>
+          )}
+          {/* His tours (lib/tour.ts), again: once the box is open and he's offered them. */}
+          {toursOpen && <button className="pixel-btn" onClick={() => setTutorialOpen(true)}>🗺️ Tutorial</button>}
         </div>
       )}
 
       {helping && (
         <>
-          {/* (Open while he's away too, to look: his gear's with him, so no swapping.) */}
-          <button className={`pixel-btn${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} style={{ marginTop: 12 }} onClick={() => setGearOpen(true)}>
-            ⚔️ Equip{pointsFree(game.klutz) > 0 && <> · <b>{pointsFree(game.klutz)}</b> points to spend</>}
-          </button>
           <div className="dock-tabs" style={{ marginTop: 12 }}>
             <button className="dock-tab" data-active={tab === "send"} onClick={() => setTab("send")}>🌀 {status.kind === "away" ? "Out" : "Send"}</button>
             <button className={`dock-tab${skillsFree > 0 ? " news-glow" : ""}`} data-active={tab === "skills"} onClick={() => setTab("skills")}>⭐ Skills{skillsFree > 0 && <> · {skillsFree}</>}</button>
@@ -118,6 +122,7 @@ export default function KlutzPage() {
       )}
 
       {gearOpen && <KlutzGear game={game} onClose={() => setGearOpen(false)} />}
+      {tutorialOpen && <TutorialWindow onClose={() => setTutorialOpen(false)} />}
     </DenFrame>
   );
 }
@@ -373,14 +378,31 @@ function ScanTip({ game }: { game: ReturnType<typeof useGameState> }) {
 // Klutz's lines for the first quest (his stolen box): short, with the
 // action you take next.
 // Klutz's tours to choose from (lib/tour.ts), two by two: the full one
-// glowing for a new player; as chips once you've had one.
-function TourChoices({ chip }: { chip?: boolean }) {
+// glowing for a new player; no glow once you've had one.
+function TourChoices({ again }: { again?: boolean }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
       {TOUR_CHOICES.map((c) => (
-        <button key={c.id} className={chip ? "chip" : `pixel-btn${c.id === "full" ? " tutorial-pulse" : ""}`}
-          style={chip ? { minHeight: 44 } : undefined} onClick={() => startTour(c.id)}>{c.label}</button>
+        <button key={c.id} className={`pixel-btn${!again && c.id === "full" ? " tutorial-pulse" : ""}`}
+          onClick={() => startTour(c.id)}>{c.label}</button>
       ))}
+    </div>
+  );
+}
+
+// The tours again, in a window from the Tutorial button by Equip.
+function TutorialWindow({ onClose }: { onClose: () => void }) {
+  useEscape(onClose);
+  return (
+    <div role="dialog" aria-label="Tutorial" onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(4,5,9,0.78)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: 16, paddingTop: "15cqh" }}>
+      <div className="stone-panel" onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 380 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>🗺️ Show me round</div>
+          <button className="chip" style={{ minWidth: 44, minHeight: 44 }} onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <TourChoices again />
+      </div>
     </div>
   );
 }
