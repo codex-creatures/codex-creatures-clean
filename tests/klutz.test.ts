@@ -5,7 +5,8 @@ import { calcDamage, triangleFor, NEUTRAL_COUNTER, setCombatRules, LIVE_RULES, T
 import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
   pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST,
   FIND_EVERY_MS, FIND_MIX, HOME_AT, SEND_AT, XP_SHARE, CATCH_CHANCE, catchChance, TRAP_STEP, SKILL_STEP, SKILL_MAX, PACK_START, PACK_TRAIT, packSize, chestSize, CHEST_START,
-  destCost, destOpen, capRarity, sendBlock, readyAt, sendHp, spendSkill, skillPointsFree, MAX_WINDOWS, type TripPlan } from "../lib/klutz";
+  destCost, destOpen, capRarity, sendBlock, readyAt, sendHp, spendSkill, skillPointsFree, MAX_WINDOWS, type TripPlan,
+  TRAIT_LEVELS, traitPicks, traitsPicked, canPickTrait, pickTrait, nextTraitLevel, selectiveOpen } from "../lib/klutz";
 import { ENTRY_FEES } from "../lib/dungeon/run";
 import { xpToReach } from "../lib/creatures/levels";
 import type { Rarity } from "../lib/items/budgets";
@@ -172,7 +173,7 @@ describe("sending Klutz (v2)", () => {
   it("his pack starts at 8; the Bigger Pack trait and pack upgrades add to it; his chest grows with upgrades", () => {
     expect(packSize({})).toBe(PACK_START);
     expect(packSize({ traits: { pack: true }, packs: 2 })).toBe(PACK_START + PACK_TRAIT.slots + 2);
-    expect(PACK_TRAIT).toMatchObject({ level: 5, cost: 1000 });
+    expect(PACK_TRAIT).toMatchObject({ cost: 1000, slots: 4 });
     expect(chestSize({ chestUps: 2 })).toBe(CHEST_START + 20);
   });
 
@@ -183,6 +184,25 @@ describe("sending Klutz (v2)", () => {
     expect(skillPointsFree(k)).toBe(0);
     expect(spendSkill(k, "scholar")).toBe(k);
     expect(skillPointsFree(respecKlutz(k))).toBe(2);
+  });
+
+  it("traits: a pick at Lv 5, 10 and 15, any trait he hasn't got, in any order", () => {
+    expect(TRAIT_LEVELS).toEqual([5, 10, 15]);
+    expect(traitPicks({ level: 4 })).toBe(0);
+    expect(canPickTrait({ level: 4 }, "selective")).toBe(false);
+    let k: KlutzState = { level: 5 };
+    expect(nextTraitLevel(k)).toBe(10);
+    k = pickTrait(k, "cageFilter"); // any one first
+    expect(traitsPicked(k)).toEqual(["cageFilter"]);
+    expect(pickTrait(k, "selective")).toBe(k); // one pick at Lv 5
+    k = pickTrait({ ...k, level: 12 }, "selective");
+    expect(selectiveOpen(k)).toBe(true);
+    expect(pickTrait(k, "selective")).toBe(k); // never twice
+    k = pickTrait({ ...k, level: 15 }, "pack");
+    expect(k.traits).toMatchObject({ pack: true });
+    expect(packSize(k)).toBe(PACK_START + PACK_TRAIT.slots);
+    expect(traitsPicked(k)).toHaveLength(3);
+    expect(nextTraitLevel(k)).toBeUndefined();
   });
 
   it("a trip that never ends on its own stops after MAX_WINDOWS", () => {

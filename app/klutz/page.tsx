@@ -6,7 +6,8 @@
 //   say what opens them), then one button; while he's out, his HP, his pack
 //   and what he's found so far.
 // - Skills: his skill points (Trapping, Armourer, Scavenger, Scholar), his
-//   traits (Bigger Pack, Selective, the cage filter) and pack upgrades.
+//   traits (Bigger Pack, Selective, the cage filter: one picked at each of
+//   Lv 5, 10 and 15, in any order) and pack upgrades.
 // - Chest: what he's brought home, against its size, and its upgrade.
 
 import { useEffect, useState } from "react";
@@ -29,8 +30,8 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import {
   klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
   KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
-  SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, SELECTIVE_LEVEL, CAGE_FILTER_LEVEL, canBuyPackTrait, selectiveOpen, cageFilterOpen,
-  type Expedition, type KlutzEncounter, type KlutzDest, type KlutzFind, type SkillKey, type SendBlock,
+  SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, TRAIT_LEVELS, traitsPicked, traitPicks, nextTraitLevel, canPickTrait,
+  type Expedition, type KlutzEncounter, type KlutzDest, type KlutzFind, type SkillKey, type SendBlock, type TraitKey,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -248,8 +249,14 @@ function TripSummary({ ex }: { ex: Expedition }) {
 }
 
 // ── Skills: points, traits, pack ──
+const TRAIT_KEYS_UI: { t: TraitKey; icon: string; name: string; what: string; cost: number }[] = [
+  { t: "pack", icon: "🎒", name: "Bigger Pack", what: `+${PACK_TRAIT.slots} pack slots`, cost: PACK_TRAIT.cost },
+  { t: "selective", icon: "🧐", name: "Selective", what: "leaves things below a rarity", cost: 0 },
+  { t: "cageFilter", icon: "🔒", name: "Cage filter", what: "only cages a rarity or better", cost: 0 },
+];
 function SkillsTab({ game }: { game: Game }) {
-  const k = game.klutz, lv = clampLevel(k.level), free = skillPointsFree(k);
+  const k = game.klutz, free = skillPointsFree(k);
+  const picked = traitsPicked(k), picksFree = traitPicks(k) - picked.length, next = nextTraitLevel(k);
   const packs = game.packUpgradesHeld().length;
   const rarityChips = (value: Rarity | null | undefined, set: (r: Rarity | null) => void, options: (Rarity | null)[], label: (r: Rarity | null) => string) => (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
@@ -287,26 +294,25 @@ function SkillsTab({ game }: { game: Game }) {
       </div>
 
       <div className="stone-panel" style={{ marginTop: 10 }}>
-        <div className="pixel-font" style={{ fontSize: 18, color: GOLD }}>Traits</div>
-        <div style={{ marginTop: 8 }}>
-          <b style={{ color: GOLD }}>🎒 Bigger Pack</b> <span style={{ fontSize: 12, color: MUTED }}>Lv {PACK_TRAIT.level} · +{PACK_TRAIT.slots} slots</span>
-          <div style={{ marginTop: 6 }}>
-            {k.traits?.pack ? <span style={{ fontSize: 13, color: "#7CFC9A" }}>Learned.</span>
-              : <button className="chip" style={{ minHeight: 44 }} disabled={!canBuyPackTrait(k) || game.gold < PACK_TRAIT.cost} onClick={game.buyKlutzPackTrait}>
-                  {lv < PACK_TRAIT.level ? `Opens at Lv ${PACK_TRAIT.level}` : <>Learn it · <Coin /> {PACK_TRAIT.cost}</>}
-                </button>}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>Traits</div>
+          <span style={{ fontSize: 13, color: picksFree > 0 ? "#7CFC9A" : MUTED }}>{picksFree > 0 ? `${picksFree} to pick` : next ? `Next pick at Lv ${next}` : "All picked"}</span>
+          <Help title="Klutz's traits"><p>He picks a trait at <b>Lv {TRAIT_LEVELS.join(", ")}</b>: any one he hasn&apos;t got, in any order. The Bigger Pack costs gold when you pick it.</p></Help>
+        </div>
+        {TRAIT_KEYS_UI.map(({ t, icon, name, what, cost }) => (
+          <div key={t} style={{ marginTop: 10 }}>
+            <b style={{ color: GOLD }}>{icon} {name}</b> <span style={{ fontSize: 12, color: MUTED }}>{what}</span>
+            {picked.includes(t)
+              ? t === "pack" ? <div style={{ fontSize: 13, color: "#7CFC9A", marginTop: 4 }}>Picked.</div>
+                : t === "selective" ? rarityChips(k.traits?.selective, game.setKlutzSelective, [null, "uncommon", "rare", "epic"], (r) => (r ? `${cap(r)}+` : "Take all"))
+                : rarityChips(k.traits?.cageFilter, game.setKlutzCageFilter, [null, "uncommon", "rare", "epic"], (r) => (r ? `${cap(r)}+` : "Cage all"))
+              : <div style={{ marginTop: 6 }}>
+                  <button className="chip" style={{ minHeight: 44 }} disabled={!canPickTrait(k, t) || (cost > 0 && game.gold < cost)} onClick={() => game.pickKlutzTrait(t)}>
+                    Pick it{cost > 0 && <> · <Coin /> {cost}</>}
+                  </button>
+                </div>}
           </div>
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <b style={{ color: GOLD }}>🧐 Selective</b> <span style={{ fontSize: 12, color: MUTED }}>Lv {SELECTIVE_LEVEL} · leaves things below a rarity</span>
-          {selectiveOpen(k) ? rarityChips(k.traits?.selective, game.setKlutzSelective, [null, "uncommon", "rare", "epic"], (r) => (r ? `${cap(r)}+` : "Take all"))
-            : <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>Opens at Lv {SELECTIVE_LEVEL}.</div>}
-        </div>
-        <div style={{ marginTop: 12 }}>
-          <b style={{ color: GOLD }}>🔒 Cage filter</b> <span style={{ fontSize: 12, color: MUTED }}>Lv {CAGE_FILTER_LEVEL} · only cages a rarity or better</span>
-          {cageFilterOpen(k) ? rarityChips(k.traits?.cageFilter, game.setKlutzCageFilter, [null, "uncommon", "rare", "epic"], (r) => (r ? `${cap(r)}+` : "Cage all"))
-            : <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>Opens at Lv {CAGE_FILTER_LEVEL}.</div>}
-        </div>
+        ))}
       </div>
 
       <div className="stone-panel" style={{ marginTop: 10 }}>

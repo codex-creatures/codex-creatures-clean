@@ -14,7 +14,7 @@ import { findPrice } from "@/lib/scanReveal";
 import { clearDungeon, loadDungeon, saveDungeon, gearEntry, gearIdOf, lootIdOf, codexPrice, codexSellPrice, onBindle, bagSize, wareDrop, BACKPACK, BAG_MAX, type Ware } from "@/lib/dungeon/run";
 import { codexDrop, potionDrop, retiredCodexMove } from "@/lib/drops";
 import type { Rarity } from "@/lib/items/budgets";
-import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, destCost, spendSkill, canBuyPackTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type BossClears, type SendBlock } from "@/lib/klutz";
+import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
@@ -540,9 +540,10 @@ export function useGameState(initialTab: TabKey = "all") {
   }
   // His skills and traits (v2, his Skills tab).
   const spendKlutzSkill = (s: SkillKey) => setKlutz((k) => spendSkill(k, s));
-  function buyKlutzPackTrait(): boolean {
-    if (!canBuyPackTrait(klutz) || !spendGold(PACK_TRAIT.cost)) return false;
-    setKlutz((k) => ({ ...k, traits: { ...k.traits, pack: true } }));
+  // A trait pick (one at each of TRAIT_LEVELS): the Bigger Pack costs PACK_TRAIT.cost.
+  function pickKlutzTrait(t: TraitKey): boolean {
+    if (!canPickTrait(klutz, t) || (t === "pack" && !spendGold(PACK_TRAIT.cost))) return false;
+    setKlutz((k) => pickTrait(k, t));
     return true;
   }
   // Selective: leave things below this rarity (null: take everything). The cage filter: only cage creatures of this rarity or better.
@@ -1214,6 +1215,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, buyKlutzPackTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

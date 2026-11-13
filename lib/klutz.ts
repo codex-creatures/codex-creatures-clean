@@ -17,9 +17,10 @@
 //   time it also drops a piece of its gear (GEAR_DROP_CHANCE).
 // - His skills (a point a level) give a chance of an extra find each window:
 //   Armourer (gear), Scavenger (materials, consumables), Scholar (codexes);
-//   Trapping raises his catch chances. His traits: a bigger pack (Lv 5,
-//   bought), Selective (Lv 10: leave things below a rarity), and a cage
-//   filter (Lv 15: only cage creatures of a rarity or better).
+//   Trapping raises his catch chances. His traits, one picked at each of
+//   Lv 5, 10 and 15 in any order: a bigger pack (bought), Selective (leave
+//   things below a rarity), and a cage filter (only cage creatures of a
+//   rarity or better).
 // - He comes home when his pack is full, when he's down to HOME_AT of his HP
 //   (he doesn't heal on the way), or when something beats him (no penalty:
 //   he keeps everything). You can call him back any time. He can set off
@@ -65,7 +66,7 @@ export const XP_SHARE = 0.5;                  // his XP, as a share of the old r
 export const MAX_WINDOWS = 100;               // a safety stop: about 33 hours out
 export const PACK_START = 8;                  // his pack: slots for what he finds (creatures go to the cage)
 export const PACK_MAX = 20;
-export const PACK_TRAIT = { level: 5, cost: 1000, slots: 4 }; // the Bigger Pack trait
+export const PACK_TRAIT = { cost: 1000, slots: 4 }; // the Bigger Pack trait (bought when picked)
 export const PACK_UPGRADE_PRICES = [500, 750, 1000, 1500, 2000, 2500, 3000, 4000]; // a merchant's pack upgrade (+1), dearer each time
 export const CHEST_START = 30;                // his chest at home
 export const CHEST_STEP = 10;                 // …each upgrade
@@ -73,8 +74,8 @@ export const CHEST_PRICES = [500, 1000, 2000, 3000, 5000];
 export const SKILL_MAX = 10;
 export const SKILL_STEP = 0.03;               // Armourer, Scavenger, Scholar: an extra find's chance a level, each window
 export const TRAP_STEP = 0.02;                // Trapping: catch chance a level
-export const SELECTIVE_LEVEL = 10;
-export const CAGE_FILTER_LEVEL = 15;
+// His traits (the user, 2026-11-14): a pick at each of these levels, any trait not yet picked, in any order.
+export const TRAIT_LEVELS = [5, 10, 15];
 
 export type KlutzDest = DungeonId; // 0 the Encampment, 1 the Cyclops, 2 the Hydra, 3 the Abyss
 export const KLUTZ_DESTS: Record<KlutzDest, { name: string; best: Rarity; levelsUp: number; firstStrike: number; lift: number }> = {
@@ -90,7 +91,10 @@ export const destOpen = (d: KlutzDest, c: BossClears) => d === 0 || (d === 1 && 
 
 export type SkillKey = "trapping" | "armourer" | "scavenger" | "scholar";
 export const SKILL_KEYS: SkillKey[] = ["trapping", "armourer", "scavenger", "scholar"];
-export type KlutzTraits = { pack?: boolean; selective?: Rarity | null; cageFilter?: Rarity | null };
+export type TraitKey = "pack" | "selective" | "cageFilter";
+export const TRAIT_KEYS: TraitKey[] = ["pack", "selective", "cageFilter"];
+// picked: the traits he's picked, in order; pack: the Bigger Pack is his; selective, cageFilter: their settings.
+export type KlutzTraits = { picked?: TraitKey[]; pack?: boolean; selective?: Rarity | null; cageFilter?: Rarity | null };
 
 // Older constants (trips planned before v2 still read with them).
 export const WALK_MIN_MS = 20 * 60 * 1000;
@@ -222,12 +226,21 @@ export const catchChance = (r: Rarity, trapping = 0) => Math.min(1, CATCH_CHANCE
 // ── His pack and chest (v2) ──
 export const packSize = (k: KlutzState) => Math.min(PACK_MAX, PACK_START + (k.traits?.pack ? PACK_TRAIT.slots : 0) + (k.packs ?? 0));
 export const packUpgradePrice = (k: KlutzState) => PACK_UPGRADE_PRICES[Math.min(PACK_UPGRADE_PRICES.length - 1, k.packs ?? 0)];
-export const canBuyPackTrait = (k: KlutzState) => !k.traits?.pack && clampLevel(k.level) >= PACK_TRAIT.level;
+
 export const chestSize = (k: KlutzState) => CHEST_START + CHEST_STEP * (k.chestUps ?? 0);
 export const chestUpgradePrice = (k: KlutzState) => CHEST_PRICES[k.chestUps ?? 0]; // undefined: fully built
-// His traits: Selective and the cage filter open with his level.
-export const selectiveOpen = (k: KlutzState) => clampLevel(k.level) >= SELECTIVE_LEVEL;
-export const cageFilterOpen = (k: KlutzState) => clampLevel(k.level) >= CAGE_FILTER_LEVEL;
+// His traits: what he's picked, the picks his level has given him, and picking one.
+export const traitsPicked = (k: KlutzState): TraitKey[] => TRAIT_KEYS.filter((t) => k.traits?.picked?.includes(t) || (t === "pack" && !!k.traits?.pack));
+export const traitPicks = (k: KlutzState) => TRAIT_LEVELS.filter((l) => clampLevel(k.level) >= l).length;
+export const nextTraitLevel = (k: KlutzState) => TRAIT_LEVELS.find((l) => l > clampLevel(k.level)); // undefined: he's had them all
+export const canPickTrait = (k: KlutzState, t: TraitKey) => !traitsPicked(k).includes(t) && traitsPicked(k).length < traitPicks(k);
+export function pickTrait(k: KlutzState, t: TraitKey): KlutzState {
+  if (!canPickTrait(k, t)) return k;
+  return { ...k, traits: { ...k.traits, picked: [...traitsPicked(k), t], ...(t === "pack" ? { pack: true } : {}) } };
+}
+export const canBuyPackTrait = (k: KlutzState) => canPickTrait(k, "pack");
+export const selectiveOpen = (k: KlutzState) => traitsPicked(k).includes("selective");
+export const cageFilterOpen = (k: KlutzState) => traitsPicked(k).includes("cageFilter");
 
 export type KlutzStatus =
   | { kind: "away"; expedition: Expedition; seen: KlutzEncounter[]; hp: number } // in the Labyrinth (hp: after his last fight)
@@ -310,7 +323,9 @@ export type TripPlan = {
 export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math.random, plan: TripPlan = { dest: 0, explorer: 30 }): Expedition {
   const L = clampLevel(plan.level), where = KLUTZ_DESTS[plan.dest];
   const sk = (s: SkillKey) => Math.min(SKILL_MAX, plan.skills?.[s] ?? 0);
-  const pack = plan.pack ?? PACK_START, leave = plan.traits?.selective ?? null, cageFrom = plan.traits?.cageFilter ?? null;
+  // (A setting counts only once its trait's picked: a trip plan with no `picked` list is a test's, taken as it is.)
+  const has = (t: TraitKey) => !plan.traits?.picked || plan.traits.picked.includes(t);
+  const pack = plan.pack ?? PACK_START, leave = has("selective") ? plan.traits?.selective ?? null : null, cageFrom = has("cageFilter") ? plan.traits?.cageFilter ?? null : null;
   const cap = (r: Rarity) => capRarity(r, plan.dest, L, plan.explorer);
   const roll = () => cap(where.lift && rng() < where.lift ? RARITIES[Math.min(4, ri(rollRarity(rng)) + 1)] : rollRarity(rng));
   const startHp = Math.min(klutz.maxHp, plan.startHp ?? klutz.maxHp);

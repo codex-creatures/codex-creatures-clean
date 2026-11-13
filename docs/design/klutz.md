@@ -26,7 +26,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - **Home** when his pack is full, when he's down to 10% HP (`HOME_AT`), or when something beats him: no penalty, he
     keeps everything. Call him back any time. He can set off from 40% HP (`SEND_AT`; the pool still heals 1 HP every
     10 s), not while his chest is full, and not without the gold. A safety stop after 100 finds (about 33 h).
-  - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (Lv 5, 1,000 gold, +4) and **Pack
+  - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (1,000 gold when picked, +4) and **Pack
     Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at 500 rising to 4,000: `KLUTZ_PACK_PRICES`),
     sewn on from his Skills tab.
   - **His chest** (the crate) takes codexes, potions and gear; materials go straight to your tally. It holds 30
@@ -34,8 +34,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - **Skills** (a point a level over 1, each up to 10): **Trapping** (+2% catch chance a level), **Armourer**,
     **Scavenger**, **Scholar** (each +3% a level: an extra weapon or armour, material or potion, or codex in each
     20-minute window). 🧪 The steps are Claude's. A re-spec hands them back with his % points.
-  - **Traits:** Bigger Pack (above); **Selective** (Lv 10: he leaves things below a rarity you pick); **cage filter**
-    (Lv 15: he only cages creatures of a rarity you pick or better).
+  - **Traits** (the user, 2026-11-14): he picks one at **Lv 5, 10 and 15** (`TRAIT_LEVELS`), any he hasn't got, in any
+    order: the Bigger Pack (above), **Selective** (he leaves things below a rarity you pick) or the **cage filter** (he
+    only cages creatures of a rarity you pick or better).
   - **Screens:** his page has three tabs under his card: Send (the dungeons as fixed rows, best rarity and cost, one
     button that says why he can't go; while he's out, HP, pack and a log), Skills, and Chest (its fill and upgrade).
   - Trips planned before v2 keep their own rules (fights with a find each) and still hand over what they held.
