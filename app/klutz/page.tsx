@@ -39,11 +39,13 @@ const GOLD = "#f1d9a0";
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const DEST_ICON: Record<KlutzDest, string> = { 0: "⛺", 1: "👁️", 2: "🐍", 3: "🕳️" };
 const DEST_OPENS: Record<KlutzDest, string> = { 0: "", 1: "Beat the Cyclops", 2: "Beat the Hydra", 3: "Beat the Warden" };
+// What a skill does now (or, untrained, what a point gives).
+const pct = (s: SkillKey, lv: number) => Math.round(skillChance(s, lv) * 100);
 const SKILL_INFO: Record<SkillKey, { name: string; icon: string; what: (lv: number) => string }> = {
-  trapping: { name: "Trapping", icon: "🪤", what: (lv) => `+${Math.round(skillChance("trapping", lv) * 100)}% catch chance` },
-  armourer: { name: "Armourer", icon: "⚔️", what: (lv) => `${Math.round(skillChance("armourer", lv) * 100)}% an extra weapon or armour` },
-  scavenger: { name: "Scavenger", icon: "🧪", what: (lv) => `${Math.round(skillChance("scavenger", lv) * 100)}% an extra material or potion` },
-  scholar: { name: "Scholar", icon: "📜", what: (lv) => `${Math.round(skillChance("scholar", lv) * 100)}% an extra codex` },
+  trapping: { name: "Trapping", icon: "🪤", what: (lv) => (lv ? `+${pct("trapping", lv)}% catch chance` : `+${pct("trapping", 1)}% catch chance a point`) },
+  armourer: { name: "Armourer", icon: "⚔️", what: (lv) => `${pct("armourer", lv || 1)}%${lv ? "" : " a point"}: an extra weapon or armour` },
+  scavenger: { name: "Scavenger", icon: "🧪", what: (lv) => `${pct("scavenger", lv || 1)}%${lv ? "" : " a point"}: an extra material or potion` },
+  scholar: { name: "Scholar", icon: "📜", what: (lv) => `${pct("scholar", lv || 1)}%${lv ? "" : " a point"}: an extra codex` },
 };
 const BLOCK_TEXT: Record<SendBlock, string> = { away: "He's out exploring.", hurt: "", chest: "His chest is full: empty it first.", closed: "Locked.", gold: "Not enough gold." };
 
