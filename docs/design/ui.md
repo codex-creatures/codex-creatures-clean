@@ -34,6 +34,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - **Text budgets** (lib/uiText.ts, checked by tests/uiText.test.ts): a card's name gets two lines
     of at most 14 letters (`CARD_NAME_LINE`), a move tablet's two lines of 12 (`MOVE_NAME_LINE`).
     New creature and move names must fit: write them shorter rather than growing the box.
+  - **Move text everywhere it's shown** (the user, 2026-11-14: names were split on narrow tablets,
+    and descriptions didn't fit the tablet's back). On a narrow tablet (the battle dock, Klutz's
+    tour) the name runs under the i's and the cost's corners (`NAME_INSET`) and shrinks so its
+    longest word fits, never below 10px (`NAME_MIN_PX`). Klutz's tour shows two tablets a row. The
+    i opens one fixed details window over the screen (MoveTile's `MoveDetails`) instead of flipping
+    the tablet; a description gets at most 7 lines of 38 letters there (`DESC_LINE`, `DESC_LINES`),
+    with 3 lines kept for a fight's effect lines. tests/uiText.test.ts checks every move at every
+    place in `TABLET_PLACES` (a 360 × 640 phone); `/lab/movetext` measures the same in a browser and
+    the estimates against the real fonts (re-run it after changing the font or a tablet's layout).
   - Built this way (2026-10-26): cards (the name box is always two lines tall), move tablets (name
     box plus one tag/note line, kept when empty), the item window (one fixed size; the ←/→ row
     kept), the creature window's gear picker (a 3×3 grid that scrolls inside itself past 9 pieces, so the Equip button and the stat list below stay put; under it the picked piece's name, five fixed stat boxes in the Stats list's icons and colours with ▲/▼ against what's worn, set and owner lines; no Cancel: tap off the picker to close it; the 🔒 line kept), librarian rows

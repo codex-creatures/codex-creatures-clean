@@ -12,7 +12,8 @@ import { coreMove } from "@/lib/creatures/raceKitsV2";
 import type { TourPicture as Picture } from "@/lib/tour";
 
 const STYLES: CombatClass[] = ["melee", "ranged", "magic"];
-const ROW: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6, marginTop: 8 };
+// Two tablets a row: three across is too narrow for their names (lib/uiText.ts TABLET_PLACES).
+const ROW: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6, marginTop: 8 };
 const CELL: React.CSSProperties = { height: 64 };
 const CAPTION: React.CSSProperties = { fontSize: 12, textAlign: "center", marginTop: 3 };
 // A move, by name (codex moves carry their race's stone).

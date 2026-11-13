@@ -82,7 +82,7 @@ const COMBAT: TourStep[] = [
   { path: "/", show: "tablets", say: "Moves are stone tablets. A creature's own moves are grey: neutral, they land the same on everyone. Codex moves are cut in their race's colour." },
   { path: "/", show: "styles", say: "The mark carved behind the name is the move's style. An impact is melee, an arrow is ranged, a bolt is magic." },
   { path: "/", show: "styles", say: "The style picks the stats: a melee move uses your melee attack against their melee defence. Same for ranged and magic." },
-  { path: "/", show: "flip", say: "Tap the i on a tablet to flip it over: its power, its cost and what it does. Go on, try it! (Tap anywhere else to carry on.)" },
+  { path: "/", show: "flip", say: "Tap the i on a tablet for its details: its power, its cost and what it does. Go on, try it! (Tap anywhere else to carry on.)" },
   { path: "/", show: "energy", say: `The number in the corner is its energy (⚡) cost. Everyone starts a fight on ${MAX_ENERGY}, and gets ${ENERGY_REGEN} back after every attack.` },
   { path: "/", show: "energy", say: `So big moves need a turn or two of saving up. Every creature keeps a cheap move (${STEADY_MAX_ENERGY} or less), so it can always attack.` },
   { path: "/", show: "chart", say: `The race chart. Your move's race down the side, theirs along the top. ▲ is effective: +${pct(RACE_EFFECT.strong - 1)} damage. ▼ is resisted: −${pct(1 - RACE_EFFECT.resisted)}.` },
