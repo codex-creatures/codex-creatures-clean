@@ -7,7 +7,8 @@
 // with a ❗ over them (tap them for their wares: app/visitor).
 // In its back corner, the Sparring Pit (the Training Pit once built over it; tap
 // it for its own window), with a ❗ while a level's ready. Left of it, flat
-// against the back-left wall, the PvP portal (app/pvp: duels, teams, ranked).
+// against the back-left wall, the PvP portal (app/pvp: duels, teams, ranked),
+// with how many other players are on now glowing over it while you're signed in.
 
 import { useEffect, useState } from "react";
 import PixelSprite from "@/components/PixelSprite";
@@ -18,6 +19,7 @@ import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { COLLECTOR, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { tavernVisitor, type TavernQuest } from "@/lib/tavern";
+import { lobbyAccount, onPlayersOnline, othersOnline, playersOnline } from "@/lib/online/duelChannel";
 
 const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in the room
 
@@ -50,11 +52,20 @@ const PORTAL_SCALE = 1.4;
 const PORTAL_BASE = { u: 0.05, v: 8.6, x: 48, y: 138 };
 const PORTAL_GLOW = { x: 48, y: 94 };
 
+// How many other players are in the lobby now (null: you're not in it, so nothing's shown).
+function useOthersOnline(): number | null {
+  const [ids, setIds] = useState(() => playersOnline());
+  useEffect(() => onPlayersOnline(setIds), []);
+  const me = lobbyAccount();
+  return me ? othersOnline(ids, me) : null;
+}
+
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).
 export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: TavernQuest; firstClearRun?: number; pit?: { ready: boolean } }) {
   const visitor = tavernVisitor(t);
   const head = CREATURE_SPRITES.cyclops;
+  const others = useOthersOnline();
   return (
     <>
       {/* The PvP portal, on the back wall. */}
@@ -69,6 +80,11 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
               style={{ left: pct(PORTAL_GLOW.x, PORTAL.w), top: pct(PORTAL_GLOW.y, PORTAL.h), width: "90%", aspectRatio: "1", background: "radial-gradient(circle, rgba(130, 190, 110, 0.3), rgba(90, 150, 80, 0.1) 45%, transparent 70%)" }} />
             <div className="pixel-font"
               style={{ position: "absolute", left: "50%", bottom: "100%", translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%" }}>
+              {others !== null && (
+                <span className={`portal-online${others > 0 ? " portal-online-on" : ""}`} aria-label={`${others} other ${others === 1 ? "player" : "players"} online`}>
+                  {others}
+                </span>
+              )}
               PvP Portal
             </div>
           </div>

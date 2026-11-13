@@ -67,10 +67,16 @@ export function listenInbox(client: SupabaseClient, me: string, h: InboxHandlers
   return () => { client.removeChannel(ch); };
 }
 
-// Who's in the game right now (account ids), for the friend list's dots.
+// Who's in the game right now (account ids), for the friend list's dots and
+// the count over the PvP portal. lobbyMe: your own id while you're in the lobby
+// (null: not signed in, or no online in this copy).
 let onlineNow = new Set<string>();
+let lobbyMe: string | null = null;
 const onlineListeners = new Set<(ids: Set<string>) => void>();
 export const playersOnline = () => onlineNow;
+export const lobbyAccount = () => lobbyMe;
+// How many others are on now (you don't count: you can't challenge yourself).
+export const othersOnline = (ids: Set<string>, me: string) => [...ids].filter((id) => id !== me).length;
 export function onPlayersOnline(fn: (ids: Set<string>) => void): () => void {
   onlineListeners.add(fn);
   return () => { onlineListeners.delete(fn); };
@@ -78,6 +84,7 @@ export function onPlayersOnline(fn: (ids: Set<string>) => void): () => void {
 
 export function joinLobby(client: SupabaseClient, me: string): () => void {
   const ch = client.channel("lobby", { config: { presence: { key: me } } });
+  lobbyMe = me;
   ch.on("presence", { event: "sync" }, () => {
     onlineNow = new Set(Object.keys(ch.presenceState()));
     for (const fn of onlineListeners) fn(onlineNow);
@@ -86,6 +93,7 @@ export function joinLobby(client: SupabaseClient, me: string): () => void {
   return () => {
     client.removeChannel(ch);
     onlineNow = new Set();
+    lobbyMe = null;
     for (const fn of onlineListeners) fn(onlineNow);
   };
 }

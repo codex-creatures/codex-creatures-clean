@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { addFriend, fetchFriends, parseFriends, removeFriend } from "../lib/online/friends";
-import { parseInvite } from "../lib/online/duelChannel";
+import { othersOnline, parseInvite } from "../lib/online/duelChannel";
 import { parseBoard } from "../lib/leaderboard";
 
 // A stand-in for the friends table: records what was asked.
@@ -53,5 +53,13 @@ describe("duel invites", () => {
     expect(parseInvite({ ...good, format: "9v9" })).toBeNull();
     expect(parseInvite({ ...good, from: { id: "u1" } })).toBeNull();
     expect(parseInvite(null)).toBeNull();
+  });
+});
+
+describe("the count over the PvP portal", () => {
+  it("counts everyone in the lobby but you", () => {
+    expect(othersOnline(new Set(["me", "a", "b"]), "me")).toBe(2);
+    expect(othersOnline(new Set(["me"]), "me")).toBe(0);
+    expect(othersOnline(new Set(), "me")).toBe(0);
   });
 });

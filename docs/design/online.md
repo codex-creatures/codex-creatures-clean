@@ -154,7 +154,9 @@ account, kept entirely apart from Vouchee.
     there once the rubble's blown open (the second room). Tap it for three tabs: **Duel a
     friend** (the friend list and duel options, components/FriendList.tsx, also still behind 👥
     on the quest board), **Teams** and **Ranked**. A finished or cancelled duel goes back to the
-    portal (to the board for a player whose rubble is still shut).
+    portal (to the board for a player whose rubble is still shut). While you're signed in, a number
+    over its name says how many other players are on now (the lobby's presence, lib/online/duelChannel.ts;
+    you don't count), glowing green when it's 1 or more, dim at 0 (the user, 2026-11-14).
   - ✅ **PvP teams** (the user, 2026-11-04; lib/pvp/teams.ts, save field `pvpTeams`, optional,
     default empty): 3 saved line-ups, apart from the Labyrinth's teams, each up to 7 (a 5v5 and
     2 more), in order. Each shows its **rarest** creature or gear. When picking your team in a

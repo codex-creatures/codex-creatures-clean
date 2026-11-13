@@ -663,7 +663,11 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 /* The PvP portal's swirl (components/TavernRoom.tsx): its light swells and fades. */
 .portal-glow { position: absolute; transform: translate(-50%, -50%); pointer-events: none; animation: portal-pulse 2.4s ease-in-out infinite; }
 @keyframes portal-pulse { 0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(0.92); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); } }
-@media (prefers-reduced-motion: reduce) { .den-glow, .den-glow-pulse, .portal-glow { animation: none; } }
+/* Over its name: how many other players are on now, glowing green while there's anyone to challenge. */
+.portal-online { position: absolute; left: 50%; bottom: 100%; translate: -50% 0; margin-bottom: 2px; font-size: 1.5em; line-height: 1; color: rgba(241, 217, 160, 0.45); }
+.portal-online-on { color: #c8f5a8; text-shadow: 0 0 4px #7fd65a, 0 0 10px rgba(110, 200, 80, 0.8); animation: portal-online-pulse 2.4s ease-in-out infinite; }
+@keyframes portal-online-pulse { 0%, 100% { text-shadow: 0 0 3px #7fd65a, 0 0 6px rgba(110, 200, 80, 0.5); } 50% { text-shadow: 0 0 5px #9ff07a, 0 0 14px rgba(110, 200, 80, 0.95); } }
+@media (prefers-reduced-motion: reduce) { .den-glow, .den-glow-pulse, .portal-glow, .portal-online-on { animation: none; } }
 
 /* Level-up show (components/LevelUpShow.tsx). */
 .levelup-pop { animation: levelup-pop 0.45s cubic-bezier(.2,1.4,.4,1) both; }
