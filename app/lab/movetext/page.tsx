@@ -6,13 +6,18 @@
 // lib/uiText.ts estimates (NAME_EM, DESC_LINE), so the quick tests' sums can be checked against a
 // real browser. Failures are listed at the top, and as JSON in #report for scripts.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { MoveDetails, MoveTile } from "@/components/MoveTile";
 import { MOVE_BY_NAME, type Skill } from "@/lib/creatures/creatureData";
 import { DESC_LINE, EXTRA_LINES, MOVE_DETAILS, NAME_EM, PHONE, TABLET_PLACES, wrapLines } from "@/lib/uiText";
 
 // A fight's effect lines at their longest (components/BattleScreen.tsx MoveButton's tags).
 const SAMPLE_EXTRA = ["40%: they flee · else attacks −20%", "poison cloud: 6% a round, 2–4 rounds", "recharging: 2 rounds"].slice(0, EXTRA_LINES);
+
+// True once in the browser. The tiles are only drawn there: drawn at build time, every move in
+// every place came to over 20 MB of HTML, past what Vercel will deploy (2026-11-14).
+const noSubscribe = () => () => {};
+const useInBrowser = () => useSyncExternalStore(noSubscribe, () => true, () => false);
 
 type Miss = { place: string; move: string; why: string };
 type Report = { misses: Miss[]; nameEm: number; descWorst: { move: string; lines: number; estimate: number } | null };
@@ -46,8 +51,10 @@ export default function MoveTextLab() {
   const moves: Skill[] = [...new Map(Object.values(MOVE_BY_NAME).map((m) => [m.name, m])).values()].sort((a, b) => a.name.localeCompare(b.name));
   const root = useRef<HTMLDivElement>(null);
   const [report, setReport] = useState<Report | null>(null);
+  const inBrowser = useInBrowser();
 
   useEffect(() => {
+    if (!inBrowser) return;
     let live = true;
     document.fonts.ready.then(() => requestAnimationFrame(() => {
       if (!live || !root.current) return;
@@ -74,7 +81,7 @@ export default function MoveTextLab() {
       setReport({ misses, nameEm: Math.round(nameEm * 1000) / 1000, descWorst });
     }));
     return () => { live = false; };
-  }, []);
+  }, [inBrowser]);
 
   const places = [...TABLET_PLACES.map((p) => ({ id: p.id, name: p.name })), { id: "details", name: "The details window" }];
   return (
@@ -102,7 +109,7 @@ export default function MoveTextLab() {
         })}
         <pre id="report" hidden>{report === null ? "" : JSON.stringify(report)}</pre>
       </section>
-      <div ref={root}>
+      {inBrowser && <div ref={root}>
         {TABLET_PLACES.map((p) => (
           <section key={p.id} style={{ margin: "18px 0" }}>
             <h2 className="pixel-font" style={{ fontSize: 15, color: "#f1d9a0" }}>{p.name}</h2>
@@ -124,7 +131,7 @@ export default function MoveTextLab() {
             {moves.map((m) => <div key={m.name} data-cell data-place="details" data-move={m.name}><MoveDetails m={m} extra={SAMPLE_EXTRA} /></div>)}
           </div>
         </section>
-      </div>
+      </div>}
     </main>
   );
 }
