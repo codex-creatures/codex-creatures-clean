@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { startWalkRun, walkInto, walkRoom, walkKeep, waitsHere, headHome } from "../lib/dungeon/walkRun";
 import { torchReach, FLARE_WALK, FLARE_REACH, TORCH_RADIUS } from "../lib/dungeon/torch";
-import { hasFight, atTheTop, endRun, wonAtTop, type Cage, type DungeonRun, type DungeonSave } from "../lib/dungeon/run";
+import { hasFight, atTheTop, endRun, wonAtTop, leaveSack, type Cage, type DungeonRun, type DungeonSave } from "../lib/dungeon/run";
 import { isSpawn, parentOf, spawnOf, sees, endOf, WAIT_REACH } from "../lib/dungeon/foes";
 import { layoutFloorplan, TWO_DEN_SHAPES, LARGE_SHAPE } from "../lib/dungeon/layout";
 import { FLOOR } from "../lib/dungeon/floorplan";
@@ -191,5 +191,24 @@ describe("flares, walking", () => {
     expect(torchReach(1)).toBe(TORCH_RADIUS * 2);
     expect(torchReach(0)).toBe(TORCH_RADIUS);
     expect(torchReach()).toBe(TORCH_RADIUS);
+  });
+});
+
+describe("leaving a room with a sack in it", () => {
+  const gold = (amount: number) => ({ id: "g", barcode: "", dropType: "reward" as const, rewardKind: "resource" as const, amount, createdAt: "" });
+  const sack = [{ potion: "lesser" as const }, { gold: 12 }];
+  const withStash = (run: DungeonRun, opened: boolean): DungeonRun => ({ ...run, current: { kind: "stash", sack, done: false, ...(opened ? { opened: true } : {}) } });
+  it("walking, an unopened stash keeps what's in it, to open when you come back", () => {
+    const run = withStash(begin(), false);
+    expect(leaveSack(run, "r1", gold)).toBe(run);
+  });
+  it("on the scroll, an unopened stash is gone with its room", () => {
+    const run = withStash({ ...begin(), walk: undefined }, false);
+    expect(leaveSack(run, "r1", gold).current?.sack).toEqual([]);
+  });
+  it("an opened one's leftovers go on the floor, walking or not", () => {
+    const after = leaveSack(withStash(begin(), true), "r1", gold);
+    expect(after.current?.sack).toEqual([]);
+    expect(after.floor).toEqual([{ room: "r1", potion: "lesser" }, { room: "r1", drop: gold(12) }]);
   });
 });

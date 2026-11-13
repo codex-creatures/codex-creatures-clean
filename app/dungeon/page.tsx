@@ -40,7 +40,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
@@ -659,15 +659,8 @@ export default function DungeonPage() {
       if ((loadDungeon().run?.current?.sack ?? []).length === sack.length) break;
     }
   }
-  // Whatever you leave in a sack or chest you opened stays on the floor (to
-  // pick up in the haul once the boss is beaten). One you never opened
-  // keeps what's in it: loot only ever comes out of an opened chest or sack.
-  const leaveSack = (r: DungeonRun): DungeonRun => {
-    const sack = (r.current?.opened ? r.current.sack : undefined) ?? [];
-    if (sack.length === 0) return r.current?.sack?.length ? { ...r, current: { ...r.current, sack: [] } } : r;
-    const floor: FloorItem[] = sack.filter((x) => !("backpack" in x)).map((x) => ("potion" in x ? { room: here(r), potion: x.potion } : { room: here(r), drop: "gold" in x ? goldOnly(x.gold) : (x as { gear: Drop }).gear }));
-    return { ...r, floor: [...(r.floor ?? []), ...floor], current: r.current ? { ...r.current, sack: [] } : r.current };
-  };
+  // Leaving a room: an opened sack's leftovers go on the floor (run.ts leaveSack).
+  const leaveSack = (r: DungeonRun): DungeonRun => leaveRunSack(r, here(r), goldOnly);
 
   // Between rooms: drink a potion on anyone still standing.
   function drink(key: PotionKey, id: string) {

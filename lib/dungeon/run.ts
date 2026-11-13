@@ -1271,6 +1271,18 @@ export function moveOn(run: DungeonRun, nodeId: string, rng: Rng = Math.random):
   return next.path.length > run.path.length ? next : run;
 }
 
+// Leaving a room: whatever you left in a sack or chest you opened stays on the
+// floor (`at`, to pick up in the haul once the boss is beaten). One you never
+// opened gives you nothing: on the scroll it's gone with the room. Walking, you
+// can come back to it, so it keeps what's in it (left emptied, a passing walk
+// through its room made later stashes and chests empty).
+export function leaveSack(r: DungeonRun, at: string, gold: (amount: number) => Drop): DungeonRun {
+  const sack = (r.current?.opened ? r.current.sack : undefined) ?? [];
+  if (sack.length === 0) return r.current?.sack?.length && !r.walk ? { ...r, current: { ...r.current, sack: [] } } : r;
+  const floor: FloorItem[] = sack.filter((x) => !("backpack" in x)).map((x) => ("potion" in x ? { room: at, potion: x.potion } : { room: at, drop: "gold" in x ? gold(x.gold) : (x as { gear: Drop }).gear }));
+  return { ...r, floor: [...(r.floor ?? []), ...floor], current: r.current ? { ...r.current, sack: [] } : r.current };
+}
+
 // The current room is finished: it's cleared, and you choose where to go.
 export function leaveRoom(run: DungeonRun): DungeonRun {
   if (!run.current) return run;
