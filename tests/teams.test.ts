@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readTeams, hasTeams, teamsWith, teamFull, toggleInTeam, teamMembers, TEAM_SLOTS } from "../lib/teams";
+import { readTeams, hasTeams, teamsWith, teamFull, toggleInTeam, teamMembers, keepOwned, TEAM_SLOTS } from "../lib/teams";
 import { PARTY_SIZE } from "../lib/dungeon/run";
 
 describe("teams", () => {
@@ -24,5 +24,12 @@ describe("teams", () => {
   it("a released creature drops out of its team", () => {
     const t = [["a", "b", "c"], [], []];
     expect(teamMembers(t, 0, new Set(["a", "c"]))).toEqual(["a", "c"]);
+  });
+  it("released creatures don't keep a full team full", () => {
+    const owned = new Set(["a", "b", "x"]);
+    const t = [["a", "b", "gone1", "gone2", "gone3"], [], []];
+    expect(teamFull(t, 0)).toBe(true);
+    expect(keepOwned(t, owned)[0]).toEqual(["a", "b"]);
+    expect(toggleInTeam(t, 0, "x", owned)[0]).toEqual(["a", "b", "x"]);
   });
 });

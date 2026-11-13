@@ -47,7 +47,7 @@ import { clearPlayTime } from "@/lib/playTime";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
 import { fitInBoxes, forFullBox, boxTier, buildBox, type CappedBox } from "@/lib/items/storage";
 import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
-import { readTeams, toggleInTeam, type Teams } from "@/lib/teams";
+import { readTeams, toggleInTeam, keepOwned, type Teams } from "@/lib/teams";
 import { readPvpTeams, togglePvpTeam, type PvpTeams } from "@/lib/pvp/teams";
 import { scanCharges, spendScan, type ScanCharges } from "@/lib/scanCharges";
 import { NEW_FIRST_SCANS, calibrating, firstScansLeft, readFirstScans, spendFirstScan, type FirstScans } from "@/lib/firstScans";
@@ -687,6 +687,9 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // Creatures in a team (teams replaced the ★ roster; a creature's old star no longer shows).
   const teamIds = useMemo(() => new Set(teams.flat()), [teams]);
+  // The creatures you have, and your teams shown without any you've since let go.
+  const creatureIds = useMemo(() => new Set(inventory.filter(isCreatureDrop).map((d) => d.id)), [inventory]);
+  const ownTeams = useMemo(() => keepOwned(teams, creatureIds), [teams, creatureIds]);
   // What shows a ★: favourited items, and creatures in a team.
   const shownFavorites = useMemo(() => {
     const creatures = new Set(inventory.filter((d) => !isRewardDrop(d) && d.dropType === "creature").map((d) => d.id));
@@ -984,7 +987,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   // Put a creature in a team, or take it out (lib/teams.ts).
   function toggleTeam(team: number, id: string) {
-    setTeams((prev) => toggleInTeam(prev, team, id));
+    setTeams((prev) => toggleInTeam(prev, team, id, creatureIds));
   }
   // …or a PvP team (lib/pvp/teams.ts).
   function togglePvp(team: number, id: string) {
@@ -1222,7 +1225,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

@@ -24,10 +24,16 @@ export const hasTeams = (teams: Teams) => teams.some((t) => t.length > 0);
 export const teamsWith = (teams: Teams, id: string) => teams.flatMap((t, i) => (t.includes(id) ? [i] : []));
 export const teamFull = (teams: Teams, team: number) => (teams[team]?.length ?? 0) >= PARTY_SIZE;
 
+// Teams without the creatures you no longer have (sold, fused, released).
+// Left in, they'd still take a place: a team could look half empty yet be full.
+export const keepOwned = (teams: Teams, owned: Set<string>): Teams => teams.map((t) => t.filter((id) => owned.has(id)));
+
 // Put a creature in a team, or take it out. A full team takes no more.
-export function toggleInTeam(teams: Teams, team: number, id: string): Teams {
+// owned: the creatures you have; any others are dropped from the team first.
+export function toggleInTeam(teams: Teams, team: number, id: string, owned?: Set<string>): Teams {
   return teams.map((t, i) => {
     if (i !== team) return t;
+    if (owned) t = t.filter((x) => x === id || owned.has(x));
     if (t.includes(id)) return t.filter((x) => x !== id);
     return t.length < PARTY_SIZE ? [...t, id] : t;
   });
