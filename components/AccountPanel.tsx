@@ -28,6 +28,8 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // Signed out here (or switching): the next Google sign-in asks which account.
+  const [pick, setPick] = useState(false);
 
   useEffect(() => {
     const problem = returnProblem(window.location.search, window.location.hash);
@@ -51,11 +53,11 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
     }
   }, [account.status]);
 
-  async function google() {
+  async function google(choose = pick) {
     const client = onlineClient();
-    if (!client || busy) return;
+    if (!client) return;
     setBusy(true); setError("");
-    const r = await signInWithGoogle(client, window.location.origin);
+    const r = await signInWithGoogle(client, window.location.origin, choose);
     if (!r.ok) { setBusy(false); setError(r.error); } // (otherwise the page is leaving for Google)
   }
   async function send() {
@@ -83,11 +85,18 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
     await signOut(client);
     forgetLastAccount(window.localStorage); // (no playing offline as them now)
     setBusy(false);
-    setAccount({ status: "out" }); setForm(null); setError("");
+    setAccount({ status: "out" }); setForm(null); setError(""); setPick(true);
   }
   function signIn() {
-    if (!EMAIL_LOGIN) { google(); return; }
+    if (!EMAIL_LOGIN) { if (!busy) google(); return; }
     setForm(form ? null : "email"); setError("");
+  }
+  // Another account: signed out, then straight to signing in (Google asks which account).
+  async function change() {
+    if (busy) return;
+    await out();
+    if (EMAIL_LOGIN) { setForm("email"); return; }
+    await google(true);
   }
 
   const s = account.status;
@@ -97,7 +106,7 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
 
   return (
     <div className="stone-panel" style={{ display: "grid", gap: 8, padding: 8 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", alignItems: "center", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: s === "in" ? "1fr auto auto auto" : "1fr auto auto", alignItems: "center", gap: 6 }}>
         <div style={{ minWidth: 0 }}>
           <div className="pixel-font" style={{ ...one, fontSize: 16, color: "#f1d9a0" }}>🌐 {label}</div>
           <div style={{ ...one, fontSize: 12, color: MUTED, visibility: sub ? undefined : "hidden" }}>{sub || "…"}</div>
@@ -111,12 +120,14 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
             <li>Your game is saved to your <b>account</b>, so it&apos;s there on any device you sign in on. The newest save always wins; the copy it replaces stays as the backup (⚙️ Settings).</li>
             <li>No internet? A device you&apos;ve played on before can play <b>offline</b>. It might be behind another device, and once you&apos;re back online the newer save wins.</li>
             <li>The global registry and PvP are on their way. Your game plays the same either way.</li>
+            <li><b>Switch</b> signs you out and lets you sign in with another account (your saves stay with each account).</li>
             <li>What&apos;s kept about you: <Link href="/privacy">Privacy</Link>.</li>
           </ul>
         </Help>
-        {s === "in" ? (
+        {s === "in" ? (<>
+          <button className="dock-tab" disabled={busy} onClick={change} style={{ minWidth: 44, minHeight: 44 }}>Switch</button>
           <button className="dock-tab" disabled={busy} onClick={out} style={{ minWidth: 44, minHeight: 44 }}>Sign out</button>
-        ) : (
+        </>) : (
           <button className="dock-tab" disabled={s !== "out" || busy} onClick={signIn}
             style={{ minWidth: 44, minHeight: 44, visibility: s === "off" ? "hidden" : undefined }}>
             {form ? "Cancel" : EMAIL_LOGIN ? "Sign in" : "Sign in with Google"}
@@ -126,7 +137,7 @@ export default function AccountPanel({ onAccount, note }: { onAccount?: (a: Acco
 
       {s === "out" && form === "email" && (
         <div style={{ display: "grid", gap: 6 }}>
-          <button className="dock-tab" disabled={busy} onClick={google}>Sign in with Google</button>
+          <button className="dock-tab" disabled={busy} onClick={() => google()}>Sign in with Google</button>
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 6 }}>
             <input type="email" autoComplete="email" inputMode="email" value={email} placeholder="…or your email"
               onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") send(); }} style={field} />

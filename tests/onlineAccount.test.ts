@@ -87,6 +87,12 @@ describe("Google sign-in", () => {
     });
   });
 
+  it("switching accounts, Google asks which one", async () => {
+    const { client, calls } = fake();
+    await signInWithGoogle(client, "o", true);
+    expect(calls.oauth).toEqual({ provider: "google", options: { redirectTo: "o" + LOGIN_RETURN_PATH, queryParams: { prompt: "select_account" } } });
+  });
+
   it("says so when it can't start", async () => {
     const r = await signInWithGoogle(fake({ throws: true }).client, "o");
     expect(r.ok === false && r.error).toMatch(/connection/);

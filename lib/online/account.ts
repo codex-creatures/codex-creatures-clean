@@ -64,11 +64,13 @@ export async function sendLoginLink(client: SupabaseClient, rawEmail: string, or
 
 // Off to Google's sign-in page; it sends the player back to the title screen.
 // Only returns if the trip couldn't start.
-export async function signInWithGoogle(client: SupabaseClient, origin: string): Promise<Result> {
+// `pick`: Google asks which account (else it signs straight back in as the one
+// it remembers, and you can't switch: the user, 2026-11-14).
+export async function signInWithGoogle(client: SupabaseClient, origin: string, pick = false): Promise<Result> {
   try {
     const { error } = await client.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: origin + LOGIN_RETURN_PATH },
+      options: { redirectTo: origin + LOGIN_RETURN_PATH, ...(pick ? { queryParams: { prompt: "select_account" } } : {}) },
     });
     return error ? { ok: false, error: explain(error, "Google sign-in couldn't start. Try again.") } : { ok: true };
   } catch (e) {

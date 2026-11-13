@@ -26,7 +26,10 @@ account, kept entirely apart from Vouchee.
 - 📌 **Accounts:** for now, **Sign in with Google** (the user, 2026-10-31); the player then picks a
   name. ✅ Built: the title screen's 🌐 box (components/AccountPanel.tsx, rules in
   lib/online/account.ts). Signing in returns to `/start`. Names are 1–16 letters and need not be
-  unique. Signing out signs out only this device. ✅ Set up and working (2026-10-31): Google Cloud
+  unique. Signing out signs out only this device. **Switch** (beside Sign out, the user, 2026-11-14) signs
+  out and goes straight to Google, which asks which account (`prompt=select_account`); after Sign
+  out, the next Google sign-in asks too (otherwise Google signs you back in as the account it
+  remembers). ✅ Set up and working (2026-10-31): Google Cloud
   project `codex-creatures`, client "Codex Creatures web". 📌 Anyone with a Google account may
   sign in (the user, 2026-10-31: players share the game freely), so the Google app is published
   rather than kept to a test-user list. Google needs the privacy page for that: `/privacy`
