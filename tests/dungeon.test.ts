@@ -339,6 +339,22 @@ describe("a labyrinth run", () => {
     expect(makeRoom("boss", Math.random, 15, 2).boss).toBe("hydra"); // (the Deep Labyrinth's boss)
   });
 
+  it("Speed Scroll opens for a dungeon once it's been beaten crawling (those that can't be crawled are always open)", async () => {
+    const { scrollOpen, CRAWLABLE } = await import("../lib/dungeon/run");
+    const meta = { runs: 4, clears: 0, injuries: {}, bag: [] };
+    const won = { ...startRun(party, party.slice(0, 3), {}, 4), status: "cleared" as const };
+    expect(CRAWLABLE.map((d) => scrollOpen(d, meta))).toEqual([false, false]);
+    expect(scrollOpen(2, meta) && scrollOpen(3, meta)).toBe(true);
+    // Beaten on the scroll: still shut. Beaten walking: open, and counted once.
+    expect(scrollOpen(1, endRun({ meta, run: won }).meta)).toBe(false);
+    const walked = { ...won, walk: {} as DungeonRun["walk"] };
+    const after = endRun({ meta: endRun({ meta, run: walked }).meta, run: walked }).meta;
+    expect(after.walkClears).toEqual([1]);
+    expect(scrollOpen(1, after) && !scrollOpen(0, after)).toBe(true);
+    // Lost walking: still shut.
+    expect(endRun({ meta, run: { ...walked, status: "dead" as const } }).meta.walkClears).toBeUndefined();
+  });
+
   it.runIf(HEAL_AT_HOME)("with the testing shortcut on, every run ends with everyone healed", () => {
     const run = { ...startRun(party, party.slice(0, 3), {}, 4), hp: { a: 0.5, b: 0, c: 1, d: 1, e: 1 }, status: "dead" as const };
     expect(endRun({ meta: { runs: 4, clears: 1, injuries: {}, bag: [] }, run }).meta.injuries).toEqual({});

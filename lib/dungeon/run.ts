@@ -1374,7 +1374,14 @@ export type DungeonMeta = {
   campRuns?: number;                 // the Encampment: runs started…
   campClears?: number;               // …and its chief beaten
   teamPick?: number;                 // the entrance: the team last picked (lib/teams.ts; missing = free pick)
+  walkClears?: DungeonId[];          // the dungeons you've beaten by Dungeon Crawling (missing = none): scrollOpen
 };
+
+// Dungeon Crawling (walking it yourself: walkRun.ts) is built for these so far; the rest are Speed Scroll only.
+export const CRAWLABLE: DungeonId[] = [0, 1];
+// Speed Scroll opens for a dungeon once you've beaten it crawling (the user, 2026-11-14), at the same
+// fee. Those that can't be crawled yet are Speed Scroll only, so always open.
+export const scrollOpen = (d: DungeonId, meta: DungeonMeta) => !CRAWLABLE.includes(d) || !!meta.walkClears?.includes(d);
 
 // ── The healing pool (in the Den) ──────────────────────────────────
 // Hurt creatures heal slowly in real time, on one clock for everyone: it
@@ -1483,6 +1490,8 @@ export function endRun(save0: DungeonSave, now = Date.now()): DungeonSave {
     else delete injuries[id];
   }
   const cleared = run.status === "cleared" || wonAtTop(run);
+  // (Beaten walking: Speed Scroll opens for it, scrollOpen.)
+  if (cleared && run.walk && !save.meta.walkClears?.includes(dungeonOf(run))) save.meta = { ...save.meta, walkClears: [...(save.meta.walkClears ?? []), dungeonOf(run)] };
   if (dungeonOf(run) === 0) {
     return { meta: { ...save.meta, injuries, campClears: (save.meta.campClears ?? 0) + (cleared ? 1 : 0) }, run: null };
   }

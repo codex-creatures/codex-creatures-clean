@@ -9,7 +9,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
 import BagPacker from "@/components/BagPacker";
 import CreaturePortrait from "@/components/CreaturePortrait";
-import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE } from "@/lib/dungeon/run";
+import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen } from "@/lib/dungeon/run";
 import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import Help from "@/components/Help";
 import { gearMarks } from "@/components/CreatureMarks";
@@ -18,9 +18,6 @@ import { BOX_NAMES, type CappedBox } from "@/lib/items/storage";
 const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳️", 3: "🌑" };
 // The picker's rows (the user, 2026-11-13): the dungeons in order, with the Minotaur to come.
 const ROWS: (DungeonId | "minotaur")[] = [0, 1, 2, "minotaur", 3];
-// Dungeon Crawling (walk it yourself, by torchlight: lib/dungeon/walkRun.ts) is built for these so far;
-// the rest are Speed Scroll only (the scroll map: pick room by room).
-const CRAWLABLE: DungeonId[] = [0, 1];
 const BOSS: Record<DungeonId, string> = { 0: "the camp's chief", 1: "the Cyclops", 2: "the Hydra", 3: "the Warden and his guards" };
 
 // ── The entrance: choose your party ─────────────────────────────────
@@ -61,6 +58,9 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   const dungeon: DungeonId = quest ? 1 : unlocked(picked) ? picked : 0;
   const walking = !quest && mode === "crawl";
   const notBuilt = walking && !CRAWLABLE.includes(dungeon); // Dungeon Crawling isn't there yet
+  // Speed Scroll opens once you've beaten the dungeon crawling (run.ts scrollOpen).
+  const crawlFirst = (d: DungeonId) => mode === "scroll" && !scrollOpen(d, lab.meta);
+  const scrollShut = !quest && crawlFirst(dungeon);
   const beaten = (d: DungeonId) => (d === 0 ? lab.meta.campClears : d === 1 ? lab.meta.clears : d === 2 ? lab.meta.deepClears : lab.meta.abyssClears) ?? 0;
   const lockedWhy = (d: DungeonId) => (d === 1 ? `Beat the Encampment first (or scan ${LABYRINTH_SCANS} barcodes)` : d === 2 ? "Beat the Cyclops first" : "Beat the Hydra first");
   const priceOf = (d: DungeonId) => { const f = entryFee(d, lab.meta, false); return d === 0 && freeRunsLeft(lab.meta) > 0 ? "FREE" : f === 0 ? "FREE" : `${f} gold`; };
@@ -104,16 +104,16 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
               </div>
             );
             const d = row, locked = !unlocked(d), on = dungeon === d && !locked;
-            const soon = mode === "crawl" && !CRAWLABLE.includes(d);
+            const soon = mode === "crawl" && !CRAWLABLE.includes(d), shut = crawlFirst(d);
             const name = DUNGEONS[d].name.replace(/^The /, "");
             return (
               <div key={d} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <button className="card-btn" onClick={() => setDungeon(d)} disabled={locked} title={locked ? lockedWhy(d) : undefined} aria-pressed={on}
                   style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 48, textAlign: "left",
-                    opacity: locked || soon ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
+                    opacity: locked || soon || shut ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
                   <b className="pixel-font" style={{ flex: 1, minWidth: 0, fontSize: 16, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locked ? "🔒" : DUNGEON_ICONS[d]} {name}</b>
-                  <span className="pixel-font" style={{ fontSize: 13, color: locked || soon ? MUTED : priceOf(d) === "FREE" ? "#7CFC9A" : "#f1d9a0", whiteSpace: "nowrap" }}>
-                    {locked ? "locked" : soon ? "Speed Scroll only" : priceOf(d)}
+                  <span className="pixel-font" style={{ fontSize: 13, color: locked || soon || shut ? MUTED : priceOf(d) === "FREE" ? "#7CFC9A" : "#f1d9a0", whiteSpace: "nowrap" }}>
+                    {locked ? "locked" : soon ? "Speed Scroll only" : shut ? "Crawl it first" : priceOf(d)}
                   </span>
                 </button>
                 <Help title={name} label={`About ${name}`} icon="i">
@@ -125,7 +125,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
                     <li>Entry: <b>{priceOf(d)}</b>{d === 0 && freeRunsLeft(lab.meta) > 0 ? ` (${freeRunsLeft(lab.meta)} free run${freeRunsLeft(lab.meta) === 1 ? "" : "s"} left)` : ""}.</li>
                     {d > 0 && <li>Foes carry codex moves of their race (up to {d === 1 ? "Uncommon" : d === 2 ? "Rare" : "Epic"}).</li>}
                     <li>Beaten <b>{beaten(d)}×</b>.</li>
-                    <li>{CRAWLABLE.includes(d) ? "Dungeon Crawling: walk it yourself by torchlight. Speed Scroll: pick your way room by room on the map." : "Speed Scroll only for now: pick your way room by room on the map."}</li>
+                    <li>{CRAWLABLE.includes(d) ? `Dungeon Crawling: walk it yourself by torchlight. Speed Scroll: pick your way room by room on the map${scrollOpen(d, lab.meta) ? "" : ", once you've beaten it crawling"}.` : "Speed Scroll only for now: pick your way room by room on the map."}</li>
                   </ul>
                 </Help>
               </div>
@@ -135,8 +135,8 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
       )}
       {/* Enter, with what's inside behind the "?". */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
-          {notBuilt ? "Speed Scroll only for now" : <>{walking ? "🔥" : DUNGEON_ICONS[dungeon]} Enter {DUNGEONS[dungeon].name.replace("The", "the")} {freeLeft > 0 ? `(free · ${freeLeft} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}</>}
+        <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt || scrollShut} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
+          {notBuilt ? "Speed Scroll only for now" : scrollShut ? "Beat it crawling first" : <>{walking ? "🔥" : DUNGEON_ICONS[dungeon]} Enter {DUNGEONS[dungeon].name.replace("The", "the")} {freeLeft > 0 ? `(free · ${freeLeft} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}</>}
         </button>
         <Help title="The labyrinth">
           <ul>
