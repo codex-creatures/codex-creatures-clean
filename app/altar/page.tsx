@@ -224,8 +224,8 @@ export default function AltarPage() {
           <div style={{ minWidth: 0 }}>
             <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{game.calibrating ? <>🔧 Calibrating: {CALIBRATION_SCANS - calibrationLeft(game.firstScans)}/{CALIBRATION_SCANS}</> : <>✅ Calibrated!</>}</div>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>{game.calibrating
-              ? <>&ldquo;The altar needs calibrating first. Scan anything! Until it&apos;s done it finds nothing past Rare.&rdquo;</>
-              : <>&ldquo;Now it reads barcodes properly. Scan those ones again: they&apos;ll open for real.&rdquo;</>}</p>
+              ? <>&ldquo;Here, have my scanner! It needs calibrating, so it&apos;s got {CALIBRATION_SCANS} free scans on it. Until then it finds nothing past Rare.&rdquo;</>
+              : <>&ldquo;Oh wow, it&apos;s calibrated! You&apos;ve still got {game.firstLeft} free scans: use them while you can. Those barcodes open for real now.&rdquo;</>}</p>
           </div>
         </div>
       )}
@@ -242,7 +242,7 @@ export default function AltarPage() {
             : <span>Scans <b style={{ color: charges.left ? "#f1d9a0" : "#ff8a80" }}>{charges.left}/{SCAN_MAX}</b>{nextIn !== null && <> · next in <b style={{ color: "#f1d9a0", fontVariantNumeric: "tabular-nums" }}>{clockText(nextIn)}</b></>}</span>}
           <Help title="Scans">
             <ul>
-              {game.firstLeft > 0 && <li>A new game starts with <b>{FIRST_SCANS}</b> scans and no clock. The first <b>{CALIBRATION_SCANS}</b> calibrate the altar: they find nothing past Rare and aren&apos;t recorded, so once it&apos;s calibrated you can scan the same barcodes again for what they really hold.</li>}
+              {game.firstLeft > 0 && <li>Klutz&apos;s scanner comes with <b>{FIRST_SCANS}</b> free scans and no clock. The first <b>{CALIBRATION_SCANS}</b> calibrate it: they find nothing past Rare and aren&apos;t recorded, so once it&apos;s calibrated you can scan the same barcodes again for what they really hold. When the free scans are gone, stored scans start from 0.</li>}
               <li>You can store up to <b>{SCAN_MAX}</b> scans. Each barcode new to you uses one.</li>
               <li>Below {SCAN_MAX}, you get one back every <b>{SCAN_REGEN_MS / 60000} minutes</b>: {SCAN_MAX} every {SCAN_MAX * SCAN_REGEN_MS / 3600000} hours. Full, you get no more, so come back and scan while you can.</li>
               <li>Rescanning a barcode you&apos;ve already opened is free, and so is one that&apos;s too rare for you yet.</li>

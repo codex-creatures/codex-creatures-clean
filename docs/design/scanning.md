@@ -27,8 +27,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   rescans (gold), one too rare for you yet, and the testing "random" mode are free. Saved as
   `scanCharges` (missing: full). Shown under the altar's Scan button with a countdown.
 - ✅ **A new game's first scans** (the user, 2026-11-13; lib/firstScans.ts): 50 (`FIRST_SCANS`)
-  with no clock, used before the stored scans (which are full when they run out). The first 25
-  (`CALIBRATION_SCANS`) **calibrate the altar**: Klutz says so in a panel above the Scan button.
+  free scans with no clock, used before the stored scans (which start at 0, their clock running,
+  when the last one's used). Klutz gives you his scanner, which needs calibrating: the first 25
+  (`CALIBRATION_SCANS`) **calibrate it** (a panel of his above the Scan button; once done he says
+  you've still got N free scans, use them while you can: no time limit, just a nudge).
   Each rolls on the spot at the usual odds but nothing past Rare and no soul stone, and asks no
   registry (global or local) and records nothing, so they work offline too and, once calibrated,
   the same barcodes are new to you again and open from the registry with the usual rules. A

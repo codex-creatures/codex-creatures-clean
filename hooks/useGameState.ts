@@ -850,6 +850,8 @@ export function useGameState(initialTab: TabKey = "all") {
   function takeScanCharge(code?: string): boolean {
     if (firstScans && firstLeft > 0) {
       setFirstScans((f) => f && spendFirstScan(f, code));
+      // The last one: the stored scans start empty, their clock from now.
+      if (firstLeft === 1) setCharges({ left: 0, at: Date.now() });
       return true;
     }
     const next = spendScan(charges, Date.now());

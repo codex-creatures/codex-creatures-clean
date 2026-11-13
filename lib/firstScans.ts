@@ -1,6 +1,6 @@
 // lib/firstScans.ts
-// A new game's first scans (the user, 2026-11-13): FIRST_SCANS of them with
-// no clock, before the stored scans (lib/scanCharges.ts) take over.
+// A new game's first scans (the user, 2026-11-13): Klutz's scanner, FIRST_SCANS free with
+// no clock, before the stored scans (lib/scanCharges.ts) take over from 0.
 //
 // The first CALIBRATION_SCANS calibrate the altar (Klutz's job for you):
 // each rolls fresh here, up to Rare at most (CALIBRATION_TOP), and asks no
