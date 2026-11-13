@@ -8,7 +8,7 @@ import { useState } from "react";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CLASS_INFO, findCreatureTemplate, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
-import { CreatureToolbar, NO_INV_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
+import { CreatureToolbar, NO_CARD_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
 import { CARDS_TO_SUMMON } from "@/lib/creatures/summon";
 import { SOUL_STONES, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SOUL_COLOR } from "./SoulStoneTag";
@@ -18,7 +18,7 @@ import { CreatureArt } from "./CreaturePortrait";
 type Stack = { t: CreatureTemplate; cards: CreatureOrItemDrop[] };
 
 export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDrop[]; onOpen: (card: CreatureOrItemDrop) => void }) {
-  const [filter, setFilter] = useState<InventoryFilter>(NO_INV_FILTER);
+  const [filter, setFilter] = useState<InventoryFilter>(NO_CARD_FILTER);
 
   // One stack per creature.
   const stacks = new Map<string, Stack>();
@@ -35,7 +35,7 @@ export default function CardGallery({ cards, onOpen }: { cards: CreatureOrItemDr
 
   return (
     <div style={{ marginTop: 2 }}>
-      <CreatureToolbar value={filter} onChange={setFilter} shown={shown.length} total={all.length} noun="cards" />
+      <CreatureToolbar value={filter} onChange={setFilter} shown={shown.length} total={all.length} noun="cards" levels={false} />
       {shown.length === 0 && <p style={{ marginTop: 12, fontSize: 14, opacity: 0.5 }}>No cards match.</p>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginTop: 14 }}>
         {shown.map((s) => <TradingCard key={s.t.id} stack={s} onOpen={() => onOpen(s.cards[0])} />)}

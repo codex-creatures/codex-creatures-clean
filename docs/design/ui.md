@@ -46,4 +46,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     ones you haven't unlocked yet greyed out with a 🔒, so bindle and backpack share one layout.
   - The creature window's set line follows the armour slot you tap (that piece's set and how
     many of it you wear), instead of always the set you wear most of.
+- Creature lists (Chest, Pit) sort highest level first by default (the user, 2026-11-14: the ones
+  they've invested in), rarest breaking ties; Rarity, Class, Race, Name and Newest are in the sort
+  menu. The card gallery has no levels, so it starts on Rarity.
 - One tap on a Den object goes in (no name-first double tap).

@@ -87,9 +87,12 @@ export function CreatureFilterBar({ value, onChange, raceCount, classCount, show
 // One tidy row: search, a Filter button (race and class, as icon toggles
 // that only show when you open it) and a sort. Active filters show as small
 // chips you can tap off.
-export type SortBy = "rarity" | "class" | "race" | "name" | "newest";
+export type SortBy = "level" | "rarity" | "class" | "race" | "name" | "newest";
 export type InventoryFilter = { race: Race | "all"; cls: CombatClass | "all"; sort: SortBy; query: string };
-export const NO_INV_FILTER: InventoryFilter = { race: "all", cls: "all", sort: "rarity", query: "" };
+// Highest level first by default: those are the ones you have invested in.
+export const NO_INV_FILTER: InventoryFilter = { race: "all", cls: "all", sort: "level", query: "" };
+// Cards have no level, so the card gallery starts on rarity.
+export const NO_CARD_FILTER: InventoryFilter = { ...NO_INV_FILTER, sort: "rarity" };
 
 const RARITY_RANK: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
 const CLASS_RANK: Record<CombatClass, number> = { melee: 0, ranged: 1, magic: 2 };
@@ -101,11 +104,12 @@ export function passes(f: InventoryFilter, name: string, race?: Race | Race[], c
 }
 
 // Sort creatures. info(x) gives what's needed to sort one.
-export function sortCreatures<T>(list: T[], sort: SortBy, info: (x: T) => { name: string; rarity: string; race?: Race; cls?: CombatClass; createdAt?: string }): T[] {
+export function sortCreatures<T>(list: T[], sort: SortBy, info: (x: T) => { name: string; rarity: string; race?: Race; cls?: CombatClass; createdAt?: string; level?: number }): T[] {
   const byRarity = (a: T, b: T) => (RARITY_RANK[info(a).rarity] ?? 9) - (RARITY_RANK[info(b).rarity] ?? 9) || info(a).name.localeCompare(info(b).name);
   return [...list].sort((a, b) => {
     const A = info(a), B = info(b);
     switch (sort) {
+      case "level":  return ((B.level ?? 1) - (A.level ?? 1)) || byRarity(a, b);
       case "name":   return A.name.localeCompare(B.name);
       case "newest": return (B.createdAt ?? "").localeCompare(A.createdAt ?? "");
       case "class":  return (CLASS_RANK[A.cls ?? "melee"] - CLASS_RANK[B.cls ?? "melee"]) || byRarity(a, b);
@@ -115,8 +119,9 @@ export function sortCreatures<T>(list: T[], sort: SortBy, info: (x: T) => { name
   });
 }
 
-export function CreatureToolbar({ value, onChange, shown, total, noun = "creatures" }: {
-  value: InventoryFilter; onChange: (f: InventoryFilter) => void; shown: number; total: number; noun?: string;
+// levels: offer the Level sort (creatures have levels; cards do not).
+export function CreatureToolbar({ value, onChange, shown, total, noun = "creatures", levels = true }: {
+  value: InventoryFilter; onChange: (f: InventoryFilter) => void; shown: number; total: number; noun?: string; levels?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const set = (p: Partial<InventoryFilter>) => onChange({ ...value, ...p });
@@ -138,6 +143,7 @@ export function CreatureToolbar({ value, onChange, shown, total, noun = "creatur
         </button>
         <select value={value.sort} onChange={(e) => set({ sort: e.target.value as SortBy })} aria-label="Sort"
           style={{ background: "#14151c", color: "white", border: "2px solid #2a2d38", borderRadius: 8, padding: "0 8px", fontSize: 13 }}>
+          {levels && <option value="level">Level</option>}
           <option value="rarity">Rarity</option>
           <option value="class">Class</option>
           <option value="race">Race</option>

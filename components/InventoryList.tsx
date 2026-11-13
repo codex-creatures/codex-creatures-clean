@@ -100,7 +100,7 @@ export default function InventoryList({
   // Creatures: one flat grid, filtered and sorted; gear: grouped by rarity.
   const filtered = creatureTab
     ? sortCreatures(gridItems.filter((d) => !isCreatureDrop(d) || passes(filter, d.name, tplOf(d)?.races ?? tplOf(d)?.race, tplOf(d)?.cls)), filter.sort,
-        (d) => ({ name: d.name, rarity: d.rarity, race: tplOf(d)?.race, cls: tplOf(d)?.cls, createdAt: d.createdAt }))
+        (d) => ({ name: d.name, rarity: d.rarity, race: tplOf(d)?.race, cls: tplOf(d)?.cls, createdAt: d.createdAt, level: isCreatureDrop(d) ? d.level : undefined }))
     : gridItems;
   const groupBy = creatureTab ? "none" as const : "rarity" as const;
   // Browsing (flicking through creatures) follows the order shown.
