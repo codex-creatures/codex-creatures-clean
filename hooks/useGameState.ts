@@ -50,6 +50,7 @@ import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
 import { readTeams, toggleInTeam, type Teams } from "@/lib/teams";
 import { readPvpTeams, togglePvpTeam, type PvpTeams } from "@/lib/pvp/teams";
 import { scanCharges, spendScan, type ScanCharges } from "@/lib/scanCharges";
+import { NEW_FIRST_SCANS, calibrating, firstScansLeft, readFirstScans, spendFirstScan, type FirstScans } from "@/lib/firstScans";
 export const RECENT_SCANS = 10; // how many recent scan drops the altar remembers
 export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode): its 3×3 window
 // Scanning: "loot" opens each scan's Code Cache straight away; "store"
@@ -102,6 +103,7 @@ type SaveState = {
   teams?: string[][];                  // the Labyrinth's saved line-ups (lib/teams.ts)
   pvpTeams?: string[][];               // line-ups saved at the PvP portal (lib/pvp/teams.ts)
   scanCharges?: ScanCharges;           // new barcodes you can scan, stored (lib/scanCharges.ts; missing: full)
+  firstScans?: FirstScans;             // a new game's first scans and calibration (lib/firstScans.ts; missing: none)
 };
 
 // A new player's first creature (a Lv 3 Rare): lib/creatures/starter.ts.
@@ -191,6 +193,7 @@ export function loadSave(): SaveState | null {
     teams: readTeams(parsed.teams),
     pvpTeams: readPvpTeams(parsed.pvpTeams),
     scanCharges: parsed.scanCharges && typeof parsed.scanCharges === "object" ? (parsed.scanCharges as ScanCharges) : undefined,
+    firstScans: readFirstScans(parsed.firstScans),
     owned: Array.isArray(parsed.owned) ? parsed.owned.filter((c: unknown) => typeof c === "string") : [],
     found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),
   };
@@ -233,6 +236,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const [teams, setTeams] = useState<Teams>(() => readTeams(undefined));
   const [pvpTeams, setPvpTeams] = useState<PvpTeams>(() => readPvpTeams(undefined));
   const [charges, setCharges] = useState<ScanCharges | undefined>(undefined);
+  // A new game starts with its first scans (no save yet); an old save has none.
+  const [firstScans, setFirstScans] = useState<FirstScans | undefined>(NEW_FIRST_SCANS);
   // Gear packed in your bag (lib/dungeon/run.ts): it can't be sold.
   const [packedIds, setPackedIds] = useState<Set<string>>(new Set());
   const [lastDrop, setLastDrop]     = useState<Drop | null>(null);
@@ -278,6 +283,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setTeams(readTeams(saved.teams));
       setPvpTeams(readPvpTeams(saved.pvpTeams));
       setCharges(saved.scanCharges);
+      setFirstScans(saved.firstScans);
     }
     setTavern(loadTavern());
     setPackedIds(packedGear());
@@ -286,8 +292,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, pvpTeams, scanCharges: charges });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, pvpTeams, charges]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, pvpTeams, scanCharges: charges, firstScans });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, pvpTeams, charges, firstScans]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -836,8 +842,16 @@ export function useGameState(initialTab: TabKey = "all") {
   // Code Cache, opened once back online (it takes one of the altar's spaces).
   // New barcodes you can scan (lib/scanCharges.ts): where you stand now, and
   // using one (false: none left). Rescans and too-rare finds are free.
+  // A new game's first scans (lib/firstScans.ts) come first, with no clock;
+  // code: the barcode, remembered while calibrating.
   const scansNow = (now = Date.now()) => scanCharges(charges, now);
-  function takeScanCharge(): boolean {
+  const firstLeft = firstScansLeft(firstScans);
+  const canScanNew = () => firstLeft > 0 || scansNow().left > 0;
+  function takeScanCharge(code?: string): boolean {
+    if (firstScans && firstLeft > 0) {
+      setFirstScans((f) => f && spendFirstScan(f, code));
+      return true;
+    }
     const next = spendScan(charges, Date.now());
     if (!next) return false;
     setCharges(next);
@@ -1181,6 +1195,8 @@ export function useGameState(initialTab: TabKey = "all") {
     setEquipment({});
     setRecentScanIds([]);
     setCaged([starterCreature()]);
+    setCharges(undefined);
+    setFirstScans(NEW_FIRST_SCANS);
     setLastDrop(null);
     setSellMode(false);
     setSelectedForSale(new Set());
@@ -1204,7 +1220,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

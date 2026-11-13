@@ -1,6 +1,7 @@
 // hooks/useDropGeneration.ts
 import type { Drop } from "@/lib/types";
 import { lookupLocal, rollBarcodeOutcome, type Lookup } from "@/lib/barcodeRegistry";
+import { calibrationRoll } from "@/lib/firstScans";
 import { dropFromOutcome, goldDrop } from "@/lib/drops";
 import { openBarcode, scanKeys, type Opened } from "@/lib/scanning";
 import { onlineClient } from "@/lib/online/client";
@@ -49,8 +50,15 @@ type UseDropGenerationArgs = {
   // Scans stored (lib/scanCharges.ts): a new barcode needs one (canScanNew),
   // and uses it once it's opened or sealed (onScanUsed). onNoScans: none left.
   canScanNew?: () => boolean;
-  onScanUsed?: () => void;
+  onScanUsed?: (code: string) => void;
   onNoScans?: () => void;
+  // A new game calibrating the altar (lib/firstScans.ts): each new barcode
+  // rolls here, up to Rare, with no registry and nothing recorded, so it's
+  // new to you again once calibrated. calibrated: barcodes already read
+  // while calibrating (onCalibratedAgain: one of those, free).
+  calibrating?: boolean;
+  calibrated?: string[];
+  onCalibratedAgain?: () => void;
 };
 
 export function useDropGeneration({
@@ -65,6 +73,9 @@ export function useDropGeneration({
   canScanNew,
   onScanUsed,
   onNoScans,
+  calibrating = false,
+  calibrated = [],
+  onCalibratedAgain,
 }: UseDropGenerationArgs) {
   async function generateDrop(code: string) {
     if (!/^[0-9]{6,20}$/.test(code)) return;
@@ -75,6 +86,23 @@ export function useDropGeneration({
     if (rollMode === "random") {
       onScanCountUpdate(code, alreadyScanned + 1);
       const drops = scanKeys(code).map(() => dropFromOutcome(rollBarcodeOutcome(), code)).filter((d): d is Drop => d !== null);
+      drops.forEach(onDrop);
+      onScan?.(drops);
+      return;
+    }
+
+    // ── CALIBRATING → A ROLL OF ITS OWN, NOTHING RECORDED ──
+    if (calibrating) {
+      if (calibrated.includes(code)) {
+        onCalibratedAgain?.();
+        return;
+      }
+      if (canScanNew && !canScanNew()) {
+        onNoScans?.();
+        return;
+      }
+      const drops = [dropFromOutcome(calibrationRoll(), code)].filter((d): d is Drop => d !== null);
+      onScanUsed?.(code);
       drops.forEach(onDrop);
       onScan?.(drops);
       return;
@@ -102,7 +130,7 @@ export function useDropGeneration({
     }
     const found = await lookUpBarcode(code);
     if (!found) {
-      onScanUsed?.();
+      onScanUsed?.(code);
       onOffline?.(code);
       return;
     }
@@ -111,7 +139,7 @@ export function useDropGeneration({
       onSealed?.(opened.rarity, opened.need);
       return;
     }
-    onScanUsed?.();
+    onScanUsed?.(code);
     onScanCountUpdate(code, 1);
     opened.drops.forEach(onDrop);
     onScan?.(opened.drops, opened.first ? "first" : undefined, opened.place);

@@ -25,6 +25,8 @@ import { backupSave } from "@/lib/saveFile";
 import { findLine, newFinds, type NewFind } from "@/lib/scanReveal";
 import { countDaily } from "@/lib/daily";
 import { SCAN_MAX, SCAN_REGEN_MS, clockText, nextScanIn } from "@/lib/scanCharges";
+import { CALIBRATION_SCANS, FIRST_SCANS, calibrationLeft } from "@/lib/firstScans";
+import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 
 const WINDOW_COLS = 3;  // the loot window: 3 wide…
 const WINDOW_ROWS = 3;  // …and 3 deep once anything's in it (1 row while empty)
@@ -95,8 +97,11 @@ export default function AltarPage() {
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
     onOffline:         (code) => { game.sealScan(code); countDaily("scan"); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
-    canScanNew:        () => rollMode !== "random" && game.scansNow().left > 0,
-    onScanUsed:        () => { game.takeScanCharge(); },
+    canScanNew:        () => rollMode !== "random" && game.canScanNew(),
+    onScanUsed:        (code) => { game.takeScanCharge(code); },
+    calibrating:       rollMode !== "random" && game.calibrating,
+    calibrated:        game.firstScans?.codes,
+    onCalibratedAgain: () => setNote(<>🔧 That one&apos;s calibrated already. Try another barcode.</>),
     onNoScans:         () => setNote(<><b style={{ color: "#ff8a80" }}>No scans left</b><br />The next one comes in {clockText(nextScanIn(game.scanCharges, Date.now()) ?? 0)}.</>),
     onSealed:          (rarity, need) => setNote(<>🔒 Something <b style={{ color: RARITY_COLORS[rarity]?.text, textTransform: "capitalize" }}>{rarity}</b> stirs in it. Come back at explorer level <b>{need}</b>.</>),
   });
@@ -212,6 +217,19 @@ export default function AltarPage() {
         </div>
       )}
 
+      {/* A new game's first scans (lib/firstScans.ts): Klutz on calibrating the altar, then on what it means. */}
+      {game.hydrated && game.firstLeft > 0 && (
+        <div className="stone-panel" style={{ marginBottom: 10, maxWidth: 520, display: "flex", gap: 10, alignItems: "center" }}>
+          {CREATURE_SPRITES.klutz && <div style={{ flexShrink: 0 }}><PixelSprite sprite={CREATURE_SPRITES.klutz} scale={1.2} title="Klutz" /></div>}
+          <div style={{ minWidth: 0 }}>
+            <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>{game.calibrating ? <>🔧 Calibrating: {CALIBRATION_SCANS - calibrationLeft(game.firstScans)}/{CALIBRATION_SCANS}</> : <>✅ Calibrated!</>}</div>
+            <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>{game.calibrating
+              ? <>&ldquo;The altar needs calibrating first. Scan anything! Until it&apos;s done it finds nothing past Rare.&rdquo;</>
+              : <>&ldquo;Now it reads barcodes properly. Scan those ones again: they&apos;ll open for real.&rdquo;</>}</p>
+          </div>
+        </div>
+      )}
+
       <div style={{ maxWidth: 520 }}>
         <button className="scan-btn pixel-font" data-tour="scan" data-on={scannerOn}
           onClick={() => setScannerOn((s) => !s)}>
@@ -219,9 +237,12 @@ export default function AltarPage() {
         </button>
         {/* Scans stored (lib/scanCharges.ts): one line, the countdown in it while below full. */}
         <div className="pixel-font" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 6, fontSize: 14, color: "#c9b48a", minHeight: 22 }}>
-          <span>Scans <b style={{ color: charges.left ? "#f1d9a0" : "#ff8a80" }}>{charges.left}/{SCAN_MAX}</b>{nextIn !== null && <> · next in <b style={{ color: "#f1d9a0", fontVariantNumeric: "tabular-nums" }}>{clockText(nextIn)}</b></>}</span>
+          {game.firstLeft > 0
+            ? <span>Scans <b style={{ color: "#f1d9a0" }}>{game.firstLeft}/{FIRST_SCANS}</b></span>
+            : <span>Scans <b style={{ color: charges.left ? "#f1d9a0" : "#ff8a80" }}>{charges.left}/{SCAN_MAX}</b>{nextIn !== null && <> · next in <b style={{ color: "#f1d9a0", fontVariantNumeric: "tabular-nums" }}>{clockText(nextIn)}</b></>}</span>}
           <Help title="Scans">
             <ul>
+              {game.firstLeft > 0 && <li>A new game starts with <b>{FIRST_SCANS}</b> scans and no clock. The first <b>{CALIBRATION_SCANS}</b> calibrate the altar: they find nothing past Rare and aren&apos;t recorded, so once it&apos;s calibrated you can scan the same barcodes again for what they really hold.</li>}
               <li>You can store up to <b>{SCAN_MAX}</b> scans. Each barcode new to you uses one.</li>
               <li>Below {SCAN_MAX}, you get one back every <b>{SCAN_REGEN_MS / 60000} minutes</b>: {SCAN_MAX} every {SCAN_MAX * SCAN_REGEN_MS / 3600000} hours. Full, you get no more, so come back and scan while you can.</li>
               <li>Rescanning a barcode you&apos;ve already opened is free, and so is one that&apos;s too rare for you yet.</li>

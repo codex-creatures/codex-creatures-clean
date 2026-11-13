@@ -26,6 +26,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   scanning and rewards coming back. A barcode new to you uses one (opened, or kept sealed offline);
   rescans (gold), one too rare for you yet, and the testing "random" mode are free. Saved as
   `scanCharges` (missing: full). Shown under the altar's Scan button with a countdown.
+- ✅ **A new game's first scans** (the user, 2026-11-13; lib/firstScans.ts): 50 (`FIRST_SCANS`)
+  with no clock, used before the stored scans (which are full when they run out). The first 25
+  (`CALIBRATION_SCANS`) **calibrate the altar**: Klutz says so in a panel above the Scan button.
+  Each rolls on the spot at the usual odds but nothing past Rare and no soul stone, and asks no
+  registry (global or local) and records nothing, so they work offline too and, once calibrated,
+  the same barcodes are new to you again and open from the registry with the usual rules. A
+  barcode already read while calibrating is free and gives nothing. Saved as `firstScans`
+  (`{ used, codes }`); missing (saves from before this): none. "Start new" and "Reset player" give
+  a new set.
 - ✅ Online builds use the **global registry** (§12): everyone shares one. A copy without online
   (the offline Windows build, tests, a dev build with no Supabase keys) keeps a **local** one
   (`codex_creatures_registry_v3`): "Reset player" keeps it, to simulate a friend; "Global reset"
