@@ -9,6 +9,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ Places: Soul Altar (scanning), Labyrinth archway, quest board, Bestiary lectern, cage, pool,
   Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 20 upgraded), bindle/bag, merchant
   stall, and a boarded-up Tavern.
+- ✅ **The Den's top bar** (the user, 2026-11-14): your explorer level as an XP bar, `Lv 3 [45 / 180] Lv 4`
+  (MAX at Lv 30), where the title "Codex Creatures" was; then gold, creatures and items found, and ⚙️.
 - 📌 **Tavern:** where travellers, merchants and librarians gather. Now reached through the
   questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). ✅ Its
   outside, repair, visitors and pits are built (the questline below); 📌 its interior is not.

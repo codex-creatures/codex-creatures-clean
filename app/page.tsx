@@ -20,6 +20,7 @@ import { DAILY_ONLINE, canClaim, todayDaily } from "@/lib/daily";
 import { useTour } from "@/hooks/useTour";
 import { tourDenTarget } from "@/lib/tour";
 import { hasPit, hydraStep } from "@/lib/trainingPit";
+import { PLAYER_MAX_LEVEL, playerXpToNext } from "@/lib/creatures/levels";
 
 // The places in the dock under the room: your creatures, your things, then help.
 const PLACES = [OBJ.pit, OBJ.altar, OBJ.cage, OBJ.pool, OBJ.klutz, OBJ.chest, OBJ.bag, OBJ.bookcase, OBJ.crate, OBJ.scroll];
@@ -51,9 +52,9 @@ export default function Home() {
   return (
     <main className="screen-page">
       <header className="screen-header" style={{ gridTemplateColumns: "1fr auto" }}>
-        {/* Your counts stand with their icon over the number, so the bar fits a phone; on
-            a very narrow one the title shrinks (at worst ending in "…"), never the counts or ⚙️. */}
-        <h1 className="pixel-font" style={{ margin: 0, minWidth: 0, fontSize: "clamp(13px, 3.9cqw, 18px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Codex Creatures</h1>
+        {/* Your explorer level where the title was; your counts stand with their icon over the
+            number, so the bar fits a phone. On a very narrow one the XP bar shrinks, never the counts or ⚙️. */}
+        <h1 style={{ margin: 0, minWidth: 0 }}><ExplorerBar level={game.player.level} xp={game.player.xp} /></h1>
         <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 2cqw, 10px)", fontSize: 13 }}>
           <Stat icon={<Coin size={13} />} color="#f5c542" title="Gold">{game.gold.toLocaleString()}</Stat>
           <Stat icon="🐾" color="#8fc1ff" title="Creatures discovered">{game.discoveredCreatures}/{TOTAL_CREATURES}</Stat>
@@ -98,5 +99,24 @@ function Stat({ icon, color, title, children }: { icon: React.ReactNode; color: 
       <span style={{ fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", height: 13 }}>{icon}</span>
       {children}
     </span>
+  );
+}
+
+// Your explorer level (from every fight's XP; it decides how rare a creature you can scan):
+// this level, the bar with your XP over what the next needs, then the next level.
+function ExplorerBar({ level, xp }: { level: number; xp: number }) {
+  const max = level >= PLAYER_MAX_LEVEL, need = playerXpToNext(level);
+  const lv = { fontSize: "clamp(11px, 3.2cqw, 14px)", color: "#f1d9a0", whiteSpace: "nowrap" as const, flexShrink: 0 };
+  return (
+    <div className="pixel-font" title="Explorer level: fights level you up, and it decides how rare a creature you can find" style={{ display: "flex", alignItems: "center", gap: "clamp(4px, 1.5cqw, 8px)", minWidth: 0, fontWeight: 400 }}>
+      <span style={lv}>Lv {level}</span>
+      <div style={{ position: "relative", flex: 1, minWidth: 40, height: 16, background: "rgba(0,0,0,0.45)", border: "1px solid rgba(241,217,160,0.45)", borderRadius: 4, overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, width: `${max ? 100 : Math.min(100, (100 * xp) / need)}%`, background: "linear-gradient(#e8c66a, #b98a2e)" }} />
+        <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", textShadow: "0 0 2px #000, 0 0 2px #000", whiteSpace: "nowrap" }}>
+          {max ? "MAX" : `${xp.toLocaleString()} / ${need.toLocaleString()}`}
+        </span>
+      </div>
+      {!max && <span style={lv}>Lv {level + 1}</span>}
+    </div>
   );
 }
