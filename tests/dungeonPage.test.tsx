@@ -92,6 +92,11 @@ function seedSave() {
   const inventory = commons.map((t) => ({ ...makeCreatureDrop(t, "creature", ""), level: 4, xp: 0 }));
   localStorage.setItem(SAVE_KEY, JSON.stringify({ gold: 500, inventory, quest: { stage: "done" } }));
 }
+// …who has beaten the Encampment crawling, so Speed Scroll is open (run.ts scrollOpen).
+function crawledIt() {
+  const s = JSON.parse(localStorage.getItem(SAVE_KEY)!);
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ ...s, labyrinth: { meta: { runs: 0, clears: 0, injuries: {}, bag: [], walkClears: [0] }, run: null } }));
+}
 
 // ── Driving the page ──────────────────────────────────────────────────────
 const pagePath = process.env.DUNGEON_PAGE ? path.resolve(process.env.DUNGEON_PAGE) : "@/app/dungeon/page";
@@ -139,7 +144,7 @@ const note = (step: string) => trace.push({ step, screen: text().slice(0, 1200),
 // room as it comes (fight and loot it, open what's there), equip a find, reload part-way, and go
 // home at the end (the haul after the chief, or retreating if it ends early).
 async function playEncampment() {
-  await mount(); note("entrance");
+  crawledIt(); await mount(); note("entrance");
   await tap("📜 Speed Scroll"); // (Dungeon Crawling is the default)
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/); // (each creature's button starts with its level)
   note("party picked");
@@ -188,7 +193,7 @@ async function playEncampment() {
 // The first fight lost: knocked out, Klutz drags you back to the Den.
 async function playDefeat() {
   outcome.next = "B";
-  await mount();
+  crawledIt(); await mount();
   await tap("📜 Speed Scroll");
   for (let i = 0; i < 3; i++) await tap(/^Lv \d/);
   await tap(/Enter the Encampment/);
