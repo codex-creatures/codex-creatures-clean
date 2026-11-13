@@ -8,7 +8,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
 import DenRoom, { SPOTS } from "@/components/DenRoom";
 import TavernRoom from "@/components/TavernRoom";
-import GoldCount from "@/components/GoldCount";
+import { Coin } from "@/components/GoldCount";
 import DailyPopup from "@/components/DailyPopup";
 import { useEffect, useState } from "react";
 import { klutzStatus, pointsFree } from "@/lib/klutz";
@@ -51,13 +51,13 @@ export default function Home() {
   return (
     <main className="screen-page">
       <header className="screen-header" style={{ gridTemplateColumns: "1fr auto" }}>
-        {/* On a narrow phone the title and the gaps shrink (and at worst the title ends in "…"),
-            so your counts and ⚙️ always fit on the bar. */}
-        <h1 className="pixel-font" style={{ margin: 0, minWidth: 0, fontSize: "clamp(13px, 4.2cqw, 18px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Codex Creatures</h1>
+        {/* Your counts stand with their icon over the number, so the bar fits a phone; on
+            a very narrow one the title shrinks (at worst ending in "…"), never the counts or ⚙️. */}
+        <h1 className="pixel-font" style={{ margin: 0, minWidth: 0, fontSize: "clamp(13px, 3.9cqw, 18px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Codex Creatures</h1>
         <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 2cqw, 10px)", fontSize: 13 }}>
-          <GoldCount gold={game.gold} size={13} />
-          <span style={{ color: "#8fc1ff" }} title="Creatures discovered">🐾 {game.discoveredCreatures}/{TOTAL_CREATURES}</span>
-          <span style={{ color: "#ffd98a" }} title="Items discovered">⚔️ {game.discoveredItems}/{TOTAL_ITEMS}</span>
+          <Stat icon={<Coin size={13} />} color="#f5c542" title="Gold">{game.gold.toLocaleString()}</Stat>
+          <Stat icon="🐾" color="#8fc1ff" title="Creatures discovered">{game.discoveredCreatures}/{TOTAL_CREATURES}</Stat>
+          <Stat icon="⚔️" color="#ffd98a" title="Items discovered">{game.discoveredItems}/{TOTAL_ITEMS}</Stat>
           <Link href="/settings" aria-label="Settings" title="Settings: export, import or back up your save" style={{ fontSize: 16, lineHeight: 1 }}>⚙️</Link>
         </div>
       </header>
@@ -88,5 +88,15 @@ export default function Home() {
         </div>
       </nav>
     </main>
+  );
+}
+
+// One of your counts on the Den's bar: what it counts over the number.
+function Stat({ icon, color, title, children }: { icon: React.ReactNode; color: string; title: string; children: React.ReactNode }) {
+  return (
+    <span title={title} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, lineHeight: 1, color, whiteSpace: "nowrap" }}>
+      <span style={{ fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", height: 13 }}>{icon}</span>
+      {children}
+    </span>
   );
 }
