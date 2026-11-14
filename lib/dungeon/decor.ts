@@ -130,3 +130,55 @@ export function placeBanners(fp: Floorplan, taken: Pt[], skip: string[], rng: Rn
   }
   return out;
 }
+
+// Floor life (the user, 2026-11-14: the /lab/chest samples, into the game): now and then a room
+// has a puddle on its floor (PUDDLE_CHANCE), and now and then a mouse hole at the foot of its top
+// wall (RAT_CHANCE), with a rat that runs along the wall to it. Purely visual, so worked out from
+// the seed and never saved, like the worn tiles. A puddle lies where it and the tiles round it are
+// all floor, clear of the doors and of what's taken (things, fires, candles, the room's middle);
+// a hole where the wall's foot runs on clear for RAT_LANE tiles at least (the rat's run to it),
+// away from the doors and the wall torches.
+export const PUDDLE_CHANCE = 0.35; // of rooms 🧪
+export const RAT_CHANCE = 0.25;    // of rooms 🧪
+export const RAT_LANE = 4;         // tiles of clear wall foot a hole needs (the rat runs up to RAT_RUN_MOST of them) 🧪
+export const RAT_RUN_MOST = 7;
+export const PUDDLE_CLEAR = 2.5;   // tiles from anything taken, at least
+export type RatHole = { x: number; y: number; from: number }; // the hole at (x, y) on the top wall's foot; the rat starts at x = from
+export function placeFloorLife(fp: Floorplan, taken: Pt[], walled: Pt[], skip: string[], rng: Rng = Math.random): { puddles: Pt[]; holes: RatHole[] } {
+  const puddles: Pt[] = [], holes: RatHole[] = [];
+  const rock = (x: number, y: number) => x < 0 || y < 0 || x >= fp.w || y >= fp.h || fp.tiles[y * fp.w + x] === ROCK;
+  const floor = (x: number, y: number) => !rock(x, y) && fp.tiles[y * fp.w + x] === FLOOR;
+  const near = (q: Pt, ps: Pt[], d: number) => ps.some((p) => Math.hypot(p.x - q.x, p.y - q.y) < d);
+  for (const id of Object.keys(fp.rooms).sort()) {
+    if (skip.includes(id)) continue;
+    const doors = fp.doors.filter((d) => d.room === id);
+    const wantPuddle = rng() < PUDDLE_CHANCE, wantHole = rng() < RAT_CHANCE;
+    if (wantPuddle) {
+      const spots: Pt[] = [];
+      for (const r of fp.rooms[id]) for (let y = r.y + 1; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) {
+        const q = { x, y };
+        let open = true;
+        for (let dy = -1; dy <= 1 && open; dy++) for (let dx = -1; dx <= 1; dx++) if (!floor(x + dx, y + dy)) { open = false; break; }
+        if (open && !near(q, taken, PUDDLE_CLEAR) && !near(q, doors, DOOR_CLEAR) && !spots.some((s) => s.x === x && s.y === y)) spots.push(q);
+      }
+      if (spots.length > 0) puddles.push(spots[Math.floor(rng() * spots.length)]);
+    }
+    if (wantHole) {
+      const top = fp.rooms[id].reduce((a, b) => (b.y < a.y ? b : a)), y = top.y;
+      // The wall's foot, tile by tile: clear where it's floor under rock, away from doors, wall torches and things.
+      const clear = (x: number) => floor(x, y) && rock(x, y - 1) && !near({ x, y }, doors, 2) && !near({ x, y }, walled, 1.5) && !near({ x, y }, taken, 1.5);
+      const spots: RatHole[] = [];
+      for (let x = top.x; x < top.x + top.w; x++) {
+        if (!clear(x)) continue;
+        // The rat comes from the longer side, as far as the clear foot goes.
+        let l = x, r = x;
+        while (l - 1 >= top.x && clear(l - 1) && x - (l - 1) <= RAT_RUN_MOST) l--;
+        while (r + 1 < top.x + top.w && clear(r + 1) && r + 1 - x <= RAT_RUN_MOST) r++;
+        const from = x - l >= r - x ? l : r;
+        if (Math.abs(x - from) + 1 >= RAT_LANE) spots.push({ x, y, from });
+      }
+      if (spots.length > 0) holes.push(spots[Math.floor(rng() * spots.length)]);
+    }
+  }
+  return { puddles, holes };
+}

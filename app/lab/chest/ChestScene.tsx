@@ -13,6 +13,7 @@ import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { chestParts, OPEN_ANGLE, type Box, type ChestMat } from "@/lib/render3d/chest3d";
 import { pixelScale } from "@/lib/render3d/stone";
+import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers } from "@/lib/render3d/puddle";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS } from "@/lib/sprites/walk";
 import { TABLE_ART, TABLE_TOP, OBJECT_U } from "@/lib/world/objects";
@@ -100,53 +101,18 @@ function StandIn({ boxes, mats, outline }: { boxes: Box[]; mats: Record<ChestMat
 // 🧪 Floor life (the user, 2026-11-13): PixelLab samples (public/sprites/walk/samples/floor-life) on
 // the floor and wall. A wet puddle, flat on the floor and shiny, so the torch glints off it as it moves;
 // a mouse hole at the foot of the wall; and a rat that runs along the wall and dives into the hole,
-// then comes out again. Samples only: the game doesn't draw them.
+// then comes out again. The game draws them too since 2026-11-14 (components/WalkView3D.tsx FloorLife).
 const LIFE = "/sprites/walk/samples/floor-life";
 const WALL_FRONT = -2;          // the wall's face (its box stands at z -3, 2 deep)
 const HOLE_X = 3.5, RAT_LONG = 0.6;
 const RAT_RUN = 5, RAT_HIDE = 2; // seconds along the wall, then in the hole
-// The puddle's reflection, drawn by hand (the game lights nothing with Three's lights, so a shiny
-// material shows nothing there): a soft glint of the light's colour where a mirror on the floor would
-// show it (the light's spot, nearer you by its height ÷ tan(pitch)), shimmering a little, and a faint
-// sheen as it comes near. Only on the water: pixels bluer than they're red or green.
-const GLINT = { radius: 0.4, strength: 1.2, sheen: 0.3, sheenReach: 1.6 };
-// Ripples (the user, 2026-11-13: when you walk in it): three rings spreading from where you stepped,
-// RIPPLE.speed u a second, fading out over RIPPLE.life seconds, lighter on the water (and bending the glint).
-// In the lab a step is the button (at the middle) or every RIPPLE.every seconds a small one somewhere.
-const RIPPLE = { speed: 0.55, life: 1.6, width: 0.09, rings: 3, gap: 0.16, light: 0.8, every: 3.5 };
-const GLINT_VERT = `varying vec2 vUv; varying vec3 vWorld;
-void main() { vUv = uv; vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`;
-const GLINT_FRAG = `uniform sampler2D map; uniform vec3 uLight; uniform vec3 uColour; uniform float uTime; uniform float uTan;
-uniform float uRadius; uniform float uStrength; uniform float uSheen; uniform float uReach;
-uniform vec3 uStep; uniform float uSpeed; uniform float uLife; uniform float uWidth; uniform float uGap; uniform float uLit;
-varying vec2 vUv; varying vec3 vWorld;
-void main() {
-  vec4 c = texture2D(map, vUv);
-  float water = smoothstep(0.02, 0.09, c.b - max(c.r, c.g)) * step(0.5, c.a);
-  // Rings from the last step (uStep: x, z, when): each a thin band moving out, fading as it goes.
-  float age = uTime - uStep.z, rings = 0.0;
-  if (age >= 0.0 && age < uLife) {
-    float from = distance(vWorld.xz, uStep.xy);
-    for (int i = 0; i < ${RIPPLE.rings}; i++) {
-      float r = age * uSpeed - float(i) * uGap;
-      if (r > 0.0) rings += exp(-pow((from - r) / uWidth, 2.0)) * (1.0 - age / uLife);
-    }
-  }
-  vec2 mirror = vec2(uLight.x, uLight.z + uLight.y / uTan);
-  float d = distance(vWorld.xz, mirror) - rings * 0.06;
-  float shimmer = 0.75 + 0.25 * sin(vWorld.x * 23.0 + uTime * 2.7) * sin(vWorld.z * 19.0 - uTime * 2.1);
-  float glint = exp(-d * d / (uRadius * uRadius)) * uStrength * shimmer;
-  float near = distance(vWorld.xz, uLight.xz);
-  float sheen = uSheen * exp(-near * near / (uReach * uReach));
-  gl_FragColor = vec4(uColour * (glint + sheen + rings * uLit) * water, 1.0);
-}`;
+// The puddle's glint and ripples: lib/render3d/puddle.ts (the game's too). In the lab a step is the
+// button (at the middle) or every RIPPLE.every seconds a small one somewhere.
 function PuddleGlint({ map, light, size, at, splash }: { map: THREE.Texture; light: React.RefObject<THREE.PointLight | null>; size: [number, number]; at: [number, number, number]; splash: number }) {
   const mat = useMemo(() => new THREE.ShaderMaterial({
     vertexShader: GLINT_VERT, fragmentShader: GLINT_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     uniforms: { map: { value: map }, uLight: { value: new THREE.Vector3() }, uColour: { value: new THREE.Color("#ffc68a") }, uTime: { value: 0 },
-      uTan: { value: Math.tan(PITCH) }, uRadius: { value: GLINT.radius }, uStrength: { value: GLINT.strength }, uSheen: { value: GLINT.sheen }, uReach: { value: GLINT.sheenReach },
-      uStep: { value: new THREE.Vector3(at[0], at[2], -99) }, uSpeed: { value: RIPPLE.speed }, uLife: { value: RIPPLE.life },
-      uWidth: { value: RIPPLE.width }, uGap: { value: RIPPLE.gap }, uLit: { value: RIPPLE.light } },
+      uStep: { value: new THREE.Vector3(at[0], at[2], -99) }, ...Object.fromEntries(Object.entries(glintNumbers(PITCH)).map(([k, v]) => [k, { value: v }])) },
   }), [map, at]);
   // A step: the button's (at the middle), or now and then a small one somewhere on the water.
   // (Its uniforms change each frame through a ref: React's rules keep the memo itself unchanged.)

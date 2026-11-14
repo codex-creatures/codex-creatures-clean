@@ -32,6 +32,10 @@ export type KitArt = { floor: string; north: string; cap: string; east: string; 
 export type KitLights = { torch: string; torchSize: [number, number]; head: number; candles: string; candleSize: [number, number]; wicks: [number, number][] };
 export const KIT_LIGHTS: KitLights = { torch: "/sprites/walk/wall-torch.png", torchSize: [24, 48], head: 4,
   candles: "/sprites/walk/candles.png", candleSize: [32, 40], wicks: [[19, 6], [9.5, 11], [16, 20]] };
+// Floor life (the user, 2026-11-14): the puddle (laid flat; its water is the bluest pixels), the rat (drawn
+// from above, head down the picture) and the mouse hole (on the wall's foot), with their art sizes.
+export const FLOOR_LIFE = { puddle: "/sprites/walk/floor-life/puddle.png", puddleSize: [64, 48], rat: "/sprites/walk/floor-life/rat.png", ratSize: [48, 36],
+  hole: "/sprites/walk/floor-life/mouse-hole-cut.png", holeSize: [24, 24] } as const;
 // The first kit's sizes, and the art density of you and the things in the walk (objects.ts), which
 // stays at KIT_PX a unit whatever kit the walls are drawn with.
 export const KIT_PX = 32, KIT_ROW = 24, KIT_NORTH = 57, KIT_CAP = 15, KIT_SIDE = 12;

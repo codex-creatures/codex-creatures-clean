@@ -9,13 +9,14 @@
 // stand and where its foes start are saved in the run (phases 2a and 2a′:
 // lib/world/placements.ts; made by lib/world/place.ts in a new run, by
 // lib/world/compat/v0.ts in one from before phase 2b). Still worked out from
-// the run's seed each time: the lab's decor (seed + 707) and banners (808).
+// the run's seed each time: the lab's decor (seed + 707) and banners (808), and
+// the game's puddles and mouse holes (909).
 // The old rules' saved ones had 303 (foes), 404 (the witch), 505 (wall
 // torches) and 606 (candles); the new rules give each room's pass its own.
 
 import { roomCentre, floorsOf, stepRule, type Layout, type Progress } from "../dungeon/layout";
 import type { Sconce, Candle } from "../dungeon/torch";
-import { placeDecor, placeBanners, type Decor } from "../dungeon/decor";
+import { placeDecor, placeBanners, placeFloorLife, type Decor, type RatHole } from "../dungeon/decor";
 import { spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
@@ -58,6 +59,13 @@ export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, c
     decor: placeDecor(plan, kinds, centresOf(layout), [...(walk.fires ?? []), ...candles], [layout.start, layout.boss], seeded(walk.seed + 707)),
     banners: placeBanners(plan, sconces.filter((c) => !c.wall || c.wall === "top"), [layout.start], seeded(walk.seed + 808)),
   };
+}
+
+// The puddles and mouse holes the game draws (decor.ts placeFloorLife), clear of the things standing
+// in the rooms (not the people who wander), the campfires, candles and wall torches.
+export function placeFloorLifeOf(walk: WalkRun, plan: Floorplan, things: Thing[], candles: Candle[], sconces: Sconce[]): { puddles: Pt[]; holes: RatHole[] } {
+  const taken = [...things.filter((t) => !t.npc), ...(walk.fires ?? []), ...candles];
+  return placeFloorLife(plan, taken, sconces, [walk.layout.start, walk.layout.boss], seeded(walk.seed + 909));
 }
 
 // How many foes a room has saved starts for (lib/world/compat/v0.ts), while

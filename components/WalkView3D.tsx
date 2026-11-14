@@ -31,10 +31,11 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isPerson, locate, personOf, PERSON_LIGHT } from "@/lib/dungeon/people";
 import type { LocatorKey } from "@/lib/items/materials";
 import type { Layout, Progress } from "@/lib/dungeon/layout";
-import type { Thing } from "@/lib/world/walkWorld";
+import { placeFloorLifeOf, type Thing } from "@/lib/world/walkWorld";
+import type { RatHole } from "@/lib/dungeon/decor";
 import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
 import { objectDef, artOf, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
-import { WALK_TILES, WALK_HERO, WALK_WITCH, KIT_LIGHTS, KIT_PX } from "@/lib/sprites/walk";
+import { WALK_TILES, WALK_HERO, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE } from "@/lib/sprites/walk";
 import { FALL_TIME, DUST_TIME, SHAKE_TIME } from "@/lib/render/scene";
 import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
 import { Stick, Warmth, WalkScroll } from "@/components/WalkView";
@@ -44,6 +45,7 @@ import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
 import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
 import { Prop3D, Campfire, HealingGem, PROP_LEAN, type Tint } from "@/components/Props3D";
+import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt } from "@/lib/render3d/puddle";
 import { texelsPerU, pixelScale, lightField, shadeAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -110,6 +112,8 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
   const camera = useRef<THREE.Camera | null>(null);
   const dark = useRef<HTMLDivElement>(null);
   const frame = useRef<Frame | null>(null);
+  // The puddles and mouse holes, from the run's seed (decor.ts placeFloorLife): worked out once, as the walk is (useWalkPlay).
+  const [life] = useState(() => placeFloorLifeOf(play.walk, plan, W.things(), sim.candles, sim.sconces));
 
   // A finger held down: once it's dragged past HOLD_DRAG px, you walk toward the floor under it, worked out
   // every frame (the camera follows you, so a finger held still near the edge keeps you walking that way).
@@ -164,7 +168,7 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
           gl={{ antialias: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.info.autoReset = false; /* (counted by hand: read, then reset, each frame) */ }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <World sim={sim} live={W.live} layout={W.layout} progress={W.progress} closed={W.closed} view={view} step={step} things={W.things} room={play.room}
-            busy={play.busy} frame={frame} cameraRef={camera} onStats={onStats} />
+            busy={play.busy} frame={frame} cameraRef={camera} onStats={onStats} life={life} />
         </Canvas>
       </div>
       <div ref={dark} aria-hidden style={{ position: "absolute", inset: 0, background: "#000", opacity: 0, pointerEvents: "none", zIndex: 2 }} />
@@ -185,10 +189,10 @@ function tracked(kinds: LocatorKey[] | undefined, sim: WalkSim, layout: Layout, 
 }
 
 // ── The world, in the scene ───────────────────────────────────────────────
-function World({ sim, live, layout, progress, closed, view, step, things, room, busy, frame, cameraRef, onStats }: {
+function World({ sim, live, layout, progress, closed, view, step, things, room, busy, frame, cameraRef, onStats, life }: {
   sim: WalkSim; live: WalkSim["live"]; layout: Layout; progress: Progress; closed: Uint8Array; view: View3D; step: (now: number) => void;
   things: () => Thing[]; room: (id: string) => Room | undefined; busy: boolean; frame: React.RefObject<Frame | null>;
-  cameraRef: React.RefObject<THREE.Camera | null>; onStats?: (s: Stats3D) => void;
+  cameraRef: React.RefObject<THREE.Camera | null>; onStats?: (s: Stats3D) => void; life: FloorLifeSpots;
 }) {
   const { size, setDpr } = useThree();
   const cells = useMemo(() => dungeonCells(live), [live]);
@@ -302,6 +306,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
       <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} fadeRef={fade} />
       {/* You, unlit, as in the other modes. */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
+      <FloorLife life={life} sim={sim} live={live} closed={closed} stretch={stretch} pitch={view.pitch} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
       <Sprites {...others} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
     </>
   );
@@ -323,6 +328,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
       <instancedMesh key={`w${cells.walls.length}`} ref={wallRef} args={[wallGeo, mats.walls, cells.walls.length]} castShadow receiveShadow raycast={() => null} />
       {/* You, unlit: the player always reads clearly, whatever the light. */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
+      <FloorLife life={life} sim={sim} live={live} closed={closed} stretch={stretch} pitch={view.pitch} />
       <Sprites {...others} />
     </>
   );
@@ -468,6 +474,96 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     );
   }
   return <>{out}</>;
+}
+
+// Floor life (decor.ts placeFloorLife; the user, 2026-11-14): puddles on the floor, and mouse holes at
+// the foot of rooms' top walls, each with a rat that runs along the wall into it now and then. Drawn
+// where you've seen them (the rat only while it's in the light), as dark as the place round them
+// (`shade`, Stone), with your torch's glint on the water and ripples as you walk through it
+// (lib/render3d/puddle.ts). Nothing here is saved or in anyone's way.
+type FloorLifeSpots = { puddles: Pt[]; holes: RatHole[] };
+const RAT_LONG = 0.6;                  // u: the rat, nose to tail (the lab's)
+const HOLE_U = 0.5;                    // u: the mouse hole across (its 24 px cut)
+function FloorLife({ life, sim, live, closed, stretch, pitch, shade }: { life: FloorLifeSpots; sim: WalkSim; live: WalkSim["live"]; closed: Uint8Array;
+  stretch: number; pitch: number; shade?: (x: number, y: number) => THREE.Color }) {
+  const seen = (p: Pt) => sim.known[p.y * live.w + p.x] === 1;
+  return (
+    <>
+      {life.puddles.filter(seen).map((p) => <Puddle key={`puddle:${p.x},${p.y}`} at={p} sim={sim} pitch={pitch} shine={!closed[p.y * live.w + p.x]} colour={shade && (() => shade(p.x, p.y))} />)}
+      {life.holes.filter(seen).map((h, i) => <RatRun key={`rat:${h.x},${h.y}`} hole={h} phase={i * 2.7} sim={sim} live={live} stretch={stretch} shade={shade} />)}
+    </>
+  );
+}
+
+// A puddle laid flat (its picture square on screen: as deep as it's tall ÷ sin pitch), and its glint over it.
+function Puddle({ at, sim, pitch, shine, colour }: { at: Pt; sim: WalkSim; pitch: number; shine: boolean; colour?: () => THREE.Color }) {
+  const [pw, ph] = FLOOR_LIFE.puddleSize, w = pw / ART_PER_U, d = ph / ART_PER_U / Math.sin(pitch);
+  const base = useRef<THREE.MeshBasicMaterial>(null);
+  const mat = useMemo(() => new THREE.ShaderMaterial({
+    vertexShader: GLINT_VERT, fragmentShader: GLINT_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { map: { value: texture(FLOOR_LIFE.puddle) }, uLight: { value: new THREE.Vector3() }, uColour: { value: new THREE.Color(TORCH.colour) }, uTime: { value: 0 },
+      uStep: { value: new THREE.Vector3(at.x, at.y, -99) }, ...Object.fromEntries(Object.entries(glintNumbers(pitch)).map(([k, v]) => [k, { value: v }])) },
+  }), [at.x, at.y, pitch]);
+  useEffect(() => () => mat.dispose(), [mat]);
+  // (Its uniforms change each frame through a ref: React's rules keep the memo itself unchanged.)
+  const live = useRef(mat), last = useRef({ drip: 0, step: -RIPPLE.step });
+  useEffect(() => { live.current = mat; }, [mat]);
+  useFrame((state) => {
+    if (base.current && colour) base.current.color.copy(colour());
+    const u = live.current.uniforms, now = state.clock.elapsedTime, step = u.uStep.value as THREE.Vector3, me = sim.me;
+    u.uLight.value.set(me.x + 0.25, TORCH.height, me.y - 0.1); // (your torch, held up beside you)
+    u.uTime.value = now;
+    const inIt = Math.abs(me.x - at.x) < w * 0.4 && Math.abs(me.y - at.y) < d * 0.4;
+    if (inIt && me.path.length > 0 && now - last.current.step > RIPPLE.step) { step.set(me.x, me.y, now); last.current.step = last.current.drip = now; }
+    else if (now - last.current.drip > RIPPLE.every) { step.set(at.x + (Math.random() - 0.5) * w * 0.5, at.y + (Math.random() - 0.5) * d * 0.4, now); last.current.drip = now; }
+  });
+  return (
+    <group position={[at.x, 0.01, at.y]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+        <planeGeometry args={[w, d]} />
+        {colour
+          ? <meshBasicMaterial ref={base} map={texture(FLOOR_LIFE.puddle)} transparent alphaTest={0.1} depthWrite={false} color={colour()} />
+          : <meshLambertMaterial map={texture(FLOOR_LIFE.puddle)} transparent alphaTest={0.1} depthWrite={false} />}
+      </mesh>
+      {shine && <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]} material={mat} raycast={() => null}><planeGeometry args={[w, d]} /></mesh>}
+    </group>
+  );
+}
+
+// A mouse hole on the wall's foot, and its rat: from `from` along the wall to the hole, in, out of sight a while, and again.
+function RatRun({ hole, phase, sim, live, stretch, shade }: { hole: RatHole; phase: number; sim: WalkSim; live: WalkSim["live"]; stretch: number;
+  shade?: (x: number, y: number) => THREE.Color }) {
+  const rat = useRef<THREE.Group>(null), ratMat = useRef<THREE.MeshBasicMaterial>(null), holeMat = useRef<THREE.MeshBasicMaterial>(null);
+  const run = Math.abs(hole.x - hole.from), dir = Math.sign(hole.x - hole.from) || 1;
+  const face = hole.y - 0.5, lane = face + 0.45, [rw, rh] = FLOOR_LIFE.ratSize, h = HOLE_U * stretch;
+  useFrame((state) => {
+    if (holeMat.current && shade) holeMat.current.color.copy(shade(hole.x, hole.y));
+    const g = rat.current;
+    if (!g) return;
+    const r = ratAt(state.clock.elapsedTime + phase, run), x = r ? hole.from + dir * r.along : hole.x;
+    g.visible = !!r && sim.lightNow[hole.y * live.w + Math.round(x)] === 1;
+    if (!r) return;
+    if (r.into === 0) { g.position.set(x, 0.02, lane); g.rotation.y = dir * (Math.PI / 2); }
+    else { g.position.set(hole.x, 0.02, lane - r.into * 0.45); g.rotation.y = Math.PI; }
+    if (ratMat.current && shade) ratMat.current.color.copy(shade(x, hole.y));
+  });
+  return (
+    <>
+      <Mounted x={hole.x} y={face + 0.01} up={h / 2}>
+        <mesh raycast={() => null} scale={[HOLE_U, h, 1]}><planeGeometry />{shade
+          ? <meshBasicMaterial ref={holeMat} map={texture(FLOOR_LIFE.hole)} alphaTest={0.5} />
+          : <meshLambertMaterial map={texture(FLOOR_LIFE.hole)} alphaTest={0.5} />}</mesh>
+      </Mounted>
+      <group ref={rat} visible={false}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
+          <planeGeometry args={[RAT_LONG * (rw / rh), RAT_LONG]} />
+          {shade
+            ? <meshBasicMaterial ref={ratMat} map={texture(FLOOR_LIFE.rat)} transparent alphaTest={0.5} />
+            : <meshLambertMaterial map={texture(FLOOR_LIFE.rat)} transparent alphaTest={0.5} />}
+        </mesh>
+      </group>
+    </>
+  );
 }
 
 // Something mounted `up` u high at (x, y) (a wall torch, a candle on a table), its children placed from

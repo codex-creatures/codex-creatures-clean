@@ -343,8 +343,14 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
     pillar are solid and only stand against a wall, so no way through is ever blocked (tested:
     every door still reaches every other); the rest are walked over. Never on a room's middle,
     its fire or candle, or by a door.
-  - Ideas not drawn yet: puddles and moss patches as decals (PixelLab gave plain floor
-    circles), side walls' faces, room-kind floors (a library's boards, a camp's dirt),
+  - **Floor life (in the game, 2026-11-14; samples first in `/lab/chest`):** in 35% of rooms
+    (`PUDDLE_CHANCE`) a sewer puddle lies on the floor, your torch glinting on its water, rippling
+    as you walk through it and now and then on its own; in 25% (`RAT_CHANCE`) a mouse hole sits at
+    the foot of the top wall, and a rat runs along the wall into it every few seconds (seen only in
+    the light). Never in the entrance or the boss's room, by a door, or on a thing, fire or
+    candle. Drawn only (`decor.ts placeFloorLife`, from the seed + 909; `components/WalkView3D.tsx`
+    FloorLife; the glint: `lib/render3d/puddle.ts`), so nothing is saved and old runs get them too.
+  - Ideas not drawn yet: moss patches as decals, side walls' faces, room-kind floors (a library's boards, a camp's dirt),
     cobwebs in corners, a darker pillar.
 - **Still to come:** scenery, rubble art, the animated flame sprite, the old Encampment's retirement once
   New has been played (the user's call), and porting `/lab/walk` onto WalkView (it keeps its

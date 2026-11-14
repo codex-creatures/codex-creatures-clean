@@ -69,8 +69,8 @@ blocked-off pocket from causing trouble:
 6. **Lights on the floor:** campfires, then candles, by a wall or near the middle (§5.6).
 7. **Spawns:** where each foe starts, where each NPC starts (§5.7), the boss's stand.
 8. **Decor:** blocking decor against walls, walk-over decor anywhere left.
-9. **Floor variety:** worn floor and wall tiles. Purely visual, so these stay worked out from the
-   seed and aren't saved.
+9. **Floor variety:** worn floor and wall tiles, and floor life (puddles, mouse holes: in the game
+   since 2026-11-14). Purely visual, so these stay worked out from the seed and aren't saved.
 
 **Separate randomness per room and per pass:** each pass in each room gets its own random
 numbers from (run seed, room, pass). Changing one pass no longer moves everything after it, as
@@ -265,7 +265,7 @@ deck of cards on (`deck: true`): the walkable Labyrinth's "?" rooms no longer ho
 | 6 floor lights | campfires (rolled with the run, `fires`) marked first with their clearance; then floor candles | below |
 | 7 spawns | every fight room's foes (the ambush's included) and the card witch | `FOE_GAP`, `DOOR_CLEAR`, not the top row, one end each in a two-den room, the boss's stand; never on a solid thing or a reserved point, never in a pocket you can't reach |
 | 8 decor | lab only (`/lab/newrun`), from the seed, not saved | `decor.ts` |
-| 9 floor variety | worn tiles from the seed, not saved | |
+| 9 floor variety | worn tiles, puddles and mouse holes from the seed, not saved | `placeFloorLife`: a puddle where it and the 8 tiles round it are floor, `PUDDLE_CLEAR` from things, fires and candles, `DOOR_CLEAR` from doors; a hole on a top wall's foot with a clear run of `RAT_LANE`+ tiles |
 
 - **Optional things try again before they're dropped** (the user, 2026-11-08): a candle (or any
   optional thing) whose spot is taken tries every other valid spot in its room, in a
