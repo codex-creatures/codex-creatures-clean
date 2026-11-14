@@ -11,7 +11,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { pixelScale } from "@/lib/render3d/stone";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
 import { WALK_KIT, WALK_HERO, KIT_PX } from "@/lib/sprites/walk";
-import { FACINGS, walkFrame, smoothHeading, turnTo, type Facing } from "@/lib/dungeon/tileArt";
+import { FACINGS, FACINGS8, walkFrame, smoothHeading, turnTo, facing8, type Facing, type Facing8 } from "@/lib/dungeon/tileArt";
 import { HERO_PARTS, HERO_COLOURS, PIVOTS, FLAME_AT, heroPose, turnToward, yawOf, type Limb } from "@/lib/render3d/hero3d";
 import { Solid, leaned, loaded } from "@/components/Props3D";
 
@@ -20,7 +20,7 @@ const ART_PER_U = 48;
 const PATCH = 17;
 const SPEED = 2.2;                       // u a second (about the game's walk)
 export type HeroPath = "circle" | "diagonal" | "still";
-export type HeroView = { path: HeroPath; across: number; outline: boolean; sprite: boolean; model: boolean };
+export type HeroView = { path: HeroPath; across: number; outline: boolean; sprite: boolean; model: boolean; eight: boolean };
 
 // Where a walker is `t` seconds along a path round (cx, cz): the point, and which way it's going.
 function along(path: HeroPath, t: number, cx: number): { x: number; z: number; dx: number; dz: number } {
@@ -98,6 +98,29 @@ function Sprite({ path, cx }: { path: HeroPath; cx: number }) {
   return <mesh ref={mesh} scale={[w, h, 1]}><planeGeometry /><meshLambertMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>;
 }
 
+// 🧪 The 8-way hero (the user, 2026-11-14: "wandering with your torch held out in front"): PixelLab
+// character 67704aec (public/sprites/walk/samples/hero-8, one still a way, no walk yet), drawn at the
+// game's hero size (32 art pixels a unit, as today's), the nearest of its eight views to the way it's
+// heading (tileArt.ts facing8).
+const EIGHT = { dir: "/sprites/walk/samples/hero-8", cell: 96, feet: 69 };
+function Sprite8({ path, cx }: { path: HeroPath; cx: number }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  const tex = useMemo(() => Object.fromEntries(FACINGS8.map((d) => [d, loaded(`${EIGHT.dir}/${d}.png`)])) as Record<Facing8, THREE.Texture>, []);
+  const state = useRef({ facing: "south" as Facing8, heading: { x: 0, y: 1 }, last: { x: NaN, z: NaN } });
+  const stretch = uprightStretch(PITCH), w = EIGHT.cell / KIT_PX, h = w * stretch, below = (1 - EIGHT.feet / EIGHT.cell) * h;
+  useFrame((st) => {
+    const m = mesh.current;
+    if (!m) return;
+    const p = along(path, st.clock.elapsedTime, cx), S = state.current;
+    const dx = Number.isNaN(S.last.x) ? 0 : p.x - S.last.x, dz = Number.isNaN(S.last.z) ? 0 : p.z - S.last.z;
+    S.last = { x: p.x, z: p.z };
+    S.heading = smoothHeading(S.heading, dx, dz); S.facing = facing8(S.heading.x, S.heading.y, S.facing);
+    (m.material as THREE.MeshLambertMaterial).map = tex[S.facing];
+    m.position.set(p.x, h / 2 - below, p.z + 0.05);
+  });
+  return <mesh ref={mesh} scale={[w, h, 1]}><planeGeometry /><meshLambertMaterial map={tex.south} alphaTest={0.5} side={THREE.DoubleSide} /></mesh>;
+}
+
 function Scene({ view }: { view: HeroView }) {
   const { size, setDpr } = useThree();
   const pix = pixelScale("art", ART_PER_U, view.across, size.width, window.devicePixelRatio || 1);
@@ -116,15 +139,18 @@ function Scene({ view }: { view: HeroView }) {
     camera.lookAt(target); camera.updateProjectionMatrix();
     if (torch.current) torch.current.intensity = 9 * (0.93 + 0.07 * Math.sin(state.clock.elapsedTime * 11));
   });
-  const both = view.model && view.sprite;
+  // Side by side, whichever are shown.
+  const shown = (["eight", "model", "sprite"] as const).filter((k) => view[k]);
+  const spot = (k: (typeof shown)[number]) => (shown.length === 1 ? 0 : (shown.indexOf(k) - (shown.length - 1) / 2) * (shown.length === 3 ? 4.2 : 4.8));
   return (
     <>
       <ambientLight color="#9aa6c8" intensity={1.1} />
       <pointLight ref={torch} color="#ffc68a" intensity={9} distance={0} decay={1.6} position={[0, 1.8, 1]} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0.5]}><planeGeometry args={[PATCH, 9]} /><meshLambertMaterial map={floor} /></mesh>
       <mesh position={[0, WALL_HEIGHT / 2, -4]} material={wall}><boxGeometry args={[PATCH, WALL_HEIGHT, 2]} /></mesh>
-      {view.model && <Model path={view.path} cx={both ? -2.4 : 0} outline={view.outline} torch={torch} />}
-      {view.sprite && <Sprite path={view.path} cx={both ? 2.4 : 0} />}
+      {view.eight && <Sprite8 path={view.path} cx={spot("eight")} />}
+      {view.model && <Model path={view.path} cx={spot("model")} outline={view.outline} torch={torch} />}
+      {view.sprite && <Sprite path={view.path} cx={spot("sprite")} />}
     </>
   );
 }

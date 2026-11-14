@@ -130,6 +130,20 @@ export function turnTo(dx: number, dy: number, was: Facing): Facing {
   return Math.max(Math.abs(dx), Math.abs(dy)) >= Math.min(Math.abs(dx), Math.abs(dy)) * FACING_LEAN ? next : was;
 }
 
+// 🧪 Eight ways (the user, 2026-11-14: an 8-direction hero, /lab/hero for now): the nearest of the
+// eight to a heading (x right, y down the screen: south), held till the heading is FACING8_HOLD
+// radians past the halfway to the next, so it doesn't flicker at a boundary either.
+export const FACINGS8 = ["south", "south-east", "east", "north-east", "north", "north-west", "west", "south-west"] as const;
+export type Facing8 = (typeof FACINGS8)[number];
+export const FACING8_HOLD = 0.12; // radians (about 7°) 🧪
+export function facing8(dx: number, dy: number, was: Facing8 = "south"): Facing8 {
+  if (dx === 0 && dy === 0) return was;
+  const sector = (Math.PI * 2) / 8, a = Math.atan2(dx, dy); // 0: south, π/2: east
+  const at = FACINGS8.indexOf(was) * sector, off = Math.atan2(Math.sin(a - at), Math.cos(a - at));
+  if (Math.abs(off) <= sector / 2 + FACING8_HOLD) return was;
+  return FACINGS8[((Math.round(a / sector) % 8) + 8) % 8];
+}
+
 // The frame of a walk cycle `frames` long after walking `tiles` tiles, a
 // stride every STRIDE tiles; standing still is frame -1 (the standing pose).
 export const STRIDE = 1.5; // tiles per walk cycle

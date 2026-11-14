@@ -14,12 +14,12 @@ const PATHS: { path: HeroPath; label: string }[] = [{ path: "circle", label: "Wa
 const ZOOMS = [{ label: "Game zoom", across: 15 }, { label: "Close", across: 7 }];
 
 export default function HeroLab() {
-  const [view, setView] = useState<HeroView>({ path: "circle", across: 15, outline: true, sprite: true, model: true });
+  const [view, setView] = useState<HeroView>({ path: "circle", across: 15, outline: true, sprite: true, model: false, eight: true });
   const set = (p: Partial<HeroView>) => setView((v) => ({ ...v, ...p }));
   const btn = (on: boolean) => ({ minHeight: 44, padding: "0 12px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
   return (
     <div style={{ background: "#111", color: "#f1d9a0", minHeight: "100vh", padding: 16, fontFamily: "sans-serif" }}>
-      <h1 style={{ fontSize: 18, margin: "0 0 8px" }}>3D hero draft</h1>
+      <h1 style={{ fontSize: 18, margin: "0 0 8px" }}>Hero drafts</h1>
       <div style={{ width: "100%", maxWidth: 480, aspectRatio: "3 / 4" }}>
         <HeroScene view={view} />
       </div>
@@ -27,14 +27,15 @@ export default function HeroLab() {
         {PATHS.map((p) => <button key={p.path} style={btn(view.path === p.path)} onClick={() => set({ path: p.path })}>{p.label}</button>)}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 480 }}>
+        <button style={btn(view.eight)} onClick={() => set({ eight: !view.eight })}>8-way {view.eight ? "shown" : "hidden"}</button>
         <button style={btn(view.model)} onClick={() => set({ model: !view.model })}>3D {view.model ? "shown" : "hidden"}</button>
         <button style={btn(view.sprite)} onClick={() => set({ sprite: !view.sprite })}>Sprite {view.sprite ? "shown" : "hidden"}</button>
         <button style={btn(view.outline)} onClick={() => set({ outline: !view.outline })}>Outline {view.outline ? "on" : "off"}</button>
         {ZOOMS.map((z) => <button key={z.across} style={btn(view.across === z.across)} onClick={() => set({ across: z.across })}>{z.label}</button>)}
       </div>
       <p style={{ color: "#a89878", fontSize: 13, maxWidth: 480 }}>
-        The 3D one (left) is boxes in the sprite&apos;s own colours; it turns smoothly any way it walks. The
-        sprite (right) is today&apos;s, turning as the game now does. Lit by the 3D one&apos;s torch, not yet
+        Left: the new 8-way hero, torch held out ahead (stills for now: no walk yet, so it glides). Right:
+        today&apos;s sprite, turning as the game now does. The boxy 3D draft is under &quot;3D&quot;. Lit by a test torch, not yet
         the game&apos;s own light.
       </p>
     </div>

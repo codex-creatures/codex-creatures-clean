@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, WALK_SPEC } from "../lib/dungeon/layout";
-import { cellArt, cornerTerrain, drawOrder, facingOf, pickTile, walkFrame, smoothHeading, turnTo, type Facing, WANG_TILES, UPPER, LOWER, CLIFF, ANY_TILE } from "../lib/dungeon/tileArt";
+import { cellArt, cornerTerrain, drawOrder, facingOf, pickTile, walkFrame, smoothHeading, turnTo, facing8, type Facing, WANG_TILES, UPPER, LOWER, CLIFF, ANY_TILE } from "../lib/dungeon/tileArt";
 
 function seeded(seed: number) {
   let s = seed;
@@ -145,5 +145,23 @@ describe("turning as you walk", () => {
     expect(turnTo(0, -1, "south")).toBe("north");
     expect(turnTo(1, 0.9, "south")).toBe("south"); // (near the diagonal: stays)
     expect(turnTo(1, 0.5, "south")).toBe("east");
+  });
+});
+
+describe("eight ways (the 8-direction hero draft)", () => {
+  it("picks the nearest of the eight, and holds it a little past the halfway", () => {
+    expect(facing8(0, 1)).toBe("south");
+    expect(facing8(1, 1)).toBe("south-east");
+    expect(facing8(1, 0)).toBe("east");
+    expect(facing8(1, -1)).toBe("north-east");
+    expect(facing8(0, -1)).toBe("north");
+    expect(facing8(-1, -1)).toBe("north-west");
+    expect(facing8(-1, 0)).toBe("west");
+    expect(facing8(-1, 1)).toBe("south-west");
+    // Just past the halfway between south and south-east (22.5°): still south; well past it: south-east.
+    const at = (deg: number) => [Math.sin((deg * Math.PI) / 180), Math.cos((deg * Math.PI) / 180)] as const;
+    expect(facing8(...at(25), "south")).toBe("south");
+    expect(facing8(...at(35), "south")).toBe("south-east");
+    expect(facing8(0, 0, "west")).toBe("west");
   });
 });
