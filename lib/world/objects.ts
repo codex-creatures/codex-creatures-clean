@@ -77,6 +77,7 @@ export type Instance = {
   legacy?: "panel";                         // placed by the old panel rules: exactly today's behaviour (world-spec §3)
   holds?: "candle";                          // a table (world version 12): what stands on it
   deck?: true;                               // a table (world version 13): a deck of cards lies on it (the room's `deck`)
+  codex?: true;                              // a bookcase against a wall (world version 14): a codex is tucked in it
 };
 
 // How a foe starts out, as generation rolled it (lib/dungeon/foes.ts): it
@@ -131,6 +132,10 @@ const WALK_OVER = { collision: "walk-over" as const, height: 0.3, sortDy: -0.6 }
 // of cards on one. Drawn in 3D (components/Props3D.tsx); its front picture stands in for it in the 2D view.
 export const TABLE_ART: ArtRef = { src: "/sprites/props/table3d/front.png?v=2", w: 60, h: 20 };
 export const TABLE_TOP = 0.83; // u: how high its top is (props3d.ts tableArt; a candle on it stands there)
+// (World version 14, the user, 2026-11-14) A storehouse's finds lying on its floor, to pick up: Klutz's
+// dynamite (the crate stamped DANGER) and the rugged backpack.
+export const DYNAMITE_ART: ArtRef = { src: "/sprites/den/crate.png", w: 56, h: 56 };
+export const BACKPACK_ART: ArtRef = { src: "/sprites/items/backpack.png", w: 64, h: 64 };
 
 const DEFS: ObjectDef[] = [
   // Things you use.
@@ -145,6 +150,9 @@ const DEFS: ObjectDef[] = [
   def("pool", floorThing({ footprint: { w: 3, d: 3 }, clearance: 1, kind: "interactable", height: 0.3, interact: usable("drink") }), legacyVisual({ base: ref(WALK_POOL) }, { width: legacyU(WALK_POOL.size), lift: 0.35 })),
   // (World version 9, decision 39) a library's broken bookcases, searched like a stash, and its locator lectern.
   def("bookcase", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", height: 1.4, interact: usable("search") }), legacyVisual({ shut: ref(WALK_BOOKCASE), open: ref(WALK_BOOKCASE) }, { width: legacyU(WALK_BOOKCASE.size) })),
+  // (World version 14) a storehouse's finds on its floor: walked over, picked up.
+  def("dynamite", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("take") }), legacyVisual({ base: DYNAMITE_ART }, { width: SACK_U })),
+  def("backpack", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 0.6, collision: "walk-over", interact: usable("take") }), legacyVisual({ base: BACKPACK_ART }, { width: SACK_U })),
   def("lectern", floorThing({ footprint: { w: 2, d: 2 }, kind: "interactable", height: 1, interact: usable("read") }), legacyVisual({ base: ref(WALK_LECTERN) }, { width: legacyU(WALK_LECTERN.size) })),
   def("cage", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.2, interact: usable("open") }), legacyVisual({ shut: ref(WALK_CAGE), open: ref(WALK_CAGE_OPEN) }, { width: legacyU(WALK_CAGE.size) })),
   // Lights.

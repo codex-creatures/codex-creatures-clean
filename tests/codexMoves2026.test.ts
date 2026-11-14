@@ -209,6 +209,12 @@ describe("the 2026-11 codex moves in a fight", () => {
     const t = createBattle([big(fighter("ironhide", ["Strike", "Headbutt"]))], [big(fighter("moss_wolf", ["Strike"]))]);
     resolveRound(t, { A: attack("Headbutt"), B: attack("Strike") });
     expect(t.log.some((e) => e.type === "effect" && e.text.includes("recoil"))).toBe(true);
+    // The hit plays first, then what it sets off.
+    const drain = s.log.findIndex((e) => e.type === "effect" && e.text.startsWith("drains"));
+    const bite = s.log.findIndex((e) => e.type === "attack" && e.skill.name === "Vampiric Bite");
+    expect(bite).toBeLessThan(drain);
+    const recoil = t.log.findIndex((e) => e.type === "effect" && e.text.includes("recoil"));
+    expect(t.log.findIndex((e) => e.type === "attack" && e.skill.name === "Headbutt")).toBeLessThan(recoil);
   });
 
   it("the Hydra's breath is a cloud like Choking Smog's: Cleansing Water washes it away", () => {

@@ -548,7 +548,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const spendKlutzSkill = (s: SkillKey) => setKlutz((k) => spendSkill(k, s));
   // A trait pick (one at each of TRAIT_LEVELS): the Bigger Pack costs PACK_TRAIT.cost.
   function pickKlutzTrait(t: TraitKey): boolean {
-    if (!canPickTrait(klutz, t) || (t === "pack" && !spendGold(PACK_TRAIT.cost))) return false;
+    if (!canPickTrait(klutz, t) || (t === "pack" && PACK_TRAIT.cost > 0 && !spendGold(PACK_TRAIT.cost))) return false;
     setKlutz((k) => pickTrait(k, t));
     return true;
   }

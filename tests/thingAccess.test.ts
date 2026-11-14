@@ -197,6 +197,8 @@ function useByTapping(run0: DungeonRun, t: Thing): string[] {
   const opens = ["chest", "rickety-chest", "sack"].includes(t.def);
   const after = json(walkKeep(opens ? withRoom(run, t.room, (r) => ({ ...r, opened: true, done: true, sack: [] })) : run, st));
   const shown = usable(after).things, again = shown.find((x) => x.key === t.key && x.def === t.def);
+  // (A sack, looted, goes: the user, 2026-11-14. A chest stays, open and empty.)
+  if (t.def === "sack" && opens) return again ? [...bad, `${t.key} ${t.def}: still there, looted, after a reload`] : bad;
   if (!again) return [...bad, `${t.key} ${t.def}: gone after a reload`];
   if (again.x !== t.x || again.y !== t.y) bad.push(`${t.key} ${t.def}: moved after a reload`);
   if (opens && (!again.open || again.state !== "open")) bad.push(`${t.key} ${t.def}: shut again after a reload`);

@@ -35,7 +35,7 @@ export const TOOL_SPRITES: Record<ToolKey, Sprite> = {
   clairvoyance: icon("tools/clairvoyance"), revival: icon("tools/revival"),
   // (Stand-ins till the locators have art of their own.)
   merchant_map: icon("schematic"), crystal_ball: icon("tools/clairvoyance"), librarian_locator: icon("codex"),
-  gold_key: icon("gold"), // (a stand-in till it has art of its own)
+  gold_key: icon("tools/gold_key"), // (PixelLab's, 2026-11-13: PIXELLAB.md)
   klutz_pack: icon("backpack"), // (a stand-in)
 };
 export const CODEX_SPRITE = icon("codex");

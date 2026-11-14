@@ -173,7 +173,7 @@ describe("sending Klutz (v2)", () => {
   it("his pack starts at 8; the Bigger Pack trait and pack upgrades add to it; his chest grows with upgrades", () => {
     expect(packSize({})).toBe(PACK_START);
     expect(packSize({ traits: { pack: true }, packs: 2 })).toBe(PACK_START + PACK_TRAIT.slots + 2);
-    expect(PACK_TRAIT).toMatchObject({ cost: 1000, slots: 4 });
+    expect(PACK_TRAIT).toMatchObject({ cost: 0, slots: 4 }); // (free: the trait pick is its price, the user 2026-11-14)
     expect(chestSize({ chestUps: 2 })).toBe(CHEST_START + 20);
   });
 

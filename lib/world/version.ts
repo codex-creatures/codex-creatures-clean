@@ -29,7 +29,10 @@
 // 12: tables now and then, some with a candle on (the user, 2026-11-11): new runs only.
 // 13: a deck of cards now and then on a table (TABLE_DECK), instead of a "?" room of its own
 //    (the user, 2026-11-13): new runs only.
-export const WALK_V = 13;
+// 14: bookcases against rooms' top walls now and then, some with a candle beside them and a few
+//    with a codex in (`shelf:<room>`); a storehouse's dynamite and rugged backpack lying on its
+//    floor to pick up (`dynamite:<room>`, `backpack:<room>`) (the user, 2026-11-14): new runs only.
+export const WALK_V = 14;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

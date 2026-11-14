@@ -120,12 +120,20 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // key: the room, or "<room>#<cage>". def: what it is (objects.ts), state:
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
-  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true }; // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13)
+  cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true;
+  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true }; // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
 };
 const shut = (opened: boolean | undefined) => (opened ? "open" : "shut");
+// (World version 14) What a run's saved placements say of a room's finds, for the screen (which never reads them itself):
+// a codex in the bookcase against its wall; Klutz's dynamite lying on its floor (else it's among the crates).
+export const shelfHasCodex = (walk: WalkRun | undefined, id: string) => !!walk?.placed?.some((i) => i.id === `shelf:${id}` && i.codex);
+export const dynamiteOnFloor = (walk: WalkRun | undefined, id: string) => !!walk?.placed?.some((i) => i.id === `dynamite:${id}`);
+// Looted: opened, with nothing left in it. A chest stays, open and empty; a sack goes (the user, 2026-11-14).
+const looted = (r: Room) => !!r.opened && (r.sack?.length ?? 0) === 0;
+const emptied = (r: Room) => (looted(r) ? { empty: true as const } : {});
 
 // Where a mini boss's or a boss's chest lies, there from the start for it to
 // guard (the user, 2026-11-07): behind a boss waiting at the top of its room
@@ -171,8 +179,8 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       const at = placed.spot(`${id}:${key}`);
       if (at) out.push(thingOf({ key: id, room: id, ...at, ...t }));
     };
-    if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done });
-    else if (r.kind === "stash" || (r.kind === "campfire" && r.sack)) add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened });
+    if (r.kind === "chest" || r.kind === "treasure") add("chest", { def: "chest", state: shut(r.done), open: r.done, ...(r.done && (r.sack?.length ?? 0) === 0 ? { empty: true as const } : {}) });
+    else if ((r.kind === "stash" || (r.kind === "campfire" && r.sack)) && !looted(r)) add("sack", { def: "sack", state: shut(r.opened), open: !!r.opened });
     else if (r.kind === "library" && r.lectern) {
       add("lectern", { def: "lectern", open: false });
       for (let i = 0; placed.spot(`${bookcaseOf(id, i)}:bookcase`); i++) {
@@ -190,15 +198,24 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       out.push(thingOf({ key: id, room: id, x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over }));
     }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
-    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
-      add("stores", { def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
+    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container && !(r.kind === "library" && looted(r))) {
+      add("stores", { def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened, ...emptied(r) });
     }
     const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;
     if (guards && !r.done) {
       out.push(thingOf({ key: id, room: id, ...guardedSpot(layout, placed, id, r, dungeon), def: "loot-chest", state: "shut", open: false, guarded: true, ...(r.golden ? { golden: true as const } : {}) }));
-    } else if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
+    } else if (r.container && r.done && (r.container !== "sack" || !looted(r))) {
       const at = guards ? guardedSpot(layout, placed, id, r, dungeon) : spots?.[id] ?? roomCentre(layout.rooms[parentOf(id)]);
-      out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened, ...(r.golden ? { golden: true as const } : {}) }));
+      out.push(thingOf({ key: id, room: id, ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened, ...emptied(r), ...(r.golden ? { golden: true as const } : {}) }));
+    }
+    // (World version 14) A bookcase against the wall, to search once; a storehouse's finds on its floor, with a "!"
+    // over each (behind its guard, while it has one).
+    const shelf = placed.spot(`shelf:${id}`);
+    if (shelf) out.push(thingOf({ key: `shelf:${id}`, room: id, ...shelf, def: "bookcase", state: shut(r.shelfSearched), open: !!r.shelfSearched, shelf: true }));
+    const guardedFind = hasFight(r) && !r.done;
+    for (const [what, there] of [["dynamite", !!r.dynamite], ["backpack", !!r.packOnFloor]] as const) {
+      const at = there ? placed.spot(`${what}:${id}`) : undefined;
+      if (at) out.push(thingOf({ key: `${what}:${id}`, room: id, ...at, def: what, open: false, pickup: what, flag: !guardedFind, ...(guardedFind ? { guarded: true } : {}) }));
     }
     // (World version 12) A table, as furniture: in the way, but nothing to use (inert: a tap by it walks).
     // (13) One with a deck of cards on it is the deck, to turn over, till it has been.

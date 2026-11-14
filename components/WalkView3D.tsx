@@ -407,7 +407,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     if (kind) {
       const deck = t.def === "card-deck" && !t.open, rarest = deck ? deckRarity(room(t.room)?.deck) : undefined;
       const glow = rarest && fireInSight(live, t, sim.me) ? RARITY_COLORS[rarest].text : undefined;
-      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade && (() => shade(t.x, t.y))} deck={deck} glow={glow} broken={kind === "bookcase" && bookcaseBroken(t.key)} golden={!!t.golden} /></group>);
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade && (() => shade(t.x, t.y))} deck={deck} glow={glow} broken={kind === "bookcase" && !t.shelf && bookcaseBroken(t.key)} empty={!!t.empty} golden={!!t.golden} /></group>);
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }

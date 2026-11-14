@@ -58,6 +58,8 @@ const CANDLES_V = 5, MOUNTED = new Set(MOUNTED_DEFS);
 const NO_WALL_CANDLES_V = 8; // (wall torches instead: place.ts)
 const TABLES_V = 12;         // (tables, and a candle standing on one)
 const DECKS_V = 13;          // (a deck of cards on a table)
+const SHELVES_V = 14;        // (bookcases against walls, and a storehouse's finds on its floor)
+const FINDS = new Set(["dynamite", "backpack"]);
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
 // of instances, each with a string id (no two the same), a known definition, a
@@ -85,6 +87,8 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (p.def === "table" && v < TABLES_V) return `${p.id}: a table in a world version ${v} run`;
     if (p.holds !== undefined && (p.def !== "table" || p.holds !== "candle")) return `${p.id}: unknown thing on it`;
     if (p.deck !== undefined && (p.def !== "table" || p.deck !== true || v < DECKS_V)) return `${p.id}: a deck of cards it can't have`;
+    if (((p.def === "bookcase" && p.id.startsWith("shelf:")) || FINDS.has(p.def)) && v < SHELVES_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
+    if (p.codex !== undefined && (p.def !== "bookcase" || p.codex !== true || v < SHELVES_V)) return `${p.id}: a codex it can't have`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
     if (p.wall !== undefined && !(v >= FIRST_PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
@@ -242,7 +246,18 @@ export function newWalkRun(run: DungeonRun): DungeonRun {
   if (!walk || walk.v !== undefined || walk.placed !== undefined) return placedRun(run);
   const m = made({ ...run, walk: { ...walk, v: PLACED_V } }, "migrated");
   if (m.outcome === "damaged") console.warn(`Walkable run ${run.id}: ${m.problem}`);
-  return withDecks(m.run);
+  return withFloorFinds(withDecks(m.run));
+}
+
+// (World version 14) A storehouse's rugged backpack lying on its floor: out of its stores, and on the
+// room (Room.packOnFloor) till you pick it up.
+function withFloorFinds(run: DungeonRun): DungeonRun {
+  const walk = run.walk;
+  const packs = (walk?.placed ?? []).filter((i) => i.def === "backpack" && walk!.rooms[i.room]);
+  if (!walk || packs.length === 0) return run;
+  const rooms = { ...walk.rooms };
+  for (const p of packs) rooms[p.room] = { ...rooms[p.room], sack: (rooms[p.room].sack ?? []).filter((x) => !("backpack" in x)), packOnFloor: true };
+  return { ...run, walk: { ...walk, rooms } };
 }
 
 // (World version 13) Each deck of cards lying on a table: its cards rolled now, with the run, so its

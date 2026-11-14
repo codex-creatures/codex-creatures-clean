@@ -717,13 +717,21 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         target.defenceCut = soaked;
         target.statuses = [...target.statuses.filter((s) => s.id !== "soak"), { id: "soak", rounds: SOAK_ROUNDS, loss: soaked }];
       }
+      // The hit itself is logged now, so it plays before what it sets off
+      // (a drain, a status, a burst, recoil…). Later parts are filled in below.
+      const hit: Extract<BattleEvent, { type: "attack" }> = { type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
+        streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, crippleRounds: crippledFor, hasted,
+        evaded: evaded || undefined, venom, pounced: pounced || undefined, sealed, soaked, braced: brace ? true : undefined };
+      const hitAt = state.log.length;
+      state.log.push(hit);
+      let burntOut = false; // (the burst below already knocked it out)
       // Emulate: the cloud goes up in flames, one more tick of it as fire (so Toxic too).
       if (burnt && target.hp > 0) {
         const fire = Math.min(target.hp - bossMinHp(state, foeKey, targetIdx), Math.max(1, Math.round(target.maxHp * burnt.tick * (burnt.boost ?? 1))));
         if (fire > 0) {
           target.hp -= fire;
           state.log.push({ type: "effect", side: foeKey, index: targetIdx, name: target.name, text: `is caught as the cloud goes up in flames (${fire} damage)`, hp: target.hp, statuses: target.statuses.map((s) => ({ ...s })), kind: "burst", damage: fire });
-          if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
+          if (target.hp <= 0) { knockedOut(state, foeKey, targetIdx); burntOut = true; }
         }
       }
       // The 2026-11 codex moves (numbers on the moves: lib/creatures/codexMoves.ts).
@@ -795,10 +803,13 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         if (!poisonWith(actor, poisoned.dmg!, rounds)) poisoned = undefined;
         if (poisoned) armorFx.push(`${SOUL_STONES.toxic_skin.name}: poisoned for ${rounds} turns`);
       }
-      state.log.push({ type: "attack", side: key, attacker: actor.name, target: target.name, skill, damage, precise, missed, crippled, targetHpAfter: target.hp, attackerEnergyAfter: actor.energy,
-        streak: { ...streak }, defenceIgnored: precise ? PRECISE_IGNORE : 0, attackerIndex: actorIdx, targetIndex: targetIdx, crippleLoss, crippleRounds: crippledFor, hasted,
-        evaded: evaded || undefined, venom, poisoned, pounced: pounced || undefined, sealed, soaked, braced: brace ? true : undefined, armorFx: armorFx.length ? armorFx.join(" · ") : undefined });
-      if (target.hp <= 0) knockedOut(state, foeKey, targetIdx);
+      if (poisoned) {
+        hit.poisoned = poisoned;
+        // The attacker's later snapshots in this hit (burned, recoil) carry the poison too, so it doesn't flicker off.
+        for (const e of state.log.slice(hitAt + 1)) if (e.type === "effect" && e.side === key && e.index === actorIdx) e.statuses = actor.statuses.map((x) => ({ ...x }));
+      }
+      if (armorFx.length) hit.armorFx = armorFx.join(" · ");
+      if (target.hp <= 0 && !burntOut) knockedOut(state, foeKey, targetIdx);
 
       // Nullify: some of a magic hit bounces back at the attacker.
       if (!missed && damage > 0 && skill.type === "magic" && hasSet(target, "arcane_nullifier") && actor.hp > 0) {

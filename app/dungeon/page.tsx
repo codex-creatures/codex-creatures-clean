@@ -40,17 +40,18 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
+import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
 import { BattleView, loadOwnedCreatures, usePlayableBattle, MUTED, type Match, type MemberInfo, type OwnedCreature, type BagItem } from "@/components/BattleScreen";
 import { BOSS_PARTS_OF, bossTeam } from "@/lib/creatures/bosses";
-import DungeonMapView, { RoomIcon } from "@/components/DungeonMapView";
+import DungeonMapView from "@/components/DungeonMapView";
 import DungeonRoomView from "@/components/DungeonRoomView";
 import dynamic from "next/dynamic";
 import { WalkMap, type WalkState } from "@/components/WalkView";
 import { startWalkRun, walkInto, walkKeep, walkRoom, headHome } from "@/lib/dungeon/walkRun";
+import { shelfHasCodex, dynamiteOnFloor } from "@/lib/world/walkWorld";
 import { openWalkSave, recoverWalkSave, canRecover, newWalkRun } from "@/lib/world/migrate";
 import { FLARE_WALK, shutPlan } from "@/lib/dungeon/torch";
 import { layoutFloorplan, type Progress } from "@/lib/dungeon/layout";
@@ -899,7 +900,8 @@ export default function DungeonPage() {
   const walkTo = (r: DungeonRun, id: string) => (runPosition(r) === id ? r : walkInto(leaveSack(leavePending(r)), id));
   // Worth opening the room's window as you walk in: treasure to take. (Not a camp: you walk up to its cages, the user, 2026-11-09.)
   const shopHere = (c: Room | null | undefined) => !!c && (c.kind === "merchant" || c.kind === "librarian" || (c.kind === "library" && !!c.librarian));
-  const walkWorthPanel = (c: Room | null) => !!c && ((c.kind === "treasure" && !c.done) || dynamiteHere(c));
+  // (Not a storehouse with Klutz's dynamite either: you walk up and find it, the user, 2026-11-14.)
+  const walkWorthPanel = (c: Room | null) => !!c && c.kind === "treasure" && !c.done;
   function walkEnter(id: string, st: WalkState) {
     // Leaving the witch mid-game: you walk away with what you've won.
     const w = loadDungeon().run?.current?.witch;
@@ -937,7 +939,8 @@ export default function DungeonPage() {
     updateRun((r) => walkTo(walkKeep(r, st), id));
     const c = loadDungeon().run?.current;
     if (!c) return;
-    if (dynamiteHere(c)) grabDynamite(); // (Klutz's: yours as you reach its crates)
+    // (Klutz's: yours as you reach its crates; from world version 14 it lies on the floor, a find of its own: walkPickup.)
+    if (dynamiteHere(c) && !dynamiteOnFloor(loadDungeon().run?.walk, id)) grabDynamite();
     if (c.opened && (c.sack?.length ?? 0) > 0) setLootOpen(true);
     else if (c.kind === "chest" && !c.done) openChest();
     else if (c.container && c.done && !c.opened) openSack();
@@ -954,6 +957,37 @@ export default function DungeonPage() {
     updateRun((r) => walkTo(walkKeep(r, st), id));
     const c = loadDungeon().run?.current;
     if (c?.deck && !c.deckTaken) openDeck(true);
+  }
+  // (World version 14) Walked up to a bookcase against the wall: searched once; now and then a codex is tucked in it.
+  function walkShelf(id: string, st: WalkState) {
+    battle.clear();
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    const r = loadDungeon().run, c = r?.current;
+    if (!c || c.shelfSearched) return;
+    const codex = shelfHasCodex(r.walk, id);
+    const searched = (x: DungeonRun) => (x.current ? { ...x, current: { ...x.current, shelfSearched: true } } : x);
+    if (!codex) { updateRun(searched); setNotes(["📚 Dust and crumbling pages. Nothing worth taking."]); return; }
+    const drop = shelfCodex();
+    give([drop], searched);
+    setNotes([`📚 Tucked between the books: ${dropLabel(drop)}!`]);
+  }
+  // (World version 14) Walked up to a storehouse's find on its floor: Klutz's dynamite, or the rugged backpack.
+  function walkPickup(id: string, what: "dynamite" | "backpack", st: WalkState) {
+    battle.clear();
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    const cur = loadDungeon(), c = cur.run?.current;
+    if (!c) return;
+    if (what === "dynamite") {
+      if (!dynamiteHere(c)) return;
+      grabDynamite();
+      setNotes(["🧨 A crate stamped DANGER: Klutz's dynamite! It's yours."]);
+      return;
+    }
+    if (!c.packOnFloor) return;
+    const size = bagSize(cur.meta);
+    if (size < BACKPACK) update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
+    setNotes([size < BACKPACK ? `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held ${BINDLE}).` : "🎒 A rugged backpack, but you've already got one."]);
+    updateRun((r) => (r.current ? { ...r, ...(size < BACKPACK ? { bindle: undefined, loot: [...r.loot, "A rugged backpack"] } : {}), current: { ...r.current, packOnFloor: false } } : r));
   }
   // Walked up to a camp's cage: open it (once its guards are beaten; an ambush springs).
   function walkCage(id: string, i: number, st: WalkState) {
@@ -1342,18 +1376,12 @@ export default function DungeonPage() {
         onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onHeal={walkHeal} onKeep={walkSave} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onHeal={walkHeal} onKeep={walkSave} />
       {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
         <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
       )}
-      {run.current && !walkPanel && (
-        <button className="chip" onClick={() => setWalkPanel(true)} aria-label="This room"
-          style={{ position: "absolute", top: 8, left: 8, minHeight: 44, minWidth: 44, zIndex: 3 }}>
-          <RoomIcon kind={run.current.kind} icon={ROOM_INFO[run.current.kind].icon} />
-        </button>
-      )}
       {notes.length > 0 && !walkPanel && (
-        <div onPointerDown={() => setNotes([])} className="stone-panel" style={{ position: "absolute", top: 8, left: 60, right: 8, zIndex: 3, fontSize: 13, color: "#f1d9a0", padding: "6px 10px" }}>
+        <div onPointerDown={() => setNotes([])} className="stone-panel" style={{ position: "absolute", top: 8, left: 8, right: 8, zIndex: 3, fontSize: 13, color: "#f1d9a0", padding: "6px 10px" }}>
           {notes.map((n) => <div key={n}>{n}</div>)}
         </div>
       )}

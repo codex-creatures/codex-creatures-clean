@@ -8,6 +8,7 @@
 import { Coin } from "./GoldCount";
 import { useMemo, useState } from "react";
 import PixelSprite from "./PixelSprite";
+import UpArrow from "./UpArrow";
 import { ICON, lookOf } from "./ContainerLoot";
 import { POTIONS, BACKPACK, BINDLE, MERCHANT_SLOTS, priceUp, wareName, wareDrop, type SackItem, type Ware } from "@/lib/dungeon/run";
 import { TOOLS, MATERIALS, SCHEMATICS } from "@/lib/items/materials";
@@ -66,7 +67,8 @@ export default function MerchantCart({ wares, bought = [], gold, bagUsed, bagSlo
               <span className="inv-slot" style={{ position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center",
                 background: `radial-gradient(circle, ${l.glow} 0%, rgba(0,0,0,0.35) 65%)`,
                 ...(on ? { borderColor: "#ffd66e", boxShadow: "0 0 12px rgba(255,214,110,0.55)" } : {}) }}>
-                {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={ICON} /> : <span style={{ fontSize: 26 }}>{l.icon}</span>}
+                {l.sprite ? <PixelSprite sprite={l.sprite} scale={4} style={"bagUp" in w ? { ...ICON, width: "64%" } : ICON} /> : <span style={{ fontSize: 26 }}>{l.icon}</span>}
+                {"bagUp" in w && <UpArrow />}
                 {"qty" in w && <span style={{ position: "absolute", right: 3, bottom: 1, fontSize: 11, fontWeight: 700, textShadow: "0 1px 0 #000" }}>×{w.qty}</span>}
               </span>
               <span className="pixel-font" style={{ display: "block", marginTop: 3, fontSize: 11, textAlign: "center", color: sold ? MUTED : on ? "#ffd66e" : GOLD }}>{sold ? "sold" : <><Coin size={11} /> {w.price}</>}</span>

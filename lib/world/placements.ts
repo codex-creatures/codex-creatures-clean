@@ -27,6 +27,7 @@ export type Placements = {
   foes: Foe[];                           // where each foe starts, beaten or not (walkWorld.ts foeStarts picks the rooms still to beat)
   spot: (id: string) => Pt | undefined;  // where an instance stands (a room's feature, a cage), by id
   decks?: Set<string>;                   // (world version 13) the tables a deck of cards lies on, by id
+  codexes?: Set<string>;                 // (world version 14) the bookcases against walls with a codex in, by id
   v?: number;                            // the world version they were placed by
 };
 
@@ -80,5 +81,6 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
     }
   }
   const decks = new Set(placed.filter((i) => i.def === "table" && i.deck).map((i) => i.id));
-  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), decks, v: walk.v ?? 0 };
+  const codexes = new Set(placed.filter((i) => i.def === "bookcase" && i.codex).map((i) => i.id));
+  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), decks, codexes, v: walk.v ?? 0 };
 }

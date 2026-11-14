@@ -26,9 +26,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - **Home** when his pack is full, when he's down to 10% HP (`HOME_AT`), or when something beats him: no penalty, he
     keeps everything. Call him back any time. He can set off from 40% HP (`SEND_AT`; the pool still heals 1 HP every
     10 s), not while his chest is full, and not without the gold. A safety stop after 100 finds (about 33 h).
-  - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (1,000 gold when picked, +4) and **Pack
-    Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at 500 rising to 4,000: `KLUTZ_PACK_PRICES`),
-    sewn on from his Skills tab.
+  - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (+4; free since 2026-11-14, the user: the trait pick
+    is its price, it cost 1,000 gold) and **Pack Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at
+    500 rising to 4,000: `KLUTZ_PACK_PRICES`), sewn on from his Skills tab: it shows his pack's slots (all 20, the
+    ones still to sew on dashed) and the upgrades you hold; tap one and a new slot pops in (the user, 2026-11-14).
   - **His chest** (the crate) takes codexes, potions and gear; materials go straight to your tally. It holds 30
     (`CHEST_START`), +10 an upgrade for 500 to 5,000 gold; full, he won't set off (a trip can overfill it).
   - **Skills** (a point a level over 1, each up to 10): **Trapping** (+2% catch chance a level), **Armourer**,
@@ -36,7 +37,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     20-minute window). 🧪 The steps are Claude's. A re-spec hands them back with his % points.
   - **Traits** (the user, 2026-11-14): he picks one at **Lv 5, 10 and 15** (`TRAIT_LEVELS`), any he hasn't got, in any
     order: the Bigger Pack (above), **Selective** (he leaves things below a rarity you pick) or the **cage filter** (he
-    only cages creatures of a rarity you pick or better).
+    only cages creatures of a rarity you pick or better). Till he has a pick, the rest show locked. Each skill
+    shows his level in it, big (3/10); its +1 shows only with a point to spend (the user, 2026-11-14).
   - **Screens:** his page has three tabs under his card: Send (the dungeons as fixed rows, best rarity and cost, one
     button that says why he can't go; while he's out, HP, pack and a log), Skills, and Chest (its fill and upgrade).
   - Trips planned before v2 keep their own rules (fights with a find each) and still hand over what they held.

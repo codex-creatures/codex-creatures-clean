@@ -257,4 +257,5 @@ Side by side: docs/ideas/reskin-samples-2026-11-07.png.
 | walk/samples/floor-life/puddle-1.png | sample 1 (2026-11-13, too grey: redone): object f9db9d3e-3d74-433b-98b7-39fea1979e5a, Pro Flash 64×48 high top-down, dungeon palette, kit E floor as style image, seed 41 |
 | walk/samples/floor-life/rat.png | sample (2026-11-13): object 93f900f1-50cf-47a9-9b41-c40fa169b18d, Pro Flash 48×36 side (came out from above), kit E floor as style image, seed 7 |
 | walk/samples/floor-life/mouse-hole.png | sample (2026-11-13): image 7a0b5963-15af-5117-96e7-464024c0d0e9, Pro Flash 48×48, dungeon palette, a 48×48 crop of kit E's north wall as style image, seed 13 |
+| items/tools/gold_key.png | the Gold Key's icon, in the game (2026-11-14): a copy of the sample below |
 | walk/samples/floor-life/gold-key.png | sample (2026-11-13): image 66d26819-9c64-5c5b-befd-08f4b0768313, Pro Flash 64×64, the Void Scythe as style image (outline, detail, shading), seed 5 |

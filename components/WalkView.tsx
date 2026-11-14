@@ -142,6 +142,7 @@ export default function WalkView({ walk, map, dungeon = 0, decor = false, here, 
     const mctx = mask.getContext("2d")!;
     const dark: DarkLayer = { canvas: mask, ctx: mctx, shade: mctx.createImageData(plan.w, plan.h) };
     restartLoop(sim, live, props.current.hp, performance.now());
+    setWarming(null); // (the fresh loop doesn't know a campfire window was up: it would stay up for good)
     let frame = 0;
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
@@ -278,8 +279,8 @@ export function Stick({ onPush }: { onPush: (push: Pt | null) => void }) {
 }
 
 // By a campfire: a thin bar of what the fire has left (burnt down: embers),
-// then your team in a column down from the top left (under the room's
-// button: app/dungeon/page.tsx), out of the way (the
+// then your team in a column down from the top left (under any news:
+// app/dungeon/page.tsx), out of the way (the
 // user, 2026-11-09), small (the size of the Abyss's five team cards), a
 // health bar under each going up and a "+" rising by each one getting some.
 // Taps go through it to the walk.

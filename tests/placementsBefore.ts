@@ -44,8 +44,10 @@ export function thingsOfBefore(layout: Layout, plan: Floorplan, ids: string[], r
     const c = roomCentre(layout.rooms[parentOf(id)]);
     const out: Thing[] = [];
     const add = (t: Omit<Thing, "key" | "room" | "solid" | "npc">) => out.push(thingOf({ key: id, room: id, ...t }));
-    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, def: "chest", state: shut(r.done), open: r.done });
-    else if (r.kind === "stash") add({ ...c, def: "sack", state: shut(r.opened), open: !!r.opened });
+    // (Since 2026-11-14, the user: a looted chest stays, open and empty; a looted sack goes. Where they stand is as before.)
+    const looted = !!r.opened && (r.sack?.length ?? 0) === 0, emptied = looted ? { empty: true as const } : {};
+    if (r.kind === "chest" || r.kind === "treasure") add({ ...c, def: "chest", state: shut(r.done), open: r.done, ...(r.done && (r.sack?.length ?? 0) === 0 ? { empty: true as const } : {}) });
+    else if (r.kind === "stash" && !looted) add({ ...c, def: "sack", state: shut(r.opened), open: !!r.opened });
     else if (r.kind === "pool") add({ ...c, def: "pool", open: r.done, glow: !r.done });
     else if (r.kind === "cards") add({ ...c, def: "card-deck", open: r.done });
     else if (r.kind === "merchant") add({ ...c, def: "merchant", open: false });
@@ -56,12 +58,12 @@ export function thingsOfBefore(layout: Layout, plan: Floorplan, ids: string[], r
       add({ x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over });
     }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
-    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container) {
-      add({ ...c, def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened });
+    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container && !(r.kind === "library" && looted)) {
+      add({ ...c, def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened, ...emptied });
     }
-    if (r.container && r.done && (!r.opened || (r.sack?.length ?? 0) > 0)) {
+    if (r.container && r.done && (r.container !== "sack" || !looted)) {
       const at = spots?.[id] ?? c;
-      add({ ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened });
+      add({ ...at, def: r.container !== "sack" ? "loot-chest" : "loot-sack", state: shut(r.opened), open: !!r.opened, ...emptied });
     }
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
     if (r.cages?.length) cageSpots(plan, parentOf(id), r.cages.length).forEach((q, i) => {

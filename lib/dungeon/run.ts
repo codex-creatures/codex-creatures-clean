@@ -575,6 +575,8 @@ export function rollBookcases(rng: Rng = Math.random): Room[] {
     return { kind: "bookcase", sack, done: false };
   });
 }
+// (World version 14) The codex tucked in a bookcase against a wall (place.ts SHELF_CODEX of them): one, at CODEX_ODDS.
+export const shelfCodex = (rng: Rng = Math.random) => codexDrop(randomCodexOfRarity(weighted(CODEX_ODDS, rng), rng));
 export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read, or a race-kit move's (Claude's draft, 2026-10-26; older race codexes: CODEX_PRICE)
 // (Impale, the Epic special move, costs what the older race codexes do.)
 export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) || MOVE_BY_NAME[move]?.codexRarity === "epic" ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
@@ -896,6 +898,8 @@ export type Room = {
   boxTaken?: boolean;  // the thief's room: you've picked up Klutz's box
   witch?: WitchGame;   // the card witch's game (lib/dungeon/witch.ts)
   deckTaken?: boolean; // (world version 13) the deck of cards on this room's table has been turned over
+  shelfSearched?: boolean; // (world version 14) the bookcase against this room's wall has been searched
+  packOnFloor?: boolean;   // (world version 14) a storehouse: the rugged backpack lies on its floor, to pick up
   deck?: string[];     // a deck of cards (a cards room's, or one on a table: world version 13): its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
   done: boolean;
 };

@@ -227,7 +227,9 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   to walk up and open it in the loot window. A camp's cages are guarded like a mini boss's
   chest (the user, 2026-11-09): its foes patrol in front of them (`cageGuardSpot`), and
   trying one before they're beaten sets them on you; then each opens as you walk up. Walking
-  in never opens the room's window now; the room button (top left) opens it any time. It sits at the
+  in never opens the room's window now (nor a storehouse with Klutz's dynamite: you find it, the user,
+  2026-11-14); walking up to what you use in a room opens it (there's no room button top left any more:
+  taken out, the user, 2026-11-14). It sits at the
   bottom, at most 55% of the view; a shop's (the merchant's cart, the librarian's shelf) takes the
   whole view, anchored to the top, as it was cut off at the bottom (the user, 2026-11-11). Nobody
   walks while it's up, but a tap (or drag) on the map shuts it and carries on: walks there, or
@@ -254,9 +256,12 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   but trying to open it sets them on you (`soundAlarm`: as if seen); win, and it stays shut:
   walk up and open it (the user, 2026-11-11; the Victory window has no Loot for a chest while
   walking, only for a sack). An ordinary fight's sack still lies where you stood.
+  **Looted** (the user, 2026-11-14): a chest you've emptied stays where it is, open, its inside bare
+  wood (no gold); a sack you've emptied (a stash's, a fight's, a library's codexes) is gone.
   **The campfire window** (the user, 2026-11-06: the long bars were too big; 2026-11-09: out
   of the way): a thin bar of what the fire has left, then your team in a column down from the
-  top left, small (56 px), a health bar under each.
+  top left, small (56 px), a health bar under each. It goes as you step away (and whenever the walk's
+  loop starts afresh, as when a tunnel falls in: it used to stay up for good then).
 - **Two dens in a big room** (the user, 2026-11-06: big and long rooms can hold two spawns,
   one down each end; `SECOND_DEN` 35% 🧪 of creature dens in a wide, tall, big, dog-leg or
   large room): the second den is a room of its own in the run (`<room>~2`, foes.ts
@@ -316,8 +321,16 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   witch's illness, and walking out mid-game leaves with your winnings, as down a tunnel.
   **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).
   (Its size, the guided rolling and the rule for a new dungeon's size: [walkable-layout.md](walkable-layout.md#size-and-guided-rolling).)
-  Klutz's dynamite quest: the large room is its storehouse, marked, and the dynamite's yours
-  as you reach its crates.
+  Klutz's dynamite quest: the large room is its storehouse, marked. From world version 14 (the user,
+  2026-11-14) the dynamite (the crate stamped DANGER, den/crate.png) lies on the storehouse's floor with
+  a "!" over it, and so does the rugged backpack when the storehouse has it (out of its crates:
+  `Room.packOnFloor`): walk up and pick each up (behind the storehouse's guard, if it has one). In older
+  runs the dynamite's yours as you reach its crates.
+  **Bookcases against a wall** (world version 14, the user, 2026-11-14): `SHELF_CHANCE` 25% of rooms
+  (`SHELF_ROOMS`: not the entrance, the boss's or a library) have a bookcase with its back to the top
+  wall (about one room in seven gets one: the wall must be clear of doors and wall torches),
+  `SHELF_CANDLE` 40% with a floor candle beside it. Walk up to search it, once (`Room.shelfSearched`):
+  `SHELF_CODEX` 10% have a codex tucked in, one, at the usual odds (run.ts `shelfCodex`, `CODEX_ODDS`).
 - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,
   and your light reaches twice as far (`FLARE_REACH`) for the next `FLARE_WALK` 90 tiles
   you walk (about half the walkable Encampment, 🧪). A new flare lights afresh.
@@ -356,7 +369,8 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
     (`PUDDLE_CHANCE`) a sewer puddle lies on the floor, your torch glinting on its water, rippling
     as you walk through it and now and then on its own; in 25% (`RAT_CHANCE`) a mouse hole sits at
     the foot of the top wall, and a rat runs along the wall into it every few seconds (seen only in
-    the light). Never in the entrance or the boss's room, by a door, or on a thing, fire or
+    the light). The hole keeps clear of doors and wall torches; the rat's run to it may pass under a
+    torch (2026-11-14: it had to keep clear of them too, and only about 2% of rooms had a hole). Never in the entrance or the boss's room, by a door, or on a thing, fire or
     candle. Drawn only (`decor.ts placeFloorLife`, from the seed + 909; `components/WalkView3D.tsx`
     FloorLife; the glint: `lib/render3d/puddle.ts`), so nothing is saved and old runs get them too.
   - Ideas not drawn yet: moss patches as decals, side walls' faces, room-kind floors (a library's boards, a camp's dirt),

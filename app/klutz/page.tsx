@@ -20,6 +20,8 @@ import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
 import KlutzGear from "@/components/KlutzGear";
 import Help, { HelpSection } from "@/components/Help";
+import UpArrow from "@/components/UpArrow";
+import { TOOL_SPRITES } from "@/lib/sprites/items";
 import { Coin } from "@/components/GoldCount";
 import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
@@ -290,10 +292,12 @@ function SkillsTab({ game }: { game: Game }) {
               <div key={s} className="card-btn" style={{ cursor: "default", gap: 10, minHeight: 52 }}>
                 <span style={{ fontSize: 20, width: 28, textAlign: "center" }}>{info.icon}</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
-                  <b style={{ color: GOLD }}>{info.name}</b> <span style={{ fontSize: 12, color: MUTED }}>{n}/{SKILL_MAX}</span>
+                  <b style={{ color: GOLD }}>{info.name}</b>
                   <span style={{ display: "block", fontSize: 12, color: "#c9b48a" }}>{info.what(n)}</span>
                 </span>
-                <button className="chip" style={{ minWidth: 44, minHeight: 44 }} disabled={free <= 0 || n >= SKILL_MAX} onClick={() => game.spendKlutzSkill(s)}>+1</button>
+                {/* His level in it, big; the +1 only with a point to spend (its space kept, so nothing moves). */}
+                <span className="pixel-font" style={{ fontSize: 20, color: n >= SKILL_MAX ? "#7CFC9A" : GOLD, whiteSpace: "nowrap" }}>{n}<span style={{ fontSize: 14, color: MUTED }}>/{SKILL_MAX}</span></span>
+                <button className="chip" style={{ minWidth: 44, minHeight: 44, visibility: free > 0 && n < SKILL_MAX ? "visible" : "hidden" }} disabled={free <= 0 || n >= SKILL_MAX} onClick={() => game.spendKlutzSkill(s)}>+1</button>
               </div>
             );
           })}
@@ -304,34 +308,60 @@ function SkillsTab({ game }: { game: Game }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>Traits</div>
           <span style={{ fontSize: 13, color: picksFree > 0 ? "#7CFC9A" : MUTED }}>{picksFree > 0 ? `${picksFree} to pick` : next ? `Next pick at Lv ${next}` : "All picked"}</span>
-          <Help title="Klutz's traits"><p>He picks a trait at <b>Lv {TRAIT_LEVELS.join(", ")}</b>: any one he hasn&apos;t got, in any order. The Bigger Pack costs gold when you pick it.</p></Help>
+          <Help title="Klutz's traits"><p>He picks a trait at <b>Lv {TRAIT_LEVELS.join(", ")}</b>: any one he hasn&apos;t got, in any order. Till his next pick, the rest stay locked.</p></Help>
         </div>
-        {TRAIT_KEYS_UI.map(({ t, icon, name, what, cost }) => (
-          <div key={t} style={{ marginTop: 10 }}>
+        {TRAIT_KEYS_UI.map(({ t, icon, name, what }) => (
+          <div key={t} style={{ marginTop: 10, opacity: picked.includes(t) || picksFree > 0 ? 1 : 0.55 }}>
             <b style={{ color: GOLD }}>{icon} {name}</b> <span style={{ fontSize: 12, color: MUTED }}>{what}</span>
             {picked.includes(t)
               ? t === "pack" ? <div style={{ fontSize: 13, color: "#7CFC9A", marginTop: 4 }}>Picked.</div>
                 : t === "selective" ? rarityChips(k.traits?.selective, game.setKlutzSelective, [null, "uncommon", "rare", "epic"], (r) => (r ? `${cap(r)}+` : "Take all"))
                 : rarityChips(k.traits?.cageFilter, game.setKlutzCageFilter, [null, "uncommon", "rare", "epic"], (r) => (r ? `${cap(r)}+` : "Cage all"))
-              : <div style={{ marginTop: 6 }}>
-                  <button className="chip" style={{ minHeight: 44 }} disabled={!canPickTrait(k, t) || (cost > 0 && game.gold < cost)} onClick={() => game.pickKlutzTrait(t)}>
-                    Pick it{cost > 0 && <> · <Coin /> {cost}</>}
-                  </button>
-                </div>}
+              : picksFree > 0
+                ? <div style={{ marginTop: 6 }}>
+                    <button className="chip" style={{ minHeight: 44 }} disabled={!canPickTrait(k, t)} onClick={() => game.pickKlutzTrait(t)}>Pick it</button>
+                  </div>
+                : <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>🔒 Locked{next ? <> · next pick at Lv {next}</> : null}</div>}
           </div>
         ))}
       </div>
 
-      <div className="stone-panel" style={{ marginTop: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>Pack · {packSize(k)} slots</div>
-          <Help title="His pack"><p>What he finds fills his pack; creatures go to the cage instead. <b>Pack Upgrades</b> (+1 each, up to {PACK_MAX}) turn up in chests and on merchants&apos; carts.</p></Help>
-        </div>
-        <button className="chip" style={{ minHeight: 44, marginTop: 6 }} disabled={packs === 0 || packSize(k) >= PACK_MAX} onClick={game.sewKlutzPack}>
-          🎒 Sew on a Pack Upgrade ({packs} held)
-        </button>
-      </div>
+      <PackPanel game={game} packs={packs} />
     </>
+  );
+}
+
+// His pack: its slots, all PACK_MAX of them (the ones he has, then the ones still to sew on), and the
+// Pack Upgrades you hold. Use one and a new slot pops into the row (the user, 2026-11-14: it used to be
+// a button and a number going up).
+function PackPanel({ game, packs }: { game: Game; packs: number }) {
+  const k = game.klutz, size = packSize(k), full = size >= PACK_MAX;
+  const [added, setAdded] = useState<number | null>(null); // the slot just sewn on (it pops in)
+  const sew = () => { if (packs > 0 && !full && game.sewKlutzPack()) setAdded(size); };
+  return (
+    <div className="stone-panel" style={{ marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>Pack · {size}/{PACK_MAX}</div>
+        <Help title="His pack"><p>What he finds fills his pack; creatures go to the cage instead. Each <b>Pack Upgrade</b> sews on one more slot, up to {PACK_MAX}: they turn up in chests and on merchants&apos; carts. The Bigger Pack trait gives {PACK_TRAIT.slots}.</p></Help>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 4, marginTop: 8 }}>
+        {Array.from({ length: PACK_MAX }, (_, i) => (
+          <span key={i} className={`inv-slot${i === added ? " anim-swapin" : ""}`} aria-label={i < size ? "slot" : "not yet sewn on"}
+            style={{ aspectRatio: "1", display: "block", ...(i < size ? (i === added ? { borderColor: "#7CFC9A", boxShadow: "0 0 8px rgba(124,252,154,0.6)" } : {}) : { opacity: 0.25, borderStyle: "dashed" }) }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+        <button onClick={sew} disabled={packs === 0 || full} aria-label="Use a Pack Upgrade" className="inv-slot"
+          style={{ position: "relative", width: 56, height: 56, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: packs && !full ? "pointer" : "default", opacity: packs ? 1 : 0.4 }}>
+          <PixelSprite sprite={TOOL_SPRITES.klutz_pack} scale={4} style={{ width: "64%", height: "auto", imageRendering: "pixelated" }} />
+          <UpArrow />
+          <span style={{ position: "absolute", right: 3, bottom: 1, fontSize: 11, fontWeight: 700, textShadow: "0 1px 0 #000" }}>×{packs}</span>
+        </button>
+        <span style={{ fontSize: 13, color: MUTED, flex: 1 }}>
+          {full ? "His pack can't get any bigger." : packs > 0 ? <>Tap a <b style={{ color: GOLD }}>Pack Upgrade</b> to sew on a slot.</> : "No Pack Upgrades. Find them in chests or on merchants' carts."}
+        </span>
+      </div>
+    </div>
   );
 }
 

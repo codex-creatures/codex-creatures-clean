@@ -58,7 +58,7 @@ const lightsOf = (run: DungeonRun, placed: ReturnType<typeof placeWalk>["placed"
   ];
 };
 
-for (const v of [4, 5, 6, 7, 8, 9, 10, 11]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
+for (const v of [4, 5, 6, 7, 8, 9, 10, 11, 12, 13]) describe(`world version ${v}'s placements and lights stay as they were made`, () => {
   // (The Cyclops's runs take seconds each: test:all runs them.)
   for (const [d, s] of CASES) (d === 0 ? it : slowIt)(`dungeon ${d} seed ${s}`, () => {
     const run = made(d, s, v);

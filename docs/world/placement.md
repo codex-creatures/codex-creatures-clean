@@ -220,6 +220,15 @@ kept paths and spots and the panels in front of a wall torch, left out if none i
 them hold a candle (`holds: "candle"`). About 4.7 a 21-room Encampment run, two thirds with a candle.)
 v13, the user, 2026-11-13: the same tables, and then, on the same stream, `TABLE_DECK` 5% of them have a
 deck of cards on (`deck: true`): the walkable Labyrinth's "?" rooms no longer hold a cards room.
+v14, the user, 2026-11-14: pass 6c, bookcases against a wall: in a room of `SHELF_ROOMS` (`TABLE_ROOMS`
+but a library; not the entrance or the boss's), `SHELF_CHANCE` 25% on its own stream (pass 62), one
+bookcase, `shelf:<room>`, on a random top-row panel (rock behind it) more than `BOOKCASE_DOOR_GAP` from
+every door's inside panel and not under a wall torch (that panel or the ones above and below), at its
+wall-most spot (spotsIn); `SHELF_CODEX` 10% hold a codex (`codex: true`); `SHELF_CANDLE` 40% get a floor
+candle (the room's next candle id) on the panel to one side, else the other, else in front. Pass 6d, a
+storehouse's finds (pass 63): its dynamite (`dynamite:<room>`) and, when its stores hold the rugged
+backpack, `backpack:<room>` (taken out of the stores as the run's made: migrate.ts `withFloorFinds`),
+walk-over, on a random valid panel off the doors (`CANDLE_CLEAR`). Both passes come before the spawns.
 
 ### Modules
 

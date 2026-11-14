@@ -112,11 +112,11 @@ function bases(mats: THREE.Material[]) {
 // `deck`: a table with the deck of cards on it; `glow`: the colour of the rarest card in it (a CSS colour);
 // `broken`: a broken bookcase.
 // `golden`: a mini boss's golden chest (the chest's own pictures, gilded till it has art of its own).
-export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false, golden = false }: { kind: Prop3DKind; open?: boolean; colour?: Tint; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean; golden?: boolean }) {
+export function Prop3D({ kind, open = false, colour, outline = true, edges = true, deck = false, glow, broken = false, golden = false, empty = false }: { kind: Prop3DKind; open?: boolean; colour?: Tint; outline?: boolean; edges?: boolean; deck?: boolean; glow?: string; broken?: boolean; golden?: boolean; empty?: boolean }) {
   if (kind === "table") return <Table colour={colour} outline={outline} deck={deck} glow={glow} />;
   if (kind === "bookcase") return broken ? <Bookcase colour={colour} outline={outline} edges={false} faces={BROKEN_BOOKCASE_FACES} /> : <Bookcase colour={colour} outline={outline} edges={edges} />;
   if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} />;
-  return <Chest open={open} colour={colour} outline={outline} edges={edges} golden={golden} />;
+  return <Chest open={open} colour={colour} outline={outline} edges={edges} golden={golden} empty={empty} />;
 }
 const GILT = new THREE.Color("#ffc94a");
 
@@ -125,8 +125,8 @@ const GILT = new THREE.Color("#ffc94a");
 // the lid top's front row) and the lid's darker underside are made beforehand, in the `-lit` and
 // `under` pictures beside the others.
 // (`faces`: another chest's pictures, the lab's drafts: the rickety chest. Each has its `under` and, with
-// `edges`, its `-lit` pictures beside them.)
-export function Chest({ open, colour, outline, edges, faces = ART_FACES, golden = false }: { open: boolean; colour?: Tint; outline: boolean; edges: boolean; faces?: ChestFaces; golden?: boolean }) {
+// `edges`, its `-lit` pictures beside them.) Looted (`empty`), its inside is bare wood: the lid's underside.
+export function Chest({ open, colour, outline, edges, faces = ART_FACES, golden = false, empty = false }: { open: boolean; colour?: Tint; outline: boolean; edges: boolean; faces?: ChestFaces; golden?: boolean; empty?: boolean }) {
   const art = useMemo(() => chestArt(faces), [faces]);
   const geo = useMemo(() => {
     const F = faces, fw = F.front.w, fh = F.front.h, split = F.front.lid;
@@ -145,8 +145,8 @@ export function Chest({ open, colour, outline, edges, faces = ART_FACES, golden 
     const under = pic(faces.top.src.replace("top.png", "under.png")), inside = pic(faces.inside.src), dark = make({ color: DARK });
     const all = [front, side, top, under, inside, dark];
     if (golden) for (const m of all) if ("color" in m && m.color instanceof THREE.Color) m.color.multiply(GILT);
-    return { lid: [side, side, top, under, front, front], body: [side, side, inside, dark, front, front], all, base: bases(all) };
-  }, [flat, edges, faces, golden]);
+    return { lid: [side, side, top, under, front, front], body: [side, side, empty ? under : inside, dark, front, front], all, base: bases(all) };
+  }, [flat, edges, faces, golden, empty]);
   useTint(mats.all, mats.base, colour);
   const lid = useRef<THREE.Group>(null);
   useFrame(() => {

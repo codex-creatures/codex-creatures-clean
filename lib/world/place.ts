@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 13;         // the world version a new run is placed at (a deck of cards on some tables; version.ts)
+export const PLACED_V = 14;         // the world version a new run is placed at (bookcases against walls, a storehouse's finds on its floor; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
@@ -83,6 +83,14 @@ export const TABLE_CANDLE = 0.7;
 export const TABLE_DECK = 0.05;
 export const TABLE_ROOMS = new Set(["easy", "hard", "miniboss", "chest", "stash", "pool", "campfire", "treasure", "merchant", "librarian", "library", "witch", "storehouse", "encampment"]);
 const TABLE_PASS = 61;              // (v12) the tables' own random numbers, so nothing else can move
+// (v14) Bookcases against a room's top wall (the user, 2026-11-14): the chance a room has one (rooms
+// of these kinds, not the entrance or the boss's; a library has its broken ones), that a floor candle
+// stands beside it, and that a codex is tucked in it (one, at the usual rarity odds: run.ts CODEX_ODDS). 🧪
+export const SHELF_CHANCE = 0.25;
+export const SHELF_CANDLE = 0.4;
+export const SHELF_CODEX = 0.1;
+export const SHELF_ROOMS = new Set([...TABLE_ROOMS].filter((k) => k !== "library"));
+const SHELF_PASS = 62, FINDS_PASS = 63; // (v14) their own random numbers
 export const BOOKCASE_DOOR_GAP = 2;  // (v10) panels: no broken bookcase this close to the panel inside a door (either way)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
@@ -639,6 +647,62 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     put(table, at, tid);
     placed.push({ id: tid, def: "table", room: id, ...at, size: { ...table.footprint }, ...(rng() < TABLE_CANDLE ? { holds: "candle" as const } : {}),
       ...(v >= 13 && rng() < TABLE_DECK ? { deck: true as const } : {}) });
+  }
+
+  // 6c. (v14) Bookcases against a wall: now and then a room has one, its back to the room's top wall
+  // (the art faces you), off the doors (BOOKCASE_DOOR_GAP), the kept paths and spots, and the wall
+  // torches; sometimes a floor candle beside it; now and then a codex in it (the user, 2026-11-14).
+  const shelf = objectDef("bookcase");
+  for (const id of v >= 14 ? parents : []) {
+    const r = room(id), rng = passRng(walk.seed, id, SHELF_PASS);
+    if (id === layout.start || id === layout.boss || !r || !SHELF_ROOMS.has(r.kind) || rng() >= SHELF_CHANCE) continue;
+    const doors = doorsInside(o, fp.rooms[id], id);
+    const torches = placed.filter((i) => i.room === id && (i.def === "sconce" || i.def === "sconce-side")).map((i) => ({ x: panelOfSubcell(i.sx), y: panelOfSubcell(i.sy) }));
+    const list = roomPanels(fp.rooms[id]).filter((p) => rock({ x: p.x, y: p.y - 1 })
+      && !doors.some((q) => Math.max(Math.abs(q.x - p.x), Math.abs(q.y - p.y)) <= BOOKCASE_DOOR_GAP)
+      && !torches.some((q) => q.x === p.x && Math.abs(q.y - p.y) <= 1));
+    const sid = `shelf:${id}`;
+    let at: Sub | null = null, panel: Pt | null = null;
+    while (list.length && !at) {
+      panel = list.splice(Math.floor(rng() * list.length), 1)[0];
+      at = spotsIn(fp, shelf, panel).find((a) => tryAt(shelf, a, sid, id)) ?? null;
+    }
+    if (!at || !panel) { report.omitted.push({ id: sid, room: id, what: "no valid spot for a bookcase against a wall" }); continue; }
+    put(shelf, at, sid);
+    placed.push({ id: sid, def: "bookcase", room: id, ...at, size: { ...shelf.footprint }, ...(rng() < SHELF_CODEX ? { codex: true as const } : {}) });
+    if (rng() >= SHELF_CANDLE) continue;
+    // Its candle: on a panel beside it (either side along the wall, else in front), wherever one fits.
+    const fc = objectDef("floor-candle"), cid = nextCandle(id), by = panel; // (a floor candle like any: the room's next candle id)
+    const sides = [{ x: by.x - 1, y: by.y }, { x: by.x + 1, y: by.y }], first = Math.floor(rng() * 2), beside = [sides[first], sides[1 - first], { x: by.x, y: by.y + 1 }];
+    let lit: Sub | null = null;
+    for (const q of beside) { lit = spotsIn(fp, fc, q).find((a) => tryAt(fc, a, cid, id)) ?? null; if (lit) break; }
+    if (!lit) { report.omitted.push({ id: cid, room: id, what: "no valid spot for a bookcase's candle" }); continue; }
+    countCandle(id);
+    put(fc, lit, cid);
+    placed.push({ id: cid, def: "floor-candle", room: id, ...lit, size: { ...fc.footprint } });
+  }
+
+  // 6d. (v14) A storehouse's finds on its floor, to walk up to and pick up (the user, 2026-11-14): Klutz's
+  // dynamite, and the rugged backpack (out of its stores: migrate.ts withFloorFinds). Off the doors and
+  // the kept paths and spots.
+  for (const id of v >= 14 ? parents : []) {
+    const r = room(id);
+    if (r?.kind !== "storehouse") continue;
+    const finds = [...(r.dynamite ? ["dynamite"] : []), ...((r.sack ?? []).some((x) => "backpack" in x) ? ["backpack"] : [])];
+    if (finds.length === 0) continue;
+    const rng = passRng(walk.seed, id, FINDS_PASS), doors = fp.doors.filter((d) => d.room === id);
+    for (const what of finds) {
+      const d = objectDef(what), fid = `${what}:${id}`;
+      const list = roomPanels(fp.rooms[id]).filter((p) => !doors.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANDLE_CLEAR));
+      let at: Sub | null = null;
+      while (list.length && !at) {
+        const p = list.splice(Math.floor(rng() * list.length), 1)[0];
+        at = spotsIn(fp, d, p).find((a) => tryAt(d, a, fid, id)) ?? null;
+      }
+      if (!at) { report.problems.push({ id: fid, room: id, what: `no valid spot for the ${what}` }); continue; }
+      put(d, at, fid);
+      placed.push({ id: fid, def: what, room: id, ...at, size: { ...d.footprint } });
+    }
   }
 
   // 7. Spawns: every fight room's foes, and the card witch.
