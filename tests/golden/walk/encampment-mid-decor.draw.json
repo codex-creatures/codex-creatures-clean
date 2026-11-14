@@ -900,7 +900,7 @@
 ["set","fillStyle","rgba(0, 0, 0, 0.45)"],
 ["fillRect",410,328,26,1.625],
 ["set","globalAlpha",1],
-["drawImage","/sprites/walk/hero-e.png",480,160,80,80,163,296,65,65],
+["drawImage","/sprites/walk/hero-e.png",480,80,80,80,163,296,65,65],
 ["drawImage","/sprites/walk/decor/pots.png",179.367,371.233,19.5,19.5],
 ["drawImage","/sprites/walk/decor/nest.png",20.929,394.409,24.375,23.534],
 ["set","globalAlpha",1],
