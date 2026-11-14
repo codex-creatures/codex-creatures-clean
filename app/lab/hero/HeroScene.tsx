@@ -10,7 +10,7 @@ import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { pixelScale } from "@/lib/render3d/stone";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
-import { WALK_KIT, WALK_HERO, KIT_PX } from "@/lib/sprites/walk";
+import { WALK_KIT, WALK_HERO, WALK_HERO8, KIT_PX } from "@/lib/sprites/walk";
 import { FACINGS, FACINGS8, walkFrame, smoothHeading, turnTo, facing8, type Facing, type Facing8 } from "@/lib/dungeon/tileArt";
 import { HERO_PARTS, HERO_COLOURS, PIVOTS, FLAME_AT, heroPose, turnToward, yawOf, type Limb } from "@/lib/render3d/hero3d";
 import { Solid, leaned, loaded } from "@/components/Props3D";
@@ -99,10 +99,10 @@ function Sprite({ path, cx }: { path: HeroPath; cx: number }) {
 }
 
 // 🧪 The 8-way hero (the user, 2026-11-14: "wandering with your torch held out in front"): PixelLab
-// character 67704aec (public/sprites/walk/samples/hero-8, one still a way, no walk yet), drawn at the
+// character 67704aec (public/sprites/walk/hero-8, one still a way, no walk yet; in the game since 2026-11-14), drawn at the
 // game's hero size (32 art pixels a unit, as today's), the nearest of its eight views to the way it's
 // heading (tileArt.ts facing8).
-const EIGHT = { dir: "/sprites/walk/samples/hero-8", cell: 96, feet: 69 };
+const EIGHT = WALK_HERO8;
 function Sprite8({ path, cx }: { path: HeroPath; cx: number }) {
   const mesh = useRef<THREE.Mesh>(null);
   const tex = useMemo(() => Object.fromEntries(FACINGS8.map((d) => [d, loaded(`${EIGHT.dir}/${d}.png`)])) as Record<Facing8, THREE.Texture>, []);

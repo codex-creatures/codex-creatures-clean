@@ -115,6 +115,11 @@ creatures appear only in fights. Samples first, the user picks.
   up/down view to a side one (or back) only once it's clearly past the diagonal (`turnTo`,
   `FACING_LEAN` 1.35, about 36°; turning right round is at once), so a diagonal walk no longer
   flickers between two views (the user, 2026-11-14).
+  The 3D view (the game) draws the 8-direction hero since 2026-11-14 (`WALK_HERO8`, the same
+  cloaked torchbearer with the torch held out ahead): the nearest of its eight views to your
+  smoothed heading (`facing8`, held a little past each halfway). Its pictures are stills for now,
+  so it bobs a little with each step (`WALK_BOB`) until its 8-direction walk is made (planned once
+  PixelLab generations refill). The 2D view keeps the 4-way hero.
   3 cells in a whole map have no exact tile (inner corners where a wall steps down by a
   tunnel): the closest is drawn.
 - 🚧 **One angle for everything** (the user, 2026-11-06: the flat tiles didn't match the

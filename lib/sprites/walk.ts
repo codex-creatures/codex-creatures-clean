@@ -80,6 +80,12 @@ export const WALK_HEROES: WalkHero[] = [
 // softened (2026-11-09, to try: kit E, WALK_TILES[1], is the one to go back to), and the cloaked torchbearer.
 export const WALK_KIT: KitArt = WALK_TILES[0].kit!;
 export const WALK_HERO: WalkHero = WALK_HEROES.find((h) => h.sheet.endsWith("hero-e.png"))!;
+// The 3D walk's hero since 2026-11-14 (the user: "wandering with your torch held out in front"): the
+// same cloaked torchbearer redrawn in all eight directions (PixelLab character 67704aec, PIXELLAB.md),
+// a still a way (FACINGS8), cell × cell px, feet that far down; drawn at KIT_PX a unit as the old one.
+// No walk yet: the 3D view bobs it a little as you walk (WALK_BOB). The 2D view keeps WALK_HERO.
+export const WALK_HERO8 = { dir: "/sprites/walk/hero-8", cell: 96, feet: 69 } as const;
+export const WALK_BOB = 0.05; // u up at the top of each step 🧪
 
 // Things standing in the walk's rooms (PixelLab map objects, low top-down;
 // ids in PIXELLAB.md), drawn `size` px wide at 16px tiles: a camp's cages,

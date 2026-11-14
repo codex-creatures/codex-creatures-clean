@@ -25,7 +25,7 @@ import { roomAt } from "@/lib/dungeon/walk";
 import { torchReach, rubbleOf, showsRubble, fireInSight, TORCH_RADIUS, SCONCE_RADIUS, CANDLE_RADIUS, type Rubble } from "@/lib/dungeon/torch";
 import { CAMPFIRE_LIGHT } from "@/lib/dungeon/campfire";
 import { ALARM_LIGHT, FADE_TIME } from "@/lib/dungeon/foes";
-import { FACINGS, facingOf, walkFrame } from "@/lib/dungeon/tileArt";
+import { FACINGS8, facingOf, facing8, STRIDE, type Facing8 } from "@/lib/dungeon/tileArt";
 import { deckRarity, type Room } from "@/lib/dungeon/run";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { isPerson, locate, personOf, PERSON_LIGHT } from "@/lib/dungeon/people";
@@ -35,7 +35,7 @@ import { placeFloorLifeOf, type Thing } from "@/lib/world/walkWorld";
 import type { RatHole } from "@/lib/dungeon/decor";
 import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
 import { objectDef, artOf, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
-import { WALK_TILES, WALK_HERO, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE } from "@/lib/sprites/walk";
+import { WALK_TILES, WALK_HERO8, WALK_BOB, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE } from "@/lib/sprites/walk";
 import { FALL_TIME, DUST_TIME, SHAKE_TIME } from "@/lib/render/scene";
 import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
 import { Stick, Warmth, WalkScroll } from "@/components/WalkView";
@@ -231,10 +231,10 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   const torch = useRef<THREE.PointLight>(null);
   const pool = useRef<(THREE.PointLight | null)[]>([]);
   const hero = useRef<THREE.Mesh>(null);
-  const heroTex = useMemo(() => {
-    const cols = WALK_HERO.frames > 0 ? WALK_HERO.frames + 1 : 1;
-    return FACINGS.map((_, row) => Array.from({ length: cols }, (_, col) => part(WALK_HERO.sheet, col / cols, 1 - (row + 1) / FACINGS.length, 1 / cols, 1 / FACINGS.length)));
-  }, []);
+  // You: the 8-way hero (WALK_HERO8), the view nearest the way you're heading (the sim's smoothed
+  // heading, tileArt.ts facing8); standing, the way the sim turns you (to face a foe that's seen you).
+  const heroTex = useMemo(() => Object.fromEntries(FACINGS8.map((d) => [d, texture(`${WALK_HERO8.dir}/${d}.png`)])) as Record<Facing8, THREE.Texture>, []);
+  const way = useRef<{ f: Facing8; was: string }>({ f: "south", was: "south" });
   const [, redraw] = useState(0); // (the sprites' list, shown again now and then)
   const last = useRef({ shadeAt: 0, known: -1, statsAt: 0, frames: 0, listAt: 0 });
 
@@ -283,12 +283,16 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
     }
     // You: your sheet's frame for the way you face, standing up on your feet.
     if (hero.current) {
-      const cols = heroTex[0].length, moving = sim.me.path.length > 0 && !busy;
-      const col = cols > 1 ? walkFrame(sim.walked, moving, WALK_HERO.frames) + 1 : 0;
-      (hero.current.material as THREE.MeshBasicMaterial).map = heroTex[FACINGS.indexOf(sim.facing)][col];
-      const w = WALK_HERO.cell / KIT_PX, h = w * stretch, below = (1 - WALK_HERO.feet / WALK_HERO.cell) * h;
+      const moving = sim.me.path.length > 0 && !busy, W8 = way.current;
+      if (moving) W8.f = facing8(sim.heading.x, sim.heading.y, W8.f);
+      else if (sim.facing !== W8.was) W8.f = sim.facing;
+      W8.was = sim.facing;
+      (hero.current.material as THREE.MeshBasicMaterial).map = heroTex[W8.f];
+      const w = WALK_HERO8.cell / KIT_PX, h = w * stretch, below = (1 - WALK_HERO8.feet / WALK_HERO8.cell) * h;
+      // (A step's bob, two a stride, while there's no walk yet.)
+      const bob = moving ? Math.abs(Math.sin((sim.walked / STRIDE) * Math.PI * 2)) * WALK_BOB : 0;
       hero.current.scale.set(w, h, 1);
-      hero.current.position.set(sim.me.x, h / 2 - below, sim.me.y + 0.05);
+      hero.current.position.set(sim.me.x, h / 2 - below + bob, sim.me.y + 0.05);
       // Stone: tinted by the light where you stand, as everything else is (the user, 2026-11-14: you
       // looked pasted on, always full bright). Your own torch lights you, so you still read clearly.
       if (view.stone) (hero.current.material as THREE.MeshBasicMaterial).color.copy(stoneShade(field.current, fade.current, live.w, sim.me.x, sim.me.y));
