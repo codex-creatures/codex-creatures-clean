@@ -110,7 +110,11 @@ creatures appear only in fights. Samples first, the user picks.
   top row (you walk there, in front of it). Rock away from any floor stays black. Tunnel
   floor where a cell is all tunnel (doors count as the room). Things standing up (chests,
   rubble, foes, you) are drawn lowest on screen last (`drawOrder`). The hero faces the way
-  they're mostly going (`facingOf`) and steps a walk cycle every 1.5 tiles (`STRIDE`, 🧪).
+  they're mostly going and steps a walk cycle every 1.5 tiles (`STRIDE`, 🧪). The way is their
+  heading smoothed over about 0.4 tiles of walking (`smoothHeading`), and they turn from an
+  up/down view to a side one (or back) only once it's clearly past the diagonal (`turnTo`,
+  `FACING_LEAN` 1.35, about 36°; turning right round is at once), so a diagonal walk no longer
+  flickers between two views (the user, 2026-11-14).
   3 cells in a whole map have no exact tile (inner corners where a wall steps down by a
   tunnel): the closest is drawn.
 - 🚧 **One angle for everything** (the user, 2026-11-06: the flat tiles didn't match the

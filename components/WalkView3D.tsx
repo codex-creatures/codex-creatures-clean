@@ -289,6 +289,9 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
       const w = WALK_HERO.cell / KIT_PX, h = w * stretch, below = (1 - WALK_HERO.feet / WALK_HERO.cell) * h;
       hero.current.scale.set(w, h, 1);
       hero.current.position.set(sim.me.x, h / 2 - below, sim.me.y + 0.05);
+      // Stone: tinted by the light where you stand, as everything else is (the user, 2026-11-14: you
+      // looked pasted on, always full bright). Your own torch lights you, so you still read clearly.
+      if (view.stone) (hero.current.material as THREE.MeshBasicMaterial).color.copy(stoneShade(field.current, fade.current, live.w, sim.me.x, sim.me.y));
     }
     if (now - last.current.listAt > 120) { last.current.listAt = now; redraw((n) => n + 1); }
     // How it's running.
@@ -304,7 +307,7 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   if (view.stone) return (
     <>
       <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} fadeRef={fade} />
-      {/* You, unlit, as in the other modes. */}
+      {/* You: tinted by the light where you stand (the world's useFrame). */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
       <FloorLife life={life} sim={sim} live={live} closed={closed} stretch={stretch} pitch={view.pitch} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
       <Sprites {...others} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
@@ -914,7 +917,7 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
   const uni = useRef(stoneUniforms());
   const mat = useRef<THREE.ShaderMaterial | null>(null), mesh = useRef<THREE.Mesh>(null);
   useEffect(() => () => mat.current?.dispose(), []);
-  const last = useRef({ light: -Infinity, seen: "", seenAt: -Infinity, live });
+  const last = useRef({ light: -Infinity, seen: "", seenAt: -Infinity, live, x: NaN, y: NaN });
 
   useFrame(() => {
     const u = uni.current, now = performance.now();
@@ -936,9 +939,12 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
     u.uSide.value.set(...texelsPerU("face", view.density, view.pitch, view.texels));
     u.uMode.value = view.light === "smooth" ? 0 : view.light === "stepped" ? 1 : 2;
     u.uLight.value = tex.light; u.uSeen.value = tex.seen; u.uPlan.value.set(live.w, live.h);
-    // The light, 30 times a second: your torch (as far as the sim's reaches now) and the lit lights you've seen.
-    if (now - last.current.light > 33) {
-      last.current.light = now;
+    // The light: your torch (as far as the sim's reaches now) and the lit lights you've seen. Every frame
+    // while you move, so your light keeps up with you (the user, 2026-11-14: it trailed a little); 30
+    // times a second while you stand (enough for the flames' flicker).
+    const moved = sim.me.x !== last.current.x || sim.me.y !== last.current.y;
+    if (moved || now - last.current.light > 33) {
+      last.current.light = now; last.current.x = sim.me.x; last.current.y = sim.me.y;
       const torch: Light3D = { x: sim.me.x, y: sim.me.y, r: torchReach(sim.flareLeft), power: 1 };
       const lights = litLights(sim, live, layout, frame.current, closed).map((l, i) => ({ ...l, power: STONE.fire * (0.93 + 0.07 * Math.sin(now / 90 + i)) }));
       const f = fieldRef.current = lightField(live, sim.lightNow, torch, lights, sim.me.x, sim.me.y, WINDOW, fieldRef.current ?? undefined, remembered(sim, closed, rememberRef));

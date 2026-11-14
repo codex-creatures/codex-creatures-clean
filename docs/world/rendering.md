@@ -403,7 +403,10 @@ The art standard itself is still to write, from samples drawn to these picks.
   pixels the camera moves in whole canvas pixels, so the stone doesn't crawl as you walk.
 - **Light: no Three.js lights.** A grid a subcell apart round you, lit only where the sim lit a tile
   this frame (`lightNow`) and along a clear line through the floorplan, so never through rock and
-  never where the game says dark. Each light has a fully lit core (`CORE` 0.4 of its reach), then
+  never where the game says dark. The sim's lit tiles are blended between their middles (`onLit`,
+  the user, 2026-11-14), so the light's edge fades out over a tile instead of stopping in whole-tile
+  steps that jump as you walk; the middle of a tile the sim hasn't lit still gets none. Worked out
+  every frame while you move (so it keeps up with you), 30 times a second while you stand. Each light has a fully lit core (`CORE` 0.4 of its reach), then
   falls off to nothing at the reach the sim uses. Your torch is kept apart so faces take it by how
   squarely they face it; faces also darken towards their tops (the torch is lower than the wall).
   Rock tops get a little light, the low rim nearly the floor's. Light multiplies the art (warm where
@@ -416,12 +419,15 @@ The art standard itself is still to write, from samples drawn to these picks.
   (lib/render3d/stone.ts `shadeAt`): as bright (the same gain, not capped below the floor's), the
   same warmth (your torch's colour or the fires', by their shares), dimmed with the floor where
   what you've seen fades out and in a room cut off behind you, and read again every frame, so they
-  follow your torch and the fires' flicker with the rock. You stay unlit, as in the other modes.
+  follow your torch and the fires' flicker with the rock, blended between the grid's samples as the
+  floor is (so they brighten and dim smoothly as they walk). You're tinted the same way too (the
+  user, 2026-11-14: unlit, you looked pasted on); your own torch keeps you lit.
   Lit flames, candles and fires stay full bright. The tuning numbers are `STONE` in
   components/WalkView3D.tsx.
 
 **Limits:** stand-in art (above); you and the objects are 32 a unit, so at 48 they're blown up
-unevenly; no shadows from objects or creatures, and no contact shadows or darkening where floor
+unevenly (you'd stand 1 u tall drawn at 48, smaller than a foe: new art, or the draft 3D you in
+`/lab/hero`, lib/render3d/hero3d.ts, are the ways round it); no shadows from objects or creatures, and no contact shadows or darkening where floor
 meets wall yet; the light grid covers 64 tiles round you; the curve is not the 2D view's
 `torchGlow`. One draw call for the rock, as grey.
 

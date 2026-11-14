@@ -3,11 +3,13 @@
 // lib/world/walkSim.ts (components/WalkView.tsx at 3e4e8a1, its draw loop up
 // to "── Drawing ──"), copied with its refs, so tests/walkSim.test.ts can run
 // the two side by side and show the move changed nothing. Only the props
-// (P), React's setters and the clock are stand-ins; the rest is verbatim.
+// (P), React's setters and the clock are stand-ins; the rest is verbatim, apart from
+// one intended change since: turning as you walk (2026-11-14, tileArt.ts turnTo: your
+// heading smoothed, and a side view only once you're clearly past the diagonal).
 
 import { cutOffY, enter, isOpen, type Layout, type Progress } from "../lib/dungeon/layout";
 import { advance, roomAt, type Walker } from "../lib/dungeon/walk";
-import { facingOf, type Facing } from "../lib/dungeon/tileArt";
+import { facingOf, smoothHeading, turnTo, type Facing } from "../lib/dungeon/tileArt";
 import { torchLit, rubbleOf, fallenIn, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../lib/dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "../lib/dungeon/campfire";
 import { foeClear } from "../lib/world/walkSim";
@@ -31,7 +33,7 @@ export function oldWalk(o: {
   const me = ref<Walker>({ ...o.at, path: [] }), goal = ref<Pt | null>(null), progressRef = ref(o.progress);
   const known = ref(o.known), lightNow = ref<Uint8Array>(new Uint8Array(plan.w * plan.h)), trail = ref(o.trail), cuts = ref(o.cuts);
   const sconces = ref(o.sconces), candles = ref(o.candles), fires = ref(o.fires), foes = ref(o.foes), npcs = ref(o.npcs);
-  const flareLeft = ref(o.flare), facing = ref<Facing>("south"), walked = ref(0), falls = ref(new Map<string, number>()), shakeAt = ref(-Infinity);
+  const flareLeft = ref(o.flare), facing = ref<Facing>("south"), heading = ref({ x: 0, y: 1 }), walked = ref(0), falls = ref(new Map<string, number>()), shakeAt = ref(-Infinity);
   const wantThing = ref<string | null>(null), fired = ref(0);
   const alarm = ref<{ room: string; at: number; going: Set<number>; arrived: Map<number, number>; fadeAt: number | null } | null>(null);
   const events: OldEvent[] = [];
@@ -86,7 +88,7 @@ export function oldWalk(o: {
     const moved = Math.hypot(me.current.x - before.x, me.current.y - before.y);
     if (moved > 0) flareLeft.current = Math.max(0, flareLeft.current - moved);
     const reachNow = torchReach(flareLeft.current);
-    if (moved > 0) { walked.current += moved; movedSince = true; facing.current = facingOf(me.current.x - before.x, me.current.y - before.y, facing.current); }
+    if (moved > 0) { walked.current += moved; movedSince = true; heading.current = smoothHeading(heading.current, me.current.x - before.x, me.current.y - before.y); facing.current = turnTo(heading.current.x, heading.current.y, facing.current); }
     lightNow.current = torchLit(live, me.current, reachNow);
     let lighted = false;
     for (const c of sconces.current) {

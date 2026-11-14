@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, TUNNEL, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, WALK_SPEC } from "../lib/dungeon/layout";
-import { cellArt, cornerTerrain, drawOrder, facingOf, pickTile, walkFrame, WANG_TILES, UPPER, LOWER, CLIFF, ANY_TILE } from "../lib/dungeon/tileArt";
+import { cellArt, cornerTerrain, drawOrder, facingOf, pickTile, walkFrame, smoothHeading, turnTo, type Facing, WANG_TILES, UPPER, LOWER, CLIFF, ANY_TILE } from "../lib/dungeon/tileArt";
 
 function seeded(seed: number) {
   let s = seed;
@@ -119,5 +119,31 @@ describe("walking pictures", () => {
   it("draws what's lower on screen over what's above", () => {
     const order = drawOrder([{ id: "a", x: 0, y: 5 }, { id: "b", x: 3, y: 2 }, { id: "c", x: 1, y: 5 }]);
     expect(order.map((t) => t.id)).toEqual(["b", "a", "c"]);
+  });
+});
+
+describe("turning as you walk", () => {
+  // A diagonal walked in little steps that lean one way, then the other (as the frames' steps do).
+  const walk = (steps: [number, number][], start: Facing = "south") => {
+    let h = { x: 0, y: 1 }, f = start;
+    const seen: Facing[] = [];
+    for (const [dx, dy] of steps) { h = smoothHeading(h, dx, dy); f = turnTo(h.x, h.y, f); seen.push(f); }
+    return seen;
+  };
+  it("walking diagonally settles on one view, instead of flickering between two", () => {
+    const steps = Array.from({ length: 60 }, (_, i): [number, number] => (i % 2 ? [0.06, 0.05] : [0.05, 0.06]));
+    const seen = walk(steps);
+    const swaps = seen.filter((f, i) => i > 0 && f !== seen[i - 1]).length;
+    expect(swaps).toBeLessThanOrEqual(1);
+    // Even on a staircase of straight steps (across, then down, ...).
+    const stairs = Array.from({ length: 60 }, (_, i): [number, number] => (i % 2 ? [0.06, 0] : [0, 0.06]));
+    const s2 = walk(stairs);
+    expect(s2.filter((f, i) => i > 0 && f !== s2[i - 1]).length).toBeLessThanOrEqual(1);
+  });
+  it("still turns to a side view once you're clearly walking that way, and right round at once", () => {
+    expect(walk(Array.from({ length: 20 }, (): [number, number] => [0.06, 0])).at(-1)).toBe("east");
+    expect(turnTo(0, -1, "south")).toBe("north");
+    expect(turnTo(1, 0.9, "south")).toBe("south"); // (near the diagonal: stays)
+    expect(turnTo(1, 0.5, "south")).toBe("east");
   });
 });

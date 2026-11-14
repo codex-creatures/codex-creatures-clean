@@ -14,7 +14,7 @@
 
 import { cutOffY, enter, isOpen, type Layout, type Progress } from "../dungeon/layout";
 import { advance, roomAt, type CanStep, type Walker } from "../dungeon/walk";
-import { facingOf, type Facing } from "../dungeon/tileArt";
+import { facingOf, smoothHeading, turnTo, type Facing } from "../dungeon/tileArt";
 import { torchLit, rubbleOf, fallenIn, showsRubble, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "../dungeon/campfire";
 import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "../dungeon/foes";
@@ -44,6 +44,7 @@ export type WalkSim = {
   layout: Layout; plan: Floorplan;
   live: Floorplan;                   // the floorplan as it stands: closed tunnels are rock (torch.ts shutPlan)
   me: Walker; facing: Facing; walked: number;
+  heading: Pt;                       // which way you've been walking, smoothed (tileArt.ts smoothHeading): what you face
   goal: Pt | null;                   // where you tapped to walk (to find the way again if a tunnel shuts under it)
   progress: Progress;
   known: Uint8Array; lightNow: Uint8Array; trail: Pt[]; cuts: number[];
@@ -85,7 +86,7 @@ export function foeClear(things: () => Thing[], fires: Campfire[]): CanStep {
 export function startWalk(walk: WalkRun, plan: Floorplan, live: Floorplan, placed: { sconces: Sconce[]; candles: Candle[]; foes: Foe[]; npcs: Foe[] }, known: Uint8Array): WalkSim {
   return {
     layout: walk.layout, plan, live,
-    me: { ...walk.at, path: [] }, facing: "south", walked: 0, goal: null, // (facing you to start: the torch shows)
+    me: { ...walk.at, path: [] }, facing: "south", heading: { x: 0, y: 1 }, walked: 0, goal: null, // (facing you to start: the torch shows)
     progress: { room: walk.room, line: walk.line ?? Infinity },
     known, lightNow: new Uint8Array(plan.w * plan.h), trail: walk.trail ?? [walk.at], cuts: walk.cuts ?? [],
     sconces: placed.sconces, candles: placed.candles, fires: (walk.fires ?? []).map((f) => ({ ...f })), foes: placed.foes, npcs: placed.npcs,
@@ -188,7 +189,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
   const moved = Math.hypot(sim.me.x - before.x, sim.me.y - before.y);
   if (moved > 0) sim.flareLeft = Math.max(0, sim.flareLeft - moved);
   const reachNow = torchReach(sim.flareLeft);
-  if (moved > 0) { sim.walked += moved; L.movedSince = true; sim.facing = facingOf(sim.me.x - before.x, sim.me.y - before.y, sim.facing); }
+  if (moved > 0) { sim.walked += moved; L.movedSince = true; sim.heading = smoothHeading(sim.heading, sim.me.x - before.x, sim.me.y - before.y); sim.facing = turnTo(sim.heading.x, sim.heading.y, sim.facing); }
   // The torch: what it lights now, remembered from now on; the wall torches.
   sim.lightNow = torchLit(live, sim.me, reachNow);
   const lightNow = sim.lightNow;

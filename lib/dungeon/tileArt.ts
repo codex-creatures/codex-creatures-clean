@@ -110,6 +110,26 @@ export function facingOf(dx: number, dy: number, was: Facing = "south"): Facing 
   return dx > 0 ? "east" : "west";
 }
 
+// Turning as you walk (the user, 2026-11-14: walking diagonally, you flickered between two views every
+// frame, as each frame's little step was a bit more one way, then the other). The way you face follows
+// your heading smoothed over about FACING_SMOOTH tiles of walking (smoothHeading), and turns from an
+// up/down view to a side one (or back) only once that heading is clearly past the diagonal: its bigger
+// way FACING_LEAN times the other at least (about 36°). Turning right round is straight away.
+export const FACING_SMOOTH = 0.4;  // tiles 🧪
+export const FACING_LEAN = 1.35;   // 🧪
+const OPPOSITE: Record<Facing, Facing> = { south: "north", north: "south", east: "west", west: "east" };
+export function smoothHeading(h: { x: number; y: number }, dx: number, dy: number): { x: number; y: number } {
+  const d = Math.hypot(dx, dy);
+  if (d === 0) return h;
+  const a = Math.min(1, d / FACING_SMOOTH);
+  return { x: h.x * (1 - a) + (dx / d) * a, y: h.y * (1 - a) + (dy / d) * a };
+}
+export function turnTo(dx: number, dy: number, was: Facing): Facing {
+  const next = facingOf(dx, dy, was);
+  if (next === was || next === OPPOSITE[was]) return next;
+  return Math.max(Math.abs(dx), Math.abs(dy)) >= Math.min(Math.abs(dx), Math.abs(dy)) * FACING_LEAN ? next : was;
+}
+
 // The frame of a walk cycle `frames` long after walking `tiles` tiles, a
 // stride every STRIDE tiles; standing still is frame -1 (the standing pose).
 export const STRIDE = 1.5; // tiles per walk cycle

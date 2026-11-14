@@ -87,9 +87,19 @@ export function lightCurve(d: number, r: number): number {
   return Math.pow(1 - (t - CORE) / (1 - CORE), FALLOFF);
 }
 
+// How much a point is on a lit tile: the sim's lit tiles (1 or 0, at each tile's middle) blended
+// between their middles (the user, 2026-11-14: the light's edge moved in whole-tile steps). So light
+// never falls on the middle of a tile the sim hasn't lit, but fades out over a tile, not at its edge.
+function onLit(fp: Floorplan, on: Uint8Array, x: number, y: number): number {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  const at = (tx: number, ty: number) => (tx < 0 || ty < 0 || tx >= fp.w || ty >= fp.h ? 0 : on[ty * fp.w + tx]);
+  return (at(ix, iy) * (1 - fx) + at(ix + 1, iy) * fx) * (1 - fy) + (at(ix, iy + 1) * (1 - fx) + at(ix + 1, iy + 1) * fx) * fy;
+}
+
 // The light grid round tile (cx, cy). Each light adds to it (lights together are brighter, never
 // past 1), only on tiles the sim lit this frame (`othersOn`: where the other lights may fall, if not
-// those), and only along a clear line. (`into`: last frame's grid, reused, so a frame makes no garbage.)
+// those; fading between them: onLit), and only along a clear line. (`into`: last frame's grid, reused,
+// so a frame makes no garbage.)
 export function lightField(fp: Floorplan, lightNow: Uint8Array, torch: Light3D | null, lights: Light3D[], cx: number, cy: number, size = WINDOW, into?: LightField, othersOn = lightNow): LightField {
   const x0 = Math.round(cx) - size / 2, y0 = Math.round(cy) - size / 2, n = size * SUB;
   const out: LightField = into && into.size === size
@@ -100,9 +110,9 @@ export function lightField(fp: Floorplan, lightNow: Uint8Array, torch: Light3D |
     const j0 = Math.max(0, Math.floor((l.y - l.r - y0 + 0.5) * SUB)), j1 = Math.min(n - 1, Math.ceil((l.y + l.r - y0 + 0.5) * SUB));
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const x = x0 - 0.5 + (i + 0.5) / SUB, y = y0 - 0.5 + (j + 0.5) / SUB;
-      const tx = Math.round(x), ty = Math.round(y);
-      if (tx < 0 || ty < 0 || tx >= fp.w || ty >= fp.h || !on[ty * fp.w + tx]) continue;
-      const v = l.power * lightCurve(Math.hypot(x - l.x, y - l.y), l.r);
+      const gate = onLit(fp, on, x, y);
+      if (gate <= 0) continue;
+      const v = gate * l.power * lightCurve(Math.hypot(x - l.x, y - l.y), l.r);
       if (v <= 0 || !clearLine(fp, l, x, y)) continue;
       const k = j * n + i;
       into[k] = 1 - (1 - into[k]) * (1 - v);
@@ -113,12 +123,21 @@ export function lightField(fp: Floorplan, lightNow: Uint8Array, torch: Light3D |
   return out;
 }
 
-// The light at a point (nearest sample), both kinds together: for sprites standing there.
+// Your torch's light and the others' at a point, blended between the four samples round it as the
+// GPU blends the grid on the floor (so a thing walking across the floor brightens and dims smoothly
+// with it, instead of in steps a third of a tile apart).
+function sampled(f: LightField, x: number, y: number): [number, number] {
+  const n = f.size * SUB, fx = (x - f.x0 + 0.5) * SUB - 0.5, fy = (y - f.y0 + 0.5) * SUB - 0.5;
+  const i = Math.floor(fx), j = Math.floor(fy), ax = fx - i, ay = fy - j;
+  const get = (a: Float32Array, ii: number, jj: number) => a[Math.min(n - 1, Math.max(0, jj)) * n + Math.min(n - 1, Math.max(0, ii))];
+  const mix = (a: Float32Array) => (get(a, i, j) * (1 - ax) + get(a, i + 1, j) * ax) * (1 - ay) + (get(a, i, j + 1) * (1 - ax) + get(a, i + 1, j + 1) * ax) * ay;
+  if (fx < -0.5 || fy < -0.5 || fx > n - 0.5 || fy > n - 0.5) return [0, 0];
+  return [mix(f.torch), mix(f.other)];
+}
+// The light at a point, both kinds together: for sprites standing there.
 export function lightAt(f: LightField, x: number, y: number): number {
-  const n = f.size * SUB, i = Math.floor((x - f.x0 + 0.5) * SUB), j = Math.floor((y - f.y0 + 0.5) * SUB);
-  if (i < 0 || j < 0 || i >= n || j >= n) return 0;
-  const k = j * n + i;
-  return 1 - (1 - f.torch[k]) * (1 - f.other[k]);
+  const [t, o] = sampled(f, x, y);
+  return 1 - (1 - t) * (1 - o);
 }
 
 // The colour a sprite or a 3D thing standing at (x, y) is tinted, worked out as the rock's shader
@@ -131,10 +150,7 @@ export type Rgb = readonly [number, number, number];
 export type Shading = { remember: number; gain: number; warm: Rgb; flame: Rgb };
 export function shadeAt(f: LightField | null, fade: ArrayLike<number> | null, w: number, x: number, y: number, s: Shading): [number, number, number] {
   let torch = 0, other = 0;
-  if (f) {
-    const n = f.size * SUB, i = Math.floor((x - f.x0 + 0.5) * SUB), j = Math.floor((y - f.y0 + 0.5) * SUB);
-    if (i >= 0 && j >= 0 && i < n && j < n) { torch = f.torch[j * n + i]; other = f.other[j * n + i]; }
-  }
+  if (f) [torch, other] = sampled(f, x, y);
   const lit = (torch + other) * s.gain, share = torch / Math.max(torch + other, 0.0001);
   const k = Math.round(y) * w + Math.round(x), dim = fade && k >= 0 && k < fade.length ? fade[k] : 1;
   return [0, 1, 2].map((c) => (s.remember + lit * (s.flame[c] + (s.warm[c] - s.flame[c]) * share)) * dim) as [number, number, number];

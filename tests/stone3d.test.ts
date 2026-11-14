@@ -63,6 +63,20 @@ describe("lightField", () => {
     expect(sample(f, "torch", 3, 2)).toBe(0);
     expect(sample(f, "torch", 2, 3)).toBeGreaterThan(0);
   });
+  it("fades out across a tile at the edge of what the sim lights, instead of stopping at the tile's edge", () => {
+    const lightNow = all(fp); lightNow[2 * fp.w + 3] = 0;
+    const f = lightField(fp, lightNow, torch, [], 2, 2, 16);
+    const near = sample(f, "torch", 2 + 1 / SUB, 2), far = sample(f, "torch", 3 - 1 / SUB, 2);
+    expect(near).toBeGreaterThan(far);
+    expect(far).toBeGreaterThan(0);
+    expect(sample(f, "torch", 3, 2)).toBe(0);
+  });
+  it("a thing's light blends between the samples, so it changes smoothly as it walks", () => {
+    const f = lightField(fp, all(fp), { x: 2, y: 2, r: 3, power: 1 }, [], 2, 2, 16);
+    let worst = 0, last = lightAt(f, 2, 2);
+    for (let x = 2.02; x <= 3.5; x += 0.02) { const v = lightAt(f, x, 2); worst = Math.max(worst, Math.abs(v - last)); last = v; }
+    expect(worst).toBeLessThan(0.05);
+  });
   it("keeps your torch apart from the other lights, and lights together never pass 1", () => {
     const f = lightField(fp, all(fp), null, [{ x: 6, y: 2, r: 3, power: 1 }, { x: 6, y: 2, r: 3, power: 0.6 }], 6, 2, 16);
     expect(f.torch.every((v) => v === 0)).toBe(true);
