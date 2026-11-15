@@ -68,6 +68,10 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   - Victorious: heals 2/3/5% of max HP a piece when the creature knocks out an opponent. Pieces
     add up. ✅ (the user, 2026-11-16) It heals whenever a foe falls while the creature is on the
     field, whatever felled it (poison, a cloud, a teammate's hit…); not from the bench.
+- ✅ **Gear already owned** (the user, 2026-11-16): every Rare or better weapon and armour piece in a
+  save (Inventory, chest, worn, the Labyrinth bag and loot, Klutz's crate) got one roll at a
+  chest's 10% (`enchantOldGear`, lib/save.ts). Only gear made before `ENCHANT_ROLL_BEFORE`; the roll
+  is seeded by the item's id, so it comes out the same on every load and every device.
 - ✅ **Selling** (the user, 2026-11-16): an enchanted item sells for 20% more (`ENCHANT_SELL_BONUS`,
   lib/items/economy/sell.ts), wherever it's sold.
 - **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence stone

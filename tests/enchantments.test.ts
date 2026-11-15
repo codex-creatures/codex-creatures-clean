@@ -7,6 +7,7 @@ import { createBattle, dealtDamage, resolveRound, type BattleAction, type Battle
 import { computeSellGold } from "../lib/items/economy/sell";
 import { getStatCapForDrop } from "../lib/items/gameHelpers";
 import { rollGearPiece } from "../lib/dungeon/run";
+import { enchantOldGear, ENCHANT_ROLL_BEFORE } from "../lib/save";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, type Fighter } from "../lib/combat/engine";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -119,6 +120,32 @@ describe("where they come from", () => {
   });
   it("every golden chest find is enchanted", () => {
     for (let i = 0; i < 20; i++) for (const d of goldenDrops(2)) expect(enchantOf(asItem(d)), d.id).toBeDefined();
+  });
+});
+
+describe("gear from before enchantments (2026-11-16)", () => {
+  const old = (i: number, rarity: "common" | "rare" | "legendary" = "rare") =>
+    ({ ...asItem(i % 2 ? weaponDrop("void_scythe", rarity) : armorDrop("frontiers_mail", rarity)), id: `old${i}`, createdAt: "2026-11-01T00:00:00Z" });
+  it("every Rare+ weapon and armour piece already owned gets one roll at a chest's 10%, the same on every load", () => {
+    const save = { inventory: Array.from({ length: 4000 }, (_, i) => old(i)), labyrinth: { meta: { loot: { x: old(9001, "legendary") } } } };
+    const once = enchantOldGear(JSON.parse(JSON.stringify(save)));
+    const again = enchantOldGear(JSON.parse(JSON.stringify(save)));
+    expect(again).toEqual(once);
+    const share = once.inventory.filter((d: CreatureOrItemDrop) => enchantOf(d)).length / 4000;
+    expect(share).toBeGreaterThan(0.08);
+    expect(share).toBeLessThan(0.12);
+    for (const d of once.inventory) if (d.enchant) expect(enchantPool(d)).toContain(d.enchant);
+    expect(Object.keys(enchantOldGear(JSON.parse(JSON.stringify(save))).labyrinth.meta.loot)).toEqual(["x"]); // (looked at everywhere)
+  });
+  it("leaves Common and Uncommon gear, gear found since, and enchanted gear alone", () => {
+    const ids = Array.from({ length: 300 }, (_, i) => i);
+    const common = ids.map((i) => old(i, "common"));
+    const recent = ids.map((i) => ({ ...old(i), createdAt: ENCHANT_ROLL_BEFORE }));
+    const keen = ids.map((i) => ({ ...old(i), enchant: "keen" as const }));
+    const out = enchantOldGear(JSON.parse(JSON.stringify({ common, recent, keen })));
+    expect(out.common.some((d: CreatureOrItemDrop) => d.enchant)).toBe(false);
+    expect(out.recent.some((d: CreatureOrItemDrop) => d.enchant)).toBe(false);
+    expect(out.keen.every((d: CreatureOrItemDrop) => d.enchant === "keen")).toBe(true);
   });
 });
 

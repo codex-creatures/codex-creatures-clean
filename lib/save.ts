@@ -7,6 +7,11 @@
 
 import { ARMOR_V2, upgradeOldArmorStats } from "./items/armor";
 import { TOOLS, type ToolKey } from "./items/materials";
+import { CHEST_ENCHANT, canEnchant, enchanted } from "./items/enchantments";
+import { seeded } from "./creatures/soulStones";
+import type { Drop, ItemCategory, Rarity } from "./types";
+
+type Gear = { itemCategory?: ItemCategory; rarity?: Rarity };
 
 // v3: Combat V2 (2026-10-26) started everyone again. Saves from before it
 // stay in the browser under the old key (codex_creatures_save_v2), unread.
@@ -19,10 +24,33 @@ export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(dropOldGoldKeys(parsed))) : {};
+    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(dropOldGoldKeys(enchantOldGear(parsed)))) : {};
   } catch {
     return {};
   }
+}
+
+// Gear from before enchantments (the user, 2026-11-16): every Rare or better
+// weapon and armour piece a player already had gets one roll, at a chest's odds
+// (CHEST_ENCHANT), wherever it is in the save. Only gear made before
+// ENCHANT_ROLL_BEFORE: what's found since (from foes, merchants, Klutz…) is left
+// as it came. The roll is seeded by the item's id, so it comes out the same on
+// every load until the save is next written with it.
+export const ENCHANT_ROLL_BEFORE = "2026-11-15T18:45:00Z";
+export function enchantOldGear<T>(save: T): T {
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (!v || typeof v !== "object") return;
+    const o = v as Record<string, unknown>;
+    if (o.dropType === "item" && o.enchant === undefined && typeof o.id === "string" && canEnchant(o as Gear)
+      && !(typeof o.createdAt === "string" && o.createdAt >= ENCHANT_ROLL_BEFORE)) {
+      const k = (enchanted(o as unknown as Drop, CHEST_ENCHANT, seeded(`enchant:${o.id}`)) as { enchant?: string }).enchant;
+      if (k) o.enchant = k;
+    }
+    for (const k in o) walk(o[k]);
+  };
+  walk(save);
+  return save;
 }
 
 // The Gold Key became Legendary (the user, 2026-11-16), and every key found
