@@ -117,7 +117,7 @@ fields optional with defaults.
      samples for the user to pick; ⏸ until then the collector's walk, tinted violet in CSS
      (`VISITOR_TINT`, components/TavernRoom.tsx), stands in. Her window is like the collector's:
      your enchanted weapons and armour in tabs (worn ones too), tap one to see it, then Reroll
-     (two taps; the second pays). On the clock like the others (5% a half hour to start). 🧪 Claude's reading: she rerolls only an item that has an
+     (two taps; the second pays). On the clock like the others (5% a half hour to start). Claude's reading, agreed by the user: she rerolls only an item that has an
      enchantment (she doesn't add one), always to a different one, each that fits as likely.
    - ✅ **On the clock** (`onTheClock`, lib/tavern.ts): every 30 minutes of real time each visitor rolls on their own chance, so
      several can be in at once; one who comes stays that 30-minute window (a sent-for one 30 minutes
@@ -132,11 +132,11 @@ fields optional with defaults.
      is open (`TAVERN_TICK_MS`). Saves: `guests` (one per visitor: until when, or runs left, and their
      stock), `seed`, `rolled` and `upgrades` are new optional fields; an old save's one visitor
      becomes a guest staying the runs they had left (`fromOldSave`), counted down on coming home
-     (`comeHome` no longer rolls). Claude's readings (🧪, say if any is wrong):
-     - 🧪 A visitor already in (sent for, say) whose roll comes up in the next window stays to that
+     (`comeHome` no longer rolls). Claude's readings (agreed by the user, 2026-11-16; the costs stay testing numbers):
+     - A visitor already in (sent for, say) whose roll comes up in the next window stays to that
        window's end, keeping their stock and what you've bought. A visitor from an old save isn't
        rolled until they've gone.
-     - 🧪 The daily quest's merchant comes as if sent for: 30 minutes.
+     - The daily quest's merchant comes as if sent for: 30 minutes.
      - 🧪 The upgrade costs (`UPGRADE_COSTS`, a row per level): 6/8/10/12/14/16/16/14/12/12 planks,
        3/4/5/5/6/6/6/5/3/2 nails, metal bars from level 3 (2, 4, 6, 8, 10, 14, 18, 23), stone from
        level 6 (1, 2, 4, 7, 12) and an essence stone at levels 9 and 10: the totals above, each level

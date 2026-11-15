@@ -47,6 +47,7 @@ import { weaponDrop, armorDrop, codexDrop, scrollDrop, soulStoneDrop, randomCode
 import { LEARNABLE_MOVES } from "../creatures/creatureData";
 import type { WalkRun } from "./walkRun";
 import { unsupportedRun } from "../world/version";
+import { enchanted, CHEST_ENCHANT } from "../items/enchantments";
 import { TOOLS, MATERIALS, SCHEMATICS, NEXT_STORAGE_PLAN, materialBundle, materialDrop, toolDrop, schematicDrop, type MaterialKey, type ToolKey, type StoragePlan } from "../items/materials";
 
 export const PARTY_SIZE = 5;
@@ -390,9 +391,11 @@ export const CYCLOPS_ITEMS: [number, number] = [1, 2];
 export const CYCLOPS_POTIONS: [number, number] = [1, 2];
 export const CYCLOPS_CHEST_MAX = 10;
 export const CYCLOPS_RACE_CODEX = 0.25;
+// A chest's gear (a stash's, a boss's): enchanted CHEST_ENCHANT of the time,
+// like a chest room's (rolled apart from rng, as its stats are).
 export function rollGearPiece(rng: Rng = Math.random): Drop {
   const rarity = pickRarity("", "random");
-  return rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity);
+  return enchanted(rng() < 1 / 3 ? weaponDrop(pick(ITEM_KEYS, rng), rarity) : armorDrop(pick(ARMOR_KEYS, rng), rarity), CHEST_ENCHANT);
 }
 export function cyclopsChest(rng: Rng = Math.random): SackItem[] {
   const times = (range: [number, number], roll: () => SackItem) => Array.from({ length: randInt(...range, rng) }, roll);
@@ -1102,7 +1105,7 @@ function rollRoom(kind: RoomKind, rng: Rng, depth: number, dungeon: DungeonId, b
       const sack: SackItem[] = [
         ...Array.from({ length: randInt(...STOREHOUSE_MATERIALS, rng) }, () => ({ gear: materialBundle(weighted(STORE_RARITY, rng), rng) })),
         ...Array.from({ length: randInt(...STOREHOUSE_POTIONS, rng) }, (): SackItem => ({ potion: rng() < STASH_POTION_CHANCE ? "potion" : "lesser" })),
-        ...(rng() < STOREHOUSE_FINDS.weapon ? [{ gear: weaponDrop(pick(ITEM_KEYS, rng), pickRarity("", "random")) }] : []),
+        ...(rng() < STOREHOUSE_FINDS.weapon ? [{ gear: enchanted(weaponDrop(pick(ITEM_KEYS, rng), pickRarity("", "random")), CHEST_ENCHANT) }] : []),
         ...(rng() < STOREHOUSE_FINDS.flare ? [{ gear: toolDrop("flare") }] : []),
         ...(rng() < STOREHOUSE_FINDS.clairvoyance ? [{ gear: toolDrop("clairvoyance") }] : []),
         ...(backpack && rng() < STOREHOUSE_BACKPACK ? [{ backpack: true as const }] : []),

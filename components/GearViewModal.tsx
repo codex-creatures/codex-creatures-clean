@@ -43,8 +43,7 @@ export default function GearViewModal({ item, slotName, creatures, onSwap, why, 
           </div>
           <div className="pixel-font" style={{ fontSize: 18, color: rc.text, marginTop: 10 }}>{item.name}</div>
           <div className="pixel-font" style={{ fontSize: 12, color: MUTED, textTransform: "capitalize", marginTop: 2 }}>{item.rarity} {slotName}</div>
-          {/* (Found in the Labyrinth: a PvP enchantment shows greyed out.) */}
-          <EnchantLine item={item} mode="pve" style={{ justifyContent: "center", fontSize: 13 }} />
+          <EnchantLine item={item} style={{ justifyContent: "center", fontSize: 13 }} />
           <GearStatLine item={item} />
         </div>
 

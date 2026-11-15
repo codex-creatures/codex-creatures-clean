@@ -41,7 +41,7 @@ import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { TOOLS, isLocator } from "@/lib/items/materials";
 import CodexMove from "./CodexMove";
 import EnchantLine from "./EnchantLine";
-import { enchantOf, type EnchantMode } from "@/lib/items/enchantments";
+import { enchantOf } from "@/lib/items/enchantments";
 import { codexLearners } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
@@ -212,7 +212,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
         {/* A closer look: one fixed box for whatever you tapped in the chest or
             in your bag. Nothing tapped: no box (the hint above says to tap), so it all fits. */}
         {seen !== null && items[seen] ? (
-          <ItemPeek item={items[seen]} mode="pve" action={<>
+          <ItemPeek item={items[seen]} action={<>
             {actionChips("loot", seen)}
             <button className={`chip${teach?.step === "take" && teach.i === seen && !full ? " tutorial-pulse" : ""}`} disabled={full} onClick={() => { onTake(seen); setSeen(null); }}>{full ? "Bag full: drag to swap" : "Take"}</button>
           </>} />
@@ -220,7 +220,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
           const l = bag[picked];
           const teaching = teach?.step === "equip" && teach.i === picked;
           return (
-            <ItemPeek item={l.peek} look={l} mode="pve" action={<>
+            <ItemPeek item={l.peek} look={l} action={<>
               {actionChips("bag", picked, teaching)}
               {!teaching && <button className="chip" onClick={() => { onPutBack(picked); setPicked(null); }}>{putLabel}</button>}
             </>} />
@@ -277,8 +277,7 @@ export default function LootWindow({ name, sprite, items, bag, slots, bagName, o
 // then the body, cut to fit.
 const PEEK_BODY = 84;
 const textBody = (t?: string) => <div style={{ fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={t}>{t}</div>;
-// mode: where you are, for an enchantment that only works elsewhere (greyed); none: at home.
-export function ItemPeek({ item, look, action, mode }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode; mode?: EnchantMode }) {
+export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
   const l = look ?? lookOf(item!);
   const gear = item && "gear" in item ? (item.gear as CreatureOrItemDrop) : undefined;
   let kind = "", body: React.ReactNode = null;
@@ -332,10 +331,10 @@ export function ItemPeek({ item, look, action, mode }: { item?: SackItem; look?:
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
           <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
-          {/* Its kind, and its enchantment (greyed if it doesn't work where you are). */}
+          {/* Its kind, and its enchantment. */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, height: 26 }}>
             <div title={kind} style={{ flexShrink: 1, minWidth: 0, fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
-            {gear && enchantOf(gear) && <EnchantLine item={gear} mode={mode} style={{ fontSize: 13, height: 26, flexShrink: 0, maxWidth: "60%" }} />}
+            {gear && enchantOf(gear) && <EnchantLine item={gear} style={{ fontSize: 13, height: 26, flexShrink: 0, maxWidth: "60%" }} />}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, maxWidth: "62%", overflowX: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>{action}</div>

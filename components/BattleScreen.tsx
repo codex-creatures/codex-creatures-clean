@@ -47,7 +47,6 @@ import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import Glyph from "./Glyph";
 import { loadTavern } from "@/lib/tavern";
-import type { EnchantMode } from "@/lib/items/enchantments";
 import { trainingId } from "@/lib/trainingPit";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
@@ -254,13 +253,12 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
   // illnesses: your creatures that are sick (the witch's curse), each for this many rounds (they stack: decision 39).
   // tutorial: the first quest's guided fight (see tutorialSteps).
   // pair: their first two are both on the field (an ambush). turnLimit: the
-  // room blows after this many rounds (see BattleState.turnLimit). mode: where
-  // the fight is, for gear enchantments (the Labyrinth: pve).
+  // room blows after this many rounds (see BattleState.turnLimit).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
-    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number; mode?: EnchantMode } = {}) {
+    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number } = {}) {
     setView(null);
     setFx(null);
-    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit, mode: opts.mode });
+    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit });
     for (const ill of opts.illnesses ?? []) {
       const sick = state.sides.A.team[ill.index];
       if (sick && ill.rounds > 0) sick.statuses.push({ id: "illness", rounds: ill.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });

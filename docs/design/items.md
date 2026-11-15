@@ -43,15 +43,19 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ### Enchantments (✅ the user, 2026-11-16, decision 46; built 2026-11-16, lib/items/enchantments.ts)
 
-Marginal edges, never game-breaking. Some work only in the Labyrinth (PvE), some only in PvP.
+Marginal edges, never game-breaking. Some are meant for the Labyrinth (PvE), some for PvP, but
+✅ (the user, 2026-11-16, after the first build) **they all work in every fight**: one with nothing
+to do there (Bounty in a duel, with no gold) just does nothing.
 
 - **Which items:** Rare, Epic and Legendary weapons and armour; one enchantment an item. Rolled
   apart from the stat budget, so the roller above doesn't change. Numbers below are
   Rare / Epic / Legendary.
-- **Where from:** scans 25%; Labyrinth chests 10%; golden chests always (all 5 finds); campaign
+- **Where from:** scans 25%; Labyrinth chests 10% (✅ the user, 2026-11-16: any chest in a run that
+  already holds weapons or armour: chest rooms, stashes, boss chests, storehouses); golden chests always (all 5 finds); campaign
   rewards to be decided with the campaign (roadmap). Never from foes (they don't wear them; they
   keep their soul stones), merchants, Klutz or daily quests.
-- **Weapons, PvE:** Bounty (+10/15/20% gold from fights it's in), Scholar's (+10/15/20% XP for its
+- **Weapons, PvE:** Bounty (+10/15/20% gold from fights it's in; ✅ the user, 2026-11-16: only a
+  fight's own gold, never a chest's, and only if its wielder dealt damage), Scholar's (+10/15/20% XP for its
   wielder), Bossbane (+4/6/8% damage to bosses), Leeching (heals 3/4/5% of the damage it deals).
 - **Weapons, PvP:** Keen (precise chance 6/8/10%, from 5%), Piercing (ignores 6/8/10% of the
   target's defence), Vampiric (heals 2/3/5% of the damage it deals).
@@ -62,7 +66,10 @@ Marginal edges, never game-breaking. Some work only in the Labyrinth (PvE), some
   - Cleansing: 2/3/5% a piece, rolled at the end of each round, to remove the most recent
     negative effect on the creature (lowered stats, poison, bleed, cripple…). Pieces add up.
   - Victorious: heals 2/3/5% of max HP a piece when the creature knocks out an opponent. Pieces
-    add up.
+    add up. ✅ (the user, 2026-11-16) It heals whenever a foe falls while the creature is on the
+    field, whatever felled it (poison, a cloud, a teammate's hit…); not from the bench.
+- ✅ **Selling** (the user, 2026-11-16): an enchanted item sells for 20% more (`ENCHANT_SELL_BONUS`,
+  lib/items/economy/sell.ts), wherever it's sold.
 - **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence stone
   plus 1,000 / 2,000 / 5,000 gold by the item's rarity.
 - **Look:** an enchanted item's picture has a moving shine over it (like Minecraft's), drawn in
@@ -71,27 +78,21 @@ Marginal edges, never game-breaking. Some work only in the Labyrinth (PvE), some
   identity, so every place that draws `itemSprite` shows it).
 - ✅ **As built:** a drop's optional `enchant` field (missing: none, so old saves load unchanged; no
   new save-file version). The Inventory's item window and the Labyrinth's loot window and found-gear
-  window show a line under the item, "✦ name" with its one-line effect behind a "?"; in the
-  Labyrinth a PvP-only one shows greyed, "(off here)". Fights get a `mode` (`createBattle`): the
-  Labyrinth `pve`, duels `pvp`; the gear's enchantments that don't work there are left off.
-  Claude's readings of the spec (🧪, say if any is wrong):
+  window show a line under the item, "✦ name" with its one-line effect behind a "?". Bounty pays
+  only the team members who dealt damage with an attack (`dealtDamage`, lib/combat/battle.ts).
+  Claude's readings of the spec (the user agreed these, 2026-11-16):
   - 🧪 Scans: the 25% is in the registry's rules (`REGISTRY_RULES.enchant`, so the server's copy
     carries it), but each player rolls their own enchantment when they open the find, like its
-    stats; the server's roll is unchanged. Labyrinth chests are chest rooms only (not stashes,
-    storehouses, or a boss's or mini boss's chest); golden chests' 5 finds always.
+    stats; the server's roll is unchanged.
   - 🧪 Every enchantment that fits the item (7 for weapons, 7 for armour) is as likely.
-  - 🧪 PvE means Labyrinth fights only: in the Fight Pit and Klutz's fights only armour's work.
   - 🧪 Bossbane counts the Cyclops and the Hydra (scripted bosses), not mini bosses.
-  - 🧪 Bounty: the fight's own gold (a golden chest's gold too), each Bounty weapon on the team that
-    fought adding its share. Scholar's: the wielder's share of the fight's XP (explorer XP as it was).
-  - 🧪 Leeching and Vampiric heal from each hit's final damage. Victorious: only a knockout by the
-    creature's own hit (not poison or a cloud).
+  - Scholar's: the wielder's share of the fight's XP (explorer XP as it was).
+  - Leeching and Vampiric heal from each hit's final damage.
   - 🧪 Cleansing: for creatures on the field, after the round's poison and bleeding; "negative
     effects" are what a ward keeps off (cripple, venom, poison, bleed, seal, weaken, soak, fear),
     not the witch's illness; it rolls only when there's one with a round left to run.
   - 🧪 Stat enchantments go on the piece's stats, so defence counts at a third like all armour
-    defence (`ARMOR_DEFENCE_WEIGHT`), and HP and agility in full. An enchantment doesn't change
-    what an item sells for.
+    defence (`ARMOR_DEFENCE_WEIGHT`), and HP and agility in full.
 - Dropped in the design: Racebane, Draining, Duelist's, Torchlit and Scavenger's (armour that
   helped the adventurer, not the creature).
 

@@ -34,6 +34,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
 import { goldenDrops } from "@/lib/dungeon/walkRooms";
 import { bountiful, scholarly, enchanted, CHEST_ENCHANT } from "@/lib/items/enchantments";
+import { dealtDamage } from "@/lib/combat/battle";
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
@@ -1054,7 +1055,6 @@ export default function DungeonPage() {
         tutorial,
         pair: room.kind === "encampment" && room.variant === "ambush",
         turnLimit: room.kind === "encampment" && room.variant === "rigged" ? squadsOf(dungeonOf(r)).fuse : undefined,
-        mode: "pve",
       },
     );
   }
@@ -1143,8 +1143,8 @@ export default function DungeonPage() {
       return;
     }
     // (A golden chest holds GOLDEN_GOLD in place of the mini boss's own gold.)
-    // (Bounty weapons on the team that fought: more of it.)
-    const gold = bountiful(room.golden ? GOLDEN_GOLD[0] + Math.floor(Math.random() * (GOLDEN_GOLD[1] - GOLDEN_GOLD[0] + 1)) : room.gold ?? 0, m.teams.A);
+    // (Bounty weapons whose wielders dealt damage: more of the fight's own gold, not a chest's.)
+    const gold = room.golden ? GOLDEN_GOLD[0] + Math.floor(Math.random() * (GOLDEN_GOLD[1] - GOLDEN_GOLD[0] + 1)) : bountiful(room.gold ?? 0, m.teams.A, dealtDamage(m.state.log, "A", m.teams.A.length));
     const drops: Drop[] = [goldOnly(gold)];
     for (const e of room.enemies ?? []) {
       for (const p of e.gear) {

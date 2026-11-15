@@ -747,6 +747,5 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 }
 @keyframes enchant-shine { from { background-position: 100% 0, 0 0; } to { background-position: 0% 0, 0 0; } }
 @media (prefers-reduced-motion: reduce) { .enchant-shine { animation: none; } }
-/* An enchantment's line on an item (components/EnchantLine.tsx): greyed where it doesn't work. */
+/* An enchantment's line on an item (components/EnchantLine.tsx). */
 .enchant-line { color: #d6b4ff; }
-.enchant-line[data-off] { color: rgba(255,255,255,0.4); }

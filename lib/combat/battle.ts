@@ -35,7 +35,6 @@ import type { CombatClass, Skill } from "../creatures/creatureData";
 import { raceOfMove, raceVsAll } from "./raceChart";
 import { bossActions, bossEndOfRound, bossMinHp, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
-import { enchantsFor, type EnchantMode } from "../items/enchantments";
 import { HAUNT_CHANCE, PERFECTIONIST_STEP, REVITALISE_HEAL, SOUL_STONES, TOXIC_SKIN, type SoulStoneKey } from "../creatures/soulStones";
 
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
@@ -300,18 +299,10 @@ export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).leng
 // bossB: side B is that boss, played by its script.
 // opts.pairB: side B's first two creatures are both on the field (an ambush).
 // opts.turnLimit: see BattleState.
-// opts.mode: where the fight is (the Labyrinth: pve; a duel: pvp; neither: the
-// Fight Pit, Klutz's fights). Gear enchantments that don't work there are left off.
 export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}, bossB?: BossKind,
-  opts: { pairB?: boolean; turnLimit?: number; mode?: EnchantMode } = {}): BattleState {
+  opts: { pairB?: boolean; turnLimit?: number } = {}): BattleState {
   const fresh = (t: Fighter[], hp?: number[]): Combatant[] =>
-    t.map((f, i) => {
-      const c: Combatant = { ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] };
-      const enchant = enchantsFor(f.enchant, opts.mode);
-      if (enchant) c.enchant = enchant;
-      else delete c.enchant;
-      return c;
-    });
+    t.map((f, i) => ({ ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] }));
   const side = (key: SideKey, team: Fighter[]): BattleSide =>
     ({ key, team: fresh(team, startHp[key]), active: 0, swaps: 0, lastSwapRound: -99 });
   const B = side("B", teamB);
@@ -826,7 +817,6 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
       if (armorFx.length) hit.armorFx = armorFx.join(" · ");
       if (target.hp <= 0 && !burntOut) knockedOut(state, foeKey, targetIdx);
-      if (target.hp <= 0) victorious(state, key, actorIdx);
 
       // Nullify: some of a magic hit bounces back at the attacker.
       if (!missed && damage > 0 && skill.type === "magic" && hasSet(target, "arcane_nullifier") && actor.hp > 0) {
@@ -943,7 +933,15 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   return state;
 }
 
-// Victorious armour: knocking a foe out heals a share of max HP (pieces add up).
+// Which of a side's team (by index) dealt any damage with an attack (Bounty pays only them).
+export function dealtDamage(log: BattleEvent[], side: SideKey, size: number): boolean[] {
+  const dealt = Array<boolean>(size).fill(false);
+  for (const e of log) if (e.type === "attack" && e.side === side && e.damage > 0 && e.attackerIndex !== undefined) dealt[e.attackerIndex] = true;
+  return dealt;
+}
+
+// Victorious armour: a foe falling (whatever felled it) heals each creature of
+// the other side on the field a share of its max HP (pieces add up).
 function victorious(state: BattleState, key: SideKey, index: number) {
   const f = state.sides[key].team[index];
   const share = f.enchant?.victorious ?? 0;
@@ -951,7 +949,7 @@ function victorious(state: BattleState, key: SideKey, index: number) {
   const healed = Math.min(f.maxHp - f.hp, Math.max(1, Math.round(f.maxHp * share)));
   if (healed <= 0) return;
   f.hp += healed;
-  state.log.push({ type: "effect", side: key, index, name: f.name, text: `is heartened by the knockout (+${healed} HP)`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "heal", damage: healed });
+  state.log.push({ type: "effect", side: key, index, name: f.name, text: `is heartened as a foe falls (+${healed} HP)`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "heal", damage: healed });
 }
 
 // Cleansing armour: at the end of each round, a chance (pieces add up) to shake
@@ -975,6 +973,7 @@ function knockedOut(state: BattleState, key: SideKey, index: number) {
   const corpse = f.statuses.find((s) => s.id === "corpsify");
   if (!corpse) {
     state.log.push({ type: "faint", side: key, name: f.name });
+    for (const i of fieldOf(state.sides[other(key)])) victorious(state, other(key), i);
     return;
   }
   f.hp = Math.max(1, Math.round(f.maxHp * (corpse.hp ?? 0.5)));

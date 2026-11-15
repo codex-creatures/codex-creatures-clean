@@ -380,7 +380,7 @@ export class Duel {
       this.sendSnap();
     } else if (v.phase === "lead" && this.myLead !== undefined && this.guestLead !== undefined && this.hostTeams) {
       const A = chooseFighters(this.hostTeams.host, this.myLead, this.format.size), B = chooseFighters(this.hostTeams.guest, this.guestLead, this.format.size);
-      this.battle = createBattle(A.fighters, B.fighters, {}, undefined, { mode: "pvp" });
+      this.battle = createBattle(A.fighters, B.fighters);
       this.info = { A: A.info, B: B.info };
       this.seq = 1;
       this.showBattle();

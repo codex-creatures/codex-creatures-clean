@@ -132,7 +132,7 @@ export default function BagPacker({ game, lab, onSave }: {
       {!away && (
         <>
           <div className="pixel-font" style={{ fontSize: 15, color: GOLD, margin: "18px 0 8px" }}>Pack from your Inventory</div>
-          <ItemPicker mode="pve" emptyText="Nothing of this kind to pack (gear on a creature isn't here)." start="consumables" small cols={BAG_COLS}
+          <ItemPicker emptyText="Nothing of this kind to pack (gear on a creature isn't here)." start="consumables" small cols={BAG_COLS}
             hint={bag.length >= slots ? "Your bag is full." : "Drag something into your bag, or double-tap it."}
             grab={(x) => ({ onPointerDown: dnd.press(x, { sprite: itemSprite(x) }), ...dnd.handlers })}
             onDouble={pack} wasDrag={dnd.wasDrag}

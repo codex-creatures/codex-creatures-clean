@@ -23,6 +23,7 @@ import type { ItemKey } from "../ceilings";
 import type { ArmorKey } from "../armor";
 import { PRIMARY_STATS_BY_ITEMKEY } from "../itemPrimaries";
 import { ARMOR_PRIMARY_STATS, PIECE_VALUE, type ArmorSlot } from "../armor";
+import { ENCHANT_SELL_BONUS, enchantOf, type EnchantKey } from "../enchantments";
 
 // Base gold values per rarity — these are the MAX possible (perfect primary spike)
 // Actual values land well below max due to the efficiency curve
@@ -42,6 +43,7 @@ type SellableDrop = {
   armorKey?: ArmorKey;
   armorSlot?: ArmorSlot;
   stats?: Record<string, number>;
+  enchant?: EnchantKey;
 };
 
 type ComputeSellGoldArgs = {
@@ -96,5 +98,7 @@ export function computeSellGold({ drop, getStatCapForDrop }: ComputeSellGoldArgs
 
   // An armour piece is worth its share of a whole set.
   const share = drop.itemCategory === "armor" && drop.armorSlot ? PIECE_VALUE[drop.armorSlot] : 1;
-  return Math.max(1, Math.floor(RARITY_BASE[drop.rarity] * clampedEfficiency * share));
+  // An enchanted one is worth ENCHANT_SELL_BONUS more.
+  const charm = enchantOf(drop) ? ENCHANT_SELL_BONUS : 1;
+  return Math.max(1, Math.floor(RARITY_BASE[drop.rarity] * clampedEfficiency * share * charm));
 }

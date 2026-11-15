@@ -3,7 +3,10 @@
 // them, where they come from, and what each does in a fight.
 
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { createBattle, resolveRound, type BattleAction, type BattleEvent } from "../lib/combat/battle";
+import { createBattle, dealtDamage, resolveRound, type BattleAction, type BattleEvent } from "../lib/combat/battle";
+import { computeSellGold } from "../lib/items/economy/sell";
+import { getStatCapForDrop } from "../lib/items/gameHelpers";
+import { rollGearPiece } from "../lib/dungeon/run";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, type Fighter } from "../lib/combat/engine";
 import { CREATURE_BY_ID } from "../lib/creatures/creatureData";
@@ -15,8 +18,8 @@ import { openBarcode } from "../lib/scanning";
 import { goldenDrops } from "../lib/dungeon/walkRooms";
 import { REGISTRY_RULES } from "../lib/barcodeRegistry";
 import {
-  ENCHANTS, ENCHANT_KEYS, SCAN_ENCHANT, CHEST_ENCHANT, GOLDEN_ENCHANT, bountiful, scholarly, canEnchant, enchantOf, enchanted,
-  enchantPool, enchantsFor, enchantText, enchantValue, fighterEnchants, rollEnchant, type EnchantKey,
+  ENCHANTS, ENCHANT_KEYS, SCAN_ENCHANT, CHEST_ENCHANT, GOLDEN_ENCHANT, ENCHANT_SELL_BONUS, bountiful, scholarly, canEnchant, enchantOf, enchanted,
+  enchantPool, enchantText, enchantValue, fighterEnchants, rollEnchant, type EnchantKey,
 } from "../lib/items/enchantments";
 import type { CreatureOrItemDrop, Drop } from "../lib/types";
 
@@ -95,6 +98,25 @@ describe("where they come from", () => {
     const again = openBarcode("12345678", [{ entry, first: true }], 1);
     expect(again.kind === "found" && asItem(again.drops[0]).enchant).toBeUndefined();
   });
+  it("any Labyrinth chest's weapons and armour (a stash's, a boss's): 10% of the Rare or better", () => {
+    let tried = 0, found = 0;
+    for (let i = 0; i < 3000; i++) {
+      const d = asItem(rollGearPiece());
+      if (!canEnchant(d)) { expect(d.enchant).toBeUndefined(); continue; }
+      tried++;
+      if (enchantOf(d)) found++;
+    }
+    expect(found / tried).toBeGreaterThan(0.06);
+    expect(found / tried).toBeLessThan(0.14);
+  });
+  it("enchanted weapons and armour sell for 20% more", () => {
+    expect(ENCHANT_SELL_BONUS).toBe(1.2);
+    const caps = (d: object, k: string) => getStatCapForDrop(d as never, k) ?? 0;
+    const plain = asItem(weaponDrop("void_scythe", "legendary", "", { melee: 100, magic: 50 }));
+    const sell = (d: CreatureOrItemDrop) => computeSellGold({ drop: d as never, getStatCapForDrop: caps });
+    const charmed = sell({ ...plain, enchant: "keen" });
+    expect(charmed / sell(plain)).toBeCloseTo(1.2, 2);
+  });
   it("every golden chest find is enchanted", () => {
     for (let i = 0; i < 20; i++) for (const d of goldenDrops(2)) expect(enchantOf(asItem(d)), d.id).toBeDefined();
   });
@@ -111,56 +133,54 @@ describe("in a fight", () => {
     expect(f.enchant).toEqual({ keen: 0.08, victorious: expect.closeTo(0.12) });
     expect(fighterFor(asItem(weaponDrop("void_scythe", "epic")), CREATURE_BY_ID.moss_wolf, w.stats, [], undefined, "void_scythe").enchant).toBeUndefined();
   });
-  it("only those that work where the fight is are kept (Labyrinth PvE, a duel PvP, anywhere else armour only)", () => {
+  it("all work in every fight (the user, 2026-11-16): nothing is left off", () => {
     const all = { bounty: 0.1, leeching: 0.03, keen: 0.06, piercing: 0.06, vampiric: 0.02, cleansing: 0.02, victorious: 0.02 };
-    expect(Object.keys(enchantsFor(all, "pve")!)).toEqual(["bounty", "leeching", "cleansing", "victorious"]);
-    expect(Object.keys(enchantsFor(all, "pvp")!)).toEqual(["keen", "piercing", "vampiric", "cleansing", "victorious"]);
-    expect(Object.keys(enchantsFor(all)!)).toEqual(["cleansing", "victorious"]);
-    expect(enchantsFor({ keen: 0.1 }, "pve")).toBeUndefined();
-    const s = createBattle([fighter({ keen: 0.1, leeching: 0.05 })], [fighter()], {}, undefined, { mode: "pvp" });
-    expect(s.sides.A.team[0].enchant).toEqual({ keen: 0.1 });
+    expect(createBattle([fighter(all)], [fighter()]).sides.A.team[0].enchant).toEqual(all);
   });
-  it("Keen: its own precise chance, in PvP only", () => {
+  it("Keen: its own precise chance", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.07);
-    for (const [mode, precise] of [["pvp", true], ["pve", false]] as const) {
-      const s = createBattle([fighter({ keen: 0.08 })], [fighter()], {}, undefined, { mode });
-      resolveRound(s, { A: attack, B: attack });
-      expect(hitsBy(s.log, "A")[0].precise, mode).toBe(precise);
-      expect(hitsBy(s.log, "B")[0].precise).toBe(false);
-    }
+    const s = createBattle([fighter({ keen: 0.08 })], [fighter()]);
+    resolveRound(s, { A: attack, B: attack });
+    expect(hitsBy(s.log, "A")[0].precise).toBe(true);
+    expect(hitsBy(s.log, "B")[0].precise).toBe(false);
   });
   it("Piercing: ignores a share of the target's defence", () => {
     const move = fighter().skills[0];
     const plain = calcDamage(move, fighter(), fighter(), false).damage;
     expect(calcDamage(move, fighter({ piercing: 0.5 }), fighter(), false).damage).toBeGreaterThan(plain);
   });
-  it("Bossbane: more damage to a boss in the Labyrinth", () => {
+  it("Bossbane: more damage to a boss", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const first = (enchant?: Fighter["enchant"]) => {
-      const s = createBattle([fighter(enchant), fighter(), fighter()], cyclopsTeam(), {}, "cyclops", { mode: "pve" });
+      const s = createBattle([fighter(enchant), fighter(), fighter()], cyclopsTeam(), {}, "cyclops");
       resolveRound(s, { A: attack, B: attack });
       return hitsBy(s.log, "A")[0].damage;
     };
     const plain = first(), bane = first({ bossbane: 0.08 });
     expect(bane / plain).toBeCloseTo(1.08, 1);
   });
-  it("Leeching (Labyrinth) and Vampiric (PvP) heal a share of the damage dealt; each only in its own mode", () => {
+  it("Leeching and Vampiric each heal a share of the damage dealt", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const big = (f: Fighter) => ({ ...f, maxHp: 999, hp: 999 });
-    for (const [enchant, mode, heals] of [[{ leeching: 0.5 }, "pve", true], [{ leeching: 0.5 }, "pvp", false], [{ vampiric: 0.5 }, "pvp", true], [{ vampiric: 0.5 }, "pve", false]] as const) {
-      const s = createBattle([big(fighter({ ...enchant }))], [big(fighter())], { A: [500] }, undefined, { mode });
+    for (const enchant of [{ leeching: 0.5 }, { vampiric: 0.5 }]) {
+      const s = createBattle([big(fighter(enchant))], [big(fighter())], { A: [500] });
       resolveRound(s, { A: attack, B: attack });
-      expect(effects(s.log, "drinks").length > 0, `${Object.keys(enchant)} in ${mode}`).toBe(heals);
+      expect(effects(s.log, "drinks").length, Object.keys(enchant)[0]).toBe(1);
     }
   });
-  it("Victorious: a knockout heals a share of max HP, everywhere", () => {
+  it("Victorious: any foe falling (whatever felled it) heals those on the field, not the bench", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const me = { ...fighter({ victorious: 0.15 }), maxHp: 999, hp: 999 };
-    const s = createBattle([me], [fighter(), fighter()], { A: [100], B: [1] });
+    const benched = { ...fighter({ victorious: 0.15 }), maxHp: 999, hp: 999 };
+    const foe = { ...fighter(), maxHp: 999, hp: 999 };
+    const s = createBattle([me, benched], [foe, fighter()], { A: [100, 100] });
+    s.sides.B.team[0].statuses.push({ id: "poison", rounds: 3, dmg: 999 }); // (the poison fells it, not the hit)
     resolveRound(s, { A: attack, B: attack });
+    expect(s.sides.B.team[0].hp).toBe(0);
     const healed = effects(s.log, "heartened");
     expect(healed).toHaveLength(1);
-    expect(healed[0].type === "effect" && healed[0].damage).toBe(Math.round(me.maxHp * 0.15));
+    expect(healed[0].type === "effect" && healed[0].index).toBe(0);
+    expect(healed[0].type === "effect" && healed[0].damage).toBe(Math.round(999 * 0.15));
   });
   it("Cleansing: at the end of a round, shakes off the latest harmful effect (no roll with none)", () => {
     const rng = vi.spyOn(Math, "random").mockReturnValue(0.5);
@@ -178,9 +198,15 @@ describe("in a fight", () => {
     resolveRound(t, { A: attack, B: attack });
     expect(t.sides.A.team[0].statuses.some((x) => x.id === "poison")).toBe(true);
   });
-  it("Bounty and Scholar's: more gold and XP after a Labyrinth fight", () => {
-    expect(bountiful(100, [{ enchant: { bounty: 0.2 } }, { enchant: { bounty: 0.1 } }, {}])).toBe(130);
-    expect(bountiful(100, [{}])).toBe(100);
+  it("Bounty and Scholar's: more of a fight's gold (only for wielders who dealt damage) and XP", () => {
+    const team = [{ enchant: { bounty: 0.2 } }, { enchant: { bounty: 0.1 } }, {}];
+    expect(bountiful(100, team, [true, true, true])).toBe(130);
+    expect(bountiful(100, team, [false, true, true])).toBe(110);
+    expect(bountiful(100, [{}], [true])).toBe(100);
+    vi.spyOn(Math, "random").mockReturnValue(0.5);
+    const s = createBattle([fighter(), fighter()], [{ ...fighter(), maxHp: 999, hp: 999 }]);
+    resolveRound(s, { A: attack, B: attack });
+    expect(dealtDamage(s.log, "A", 2)).toEqual([true, false]);
     expect(scholarly(40, { enchant: { scholars: 0.15 } })).toBe(46);
     expect(scholarly(50, undefined)).toBe(50);
   });
