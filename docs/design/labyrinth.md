@@ -124,7 +124,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   in a chest) at Rare 65 / Epic 30 / Legendary 5 (`GOLDEN_RARITY`), Legendary only from the Hydra on
   (`GOLDEN_LEGENDARY_FROM`; in the Cyclops Rare and Epic share its odds, about 68 / 32). Keys are
   rare on purpose: the idea is to carry one into runs, waiting for a golden chest (the user,
-  2026-11-14). The Gold Key is an Epic tool (`gold_key`) in 10% of chests (`CHEST_TOOLS`); it takes a bag
+  2026-11-14). The Gold Key is a Legendary tool (`gold_key`; Epic until the user's change of
+  2026-11-16, when every key already found was taken back from saves: `dropOldGoldKeys`, lib/save.ts,
+  removes any key that isn't Legendary on load) in 10% of chests (`CHEST_TOOLS`); it takes a bag
   slot, stays in your bag between runs as tools do, and isn't sold by merchants (they buy it for 200).
   Walking, the chest is drawn gilded (the chest's art tinted gold, and the key a stand-in icon, till
   PixelLab art).

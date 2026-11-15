@@ -51,7 +51,8 @@ export const TOOLS: Record<ToolKey, { name: string; icon: string; rarity: Rarity
                   desc: "In the Labyrinth, between rooms or in a fight (it takes your turn): brings a knocked-out creature back with half its HP." },
   // A golden chest's key (the user, 2026-11-13): found in chests (CHEST_TOOLS), used up opening a mini boss's
   // golden chest (GOLDEN_CHEST in lib/dungeon/run.ts). Not for sale; its price is what selling it is worth.
-  gold_key:     { name: "Gold Key",            icon: "🔑", rarity: "epic",     price: 400,
+  // Legendary since 2026-11-16 (the user): the Epic ones found before were taken back (lib/save.ts dropOldGoldKeys).
+  gold_key:     { name: "Gold Key",            icon: "🔑", rarity: "legendary", price: 400,
                   desc: "Opens a golden chest in the Labyrinth (it's used up). It has to be in your bag." },
   // A Pack Upgrade for Klutz (the user, 2026-11-14): +1 slot in his pack, sewn on from his page. In chests
   // now and then (CHEST_TOOLS) and on merchants' carts (KLUTZ_PACK_CHANCE), dearer each time (lib/klutz.ts PACK_UPGRADE_PRICES).

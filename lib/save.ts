@@ -19,10 +19,54 @@ export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(parsed)) : {};
+    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(dropOldGoldKeys(parsed))) : {};
   } catch {
     return {};
   }
+}
+
+// The Gold Key became Legendary (the user, 2026-11-16), and every key found
+// before then was taken back. A key that isn't Legendary is one of those: it's
+// removed wherever it is in the save (the Inventory, the chest, the Labyrinth's
+// bag and loot, a room's chest or sack), with any bag slot that held it. Keys
+// found since are Legendary, so this leaves them be.
+const isOldGoldKey = (v: unknown): v is { id?: string } =>
+  !!v && typeof v === "object" && (v as Record<string, unknown>).tool === "gold_key" && (v as Record<string, unknown>).rarity !== "legendary";
+export function dropOldGoldKeys<T>(save: T): T {
+  const gone = new Set<string>();
+  // (A key on its own, or in a wrapper: a chest's { gear }, a run's { drop }.)
+  const inner = (v: unknown) => (isOldGoldKey(v) ? v : v && typeof v === "object" ? [(v as Record<string, unknown>).gear, (v as Record<string, unknown>).drop].find(isOldGoldKey) : undefined);
+  const strip = (v: unknown) => {
+    if (Array.isArray(v)) {
+      for (let i = v.length - 1; i >= 0; i--) {
+        const key = inner(v[i]);
+        if (!key) continue;
+        if (key.id) gone.add(key.id);
+        v.splice(i, 1);
+      }
+      v.forEach(strip);
+      return;
+    }
+    if (!v || typeof v !== "object") return;
+    const o = v as Record<string, unknown>;
+    for (const k in o) {
+      if (isOldGoldKey(o[k])) { const id = (o[k] as { id?: string }).id; if (id) gone.add(id); delete o[k]; }
+      else strip(o[k]);
+    }
+  };
+  strip(save);
+  if (!gone.size) return save;
+  // Bag slots and the like that pointed at a key (e.g. "loot:<id>").
+  const unlink = (v: unknown) => {
+    if (Array.isArray(v)) {
+      for (let i = v.length - 1; i >= 0; i--) if (typeof v[i] === "string" && gone.has(String(v[i]).replace(/^(loot|gear):/, ""))) v.splice(i, 1);
+      v.forEach(unlink);
+      return;
+    }
+    if (v && typeof v === "object") for (const k in v as Record<string, unknown>) unlink((v as Record<string, unknown>)[k]);
+  };
+  unlink(save);
+  return save;
 }
 
 // Armour from before every piece rolled in full (lib/items/armor.ts), wherever

@@ -3,7 +3,8 @@ import {
   rollWares, waresFor, priceUp, wareDrop, minibossExtras, bagUpgradePrice,
   BACKPACK, BAG_MAX, BAG_UPGRADE_PRICES, STORAGE_PLAN_PRICE, STORAGE_PLAN_2_PRICE, MERCHANT_SLOTS, type Ware,
 } from "../lib/dungeon/run";
-import { TOOLS } from "../lib/items/materials";
+import { TOOLS, toolDrop } from "../lib/items/materials";
+import { dropOldGoldKeys } from "../lib/save";
 import { BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP, boxCap, buildBox, fullBoxes, forFullBox, fitInBoxes } from "../lib/items/storage";
 import { weaponDrop, armorDrop } from "../lib/drops";
 
@@ -122,6 +123,30 @@ describe("bigger storage boxes", () => {
 });
 
 describe("golden chests and Gold Keys (the user, 2026-11-13)", () => {
+  it("the Gold Keys found before they were Legendary are taken back from every part of a save (2026-11-16)", () => {
+    const old = { ...toolDrop("gold_key"), rarity: "epic", id: "old" };
+    const fresh = { ...toolDrop("gold_key"), id: "new" };
+    const flare = { ...toolDrop("flare"), id: "f" };
+    const save = {
+      inventory: [old, flare, fresh],
+      favoriteIds: ["old", "f"],
+      labyrinth: {
+        meta: { bag: ["loot:old", "potion", "loot:new"], loot: { old, new: fresh } },
+        run: { got: [{ drop: old }, { drop: flare }], current: { sack: [{ gear: old }, { gold: 5 }] } },
+      },
+    };
+    const out = dropOldGoldKeys(JSON.parse(JSON.stringify(save)));
+    expect(out.inventory.map((d: { id: string }) => d.id)).toEqual(["f", "new"]);
+    expect(out.favoriteIds).toEqual(["f"]);
+    expect(out.labyrinth.meta.bag).toEqual(["potion", "loot:new"]);
+    expect(Object.keys(out.labyrinth.meta.loot)).toEqual(["new"]);
+    expect(out.labyrinth.run.got).toEqual([{ drop: flare }]);
+    expect(out.labyrinth.run.current.sack).toEqual([{ gold: 5 }]);
+    // Nothing to take: the save comes back as it was.
+    const clean = { inventory: [flare, fresh] };
+    expect(dropOldGoldKeys(JSON.parse(JSON.stringify(clean)))).toEqual(JSON.parse(JSON.stringify(clean)));
+  });
+
   it("about 1 mini boss in 10 guards a golden chest; no other room does", async () => {
     const { makeRoom, GOLDEN_CHEST } = await import("../lib/dungeon/run");
     let n = 0;
@@ -155,12 +180,12 @@ describe("golden chests and Gold Keys (the user, 2026-11-13)", () => {
     expect(hydra.legendary).toBeGreaterThan(0.03);
     expect(hydra.legendary).toBeLessThan(0.07);
   });
-  it("a chest holds a Gold Key now and then (an Epic tool); a stash never does", async () => {
+  it("a chest holds a Gold Key now and then (a Legendary tool); a stash never does", async () => {
     const { toolFinds, CHEST_TOOLS, STASH_TOOLS } = await import("../lib/dungeon/run");
     const keys = (odds: typeof CHEST_TOOLS | typeof STASH_TOOLS) => Array.from({ length: 4000 }, () => toolFinds(odds))
       .filter((s) => s.some((x) => "gear" in x && x.gear.dropType === "item" && x.gear.tool === "gold_key")).length / 4000;
     expect(keys(CHEST_TOOLS)).toBeCloseTo(CHEST_TOOLS.gold_key, 1);
     expect(keys(STASH_TOOLS)).toBe(0);
-    expect(TOOLS.gold_key.rarity).toBe("epic");
+    expect(TOOLS.gold_key.rarity).toBe("legendary"); // (Epic until 2026-11-16)
   });
 });
