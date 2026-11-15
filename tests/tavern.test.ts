@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, MERCHANT_MATERIALS, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitor, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, VISITOR_ODDS, VISITOR_PITY, VISITOR_STAY, type TavernQuest } from "../lib/tavern";
+import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitors, guestOf, onTheClock, windowOf, VISITORS, VISITOR_WINDOW, visitorChance, upgradeVisitor, upgradeCost, upgradeLevel, canUpgrade, UPGRADE_COSTS, UPGRADE_STEP, MAX_UPGRADE, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -115,9 +115,9 @@ describe("the tavern questline: the rubble and the repair", () => {
   });
 
   it("only has visitors once it's repaired", () => {
-    expect(tavernVisitor({ blasted: true, visitor: "merchant" })).toBeUndefined();
-    expect(tavernVisitor({ blasted: true, repaired: true, visitor: "librarian" })).toBe("librarian");
-    expect(tavernVisitor({ blasted: true, repaired: true })).toBeUndefined();
+    expect(tavernVisitors({ blasted: true, guests: { merchant: { runs: 1 } } }, 0)).toEqual([]);
+    expect(tavernVisitors({ blasted: true, repaired: true, guests: { librarian: { runs: 1 } } }, 0)).toEqual(["librarian"]);
+    expect(tavernVisitors({ blasted: true, repaired: true }, 0)).toEqual([]);
   });
 
   it("takes the materials exactly once", () => {
@@ -179,84 +179,110 @@ describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
   });
 });
 
-describe("the tavern questline: visitors", () => {
-  // These rolls first, then real ones (the stock rolls need them: a librarian picks 3 different codexes).
-  const seq = (...xs: number[]) => { let i = 0; return () => (i < xs.length ? xs[i++] : Math.random()); };
+describe("the tavern questline: visitors on the clock (decision 47)", () => {
+  const W = VISITOR_WINDOW;
+  const at = 1_000 * W + 60_000; // a minute into a window
+  const seedOf = (s: string) => () => s;
+  // A tavern whose seed brings who in this window (found by trying seeds).
+  function seedBringing(want: (t: TavernQuest) => boolean, base: TavernQuest = { repaired: true }): string {
+    for (let i = 0; i < 5000; i++) if (want(onTheClock(base, at, false, seedOf(`s${i}`)))) return `s${i}`;
+    throw new Error("no seed");
+  }
 
   it("only call at a repaired tavern", () => {
-    expect(comeHome({ blasted: true }, seq(0))).toEqual({ blasted: true });
+    expect(onTheClock({ blasted: true }, at)).toEqual({ blasted: true });
+    expect(tavernVisitors({ blasted: true, guests: { merchant: { until: at + W } } }, at)).toEqual([]);
+    expect(comeHome({ blasted: true })).toEqual({ blasted: true });
   });
 
-  it("the first roll after the repair always brings someone, in the usual proportions", () => {
-    let merchants = 0;
-    for (let i = 0; i < 400; i++) {
-      const t = comeHome({ repaired: true });
-      expect(t.visitor).toBeDefined();
-      if (t.visitor === "merchant") merchants++;
+  it("every half hour, each of the 4 rolls on their own 5% (so several can be in), staying to the window's end", () => {
+    expect(W).toBe(30 * 60 * 1000);
+    expect(VISITORS.map((v) => visitorChance({}, v))).toEqual([0.05, 0.05, 0.05, 0.05]);
+    const counts: Record<string, number> = {};
+    let several = 0;
+    for (let i = 0; i < 4000; i++) {
+      const t = onTheClock({ repaired: true }, at, false, seedOf(`r${i}`));
+      const who = tavernVisitors(t, at);
+      for (const v of who) counts[v] = (counts[v] ?? 0) + 1;
+      if (who.length > 1) several++;
+      for (const v of who) expect(guestOf(t, v, at)!.until).toBe((windowOf(at) + 1) * W);
     }
-    // 12 : 8 : 8 → 43% merchants.
-    expect(merchants / 400).toBeGreaterThan(0.33);
-    expect(merchants / 400).toBeLessThan(0.53);
+    for (const v of VISITORS) { expect(counts[v] / 4000, v).toBeGreaterThan(0.035); expect(counts[v] / 4000, v).toBeLessThan(0.065); }
+    expect(several).toBeGreaterThan(0);
   });
 
-  it("rolls 12% merchant, 8% librarian, 8% collector, else nobody", () => {
-    expect(VISITOR_ODDS).toEqual({ merchant: 0.12, librarian: 0.08, collector: 0.08 });
-    const base = { repaired: true, visited: true };
-    expect(comeHome(base, seq(0.05)).visitor).toBe("merchant");
-    expect(comeHome(base, seq(0.15)).visitor).toBe("librarian");
-    const c = comeHome(base, seq(0.25));
-    expect(c.visitor).toBe("collector");
-    expect(c.wares).toBeUndefined(); // he brings no stock
-    expect(c.offers).toBeUndefined();
-    const none = comeHome(base, seq(0.5));
-    expect(none.visitor).toBeUndefined();
-    expect(none.misses).toBe(1);
+  it("is fixed per window: rolled once from the tavern's seed, so reloading doesn't reroll", () => {
+    const seed = seedBringing((t) => tavernVisitors(t, at).length > 0);
+    const first = onTheClock({ repaired: true }, at, false, seedOf(seed));
+    expect(first.seed).toBe(seed);
+    expect(first.rolled).toBe(windowOf(at));
+    // The same window again (a reload): nothing changes, and it's the same object (nothing to save).
+    expect(onTheClock(first, at + 60_000)).toBe(first);
+    // Rolled afresh from the start (a lost save write): the same visitors with the same stock.
+    expect(onTheClock({ repaired: true }, at + 5 * 60_000, false, seedOf(seed)).guests).toEqual(first.guests);
   });
 
-  it("is sure to bring someone after 3 misses in a row", () => {
-    expect(VISITOR_PITY).toBe(3);
-    let t: TavernQuest = { repaired: true, visited: true };
-    for (let i = 0; i < 3; i++) t = comeHome(t, seq(0.99));
-    expect(t.visitor).toBeUndefined();
-    t = comeHome(t, seq(0.99));
-    expect(t.visitor).toBe("collector"); // 0.99 of the sure range
-    expect(t.misses).toBe(0);
+  it("windows missed while away are gone: only the current one is rolled, and a stay ends with its window", () => {
+    const seed = seedBringing((t) => tavernVisitors(t, at).length > 0);
+    const first = onTheClock({ repaired: true }, at, false, seedOf(seed));
+    const later = at + 7 * W;
+    const back = onTheClock(first, later);
+    expect(back.rolled).toBe(windowOf(later));
+    for (const v of tavernVisitors(back, later)) expect(guestOf(back, v, later)!.until).toBe((windowOf(later) + 1) * W);
+    expect(tavernVisitors(first, later)).toEqual([]); // (their stay was up)
+  });
+
+  it("no pity: a long run of empty windows brings nobody for sure", () => {
+    let t: TavernQuest = { repaired: true, seed: "x" };
+    let empty = 0;
+    for (let w = 0; w < 200; w++) { t = onTheClock(t, (2000 + w) * W); if (!tavernVisitors(t, (2000 + w) * W).length) empty++; }
+    expect(empty).toBeGreaterThan(100);
+  });
+
+  it("brings their stock: the merchant's cart, the librarian's 3 codexes; the collector and the Enchantress none", () => {
+    for (const who of VISITORS) {
+      const t = onTheClock({ repaired: true }, at, false, seedOf(seedBringing((x) => !!guestOf(x, who, at))));
+      const g = guestOf(t, who, at)!;
+      if (who === "merchant") expect(g.wares!.length).toBeGreaterThan(0);
+      else expect(g.wares).toBeUndefined();
+      if (who === "librarian") expect(g.offers).toHaveLength(3);
+      else expect(g.offers).toBeUndefined();
+      expect(g.bought).toEqual([]);
+    }
+  });
+
+  it("an old save's visitor stays their old stay out (in runs), then the clock takes over", () => {
+    const old: TavernQuest = { repaired: true, visitor: "librarian", stay: 2, offers: ["a", "b", "c"], bought: ["a"], visited: true, misses: 1 };
+    const now = onTheClock(old, at, false, seedOf("old"));
+    expect(now.visitor).toBeUndefined();
+    expect(now.visited).toBeUndefined();
+    expect(now.misses).toBeUndefined();
+    expect(now.guests!.librarian).toEqual({ runs: 2, offers: ["a", "b", "c"], bought: ["a"], wares: undefined });
+    expect(guestOf(now, "librarian", at + 99 * W)).toBeDefined(); // (not on the clock)
+    const one = comeHome(now);
+    expect(one.guests!.librarian!.runs).toBe(1);
+    const gone = comeHome(one);
+    expect(gone.guests!.librarian).toBeUndefined();
+    // Coming home never brings anyone new.
+    expect(comeHome({ repaired: true })).toEqual({ repaired: true });
+  });
+
+  it("sells one of each, per visitor", () => {
+    const t = summonVisitor({ repaired: true }, "merchant", Math.random, false, at);
+    const key = guestOf(t, "merchant", at)!.wares![0].key;
+    const once = buyFromVisitor(t, "merchant", key, at);
+    expect(guestOf(once, "merchant", at)!.bought).toEqual([key]);
+    expect(buyFromVisitor(once, "merchant", key, at)).toBe(once);
+    expect(buyFromVisitor(once, "librarian", key, at)).toBe(once); // (she isn't in)
   });
 
   it("the altar's testing button calls one straight away, opening and repairing the tavern", () => {
-    const m = callVisitor({}, "merchant");
-    expect(tavernVisitor(m)).toBe("merchant");
+    const m = callVisitor({}, "merchant", Math.random, false, at);
+    expect(tavernVisitors(m, at)).toEqual(["merchant"]);
     expect(m.blasted && m.repaired).toBe(true);
-    expect(m.wares?.length).toBeGreaterThan(0);
-    expect(m.stay).toBe(VISITOR_STAY);
-    const l = callVisitor(m, "librarian");
-    expect(tavernVisitor(l)).toBe("librarian");
-    expect(l.offers?.length).toBe(3);
-  });
-
-  it("brings their stock, stays 2 runs, then leaves", () => {
-    expect(VISITOR_STAY).toBe(2);
-    const m = comeHome({ repaired: true }, seq(0.1));
-    expect(m.visitor).toBe("merchant");
-    expect(m.wares?.length).toBeGreaterThan(0);
-    const l = comeHome({ repaired: true }, seq(0.6));
-    expect(l.visitor).toBe("librarian");
-    expect(l.offers?.length).toBe(3);
-    const still = comeHome(m, seq(0.99));
-    expect(still.visitor).toBe("merchant");
-    expect(still.wares).toBe(m.wares);
-    const gone = comeHome(still, seq(0.99));
-    expect(gone.visitor).toBeUndefined();
-    expect(gone.wares).toBeUndefined();
-  });
-
-  it("sells one of each", () => {
-    const m = comeHome({ repaired: true }, seq(0.1));
-    const key = m.wares![0].key;
-    const once = buyFromVisitor(m, key);
-    expect(once.bought).toEqual([key]);
-    expect(buyFromVisitor(once, key)).toBe(once);
-    expect(buyFromVisitor({ repaired: true }, key).bought).toBeUndefined();
+    const l = callVisitor(m, "librarian", Math.random, false, at);
+    expect(tavernVisitors(l, at)).toEqual(["merchant", "librarian"]);
+    expect(guestOf(l, "librarian", at)!.offers?.length).toBe(3);
   });
 
   it("charges more for materials than the Labyrinth's merchant, and buys them back at the Labyrinth's half", () => {
@@ -271,9 +297,45 @@ describe("the tavern questline: visitors", () => {
       expect(w.price).toBe("material" in w ? TAVERN_MATERIAL_PRICES[w.material] : before.price);
     }
     // Every way a merchant calls brings the tavern's prices.
-    for (const t of [callVisitor({}, "merchant"), comeHome({ repaired: true }, seq(0.1)), merchantCalls({ repaired: true })])
-      for (const w of t.wares!) if ("material" in w) expect(w.price).toBe(TAVERN_MATERIAL_PRICES[w.material]);
+    const clock = onTheClock({ repaired: true }, at, false, seedOf(seedBringing((x) => !!guestOf(x, "merchant", at))));
+    for (const t of [callVisitor({}, "merchant", Math.random, false, at), clock, merchantCalls({ repaired: true }, Math.random, false, at)])
+      for (const w of guestOf(t, "merchant", at)!.wares!) if ("material" in w) expect(w.price).toBe(TAVERN_MATERIAL_PRICES[w.material]);
     expect(materialOffer("essence_stones")).toBe(75);
+  });
+});
+
+describe("tavern upgrades (decision 47)", () => {
+  it("+1% a level, 10 levels: 5% to 15%", () => {
+    expect([UPGRADE_STEP, MAX_UPGRADE]).toEqual([0.01, 10]);
+    expect(visitorChance({ upgrades: { librarian: 4 } }, "librarian")).toBeCloseTo(0.09);
+    expect(visitorChance({ upgrades: { librarian: 4 } }, "merchant")).toBeCloseTo(0.05);
+    expect(visitorChance({ upgrades: { merchant: 99 } }, "merchant")).toBeCloseTo(0.15);
+  });
+  it("cost materials, dearer each level: 120 planks, 45 nails, 85 metal bars, 26 stone and 2 essence stones a visitor", () => {
+    expect(UPGRADE_COSTS).toHaveLength(10);
+    const total: Record<string, number> = {};
+    for (const c of UPGRADE_COSTS) for (const [k, n] of Object.entries(c)) total[k] = (total[k] ?? 0) + n!;
+    expect(total).toEqual({ planks: 120, nails: 45, metal_bars: 85, essence_stones: 26, essence: 2 });
+    // Dearer each level, by the merchant's prices for one of each.
+    const worth = (c: Record<string, number | undefined>) => Object.entries(c).reduce((n, [k, v]) => n + (v ?? 0) * (TAVERN_MATERIAL_PRICES[k as keyof typeof TAVERN_MATERIAL_PRICES] ?? 0), 0);
+    for (let i = 1; i < UPGRADE_COSTS.length; i++) expect(worth(UPGRADE_COSTS[i]), `level ${i + 1}`).toBeGreaterThan(worth(UPGRADE_COSTS[i - 1]));
+    // Planks and nails first; stone, then essence, only at the top.
+    expect(Object.keys(UPGRADE_COSTS[0])).toEqual(["planks", "nails"]);
+    expect(UPGRADE_COSTS.findIndex((c) => c.essence_stones)).toBeGreaterThan(UPGRADE_COSTS.findIndex((c) => c.metal_bars));
+    expect(UPGRADE_COSTS.findIndex((c) => c.essence)).toBeGreaterThan(UPGRADE_COSTS.findIndex((c) => c.essence_stones));
+  });
+  it("takes the next level's materials, once a level, only at a repaired tavern, and stops at 10", () => {
+    const have = { planks: 6, nails: 3 };
+    expect(upgradeVisitor({ blasted: true }, "collector", have)).toBeNull();
+    const done = upgradeVisitor({ repaired: true }, "collector", have)!;
+    expect(done.tavern.upgrades).toEqual({ collector: 1 });
+    expect(done.materials).toEqual({ planks: 0, nails: 0 });
+    expect(upgradeVisitor(done.tavern, "collector", done.materials)).toBeNull(); // (level 2 costs more)
+    expect(upgradeCost({ repaired: true, upgrades: { collector: 10 } }, "collector")).toBeNull();
+    expect(canUpgrade({ repaired: true, upgrades: { collector: 10 } }, "collector", { planks: 999 })).toBe(false);
+  });
+  it("an old save has none: every visitor at level 0", () => {
+    for (const v of VISITORS) expect(upgradeLevel({ repaired: true }, v)).toBe(0);
   });
 });
 
@@ -356,15 +418,27 @@ describe("the bounty on the quest board", () => {
 });
 
 describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
-  it("500 gold; only once it's repaired; a new one replaces whoever's in, with new stock", () => {
+  const at = 2_000 * VISITOR_WINDOW;
+  it("500 gold; only once it's repaired; half an hour; a new one replaces one of the same kind, the others stay", () => {
     expect(SUMMON_PRICE).toBe(500);
-    expect(summonVisitor({ blasted: true }, "librarian")).toEqual({ blasted: true });
-    const lib = summonVisitor({ blasted: true, repaired: true, visitor: "merchant", stay: 1, bought: ["x"] }, "librarian");
-    expect(lib).toMatchObject({ visitor: "librarian", stay: VISITOR_STAY, bought: [] });
-    expect(lib.offers?.length).toBeGreaterThan(0);
-    const again = summonVisitor({ ...lib, bought: [lib.offers![0]] }, "librarian");
-    expect(again.bought).toEqual([]);
-    expect(summonVisitor(lib, "merchant").wares?.length).toBeGreaterThan(0);
+    expect(summonVisitor({ blasted: true }, "librarian", Math.random, false, at)).toEqual({ blasted: true });
+    const both = summonVisitor(summonVisitor({ repaired: true }, "merchant", Math.random, false, at), "librarian", Math.random, false, at);
+    expect(tavernVisitors(both, at)).toEqual(["merchant", "librarian"]);
+    expect(guestOf(both, "librarian", at)!.until).toBe(at + VISITOR_WINDOW);
+    expect(tavernVisitors(both, at + VISITOR_WINDOW)).toEqual([]);
+    const bought = buyFromVisitor(both, "librarian", guestOf(both, "librarian", at)!.offers![0], at);
+    const again = summonVisitor(bought, "librarian", Math.random, false, at + 60_000);
+    expect(guestOf(again, "librarian", at)!.bought).toEqual([]);
+    expect(guestOf(again, "merchant", at)).toEqual(guestOf(both, "merchant", at));
+  });
+  it("a sent-for one rolled again in the next window stays to that window's end", () => {
+    const t = summonVisitor({ repaired: true, seed: "x" }, "collector", Math.random, false, at + VISITOR_WINDOW - 60_000);
+    for (let i = 0; i < 2000; i++) {
+      const next = onTheClock({ ...t, seed: `k${i}` }, at + VISITOR_WINDOW + 1);
+      const g = guestOf(next, "collector", at + VISITOR_WINDOW + 1);
+      if (g && g.until === at + 2 * VISITOR_WINDOW) return;
+    }
+    throw new Error("never extended");
   });
 });
 

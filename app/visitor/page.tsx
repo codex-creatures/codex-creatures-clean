@@ -23,7 +23,7 @@ import { gearMarks } from "@/components/CreatureMarks";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import { TRADE_UP_COUNT, creaturePrice, rarityAbove } from "@/lib/collector";
-import { materialOffer, tavernVisitor, type Visitor } from "@/lib/tavern";
+import { guestOf, materialOffer, tavernVisitors, type Visitor } from "@/lib/tavern";
 import { canReroll, enchantedItems, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
 import { ENCHANTS, enchantOf } from "@/lib/items/enchantments";
 import { MaterialIcon } from "@/components/PixelSprite";
@@ -43,12 +43,16 @@ export default function VisitorPage() {
   // to sell (a second tap sells it).
   const [trade, setTrade] = useState<"buy" | "sell">("buy");
   const [armed, setArmed] = useState<string | null>(null);
-  const visitor = game.hydrated ? tavernVisitor(t) : undefined;
+  // Which one: ?v= (tapped in the room), or whoever's in if they've gone.
+  const present = game.hydrated ? tavernVisitors(t) : [];
+  const asked = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("v");
+  const visitor = present.find((v) => v === asked) ?? present[0];
+  const guest = visitor ? guestOf(t, visitor) : undefined;
   if (!game.hydrated) return <DenFrame title="Visitor" icon="🍺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
-  if (!visitor) {
+  if (!visitor || !guest) {
     return (
       <DenFrame title="Visitor" icon="🍺">
-        <p style={{ color: MUTED }}>Nobody&apos;s visiting. Travellers call when you&apos;re back from a run, or send for one at the tavern.</p>
+        <p style={{ color: MUTED }}>Nobody&apos;s visiting. Travellers drop in now and then, or send for one at the tavern.</p>
         <Link href="/" className="pixel-btn">← Back to the Den</Link>
       </DenFrame>
     );
@@ -67,7 +71,7 @@ export default function VisitorPage() {
             {trade === "buy" ? (
               <>
                 <p style={{ fontSize: 13, color: "#d8d4c8", margin: "0 0 6px" }}>&ldquo;One of each, friend. It all goes in your Inventory.&rdquo;</p>
-                <MerchantCart wares={waresFor(t.wares ?? [], loadDungeon().meta, game.heldStoragePlans(), game.klutz.packs ?? 0)} bought={t.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
+                <MerchantCart wares={waresFor(guest.wares ?? [], loadDungeon().meta, game.heldStoragePlans(), game.klutz.packs ?? 0)} bought={guest.bought} gold={game.gold} bagUsed={0} bagSlots={99} stacks={[]} onBuy={(ws) => ws.forEach(game.buyTavernWare)} />
               </>
             ) : (
               <>
@@ -81,7 +85,7 @@ export default function VisitorPage() {
         {visitor === "librarian" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <p style={{ fontSize: 13, color: "#d8d4c8", margin: 0 }}>&ldquo;Codexes,&rdquo; it whispers. &ldquo;Each teaches one creature a move — once.&rdquo;</p>
-            <LibrarianShelf offers={t.offers ?? []} bought={t.bought} price={codexPrice} gold={game.gold} full={game.shelfFree <= 0 ? "Bookcase full" : undefined}
+            <LibrarianShelf offers={guest.offers ?? []} bought={guest.bought} price={codexPrice} gold={game.gold} full={game.shelfFree <= 0 ? "Bookcase full" : undefined}
               room={`bookcase ${game.shelfFree > 0 ? `${game.shelfFree} free` : "full"}`} onBuy={game.buyTavernCodex} />
           </div>
         )}

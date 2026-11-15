@@ -359,7 +359,7 @@ export default function DungeonPage() {
     if (cur.run) countDaily("room", cur.run.cleared.length);
     if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) countDaily(`win:${dungeonOf(cur.run)}`);
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
-    updateTavern((t) => comeHome(t, Math.random, onBindle(cur.meta))); // home: a visitor may call at the tavern
+    updateTavern(comeHome); // home: a visitor from before the clock stays a run less
     battle.clear();
     setNotes([]);
   }

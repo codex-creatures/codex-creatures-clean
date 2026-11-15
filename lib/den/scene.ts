@@ -122,6 +122,9 @@ export const VISITOR_PATH: [number, number][] = [
 ];
 export const VISITOR_SPEED = 0.45; // a little slower than Klutz: they're laden
 export const VISITOR_PAUSE = 3.5;
+// Several visitors at once walk the same stroll, spread evenly round it (strollLoop: one lap's seconds).
+export const strollLoop = (path: [number, number][], speed: number, pause: number) =>
+  path.reduce((s, p, i) => { const q = path[(i + 1) % path.length]; return s + Math.hypot(q[0] - p[0], q[1] - p[1]) / speed + pause; }, 0);
 export type KlutzMode = "home" | "pool" | "away";
 
 // The frame's changed patches, joined where they're close: each patch is a

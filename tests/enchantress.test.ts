@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from "vitest";
 import { canReroll, enchantedItems, reroll, rerollCost, REROLL_ESSENCE, REROLL_GOLD } from "../lib/enchantress";
-import { summonVisitor, VISITORS } from "../lib/tavern";
+import { guestOf, summonVisitor, VISITORS } from "../lib/tavern";
 import { weaponDrop, armorDrop } from "../lib/drops";
 import { enchantPool } from "../lib/items/enchantments";
 import { seeded } from "../lib/creatures/soulStones";
@@ -16,10 +16,11 @@ const sword = (rarity: "rare" | "epic" | "legendary" | "common", enchant?: Creat
 describe("the Enchantress", () => {
   it("is a fourth visitor, sent for like the others, bringing no stock", () => {
     expect(VISITORS).toEqual(["merchant", "librarian", "collector", "enchantress"]);
-    const t = summonVisitor({ repaired: true }, "enchantress", seeded("x"));
-    expect(t.visitor).toBe("enchantress");
-    expect(t.wares).toBeUndefined();
-    expect(t.offers).toBeUndefined();
+    const t = summonVisitor({ repaired: true }, "enchantress", seeded("x"), false, 1e12);
+    const g = guestOf(t, "enchantress", 1e12)!;
+    expect(g).toBeDefined();
+    expect(g.wares).toBeUndefined();
+    expect(g.offers).toBeUndefined();
   });
   it("costs 1 essence stone plus 1,000 / 2,000 / 5,000 gold by the item's rarity", () => {
     expect(REROLL_ESSENCE).toBe(1);

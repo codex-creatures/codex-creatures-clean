@@ -83,7 +83,7 @@ fields optional with defaults.
    bookcase art (`den/bookcase-2.png`). (It was 20 planks + 10 nails for 25.) A save that already
    built it keeps its 25 slots, and schematics already in a save stay buildable (now 20 slots).
    In the Den the shelf swaps to the upgraded art once it's built.
-9. **Visitors** (after the repair): on returning home from each run, roll a merchant (12%), a
+9. **Visitors** (after the repair). ⚠️ The per-run roll below was replaced on 2026-11-16 by visitors on the clock (decision 47, the 📌 block at the end of this item, now ✅); it's kept as the record of what came before. On returning home from each run, roll a merchant (12%), a
    librarian (8%), the creature collector (8%) or nobody. A visitor stays about 2 runs. The first roll after the repair is
    guaranteed, and so is one after 3 misses. They reuse the Labyrinth's merchant and librarian. 🧪 Built 2026-10-20 (`lib/tavern.ts` `comeHome`, `VISITOR_ODDS`/`VISITOR_STAY`/`VISITOR_PITY`). A sure visit is still one of them, at 12:8:8. The roll happens whenever a run ends (won, lost or retreated). While a visitor's in, a ❗ shows at the Den's doorway and over their head (their name: tap them to trade), and they stroll round the tavern's room with a walk cycle, as Klutz does round the Den (`VISITOR_PATH` in lib/den/scene.ts; walks: PixMiniMax, 2026-11-03). They bring the Labyrinth stock: a merchant's cart, or a librarian's 3 race codexes. You buy one of each, and it goes straight home: potions and XP scrolls to the Inventory, materials to the tally, codexes to the bookcase (needs room). Flares and clairvoyance scrolls go to the Inventory's consumables too, and the bag page packs them (and stores them back). One not used on a run comes home to the Inventory too. ✅ The tavern merchant buys (2026-10-20, `tavernSellables`/`materialOffer`): anything in the Inventory he'd take in the Labyrinth, at the same prices (`merchantOffer`), except what's worn, packed or favourited; materials one at a time. Tap twice to sell.
    (The creature trader is left out for now.)
@@ -108,21 +108,39 @@ fields optional with defaults.
    room: taps there look past the Den's canvas for the pit) shows the pit's picture, its rate, the lifetime XP
    (plus what's training now), the creature in it, and with the plans, the schematic: the Training Pit's
    picture beside a column of material icons with have/need, "50 → 100 XP/h" and Build.
-   ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant, a librarian or the collector now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
+   ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for any visitor now, for 30 minutes (`SUMMON_STAY`; it was `VISITOR_STAY` runs before the clock), in place of one of the same kind who's in (a new one, new stock); the others stay. Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
    ✅ **The creature collector** (the user, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
-   📌 **The Enchantress, visitors on the clock, and tavern upgrades** (the user, 2026-11-16, decision 47; not built yet; replaces the per-run roll above once built):
+   ✅ **The Enchantress, visitors on the clock, and tavern upgrades** (the user, 2026-11-16, decision 47; built 2026-11-16; replaces the per-run roll above):
    - ✅ **The Enchantress**, a fourth visitor (built 2026-11-16, `lib/enchantress.ts`): she doesn't play; she rerolls an item's enchantment
      ([items.md](items.md) §3, Enchantments) for 1 essence stone plus 1,000 / 2,000 / 5,000 gold by
      the item's rarity (Rare / Epic / Legendary). Can be sent for, as the others. Art: PixelLab
      samples for the user to pick; ⏸ until then the collector's walk, tinted violet in CSS
      (`VISITOR_TINT`, components/TavernRoom.tsx), stands in. Her window is like the collector's:
      your enchanted weapons and armour in tabs (worn ones too), tap one to see it, then Reroll
-     (two taps; the second pays). 🧪 Claude's reading: she rerolls only an item that has an
+     (two taps; the second pays). On the clock like the others (5% a half hour to start). 🧪 Claude's reading: she rerolls only an item that has an
      enchantment (she doesn't add one), always to a different one, each that fits as likely.
-   - **On the clock:** every 30 minutes of real time each visitor rolls on their own chance, so
+   - ✅ **On the clock** (`onTheClock`, lib/tavern.ts): every 30 minutes of real time each visitor rolls on their own chance, so
      several can be in at once; one who comes stays that 30-minute window (a sent-for one 30 minutes
      too). Fixed per window (reloading doesn't reroll); windows missed while away are gone. No more
      roll after runs, and no pity rule.
+   - ✅ As built: the windows are fixed half hours of the clock (`VISITOR_WINDOW`, counted from 1970, so
+     every device agrees); each roll is seeded from the tavern's own seed (`seed`, made the first time
+     it's needed and saved) plus the window's number and the visitor, and `rolled` records the last
+     window rolled. The tavern's window shows who's in on one line. Several in at once each walk the
+     room's stroll, spread evenly round it (`strollLoop`), each with their own ❗ and name, and a tap
+     opens their own window (`/visitor?v=…`). The game checks the clock every 30 seconds while a page
+     is open (`TAVERN_TICK_MS`). Saves: `guests` (one per visitor: until when, or runs left, and their
+     stock), `seed`, `rolled` and `upgrades` are new optional fields; an old save's one visitor
+     becomes a guest staying the runs they had left (`fromOldSave`), counted down on coming home
+     (`comeHome` no longer rolls). Claude's readings (🧪, say if any is wrong):
+     - 🧪 A visitor already in (sent for, say) whose roll comes up in the next window stays to that
+       window's end, keeping their stock and what you've bought. A visitor from an old save isn't
+       rolled until they've gone.
+     - 🧪 The daily quest's merchant comes as if sent for: 30 minutes.
+     - 🧪 The upgrade costs (`UPGRADE_COSTS`, a row per level): 6/8/10/12/14/16/16/14/12/12 planks,
+       3/4/5/5/6/6/6/5/3/2 nails, metal bars from level 3 (2, 4, 6, 8, 10, 14, 18, 23), stone from
+       level 6 (1, 2, 4, 7, 12) and an essence stone at levels 9 and 10: the totals above, each level
+       dearer than the last at the merchant's prices. An upgrade takes two taps (the second pays).
    - **Odds start at 5% each** (merchant, librarian, collector, Enchantress) and the tavern upgrades
      them: tapping the tavern shows sending for a visitor and the upgrades, a row per visitor,
      +1% a level, 10 levels (15% at most), paid in materials, dearer each level. 🧪 Testing cost

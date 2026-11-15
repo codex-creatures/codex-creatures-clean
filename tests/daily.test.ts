@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { DAILY_BOX, DAILY_GEAR, PRIMARY_QUESTS, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, openQuests, questsOfDay, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
-import { merchantCalls, VISITOR_STAY } from "../lib/tavern";
+import { guestOf, merchantCalls, SUMMON_STAY } from "../lib/tavern";
 import type { Rarity } from "../lib/items/budgets";
 
 const ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
@@ -119,10 +119,10 @@ describe("the daily rewards", () => {
 
   it("the merchant only calls at a repaired tavern", () => {
     expect(merchantCalls({ blasted: true })).toEqual({ blasted: true });
-    const t = merchantCalls({ blasted: true, repaired: true, visitor: "librarian", stay: 1 });
-    expect(t.visitor).toBe("merchant");
-    expect(t.stay).toBe(VISITOR_STAY);
-    expect(t.wares?.length).toBeGreaterThan(0);
+    const t = merchantCalls({ blasted: true, repaired: true, visitor: "librarian", stay: 1 }, Math.random, false, 1e12);
+    expect(guestOf(t, "merchant", 1e12)!.until).toBe(1e12 + SUMMON_STAY); // (half an hour, like one sent for)
+    expect(guestOf(t, "librarian", 1e12)!.runs).toBe(1); // (an old save's visitor stays)
+    expect(guestOf(t, "merchant", 1e12)!.wares?.length).toBeGreaterThan(0);
   });
 });
 

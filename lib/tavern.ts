@@ -22,11 +22,12 @@
 // 7. Hand the head in at the board (once): it goes up on the tavern wall and
 //    the bounty's paid with the Crooked Bookcase Schematic, the only way to
 //    get it (built at the bookcase).
-// 8. Visitors. Once it's repaired, each time you come home from a run there's
-//    a chance a travelling merchant, a wandering librarian or the creature
-//    collector (lib/collector.ts) calls (VISITOR_ODDS). They stay VISITOR_STAY runs, with what they'd have in
-//    the Labyrinth to sell (materials dearer: TAVERN_MATERIAL_PRICES). The first roll after the repair always brings
-//    someone, and so does the one after VISITOR_PITY misses in a row.
+// 8. Visitors. Once it's repaired, a travelling merchant, a wandering
+//    librarian, the creature collector (lib/collector.ts) and the Enchantress
+//    (lib/enchantress.ts) each call on their own chance every half hour of real
+//    time (onTheClock), and stay that half hour, with what they'd have in the
+//    Labyrinth to sell (materials dearer: TAVERN_MATERIAL_PRICES). Tavern
+//    upgrades, paid in materials, make each more likely (UPGRADE_COSTS).
 //    The merchant also buys from your Inventory, at the Labyrinth's prices
 //    (merchantOffer): gear for what the crate pays, the rest at half his.
 //
@@ -34,9 +35,10 @@
 // Den (Klutz) and the Labyrinth (the dynamite) write it.
 
 import { readSave, writeSaveField } from "./save";
-import { MERCHANT_BUYBACK, MERCHANT_MATERIALS, lootEntry, makeRoom, merchantOffer, type Ware } from "./dungeon/run";
+import { MERCHANT_BUYBACK, MERCHANT_MATERIALS, loadDungeon, lootEntry, makeRoom, merchantOffer, onBindle, type Ware } from "./dungeon/run";
 import type { CreatureOrItemDrop, Drop } from "./types";
 import { addMaterials, canAfford, countMaterial, type MaterialKey, type Materials } from "./items/materials";
+import { seeded } from "./creatures/soulStones";
 
 export const QUEST_CREATURE_LEVEL = 6;
 export const QUEST_KLUTZ_LEVEL = 2;
@@ -49,53 +51,117 @@ export type TavernQuest = {
   repaired?: boolean; // the tavern's been repaired
   bounty?: boolean;   // you've taken the Cyclops bounty
   mounted?: boolean;  // the Cyclops Head is on the tavern wall: the bounty's paid (the bookcase schematic)
-  visitor?: Visitor;  // a wanderer calling at the tavern
+  guests?: Partial<Record<Visitor, Guest>>; // who's calling at the tavern (on the clock: onTheClock)
+  seed?: string;      // …the tavern's own seed for the clock's rolls (made the first time it's needed)
+  rolled?: number;    // …the last window rolled (windowOf)
+  upgrades?: Partial<Record<Visitor, number>>; // tavern upgrades: each visitor's level (missing: 0)
+  // Before the clock (read once, then moved into guests: fromOldSave):
+  visitor?: Visitor;  // the one wanderer calling at the tavern
   stay?: number;      // …how many more runs they'll stay
   wares?: Ware[];     // a merchant's cart
   offers?: string[];  // a librarian's codexes
   bought?: string[];  // …and what you've bought (ware keys, codex names)
-  visited?: boolean;  // someone's called since the repair (the first roll's a sure thing)
+  visited?: boolean;  // someone had called since the repair
   misses?: number;    // homecomings in a row with nobody calling
   pit?: boolean;      // the Training Pit's built over the Sparring Pit, in the tavern's room (lib/trainingPit.ts)
   plans?: boolean;    // …its plans, claimed from the Hydra quest on the quest board
   training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
   trainedXp?: number; // …all the XP it has ever trained into creatures (banked; missing: 0)
 };
-// The Enchantress (lib/enchantress.ts) rerolls enchantments; she only comes when sent for.
+// The Enchantress (lib/enchantress.ts) rerolls enchantments.
 export type Visitor = "merchant" | "librarian" | "collector" | "enchantress";
 export const VISITORS: Visitor[] = ["merchant", "librarian", "collector", "enchantress"];
+// One calling: until when (on the clock: ms), or how many more runs (one from before the clock), and their stock.
+export type Guest = {
+  until?: number;
+  runs?: number;
+  wares?: Ware[];     // a merchant's cart
+  offers?: string[];  // a librarian's codexes
+  bought?: string[];  // …and what you've bought (ware keys, codex names)
+};
 
 // Who's in the tavern: only a repaired tavern has visitors. (A ❗ shows at the
 // Den's doorway while someone's there.)
-export const tavernVisitor = (t: TavernQuest): Visitor | undefined => (t.repaired ? t.visitor : undefined);
+//
+// On the clock (the user, 2026-11-16, decision 47): real time is cut into
+// VISITOR_WINDOW windows, and in each one every visitor rolls on their own
+// chance (visitorChance), so several can be in at once. One who comes stays
+// to the end of that window; one sent for stays SUMMON_STAY from then. The
+// rolls come from the tavern's own seed and the window's number, so they're
+// fixed: reloading doesn't roll again, and a window you weren't there for is
+// simply gone (only the current one is ever rolled). No pity rule.
+// A visitor from before the clock (one save field, `visitor`, staying a number
+// of runs) stays their old stay out, counted down as you come home (comeHome).
+export const VISITOR_WINDOW = 30 * 60 * 1000;
+export const SUMMON_STAY = VISITOR_WINDOW;
+export const windowOf = (now: number) => Math.floor(now / VISITOR_WINDOW);
 
-// Who calls, each homecoming (the rest of the time, nobody).
-export const VISITOR_ODDS: Partial<Record<Visitor, number>> = { merchant: 0.12, librarian: 0.08, collector: 0.08 };
-export const VISITOR_STAY = 2;  // runs a visitor stays
-export const VISITOR_PITY = 3;  // after this many misses in a row, someone's sure to call
+// Each visitor's chance a window: VISITOR_BASE, plus UPGRADE_STEP for each
+// level of the tavern upgrade for them (up to MAX_UPGRADE).
+export const VISITOR_BASE = 0.05;
+export const UPGRADE_STEP = 0.01;
+export const MAX_UPGRADE = 10;
+export const upgradeLevel = (t: TavernQuest, who: Visitor) => Math.max(0, Math.min(MAX_UPGRADE, Math.floor(t.upgrades?.[who] ?? 0)));
+export const visitorChance = (t: TavernQuest, who: Visitor) => VISITOR_BASE + UPGRADE_STEP * upgradeLevel(t, who);
 
-// Home from a run: whoever's calling stays one run less (and leaves at 0),
-// then, if nobody's here, roll for someone new. bindle: you're still on the
-// bindle, so a merchant brings the rugged backpack.
-export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest {
-  if (!t.repaired) return t;
-  if (t.visitor && (t.stay ?? 0) > 1) return { ...t, stay: (t.stay ?? 0) - 1 };
-  const gone: TavernQuest = { ...t, visitor: undefined, stay: undefined, wares: undefined, offers: undefined, bought: undefined };
-  const sure = !t.visited || (t.misses ?? 0) >= VISITOR_PITY;
-  const odds = Object.entries(VISITOR_ODDS) as [Visitor, number][];
-  const total = odds.reduce((n, [, p]) => n + p, 0);
-  // A sure visit is still one of them, in their usual proportions.
-  let r = rng() * (sure ? total : 1);
-  const who = odds.find(([, p]) => (r -= p) < 0)?.[0];
-  if (!who) return { ...gone, misses: (t.misses ?? 0) + 1 };
-  return { ...gone, ...arrive(who, rng, bindle) };
+// Someone in: until (on the clock) or runs (from before it) says how long.
+const isIn = (g: Guest | undefined, now: number): g is Guest => !!g && ((g.runs ?? 0) > 0 || (g.until ?? 0) > now);
+export const guestOf = (t: TavernQuest, who: Visitor, now = Date.now()): Guest | undefined => {
+  const g = t.repaired ? t.guests?.[who] : undefined;
+  return isIn(g, now) ? g : undefined;
+};
+export const tavernVisitors = (t: TavernQuest, now = Date.now()): Visitor[] => VISITORS.filter((v) => guestOf(t, v, now));
+
+// A save from before the clock: its one visitor becomes a guest staying the
+// runs they had left. (The old fields go.)
+function fromOldSave(t: TavernQuest): TavernQuest {
+  if ([t.visitor, t.stay, t.visited, t.misses, t.wares, t.offers, t.bought].every((v) => v === undefined)) return t;
+  const { visitor, stay, wares, offers, bought, ...rest } = t;
+  delete rest.visited;
+  delete rest.misses;
+  if (!visitor) return rest;
+  return { ...rest, guests: { ...rest.guests, [visitor]: { runs: Math.max(1, stay ?? 1), wares, offers, bought } } };
 }
 
-// Someone arriving, with the stock they'd have in the Labyrinth (the
-// collector and the Enchantress bring none: they work on what's yours), staying VISITOR_STAY runs.
-function arrive(who: Visitor, rng: () => number, bindle: boolean): TavernQuest {
+// The tavern now: old visitors brought over, guests whose stay is up gone, and
+// the current window rolled if it hasn't been. newSeed: the tavern's seed, the
+// first time it needs one. bindle: you're still on the bindle, so a merchant
+// brings the rugged backpack.
+export function onTheClock(t: TavernQuest, now: number, bindle = false, newSeed: () => string = () => crypto.randomUUID()): TavernQuest {
+  if (!t.repaired) return t;
+  const x = fromOldSave(t);
+  const guests: Partial<Record<Visitor, Guest>> = Object.fromEntries(Object.entries(x.guests ?? {}).filter(([, g]) => isIn(g, now)));
+  const w = windowOf(now);
+  if (x.rolled === w) return sameGuests(x.guests, guests) ? x : { ...x, guests };
+  const seed = x.seed ?? newSeed();
+  const until = (w + 1) * VISITOR_WINDOW;
+  for (const who of VISITORS) {
+    if (seeded(`${seed}:${w}:${who}`)() >= visitorChance(x, who)) continue;
+    const g = guests[who];
+    if (g?.runs) continue; // (one from before the clock stays as they were)
+    guests[who] = g ? { ...g, until: Math.max(g.until ?? 0, until) } : { ...stockOf(who, seeded(`${seed}:${w}:${who}:stock`), bindle), until };
+  }
+  return { ...x, seed, rolled: w, guests };
+}
+const sameGuests = (a: TavernQuest["guests"], b: TavernQuest["guests"]) => JSON.stringify(a ?? {}) === JSON.stringify(b ?? {});
+
+// Home from a run: a visitor from before the clock stays one run less (and
+// leaves at 0). Nobody new comes for a run: that's the clock's job now.
+export function comeHome(t: TavernQuest): TavernQuest {
+  if (!t.repaired) return t;
+  const x = fromOldSave(t);
+  if (!x.guests || !Object.values(x.guests).some((g) => g?.runs)) return x;
+  const guests = Object.fromEntries(Object.entries(x.guests)
+    .map(([who, g]) => [who, g?.runs ? { ...g, runs: g.runs - 1 } : g] as const)
+    .filter(([, g]) => g && (g.runs === undefined || g.runs > 0)));
+  return { ...x, guests };
+}
+
+// What a visitor brings: the stock they'd have in the Labyrinth (the collector
+// and the Enchantress bring none: they work on what's yours).
+function stockOf(who: Visitor, rng: () => number, bindle: boolean): Guest {
   const stock: { wares?: Ware[]; offers?: string[] } = who === "merchant" || who === "librarian" ? makeRoom(who, rng, Infinity, 1, bindle) : {};
-  return { visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
+  return { ...(stock.wares ? { wares: tavernWares(stock.wares) } : {}), ...(stock.offers ? { offers: stock.offers } : {}), bought: [] };
 }
 
 // At the tavern the merchant charges more for materials than in the Labyrinth
@@ -114,28 +180,64 @@ export const tavernWares = (wares: Ware[] | undefined): Ware[] | undefined =>
   wares?.map((w) => ("material" in w ? { ...w, price: TAVERN_MATERIAL_PRICES[w.material] ?? w.price } : w));
 
 // A daily quest's reward (lib/daily.ts): the merchant calls at the repaired
-// tavern now, in place of whoever's there, for VISITOR_STAY runs.
-export const merchantCalls = (t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest => summonVisitor(t, "merchant", rng, bindle);
+// tavern now, as if sent for.
+export const merchantCalls = (t: TavernQuest, rng: () => number = Math.random, bindle = false, now = Date.now()): TavernQuest => summonVisitor(t, "merchant", rng, bindle, now);
 
-// Summoning (the user, 2026-11-03): at the repaired tavern you can pay
-// SUMMON_PRICE to have a merchant, a librarian, the collector or the Enchantress call now, in place of
-// whoever's there (the same kind too: a new one, with new stock), for
-// VISITOR_STAY runs. The gold is the game state's (hooks/useGameState.ts).
+// Sending for one (the user, 2026-11-03): at the repaired tavern you can pay
+// SUMMON_PRICE to have any visitor call now, for SUMMON_STAY, in place of one
+// of the same kind who's in (a new one, with new stock). The others stay. The
+// gold is the game state's (hooks/useGameState.ts).
 export const SUMMON_PRICE = 500;
-export function summonVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
+export function summonVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false, now = Date.now()): TavernQuest {
   if (!t.repaired) return t;
-  return { ...t, ...arrive(who, rng, bindle) };
+  const x = fromOldSave(t);
+  return { ...x, guests: { ...x.guests, [who]: { ...stockOf(who, rng, bindle), until: now + SUMMON_STAY } } };
 }
 
-// For testing (the altar): open and repair the tavern, and have who call right
-// now, with their usual stock, staying VISITOR_STAY runs.
-export function callVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false): TavernQuest {
-  return { ...forceOpen(t), seen: true, repaired: true, ...arrive(who, rng, bindle) };
+// For testing (the altar): open and repair the tavern, and have who call right now.
+export function callVisitor(t: TavernQuest, who: Visitor, rng: () => number = Math.random, bindle = false, now = Date.now()): TavernQuest {
+  return summonVisitor({ ...forceOpen(t), seen: true, repaired: true }, who, rng, bindle, now);
 }
 
-// Mark something bought from the visitor (one of each).
-export const buyFromVisitor = (t: TavernQuest, key: string): TavernQuest =>
-  (t.visitor && !t.bought?.includes(key) ? { ...t, bought: [...(t.bought ?? []), key] } : t);
+// Mark something bought from a visitor (one of each).
+export function buyFromVisitor(t: TavernQuest, who: Visitor, key: string, now = Date.now()): TavernQuest {
+  const g = guestOf(t, who, now);
+  return g && !g.bought?.includes(key) ? { ...t, guests: { ...t.guests, [who]: { ...g, bought: [...(g.bought ?? []), key] } } } : t;
+}
+
+// ── Tavern upgrades (the user, 2026-11-16, decision 47) ───────────────
+// A row per visitor at the tavern: each level is +UPGRADE_STEP to their
+// chance, paid in materials, dearer each level (index 0: the 1st level).
+// 🧪 Testing costs (the user's pick of the slowest pace): per visitor, 120
+// planks, 45 nails, 85 metal bars, 26 stone and 2 essence stones in all;
+// planks and nails first, then metal bars, with stone and essence at the top.
+export const UPGRADE_COSTS: Materials[] = [
+  { planks: 6, nails: 3 },
+  { planks: 8, nails: 4 },
+  { planks: 10, nails: 5, metal_bars: 2 },
+  { planks: 12, nails: 5, metal_bars: 4 },
+  { planks: 14, nails: 6, metal_bars: 6 },
+  { planks: 16, nails: 6, metal_bars: 8, essence_stones: 1 },
+  { planks: 16, nails: 6, metal_bars: 10, essence_stones: 2 },
+  { planks: 14, nails: 5, metal_bars: 14, essence_stones: 4 },
+  { planks: 12, nails: 3, metal_bars: 18, essence_stones: 7, essence: 1 },
+  { planks: 12, nails: 2, metal_bars: 23, essence_stones: 12, essence: 1 },
+];
+// The next level's cost (null: at the top).
+export const upgradeCost = (t: TavernQuest, who: Visitor): Materials | null => UPGRADE_COSTS[upgradeLevel(t, who)] ?? null;
+export function canUpgrade(t: TavernQuest, who: Visitor, have: Materials): boolean {
+  const cost = upgradeCost(t, who);
+  return !!t.repaired && !!cost && canAfford(have, cost);
+}
+// One level more: the tavern and your materials after, or null if you can't.
+export function upgradeVisitor(t: TavernQuest, who: Visitor, have: Materials): { tavern: TavernQuest; materials: Materials } | null {
+  const cost = upgradeCost(t, who);
+  if (!cost || !canUpgrade(t, who, have)) return null;
+  return {
+    tavern: { ...t, upgrades: { ...t.upgrades, [who]: upgradeLevel(t, who) + 1 } },
+    materials: addMaterials(have, Object.fromEntries(Object.entries(cost).map(([k, n]) => [k, -n!]))),
+  };
+}
 
 // What the merchant will buy from your Inventory, and for how much: not
 // what's worn, packed or favourited (locked), nor what he won't take (Klutz's
@@ -207,6 +309,15 @@ export const TAVERN_FIELD = "tavern";
 export function loadTavern(): TavernQuest {
   const t = readSave()[TAVERN_FIELD];
   return t && typeof t === "object" ? (t as TavernQuest) : {};
+}
+
+// The tavern as it is now, on the clock (onTheClock): saved if that changed
+// anything (a window rolled, a guest gone, an old save brought over).
+export function tavernNow(now = Date.now()): TavernQuest {
+  const t = loadTavern();
+  const next = onTheClock(t, now, onBindle(loadDungeon().meta));
+  if (next !== t) writeSaveField(TAVERN_FIELD, next);
+  return next;
 }
 
 // Change it (read, change, write: whoever else wrote it meanwhile is kept).

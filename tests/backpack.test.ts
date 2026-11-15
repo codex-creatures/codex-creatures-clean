@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { rollWares, waresFor, priceUp, makeRoom, startRun, onBindle, BACKPACK, BINDLE, BACKPACK_PRICE, STOREHOUSE_BACKPACK, MERCHANT_SLOTS, type SackItem } from "../lib/dungeon/run";
-import { comeHome } from "../lib/tavern";
+import { guestOf, summonVisitor } from "../lib/tavern";
 
 // A seeded rng, so a whole room's roll repeats.
 const seeded = (seed: number) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -49,12 +49,8 @@ describe("the rugged backpack, until you've got one", () => {
   });
 
   it("a tavern merchant brings it too, while you're on the bindle", () => {
-    const m = comeHome({ repaired: true }, seeded(5), true);
-    expect(m.visitor).toBeDefined();
-    if (m.visitor === "merchant") expect(m.wares?.[0].key).toBe("backpack");
-    // Force the merchant (the first visit is sure, and a low roll is him).
-    const low = () => 0.01;
-    expect(comeHome({ repaired: true }, low, true).wares?.[0].key).toBe("backpack");
-    expect(comeHome({ repaired: true }, low, false).wares?.some((x) => "backpack" in x)).toBe(false);
+    const at = 1e12;
+    expect(guestOf(summonVisitor({ repaired: true }, "merchant", seeded(5), true, at), "merchant", at)!.wares?.[0].key).toBe("backpack");
+    expect(guestOf(summonVisitor({ repaired: true }, "merchant", seeded(5), false, at), "merchant", at)!.wares?.some((x) => "backpack" in x)).toBe(false);
   });
 });

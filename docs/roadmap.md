@@ -59,8 +59,8 @@ interesting situations, real decisions, progression and surprises, not feel they
 ### 📌 Decided, not built
 
 - ✅ **Enchantments** (decision 46, built 2026-11-16). [design/items.md](design/items.md) §3
-- **The Enchantress, visitors on the clock and tavern upgrades** (decision 47).
-  [design/den.md](design/den.md) §9
+- ✅ **The Enchantress, visitors on the clock and tavern upgrades** (decision 47, built
+  2026-11-16). [design/den.md](design/den.md) §9
 - **The campaign** (the user, 2026-11-16; to be mapped next): quests that aren't daily and lead
   through the game; a reward can't be claimed until every quest before it is, but progress
   (scans and so on) counts all along. Its rewards may include enchanted gear.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { COLLECTOR_PRICES, TRADE_UP_COUNT, canTradeUp, collectorCreatures, creaturePrice, rarityAbove, tradeUpCard } from "../lib/collector";
-import { summonVisitor } from "../lib/tavern";
+import { guestOf, summonVisitor } from "../lib/tavern";
 import { CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
 import { makeCreatureDrop } from "../lib/creatures/summon";
 import type { Rarity } from "../lib/items/budgets";
@@ -41,8 +41,8 @@ describe("the creature collector", () => {
   });
 
   it("can be sent for at the tavern, bringing no stock", () => {
-    const t = summonVisitor({ repaired: true, visitor: "merchant", wares: [] }, "collector");
-    expect(t.visitor).toBe("collector");
-    expect(t.wares).toBeUndefined();
+    const t = summonVisitor({ repaired: true, visitor: "merchant", wares: [] }, "collector", Math.random, false, 1e12);
+    expect(guestOf(t, "collector", 1e12)!.wares).toBeUndefined();
+    expect(guestOf(t, "merchant", 1e12)).toBeDefined(); // (an old save's merchant stays)
   });
 });

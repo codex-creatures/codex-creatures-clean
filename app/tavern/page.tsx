@@ -5,10 +5,11 @@
 // first time you see it Klutz has his say. Repairing it takes REPAIR_COST in
 // materials, once. That puts the Cyclops bounty on the quest board
 // (app/board); once paid, the head hangs over the door.
-// Once it's repaired, a merchant, a librarian or the creature collector
-// sometimes calls (rolled on coming home from a run: lib/tavern.ts comeHome),
-// or you send for one here. They stroll round the room and trade in their own
-// window, tapped there (app/visitor). The pit has its own window too (app/training).
+// Once it's repaired, the merchant, the librarian, the creature collector and
+// the Enchantress each may call every half hour (lib/tavern.ts onTheClock), or
+// you send for one here; the upgrades here make each more likely. They stroll
+// round the room and trade in their own window, tapped there (app/visitor).
+// The pit has its own window too (app/training).
 // The room itself is in the Den, through its doorway (components/TavernRoom.tsx);
 // this is the tavern's window, opened by tapping it there.
 
@@ -22,16 +23,22 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
 import { MATERIALS } from "@/lib/items/materials";
 import { COLLECTOR_PRICES, TRADE_UP_COUNT } from "@/lib/collector";
-import { REPAIR_COST, SUMMON_PRICE, VISITORS, VISITOR_STAY, canRepair, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
+import { MAX_UPGRADE, REPAIR_COST, SUMMON_PRICE, UPGRADE_COSTS, VISITORS, canRepair, canUpgrade, guestOf, repairNeeds, tavernVisitors, upgradeCost, upgradeLevel, visitorChance, type Visitor } from "@/lib/tavern";
+import { countMaterial, type MaterialKey } from "@/lib/items/materials";
 import { REROLL_GOLD } from "@/lib/enchantress";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const VISITOR_NAME: Record<Visitor, string> = { merchant: "merchant", librarian: "librarian", collector: "creature collector", enchantress: "Enchantress" };
+const VISITOR_LABEL: Record<Visitor, string> = { merchant: "Merchant", librarian: "Librarian", collector: "Collector", enchantress: "Enchantress" };
+const pct = (p: number) => `${Math.round(p * 100)}%`;
+// What every level of a visitor's upgrade comes to (for the "?").
+const UPGRADE_TOTAL = UPGRADE_COSTS.reduce<Record<string, number>>((n, c) => { for (const [k, v] of Object.entries(c)) n[k] = (n[k] ?? 0) + (v ?? 0); return n; }, {});
 
 export default function TavernPage() {
   const game = useGameState();
   const t = game.tavern;
   const [summoning, setSummoning] = useState<Visitor | null>(null); // tapped once: a second tap pays
+  const [upgrading, setUpgrading] = useState<Visitor | null>(null);  // …and the same for an upgrade
   if (!game.hydrated) return <DenFrame title="Tavern" icon="🍺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
   if (!t.blasted) {
     return (
@@ -43,8 +50,8 @@ export default function TavernPage() {
   }
 
   const needs = repairNeeds(game.materials);
-  // A wanderer calling (they trade in their own window, tapped in the room: app/visitor).
-  const visitor = tavernVisitor(t);
+  // Who's calling (they trade in their own window, tapped in the room: app/visitor).
+  const visitors = tavernVisitors(t);
   return (
     <DenFrame title={t.repaired ? "Tavern" : "Broken tavern"} icon="🍺">
       <div className="stone-panel">
@@ -54,10 +61,11 @@ export default function TavernPage() {
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
               <li>Repairing it puts a <b>bounty</b> on the Cyclops up on the <b>quest board</b>.</li>
-              <li>Once it&apos;s repaired, a <b>merchant</b>, a <b>librarian</b> or the <b>creature collector</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. Tap them in the room to trade. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
+              <li>Once it&apos;s repaired, the <b>merchant</b>, the <b>librarian</b>, the <b>creature collector</b> and the <b>Enchantress</b> may each call <b>every half hour</b>, on their own chance, so several can be in at once. One who comes stays that half hour. Tap them in the room to trade. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
               <li>The <b>creature collector</b> buys creatures (Common {COLLECTOR_PRICES.common}, Uncommon {COLLECTOR_PRICES.uncommon}, Rare {COLLECTOR_PRICES.rare}, Epic {COLLECTOR_PRICES.epic}, Legendary {COLLECTOR_PRICES.legendary} gold), or trades <b>{TRADE_UP_COUNT} creatures of one rarity</b> for a card of a random creature one rarity up. Not cards, and not a creature in a team, the pit or on a run.</li>
-              <li>The <b>Enchantress</b> rerolls an item&apos;s enchantment for <b>1 essence stone</b> and gold by its rarity (Rare {REROLL_GOLD.rare!.toLocaleString()}, Epic {REROLL_GOLD.epic!.toLocaleString()}, Legendary {REROLL_GOLD.legendary!.toLocaleString()}). She only comes when sent for.</li>
-              <li>Or send for one: <b>{SUMMON_PRICE} gold</b> and they come now, for {VISITOR_STAY} runs. Whoever&apos;s in leaves, so you can send for a fresh one too.</li>
+              <li>The <b>Enchantress</b> rerolls an item&apos;s enchantment for <b>1 essence stone</b> and gold by its rarity (Rare {REROLL_GOLD.rare!.toLocaleString()}, Epic {REROLL_GOLD.epic!.toLocaleString()}, Legendary {REROLL_GOLD.legendary!.toLocaleString()}).</li>
+              <li>Or send for one: <b>{SUMMON_PRICE} gold</b> and they come now, for half an hour. One of the same kind who&apos;s in leaves, so you can send for a fresh one too.</li>
+              <li><b>Upgrades</b>: each visitor starts at a <b>{pct(visitorChance({}, "merchant"))}</b> chance a half hour, and each level adds 1%, up to {MAX_UPGRADE} levels. Paid in materials, dearer each level: all {MAX_UPGRADE} come to {UPGRADE_TOTAL.planks} planks, {UPGRADE_TOTAL.nails} nails, {UPGRADE_TOTAL.metal_bars} metal bars, {UPGRADE_TOTAL.essence_stones} stone and {UPGRADE_TOTAL.essence} essence stones a visitor.</li>
             </ul>
           </Help>
         </div>
@@ -89,11 +97,12 @@ export default function TavernPage() {
           </div>
         )}
 
-        {t.repaired && <p style={{ fontSize: 13, color: MUTED, margin: "10px 0 0" }}>{visitor
-          ? <>The {VISITOR_NAME[visitor]}&apos;s in the room. Tap them there to trade.</>
-          : <>Nobody&apos;s in. Travellers call when you&apos;re back from a run.</>}</p>}
+        {/* Who's in: one line, cut to fit. */}
+        {t.repaired && <p style={{ fontSize: 13, color: MUTED, margin: "10px 0 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{visitors.length
+          ? <>In the room: {visitors.map((v) => VISITOR_NAME[v]).join(", ")}. Tap them there.</>
+          : <>Nobody&apos;s in. Travellers drop in now and then.</>}</p>}
 
-        {/* Sending for someone: a second tap pays (and sends whoever's in on their way).
+        {/* Sending for someone: a second tap pays (and sends one of the same kind who's in on their way).
             Two a row, under their label, so they fit a phone. */}
         {t.repaired && <div style={{ marginTop: 10, fontSize: 12, color: MUTED }}>Send for:</div>}
         {t.repaired && (
@@ -104,8 +113,39 @@ export default function TavernPage() {
                 <button key={who} className="chip" disabled={game.gold < SUMMON_PRICE}
                   onClick={() => { if (!on) { setSummoning(who); return; } setSummoning(null); game.summonTavernVisitor(who); }}
                   style={{ minHeight: 44, minWidth: 0, background: on ? "#6e1f18" : undefined }}>
-                  {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{visitor === who ? `A new ${who}` : who[0].toUpperCase() + who.slice(1)} <Coin /> {SUMMON_PRICE}</>}
+                  {on ? <>Pay <Coin /> {SUMMON_PRICE}?</> : <>{guestOf(t, who) ? `A new ${who}` : VISITOR_LABEL[who]} <Coin /> {SUMMON_PRICE}</>}
                 </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Upgrades: a fixed row per visitor (name, level and chance; the next
+            level's materials, have/need; the button). A second tap pays. */}
+        {t.repaired && <div style={{ marginTop: 12, fontSize: 12, color: MUTED }}>Upgrades (each visitor&apos;s chance every half hour):</div>}
+        {t.repaired && (
+          <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
+            {VISITORS.map((who) => {
+              const level = upgradeLevel(t, who), cost = upgradeCost(t, who), on = upgrading === who;
+              return (
+                <div key={who} style={{ display: "flex", alignItems: "center", gap: 8, background: "#12131a", padding: "4px 8px", minHeight: 52 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {VISITOR_LABEL[who]} <span style={{ color: MUTED }}>Lv {level}/{MAX_UPGRADE} · {pct(visitorChance(t, who))}</span>
+                    </div>
+                    <div style={{ fontSize: 12, height: 18, display: "flex", gap: 8, overflow: "hidden", whiteSpace: "nowrap" }}>
+                      {cost ? (Object.entries(cost) as [MaterialKey, number][]).map(([k, need]) => {
+                        const have = countMaterial(game.materials, k);
+                        return <span key={k} title={MATERIALS[k].name} style={{ color: have >= need ? "#5ee08a" : "#ff8a80" }}><MaterialIcon k={k} />{have}/{need}</span>;
+                      }) : <span style={{ color: MUTED }}>Fully upgraded</span>}
+                    </div>
+                  </div>
+                  <button className="chip" disabled={!canUpgrade(t, who, game.materials)}
+                    onClick={() => { if (!on) { setUpgrading(who); return; } setUpgrading(null); game.upgradeTavernVisitor(who); }}
+                    style={{ minHeight: 44, flexShrink: 0, width: 92, background: on ? "#6e1f18" : undefined }}>
+                    {!cost ? "Max" : on ? "Upgrade?" : `+1% · Lv ${level + 1}`}
+                  </button>
+                </div>
               );
             })}
           </div>

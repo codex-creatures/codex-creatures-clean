@@ -13,12 +13,12 @@
 import { useEffect, useState } from "react";
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot, VISITOR_HREF } from "@/components/DenRoom";
-import { RES, strollAt, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "@/lib/den/scene";
+import { RES, strollAt, strollLoop, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "@/lib/den/scene";
 import { artFor } from "@/lib/sprites/art";
 import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { COLLECTOR, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
-import { tavernVisitor, type TavernQuest, type Visitor as VisitorKind } from "@/lib/tavern";
+import { tavernVisitors, type TavernQuest, type Visitor as VisitorKind } from "@/lib/tavern";
 import { lobbyAccount, onPlayersOnline, othersOnline, playersOnline } from "@/lib/online/duelChannel";
 
 const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in the room
@@ -63,7 +63,8 @@ function useOthersOnline(): number | null {
 // firstClearRun: the run you first beat the Cyclops on (marked on the head).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).
 export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: TavernQuest; firstClearRun?: number; pit?: { ready: boolean } }) {
-  const visitor = tavernVisitor(t);
+  // Everyone calling, each a step along the stroll from the last (lib/tavern.ts onTheClock).
+  const visitors = tavernVisitors(t);
   const head = CREATURE_SPRITES.cyclops;
   const others = useOthersOnline();
   return (
@@ -128,7 +129,10 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           </div>
         )}
       </RoomSpot>
-      {visitor && <Visitor sprite={VISITOR_SPRITE[visitor]} title={VISITOR_TITLE[visitor]} label={VISITOR_LABEL[visitor]} tint={VISITOR_TINT[visitor]} />}
+      {visitors.map((who, i) => (
+        <Visitor key={who} sprite={VISITOR_SPRITE[who]} title={VISITOR_TITLE[who]} label={VISITOR_LABEL[who]} tint={VISITOR_TINT[who]}
+          href={`${VISITOR_HREF}?v=${who}`} lead={(i * STROLL_LOOP) / visitors.length} />
+      ))}
     </>
   );
 }
@@ -140,14 +144,16 @@ const VISITOR_TINT: Partial<Record<VisitorKind, string>> = { enchantress: "hue-r
 const VISITOR_TITLE: Record<VisitorKind, string> = { merchant: "A travelling merchant", librarian: "A wandering librarian", collector: "A creature collector", enchantress: "The Enchantress" };
 const VISITOR_LABEL: Record<VisitorKind, string> = { merchant: "Merchant", librarian: "Librarian", collector: "Collector", enchantress: "Enchantress" };
 const VISITOR_FPS = 12; // how often they're moved along
+const STROLL_LOOP = strollLoop(VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE);
 const STEP_FPS = 9;     // their walk's frames a second (as Klutz's)
 
 // A visitor strolling round the room (VISITOR_PATH), at the same scale as
 // everything else (1:1): their walk while they move, their still while they
 // pause, mirrored when heading right (the art faces left). Drawn in a box the
 // size of a walk frame, with the still where it sits in that frame, and their
-// name over their head with a ❗. Tap them for their wares.
-function Visitor({ sprite, title, label, tint }: { sprite: Sprite; title: string; label: string; tint?: string }) {
+// name over their head with a ❗. Tap them for their wares (href: their window).
+// lead: seconds ahead of the first along the stroll, so several don't walk as one.
+function Visitor({ sprite, title, label, tint, href, lead }: { sprite: Sprite; title: string; label: string; tint?: string; href: string; lead: number }) {
   const [t, setT] = useState(0); // (set on the first tick: the clock differs between server and browser)
   useEffect(() => {
     const timer = window.setInterval(() => setT(performance.now() / 1000), 1000 / VISITOR_FPS);
@@ -155,17 +161,17 @@ function Visitor({ sprite, title, label, tint }: { sprite: Sprite; title: string
   }, []);
   const art = artFor(sprite);
   const walk = art?.walk;
-  const at = strollAt(t, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE);
+  const at = strollAt(t + lead, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE);
   if (!art || !walk) return null;
   const frame = Math.floor(t * STEP_FPS) % walk.frames;
   return (
     <RoomSpot u={at.u} v={at.v} w={walk.w / RES}
       style={{ transform: `translate(-50%, -${pct(walk.y + art.h, walk.h)})` }}>
-      <div className="pixel-font news-glow" data-href={VISITOR_HREF}
+      <div className="pixel-font news-glow" data-href={href}
         style={{ position: "absolute", left: "50%", bottom: pct(walk.h - walk.y, walk.h), translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%", pointerEvents: "auto", cursor: "pointer" }}>
         <span className="news-pulse" aria-label="Someone's visiting">❗ </span>{label}
       </div>
-      <div title={title} data-href={VISITOR_HREF} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)", pointerEvents: "auto", cursor: "pointer", filter: tint }}>
+      <div title={title} data-href={href} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)", pointerEvents: "auto", cursor: "pointer", filter: tint }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={art.src} alt={title} draggable={false}
           style={{ position: "absolute", left: pct(walk.x, walk.w), top: pct(walk.y, walk.h), width: pct(art.w, walk.w), height: "auto", imageRendering: "pixelated", visibility: at.walking ? "hidden" : "visible" }} />

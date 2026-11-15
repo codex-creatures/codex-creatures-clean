@@ -18,7 +18,7 @@ import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, 
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
-import { VISITORS, blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { VISITORS, guestOf, tavernNow, upgradeVisitor, blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
 import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
@@ -59,6 +59,8 @@ export const CACHE_LIMIT = 9;   // Code Caches the altar can hold (Storage mode)
 export type ScanMode = "loot" | "store";
 // A new player loots, unless they start offline (then their scans keep for later).
 export const defaultScanMode = (): ScanMode => (typeof navigator !== "undefined" && navigator.onLine === false ? "store" : "loot");
+// How often the tavern checks its clock (a new half hour, a stay ending) while a page is open.
+export const TAVERN_TICK_MS = 30_000;
 export const SCAN_TIP_DEATHS = 3; // Labyrinth deaths in a row, without a scan, before Klutz suggests scanning
 
 // What a creature has equipped — inventory drop ids — plus its 4 move slots
@@ -286,7 +288,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setCharges(saved.scanCharges);
       setFirstScans(saved.firstScans);
     }
-    setTavern(loadTavern());
+    setTavern(tavernNow());
     setPackedIds(packedGear());
     setHydrated(true);
   }, []);
@@ -467,7 +469,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const blastRubble = () => setTavern(updateTavern(blast));
   const openRubbleForTesting = () => setTavern(updateTavern(forceOpen)); // the altar's testing tools
   // …and a visitor now: the merchant, the librarian, the collector and the Enchantress, in turn.
-  const callVisitorForTesting = () => setTavern(updateTavern((t) => callVisitor(t, VISITORS[(VISITORS.indexOf(t.visitor ?? "enchantress") + 1) % VISITORS.length], Math.random, onBindle(loadDungeon().meta))));
+  const callVisitorForTesting = () => setTavern(updateTavern((t) => callVisitor(t, VISITORS.find((v) => !guestOf(t, v)) ?? "merchant", Math.random, onBindle(loadDungeon().meta))));
   const seeTavern = () => setTavern(updateTavern((t) => ({ ...t, seen: true })));
   // The repair takes its materials once: the tavern's marked repaired as
   // they're taken, and a second go finds it already done.
@@ -495,13 +497,14 @@ export function useGameState(initialTab: TabKey = "all") {
   // materials to your tally.
   function buyTavernWare(w: Ware): boolean {
     const t = loadTavern();
-    if (t.visitor !== "merchant" || !t.wares?.some((x) => x.key === w.key) || t.bought?.includes(w.key)) return false;
+    const g = guestOf(t, "merchant");
+    if (!g || !g.wares?.some((x) => x.key === w.key) || g.bought?.includes(w.key)) return false;
     if ("backpack" in w) {
       // The rugged backpack: your bag's bigger from your next run on.
       const lab = loadDungeon();
       if (!onBindle(lab.meta) || !spendGold(w.price)) return false;
       saveDungeon({ ...lab, meta: { ...lab.meta, bagSize: BACKPACK } });
-      setTavern(updateTavern((x) => buyFromVisitor(x, w.key)));
+      setTavern(updateTavern((x) => buyFromVisitor(x, "merchant", w.key)));
       return true;
     }
     if ("bagUp" in w) {
@@ -510,21 +513,22 @@ export function useGameState(initialTab: TabKey = "all") {
       const size = bagSize(lab.meta);
       if (onBindle(lab.meta) || size >= BAG_MAX || !spendGold(w.price)) return false;
       saveDungeon({ ...lab, meta: { ...lab.meta, bagSize: size + 1 } });
-      setTavern(updateTavern((x) => buyFromVisitor(x, w.key)));
+      setTavern(updateTavern((x) => buyFromVisitor(x, "merchant", w.key)));
       return true;
     }
     if (!spendGold(w.price)) return false;
     addDrop("potion" in w ? potionDrop("", w.potion) : wareDrop(w)!);
-    setTavern(updateTavern((x) => buyFromVisitor(x, w.key)));
+    setTavern(updateTavern((x) => buyFromVisitor(x, "merchant", w.key)));
     return true;
   }
   // A codex from the librarian goes on the bookcase, if there's room.
   const shelfFree = bookcaseSize(bookcase) - inventory.filter((x) => x.dropType === "item" && x.codexMove).length;
   function buyTavernCodex(move: string): boolean {
     const t = loadTavern();
-    if (t.visitor !== "librarian" || !t.offers?.includes(move) || t.bought?.includes(move) || shelfFree <= 0 || !spendGold(codexPrice(move))) return false;
+    const g = guestOf(t, "librarian");
+    if (!g || !g.offers?.includes(move) || g.bought?.includes(move) || shelfFree <= 0 || !spendGold(codexPrice(move))) return false;
     addDrop(codexDrop(move));
-    setTavern(updateTavern((x) => buyFromVisitor(x, move)));
+    setTavern(updateTavern((x) => buyFromVisitor(x, "librarian", move)));
     return true;
   }
 
@@ -654,6 +658,17 @@ export function useGameState(initialTab: TabKey = "all") {
     };
     check();
     const timer = window.setInterval(check, 5000);
+    return () => window.clearInterval(timer);
+  }, [hydrated]);
+
+  // ── The tavern's clock (lib/tavern.ts onTheClock) ─────
+  // A new half hour may bring visitors, and a stay may end, while you watch.
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = window.setInterval(() => {
+      const next = tavernNow();
+      setTavern((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    }, TAVERN_TICK_MS);
     return () => window.clearInterval(timer);
   }, [hydrated]);
 
@@ -911,7 +926,7 @@ export function useGameState(initialTab: TabKey = "all") {
     return price;
   }
   function sellToTavern(id: string): boolean {
-    const offer = loadTavern().visitor === "merchant" && tavernSells().find((x) => x.drop.id === id);
+    const offer = !!guestOf(loadTavern(), "merchant") && tavernSells().find((x) => x.drop.id === id);
     if (!offer) return false;
     removeDrop(id);
     setGold((g) => g + offer.price);
@@ -919,7 +934,7 @@ export function useGameState(initialTab: TabKey = "all") {
     return true;
   }
   function sellMaterialToTavern(key: MaterialKey): boolean {
-    if (loadTavern().visitor !== "merchant" || countMaterial(materials, key) < 1 || materialOffer(key) <= 0) return false;
+    if (!guestOf(loadTavern(), "merchant") || countMaterial(materials, key) < 1 || materialOffer(key) <= 0) return false;
     setMaterials((m) => addMaterials(m, { [key]: -1 }));
     setGold((g) => g + materialOffer(key));
     countDaily("sell", materialOffer(key));
@@ -938,7 +953,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setEquipment((prev) => (ids.some((id) => id in prev) ? Object.fromEntries(Object.entries(prev).filter(([id]) => !ids.includes(id))) : prev));
   }
   function sellToCollector(id: string): boolean {
-    const d = loadTavern().visitor === "collector" && collectorOffers().find((x) => x.id === id);
+    const d = !!guestOf(loadTavern(), "collector") && collectorOffers().find((x) => x.id === id);
     if (!d) return false;
     const price = creaturePrice(d);
     partWithCreatures([id]);
@@ -946,10 +961,18 @@ export function useGameState(initialTab: TabKey = "all") {
     countDaily("sell", price);
     return true;
   }
+  // A tavern upgrade (lib/tavern.ts UPGRADE_COSTS): one level more for that visitor, paid in materials.
+  function upgradeTavernVisitor(who: Visitor): boolean {
+    const done = upgradeVisitor(loadTavern(), who, materials);
+    if (!done) return false;
+    setTavern(updateTavern((t) => ({ ...t, upgrades: done.tavern.upgrades })));
+    setMaterials(done.materials);
+    return true;
+  }
   // The Enchantress (lib/enchantress.ts): a new enchantment on one of your
   // items, for an essence stone and gold by its rarity. Returns the item as it is now (null: not done).
   function rerollEnchantment(id: string): CreatureOrItemDrop | null {
-    if (loadTavern().visitor !== "enchantress") return null;
+    if (!guestOf(loadTavern(), "enchantress")) return null;
     const d = inventory.find((x) => x.id === id) as CreatureOrItemDrop | undefined;
     const cost = d && rerollCost(d);
     if (!d || !cost || !canReroll(d, gold, materials) || !spendGold(cost.gold)) return null;
@@ -960,7 +983,7 @@ export function useGameState(initialTab: TabKey = "all") {
   }
   // Returns the card he gives (null: no trade).
   function tradeUpWithCollector(ids: string[]): CreatureOrItemDrop | null {
-    if (loadTavern().visitor !== "collector") return null;
+    if (!guestOf(loadTavern(), "collector")) return null;
     const offers = collectorOffers();
     const card = tradeUpCard(ids.map((id) => offers.find((x) => x.id === id)!).filter(Boolean));
     if (!card) return null;
@@ -1238,7 +1261,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived
