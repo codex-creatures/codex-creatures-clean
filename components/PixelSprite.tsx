@@ -35,12 +35,12 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
       // eslint-disable-next-line @next/next/no-img-element
       <img src={art.src} alt={title ?? ""} title={title} width={width} height={height}
         onError={() => setBroken(art.src)} draggable={false}
-        style={{ display: "block", flexShrink: 0, imageRendering: width * dpr >= art.w ? "pixelated" : "auto", ...(shine ? {} : style) }} />
+        style={{ display: "block", flexShrink: 0, imageRendering: width * dpr >= art.w ? "pixelated" : "auto", ...(shine ? FILL : style) }} />
     );
     if (!shine) return img;
     const mask = `url("${art.src}") center / 100% 100% no-repeat`;
     return (
-      <span style={{ display: "block", flexShrink: 0, position: "relative", width, height, ...style }}>
+      <span style={shineBox(width, height, style)}>
         {img}
         <span aria-hidden className="enchant-shine" style={{ WebkitMask: mask, mask }} />
       </span>
@@ -48,19 +48,27 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
   }
   const svg = (
     <svg width={(w * scale) / 2} height={(h * scale) / 2} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges"
-      role="img" aria-label={title} style={{ display: "block", flexShrink: 0, ...(shine ? {} : style) }}>
+      role="img" aria-label={title} style={{ display: "block", flexShrink: 0, ...(shine ? FILL : style) }}>
       {title && <title>{title}</title>}
       {rects.map(([x, y, n, c], i) => <rect key={i} x={x} y={y} width={n} height={1} fill={c} />)}
     </svg>
   );
   if (!shine) return svg;
   return (
-    <span style={{ display: "block", flexShrink: 0, position: "relative", width: (w * scale) / 2, height: (h * scale) / 2, ...style }}>
+    <span style={shineBox((w * scale) / 2, (h * scale) / 2, style)}>
       {svg}
       <span aria-hidden className="enchant-shine" />
     </span>
   );
 }
+
+// A shining sprite's box takes the caller's style (its size, shadow, flip), and
+// the picture fills it, so the picture and its shine always line up (a style
+// like width 84% would otherwise stretch the box but not the picture).
+const FILL: React.CSSProperties = { width: "100%", height: "100%" };
+const shineBox = (width: number, height: number, style?: React.CSSProperties): React.CSSProperties => ({
+  display: "block", flexShrink: 0, position: "relative", width, height, aspectRatio: `${width} / ${height}`, ...style,
+});
 
 // The sprite for an item drop: gear, a potion, a material, a tool, a codex,
 // an XP scroll or a schematic (undefined for anything without art). An
