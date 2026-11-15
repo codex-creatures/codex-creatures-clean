@@ -61,14 +61,16 @@ export type TavernQuest = {
   training?: { id: string; since: string }; // …the creature in it, training since then (ISO time)
   trainedXp?: number; // …all the XP it has ever trained into creatures (banked; missing: 0)
 };
-export type Visitor = "merchant" | "librarian" | "collector";
+// The Enchantress (lib/enchantress.ts) rerolls enchantments; she only comes when sent for.
+export type Visitor = "merchant" | "librarian" | "collector" | "enchantress";
+export const VISITORS: Visitor[] = ["merchant", "librarian", "collector", "enchantress"];
 
 // Who's in the tavern: only a repaired tavern has visitors. (A ❗ shows at the
 // Den's doorway while someone's there.)
 export const tavernVisitor = (t: TavernQuest): Visitor | undefined => (t.repaired ? t.visitor : undefined);
 
 // Who calls, each homecoming (the rest of the time, nobody).
-export const VISITOR_ODDS: Record<Visitor, number> = { merchant: 0.12, librarian: 0.08, collector: 0.08 };
+export const VISITOR_ODDS: Partial<Record<Visitor, number>> = { merchant: 0.12, librarian: 0.08, collector: 0.08 };
 export const VISITOR_STAY = 2;  // runs a visitor stays
 export const VISITOR_PITY = 3;  // after this many misses in a row, someone's sure to call
 
@@ -90,9 +92,9 @@ export function comeHome(t: TavernQuest, rng: () => number = Math.random, bindle
 }
 
 // Someone arriving, with the stock they'd have in the Labyrinth (the
-// collector brings none: he deals in your creatures), staying VISITOR_STAY runs.
+// collector and the Enchantress bring none: they work on what's yours), staying VISITOR_STAY runs.
 function arrive(who: Visitor, rng: () => number, bindle: boolean): TavernQuest {
-  const stock: { wares?: Ware[]; offers?: string[] } = who === "collector" ? {} : makeRoom(who, rng, Infinity, 1, bindle);
+  const stock: { wares?: Ware[]; offers?: string[] } = who === "merchant" || who === "librarian" ? makeRoom(who, rng, Infinity, 1, bindle) : {};
   return { visitor: who, stay: VISITOR_STAY, visited: true, misses: 0, wares: tavernWares(stock.wares), offers: stock.offers, bought: [] };
 }
 
@@ -116,7 +118,7 @@ export const tavernWares = (wares: Ware[] | undefined): Ware[] | undefined =>
 export const merchantCalls = (t: TavernQuest, rng: () => number = Math.random, bindle = false): TavernQuest => summonVisitor(t, "merchant", rng, bindle);
 
 // Summoning (the user, 2026-11-03): at the repaired tavern you can pay
-// SUMMON_PRICE to have a merchant, a librarian or the collector call now, in place of
+// SUMMON_PRICE to have a merchant, a librarian, the collector or the Enchantress call now, in place of
 // whoever's there (the same kind too: a new one, with new stock), for
 // VISITOR_STAY runs. The gold is the game state's (hooks/useGameState.ts).
 export const SUMMON_PRICE = 500;

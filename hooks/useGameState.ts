@@ -17,7 +17,8 @@ import type { Rarity } from "@/lib/items/budgets";
 import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, giveKlutzStone, spendPoints, RESPEC_COST, sendKlutz as sendKlutzOut, sendBlock, destCost, spendSkill, canPickTrait, pickTrait, selectiveOpen, cageFilterOpen, chestUpgradePrice, packSize, PACK_TRAIT, PACK_MAX, type KlutzState, type KlutzDest, type SkillKey, type TraitKey, type BossClears, type SendBlock } from "@/lib/klutz";
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
-import { blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
+import { VISITORS, blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
 import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
@@ -465,8 +466,8 @@ export function useGameState(initialTab: TabKey = "all") {
   const acceptTavernQuest = () => setTavern(updateTavern((t) => ({ ...t, accepted: true })));
   const blastRubble = () => setTavern(updateTavern(blast));
   const openRubbleForTesting = () => setTavern(updateTavern(forceOpen)); // the altar's testing tools
-  // …and a visitor now: the merchant, then the librarian, then the collector, in turn.
-  const callVisitorForTesting = () => setTavern(updateTavern((t) => callVisitor(t, t.visitor === "merchant" ? "librarian" : t.visitor === "librarian" ? "collector" : "merchant", Math.random, onBindle(loadDungeon().meta))));
+  // …and a visitor now: the merchant, the librarian, the collector and the Enchantress, in turn.
+  const callVisitorForTesting = () => setTavern(updateTavern((t) => callVisitor(t, VISITORS[(VISITORS.indexOf(t.visitor ?? "enchantress") + 1) % VISITORS.length], Math.random, onBindle(loadDungeon().meta))));
   const seeTavern = () => setTavern(updateTavern((t) => ({ ...t, seen: true })));
   // The repair takes its materials once: the tavern's marked repaired as
   // they're taken, and a second go finds it already done.
@@ -945,6 +946,18 @@ export function useGameState(initialTab: TabKey = "all") {
     countDaily("sell", price);
     return true;
   }
+  // The Enchantress (lib/enchantress.ts): a new enchantment on one of your
+  // items, for an essence stone and gold by its rarity. Returns the item as it is now (null: not done).
+  function rerollEnchantment(id: string): CreatureOrItemDrop | null {
+    if (loadTavern().visitor !== "enchantress") return null;
+    const d = inventory.find((x) => x.id === id) as CreatureOrItemDrop | undefined;
+    const cost = d && rerollCost(d);
+    if (!d || !cost || !canReroll(d, gold, materials) || !spendGold(cost.gold)) return null;
+    const next = reroll(d);
+    setMaterials((m) => addMaterials(m, { essence: -REROLL_ESSENCE }));
+    setInventory((prev) => prev.map((x) => (x.id === id ? next : x)));
+    return next;
+  }
   // Returns the card he gives (null: no trade).
   function tradeUpWithCollector(ids: string[]): CreatureOrItemDrop | null {
     if (loadTavern().visitor !== "collector") return null;
@@ -1225,7 +1238,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

@@ -14,6 +14,7 @@ import TileGrid from "./TileGrid";
 import { doubleTapper } from "@/lib/doubleTap";
 import { ItemPeek } from "./LootWindow";
 import type { CreatureOrItemDrop } from "@/lib/types";
+import type { EnchantMode } from "@/lib/items/enchantments";
 
 const MUTED = "rgba(255,255,255,0.5)";
 // How tall the grid is (it scrolls inside this).
@@ -21,7 +22,8 @@ const GRID_HEIGHT = "30cqh";
 
 export type PickerTab = { key: string; label: string; items: CreatureOrItemDrop[] };
 
-export default function ItemPicker({ tabs, action, badge, emptyText = "Nothing of this kind.", start, small, hint = "Tap something for a closer look.", cols, grab, onDouble, wasDrag }: {
+export default function ItemPicker({ tabs, action, badge, emptyText = "Nothing of this kind.", start, small, hint = "Tap something for a closer look.", cols, grab, onDouble, wasDrag, mode }: {
+  mode?: EnchantMode; // where it's for (the bag packer: the Labyrinth), for enchantments that don't work there
   tabs: PickerTab[];
   start?: string;   // the tab to open on (otherwise the first with something in it)
   small?: boolean;  // the empty box is one line, not the full closer look's height (the bag packer: it's last on the page)
@@ -74,7 +76,7 @@ export default function ItemPicker({ tabs, action, badge, emptyText = "Nothing o
 
       <div style={{ marginTop: 8 }}>
         {picked
-          ? <ItemPeek item={{ gear: picked }} action={action(picked)} />
+          ? <ItemPeek item={{ gear: picked }} action={action(picked)} mode={mode} />
           : small ? <p style={{ margin: 0, fontSize: 13, color: MUTED }}>{hint}</p>
           : <ItemPeek look={{ name: "Tap something for a closer look", color: MUTED }} />}
       </div>

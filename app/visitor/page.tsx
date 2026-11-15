@@ -1,7 +1,7 @@
 "use client";
 // app/visitor/page.tsx
-// Whoever's visiting the tavern (lib/tavern.ts: a merchant, a librarian or the
-// creature collector), opened by tapping them as they stroll round its room
+// Whoever's visiting the tavern (lib/tavern.ts: a merchant, a librarian, the
+// creature collector or the Enchantress), opened by tapping them as they stroll round its room
 // (components/TavernRoom.tsx). The merchant and librarian sell what they would
 // in the Labyrinth, and the merchant buys from your Inventory too. The
 // collector buys creatures and trades 3 of a rarity for a card one up
@@ -24,12 +24,16 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import { TRADE_UP_COUNT, creaturePrice, rarityAbove } from "@/lib/collector";
 import { materialOffer, tavernVisitor, type Visitor } from "@/lib/tavern";
+import { canReroll, enchantedItems, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
+import { ENCHANTS, enchantOf } from "@/lib/items/enchantments";
+import { MaterialIcon } from "@/components/PixelSprite";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const TITLE: Record<Visitor, { title: string; icon: string }> = {
   merchant: { title: "Travelling merchant", icon: "🛒" },
   librarian: { title: "Wandering librarian", icon: "📚" },
   collector: { title: "Creature collector", icon: "🫙" },
+  enchantress: { title: "The Enchantress", icon: "✨" },
 };
 
 export default function VisitorPage() {
@@ -83,6 +87,7 @@ export default function VisitorPage() {
         )}
 
         {visitor === "collector" && <CollectorDesk game={game} />}
+        {visitor === "enchantress" && <EnchantressDesk game={game} />}
       </div>
     </DenFrame>
   );
@@ -124,6 +129,47 @@ function TavernSell({ game, armed, setArmed }: { game: ReturnType<typeof useGame
           </button>
         );
       }} />
+  );
+}
+
+// The Enchantress (lib/enchantress.ts): your enchanted weapons and armour, as
+// in the merchant's window; tap one, then Reroll (twice: the second tap pays an
+// essence stone and the gold). The line under it keeps its place: what you have,
+// or what the last reroll gave.
+function EnchantressDesk({ game }: { game: ReturnType<typeof useGameState> }) {
+  const [armed, setArmed] = useState<string | null>(null);
+  const [got, setGot] = useState<CreatureOrItemDrop | null>(null);
+  const items = enchantedItems(game.inventory);
+  const tabs: PickerTab[] = [
+    { key: "weapons", label: "Weapons", items: items.filter((d) => d.itemCategory === "weapon") },
+    { key: "armor", label: "Armour", items: items.filter((d) => d.itemCategory === "armor") },
+  ];
+  const essence = countMaterial(game.materials, "essence");
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <p style={{ fontSize: 13, color: "#d8d4c8", margin: 0 }}>&ldquo;Every charm can be woven again, for a price.&rdquo;</p>
+      <ItemPicker tabs={tabs} emptyText="Nothing enchanted of this kind." hint="Tap an enchanted item."
+        action={(d) => {
+          const cost = rerollCost(d);
+          if (!cost) return null;
+          const on = armed === d.id;
+          return (
+            <button className="chip" disabled={!canReroll(d, game.gold, game.materials)} style={{ minHeight: 44, background: on ? "#6e1f18" : undefined }}
+              onClick={() => {
+                if (!on) { setArmed(d.id); return; }
+                setArmed(null);
+                setGot(game.rerollEnchantment(d.id));
+              }}>
+              {on ? "Reroll?" : "Reroll"} <MaterialIcon k="essence" />{REROLL_ESSENCE} <Coin /> {cost.gold.toLocaleString()}
+            </button>
+          );
+        }} />
+      <p style={{ fontSize: 12, color: MUTED, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {got && enchantOf(got)
+          ? <>{got.name} is now <span className="enchant-line">✦ {ENCHANTS[enchantOf(got)!].name}</span></>
+          : <>You have {essence} essence {essence === 1 ? "stone" : "stones"} and {game.gold} gold.</>}
+      </p>
+    </div>
   );
 }
 

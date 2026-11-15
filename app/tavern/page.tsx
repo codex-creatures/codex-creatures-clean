@@ -22,10 +22,11 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
 import { MATERIALS } from "@/lib/items/materials";
 import { COLLECTOR_PRICES, TRADE_UP_COUNT } from "@/lib/collector";
-import { REPAIR_COST, SUMMON_PRICE, VISITOR_STAY, canRepair, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
+import { REPAIR_COST, SUMMON_PRICE, VISITORS, VISITOR_STAY, canRepair, repairNeeds, tavernVisitor, type Visitor } from "@/lib/tavern";
+import { REROLL_GOLD } from "@/lib/enchantress";
 
 const MUTED = "rgba(255,255,255,0.5)";
-const VISITOR_NAME: Record<Visitor, string> = { merchant: "merchant", librarian: "librarian", collector: "creature collector" };
+const VISITOR_NAME: Record<Visitor, string> = { merchant: "merchant", librarian: "librarian", collector: "creature collector", enchantress: "Enchantress" };
 
 export default function TavernPage() {
   const game = useGameState();
@@ -55,6 +56,7 @@ export default function TavernPage() {
               <li>Repairing it puts a <b>bounty</b> on the Cyclops up on the <b>quest board</b>.</li>
               <li>Once it&apos;s repaired, a <b>merchant</b>, a <b>librarian</b> or the <b>creature collector</b> sometimes calls when you come home from a run, and stays for {VISITOR_STAY} runs. Tap them in the room to trade. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
               <li>The <b>creature collector</b> buys creatures (Common {COLLECTOR_PRICES.common}, Uncommon {COLLECTOR_PRICES.uncommon}, Rare {COLLECTOR_PRICES.rare}, Epic {COLLECTOR_PRICES.epic}, Legendary {COLLECTOR_PRICES.legendary} gold), or trades <b>{TRADE_UP_COUNT} creatures of one rarity</b> for a card of a random creature one rarity up. Not cards, and not a creature in a team, the pit or on a run.</li>
+              <li>The <b>Enchantress</b> rerolls an item&apos;s enchantment for <b>1 essence stone</b> and gold by its rarity (Rare {REROLL_GOLD.rare!.toLocaleString()}, Epic {REROLL_GOLD.epic!.toLocaleString()}, Legendary {REROLL_GOLD.legendary!.toLocaleString()}). She only comes when sent for.</li>
               <li>Or send for one: <b>{SUMMON_PRICE} gold</b> and they come now, for {VISITOR_STAY} runs. Whoever&apos;s in leaves, so you can send for a fresh one too.</li>
             </ul>
           </Help>
@@ -92,11 +94,11 @@ export default function TavernPage() {
           : <>Nobody&apos;s in. Travellers call when you&apos;re back from a run.</>}</p>}
 
         {/* Sending for someone: a second tap pays (and sends whoever's in on their way).
-            The three share the panel's width, under their label, so they fit a phone. */}
+            Two a row, under their label, so they fit a phone. */}
         {t.repaired && <div style={{ marginTop: 10, fontSize: 12, color: MUTED }}>Send for:</div>}
         {t.repaired && (
-          <div style={{ marginTop: 4, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
-            {(["merchant", "librarian", "collector"] as const).map((who) => {
+          <div style={{ marginTop: 4, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 6 }}>
+            {VISITORS.map((who) => {
               const on = summoning === who;
               return (
                 <button key={who} className="chip" disabled={game.gold < SUMMON_PRICE}

@@ -111,10 +111,14 @@ fields optional with defaults.
    ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for a merchant, a librarian or the collector now, for `VISITOR_STAY` runs, in place of whoever's in (one of the same kind too: a new one, new stock). Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
    ✅ **The creature collector** (the user, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
    📌 **The Enchantress, visitors on the clock, and tavern upgrades** (the user, 2026-11-16, decision 47; not built yet; replaces the per-run roll above once built):
-   - **The Enchantress**, a fourth visitor: she doesn't play; she rerolls an item's enchantment
+   - ✅ **The Enchantress**, a fourth visitor (built 2026-11-16, `lib/enchantress.ts`): she doesn't play; she rerolls an item's enchantment
      ([items.md](items.md) §3, Enchantments) for 1 essence stone plus 1,000 / 2,000 / 5,000 gold by
      the item's rarity (Rare / Epic / Legendary). Can be sent for, as the others. Art: PixelLab
-     samples for the user to pick.
+     samples for the user to pick; ⏸ until then the collector's walk, tinted violet in CSS
+     (`VISITOR_TINT`, components/TavernRoom.tsx), stands in. Her window is like the collector's:
+     your enchanted weapons and armour in tabs (worn ones too), tap one to see it, then Reroll
+     (two taps; the second pays). 🧪 Claude's reading: she rerolls only an item that has an
+     enchantment (she doesn't add one), always to a different one, each that fits as likely.
    - **On the clock:** every 30 minutes of real time each visitor rolls on their own chance, so
      several can be in at once; one who comes stays that 30-minute window (a sent-for one 30 minutes
      too). Fixed per window (reloading doesn't reroll); windows missed while away are gone. No more

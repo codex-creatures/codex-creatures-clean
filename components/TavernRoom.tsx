@@ -18,7 +18,7 @@ import { artFor } from "@/lib/sprites/art";
 import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { COLLECTOR, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
-import { tavernVisitor, type TavernQuest } from "@/lib/tavern";
+import { tavernVisitor, type TavernQuest, type Visitor as VisitorKind } from "@/lib/tavern";
 import { lobbyAccount, onPlayersOnline, othersOnline, playersOnline } from "@/lib/online/duelChannel";
 
 const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in the room
@@ -128,14 +128,17 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           </div>
         )}
       </RoomSpot>
-      {visitor && <Visitor sprite={VISITOR_SPRITE[visitor]} title={VISITOR_TITLE[visitor]} label={VISITOR_LABEL[visitor]} />}
+      {visitor && <Visitor sprite={VISITOR_SPRITE[visitor]} title={VISITOR_TITLE[visitor]} label={VISITOR_LABEL[visitor]} tint={VISITOR_TINT[visitor]} />}
     </>
   );
 }
 
-const VISITOR_SPRITE = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR };
-const VISITOR_TITLE = { merchant: "A travelling merchant", librarian: "A wandering librarian", collector: "A creature collector" };
-const VISITOR_LABEL = { merchant: "Merchant", librarian: "Librarian", collector: "Collector" };
+// The Enchantress has no art of her own yet: the collector's, tinted violet,
+// stands in until the user picks from PixelLab samples.
+const VISITOR_SPRITE: Record<VisitorKind, Sprite> = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR, enchantress: COLLECTOR };
+const VISITOR_TINT: Partial<Record<VisitorKind, string>> = { enchantress: "hue-rotate(235deg) saturate(1.5) brightness(1.1)" };
+const VISITOR_TITLE: Record<VisitorKind, string> = { merchant: "A travelling merchant", librarian: "A wandering librarian", collector: "A creature collector", enchantress: "The Enchantress" };
+const VISITOR_LABEL: Record<VisitorKind, string> = { merchant: "Merchant", librarian: "Librarian", collector: "Collector", enchantress: "Enchantress" };
 const VISITOR_FPS = 12; // how often they're moved along
 const STEP_FPS = 9;     // their walk's frames a second (as Klutz's)
 
@@ -144,7 +147,7 @@ const STEP_FPS = 9;     // their walk's frames a second (as Klutz's)
 // pause, mirrored when heading right (the art faces left). Drawn in a box the
 // size of a walk frame, with the still where it sits in that frame, and their
 // name over their head with a ❗. Tap them for their wares.
-function Visitor({ sprite, title, label }: { sprite: Sprite; title: string; label: string }) {
+function Visitor({ sprite, title, label, tint }: { sprite: Sprite; title: string; label: string; tint?: string }) {
   const [t, setT] = useState(0); // (set on the first tick: the clock differs between server and browser)
   useEffect(() => {
     const timer = window.setInterval(() => setT(performance.now() / 1000), 1000 / VISITOR_FPS);
@@ -162,7 +165,7 @@ function Visitor({ sprite, title, label }: { sprite: Sprite; title: string; labe
         style={{ position: "absolute", left: "50%", bottom: pct(walk.h - walk.y, walk.h), translate: "-50% 0", width: "max-content", padding: "2px 6px", fontSize: "clamp(11px, 2.6cqw, 14px)", lineHeight: 1.3, background: "rgba(12, 12, 18, 0.78)", border: "2px solid #8a6a3a", color: "#f1d9a0", transform: "scale(var(--inv, 1))", transformOrigin: "50% 100%", pointerEvents: "auto", cursor: "pointer" }}>
         <span className="news-pulse" aria-label="Someone's visiting">❗ </span>{label}
       </div>
-      <div title={title} data-href={VISITOR_HREF} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)", pointerEvents: "auto", cursor: "pointer" }}>
+      <div title={title} data-href={VISITOR_HREF} style={{ position: "relative", aspectRatio: `${walk.w} / ${walk.h}`, transform: at.left ? undefined : "scaleX(-1)", pointerEvents: "auto", cursor: "pointer", filter: tint }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={art.src} alt={title} draggable={false}
           style={{ position: "absolute", left: pct(walk.x, walk.w), top: pct(walk.y, walk.h), width: pct(art.w, walk.w), height: "auto", imageRendering: "pixelated", visibility: at.walking ? "hidden" : "visible" }} />
