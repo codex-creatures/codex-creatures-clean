@@ -74,13 +74,15 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 14;         // the world version a new run is placed at (bookcases against walls, a storehouse's finds on its floor; version.ts)
+export const PLACED_V = 15;         // the world version a new run is placed at (some tables turned end-on; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
 export const TABLE_CANDLE = 0.7;
 // (v13) …and that a deck of cards lies on it (the user, 2026-11-13: no more cards rooms in the walkable Labyrinth).
 export const TABLE_DECK = 0.05;
+// (v15) …and that it's turned end-on, running north to south (the user, 2026-11-15: "vertical tables"). 🧪
+export const TABLE_TURNED = 0.5;
 export const TABLE_ROOMS = new Set(["easy", "hard", "miniboss", "chest", "stash", "pool", "campfire", "treasure", "merchant", "librarian", "library", "witch", "storehouse", "encampment"]);
 const TABLE_PASS = 61;              // (v12) the tables' own random numbers, so nothing else can move
 // (v14) Bookcases against a room's top wall (the user, 2026-11-14): the chance a room has one (rooms
@@ -633,6 +635,8 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
   for (const id of v >= 12 ? parents : []) {
     const r = room(id), rng = passRng(walk.seed, id, TABLE_PASS);
     if (id === layout.start || id === layout.boss || !r || !TABLE_ROOMS.has(r.kind) || rng() >= TABLE_CHANCE) continue;
+    // (v15) Turned: its footprint the other way round, saved unturned with its quarter turn (grid.ts turned).
+    const turn = v >= 15 && rng() < TABLE_TURNED, def = turn ? { ...table, footprint: { w: table.footprint.d, d: table.footprint.w } } : table;
     const doors = fp.doors.filter((d) => d.room === id);
     const torches = placed.filter((i) => i.room === id && (i.def === "sconce" || i.def === "sconce-side")).map((i) => ({ x: panelOfSubcell(i.sx), y: panelOfSubcell(i.sy) }));
     const list = roomPanels(fp.rooms[id]).filter((p) => !doors.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANDLE_CLEAR)
@@ -641,11 +645,11 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
     let at: Sub | null = null;
     while (list.length && !at) {
       const p = list.splice(Math.floor(rng() * list.length), 1)[0];
-      at = spotsIn(fp, table, p).find((a) => tryAt(table, a, tid, id)) ?? null;
+      at = spotsIn(fp, def, p).find((a) => tryAt(def, a, tid, id)) ?? null;
     }
     if (!at) { report.omitted.push({ id: tid, room: id, what: "no valid spot for a table" }); continue; }
-    put(table, at, tid);
-    placed.push({ id: tid, def: "table", room: id, ...at, size: { ...table.footprint }, ...(rng() < TABLE_CANDLE ? { holds: "candle" as const } : {}),
+    put(def, at, tid);
+    placed.push({ id: tid, def: "table", room: id, ...at, size: { ...table.footprint }, ...(turn ? { rot: 1 as const } : {}), ...(rng() < TABLE_CANDLE ? { holds: "candle" as const } : {}),
       ...(v >= 13 && rng() < TABLE_DECK ? { deck: true as const } : {}) });
   }
 

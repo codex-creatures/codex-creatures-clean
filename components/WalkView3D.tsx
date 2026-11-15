@@ -407,7 +407,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     if (kind) {
       const deck = t.def === "card-deck" && !t.open, rarest = deck ? deckRarity(room(t.room)?.deck) : undefined;
       const glow = rarest && fireInSight(live, t, sim.me) ? RARITY_COLORS[rarest].text : undefined;
-      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Prop3D kind={kind} open={t.open} colour={shade && (() => shade(t.x, t.y))} deck={deck} glow={glow} broken={kind === "bookcase" && !t.shelf && bookcaseBroken(t.key)} empty={!!t.empty} golden={!!t.golden} /></group>);
+      out.push(<group key={t.key} position={[t.x, 0, t.y]} rotation={[0, t.turned ? Math.PI / 2 : 0, 0]}><Prop3D kind={kind} open={t.open} colour={shade && (() => shade(t.x, t.y))} deck={deck} glow={glow} broken={kind === "bookcase" && !t.shelf && bookcaseBroken(t.key)} empty={!!t.empty} golden={!!t.golden} /></group>);
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
     }
@@ -449,7 +449,8 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     // The kit's candles, the 2D view's size against the walls' art (CANDLE_ART 0.85), a flame on each wick when lit.
     // (One on a table, world version 12, stands on its top: `high` up, to the left of its middle.)
     const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, on = glows(c.lit, c.x, c.y);
-    const up = c.high ?? 0, cy = up ? c.y + 0.05 : c.y, cx = up ? c.x + CANDLE_AT : c.x;
+    // (On a table turned end-on, a quarter turn round: its left is to the south.)
+    const up = c.high ?? 0, cy = up ? (c.turned ? c.y - CANDLE_AT : c.y + 0.05) : c.y, cx = up ? (c.turned ? c.x + 0.05 : c.x + CANDLE_AT) : c.x;
     out.push(
       <Mounted key={c.id} x={cx} y={0} up={up}>
         <Upright src={KIT_LIGHTS.candles} x={0} y={cy} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(c.x, c.y))} />

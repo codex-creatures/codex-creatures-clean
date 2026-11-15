@@ -152,8 +152,9 @@ v0 → v1 → v2 are migrations.
 | 12 | the user (2026-11-11) | tables (`table:<room>`, refused below v12), now and then, most with a candle on (`holds: "candle"`; its candle `table:<room>:candle`) |
 | 13 | the user (2026-11-13) | a deck of cards on a table now and then (`deck: true`, refused below v13; its cards on the room, `Room.deck`, rolled as the run's made; `Room.deckTaken` once turned over); no cards rooms in new walkable runs |
 | 14 | the user (2026-11-14) | bookcases against a wall (`shelf:<room>`, some `codex: true`, refused below v14; `Room.shelfSearched` once searched), a floor candle beside some; a storehouse's dynamite and rugged backpack on its floor (`dynamite:<room>`, `backpack:<room>`, refused below v14; `Room.packOnFloor`) |
+| 15 | the user (2026-11-15) | some tables turned end-on (`rot: 1`, refused below v15 and on anything but a table) |
 
-**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v13 (tests/placeV4Pinned.test.ts,
+**Pinned, so old versions can't drift:** v3 (tests/placeV3.test.ts), v4–v14 (tests/placeV4Pinned.test.ts,
 saved runs in tests/fixtures/pins/), each fixture's `tests/golden/walk/<fixture>.placed.json`, and the
 phase-0/1 goldens. **Before changing placement rules, pin the current version; new rules mean a new
 world version.**

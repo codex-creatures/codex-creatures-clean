@@ -68,7 +68,7 @@ export type ObjectDef = {
 export type Instance = {
   id: string; def: string; room: string;     // stable identity, and what it is
   sx: number; sy: number;                    // its anchor subcell (lib/world/grid.ts), whole numbers
-  rot?: 0 | 1 | 2 | 3;                       // quarter turns (missing: 0; nothing turns yet)
+  rot?: 0 | 1 | 2 | 3;                       // quarter turns (missing: 0; only a table turns, a quarter, from world version 15)
   wall?: "north" | "east" | "west" | "south"; // a wall thing: the wall beside the floor subcell sx, sy ("south": world version 3 on)
   start?: "lit";                             // the state generation gave it (a wall torch that starts lit)
   facing?: number;                           // a creature: the way generation set it looking

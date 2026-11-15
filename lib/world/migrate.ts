@@ -59,6 +59,7 @@ const NO_WALL_CANDLES_V = 8; // (wall torches instead: place.ts)
 const TABLES_V = 12;         // (tables, and a candle standing on one)
 const DECKS_V = 13;          // (a deck of cards on a table)
 const SHELVES_V = 14;        // (bookcases against walls, and a storehouse's finds on its floor)
+const TURNED_V = 15;         // (a table turned end-on: the first thing that turns)
 const FINDS = new Set(["dynamite", "backpack"]);
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
@@ -91,6 +92,7 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (p.codex !== undefined && (p.def !== "bookcase" || p.codex !== true || v < SHELVES_V)) return `${p.id}: a codex it can't have`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
+    if (p.rot !== undefined && p.rot !== 0 && (p.def !== "table" || p.rot !== 1 || v < TURNED_V)) return `${p.id}: a turn it can't have`;
     if (p.wall !== undefined && !(v >= FIRST_PLACED_V ? WALLS_V3 : WALLS).has(p.wall as string)) return `${p.id}: unknown wall`;
     if (p.size !== undefined && (v < FIRST_PLACED_V || !sizeOk(p.size))) return `${p.id}: unknown size`;
     if (p.start !== undefined && p.start !== "lit") return `${p.id}: unknown starting state`;

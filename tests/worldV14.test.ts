@@ -99,6 +99,43 @@ describe("bookcases against a wall (world version 14)", () => {
   });
 });
 
+describe("tables turned end-on (world version 15)", () => {
+  it("about half of them run north to south, each inside its panel; none turn before 15, and only a table may", async () => {
+    const { TABLE_TURNED } = await import("../lib/world/place");
+    const { footprintPanels } = await import("../lib/world/grid");
+    expect(runs.slice(0, 3).flatMap((r) => at(r, 14).placed).some((i) => i.rot)).toBe(false);
+    const bad: string[] = [];
+    let tables = 0, turned = 0;
+    for (const [n, run] of runs.entries()) {
+      const { walk, placed } = at(run, 15), plan = layoutFloorplan(walk.layout);
+      expect(placedProblem(placed, 15)).toBeNull();
+      const placements = placementsFrom(placed, walk);
+      for (const t of placed.filter((i) => i.def === "table")) {
+        tables++;
+        if (!t.rot) continue;
+        turned++;
+        const cells = footprintCells(t, t.size!, t.rot);
+        const xs = new Set(cells.map((c) => c.sx)), ys = new Set(cells.map((c) => c.sy));
+        if (xs.size !== 2 || ys.size !== 3) bad.push(`${n} ${t.id}: ${xs.size} by ${ys.size}`);
+        const panels = new Set(cells.map((c) => `${panelOfSubcell(c.sx)},${panelOfSubcell(c.sy)}`));
+        if (panels.size !== 1) bad.push(`${n} ${t.id}: over ${panels.size} panels`);
+        if (footprintPanels(t, t.size!).some((p) => plan.tiles[p.y * plan.w + p.x] === ROCK)) bad.push(`${n} ${t.id}: on rock`);
+        const thing = thingsOf(walk.layout, placements, [t.room], (k) => walkRoom(run, k), [], undefined, 0).find((q) => q.key === t.id);
+        if (!thing?.turned) bad.push(`${n} ${t.id}: drawn unturned`);
+        const candle = placements.candles.find((c) => c.id === `${t.id}:candle`);
+        if (candle && !candle.turned) bad.push(`${n} ${t.id}: its candle unturned`);
+      }
+    }
+    expect(bad).toEqual([]);
+    expect(turned / tables).toBeGreaterThan(TABLE_TURNED - 0.25);
+    expect(turned / tables).toBeLessThan(TABLE_TURNED + 0.25);
+    const t: Instance = { id: "table:r", def: "table", room: "r", sx: 3, sy: 3, size: { w: 3, d: 2 }, rot: 1 };
+    expect(placedProblem([t], 15)).toBeNull();
+    expect(placedProblem([t], 14)).toMatch(/turn it can't have/);
+    expect(placedProblem([{ ...t, def: "chest" }], 15)).toMatch(/turn it can't have/);
+  }, 60_000);
+});
+
 describe("a storehouse's finds on its floor (world version 14)", () => {
   // The Labyrinth with Klutz's dynamite wanted: its first large room is the storehouse, holding the dynamite
   // (and, on the bindle, the rugged backpack now and then).

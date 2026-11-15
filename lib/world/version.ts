@@ -32,7 +32,8 @@
 // 14: bookcases against rooms' top walls now and then, some with a candle beside them and a few
 //    with a codex in (`shelf:<room>`); a storehouse's dynamite and rugged backpack lying on its
 //    floor to pick up (`dynamite:<room>`, `backpack:<room>`) (the user, 2026-11-14): new runs only.
-export const WALK_V = 14;
+// 15: some tables turned end-on, running north to south (`rot: 1`; the user, 2026-11-15): new runs only.
+export const WALK_V = 15;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

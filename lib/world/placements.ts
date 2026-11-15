@@ -28,6 +28,7 @@ export type Placements = {
   spot: (id: string) => Pt | undefined;  // where an instance stands (a room's feature, a cage), by id
   decks?: Set<string>;                   // (world version 13) the tables a deck of cards lies on, by id
   codexes?: Set<string>;                 // (world version 14) the bookcases against walls with a codex in, by id
+  turned?: Set<string>;                  // (world version 15) the tables turned end-on, by id
   v?: number;                            // the world version they were placed by
 };
 
@@ -71,7 +72,7 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
     } else if (i.def === "table" && i.holds === "candle") {
       // (v12) A candle on a table: a candle like a floor one (walk near and it lights), up on the table.
-      candles.push({ id: `${i.id}:candle`, room: i.room, ...p, lit: lit.has(`${i.id}:candle`), high: TABLE_TOP });
+      candles.push({ id: `${i.id}:candle`, room: i.room, ...p, lit: lit.has(`${i.id}:candle`), high: TABLE_TOP, ...(i.rot === 1 ? { turned: true as const } : {}) });
     } else if (i.def === "witch") {
       witches.push({ room: i.room, index: 0, ...p, facing: i.facing ?? 0, walks: true, path: [], wait: 1 });
     } else if (i.def === "foe" && i.foe) {
@@ -82,5 +83,6 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
   }
   const decks = new Set(placed.filter((i) => i.def === "table" && i.deck).map((i) => i.id));
   const codexes = new Set(placed.filter((i) => i.def === "bookcase" && i.codex).map((i) => i.id));
-  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), decks, codexes, v: walk.v ?? 0 };
+  const turned = new Set(placed.filter((i) => i.def === "table" && i.rot === 1).map((i) => i.id));
+  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), decks, codexes, turned, v: walk.v ?? 0 };
 }

@@ -229,6 +229,11 @@ candle (the room's next candle id) on the panel to one side, else the other, els
 storehouse's finds (pass 63): its dynamite (`dynamite:<room>`) and, when its stores hold the rugged
 backpack, `backpack:<room>` (taken out of the stores as the run's made: migrate.ts `withFloorFinds`),
 walk-over, on a random valid panel off the doors (`CANDLE_CLEAR`). Both passes come before the spawns.
+v15, the user, 2026-11-15: pass 6b's tables, then (on its stream, right after a room's table roll)
+`TABLE_TURNED` 50% of them turned end-on, running north to south: placed with the footprint the other way
+round (2 × 3 subcells, still inside one panel), saved with its unturned size and `rot: 1` (the first thing
+that turns; refused on anything else, and below v15). Drawn a quarter turn round, the candle on one to its
+south end.
 
 ### Modules
 

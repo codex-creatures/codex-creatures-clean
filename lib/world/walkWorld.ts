@@ -121,7 +121,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
   cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true;
-  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true }; // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
+  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true; turned?: true }; // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -219,9 +219,9 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     }
     // (World version 12) A table, as furniture: in the way, but nothing to use (inert: a tap by it walks).
     // (13) One with a deck of cards on it is the deck, to turn over, till it has been.
-    const table = placed.spot(`table:${id}`);
-    if (table && placed.decks?.has(`table:${id}`) && !r.deckTaken) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "card-deck", open: false, deck: true }));
-    else if (table) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "table", open: false, inert: true }));
+    const table = placed.spot(`table:${id}`), turned = placed.turned?.has(`table:${id}`) ? { turned: true as const } : {};
+    if (table && placed.decks?.has(`table:${id}`) && !r.deckTaken) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "card-deck", open: false, deck: true, ...turned }));
+    else if (table) out.push(thingOf({ key: `table:${id}`, room: id, ...table, def: "table", open: false, inert: true, ...turned }));
     // A camp's cages, along its top: "!" over each you can open (its guards beaten, or none to see).
     // Till they're beaten, its guards are round them: trying one sets them on you, as a guarded chest does.
     r.cages?.forEach((cage, i) => {
