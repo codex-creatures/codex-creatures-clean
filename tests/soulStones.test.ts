@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, CREATURES_BY_RARITY } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, PRE_V2_SPECIES, CREATURES_BY_RARITY, SPECIAL_MOVES, RACE_MOVES, LEARNABLE_MOVES } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { buildFighter } from "../lib/combat/loadout";
-import { createBattle, resolveRound, activeOf, isCrippled, type BattleEvent } from "../lib/combat/battle";
+import { createBattle, resolveRound, activeOf, isCrippled, isUtilityMove, turnPriority, type BattleEvent } from "../lib/combat/battle";
 import type { Fighter } from "../lib/combat/engine";
 import {
   POOLS, SOUL_STONE_CHANCE, TOXIC_SKIN, REVITALISE_HEAL, PERFECTIONIST_STEP,
@@ -157,8 +157,23 @@ describe("soul stones in battle", () => {
     expect(perfect[4]).toBe(plain[4]); // Crush: a new run
   });
 
+  it("Trickster: every utility move (no damage) goes first, attacks don't (the user, 2026-11-16)", () => {
+    const utility = [...SPECIAL_MOVES, ...RACE_MOVES, ...LEARNABLE_MOVES].filter(isUtilityMove);
+    // The ones aimed at a foe count as much as the ones on itself.
+    for (const n of ["Mirage", "Corpsify", "Brace", "Meditate", "Nullifying Voice", "Enfeeble", "Caltrops", "Choking Smog", "Haunting Scream", "Corrosive Soak", "Cleansing Water", "Flame Body", "Healing Blessing", "Blood Sacrifice", "Crystal Armour", "Divine Strength"])
+      expect(utility.map((m) => m.name), n).toContain(n);
+    const base = { ...buildFighter(CREATURE_BY_ID.moss_wolf, { hp: 50 }), statuses: [] };
+    for (const m of utility) {
+      const f = { ...base, skills: [m], soulStone: "trickster" as const };
+      expect(turnPriority(f, { kind: "attack", skillName: m.name }), m.name).toBe(2);
+      expect(turnPriority({ ...f, soulStone: undefined }, { kind: "attack", skillName: m.name }), m.name).toBeLessThan(2);
+    }
+    for (const m of [...SPECIAL_MOVES, ...RACE_MOVES, ...LEARNABLE_MOVES].filter((x) => !isUtilityMove(x)))
+      expect(turnPriority({ ...base, skills: [m], soulStone: "trickster" }, { kind: "attack", skillName: m.name }), m.name).toBeLessThan(2);
+    expect(SOUL_STONES.trickster.text).toBe("Its utility moves always go first.");
+  });
   it("Trickster: its utility move goes before a faster attacker", () => {
-    const slow = with_(buildFighter(CREATURE_BY_ID.void_serpent, { hp: 900, agility: 0 }, undefined, ["Mirage", "Slash"]), "trickster");
+    const slow = with_(buildFighter(CREATURE_BY_ID.flicker_wisp, { hp: 900, agility: 0 }, undefined, ["Mirage", "Slash"]), "trickster");
     const fast = brute(undefined, 200);
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     const s = createBattle([slow], [fast]);
@@ -217,7 +232,7 @@ describe("the starter's and Klutz's soul stones", () => {
   });
 });
 
-import { SOUL_STONE_KEYS, SOUL_STONE_REPLACE_COST, setStoneIn } from "../lib/creatures/soulStones";
+import { SOUL_STONES, SOUL_STONE_KEYS, SOUL_STONE_REPLACE_COST, setStoneIn } from "../lib/creatures/soulStones";
 import { soulStoneDrop } from "../lib/drops";
 import { bossSoulStone, CYCLOPS_SOUL_STONE, WARDEN_SOUL_STONE } from "../lib/dungeon/run";
 import type { Drop } from "../lib/types";

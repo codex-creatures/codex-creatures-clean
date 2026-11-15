@@ -560,8 +560,8 @@ export const LIBRARY_BOOKS = 5;
 // A walkable library's broken bookcases (decision 39, the user, 2026-11-10;
 // world version 9): BOOKCASES of them, each a loot box holding only codexes
 // and clairvoyance scrolls, rolled apart. BOOKCASE_EMPTY of them hold no
-// codex, the rest BOOKCASE_CODEXES, each at CODEX_ODDS (Legendary counts as
-// Epic till there's a Legendary codex: randomCodexOfRarity); each has
+// codex, the rest BOOKCASE_CODEXES, each at CODEX_ODDS (Legendary codexes since
+// the user's v2 codex review, 2026-11-16: Choking Smog, Haunting Scream); each has
 // BOOKCASE_SCROLL of a clairvoyance scroll, BOOKCASE_SCROLLS at most a library.
 export const BOOKCASES: [number, number] = [3, 5];
 export const BOOKCASE_EMPTY = 0.3;
@@ -582,7 +582,7 @@ export function rollBookcases(rng: Rng = Math.random): Room[] {
 export const shelfCodex = (rng: Rng = Math.random) => codexDrop(randomCodexOfRarity(weighted(CODEX_ODDS, rng), rng));
 export const LEARNABLE_CODEX_PRICE = 200; // a librarian's codex any creature can read, or a race-kit move's (Claude's draft, 2026-10-26; older race codexes: CODEX_PRICE)
 // (Impale, the Epic special move, costs what the older race codexes do.)
-export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) || MOVE_BY_NAME[move]?.codexRarity === "epic" ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
+export const codexPrice = (move: string) => (RACE_MOVES.some((m) => m.name === move) || MOVE_BY_NAME[move]?.codexRarity === "epic" || MOVE_BY_NAME[move]?.codexRarity === "legendary" ? CODEX_PRICE : LEARNABLE_CODEX_PRICE);
 export const STOREHOUSE_GUARD = 0.35;
 export const STOREHOUSE_MATERIALS: [number, number] = [3, 5];
 export const STOREHOUSE_POTIONS: [number, number] = [1, 2];
@@ -976,7 +976,7 @@ export const FOE_CODEX: Record<DungeonId, { upTo: Rarity; offRace: number } | nu
 };
 export const NOT_ON_FOES = ["Healing Blessing", "Blood Sacrifice"];
 export const ONE_A_ROOM = ["Choking Smog"];
-const CODEX_RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic"];
+const CODEX_RARITY_ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"]; // (Legendary codexes, from 2026-11-16: never on foes, as no dungeon goes past Epic)
 const FOE_CODEXES = (): Skill[] => [...RACE_CODEX_MOVES, ...LEARNABLE_MOVES].filter((m) => !NOT_ON_FOES.includes(m.name));
 // A seed from what was rolled for it (its species, level and %s; not its gear, which is rolled unseeded): the same foe, the same picks.
 function foeSeed(e: Enemy): number {

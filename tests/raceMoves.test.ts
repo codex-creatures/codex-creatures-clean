@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createBattle, resolveRound, affordableSkills, type BattleAction } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
-import { CREATURE_BY_ID as LIVE_BY_ID, isRetiredMove, PRE_V2_SPECIES, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID as LIVE_BY_ID, CREATURE_TEMPLATES, isRetiredMove, PRE_V2_SPECIES, RACE_MOVES, LEARNABLE_MOVES, MOVE_BY_NAME, movesAvailableTo, resolveMoves, canLearnFromCodex } from "../lib/creatures/creatureData";
 // Battle mechanics tests use the older species, with the moves they were written with.
 const CREATURE_BY_ID = { ...LIVE_BY_ID, ...PRE_V2_SPECIES };
 import { codexDrop, dropFromOutcome, RACE_CODEX_MOVES } from "../lib/drops";
@@ -43,16 +43,19 @@ describe("what a creature can use and learn", () => {
     expect(canLearnFromCodex(CREATURE_BY_ID.moss_wolf, "Pounce")).toBe(true);
   });
 
-  it("race moves: their race plus the species the user named, minus any left out", () => {
-    const can = (id: string, m: string) => canLearnFromCodex(CREATURE_BY_ID[id], m);
-    for (const id of ["void_serpent", "deep_angler", "veilstalker", "cave_bat", "moss_wolf"]) expect(can(id, "Pounce")).toBe(true);
-    for (const id of ["ironhide", "tunnel_wyrm", "rust_beetle"]) expect(can(id, "Pounce")).toBe(false);
-    for (const id of ["flicker_wisp", "dust_sprite", "dustwraith", "swamp_witch", "mr_shadows", "dreadpox", "thunderhead", "pale_rider", "storm_phoenix"]) expect(can(id, "Mirage")).toBe(true);
-    for (const id of ["rattlebones", "hollow_matriarch", "dreadpox", "plague_rat"]) expect(can(id, "Corpsify")).toBe(true);
-    for (const id of ["rotgut_fly", "leafblade_scout", "aurelius", "the_watcher", "thunderhead", "sylvaran", "storm_phoenix", "hollow_matriarch"]) expect(can(id, "Barrage")).toBe(true);
-    for (const id of ["dust_sprite", "tunnel_wyrm", "swamp_witch", "mr_shadows", "thunderhead", "ironhide"]) expect(can(id, "Erupt")).toBe(true);
-    expect(can("moss_wolf", "Erupt")).toBe(false);
-    expect(can("moss_wolf", "Mirage")).toBe(false);
+  it("race moves: only the species on the user's list (the v2 codex review, 2026-11-16)", () => {
+    const LISTS: Record<string, string[]> = {
+      "Pounce":           ["moss_wolf", "bellow_toad", "dire_wolf", "cave_bat", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "leafblade_scout", "aurelius", "gleamling", "deep_angler", "plague_rat"],
+      "Mirage":           ["dust_sprite", "flicker_wisp", "veilstalker", "the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider"],
+      "Erupt":            ["ironhide", "rust_beetle", "crystalback", "crystal_golem", "dust_sprite", "dustwraith", "mr_shadows", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "tunnel_wyrm", "dreadpox"],
+      "Barrage":          ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "rotgut_fly", "pale_rider"],
+      "Rabid Bite":       ["moss_wolf", "bellow_toad", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "shambler", "dustwraith", "mr_shadows", "swamp_witch", "deep_angler", "tunnel_wyrm", "plague_rat", "rotgut_fly", "glob", "dreadpox"],
+      "Corpsify":         ["rattlebones", "shambler", "dustwraith", "mr_shadows", "storm_phoenix", "plague_rat", "glob", "dreadpox", "pale_rider"],
+    };
+    for (const [move, ids] of Object.entries(LISTS))
+      for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, move), `${move} ${t.id}`).toBe(ids.includes(t.id));
+    // Taken off: Pounce from the Amber Wasp and Skull Raven, Mirage from the Void Serpent, Corpsify from the Hollow Matriarch.
+    for (const [id, m] of [["amber_wasp", "Pounce"], ["storm_phoenix", "Pounce"], ["void_serpent", "Mirage"], ["hollow_matriarch", "Corpsify"]]) expect(canLearnFromCodex(CREATURE_BY_ID[id], m), `${m} ${id}`).toBe(false);
   });
 
   it("Erupt: 25 magic damage, 70 energy, a 25% chance to cripple for 3-5 rounds", () => {

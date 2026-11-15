@@ -171,9 +171,9 @@ describe("a library's broken bookcases", () => {
     }
   });
 
-  it("3–5 a library; only codexes (never Legendary) and clairvoyance scrolls, at most 2 scrolls; about 30% hold no codex", () => {
+  it("3–5 a library; only codexes and clairvoyance scrolls, at most 2 scrolls; about 30% hold no codex", () => {
     const rng = seeded(11);
-    let cases = 0, noCodex = 0, codexes = 0, epic = 0;
+    let cases = 0, noCodex = 0, codexes = 0, epic = 0, legendary = 0;
     for (let i = 0; i < 2000; i++) {
       const lib = rollBookcases(rng);
       expect(lib.length).toBeGreaterThanOrEqual(3);
@@ -189,15 +189,17 @@ describe("a library's broken bookcases", () => {
         expect(books.length).toBeLessThanOrEqual(2);
         if (books.length === 0) noCodex++;
         codexes += books.length;
-        for (const d of books) { expect(d!.rarity).not.toBe("legendary"); expect(codexRarityOf(d!.codexMove!)).toBe(d!.rarity); if (d!.rarity === "epic") epic++; }
+        for (const d of books) { expect(codexRarityOf(d!.codexMove!)).toBe(d!.rarity); if (d!.rarity === "epic") epic++; if (d!.rarity === "legendary") legendary++; }
       }
       expect(scrolls).toBeLessThanOrEqual(BOOKCASE_SCROLLS);
     }
     expect(noCodex / cases).toBeGreaterThan(0.26);
     expect(noCodex / cases).toBeLessThan(0.34);
-    // Epic is 9 + 1 (Legendary's) in 100 of the codexes.
-    expect(epic / codexes).toBeGreaterThan(0.08);
-    expect(epic / codexes).toBeLessThan(0.12);
+    // Epic is 9 in 100 of the codexes, Legendary 1 (there are Legendary codexes since 2026-11-16).
+    expect(epic / codexes).toBeGreaterThan(0.07);
+    expect(epic / codexes).toBeLessThan(0.11);
+    expect(legendary / codexes).toBeGreaterThan(0.003);
+    expect(legendary / codexes).toBeLessThan(0.02);
   });
 });
 

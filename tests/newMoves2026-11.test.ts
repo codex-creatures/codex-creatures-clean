@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { createBattle, resolveRound, sendInReplacement, activeOf, type BattleState } from "../lib/combat/battle";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
-import { CREATURE_BY_ID, CREATURE_TEMPLATES, KLUTZ, MOVE_BY_NAME, canLearnFromCodex, stylesOf } from "../lib/creatures/creatureData";
+import { CREATURE_BY_ID, CREATURE_TEMPLATES, KLUTZ, MOVE_BY_NAME, canLearnFromCodex } from "../lib/creatures/creatureData";
 import { codexDrop } from "../lib/drops";
 import { SOUL_STONES } from "../lib/creatures/soulStones";
 import type { CreatureOrItemDrop } from "../lib/types";
@@ -19,22 +19,17 @@ describe("who can learn the new codexes", () => {
     for (const t of [...CREATURE_TEMPLATES, KLUTZ]) expect(canLearnFromCodex(t, "Brace"), t.id).toBe(true);
     expect((codexDrop("Brace") as CreatureOrItemDrop).rarity).toBe("rare");
   });
-  it("the Divine blessings: every creature that fights in that style (hybrids too); Epic codexes", () => {
-    for (const [move, style] of [["Divine Strength", "melee"], ["Arcane Channel", "magic"], ["Sureshot Blessing", "ranged"]] as const) {
-      const learners = CREATURE_TEMPLATES.filter((t) => canLearnFromCodex(t, move));
-      expect(learners.length, move).toBeGreaterThan(5);
-      for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, move), `${move} ${t.id}`).toBe(stylesOf(t).includes(style));
+  it("the Divine blessings: any creature can read them (the v2 review, 2026-11-16; it was by style); Epic codexes", () => {
+    for (const move of ["Divine Strength", "Arcane Channel", "Sureshot Blessing"]) {
+      for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, move), `${move} ${t.id}`).toBe(true);
       expect(canLearnFromCodex(KLUTZ, move)).toBe(true); // (Klutz can learn any codex: the user, 2026-11-14)
       expect((codexDrop(move) as CreatureOrItemDrop).rarity).toBe("epic");
       expect(MOVE_BY_NAME[move]).toMatchObject({ energyCost: 50, cooldown: 5, race: "divine", self: true });
     }
-    // A Battlemage learns both melee and magic.
-    expect(canLearnFromCodex(CREATURE_BY_ID.crystal_golem, "Divine Strength")).toBe(true);
-    expect(canLearnFromCodex(CREATURE_BY_ID.crystal_golem, "Arcane Channel")).toBe(true);
-    expect(canLearnFromCodex(CREATURE_BY_ID.crystal_golem, "Sureshot Blessing")).toBe(false);
   });
-  it("Blood Sacrifice: Dark Seal's learners; an Epic codex, 70 energy", () => {
-    for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, "Blood Sacrifice"), t.id).toBe(canLearnFromCodex(t, "Dark Seal"));
+  it("Blood Sacrifice: its own list now (the v2 review: it was Dark Seal's); an Epic codex, 70 energy", () => {
+    expect(MOVE_BY_NAME["Blood Sacrifice"].learners).toEqual(["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "dreadpox", "pale_rider"]);
+    for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, "Blood Sacrifice"), t.id).toBe(MOVE_BY_NAME["Blood Sacrifice"].learners!.includes(t.id));
     expect((codexDrop("Blood Sacrifice") as CreatureOrItemDrop).rarity).toBe("epic");
     expect(MOVE_BY_NAME["Blood Sacrifice"]).toMatchObject({ energyCost: 70, damage: 0 });
   });

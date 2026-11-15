@@ -24,7 +24,7 @@ export const SOUL_STONES: Record<SoulStoneKey, { name: string; icon: string; tex
   haunting_presence: { name: "Haunting Presence", icon: "👻", text: "When it comes in, 25% that the enemy is crippled with fear and loses its next attack." },
   unstoppable_force: { name: "Unstoppable Force", icon: "🪨", text: "Can't be crippled." },
   perfectionist:     { name: "Perfectionist",     icon: "🎯", text: "Each use of the same move in a row hits 10% harder than the last." },
-  trickster:         { name: "Trickster",         icon: "🃏", text: "Its utility moves (Mirage, Corpsify) always go first." },
+  trickster:         { name: "Trickster",         icon: "🃏", text: "Its utility moves always go first." },
   revitalise:        { name: "Revitalise",        icon: "💚", text: "Swapped out to the bench, it heals 25% of its max HP." },
 };
 

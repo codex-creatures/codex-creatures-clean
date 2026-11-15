@@ -45,7 +45,9 @@ describe("race chart", () => {
 
   it("every scannable creature and every move has a race", () => {
     for (const c of CREATURE_TEMPLATES) expect(SPECIES_RACES[c.id]?.length, c.id).toBeGreaterThan(0);
-    for (const m of [...ALL_SKILLS, ...LEARNABLE_MOVES, ...RACE_MOVES]) expect(MOVE_RACES[m.name], m.name).toBeDefined();
+    // (Hobble Hex lands neutral: the user's v2 codex review, 2026-11-16.)
+    for (const m of [...ALL_SKILLS, ...LEARNABLE_MOVES, ...RACE_MOVES]) if (m.name !== "Hobble Hex") expect(MOVE_RACES[m.name], m.name).toBeDefined();
+    expect(MOVE_RACES["Hobble Hex"]).toBeUndefined();
   });
 });
 

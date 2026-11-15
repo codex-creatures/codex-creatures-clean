@@ -19,12 +19,13 @@ const attack = (skillName: string) => ({ kind: "attack" as const, skillName });
 const swap = (to: number) => ({ kind: "swap" as const, to });
 
 describe("special moves: who can learn them", () => {
+  // The user's lists (the v2 codex review, 2026-11-16).
   const LISTS: Record<string, string[]> = {
-    "Dark Seal":        ["dreadpox", "swamp_witch", "mr_shadows", "flame_imp", "dustwraith", "thunderhead"],
-    "Healing Blessing": ["thunderhead", "crystal_golem", "veilstalker", "flicker_wisp", "sylvaran"],
-    "Corrosive Soak":   ["bellow_toad", "rotgut_fly", "plague_rat", "glob", "deep_angler", "dreadpox", "void_serpent", "hollow_matriarch"],
-    "Impale":           ["deep_angler", "aurelius", "crystal_golem", "storm_phoenix", "sylvaran", "pale_rider"],
-    "Pin Down":         ["thicket_archer", "aurelius", "storm_phoenix", "sylvaran", "hollow_matriarch", "rotgut_fly"],
+    "Dark Seal":        ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "thunderhead", "dreadpox", "pale_rider"],
+    "Healing Blessing": ["ironhide", "crystalback", "crystal_golem", "flicker_wisp", "the_watcher", "aurelius", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider"],
+    "Corrosive Soak":   ["bellow_toad", "crystalback", "hollow_matriarch", "the_watcher", "void_serpent", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "plague_rat", "rotgut_fly", "glob", "dreadpox"],
+    "Impale":           ["ironhide", "crystalback", "crystal_golem", "hollow_matriarch", "veilstalker", "rattlebones", "storm_phoenix", "thicket_archer", "aurelius", "sylvaran", "deep_angler", "tunnel_wyrm", "pale_rider"],
+    "Pin Down":         ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran"],
   };
   it("only the creatures on each move's list", () => {
     for (const [move, ids] of Object.entries(LISTS)) {
@@ -41,9 +42,9 @@ describe("special moves: who can learn them", () => {
     for (const [m, r] of Object.entries(want)) expect((codexDrop(m) as CreatureOrItemDrop).rarity, m).toBe(r);
     for (const m of SPECIAL_MOVES) expect(RACE_CODEX_MOVES).toContain(m);
   });
-  it("the old melee Impale is retired: Impale is now the Underkin ranged move", () => {
+  it("the old melee Impale is retired: Impale is now the ranged move (Geo since the v2 review; it was Underkin)", () => {
     expect(ALL_SKILLS.some((m) => m.name === "Impale")).toBe(false);
-    expect(MOVE_BY_NAME.Impale).toMatchObject({ type: "ranged", race: "underkin", damage: 25, energyCost: 80 });
+    expect(MOVE_BY_NAME.Impale).toMatchObject({ type: "ranged", race: "geo", damage: 25, energyCost: 80 });
     expect(canLearnFromCodex(CREATURE_BY_ID.dire_wolf, "Impale")).toBe(false);
   });
 });

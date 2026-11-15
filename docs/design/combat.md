@@ -244,11 +244,20 @@ from two sim rounds (3v3, Lv 5–30, Normal AI; the reports were published pages
 by −3 to +5 points of win rate. Big hits use a damage multiplier (`mult`), not big power, because
 power counts for less as attack grows.
 
-- **Rarity:** Common: Whiplash, Nibble, Crystal Armour, Poison Dart, Headbutt, Slap. Uncommon:
-  Nullifying Voice, Vampiric Bite, Bone Javelin, Caltrops, Cleansing Water, Ambush, Soul Snatch,
-  Bolas Shot, Enfeeble, Razor Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Smite, Mega
-  Smash, Emulate, Voltage Surge, Flame Body, Haemorrhage. Epic: Haunting Scream, Choking Smog,
-  Implode, Fissure. (A Legendary codex tier was floated for Choking Smog and Blood Sacrifice: ❓ open.)
+- ✅ **The user's v2 codex review** (2026-11-16, the spreadsheet `codex-creatures-review v2.xlsx`):
+  who can read each codex is now the user's list, for every codex but the three anyone can read
+  (Cripple, Crippling Shot, Hobble Hex), Meditate and Brace: `learners` on each move, race codexes
+  too (`raceMovesFor`). The Divine blessings (Divine Strength, Arcane Channel, Sureshot Blessing)
+  are for anyone now, not by style. Races: Dark Seal lands Divine (was Undead), Impale Geo (was
+  Underkin), Caltrops Humanoid (was neutral), Hobble Hex neutral (was Toxic). Mirage lasts 5 rounds
+  (was 3). A creature that loses a codex move it had learned can no longer use it.
+- **Rarity:** Common: Whiplash, Nibble, Crystal Armour, Poison Dart, Headbutt, Slap, Cleansing
+  Water. Uncommon: Nullifying Voice, Vampiric Bite, Caltrops, Ambush, Bolas Shot, Enfeeble, Razor
+  Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Mega Smash, Emulate, Voltage Surge, Flame
+  Body, Haemorrhage, Soul Snatch, Bone Javelin. Epic: Smite, Implode, Fissure. ✅ Legendary (the v2
+  review): Choking Smog, Haunting Scream. Legendary codexes cost what Epic ones do at a librarian
+  (`codexPrice`), come from a library's bookcases 1 in 100 (`CODEX_ODDS`) and the other places
+  every codex does, and are never on foes (no dungeon goes past Epic).
 - **Clouds** (`GroundEffect` "cloud", lib/combat/battle.ts): Choking Smog, Implode and the Hydra's
   breath. Whoever stands in one is poisoned (10% a round for Smog and Implode), and keeps it 1–3
   rounds after it leaves or the cloud clears; the Hydra's poisons only as a creature comes in, for 20

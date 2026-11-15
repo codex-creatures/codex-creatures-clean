@@ -484,14 +484,8 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   }
   // A Trickster's utility move goes first of all; then a pounce (and a
   // Quickscale set's first attack); otherwise fastest first.
-  const quick = (f: Combatant, a: BattleAction) => a.kind === "attack" && hasSet(f, "dragonscale_tunic") && !f.setUsed;
-  const pounces = (f: Combatant, a: BattleAction) => {
-    const sk = a.kind === "attack" ? f.skills.find((s) => s.name === a.skillName) : undefined;
-    if (sk?.self && hasStone(f, "trickster")) return 2;
-    const k = sk?.effect?.kind;
-    if (k === "implode") return -1; // Implode goes last
-    return k === "pounce" || k === "quick" || k === "brace" || k === "smoke" || k === "ambush" || quick(f, a) ? 1 : 0;
-  };
+  const pounces = turnPriority;
+  const quick = quickscaleTurn;
   const attackers = turns
     .map((t) => {
       const actor = state.sides[t.key].team[t.index];
@@ -966,6 +960,20 @@ function cleanse(state: BattleState, key: SideKey, index: number) {
   if (last.id === "soak") f.defenceCut = undefined;
   state.log.push({ type: "effect", side: key, index, name: f.name, text: `shakes off its ${CLEANSED[last.id] ?? last.id}`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "ability" });
 }
+
+// Who goes first in a round, before agility: 2 a Trickster's utility move (any
+// move with no damage), 1 a first-strike move (and a Quickscale set's first
+// attack), -1 Implode (last), 0 the rest.
+export const isUtilityMove = (s: Skill) => s.damage <= 0;
+export function turnPriority(f: Combatant, a: BattleAction): number {
+  const sk = a.kind === "attack" ? f.skills.find((s) => s.name === a.skillName) : undefined;
+  if (sk && isUtilityMove(sk) && hasStone(f, "trickster")) return 2;
+  const k = sk?.effect?.kind;
+  if (k === "implode") return -1; // Implode goes last
+  return k === "pounce" || k === "quick" || k === "brace" || k === "smoke" || k === "ambush" || quickscaleTurn(f, a) ? 1 : 0;
+}
+// A Quickscale set's first attack of the fight.
+const quickscaleTurn = (f: Combatant, a: BattleAction) => a.kind === "attack" && hasSet(f, "dragonscale_tunic") && !f.setUsed;
 
 // A creature has just hit 0 HP: it faints, unless Corpsify brings it back.
 function knockedOut(state: BattleState, key: SideKey, index: number) {

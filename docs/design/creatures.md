@@ -78,8 +78,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - **Perfectionist**: each use of the same move in a row does 10% more than the last, compounding
     (10 → 11 → 12.1, ±5% spread), with no cap. Resets on a different move, a rest, a stumble or
     fear, an item, or swapping out (the foe swapping doesn't reset it).
-  - **Trickster**: its utility moves (ones used on itself: Mirage, Corpsify) go before everyone,
-    whatever the agility. (Cripple, Haste and Precise are utility *attacks*: not included.)
+  - **Trickster**: its utility moves go before everyone, whatever the agility. ✅ (the user,
+    2026-11-16) Every utility move counts, any move that does no damage, the ones aimed at a foe
+    too (Nullifying Voice, Caltrops, Choking Smog…), not just those used on itself as before
+    (`turnPriority`, lib/combat/battle.ts). Its text: "Its utility moves always go first." (Attacks
+    with a side effect, like Cripple, are attacks: not included.)
   - **Revitalise**: swapped out to the bench, heals 25% of its max HP.
 - 📌 More stones later: the user plans to expand the list.
 - ❓ A slave trader who buys creatures (with the Tavern's encounters): mentioned, not designed.

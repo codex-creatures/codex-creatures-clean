@@ -75,7 +75,7 @@ export const MOVE_RACES: Record<string, RaceV2> = {
   "Spark": "geo", "Frost Shard": "geo", "Hex": "toxic", "Firebolt": "geo", "Ice Lance": "geo",
   "Fireball": "geo", "Soul Drain": "undead", "Starfall": "divine",
   // Learnable
-  "Cripple": "beast", "Crippling Shot": "humanoid", "Hobble Hex": "toxic", "Dash Lash": "beast",
+  "Cripple": "beast", "Crippling Shot": "humanoid", "Dash Lash": "beast", // (Hobble Hex lands neutral: the user, 2026-11-16)
   "Quick Bolt": "humanoid", "Quickcast": "divine", "Precise Slice": "humanoid", "Precise Shot": "humanoid",
   "Seeker Spark": "geo",
   // Race moves

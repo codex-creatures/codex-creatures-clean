@@ -12,22 +12,22 @@ describe("Klutz and race moves", () => {
     expect(KLUTZ.race).toBeUndefined();
     expect(KLUTZ.races).toBeUndefined();
   });
-  it("Rabid Bite: Beast, Underkin and Toxic creatures can learn it; it hits as Toxic", () => {
+  it("Rabid Bite: the species on its list can learn it (the v2 review, 2026-11-16); it hits as Toxic", () => {
     const bite = MOVE_BY_NAME["Rabid Bite"];
     expect(bite.race).toBe("toxic");
-    for (const t of CREATURE_TEMPLATES) {
-      const can = (t.races ?? []).some((r) => ["beast", "underkin", "toxic"].includes(r));
-      expect(canLearnFromCodex(t, "Rabid Bite"), t.id).toBe(can);
-    }
+    expect(bite.learners).toHaveLength(20);
+    for (const t of CREATURE_TEMPLATES) expect(canLearnFromCodex(t, "Rabid Bite"), t.id).toBe(bite.learners!.includes(t.id));
+    expect(canLearnFromCodex(CREATURE_BY_ID.amber_wasp, "Rabid Bite")).toBe(false); // (taken off it)
     expect(canLearnFromCodex(KLUTZ, "Rabid Bite")).toBe(true); // (Klutz can learn any codex: the user, 2026-11-14)
   });
 });
 
 describe("codexes say who can read them", () => {
   it("race moves and learnable ones", () => {
-    expect(codexLearners("Rabid Bite").text).toBe("Beast / Underkin / Toxic only");
-    expect(codexLearners("Pounce").text).toBe("Beast + 4 more");
-    expect(codexLearners("Erupt").text).toBe("Geo + 3 more");
+    expect(codexLearners("Rabid Bite").text).toBe("20 creatures only");
+    expect(codexLearners("Pounce").text).toBe("13 creatures only");
+    expect(codexLearners("Erupt").text).toBe("13 creatures only");
+    expect(codexLearners("Divine Strength").text).toBe("any creature");
     expect(codexLearners("Cripple").text).toBe("any creature");
   });
   it("every move but the bosses' has a description", () => {

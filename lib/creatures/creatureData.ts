@@ -99,11 +99,11 @@ export type Skill = {
   race?: Race;       // a race move: its race (only that race can learn it, from a codex, unless learnRaces says otherwise)
   asRace?: Race;     // a core move (no race of its own): the race it lands as, its creature's main race
   learnRaces?: Race[]; // a race move several races can learn (Rabid Bite)
-  learners?: string[]; // a special move only these species can learn (missing: anyone, unless learnStyles)
+  learners?: string[]; // a special or race move only these species can learn (missing: anyone, unless learnStyles; a race move: its race)
   learnStyles?: CombatClass[]; // a special move any creature fighting in one of these styles can learn (its archetype's)
   alsoLearners?: string[]; // a race move these species can learn too, whatever their race
   notLearners?: string[];  // a race move these species can't learn, though of its race (Ironhide: Pounce)
-  codexRarity?: "common" | "uncommon" | "rare" | "epic"; // a special move's codex rarity
+  codexRarity?: "common" | "uncommon" | "rare" | "epic" | "legendary"; // a special move's codex rarity (Legendary: the user, 2026-11-16)
   mult?: number;     // its damage is this many times a hit of its power (big hits: power fades as attack grows, a multiplier doesn't)
 };
 
@@ -198,27 +198,26 @@ export const LEARNABLE_MOVES: Skill[] = OLD_LEARNABLES.filter((m) => m.effect?.k
 const RETIRED_LEARNABLES: Skill[] = OLD_LEARNABLES.filter((m) => m.effect?.kind !== "cripple");
 
 // Race moves: each is taught by a single-use codex (bought from wandering
-// librarians or found in dungeon chests), and only creatures of its race
-// can learn it. Tuning lives here and in lib/combat/battle.ts.
+// librarians or found in dungeon chests). Who can learn each is the user's
+// list (learners: the v2 codex review, 2026-11-16; it was its race, give or take). Tuning lives here and in lib/combat/battle.ts.
 export const RACE_MOVES: Skill[] = [
   { name: "Pounce",     damage: 15, energyCost: 50, type: "melee",  dmgType: "force",  race: "beast",        effect: { kind: "pounce", lowHpBonus: 0.5 },
-    // The user, 2026-10-31: these non-Beasts can learn it too, and Ironhide can't.
-    alsoLearners: ["void_serpent", "deep_angler", "veilstalker", "cave_bat"], notLearners: ["ironhide"],
+    learners: ["moss_wolf", "bellow_toad", "dire_wolf", "cave_bat", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "leafblade_scout", "aurelius", "gleamling", "deep_angler", "plague_rat"],
     desc: "Always strikes first this round, whatever its agility. +50% damage if the target is below half HP." },
-  { name: "Rabid Bite", damage: 15, energyCost: 70, type: "melee",  dmgType: "pierce", race: "toxic", learnRaces: ["beast", "underkin", "toxic"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
+  { name: "Rabid Bite", damage: 15, energyCost: 70, type: "melee",  dmgType: "pierce", race: "toxic", learners: ["moss_wolf", "bellow_toad", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "shambler", "dustwraith", "mr_shadows", "swamp_witch", "deep_angler", "tunnel_wyrm", "plague_rat", "rotgut_fly", "glob", "dreadpox"], effect: { kind: "venom", tick: 0.1, minRounds: 3, maxRounds: 5 },
     desc: "Venom: the target loses 10% of its max HP at the end of each round for 3–5 rounds — even if it swaps to the bench. Toxic creatures are immune." },
-  { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 3 }, self: true,
-    alsoLearners: ["dust_sprite", "dustwraith", "swamp_witch", "mr_shadows", "dreadpox", "thunderhead", "pale_rider", "storm_phoenix"],
-    desc: "Shimmers half out of the world: a 30% chance to dodge each attack for 3 rounds." },
+  { name: "Mirage",     damage: 0,  energyCost: 40, type: "magic",  dmgType: "arcane", race: "divine", effect: { kind: "mirage", evade: 0.3, rounds: 5 }, self: true,
+    learners: ["dust_sprite", "flicker_wisp", "veilstalker", "the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider"],
+    desc: "Shimmers half out of the world: a 30% chance to dodge each attack for 5 rounds." },
   { name: "Corpsify",   damage: 0,  energyCost: 30, type: "melee",  dmgType: "force",  race: "undead",       effect: { kind: "corpsify", reviveHp: 0.55 }, self: true, cooldown: 3,
-    alsoLearners: ["hollow_matriarch", "plague_rat"],
+    learners: ["rattlebones", "shambler", "dustwraith", "mr_shadows", "storm_phoenix", "plague_rat", "glob", "dreadpox", "pale_rider"],
     desc: "If it's knocked out before the end of next round, it rises again with 55% HP. 3-round cooldown." },
   { name: "Barrage",    damage: 15, energyCost: 60, type: "ranged", dmgType: "pierce", race: "humanoid", effect: { kind: "barrage" },
-    alsoLearners: ["rotgut_fly", "the_watcher", "thunderhead", "storm_phoenix", "hollow_matriarch"],
+    learners: ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "rotgut_fly", "pale_rider"],
     desc: "A volley that hits every enemy on the field." },
   // Geo's race move (the user, 2026-10-31).
   { name: "Erupt",      damage: 25, energyCost: 70, type: "magic",  dmgType: "force",  race: "geo", effect: { kind: "cripple", chance: 0.25, minRounds: 3, maxRounds: 5 },
-    alsoLearners: ["swamp_witch", "mr_shadows", "ironhide"],
+    learners: ["ironhide", "rust_beetle", "crystalback", "crystal_golem", "dust_sprite", "dustwraith", "mr_shadows", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "tunnel_wyrm", "dreadpox"],
     desc: "25% chance to cripple for 3–5 rounds: the target loses 50% agility and has a 50% chance to stumble and lose each attack." },
 ];
 
@@ -226,37 +225,37 @@ export const RACE_MOVES: Skill[] = [
 // rarity, and only the species listed can read it (Meditate: anyone). Not
 // race-locked: the list is the user's pick. (The old melee Impale was
 // retired for the new one: an old Impale codex is now this one.)
-const DARK_SEAL_LEARNERS = ["dreadpox", "swamp_witch", "mr_shadows", "flame_imp", "dustwraith", "thunderhead"];
-// The Divine blessings (the user, 2026-11-03): one per style, for the
-// creatures that fight in it (hybrids too).
+// The Divine blessings (the user, 2026-11-03): one per style. Any creature can
+// read them (the user's v2 codex review, 2026-11-16; they were for the
+// creatures fighting in that style).
 const empower = (name: string, style: CombatClass): Skill => ({
   name, damage: 0, energyCost: 50, type: style, dmgType: "force", race: "divine", codexRarity: "epic", cooldown: 5, self: true,
-  effect: { kind: "empower", style, boost: 0.5 }, learnStyles: [style],
+  effect: { kind: "empower", style, boost: 0.5 },
   desc: `+50% ${CLASS_INFO[style].name.toLowerCase()} attack for the rest of the fight, while it stays on the field (swapping out loses it). Doesn't stack. 5-round cooldown.`,
 });
 export const SPECIAL_MOVES: Skill[] = [
-  { name: "Dark Seal", damage: 5, energyCost: 50, type: "magic", dmgType: "force", race: "undead", codexRarity: "rare", cooldown: 5,
+  { name: "Dark Seal", damage: 5, energyCost: 50, type: "magic", dmgType: "force", race: "divine", codexRarity: "rare", cooldown: 5,
     effect: { kind: "seal", rounds: 3, chance: 1 },
-    learners: DARK_SEAL_LEARNERS,
+    learners: ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "thunderhead", "dreadpox", "pale_rider"],
     desc: "The target can't swap out for 3 rounds, even if you swap. 5-round cooldown." },
   { name: "Meditate", damage: 0, energyCost: 0, type: "magic", dmgType: "force", codexRarity: "common", cooldown: 3, self: true,
     effect: { kind: "meditate", energy: 30 },
     desc: "Restores 30 extra energy. 3-round cooldown." },
   { name: "Healing Blessing", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "divine", codexRarity: "uncommon", cooldown: 3, self: true,
     effect: { kind: "blessing", heal: 0.6 },
-    learners: ["thunderhead", "crystal_golem", "veilstalker", "flicker_wisp", "sylvaran"],
+    learners: ["ironhide", "crystalback", "crystal_golem", "flicker_wisp", "the_watcher", "aurelius", "sylvaran", "gleamling", "flame_imp", "thunderhead", "dreadpox", "pale_rider"],
     desc: "Next round, once everyone has attacked, whoever you have on the field heals 60% of its max HP (stay, or swap in someone hurt). 3-round cooldown." },
   { name: "Corrosive Soak", damage: 0, energyCost: 40, type: "magic", dmgType: "force", race: "toxic", codexRarity: "rare",
     effect: { kind: "soak", cut: 0.3 },
-    learners: ["bellow_toad", "rotgut_fly", "plague_rat", "glob", "deep_angler", "dreadpox", "void_serpent", "hollow_matriarch"],
+    learners: ["bellow_toad", "crystalback", "hollow_matriarch", "the_watcher", "void_serpent", "swamp_witch", "gleamling", "flame_imp", "thunderhead", "plague_rat", "rotgut_fly", "glob", "dreadpox"],
     desc: "The target's melee, ranged and magic defences drop by 30% until it leaves the field. Doesn't stack." },
-  { name: "Impale", damage: 25, energyCost: 80, type: "ranged", dmgType: "force", race: "underkin", codexRarity: "epic",
+  { name: "Impale", damage: 25, energyCost: 80, type: "ranged", dmgType: "force", race: "geo", codexRarity: "epic",
     effect: { kind: "seal", rounds: 2, chance: 0.6 },
-    learners: ["deep_angler", "aurelius", "crystal_golem", "storm_phoenix", "sylvaran", "pale_rider"],
+    learners: ["ironhide", "crystalback", "crystal_golem", "hollow_matriarch", "veilstalker", "rattlebones", "storm_phoenix", "thicket_archer", "aurelius", "sylvaran", "deep_angler", "tunnel_wyrm", "pale_rider"],
     desc: "60% chance the target can't swap out for 2 rounds." },
   { name: "Pin Down", damage: 10, energyCost: 60, type: "ranged", dmgType: "force", race: "humanoid", codexRarity: "rare", cooldown: 5,
     effect: { kind: "seal", rounds: 2, chance: 1, extraChance: 0.3 },
-    learners: ["thicket_archer", "aurelius", "storm_phoenix", "sylvaran", "hollow_matriarch", "rotgut_fly"],
+    learners: ["hollow_matriarch", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran"],
     desc: "The target can't swap out for 2 rounds (30% chance of a third). 5-round cooldown." },
   // The user, 2026-11-03.
   { name: "Brace", damage: 0, energyCost: 50, type: "magic", dmgType: "force", codexRarity: "rare", self: true,
@@ -267,7 +266,7 @@ export const SPECIAL_MOVES: Skill[] = [
   empower("Sureshot Blessing", "ranged"),
   { name: "Blood Sacrifice", damage: 0, energyCost: 70, type: "magic", dmgType: "force", race: "undead", codexRarity: "epic",
     effect: { kind: "blood", cost: 0.25, tick: 0.05, entry: 0.2, entries: 3, burst: 25, leech: 0.5 },
-    learners: DARK_SEAL_LEARNERS,
+    learners: ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "dreadpox", "pale_rider"],
     desc: "Costs 25% of its max HP. Blood pools under the foes: 5% max HP a round to the one out, 20% to each that comes in, and the third bursts for a 25-power magic hit. Whoever you have out heals half of it. Undead are untouched." },
   // The 2026-11 codex moves (the user's 29; lib/creatures/codexMoves.ts).
   ...CODEX_MOVES_2026,
@@ -339,6 +338,8 @@ export function codexLearners(moveName: string): { text: string; color: string }
   const m = MOVE_BY_NAME[moveName];
   if (m?.learnStyles) return { text: `${m.learnStyles.map((st) => CLASS_INFO[st].name).join(" / ")} fighters only`, color: m.race ? RACE_INFO[m.race].color : BALANCED_INFO.color };
   if (m?.learners) return { text: `${m.learners.length} creatures only`, color: m.race ? RACE_INFO[m.race].color : BALANCED_INFO.color };
+  // (A special move with no list: anyone, whatever race it lands as. The Divine blessings, since 2026-11-16.)
+  if (m && isSpecialMove(m.name)) return { text: "any creature", color: m.race ? RACE_INFO[m.race].color : "rgba(255,255,255,0.5)" };
   const races = m ? learnRacesOf(m) : [];
   const also = m?.alsoLearners?.length ? ` + ${m.alsoLearners.length} more` : " only";
   if (races.length) return { text: `${races.map((r) => RACE_INFO[r].name).join(" / ")}${also}`, color: RACE_INFO[races[0]].color };
@@ -346,7 +347,7 @@ export function codexLearners(moveName: string): { text: string; color: string }
 }
 
 // The race moves a creature of these races (or named on the move) could learn.
-export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => !m.notLearners?.includes(c.id) &&
+export const raceMovesFor = (c: CreatureTemplate): Skill[] => RACE_MOVES.filter((m) => m.learners ? m.learners.includes(c.id) : !m.notLearners?.includes(c.id) &&
   (m.alsoLearners?.includes(c.id) || learnRacesOf(m).some((r) => (c.races ?? (c.race ? [c.race] : [])).includes(r))));
 // The races that can learn a race move (most: just its own).
 export const learnRacesOf = (m: Skill): Race[] => m.learnRaces ?? (m.race ? [m.race] : []);

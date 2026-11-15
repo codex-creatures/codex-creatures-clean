@@ -42,10 +42,13 @@ describe("the 2026-11 codex moves: who, what rarity, where they come from", () =
     expect(abilityOf(MOVE_BY_NAME["Rabid Bite"])).toBe("Venom");
     expect(abilityOf(MOVE_BY_NAME["Haunting Scream"])).toBe("Scare off");
   });
-  it("the older special moves land as their own race (2026-11-13; they landed neutral before)", () => {
-    expect(["Dark Seal", "Impale", "Pin Down", "Blood Sacrifice"].map((n) => raceOfMove(MOVE_BY_NAME[n]))).toEqual(["undead", "underkin", "humanoid", "undead"]);
-    // Underkin beats Toxic: Impale is effective on a Toxic creature, and an Underkin using it gets its own-race bonus.
-    expect(raceMultiplier(MOVE_BY_NAME.Impale, { races: ["underkin"] }, { races: ["toxic"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
+  it("the older special moves land as their own race (2026-11-13; Dark Seal Divine and Impale Geo from the v2 review, 2026-11-16)", () => {
+    expect(["Dark Seal", "Impale", "Pin Down", "Blood Sacrifice"].map((n) => raceOfMove(MOVE_BY_NAME[n]))).toEqual(["divine", "geo", "humanoid", "undead"]);
+    // Caltrops lands as Humanoid now, and Hobble Hex as neutral (the v2 review).
+    expect(raceOfMove(MOVE_BY_NAME.Caltrops)).toBe("humanoid");
+    expect(raceOfMove(MOVE_BY_NAME["Hobble Hex"])).toBeUndefined();
+    // Underkin beats Toxic: an Underkin move is effective on a Toxic creature, with the own-race bonus for an Underkin.
+    expect(raceMultiplier(MOVE_BY_NAME["Vampiric Bite"], { races: ["underkin"] }, { races: ["toxic"] }, "drafted")).toBeCloseTo(RACE_EFFECT.strong * MATCH_BONUS);
   });
   it("Smite and Ambush are the new moves now; an old one in a save is wiped once", () => {
     expect(isRetiredMove("Smite")).toBe(false);
