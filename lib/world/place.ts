@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 15;         // the world version a new run is placed at (some tables turned end-on; version.ts)
+export const PLACED_V = 16;         // the world version a new run is placed at (a storehouse's crates, corner groups, a boss's torches; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
@@ -83,6 +83,25 @@ export const TABLE_CANDLE = 0.7;
 export const TABLE_DECK = 0.05;
 // (v15) …and that it's turned end-on, running north to south (the user, 2026-11-15: "vertical tables"). 🧪
 export const TABLE_TURNED = 0.5;
+// (v16, the user, 2026-11-15) An unguarded storehouse's stores in STORE_CRATES crates and barrels round its
+// walls, searched one by one (migrate.ts withCrates shares its stores out, leaving some empty). 🧪
+export const STORE_CRATES: [number, number] = [4, 6];
+// …a group of decor in a room's tucked-away corners (two walls meeting, CORNER_DOOR_GAP panels from every
+// doorway): CORNER_GROUP of such corners, CORNER_MOST a room, the pieces suiting the room (CORNER_THEMES). 🧪
+export const CORNER_GROUP = 0.35;
+export const CORNER_MOST = 2;
+export const CORNER_DOOR_GAP = 3;
+export const CORNER_THEMES: Record<string, string[][]> = {
+  easy: [["skull", "nest"], ["skull", "pots"]], hard: [["skull", "nest"], ["skull", "skull"]], miniboss: [["skull", "pots"]],
+  storehouse: [["barrels", "crates"], ["crates", "barrels", "pots"]], encampment: [["barrels", "crates"], ["barrels", "skull"]],
+  merchant: [["barrels", "crates"]], library: [["crates", "pots"]], librarian: [["crates", "pots"]],
+};
+const CORNER_ANY = [["pots", "barrels"], ["pots", "skull"]];
+// …and in the boss's room, pairs of standing torches either side of the way from its door to the boss,
+// BOSS_TORCH_STEP panels apart and BOSS_TORCH_SIDE out to each side: unlit, they light a pair at a time
+// once your torch reaches one (walkSim.ts CHAIN_STEP).
+export const BOSS_TORCH_STEP = 3;
+export const BOSS_TORCH_SIDE = 2;
 export const TABLE_ROOMS = new Set(["easy", "hard", "miniboss", "chest", "stash", "pool", "campfire", "treasure", "merchant", "librarian", "library", "witch", "storehouse", "encampment"]);
 const TABLE_PASS = 61;              // (v12) the tables' own random numbers, so nothing else can move
 // (v14) Bookcases against a room's top wall (the user, 2026-11-14): the chance a room has one (rooms
@@ -93,6 +112,7 @@ export const SHELF_CANDLE = 0.4;
 export const SHELF_CODEX = 0.1;
 export const SHELF_ROOMS = new Set([...TABLE_ROOMS].filter((k) => k !== "library"));
 const SHELF_PASS = 62, FINDS_PASS = 63; // (v14) their own random numbers
+const CRATES_PASS = 64, CORNER_PASS = 65; // (v16)
 export const BOOKCASE_DOOR_GAP = 2;  // (v10) panels: no broken bookcase this close to the panel inside a door (either way)
 // Spawn clearance by size class (§3): subcells round a big creature's footprint kept free of solid things.
 export const SPAWN_CLEARANCE: Partial<Record<string, number>> = { large: 1, huge: 1 };
@@ -706,6 +726,80 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
       if (!at) { report.problems.push({ id: fid, room: id, what: `no valid spot for the ${what}` }); continue; }
       put(d, at, fid);
       placed.push({ id: fid, def: what, room: id, ...at, size: { ...d.footprint } });
+    }
+  }
+
+  // 6e. (v16) An unguarded storehouse's crates and barrels, against its walls (spotsIn leans them there),
+  // off the doors and the kept paths and spots (the user, 2026-11-15).
+  for (const id of v >= 16 ? parents : []) {
+    const r = room(id);
+    if (r?.kind !== "storehouse" || r.guarded || !r.sack) continue;
+    const rng = passRng(walk.seed, id, CRATES_PASS), doors = fp.doors.filter((d) => d.room === id);
+    const want = STORE_CRATES[0] + Math.floor(rng() * (STORE_CRATES[1] - STORE_CRATES[0] + 1));
+    const list = roomPanels(fp.rooms[id]).filter((p) => STEPS.some((s) => rock({ x: p.x + s.x, y: p.y + s.y }))
+      && !doors.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < CANDLE_CLEAR));
+    for (let n = 0; n < want && list.length; ) {
+      const p = list.splice(Math.floor(rng() * list.length), 1)[0], what = rng() < 0.5 ? "store-crates" : "store-barrels";
+      const d = objectDef(what), cid = `crate:${id}:${n}`;
+      const at = spotsIn(fp, d, p).find((a) => tryAt(d, a, cid, id));
+      if (!at) continue;
+      put(d, at, cid);
+      placed.push({ id: cid, def: what, room: id, ...at, size: { ...d.footprint } });
+      n++;
+    }
+  }
+
+  // 6f. (v16) Groups of decor in tucked-away corners: a floor panel with rock on a side and above or below
+  // it, CORNER_DOOR_GAP panels from every doorway; the corner's piece, then the next ones along its walls.
+  for (const id of v >= 16 ? parents : []) {
+    const r = room(id);
+    if (id === layout.start || id === layout.boss || !r) continue;
+    const rng = passRng(walk.seed, id, CORNER_PASS), doors = doorsInside(o, fp.rooms[id], id), themes = CORNER_THEMES[r.kind] ?? CORNER_ANY;
+    const corners = roomPanels(fp.rooms[id]).filter((p) => (rock({ x: p.x - 1, y: p.y }) || rock({ x: p.x + 1, y: p.y }))
+      && (rock({ x: p.x, y: p.y - 1 }) || rock({ x: p.x, y: p.y + 1 }))
+      && !doors.some((q) => Math.max(Math.abs(q.x - p.x), Math.abs(q.y - p.y)) <= CORNER_DOOR_GAP));
+    let groups = 0;
+    for (const c of corners) {
+      if (groups >= CORNER_MOST || rng() >= CORNER_GROUP) continue;
+      const kinds = themes[Math.floor(rng() * themes.length)];
+      // Along its walls, out of the corner: the way away from the rock, each way.
+      const ax = rock({ x: c.x - 1, y: c.y }) ? 1 : -1, ay = rock({ x: c.x, y: c.y - 1 }) ? 1 : -1;
+      const spots = [c, { x: c.x + ax, y: c.y }, { x: c.x, y: c.y + ay }];
+      let put1 = 0;
+      kinds.forEach((kind, k) => {
+        const d = objectDef(kind), did = `decor:${id}:${groups}:${k}`;
+        const at = spotsIn(fp, d, spots[k]).find((a) => tryAt(d, a, did, id));
+        if (!at) return;
+        put(d, at, did);
+        placed.push({ id: did, def: kind, room: id, ...at, size: { ...d.footprint } });
+        put1++;
+      });
+      if (put1) groups++;
+    }
+  }
+
+  // 6g. (v16) The way to the boss: pairs of standing torches either side of the line from the boss room's
+  // way in to where the boss stands, each pair `brazier:<room>:<pair>:<side>` (the user, 2026-11-15).
+  for (const id of v >= 16 ? [layout.boss] : []) {
+    const floors = fp.rooms[id], door = floors && doorsInside(o, floors, id)[0];
+    if (!door) continue;
+    const stand = standOf(floors), len = Math.hypot(stand.x - door.x, stand.y - door.y);
+    if (len < BOSS_TORCH_STEP * 2) continue;
+    const ux = (stand.x - door.x) / len, uy = (stand.y - door.y) / len, torch = objectDef("standing-torch");
+    let pair = 0;
+    for (let k = BOSS_TORCH_STEP - 1; k <= len - BOSS_TORCH_STEP; k += BOSS_TORCH_STEP) {
+      let both = 0;
+      for (const side of [-1, 1]) {
+        const p = { x: Math.round(door.x + ux * k - uy * side * BOSS_TORCH_SIDE), y: Math.round(door.y + uy * k + ux * side * BOSS_TORCH_SIDE) };
+        if (!inRects(floors, p)) continue;
+        const tid = `brazier:${id}:${pair}:${side < 0 ? 0 : 1}`;
+        const at = spotsIn(fp, torch, p).find((a) => tryAt(torch, a, tid, id));
+        if (!at) continue;
+        put(torch, at, tid);
+        placed.push({ id: tid, def: "standing-torch", room: id, ...at, size: { ...torch.footprint } });
+        both++;
+      }
+      if (both) pair++;
     }
   }
 

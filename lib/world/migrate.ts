@@ -27,11 +27,11 @@
 // - repaired: a damaged run mended, at the player's say-so;
 // - none: not a walkable run.
 
-import { dungeonOf, rollDeck, type DungeonId, type DungeonRun, type DungeonSave, type Room } from "../dungeon/run";
+import { dungeonOf, rollDeck, type DungeonId, type DungeonRun, type DungeonSave, type Room, type SackItem } from "../dungeon/run";
 import { walkRoom, type WalkRun } from "../dungeon/walkRun";
 import type { DungeonMap } from "../dungeon/map";
 import { legacyPlacements, legacyFoePlacements } from "./compat/v0";
-import { placeWalk, PLACED_V, FIRST_PLACED_V, MOUNTED_DEFS } from "./place";
+import { placeWalk, passRng, PLACED_V, FIRST_PLACED_V, MOUNTED_DEFS } from "./place";
 import { layoutFloorplan } from "../dungeon/layout";
 import { ROCK } from "../dungeon/floorplan";
 import { panelOfSubcell } from "./grid";
@@ -60,6 +60,8 @@ const TABLES_V = 12;         // (tables, and a candle standing on one)
 const DECKS_V = 13;          // (a deck of cards on a table)
 const SHELVES_V = 14;        // (bookcases against walls, and a storehouse's finds on its floor)
 const TURNED_V = 15;         // (a table turned end-on: the first thing that turns)
+const CORNERS_V = 16;        // (a storehouse's crates, groups of decor in corners, the boss's standing torches)
+const CORNER_DEFS = new Set(["store-crates", "store-barrels", "standing-torch", "barrels", "crates", "fallen-pillar", "skull", "nest", "pots"]);
 const FINDS = new Set(["dynamite", "backpack"]);
 
 // What's wrong with a saved `placed`, or null if it's sound: a non-empty list
@@ -89,6 +91,7 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (p.holds !== undefined && (p.def !== "table" || p.holds !== "candle")) return `${p.id}: unknown thing on it`;
     if (p.deck !== undefined && (p.def !== "table" || p.deck !== true || v < DECKS_V)) return `${p.id}: a deck of cards it can't have`;
     if (((p.def === "bookcase" && p.id.startsWith("shelf:")) || FINDS.has(p.def)) && v < SHELVES_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
+    if (CORNER_DEFS.has(p.def) && v < CORNERS_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
     if (p.codex !== undefined && (p.def !== "bookcase" || p.codex !== true || v < SHELVES_V)) return `${p.id}: a codex it can't have`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
@@ -248,11 +251,31 @@ export function newWalkRun(run: DungeonRun): DungeonRun {
   if (!walk || walk.v !== undefined || walk.placed !== undefined) return placedRun(run);
   const m = made({ ...run, walk: { ...walk, v: PLACED_V } }, "migrated");
   if (m.outcome === "damaged") console.warn(`Walkable run ${run.id}: ${m.problem}`);
-  return withFloorFinds(withDecks(m.run));
+  return withCrates(withFloorFinds(withDecks(m.run)));
 }
 
 // (World version 14) A storehouse's rugged backpack lying on its floor: out of its stores, and on the
 // room (Room.packOnFloor) till you pick it up.
+// (World version 16) An unguarded storehouse's stores shared out among its crates and barrels, at random,
+// some left with nothing (CRATES_EMPTY at least): each crate's on its room (Room.crates), searched one by one.
+export const CRATES_EMPTY = 1;
+function withCrates(run: DungeonRun): DungeonRun {
+  const walk = run.walk;
+  if (!walk) return run;
+  const by = new Map<string, number>();
+  for (const i of walk.placed ?? []) if (i.id.startsWith("crate:") && walk.rooms[i.room]) by.set(i.room, (by.get(i.room) ?? 0) + 1);
+  if (by.size === 0) return run;
+  const rooms = { ...walk.rooms };
+  for (const [id, n] of by) {
+    const r = rooms[id], rng = passRng(walk.seed, id, 66), crates: SackItem[][] = Array.from({ length: n }, () => []);
+    const full = Math.max(1, n - CRATES_EMPTY - Math.floor(rng() * 2)); // (the rest hold nothing)
+    for (const item of r.sack ?? []) crates[Math.floor(rng() * full)].push(item);
+    for (let k = n - 1; k > 0; k--) { const j = Math.floor(rng() * (k + 1)); [crates[k], crates[j]] = [crates[j], crates[k]]; }
+    rooms[id] = { ...r, sack: [], crates };
+  }
+  return { ...run, walk: { ...walk, rooms } };
+}
+
 function withFloorFinds(run: DungeonRun): DungeonRun {
   const walk = run.walk;
   const packs = (walk?.placed ?? []).filter((i) => i.def === "backpack" && walk!.rooms[i.room]);

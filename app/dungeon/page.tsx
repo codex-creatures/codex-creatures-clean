@@ -901,6 +901,8 @@ export default function DungeonPage() {
   // Worth opening the room's window as you walk in: treasure to take. (Not a camp: you walk up to its cages, the user, 2026-11-09.)
   const shopHere = (c: Room | null | undefined) => !!c && (c.kind === "merchant" || c.kind === "librarian" || (c.kind === "library" && !!c.librarian));
   // (Not a storehouse with Klutz's dynamite either: you walk up and find it, the user, 2026-11-14.)
+  // What a storehouse's crate or barrel with nothing in it says (world version 16).
+  const NOTHING_HERE = ["📦 Rotten straw and rat droppings. Nothing useful.", "📦 Empty, but for a few splinters.", "🛢️ Stale water and a dead beetle. Nothing worth taking.", "📦 Mouldy sacking. Someone got here first."];
   const walkWorthPanel = (c: Room | null) => !!c && c.kind === "treasure" && !c.done;
   function walkEnter(id: string, st: WalkState) {
     // Leaving the witch mid-game: you walk away with what you've won.
@@ -944,6 +946,8 @@ export default function DungeonPage() {
     if (c.opened && (c.sack?.length ?? 0) > 0) setLootOpen(true);
     else if (c.kind === "chest" && !c.done) openChest();
     else if (c.container && c.done && !c.opened) openSack();
+    // (A broken bookcase with nothing in it: a line says so, as a bookcase against a wall does: the user, 2026-11-15.)
+    else if (c.kind === "bookcase" && !c.opened && (c.sack?.length ?? 0) === 0) { updateRun((r) => (r.current ? { ...r, current: { ...r.current, opened: true, done: true } } : r)); setNotes(["📚 Dust and crumbling pages. Nothing worth taking."]); }
     else if ((c.kind === "stash" || c.kind === "bookcase" || (c.kind === "campfire" && c.sack)) && !c.opened) openSack(); // (a library's broken bookcase, a campfire's stash: world version 9)
     else if (c.kind === "library" && c.lectern) track("librarian_locator"); // (its lectern finds the librarian)
     else if (c.kind === "treasure" && !c.done) takeTreasure(c);
@@ -970,6 +974,19 @@ export default function DungeonPage() {
     const drop = shelfCodex();
     give([drop], searched);
     setNotes([`📚 Tucked between the books: ${dropLabel(drop)}!`]);
+  }
+  // (World version 16) Walked up to one of a storehouse's crates or barrels: searched once; what's in it
+  // comes out to take (the loot window), or a line says there's nothing worth having.
+  function walkCrate(id: string, i: number, st: WalkState) {
+    battle.clear();
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    const c = loadDungeon().run?.current;
+    if (!c?.crates || c.searched?.includes(i)) return;
+    const found = c.crates[i] ?? [];
+    updateRun((r) => (r.current ? { ...r, current: { ...r.current, searched: [...(r.current.searched ?? []), i],
+      ...(found.length ? { sack: [...(r.current.sack ?? []), ...found], opened: true, done: true } : {}) } } : r));
+    if (found.length) setLootOpen(true);
+    else setNotes([NOTHING_HERE[Math.floor(Math.random() * NOTHING_HERE.length)]]);
   }
   // (World version 14) Walked up to a storehouse's find on its floor: Klutz's dynamite, or the rugged backpack.
   function walkPickup(id: string, what: "dynamite" | "backpack", st: WalkState) {
@@ -1376,7 +1393,7 @@ export default function DungeonPage() {
         onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onHeal={walkHeal} onKeep={walkSave} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onHeal={walkHeal} onKeep={walkSave} />
       {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
         <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
       )}

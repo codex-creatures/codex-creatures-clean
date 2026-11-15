@@ -331,6 +331,21 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   wall (about one room in seven gets one: the wall must be clear of doors and wall torches),
   `SHELF_CANDLE` 40% with a floor candle beside it. Walk up to search it, once (`Room.shelfSearched`):
   `SHELF_CODEX` 10% have a codex tucked in, one, at the usual odds (run.ts `shelfCodex`, `CODEX_ODDS`).
+  A bookcase with nothing in it (a library's broken ones too) says so in a line, with no loot window.
+  **A storehouse's crates and barrels** (world version 16, the user, 2026-11-15): an unguarded
+  storehouse's stores are in `STORE_CRATES` 4–6 crates and barrels against its walls instead of one pile,
+  shared out at random as the run's made with at least one left empty (migrate.ts `withCrates`,
+  `Room.crates`). Walk up to search each, once (`Room.searched`): what's in it comes out to take, or a
+  line says there's nothing worth having ("Rotten straw and rat droppings…").
+  **Tucked-away corners** (world version 16): `CORNER_GROUP` 35% of a room's corners (two walls meeting,
+  more than `CORNER_DOOR_GAP` 3 panels from every doorway; `CORNER_MOST` 2 a room; not the entrance or the
+  boss's) hold a small group of the lab's decor suiting the room (`CORNER_THEMES`: bones and a nest in
+  dens, barrels and crates in storehouses and camps, crates and pots in libraries…), in the way but
+  nothing to use. Drawn upright, flat, as the lab drew them, till 3D or new art replaces them.
+  **The way to the boss** (world version 16): pairs of standing torches either side of the line from the
+  boss room's way in to where the boss stands (`BOSS_TORCH_STEP` 3 panels apart, `BOSS_TORCH_SIDE` 2 out),
+  unlit; once your torch reaches one, they light a pair at a time from the door up (`CHAIN_STEP` 0.45 s,
+  walkSim.ts). The floor candle's picture stands in for theirs (a sample's to be made).
 - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,
   and your light reaches twice as far (`FLARE_REACH`) for the next `FLARE_WALK` 90 tiles
   you walk (about half the walkable Encampment, 🧪). A new flare lights afresh.
@@ -370,7 +385,9 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
     as you walk through it and now and then on its own; in 25% (`RAT_CHANCE`) a mouse hole sits at
     the foot of the top wall, and a rat runs along the wall into it every few seconds (seen only in
     the light). The hole keeps clear of doors and wall torches; the rat's run to it may pass under a
-    torch (2026-11-14: it had to keep clear of them too, and only about 2% of rooms had a hole). Never in the entrance or the boss's room, by a door, or on a thing, fire or
+    torch (2026-11-14: it had to keep clear of them too, and only about 2% of rooms had a hole). Come
+    within `RAT_FLEE` 2.5 tiles of a rat out on its run and it bolts for its hole, `RAT_BOLT` 3 times as
+    fast, then hides as after any run (the user, 2026-11-15; render3d/puddle.ts `ratBolt`). Never in the entrance or the boss's room, by a door, or on a thing, fire or
     candle. Drawn only (`decor.ts placeFloorLife`, from the seed + 909; `components/WalkView3D.tsx`
     FloorLife; the glint: `lib/render3d/puddle.ts`), so nothing is saved and old runs get them too.
   - Ideas not drawn yet: moss patches as decals, side walls' faces, room-kind floors (a library's boards, a camp's dirt),

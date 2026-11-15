@@ -1,14 +1,17 @@
 "use client";
 // app/lab/floor-life/page.tsx — PixelLab samples for the user to judge (dev tool, not in the game):
 // a wet puddle and a rat with its mouse hole for the walkable dungeon's floors, and the Gold Key's
-// icon (the user, 2026-11-13). Samples live in public/sprites/walk/samples/ and nothing imports them.
+// icon (the user, 2026-11-13); a cobweb for rooms' top corners and floor moss (the user, 2026-11-15).
+// Samples live in public/sprites/walk/samples/ and nothing imports them.
 
 const DIR = "/sprites/walk/samples/floor-life";
 const SAMPLES = [
   { file: "puddle.png", name: "Wet puddle", note: "A sewer puddle on the floor. In 3D (/lab/chest) the torch glints on its water and it ripples when stepped in." },
   { file: "rat.png", name: "Rat", note: "Scurries along the walls, not fightable. A still for now: its running animation comes once the look's approved." },
   { file: "mouse-hole.png", name: "Mouse hole", note: "At the foot of a wall: rats dive into it. (Only the hole and its stones would be used, not the whole wall tile.)" },
-  { file: "gold-key.png", name: "Gold Key", note: "Its icon in your bag (the gold coin stands in for it now)." },
+  { file: "gold-key.png", name: "Gold Key", note: "Its icon in your bag (in the game since 2026-11-14)." },
+  { file: "cobweb.png", name: "Cobweb", note: "For the top corners of some rooms, where the top wall meets a side wall (2026-11-15)." },
+  { file: "moss-1.png", name: "Moss (try 1)", note: "Meant as a loose patch round puddles; it came out a solid square, so it's to be redone (2026-11-15)." },
 ];
 const SCALES = [1, 3, 6];
 

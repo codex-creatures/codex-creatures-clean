@@ -64,7 +64,8 @@ export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, c
 // The puddles and mouse holes the game draws (decor.ts placeFloorLife), clear of the things standing
 // in the rooms (not the people who wander), the campfires, candles and wall torches.
 export function placeFloorLifeOf(walk: WalkRun, plan: Floorplan, things: Thing[], candles: Candle[], sconces: Sconce[]): { puddles: Pt[]; holes: RatHole[] } {
-  const taken = [...things.filter((t) => !t.npc), ...(walk.fires ?? []), ...candles];
+  // (Bones, pots and nests lying in a corner, world version 16, are walked over: a rat runs past them too.)
+  const taken = [...things.filter((t) => !t.npc && !(t.inert && !t.solid)), ...(walk.fires ?? []), ...candles];
   return placeFloorLife(plan, taken, sconces, [walk.layout.start, walk.layout.boss], seeded(walk.seed + 909));
 }
 
@@ -121,7 +122,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
   cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true;
-  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true; turned?: true }; // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
+  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true; turned?: true; crate?: number }; // crate: a storehouse's crate or barrel, to search (v16) // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -198,7 +199,7 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
       out.push(thingOf({ key: id, room: id, x: Math.round(n.x), y: Math.round(n.y), def: "witch", open: false, inert: over }));
     }
     // A large room's stores (a library's codexes lying about, a storehouse's crates), till a guard's beaten.
-    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !hasFight(r) && !r.container && !(r.kind === "library" && looted(r))) {
+    if ((r.kind === "library" || r.kind === "storehouse") && r.sack && !r.crates && !hasFight(r) && !r.container && !(r.kind === "library" && looted(r))) {
       add("stores", { def: r.kind === "library" ? "sack" : "rickety-chest", state: shut(r.opened), open: !!r.opened, ...emptied(r) });
     }
     const guards = hasFight(r) || r.done ? fightContainer(r, dungeon) !== "sack" : false;
@@ -212,6 +213,13 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     // over each (behind its guard, while it has one).
     const shelf = placed.spot(`shelf:${id}`);
     if (shelf) out.push(thingOf({ key: `shelf:${id}`, room: id, ...shelf, def: "bookcase", state: shut(r.shelfSearched), open: !!r.shelfSearched, shelf: true }));
+    // (World version 16) Groups of decor in its corners (in the way, nothing to use), and a storehouse's crates and barrels to search.
+    for (const d of placed.decor ?? []) {
+      if (d.room !== id) continue;
+      const at = placed.spot(d.id)!, n = d.id.startsWith("crate:") ? Number(d.id.slice(d.id.lastIndexOf(":") + 1)) : undefined;
+      if (n === undefined) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: false, inert: true }));
+      else if (r.crates) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: !!r.searched?.includes(n), crate: n }));
+    }
     const guardedFind = hasFight(r) && !r.done;
     for (const [what, there] of [["dynamite", !!r.dynamite], ["backpack", !!r.packOnFloor]] as const) {
       const at = there ? placed.spot(`${what}:${id}`) : undefined;

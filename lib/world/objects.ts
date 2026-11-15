@@ -192,6 +192,12 @@ const DEFS: ObjectDef[] = [
   decorDef("skull", "skull", WALK_OVER, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
   decorDef("nest", "nest", { ...WALK_OVER, footprint: { w: 2, d: 2 } }, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
   decorDef("pots", "pots", { ...WALK_OVER, footprint: { w: 2, d: 2 }, height: 0.5 }, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
+  // (World version 16) A storehouse's crates and barrels, each searched once (the user, 2026-11-15), and the
+  // standing torches lining the way to a boss (the floor candle's picture stands in till theirs is made).
+  def("store-crates", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.1, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.crates) }, { width: legacyU(WALK_DECOR.crates.size) })),
+  def("store-barrels", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", height: 0.9, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.barrels) }, { width: legacyU(WALK_DECOR.barrels.size) })),
+  def("standing-torch", floorThing({ footprint: { w: 1, d: 1 }, kind: "light", height: 1.2, collision: "walk-over", light: { radius: CANDLE_RADIUS, colour: "#ffbe5a", flicker: true } }),
+    legacyVisual({ out: ref(WALK_CANDLE), lit: ref(WALK_CANDLE_LIT) }, { width: legacyU(WALK_CANDLE.size) })),
   // People: the merchant and the librarian stand by their carts; the card witch walks about (not solid).
   def("merchant", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(MERCHANT) }, { height: NPC_U })),
   def("librarian", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),

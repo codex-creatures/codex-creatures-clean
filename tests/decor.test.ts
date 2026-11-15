@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { placeDecor, floorVariant, wallVariant, placeBanners, placeFloorLife, THEMES, DECOR_MOST, FLOOR_WORN, SOLID_DECOR, DOOR_CLEAR, PUDDLE_CLEAR, RAT_LANE, RAT_RUN_MOST } from "../lib/dungeon/decor";
-import { ratAt, ratLoop, RAT_SPEED } from "../lib/render3d/puddle";
+import { ratAt, ratLoop, ratBolt, ratHidesFrom, RAT_SPEED, RAT_BOLT, RAT_DIVE } from "../lib/render3d/puddle";
 import { CANDLE_NEAR } from "../lib/dungeon/torch";
 import { startWalkRun } from "../lib/dungeon/walkRun";
 import { layoutFloorplan, roomCentre } from "../lib/dungeon/layout";
@@ -141,5 +141,13 @@ describe("floor life (puddles, mouse holes)", () => {
     expect(ratAt(there + 0.15, run)!.into).toBeGreaterThan(0);
     expect(ratAt(there + 2, run)).toBeNull();
     expect(ratAt(ratLoop(run) + 0.1, run)).toEqual(ratAt(0.1, run));
+  });
+  it("come near and the rat bolts for its hole, faster, then hides as after any run", () => {
+    const run = 6, from = 2, time = (run - from) / (RAT_SPEED * RAT_BOLT);
+    expect(ratBolt(from, 0, run)).toEqual({ along: from, into: 0 });
+    expect(ratBolt(from, time / 2, run)!.along).toBeCloseTo(from + (run - from) / 2);
+    expect(ratBolt(from, time + RAT_DIVE / 2, run)!.into).toBeCloseTo(0.5);
+    expect(ratBolt(from, time + RAT_DIVE + 0.01, run)).toBeNull();
+    expect(ratAt(ratHidesFrom(run) + 0.01, run)).toBeNull();
   });
 });

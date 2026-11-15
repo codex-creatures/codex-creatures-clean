@@ -45,7 +45,7 @@ import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
 import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
 import { Prop3D, Campfire, HealingGem, PROP_LEAN, type Tint } from "@/components/Props3D";
-import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt } from "@/lib/render3d/puddle";
+import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt, ratBolt, ratHidesFrom, RAT_FLEE } from "@/lib/render3d/puddle";
 import { texelsPerU, pixelScale, lightField, shadeAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -544,11 +544,22 @@ function RatRun({ hole, phase, sim, live, stretch, shade }: { hole: RatHole; pha
   const rat = useRef<THREE.Group>(null), ratMat = useRef<THREE.MeshBasicMaterial>(null), holeMat = useRef<THREE.MeshBasicMaterial>(null);
   const run = Math.abs(hole.x - hole.from), dir = Math.sign(hole.x - hole.from) || 1;
   const face = hole.y - 0.5, lane = face + 0.45, [rw, rh] = FLOOR_LIFE.ratSize, h = HOLE_U * stretch;
+  // (Its own clock, nudged after it bolts so it hides from there; and the bolt under way.)
+  const shift = useRef(phase), bolt = useRef<{ from: number; at: number } | null>(null);
   useFrame((state) => {
     if (holeMat.current && shade) holeMat.current.color.copy(shade(hole.x, hole.y));
     const g = rat.current;
     if (!g) return;
-    const r = ratAt(state.clock.elapsedTime + phase, run), x = r ? hole.from + dir * r.along : hole.x;
+    const now = state.clock.elapsedTime;
+    let r = bolt.current ? ratBolt(bolt.current.from, now - bolt.current.at, run) : ratAt(now + shift.current, run);
+    if (!bolt.current && r && r.into === 0 && Math.hypot(sim.me.x - (hole.from + dir * r.along), sim.me.y - hole.y) < RAT_FLEE) {
+      bolt.current = { from: r.along, at: now }; // (you came near: it runs for it)
+    } else if (bolt.current && !r) {
+      bolt.current = null;
+      shift.current = ratHidesFrom(run) - now;
+      r = null;
+    }
+    const x = r ? hole.from + dir * r.along : hole.x;
     g.visible = !!r && sim.lightNow[hole.y * live.w + Math.round(x)] === 1;
     if (!r) return;
     if (r.into === 0) { g.position.set(x, 0.02, lane); g.rotation.y = dir * (Math.PI / 2); }

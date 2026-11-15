@@ -900,6 +900,8 @@ export type Room = {
   deckTaken?: boolean; // (world version 13) the deck of cards on this room's table has been turned over
   shelfSearched?: boolean; // (world version 14) the bookcase against this room's wall has been searched
   packOnFloor?: boolean;   // (world version 14) a storehouse: the rugged backpack lies on its floor, to pick up
+  crates?: SackItem[][];   // (world version 16) a storehouse: what's in each of its crates and barrels (`crate:<room>:<n>`)
+  searched?: number[];     // …the ones searched
   deck?: string[];     // a deck of cards (a cards room's, or one on a table: world version 13): its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
   done: boolean;
 };

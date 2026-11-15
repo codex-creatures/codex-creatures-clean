@@ -234,6 +234,17 @@ v15, the user, 2026-11-15: pass 6b's tables, then (on its stream, right after a 
 round (2 × 3 subcells, still inside one panel), saved with its unturned size and `rot: 1` (the first thing
 that turns; refused on anything else, and below v15). Drawn a quarter turn round, the candle on one to its
 south end.
+v16, the user, 2026-11-15, after the v14 passes and before the spawns: 6e, an unguarded storehouse's crates
+and barrels (pass 64): `STORE_CRATES` 4–6, `crate:<room>:<n>` (`store-crates` or `store-barrels`), each on a
+random panel beside rock off the doors (`CANDLE_CLEAR`), wall-most (spotsIn); its stores shared out among
+them as the run's made (migrate.ts `withCrates`, its own stream). 6f, corner groups (pass 65): each panel
+with rock beside it and above or below, more than `CORNER_DOOR_GAP` from every door's inside panel,
+`CORNER_GROUP` 35% each, `CORNER_MOST` 2 a room, not the entrance or the boss's: a theme's 2–3 decor
+pieces (`decor:<room>:<g>:<k>`), the corner first, then the panels beside it along its walls, each left out
+if it can't go. 6g, the boss room's standing torches: from its first door's inside panel towards
+`standOf`, every `BOSS_TORCH_STEP` panels from 2 in to 3 short, one `BOSS_TORCH_SIDE` panels to each side
+(`brazier:<room>:<pair>:<side>`), each left out if it can't go. The decor and torch definitions are
+refused below v16.
 
 ### Modules
 

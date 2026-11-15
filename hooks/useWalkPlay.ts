@@ -41,6 +41,7 @@ export type WalkPlayProps = {
   onDeck?: (id: string, state: WalkState) => void; // walked up to a deck of cards on a room's table (world version 13)
   onShelf?: (id: string, state: WalkState) => void; // …a bookcase against a room's wall (world version 14)
   onPickup?: (id: string, what: "dynamite" | "backpack", state: WalkState) => void; // …a storehouse's find on its floor (world version 14)
+  onCrate?: (id: string, crate: number, state: WalkState) => void; // …one of a storehouse's crates or barrels (world version 16)
   onHeal: (gains: Record<string, number>, state: WalkState) => void;
   onKeep: (state: WalkState) => void;
   seeAll?: boolean;                    // the lab: everything shown as seen (to judge a room)
@@ -101,6 +102,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
   // Tapped (and walked up to) a thing: a cage opens as a cage; a chest or cage still guarded sets its guards on you; anything else is its room's.
   const openThing = (t: Thing, st: WalkState) => (t.guarded ? soundAlarm(sim, t.room, performance.now())
     : t.cage !== undefined ? props.current.onCage?.(t.room, t.cage, st) : t.deck ? props.current.onDeck?.(t.room, st)
+    : t.crate !== undefined ? props.current.onCrate?.(t.room, t.crate, st)
     : t.shelf ? props.current.onShelf?.(t.room, st) : t.pickup ? props.current.onPickup?.(t.room, t.pickup, st) : props.current.onObject(t.room, st));
 
   // Where you may walk: what the forward rule allows, only where you've seen, and never into a chest.

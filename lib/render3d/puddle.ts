@@ -58,3 +58,15 @@ export function ratAt(t: number, run: number): { along: number; into: number } |
   if (at < time + RAT_DIVE) return { along: run, into: (at - time) / RAT_DIVE };
   return null;
 }
+// A rat out on its run that you come within RAT_FLEE of bolts for its hole, RAT_BOLT times as fast (the
+// user, 2026-11-15). Where it is `dt` seconds after it took fright at `from` along its run; null once
+// it's in (then it hides, as after any run: ratHidesFrom).
+export const RAT_FLEE = 2.5, RAT_BOLT = 3; // 🧪 tiles; times its speed
+export function ratBolt(from: number, dt: number, run: number): { along: number; into: number } | null {
+  const time = Math.max(0, run - from) / (RAT_SPEED * RAT_BOLT);
+  if (dt < time) return { along: from + dt * RAT_SPEED * RAT_BOLT, into: 0 };
+  if (dt < time + RAT_DIVE) return { along: run, into: (dt - time) / RAT_DIVE };
+  return null;
+}
+// …and the loop's time just as it went in: from there it hides, and runs again, as ever.
+export const ratHidesFrom = (run: number) => run / RAT_SPEED + RAT_DIVE;

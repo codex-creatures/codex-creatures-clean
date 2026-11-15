@@ -29,6 +29,7 @@ export type Placements = {
   decks?: Set<string>;                   // (world version 13) the tables a deck of cards lies on, by id
   codexes?: Set<string>;                 // (world version 14) the bookcases against walls with a codex in, by id
   turned?: Set<string>;                  // (world version 15) the tables turned end-on, by id
+  decor?: { id: string; def: string; room: string }[]; // (world version 16) groups of decor in corners, and a storehouse's crates
   v?: number;                            // the world version they were placed by
 };
 
@@ -68,6 +69,9 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
     } else if (MOUNTED.has(i.def)) {
       candles.push({ id: i.id, room: i.room, ...p, lit: i.start === "lit" || lit.has(i.id) });
+    } else if (i.def === "standing-torch") {
+      // (v16) A boss's standing torch: lit in turn, a pair at a time (walkSim.ts), never by walking near.
+      candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id), chain: Number(i.id.split(":")[2]) });
     } else if (i.def === "floor-candle") {
       candles.push({ id: i.id, room: i.room, ...p, lit: lit.has(i.id) });
     } else if (i.def === "table" && i.holds === "candle") {
@@ -84,5 +88,6 @@ export function placementsFrom(placed: Instance[], walk: Pick<WalkRun, "lit" | "
   const decks = new Set(placed.filter((i) => i.def === "table" && i.deck).map((i) => i.id));
   const codexes = new Set(placed.filter((i) => i.def === "bookcase" && i.codex).map((i) => i.id));
   const turned = new Set(placed.filter((i) => i.def === "table" && i.rot === 1).map((i) => i.id));
-  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), decks, codexes, turned, v: walk.v ?? 0 };
+  const decor = placed.filter((i) => i.id.startsWith("decor:") || i.id.startsWith("crate:")).map((i) => ({ id: i.id, def: i.def, room: i.room }));
+  return { sconces, candles, witches, foes, spot: (id) => spots.get(id), decks, codexes, turned, decor, v: walk.v ?? 0 };
 }

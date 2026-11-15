@@ -30,6 +30,7 @@ export const KEEP_EVERY = 5000;  // ms: your spot's saved this often while you w
 export const HEAL_EVERY = 400;   // ms: health from a campfire is handed back this often
 export const SHOW_EVERY = 100;   // ms: the campfire window updates this often
 export const OUT_SHOW = 1500;    // ms the campfire window stays up after the fire's burnt down
+export const CHAIN_STEP = 450;   // ms between a boss's standing torches lighting, pair by pair 🧪
 export const TRAIL_MAX = 3000;   // cells of your trail kept for the scroll
 export const FIRED_WAIT = 2000;  // ms: a fight called for that hasn't started by then: carry on
 
@@ -51,6 +52,7 @@ export type WalkSim = {
   sconces: Sconce[]; candles: Candle[]; fires: Campfire[]; foes: Foe[]; npcs: Foe[];
   people: Wanderer[];                // who wanders the dungeon (world version 9 on: people.ts)
   flareLeft: number;                // cells of walking left with a flare's light
+  chainAt?: number;                  // (world version 16) when the boss's standing torches began to light, a pair at a time (ms)
   falls: Map<string, number>;        // tunnels falling in (rubble key: when, ms)
   shakeAt: number;                   // when the screen last shook (ms)
   wantThing: string | null;          // walking up to this thing (its key), to open it
@@ -202,7 +204,13 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
       for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1;
     }
   }
-  for (const c of sim.candles) if (!busy && canIgnite(live, c, sim.me)) { c.lit = true; lighted = true; }
+  for (const c of sim.candles) if (!busy && c.chain === undefined && canIgnite(live, c, sim.me)) { c.lit = true; lighted = true; }
+  // (World version 16) The boss's standing torches: once your torch reaches one still out, they light a
+  // pair at a time, nearest the door first, CHAIN_STEP apart (the user, 2026-11-15).
+  if (sim.chainAt === undefined && sim.candles.some((c) => c.chain !== undefined && !c.lit && lightNow[Math.round(c.y) * live.w + Math.round(c.x)] === 1)) sim.chainAt = now;
+  if (sim.chainAt !== undefined) for (const c of sim.candles) {
+    if (c.chain !== undefined && !c.lit && c.chain <= (now - sim.chainAt) / CHAIN_STEP) { c.lit = true; lighted = true; }
+  }
   const candlesSeen = sim.candles.filter((c) => c.lit && fireInSight(live, c, sim.me));
   for (const c of candlesSeen) { const a = candleLight(sim, c); for (let i = 0; i < a.length; i++) if (a[i]) lightNow[i] = 1; }
   const fireSeen = sim.fires.filter((f) => fireInSight(live, f, sim.me));
