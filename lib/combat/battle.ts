@@ -35,6 +35,7 @@ import type { CombatClass, Skill } from "../creatures/creatureData";
 import { raceOfMove, raceVsAll } from "./raceChart";
 import { bossActions, bossEndOfRound, bossMinHp, bossSelfMove, bossSetup, type BossKind, type BossState } from "./bossAi";
 import { DEFLECT_CHANCE, NULLIFY_REFLECT, SET_BONUS, type ArmorKey } from "../items/armor";
+import { enchantsFor, type EnchantMode } from "../items/enchantments";
 import { HAUNT_CHANCE, PERFECTIONIST_STEP, REVITALISE_HEAL, SOUL_STONES, TOXIC_SKIN, type SoulStoneKey } from "../creatures/soulStones";
 
 export const SWAP_ENERGY_RESTORE = 0.5; // share of MISSING energy restored on swap-out
@@ -299,10 +300,18 @@ export const aliveCount = (s: BattleSide) => s.team.filter((f) => f.hp > 0).leng
 // bossB: side B is that boss, played by its script.
 // opts.pairB: side B's first two creatures are both on the field (an ambush).
 // opts.turnLimit: see BattleState.
+// opts.mode: where the fight is (the Labyrinth: pve; a duel: pvp; neither: the
+// Fight Pit, Klutz's fights). Gear enchantments that don't work there are left off.
 export function createBattle(teamA: Fighter[], teamB: Fighter[], startHp: Partial<Record<SideKey, number[]>> = {}, bossB?: BossKind,
-  opts: { pairB?: boolean; turnLimit?: number } = {}): BattleState {
+  opts: { pairB?: boolean; turnLimit?: number; mode?: EnchantMode } = {}): BattleState {
   const fresh = (t: Fighter[], hp?: number[]): Combatant[] =>
-    t.map((f, i) => ({ ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] }));
+    t.map((f, i) => {
+      const c: Combatant = { ...f, hp: Math.max(1, Math.min(f.maxHp, hp?.[i] ?? f.maxHp)), energy: MAX_ENERGY, statuses: [] };
+      const enchant = enchantsFor(f.enchant, opts.mode);
+      if (enchant) c.enchant = enchant;
+      else delete c.enchant;
+      return c;
+    });
   const side = (key: SideKey, team: Fighter[]): BattleSide =>
     ({ key, team: fresh(team, startHp[key]), active: 0, swaps: 0, lastSwapRound: -99 });
   const B = side("B", teamB);
@@ -642,7 +651,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       const armorFx: string[] = []; // armour sets (and soul stones) that kicked in
       if (quickscale) armorFx.push(`${SET_BONUS.dragonscale_tunic.name}: strikes first`);
       if (deflected) armorFx.push(`${SET_BONUS.arrowward_mantle.name}: their armour turns it aside`);
-      const precise = !missed && (fx?.kind === "precise" || Math.random() < PRECISE_CHANCE);
+      const precise = !missed && (fx?.kind === "precise" || Math.random() < Math.max(PRECISE_CHANCE, actor.enchant?.keen ?? 0)); // (a Keen weapon: its own chance)
       const pounced = fx?.kind === "pounce" && target.hp < target.maxHp / 2;
       let damage = missed ? 0 : calcDamage(skill, actor, target, precise, PRECISE_IGNORE, rollDamage()).damage;
       if (pounced && fx?.kind === "pounce") damage = Math.round(damage * (1 + fx.lowHpBonus));
@@ -654,6 +663,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         if (fx?.kind === "septic" && (target.statuses.some((s) => s.id === "bleed") || groundOf(foe, "blood") || groundOf(foe, "gore"))) m *= fx.mult;
         if (fx?.kind === "ignite" && groundOf(foe, "cloud")) { m *= fx.mult; burnt = groundOf(foe, "cloud"); clearGroundLogged(state, foeKey, ["cloud"]); }
         if (fx?.kind === "chain") m *= 1 + Math.min(fx.cap, fx.step * (streak.hits - 1));
+        if (foe.boss && actor.enchant?.bossbane) m *= 1 + actor.enchant.bossbane; // (a Bossbane weapon)
         const gore = groundOf(foe, "gore");
         if (gore && !cannotBleed(target) && raceOfMove(skill) === "toxic") m *= 1 + gore.amp;
         damage = Math.round(damage * m);
@@ -741,6 +751,12 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
           const healed = Math.min(actor.maxHp - actor.hp, Math.round(damage * fx.share));
           if (healed > 0) { actor.hp += healed; state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `drains ${healed} HP`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "heal", damage: healed }); }
         }
+        // A Leeching (the Labyrinth) or Vampiric (PvP) weapon: a share of the hit back as health.
+        const leech = (actor.enchant?.leeching ?? 0) + (actor.enchant?.vampiric ?? 0);
+        if (leech > 0 && damage > 0 && actor.hp > 0) {
+          const healed = Math.min(actor.maxHp - actor.hp, Math.round(damage * leech));
+          if (healed > 0) { actor.hp += healed; state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `drinks ${healed} HP from the hit`, hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "heal", damage: healed }); }
+        }
         if (fx?.kind === "agility") actor.agilityUp = Math.max(actor.agilityUp ?? 0, fx.gain);
         if (fx?.kind === "surge") actor.surge = Math.max(actor.surge ?? 0, fx.gain);
         if (target.hp > 0) {
@@ -810,6 +826,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
       if (armorFx.length) hit.armorFx = armorFx.join(" · ");
       if (target.hp <= 0 && !burntOut) knockedOut(state, foeKey, targetIdx);
+      if (target.hp <= 0) victorious(state, key, actorIdx);
 
       // Nullify: some of a magic hit bounces back at the attacker.
       if (!missed && damage > 0 && skill.type === "magic" && hasSet(target, "arcane_nullifier") && actor.hp > 0) {
@@ -891,6 +908,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       }
     });
   }
+  for (const k of ["A", "B"] as SideKey[]) for (const i of fieldOf(state.sides[k])) cleanse(state, k, i);
   for (const k of ["A", "B"] as SideKey[]) {
     for (const f of state.sides[k].team) {
       f.statuses = f.statuses.map((st) => ({ ...st, rounds: st.rounds - 1 })).filter((st) => st.rounds > 0);
@@ -923,6 +941,32 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     state.needsReplacement = (["A", "B"] as SideKey[]).filter((k) => !state.sides[k].boss && activeOf(state.sides[k]).hp <= 0);
   }
   return state;
+}
+
+// Victorious armour: knocking a foe out heals a share of max HP (pieces add up).
+function victorious(state: BattleState, key: SideKey, index: number) {
+  const f = state.sides[key].team[index];
+  const share = f.enchant?.victorious ?? 0;
+  if (share <= 0 || f.hp <= 0) return;
+  const healed = Math.min(f.maxHp - f.hp, Math.max(1, Math.round(f.maxHp * share)));
+  if (healed <= 0) return;
+  f.hp += healed;
+  state.log.push({ type: "effect", side: key, index, name: f.name, text: `is heartened by the knockout (+${healed} HP)`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "heal", damage: healed });
+}
+
+// Cleansing armour: at the end of each round, a chance (pieces add up) to shake
+// off its latest harmful effect (WARD_BLOCKS: what a ward keeps off) that has a
+// round left to run. No roll when there's nothing to shake off.
+const CLEANSED: Record<string, string> = { soak: "soaking", weaken: "weakness", seal: "seal", cripple: "cripple", venom: "venom", poison: "poison", bleed: "bleeding", fear: "fear" };
+function cleanse(state: BattleState, key: SideKey, index: number) {
+  const f = state.sides[key].team[index];
+  const share = f.enchant?.cleansing ?? 0;
+  if (share <= 0 || f.hp <= 0 || f.hidden) return;
+  const last = f.statuses.filter((s) => WARD_BLOCKS.includes(s.id) && s.rounds > 1).pop();
+  if (!last || Math.random() >= share) return;
+  f.statuses = f.statuses.filter((s) => s !== last);
+  if (last.id === "soak") f.defenceCut = undefined;
+  state.log.push({ type: "effect", side: key, index, name: f.name, text: `shakes off its ${CLEANSED[last.id] ?? last.id}`, hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "ability" });
 }
 
 // A creature has just hit 0 HP: it faints, unless Corpsify brings it back.

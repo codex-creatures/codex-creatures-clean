@@ -63,6 +63,7 @@ export type Fighter = {
   weakTo?: CombatClass; // a boss part's weak spot: moves of this style hit it WEAK_SPOT harder (the Hydra's heads)
   agilityUp?: number; // share added to its agility for the rest of the fight (Whiplash)
   surge?: number;     // share added to its magic damage for the rest of the fight (Voltage Surge)
+  enchant?: import("../items/enchantments").FighterEnchants; // its gear's enchantments (createBattle keeps the ones that work in the fight)
   offRace?: string;   // a foe's codex move of another race, which the AI doesn't always think to use (lib/dungeon/run.ts foeCodexes)
 };
 // How often an AI-played foe considers its offRace move on a turn.
@@ -218,7 +219,8 @@ export function calcDamage(
   // Armour defence counts at ARMOR_DEFENCE_WEIGHT. Penetration and precise
   // hits each ignore a share of what's left.
   const effectiveDef   = withProf(defender.armor[defKey] ?? 0, defender.proficiency[defKey]) * ARMOR_DEFENCE_WEIGHT * (1 - (defender.defenceCut ?? 0));
-  const defenseApplied = effectiveDef * (1 - dmgType.pen) * (precise ? 1 - preciseIgnore : 1);
+  // (A Piercing weapon ignores a share of it too.)
+  const defenseApplied = effectiveDef * (1 - dmgType.pen) * (precise ? 1 - preciseIgnore : 1) * (1 - (attacker.enchant?.piercing ?? 0));
 
   // Attack against defence as a ratio: defence always cuts damage, but a hit
   // never drops to nothing (a hit as big as the counted defence does half).
@@ -236,7 +238,7 @@ export function calcDamage(
 // ── Energy & precise hits ───────────────────────────────
 export const MAX_ENERGY = 100;
 export const ENERGY_REGEN = 30;     // after each attack
-export const PRECISE_CHANCE = 0.05; // chance of a precise hit…
+export const PRECISE_CHANCE = 0.05; // chance of a precise hit (a Keen weapon's, in PvP: its own)…
 export const PRECISE_IGNORE = 0.25; // …which ignores 25% of defence
 export const PRECISE_DAMAGE = 1.75; // …and does 1.75× damage (the user, 2026-10-24)
 

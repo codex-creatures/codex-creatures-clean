@@ -443,7 +443,7 @@ export function useGameState(initialTab: TabKey = "all") {
     const l = equipment[KLUTZ_DROP_ID];
     const byId = new Map(inventory.map((d) => [d.id, d as CreatureOrItemDrop]));
     const w = l?.weaponId ? byId.get(l.weaponId) : undefined;
-    return fighterFor(klutzDrop(klutz.level, 0, klutz.points, undefined, klutz.soulStone), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey);
+    return fighterFor(klutzDrop(klutz.level, 0, klutz.points, undefined, klutz.soulStone), KLUTZ, w?.stats, armorPieces(l, (id) => byId.get(id)), l?.moves, w?.itemKey, w);
   }, [equipment, inventory, klutz.level, klutz.points, klutz.soulStone]);
 
   // While Klutz is out, the gear he's wearing goes with him: nobody can take

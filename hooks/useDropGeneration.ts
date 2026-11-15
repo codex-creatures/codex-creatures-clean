@@ -2,8 +2,8 @@
 import type { Drop } from "@/lib/types";
 import { lookupLocal, rollBarcodeOutcome, type Lookup } from "@/lib/barcodeRegistry";
 import { calibrationRoll } from "@/lib/firstScans";
-import { dropFromOutcome, goldDrop } from "@/lib/drops";
-import { openBarcode, scanKeys, type Opened } from "@/lib/scanning";
+import { goldDrop } from "@/lib/drops";
+import { openBarcode, scanDrop, scanKeys, type Opened } from "@/lib/scanning";
 import { onlineClient } from "@/lib/online/client";
 import { lookupOnline } from "@/lib/online/registry";
 import type { Rarity } from "@/lib/types";
@@ -85,7 +85,7 @@ export function useDropGeneration({
     // ── RANDOM (testing) → A FRESH ROLL EVERY TIME ────────
     if (rollMode === "random") {
       onScanCountUpdate(code, alreadyScanned + 1);
-      const drops = scanKeys(code).map(() => dropFromOutcome(rollBarcodeOutcome(), code)).filter((d): d is Drop => d !== null);
+      const drops = scanKeys(code).map(() => scanDrop(rollBarcodeOutcome(), code)).filter((d): d is Drop => d !== null);
       drops.forEach(onDrop);
       onScan?.(drops);
       return;
@@ -101,7 +101,7 @@ export function useDropGeneration({
         onNoScans?.();
         return;
       }
-      const drops = [dropFromOutcome(calibrationRoll(), code)].filter((d): d is Drop => d !== null);
+      const drops = [scanDrop(calibrationRoll(), code)].filter((d): d is Drop => d !== null);
       onScanUsed?.(code);
       drops.forEach(onDrop);
       onScan?.(drops);

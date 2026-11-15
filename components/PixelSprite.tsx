@@ -6,7 +6,8 @@
 
 import { useMemo, useState } from "react";
 import { fineGrid, outlined, runs, type Sprite } from "@/lib/sprites/pixels";
-import { artFor } from "@/lib/sprites/art";
+import { artFor, isShining, shining } from "@/lib/sprites/art";
+import { enchantOf } from "@/lib/items/enchantments";
 import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES, POTION_SPRITES, MATERIAL_SPRITES, TOOL_SPRITES, CODEX_SPRITE, SCROLL_SPRITE, SCHEMATIC_SPRITE } from "@/lib/sprites/items";
 import { MATERIALS, type MaterialKey } from "@/lib/items/materials";
 import { CREATURE_SPRITES, EGG } from "@/lib/sprites/creatures";
@@ -22,30 +23,53 @@ export default function PixelSprite({ sprite, scale = 4, title, style }: {
     const g = outlined(fineGrid(sprite));
     return { w: g[0].length, h: g.length, rects: runs(g) };
   }, [sprite]);
+  // An enchanted item (lib/sprites/art.ts shining): a moving shine over it, in
+  // the picture's own shape when it's drawn art (CSS only: .enchant-shine).
+  const shine = isShining(sprite);
   if (art && broken !== art.src) {
     const width = ((art.size ?? art.w) * scale) / 2, height = (width * art.h) / art.w;
     // Crisp pixels when shown at its own size or bigger; shrunk, smooth (crisp
     // shrinking drops pixels unevenly).
     const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio;
-    return (
+    const img = (
       // eslint-disable-next-line @next/next/no-img-element
       <img src={art.src} alt={title ?? ""} title={title} width={width} height={height}
         onError={() => setBroken(art.src)} draggable={false}
-        style={{ display: "block", flexShrink: 0, imageRendering: width * dpr >= art.w ? "pixelated" : "auto", ...style }} />
+        style={{ display: "block", flexShrink: 0, imageRendering: width * dpr >= art.w ? "pixelated" : "auto", ...(shine ? {} : style) }} />
+    );
+    if (!shine) return img;
+    const mask = `url("${art.src}") center / 100% 100% no-repeat`;
+    return (
+      <span style={{ display: "block", flexShrink: 0, position: "relative", width, height, ...style }}>
+        {img}
+        <span aria-hidden className="enchant-shine" style={{ WebkitMask: mask, mask }} />
+      </span>
     );
   }
-  return (
+  const svg = (
     <svg width={(w * scale) / 2} height={(h * scale) / 2} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges"
-      role="img" aria-label={title} style={{ display: "block", flexShrink: 0, ...style }}>
+      role="img" aria-label={title} style={{ display: "block", flexShrink: 0, ...(shine ? {} : style) }}>
       {title && <title>{title}</title>}
       {rects.map(([x, y, n, c], i) => <rect key={i} x={x} y={y} width={n} height={1} fill={c} />)}
     </svg>
   );
+  if (!shine) return svg;
+  return (
+    <span style={{ display: "block", flexShrink: 0, position: "relative", width: (w * scale) / 2, height: (h * scale) / 2, ...style }}>
+      {svg}
+      <span aria-hidden className="enchant-shine" />
+    </span>
+  );
 }
 
 // The sprite for an item drop: gear, a potion, a material, a tool, a codex,
-// an XP scroll or a schematic (undefined for anything without art).
+// an XP scroll or a schematic (undefined for anything without art). An
+// enchanted piece's carries the shine.
 export function itemSprite(item: CreatureOrItemDrop): Sprite | undefined {
+  const sp = plainItemSprite(item);
+  return sp && enchantOf(item) ? shining(sp) : sp;
+}
+function plainItemSprite(item: CreatureOrItemDrop): Sprite | undefined {
   if (item.potion) return POTION_SPRITES[item.potion];
   if (item.material && MATERIAL_SPRITES[item.material]) return MATERIAL_SPRITES[item.material];
   if (item.tool) return TOOL_SPRITES[item.tool];

@@ -23,6 +23,7 @@ import { CREATURES_BY_RARITY } from "./creatures/creatureData";
 import { canFind } from "./creatures/levels";
 import { SOUL_STONE_KEYS, type SoulStoneKey } from "./creatures/soulStones";
 import { savesLocked } from "./save";
+import { SCAN_ENCHANT } from "./items/enchantments";
 
 export type BarcodeOutcome =
   | { outcome: "gold"; amount: number }
@@ -73,6 +74,7 @@ export type RegistryRules = {
   armors: string[];
   armorSlots: string[];
   soulStones: string[];
+  enchant: number; // the share of Rare+ weapons and armour that come enchanted (rolled per player, like stats: lib/items/enchantments.ts)
 };
 
 export const REGISTRY_RULES: RegistryRules = {
@@ -85,6 +87,7 @@ export const REGISTRY_RULES: RegistryRules = {
   armors: [...ARMOR_KEYS],
   armorSlots: [...ARMOR_SLOTS],
   soulStones: [...SOUL_STONE_KEYS],
+  enchant: SCAN_ENCHANT,
 };
 
 // A key, at the weights given.

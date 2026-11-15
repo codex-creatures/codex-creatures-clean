@@ -20,6 +20,7 @@ import {
   CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, GOLDEN_DROPS, GOLDEN_RARITY, GOLDEN_LEGENDARY_FROM, type Room, type SackItem, type DungeonId,
 } from "./run";
 import { CHEST_ODDS, REGISTRY_RULES, rollBarcodeOutcome, rollFromRules } from "../barcodeRegistry";
+import { enchanted, CHEST_ENCHANT, GOLDEN_ENCHANT } from "../items/enchantments";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot } from "../drops";
 import type { Drop } from "../types";
 import type { ItemKey } from "../items/ceilings";
@@ -90,7 +91,7 @@ export function goldenDrops(dungeon: DungeonId, rng: Rng = Math.random): Drop[] 
   };
   const drops: Drop[] = [];
   while (drops.length < GOLDEN_DROPS) {
-    const d = dropFromOutcome(rollFromRules(rules, rng));
+    const d = enchanted(dropFromOutcome(rollFromRules(rules, rng)), GOLDEN_ENCHANT, rng);
     if (d) drops.push(d);
   }
   return drops;
@@ -101,7 +102,7 @@ export function goldenDrops(dungeon: DungeonId, rng: Rng = Math.random): Drop[] 
 export function chestSack(): SackItem[] {
   const drops: Drop[] = [];
   while (drops.length < CHEST_DROPS) {
-    const d = dropFromOutcome(rollBarcodeOutcome(CHEST_ODDS));
+    const d = enchanted(dropFromOutcome(rollBarcodeOutcome(CHEST_ODDS)), CHEST_ENCHANT);
     if (d) drops.push(d);
   }
   if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());

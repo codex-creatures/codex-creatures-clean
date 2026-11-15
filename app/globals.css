@@ -732,3 +732,21 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 .triumph-cheer { animation: swapin 0.35s ease-out both, levelup-hop 0.7s ease-in-out 1.2s infinite; }
 .triumph-stats { animation: swapin 0.4s ease-out 1s both; }
 @media (prefers-reduced-motion: reduce) { .triumph-spark { display: none; } .triumph-banner, .triumph-title, .triumph-line, .triumph-cheer, .triumph-stats { animation: none; } }
+
+/* An enchanted item's moving shine, like Minecraft's glint (lib/sprites/art.ts
+   shining; PixelSprite masks it to the picture's shape when it's drawn art). */
+.enchant-shine {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 38%, rgba(190,130,255,0.6) 46%, rgba(255,235,255,0.75) 50%, rgba(190,130,255,0.6) 54%, transparent 62%),
+    rgba(150,90,255,0.16);
+  background-size: 300% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen;
+  animation: enchant-shine 2.8s linear infinite;
+}
+@keyframes enchant-shine { from { background-position: 100% 0, 0 0; } to { background-position: 0% 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) { .enchant-shine { animation: none; } }
+/* An enchantment's line on an item (components/EnchantLine.tsx): greyed where it doesn't work. */
+.enchant-line { color: #d6b4ff; }
+.enchant-line[data-off] { color: rgba(255,255,255,0.4); }

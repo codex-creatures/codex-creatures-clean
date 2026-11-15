@@ -16,6 +16,7 @@ import { computeSellGold } from "@/lib/items/economy/sell";
 import { WEAPON_AFFINITY } from "@/lib/items/ceilings";
 import { DAMAGE_TYPE_INFO } from "@/lib/creatures/creatureData";
 import { AFFINITY_BONUS, damageTypesOn } from "@/lib/combat/engine";
+import EnchantLine from "./EnchantLine";
 
 type Props = {
   item: CreatureOrItemDrop;
@@ -167,6 +168,8 @@ export default function ItemDetailModal({ item, isFavorite, onToggleFavorite, on
               </div>
             ) : null}
           </div>
+          {/* Its enchantment, if any (the line keeps its place either way). */}
+          <EnchantLine item={item} style={{ marginTop: 6, fontSize: 14 }} />
         </div>
 
         <div style={{ height: 1, background: "rgba(255,255,255,0.07)", marginBottom: 20 }} />

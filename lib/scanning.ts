@@ -3,9 +3,15 @@
 // (lib/barcodeRegistry.ts locally, lib/online/registry.ts online).
 
 import type { Drop, Rarity } from "./types";
-import { claimedOutcome, tooRare, type Lookup } from "./barcodeRegistry";
+import { claimedOutcome, REGISTRY_RULES, tooRare, type Lookup } from "./barcodeRegistry";
 import { SCAN_UNLOCK } from "./creatures/levels";
 import { dropFromOutcome } from "./drops";
+import { enchanted } from "./items/enchantments";
+import type { BarcodeOutcome } from "./barcodeRegistry";
+
+// A scan's drop: a Rare or better weapon or armour piece is enchanted at the
+// registry rules' odds (each player rolls their own, as with its stats).
+export const scanDrop = (outcome: BarcodeOutcome, code: string) => enchanted(dropFromOutcome(outcome, code), REGISTRY_RULES.enchant);
 
 // A barcode you've never scanned gives this many drops (1: items stay
 // scarce — scanning a few things is rewarding enough). Each is its own
@@ -32,7 +38,7 @@ export function openBarcode(code: string, found: Lookup[], playerLevel: number):
     return { kind: "too_rare", rarity: main.entry.rarity, need: SCAN_UNLOCK[main.entry.rarity] };
   }
   const drops = found
-    .map(({ entry, first }) => dropFromOutcome(first ? entry : claimedOutcome(entry), code))
+    .map(({ entry, first }) => scanDrop(first ? entry : claimedOutcome(entry), code))
     .filter((d): d is Drop => d !== null);
   return { kind: "found", drops, first: main.first, ...(main.place ? { place: main.place } : {}) };
 }

@@ -5,6 +5,7 @@
 import type { CreatureOrItemDrop } from "../types";
 import { buildFighter } from "../combat/loadout";
 import { wornArmor } from "../items/armor";
+import { fighterEnchants } from "../items/enchantments";
 import type { ItemKey } from "../items/ceilings";
 import { RESTYLED_SPECIES } from "./rosterV2";
 import { defaultMoveNames, isRetiredMove, renamedMove, replaceRetired, resolveMoves, REUSED_NAMES, startingMoveCount, STARTING_MOVES, type CreatureProficiency, type CreatureTemplate, type Skill } from "./creatureData";
@@ -83,9 +84,11 @@ export function movesOf(drop: CreatureOrItemDrop, t: CreatureTemplate, chosen?: 
 }
 
 // armor: the creature's armour pieces (helmet, chest, legs; missing = empty).
-// weaponKey: the weapon's type, for its damage-type affinity.
-export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor: (CreatureOrItemDrop | undefined)[] = [], chosenMoves?: string[], weaponKey?: ItemKey) {
+// weaponKey: the weapon's type, for its damage-type affinity. weaponItem: the
+// weapon itself, for its enchantment (the armour pieces carry theirs).
+export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor: (CreatureOrItemDrop | undefined)[] = [], chosenMoves?: string[], weaponKey?: ItemKey, weaponItem?: CreatureOrItemDrop) {
   const worn = wornArmor(armor);
   const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set, weaponKey, drop.level ?? 1);
-  return drop.soulStone ? { ...f, soulStone: drop.soulStone } : f;
+  const enchant = fighterEnchants(weaponItem, armor);
+  return { ...f, ...(drop.soulStone ? { soulStone: drop.soulStone } : {}), ...(enchant ? { enchant } : {}) };
 }

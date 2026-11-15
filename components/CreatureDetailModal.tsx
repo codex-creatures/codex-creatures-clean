@@ -170,7 +170,7 @@ export default function CreatureDetailModal({
 
   const summary = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[], cr: CreatureOrItemDrop = creature) => {
     if (!template) return null;
-    const f = fighterFor(cr, template, w?.stats, pieces, loadout?.moves, w?.itemKey);
+    const f = fighterFor(cr, template, w?.stats, pieces, loadout?.moves, w?.itemKey, w);
     return { f, s: combatSummary(f) };
   };
   // Klutz with his unconfirmed points added (to preview them on his stats).

@@ -1,4 +1,6 @@
 import type { Rarity } from "./budgets";
+import type { ItemCategory } from "../types";
+import { enchantStats, type EnchantKey } from "./enchantments";
 
 export type ArmorKey =
   | "frontiers_mail"
@@ -182,13 +184,14 @@ export const NULLIFY_REFLECT = 0.25;
 export const DEFLECT_CHANCE = 0.25;
 export const SECOND_WIND_HEAL = 0.15;
 
-type Piece = { armorKey?: ArmorKey; armorSlot?: ArmorSlot; stats?: Record<string, number> } | undefined;
+type Piece = { armorKey?: ArmorKey; armorSlot?: ArmorSlot; stats?: Record<string, number>; itemCategory?: ItemCategory; rarity?: Rarity; enchant?: EnchantKey } | undefined;
 
 // What a creature's armour adds up to: the pieces' stats summed, and the set
-// whose mechanic it gets (only with all three pieces of the same armour).
+// whose mechanic it gets (only with all three pieces of the same armour). A
+// stat enchantment (Ironbound and the like) adds to its piece's stats.
 export function wornArmor(pieces: Piece[]): { stats: Record<string, number>; set?: ArmorKey } {
   const stats: Record<string, number> = {};
-  for (const p of pieces) for (const [k, v] of Object.entries(p?.stats ?? {})) stats[k] = (stats[k] ?? 0) + v;
+  for (const p of pieces) for (const [k, v] of [...Object.entries(p?.stats ?? {}), ...Object.entries(enchantStats(p))]) stats[k] = (stats[k] ?? 0) + v;
   const keys = pieces.map((p) => p?.armorKey);
   const slots = new Set(pieces.map((p) => p?.armorSlot));
   const full = pieces.length === 3 && keys[0] && keys.every((k) => k === keys[0]) && ARMOR_SLOTS.every((s) => slots.has(s));

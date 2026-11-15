@@ -41,7 +41,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - Weapons have a damage-type affinity (+15% when the move's type matches: `AFFINITY_BONUS`), but only
   under the old rules: Combat V2 has no damage types, so it's off (and not shown).
 
-### Enchantments (📌 the user, 2026-11-16, decision 46; not built yet)
+### Enchantments (✅ the user, 2026-11-16, decision 46; built 2026-11-16, lib/items/enchantments.ts)
 
 Marginal edges, never game-breaking. Some work only in the Labyrinth (PvE), some only in PvP.
 
@@ -66,7 +66,32 @@ Marginal edges, never game-breaking. Some work only in the Labyrinth (PvE), some
 - **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence stone
   plus 1,000 / 2,000 / 5,000 gold by the item's rarity.
 - **Look:** an enchanted item's picture has a moving shine over it (like Minecraft's), drawn in
-  code: no new art.
+  code: no new art. ✅ A purple glint sweeping across, masked to the picture's shape (CSS
+  `.enchant-shine`; `shining` in lib/sprites/art.ts gives an enchanted piece's picture its own
+  identity, so every place that draws `itemSprite` shows it).
+- ✅ **As built:** a drop's optional `enchant` field (missing: none, so old saves load unchanged; no
+  new save-file version). The Inventory's item window and the Labyrinth's loot window and found-gear
+  window show a line under the item, "✦ name" with its one-line effect behind a "?"; in the
+  Labyrinth a PvP-only one shows greyed, "(off here)". Fights get a `mode` (`createBattle`): the
+  Labyrinth `pve`, duels `pvp`; the gear's enchantments that don't work there are left off.
+  Claude's readings of the spec (🧪, say if any is wrong):
+  - 🧪 Scans: the 25% is in the registry's rules (`REGISTRY_RULES.enchant`, so the server's copy
+    carries it), but each player rolls their own enchantment when they open the find, like its
+    stats; the server's roll is unchanged. Labyrinth chests are chest rooms only (not stashes,
+    storehouses, or a boss's or mini boss's chest); golden chests' 5 finds always.
+  - 🧪 Every enchantment that fits the item (7 for weapons, 7 for armour) is as likely.
+  - 🧪 PvE means Labyrinth fights only: in the Fight Pit and Klutz's fights only armour's work.
+  - 🧪 Bossbane counts the Cyclops and the Hydra (scripted bosses), not mini bosses.
+  - 🧪 Bounty: the fight's own gold (a golden chest's gold too), each Bounty weapon on the team that
+    fought adding its share. Scholar's: the wielder's share of the fight's XP (explorer XP as it was).
+  - 🧪 Leeching and Vampiric heal from each hit's final damage. Victorious: only a knockout by the
+    creature's own hit (not poison or a cloud).
+  - 🧪 Cleansing: for creatures on the field, after the round's poison and bleeding; "negative
+    effects" are what a ward keeps off (cripple, venom, poison, bleed, seal, weaken, soak, fear),
+    not the witch's illness; it rolls only when there's one with a round left to run.
+  - 🧪 Stat enchantments go on the piece's stats, so defence counts at a third like all armour
+    defence (`ARMOR_DEFENCE_WEIGHT`), and HP and agility in full. An enchantment doesn't change
+    what an item sells for.
 - Dropped in the design: Racebane, Draining, Duelist's, Torchlit and Scavenger's (armour that
   helped the adventurer, not the creature).
 

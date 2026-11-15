@@ -35,7 +35,7 @@ function outcome({ creature, loadout }: EquipCandidate, item: CreatureOrItemDrop
   const old = slot === "weapon" ? weapon : worn[ARMOR_SLOTS.indexOf(slot)];
   if (!template) return { old, template };
   const sum = (w: CreatureOrItemDrop | undefined, pieces: (CreatureOrItemDrop | undefined)[]) => {
-    const f = fighterFor(creature, template, w?.stats, pieces, loadout?.moves, w?.itemKey);
+    const f = fighterFor(creature, template, w?.stats, pieces, loadout?.moves, w?.itemKey, w);
     return { f, s: combatSummary(f) };
   };
   const now = sum(weapon, worn);

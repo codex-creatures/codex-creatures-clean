@@ -47,6 +47,7 @@ import { spriteWidth, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, flipToFace, fineWidth, fineHeight } from "@/lib/sprites/art";
 import Glyph from "./Glyph";
 import { loadTavern } from "@/lib/tavern";
+import type { EnchantMode } from "@/lib/items/enchantments";
 import { trainingId } from "@/lib/trainingPit";
 
 // Fighters face each other: yours (on the left) look right, theirs look left.
@@ -150,7 +151,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true, withAway = 
       weaponName: w?.name,
       armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,
-      fighter: fighterFor(atLevel ? { ...d, level: duelLevel(d.level ?? 1, { level: atLevel, scaleUp }) } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey),
+      fighter: fighterFor(atLevel ? { ...d, level: duelLevel(d.level ?? 1, { level: atLevel, scaleUp }) } : d, t, w?.stats, pieces, equipment[d.id]?.moves, w?.itemKey, w),
       gear: [w, ...worn].filter((g): g is CreatureOrItemDrop => !!g).map((g) => ({ name: g.name, rarity: g.rarity })),
       ...(d.id === away ? { away: true } : {}),
     });
@@ -253,12 +254,13 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
   // illnesses: your creatures that are sick (the witch's curse), each for this many rounds (they stack: decision 39).
   // tutorial: the first quest's guided fight (see tutorialSteps).
   // pair: their first two are both on the field (an ambush). turnLimit: the
-  // room blows after this many rounds (see BattleState.turnLimit).
+  // room blows after this many rounds (see BattleState.turnLimit). mode: where
+  // the fight is, for gear enchantments (the Labyrinth: pve).
   function start(teams: Match["teams"], info: Match["info"], level: AiLevel,
-    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number } = {}) {
+    opts: { startHp?: number[]; title?: string; boss?: BossKind; illnesses?: { index: number; rounds: number }[]; tutorial?: boolean; pair?: boolean; turnLimit?: number; mode?: EnchantMode } = {}) {
     setView(null);
     setFx(null);
-    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit });
+    const state = createBattle(teams.A, teams.B, { A: opts.startHp }, opts.boss, { pairB: opts.pair, turnLimit: opts.turnLimit, mode: opts.mode });
     for (const ill of opts.illnesses ?? []) {
       const sick = state.sides.A.team[ill.index];
       if (sick && ill.rounds > 0) sick.statuses.push({ id: "illness", rounds: ill.rounds, dmg: Math.max(1, Math.round(sick.maxHp * ILLNESS_DAMAGE)) });

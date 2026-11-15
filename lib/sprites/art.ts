@@ -27,6 +27,23 @@ export function withArt(sprite: Sprite, art: Art): Sprite {
 
 export const artFor = (sprite: Sprite): Art | undefined => ART.get(sprite);
 
+// An enchanted item's picture: the same sprite (and art) under its own identity,
+// so PixelSprite knows to lay the enchantment's moving shine over it.
+const SHINING = new WeakSet<Sprite>();
+const TWINS = new WeakMap<Sprite, Sprite>();
+export function shining(sprite: Sprite): Sprite {
+  let twin = TWINS.get(sprite);
+  if (!twin) {
+    twin = [...sprite];
+    const art = ART.get(sprite);
+    if (art) ART.set(twin, art);
+    SHINING.add(twin);
+    TWINS.set(sprite, twin);
+  }
+  return twin;
+}
+export const isShining = (sprite: Sprite) => SHINING.has(sprite);
+
 // A sprite's size in fine pixels (art as drawn, a grid sprite at 2 fine pixels a cell).
 export const fineWidth = (s: Sprite) => { const a = artFor(s); return a ? (a.size ?? a.w) : spriteWidth(s) * 2; };
 export const fineHeight = (s: Sprite) => { const a = artFor(s); return a ? a.h * ((a.size ?? a.w) / a.w) : s.length * 2; };

@@ -33,6 +33,7 @@ import { damageTypesOn } from "@/lib/combat/engine";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { dropFromOutcome, weaponDrop, armorDrop, codexDrop, randomCodexMove, randomArmorSlot, scrollDrop, potionDrop } from "@/lib/drops";
 import { goldenDrops } from "@/lib/dungeon/walkRooms";
+import { bountiful, scholarly, enchanted, CHEST_ENCHANT } from "@/lib/items/enchantments";
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
@@ -384,7 +385,7 @@ export default function DungeonPage() {
     // Barcode-style drops. (When the barcode merchant outcome arrives, it must be left out here.)
     const drops: Drop[] = [];
     while (drops.length < CHEST_DROPS) {
-      const d = dropFromOutcome(rollBarcodeOutcome(CHEST_ODDS));
+      const d = enchanted(dropFromOutcome(rollBarcodeOutcome(CHEST_ODDS)), CHEST_ENCHANT);
       if (d) drops.push(d);
     }
     if (Math.random() < CHEST_CODEX_CHANCE) drops[drops.length - 1] = codexDrop(randomCodexMove());
@@ -1053,6 +1054,7 @@ export default function DungeonPage() {
         tutorial,
         pair: room.kind === "encampment" && room.variant === "ambush",
         turnLimit: room.kind === "encampment" && room.variant === "rigged" ? squadsOf(dungeonOf(r)).fuse : undefined,
+        mode: "pve",
       },
     );
   }
@@ -1092,6 +1094,8 @@ export default function DungeonPage() {
       const impacts = impactsFromLog(m.state.log, "A", ids.length);
       const maxed = (id: string) => ((game.inventory.find((d) => d.id === id) as CreatureOrItemDrop | undefined)?.level ?? 1) >= MAX_LEVEL;
       const shares = shareXp(xp, mineAt.map((i) => ({ ...impacts[i], maxed: maxed(ids[i]) })));
+      // (A Scholar's weapon: more for its wielder.)
+      mineAt.forEach((i, k) => { shares[k] = scholarly(shares[k], m.teams.A[i]); });
       const gains: Record<string, number> = {};
       mineAt.forEach((i, k) => { gains[ids[i]] = shares[k]; });
       for (const [i, k] of mineAt.map((i, k) => [i, k])) {
@@ -1139,7 +1143,8 @@ export default function DungeonPage() {
       return;
     }
     // (A golden chest holds GOLDEN_GOLD in place of the mini boss's own gold.)
-    const gold = room.golden ? GOLDEN_GOLD[0] + Math.floor(Math.random() * (GOLDEN_GOLD[1] - GOLDEN_GOLD[0] + 1)) : room.gold ?? 0;
+    // (Bounty weapons on the team that fought: more of it.)
+    const gold = bountiful(room.golden ? GOLDEN_GOLD[0] + Math.floor(Math.random() * (GOLDEN_GOLD[1] - GOLDEN_GOLD[0] + 1)) : room.gold ?? 0, m.teams.A);
     const drops: Drop[] = [goldOnly(gold)];
     for (const e of room.enemies ?? []) {
       for (const p of e.gear) {

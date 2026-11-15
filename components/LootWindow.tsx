@@ -40,6 +40,8 @@ import { getBarColor } from "./ItemDetailModal";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import { TOOLS, isLocator } from "@/lib/items/materials";
 import CodexMove from "./CodexMove";
+import EnchantLine from "./EnchantLine";
+import { enchantOf } from "@/lib/items/enchantments";
 import { codexLearners } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
@@ -277,6 +279,7 @@ const PEEK_BODY = 84;
 const textBody = (t?: string) => <div style={{ fontSize: 14, lineHeight: 1.35, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }} title={t}>{t}</div>;
 export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotLook; action?: React.ReactNode }) {
   const l = look ?? lookOf(item!);
+  const gear = item && "gear" in item ? (item.gear as CreatureOrItemDrop) : undefined;
   let kind = "", body: React.ReactNode = null;
   if (!item) { /* (just its name: a bag slot with no closer look) */ }
   else if ("potion" in item) { kind = "potion"; body = textBody(`Heals one creature ${POTIONS[item.potion].heal} HP`); }
@@ -324,11 +327,15 @@ export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotL
     }
   }
   return (
-    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `44px ${PEEK_BODY}px`, gap: 6 }}>
+    <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `48px ${PEEK_BODY}px`, gap: 6 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
           <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
-          <div title={kind} style={{ fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
+          {/* Its kind, and its enchantment (greyed if it only works in PvP: this is the Labyrinth). */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, height: 26 }}>
+            <div title={kind} style={{ flexShrink: 1, minWidth: 0, fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
+            {gear && enchantOf(gear) && <EnchantLine item={gear} mode="pve" style={{ fontSize: 13, height: 26, flexShrink: 0, maxWidth: "60%" }} />}
+          </div>
         </div>
         <div style={{ display: "flex", gap: 6, maxWidth: "62%", overflowX: "auto", flexShrink: 0, whiteSpace: "nowrap" }}>{action}</div>
       </div>
