@@ -41,6 +41,35 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - Weapons have a damage-type affinity (+15% when the move's type matches: `AFFINITY_BONUS`), but only
   under the old rules: Combat V2 has no damage types, so it's off (and not shown).
 
+### Enchantments (📌 the user, 2026-11-16, decision 46; not built yet)
+
+Marginal edges, never game-breaking. Some work only in the Labyrinth (PvE), some only in PvP.
+
+- **Which items:** Rare, Epic and Legendary weapons and armour; one enchantment an item. Rolled
+  apart from the stat budget, so the roller above doesn't change. Numbers below are
+  Rare / Epic / Legendary.
+- **Where from:** scans 25%; Labyrinth chests 10%; golden chests always (all 5 finds); campaign
+  rewards to be decided with the campaign (roadmap). Never from foes (they don't wear them; they
+  keep their soul stones), merchants, Klutz or daily quests.
+- **Weapons, PvE:** Bounty (+10/15/20% gold from fights it's in), Scholar's (+10/15/20% XP for its
+  wielder), Bossbane (+4/6/8% damage to bosses), Leeching (heals 3/4/5% of the damage it deals).
+- **Weapons, PvP:** Keen (precise chance 6/8/10%, from 5%), Piercing (ignores 6/8/10% of the
+  target's defence), Vampiric (heals 2/3/5% of the damage it deals).
+- **Armour, PvE and PvP:**
+  - A stat on top of the budget, +5/10/20, agility in full: Ironbound (melee defence), Shielded
+    (ranged defence), Runed (magic defence), Stalwart (HP), Fleet (agility). Kept to stats so the
+    full-set bonuses stay armour's only effects.
+  - Cleansing: 2/3/5% a piece, rolled at the end of each round, to remove the most recent
+    negative effect on the creature (lowered stats, poison, bleed, cripple…). Pieces add up.
+  - Victorious: heals 2/3/5% of max HP a piece when the creature knocks out an opponent. Pieces
+    add up.
+- **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence stone
+  plus 1,000 / 2,000 / 5,000 gold by the item's rarity.
+- **Look:** an enchanted item's picture has a moving shine over it (like Minecraft's), drawn in
+  code: no new art.
+- Dropped in the design: Racebane, Draining, Duelist's, Torchlit and Scavenger's (armour that
+  helped the adventurer, not the creature).
+
 ### Materials, consumables, bags
 
 - ✅ **Materials** (planks, nails, metal bars, stone, essence stones: lib/items/materials.ts) are a tally at

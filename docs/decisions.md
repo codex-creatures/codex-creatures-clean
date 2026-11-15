@@ -28,6 +28,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 | 8 | Stat rolling: rarity weights 40/30/20/9/1, budgets 60–150, the chunked roller. Never changed unasked | The user's most carefully balanced system | ✅ locked by tests | [design/items.md](design/items.md) §3 |
 | 9 | Armour pieces roll the whole budget; defence counts at a third; a piece rolls ⅓ of its armour's HP ceiling | Armour mustn't look weak next to weapons | ✅ (HP share 🧪) | [design/items.md](design/items.md) §3 |
 | 10 | Soul stones replaced the old abilities | The user's spec, 2026-10-25 | ✅ | [design/creatures.md](design/creatures.md) §4 |
+| 46 | Enchantments on Rare+ weapons and armour, one an item, apart from the stat budget: 25% of scans, 10% of Labyrinth chests, every golden-chest find; never from foes, merchants, Klutz or daily quests. Weapons, PvE: Bounty, Scholar's, Bossbane, Leeching; PvP: Keen, Piercing, Vampiric. Armour: +5/10/20 to one stat, Cleansing, Victorious. A moving shine on enchanted items. Rerolled only by the Enchantress | The user, 2026-11-16 | 📌 decided, not built | [design/items.md](design/items.md#enchantments--the-user-2026-11-16-decision-46-not-built-yet) |
 
 ## Combat
 
@@ -46,6 +47,7 @@ Status: ✅ built and in force · 📌 decided, not (fully) built · 🧪 in for
 | 16 | Mystery rooms stay high risk, high reward | Don't soften them | ✅ | [design/labyrinth.md](design/labyrinth.md) §7 |
 | 44 | Klutz v2: he explores dungeons you've beaten (the Encampment free, the rest half your entry fee), finding something every 20 minutes (30% creature, 10% codex, 20% material or potion, 40% gear) at rarities capped by the dungeon, his level and your explorer level; catches by chance (Legendary as creatures); home when his pack (8, upgradable) is full, at 10% HP or beaten (no penalty); sent from 40% HP; half XP; skills (Trapping, Armourer, Scavenger, Scholar) and traits (Bigger Pack, Selective, cage filter: one picked at each of Lv 5, 10 and 15, in any order); his chest has a size; he can learn any codex | The user, 2026-11-14, after the Klutz audit (a Lv 30 Klutz out-earned a full Cyclops clear) | ✅ built 2026-11-14 | [design/klutz.md](design/klutz.md) |
 | 17 | Online: sign in with Google, one save per account, the cloud wins (the device's copy kept as the backup), one game at a time | Saves follow players between devices without questions | ✅ | [design/online.md](design/online.md) §12 |
+| 47 | Tavern visitors on a 30-minute real-time clock, each rolling on their own chance (several at once; no pity); 5% each to start, raised 1% a level by tavern upgrades paid in materials, 10 levels (very slow on purpose); a fourth visitor, the Enchantress, who rerolls enchantments for an essence stone and 1,000/2,000/5,000 gold | The user, 2026-11-16 | 📌 decided, not built | [design/den.md](design/den.md#9-the-den-and-economy) |
 
 ## The walkable world
 
