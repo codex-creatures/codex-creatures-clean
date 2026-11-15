@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, MERCHANT_MATERIALS, type DungeonRun } from "../lib/dungeon/run";
-import { tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitors, guestOf, onTheClock, windowOf, VISITORS, VISITOR_WINDOW, visitorChance, upgradeVisitor, upgradeCost, upgradeLevel, canUpgrade, UPGRADE_COSTS, UPGRADE_STEP, MAX_UPGRADE, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, type TavernQuest } from "../lib/tavern";
+import { hasBookPlans, tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitors, guestOf, onTheClock, windowOf, VISITORS, VISITOR_WINDOW, visitorChance, upgradeVisitor, upgradeCost, upgradeLevel, canUpgrade, UPGRADE_COSTS, UPGRADE_STEP, MAX_UPGRADE, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, type TavernQuest } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -152,14 +152,21 @@ describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
     expect(bountyHasStep({ ...repaired, bounty: true, mounted: true }, 1)).toBe(false); // all done
   });
 
-  it("mounting it is once only, and pays the bookcase schematic", () => {
+  it("mounting it is once only, and pays gold now: the bookcase schematic moved into the campaign (2026-11-16)", () => {
     const t = mountHead({ ...repaired, bounty: true }, 2);
     expect(t.mounted).toBe(true);
+    expect(t.headGold).toBe(true); // (the board pays BOUNTY_GOLD with it)
     expect(headToMount(t, 2)).toBe(false);
-    expect(tavernPlan(t, 1)).toBe(true);
-    expect(tavernPlan({ ...repaired, bounty: true }, 1)).toBe(false);
-    expect(tavernPlan(t, BOOKCASE_BUILT)).toBe(false); // already built
-    expect(tavernPlan(t, 2)).toBe(false);              // an old save's crooked bookcase
+    expect(tavernPlan(t, 1)).toBe(false);
+    // The campaign's reward for the rubble: the plans, found in the broken tavern.
+    const found = { ...repaired, bookPlans: true };
+    expect(tavernPlan(found, 1)).toBe(true);
+    expect(tavernPlan(found, BOOKCASE_BUILT)).toBe(false); // already built
+    expect(tavernPlan(found, 2)).toBe(false);              // an old save's crooked bookcase
+    // A head handed in before the campaign paid the plans, and they're kept.
+    const old = { ...repaired, bounty: true, mounted: true };
+    expect(hasBookPlans(old)).toBe(true);
+    expect(tavernPlan(old, 1)).toBe(true);
   });
 
   it("the crooked bookcase: 10 planks and 5 nails for 20 slots; an old save's keeps 25", () => {

@@ -18,7 +18,7 @@ type Gear = { itemCategory?: ItemCategory; rarity?: Rarity };
 export const SAVE_KEY = "codex_creatures_save_v3";
 
 // Fields written by something other than useGameState.
-export const OWN_FIELDS = ["labyrinth", "tavern", "playTime", "tour", "daily"] as const; // (playTime: lib/playTime.ts; tour: lib/tour.ts; daily: lib/daily.ts)
+export const OWN_FIELDS = ["labyrinth", "tavern", "playTime", "tour", "daily", "campaign"] as const; // (playTime: lib/playTime.ts; tour: lib/tour.ts; daily: lib/daily.ts; campaign: lib/campaign.ts)
 
 export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};

@@ -50,7 +50,9 @@ export type TavernQuest = {
   seen?: boolean;     // you've seen the tavern (and heard Klutz on it)
   repaired?: boolean; // the tavern's been repaired
   bounty?: boolean;   // you've taken the Cyclops bounty
-  mounted?: boolean;  // the Cyclops Head is on the tavern wall: the bounty's paid (the bookcase schematic)
+  mounted?: boolean;  // the Cyclops Head is on the tavern wall: the bounty's paid
+  headGold?: boolean; // …in gold (BOUNTY_GOLD): handed in since the campaign. Before it, the bounty paid the bookcase schematic
+  bookPlans?: boolean; // the Crooked Bookcase Schematic, found in the broken tavern (the campaign's reward: lib/campaign.ts)
   guests?: Partial<Record<Visitor, Guest>>; // who's calling at the tavern (on the clock: onTheClock)
   seed?: string;      // …the tavern's own seed for the clock's rolls (made the first time it's needed)
   rolled?: number;    // …the last window rolled (windowOf)
@@ -290,7 +292,10 @@ export function repair(t: TavernQuest, have: Materials): { tavern: TavernQuest; 
 export const canTakeBounty = (t: TavernQuest) => !!t.repaired && !t.bounty;
 // The head's waiting to go up on the wall.
 export const headToMount = (t: TavernQuest, clears: number) => !!t.bounty && clears > 0 && !t.mounted;
-export const mountHead = (t: TavernQuest, clears: number): TavernQuest => (headToMount(t, clears) ? { ...t, mounted: true } : t);
+// The bounty pays BOUNTY_GOLD (the user, 2026-11-16: the bookcase schematic it
+// used to pay moved into the campaign, found in the broken tavern).
+export const BOUNTY_GOLD = 1000;
+export const mountHead = (t: TavernQuest, clears: number): TavernQuest => (headToMount(t, clears) ? { ...t, mounted: true, headGold: true } : t);
 // Where the bounty's at, for the quest board: not up yet (the tavern's still
 // broken), on offer, taken (go and beat the Cyclops), the head to hand in, or paid.
 export type BountyStep = "closed" | "offer" | "hunt" | "head" | "paid";
@@ -299,9 +304,11 @@ export function bountyStep(t: TavernQuest, clears: number): BountyStep {
 }
 // The bounty has a step waiting (a ❗ at the quest board): the bounty to take, or the head to hand in.
 export const bountyHasStep = (t: TavernQuest, clears: number) => canTakeBounty(t) || headToMount(t, clears);
-// The bounty's reward: the bookcase schematic, to build while the bookcase is
-// still the broken shelf (level 1).
-export const tavernPlan = (t: TavernQuest, bookcaseLevel: number) => !!t.mounted && bookcaseLevel < 2;
+// The bookcase schematic, to build while the bookcase is still the broken
+// shelf (level 1): the campaign's reward, or the bounty's for a head handed
+// in before the campaign (the plans weren't an item: the bookcase offers to build).
+export const hasBookPlans = (t: TavernQuest) => !!t.bookPlans || (!!t.mounted && !t.headGold);
+export const tavernPlan = (t: TavernQuest, bookcaseLevel: number) => hasBookPlans(t) && bookcaseLevel < 2;
 
 // ── Saved progress ───────────────────────────────────────────────────
 export const TAVERN_FIELD = "tavern";

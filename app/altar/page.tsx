@@ -24,6 +24,7 @@ import { testingToolsAllowed } from "@/lib/online/admin";
 import { backupSave } from "@/lib/saveFile";
 import { findLine, newFinds, type NewFind } from "@/lib/scanReveal";
 import { countDaily } from "@/lib/daily";
+import { countCampaign } from "@/lib/campaign";
 import { SCAN_MAX, SCAN_REGEN_MS, clockText, nextScanIn } from "@/lib/scanCharges";
 import { CALIBRATION_SCANS, FIRST_SCANS, calibrationLeft } from "@/lib/firstScans";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
@@ -78,7 +79,7 @@ export default function AltarPage() {
     onScan:            (drops, found, place) => {
       const opened = drops.filter((d) => !kept.current.has(d.id));
       noteNew(opened); // (game is still as it was before this scan)
-      if (found !== "looted") countDaily("scan"); // a new barcode (the daily quest: lib/daily.ts)
+      if (found !== "looted") { countDaily("scan"); countCampaign("scan"); } // a new barcode (the daily quest: lib/daily.ts)
       // The first ever to scan this barcode, how many found it before you, or
       // one you've scanned before: in the unveiling (Looting), else under the window.
       const line = findLine(found, place);
@@ -96,7 +97,7 @@ export default function AltarPage() {
     },
     onScanCountUpdate: game.updateScanCount,
     playerLevel:       game.player.level,
-    onOffline:         (code) => { game.sealScan(code); countDaily("scan"); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
+    onOffline:         (code) => { game.sealScan(code); countDaily("scan"); countCampaign("scan"); setNote(<>📡 No connection: kept as a sealed Code Cache.<br />It opens once you&apos;re online.</>); },
     canScanNew:        () => rollMode !== "random" && game.canScanNew(),
     onScanUsed:        (code) => { game.takeScanCharge(code); },
     calibrating:       rollMode !== "random" && game.calibrating,

@@ -44,6 +44,7 @@ import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
 import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
+import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
 import DenFrame from "@/components/DenFrame";
 import { BattleView, loadOwnedCreatures, usePlayableBattle, MUTED, type Match, type MemberInfo, type OwnedCreature, type BagItem } from "@/components/BattleScreen";
@@ -130,7 +131,7 @@ export default function DungeonPage() {
   // field, or a Revival Elixir (on a knocked-out teammate: the fight brings it back).
   function useFromBag(key: string, activeIndex: number) {
     const e = key as BagEntry;
-    if (isPotionEntry(e)) { takeOne(e); return; }
+    if (isPotionEntry(e)) { takeOne(e); noteDrank(loadDungeon().meta.runs); return; }
     if (itemOf(e)?.tool === "revival") { spendTool(e); return; }
     const creatureId = loadDungeon().run?.current?.fighters?.[activeIndex];
     if (creatureId) equipFromBag(e, creatureId);
@@ -358,7 +359,10 @@ export default function DungeonPage() {
     }
     // The daily quests (lib/daily.ts): rooms finished this run, and a win.
     if (cur.run) countDaily("room", cur.run.cleared.length);
-    if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) countDaily(`win:${dungeonOf(cur.run)}`);
+    if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) {
+      countDaily(`win:${dungeonOf(cur.run)}`);
+      if (!drankOn(cur.meta.runs)) countCampaign(`clean:${dungeonOf(cur.run)}`); // (the campaign: its boss beaten without a potion)
+    }
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     updateTavern(comeHome); // home: a visitor from before the clock stays a run less
     battle.clear();
@@ -404,6 +408,7 @@ export default function DungeonPage() {
     if (!room?.offers?.includes(move) || room.bought?.includes(move) || (cur.meta.bag ?? []).length >= bagSize(cur.meta) || !game.spendGold(codexPrice(move))) return;
     const codex = codexDrop(move);
     carry([codex]);
+    countCampaign("buy");
     updateRun((r) => (r.current ? { ...r, loot: [...r.loot, `Codex: ${move}`], got: [...(r.got ?? []), { drop: codex }], current: { ...r.current, bought: [...(r.current.bought ?? []), move] } } : r));
   }
 
@@ -422,6 +427,7 @@ export default function DungeonPage() {
       // The rugged backpack, off his cart: more room in your bag from now on.
       if (!onBindle(cur.meta) || cur.run?.current?.bought?.includes(w.key) || !game.spendGold(w.price)) return;
       update({ ...cur, meta: { ...cur.meta, bagSize: BACKPACK } });
+      countCampaign("buy");
       setNotes((n) => [...n, `🎒 A rugged backpack! You can carry ${BACKPACK} things now (your bindle held ${BINDLE}).`]);
       updateRun((r) => (r.current ? { ...r, bindle: undefined, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
       return;
@@ -431,6 +437,7 @@ export default function DungeonPage() {
       const size = bagSize(cur.meta);
       if (onBindle(cur.meta) || size >= BAG_MAX || cur.run?.current?.bought?.includes(w.key) || !game.spendGold(w.price)) return;
       update({ ...cur, meta: { ...cur.meta, bagSize: size + 1 } });
+      countCampaign("buy");
       setNotes((n) => [...n, `🎒 Your backpack holds ${size + 1} things now.`]);
       updateRun((r) => (r.current ? { ...r, loot: [...r.loot, wareName(w)], current: { ...r.current, bought: [...(r.current.bought ?? []), w.key] } } : r));
       return;
@@ -438,6 +445,7 @@ export default function DungeonPage() {
     const d = wareDrop(w);
     const slot = d ? needsSlot(cur.meta, d) : true;
     if (cur.run?.current?.bought?.includes(w.key) || (slot && (cur.meta.bag ?? []).length >= bagSize(cur.meta)) || !game.spendGold(w.price)) return;
+    countCampaign("buy");
     let got: GotItem;
     if ("potion" in w) {
       updateBag((bag) => addToBag(bag, [w.potion], bagSize(cur.meta)));
@@ -493,6 +501,7 @@ export default function DungeonPage() {
       return;
     }
     if (hasFight(room) && !room.done) return; // beat them first
+    countCampaign("cage");
     const t = cage.creatureId ? CREATURE_BY_ID[cage.creatureId] : undefined;
     const creature = t ? { ...makeCreatureDrop(t, "creature", ""), ...(cage.level ? { level: cage.level, xp: 0 } : {}) } : undefined;
     if (creature) game.addDrop(creature);
@@ -588,6 +597,7 @@ export default function DungeonPage() {
       const key = (loadDungeon().meta.bag ?? []).find((e) => itemOf(e)?.tool === "gold_key");
       if (!key) { setNotes(["🔒 The golden chest is locked. You need a Gold Key in your bag."]); return; }
       spendTool(key);
+      countCampaign("goldchest");
       setNotes(["🔑 The Gold Key turns, and the golden chest opens."]);
     }
     updateRun((r) => (r.current ? { ...r, current: { ...r.current, opened: true, done: true } } : r));
@@ -671,6 +681,7 @@ export default function DungeonPage() {
     const hp = run?.hp[id] ?? 1;
     if (!c || hp <= 0 || hp >= 1 || !(lab?.meta.bag ?? []).includes(key)) return;
     takeOne(key);
+    noteDrank(loadDungeon().meta.runs);
     updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) } }));
   }
   // …or one straight out of the open chest or sack, without it going in your bag.
@@ -763,6 +774,7 @@ export default function DungeonPage() {
     const key = !item ? undefined : "potion" in item ? item.potion : "gear" in item ? (item.gear as CreatureOrItemDrop).potion : undefined;
     const hp = r0?.hp[id] ?? 1;
     if (!c || !key || hp <= 0 || hp >= 1) return;
+    noteDrank(loadDungeon().meta.runs);
     updateRun((r) => (r.current ? { ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) },
       current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
   }
@@ -1133,6 +1145,8 @@ export default function DungeonPage() {
     }
     const room = r.current!;
     countDaily("battle"); // (the daily quests: lib/daily.ts)
+    countCampaign("battle"); // (the campaign: lib/campaign.ts)
+    if (onlyEffective(m.state.log, m.state.sides.B.team.map((f) => f.races))) countCampaign("effective");
     if (room.kind === "miniboss" || (room.kind === "storehouse" && room.guarded)) countDaily("miniboss");
     if (room.quest === "thief") {
       // It runs off, and the box it was carrying drops to the floor (the box is the prize: no gold).

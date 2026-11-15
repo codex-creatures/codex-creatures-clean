@@ -18,8 +18,9 @@ import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, 
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
-import { VISITORS, guestOf, tavernNow, upgradeVisitor, blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { VISITORS, BOUNTY_GOLD, headToMount, tavernVisitors, guestOf, tavernNow, upgradeVisitor, blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
+import { clearCampaign, countCampaign, loadCampaign } from "@/lib/campaign";
 import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
 import { collectorCreatures, creaturePrice, tradeUpCard } from "@/lib/collector";
@@ -402,7 +403,9 @@ export function useGameState(initialTab: TabKey = "all") {
     const id = trainingId(t);
     const d = id && inventory.find((x) => x.id === id);
     if (!id || !t.training || !d || !isCreatureDrop(d) || !training({ level: d.level ?? 1, xp: d.xp ?? 0 }, t.training.since, Date.now(), pitRate(t)).full) return null;
-    return gainXp({ [id]: bankTraining(id) })[0] ?? null;
+    const up = gainXp({ [id]: bankTraining(id) })[0] ?? null;
+    if (up) countCampaign("spar", up.to - up.from);
+    return up;
   }
   // Take it out, with what it's earned (a full bar levels it up).
   function takeOutOfTraining(): LevelUp | null {
@@ -411,6 +414,7 @@ export function useGameState(initialTab: TabKey = "all") {
     const earned = trainingEarned(id);
     const up = gainXp({ [id]: earned })[0] ?? null;
     setTavern(updateTavern((t) => logTrained(stopTraining(t), earned)));
+    if (up) countCampaign("spar", up.to - up.from);
     return up;
   }
 
@@ -481,8 +485,14 @@ export function useGameState(initialTab: TabKey = "all") {
     return true;
   }
   const takeBounty = () => setTavern(updateTavern((t) => (canTakeBounty(t) ? { ...t, bounty: true } : t)));
-  // The head goes up once you've beaten the Cyclops (the Labyrinth's record).
-  const mountCyclopsHead = () => setTavern(updateTavern((t) => mountHead(t, loadDungeon().meta.clears)));
+  // The head goes up once you've beaten the Cyclops (the Labyrinth's record), and the bounty pays.
+  function mountCyclopsHead() {
+    if (!headToMount(loadTavern(), loadDungeon().meta.clears)) return;
+    setTavern(updateTavern((t) => mountHead(t, loadDungeon().meta.clears)));
+    addGold(BOUNTY_GOLD);
+  }
+  // The campaign's reward for blowing open the rubble: the bookcase schematic, found in the broken tavern.
+  const findBookPlans = () => setTavern(updateTavern((t) => ({ ...t, bookPlans: true })));
   // The daily quest's merchant (lib/daily.ts): he calls at the tavern now.
   const merchantVisits = () => setTavern(updateTavern((t) => merchantCalls(t, Math.random, onBindle(loadDungeon().meta))));
   // Paying SUMMON_PRICE at the tavern for a merchant or librarian now (a new one, if one's in).
@@ -505,6 +515,7 @@ export function useGameState(initialTab: TabKey = "all") {
       if (!onBindle(lab.meta) || !spendGold(w.price)) return false;
       saveDungeon({ ...lab, meta: { ...lab.meta, bagSize: BACKPACK } });
       setTavern(updateTavern((x) => buyFromVisitor(x, "merchant", w.key)));
+      countCampaign("buy");
       return true;
     }
     if ("bagUp" in w) {
@@ -514,11 +525,13 @@ export function useGameState(initialTab: TabKey = "all") {
       if (onBindle(lab.meta) || size >= BAG_MAX || !spendGold(w.price)) return false;
       saveDungeon({ ...lab, meta: { ...lab.meta, bagSize: size + 1 } });
       setTavern(updateTavern((x) => buyFromVisitor(x, "merchant", w.key)));
+      countCampaign("buy");
       return true;
     }
     if (!spendGold(w.price)) return false;
     addDrop("potion" in w ? potionDrop("", w.potion) : wareDrop(w)!);
     setTavern(updateTavern((x) => buyFromVisitor(x, "merchant", w.key)));
+    countCampaign("buy");
     return true;
   }
   // A codex from the librarian goes on the bookcase, if there's room.
@@ -547,6 +560,7 @@ export function useGameState(initialTab: TabKey = "all") {
     if (destCost(dest) > 0 && !spendGold(destCost(dest))) return "gold";
     setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, dest, clampLevel(player.level)));
     countDaily("klutz");
+    countCampaign("klutz");
     return null;
   }
   // His skills and traits (v2, his Skills tab).
@@ -626,6 +640,13 @@ export function useGameState(initialTab: TabKey = "all") {
     });
   }
 
+  // The campaign: each visitor the first time they're in at the tavern (lib/campaign.ts).
+  useEffect(() => {
+    if (!hydrated) return;
+    const counted = loadCampaign().tally ?? {};
+    for (const v of tavernVisitors(tavern)) if (!counted[`visit:${v}`]) countCampaign(`visit:${v}`);
+  }, [hydrated, tavern]);
+
   // When an expedition is over, hand over what he caught: creatures to the
   // cage, their gear to your inventory. Checked every few seconds.
   const klutzRef = useRef(klutz);
@@ -655,6 +676,8 @@ export function useGameState(initialTab: TabKey = "all") {
       for (const d of loot) if (d.dropType === "item" && d.material) more[d.material] = (more[d.material] ?? 0) + (d.qty ?? 1);
       if (Object.keys(more).length) setMaterials((m) => addMaterials(m, more));
       setCrate((prev) => [...loot.filter((d) => !isCreatureDrop(d) && !isMaterial(d)), ...prev]);
+      // The campaign counts the gear he brings home, by rarity.
+      for (const d of loot) if (d.dropType === "item" && (d.itemCategory === "weapon" || d.itemCategory === "armor")) countCampaign(`kfind:${d.rarity}`);
     };
     check();
     const timer = window.setInterval(check, 5000);
@@ -816,6 +839,7 @@ export function useGameState(initialTab: TabKey = "all") {
   function addDrop(drop: Drop) {
     setLastDrop(drop);
     noteFound([drop]);
+    if (isCardDrop(drop)) countCampaign("card");
     // Materials join your tally.
     if (drop.dropType === "item" && drop.material) {
       depositMaterials([drop]);
@@ -1144,6 +1168,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setInventory((prev) => [creature, ...prev.filter((d) => !cardIds.includes(d.id))]);
     setLastDrop(creature);
     countDaily("summon");
+    countCampaign(`summon:${creature.rarity}`);
     return creature;
   }
 
@@ -1209,6 +1234,7 @@ export function useGameState(initialTab: TabKey = "all") {
     clearDungeon();
     clearTavern();
     clearDaily();
+    clearCampaign();
     clearPlayTime();
     endTour();
     setTavern({});
@@ -1261,7 +1287,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

@@ -1,6 +1,7 @@
 "use client";
 // app/board/page.tsx
-// The quest board in the Den, in two tabs. Quests: today's two (lib/daily.ts),
+// The quest board in the Den, in three tabs. Campaign: the campaign's chapter
+// you're on (lib/campaign.ts). Quests: today's two (lib/daily.ts),
 // and the Cyclops bounty, up once the tavern's repaired (lib/tavern.ts
 // bountyStep): take it, beat the Cyclops, hand in the head. They play offline. Leaderboards (lib/leaderboard.ts):
 // species collected, runs and wins in each dungeon, and time played,
@@ -19,7 +20,10 @@ import FriendList, { useFriends } from "@/components/FriendList";
 import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
-import { bountyStep } from "@/lib/tavern";
+import { BOUNTY_GOLD, bountyStep, hasBookPlans } from "@/lib/tavern";
+import { CHAPTERS, PLANS_TAKEN_GOLD, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
+import { klutzHelping } from "@/lib/quest";
+import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
 import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest } from "@/lib/daily";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
@@ -35,8 +39,8 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 type View = { status: "loading" | "off" | "out" | "failed" } | { status: "ok"; board: Board };
 
 export default function QuestBoardPage() {
-  const [tab, setTab] = useState<"quests" | "boards">("quests");
-  const quests = tab === "quests";
+  const [tab, setTab] = useState<"campaign" | "quests" | "boards">("quests");
+  const quests = tab !== "boards"; // (the campaign too: neither shows the leaderboards' parts)
   const [kind, setKind] = useState<BoardKind>("species");
   const [dungeon, setDungeon] = useState<DungeonId>(1);
   const [tries, setTries] = useState(0);
@@ -65,7 +69,7 @@ export default function QuestBoardPage() {
   const friendIds = new Set((friends ?? []).map((f) => f.id));
 
   const board = view.status === "ok" ? view.board : null;
-  const title = quests ? "Quests" : showFriends ? "Friends" : kind === "species" ? "Species collected" : kind === "time" ? "Time played" : kind === "scans" ? "Barcodes scanned" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
+  const title = tab === "campaign" ? "Campaign" : quests ? "Quests" : showFriends ? "Friends" : kind === "species" ? "Species collected" : kind === "time" ? "Time played" : kind === "scans" ? "Barcodes scanned" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
 
   // (Kept on the Quests tab too, hidden, so the panel doesn't change size.)
   const dock = (
@@ -82,26 +86,36 @@ export default function QuestBoardPage() {
   return (
     <DenFrame title="Quest Board" icon="📜" fill dock={dock}>
       <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, padding: "12px 12px 14px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-          <button className="chip" data-active={quests} onClick={() => setTab("quests")} style={{ minHeight: 44, justifyContent: "center" }}>📜 Quests</button>
-          <button className="chip" data-active={!quests} onClick={() => setTab("boards")} style={{ minHeight: 44, justifyContent: "center" }}>🏆 Leaderboards</button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+          <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}>📖 Campaign</button>
+          <button className="chip" data-active={tab === "quests"} onClick={() => setTab("quests")} style={TAB}>📜 Quests</button>
+          <button className="chip" data-active={tab === "boards"} onClick={() => setTab("boards")} style={TAB}>🏆 Boards</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <div style={{ minWidth: 0 }}>
-            <div className="pixel-font" style={{ fontSize: 17, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{quests ? "📜" : showFriends ? "👥" : "🏆"} {title}</div>
+            <div className="pixel-font" style={{ fontSize: 17, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tab === "campaign" ? "📖" : quests ? "📜" : showFriends ? "👥" : "🏆"} {title}</div>
             <div style={{ fontSize: 12, color: MUTED, visibility: board && !showFriends && !quests ? "visible" : "hidden" }}>
               Season {board?.season ?? 1}{board ? ` · since ${new Date(board.startedAt).toLocaleDateString()}` : ""}
             </div>
           </div>
           <button className="chip" data-active={showFriends} onClick={() => setShowFriends((v) => !v)} aria-label="Friends" title="Friends"
             style={{ minHeight: 44, minWidth: 44, justifyContent: "center", marginLeft: "auto", visibility: me && !quests ? "visible" : "hidden" }}>👥</button>
-          {quests ? (
+          {tab === "campaign" ? (
+            <Help title="Campaign">
+              <ul>
+                <li>Quests that lead you through the game, a chapter at a time. Each chapter ends with a dungeon&apos;s boss.</li>
+                <li>Everything you do counts, whenever you do it. But rewards are claimed <b>in order</b>: claim the one above to claim the next.</li>
+                <li>➜ takes you to where a quest is done. A ❗ on the board in the Den means a reward is ready.</li>
+                <li><b>Crates</b> open as you claim them: materials, gear, codexes or supplies (potions, a Revival Elixir and a torch).</li>
+              </ul>
+            </Help>
+          ) : quests ? (
             <Help title="Quests">
               <ul>
                 <li>A ❗ on the board in the Den means a quest has a step for you.</li>
                 <li><b>☀️ Today:</b> two quests a day, a big one and a smaller one, the same for everyone and new at midnight. Only what you do that day counts. Finish one, then claim its reward.</li>
                 <li>A boss you&apos;ve never beaten is swapped for an easier one (the Abyss for the Hydra, then the Cyclops, then the Encampment).</li>
-                <li><b>The Cyclops bounty:</b> it goes up once the tavern&apos;s repaired. Take it, beat the Cyclops (a win from before counts) and hand in its head: it&apos;s mounted on the tavern wall. The reward: the <b>Crooked Bookcase Schematic</b>, the only way to get one.</li>
+                <li><b>The Cyclops bounty:</b> it goes up once the tavern&apos;s repaired. Take it, beat the Cyclops (a win from before counts) and hand in its head: it&apos;s mounted on the tavern wall. The reward: <b>{BOUNTY_GOLD.toLocaleString()} gold</b>.</li>
                 <li><b>Slay the Hydra:</b> it goes up once you&apos;ve beaten the Cyclops. Beat the Hydra dungeon and claim the <b>Training Pit Schematic</b>: it builds the Sparring Pit up into the Training Pit, twice as fast.</li>
               </ul>
             </Help>
@@ -130,7 +144,9 @@ export default function QuestBoardPage() {
         </div>
 
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", borderRadius: 8, background: "rgba(0,0,0,0.25)", padding: "4px 8px" }}>
-          {quests ? (
+          {tab === "campaign" ? (
+            <CampaignList />
+          ) : quests ? (
             <QuestList />
           ) : showFriends ? (
             <FriendList friends={friends} online={online} onRemove={remove} />
@@ -205,10 +221,10 @@ function QuestList() {
   // The Cyclops: how often you've beaten it, and the run you first did (the Labyrinth's record).
   const meta = loadDungeon().meta;
   const step = bountyStep(game.tavern, meta.clears);
-  const say = step === "offer" ? "Beat the Cyclops and bring back its head. Pays the Crooked Bookcase Schematic."
+  const say = step === "offer" ? `Beat the Cyclops and bring back its head. Pays ${BOUNTY_GOLD.toLocaleString()} gold.`
     : step === "hunt" ? "Beat the Cyclops and bring back its head."
     : step === "head" ? `You have the Cyclops Head${meta.firstClearRun ? ` (run ${meta.firstClearRun})` : ""}. Hand it in to be paid.`
-    : `Paid: the Crooked Bookcase Schematic.${game.bookcase < 2 ? " Build it at the bookcase." : ""}`;
+    : game.tavern.headGold ? `Paid: ${BOUNTY_GOLD.toLocaleString()} gold.` : `Paid: the Crooked Bookcase Schematic.${game.bookcase < 2 ? " Build it at the bookcase." : ""}`;
   // The Hydra quest: up once the Cyclops is beaten; its reward, the Training Pit's plans (lib/trainingPit.ts).
   const hydra = hydraStep(game.tavern, meta.clears, meta.deepClears ?? 0);
   const hydraSay = hydra === "hunt" ? "Beat the Hydra. Reward: the Training Pit Schematic."
@@ -268,5 +284,69 @@ function QuestList() {
     </div>
   );
 }
+// The campaign (lib/campaign.ts): the chapter you're on, a row per quest, each
+// of fixed lines (what to do, then its reward and how far along), with one
+// button: Claim on the next reward when its quest is done, ➜ to go and do an
+// unfinished one. Rewards are claimed in order.
+function CampaignList() {
+  const game = useGameState();
+  const router = useRouter();
+  const [, reread] = useState(0);
+  const [prize, setPrize] = useState<{ title: string; drops: Drop[] } | null>(null);
+  const [full, setFull] = useState(false); // the last claim had no room for its reward
+  if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
+  if (!klutzHelping(game.quest)) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Finish Klutz&apos;s quest first.</p>;
+
+  const state = loadCampaign(), ctx = readCampaignCtx();
+  const claimed = claimedCount(state), next = nextQuest(state);
+  const ch = currentChapter(state), chapter = CHAPTERS[ch];
+  const first = CHAPTERS.slice(0, ch).reduce((n, c) => n + c.quests.length, 0); // the chapter's first quest, in the whole list
+  function claim() {
+    const s = loadCampaign(), c = readCampaignCtx(), q = nextQuest(s);
+    if (!q || !questDone(q, c)) return;
+    const r = q.reward;
+    const drops = rollCampaignReward(r);
+    const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
+    if (drops.length && (fitInBoxes(game.inventory, drops, game.storage).fit.length < drops.length || codexes > game.shelfFree)) { setFull(true); return; }
+    setFull(false);
+    updateCampaign((x) => claimNext(x, c));
+    if ("gold" in r) game.addGold(r.gold);
+    // The bookcase's plans: already yours (or built), and it pays gold instead.
+    else if ("bookcasePlans" in r) { if (hasBookPlans(game.tavern) || game.bookcase >= 2) game.addGold(PLANS_TAKEN_GOLD); else game.findBookPlans(); }
+    else { drops.forEach(game.addDrop); setPrize({ title: rewardText(r), drops }); }
+    reread((n) => n + 1);
+  }
+  return (
+    <div style={{ display: "grid", gap: 6, padding: "8px 0" }}>
+      <div className="pixel-font" style={{ fontSize: 14, color: GOLD, display: "flex", justifyContent: "space-between", gap: 8 }}>
+        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Chapter {ch + 1}: {chapter.name}</span>
+        <span style={{ color: MUTED }}>{Math.min(chapter.quests.length, Math.max(0, claimed - first))}/{chapter.quests.length}</span>
+      </div>
+      {chapter.quests.map((q, i) => {
+        const at = first + i, got = at < claimed, done = questDone(q, ctx), isNext = q === next;
+        const icon = got ? "✓" : isNext && done ? "❗" : done ? "☑️" : "▫️";
+        const status = got ? "Claimed" : done ? (isNext ? (full ? "No room for it" : "Ready to claim") : "Done: claim the ones above first")
+          : `${Math.min(q.progress(ctx), q.goal).toLocaleString()}/${q.goal.toLocaleString()}`;
+        return (
+          <div key={q.id} className="stone-panel" style={{ display: "grid", gridTemplateColumns: "1fr 44px", alignItems: "center", gap: 8, padding: "6px 10px", opacity: got ? 0.6 : 1 }}>
+            <div style={{ minWidth: 0 }}>
+              <div title={q.task} style={{ fontSize: 13, color: "#d8d4c8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{icon} {q.task}</div>
+              <div title={rewardText(q.reward)} style={{ fontSize: 12, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                🎁 {rewardText(q.reward)} · <span style={{ color: got || (isNext && done && !full) ? "#5ee08a" : isNext && full ? "#ff8a80" : MUTED }}>{status}</span>
+              </div>
+            </div>
+            {isNext && done
+              ? <button className="pixel-btn" onClick={claim} aria-label="Claim" title="Claim" style={{ minWidth: 44, minHeight: 44, padding: 0 }}>🎁</button>
+              : <button className="chip" onClick={() => q.go && router.push(q.go)} aria-label="Go there" title="Go there"
+                  style={{ minWidth: 44, minHeight: 44, padding: 0, justifyContent: "center", visibility: !got && !done && q.go ? "visible" : "hidden" }}>➜</button>}
+          </div>
+        );
+      })}
+      {prize && <CodeCache title={prize.title} items={prize.drops} doneLabel="Take it all" intro="Tap a slot to see what's inside." onDone={() => setPrize(null)} />}
+    </div>
+  );
+}
+
+const TAB: React.CSSProperties = { minHeight: 44, justifyContent: "center", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 // Two lines whatever the words, so every card is the same height.
 const CLAMP2: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, height: "2.7em", fontSize: 13, color: "#d8d4c8" };

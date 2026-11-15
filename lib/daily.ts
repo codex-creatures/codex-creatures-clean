@@ -152,7 +152,7 @@ export function rollRarity(rng: Rng, lo: Rarity = "common", hi: Rarity = "legend
 const pick = <T,>(xs: readonly T[], rng: Rng) => xs[Math.floor(rng() * xs.length)];
 
 // A weapon a third of the time, otherwise an armour piece (as in Klutz's box).
-function gearPiece(lo: Rarity, hi: Rarity, rng: Rng): Drop {
+export function gearPiece(lo: Rarity, hi: Rarity, rng: Rng): Drop {
   const rarity = rollRarity(rng, lo, hi);
   if (rng() < 1 / 3) {
     const key = pick(ITEM_KEYS, rng);

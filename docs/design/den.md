@@ -72,13 +72,17 @@ fields optional with defaults.
    button; with a win already on record (`meta.clears`), the head is ready to hand in straight away.
 7. ✅ **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
    the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Handing it
-   in at the board (once) mounts it on the tavern wall, completes the bounty and unlocks the bookcase schematic.
+   in at the board (once) mounts it on the tavern wall, completes the bounty and pays **1,000 gold**
+   (`BOUNTY_GOLD`; 🧪 Claude's placeholder, 2026-11-16). ⚠️ It paid the bookcase schematic until the
+   campaign (below) moved the schematic to the rubble; a head handed in before then keeps its plans
+   (`hasBookPlans`: `mounted` without `headGold`).
    🧪 The head isn't an item in your storage: it's yours once you've beaten the Cyclops and taken
    the bounty, so it can't be sold, used, lost or doubled. Mounted, it hangs over the tavern door
    (placeholder: the Cyclops sprite on a plaque marked with the run).
    The schematic it pays isn't an item either: the bookcase just offers to build.
 8. ✅ **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
-   **only** way to get it: it no longer drops from mini bosses, the Cyclops or storehouses. It costs
+   **only** way to get it (since 2026-11-16 the campaign's reward for blowing open the rubble: found
+   in the broken tavern, `bookPlans`): it no longer drops from mini bosses, the Cyclops or storehouses. It costs
    10 planks and 5 nails, is built separately, holds **20** codexes, and uses the user's upgraded
    bookcase art (`den/bookcase-2.png`). (It was 20 planks + 10 nails for 25.) A save that already
    built it keeps its 25 slots, and schematics already in a save stay buildable (now 20 slots).
@@ -197,3 +201,57 @@ steps down to the fights quest until he hunts for you, and duels do in a copy wi
 The merchant replaces whoever's at the tavern for 2 runs, and can't be claimed until the
 tavern's repaired (progress still counts). A reward with no room (chest boxes, the bookcase for a
 codex, the altar for a Code Cache) waits until there is.
+
+### The campaign (✅ the user, 2026-11-16; lib/campaign.ts)
+
+Quests that aren't daily and lead through the game, on the quest board's **📖 Campaign** tab
+(`/board`, beside Quests and Boards), once Klutz's first quest is done. **Five chapters**, each
+leading up to a dungeon's boss (the Encampment, the Cyclops, the Hydra, the Abyss), then **Legend**,
+a long last one. The user listed the quests and the kinds of reward; Claude set the order and the
+numbers from a model of a normal player's progress (below). All 🧪 testing numbers.
+
+- **Progress counts all along; rewards are claimed in order.** A quest done early shows ☑️ "Done:
+  claim the ones above first". Most quests read the save as it is (levels, gold, gear worn, bosses
+  beaten, the tavern), so an old save opens with most done. The rest count events from the day it
+  came in (`tally`): fights won in a dungeon, new barcodes, cards got, Klutz sent, buys from a
+  merchant (in the Labyrinth or the tavern), camp cages opened (the Encampment's and the large rooms'),
+  golden chests opened, fights won with only effective hits, levels from the Sparring Pit, summons by
+  rarity, gear Klutz brings home by rarity, each visitor seen at the tavern, and a boss beaten on a
+  run with no potion drunk (`drank`: the run, `meta.runs`, a potion was last drunk on). Scans
+  and cards take the larger of the save's count and the tally.
+- **The screen:** the chapter's name and how many are claimed, then a row per quest (fixed: the task
+  on one line, the reward and progress on the next) with one 44px button: 🎁 Claim on the next
+  reward when it's done, ➜ to the screen where an unfinished quest is done. A ❗ on the board in the
+  Den while the next reward is ready. Claiming opens crates and gear in the Code Cache window.
+  A reward with no room (chest boxes, the bookcase for codexes) waits ("No room for it").
+- **Rewards** (the user): gold for the small ones, Tattered XP Scrolls for some, better things at
+  milestones; **crates** opened as you claim them (Materials, Gear, Codex: a number of things in a
+  rarity band; gear gets a chest's 10% enchantment chance; Supplies: 2 Lesser Potions, a Healing
+  Potion, a Revival Elixir and a torch). Fixing up the tavern pays a **Gold Key**; the Cyclops a
+  random **enchanted Epic weapon**; the rubble the **Crooked Bookcase Schematic** (500 gold instead
+  if you have the plans or the bookcase already, `PLANS_TAKEN_GOLD`).
+- Claude's readings (2026-11-16, not asked): "upgrade your inventory slot" is a bigger bag (the
+  backpack, or a slot bought); "camp cages" are any cages in an encampment; "beat X level without
+  potions" is a dungeon's boss beaten on a run with no potion drunk (Revival Elixirs don't count);
+  "identify creatures in the Bestiary" counts every creature in it (seen, owned or carded);
+  "summon a Common…" accepts that rarity or rarer; "level every one of Klutz's skills" is each of
+  his four skills at level 1 or more; "Klutz's explorations" count his weapons and armour.
+
+| Chapter | Quests, in order (reward) |
+|---|---|
+| 1 The Encampment | Scan 3 (50g) · 3 in the Bestiary (50g) · Send Klutz hunting (scroll) · A creature fully kitted (100g) · Win 5 fights (100g) · Collect 3 cards (100g) · A creature Lv 5 (scroll) · **Beat the Encampment** (Gear Crate, Uncommon–Rare ×3) |
+| 2 The Cyclops | Calibrate the scanner (150g) · Explorer Lv 5 (scroll) · Learn a codex move (150g) · Buy from a merchant (150g) · Summon a Common+ (Supplies) · Open 3 camp cages (200g) · A Rare+ weapon on (250g) · Klutz brings home Rare+ gear (scroll) · Win 25 fights (scroll) · A set bonus (250g) · 1,000 gold saved (Materials, Common–Uncommon) · The Encampment without a potion (300g) · Blow open the rubble (bookcase schematic) · **Beat the Cyclops** (enchanted Epic weapon) |
+| 3 The Hydra | Klutz Lv 5 (scroll) · A creature Lv 10 (Materials, Uncommon–Rare) · An enchanted weapon on (300g) · Every Klutz skill levelled (300g) · Fix up the tavern (Gold Key) · A win with only effective moves (400g) · Summon an Uncommon+ (Supplies) · Scan 50 (500g) · 15 in the Bestiary (scroll) · A bigger bag (500g) · 3 Sparring Pit levels (2 scrolls) · Klutz brings home Epic+ gear (Materials, Rare–Epic) · An Epic+ item on (500g) · Win 100 fights (Codex Crate, Uncommon–Rare ×2) · Open a golden chest (Gear, Rare–Epic) · 5,000 gold (2 scrolls) · The Cyclops without a potion (1,000g) · A creature Lv 15 (Gear, Rare–Epic) · **Beat the Hydra** (enchanted Epic armour) |
+| 4 The Abyss | An enchanted armour piece on (1,000g) · Klutz Lv 10 (Materials, Rare–Epic) · Every visitor calls (2 scrolls) · Summon a Rare+ (Supplies) · Build 3 schematics (Materials, Rare–Epic) · Explorer Lv 20 (2,000g) · 10 Sparring Pit levels (3 scrolls) · A creature Lv 20 (Gear, Epic) · 15,000 gold (3 scrolls) · Win 250 fights (Codex, Rare–Epic ×2) · The Hydra without a potion (Gear, Epic) · **Beat the Abyss** (enchanted Legendary weapon) |
+| 5 Legend | A creature Lv 25 · Klutz Lv 15 · Summon an Epic+ · Klutz brings home Legendary gear · A Legendary item on · Scan 250 · 35 in the Bestiary (all) · Explorer Lv 30 · 50,000 gold · The Abyss without a potion · A creature Lv 30 · Klutz Lv 20 · Summon a Legendary · Klutz Lv 25 · Klutz Lv 30 (crates Epic–Legendary, scrolls, enchanted Legendary gear) |
+
+**The pacing model** (Claude, 2026-11-16; scripts not kept). Explorer XP is every fight's XP; a
+creature Lv 5 / 10 / 15 / 20 / 25 / 30 needs 399 / 1,567 / 3,654 / 6,847 / 11,334 / 17,302 XP, an
+explorer 640 / 2,340 / 5,040 / 8,740 / 13,440 / 19,140. A won run gives about 190 XP (the
+Encampment), 620 (the Cyclops), 1,760 (the Hydra) and 4,100 (the Abyss), shared by the team. Klutz,
+simulated with the real trip code (40 players, ungeared, points spread evenly, no scrolls, going
+deeper as bosses fall): Lv 2 on trip 3, **Lv 5 on trip ~18, Lv 10 on trip ~70, Lv 15 in only a
+quarter of players by trip 140, Lv 20 never by trip 150**; his first Rare gear on trip ~7, Epic ~35,
+Legendary ~120 (half of players by trip 150). So Klutz Lv 5 opens chapter 3, Lv 10 chapter 4, and
+Lv 15–30 wait in Legend (scrolls and gear make him faster; Lv 20+ is meant to be a very long goal).
+Slow quests sit late in a chapter or early in the next, so none holds a boss's reward up for long.
