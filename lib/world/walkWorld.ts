@@ -16,7 +16,7 @@
 
 import { roomCentre, floorsOf, stepRule, type Layout, type Progress } from "../dungeon/layout";
 import type { Sconce, Candle } from "../dungeon/torch";
-import { placeDecor, placeBanners, placeFloorLife, type Decor, type RatHole } from "../dungeon/decor";
+import { placeDecor, placeBanners, placeFloorLife, type Decor, type RatHole, type CobWeb } from "../dungeon/decor";
 import { spawnOf, parentOf, WAIT_FROM_TOP, type Foe } from "../dungeon/foes";
 import { findPath, walkable, type CanStep } from "../dungeon/walk";
 import { hasFight, fightContainer, type DungeonId, type Room } from "../dungeon/run";
@@ -63,7 +63,7 @@ export function placeLabDecor(walk: WalkRun, plan: Floorplan, map: DungeonMap, c
 
 // The puddles and mouse holes the game draws (decor.ts placeFloorLife), clear of the things standing
 // in the rooms (not the people who wander), the campfires, candles and wall torches.
-export function placeFloorLifeOf(walk: WalkRun, plan: Floorplan, things: Thing[], candles: Candle[], sconces: Sconce[]): { puddles: Pt[]; holes: RatHole[] } {
+export function placeFloorLifeOf(walk: WalkRun, plan: Floorplan, things: Thing[], candles: Candle[], sconces: Sconce[]): { puddles: Pt[]; holes: RatHole[]; webs: CobWeb[] } {
   // (Bones, pots and nests lying in a corner, world version 16, are walked over: a rat runs past them too.)
   const taken = [...things.filter((t) => !t.npc && !(t.inert && !t.solid)), ...(walk.fires ?? []), ...candles];
   return placeFloorLife(plan, taken, sconces, [walk.layout.start, walk.layout.boss], seeded(walk.seed + 909));

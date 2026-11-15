@@ -145,8 +145,13 @@ export const RAT_LANE = 4;         // tiles of clear wall foot a hole needs (the
 export const RAT_RUN_MOST = 7;
 export const PUDDLE_CLEAR = 2.5;   // tiles from anything taken, at least
 export type RatHole = { x: number; y: number; from: number }; // the hole at (x, y) on the top wall's foot; the rat starts at x = from
-export function placeFloorLife(fp: Floorplan, taken: Pt[], walled: Pt[], skip: string[], rng: Rng = Math.random): { puddles: Pt[]; holes: RatHole[] } {
-  const puddles: Pt[] = [], holes: RatHole[] = [];
+// (The user, 2026-11-15) Cobwebs: WEB_CHANCE of rooms' top corners (each side on its own), where the top wall
+// meets a side wall, not by a wall torch or a door. x, y: the corner's floor tile. Drawn as the wall's own
+// tile with a web in it (lib/render3d/tiles.ts). 🧪
+export const WEB_CHANCE = 0.3;
+export type CobWeb = { x: number; y: number; side: "left" | "right" };
+export function placeFloorLife(fp: Floorplan, taken: Pt[], walled: Pt[], skip: string[], rng: Rng = Math.random): { puddles: Pt[]; holes: RatHole[]; webs: CobWeb[] } {
+  const puddles: Pt[] = [], holes: RatHole[] = [], webs: CobWeb[] = [];
   const rock = (x: number, y: number) => x < 0 || y < 0 || x >= fp.w || y >= fp.h || fp.tiles[y * fp.w + x] === ROCK;
   const floor = (x: number, y: number) => !rock(x, y) && fp.tiles[y * fp.w + x] === FLOOR;
   const near = (q: Pt, ps: Pt[], d: number) => ps.some((p) => Math.hypot(p.x - q.x, p.y - q.y) < d);
@@ -183,5 +188,15 @@ export function placeFloorLife(fp: Floorplan, taken: Pt[], walled: Pt[], skip: s
       if (spots.length > 0) holes.push(spots[Math.floor(rng() * spots.length)]);
     }
   }
-  return { puddles, holes };
+  // (After the rest, on the same stream, so the puddles and holes stay where they were.)
+  for (const id of Object.keys(fp.rooms).sort()) {
+    if (skip.includes(id)) continue;
+    const top = fp.rooms[id].reduce((a, b) => (b.y < a.y ? b : a)), y = top.y, doors = fp.doors.filter((d) => d.room === id);
+    for (const [side, x, out] of [["left", top.x, top.x - 1], ["right", top.x + top.w - 1, top.x + top.w]] as const) {
+      if (rng() >= WEB_CHANCE) continue;
+      if (!floor(x, y) || !rock(x, y - 1) || !rock(out, y) || near({ x, y }, walled, 1.5) || near({ x, y }, doors, 2)) continue;
+      webs.push({ x, y, side });
+    }
+  }
+  return { puddles, holes, webs };
 }

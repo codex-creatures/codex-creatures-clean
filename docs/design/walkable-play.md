@@ -387,7 +387,15 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
     the light). The hole keeps clear of doors and wall torches; the rat's run to it may pass under a
     torch (2026-11-14: it had to keep clear of them too, and only about 2% of rooms had a hole). Come
     within `RAT_FLEE` 2.5 tiles of a rat out on its run and it bolts for its hole, `RAT_BOLT` 3 times as
-    fast, then hides as after any run (the user, 2026-11-15; render3d/puddle.ts `ratBolt`). Never in the entrance or the boss's room, by a door, or on a thing, fire or
+    fast, then hides as after any run (the user, 2026-11-15; render3d/puddle.ts `ratBolt`).
+  - **In the tiles themselves** (the user, 2026-11-15: "additional texture added to the current art", not
+    pictures laid on top): the mouse hole is the wall's own tile with a hole at its foot (half a tile along
+    from `RatHole.x`, where the rat runs to); `WEB_CHANCE` 30% of rooms' top corners (where the top wall
+    meets a side wall, not by a torch or a door: `placeFloorLife` webs) have a cobweb in the wall's own
+    tile; and floor tiles have moss in their cracks, half of those round a puddle (`MOSS_BY_PUDDLE`) and
+    3% of the rest (`MOSS_ANY`). The Stone shader picks each variant by the art's repeat it's in
+    (lib/render3d/tiles.ts, kit F only); each differs from the plain tile only where it adds something,
+    so there are no seams. From the seed + 910, nothing saved: every run has them. Never in the entrance or the boss's room, by a door, or on a thing, fire or
     candle. Drawn only (`decor.ts placeFloorLife`, from the seed + 909; `components/WalkView3D.tsx`
     FloorLife; the glint: `lib/render3d/puddle.ts`), so nothing is saved and old runs get them too.
   - Ideas not drawn yet: moss patches as decals, side walls' faces, room-kind floors (a library's boards, a camp's dirt),

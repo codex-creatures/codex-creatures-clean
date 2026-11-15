@@ -10,8 +10,8 @@ const SAMPLES = [
   { file: "rat.png", name: "Rat", note: "Scurries along the walls, not fightable. A still for now: its running animation comes once the look's approved." },
   { file: "mouse-hole.png", name: "Mouse hole", note: "At the foot of a wall: rats dive into it. (Only the hole and its stones would be used, not the whole wall tile.)" },
   { file: "gold-key.png", name: "Gold Key", note: "Its icon in your bag (in the game since 2026-11-14)." },
-  { file: "cobweb.png", name: "Cobweb", note: "For the top corners of some rooms, where the top wall meets a side wall (2026-11-15)." },
-  { file: "moss-1.png", name: "Moss (try 1)", note: "Meant as a loose patch round puddles; it came out a solid square, so it's to be redone (2026-11-15)." },
+  { file: "../tiles/room-preview.png", name: "In the tiles themselves (2026-11-15)", note: "The dungeon's own tiles with something added, not pictures laid on them: a top wall with a cobweb in each corner (the cobweb sample laid into the wall) and a mouse hole at its foot, and a floor tile with moss in its cracks (PixelLab edits of the tiles). In the game since 2026-11-15." },
+  { file: "cobweb.png", name: "Cobweb", note: "The web laid into the walls' corner tiles (above)." },
 ];
 const SCALES = [1, 3, 6];
 

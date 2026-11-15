@@ -32,7 +32,7 @@ import { isPerson, locate, personOf, PERSON_LIGHT } from "@/lib/dungeon/people";
 import type { LocatorKey } from "@/lib/items/materials";
 import type { Layout, Progress } from "@/lib/dungeon/layout";
 import { placeFloorLifeOf, type Thing } from "@/lib/world/walkWorld";
-import type { RatHole } from "@/lib/dungeon/decor";
+import type { RatHole, CobWeb } from "@/lib/dungeon/decor";
 import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
 import { objectDef, artOf, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
 import { WALK_TILES, WALK_HERO8, WALK_BOB, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE } from "@/lib/sprites/walk";
@@ -46,6 +46,8 @@ import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carved
 import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
 import { Prop3D, Campfire, HealingGem, PROP_LEAN, type Tint } from "@/components/Props3D";
 import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt, ratBolt, ratHidesFrom, RAT_FLEE } from "@/lib/render3d/puddle";
+import { tileVariants, TILE_ART } from "@/lib/render3d/tiles";
+import { seeded } from "@/lib/world/walkWorld";
 import { texelsPerU, pixelScale, lightField, shadeAt, seenField, SUB, WINDOW, type LightField, type Light3D, type PixelMode, type TexelMode } from "@/lib/render3d/stone";
 
 // What the lab can change, to compare. `grey` is the geometry experiment (world/rendering.md §4.8):
@@ -113,7 +115,11 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
   const dark = useRef<HTMLDivElement>(null);
   const frame = useRef<Frame | null>(null);
   // The puddles and mouse holes, from the run's seed (decor.ts placeFloorLife): worked out once, as the walk is (useWalkPlay).
-  const [life] = useState(() => placeFloorLifeOf(play.walk, plan, W.things(), sim.candles, sim.sconces));
+  // …and which tiles show a variant of themselves (lib/render3d/tiles.ts), from the seed + 910, the same every time.
+  const [life] = useState((): FloorLifeSpots => {
+    const l = placeFloorLifeOf(play.walk, plan, W.things(), sim.candles, sim.sconces);
+    return { ...l, tiles: tileVariants(plan, l, seeded(play.walk.seed + 910)) };
+  });
 
   // A finger held down: once it's dragged past HOLD_DRAG px, you walk toward the floor under it, worked out
   // every frame (the camera follows you, so a finger held still near the edge keeps you walking that way).
@@ -310,10 +316,10 @@ function World({ sim, live, layout, progress, closed, view, step, things, room, 
   const others = { sim, live, layout, progress, frame, things: things(), room, stretch, closed };
   if (view.stone) return (
     <>
-      <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} fadeRef={fade} />
+      <StoneRock sim={sim} live={live} layout={layout} view={view} closed={closed} frame={frame} centre={centre} fieldRef={field} fadeRef={fade} life={life} />
       {/* You: tinted by the light where you stand (the world's useFrame). */}
       <mesh ref={hero} raycast={() => null}><planeGeometry /><meshBasicMaterial alphaTest={0.5} side={THREE.DoubleSide} /></mesh>
-      <FloorLife life={life} sim={sim} live={live} closed={closed} stretch={stretch} pitch={view.pitch} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
+      <FloorLife life={life} sim={sim} live={live} closed={closed} stretch={stretch} pitch={view.pitch} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} tiled={view.kit === "f"} />
       <Sprites {...others} shade={(x, y) => stoneShade(field.current, fade.current, live.w, x, y)} />
     </>
   );
@@ -489,16 +495,17 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
 // where you've seen them (the rat only while it's in the light), as dark as the place round them
 // (`shade`, Stone), with your torch's glint on the water and ripples as you walk through it
 // (lib/render3d/puddle.ts). Nothing here is saved or in anyone's way.
-type FloorLifeSpots = { puddles: Pt[]; holes: RatHole[] };
+type FloorLifeSpots = { puddles: Pt[]; holes: RatHole[]; webs: CobWeb[]; tiles?: ReturnType<typeof tileVariants> };
 const RAT_LONG = 0.6;                  // u: the rat, nose to tail (the lab's)
 const HOLE_U = 0.5;                    // u: the mouse hole across (its 24 px cut)
-function FloorLife({ life, sim, live, closed, stretch, pitch, shade }: { life: FloorLifeSpots; sim: WalkSim; live: WalkSim["live"]; closed: Uint8Array;
-  stretch: number; pitch: number; shade?: (x: number, y: number) => THREE.Color }) {
+// tiled: the holes are in the walls' own tiles (Stone, kit F: lib/render3d/tiles.ts), not pictures on them, and half a tile along.
+function FloorLife({ life, sim, live, closed, stretch, pitch, shade, tiled = false }: { life: FloorLifeSpots; sim: WalkSim; live: WalkSim["live"]; closed: Uint8Array;
+  stretch: number; pitch: number; shade?: (x: number, y: number) => THREE.Color; tiled?: boolean }) {
   const seen = (p: Pt) => sim.known[p.y * live.w + p.x] === 1;
   return (
     <>
       {life.puddles.filter(seen).map((p) => <Puddle key={`puddle:${p.x},${p.y}`} at={p} sim={sim} pitch={pitch} shine={!closed[p.y * live.w + p.x]} colour={shade && (() => shade(p.x, p.y))} />)}
-      {life.holes.filter(seen).map((h, i) => <RatRun key={`rat:${h.x},${h.y}`} hole={h} phase={i * 2.7} sim={sim} live={live} stretch={stretch} shade={shade} />)}
+      {life.holes.filter(seen).map((h, i) => <RatRun key={`rat:${h.x},${h.y}`} hole={h} phase={i * 2.7} sim={sim} live={live} stretch={stretch} shade={shade} tiled={tiled} />)}
     </>
   );
 }
@@ -539,10 +546,11 @@ function Puddle({ at, sim, pitch, shine, colour }: { at: Pt; sim: WalkSim; pitch
 }
 
 // A mouse hole on the wall's foot, and its rat: from `from` along the wall to the hole, in, out of sight a while, and again.
-function RatRun({ hole, phase, sim, live, stretch, shade }: { hole: RatHole; phase: number; sim: WalkSim; live: WalkSim["live"]; stretch: number;
-  shade?: (x: number, y: number) => THREE.Color }) {
+function RatRun({ hole, phase, sim, live, stretch, shade, tiled = false }: { hole: RatHole; phase: number; sim: WalkSim; live: WalkSim["live"]; stretch: number;
+  shade?: (x: number, y: number) => THREE.Color; tiled?: boolean }) {
   const rat = useRef<THREE.Group>(null), ratMat = useRef<THREE.MeshBasicMaterial>(null), holeMat = useRef<THREE.MeshBasicMaterial>(null);
-  const run = Math.abs(hole.x - hole.from), dir = Math.sign(hole.x - hole.from) || 1;
+  const hx = hole.x + (tiled ? 0.5 : 0); // (the wall's tile has its hole half a tile along: tiles.ts)
+  const run = Math.abs(hx - hole.from), dir = Math.sign(hx - hole.from) || 1;
   const face = hole.y - 0.5, lane = face + 0.45, [rw, rh] = FLOOR_LIFE.ratSize, h = HOLE_U * stretch;
   // (Its own clock, nudged after it bolts so it hides from there; and the bolt under way.)
   const shift = useRef(phase), bolt = useRef<{ from: number; at: number } | null>(null);
@@ -559,20 +567,20 @@ function RatRun({ hole, phase, sim, live, stretch, shade }: { hole: RatHole; pha
       shift.current = ratHidesFrom(run) - now;
       r = null;
     }
-    const x = r ? hole.from + dir * r.along : hole.x;
+    const x = r ? hole.from + dir * r.along : hx;
     g.visible = !!r && sim.lightNow[hole.y * live.w + Math.round(x)] === 1;
     if (!r) return;
     if (r.into === 0) { g.position.set(x, 0.02, lane); g.rotation.y = dir * (Math.PI / 2); }
-    else { g.position.set(hole.x, 0.02, lane - r.into * 0.45); g.rotation.y = Math.PI; }
+    else { g.position.set(hx, 0.02, lane - r.into * 0.45); g.rotation.y = Math.PI; }
     if (ratMat.current && shade) ratMat.current.color.copy(shade(x, hole.y));
   });
   return (
     <>
-      <Mounted x={hole.x} y={face + 0.01} up={h / 2}>
+      {!tiled && <Mounted x={hole.x} y={face + 0.01} up={h / 2}>
         <mesh raycast={() => null} scale={[HOLE_U, h, 1]}><planeGeometry />{shade
           ? <meshBasicMaterial ref={holeMat} map={texture(FLOOR_LIFE.hole)} alphaTest={0.5} />
           : <meshLambertMaterial map={texture(FLOOR_LIFE.hole)} alphaTest={0.5} />}</mesh>
-      </Mounted>
+      </Mounted>}
       <group ref={rat} visible={false}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
           <planeGeometry args={[RAT_LONG * (rw / rh), RAT_LONG]} />
@@ -843,6 +851,15 @@ function gridTexture(w: number, h: number): THREE.DataTexture {
   return t;
 }
 
+// A grid of codes (tile variants: tiles.ts), read exactly: one byte a cell in red.
+function codeTexture(codes: Uint8Array, w: number, h: number): THREE.DataTexture {
+  const d = new Uint8Array(w * h * 4);
+  for (let i = 0; i < codes.length; i++) d[i * 4] = codes[i];
+  const t = new THREE.DataTexture(d, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.needsUpdate = true;
+  return t;
+}
+
 // Two grids (values 0–1) into a grid texture's red and green.
 function fillGrid(t: THREE.DataTexture, r: ArrayLike<number>, g: ArrayLike<number>) {
   const d = t.image.data as Uint8Array;
@@ -864,6 +881,8 @@ void main() {
 const STONE_FRAGMENT = `
 uniform sampler2D uFloor; uniform sampler2D uFace; uniform sampler2D uRim;
 uniform vec2 uFloorSize; uniform vec2 uFaceSize; uniform vec2 uRimSize;   // (their pixels)
+uniform sampler2D uMoss; uniform sampler2D uHole; uniform sampler2D uWebA; uniform sampler2D uWebB; uniform sampler2D uWebC; uniform sampler2D uWebD;
+uniform sampler2D uFaceVar; uniform sampler2D uMossVar; uniform float uMossRows; // which cells show a variant (tiles.ts)
 uniform float uFaceRows;                                                  // the face's rows under the cap
 uniform vec2 uUp; uniform vec2 uSide;                                     // texels a unit: floors and tops, faces (stone.ts texelsPerU)
 uniform sampler2D uLight; uniform vec3 uWin;                              // r: your torch, g: the others; its corner (x, z) and size (u)
@@ -876,6 +895,16 @@ varying vec3 vNormal;
 
 const int BAYER[16] = int[16](0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5);
 vec3 face(vec2 t) { return texture2D(uFace, vec2(t.x / uFaceSize.x, mod(t.y, uFaceRows) / uFaceSize.y)).rgb; }
+// A north face's cell, as a variant of itself (code: tiles.ts FACE).
+vec3 faceAs(vec2 t, int code) {
+  vec2 uv = vec2(t.x / uFaceSize.x, mod(t.y, uFaceRows) / uFaceSize.y);
+  if (code == 1) return texture2D(uHole, uv).rgb;
+  if (code == 2) return texture2D(uWebA, uv).rgb;
+  if (code == 3) return texture2D(uWebB, uv).rgb;
+  if (code == 4) return texture2D(uWebC, uv).rgb;
+  if (code == 5) return texture2D(uWebD, uv).rgb;
+  return texture2D(uFace, uv).rgb;
+}
 
 void main() {
   vec3 n = normalize(vNormal);
@@ -891,12 +920,22 @@ void main() {
   vec3 tex;
   if (up) {
     vec2 t = vec2(vWorld.x, -vWorld.z) * uUp;
-    if (y < 0.01) tex = texture2D(uFloor, t / uFloorSize).rgb;
+    if (y < 0.01) {
+      ivec2 cell = ivec2(int(floor(vWorld.x)), int(-floor(t.y / uFloorSize.y)));
+      bool moss = cell.x >= 0 && cell.y >= 0 && float(cell.x) < uPlan.x && float(cell.y) < uMossRows && texelFetch(uMossVar, cell, 0).r > 0.5;
+      tex = moss ? texture2D(uMoss, t / uFloorSize).rgb : texture2D(uFloor, t / uFloorSize).rgb;
+    }
     else if (y < uWall - 0.01) tex = texture2D(uRim, t / uRimSize).rgb;
     else tex = face(t) * uTop;
   } else {
     float across = abs(n.z) > 0.5 ? vWorld.x : vWorld.z * n.x;
-    tex = face(vec2(across, y) * uSide);
+    int code = 0;
+    if (n.z > 0.5) {
+      // A room's top wall (it faces south, at you): its cell, in front of the floor row it stands over.
+      ivec2 cell = ivec2(int(floor(vWorld.x)), tile.y);
+      if (cell.x >= 0 && float(cell.x) < uPlan.x) code = int(texelFetch(uFaceVar, cell, 0).r * 255.0 + 0.5);
+    }
+    tex = faceAs(vec2(across, y) * uSide, code);
   }
 
   // The light where it lands, and how the surface takes it.
@@ -920,11 +959,19 @@ void main() {
   gl_FragColor = vec4(tex * colour * (I > 0.0 ? Q / I : 0.0), 1.0);
 }`;
 
-function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, fadeRef }: {
+function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, fadeRef, life }: {
   sim: WalkSim; live: WalkSim["live"]; layout: Layout; view: View3D; closed: Uint8Array; frame: React.RefObject<Frame | null>;
   centre: React.RefObject<{ x: number; z: number }>; fieldRef: React.RefObject<LightField | null>; fadeRef: React.RefObject<Float32Array | null>;
+  life: FloorLifeSpots;
 }) {
   const geo = useCarved(sim, live, layout, view);
+  // Which tiles show a variant of themselves (moss, a mouse hole, a cobweb: lib/render3d/tiles.ts), as two
+  // grids of codes; kit F's only (the game's), so a lab kit shows none.
+  const variants = useMemo(() => {
+    const v = life.tiles ?? tileVariants(sim.plan, life, seeded(910)), on = view.kit === "f";
+    return { face: codeTexture(on ? v.face : new Uint8Array(v.face.length), sim.plan.w, sim.plan.h), moss: codeTexture(on ? v.moss : new Uint8Array(v.moss.length), sim.plan.w, v.mossRows), rows: v.mossRows };
+  }, [sim, life, view.kit]);
+  useEffect(() => () => { variants.face.dispose(); variants.moss.dispose(); }, [variants]);
   const rememberRef = useRef<Uint8Array | null>(null);
   // The light grid and what you've seen, as textures (written into each frame, so kept in a ref).
   const grids = useRef<{ light: THREE.DataTexture; seen: THREE.DataTexture } | null>(null);
@@ -951,6 +998,9 @@ function StoneRock({ sim, live, layout, view, closed, frame, centre, fieldRef, f
     u.uFloor.value = rawTexture(kit.floor); u.uFloorSize.value.set(k.px, k.row);
     u.uFace.value = rawTexture(kit.north); u.uFaceSize.value.set(k.px, k.north); u.uFaceRows.value = k.north - k.cap;
     u.uRim.value = rawTexture(kit.cap); u.uRimSize.value.set(k.px, k.cap);
+    u.uMoss.value = rawTexture(TILE_ART.moss); u.uHole.value = rawTexture(TILE_ART.hole);
+    u.uWebA.value = rawTexture(TILE_ART.webA); u.uWebB.value = rawTexture(TILE_ART.webB); u.uWebC.value = rawTexture(TILE_ART.webC); u.uWebD.value = rawTexture(TILE_ART.webD);
+    u.uFaceVar.value = variants.face; u.uMossVar.value = variants.moss; u.uMossRows.value = variants.rows;
     u.uUp.value.set(...texelsPerU("up", view.density, view.pitch, view.texels));
     u.uSide.value.set(...texelsPerU("face", view.density, view.pitch, view.texels));
     u.uMode.value = view.light === "smooth" ? 0 : view.light === "stepped" ? 1 : 2;
@@ -997,6 +1047,7 @@ function stoneUniforms() {
   const map = () => ({ value: null as THREE.Texture | null });
   return {
     uLean: { value: 0 }, uCx: { value: 0 }, uFloor: map(), uFace: map(), uRim: map(), uFloorSize: v2(), uFaceSize: v2(), uRimSize: v2(),
+    uMoss: map(), uHole: map(), uWebA: map(), uWebB: map(), uWebC: map(), uWebD: map(), uFaceVar: map(), uMossVar: map(), uMossRows: { value: 1 },
     uFaceRows: { value: 1 }, uUp: v2(), uSide: v2(), uLight: map(), uWin: v3(), uSeen: map(), uPlan: v2(),
     uWall: { value: WALL_HEIGHT }, uRemember: { value: STONE.remember }, uGain: { value: STONE.gain }, uTop: { value: STONE.top },
     uTopLight: { value: STONE.topLight }, uRimLight: { value: STONE.rimLight }, uFaceFire: { value: STONE.faceFire },
