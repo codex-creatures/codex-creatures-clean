@@ -28,6 +28,16 @@ describe("the campaign's quests", () => {
     expect(CHAPTERS.slice(0, 4).map((c) => c.quests.at(-1)!.id)).toEqual(["camp", "cyclops", "hydra", "abyss"]);
   });
 
+  it("a quest's place in its chapter lines up with its place in the whole list (the board finds the one to claim by it)", () => {
+    // (The bug, 2026-11-16: the board compared quests to CAMPAIGN's copies of them, never equal, so nothing could be claimed.)
+    let at = 0;
+    for (const ch of CHAPTERS) for (const q of ch.quests) {
+      expect(CAMPAIGN[at].id).toBe(q.id);
+      expect(nextQuest({ claimed: at })?.id).toBe(q.id);
+      at++;
+    }
+  });
+
   it("a new player has done none of them", () => {
     expect(CAMPAIGN.filter((q) => questDone(q, NEW)).map((q) => q.id)).toEqual(["calibrate"]); // (a save with no first scans: calibrated already)
     expect(campaignCtx({ firstScans: { used: 0, codes: [] } }).calibrated).toBe(false);

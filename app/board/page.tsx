@@ -279,7 +279,7 @@ function CampaignList() {
   if (!klutzHelping(game.quest)) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Finish Klutz&apos;s quest first.</p>;
 
   const state = loadCampaign(), ctx = readCampaignCtx();
-  const claimed = claimedCount(state), next = nextQuest(state);
+  const claimed = claimedCount(state);
   const ch = currentChapter(state), chapter = CHAPTERS[ch];
   const first = CHAPTERS.slice(0, ch).reduce((n, c) => n + c.quests.length, 0); // the chapter's first quest, in the whole list
   function claim() {
@@ -308,7 +308,9 @@ function CampaignList() {
         <span style={{ color: MUTED }}>{Math.min(chapter.quests.length, Math.max(0, claimed - first))}/{chapter.quests.length}</span>
       </div>
       {chapter.quests.map((q, i) => {
-        const at = first + i, got = at < claimed, done = questDone(q, ctx), isNext = q === next;
+        // (The next to claim by its place in the whole list: CAMPAIGN holds copies of the chapters' quests, so
+        // comparing the quests themselves never matched, and no reward could be claimed.)
+        const at = first + i, got = at < claimed, done = questDone(q, ctx), isNext = at === claimed;
         const icon = got ? "✓" : isNext && done ? "❗" : done ? "☑️" : "▫️";
         const status = got ? "Claimed" : done ? (isNext ? (full ? "No room for it" : "Ready to claim") : "Done: claim the ones above first")
           : `${Math.min(q.progress(ctx), q.goal).toLocaleString()}/${q.goal.toLocaleString()}`;
