@@ -67,6 +67,12 @@ button, a, [role="button"] { touch-action: manipulation; }
 /* The pixel font: Silkscreen for digits (clearer), Pixelify for everything
    else (both set up in app/layout.tsx). */
 body { --font-pixel: var(--font-digits), var(--font-pixelify); }
+/* Four brass rivets in a panel's corners (a background layer, so nothing inside moves). */
+body {
+  --rivet: #e0bb72 0 2px, #4a3519 2px 3.5px, transparent 4px;
+  --rivets: radial-gradient(circle at 9px 9px, var(--rivet)), radial-gradient(circle at calc(100% - 9px) 9px, var(--rivet)),
+    radial-gradient(circle at 9px calc(100% - 9px), var(--rivet)), radial-gradient(circle at calc(100% - 9px) calc(100% - 9px), var(--rivet));
+}
 
 .pixel-font {
   font-family: var(--font-pixel), "Courier New", monospace;
@@ -75,34 +81,39 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 }
 
 /* Chunky stone panel with a pixel-style bevel. */
+/* (The UI overhaul, the user, 2026-11-17: "Torchlit Stone": riveted stone, brass trim, bronze buttons.) */
 .stone-panel {
-  background: #23262f;
-  border: 3px solid #12131a;
-  box-shadow: inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 4px 0 rgba(0, 0, 0, 0.5);
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 170, 90, 0.06), transparent 65%), #1b1d24;
+  border: 3px solid;
+  border-color: #6d6249 #2a261d #2a261d #6d6249;
+  outline: 2px solid #06060a;
+  box-shadow: inset 0 0 0 2px #06060a, inset 0 0 30px rgba(0, 0, 0, 0.6), 0 5px 0 rgba(0, 0, 0, 0.45);
   padding: 14px 16px;
 }
 
+/* The main buttons: carved bronze, lit from above. */
 .pixel-btn {
   font-family: var(--font-pixel), "Courier New", monospace;
-  background: #5a3b1c;
-  color: #ffe9b0;
-  border: 3px solid #1d1209;
-  box-shadow: inset 2px 2px 0 #8a5f2f, inset -2px -2px 0 #3a250f;
+  background: linear-gradient(180deg, #8f6338 0%, #6e4826 55%, #4f321a 100%);
+  color: #f4e2b8;
+  text-shadow: 0 2px 0 #24150a;
+  border: 2px solid #1d1209;
+  box-shadow: inset 0 2px 0 #c8955c, inset 0 -3px 0 #2e1c0d, inset 2px 0 0 #7d552f, inset -2px 0 0 #3d2713, 0 3px 0 rgba(0, 0, 0, 0.5);
   padding: 8px 16px;
   font-size: 16px;
   min-height: 44px;
   cursor: pointer;
 }
-@media (hover: hover) { .pixel-btn:hover { background: #6b4722; } }
-.pixel-btn:active:not(:disabled) { background: #6b4722; transform: translateY(1px); }
+@media (hover: hover) { .pixel-btn:hover:not(:disabled) { filter: brightness(1.1); } }
+.pixel-btn:active:not(:disabled) { filter: brightness(1.1); transform: translateY(1px); }
 .pixel-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Clickable card rows (team picker, moves, swaps). */
 .card-btn {
   display: flex; gap: 12px; align-items: center; width: 100%;
   text-align: left; padding: 9px 12px; color: white; cursor: pointer; min-height: 44px; font-size: 15px;
-  background: #1b1d25; border: 2px solid #2f3340;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  background: linear-gradient(180deg, #1f2129, #17181e); border: 2px solid #2f3340;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 0 rgba(0, 0, 0, 0.5);
 }
 @media (hover: hover) { .card-btn:hover:not(:disabled) { border-color: #8a6a3a; background: #222530; } }
 .card-btn:active:not(:disabled) { border-color: #8a6a3a; background: #222530; }
@@ -111,9 +122,11 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .chip {
   font-family: var(--font-pixel), "Courier New", monospace;
   padding: 8px 14px; font-size: 15px; min-height: 40px; cursor: pointer; text-transform: capitalize;
-  background: #1b1d25; color: #d8d4c8; border: 2px solid #2f3340;
+  background: linear-gradient(180deg, #343743, #22242d); color: #d8d4c8; border: 2px solid #101116;
+  box-shadow: inset 0 2px 0 #4f5362, inset 0 -3px 0 #15161b; text-shadow: 0 2px 0 #000;
 }
-.chip[data-active="true"] { background: #5a3b1c; color: #ffe9b0; border-color: #1d1209; box-shadow: inset 2px 2px 0 #8a5f2f; }
+/* (Tabs and choices: carved stone; the one picked turns brass.) */
+.chip[data-active="true"] { background: linear-gradient(180deg, #6a4f28, #3d2c15); color: #ffe7a8; border-color: #1d1209; box-shadow: inset 0 2px 0 #c39a55, inset 0 -3px 0 #1d1408; text-shadow: 0 2px 0 #1a1004; }
 
 /* ── Battle ── */
 /* Moves: two to a row on a phone, more on wider screens. */
@@ -281,13 +294,13 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 /* Inputs in the dungeon style. */
 .pixel-input {
   width: 100%; padding: 10px 12px; font-size: 16px; color: #f1e6c8;
-  background: #12131a; border: 3px solid #2f3340; box-shadow: inset 2px 2px 0 #000;
+  background: #0d0e12; border: 2px solid #2f3340; box-shadow: inset 2px 2px 0 #000, inset -1px -1px 0 rgba(255, 255, 255, 0.05);
 }
 .pixel-input:focus { outline: none; border-color: #8a6a3a; }
 
 /* Pop-up windows (item / creature details, sell confirm). */
 .modal-panel {
-  background: #191b22 !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 170, 90, 0.06), transparent 55%), #17181e !important;
   border-width: 3px !important;
   border-radius: 4px !important;
 }
@@ -378,8 +391,8 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
   position: fixed; top: 50%; transform: translateY(-50%); z-index: 210;
   width: 44px; height: 72px; display: flex; align-items: center; justify-content: center;
   font-family: var(--font-pixel), monospace; font-size: 40px; line-height: 1; color: #f1d9a0;
-  background: rgba(20, 16, 12, 0.82); border: 2px solid #8a6a3a; cursor: pointer;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
+  background: linear-gradient(180deg, rgba(58, 47, 28, 0.92), rgba(28, 23, 14, 0.92)); border: 2px solid #8a6a3a; cursor: pointer;
+  box-shadow: inset 0 2px 0 rgba(195, 154, 85, 0.6), 0 3px 0 rgba(0, 0, 0, 0.6);
 }
 .side-arrow.prev { left: max(6px, env(safe-area-inset-left)); }
 .side-arrow.next { right: max(6px, env(safe-area-inset-right)); }
@@ -406,7 +419,7 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .help-btn {
   width: 26px; height: 26px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
   font-family: var(--font-pixel), monospace; font-size: 16px; line-height: 1; color: #2b1d10; cursor: pointer;
-  background: #e6c47a; border: 2px solid #5a3b1c; border-radius: 50%; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+  background: #e0bb72; border: 2px solid #5a3b1c; border-radius: 3px; box-shadow: inset 0 -2px 0 #a8823e, 0 2px 0 rgba(0, 0, 0, 0.6);
   vertical-align: middle;
 }
 .help-btn:hover { background: #f5d892; }
@@ -481,7 +494,7 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 .inv-panel {
   position: relative;
   padding: 12px;
-  background: radial-gradient(ellipse at 50% 30%, rgba(120, 100, 70, 0.08), transparent 70%), #101116;
+  background: var(--rivets), radial-gradient(ellipse at 50% 0%, rgba(255, 170, 90, 0.07), transparent 60%), radial-gradient(ellipse at 50% 30%, rgba(120, 100, 70, 0.08), transparent 70%), #101116;
   border: 4px solid #4d4738;
   border-color: #716852 #2b2820 #2b2820 #716852;
   outline: 2px solid #08080b;
@@ -534,9 +547,9 @@ body { --font-pixel: var(--font-digits), var(--font-pixelify); }
 /* ── Title bars (the Den and every screen opened from it) ──
    The creature card's stone and bevel, with a thin gold trim. */
 .title-bar {
-  background: #23262f;
-  border: 2px solid #3a3020;
-  box-shadow: inset 0 0 0 1px #c9a860, inset 2px 2px 0 #e8d4a0, inset -2px -2px 0 #6b5428, inset 4px 4px 0 #3a3e4b, inset -4px -4px 0 #181a21, 0 4px 0 rgba(0, 0, 0, 0.5);
+  background: linear-gradient(180deg, #2c2519, #16130d);
+  border: 2px solid #8a6a3a;
+  box-shadow: inset 0 1px 0 rgba(224, 187, 114, 0.45), 0 3px 0 #000;
   padding: 10px 16px;
 }
 .sheet-up { animation: sheet-up 0.22s ease-out; }
@@ -590,32 +603,45 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 .screen-header {
   flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
   padding: 6px 10px; min-height: 46px;
-  background: #23262f; border-bottom: 2px solid #3a3020;
-  box-shadow: inset 0 -1px 0 #c9a860, inset 0 2px 0 #3a3e4b, 0 3px 0 rgba(0, 0, 0, 0.45);
+  background: linear-gradient(180deg, #1d1e26, #111218); border-bottom: 2px solid #000;
+  box-shadow: inset 0 -2px 0 #8a6a3a, 0 3px 0 rgba(0, 0, 0, 0.5);
   position: relative; z-index: 5;
 }
 /* Under the header: your gold and materials, spread evenly (the Inventory). */
 .screen-wallet {
   flex: none; display: flex; justify-content: space-around; align-items: center; gap: 6px;
   padding: 4px 10px; min-height: 30px; font-size: 15px; color: #f1d9a0;
-  background: #1c1e25; border-bottom: 2px solid #3a3020;
+  background: #121318; border-bottom: 2px solid #3a3020;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
 }
-.screen-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 12px; overscroll-behavior: contain; }
+/* A screen's title, on a brass plaque (DenFrame). */
+.screen-title {
+  padding: 3px 14px; background: linear-gradient(180deg, #2c2519, #16130d); border: 2px solid #8a6a3a;
+  box-shadow: inset 0 1px 0 rgba(224, 187, 114, 0.45), 0 2px 0 #000; text-shadow: 0 2px 0 #000;
+}
+/* The way back: a small stone button (DenFrame). */
+.screen-back {
+  display: inline-flex; align-items: center; justify-self: start; min-height: 34px; padding: 0 10px; max-width: 100%; box-sizing: border-box;
+  background: linear-gradient(180deg, #343743, #22242d); border: 2px solid #101116; box-shadow: inset 0 2px 0 #4f5362, inset 0 -2px 0 #15161b;
+}
+.screen-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 12px; overscroll-behavior: contain;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255, 150, 70, 0.06), transparent 55%); }
 .screen-fill { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .screen-dock {
-  flex: none; position: relative; z-index: 5; padding: 8px;
-  background: #1c1e25; border-top: 2px solid #3a3020;
-  box-shadow: inset 0 1px 0 #c9a860, inset 0 3px 0 #2c2f3a, 0 -3px 0 rgba(0, 0, 0, 0.45);
+  flex: none; position: relative; z-index: 5; padding: 10px 8px 8px;
+  background: linear-gradient(180deg, #1a1b22, #0e0f13); border-top: 2px solid #000;
+  box-shadow: inset 0 2px 0 #8a6a3a, inset 0 3px 0 #000, inset 0 4px 0 rgba(224, 187, 114, 0.15), 0 -3px 0 rgba(0, 0, 0, 0.45);
 }
 /* Buttons built into a dock: a row of equal tabs, no gaps floating apart. */
 .dock-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
 .dock-tab {
   font-family: var(--font-pixel), "Courier New", monospace; font-size: 14px; color: #ffe9b0;
   min-height: 42px; padding: 4px 6px; cursor: pointer; position: relative;
-  background: #3e2a15; border: 2px solid #1d1209; box-shadow: inset 2px 2px 0 #6e4b24, inset -2px -2px 0 #2a1a0b;
+  background: linear-gradient(180deg, #343743, #22242d); border: 2px solid #101116; box-shadow: inset 0 2px 0 #4f5362, inset 0 -3px 0 #15161b;
+  text-shadow: 0 2px 0 #000;
   display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap;
 }
-.dock-tab[data-active="true"] { background: #6b4722; box-shadow: inset 2px 2px 0 #a07038, inset -2px -2px 0 #3a250f; }
+.dock-tab[data-active="true"] { background: linear-gradient(180deg, #6a4f28, #3d2c15); color: #ffe7a8; box-shadow: inset 0 2px 0 #c39a55, inset 0 -3px 0 #1d1408; }
 .dock-tab:disabled { opacity: 0.4; cursor: not-allowed; }
 .dock-tab:active:not(:disabled) { transform: translateY(1px); }
 .dock-tab .count { opacity: 0.7; font-size: 12px; }

@@ -301,8 +301,8 @@ export default function CreatureDetailModal({
                 <span className="tutorial-arrow">👇</span> Tap a glowing <b>armour slot</b> to put some of Klutz&apos;s armour on.
               </div>
             )}
-            {/* Paper doll: weapon · creature · armour */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: "radial-gradient(ellipse at 50% 60%, rgba(255,170,80,0.10), transparent 70%), #15161d", border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
+            {/* Paper doll: weapon · creature · armour, on a stage lit in its rarity's colour. */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8, padding: "12px 8px", background: `repeating-conic-gradient(from 0deg at 50% 78%, ${c.text}12 0 6deg, transparent 6deg 18deg), radial-gradient(ellipse at 50% 74%, ${c.text}55, transparent 52%), radial-gradient(ellipse at 50% 0%, ${c.text}24, #0e0f13 75%)`, border: "2px solid #0e0f14", boxShadow: "inset 0 0 24px rgba(0,0,0,0.6)" }}>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <Slot label={weaponKind ? `${weaponKind.icon} ${weaponKind.name} weapon` : "Weapon"} labelColor={weaponKind?.color} slot="weapon" item={weapon} active={picking === "weapon"} hot={dnd.over === "slot:weapon"} onClick={() => openSlot("weapon")} small />
                 <SoulSlot stone={creature.soulStone} active={stonePicking} changeable={canSetStone}

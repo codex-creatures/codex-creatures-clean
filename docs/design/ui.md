@@ -21,6 +21,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - **Double tap** (`lib/doubleTap.ts`, built 2026-10-24): a quick second tap on the same thing does its main button. In a creature's Equip picker it equips the piece (or unequips, on ⊘); in the loot window it takes the item.
 - **Few words.** One-line summaries on screen, and depth behind a "?" (`components/Help.tsx`) in
   big, bold, broken-up text. Klutz's lines are short.
+- **Torchlit Stone** (the UI overhaul, the user, 2026-11-17; drafts on the design canvas
+  https://claude.ai/artifact/Dx8wgJXtLRvz1Be7hcXnXF): carved bronze main buttons (`.pixel-btn`), stone
+  tabs that turn brass when picked (`.chip`, `.dock-tab`), a dark header and dock with a brass trim,
+  each screen's title on a brass plaque and the way back a small stone button (`.screen-title`,
+  `.screen-back`), brass rivets on the big panels (`.inv-panel`), warm torchlight from above, and
+  the creature window's stage lit in the creature's rarity colour. Muted, adventurous colours: leather,
+  brass and parchment, never neon. Still to come from the drafts: the dungeon showcase on the
+  entrance (the boss on its own lit backdrop), the quest board as pinned parchment notes, and
+  rarity-lit creature cards.
 - **The stone card standard:**
   - #23262f stone with pixel bevels and a thin rarity-coloured trim;
   - the pixel font in yellow #f1d9a0, and sunken wells for text;

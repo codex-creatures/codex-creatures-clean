@@ -33,13 +33,13 @@ export default function DenFrame({
     <main className="screen-page">
       <header className="screen-header">
         {backLocked
-          ? <span className="pixel-font" title={backLocked} aria-disabled style={{ color: "#c9b48a", opacity: 0.35, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "not-allowed" }}>🔒 {backLabel}</span>
+          ? <span className="pixel-font screen-back" title={backLocked} aria-disabled style={{ color: "#c9b48a", opacity: 0.35, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", cursor: "not-allowed" }}>🔒 {backLabel}</span>
           : onBack
-          ? <button onClick={onBack} className="pixel-font" style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", color: "#c9b48a", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</button>
-          : <Link href={back} className="pixel-font" style={{ color: "#c9b48a", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</Link>}
+          ? <button onClick={onBack} className="pixel-font screen-back" style={{ textAlign: "left", cursor: "pointer", color: "#e8d3a0", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</button>
+          : <Link href={back} className="pixel-font screen-back" style={{ color: "#e8d3a0", fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>← {backLabel}</Link>}
         {/* On a narrow phone the title shrinks a little and your gold stands with the coin
             over the number (as on the Den's bar), so the back button keeps its words. */}
-        <h1 className="pixel-font" style={{ margin: 0, fontSize: "clamp(15px, 4.8cqw, 19px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60cqw" }}>
+        <h1 className="pixel-font screen-title" style={{ margin: 0, fontSize: "clamp(15px, 4.8cqw, 19px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60cqw" }}>
           {icon ? `${icon} ` : ""}{title}
         </h1>
         <span style={{ display: "flex", justifyContent: "flex-end" }}>{gold !== undefined && !materials && (

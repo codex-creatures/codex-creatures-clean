@@ -40,7 +40,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 type View = { status: "loading" | "off" | "out" | "failed" } | { status: "ok"; board: Board };
 
 export default function QuestBoardPage() {
-  const [tab, setTab] = useState<"campaign" | "quests" | "boards">("quests");
+  const [tab, setTab] = useState<"campaign" | "quests" | "boards">("campaign"); // (opens on the campaign: the user, 2026-11-17)
   const quests = tab !== "boards"; // (the campaign too: neither shows the leaderboards' parts)
   const [kind, setKind] = useState<BoardKind>("species");
   const [dungeon, setDungeon] = useState<DungeonId>(1);

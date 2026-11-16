@@ -11,6 +11,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   stall, and a boarded-up Tavern.
 - ✅ **The Den's top bar** (the user, 2026-11-14): your explorer level as an XP bar, `Lv 3 [45 / 180] Lv 4`
   (MAX at Lv 30), where the title "Codex Creatures" was; then gold, creatures and items found, and ⚙️.
+  Under it, every material's count, even at 0 (the user, 2026-11-17).
+- ✅ **The Den's dock** (the user, 2026-11-17): just **Enter the Labyrinth** and **Scan barcodes**
+  (the Soul Altar). The other places are tapped in the room; Klutz's tour shows them. (It had a
+  button for every place before.) While Klutz is out hunting he isn't in the room, so a "Klutz is out
+  hunting" button sits over the Den's top-left corner to reach him.
 - 📌 **Tavern:** where travellers, merchants and librarians gather. Now reached through the
   questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). ✅ Its
   outside, repair, visitors and pits are built (the questline below); 📌 its interior is not.
@@ -212,7 +217,7 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   rarity, gear Klutz brings home by rarity, each visitor seen at the tavern, and a boss beaten on a
   run with no potion drunk (`drank`: the run, `meta.runs`, a potion was last drunk on). Scans
   and cards take the larger of the save's count and the tally.
-- **The screen:** the chapter's name and how many are claimed, then a row per quest (fixed: the task
+- **The screen:** the quest board opens on the campaign (the user, 2026-11-17). The chapter's name and how many are claimed, then a row per quest (fixed: the task
   on one line, the reward and progress on the next) with one 44px button: 🎁 Claim on the next
   reward when it's done, ➜ to the screen where an unfinished quest is done. A ❗ on the board in the
   Den while the next reward is ready. Claiming opens crates and gear in the Code Cache window.

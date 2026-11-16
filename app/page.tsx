@@ -1,12 +1,13 @@
 "use client";
 // app/page.tsx — home: the Den, where you live. Click objects to open each
-// part of the game. Under the room, a dock with the same places as buttons
-// (quicker on small screens and for keyboard users), the Labyrinth first.
+// part of the game. Under the bar, your materials; under the room, a dock with
+// just the Labyrinth and the scanner (the user, 2026-11-17: Klutz's tour shows
+// the rest, and you tap them in the room).
 
 import Link from "next/link";
 import { useGameState } from "@/hooks/useGameState";
 import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
-import DenRoom, { SPOTS } from "@/components/DenRoom";
+import DenRoom from "@/components/DenRoom";
 import TavernRoom from "@/components/TavernRoom";
 import { Coin } from "@/components/GoldCount";
 import DailyPopup from "@/components/DailyPopup";
@@ -23,9 +24,8 @@ import { useTour } from "@/hooks/useTour";
 import { tourDenTarget } from "@/lib/tour";
 import { hasPit, hydraStep } from "@/lib/trainingPit";
 import { PLAYER_MAX_LEVEL, playerXpToNext } from "@/lib/creatures/levels";
-
-// The places in the dock under the room: your creatures, your things, then help.
-const PLACES = [OBJ.pit, OBJ.altar, OBJ.cage, OBJ.pool, OBJ.klutz, OBJ.chest, OBJ.bag, OBJ.bookcase, OBJ.crate, OBJ.scroll];
+import { MaterialIcon } from "@/components/PixelSprite";
+import { MATERIALS, MATERIAL_KEYS } from "@/lib/items/materials";
 
 export default function Home() {
   const game = useGameState();
@@ -64,8 +64,22 @@ export default function Home() {
           <Link href="/settings" aria-label="Settings" title="Settings: export, import or back up your save" style={{ fontSize: 16, lineHeight: 1 }}><Glyph icon="⚙️" art="ui_settings" size={18} title="Settings" /></Link>
         </div>
       </header>
+      {/* Your materials, every one even at 0, so nothing shifts as counts change. */}
+      <div className="screen-wallet pixel-font">
+        {MATERIAL_KEYS.map((k) => (
+          <span key={k} title={MATERIALS[k].name} style={{ opacity: game.materials[k] ? 1 : 0.4, whiteSpace: "nowrap" }}>
+            <MaterialIcon k={k} /> {game.materials[k] ?? 0}
+          </span>
+        ))}
+      </div>
 
-      <div className="screen-fill">
+      <div className="screen-fill" style={{ position: "relative" }}>
+        {/* Klutz isn't in the room while he's out hunting, and the dock has no button for him: this is the way to him. */}
+        {game.hydrated && k === "away" && (
+          <Link href="/klutz" className="chip pixel-font" style={{ position: "absolute", left: 8, top: 8, zIndex: 3, display: "inline-flex", alignItems: "center", minHeight: 40, fontSize: 13, textTransform: "none" }}>
+            👺 Klutz is out hunting
+          </Link>
+        )}
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0))} backpack={backpack} highlight={highlight}
@@ -78,17 +92,14 @@ export default function Home() {
       {/* Today's quests, as you come in (not over Klutz's tour, nor before your first creature). */}
       <DailyPopup ready={game.hydrated && tour === null && mine.length > 0} now={now} />
 
-      {/* The dock: the Labyrinth first and biggest, then every place in the Den. */}
-      <nav className="screen-dock" data-tour="dock" style={{ display: "grid", gap: 6 }}>
-        <Link href="/dungeon" className="pixel-btn" style={{ display: "block", textAlign: "center", fontSize: 18, padding: "8px 0" }}>
+      {/* The dock: the Labyrinth, big, and the scanner under it. */}
+      <nav className="screen-dock" data-tour="dock" style={{ display: "grid", gap: 8 }}>
+        <Link href="/dungeon" className="pixel-btn" style={{ display: "block", textAlign: "center", fontSize: 19, padding: "12px 0" }}>
           🌀 Enter the Labyrinth
         </Link>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 5 }}>
-          {PLACES.map((id) => {
-            const s = SPOTS[id as keyof typeof SPOTS];
-            return s?.href ? <Link key={id} href={s.href} className={`dock-tab${id === highlight ? " tutorial-pulse" : ""}`} style={{ fontSize: 11, whiteSpace: "normal", textAlign: "center", lineHeight: 1.1, minHeight: 40 }}>{s.label}</Link> : null;
-          })}
-        </div>
+        <Link href="/altar" className={`dock-tab${highlight === OBJ.altar ? " tutorial-pulse" : ""}`} style={{ fontSize: 16, minHeight: 46 }}>
+          🔍 Scan barcodes
+        </Link>
       </nav>
     </main>
   );

@@ -36,7 +36,7 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 // ── The basics: round the Den ─────────────────────────────────────
 const BASICS: TourStep[] = [
   { path: "/", say: "This is the Den: your home. Tap anything in here to go there. I'll show you round. Tap anywhere to carry on." },
-  { path: "/", target: "dock", say: "The same places are down here too, quicker to reach." },
+  { path: "/", target: "dock", say: "Down here: into the Labyrinth, or scan a barcode. Your materials are up top." },
 
   // The Soul Altar
   { path: "/", target: den(OBJ.altar), say: "The Soul Altar. Scan a real barcode (a cereal box, a book, anything) and it cracks open a Code Cache: creatures, gear or potions." },
