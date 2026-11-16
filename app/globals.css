@@ -563,6 +563,41 @@ body {
 .float-shadow { background: radial-gradient(ellipse, rgba(0,0,0,0.55), transparent 70%); animation: float-shadow 2.8s ease-in-out infinite; }
 @keyframes float-shadow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.75); opacity: 0.6; } }
 
+/* ── The quest board (app/board): parchment notes pinned to a wooden board ──
+   (the user's pick, 2026-11-17). Notes sit a touch crooked; the last quest of a
+   campaign chapter, and the Hydra quest, are Wanted posters. */
+.quest-board {
+  background: repeating-linear-gradient(90deg, #3a2716 0 62px, #2c1d10 62px 64px, #432d19 64px 128px, #2c1d10 128px 130px), #3a2716;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.7);
+}
+.note {
+  position: relative; color: #3a2a18;
+  background: radial-gradient(ellipse at 30% 20%, #f3e4bd, #e2cb95 70%, #cdb078);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 2px rgba(120, 84, 40, 0.35), inset 0 0 18px rgba(120, 84, 40, 0.35);
+}
+.note-pin {
+  position: absolute; top: -6px; left: 50%; margin-left: -7px; width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d5d8e0, #6b6f7c 60%, #2a2c33); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+.note-wanted {
+  background: radial-gradient(ellipse at 30% 20%, #f6e8c4, #e8cf92 70%, #c9a35e);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 3px #a8763c, inset 0 0 22px rgba(120, 84, 40, 0.4);
+}
+.note-wanted .note-pin { background: radial-gradient(circle at 35% 35%, #ff9a7a, #a8321e 60%, #4a1208); }
+.note-label { font-family: var(--font-pixel), monospace; font-size: 10px; letter-spacing: 0.06em; color: #7a5a30; text-transform: uppercase; }
+.note-stamp {
+  position: absolute; right: 54px; top: 14px; transform: rotate(-12deg); padding: 3px 9px; pointer-events: none;
+  font-family: var(--font-pixel), monospace; font-size: 12px; color: #2f7a3a; box-shadow: inset 0 0 0 2px #2f7a3a; opacity: 0.9;
+}
+.note-pip { width: 14px; height: 14px; flex: none; box-shadow: inset 0 0 0 2px #7a5a30; }
+.note-pip[data-on="true"] { background: #7a5a30; }
+/* The ➜ on a note: a parchment button. */
+.note-go {
+  min-width: 44px; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  font-size: 18px; color: #5a3f1c; background: linear-gradient(180deg, #e2cb95, #c9a96a); border: 2px solid #a8865a;
+  box-shadow: inset 0 2px 0 #f3e4bd, 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
 /* ── The game screen (components/GameScreen.tsx) ─────────────────
    One fixed screen, always the same size: it fills a phone; on anything
    wider (a laptop) it's a borderless portrait screen the full height of the

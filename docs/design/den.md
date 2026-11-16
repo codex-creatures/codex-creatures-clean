@@ -217,7 +217,7 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   rarity, gear Klutz brings home by rarity, each visitor seen at the tavern, and a boss beaten on a
   run with no potion drunk (`drank`: the run, `meta.runs`, a potion was last drunk on). Scans
   and cards take the larger of the save's count and the tally.
-- **The screen:** the quest board opens on the campaign (the user, 2026-11-17). The chapter's name and how many are claimed, then a row per quest (fixed: the task
+- **The screen:** the quest board opens on the campaign (the user, 2026-11-17), each quest a parchment note pinned to a wooden board, the chapter's last a Wanted poster. The chapter's name and how many are claimed, then a row per quest (fixed: the task
   on one line, the reward and progress on the next) with one 44px button: 🎁 Claim on the next
   reward when it's done, ➜ to the screen where an unfinished quest is done. A ❗ on the board in the
   Den while the next reward is ready. Claiming opens crates and gear in the Code Cache window.

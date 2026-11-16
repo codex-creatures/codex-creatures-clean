@@ -62,11 +62,11 @@ type Props = {
 };
 
 export default function TileGrid({ items, favoriteIds, badge, gear, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, grab }: Props) {
-  const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : `repeat(auto-fill, minmax(${large ? 132 : 84}px, 1fr))`;
+  const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : `repeat(auto-fill, minmax(${large ? 96 : 84}px, 1fr))`; // (creature cards: three a row on a phone)
   return (
     <div>
       {groupBy === "none" && (
-        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? 16 : cols ? 8 : 10, marginTop: 14 }}>
+        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? 8 : cols ? 8 : 10, marginTop: 14 }}>
           {items.map((d) => large && d.dropType !== "item" ? (
             <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
           ) : (
@@ -137,26 +137,38 @@ function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
   );
 }
 
-// A creature in your collection: "Lv 3 Rust Beetle" on top, the creature
-// itself below (just the sprite, no frame), then its attack style and race.
+// A creature in your collection, as a card lit by its rarity (the UI overhaul, 2026-11-17):
+// a tint and trim in the rarity's colour, its level top left and its race and class marks
+// top right, the creature on a glow, then its name in a sunken box (always two lines tall,
+// so every card is the same size) and its attack style and race.
 function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
   return (
     <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
-      style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "4px 2px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-      <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 14, color: col.text, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.15 }}>
-        <span style={{ color: "#f1d9a0" }}>Lv {d.level ?? 1}</span> {d.name}
+      style={{
+        position: "relative", border: "none", padding: "8px 6px 6px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+        background: `linear-gradient(180deg, color-mix(in srgb, ${col.text} 16%, #15161c) 0%, #15161c 60%)`,
+        boxShadow: `inset 0 0 0 2px ${col.text}, inset 0 0 0 4px #07070a, inset 0 3px 0 4px ${col.text}40, inset 0 -24px 30px rgba(0,0,0,0.55), 0 3px 0 rgba(0,0,0,0.5)`,
+      }}>
+      <span className="pixel-font" style={{ position: "absolute", top: 7, left: 7, zIndex: 1, fontSize: 11, lineHeight: 1, padding: "2px 5px", color: "#f1d9a0", background: "#07070a" }}>Lv {d.level ?? 1}</span>
+      {tpl && <span style={{ position: "absolute", top: 5, right: 5, zIndex: 1 }}><CreatureMarks race={tpl.race} races={tpl.races} size={10} /></span>}
+      <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }}
+        frame={{ marginTop: 14, background: `radial-gradient(ellipse at 50% 85%, ${rarityGlow(d.rarity)}, transparent 62%)` }} />
+      <span className="pixel-font" style={{
+        width: "100%", boxSizing: "border-box", padding: "3px 4px", height: "calc(2.3em + 6px)", display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 12, lineHeight: 1.15, textAlign: "center", color: col.text, background: "rgba(0,0,0,0.5)", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.75), inset -1px -1px 0 rgba(255,255,255,0.06)",
+      }}>
+        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{d.name}</span>
       </span>
-      <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }} />
       {tpl && (
-        <span className="pixel-font" style={{ fontSize: 12, textAlign: "center" }}>
+        <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 10, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
           {tpl.race && <span style={{ color: "#f1d9a0" }}> · {raceNames(tpl)}</span>}
         </span>
       )}
-      {fav && <span style={{ position: "absolute", top: 26, left: 4, fontSize: 15, color: "#f5c542" }}>★</span>}
-      {(gear || badge) && <span style={{ position: "absolute", top: 26, right: 4, fontSize: 13 }}>{gear}{badge}</span>}
+      {fav && <span style={{ position: "absolute", top: 24, left: 7, fontSize: 14, color: "#f5c542" }}>★</span>}
+      {(gear || badge) && <span style={{ position: "absolute", top: 30, right: 6, fontSize: 12 }}>{gear}{badge}</span>}
     </button>
   );
 }

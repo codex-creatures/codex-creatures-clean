@@ -143,7 +143,8 @@ export default function QuestBoardPage() {
           ))}
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", borderRadius: 8, background: "rgba(0,0,0,0.25)", padding: "4px 8px" }}>
+        {/* The campaign and today's quests: notes pinned to a wooden board. The leaderboards: a plain list. */}
+        <div className={quests ? "quest-board" : undefined} style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: quests ? 2 : 8, background: quests ? undefined : "rgba(0,0,0,0.25)", padding: quests ? "10px 12px" : "4px 8px" }}>
           {tab === "campaign" ? (
             <CampaignList />
           ) : quests ? (
@@ -225,38 +226,46 @@ function QuestList() {
     : hydra === "claim" ? "You beat the Hydra! Claim the Training Pit Schematic."
     : `Claimed: the Training Pit Schematic.${game.tavern.pit ? "" : " Build it at the Sparring Pit, in the tavern's room."}`;
   return (
-    <div style={{ display: "grid", gap: 8, padding: "8px 0" }}>
+    <div style={{ display: "grid", gap: 18, padding: "10px 0" }}>
       {quests.map((q, i) => {
         const done = daily.claimed[i];
         const ready = canClaim(daily, i);
         const text = `${q.task}. Reward: ${q.pays}.`;
-        const note = done ? "Claimed: new quests at midnight" : waits(q) ? "Repair the tavern to claim"
-          : full === i ? (q.reward === "cache" ? "The altar's full" : "No room for it") : `${Math.min(daily.progress[i], q.goal)}/${q.goal}`;
+        const note = done ? "New quests at midnight" : waits(q) ? "Repair the tavern to claim"
+          : full === i ? (q.reward === "cache" ? "The altar's full" : "No room for it") : ready ? "Ready to claim" : "";
         return (
-          <div key={i} className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: done ? 0.7 : 1 }}>
-            <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {done ? "✓" : ready ? "❗" : i === 0 ? "☀️" : "🌙"} {i === 0 ? "Today" : "Also today"}: {q.name}
+          <div key={i} className="note" style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gap: 4, padding: "14px 12px 10px", opacity: done ? 0.75 : 1 }}>
+            <span className="note-pin" />
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+              <span className="note-label">{i === 0 ? "☀️ Today" : "🌙 Also today"}</span>
+              <span className="note-label">{Math.min(daily.progress[i], q.goal).toLocaleString()}/{q.goal.toLocaleString()}</span>
             </div>
+            <div className="pixel-font" style={{ fontSize: 18, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{q.name}</div>
             <div title={text} style={CLAMP2}>{text}</div>
             <div style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 10 }}>
               <button className="pixel-btn" onClick={() => claim(i)} disabled={!ready || waits(q)}
                 style={{ visibility: done ? "hidden" : "visible" }}>🎁 Claim</button>
-              <span className="pixel-font" style={{ fontSize: 13, color: done ? "#5ee08a" : full === i || waits(q) ? "#ff8a80" : MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{note}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: ready && full !== i && !waits(q) ? "#2f7a3a" : full === i || waits(q) ? "#a8321e" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{note}</span>
             </div>
+            {done && <span className="note-stamp" style={{ right: 14 }}>CLAIMED</span>}
           </div>
         );
       })}
 
       {hydra !== "closed" && (
-        <div className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: hydra === "paid" ? 0.7 : 1 }}>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {hydra === "paid" ? "✓" : hydra === "claim" ? "❗" : "🐉"} Slay the Hydra
+        <div className="note note-wanted" style={{ transform: `rotate(${TILT[2]}deg)`, display: "grid", gridTemplateColumns: "auto 1fr", alignItems: "center", gap: 10, padding: "14px 12px 10px", opacity: hydra === "paid" ? 0.75 : 1 }}>
+          <span className="note-pin" />
+          <WantedPicture chapter={2} />
+          <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+            <span className="note-label">Wanted</span>
+            <div className="pixel-font" style={{ fontSize: 18, fontWeight: 700 }}>Slay the Hydra</div>
+            <div title={hydraSay} style={CLAMP2}>{hydraSay}</div>
+            <div style={{ minHeight: 44, display: "flex", alignItems: "center" }}>
+              {hydra === "claim" ? <button className="pixel-btn" onClick={game.claimHydraPlans}>📐 Claim the schematic</button>
+                : <span style={{ fontSize: 13, fontWeight: 600, color: hydra === "paid" ? "#2f7a3a" : "#7a5a30" }}>{hydra === "paid" ? "Done" : "Not beaten yet"}</span>}
+            </div>
           </div>
-          <div title={hydraSay} style={CLAMP2}>{hydraSay}</div>
-          <div style={{ minHeight: 44, display: "flex", alignItems: "center" }}>
-            {hydra === "claim" ? <button className="pixel-btn" onClick={game.claimHydraPlans}>📐 Claim the schematic</button>
-              : <span className="pixel-font" style={{ fontSize: 13, color: hydra === "paid" ? "#5ee08a" : MUTED }}>{hydra === "paid" ? "Done" : "Hydra: not beaten yet"}</span>}
-          </div>
+          {hydra === "paid" && <span className="note-stamp" style={{ right: 14 }}>CLAIMED</span>}
         </div>
       )}
 
@@ -302,30 +311,39 @@ function CampaignList() {
     reread((n) => n + 1);
   }
   return (
-    <div style={{ display: "grid", gap: 6, padding: "8px 0" }}>
-      <div className="pixel-font" style={{ fontSize: 14, color: GOLD, display: "flex", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Chapter {ch + 1}: {chapter.name}</span>
-        <span style={{ color: MUTED }}>{Math.min(chapter.quests.length, Math.max(0, claimed - first))}/{chapter.quests.length}</span>
+    <div style={{ display: "grid", gap: 18, padding: "4px 0 10px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span className="pixel-font title-bar" style={{ fontSize: 14, color: GOLD, padding: "4px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Chapter {ch + 1} · {chapter.name}</span>
+        <span className="pixel-font" style={{ fontSize: 12, color: "#e9d6a8", whiteSpace: "nowrap" }}>{Math.min(chapter.quests.length, Math.max(0, claimed - first))}/{chapter.quests.length} done</span>
       </div>
       {chapter.quests.map((q, i) => {
         // (The next to claim by its place in the whole list: CAMPAIGN holds copies of the chapters' quests, so
         // comparing the quests themselves never matched, and no reward could be claimed.)
         const at = first + i, got = at < claimed, done = questDone(q, ctx), isNext = at === claimed;
-        const icon = got ? "✓" : isNext && done ? "❗" : done ? "☑️" : "▫️";
-        const status = got ? "Claimed" : done ? (isNext ? (full ? "No room for it" : "Ready to claim") : "Done: claim the ones above first")
-          : `${Math.min(q.progress(ctx), q.goal).toLocaleString()}/${q.goal.toLocaleString()}`;
+        const wanted = i === chapter.quests.length - 1; // (the chapter's boss: a Wanted poster)
+        const prog = Math.min(q.progress(ctx), q.goal);
+        const status = got ? "" : done ? (isNext ? (full ? "No room for it" : "Ready to claim") : "Claim the ones above first") : "";
         return (
-          <div key={q.id} className="stone-panel" style={{ display: "grid", gridTemplateColumns: "1fr 44px", alignItems: "center", gap: 8, padding: "6px 10px", opacity: got ? 0.6 : 1 }}>
+          <div key={q.id} className={`note${wanted ? " note-wanted" : ""}`} style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: wanted ? "auto 1fr 44px" : "1fr 44px", alignItems: "center", gap: 10, padding: "14px 10px 10px 12px", opacity: got ? 0.75 : 1 }}>
+            <span className="note-pin" />
+            {wanted && <WantedPicture chapter={ch} />}
             <div style={{ minWidth: 0 }}>
-              <div title={q.task} style={{ fontSize: 13, color: "#d8d4c8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{icon} {q.task}</div>
-              <div title={rewardText(q.reward)} style={{ fontSize: 12, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                🎁 {rewardText(q.reward)} · <span style={{ color: got || (isNext && done && !full) ? "#5ee08a" : isNext && full ? "#ff8a80" : MUTED }}>{status}</span>
+              <div className="note-label">{wanted ? "Wanted · final task" : `Quest ${i + 1}`}</div>
+              <div title={q.task} style={NOTE_TASK}>{q.task}</div>
+              {/* How far along: a box per step for a short goal, else the count; then where it stands. */}
+              <div style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 18, marginTop: 4 }}>
+                {q.goal > 1 && q.goal <= 6
+                  ? Array.from({ length: q.goal }, (_, k) => <span key={k} className="note-pip" data-on={k < prog} />)
+                  : <span className="note-label" style={{ fontSize: 11 }}>{prog.toLocaleString()}/{q.goal.toLocaleString()}</span>}
+                <span style={{ marginLeft: 6, fontSize: 12, fontWeight: 600, color: isNext && done && !full ? "#2f7a3a" : isNext && full ? "#a8321e" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{status}</span>
               </div>
+              <div title={rewardText(q.reward)} style={{ fontSize: 12, color: "#6e5232", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🎁 {rewardText(q.reward)}</div>
             </div>
             {isNext && done
               ? <button className="pixel-btn" onClick={claim} aria-label="Claim" title="Claim" style={{ minWidth: 44, minHeight: 44, padding: 0 }}>🎁</button>
-              : <button className="chip" onClick={() => q.go && router.push(q.go)} aria-label="Go there" title="Go there"
-                  style={{ minWidth: 44, minHeight: 44, padding: 0, justifyContent: "center", visibility: !got && !done && q.go ? "visible" : "hidden" }}>➜</button>}
+              : <button className="note-go" onClick={() => q.go && router.push(q.go)} aria-label="Go there" title="Go there"
+                  style={{ visibility: !got && !done && q.go ? "visible" : "hidden" }}>➜</button>}
+            {got && <span className="note-stamp">CLAIMED</span>}
           </div>
         );
       })}
@@ -336,5 +354,22 @@ function CampaignList() {
 }
 
 const TAB: React.CSSProperties = { minHeight: 44, justifyContent: "center", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-// Two lines whatever the words, so every card is the same height.
-const CLAMP2: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, height: "2.7em", fontSize: 13, color: "#d8d4c8" };
+// Two lines whatever the words, so every note is the same height.
+const CLAMP2: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, height: "2.7em", fontSize: 13, color: "#3a2a18" };
+// A campaign quest's task, in ink: two lines at most, the space for two always kept.
+const NOTE_TASK: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.2, height: "2.4em", fontSize: 15, fontWeight: 700, marginTop: 2 };
+// How crooked each note hangs, in turn (degrees).
+const TILT = [-1, 1.1, -0.5, 0.7];
+
+// A Wanted poster's picture: the chapter's boss in sepia (the Cyclops, the Hydra), else a
+// shadow of whoever it'll be (the camp's chief and the Warden are different every time).
+function WantedPicture({ chapter }: { chapter: number }) {
+  const art = chapter === 1 ? "/sprites/creatures/cyclops.png" : chapter === 2 ? "/sprites/creatures/hydra/hydra-000.png" : "/sprites/creatures/dire_wolf.png";
+  const shadow = chapter !== 1 && chapter !== 2;
+  return (
+    <div style={{ width: 76, height: 64, display: "flex", alignItems: "flex-end", justifyContent: "center", overflow: "hidden", boxShadow: "inset 0 0 0 2px rgba(122,90,48,0.5)", background: "radial-gradient(ellipse at 50% 80%, rgba(122,90,48,0.25), transparent 70%)" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={art} alt="" draggable={false} style={{ maxWidth: 72, maxHeight: 60, imageRendering: "pixelated", filter: shadow ? "brightness(0) opacity(0.55)" : "sepia(0.6) contrast(1.1)" }} />
+    </div>
+  );
+}
