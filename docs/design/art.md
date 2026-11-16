@@ -121,3 +121,13 @@ boxes are 3D models in this game, not flat pictures): the chest's two boxes with
 (front, ends, lid, from chest3d's at the same sizes) and a look-down picture of each kind's contents
 inside (`crate3d/inside-<kind>.png`), in `/lab/art`'s 3D panel and `/lab/chest`. Still to review: the
 Cyclops Head, the fireplace, the Enchantress, soaked and charged.
+
+**The user's third review (2026-11-16):** ✅ Underkin (golem eyes) and Soaked are in the game; the
+Materials and Supplies crates (3D) are approved, to go in with the campaign's rewards window. **Codex
+rewards come as a bookcase, not a crate** (the reward reads "Codex Bookcase"; the game's 3D bookcase is
+its model). **The gear reward is a barrel** with weapons sticking out ("Gear Barrel"): a 3D draft, a
+bulging lathe of staves with a straw top and the weapons as an upright picture (`barrel3d/`, in
+`/lab/art`'s 3D panel). **The Enchantress** is approved if smaller and walking: redrawn at 64 × 80 (from
+80 × 96) and given an 8-frame walk like the other visitors' (PixMiniMax), both in `/lab/art`. Dropped by
+the user: the fireplace, the Cyclops Head (the head stays the Cyclops sprite on its plaque) and the
+charged mark's draft (charged is a charge move winding up, e.g. Mega Smash; it keeps 💢 for now).

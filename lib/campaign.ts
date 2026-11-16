@@ -150,7 +150,8 @@ export type CampaignReward =
   | { enchanted: "weapon" | "armour"; rarity: Rarity }
   | { bookcasePlans: true };
 
-export const CRATE_NAMES: Record<CrateKind, string> = { materials: "Materials Crate", gear: "Gear Crate", supplies: "Supplies Crate", codex: "Codex Crate" };
+// (The codex reward is a bookcase, not a crate: the user, 2026-11-16. The gear one's a barrel, to be drawn.)
+export const CRATE_NAMES: Record<CrateKind, string> = { materials: "Materials Crate", gear: "Gear Barrel", supplies: "Supplies Crate", codex: "Codex Bookcase" };
 const RARITY_WORD: Record<Rarity, string> = { common: "Common", uncommon: "Uncommon", rare: "Rare", epic: "Epic", legendary: "Legendary" };
 const band = (lo: Rarity, hi: Rarity) => (lo === hi ? RARITY_WORD[lo] : `${RARITY_WORD[lo]}–${RARITY_WORD[hi]}`);
 export function rewardText(r: CampaignReward): string {

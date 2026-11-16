@@ -125,7 +125,7 @@ export const RACE_INFO: Record<Race, { name: string; color: string; icon: string
   undead:   { name: "Undead",   color: "#c9c5b8", icon: "💀", art: "race_undead" },   // bone grey
   divine:   { name: "Divine",   color: "#f3dc8a", icon: "✨", art: "race_divine" },   // light gold
   beast:    { name: "Beast",    color: "#6fdc6f", icon: "🐾", art: "race_beast" },    // green
-  underkin: { name: "Underkin", color: "#c08a55", icon: "🪨" },                       // brown
+  underkin: { name: "Underkin", color: "#c08a55", icon: "🪨", art: "race_underkin" }, // brown
   geo:      { name: "Geo",      color: "#ff6b5c", icon: "🔥", art: "race_geo" },      // red
   humanoid: { name: "Humanoid", color: "#6fb0ff", icon: "🛡️", art: "race_humanoid" }, // blue
   toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠", art: "race_toxic" },    // purple

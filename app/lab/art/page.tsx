@@ -17,24 +17,20 @@ import type { ChestView, Thing3D } from "../chest/ChestScene";
 // on this page only.
 const ChestScene = dynamic(() => import("../chest/ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 const PROPS_3D: { thing: Thing3D; label: string }[] = [
-  { thing: "crate-materials", label: "Materials Crate" }, { thing: "crate-gear", label: "Gear Crate" },
-  { thing: "crate-codex", label: "Codex Crate" }, { thing: "crate-supplies", label: "Supplies Crate" },
+  { thing: "barrel", label: "Gear Barrel (new)" }, { thing: "bookcase", label: "Codex reward: bookcase" },
+  { thing: "crate-materials", label: "Materials Crate ✓" }, { thing: "crate-supplies", label: "Supplies Crate ✓" },
   { thing: "golden", label: "Golden chest ✓" }, { thing: "standingtorch", label: "Standing torch ✓" }, { thing: "dynamite", label: "Dynamite ✓" },
 ];
 
 const DRAFTS = "/sprites/walk/samples/drafts";
 type Exhibit = { file: string; name: string; now: string; nowArt?: string; where: string; px?: number };
 
-// Still to review (2026-11-16): round 2's Cyclops Head, fireplace, Enchantress, soaked and charged, and round 3's
-// Underkin. (The crates are 3D drafts now, in the 3D panel above.)
+// Still to review (2026-11-16): the Enchantress, smaller, with her walk (shown playing under the gallery).
+// (The crates and the gear barrel are 3D drafts, in the 3D panel above; the fireplace, the Cyclops Head and
+// charged were dropped by the user.)
 // Each with what it replaces (an emoji, or the picture standing in) and where.
 const EXHIBITS: Exhibit[] = [
-  { file: "cyclops-head-3", name: "Cyclops Head", now: "", nowArt: "/sprites/creatures/cyclops.png", where: "Over the tavern door, flat on its sloping wall" },
-  { file: "den-fireplace-2", name: "Den fireplace (not built)", now: "(none)", where: "The Den: on a wall sloping like the tavern's front", px: 96 },
-  { file: "enchantress-2", name: "The Enchantress", now: "", nowArt: "/sprites/npcs/collector.png", where: "The tavern (now the collector, tinted violet)", px: 92 },
-  { file: "race-underkin-3", name: "Underkin", now: "🪨", where: "Race icons (round 3: gloomy golem eyes)", px: 32 },
-  { file: "status-soak-2", name: "Soaked", now: "🫧", where: "Status marks", px: 32 },
-  { file: "status-charged-2", name: "Charged", now: "💢", where: "Status marks", px: 32 },
+  { file: "enchantress-3", name: "The Enchantress (smaller)", now: "", nowArt: "/sprites/npcs/collector.png", where: "The tavern: smaller, with her walk below", px: 80 },
 ];
 // Approved in round 1, and now in the game.
 const APPROVED: { file: string; name: string }[] = [
@@ -44,7 +40,7 @@ const APPROVED: { file: string; name: string }[] = [
   ["race-toxic", "Toxic"], ["status-corpse", "Corpsify"], ["status-mirage", "Mirage"], ["status-bleed", "Bleed"], ["status-boost", "Boost"],
   ["status-flame", "Burning"], ["status-ward", "Ward"], ["status-weaken", "Weakened"], ["status-seal", "Sealed"], ["status-haste", "Haste"],
   ["ui-items", "Items discovered"], ["ui-campaign", "Campaign"], ["ui-quests", "Quests"], ["ui-leaderboards", "Leaderboards"],
-  ["golden-chest3d/front", "Golden chest (3D)"], ["stone", "Stone"], ["locator-merchant-map-2", "Merchant's Map"], ["ui-settings-2", "Settings"], ["ui-creatures-2", "Creatures discovered"],
+  ["golden-chest3d/front", "Golden chest (3D)"], ["stone", "Stone"], ["locator-merchant-map-2", "Merchant's Map"], ["ui-settings-2", "Settings"], ["ui-creatures-2", "Creatures discovered"], ["race-underkin-3", "Underkin"], ["status-soak-2", "Soaked"],
 ].map(([file, name]) => ({ file, name }));
 
 // The room, in art pixels (kit F's tiles are 48 × 36), drawn SCALE× on screen.
@@ -72,7 +68,7 @@ export default function ArtLab() {
   const [near, setNear] = useState<number | null>(null);
   const [lit, setLit] = useState(false);
   const [view3d, setView3d] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true,
-    thing: "crate-materials", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
+    thing: "barrel", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
   const set3d = (v: Partial<ChestView>) => setView3d((x) => ({ ...x, ...v }));
   const litRef = useRef(lit);
   useEffect(() => { litRef.current = lit; }, [lit]);
@@ -241,6 +237,9 @@ export default function ArtLab() {
         ))}
       </div>
 
+      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>The Enchantress walking (as the tavern plays a visitor&apos;s walk)</h2>
+      <WalkStrip src={`${DRAFTS}/enchantress-3-walk.png`} frames={8} />
+
       <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>✓ Approved, in the game now ({APPROVED.length})</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 6, maxWidth: 980 }}>
         {APPROVED.map((e) => (
@@ -262,4 +261,15 @@ function Thumb({ ex, now = false }: { ex: Exhibit | null; now?: boolean }) {
   if (now && !ex.nowArt) return <div style={{ ...box, fontSize: ex.now.length > 3 ? 11 : 30, color: "#aaa" }}>{ex.now}</div>;
   // eslint-disable-next-line @next/next/no-img-element
   return <div style={box}><img src={now ? ex.nowArt : `${DRAFTS}/${ex.file}.png`} alt="" style={{ maxWidth: 60, maxHeight: 60, imageRendering: "pixelated", filter: now && ex.file === "enchantress" ? "hue-rotate(60deg) saturate(1.4)" : undefined }} /></div>;
+}
+
+// A walk strip playing (its frames side by side), 9 frames a second as the tavern's visitors walk.
+function WalkStrip({ src, frames }: { src: string; frames: number }) {
+  const [f, setF] = useState(0);
+  useEffect(() => { const t = window.setInterval(() => setF((n) => (n + 1) % frames), 1000 / 9); return () => window.clearInterval(t); }, [frames]);
+  return (
+    <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
+      <div style={{ width: 192, height: 192, background: `#3a362e url(${src}) no-repeat`, backgroundSize: `${frames * 100}% 100%`, backgroundPosition: `${(f / (frames - 1)) * 100}% 0`, imageRendering: "pixelated", borderRadius: 8 }} />
+    </div>
+  );
 }

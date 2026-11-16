@@ -48,8 +48,7 @@ const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall
   dynamite: { shut: "/sprites/den/crate.png", open: "/sprites/den/crate.png", w: SACK_U, tall: 1 },
   // (The crates' flat drafts from round 2, beside their 3D ones.)
   "crate-materials": { shut: "/sprites/walk/samples/drafts/crate-materials-2.png", open: "/sprites/walk/samples/drafts/crate-materials-2.png", w: OLD_W, tall: 1 },
-  "crate-gear": { shut: "/sprites/walk/samples/drafts/crate-gear-2.png", open: "/sprites/walk/samples/drafts/crate-gear-2.png", w: OLD_W, tall: 1 },
-  "crate-codex": { shut: "/sprites/walk/samples/drafts/crate-codex-2.png", open: "/sprites/walk/samples/drafts/crate-codex-2.png", w: OLD_W, tall: 1 },
+  barrel: { shut: "/sprites/walk/samples/drafts/crate-gear-2.png", open: "/sprites/walk/samples/drafts/crate-gear-2.png", w: OLD_W, tall: 1 },
   "crate-supplies": { shut: "/sprites/walk/samples/drafts/crate-supplies-2.png", open: "/sprites/walk/samples/drafts/crate-supplies-2.png", w: OLD_W, tall: 1 },
   floortorch: { shut: KIT_LIGHTS.candles, open: KIT_LIGHTS.candles, w: (KIT_LIGHTS.candleSize[0] * 0.85) / 48, tall: KIT_LIGHTS.candleSize[1] / KIT_LIGHTS.candleSize[0] },
 };
@@ -60,11 +59,14 @@ export type ChestView = { open: boolean; across: number; width: number; moving: 
   at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean; splash: number };
 // table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
 // the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
-export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "golden" | "standingtorch" | "dynamite" | CrateThing | DraftKind;
+export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "golden" | "standingtorch" | "dynamite" | "barrel" | CrateThing | DraftKind;
+// barrel: the gear reward as a 3D barrel (2026-11-16, the user: "a barrel with items hanging out"): a bulging
+// lathe of staves (barrel3d/side.png wrapped round), its open top packed with straw, and the weapons
+// sticking up out of it as an upright picture, the way the game stands its pictures up.
 // The campaign's crates as 3D drafts (2026-11-16): the chest's two boxes with a plain crate's faces
 // (public/sprites/walk/samples/drafts/crate3d/, made from chest3d's at the same sizes), each kind's contents
 // in it, seen when it's open.
-export type CrateThing = "crate-materials" | "crate-gear" | "crate-codex" | "crate-supplies";
+export type CrateThing = "crate-materials" | "crate-supplies";
 const CRATE = "/sprites/walk/samples/drafts/crate3d";
 const crateFaces = (t: CrateThing): ChestFaces => ({
   front: { src: `${CRATE}/front.png`, w: 60, h: 19, lid: 6 }, side: { src: `${CRATE}/side.png`, w: 38, h: 19 },
@@ -271,6 +273,8 @@ function Scene({ view }: { view: ChestView }) {
             </>)
           : view.thing === "standingtorch" || view.thing === "dynamite"
             ? <Upright3D thing={view.thing} lit={view.lit} />
+          : view.thing === "barrel"
+            ? <Barrel3D />
           : isCrate(view.thing)
             ? <Chest faces={crateFaces(view.thing)} open={view.open} outline={view.outline} edges={view.edges} />
           : view.thing === "golden"
@@ -314,6 +318,32 @@ function Upright3D({ thing, lit }: { thing: "standingtorch" | "dynamite"; lit: b
         </mesh>
         <pointLight position={[0, h + 0.2, 0.3]} color="#ffbe5a" intensity={3} distance={0} decay={1.6} />
       </>)}
+    </>
+  );
+}
+
+// The gear barrel: BARREL_H tall, BARREL_R round at the middle (a little less at the ends), the staves
+// wrapped once round it, its straw top flat on it, and the weapons standing up out of it.
+const BARREL = "/sprites/walk/samples/drafts/barrel3d";
+const BARREL_H = 0.9, BARREL_R = 0.36, BARREL_ENDS = 0.86; // (the ends' radius, as a share of the middle's)
+function Barrel3D() {
+  const stretch = uprightStretch(PITCH);
+  const geo = useMemo(() => {
+    const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * BARREL_H; return new THREE.Vector2(BARREL_R * (BARREL_ENDS + (1 - BARREL_ENDS) * Math.sin((Math.PI * y) / BARREL_H)), y); });
+    return new THREE.LatheGeometry(pts, 24);
+  }, []);
+  const mats = useMemo(() => ({
+    side: leaned(new THREE.MeshLambertMaterial({ map: loaded(`${BARREL}/side.png`) })),
+    top: leaned(new THREE.MeshLambertMaterial({ map: loaded(`${BARREL}/top.png`), transparent: true, alphaTest: 0.5 })),
+    items: new THREE.MeshLambertMaterial({ map: loaded(`${BARREL}/items.png`), transparent: true, alphaTest: 0.5 }),
+  }), []);
+  const top = BARREL_R * BARREL_ENDS, itemsW = 0.75, itemsH = itemsW * stretch;
+  return (
+    <>
+      <mesh geometry={geo} material={mats.side} />
+      <mesh position={[0, BARREL_H + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.top}><circleGeometry args={[top * 1.02, 24]} /></mesh>
+      {/* The weapons: their bottom a little way down into the barrel, standing up facing you. */}
+      <mesh position={[0, BARREL_H - 0.12 + itemsH / 2, 0.02]} scale={[itemsW, itemsH, 1]} material={mats.items}><planeGeometry /></mesh>
     </>
   );
 }

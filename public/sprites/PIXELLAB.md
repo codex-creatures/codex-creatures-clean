@@ -354,3 +354,17 @@ The crate as a 3D draft (walk/samples/drafts/crate3d/): Pro Flash edit (text) of
 | crate3d-inside-supplies-pad | 69ca883c-0d8a-4827-92e9-ff3f857e3b57 |
 | race-underkin-3 | 3e36142d-5c56-42eb-a782-0426158797b7 |
 | crate3d-side-pad | 05dd23ba-014d-43af-9c91-3c66a0c5f672 |
+
+## Round 4 (2026-11-16)
+
+| File (walk/samples/drafts/) | Job |
+|---|---|
+| enchantress-small | 082be149-e542-4110-a3ae-e5ebd40915fe |
+| barrel-side | 72ade5a4-bd44-47da-913a-78600c562aff |
+| barrel-top | 36963145-79f1-403a-a9b7-2201c1519be8 |
+| barrel-items | 7268a1a3-241a-4c27-87ef-5b1e650246eb |
+| enchantress-3.png | the smaller Enchantress: enchantress-2 scaled to 60×76 (nearest) on a 64×80 canvas, cleaned up by Pro Flash edit (job 082be149-e542-4110-a3ae-e5ebd40915fe) |
+| enchantress-3-walk.png | job f9b7ac16-b9ba-4d06-b47e-941a63d329a1 (animate_image_pixminimax, 8 frames on a 96×96 canvas, the still at 16, 14) |
+| barrel3d/side.png, top.png, items.png | jobs 72ade5a4-bd44-47da-913a-78600c562aff, 36963145-79f1-403a-a9b7-2201c1519be8, 7268a1a3-241a-4c27-87ef-5b1e650246eb |
+
+In the game since: icons/race_underkin.png (race-underkin-3), icons/status_soak.png (status-soak-2).
