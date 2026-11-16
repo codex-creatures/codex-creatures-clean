@@ -43,8 +43,9 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
-import { prop3dOf, bookcaseBroken, CANDLE_AT } from "@/lib/render3d/props3d";
-import { Prop3D, Campfire, HealingGem, PROP_LEAN, type Tint } from "@/components/Props3D";
+import { prop3dOf, bookcaseBroken, CANDLE_AT, DECOR_3D, DYNAMITE_GLOW } from "@/lib/render3d/props3d";
+import { Prop3D, Campfire, HealingGem, Glow, PROP_LEAN, type Tint } from "@/components/Props3D";
+import { Decor3D } from "@/components/Decor3D";
 import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt, ratBolt, ratHidesFrom, RAT_FLEE } from "@/lib/render3d/puddle";
 import { tileVariants, TILE_ART } from "@/lib/render3d/tiles";
 import { seeded } from "@/lib/world/walkWorld";
@@ -409,6 +410,15 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     // A chest, a stash's sack, a bookcase or a table: built in 3D, standing on its footprint (Props3D): where
     // the thing stands is already its footprint's middle (placements.ts spotOf). A cards room's table has
     // the deck on it till it's turned over, glowing the colour of its rarest card while it's in your sight.
+    // The dungeon's props built in 3D (Decor3D): barrels, corner crates (open once searched), pots, the
+    // dynamite (glowing till it's taken), a library's lectern.
+    const decor = DECOR_3D[t.def];
+    if (decor) {
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Decor3D kind={decor} stretch={stretch} colour={shade && (() => shade(t.x, t.y))} open={!!t.box && t.open} /></group>);
+      if (decor === "dynamite") out.push(<group key={`glow:${t.key}`} position={[t.x, 0, t.y]}><Glow colour={DYNAMITE_GLOW.colour} radius={DYNAMITE_GLOW.radius} strength={DYNAMITE_GLOW.strength} /></group>);
+      if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
+      continue;
+    }
     const kind = prop3dOf(t.def);
     if (kind) {
       const deck = t.def === "card-deck" && !t.open, rarest = deck ? deckRarity(room(t.room)?.deck) : undefined;

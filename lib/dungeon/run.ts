@@ -406,6 +406,22 @@ export function cyclopsChest(rng: Rng = Math.random): SackItem[] {
   const gear = Math.min(randInt(...CYCLOPS_GEAR, rng), CYCLOPS_CHEST_MAX - chest.length);
   return [...chest, ...Array.from({ length: gear }, (): SackItem => ({ gear: rollGearPiece(rng) }))];
 }
+// (World version 17, the user, 2026-11-17) A crate in a room's corner, searched once: CORNER_FIND of the time it
+// holds one thing, a material bundle (Common, sometimes Uncommon) or a consumable (CORNER_CONSUMABLES: a
+// Lesser or Healing Potion, a torch, a clairvoyance scroll); the rest of the time it's empty. 🧪
+export const CORNER_FIND = 0.5;
+export const CORNER_MATERIAL = 0.5;          // …of the finds, a material bundle (else a consumable)
+export const CORNER_UNCOMMON = 0.25;         // …a bundle Uncommon this often
+export const CORNER_CONSUMABLES: [string, number][] = [["lesser", 40], ["potion", 15], ["flare", 30], ["clairvoyance", 15]];
+export function cornerCrateFind(rng: Rng = Math.random): SackItem[] {
+  if (rng() >= CORNER_FIND) return [];
+  if (rng() < CORNER_MATERIAL) return [{ gear: materialBundle(rng() < CORNER_UNCOMMON ? "uncommon" : "common", rng) }];
+  const total = CORNER_CONSUMABLES.reduce((n, [, w]) => n + w, 0);
+  let x = rng() * total, k = CORNER_CONSUMABLES[0][0];
+  for (const [key, w] of CORNER_CONSUMABLES) { if (x < w) { k = key; break; } x -= w; }
+  return [k === "lesser" || k === "potion" ? { potion: k as PotionKey } : { gear: toolDrop(k as ToolKey) }];
+}
+
 // backpack: the rugged backpack (in the Cyclops' chest, the first time you beat it).
 export type SackItem = { potion: PotionKey } | { gold: number } | { gear: Drop } | { backpack: true };
 
@@ -905,6 +921,7 @@ export type Room = {
   packOnFloor?: boolean;   // (world version 14) a storehouse: the rugged backpack lies on its floor, to pick up
   crates?: SackItem[][];   // (world version 16) a storehouse: what's in each of its crates and barrels (`crate:<room>:<n>`)
   searched?: number[];     // …the ones searched
+  boxesSearched?: string[]; // (world version 17) the crates in its corners searched (their ids, `decor:<room>:<g>:<k>`)
   deck?: string[];     // a deck of cards (a cards room's, or one on a table: world version 13): its DECK_CARDS creatures, rolled with the room so its glow shows the rarest (missing: rolled as you turn them over)
   done: boolean;
 };

@@ -95,6 +95,15 @@ export type Prop3DKind = "chest" | "stash" | "bookcase" | "table" | "crate";
 export const PROPS_3D: Record<string, Prop3DKind> = { "store-crates": "crate", chest: "chest", "rickety-chest": "chest", "loot-chest": "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase", table: "table", "card-deck": "table" };
 export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
 
+// The dungeon's props built in 3D by components/Decor3D.tsx (the user, 2026-11-17): a room's corner barrels,
+// crates and pots, a storehouse's barrels, Klutz's dynamite on a storehouse floor, a library's lectern.
+export const DECOR_3D: Record<string, "barrels" | "crates" | "pots" | "dynamite" | "lectern"> = {
+  barrels: "barrels", "store-barrels": "barrels", crates: "crates", pots: "pots", dynamite: "dynamite", lectern: "lectern",
+};
+// The dynamite glows on the floor round it till it's picked up (the user, 2026-11-17: "highlighted when first
+// found, to encourage them to loot"), as a deck's rarest card does.
+export const DYNAMITE_GLOW = { colour: "#ffb24a", radius: 0.7, strength: 0.55 };
+
 // The campaign's Gear Barrel (the user, 2026-11-16): BARREL.h tall, BARREL.r round at the middle (ends×
 // that at the top and bottom), its staves (side.png) wrapped once round it, its open top packed with straw,
 // and the weapons (items.png) standing up out of it, a little way in, as the game stands its pictures up.

@@ -42,7 +42,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
+import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, startQuestRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
@@ -1002,6 +1002,19 @@ export default function DungeonPage() {
     if (found.length) setLootOpen(true);
     else setNotes([NOTHING_HERE[Math.floor(Math.random() * NOTHING_HERE.length)]]);
   }
+  // (World version 17) Walked up to a crate in a room's corner: searched once; now and then one thing in it
+  // (cornerCrateFind) comes out to take, or a line says there's nothing.
+  function walkBox(id: string, key: string, st: WalkState) {
+    battle.clear();
+    updateRun((r) => walkTo(walkKeep(r, st), id));
+    const c = loadDungeon().run?.current;
+    if (!c || c.boxesSearched?.includes(key)) return;
+    const found = cornerCrateFind();
+    updateRun((r) => (r.current ? { ...r, current: { ...r.current, boxesSearched: [...(r.current.boxesSearched ?? []), key],
+      ...(found.length ? { sack: [...(r.current.sack ?? []), ...found], opened: true } : {}) } } : r));
+    if (found.length) setLootOpen(true);
+    else setNotes([NOTHING_HERE[Math.floor(Math.random() * NOTHING_HERE.length)]]);
+  }
   // (World version 14) Walked up to a storehouse's find on its floor: Klutz's dynamite, or the rugged backpack.
   function walkPickup(id: string, what: "dynamite" | "backpack", st: WalkState) {
     battle.clear();
@@ -1412,7 +1425,7 @@ export default function DungeonPage() {
         onTapClose={walkPanel ? () => setWalkPanel(false) : undefined}
         been={run.path} cleared={run.cleared.filter((id) => walkRoom(run, id)?.done)} lit={run.lit} seen={run.seen} scroll={walkScroll} onScrollClose={() => setWalkScroll(false)}
         team={run.team.flatMap((id) => { const c = byId(id); return c ? [{ id, name: c.name, rarity: c.rarity, creatureId: c.creatureId, maxHp: c.fighter.maxHp }] : []; })} hp={run.hp}
-        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onHeal={walkHeal} onKeep={walkSave} />
+        onEnter={walkEnter} onSpotted={walkSpotted} onObject={walkObject} onCage={walkCage} onDeck={walkDeck} onShelf={walkShelf} onPickup={walkPickup} onCrate={walkCrate} onBox={walkBox} onHeal={walkHeal} onKeep={walkSave} />
       {wonAtTop(run) && run.status === "exploring" && !walkPanel && (
         <button className="pixel-btn" onClick={walkHome} style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", minHeight: 44, zIndex: 3 }}>🏠 Head home</button>
       )}

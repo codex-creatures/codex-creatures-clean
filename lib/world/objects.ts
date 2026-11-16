@@ -78,6 +78,7 @@ export type Instance = {
   holds?: "candle";                          // a table (world version 12): what stands on it
   deck?: true;                               // a table (world version 13): a deck of cards lies on it (the room's `deck`)
   codex?: true;                              // a bookcase against a wall (world version 14): a codex is tucked in it
+  search?: true;                             // a crate in a room's corner (world version 17): searched once, sometimes holding a find
 };
 
 // How a foe starts out, as generation rolled it (lib/dungeon/foes.ts): it

@@ -87,8 +87,8 @@ export function Solid({ geometry, material, at, size, outline, hull = HULL }: { 
 
 // The faces' material: lit (the lab), or plain and tinted by the light where it stands (the game).
 type Make = (o: { map?: THREE.Texture; color?: string; flatShading?: boolean; side?: THREE.Side }, nudge?: number) => THREE.Material;
-const makeLit: Make = (o, nudge) => leaned(new THREE.MeshLambertMaterial(o), nudge);
-const makeFlat: Make = (o, nudge) => leaned(new THREE.MeshBasicMaterial({ map: o.map, color: o.color, side: o.side }), nudge); // (unlit: no shading to flatten)
+export const makeLit: Make = (o, nudge) => leaned(new THREE.MeshLambertMaterial(o), nudge);
+export const makeFlat: Make = (o, nudge) => leaned(new THREE.MeshBasicMaterial({ map: o.map, color: o.color, side: o.side }), nudge); // (unlit: no shading to flatten)
 const lit = (src: string, edges: boolean) => (edges ? src.replace(".png", "-lit.png") : src);
 
 // `colour`: the light's colour, or (the game) where to read it each frame, so a thing follows the
@@ -100,13 +100,13 @@ function tint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, co
   const c = typeof colour === "function" ? colour() : colour;
   for (const m of mats) if (m instanceof THREE.MeshBasicMaterial) m.color.copy(base.get(m) ?? WHITE).multiply(c);
 }
-function useTint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, colour?: Tint) {
+export function useTint(mats: THREE.Material[], base: Map<THREE.Material, THREE.Color>, colour?: Tint) {
   tint(mats, base, colour);
   useFrame(() => { if (typeof colour === "function") tint(mats, base, colour); });
 }
 const WHITE = new THREE.Color(1, 1, 1);
 // (Each material's own colour, kept to tint from.)
-function bases(mats: THREE.Material[]) {
+export function bases(mats: THREE.Material[]) {
   return new Map(mats.flatMap((m) => (m instanceof THREE.MeshBasicMaterial ? [[m, m.color.clone()] as const] : [])));
 }
 
@@ -180,16 +180,20 @@ export function Crate({ inside, ...p }: { inside: CrateKind3D; open: boolean; co
 
 // The Gear Barrel (BARREL in lib/render3d/props3d.ts): a lathe of staves, its straw top, the weapons in it.
 // `lid`: a closed barrel instead (that picture on top, nothing sticking out): the dungeon's barrels.
-export function Barrel({ stretch, lid }: { stretch: number; lid?: string }) {
+export function Barrel({ stretch, lid, colour }: { stretch: number; lid?: string; colour?: Tint }) {
   const geo = useMemo(() => {
     const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * BARREL.h; return new THREE.Vector2(BARREL.r * (BARREL.ends + (1 - BARREL.ends) * Math.sin((Math.PI * y) / BARREL.h)), y); });
     return new THREE.LatheGeometry(pts, 24);
   }, []);
-  const mats = useMemo(() => ({
-    side: leaned(new THREE.MeshLambertMaterial({ map: loaded(BARREL.side) })),
-    top: leaned(new THREE.MeshLambertMaterial({ map: loaded(lid ?? BARREL.top), transparent: true, alphaTest: 0.5 })),
-    items: new THREE.MeshLambertMaterial({ map: loaded(BARREL.items), transparent: true, alphaTest: 0.5 }),
-  }), [lid]);
+  const flat = !!colour;
+  const mats = useMemo(() => {
+    const make = flat ? makeFlat : makeLit, see = (m: THREE.Material) => { m.transparent = true; m.alphaTest = 0.5; return m; };
+    const side = make({ map: loaded(BARREL.side) }), top = see(make({ map: loaded(lid ?? BARREL.top) }));
+    const items = see(flat ? new THREE.MeshBasicMaterial({ map: loaded(BARREL.items) }) : new THREE.MeshLambertMaterial({ map: loaded(BARREL.items) }));
+    const all = [side, top, items];
+    return { side, top, items, all, base: bases(all) };
+  }, [lid, flat]);
+  useTint(mats.all, mats.base, colour);
   const itemsH = BARREL.itemsW * stretch;
   return (
     <>

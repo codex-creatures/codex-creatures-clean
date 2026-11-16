@@ -60,6 +60,7 @@ const TABLES_V = 12;         // (tables, and a candle standing on one)
 const DECKS_V = 13;          // (a deck of cards on a table)
 const SHELVES_V = 14;        // (bookcases against walls, and a storehouse's finds on its floor)
 const TURNED_V = 15;         // (a table turned end-on: the first thing that turns)
+const SEARCH_V = 17;         // (a corner crate to search)
 const CORNERS_V = 16;        // (a storehouse's crates, groups of decor in corners, the boss's standing torches)
 const CORNER_DEFS = new Set(["store-crates", "store-barrels", "standing-torch", "barrels", "crates", "fallen-pillar", "skull", "nest", "pots"]);
 const FINDS = new Set(["dynamite", "backpack"]);
@@ -93,6 +94,7 @@ export function placedProblem(placed: unknown, v = LEGACY_WALK_V): string | null
     if (((p.def === "bookcase" && p.id.startsWith("shelf:")) || FINDS.has(p.def)) && v < SHELVES_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
     if (CORNER_DEFS.has(p.def) && v < CORNERS_V) return `${p.id}: a ${p.def} in a world version ${v} run`;
     if (p.codex !== undefined && (p.def !== "bookcase" || p.codex !== true || v < SHELVES_V)) return `${p.id}: a codex it can't have`;
+    if (p.search !== undefined && (p.def !== "crates" || p.search !== true || v < SEARCH_V)) return `${p.id}: a search it can't have`;
     if (!whole(p.sx) || !whole(p.sy)) return `${p.id}: subcells aren't whole numbers`;
     if (p.rot !== undefined && ![0, 1, 2, 3].includes(p.rot as number)) return `${p.id}: unknown turn`;
     if (p.rot !== undefined && p.rot !== 0 && (p.def !== "table" || p.rot !== 1 || v < TURNED_V)) return `${p.id}: a turn it can't have`;

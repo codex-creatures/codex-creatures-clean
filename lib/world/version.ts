@@ -36,7 +36,9 @@
 // 16: an unguarded storehouse's stores in crates and barrels to search (`crate:<room>:<n>`; Room.crates,
 //    Room.searched), groups of decor in rooms' tucked-away corners (`decor:<room>:<g>:<k>`), and pairs of
 //    standing torches lining the way to the boss (`brazier:<room>:<pair>:<side>`) (the user, 2026-11-15): new runs only.
-export const WALK_V = 16;
+// 17: no nests in rooms' corners (the user, 2026-11-17: they don't fit), and the crates in rooms' corners can be
+//    searched, sometimes holding one material or consumable (`search: true`; Room.boxesSearched): new runs only.
+export const WALK_V = 17;
 
 type Versioned = { walk?: { v?: unknown } } | null | undefined;
 

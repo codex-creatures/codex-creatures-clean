@@ -122,7 +122,7 @@ export function foeStarts(placed: Placements, ids: string[], room: (id: string) 
 // which of its pictures; solid and npc come from the definition.
 export type Thing = { key: string; room: string; x: number; y: number; def: string; state?: string; open: boolean; solid: boolean;
   cage?: number; flag?: boolean; npc?: boolean; glow?: boolean; inert?: boolean; guarded?: boolean; deck?: true; golden?: true;
-  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true; turned?: true; crate?: number }; // crate: a storehouse's crate or barrel, to search (v16) // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
+  shelf?: true; pickup?: "dynamite" | "backpack"; empty?: true; turned?: true; crate?: number; box?: true }; // crate: a storehouse's crate or barrel, to search (v16) // turned: a table end-on (v15) // golden: a golden chest (locked till a Gold Key opens it); inert: drawn, not tapped; guarded: opening it sets its guards on you; deck: a table's deck of cards (v13); shelf: a bookcase against a wall, to search (v14); pickup: a storehouse's find on its floor (v14); empty: an open chest with nothing left in it
 const thingOf = (t: Omit<Thing, "solid" | "npc">): Thing => {
   const d = objectDef(t.def);
   return { ...t, solid: d.collision === "solid", ...(d.kind === "npc" ? { npc: true } : {}) };
@@ -217,7 +217,9 @@ export function thingsOf(layout: Layout, placed: Placements, ids: string[], room
     for (const d of placed.decor ?? []) {
       if (d.room !== id) continue;
       const at = placed.spot(d.id)!, n = d.id.startsWith("crate:") ? Number(d.id.slice(d.id.lastIndexOf(":") + 1)) : undefined;
-      if (n === undefined) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: false, inert: true }));
+      // (World version 17) A corner crate to search: once searched it stands open.
+      if (n === undefined && d.search) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: !!r.boxesSearched?.includes(d.id), box: true }));
+      else if (n === undefined) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: false, inert: true }));
       else if (r.crates) out.push(thingOf({ key: d.id, room: id, ...at, def: d.def, open: !!r.searched?.includes(n), crate: n }));
     }
     const guardedFind = hasFight(r) && !r.done;

@@ -74,7 +74,7 @@ import {
 import { navBlocked, canStand, oneSolidPerPanel, claimedBy, claim, type PanelClaims } from "./policy";
 
 export const FIRST_PLACED_V = 3;    // the first world version placed by these rules (2b-1)
-export const PLACED_V = 16;         // the world version a new run is placed at (a storehouse's crates, corner groups, a boss's torches; version.ts)
+export const PLACED_V = 17;         // the world version a new run is placed at (no corner nests, searchable corner crates; version.ts)
 // (v12) Tables (the user, 2026-11-11): the chance a room has one (rooms of these kinds, not the
 // entrance or the boss's), and that one has a candle on it. A cards room's deck stands on a table of its own. 🧪
 export const TABLE_CHANCE = 0.25;
@@ -97,6 +97,11 @@ export const CORNER_THEMES: Record<string, string[][]> = {
   merchant: [["barrels", "crates"]], library: [["crates", "pots"]], librarian: [["crates", "pots"]],
 };
 const CORNER_ANY = [["pots", "barrels"], ["pots", "skull"]];
+// …from world version 17 (the user, 2026-11-17): no nests (they don't fit), crates and pots in their place.
+export const CORNER_THEMES_V17: Record<string, string[][]> = {
+  ...CORNER_THEMES, easy: [["skull", "pots"], ["crates", "pots"]], hard: [["skull", "crates"], ["skull", "skull"]],
+};
+export const SEARCH_V = 17; // corner crates can be searched from this world version (Instance.search)
 // …and in the boss's room, pairs of standing torches either side of the way from its door to the boss,
 // BOSS_TORCH_STEP panels apart and BOSS_TORCH_SIDE out to each side: unlit, they light a pair at a time
 // once your torch reaches one (walkSim.ts CHAIN_STEP).
@@ -754,7 +759,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
   for (const id of v >= 16 ? parents : []) {
     const r = room(id);
     if (id === layout.start || id === layout.boss || !r) continue;
-    const rng = passRng(walk.seed, id, CORNER_PASS), doors = doorsInside(o, fp.rooms[id], id), themes = CORNER_THEMES[r.kind] ?? CORNER_ANY;
+    const rng = passRng(walk.seed, id, CORNER_PASS), doors = doorsInside(o, fp.rooms[id], id), themes = (v >= SEARCH_V ? CORNER_THEMES_V17 : CORNER_THEMES)[r.kind] ?? CORNER_ANY;
     const corners = roomPanels(fp.rooms[id]).filter((p) => (rock({ x: p.x - 1, y: p.y }) || rock({ x: p.x + 1, y: p.y }))
       && (rock({ x: p.x, y: p.y - 1 }) || rock({ x: p.x, y: p.y + 1 }))
       && !doors.some((q) => Math.max(Math.abs(q.x - p.x), Math.abs(q.y - p.y)) <= CORNER_DOOR_GAP));
@@ -771,7 +776,7 @@ export function placeWalk(walk: WalkRun, map: DungeonMap, dungeon: DungeonId, ro
         const at = spotsIn(fp, d, spots[k]).find((a) => tryAt(d, a, did, id));
         if (!at) return;
         put(d, at, did);
-        placed.push({ id: did, def: kind, room: id, ...at, size: { ...d.footprint } });
+        placed.push({ id: did, def: kind, room: id, ...at, size: { ...d.footprint }, ...(kind === "crates" && v >= SEARCH_V ? { search: true as const } : {}) });
         put1++;
       });
       if (put1) groups++;

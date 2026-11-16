@@ -145,3 +145,11 @@ on scattered bones, a fallen mossy pillar, a twig nest with eggs, three clay pot
 In `/lab/art`'s 3D panel, each beside the flat picture it would replace. The banner stays a flat cloth on
 its wall. Not in the game till approved. The Enchantress is in the tavern (her walk is to be redone with
 the Den, which the user plans to rebuild).
+
+**The fifth review (2026-11-17):** ✅ in the game, built in 3D (components/Decor3D.tsx, tinted by the light
+where each stands): a room's corner **barrels** and a storehouse's barrels (two lidded barrels: "your best
+design this round"), corner **crates** (two stacked; from world version 17 they can be searched, open once
+searched), **pots** (scenery, nothing in them), the library's **lectern**, and the **dynamite** (glowing on
+the floor till it's taken, as well as its ❗). Dropped: the fallen pillar and the nest (no nests in new runs'
+corners, world version 17). To redo: the backpack (not a box), the skull and bones (hard to read), the
+cage (to match the barrels). The collector's and Enchantress's walks barely move: to be redone.
