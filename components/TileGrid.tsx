@@ -66,7 +66,7 @@ export default function TileGrid({ items, favoriteIds, badge, gear, sellMode, se
   return (
     <div>
       {groupBy === "none" && (
-        <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? 8 : cols ? 8 : 10, marginTop: 14 }}>
+        <div className={large ? undefined : "inv-panel"} style={{ display: "grid", gridTemplateColumns: columns, justifyContent: "center", gap: large ? "14px 6px" : cols ? 8 : 10, marginTop: 14 }}>{/* (creature cards: no panel round them, the user, 2026-11-17: the rows need the width) */}
           {items.map((d) => large && d.dropType !== "item" ? (
             <CreatureCard key={d.id} d={d} fav={favoriteIds.has(d.id)} badge={badge?.(d)} gear={gear?.(d)} onClick={() => onOpen(d)} glow={pulse === d.id} />
           ) : (
@@ -137,38 +137,35 @@ function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
   );
 }
 
-// A creature in your collection, as a card lit by its rarity (the UI overhaul, 2026-11-17):
-// a tint and trim in the rarity's colour, its level top left and its race and class marks
-// top right, the creature on a glow, then its name in a sunken box (always two lines tall,
-// so every card is the same size) and its attack style and race.
+// A creature in your collection (the user, 2026-11-17: no boxes, so the words have room): its level
+// top left and its race(s) top right, the creature on a glow of its rarity, then its name in the
+// rarity's colour (always two lines tall, so every card is the same size) and its attack style and
+// race (two lines at most, never cut off mid-word on a phone).
 function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
+  const races = tpl ? (tpl.races?.length ? tpl.races : tpl.race ? [tpl.race] : []) : [];
+  const SHADOW = "0 2px 0 #000, 0 0 3px #000";
   return (
     <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
-      style={{
-        position: "relative", border: "none", padding: "8px 6px 6px", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
-        background: `linear-gradient(180deg, color-mix(in srgb, ${col.text} 16%, #15161c) 0%, #15161c 60%)`,
-        boxShadow: `inset 0 0 0 2px ${col.text}, inset 0 0 0 4px #07070a, inset 0 3px 0 4px ${col.text}40, inset 0 -24px 30px rgba(0,0,0,0.55), 0 3px 0 rgba(0,0,0,0.5)`,
-      }}>
-      <span className="pixel-font" style={{ position: "absolute", top: 7, left: 7, zIndex: 1, fontSize: 11, lineHeight: 1, padding: "2px 5px", color: "#f1d9a0", background: "#07070a" }}>Lv {d.level ?? 1}</span>
-      {tpl && <span style={{ position: "absolute", top: 5, right: 5, zIndex: 1 }}><CreatureMarks race={tpl.race} races={tpl.races} size={10} /></span>}
+      style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "2px 0", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+      <span className="pixel-font" style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 12, lineHeight: 1, color: "#f1d9a0", textShadow: SHADOW }}>Lv {d.level ?? 1}</span>
+      <span style={{ position: "absolute", top: 0, right: 0, zIndex: 1, display: "flex", gap: 2, filter: "drop-shadow(0 2px 0 #000)" }}>
+        {races.map((r) => <span key={r} title={`Race: ${RACE_INFO[r].name}`} style={{ display: "inline-flex" }}><RaceIcon r={r} size={16} /></span>)}
+      </span>
       <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }}
-        frame={{ marginTop: 14, background: `radial-gradient(ellipse at 50% 85%, ${rarityGlow(d.rarity)}, transparent 62%)` }} />
-      <span className="pixel-font" style={{
-        width: "100%", boxSizing: "border-box", padding: "3px 4px", height: "calc(2.3em + 6px)", display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 12, lineHeight: 1.15, textAlign: "center", color: col.text, background: "rgba(0,0,0,0.5)", boxShadow: "inset 2px 2px 0 rgba(0,0,0,0.75), inset -1px -1px 0 rgba(255,255,255,0.06)",
-      }}>
-        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{d.name}</span>
+        frame={{ marginTop: 12, background: `radial-gradient(ellipse at 50% 80%, ${col.text}55, transparent 62%)` }} />
+      <span className="pixel-font" style={{ width: "100%", height: "2.3em", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, lineHeight: 1.15, textAlign: "center", color: col.text, textShadow: "0 2px 0 #000" }}>
+        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{d.name}</span>
       </span>
       {tpl && (
-        <span className="pixel-font" style={{ maxWidth: "100%", fontSize: 10, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <span className="pixel-font" style={{ width: "100%", height: "2.3em", fontSize: 11, lineHeight: 1.15, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
           {tpl.race && <span style={{ color: "#f1d9a0" }}> · {raceNames(tpl)}</span>}
         </span>
       )}
-      {fav && <span style={{ position: "absolute", top: 24, left: 7, fontSize: 14, color: "#f5c542" }}>★</span>}
-      {(gear || badge) && <span style={{ position: "absolute", top: 30, right: 6, fontSize: 12 }}>{gear}{badge}</span>}
+      {fav && <span style={{ position: "absolute", top: 18, left: 2, fontSize: 14, color: "#f5c542", textShadow: SHADOW }}>★</span>}
+      {(gear || badge) && <span style={{ position: "absolute", top: 22, right: 0, fontSize: 12 }}>{gear}{badge}</span>}
     </button>
   );
 }
