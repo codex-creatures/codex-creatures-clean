@@ -2,8 +2,7 @@
 // components/Decor3D.tsx: the dungeon's props in 3D (the user, 2026-11-16/17: "build 3D assets for the
 // dungeon's props"), built as the chest, crate and barrel are: simple shapes made here, their surfaces
 // PixelLab's, leaning as the rock does. In the game (✓, public/sprites/props/decor3d/ and lectern3d/): a
-// pair of lidded barrels, stacked crates, clay pots, the dynamite, the librarian's lectern. Still drafts,
-// for /lab/art only (public/sprites/walk/samples/drafts/decor3d/): the skull and the backpack, being redone.
+// pair of lidded barrels, stacked crates, clay pots, the dynamite, the librarian's lectern, a camp's cage.
 // `colour` (the game's Stone): unlit, tinted by the light where it stands; without it, lit (the labs).
 
 import { useMemo } from "react";
@@ -11,10 +10,10 @@ import * as THREE from "three";
 import { Barrel, Crate, loaded, makeFlat, makeLit, bases, useTint, type Tint } from "./Props3D";
 import { ART_PER_U, ART_PITCH } from "@/lib/render3d/chest3d";
 
-const GAME = "/sprites/props/decor3d", DRAFT = "/sprites/walk/samples/drafts/decor3d";
-export type Decor3DKind = "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "skull" | "backpack" | "cage";
+const GAME = "/sprites/props/decor3d";
+export type Decor3DKind = "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage";
 // Each one's size against the flat picture it replaces (the first drafts came out small beside them).
-const SIZE: Partial<Record<Decor3DKind, number>> = { skull: 1.4, pots: 1.45, dynamite: 1.7, backpack: 1.75 };
+const SIZE: Partial<Record<Decor3DKind, number>> = { pots: 1.45, dynamite: 1.7 };
 
 const tex = (src: string, repeat?: [number, number]) => {
   if (!repeat) return loaded(src);
@@ -51,9 +50,7 @@ function Piece({ kind, stretch, colour, open }: { kind: Decor3DKind; stretch: nu
   if (kind === "pots") return <Pots colour={colour} />;
   if (kind === "dynamite") return <Dynamite colour={colour} />;
   if (kind === "lectern") return <Lectern colour={colour} />;
-  if (kind === "skull") return <Skull colour={colour} />;
-  if (kind === "cage") return <Cage colour={colour} open={open} />;
-  return <Backpack colour={colour} />;
+  return <Cage colour={colour} open={open} />;
 }
 
 // Pots: three turned clay pots, a big one and two small (scenery: nothing in them).
@@ -103,61 +100,11 @@ function Lectern({ colour }: { colour?: Tint }) {
   </>);
 }
 
-// 🧪 Drafts (round 2, 2026-11-17): a skull on crossed bones, the backpack, the cage.
-
-// A skull: a round cranium, its face painted on the front, a jaw, lying on two crossed bones (a shaft with
-// a knuckle at each end), big enough to read at a glance.
-const BONE = "#d6cca2";
-const SKULL_MATS = (make: typeof makeLit) => ({ bone: make({ color: BONE }), shade: make({ color: "#a39a76" }), face: see(make({ map: tex(`${DRAFT}/skull-face.png`) })) });
-function Bone({ m, at, turn }: { m: THREE.Material; at: [number, number, number]; turn: number }) {
-  const L = 0.46, r = 0.026, k = 0.04;
-  return (
-    <group position={at} rotation={[0, turn, 0]}>
-      <mesh rotation={[0, 0, Math.PI / 2]} material={m} raycast={() => null}><cylinderGeometry args={[r, r, L, 8]} /></mesh>
-      {[-1, 1].flatMap((e) => [-1, 1].map((f) => (
-        <mesh key={`${e}${f}`} position={[(e * L) / 2, 0, f * k * 0.6]} material={m} raycast={() => null}><sphereGeometry args={[k, 8, 6]} /></mesh>
-      )))}
-    </group>
-  );
-}
-function Skull({ colour }: { colour?: Tint }) {
-  const m = useMats(SKULL_MATS, colour);
-  return (<>
-    <Bone m={m.shade} at={[0, 0.04, 0.02]} turn={0.55} />
-    <Bone m={m.bone} at={[0, 0.07, 0.02]} turn={-0.55} />
-    <group position={[0, 0.2, 0]}>
-      <mesh scale={[1, 0.92, 1.08]} material={m.bone} raycast={() => null}><sphereGeometry args={[0.13, 14, 10]} /></mesh>
-      <mesh position={[0, -0.1, 0.05]} material={m.shade} raycast={() => null}><boxGeometry args={[0.15, 0.06, 0.12]} /></mesh>
-      <mesh position={[0, -0.01, 0.135]} material={m.face} raycast={() => null}><planeGeometry args={[0.22, 0.25]} /></mesh>
-    </group>
-  </>);
-}
-
-// The backpack: a rounded leather body (a squashed lathe, its straps and buckles wrapped round), a pocket
-// on its front, and the bedroll strapped across the top.
-const PACK = (() => {
-  const H = 0.5, R = 0.21;
-  const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * H; return new THREE.Vector2(Math.max(0.02, R * Math.pow(Math.sin(Math.PI * (0.08 + 0.84 * (y / H))), 0.45)), y); });
-  return { geo: new THREE.LatheGeometry(pts, 18), H, R };
-})();
-const BACKPACK_MATS = (make: typeof makeLit) => ({
-  body: make({ map: tex(`${DRAFT}/pack-leather.png`, [1.5, 1]) }), roll: make({ map: tex(`${DRAFT}/pack-bedroll.png`, [1, 1]) }),
-  pocket: see(make({ map: tex(`${DRAFT}/pack-pocket.png`) })), end: make({ color: "#3e5a32" }),
-});
-function Backpack({ colour }: { colour?: Tint }) {
-  const m = useMats(BACKPACK_MATS, colour);
-  return (
-    <group rotation={[0, -0.3, 0]}>
-      <mesh geometry={PACK.geo} scale={[1, 1, 0.78]} material={m.body} raycast={() => null} />
-      <mesh position={[0, 0.2, PACK.R * 0.78 + 0.005]} material={m.pocket} raycast={() => null}><planeGeometry args={[0.26, 0.26]} /></mesh>
-      <mesh position={[0, PACK.H + 0.03, 0]} rotation={[0, 0, Math.PI / 2]} material={[m.roll, m.end, m.end]} raycast={() => null}><cylinderGeometry args={[0.07, 0.07, 0.42, 12]} /></mesh>
-    </group>
-  );
-}
-
-// The cage: built as the crates are, a plank floor and roof in the crate's own wood, corner posts, and
-// rusty iron bars between; open, its front swings out on its left post. CAGE: 1 u across, 1.2 u tall.
-const CAGE = { w: 1, h: 1.2, deck: 0.12, roof: 0.08, post: 0.09, bars: 5, bar: 0.018 };
+// A camp's cage (the user, 2026-11-17: liked, "bigger, wall height ish"): built as the crates are, a plank
+// floor in the crate's own wood, corner posts, rusty iron bars between, and an open roof of beams and bars
+// (a solid one hid the inside from the high camera); open, its front swings out on its left post. CAGE: w
+// across (a little over its 1 u footprint; a camp's cages stand in a row), h tall, nearly the walls' 2.25.
+const CAGE = { w: 1.1, h: 2.1, deck: 0.14, roof: 0.1, post: 0.11, bars: 6, bar: 0.022 };
 const CRATE_WOOD = "/sprites/props/crate3d";
 const CAGE_MATS = (make: typeof makeLit) => {
   const side = make({ map: tex(`${CRATE_WOOD}/side.png`) }), top = make({ map: tex(`${CRATE_WOOD}/top.png`) }), dark = make({ color: "#33271a" });

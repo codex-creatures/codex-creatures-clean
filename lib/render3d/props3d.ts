@@ -96,9 +96,9 @@ export const PROPS_3D: Record<string, Prop3DKind> = { "store-crates": "crate", c
 export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
 
 // The dungeon's props built in 3D by components/Decor3D.tsx (the user, 2026-11-17): a room's corner barrels,
-// crates and pots, a storehouse's barrels, Klutz's dynamite on a storehouse floor, a library's lectern.
-export const DECOR_3D: Record<string, "barrels" | "crates" | "pots" | "dynamite" | "lectern"> = {
-  barrels: "barrels", "store-barrels": "barrels", crates: "crates", pots: "pots", dynamite: "dynamite", lectern: "lectern",
+// crates and pots, a storehouse's barrels, Klutz's dynamite on a storehouse floor, a library's lectern, a camp's cages.
+export const DECOR_3D: Record<string, "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage"> = {
+  barrels: "barrels", "store-barrels": "barrels", crates: "crates", pots: "pots", dynamite: "dynamite", lectern: "lectern", cage: "cage",
 };
 // The dynamite glows on the floor round it till it's picked up (the user, 2026-11-17: "highlighted when first
 // found, to encourage them to loot"), as a deck's rarest card does.

@@ -158,3 +158,5 @@ on, lying on two crossed 3D bones; the backpack a rounded leather body with a fr
 strapped on top; the cage built like the crates (a plank floor in the crate's wood, corner posts, rusty
 iron bars, an open roof of beams and bars so you see in from the high camera). The collector's walk is
 redone with big lifted steps (in the tavern now).
+**2026-11-17:** ✅ the cage is in the game, made bigger (2.1 u tall against the walls' 2.25, 1.1 u across;
+`DECOR_3D.cage`, opening with its cage); the skull and backpack drafts are dropped (the user: not needed).

@@ -50,12 +50,10 @@ const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall
   "crate-materials": { shut: "/sprites/walk/samples/drafts/crate-materials-2.png", open: "/sprites/walk/samples/drafts/crate-materials-2.png", w: OLD_W, tall: 1 },
   "decor-barrels": { shut: "/sprites/walk/decor/barrels.png", open: "/sprites/walk/decor/barrels.png", w: legacyU(28), tall: 1 },
   "decor-crates": { shut: "/sprites/walk/decor/crates.png", open: "/sprites/walk/decor/crates.png", w: legacyU(28), tall: 1 },
-  "decor-skull": { shut: "/sprites/walk/decor/bones.png", open: "/sprites/walk/decor/bones.png", w: legacyU(11), tall: 33 / 22 },
   "decor-lectern": { shut: "/sprites/den/lectern.png", open: "/sprites/den/lectern.png", w: legacyU(20), tall: 56 / 48 },
   "decor-cage": { shut: "/sprites/walk/cage.png", open: "/sprites/walk/cage-open.png", w: legacyU(22), tall: 1 },
   "decor-pots": { shut: "/sprites/walk/decor/pots.png", open: "/sprites/walk/decor/pots.png", w: legacyU(18), tall: 1 },
   "decor-dynamite": { shut: "/sprites/props/dynamite.png", open: "/sprites/props/dynamite.png", w: SACK_U, tall: 1 },
-  "decor-backpack": { shut: "/sprites/items/backpack.png", open: "/sprites/items/backpack.png", w: SACK_U, tall: 1 },
   barrel: { shut: "/sprites/walk/samples/drafts/crate-gear-2.png", open: "/sprites/walk/samples/drafts/crate-gear-2.png", w: OLD_W, tall: 1 },
   "crate-supplies": { shut: "/sprites/walk/samples/drafts/crate-supplies-2.png", open: "/sprites/walk/samples/drafts/crate-supplies-2.png", w: OLD_W, tall: 1 },
   floortorch: { shut: KIT_LIGHTS.candles, open: KIT_LIGHTS.candles, w: (KIT_LIGHTS.candleSize[0] * 0.85) / 48, tall: KIT_LIGHTS.candleSize[1] / KIT_LIGHTS.candleSize[0] },
@@ -280,7 +278,7 @@ function Scene({ view }: { view: ChestView }) {
           : view.thing === "standingtorch" || view.thing === "dynamite"
             ? <Upright3D thing={view.thing} lit={view.lit} />
           : isDecor(view.thing)
-            ? <Decor3D kind={view.thing.slice(6) as Decor3DKind} stretch={uprightStretch(PITCH)} />
+            ? <Decor3D kind={view.thing.slice(6) as Decor3DKind} stretch={uprightStretch(PITCH)} open={view.open} />
           : view.thing === "barrel"
             ? <Barrel stretch={uprightStretch(PITCH)} />
           : isCrate(view.thing)

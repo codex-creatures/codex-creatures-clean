@@ -20,7 +20,7 @@ import type { RewardModel } from "@/lib/campaign";
 // on this page only.
 const ChestScene = dynamic(() => import("../chest/ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 const PROPS_3D: { thing: Thing3D; label: string }[] = [
-  { thing: "decor-skull", label: "Skull & bones" }, { thing: "decor-backpack", label: "Backpack" }, { thing: "decor-cage", label: "Cage" },
+  { thing: "decor-cage", label: "Cage ✓" },
   { thing: "decor-barrels", label: "Barrels ✓" }, { thing: "decor-crates", label: "Crates ✓" }, { thing: "decor-pots", label: "Pots ✓" },
   { thing: "decor-lectern", label: "Lectern ✓" }, { thing: "decor-dynamite", label: "Dynamite ✓" },
   { thing: "barrel", label: "Gear Barrel ✓" }, { thing: "bookcase", label: "Codex reward: bookcase" },
@@ -74,7 +74,7 @@ export default function ArtLab() {
   const [near, setNear] = useState<number | null>(null);
   const [lit, setLit] = useState(false);
   const [view3d, setView3d] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true,
-    thing: "decor-skull", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
+    thing: "decor-cage", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
   const set3d = (v: Partial<ChestView>) => setView3d((x) => ({ ...x, ...v }));
   const [reveal, setReveal] = useState<{ title: string; model: RewardModel } | null>(null); // the campaign's reward reveal, previewed
   const litRef = useRef(lit);

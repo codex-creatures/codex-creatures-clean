@@ -414,7 +414,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     // dynamite (glowing till it's taken), a library's lectern.
     const decor = DECOR_3D[t.def];
     if (decor) {
-      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Decor3D kind={decor} stretch={stretch} colour={shade && (() => shade(t.x, t.y))} open={!!t.box && t.open} /></group>);
+      out.push(<group key={t.key} position={[t.x, 0, t.y]}><Decor3D kind={decor} stretch={stretch} colour={shade && (() => shade(t.x, t.y))} open={(!!t.box || decor === "cage") && t.open} /></group>);
       if (decor === "dynamite") out.push(<group key={`glow:${t.key}`} position={[t.x, 0, t.y]}><Glow colour={DYNAMITE_GLOW.colour} radius={DYNAMITE_GLOW.radius} strength={DYNAMITE_GLOW.strength} /></group>);
       if (t.flag && lightNow(t.x, t.y)) out.push(<Mark key={`!${t.key}`} at={() => t} up={b.up * stretch + 0.25} />);
       continue;
