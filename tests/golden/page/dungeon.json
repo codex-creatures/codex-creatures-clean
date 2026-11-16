@@ -2,7 +2,7 @@
  "encampment": [
   {
    "step": "entrance",
-   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🐂Minotaur🔒Abyss🔥 Enter the Encampment (free · 10 left)?🐾 Party 0/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (0/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkinLv 4 Dust SpriteGeoLv 4 Moss WolfBeast",
+   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🐂Minotaur🔒Abyss🐾 Party 0/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (0/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkinLv 4 Dust SpriteGeoLv 4 Moss WolfBeast🔥 Enter the Encampment (free · 10 left)?",
    "save": {
     "gold": 500,
     "creatures": [
@@ -19,7 +19,7 @@
   },
   {
    "step": "party picked",
-   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🐂Minotaur🔒Abyss⛺ Enter the Encampment (free · 10 left)?🐾 Party 1/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (1/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkin1Lv 4 Dust SpriteGeoLv 4 Moss WolfBeast",
+   "screen": "← Den🌀 The Labyrinth500🔥 Dungeon Crawling📜 Speed ScrollBOSS · LV 5DUNGEON 1 OF 5ithe EncampmentFREE7 roomsFoes Lv 1–5Team of 3Camp🔒Cyclops🔒Hydra🐂Minotaur🔒Abyss🐾 Party 1/3🎒 Bindle 0/3Free pick-Team 10/5Team 20/5Team 30/5Your party (1/3)Tap up to 3More creatures make it easier — scan or summon more.Lv 4 Cave GoblinUnderkin1Lv 4 Dust SpriteGeoLv 4 Moss WolfBeast⛺ Enter the Encampment (free · 10 left)?",
    "save": {
     "gold": 500,
     "creatures": [
