@@ -221,7 +221,10 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
 - **Rewards** (the user): gold for the small ones, Tattered XP Scrolls for some, better things at
   milestones; **crates** opened as you claim them (Materials, Gear, Codex: a number of things in a
   rarity band; gear gets a chest's 10% enchantment chance; Supplies: 2 Lesser Potions, a Healing
-  Potion, a Revival Elixir and a torch). Fixing up the tavern pays a **Gold Key**; the Cyclops a
+  Potion, a Revival Elixir and a torch). ✅ (the user, 2026-11-16) The gear one is the **Gear Barrel**
+  and the codex one the **Codex Bookcase**; each container is shown in 3D first (components/RewardReveal.tsx:
+  the crate, the barrel or the game's bookcase on the dungeon floor by torchlight; tap it, a crate's lid
+  swings open or the barrel or bookcase hops), then its loot window (`rewardModel`). Fixing up the tavern pays a **Gold Key**; the Cyclops a
   random **enchanted Epic weapon**; the rubble the **Crooked Bookcase Schematic** (500 gold instead
   if you have the plans or the bookcase already, `PLANS_TAKEN_GOLD`).
 - Claude's readings (2026-11-16, not asked): "upgrade your inventory slot" is a bigger bag (the

@@ -20,10 +20,9 @@ import { TABLE_ART, TABLE_TOP, OBJECT_U, SACK_U, DYNAMITE_ART } from "@/lib/worl
 import { CANDLE_AT } from "@/lib/render3d/props3d";
 import { Draft3D, TableCandle3D, type DraftKind } from "@/components/Drafts3D";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import type { ChestFaces } from "@/lib/render3d/chest3d";
 import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
-import { Prop3D, Chest, Solid, leaned, sharp, loaded, PROP_LEAN } from "@/components/Props3D";
+import { Prop3D, Crate, Barrel, Solid, leaned, sharp, loaded, PROP_LEAN } from "@/components/Props3D";
 
 const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
@@ -67,11 +66,6 @@ export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "golde
 // (public/sprites/walk/samples/drafts/crate3d/, made from chest3d's at the same sizes), each kind's contents
 // in it, seen when it's open.
 export type CrateThing = "crate-materials" | "crate-supplies";
-const CRATE = "/sprites/walk/samples/drafts/crate3d";
-const crateFaces = (t: CrateThing): ChestFaces => ({
-  front: { src: `${CRATE}/front.png`, w: 60, h: 19, lid: 6 }, side: { src: `${CRATE}/side.png`, w: 38, h: 19 },
-  inside: { src: `${CRATE}/inside-${t.slice(6)}.png`, w: 60, h: 33 }, top: { src: `${CRATE}/top.png`, w: 60, h: 33 },
-});
 const isCrate = (t: Thing3D): t is CrateThing => t.startsWith("crate-");
 // standingtorch, dynamite: the boss's standing torch and the storehouse's dynamite, upright pictures as the
 // game's 3D view draws them (WalkView3D: the torch STANDING_TORCH_U tall with a flame on its bowl; the
@@ -274,9 +268,9 @@ function Scene({ view }: { view: ChestView }) {
           : view.thing === "standingtorch" || view.thing === "dynamite"
             ? <Upright3D thing={view.thing} lit={view.lit} />
           : view.thing === "barrel"
-            ? <Barrel3D />
+            ? <Barrel stretch={uprightStretch(PITCH)} />
           : isCrate(view.thing)
-            ? <Chest faces={crateFaces(view.thing)} open={view.open} outline={view.outline} edges={view.edges} />
+            ? <Crate inside={view.thing === "crate-materials" ? "materials" : "supplies"} open={view.open} outline={view.outline} edges={view.edges} />
           : view.thing === "golden"
             ? <Prop3D kind="chest" golden open={view.open} outline={view.outline} edges={view.edges} />
             : <Prop3D kind={view.thing as "chest" | "stash" | "bookcase"} open={view.open} outline={view.outline} edges={view.edges} />}
@@ -318,32 +312,6 @@ function Upright3D({ thing, lit }: { thing: "standingtorch" | "dynamite"; lit: b
         </mesh>
         <pointLight position={[0, h + 0.2, 0.3]} color="#ffbe5a" intensity={3} distance={0} decay={1.6} />
       </>)}
-    </>
-  );
-}
-
-// The gear barrel: BARREL_H tall, BARREL_R round at the middle (a little less at the ends), the staves
-// wrapped once round it, its straw top flat on it, and the weapons standing up out of it.
-const BARREL = "/sprites/walk/samples/drafts/barrel3d";
-const BARREL_H = 0.9, BARREL_R = 0.36, BARREL_ENDS = 0.86; // (the ends' radius, as a share of the middle's)
-function Barrel3D() {
-  const stretch = uprightStretch(PITCH);
-  const geo = useMemo(() => {
-    const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * BARREL_H; return new THREE.Vector2(BARREL_R * (BARREL_ENDS + (1 - BARREL_ENDS) * Math.sin((Math.PI * y) / BARREL_H)), y); });
-    return new THREE.LatheGeometry(pts, 24);
-  }, []);
-  const mats = useMemo(() => ({
-    side: leaned(new THREE.MeshLambertMaterial({ map: loaded(`${BARREL}/side.png`) })),
-    top: leaned(new THREE.MeshLambertMaterial({ map: loaded(`${BARREL}/top.png`), transparent: true, alphaTest: 0.5 })),
-    items: new THREE.MeshLambertMaterial({ map: loaded(`${BARREL}/items.png`), transparent: true, alphaTest: 0.5 }),
-  }), []);
-  const top = BARREL_R * BARREL_ENDS, itemsW = 0.75, itemsH = itemsW * stretch;
-  return (
-    <>
-      <mesh geometry={geo} material={mats.side} />
-      <mesh position={[0, BARREL_H + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.top}><circleGeometry args={[top * 1.02, 24]} /></mesh>
-      {/* The weapons: their bottom a little way down into the barrel, standing up facing you. */}
-      <mesh position={[0, BARREL_H - 0.12 + itemsH / 2, 0.02]} scale={[itemsW, itemsH, 1]} material={mats.items}><planeGeometry /></mesh>
     </>
   );
 }

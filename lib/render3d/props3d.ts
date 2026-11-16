@@ -90,7 +90,14 @@ export const deckGlowRadius = (t: ReturnType<typeof tableArt>) => Math.min(t.dec
 // chest for now (the user, 2026-11-11): a storehouse's rickety one, and a mini boss's or boss's loot,
 // till they get their own painted faces.
 // A cards room's deck is drawn on a table (the user, 2026-11-11), in runs of every world version.
-export type Prop3DKind = "chest" | "stash" | "bookcase" | "table";
-export const PROPS_3D: Record<string, Prop3DKind> = { chest: "chest", "rickety-chest": "chest", "loot-chest": "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase", table: "table", "card-deck": "table" };
+export type Prop3DKind = "chest" | "stash" | "bookcase" | "table" | "crate";
+// A storehouse's crates are the Materials Crate (the user, 2026-11-16), opened once searched.
+export const PROPS_3D: Record<string, Prop3DKind> = { "store-crates": "crate", chest: "chest", "rickety-chest": "chest", "loot-chest": "chest", sack: "stash", "loot-sack": "stash", bookcase: "bookcase", table: "table", "card-deck": "table" };
 export const prop3dOf = (def: string): Prop3DKind | undefined => PROPS_3D[def];
+
+// The campaign's Gear Barrel (the user, 2026-11-16): BARREL.h tall, BARREL.r round at the middle (ends×
+// that at the top and bottom), its staves (side.png) wrapped once round it, its open top packed with straw,
+// and the weapons (items.png) standing up out of it, a little way in, as the game stands its pictures up.
+export const BARREL = { side: "/sprites/props/barrel3d/side.png", top: "/sprites/props/barrel3d/top.png", items: "/sprites/props/barrel3d/items.png",
+  h: 0.9, r: 0.36, ends: 0.86, itemsW: 0.75, itemsIn: 0.12 };
 

@@ -41,6 +41,17 @@ export const GOLDEN_FACES = {
   top: { src: `/sprites/props/chest3d-gold/top.png?v=${ART_V}`, w: 60, h: 33 },
 };
 
+// A crate (the user, 2026-11-16): the chest's boxes with a plain nailed crate's faces (public/sprites/props/
+// crate3d/, made from the chest's at the same sizes), and what's in it seen from above when it's open:
+// building materials (the campaign's Materials Crate, and a storehouse's crates) or supplies.
+export type CrateKind3D = "materials" | "supplies";
+export const crateFaces = (inside: CrateKind3D) => ({
+  front: { src: `/sprites/props/crate3d/front.png?v=${ART_V}`, w: 60, h: 19, lid: 6 },
+  side: { src: `/sprites/props/crate3d/side.png?v=${ART_V}`, w: 38, h: 19 },
+  inside: { src: `/sprites/props/crate3d/inside-${inside}.png?v=${ART_V}`, w: 60, h: 33 },
+  top: { src: `/sprites/props/crate3d/top.png?v=${ART_V}`, w: 60, h: 33 },
+});
+
 export type ChestFaces = { front: { src: string; w: number; h: number; lid: number }; side: { src: string; w: number; h: number }; inside: { src: string; w: number; h: number }; top: { src: string; w: number; h: number } };
 export function chestArt(F: ChestFaces = ART_FACES) {
   const up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);

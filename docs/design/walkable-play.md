@@ -345,7 +345,8 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   **The way to the boss** (world version 16): pairs of standing torches either side of the line from the
   boss room's way in to where the boss stands (`BOSS_TORCH_STEP` 3 panels apart, `BOSS_TORCH_SIDE` 2 out),
   unlit; once your torch reaches one, they light a pair at a time from the door up (`CHAIN_STEP` 0.45 s,
-  walkSim.ts). ✅ Their own picture since 2026-11-16 (`WALK_STANDING_TORCH`, 1.2 u tall, one flame drawn on its bowl).
+  walkSim.ts). ✅ A storehouse's crates are the Materials Crate in 3D since 2026-11-16 (`PROPS_3D["store-crates"]`:
+  the chest's boxes in a crate's faces, standing open and bare once searched). ✅ Their own picture since 2026-11-16 (`WALK_STANDING_TORCH`, 1.2 u tall, one flame drawn on its bowl).
 - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,
   and your light reaches twice as far (`FLARE_REACH`) for the next `FLARE_WALK` 90 tiles
   you walk (about half the walkable Encampment, 🧪). A new flare lights afresh.

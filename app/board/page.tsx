@@ -21,7 +21,8 @@ import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
-import { CHAPTERS, PLANS_TAKEN_GOLD, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
+import RewardReveal from "@/components/RewardReveal";
+import { CHAPTERS, PLANS_TAKEN_GOLD, rewardModel, type RewardModel, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
@@ -272,6 +273,7 @@ function CampaignList() {
   const router = useRouter();
   const [, reread] = useState(0);
   const [prize, setPrize] = useState<{ title: string; drops: Drop[] } | null>(null);
+  const [reveal, setReveal] = useState<{ title: string; model: RewardModel; drops: Drop[] } | null>(null); // a crate reward, in 3D before its loot
   const [full, setFull] = useState(false); // the last claim had no room for its reward
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
   if (!klutzHelping(game.quest)) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Finish Klutz&apos;s quest first.</p>;
@@ -292,7 +294,11 @@ function CampaignList() {
     if ("gold" in r) game.addGold(r.gold);
     // The bookcase's plans: already yours (or built), and it pays gold instead.
     else if ("bookcasePlans" in r) { if (hasBookPlans(game.tavern) || game.bookcase >= 2) game.addGold(PLANS_TAKEN_GOLD); else game.findBookPlans(); }
-    else { drops.forEach(game.addDrop); setPrize({ title: rewardText(r), drops }); }
+    else {
+      drops.forEach(game.addDrop);
+      const model = rewardModel(r);
+      if (model) setReveal({ title: rewardText(r), model, drops }); else setPrize({ title: rewardText(r), drops });
+    }
     reread((n) => n + 1);
   }
   return (
@@ -321,6 +327,7 @@ function CampaignList() {
           </div>
         );
       })}
+      {reveal && <RewardReveal title={reveal.title} model={reveal.model} onOpen={() => { setPrize({ title: reveal.title, drops: reveal.drops }); setReveal(null); }} />}
       {prize && <CodeCache title={prize.title} items={prize.drops} doneLabel="Take it all" intro="Tap a slot to see what's inside." onDone={() => setPrize(null)} />}
     </div>
   );

@@ -131,3 +131,8 @@ bulging lathe of staves with a straw top and the weapons as an upright picture (
 80 × 96) and given an 8-frame walk like the other visitors' (PixMiniMax), both in `/lab/art`. Dropped by
 the user: the fireplace, the Cyclops Head (the head stays the Cyclops sprite on its plaque) and the
 charged mark's draft (charged is a charge move winding up, e.g. Mega Smash; it keeps 💢 for now).
+
+**In the game (2026-11-16, the user's fourth review):** the Gear Barrel, and the Materials and Supplies
+Crates (public/sprites/props/crate3d/ and barrel3d/; `Crate` and `Barrel` in components/Props3D.tsx) show
+in 3D when a campaign crate reward is claimed (the Codex Bookcase is the game's bookcase), and a
+storehouse's crates are the Materials Crate in 3D. Still to review: the Enchantress (smaller, walking).

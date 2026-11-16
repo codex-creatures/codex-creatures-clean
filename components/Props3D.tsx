@@ -10,9 +10,9 @@
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { chestArt, OPEN_ANGLE, ART_FACES, GOLDEN_FACES, ART_PER_U, CHEST_NUDGE, type ChestFaces } from "@/lib/render3d/chest3d";
+import { chestArt, OPEN_ANGLE, ART_FACES, GOLDEN_FACES, ART_PER_U, CHEST_NUDGE, crateFaces, type ChestFaces, type CrateKind3D } from "@/lib/render3d/chest3d";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, deckGlowRadius, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
+import { BARREL, bookcaseArt, BOOKCASE_FACES, sackOutline, sackOpenOutline, SACK_SIDES, SACK_CLOTH, SACK_NECK, SACK_TALL, BROKEN_BOOKCASE_FACES, tableArt, TABLE_FACES, DECK_TALL, LEG_IN, DECK_AT, DECK_GLOW, deckGlowRadius, type Prop3DKind, type BookcaseFaces } from "@/lib/render3d/props3d";
 import { CANDLE_RADIUS } from "@/lib/dungeon/torch";
 
 const OUTLINE_U = 1 / ART_PER_U; // the outline: an art pixel
@@ -118,6 +118,8 @@ export function Prop3D({ kind, open = false, colour, outline = true, edges = tru
   if (kind === "table") return <Table colour={colour} outline={outline} deck={deck} glow={glow} />;
   if (kind === "bookcase") return broken ? <Bookcase colour={colour} outline={outline} edges={false} faces={BROKEN_BOOKCASE_FACES} /> : <Bookcase colour={colour} outline={outline} edges={edges} />;
   if (kind === "stash") return <Sack open={open} colour={colour} outline={outline} />;
+  // (A storehouse's crate: once searched it stands open, bare inside.)
+  if (kind === "crate") return <Crate inside="materials" open={open} colour={colour} outline={outline} edges={edges} empty={open} />;
   if (golden) return (<>
     <Chest open={open} colour={colour} outline={outline} edges={edges} faces={GOLDEN_FACES} empty={empty} />
     <Glow colour={RARITY_COLORS.legendary.text} radius={CANDLE_RADIUS * DECK_GLOW.share} strength={DECK_GLOW.strength} />
@@ -170,6 +172,33 @@ export function Chest({ open, colour, outline, edges, faces = ART_FACES, empty =
 }
 
 // The bookcase: one box, its faces PixelLab's (lit edges made beforehand, as the chest's).
+// A crate: the chest's boxes in a crate's faces, `inside` what it holds.
+const CRATE_FACES = { materials: crateFaces("materials"), supplies: crateFaces("supplies") };
+export function Crate({ inside, ...p }: { inside: CrateKind3D; open: boolean; colour?: Tint; outline: boolean; edges: boolean; empty?: boolean }) {
+  return <Chest {...p} faces={CRATE_FACES[inside]} />;
+}
+
+// The Gear Barrel (BARREL in lib/render3d/props3d.ts): a lathe of staves, its straw top, the weapons in it.
+export function Barrel({ stretch }: { stretch: number }) {
+  const geo = useMemo(() => {
+    const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * BARREL.h; return new THREE.Vector2(BARREL.r * (BARREL.ends + (1 - BARREL.ends) * Math.sin((Math.PI * y) / BARREL.h)), y); });
+    return new THREE.LatheGeometry(pts, 24);
+  }, []);
+  const mats = useMemo(() => ({
+    side: leaned(new THREE.MeshLambertMaterial({ map: loaded(BARREL.side) })),
+    top: leaned(new THREE.MeshLambertMaterial({ map: loaded(BARREL.top), transparent: true, alphaTest: 0.5 })),
+    items: new THREE.MeshLambertMaterial({ map: loaded(BARREL.items), transparent: true, alphaTest: 0.5 }),
+  }), []);
+  const itemsH = BARREL.itemsW * stretch;
+  return (
+    <>
+      <mesh geometry={geo} material={mats.side} />
+      <mesh position={[0, BARREL.h + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.top}><circleGeometry args={[BARREL.r * BARREL.ends * 1.02, 24]} /></mesh>
+      <mesh position={[0, BARREL.h - BARREL.itemsIn + itemsH / 2, 0.02]} scale={[BARREL.itemsW, itemsH, 1]} material={mats.items}><planeGeometry /></mesh>
+    </>
+  );
+}
+
 export function Bookcase({ colour, outline, edges, faces = BOOKCASE_FACES }: { colour?: Tint; outline: boolean; edges: boolean; faces?: BookcaseFaces }) {
   const b = useMemo(() => bookcaseArt(faces), [faces]);
   const geo = useMemo(() => new THREE.BoxGeometry(b.width, b.height, b.depth), [b]);
