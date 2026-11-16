@@ -95,8 +95,9 @@ export default function InventoryPage() {
     </div>
   );
 
+  // The dock (Sell mode) only on the Items tab: an empty one is just a black strip (the user, 2026-11-17).
   return (
-    <DenFrame title="Inventory" icon="🧰" gold={game.gold} materials={game.materials} dock={dock}>
+    <DenFrame title="Inventory" icon="🧰" gold={game.gold} materials={game.materials} dock={part === "items" ? dock : undefined}>
       {game.showSellConfirm && (
         <SellConfirmModal
           items={game.selectedItemsForModal}

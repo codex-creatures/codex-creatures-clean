@@ -84,8 +84,9 @@ export default function QuestBoardPage() {
     </div>
   );
 
+  // The dock (the leaderboards) only on the Boards tab: an empty one is just a black strip (the user, 2026-11-17).
   return (
-    <DenFrame title="Quest Board" icon="📜" fill dock={dock}>
+    <DenFrame title="Quest Board" icon="📜" fill dock={quests ? undefined : dock}>
       <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, padding: "12px 12px 14px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
           <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}><Glyph icon="📖" art="ui_campaign" size={18} /> Campaign</button>
