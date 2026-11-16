@@ -128,7 +128,7 @@ export const RACE_INFO: Record<Race, { name: string; color: string; icon: string
   underkin: { name: "Underkin", color: "#c08a55", icon: "🪨" },                       // brown
   geo:      { name: "Geo",      color: "#ff6b5c", icon: "🔥", art: "race_geo" },      // red
   humanoid: { name: "Humanoid", color: "#6fb0ff", icon: "🛡️", art: "race_humanoid" }, // blue
-  toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠" },                       // purple
+  toxic:    { name: "Toxic",    color: "#b98cf0", icon: "🦠", art: "race_toxic" },    // purple
 };
 // A move with no race (the Balanced moves, lib/creatures/raceKitsV2.ts): neutral against everyone.
 export const BALANCED_INFO: { name: string; color: string; icon: string; art?: string } = { name: "Neutral", color: "#8e929c", icon: "⚖️", art: "neutral" }; // slate grey

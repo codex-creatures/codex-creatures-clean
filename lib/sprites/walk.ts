@@ -110,6 +110,11 @@ export const WALK_CAMPFIRE_OUT: WalkProp = { src: "/sprites/walk/campfire-out.pn
 // is the same with its flame taken off, a wick left), drawn `size` px wide.
 export const WALK_CANDLE: WalkProp = { src: "/sprites/walk/candle.png", w: 15, h: 28, size: 7 };
 export const WALK_CANDLE_LIT: WalkProp = { src: "/sprites/walk/candle-lit.png", w: 15, h: 28, size: 7 };
+// A boss's standing torch (PixelLab Pro Flash, 2026-11-16, trimmed): an iron pole with a bowl on top, no
+// flame (the game draws it, on the bowl: STANDING_TORCH_FLAME, art pixels from its top left).
+export const WALK_STANDING_TORCH: WalkProp = { src: "/sprites/walk/standing-torch.png", w: 17, h: 52, size: 8 };
+export const STANDING_TORCH_U = 1.2; // how tall it stands, in units (its object's height)
+export const STANDING_TORCH_FLAME: [number, number] = [8.5, 3];
 
 // 🚧 Decor samples (2026-11-06, /lab/newrun's Decor switch only, for the user
 // to judge; lib/dungeon/decor.ts places them): PixelLab map objects matched

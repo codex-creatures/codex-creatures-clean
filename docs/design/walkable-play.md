@@ -345,7 +345,7 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   **The way to the boss** (world version 16): pairs of standing torches either side of the line from the
   boss room's way in to where the boss stands (`BOSS_TORCH_STEP` 3 panels apart, `BOSS_TORCH_SIDE` 2 out),
   unlit; once your torch reaches one, they light a pair at a time from the door up (`CHAIN_STEP` 0.45 s,
-  walkSim.ts). The floor candle's picture stands in for theirs (a sample's to be made).
+  walkSim.ts). ✅ Their own picture since 2026-11-16 (`WALK_STANDING_TORCH`, 1.2 u tall, one flame drawn on its bowl).
 - **Flares, walking** (the user, 2026-11-06): lighting one shows the scroll on top as ever,
   and your light reaches twice as far (`FLARE_REACH`) for the next `FLARE_WALK` 90 tiles
   you walk (about half the walkable Encampment, 🧪). A new flare lights afresh.
@@ -459,8 +459,8 @@ the walk in `lib/world/walkSim.ts`, what you tap in `walkWorld.ts thingsOf`, dra
   a **20%** chance of a clairvoyance scroll, at most **2** a library.
 - **Later, planned by the user (not part of this decision):** codexes can be sold for half what
   they cost; a scan that gives a codex fixes its rarity, and which codex of that rarity is random.
-- **Locators** (new tools, `LOCATORS` in materials.ts: Rare; stand-in icons till they have art of
-  their own): **5% per chest or stash** holds one, any of the three (`LOCATOR_FIND`; a stash's
+- **Locators** (new tools, `LOCATORS` in materials.ts: Rare; the crystal ball and the librarian locator have
+  their own art since 2026-11-16, the merchant's map a stand-in till its draft is approved): **5% per chest or stash** holds one, any of the three (`LOCATOR_FIND`; a stash's
   rolled with the run, a chest's as it's opened); the merchant sells **one**, at **200 gold** (in
   his cart's last slot if it's full).
   - **Merchant map**: where the merchant is;

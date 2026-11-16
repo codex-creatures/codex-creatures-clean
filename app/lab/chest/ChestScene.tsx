@@ -15,14 +15,15 @@ import { chestParts, OPEN_ANGLE, type Box, type ChestMat } from "@/lib/render3d/
 import { pixelScale } from "@/lib/render3d/stone";
 import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers } from "@/lib/render3d/puddle";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
-import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS } from "@/lib/sprites/walk";
-import { TABLE_ART, TABLE_TOP, OBJECT_U } from "@/lib/world/objects";
+import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS, WALK_STANDING_TORCH, STANDING_TORCH_U, STANDING_TORCH_FLAME, WALK_CANDLE, WALK_CANDLE_LIT } from "@/lib/sprites/walk";
+import { TABLE_ART, TABLE_TOP, OBJECT_U, SACK_U, DYNAMITE_ART } from "@/lib/world/objects";
 import { CANDLE_AT } from "@/lib/render3d/props3d";
 import { Draft3D, TableCandle3D, type DraftKind } from "@/components/Drafts3D";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
-import { Prop3D, Solid, leaned, sharp, loaded, PROP_LEAN } from "@/components/Props3D";
+import { Prop3D, Chest, Solid, leaned, sharp, loaded, PROP_LEAN } from "@/components/Props3D";
+import type { ChestFaces } from "@/lib/render3d/chest3d";
 
 const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
@@ -41,6 +42,11 @@ const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall
   campfire: { shut: "/sprites/walk/campfire.png", open: "/sprites/walk/campfire-out.png", w: legacyU(24), tall: 1 },
   cage: { shut: "/sprites/walk/cage.png", open: "/sprites/walk/cage-open.png", w: legacyU(22), tall: 1 },
   lectern: { shut: "/sprites/den/lectern.png", open: "/sprites/den/lectern.png", w: legacyU(20), tall: 56 / 48 },
+  gilt: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
+  golden: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
+  // (The standing torch's stand-in was the floor candle; the dynamite's, Klutz's crate.)
+  standingtorch: { shut: WALK_CANDLE_LIT.src, open: WALK_CANDLE.src, w: legacyU(WALK_CANDLE.size), tall: WALK_CANDLE.h / WALK_CANDLE.w },
+  dynamite: { shut: "/sprites/den/crate.png", open: "/sprites/den/crate.png", w: SACK_U, tall: 1 },
   floortorch: { shut: KIT_LIGHTS.candles, open: KIT_LIGHTS.candles, w: (KIT_LIGHTS.candleSize[0] * 0.85) / 48, tall: KIT_LIGHTS.candleSize[1] / KIT_LIGHTS.candleSize[0] },
 };
 const DRAFTS: Thing3D[] = ["strongbox", "broken", "gem", "campfire", "cage", "lectern", "floortorch", "torch"];
@@ -50,7 +56,17 @@ export type ChestView = { open: boolean; across: number; width: number; moving: 
   at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean; splash: number };
 // table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
 // the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
-export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | DraftKind;
+export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "gilt" | "golden" | "standingtorch" | "dynamite" | DraftKind;
+// standingtorch, dynamite: the boss's standing torch and the storehouse's dynamite, upright pictures as the
+// game's 3D view draws them (WalkView3D: the torch STANDING_TORCH_U tall with a flame on its bowl; the
+// dynamite SACK_U wide, as a pickup on the floor is).
+// gilt: the golden chest as the game draws it now (the chest tinted); golden: the draft of its own gold faces
+// (2026-11-16, public/sprites/walk/samples/drafts/golden-chest3d/, made from chest3d's faces, same sizes).
+const GOLD = "/sprites/walk/samples/drafts/golden-chest3d";
+const GOLDEN_DRAFT_FACES: ChestFaces = {
+  front: { src: `${GOLD}/front.png`, w: 60, h: 19, lid: 6 }, side: { src: `${GOLD}/side.png`, w: 38, h: 19 },
+  inside: { src: `${GOLD}/inside.png`, w: 60, h: 33 }, top: { src: `${GOLD}/top.png`, w: 60, h: 33 },
+};
 
 // The walls' lean (decision 36, WalkView3D's at GAME_VIEW's 0.03), on the chest and the wall here
 // (Props3D's PROP_LEAN, about you at x = 0).
@@ -245,6 +261,12 @@ function Scene({ view }: { view: ChestView }) {
               <Prop3D kind="table" outline={view.outline} deck={view.thing === "deck" && !view.open} glow={RARITY_COLORS[view.rarity].text} />
               {view.thing === "table" && view.candle && <TableCandle3D x={CANDLE_AT} top={TABLE_TOP} />}
             </>)
+          : view.thing === "standingtorch" || view.thing === "dynamite"
+            ? <Upright3D thing={view.thing} lit={view.lit} />
+          : view.thing === "golden"
+            ? <Chest faces={GOLDEN_DRAFT_FACES} open={view.open} outline={view.outline} edges={view.edges} />
+          : view.thing === "gilt"
+            ? <Prop3D kind="chest" golden open={view.open} outline={view.outline} edges={view.edges} />
             : <Prop3D kind={view.thing as "chest" | "stash" | "bookcase"} open={view.open} outline={view.outline} edges={view.edges} />}
       </group>
       {view.old && o && (
@@ -262,6 +284,31 @@ function Scene({ view }: { view: ChestView }) {
   );
 }
 
+
+// The standing torch or the dynamite, as WalkView3D draws them: a picture standing upright, facing the
+// camera, lit by the light where it stands (here, the lab's lights); the torch's flame on its bowl.
+function Upright3D({ thing, lit }: { thing: "standingtorch" | "dynamite"; lit: boolean }) {
+  const stretch = uprightStretch(PITCH);
+  const torch = thing === "standingtorch";
+  const map = useMemo(() => loaded(torch ? WALK_STANDING_TORCH.src : DYNAMITE_ART.src), [torch]);
+  const k = torch ? STANDING_TORCH_U / WALK_STANDING_TORCH.h : SACK_U / DYNAMITE_ART.w;
+  const w = torch ? WALK_STANDING_TORCH.w * k : SACK_U, h = (torch ? STANDING_TORCH_U : DYNAMITE_ART.h * k) * stretch;
+  const [fx, fy] = STANDING_TORCH_FLAME;
+  return (
+    <>
+      <mesh position={[0, h / 2, 0.05]} scale={[w, h, 1]}>
+        <planeGeometry />
+        <meshLambertMaterial map={map} alphaTest={0.5} transparent />
+      </mesh>
+      {torch && lit && (<>
+        <mesh position={[-w / 2 + fx * k, h - fy * k * stretch + 0.08, 0.11]} scale={[0.1, 0.18, 1]}>
+          <planeGeometry /><meshBasicMaterial color="#ffd27a" />
+        </mesh>
+        <pointLight position={[0, h + 0.2, 0.3]} color="#ffbe5a" intensity={3} distance={0} decay={1.6} />
+      </>)}
+    </>
+  );
+}
 
 export default function ChestScene({ view }: { view: ChestView }) {
   return (

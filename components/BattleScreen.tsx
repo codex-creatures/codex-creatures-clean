@@ -917,17 +917,17 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
   // Venom (Rabid Bite) and poison share the poison icon, shown once.
   const has = (...ids: string[]) => f.statuses.some((s) => ids.includes(s.id));
   const marks: [boolean, React.ReactNode][] = [
-    [has("cripple"), <Glyph key="cripple" icon="🐌" art="status_cripple" />], [has("haste"), "⚡"],
-    [has("venom", "poison"), <Glyph key="poison" icon="☣️" art="status_poison" />], [has("mirage"), "✨"],
-    [has("corpsify"), "⚰️"],
-    [has("seal"), "⛓️"], // (fear stays hidden until it strikes)
+    [has("cripple"), <Glyph key="cripple" icon="🐌" art="status_cripple" />], [has("haste"), <Glyph key="haste" icon="⚡" art="status_haste" />],
+    [has("venom", "poison"), <Glyph key="poison" icon="☣️" art="status_poison" />], [has("mirage"), <Glyph key="mirage" icon="✨" art="status_mirage" />],
+    [has("corpsify"), <Glyph key="corpse" icon="⚰️" art="status_corpse" />],
+    [has("seal"), <Glyph key="seal" icon="⛓️" art="status_seal" />], // (fear stays hidden until it strikes)
     [has("soak"), "🫧"],
     [has("brace"), "🧱"],
-    [f.statuses.some((s) => s.id === "boost"), "💪"],
-    [has("bleed"), "🩸"],
-    [has("weaken"), "🔻"],
-    [has("ward"), "💎"],
-    [has("flame"), "🔥"],
+    [f.statuses.some((s) => s.id === "boost"), <Glyph key="boost" icon="💪" art="status_boost" />],
+    [has("bleed"), <Glyph key="bleed" icon="🩸" art="status_bleed" />],
+    [has("weaken"), <Glyph key="weaken" icon="🔻" art="status_weaken" />],
+    [has("ward"), <Glyph key="ward" icon="💎" art="status_ward" />],
+    [has("flame"), <Glyph key="flame" icon="🔥" art="status_flame" />],
     [has("charged"), "💢"],
   ];
   const shown = marks.filter(([on]) => on).map(([, m]) => m);

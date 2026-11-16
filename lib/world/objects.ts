@@ -16,7 +16,7 @@
 
 import { artFor, type Art } from "../sprites/art";
 import { TREASURE_CHEST, TREASURE_CHEST_OPEN, BURLAP_SACK, BURLAP_SACK_OPEN, RICKETY_CHEST, RICKETY_CHEST_OPEN, CARD_DECK, MERCHANT, LIBRARIAN, CARD_WITCH } from "../sprites/props";
-import { WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_BOOKCASE, WALK_LECTERN, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_DECOR, WALK_BANNER, WALK_HERO, WALK_KIT, KIT_PX, type WalkProp } from "../sprites/walk";
+import { WALK_CAGE, WALK_CAGE_OPEN, WALK_POOL, WALK_BOOKCASE, WALK_LECTERN, WALK_CAMPFIRE, WALK_CAMPFIRE_OUT, WALK_CANDLE, WALK_CANDLE_LIT, WALK_STANDING_TORCH, WALK_DECOR, WALK_BANNER, WALK_HERO, WALK_KIT, KIT_PX, type WalkProp } from "../sprites/walk";
 import { legacyU } from "../render/projection";
 import { SCONCE_RADIUS, CANDLE_RADIUS } from "../dungeon/torch";
 import { CAMPFIRE_LIGHT } from "../dungeon/campfire";
@@ -133,8 +133,8 @@ const WALK_OVER = { collision: "walk-over" as const, height: 0.3, sortDy: -0.6 }
 export const TABLE_ART: ArtRef = { src: "/sprites/props/table3d/front.png?v=2", w: 60, h: 20 };
 export const TABLE_TOP = 0.83; // u: how high its top is (props3d.ts tableArt; a candle on it stands there)
 // (World version 14, the user, 2026-11-14) A storehouse's finds lying on its floor, to pick up: Klutz's
-// dynamite (the crate stamped DANGER) and the rugged backpack.
-export const DYNAMITE_ART: ArtRef = { src: "/sprites/den/crate.png", w: 56, h: 56 };
+// dynamite (its own picture since 2026-11-16; it was Klutz's crate) and the rugged backpack.
+export const DYNAMITE_ART: ArtRef = { src: "/sprites/props/dynamite.png", w: 64, h: 64 };
 export const BACKPACK_ART: ArtRef = { src: "/sprites/items/backpack.png", w: 64, h: 64 };
 
 const DEFS: ObjectDef[] = [
@@ -193,11 +193,11 @@ const DEFS: ObjectDef[] = [
   decorDef("nest", "nest", { ...WALK_OVER, footprint: { w: 2, d: 2 } }, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
   decorDef("pots", "pots", { ...WALK_OVER, footprint: { w: 2, d: 2 }, height: 0.5 }, { lift: 0.3, sortDy: WALK_OVER.sortDy }),
   // (World version 16) A storehouse's crates and barrels, each searched once (the user, 2026-11-15), and the
-  // standing torches lining the way to a boss (the floor candle's picture stands in till theirs is made).
+  // standing torches lining the way to a boss (their own picture, 2026-11-16: WALK_STANDING_TORCH).
   def("store-crates", floorThing({ footprint: { w: 3, d: 3 }, kind: "interactable", height: 1.1, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.crates) }, { width: legacyU(WALK_DECOR.crates.size) })),
   def("store-barrels", floorThing({ footprint: { w: 3, d: 2 }, kind: "interactable", height: 0.9, interact: usable("search") }), legacyVisual({ base: ref(WALK_DECOR.barrels) }, { width: legacyU(WALK_DECOR.barrels.size) })),
   def("standing-torch", floorThing({ footprint: { w: 1, d: 1 }, kind: "light", height: 1.2, collision: "walk-over", light: { radius: CANDLE_RADIUS, colour: "#ffbe5a", flicker: true } }),
-    legacyVisual({ out: ref(WALK_CANDLE), lit: ref(WALK_CANDLE_LIT) }, { width: legacyU(WALK_CANDLE.size) })),
+    legacyVisual({ out: ref(WALK_STANDING_TORCH), lit: ref(WALK_STANDING_TORCH) }, { width: legacyU(WALK_STANDING_TORCH.size) })),
   // People: the merchant and the librarian stand by their carts; the card witch walks about (not solid).
   def("merchant", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(MERCHANT) }, { height: NPC_U })),
   def("librarian", floorThing({ footprint: { w: 3, d: 2 }, clearance: 1, clearFront: true, kind: "npc", height: 1.4, light: NPC_LIGHT, interact: usable("talk", true) }), legacyVisual({ base: propRef(LIBRARIAN) }, { height: NPC_U })),

@@ -20,6 +20,7 @@ import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
+import Glyph from "@/components/Glyph";
 import { CHAPTERS, PLANS_TAKEN_GOLD, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
@@ -86,9 +87,9 @@ export default function QuestBoardPage() {
     <DenFrame title="Quest Board" icon="📜" fill dock={dock}>
       <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, padding: "12px 12px 14px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-          <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}>📖 Campaign</button>
-          <button className="chip" data-active={tab === "quests"} onClick={() => setTab("quests")} style={TAB}>📜 Quests</button>
-          <button className="chip" data-active={tab === "boards"} onClick={() => setTab("boards")} style={TAB}>🏆 Boards</button>
+          <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}><Glyph icon="📖" art="ui_campaign" size={18} /> Campaign</button>
+          <button className="chip" data-active={tab === "quests"} onClick={() => setTab("quests")} style={TAB}><Glyph icon="📜" art="ui_quests" size={18} /> Quests</button>
+          <button className="chip" data-active={tab === "boards"} onClick={() => setTab("boards")} style={TAB}><Glyph icon="🏆" art="ui_leaderboards" size={18} /> Boards</button>
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
           <div style={{ minWidth: 0 }}>

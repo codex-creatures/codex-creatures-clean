@@ -33,7 +33,7 @@ export const MATERIALS: Record<MaterialKey, { name: string; icon: string; rarity
   nails:          { name: "Nails",          icon: "📌", rarity: "common",   desc: "A fistful of bent iron nails." },
   metal_bars:     { name: "Metal bars",     icon: "🧱", rarity: "uncommon", desc: "Dull iron ingots. For upgrades that need to be strong." },
   essence_stones: { name: "Stone",          icon: "🪨", rarity: "rare",     desc: "Squared blocks of cave stone. For building that has to last." },
-  essence:        { name: "Essence stones", icon: "💎", rarity: "epic",     desc: "Stones that hum like the barcodes do. For magical building." },
+  essence:        { name: "Essence crystal", icon: "💎", rarity: "epic",    desc: "A crystal that hums like the barcodes do. For magical building." }, // (named Essence stones till 2026-11-16)
 };
 export const MATERIAL_KEYS = Object.keys(MATERIALS) as MaterialKey[];
 

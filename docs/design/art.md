@@ -62,7 +62,7 @@ and status icons; NPCs on the collector; dungeon props with the dungeon palette 
 
 | Group | Placeholder now | Where | Draft |
 |---|---|---|---|
-| Material | Essence stones: 💎 | `MATERIALS.essence`, `MATERIAL_SPRITES` | 64px icon |
+| Material | Essence crystal (was Essence stones): 💎 | `MATERIALS.essence`, `MATERIAL_SPRITES` | 64px icon |
 | Soul stones (6) | emoji (☣️ 👻 🪨 🎯 🃏 💚) | `SOUL_STONES` | 64px icon each |
 | Locators (3) | the schematic, clairvoyance and codex icons | `TOOL_SPRITES` | 64px icon each |
 | Klutz's Pack Upgrade | the backpack icon | `TOOL_SPRITES.klutz_pack` | 64px icon |
@@ -93,3 +93,22 @@ as one family; the weakest are the Underkin pickaxe (faint outline) and the stan
 dark); the golden chest kept the treasure chest's shape, so it could become the 3D chest's gold
 faces; the fireplace isn't on the Den's 2:1 angle yet (§11's block-out method would fix that).
 Approved ones go into the game with their registries (`lib/sprites`, `RACE_INFO`, `Glyph`).
+
+**The user's review (2026-11-16):** ✅ **approved and in the game:** the six soul stones (`STONE_SPRITES`,
+`StoneIcon`), the Essence crystal (renamed from Essence stones), Klutz's Pack Upgrade, the crystal ball
+and librarian locator, the dynamite on a storehouse's floor (`DYNAMITE_ART`), the standing torch (its own
+picture in 3D, one flame on its bowl), the Toxic race icon, nine status marks (corpsify, mirage, bleed,
+boost, burning, ward, weakened, sealed, haste) and four UI icons (items discovered; the board's Campaign,
+Quests and Boards tabs). (Ward is Crystal Armour's: it clears a creature's statuses and blocks new ones
+for 3 rounds.) The rest were redrawn (round 2, the user: "real world props" must look as they will
+as a real 3D model in the Labyrinth, or at the Den's angle):
+- **The golden chest** as the 3D chest's own faces in gold (front, ends, lid top, with their lit edges
+  and underside, made from chest3d's at the same sizes, so they go straight on `Chest`'s boxes): see
+  `/lab/chest`, Golden (draft) beside Golden (now).
+- **The Cyclops Head** and **the fireplace** by §11's block-out method: a flat-colour shape at the
+  2:1 angle (on a wall sloping like the tavern's front), repainted by Pro Flash edit.
+- **The Enchantress** styled on the merchant (three-quarter view, hunched, earthy, a prop in hand).
+- **The crates** styled on the game's own crate; the merchant's map, Underkin, soaked, brace, charged,
+  settings and creatures redrawn; **Stone** (🪨, missed in round 1) drafted.
+Round 2 cost 101 generations (1,693 left). In `/lab/art` the room now shows round 2; the
+approved ones are listed under it.

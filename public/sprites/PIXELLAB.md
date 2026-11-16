@@ -314,3 +314,28 @@ All Pro Flash, seed 7 unless noted. Item icons and crates 64×64 with the Void S
 | ui-quests.png | c646032b-bf09-40ab-9d66-7c2849b885c2 |
 | ui-leaderboards.png | e9e4f29c-c106-4e5c-97ce-ebc6226760fd |
 | (dynamite.png) | seed 3, the third wording: the first two ("dynamite", "blasting charge") were refused by the content filter |
+
+## The placeholder drafts, round 2 (2026-11-16; shown in /lab/art and /lab/chest)
+
+Same recipes as round 1 unless noted. The golden chest faces: Pro Flash edit (text) of chest3d/front, top and side padded to 64×32, 64×36 and 40×32, cut back to 60×19, 60×33 and 38×19 (the front on a solid ground: on a clear one the dark wood was taken for background), lit edges and underside made as chest3d's. Cyclops Head and fireplace: Pro Flash edit of a flat block-out at the 2:1 angle. Enchantress: styled on npcs/merchant.png (its palette too). Crates: styled on den/crate.png (its palette too). Small icons styled on the approved ui_items / status_flame / race_toxic.
+
+| File (walk/samples/drafts/) | Job |
+|---|---|
+| den-fireplace-2.png | fbd1dfe6-2e87-48f4-9c12-72fdbeade224 |
+| enchantress-2.png | f4daf3a4-fb7b-49b6-a357-c46deafd5da7 |
+| ui-settings-2.png | e2b7c2f9-b237-4719-99a2-c5a2dd499aa9 |
+| ui-creatures-2.png | c99dde9d-818e-4271-a529-4d5d98d52697 |
+| race-underkin-2.png | 7adf085c-e6ce-4896-ad7d-04a5ab2050ef |
+| status-soak-2.png | ae02ec3b-f764-43f4-8439-d80de6600c93 |
+| status-brace-2.png | 2857c2ca-b442-4faa-8419-0823de593e05 |
+| status-charged-2.png | dabc778b-2564-44cc-8756-f11700bb5c1e |
+| locator-merchant-map-2.png | dae4a404-5c4d-4bb0-b3ac-623f77e1016c |
+| crate-materials-2.png | 215c9594-964e-4287-ab88-d0e1687d5c28 |
+| crate-gear-2.png | 244bcd89-3160-4641-9abb-d9c31fc1a9aa |
+| crate-codex-2.png | d24bdaaa-791c-46d1-9421-8b5f2b362d84 |
+| crate-supplies-2.png | f888cfe4-f535-4eaa-8f40-73e5762685a8 |
+| cyclops-head-3.png | a8637cd5-13b6-4a0e-a3f8-ce30876cc68c |
+| stone.png | e393a09d-666b-4fa4-a3aa-21b7d7678a2b |
+| golden-chest3d/*.png | from jobs 3e2ce112-0b8d-4d95-abb0-3ef2f87b059c (front), 89fe7170-92bb-4610-9e7b-305ed05534f9 (top), a99210b5-c4d4-4947-b6ba-3480d1376547 (side) |
+
+In the game since 2026-11-16 (copies of the approved round-1 drafts above): icons/status_{corpse,mirage,bleed,boost,flame,ward,weaken,seal,haste}.png, icons/race_toxic.png, icons/ui_{items,campaign,quests,leaderboards}.png, items/stones/<key>.png, items/materials/essence.png (the Essence crystal; the old gem, materials/essence_stones.png, is no longer used), items/tools/{klutz_pack,crystal_ball,librarian_locator}.png, props/dynamite.png, walk/standing-torch.png (trimmed to 17×52).

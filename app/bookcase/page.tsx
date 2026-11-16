@@ -48,7 +48,7 @@ export default function BookcasePage() {
               <li>Read a codex from a creature&apos;s <b>Moves</b> tab. Race codexes only work on that race.</li>
               <li>Don&apos;t want one? Tap it, then <b>Sell</b>: you get what a merchant would pay (half a librarian&apos;s price), and it makes room.</li>
               <li>The <b>Crooked Bookcase Schematic</b> (the campaign&apos;s reward for blowing open the rubble) builds it up to <b>{bookcaseSize(BOOKCASE_BUILT)}</b>: {SCHEMATICS.crooked_bookcase.cost.planks} planks and {SCHEMATICS.crooked_bookcase.cost.nails} nails.</li>
-              <li>Then it can be built up to the <b>iron-bound bookcase</b>, holding <b>{bookcaseSize(BOOKCASE_REINFORCED)}</b>: {BOOKCASE_UPGRADE_COST.metal_bars} metal bars, {BOOKCASE_UPGRADE_COST.essence_stones} stone and {BOOKCASE_UPGRADE_COST.essence} essence stones.</li>
+              <li>Then it can be built up to the <b>iron-bound bookcase</b>, holding <b>{bookcaseSize(BOOKCASE_REINFORCED)}</b>: {BOOKCASE_UPGRADE_COST.metal_bars} metal bars, {BOOKCASE_UPGRADE_COST.essence_stones} stone and {BOOKCASE_UPGRADE_COST.essence} essence crystals.</li>
             </ul>
           </Help>
         </div>

@@ -6,6 +6,7 @@
 import type { Sprite } from "./pixels";
 import { withArt } from "./art";
 import type { MaterialKey, ToolKey } from "../items/materials";
+import type { SoulStoneKey } from "../creatures/soulStones";
 import { ITEM_CEILINGS, type ItemKey } from "../items/ceilings";
 import { ARMOR_KEYS, type ArmorKey } from "../items/armor";
 
@@ -27,18 +28,23 @@ export const GOLD_SPRITE = icon("gold");
 export const POTION_SPRITES: Record<"potion" | "lesser", Sprite> = { potion: icon("potion"), lesser: icon("lesser_potion") };
 export const BACKPACK_SPRITE = icon("backpack");
 // Building materials.
-export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars"), essence: icon("materials/essence_stones") }; // (the gem art is the epic essence stone's; Stone has none yet)
+export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars"), essence: icon("materials/essence") }; // (the essence crystal, 2026-11-16; Stone has none yet)
 // The Labyrinth's tools (the Torch, drawn at 32px, keeps its old id: flare), codexes,
 // XP scrolls and schematics.
 export const TOOL_SPRITES: Record<ToolKey, Sprite> = {
   flare: withArt(["."], { src: "/sprites/items/tools/flare.png", w: 32, h: 32, size: 32 }),
   clairvoyance: icon("tools/clairvoyance"), revival: icon("tools/revival"),
-  // (Stand-ins till the locators have art of their own.)
-  merchant_map: icon("schematic"), crystal_ball: icon("tools/clairvoyance"), librarian_locator: icon("codex"),
+  // (The merchant's map: a stand-in till its art is approved.)
+  merchant_map: icon("schematic"), crystal_ball: icon("tools/crystal_ball"), librarian_locator: icon("tools/librarian_locator"),
   gold_key: icon("tools/gold_key"), // (PixelLab's, 2026-11-13: PIXELLAB.md)
-  klutz_pack: icon("backpack"), // (a stand-in)
+  klutz_pack: icon("tools/klutz_pack"),
 };
 export const CODEX_SPRITE = icon("codex");
+// The soul stones (public/sprites/items/stones/<key>.png; approved 2026-11-16).
+export const STONE_SPRITES: Record<SoulStoneKey, Sprite> = {
+  toxic_skin: icon("stones/toxic_skin"), haunting_presence: icon("stones/haunting_presence"), unstoppable_force: icon("stones/unstoppable_force"),
+  perfectionist: icon("stones/perfectionist"), trickster: icon("stones/trickster"), revitalise: icon("stones/revitalise"),
+};
 export const SCROLL_SPRITE = icon("xp_scroll");
 export const SCHEMATIC_SPRITE = icon("schematic");
 // …and the rarity their glow shows in an inventory: gold and the backpack are

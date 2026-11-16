@@ -74,7 +74,7 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   is seeded by the item's id, so it comes out the same on every load and every device.
 - ✅ **Selling** (the user, 2026-11-16): an enchanted item sells for 20% more (`ENCHANT_SELL_BONUS`,
   lib/items/economy/sell.ts), wherever it's sold.
-- **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence stone
+- **Rerolling:** only the Enchantress, a tavern visitor ([den.md](den.md) §9): 1 essence crystal
   plus 1,000 / 2,000 / 5,000 gold by the item's rarity.
 - **Look:** an enchanted item's picture has a moving shine over it (like Minecraft's), drawn in
   code: no new art. ✅ A purple glint sweeping across, masked to the picture's shape (CSS
@@ -102,14 +102,14 @@ to do there (Bounty in a duel, with no gold) just does nothing.
 
 ### Materials, consumables, bags
 
-- ✅ **Materials** (planks, nails, metal bars, stone, essence stones: lib/items/materials.ts) are a tally at
+- ✅ **Materials** (planks, nails, metal bars, stone, essence crystals: lib/items/materials.ts) are a tally at
   home, like gold. In the Labyrinth a material find is a stack that takes one bag slot and joins
   the tally when you get home.
-  ✅ **Stone and essence stones** (the user, 2026-11-03): **Stone** (rare, 🪨 until PixelLab art)
-  took the old rare essence stone's place everywhere: material finds, the merchants (Labyrinth
+  ✅ **Stone and essence crystals** (the user, 2026-11-03): **Stone** (rare, 🪨 until PixelLab art)
+  took the old rare essence crystal's place everywhere: material finds, the merchants (Labyrinth
   150, tavern 300) and the storage schematics. It keeps the save key `essence_stones`, so stones
-  already in a save are Stone now. **Essence stones** are a new **epic** material (`essence`, the
-  old gem art): 1 in an Epic material find and 1–2 in a Legendary one (each a third of those
+  already in a save are Stone now. **Essence stones** are a new **epic** material (`essence`;
+  ✅ renamed the **Essence crystal**, with its own crystal art, by the user on 2026-11-16): 1 in an Epic material find and 1–2 in a Legendary one (each a third of those
   finds; the rest metal bars or stone), and on 1 merchant's cart in 3: 500 in the Labyrinth,
   1,000 at the tavern, bought back for 250.
 - ✅ **Potions** go in the bag. The Chest (Inventory) stores the rest.
@@ -127,7 +127,7 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   ✅ **Reinforced storage schematics** (the user, 2026-11-13): once a box's first schematic is built,
   the merchant's same 20% roll offers its second one instead (`weapon_storage_2`, `armor_storage_2`,
   Legendary) for 4,000 gold (`STORAGE_PLAN_2_PRICE`). Built the same way, for 10 metal bars, 5 stone and
-  2 essence stones: that box holds 100 (`BIGGER_BOX_CAP`). In the save a box built twice is in
+  2 essence crystals: that box holds 100 (`BIGGER_BOX_CAP`). In the save a box built twice is in
   `storage` twice (`boxTier`; older saves read as before).
 - ✅ **Bags:** you start with a Bindle (3 slots, `BINDLE`). The Rugged Backpack (5, `BACKPACK`) is
   found three ways, until you've got it (the user, 2026-10-20): the first Cyclops's chest; every
@@ -148,7 +148,7 @@ to do there (Bounty in a duel, with no gold) just does nothing.
   lib/items/materials.ts). (It was an epic drop for 20 planks + 10 nails, holding 25; a bookcase
   built then keeps its 25: `BOOKCASE_LEVELS`.)
   ✅ **Iron-bound bookcase** (the user, 2026-11-13): the crooked bookcase builds up again, with no
-  schematic, for 10 metal bars, 5 stone and 2 essence stones (`BOOKCASE_UPGRADE_COST`): it holds 30
+  schematic, for 10 metal bars, 5 stone and 2 essence crystals (`BOOKCASE_UPGRADE_COST`): it holds 30
   (`BOOKCASE_REINFORCED`, level 4). It keeps the crooked bookcase's art for now.
 - ✅ **Selling codexes** (the user, 2026-11-12; was throwing out, for no gold, since 2026-10-25): tap a
   codex on the bookcase, then Sell and Yes, for what a merchant pays (`codexSellPrice`: half a

@@ -30,7 +30,7 @@ import RaceTag from "./RaceTag";
 import ClassBadge from "./ClassBadge";
 import { SOUL_STONES, SOUL_STONE_KEYS, setStoneCost, type SoulStoneKey } from "@/lib/creatures/soulStones";
 import { SOUL_COLOR } from "./SoulStoneTag";
-import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
+import PixelSprite, { creatureSprite, itemSprite, StoneIcon } from "./PixelSprite";
 import { useDragDrop } from "@/hooks/useDragDrop";
 import { doubleTapper } from "@/lib/doubleTap";
 import { Coin } from "./GoldCount";
@@ -329,7 +329,7 @@ export default function CreatureDetailModal({
             {/* A stone that can't be changed here: tapping it just says what it does */}
             {stonePicking && !canSetStone && creature.soulStone && (
               <div style={{ marginTop: 10, padding: 10, background: "#15161d", border: "2px solid #8a6a3a", fontSize: 12, lineHeight: 1.4, color: SOUL_COLOR }}>
-                <b>{SOUL_STONES[creature.soulStone].icon} {SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}
+                <b><StoneIcon k={creature.soulStone} /> {SOUL_STONES[creature.soulStone].name}</b>: {SOUL_STONES[creature.soulStone].text}
               </div>
             )}
 
@@ -607,7 +607,7 @@ function StoneSetter({ current, owned, gold, onSet }: { current?: SoulStoneKey |
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
           {kinds.map((k) => (
             <Tile key={k} rarity="legendary" selected={chosen === k} onClick={() => setChosen(k)} title={`${SOUL_STONES[k].name}: ${SOUL_STONES[k].text}`}>
-              <span style={{ fontSize: 22 }}>{SOUL_STONES[k].icon}</span>
+              <StoneIcon k={k} scale={1.5} />
               <Badge color={GOLD}>×{owned.filter((d) => d.stone === k).length}</Badge>
             </Tile>
           ))}

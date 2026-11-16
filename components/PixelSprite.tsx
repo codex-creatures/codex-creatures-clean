@@ -8,10 +8,11 @@ import { useMemo, useState } from "react";
 import { fineGrid, outlined, runs, type Sprite } from "@/lib/sprites/pixels";
 import { artFor, isShining, shining } from "@/lib/sprites/art";
 import { enchantOf } from "@/lib/items/enchantments";
-import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES, POTION_SPRITES, MATERIAL_SPRITES, TOOL_SPRITES, CODEX_SPRITE, SCROLL_SPRITE, SCHEMATIC_SPRITE } from "@/lib/sprites/items";
+import { WEAPON_SPRITES, ARMOR_SPRITES, HELMET_SPRITES, LEGS_SPRITES, POTION_SPRITES, MATERIAL_SPRITES, TOOL_SPRITES, STONE_SPRITES, CODEX_SPRITE, SCROLL_SPRITE, SCHEMATIC_SPRITE } from "@/lib/sprites/items";
 import { MATERIALS, type MaterialKey } from "@/lib/items/materials";
 import { CREATURE_SPRITES, EGG } from "@/lib/sprites/creatures";
 import type { CreatureOrItemDrop } from "@/lib/types";
+import type { SoulStoneKey } from "@/lib/creatures/soulStones";
 
 export default function PixelSprite({ sprite, scale = 4, title, style }: {
   sprite: Sprite; scale?: number; title?: string; style?: React.CSSProperties;
@@ -81,6 +82,7 @@ function plainItemSprite(item: CreatureOrItemDrop): Sprite | undefined {
   if (item.potion) return POTION_SPRITES[item.potion];
   if (item.material && MATERIAL_SPRITES[item.material]) return MATERIAL_SPRITES[item.material];
   if (item.tool) return TOOL_SPRITES[item.tool];
+  if (item.stone) return STONE_SPRITES[item.stone];
   if (item.codexMove) return CODEX_SPRITE;
   if (item.scroll) return SCROLL_SPRITE;
   if (item.schematic) return SCHEMATIC_SPRITE;
@@ -101,6 +103,11 @@ export const creatureSprite = (creatureId?: string): Sprite => (creatureId && CR
 // is a Healing Potion, the little vial a Lesser one).
 export function PotionIcon({ kind }: { kind: "potion" | "lesser" }) {
   return <PixelSprite sprite={POTION_SPRITES[kind]} scale={1.25} style={{ verticalAlign: "middle", marginRight: 4 }} />;
+}
+
+// A soul stone's picture, for a line of text or a tile.
+export function StoneIcon({ k, scale = 1.25 }: { k: SoulStoneKey; scale?: number }) {
+  return <PixelSprite sprite={STONE_SPRITES[k]} scale={scale} style={{ verticalAlign: "middle", marginRight: 2, display: "inline-block" }} />;
 }
 
 // A material's picture for a line of text (its emoji if it has no art).

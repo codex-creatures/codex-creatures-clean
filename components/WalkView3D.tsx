@@ -35,7 +35,7 @@ import { placeFloorLifeOf, type Thing } from "@/lib/world/walkWorld";
 import type { RatHole, CobWeb } from "@/lib/dungeon/decor";
 import { torchThere, type WalkSim, type Frame } from "@/lib/world/walkSim";
 import { objectDef, artOf, FOE_U, NPC_U, BOSS_SCALE, CHIEF_SCALE } from "@/lib/world/objects";
-import { WALK_TILES, WALK_HERO8, WALK_BOB, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE } from "@/lib/sprites/walk";
+import { WALK_TILES, WALK_HERO8, WALK_BOB, WALK_WITCH, KIT_LIGHTS, KIT_PX, FLOOR_LIFE, WALK_STANDING_TORCH, STANDING_TORCH_U, STANDING_TORCH_FLAME } from "@/lib/sprites/walk";
 import { FALL_TIME, DUST_TIME, SHAKE_TIME } from "@/lib/render/scene";
 import { useWalkPlay, type WalkPlayProps } from "@/hooks/useWalkPlay";
 import { Stick, Warmth, WalkScroll } from "@/components/WalkView";
@@ -452,6 +452,22 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
   }
   for (const c of sim.candles) {
     if (!seen(c.x, c.y)) continue;
+    if (c.chain !== undefined) {
+      // A boss's standing torch: its own picture, STANDING_TORCH_U tall, one flame on its bowl when lit.
+      const k = STANDING_TORCH_U / WALK_STANDING_TORCH.h, w = WALK_STANDING_TORCH.w * k, h = STANDING_TORCH_U * stretch, on = glows(c.lit, c.x, c.y);
+      const [fx, fy] = STANDING_TORCH_FLAME;
+      out.push(
+        <group key={c.id}>
+          <Upright src={WALK_STANDING_TORCH.src} x={c.x} y={c.y} w={w} h={h} below={0} colour={on ? (shade ? new THREE.Color(1, 1, 1) : undefined) : shade && (() => shade(c.x, c.y))} />
+          {on && (
+            <mesh raycast={() => null} position={[c.x - w / 2 + fx * k, h - fy * k * stretch + 0.08, c.y + 0.06]} scale={[0.1, 0.18, 1]}>
+              <planeGeometry /><meshBasicMaterial color={FLAME_COLOUR} />
+            </mesh>
+          )}
+        </group>,
+      );
+      continue;
+    }
     // The kit's candles, the 2D view's size against the walls' art (CANDLE_ART 0.85), a flame on each wick when lit.
     // (One on a table, world version 12, stands on its top: `high` up, to the left of its middle.)
     const [cw, ch] = KIT_LIGHTS.candleSize, k = 0.85 / ART_PER_U, w = cw * k, h = ch * k * stretch, on = glows(c.lit, c.x, c.y);

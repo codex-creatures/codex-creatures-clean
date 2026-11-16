@@ -99,7 +99,7 @@ fields optional with defaults.
    beat the Hydra and claim its reward there, the **Training Pit Schematic** (not an item: the pit
    just offers to build). It builds the **Training Pit** over the Sparring Pit (a stone rim ringed with
    spears, `den/training-pit.png`, the same grid) for **10 stone, 10 metal bars, 5 planks, 5 nails
-   and 3 essence stones**, once: **100 XP an hour** (`TRAINING_XP_PER_HOUR`; 🧪 the user's pick: Lv
+   and 3 essence crystals**, once: **100 XP an hour** (`TRAINING_XP_PER_HOUR`; 🧪 the user's pick: Lv
    10→11 about 3.5h, Lv 20→21 about 8h, Lv 29→30 about 13h). Whoever's training keeps what they earned
    at the sparring rate. Saved in the tavern field (`plans`, `pit`, `training`, and `trainedXp`: the
    pit's **lifetime XP**, everything banked out of it, `logTrained`). Its window (`/training`, tapped in the
@@ -110,7 +110,7 @@ fields optional with defaults.
    ✅ **The creature collector** (the user, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
    ✅ **The Enchantress, visitors on the clock, and tavern upgrades** (the user, 2026-11-16, decision 47; built 2026-11-16; replaces the per-run roll above):
    - ✅ **The Enchantress**, a fourth visitor (built 2026-11-16, `lib/enchantress.ts`): she doesn't play; she rerolls an item's enchantment
-     ([items.md](items.md) §3, Enchantments) for 1 essence stone plus 1,000 / 2,000 / 5,000 gold by
+     ([items.md](items.md) §3, Enchantments) for 1 essence crystal plus 1,000 / 2,000 / 5,000 gold by
      the item's rarity (Rare / Epic / Legendary). Can be sent for, as the others. Art: PixelLab
      samples for the user to pick; ⏸ until then the collector's walk, tinted violet in CSS
      (`VISITOR_TINT`, components/TavernRoom.tsx), stands in. Her window is like the collector's:
@@ -137,13 +137,13 @@ fields optional with defaults.
      - The daily quest's merchant comes as if sent for: 30 minutes.
      - 🧪 The upgrade costs (`UPGRADE_COSTS`, a row per level): 6/8/10/12/14/16/16/14/12/12 planks,
        3/4/5/5/6/6/6/5/3/2 nails, metal bars from level 3 (2, 4, 6, 8, 10, 14, 18, 23), stone from
-       level 6 (1, 2, 4, 7, 12) and an essence stone at levels 9 and 10: the totals above, each level
+       level 6 (1, 2, 4, 7, 12) and an essence crystal at levels 9 and 10: the totals above, each level
        dearer than the last at the merchant's prices. An upgrade takes two taps (the second pays).
    - **Odds start at 5% each** (merchant, librarian, collector, Enchantress) and the tavern upgrades
      them: tapping the tavern shows sending for a visitor and the upgrades, a row per visitor,
      +1% a level, 10 levels (15% at most), paid in materials, dearer each level. 🧪 Testing cost
      (the user's pick of the slowest pace, 2026-11-16): about 120 planks, 45 nails, 85 metal bars,
-     26 stone and 2 essence stones per visitor, planks and nails first, metal bars, then stone and
+     26 stone and 2 essence crystals per visitor, planks and nails first, metal bars, then stone and
      essence at the top. Claude's sim (2026-11-16, full clears): a Cyclops run gives about 4
      planks, 3.4 nails, 1 metal bar, 0.25 stone, 0.05 essence (the Deep and the Abyss about half as
      much again); Klutz, sent out 3 times a day, about 1.5 metal bars and 0.4 stone a day; so an

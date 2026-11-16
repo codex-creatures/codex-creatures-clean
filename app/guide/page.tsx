@@ -8,7 +8,7 @@
 import { useMemo, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import { useGameState } from "@/hooks/useGameState";
-import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite, StoneIcon } from "@/components/PixelSprite";
 import RaceTag from "@/components/RaceTag";
 import RaceChart from "@/components/RaceChart";
 import ClassBadge, { MoveKind, moveKind } from "@/components/ClassBadge";
@@ -123,7 +123,7 @@ function Combat() {
       <P>Some creatures are born with a soul stone, shown under their weapon: Rare {pct(SOUL_STONE_CHANCE.rare ?? 0)}, Epic {pct(SOUL_STONE_CHANCE.epic ?? 0)}, Legendary always. Cards have them too, and summoning from a card keeps its stone. Each species can get one of a few (see the Bestiary).</P>
       <P>Soul stones also turn up on their own: in {SCAN_ODDS.soul_stone}% of barcodes nobody has scanned before (anyone who scans it after you gets gold), and now and then in a boss&apos;s chest (the Cyclops {pct(CYCLOPS_SOUL_STONE)}, the Hydra and the Warden {pct(WARDEN_SOUL_STONE)}). Tap a creature&apos;s soul stone slot to set one in it, any creature at all: free into an empty slot, {SOUL_STONE_REPLACE_COST.toLocaleString()} gold to replace a stone, and the old one is destroyed.</P>
       <ul style={{ fontSize: 13, lineHeight: 1.6, paddingLeft: 18, margin: "4px 0" }}>
-        {(Object.keys(SOUL_STONES) as SoulStoneKey[]).map((k) => <li key={k}>{SOUL_STONES[k].icon} <b>{SOUL_STONES[k].name}</b>: {SOUL_STONES[k].text}</li>)}
+        {(Object.keys(SOUL_STONES) as SoulStoneKey[]).map((k) => <li key={k}><StoneIcon k={k} /> <b>{SOUL_STONES[k].name}</b>: {SOUL_STONES[k].text}</li>)}
       </ul>
     </div>
   );

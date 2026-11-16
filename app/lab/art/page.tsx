@@ -1,60 +1,58 @@
 "use client";
 // app/lab/art/page.tsx — 🧪 the art drafts (the user, 2026-11-16): every placeholder in the game
 // with the PixelLab draft made for it (docs/design/art.md, "The placeholder audit"), laid out on
-// plinths in a stone room you walk round by torchlight. Walk up to one and its card shows the
+// plinths in a stone room you walk round by torchlight (round 2: the redrafts; the approved ones listed below).
+// At the top, the Labyrinth's props rendered in 3D as the game draws them (the chest lab's scene). Walk up to one and its card shows the
 // draft beside what the game shows now. Below the room, all of them in a grid, fully lit.
 // Nothing here is used by the game, and nothing is saved.
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Stick } from "@/components/WalkView";
+import { CHEST_W } from "@/lib/render3d/chest3d";
+import type { ChestView, Thing3D } from "../chest/ChestScene";
+
+// The world props in 3D, through the chest lab's scene (the game's camera, floor, wall and lean, a torch
+// carried round them, you for scale, and the flat picture the game draws now beside each). Three.js loads
+// on this page only.
+const ChestScene = dynamic(() => import("../chest/ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
+const PROPS_3D: { thing: Thing3D; label: string }[] = [
+  { thing: "golden", label: "Golden chest (draft)" }, { thing: "gilt", label: "Golden chest (now)" },
+  { thing: "standingtorch", label: "Standing torch ✓" }, { thing: "dynamite", label: "Dynamite ✓" },
+];
 
 const DRAFTS = "/sprites/walk/samples/drafts";
 type Exhibit = { file: string; name: string; now: string; nowArt?: string; where: string; px?: number };
 
-// Each draft, what it replaces (an emoji, or the picture standing in) and where.
+// Round 2 (2026-11-16): the redrafts of the ones not approved in round 1, and Stone (missed then).
+// Each with what it replaces (an emoji, or the picture standing in) and where.
 const EXHIBITS: Exhibit[] = [
-  { file: "essence", name: "Essence stones", now: "💎", where: "Materials" },
-  { file: "soul-toxic-skin", name: "Toxic Skin", now: "☣️", where: "Soul stones" },
-  { file: "soul-haunting-presence", name: "Haunting Presence", now: "👻", where: "Soul stones" },
-  { file: "soul-unstoppable-force", name: "Unstoppable Force", now: "🪨", where: "Soul stones" },
-  { file: "soul-perfectionist", name: "Perfectionist", now: "🎯", where: "Soul stones" },
-  { file: "soul-trickster", name: "Trickster", now: "🃏", where: "Soul stones" },
-  { file: "soul-revitalise", name: "Revitalise", now: "💚", where: "Soul stones" },
-  { file: "klutz-pack", name: "Klutz's Pack Upgrade", now: "", nowArt: "/sprites/items/backpack.png", where: "Tools" },
-  { file: "locator-merchant-map", name: "Merchant's Map", now: "", nowArt: "/sprites/items/schematic.png", where: "Locators" },
-  { file: "locator-crystal-ball", name: "Crystal Ball", now: "", nowArt: "/sprites/items/tools/clairvoyance.png", where: "Locators" },
-  { file: "locator-librarian", name: "Librarian Locator", now: "", nowArt: "/sprites/items/codex.png", where: "Locators" },
-  { file: "dynamite", name: "Dynamite", now: "", nowArt: "/sprites/den/crate.png", where: "The storehouse's floor" },
-  { file: "crate-materials", name: "Materials Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "crate-gear", name: "Gear Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "crate-codex", name: "Codex Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "crate-supplies", name: "Supplies Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "cyclops-head", name: "Cyclops Head", now: "", nowArt: "/sprites/creatures/cyclops.png", where: "Over the tavern door" },
-  { file: "golden-chest", name: "Golden chest", now: "", nowArt: "/sprites/props/treasure_chest.png", where: "Mini bosses' golden chests (now the chest tinted gold)" },
-  { file: "standing-torch", name: "Standing torch", now: "", nowArt: "/sprites/walk/candle.png", where: "The way to a boss" },
-  { file: "enchantress", name: "The Enchantress", now: "", nowArt: "/sprites/npcs/collector.png", where: "The tavern (now the collector, tinted violet)", px: 92 },
-  { file: "den-fireplace", name: "Den fireplace (not built)", now: "(none)", where: "The Den", px: 96 },
-  { file: "race-underkin", name: "Underkin", now: "🪨", where: "Race icons", px: 32 },
-  { file: "race-toxic", name: "Toxic", now: "🦠", where: "Race icons", px: 32 },
-  { file: "status-haste", name: "Haste", now: "⚡", where: "Status marks", px: 32 },
-  { file: "status-mirage", name: "Mirage", now: "✨", where: "Status marks", px: 32 },
-  { file: "status-corpse", name: "Corpsify", now: "⚰️", where: "Status marks", px: 32 },
-  { file: "status-seal", name: "Sealed", now: "⛓️", where: "Status marks", px: 32 },
-  { file: "status-soak", name: "Soaked", now: "🫧", where: "Status marks", px: 32 },
-  { file: "status-brace", name: "Brace", now: "🧱", where: "Status marks", px: 32 },
-  { file: "status-boost", name: "Boost", now: "💪", where: "Status marks", px: 32 },
-  { file: "status-bleed", name: "Bleed", now: "🩸", where: "Status marks", px: 32 },
-  { file: "status-weaken", name: "Weakened", now: "🔻", where: "Status marks", px: 32 },
-  { file: "status-ward", name: "Ward", now: "💎", where: "Status marks", px: 32 },
-  { file: "status-flame", name: "Burning", now: "🔥", where: "Status marks", px: 32 },
-  { file: "status-charged", name: "Charged", now: "💢", where: "Status marks", px: 32 },
-  { file: "ui-settings", name: "Settings", now: "⚙️", where: "The Den's top bar", px: 32 },
-  { file: "ui-creatures", name: "Creatures discovered", now: "🐾", where: "The Den's top bar", px: 32 },
-  { file: "ui-items", name: "Items discovered", now: "⚔️", where: "The Den's top bar", px: 32 },
-  { file: "ui-campaign", name: "Campaign", now: "📖", where: "The quest board's tabs", px: 32 },
-  { file: "ui-quests", name: "Quests", now: "📜", where: "The quest board's tabs", px: 32 },
-  { file: "ui-leaderboards", name: "Leaderboards", now: "🏆", where: "The quest board's tabs", px: 32 },
+  { file: "golden-chest3d/front", name: "Golden chest (3D faces)", now: "", nowArt: "/sprites/props/chest3d/front.png", where: "Its gold faces for the 3D chest: see /lab/chest, Golden (draft)", px: 60 },
+  { file: "cyclops-head-3", name: "Cyclops Head", now: "", nowArt: "/sprites/creatures/cyclops.png", where: "Over the tavern door, flat on its sloping wall" },
+  { file: "den-fireplace-2", name: "Den fireplace (not built)", now: "(none)", where: "The Den: on a wall sloping like the tavern's front", px: 96 },
+  { file: "enchantress-2", name: "The Enchantress", now: "", nowArt: "/sprites/npcs/collector.png", where: "The tavern (now the collector, tinted violet)", px: 92 },
+  { file: "crate-materials-2", name: "Materials Crate", now: "(none)", where: "Campaign rewards" },
+  { file: "crate-gear-2", name: "Gear Crate", now: "(none)", where: "Campaign rewards" },
+  { file: "crate-codex-2", name: "Codex Crate", now: "(none)", where: "Campaign rewards" },
+  { file: "crate-supplies-2", name: "Supplies Crate", now: "(none)", where: "Campaign rewards" },
+  { file: "locator-merchant-map-2", name: "Merchant's Map", now: "", nowArt: "/sprites/items/schematic.png", where: "Locators" },
+  { file: "stone", name: "Stone", now: "🪨", where: "Materials (missed in round 1)" },
+  { file: "race-underkin-2", name: "Underkin", now: "🪨", where: "Race icons", px: 32 },
+  { file: "status-soak-2", name: "Soaked", now: "🫧", where: "Status marks", px: 32 },
+  { file: "status-brace-2", name: "Brace", now: "🧱", where: "Status marks", px: 32 },
+  { file: "status-charged-2", name: "Charged", now: "💢", where: "Status marks", px: 32 },
+  { file: "ui-settings-2", name: "Settings", now: "⚙️", where: "The Den's top bar", px: 32 },
+  { file: "ui-creatures-2", name: "Creatures discovered", now: "🐾", where: "The Den's top bar", px: 32 },
 ];
+// Approved in round 1, and now in the game.
+const APPROVED: { file: string; name: string }[] = [
+  ["soul-toxic-skin", "Toxic Skin"], ["soul-haunting-presence", "Haunting Presence"], ["soul-unstoppable-force", "Unstoppable Force"], ["soul-perfectionist", "Perfectionist"],
+  ["soul-trickster", "Trickster"], ["soul-revitalise", "Revitalise"], ["essence", "Essence crystal"], ["klutz-pack", "Klutz's Pack Upgrade"],
+  ["locator-crystal-ball", "Crystal Ball"], ["locator-librarian", "Librarian Locator"], ["dynamite", "Dynamite"], ["standing-torch", "Standing torch"],
+  ["race-toxic", "Toxic"], ["status-corpse", "Corpsify"], ["status-mirage", "Mirage"], ["status-bleed", "Bleed"], ["status-boost", "Boost"],
+  ["status-flame", "Burning"], ["status-ward", "Ward"], ["status-weaken", "Weakened"], ["status-seal", "Sealed"], ["status-haste", "Haste"],
+  ["ui-items", "Items discovered"], ["ui-campaign", "Campaign"], ["ui-quests", "Quests"], ["ui-leaderboards", "Leaderboards"],
+].map(([file, name]) => ({ file, name }));
 
 // The room, in art pixels (kit F's tiles are 48 × 36), drawn SCALE× on screen.
 const TILE_W = 48, TILE_H = 36, WALL_H = 87;
@@ -80,6 +78,9 @@ export default function ArtLab() {
   const hero = useRef({ x: ROOM_W / 2, y: ROOM_H - 30, dir: "north" });
   const [near, setNear] = useState<number | null>(null);
   const [lit, setLit] = useState(false);
+  const [view3d, setView3d] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true,
+    thing: "golden", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
+  const set3d = (v: Partial<ChestView>) => setView3d((x) => ({ ...x, ...v }));
   const litRef = useRef(lit);
   useEffect(() => { litRef.current = lit; }, [lit]);
 
@@ -191,6 +192,27 @@ export default function ArtLab() {
   return (
     <div style={{ background: "#111", color: "#f1d9a0", minHeight: "100vh", padding: 16, fontFamily: "sans-serif" }}>
       <h1 style={{ fontSize: 18, margin: "0 0 4px" }}>Art drafts: the placeholder audit</h1>
+
+      {/* The world props, rendered in 3D as the Labyrinth draws them. */}
+      <h2 style={{ fontSize: 15, margin: "8px 0 4px" }}>3D renders: the Labyrinth&apos;s props</h2>
+      <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 8px", maxWidth: 520 }}>
+        Under the game&apos;s camera, on its floor, with a torch carried round. The flat picture on the left is what the game draws now; you stand in the middle for scale.
+      </p>
+      <div style={{ width: "100%", maxWidth: 520, aspectRatio: "4 / 3", borderRadius: 8, overflow: "hidden" }}>
+        <ChestScene view={view3d} />
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 520 }}>
+        {PROPS_3D.map((k) => <button key={k.thing} style={btn(view3d.thing === k.thing)} onClick={() => set3d({ thing: k.thing })}>{k.label}</button>)}
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8, maxWidth: 520 }}>
+        <button style={btn(view3d.open)} onClick={() => set3d({ open: !view3d.open })}>{view3d.open ? "Chest open" : "Chest shut"}</button>
+        <button style={btn(view3d.lit)} onClick={() => set3d({ lit: !view3d.lit })}>{view3d.lit ? "Torch lit" : "Torch out"}</button>
+        <button style={btn(view3d.moving)} onClick={() => set3d({ moving: !view3d.moving })}>{view3d.moving ? "Light moving" : "Light still"}</button>
+        <button style={btn(view3d.old)} onClick={() => set3d({ old: !view3d.old })}>{view3d.old ? "Now shown" : "Now hidden"}</button>
+        <button style={btn(view3d.across === 7)} onClick={() => set3d({ across: view3d.across === 7 ? 15 : 7 })}>{view3d.across === 7 ? "Close" : "Game zoom"}</button>
+      </div>
+
+      <h2 style={{ fontSize: 15, margin: "20px 0 4px" }}>The gallery: walk round the drafts</h2>
       <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 8px", maxWidth: 520 }}>
         Walk with the arrow keys or WASD, the stick, or tap where to go. Walk up to a draft to see it beside what the game shows now.
       </p>
@@ -215,13 +237,24 @@ export default function ArtLab() {
         <button style={btn(lit)} onClick={() => setLit(true)}>☀️ Fully lit</button>
       </div>
 
-      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>All {EXHIBITS.length} drafts, now → draft</h2>
+      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>Round 2: {EXHIBITS.length} drafts, now → draft</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, maxWidth: 980 }}>
         {EXHIBITS.map((e) => (
           <div key={e.file} style={{ background: "#3a362e", borderRadius: 8, padding: 8, fontSize: 12 }}>
             <div style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={e.name}>{e.name}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, alignItems: "center" }}><Thumb ex={e} now /><Thumb ex={e} /></div>
             <div style={{ color: "#cbbf9f", height: 30, overflow: "hidden" }} title={e.where}>{e.where}</div>
+          </div>
+        ))}
+      </div>
+
+      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>✓ Approved in round 1, in the game now ({APPROVED.length})</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 6, maxWidth: 980 }}>
+        {APPROVED.map((e) => (
+          <div key={e.file} style={{ background: "#2a2622", borderRadius: 8, padding: 6, fontSize: 11, textAlign: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${DRAFTS}/${e.file}.png`} alt="" style={{ width: 48, height: 48, objectFit: "contain", imageRendering: "pixelated" }} />
+            <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={e.name}>{e.name}</div>
           </div>
         ))}
       </div>

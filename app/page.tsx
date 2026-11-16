@@ -16,6 +16,7 @@ import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/l
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { canBlast, headUp, tavernVisitors } from "@/lib/tavern";
+import Glyph from "@/components/Glyph";
 import { canClaimNext, loadCampaign, readCampaignCtx } from "@/lib/campaign";
 import { DAILY_ONLINE, canClaim, todayDaily } from "@/lib/daily";
 import { useTour } from "@/hooks/useTour";
@@ -59,7 +60,7 @@ export default function Home() {
         <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 2cqw, 10px)", fontSize: 13 }}>
           <Stat icon={<Coin size={13} />} color="#f5c542" title="Gold">{game.gold.toLocaleString()}</Stat>
           <Stat icon="🐾" color="#8fc1ff" title="Creatures discovered">{game.discoveredCreatures}/{TOTAL_CREATURES}</Stat>
-          <Stat icon="⚔️" color="#ffd98a" title="Items discovered">{game.discoveredItems}/{TOTAL_ITEMS}</Stat>
+          <Stat icon={<Glyph icon="⚔️" art="ui_items" size={13} />} color="#ffd98a" title="Items discovered">{game.discoveredItems}/{TOTAL_ITEMS}</Stat>
           <Link href="/settings" aria-label="Settings" title="Settings: export, import or back up your save" style={{ fontSize: 16, lineHeight: 1 }}>⚙️</Link>
         </div>
       </header>
