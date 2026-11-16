@@ -16,10 +16,11 @@ import { RARITY_COLORS, rarityGlow } from "@/lib/items/gameHelpers";
 import { spriteWidth } from "@/lib/sprites/pixels";
 import PixelSprite, { creatureSprite, itemSprite } from "./PixelSprite";
 import CreaturePortrait from "./CreaturePortrait";
-import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate, raceNames } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, COMBAT_CLASSES, RACES, RACE_INFO, findCreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureMarks, type GroupBy } from "./CreatureMarks";
 import { ICON, NAME } from "./ContainerLoot";
 import { RaceIcon } from "./Glyph";
+import { RaceNames } from "./RaceTag";
 
 export const RARITY_ORDER: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const MUTED = "rgba(255,255,255,0.45)";
@@ -138,21 +139,17 @@ function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
 }
 
 // A creature in your collection (the user, 2026-11-17: no boxes, so the words have room): its level
-// top left and its race(s) top right, the creature on a glow of its rarity, then its name in the
-// rarity's colour (always two lines tall, so every card is the same size) and its attack style and
-// race (two lines at most, never cut off mid-word on a phone).
+// top left, the creature on a glow of its rarity, then its name in the rarity's colour (always two
+// lines tall, so every card is the same size) and its attack style and its race(s), each race's
+// name in the race's colour (two lines at most, never cut off mid-word on a phone).
 function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrItemDrop; fav: boolean; badge?: string; gear?: string; onClick: () => void; glow?: boolean }) {
   const col = RARITY_COLORS[d.rarity];
   const tpl = templateOf(d);
-  const races = tpl ? (tpl.races?.length ? tpl.races : tpl.race ? [tpl.race] : []) : [];
   const SHADOW = "0 2px 0 #000, 0 0 3px #000";
   return (
     <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
       style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "2px 0", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
       <span className="pixel-font" style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 12, lineHeight: 1, color: "#f1d9a0", textShadow: SHADOW }}>Lv {d.level ?? 1}</span>
-      <span style={{ position: "absolute", top: 0, right: 0, zIndex: 1, display: "flex", gap: 2, filter: "drop-shadow(0 2px 0 #000)" }}>
-        {races.map((r) => <span key={r} title={`Race: ${RACE_INFO[r].name}`} style={{ display: "inline-flex" }}><RaceIcon r={r} size={16} /></span>)}
-      </span>
       <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }}
         frame={{ marginTop: 12, background: `radial-gradient(ellipse at 50% 80%, ${col.text}55, transparent 62%)` }} />
       <span className="pixel-font" style={{ width: "100%", height: "2.3em", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, lineHeight: 1.15, textAlign: "center", color: col.text, textShadow: "0 2px 0 #000" }}>
@@ -161,11 +158,11 @@ function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrIte
       {tpl && (
         <span className="pixel-font" style={{ width: "100%", height: "2.3em", fontSize: 11, lineHeight: 1.15, textAlign: "center", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
           <span style={{ color: CLASS_INFO[tpl.cls].color }}>{CLASS_INFO[tpl.cls].name}</span>
-          {tpl.race && <span style={{ color: "#f1d9a0" }}> · {raceNames(tpl)}</span>}
+          {tpl.race && <> · <RaceNames races={tpl.races?.length ? tpl.races : [tpl.race]} /></>}
         </span>
       )}
       {fav && <span style={{ position: "absolute", top: 18, left: 2, fontSize: 14, color: "#f5c542", textShadow: SHADOW }}>★</span>}
-      {(gear || badge) && <span style={{ position: "absolute", top: 22, right: 0, fontSize: 12 }}>{gear}{badge}</span>}
+      {(gear || badge) && <span style={{ position: "absolute", top: 0, right: 0, fontSize: 12 }}>{gear}{badge}</span>}
     </button>
   );
 }
