@@ -12,9 +12,9 @@ import { Barrel, Crate, loaded, makeFlat, makeLit, bases, useTint, type Tint } f
 import { ART_PER_U, ART_PITCH } from "@/lib/render3d/chest3d";
 
 const GAME = "/sprites/props/decor3d", DRAFT = "/sprites/walk/samples/drafts/decor3d";
-export type Decor3DKind = "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "skull" | "backpack";
+export type Decor3DKind = "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "skull" | "backpack" | "cage";
 // Each one's size against the flat picture it replaces (the first drafts came out small beside them).
-const SIZE: Partial<Record<Decor3DKind, number>> = { skull: 1.7, pots: 1.45, dynamite: 1.7, backpack: 1.5 };
+const SIZE: Partial<Record<Decor3DKind, number>> = { skull: 1.4, pots: 1.45, dynamite: 1.7, backpack: 1.75 };
 
 const tex = (src: string, repeat?: [number, number]) => {
   if (!repeat) return loaded(src);
@@ -52,6 +52,7 @@ function Piece({ kind, stretch, colour, open }: { kind: Decor3DKind; stretch: nu
   if (kind === "dynamite") return <Dynamite colour={colour} />;
   if (kind === "lectern") return <Lectern colour={colour} />;
   if (kind === "skull") return <Skull colour={colour} />;
+  if (kind === "cage") return <Cage colour={colour} open={open} />;
   return <Backpack colour={colour} />;
 }
 
@@ -102,20 +103,88 @@ function Lectern({ colour }: { colour?: Tint }) {
   </>);
 }
 
-// 🧪 Drafts (being redone): a skull on its bones, and the backpack.
-const SKULL_MATS = (make: typeof makeLit) => {
-  const bone = make({ color: "#cbc29a" });
-  return { bones: see(make({ map: tex(`${DRAFT}/bones-floor.png`) })), box: [bone, bone, bone, make({ color: "#8a8466" }), make({ map: tex(`${DRAFT}/skull-face.png`) }), bone] };
-};
+// 🧪 Drafts (round 2, 2026-11-17): a skull on crossed bones, the backpack, the cage.
+
+// A skull: a round cranium, its face painted on the front, a jaw, lying on two crossed bones (a shaft with
+// a knuckle at each end), big enough to read at a glance.
+const BONE = "#d6cca2";
+const SKULL_MATS = (make: typeof makeLit) => ({ bone: make({ color: BONE }), shade: make({ color: "#a39a76" }), face: see(make({ map: tex(`${DRAFT}/skull-face.png`) })) });
+function Bone({ m, at, turn }: { m: THREE.Material; at: [number, number, number]; turn: number }) {
+  const L = 0.46, r = 0.026, k = 0.04;
+  return (
+    <group position={at} rotation={[0, turn, 0]}>
+      <mesh rotation={[0, 0, Math.PI / 2]} material={m} raycast={() => null}><cylinderGeometry args={[r, r, L, 8]} /></mesh>
+      {[-1, 1].flatMap((e) => [-1, 1].map((f) => (
+        <mesh key={`${e}${f}`} position={[(e * L) / 2, 0, f * k * 0.6]} material={m} raycast={() => null}><sphereGeometry args={[k, 8, 6]} /></mesh>
+      )))}
+    </group>
+  );
+}
 function Skull({ colour }: { colour?: Tint }) {
   const m = useMats(SKULL_MATS, colour);
   return (<>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.004, 0]} material={m.bones}><planeGeometry args={[0.85, 0.85]} /></mesh>
-    <mesh position={[0.06, 0.13, 0.05]} rotation={[0, -0.3, 0]} material={m.box}><boxGeometry args={[0.24, 0.26, 0.26]} /></mesh>
+    <Bone m={m.shade} at={[0, 0.04, 0.02]} turn={0.55} />
+    <Bone m={m.bone} at={[0, 0.07, 0.02]} turn={-0.55} />
+    <group position={[0, 0.2, 0]}>
+      <mesh scale={[1, 0.92, 1.08]} material={m.bone} raycast={() => null}><sphereGeometry args={[0.13, 14, 10]} /></mesh>
+      <mesh position={[0, -0.1, 0.05]} material={m.shade} raycast={() => null}><boxGeometry args={[0.15, 0.06, 0.12]} /></mesh>
+      <mesh position={[0, -0.01, 0.135]} material={m.face} raycast={() => null}><planeGeometry args={[0.22, 0.25]} /></mesh>
+    </group>
   </>);
 }
-const BACKPACK_MATS = (make: typeof makeLit) => { const leather = make({ color: "#5e3d24" }); return { box: [leather, leather, make({ color: "#4a3020" }), leather, see(make({ map: tex(`${DRAFT}/backpack-front.png`) })), leather] }; };
+
+// The backpack: a rounded leather body (a squashed lathe, its straps and buckles wrapped round), a pocket
+// on its front, and the bedroll strapped across the top.
+const PACK = (() => {
+  const H = 0.5, R = 0.21;
+  const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * H; return new THREE.Vector2(Math.max(0.02, R * Math.pow(Math.sin(Math.PI * (0.08 + 0.84 * (y / H))), 0.45)), y); });
+  return { geo: new THREE.LatheGeometry(pts, 18), H, R };
+})();
+const BACKPACK_MATS = (make: typeof makeLit) => ({
+  body: make({ map: tex(`${DRAFT}/pack-leather.png`, [1.5, 1]) }), roll: make({ map: tex(`${DRAFT}/pack-bedroll.png`, [1, 1]) }),
+  pocket: see(make({ map: tex(`${DRAFT}/pack-pocket.png`) })), end: make({ color: "#3e5a32" }),
+});
 function Backpack({ colour }: { colour?: Tint }) {
   const m = useMats(BACKPACK_MATS, colour);
-  return <mesh position={[0, 0.24, 0]} rotation={[0, -0.25, 0]} material={m.box}><boxGeometry args={[0.46, 0.48, 0.22]} /></mesh>;
+  return (
+    <group rotation={[0, -0.3, 0]}>
+      <mesh geometry={PACK.geo} scale={[1, 1, 0.78]} material={m.body} raycast={() => null} />
+      <mesh position={[0, 0.2, PACK.R * 0.78 + 0.005]} material={m.pocket} raycast={() => null}><planeGeometry args={[0.26, 0.26]} /></mesh>
+      <mesh position={[0, PACK.H + 0.03, 0]} rotation={[0, 0, Math.PI / 2]} material={[m.roll, m.end, m.end]} raycast={() => null}><cylinderGeometry args={[0.07, 0.07, 0.42, 12]} /></mesh>
+    </group>
+  );
+}
+
+// The cage: built as the crates are, a plank floor and roof in the crate's own wood, corner posts, and
+// rusty iron bars between; open, its front swings out on its left post. CAGE: 1 u across, 1.2 u tall.
+const CAGE = { w: 1, h: 1.2, deck: 0.12, roof: 0.08, post: 0.09, bars: 5, bar: 0.018 };
+const CRATE_WOOD = "/sprites/props/crate3d";
+const CAGE_MATS = (make: typeof makeLit) => {
+  const side = make({ map: tex(`${CRATE_WOOD}/side.png`) }), top = make({ map: tex(`${CRATE_WOOD}/top.png`) }), dark = make({ color: "#33271a" });
+  return { slab: [side, side, top, dark, side, side], post: make({ color: "#483522" }), bars: [make({ color: "#6d452d" }), make({ color: "#563e2d" }), make({ color: "#4c433b" })] };
+};
+function Cage({ colour, open }: { colour?: Tint; open: boolean }) {
+  const m = useMats(CAGE_MATS, colour), W = CAGE.w, h = CAGE.h - CAGE.deck - CAGE.roof, half = W / 2 - CAGE.post / 2;
+  // One side's bars, along x from -half to half, at z = 0 of its group.
+  const bars = (key: string) => Array.from({ length: CAGE.bars }, (_, i) => {
+    const x = -half + ((i + 1) * (2 * half)) / (CAGE.bars + 1);
+    return <mesh key={`${key}${i}`} position={[x, CAGE.deck + h / 2, 0]} material={m.bars[i % m.bars.length]} raycast={() => null}><cylinderGeometry args={[CAGE.bar, CAGE.bar, h, 6]} /></mesh>;
+  });
+  return (<>
+    <mesh position={[0, CAGE.deck / 2, 0]} material={m.slab} raycast={() => null}><boxGeometry args={[W, CAGE.deck, W]} /></mesh>
+    {/* The roof: an open frame of beams, bars across it (a solid roof hid what's inside from the high camera). */}
+    {[-1, 1].map((z) => <mesh key={`rz${z}`} position={[0, CAGE.h - CAGE.roof / 2, z * half]} material={m.post} raycast={() => null}><boxGeometry args={[W, CAGE.roof, CAGE.post]} /></mesh>)}
+    {[-1, 1].map((x) => <mesh key={`rx${x}`} position={[x * half, CAGE.h - CAGE.roof / 2, 0]} material={m.post} raycast={() => null}><boxGeometry args={[CAGE.post, CAGE.roof, W]} /></mesh>)}
+    {Array.from({ length: CAGE.bars }, (_, i) => -half + ((i + 1) * (2 * half)) / (CAGE.bars + 1)).map((x, i) => (
+      <mesh key={`rb${i}`} position={[x, CAGE.h - CAGE.roof / 2, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.bars[i % m.bars.length]} raycast={() => null}><cylinderGeometry args={[CAGE.bar, CAGE.bar, W - CAGE.post, 6]} /></mesh>
+    ))}
+    {[-1, 1].flatMap((x) => [-1, 1].map((z) => (
+      <mesh key={`p${x}${z}`} position={[x * half, CAGE.deck + h / 2, z * half]} material={m.post} raycast={() => null}><boxGeometry args={[CAGE.post, h, CAGE.post]} /></mesh>
+    )))}
+    <group position={[0, 0, -half]}>{bars("b")}</group>
+    <group position={[-half, 0, 0]} rotation={[0, Math.PI / 2, 0]}>{bars("l")}</group>
+    <group position={[half, 0, 0]} rotation={[0, Math.PI / 2, 0]}>{bars("r")}</group>
+    {/* The front: on a hinge at its left post, swung out when open. */}
+    <group position={[-half, 0, half]} rotation={[0, open ? -1.9 : 0, 0]}><group position={[half, 0, 0]}>{bars("f")}</group></group>
+  </>);
 }

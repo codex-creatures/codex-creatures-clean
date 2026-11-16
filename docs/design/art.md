@@ -153,3 +153,8 @@ searched), **pots** (scenery, nothing in them), the library's **lectern**, and t
 the floor till it's taken, as well as its ❗). Dropped: the fallen pillar and the nest (no nests in new runs'
 corners, world version 17). To redo: the backpack (not a box), the skull and bones (hard to read), the
 cage (to match the barrels). The collector's and Enchantress's walks barely move: to be redone.
+Round 2 of those three (2026-11-17, drafts in `/lab/art`): the skull is a round cranium with its face painted
+on, lying on two crossed 3D bones; the backpack a rounded leather body with a front pocket and a bedroll
+strapped on top; the cage built like the crates (a plank floor in the crate's wood, corner posts, rusty
+iron bars, an open roof of beams and bars so you see in from the high camera). The collector's walk is
+redone with big lifted steps (in the tavern now).

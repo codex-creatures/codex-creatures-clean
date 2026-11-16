@@ -20,7 +20,7 @@ import type { RewardModel } from "@/lib/campaign";
 // on this page only.
 const ChestScene = dynamic(() => import("../chest/ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 const PROPS_3D: { thing: Thing3D; label: string }[] = [
-  { thing: "decor-skull", label: "Skull & bones" }, { thing: "decor-backpack", label: "Backpack" }, { thing: "cage", label: "Cage" },
+  { thing: "decor-skull", label: "Skull & bones" }, { thing: "decor-backpack", label: "Backpack" }, { thing: "decor-cage", label: "Cage" },
   { thing: "decor-barrels", label: "Barrels ✓" }, { thing: "decor-crates", label: "Crates ✓" }, { thing: "decor-pots", label: "Pots ✓" },
   { thing: "decor-lectern", label: "Lectern ✓" }, { thing: "decor-dynamite", label: "Dynamite ✓" },
   { thing: "barrel", label: "Gear Barrel ✓" }, { thing: "bookcase", label: "Codex reward: bookcase" },

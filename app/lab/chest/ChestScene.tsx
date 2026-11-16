@@ -52,6 +52,7 @@ const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall
   "decor-crates": { shut: "/sprites/walk/decor/crates.png", open: "/sprites/walk/decor/crates.png", w: legacyU(28), tall: 1 },
   "decor-skull": { shut: "/sprites/walk/decor/bones.png", open: "/sprites/walk/decor/bones.png", w: legacyU(11), tall: 33 / 22 },
   "decor-lectern": { shut: "/sprites/den/lectern.png", open: "/sprites/den/lectern.png", w: legacyU(20), tall: 56 / 48 },
+  "decor-cage": { shut: "/sprites/walk/cage.png", open: "/sprites/walk/cage-open.png", w: legacyU(22), tall: 1 },
   "decor-pots": { shut: "/sprites/walk/decor/pots.png", open: "/sprites/walk/decor/pots.png", w: legacyU(18), tall: 1 },
   "decor-dynamite": { shut: "/sprites/props/dynamite.png", open: "/sprites/props/dynamite.png", w: SACK_U, tall: 1 },
   "decor-backpack": { shut: "/sprites/items/backpack.png", open: "/sprites/items/backpack.png", w: SACK_U, tall: 1 },
