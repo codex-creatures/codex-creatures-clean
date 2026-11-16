@@ -179,22 +179,23 @@ export function Crate({ inside, ...p }: { inside: CrateKind3D; open: boolean; co
 }
 
 // The Gear Barrel (BARREL in lib/render3d/props3d.ts): a lathe of staves, its straw top, the weapons in it.
-export function Barrel({ stretch }: { stretch: number }) {
+// `lid`: a closed barrel instead (that picture on top, nothing sticking out): the dungeon's barrels.
+export function Barrel({ stretch, lid }: { stretch: number; lid?: string }) {
   const geo = useMemo(() => {
     const pts = Array.from({ length: 13 }, (_, i) => { const y = (i / 12) * BARREL.h; return new THREE.Vector2(BARREL.r * (BARREL.ends + (1 - BARREL.ends) * Math.sin((Math.PI * y) / BARREL.h)), y); });
     return new THREE.LatheGeometry(pts, 24);
   }, []);
   const mats = useMemo(() => ({
     side: leaned(new THREE.MeshLambertMaterial({ map: loaded(BARREL.side) })),
-    top: leaned(new THREE.MeshLambertMaterial({ map: loaded(BARREL.top), transparent: true, alphaTest: 0.5 })),
+    top: leaned(new THREE.MeshLambertMaterial({ map: loaded(lid ?? BARREL.top), transparent: true, alphaTest: 0.5 })),
     items: new THREE.MeshLambertMaterial({ map: loaded(BARREL.items), transparent: true, alphaTest: 0.5 }),
-  }), []);
+  }), [lid]);
   const itemsH = BARREL.itemsW * stretch;
   return (
     <>
       <mesh geometry={geo} material={mats.side} />
       <mesh position={[0, BARREL.h + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.top}><circleGeometry args={[BARREL.r * BARREL.ends * 1.02, 24]} /></mesh>
-      <mesh position={[0, BARREL.h - BARREL.itemsIn + itemsH / 2, 0.02]} scale={[BARREL.itemsW, itemsH, 1]} material={mats.items}><planeGeometry /></mesh>
+      {!lid && <mesh position={[0, BARREL.h - BARREL.itemsIn + itemsH / 2, 0.02]} scale={[BARREL.itemsW, itemsH, 1]} material={mats.items}><planeGeometry /></mesh>}
     </>
   );
 }

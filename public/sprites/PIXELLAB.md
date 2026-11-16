@@ -369,3 +369,21 @@ The crate as a 3D draft (walk/samples/drafts/crate3d/): Pro Flash edit (text) of
 
 In the game since: icons/race_underkin.png (race-underkin-3), icons/status_soak.png (status-soak-2).
 | enchantress-3-walk-a.png, -b.png | jobs 5dd86b64-583d-4eb2-8ba2-ca47f918ae96 (seed 21) and c390e4e6-a737-4af5-8ee7-9bbb504ea658 (seed 33): the walk redone with clear alternating steps (the first, f9b7ac16…, only swayed: dropped) |
+
+## The dungeon props in 3D, drafts (2026-11-16)
+
+walk/samples/drafts/decor3d/, Pro Flash, seed 41, each styled on the flat decor picture it would replace (palette too); the barrel lid on props/barrel3d/top.png, the backpack front on items/backpack.png, the dynamite paper on props/dynamite.png. Enchantress: npcs/enchantress.png and -walk.png are enchantress-3 and walk B mirrored to face left (frame by frame).
+
+| File | Job |
+|---|---|
+| barrel-lid.png | 6ee3049e-d497-4a24-949a-ea77476cef2d |
+| bones-floor.png | c4203cc3-501d-4bf8-92b1-fbd7998edc9c |
+| pillar-end.png | fcc1b8e1-c857-4e2e-984a-d3dca2317668 |
+| nest-top.png | 1a551d9f-c4bd-4bee-852c-478218793608 |
+| pot-side.png | b4dc84f5-631b-4732-836f-efe5da044119 |
+| skull-face.png | 85279242-d412-4f72-ba4c-ab0d48d1e989 |
+| pillar-side.png | 63a1105e-4634-43b3-b94c-4b5ae9f13090 |
+| nest-rim.png | 9704964c-41d8-46f1-8037-07e59e47ce9c |
+| pot-top.png | 5642408e-43cf-43f2-b782-8c51691f9172 |
+| backpack-front.png | 87fdb46c-c30c-4f6e-8fd1-f53ca8c39297 |
+| dynamite-paper.png | 58a626d7-5efa-4b1d-9ad4-e21174c2101c |

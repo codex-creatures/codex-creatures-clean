@@ -19,6 +19,7 @@ import { WALK_KIT, WALK_HERO, KIT_PX, KIT_LIGHTS, WALK_STANDING_TORCH, STANDING_
 import { TABLE_ART, TABLE_TOP, OBJECT_U, SACK_U, DYNAMITE_ART } from "@/lib/world/objects";
 import { CANDLE_AT } from "@/lib/render3d/props3d";
 import { Draft3D, TableCandle3D, type DraftKind } from "@/components/Drafts3D";
+import { Decor3D, type Decor3DKind } from "@/components/Decor3D";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
@@ -47,6 +48,14 @@ const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall
   dynamite: { shut: "/sprites/den/crate.png", open: "/sprites/den/crate.png", w: SACK_U, tall: 1 },
   // (The crates' flat drafts from round 2, beside their 3D ones.)
   "crate-materials": { shut: "/sprites/walk/samples/drafts/crate-materials-2.png", open: "/sprites/walk/samples/drafts/crate-materials-2.png", w: OLD_W, tall: 1 },
+  "decor-barrels": { shut: "/sprites/walk/decor/barrels.png", open: "/sprites/walk/decor/barrels.png", w: legacyU(28), tall: 1 },
+  "decor-crates": { shut: "/sprites/walk/decor/crates.png", open: "/sprites/walk/decor/crates.png", w: legacyU(28), tall: 1 },
+  "decor-skull": { shut: "/sprites/walk/decor/bones.png", open: "/sprites/walk/decor/bones.png", w: legacyU(11), tall: 33 / 22 },
+  "decor-pillar": { shut: "/sprites/walk/decor/pillar.png", open: "/sprites/walk/decor/pillar.png", w: legacyU(24), tall: 33 / 37 },
+  "decor-nest": { shut: "/sprites/walk/decor/nest.png", open: "/sprites/walk/decor/nest.png", w: legacyU(20), tall: 28 / 29 },
+  "decor-pots": { shut: "/sprites/walk/decor/pots.png", open: "/sprites/walk/decor/pots.png", w: legacyU(18), tall: 1 },
+  "decor-dynamite": { shut: "/sprites/props/dynamite.png", open: "/sprites/props/dynamite.png", w: SACK_U, tall: 1 },
+  "decor-backpack": { shut: "/sprites/items/backpack.png", open: "/sprites/items/backpack.png", w: SACK_U, tall: 1 },
   barrel: { shut: "/sprites/walk/samples/drafts/crate-gear-2.png", open: "/sprites/walk/samples/drafts/crate-gear-2.png", w: OLD_W, tall: 1 },
   "crate-supplies": { shut: "/sprites/walk/samples/drafts/crate-supplies-2.png", open: "/sprites/walk/samples/drafts/crate-supplies-2.png", w: OLD_W, tall: 1 },
   floortorch: { shut: KIT_LIGHTS.candles, open: KIT_LIGHTS.candles, w: (KIT_LIGHTS.candleSize[0] * 0.85) / 48, tall: KIT_LIGHTS.candleSize[1] / KIT_LIGHTS.candleSize[0] },
@@ -58,7 +67,10 @@ export type ChestView = { open: boolean; across: number; width: number; moving: 
   at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean; splash: number };
 // table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
 // the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
-export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "golden" | "standingtorch" | "dynamite" | "barrel" | CrateThing | DraftKind;
+export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "golden" | "standingtorch" | "dynamite" | "barrel" | CrateThing | DraftKind | DecorThing;
+// The dungeon's decor and finds in 3D (drafts, components/Decor3D.tsx), each beside the flat picture it would replace.
+export type DecorThing = `decor-${Decor3DKind}`;
+const isDecor = (t: Thing3D): t is DecorThing => t.startsWith("decor-");
 // barrel: the gear reward as a 3D barrel (2026-11-16, the user: "a barrel with items hanging out"): a bulging
 // lathe of staves (barrel3d/side.png wrapped round), its open top packed with straw, and the weapons
 // sticking up out of it as an upright picture, the way the game stands its pictures up.
@@ -267,6 +279,8 @@ function Scene({ view }: { view: ChestView }) {
             </>)
           : view.thing === "standingtorch" || view.thing === "dynamite"
             ? <Upright3D thing={view.thing} lit={view.lit} />
+          : isDecor(view.thing)
+            ? <Decor3D kind={view.thing.slice(6) as Decor3DKind} stretch={uprightStretch(PITCH)} />
           : view.thing === "barrel"
             ? <Barrel stretch={uprightStretch(PITCH)} />
           : isCrate(view.thing)

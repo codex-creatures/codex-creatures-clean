@@ -136,3 +136,12 @@ charged mark's draft (charged is a charge move winding up, e.g. Mega Smash; it k
 Crates (public/sprites/props/crate3d/ and barrel3d/; `Crate` and `Barrel` in components/Props3D.tsx) show
 in 3D when a campaign crate reward is claimed (the Codex Bookcase is the game's bookcase), and a
 storehouse's crates are the Materials Crate in 3D. Still to review: the Enchantress (smaller, walking).
+
+**The dungeon's flat props in 3D (drafts, 2026-11-16; the user: "we did not build 3D assets for the new
+props"):** components/Decor3D.tsx, built like the chest, crate and barrel (shapes in code, PixelLab
+surfaces in `walk/samples/drafts/decor3d/`): the corner decor (two lidded barrels, stacked crates, a skull
+on scattered bones, a fallen mossy pillar, a twig nest with eggs, three clay pots) and a storehouse's finds
+(the dynamite as three bound sticks, the backpack), plus the chest lab's earlier cage and lectern drafts.
+In `/lab/art`'s 3D panel, each beside the flat picture it would replace. The banner stays a flat cloth on
+its wall. Not in the game till approved. The Enchantress is in the tavern (her walk is to be redone with
+the Den, which the user plans to rebuild).
