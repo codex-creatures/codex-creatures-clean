@@ -29,8 +29,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   the creature window's stage lit in the creature's rarity colour. The quest board's campaign and
   today's quests are parchment notes pinned to a wooden board (a chapter's last quest, and the Hydra
   quest, a Wanted poster), and creature cards (the Inventory, the Pit) are lit by their rarity, three a
-  row. Muted, adventurous colours: leather, brass and parchment, never neon. Still to come from the
-  drafts: the dungeon showcase on the entrance (the boss on its own lit backdrop).
+  row. Muted, adventurous colours: leather, brass and parchment, never neon. The Labyrinth entrance shows the
+  dungeon picked as a showcase (its boss in its own light on a cave backdrop: a shadow for the camp's
+  chief and the Warden, who are different every time), with a medallion per dungeon under it to pick
+  one, and your creatures in a panel that scrolls inside itself so the screen fits.
 - **The stone card standard:**
   - #23262f stone with pixel bevels and a thin rarity-coloured trim;
   - the pixel font in yellow #f1d9a0, and sunken wells for text;

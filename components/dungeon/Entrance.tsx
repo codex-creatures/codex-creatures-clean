@@ -9,7 +9,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { TEAM_SLOTS, teamMembers } from "@/lib/teams";
 import BagPacker from "@/components/BagPacker";
 import CreaturePortrait from "@/components/CreaturePortrait";
-import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen } from "@/lib/dungeon/run";
+import { PARTY_SIZE, squadsOf, entryFee, freeRunsLeft, bagSize, bagName, type DungeonSave, DUNGEONS, DEEP_ROUTE, type DungeonId, labyrinthOpen, LABYRINTH_SCANS, CAMP_ROUTE, CRAWLABLE, scrollOpen, bossLevel, CAMP_CHIEF_LEVEL } from "@/lib/dungeon/run";
 import { SectionTitle, loadOwnedCreatures, rarityColor, MUTED, type OwnedCreature } from "@/components/BattleScreen";
 import Help from "@/components/Help";
 import { gearMarks } from "@/components/CreatureMarks";
@@ -19,6 +19,55 @@ const DUNGEON_ICONS: Record<DungeonId, string> = { 0: "⛺", 1: "🌀", 2: "🕳
 // The picker's rows (the user, 2026-11-13): the dungeons in order, with the Minotaur to come.
 const ROWS: (DungeonId | "minotaur")[] = [0, 1, 2, "minotaur", 3];
 const BOSS: Record<DungeonId, string> = { 0: "the camp's chief", 1: "the Cyclops", 2: "the Hydra", 3: "the Warden and his guards" };
+const roomsTo = (d: DungeonId) => (d === 0 ? CAMP_ROUTE : d === 1 ? DUNGEONS[1].spec.minRoute : DEEP_ROUTE);
+
+// Each dungeon's showcase (the UI overhaul, the user, 2026-11-17): its boss's art (the camp's chief and
+// the Warden are different every time, so a shadow), where a medallion crops it, and the backdrop's light.
+// glow: the boss's light; sky: the cave above; motes: what drifts in the air.
+const SHOW: Record<DungeonId, { art: string; crop: string; shadow?: boolean; glow: string; sky: string; ground: string; motes: string; sub: string }> = {
+  0: { art: "/sprites/creatures/dire_wolf.png", crop: "40% 20%", shadow: true, glow: "rgba(255,150,60,0.45)", sky: "#24170c", ground: "#120b06", motes: "#ffb45e", sub: "The goblin camp" },
+  1: { art: "/sprites/creatures/cyclops.png", crop: "50% 10%", glow: "rgba(150,180,235,0.35)", sky: "#141a24", ground: "#0b0e14", motes: "#d8e2f0", sub: "The Labyrinth" },
+  2: { art: "/sprites/creatures/hydra/hydra-000.png", crop: "50% 15%", glow: "rgba(120,230,150,0.42)", sky: "#14261d", ground: "#0a1410", motes: "#c9ffd8", sub: "The Deep Labyrinth" },
+  3: { art: "/sprites/creatures/aurelius.png", crop: "50% 15%", shadow: true, glow: "rgba(170,70,255,0.42)", sky: "#150d1e", ground: "#0b0710", motes: "#e0b8ff", sub: "The Abyss" },
+};
+// Where the motes drift, as shares of the showcase (fixed, so it looks the same every time).
+const MOTES: [number, number, number][] = [[12, 30, 3], [22, 62, 2], [31, 18, 2], [68, 24, 3], [79, 52, 2], [88, 34, 3], [44, 12, 2], [58, 66, 2], [7, 56, 2]];
+
+// The dungeon picked: its boss standing in its light, on a cave backdrop, with its name, how far
+// to the top, the foes' levels and the team size; its price (or why it's shut) and the (i) on it.
+function Showcase({ d, n, status, info }: { d: DungeonId; n: number; status: string; info: React.ReactNode }) {
+  const s = SHOW[d], name = DUNGEONS[d].name.replace(/^The /, "the ");
+  const level = d === 0 ? CAMP_CHIEF_LEVEL : bossLevel(d);
+  const shut = status === "locked" || status === "Speed Scroll only" || status === "Crawl it first";
+  return (
+    <div className="showcase" style={{ background: `radial-gradient(ellipse 60% 55% at 50% 50%, ${s.glow}, transparent 75%), radial-gradient(ellipse at 50% 0%, ${s.sky}, #07090a 70%)` }}>
+      <div className="showcase-rays" />
+      <div className="showcase-rocks" style={{ background: s.ground }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={s.art} alt={BOSS[d]} draggable={false} className="showcase-boss"
+        style={{ filter: s.shadow ? `brightness(0) drop-shadow(0 0 2px ${s.motes}) drop-shadow(0 0 14px ${s.glow})` : `drop-shadow(0 0 1px ${s.motes}) drop-shadow(0 0 14px ${s.glow})` }} />
+      <div className="showcase-fog" />
+      {MOTES.map(([x, y, z], i) => <span key={i} className="showcase-mote" style={{ left: `${x}%`, top: `${y}%`, width: z, height: z, background: s.motes, boxShadow: `0 0 6px 2px ${s.motes}88` }} />)}
+      <div className="showcase-shade" />
+      <div style={{ position: "absolute", left: 10, top: 8, display: "flex", alignItems: "center", gap: 6 }}>
+        <span className="pixel-font showcase-boss-tag">BOSS · LV {level}</span>
+        <span className="pixel-font" style={{ fontSize: 10, color: "#a9a49a" }}>DUNGEON {n} OF {ROWS.length}</span>
+      </div>
+      <div style={{ position: "absolute", right: 8, top: 6 }}>{info}</div>
+      <div style={{ position: "absolute", left: 12, right: 12, bottom: 10, display: "grid", gap: 6 }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+          <span className="pixel-font" style={{ fontSize: 24, fontWeight: 700, color: "#ffe7a8", textShadow: "0 3px 0 #2a1a08, 0 0 14px rgba(255,170,80,0.35)", textTransform: "capitalize", whiteSpace: "nowrap" }}>{name}</span>
+          <span className="pixel-font" style={{ fontSize: 13, color: shut ? "#a9a49a" : status === "FREE" ? "#7CFC9A" : "#f5c542", whiteSpace: "nowrap" }}>{status}</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
+          {[`${roomsTo(d)} rooms`, `Foes Lv ${DUNGEONS[d].levels[0][1]}–${DUNGEONS[d].maxLevel}`, `Team of ${squadsOf(d).team}`].map((t) => (
+            <span key={t} className="pixel-font showcase-stat">{t}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── The entrance: choose your party ─────────────────────────────────
 // quest: Klutz's box is still to fetch (the quest's short run, in the Labyrinth). scans: barcodes scanned.
@@ -96,46 +145,46 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
                 style={{ minHeight: 44, textTransform: "none", fontSize: 14 }}>{label}</button>
             ))}
           </div>
-          {ROWS.map((row) => {
-            if (row === "minotaur") return (
-              <div key="minotaur" className="card-btn" aria-disabled style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 48, opacity: 0.45 }}>
-                <b className="pixel-font" style={{ flex: 1, fontSize: 16, color: "#f1d9a0" }}>🐂 Minotaur</b>
-                <span style={{ fontSize: 12, color: MUTED }}>to come</span>
-              </div>
-            );
-            const d = row, locked = !unlocked(d), on = dungeon === d && !locked;
-            const soon = mode === "crawl" && !CRAWLABLE.includes(d), shut = crawlFirst(d);
-            const name = DUNGEONS[d].name.replace(/^The /, "");
-            return (
-              <div key={d} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <button className="card-btn" onClick={() => setDungeon(d)} disabled={locked} title={locked ? lockedWhy(d) : undefined} aria-pressed={on}
-                  style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 48, textAlign: "left",
-                    opacity: locked || soon || shut ? 0.5 : 1, borderColor: on ? "#f1d9a0" : undefined, background: on ? "rgba(241,217,160,0.1)" : undefined }}>
-                  <b className="pixel-font" style={{ flex: 1, minWidth: 0, fontSize: 16, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{locked ? "🔒" : DUNGEON_ICONS[d]} {name}</b>
-                  <span className="pixel-font" style={{ fontSize: 13, color: locked || soon || shut ? MUTED : priceOf(d) === "FREE" ? "#7CFC9A" : "#f1d9a0", whiteSpace: "nowrap" }}>
-                    {locked ? "locked" : soon ? "Speed Scroll only" : shut ? "Crawl it first" : priceOf(d)}
-                  </span>
+          {/* The dungeon picked, as a showcase: its boss on its own lit backdrop (the UI overhaul, 2026-11-17). */}
+          <Showcase d={dungeon} n={ROWS.indexOf(dungeon) + 1}
+            status={!unlocked(dungeon) ? "locked" : mode === "crawl" && !CRAWLABLE.includes(dungeon) ? "Speed Scroll only" : crawlFirst(dungeon) ? "Crawl it first" : priceOf(dungeon)}
+            info={(() => { const name = DUNGEONS[dungeon].name.replace(/^The /, ""), d = dungeon; return (
+              <Help title={name} label={`About ${name}`} icon="i">
+                <ul>
+                  <li><b>{roomsTo(d)} rooms</b> to {BOSS[d]} at the top.</li>
+                  <li>Foes <b>Lv {DUNGEONS[d].levels[0][1]}–{DUNGEONS[d].maxLevel}</b>.</li>
+                  <li>Take <b>{squadsOf(d).team} creatures</b> in.</li>
+                  <li>Entry: <b>{priceOf(d)}</b>{d === 0 && freeRunsLeft(lab.meta) > 0 ? ` (${freeRunsLeft(lab.meta)} free run${freeRunsLeft(lab.meta) === 1 ? "" : "s"} left)` : ""}.</li>
+                  {d > 0 && <li>Foes carry codex moves of their race (up to {d === 1 ? "Uncommon" : d === 2 ? "Rare" : "Epic"}).</li>}
+                  <li>Beaten <b>{beaten(d)}×</b>.</li>
+                  <li>{CRAWLABLE.includes(d) ? `Dungeon Crawling: walk it yourself by torchlight. Speed Scroll: pick your way room by room on the map${scrollOpen(d, lab.meta) ? "" : ", once you've beaten it crawling"}.` : "Speed Scroll only for now: pick your way room by room on the map."}</li>
+                </ul>
+              </Help>
+            ); })()} />
+          {/* Every dungeon as a medallion: tap one to show it above (a locked one says why). */}
+          <div style={{ display: "grid", gridTemplateColumns: `repeat(${ROWS.length}, minmax(0, 1fr))`, gap: 4 }}>
+            {ROWS.map((row) => {
+              const locked = row === "minotaur" || !unlocked(row), on = row === dungeon;
+              const name = row === "minotaur" ? "Minotaur" : DUNGEONS[row].name.replace(/^The /, "");
+              return (
+                <button key={row} onClick={() => row !== "minotaur" && setDungeon(row)} disabled={locked} aria-pressed={on} aria-label={name}
+                  title={row === "minotaur" ? "The Minotaur: to come" : locked ? lockedWhy(row) : name}
+                  style={{ background: "none", border: "none", padding: 0, cursor: locked ? "default" : "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minWidth: 0 }}>
+                  <span className="medallion" data-on={on} data-locked={locked}><span className="medallion-in">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    {row !== "minotaur" && !locked && <img src={SHOW[row].art} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: SHOW[row].crop, imageRendering: "pixelated", filter: SHOW[row].shadow ? "brightness(0.25) sepia(1) hue-rotate(-20deg)" : undefined }} />}
+                    {locked && <span style={{ fontSize: 18, opacity: 0.6 }}>{row === "minotaur" ? "🐂" : "🔒"}</span>}
+                  </span></span>
+                  <span className="pixel-font" style={{ fontSize: 10, color: on ? "#ffe7a8" : locked ? "#6f6b62" : "#a9a49a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{row === 0 ? "Camp" : name}</span>
                 </button>
-                <Help title={name} label={`About ${name}`} icon="i">
-                  <ul>
-                    {locked && <li><b>{lockedWhy(d)}.</b></li>}
-                    <li><b>{d === 0 ? CAMP_ROUTE : d === 1 ? DUNGEONS[1].spec.minRoute : DEEP_ROUTE} rooms</b> to {BOSS[d]} at the top.</li>
-                    <li>Foes <b>Lv {DUNGEONS[d].levels[0][1]}–{DUNGEONS[d].maxLevel}</b>.</li>
-                    <li>Take <b>{squadsOf(d).team} creatures</b> in.</li>
-                    <li>Entry: <b>{priceOf(d)}</b>{d === 0 && freeRunsLeft(lab.meta) > 0 ? ` (${freeRunsLeft(lab.meta)} free run${freeRunsLeft(lab.meta) === 1 ? "" : "s"} left)` : ""}.</li>
-                    {d > 0 && <li>Foes carry codex moves of their race (up to {d === 1 ? "Uncommon" : d === 2 ? "Rare" : "Epic"}).</li>}
-                    <li>Beaten <b>{beaten(d)}×</b>.</li>
-                    <li>{CRAWLABLE.includes(d) ? `Dungeon Crawling: walk it yourself by torchlight. Speed Scroll: pick your way room by room on the map${scrollOpen(d, lab.meta) ? "" : ", once you've beaten it crawling"}.` : "Speed Scroll only for now: pick your way room by room on the map."}</li>
-                  </ul>
-                </Help>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
       {/* Enter, with what's inside behind the "?". */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt || scrollShut} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: 20, padding: "12px 0" }}>
+        <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt || scrollShut} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: freeLeft > 0 ? 15 : 20, padding: "12px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{/* (smaller with the free runs left in it, so it stays one line) */}
           {notBuilt ? "Speed Scroll only for now" : scrollShut ? "Beat it crawling first" : <>{walking ? "🔥" : DUNGEON_ICONS[dungeon]} Enter {DUNGEONS[dungeon].name.replace("The", "the")} {freeLeft > 0 ? `(free · ${freeLeft} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}</>}
         </button>
         <Help title="The labyrinth">
@@ -195,7 +244,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
           </p>
         )}
         {owned.length > 0 && (
-          <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 10 }}>
+          <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 10, maxHeight: "24cqh", overflowY: "auto", overscrollBehavior: "contain" }}>
             {[...owned, ...away].map((c) => {
               const slot = listed.indexOf(c.id);
               const hp = lab.meta.injuries[c.id] ?? 1;
