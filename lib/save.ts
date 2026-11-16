@@ -24,7 +24,7 @@ export function readSave(): Record<string, unknown> {
   if (typeof window === "undefined") return {};
   try {
     const parsed = JSON.parse(window.localStorage.getItem(SAVE_KEY) ?? "{}");
-    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(dropOldGoldKeys(enchantOldGear(parsed)))) : {};
+    return parsed && typeof parsed === "object" ? upgradeOldArmor(refreshToolNames(dropTakenBack(enchantOldGear(parsed)))) : {};
   } catch {
     return {};
   }
@@ -53,17 +53,21 @@ export function enchantOldGear<T>(save: T): T {
   return save;
 }
 
-// The Gold Key became Legendary (the user, 2026-11-16), and every key found
-// before then was taken back. A key that isn't Legendary is one of those: it's
-// removed wherever it is in the save (the Inventory, the chest, the Labyrinth's
-// bag and loot, a room's chest or sack), with any bag slot that held it. Keys
-// found since are Legendary, so this leaves them be.
-const isOldGoldKey = (v: unknown): v is { id?: string } =>
-  !!v && typeof v === "object" && (v as Record<string, unknown>).tool === "gold_key" && (v as Record<string, unknown>).rarity !== "legendary";
-export function dropOldGoldKeys<T>(save: T): T {
+// Things taken back from players when they became Legendary (the user): the
+// Gold Key (2026-11-16) and the Choking Smog codex (2026-11-16). One that isn't
+// Legendary was found before the change: it's removed wherever it is in the
+// save (the Inventory, the chest, the bookcase, the Labyrinth's bag and loot,
+// a room's chest or sack), with any bag slot that held it. Ones found since
+// are Legendary, so this leaves them be. (A move already learned is kept.)
+const isTakenBack = (v: unknown): v is { id?: string } => {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  return o.rarity !== "legendary" && (o.tool === "gold_key" || o.codexMove === "Choking Smog");
+};
+export function dropTakenBack<T>(save: T): T {
   const gone = new Set<string>();
   // (A key on its own, or in a wrapper: a chest's { gear }, a run's { drop }.)
-  const inner = (v: unknown) => (isOldGoldKey(v) ? v : v && typeof v === "object" ? [(v as Record<string, unknown>).gear, (v as Record<string, unknown>).drop].find(isOldGoldKey) : undefined);
+  const inner = (v: unknown) => (isTakenBack(v) ? v : v && typeof v === "object" ? [(v as Record<string, unknown>).gear, (v as Record<string, unknown>).drop].find(isTakenBack) : undefined);
   const strip = (v: unknown) => {
     if (Array.isArray(v)) {
       for (let i = v.length - 1; i >= 0; i--) {
@@ -78,7 +82,7 @@ export function dropOldGoldKeys<T>(save: T): T {
     if (!v || typeof v !== "object") return;
     const o = v as Record<string, unknown>;
     for (const k in o) {
-      if (isOldGoldKey(o[k])) { const id = (o[k] as { id?: string }).id; if (id) gone.add(id); delete o[k]; }
+      if (isTakenBack(o[k])) { const id = (o[k] as { id?: string }).id; if (id) gone.add(id); delete o[k]; }
       else strip(o[k]);
     }
   };

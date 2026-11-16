@@ -257,7 +257,9 @@ power counts for less as attack grows.
   Body, Haemorrhage, Soul Snatch, Bone Javelin. Epic: Smite, Implode, Fissure. ✅ Legendary (the v2
   review): Choking Smog, Haunting Scream. Legendary codexes cost what Epic ones do at a librarian
   (`codexPrice`), come from a library's bookcases 1 in 100 (`CODEX_ODDS`) and the other places
-  every codex does, and are never on foes (no dungeon goes past Epic).
+  every codex does, and are never on foes (no dungeon goes past Epic). The Choking Smog codexes
+  found while it was Epic were taken back on load (the user, 2026-11-16; `dropTakenBack` in
+  lib/save.ts); creatures that had already learned it keep it.
 - **Clouds** (`GroundEffect` "cloud", lib/combat/battle.ts): Choking Smog, Implode and the Hydra's
   breath. Whoever stands in one is poisoned (10% a round for Smog and Implode), and keeps it 1–3
   rounds after it leaves or the cloud clears; the Hydra's poisons only as a creature comes in, for 20

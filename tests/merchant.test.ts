@@ -4,9 +4,10 @@ import {
   BACKPACK, BAG_MAX, BAG_UPGRADE_PRICES, STORAGE_PLAN_PRICE, STORAGE_PLAN_2_PRICE, MERCHANT_SLOTS, type Ware,
 } from "../lib/dungeon/run";
 import { TOOLS, toolDrop } from "../lib/items/materials";
-import { dropOldGoldKeys } from "../lib/save";
+import { dropTakenBack } from "../lib/save";
 import { BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP, boxCap, buildBox, fullBoxes, forFullBox, fitInBoxes } from "../lib/items/storage";
-import { weaponDrop, armorDrop } from "../lib/drops";
+import { weaponDrop, armorDrop, codexDrop } from "../lib/drops";
+import type { CreatureOrItemDrop } from "../lib/types";
 
 // The bigger merchant (the user, 2026-10-23): steps 1 and 2 of the cart plan.
 const share = (n: number, test: (w: Ware[]) => boolean, backpack = false) => {
@@ -135,7 +136,7 @@ describe("golden chests and Gold Keys (the user, 2026-11-13)", () => {
         run: { got: [{ drop: old }, { drop: flare }], current: { sack: [{ gear: old }, { gold: 5 }] } },
       },
     };
-    const out = dropOldGoldKeys(JSON.parse(JSON.stringify(save)));
+    const out = dropTakenBack(JSON.parse(JSON.stringify(save)));
     expect(out.inventory.map((d: { id: string }) => d.id)).toEqual(["f", "new"]);
     expect(out.favoriteIds).toEqual(["f"]);
     expect(out.labyrinth.meta.bag).toEqual(["potion", "loot:new"]);
@@ -144,7 +145,19 @@ describe("golden chests and Gold Keys (the user, 2026-11-13)", () => {
     expect(out.labyrinth.run.current.sack).toEqual([{ gold: 5 }]);
     // Nothing to take: the save comes back as it was.
     const clean = { inventory: [flare, fresh] };
-    expect(dropOldGoldKeys(JSON.parse(JSON.stringify(clean)))).toEqual(JSON.parse(JSON.stringify(clean)));
+    expect(dropTakenBack(JSON.parse(JSON.stringify(clean)))).toEqual(JSON.parse(JSON.stringify(clean)));
+  });
+
+  it("the Choking Smog codexes found before it was Legendary are taken back too; new ones and other codexes stay (2026-11-16)", () => {
+    const fresh = { ...(codexDrop("Choking Smog") as CreatureOrItemDrop), id: "new" };
+    expect(fresh.rarity).toBe("legendary");
+    const old = { ...fresh, rarity: "epic", id: "old" };
+    const other = { ...(codexDrop("Haunting Scream") as CreatureOrItemDrop), rarity: "epic", id: "hs" };
+    const save = { inventory: [old, other, fresh], crate: [old], labyrinth: { run: { current: { sack: [{ gear: old }] } } } };
+    const out = dropTakenBack(JSON.parse(JSON.stringify(save)));
+    expect(out.inventory.map((d: { id: string }) => d.id)).toEqual(["hs", "new"]);
+    expect(out.crate).toEqual([]);
+    expect(out.labyrinth.run.current.sack).toEqual([]);
   });
 
   it("about 1 mini boss in 10 guards a golden chest; no other room does", async () => {
