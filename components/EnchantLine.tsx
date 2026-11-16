@@ -2,7 +2,9 @@
 // components/EnchantLine.tsx
 // An item's enchantment in one line: its name, and its effect behind a "?"
 // (lib/items/enchantments.ts). The line keeps its space when the item has none
-// (visibility: hidden), so flicking between items moves nothing.
+// (visibility: hidden), so flicking between items moves nothing. With one it inherits its box's
+// visibility rather than forcing "visible": a hidden box (the scan reveal's panel while the cache still
+// rattles) must hide it too, or the enchantment shows before the item does.
 
 import Help from "./Help";
 import { ENCHANTS, enchantOf, enchantText } from "@/lib/items/enchantments";
@@ -12,7 +14,7 @@ export default function EnchantLine({ item, style }: { item?: CreatureOrItemDrop
   const k = enchantOf(item);
   return (
     <div className="enchant-line"
-      style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, height: 28, visibility: k ? "visible" : "hidden", ...style }}>
+      style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, height: 28, visibility: k ? "inherit" : "hidden", ...style }}>
       <span style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
         title={k ? enchantText(k, item!.rarity) : undefined}>
         ✦ {k ? ENCHANTS[k].name : "-"}
