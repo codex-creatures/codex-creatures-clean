@@ -389,3 +389,4 @@ walk/samples/drafts/decor3d/, Pro Flash, seed 41, each styled on the flat decor 
 | dynamite-paper.png | 58a626d7-5efa-4b1d-9ad4-e21174c2101c |
 | decor3d/pack-leather.png, pack-bedroll.png, pack-pocket.png | jobs 249e8816-925a-4d1c-8ec1-664104af91a1, 694e9889-9a72-4bf0-8f72-d3edff76cb41, b02070f9-6d7e-47a8-9ebe-8d6ded3c7f57 (seed 51, styled on items/backpack.png): the backpack round 2 |
 | npcs/collector-walk.png | replaced 2026-11-17: job 455188f1-eaa0-4dbf-a24b-af76a160c43f (animate_image_pixminimax, seed 51, "exaggerated walk", from the still at 7, 2): the old one (a0336eb3…) barely moved |
+| npcs/collector-walk.png | 2026-11-17: the same frames in reverse order (played forwards he moonwalked) |
