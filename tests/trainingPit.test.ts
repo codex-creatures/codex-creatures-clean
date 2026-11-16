@@ -14,7 +14,7 @@ const since = new Date(T0).toISOString();
 describe("stone and essence stones", () => {
   it("the old essence stone is Stone (same key, so saves keep theirs), and essence stones are a new epic material", () => {
     expect(MATERIALS.essence_stones).toMatchObject({ name: "Stone", rarity: "rare" });
-    expect(MATERIALS.essence).toMatchObject({ name: "Essence stones", rarity: "epic" });
+    expect(MATERIALS.essence).toMatchObject({ name: "Essence crystal", rarity: "epic" });
     // Stone's where the essence stone was: the storage plans and the merchants.
     expect(SCHEMATICS.weapon_storage.cost.essence_stones).toBe(1);
     expect(MERCHANT_MATERIALS.find((m) => m.material === "essence_stones")?.price).toBe(150);

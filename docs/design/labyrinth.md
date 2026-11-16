@@ -128,8 +128,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   2026-11-16, when every key already found was taken back from saves: `dropOldGoldKeys`, lib/save.ts,
   removes any key that isn't Legendary on load) in 10% of chests (`CHEST_TOOLS`); it takes a bag
   slot, stays in your bag between runs as tools do, and isn't sold by merchants (they buy it for 200).
-  Walking, the chest is drawn gilded (the chest's art tinted gold, and the key a stand-in icon, till
-  PixelLab art).
+  Walking, it's the 3D chest with its own gold faces (`GOLDEN_FACES`, public/sprites/props/chest3d-gold/,
+  the user's pick, 2026-11-16) and a Legendary glow on the floor round it, as a deck with a Legendary in it has.
 - ✅ **Selling to the merchant:** his room shows your bag (slots used/free); tap a slot and sell it to make room,
   or Use it (opens it in your bag: drink, equip…). In the merchant's or a librarian's room, your bag also has a
   Sell button, at the same prices (`buysHere`; selling to a librarian is Claude's default, 2026-10-23). A codex

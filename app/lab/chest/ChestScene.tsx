@@ -20,10 +20,10 @@ import { TABLE_ART, TABLE_TOP, OBJECT_U, SACK_U, DYNAMITE_ART } from "@/lib/worl
 import { CANDLE_AT } from "@/lib/render3d/props3d";
 import { Draft3D, TableCandle3D, type DraftKind } from "@/components/Drafts3D";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import type { ChestFaces } from "@/lib/render3d/chest3d";
 import type { Rarity } from "@/lib/types";
 import { legacyU } from "@/lib/render/projection";
 import { Prop3D, Chest, Solid, leaned, sharp, loaded, PROP_LEAN } from "@/components/Props3D";
-import type { ChestFaces } from "@/lib/render3d/chest3d";
 
 const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
@@ -42,11 +42,15 @@ const OLD: Partial<Record<Thing3D, { shut: string; open: string; w: number; tall
   campfire: { shut: "/sprites/walk/campfire.png", open: "/sprites/walk/campfire-out.png", w: legacyU(24), tall: 1 },
   cage: { shut: "/sprites/walk/cage.png", open: "/sprites/walk/cage-open.png", w: legacyU(22), tall: 1 },
   lectern: { shut: "/sprites/den/lectern.png", open: "/sprites/den/lectern.png", w: legacyU(20), tall: 56 / 48 },
-  gilt: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
   golden: { shut: "/sprites/props/treasure_chest.png", open: "/sprites/props/treasure_chest_open.png", w: OLD_W, tall: 1 },
   // (The standing torch's stand-in was the floor candle; the dynamite's, Klutz's crate.)
   standingtorch: { shut: WALK_CANDLE_LIT.src, open: WALK_CANDLE.src, w: legacyU(WALK_CANDLE.size), tall: WALK_CANDLE.h / WALK_CANDLE.w },
   dynamite: { shut: "/sprites/den/crate.png", open: "/sprites/den/crate.png", w: SACK_U, tall: 1 },
+  // (The crates' flat drafts from round 2, beside their 3D ones.)
+  "crate-materials": { shut: "/sprites/walk/samples/drafts/crate-materials-2.png", open: "/sprites/walk/samples/drafts/crate-materials-2.png", w: OLD_W, tall: 1 },
+  "crate-gear": { shut: "/sprites/walk/samples/drafts/crate-gear-2.png", open: "/sprites/walk/samples/drafts/crate-gear-2.png", w: OLD_W, tall: 1 },
+  "crate-codex": { shut: "/sprites/walk/samples/drafts/crate-codex-2.png", open: "/sprites/walk/samples/drafts/crate-codex-2.png", w: OLD_W, tall: 1 },
+  "crate-supplies": { shut: "/sprites/walk/samples/drafts/crate-supplies-2.png", open: "/sprites/walk/samples/drafts/crate-supplies-2.png", w: OLD_W, tall: 1 },
   floortorch: { shut: KIT_LIGHTS.candles, open: KIT_LIGHTS.candles, w: (KIT_LIGHTS.candleSize[0] * 0.85) / 48, tall: KIT_LIGHTS.candleSize[1] / KIT_LIGHTS.candleSize[0] },
 };
 const DRAFTS: Thing3D[] = ["strongbox", "broken", "gem", "campfire", "cage", "lectern", "floortorch", "torch"];
@@ -56,17 +60,21 @@ export type ChestView = { open: boolean; across: number; width: number; moving: 
   at: number; lean: boolean; thing: Thing3D; turned: boolean; candle: boolean; rarity: Rarity; lit: boolean; life: boolean; splash: number };
 // table: a rickety table (a candle on it, or not); deck: the cards room's table, the deck on it glowing its rarest card's colour;
 // the rest: the drafts of the dungeon's other things (components/Drafts3D.tsx).
-export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "gilt" | "golden" | "standingtorch" | "dynamite" | DraftKind;
+export type Thing3D = "chest" | "stash" | "bookcase" | "table" | "deck" | "golden" | "standingtorch" | "dynamite" | CrateThing | DraftKind;
+// The campaign's crates as 3D drafts (2026-11-16): the chest's two boxes with a plain crate's faces
+// (public/sprites/walk/samples/drafts/crate3d/, made from chest3d's at the same sizes), each kind's contents
+// in it, seen when it's open.
+export type CrateThing = "crate-materials" | "crate-gear" | "crate-codex" | "crate-supplies";
+const CRATE = "/sprites/walk/samples/drafts/crate3d";
+const crateFaces = (t: CrateThing): ChestFaces => ({
+  front: { src: `${CRATE}/front.png`, w: 60, h: 19, lid: 6 }, side: { src: `${CRATE}/side.png`, w: 38, h: 19 },
+  inside: { src: `${CRATE}/inside-${t.slice(6)}.png`, w: 60, h: 33 }, top: { src: `${CRATE}/top.png`, w: 60, h: 33 },
+});
+const isCrate = (t: Thing3D): t is CrateThing => t.startsWith("crate-");
 // standingtorch, dynamite: the boss's standing torch and the storehouse's dynamite, upright pictures as the
 // game's 3D view draws them (WalkView3D: the torch STANDING_TORCH_U tall with a flame on its bowl; the
 // dynamite SACK_U wide, as a pickup on the floor is).
-// gilt: the golden chest as the game draws it now (the chest tinted); golden: the draft of its own gold faces
-// (2026-11-16, public/sprites/walk/samples/drafts/golden-chest3d/, made from chest3d's faces, same sizes).
-const GOLD = "/sprites/walk/samples/drafts/golden-chest3d";
-const GOLDEN_DRAFT_FACES: ChestFaces = {
-  front: { src: `${GOLD}/front.png`, w: 60, h: 19, lid: 6 }, side: { src: `${GOLD}/side.png`, w: 38, h: 19 },
-  inside: { src: `${GOLD}/inside.png`, w: 60, h: 33 }, top: { src: `${GOLD}/top.png`, w: 60, h: 33 },
-};
+// golden: a mini boss's golden chest, as the game draws it (Prop3D golden: its gold faces and glow).
 
 // The walls' lean (decision 36, WalkView3D's at GAME_VIEW's 0.03), on the chest and the wall here
 // (Props3D's PROP_LEAN, about you at x = 0).
@@ -263,9 +271,9 @@ function Scene({ view }: { view: ChestView }) {
             </>)
           : view.thing === "standingtorch" || view.thing === "dynamite"
             ? <Upright3D thing={view.thing} lit={view.lit} />
+          : isCrate(view.thing)
+            ? <Chest faces={crateFaces(view.thing)} open={view.open} outline={view.outline} edges={view.edges} />
           : view.thing === "golden"
-            ? <Chest faces={GOLDEN_DRAFT_FACES} open={view.open} outline={view.outline} edges={view.edges} />
-          : view.thing === "gilt"
             ? <Prop3D kind="chest" golden open={view.open} outline={view.outline} edges={view.edges} />
             : <Prop3D kind={view.thing as "chest" | "stash" | "bookcase"} open={view.open} outline={view.outline} edges={view.edges} />}
       </group>

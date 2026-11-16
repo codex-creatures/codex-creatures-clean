@@ -112,3 +112,12 @@ as a real 3D model in the Labyrinth, or at the Den's angle):
   settings and creatures redrawn; **Stone** (🪨, missed in round 1) drafted.
 Round 2 cost 101 generations (1,693 left). In `/lab/art` the room now shows round 2; the
 approved ones are listed under it.
+
+**The user's second review (2026-11-16):** ✅ the golden chest's 3D faces (now the game's, with a
+Legendary glow round it like a deck's), Stone, the merchant's map, and the settings and creatures icons
+are in the game. **Brace gets no mark** (it resolves the same turn, so the log's words do). Redrawn:
+**Underkin** as a gloomy stone face with glowing golem eyes. **The crates are 3D now** (the user: loot
+boxes are 3D models in this game, not flat pictures): the chest's two boxes with a plain crate's faces
+(front, ends, lid, from chest3d's at the same sizes) and a look-down picture of each kind's contents
+inside (`crate3d/inside-<kind>.png`), in `/lab/art`'s 3D panel and `/lab/chest`. Still to review: the
+Cyclops Head, the fireplace, the Enchantress, soaked and charged.

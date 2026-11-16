@@ -15,7 +15,7 @@ import type { Rarity } from "@/lib/types";
 const ChestScene = dynamic(() => import("./ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 
 const SIZES = [1, CHEST_W, 1.5, 1.75];
-const THINGS: { thing: Thing3D; label: string }[] = [{ thing: "chest", label: "Chest" }, { thing: "stash", label: "Stash" }, { thing: "bookcase", label: "Bookcase" }, { thing: "table", label: "Table" }, { thing: "deck", label: "Deck" }, { thing: "gilt", label: "Golden (now)" }, { thing: "golden", label: "Golden (draft)" }];
+const THINGS: { thing: Thing3D; label: string }[] = [{ thing: "chest", label: "Chest" }, { thing: "stash", label: "Stash" }, { thing: "bookcase", label: "Bookcase" }, { thing: "table", label: "Table" }, { thing: "deck", label: "Deck" }, { thing: "golden", label: "Golden ✓" }];
 // Drafts of the dungeon's other things (components/Drafts3D.tsx; the broken bookcase and the campfire are in the game).
 const DRAFTS: { thing: Thing3D; label: string }[] = [
   { thing: "strongbox", label: "Strongbox" }, { thing: "broken", label: "Broken bookcase ✓" }, { thing: "gem", label: "Healing gem ✓" }, { thing: "campfire", label: "Campfire ✓" },

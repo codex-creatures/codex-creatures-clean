@@ -32,6 +32,15 @@ export const ART_FACES = {
   top: { src: `/sprites/props/chest3d/top.png?v=${ART_V}`, w: 60, h: 33 },
 };
 
+// A mini boss's golden chest (the user, 2026-11-16): the chest's own faces redrawn in gold, the same
+// sizes (public/sprites/props/chest3d-gold/), with the gold and gems inside it the chest's.
+export const GOLDEN_FACES = {
+  front: { src: `/sprites/props/chest3d-gold/front.png?v=${ART_V}`, w: 60, h: 19, lid: 6 },
+  side: { src: `/sprites/props/chest3d-gold/side.png?v=${ART_V}`, w: 38, h: 19 },
+  inside: ART_FACES.inside,
+  top: { src: `/sprites/props/chest3d-gold/top.png?v=${ART_V}`, w: 60, h: 33 },
+};
+
 export type ChestFaces = { front: { src: string; w: number; h: number; lid: number }; side: { src: string; w: number; h: number }; inside: { src: string; w: number; h: number }; top: { src: string; w: number; h: number } };
 export function chestArt(F: ChestFaces = ART_FACES) {
   const up = ART_PER_U * Math.cos(ART_PITCH), flat = ART_PER_U * Math.sin(ART_PITCH);

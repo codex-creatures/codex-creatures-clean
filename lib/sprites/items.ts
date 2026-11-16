@@ -28,14 +28,13 @@ export const GOLD_SPRITE = icon("gold");
 export const POTION_SPRITES: Record<"potion" | "lesser", Sprite> = { potion: icon("potion"), lesser: icon("lesser_potion") };
 export const BACKPACK_SPRITE = icon("backpack");
 // Building materials.
-export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars"), essence: icon("materials/essence") }; // (the essence crystal, 2026-11-16; Stone has none yet)
+export const MATERIAL_SPRITES: Partial<Record<MaterialKey, Sprite>> = { planks: icon("materials/planks"), nails: icon("materials/nails"), metal_bars: icon("materials/metal_bars"), essence: icon("materials/essence"), essence_stones: icon("materials/stone") }; // (the essence crystal and Stone, 2026-11-16)
 // The Labyrinth's tools (the Torch, drawn at 32px, keeps its old id: flare), codexes,
 // XP scrolls and schematics.
 export const TOOL_SPRITES: Record<ToolKey, Sprite> = {
   flare: withArt(["."], { src: "/sprites/items/tools/flare.png", w: 32, h: 32, size: 32 }),
   clairvoyance: icon("tools/clairvoyance"), revival: icon("tools/revival"),
-  // (The merchant's map: a stand-in till its art is approved.)
-  merchant_map: icon("schematic"), crystal_ball: icon("tools/crystal_ball"), librarian_locator: icon("tools/librarian_locator"),
+  merchant_map: icon("tools/merchant_map"), crystal_ball: icon("tools/crystal_ball"), librarian_locator: icon("tools/librarian_locator"),
   gold_key: icon("tools/gold_key"), // (PixelLab's, 2026-11-13: PIXELLAB.md)
   klutz_pack: icon("tools/klutz_pack"),
 };

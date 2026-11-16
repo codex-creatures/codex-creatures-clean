@@ -922,7 +922,6 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
     [has("corpsify"), <Glyph key="corpse" icon="⚰️" art="status_corpse" />],
     [has("seal"), <Glyph key="seal" icon="⛓️" art="status_seal" />], // (fear stays hidden until it strikes)
     [has("soak"), "🫧"],
-    [has("brace"), "🧱"],
     [f.statuses.some((s) => s.id === "boost"), <Glyph key="boost" icon="💪" art="status_boost" />],
     [has("bleed"), <Glyph key="bleed" icon="🩸" art="status_bleed" />],
     [has("weaken"), <Glyph key="weaken" icon="🔻" art="status_weaken" />],

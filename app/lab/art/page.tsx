@@ -17,32 +17,24 @@ import type { ChestView, Thing3D } from "../chest/ChestScene";
 // on this page only.
 const ChestScene = dynamic(() => import("../chest/ChestScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 const PROPS_3D: { thing: Thing3D; label: string }[] = [
-  { thing: "golden", label: "Golden chest (draft)" }, { thing: "gilt", label: "Golden chest (now)" },
-  { thing: "standingtorch", label: "Standing torch ✓" }, { thing: "dynamite", label: "Dynamite ✓" },
+  { thing: "crate-materials", label: "Materials Crate" }, { thing: "crate-gear", label: "Gear Crate" },
+  { thing: "crate-codex", label: "Codex Crate" }, { thing: "crate-supplies", label: "Supplies Crate" },
+  { thing: "golden", label: "Golden chest ✓" }, { thing: "standingtorch", label: "Standing torch ✓" }, { thing: "dynamite", label: "Dynamite ✓" },
 ];
 
 const DRAFTS = "/sprites/walk/samples/drafts";
 type Exhibit = { file: string; name: string; now: string; nowArt?: string; where: string; px?: number };
 
-// Round 2 (2026-11-16): the redrafts of the ones not approved in round 1, and Stone (missed then).
+// Still to review (2026-11-16): round 2's Cyclops Head, fireplace, Enchantress, soaked and charged, and round 3's
+// Underkin. (The crates are 3D drafts now, in the 3D panel above.)
 // Each with what it replaces (an emoji, or the picture standing in) and where.
 const EXHIBITS: Exhibit[] = [
-  { file: "golden-chest3d/front", name: "Golden chest (3D faces)", now: "", nowArt: "/sprites/props/chest3d/front.png", where: "Its gold faces for the 3D chest: see /lab/chest, Golden (draft)", px: 60 },
   { file: "cyclops-head-3", name: "Cyclops Head", now: "", nowArt: "/sprites/creatures/cyclops.png", where: "Over the tavern door, flat on its sloping wall" },
   { file: "den-fireplace-2", name: "Den fireplace (not built)", now: "(none)", where: "The Den: on a wall sloping like the tavern's front", px: 96 },
   { file: "enchantress-2", name: "The Enchantress", now: "", nowArt: "/sprites/npcs/collector.png", where: "The tavern (now the collector, tinted violet)", px: 92 },
-  { file: "crate-materials-2", name: "Materials Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "crate-gear-2", name: "Gear Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "crate-codex-2", name: "Codex Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "crate-supplies-2", name: "Supplies Crate", now: "(none)", where: "Campaign rewards" },
-  { file: "locator-merchant-map-2", name: "Merchant's Map", now: "", nowArt: "/sprites/items/schematic.png", where: "Locators" },
-  { file: "stone", name: "Stone", now: "🪨", where: "Materials (missed in round 1)" },
-  { file: "race-underkin-2", name: "Underkin", now: "🪨", where: "Race icons", px: 32 },
+  { file: "race-underkin-3", name: "Underkin", now: "🪨", where: "Race icons (round 3: gloomy golem eyes)", px: 32 },
   { file: "status-soak-2", name: "Soaked", now: "🫧", where: "Status marks", px: 32 },
-  { file: "status-brace-2", name: "Brace", now: "🧱", where: "Status marks", px: 32 },
   { file: "status-charged-2", name: "Charged", now: "💢", where: "Status marks", px: 32 },
-  { file: "ui-settings-2", name: "Settings", now: "⚙️", where: "The Den's top bar", px: 32 },
-  { file: "ui-creatures-2", name: "Creatures discovered", now: "🐾", where: "The Den's top bar", px: 32 },
 ];
 // Approved in round 1, and now in the game.
 const APPROVED: { file: string; name: string }[] = [
@@ -52,6 +44,7 @@ const APPROVED: { file: string; name: string }[] = [
   ["race-toxic", "Toxic"], ["status-corpse", "Corpsify"], ["status-mirage", "Mirage"], ["status-bleed", "Bleed"], ["status-boost", "Boost"],
   ["status-flame", "Burning"], ["status-ward", "Ward"], ["status-weaken", "Weakened"], ["status-seal", "Sealed"], ["status-haste", "Haste"],
   ["ui-items", "Items discovered"], ["ui-campaign", "Campaign"], ["ui-quests", "Quests"], ["ui-leaderboards", "Leaderboards"],
+  ["golden-chest3d/front", "Golden chest (3D)"], ["stone", "Stone"], ["locator-merchant-map-2", "Merchant's Map"], ["ui-settings-2", "Settings"], ["ui-creatures-2", "Creatures discovered"],
 ].map(([file, name]) => ({ file, name }));
 
 // The room, in art pixels (kit F's tiles are 48 × 36), drawn SCALE× on screen.
@@ -79,7 +72,7 @@ export default function ArtLab() {
   const [near, setNear] = useState<number | null>(null);
   const [lit, setLit] = useState(false);
   const [view3d, setView3d] = useState<ChestView>({ open: false, across: 15, width: CHEST_W, moving: true, old: true, art: true, outline: true, edges: true, at: 0, lean: true,
-    thing: "golden", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
+    thing: "crate-materials", turned: false, candle: false, rarity: "rare", lit: true, life: false, splash: 0 });
   const set3d = (v: Partial<ChestView>) => setView3d((x) => ({ ...x, ...v }));
   const litRef = useRef(lit);
   useEffect(() => { litRef.current = lit; }, [lit]);
@@ -237,7 +230,7 @@ export default function ArtLab() {
         <button style={btn(lit)} onClick={() => setLit(true)}>☀️ Fully lit</button>
       </div>
 
-      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>Round 2: {EXHIBITS.length} drafts, now → draft</h2>
+      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>Still to review: {EXHIBITS.length} drafts, now → draft</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, maxWidth: 980 }}>
         {EXHIBITS.map((e) => (
           <div key={e.file} style={{ background: "#3a362e", borderRadius: 8, padding: 8, fontSize: 12 }}>
@@ -248,7 +241,7 @@ export default function ArtLab() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>✓ Approved in round 1, in the game now ({APPROVED.length})</h2>
+      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>✓ Approved, in the game now ({APPROVED.length})</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 6, maxWidth: 980 }}>
         {APPROVED.map((e) => (
           <div key={e.file} style={{ background: "#2a2622", borderRadius: 8, padding: 6, fontSize: 11, textAlign: "center" }}>

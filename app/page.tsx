@@ -59,9 +59,9 @@ export default function Home() {
         <h1 style={{ margin: 0, minWidth: 0 }}><ExplorerBar level={game.player.level} xp={game.player.xp} /></h1>
         <div className="pixel-font" style={{ display: "flex", alignItems: "center", gap: "clamp(5px, 2cqw, 10px)", fontSize: 13 }}>
           <Stat icon={<Coin size={13} />} color="#f5c542" title="Gold">{game.gold.toLocaleString()}</Stat>
-          <Stat icon="🐾" color="#8fc1ff" title="Creatures discovered">{game.discoveredCreatures}/{TOTAL_CREATURES}</Stat>
+          <Stat icon={<Glyph icon="🐾" art="ui_creatures" size={13} />} color="#8fc1ff" title="Creatures discovered">{game.discoveredCreatures}/{TOTAL_CREATURES}</Stat>
           <Stat icon={<Glyph icon="⚔️" art="ui_items" size={13} />} color="#ffd98a" title="Items discovered">{game.discoveredItems}/{TOTAL_ITEMS}</Stat>
-          <Link href="/settings" aria-label="Settings" title="Settings: export, import or back up your save" style={{ fontSize: 16, lineHeight: 1 }}>⚙️</Link>
+          <Link href="/settings" aria-label="Settings" title="Settings: export, import or back up your save" style={{ fontSize: 16, lineHeight: 1 }}><Glyph icon="⚙️" art="ui_settings" size={18} title="Settings" /></Link>
         </div>
       </header>
 

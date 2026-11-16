@@ -339,3 +339,18 @@ Same recipes as round 1 unless noted. The golden chest faces: Pro Flash edit (te
 | golden-chest3d/*.png | from jobs 3e2ce112-0b8d-4d95-abb0-3ef2f87b059c (front), 89fe7170-92bb-4610-9e7b-305ed05534f9 (top), a99210b5-c4d4-4947-b6ba-3480d1376547 (side) |
 
 In the game since 2026-11-16 (copies of the approved round-1 drafts above): icons/status_{corpse,mirage,bleed,boost,flame,ward,weaken,seal,haste}.png, icons/race_toxic.png, icons/ui_{items,campaign,quests,leaderboards}.png, items/stones/<key>.png, items/materials/essence.png (the Essence crystal; the old gem, materials/essence_stones.png, is no longer used), items/tools/{klutz_pack,crystal_ball,librarian_locator}.png, props/dynamite.png, walk/standing-torch.png (trimmed to 17×52).
+
+## Round 3 (2026-11-16)
+
+The crate as a 3D draft (walk/samples/drafts/crate3d/): Pro Flash edit (text) of chest3d/front, side and top padded as for the golden chest, and of chest3d/inside.png padded to 64×36 for each kind's contents, all on a solid ground, cut back to the chest's sizes; lit edges and underside made as chest3d's. Underkin round 3 styled on race_toxic.png. In the game now: props/chest3d-gold/ (the golden chest), items/materials/stone.png, items/tools/merchant_map.png, icons/ui_settings.png, icons/ui_creatures.png.
+
+| File | Job |
+|---|---|
+| crate3d-front-pad | 76ff2e90-f82d-45f2-a1f0-476319cf45d5 |
+| crate3d-top-pad | 677d9d2f-e427-4df2-9ea1-cf73c1d1a691 |
+| crate3d-inside-materials-pad | c2016047-e92e-4592-bdbb-502365cedd82 |
+| crate3d-inside-gear-pad | 33d8e71b-5e2b-4842-95f1-e71e0cfec873 |
+| crate3d-inside-codex-pad | 7179614b-5aec-4b38-9693-dd9beeef1d95 |
+| crate3d-inside-supplies-pad | 69ca883c-0d8a-4827-92e9-ff3f857e3b57 |
+| race-underkin-3 | 3e36142d-5c56-42eb-a782-0426158797b7 |
+| crate3d-side-pad | 05dd23ba-014d-43af-9c91-3c66a0c5f672 |
