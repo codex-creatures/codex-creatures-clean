@@ -112,8 +112,7 @@ fields optional with defaults.
    - ✅ **The Enchantress**, a fourth visitor (built 2026-11-16, `lib/enchantress.ts`): she doesn't play; she rerolls an item's enchantment
      ([items.md](items.md) §3, Enchantments) for 1 essence crystal plus 1,000 / 2,000 / 5,000 gold by
      the item's rarity (Rare / Epic / Legendary). Can be sent for, as the others. Art: PixelLab
-     samples for the user to pick; ⏸ until then the collector's walk, tinted violet in CSS
-     (`VISITOR_TINT`, components/TavernRoom.tsx), stands in. Her window is like the collector's:
+     samples for the user to pick; ✅ her own art since 2026-11-16 (`ENCHANTRESS`, npcs/enchantress.png and its walk: smaller than the other visitors, a hunched old woman with a lantern; the walk to be redone with the Den). Her window is like the collector's:
      your enchanted weapons and armour in tabs (worn ones too), tap one to see it, then Reroll
      (two taps; the second pays). On the clock like the others (5% a half hour to start). Claude's reading, agreed by the user: she rerolls only an item that has an
      enchantment (she doesn't add one), always to a different one, each that fits as likely.

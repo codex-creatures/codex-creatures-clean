@@ -17,7 +17,7 @@ import { RES, strollAt, strollLoop, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE }
 import { artFor } from "@/lib/sprites/art";
 import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
-import { COLLECTOR, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
+import { COLLECTOR, ENCHANTRESS, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { tavernVisitors, type TavernQuest, type Visitor as VisitorKind } from "@/lib/tavern";
 import { lobbyAccount, onPlayersOnline, othersOnline, playersOnline } from "@/lib/online/duelChannel";
 
@@ -137,10 +137,8 @@ export default function TavernRoom({ tavern: t, head: headIsUp, firstClearRun, p
   );
 }
 
-// The Enchantress has no art of her own yet: the collector's, tinted violet,
-// stands in until the user picks from PixelLab samples.
-const VISITOR_SPRITE: Record<VisitorKind, Sprite> = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR, enchantress: COLLECTOR };
-const VISITOR_TINT: Partial<Record<VisitorKind, string>> = { enchantress: "hue-rotate(235deg) saturate(1.5) brightness(1.1)" };
+const VISITOR_SPRITE: Record<VisitorKind, Sprite> = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR, enchantress: ENCHANTRESS };
+const VISITOR_TINT: Partial<Record<VisitorKind, string>> = {}; // (the Enchantress was the collector tinted violet till her own art, 2026-11-16)
 const VISITOR_TITLE: Record<VisitorKind, string> = { merchant: "A travelling merchant", librarian: "A wandering librarian", collector: "A creature collector", enchantress: "The Enchantress" };
 const VISITOR_LABEL: Record<VisitorKind, string> = { merchant: "Merchant", librarian: "Librarian", collector: "Collector", enchantress: "Enchantress" };
 const VISITOR_FPS = 12; // how often they're moved along

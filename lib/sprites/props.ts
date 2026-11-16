@@ -30,6 +30,9 @@ const npc = (id: string, w: number, h: number, walk?: { x: number; y: number }):
 export const MERCHANT = npc("merchant", 77, 91, { x: 9, y: 3 });
 export const LIBRARIAN = npc("librarian", 90, 89, { x: 3, y: 5 });
 export const COLLECTOR = npc("collector", 76, 92, { x: 7, y: 2 }); // the tavern's creature collector
+// The Enchantress (the user's pick, 2026-11-16): smaller than the others, a hunched old woman with a lantern
+// (drawn facing right, mirrored to face left as the others do; her walk the same, frame by frame).
+export const ENCHANTRESS = npc("enchantress", 64, 80, { x: 16, y: 14 });
 export const CARD_WITCH = npc("witch", 78, 92);
 
 // Loot lying about (drawn at about three quarters of its size): a fight's
