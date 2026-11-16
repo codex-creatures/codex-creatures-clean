@@ -252,11 +252,11 @@ export default function ArtLab() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>The Enchantress walking (as the tavern plays a visitor&apos;s walk)</h2>
+      <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>The tavern&apos;s visitors walking (as the tavern plays them)</h2>
       <div style={{ display: "grid", gap: 8 }}>
-        <WalkStrip src={`${DRAFTS}/enchantress-3-walk-a.png`} frames={8} label="The Enchantress: walk A" />
-        <WalkStrip src={`${DRAFTS}/enchantress-3-walk-b.png`} frames={8} label="The Enchantress: walk B" />
-        <WalkStrip src="/sprites/npcs/collector-walk.png" frames={8} label="The collector (in the game), for comparison" />
+        <WalkStrip src="/sprites/npcs/collector-walk.png" frames={8} label="The collector, fixed (in the game since 2026-11-17)" />
+        <WalkStrip src={`${DRAFTS}/collector-walk-before.png`} frames={8} label="The collector before the fix: moonwalking" />
+        <WalkStrip src="/sprites/npcs/enchantress-walk.png" frames={8} label="The Enchantress (in the game)" />
       </div>
 
       <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>✓ Approved, in the game now ({APPROVED.length})</h2>
@@ -285,6 +285,7 @@ function Thumb({ ex, now = false }: { ex: Exhibit | null; now?: boolean }) {
 // A visitor's walk strolling to and fro across a strip of floor, turning at each end, at the tavern's pace
 // (VISITOR_SPEED blocks a second, 64 px a block, 9 frames a second), drawn 2× for a closer look.
 const STROLL_W = 440, STROLL_SCALE = 2, STROLL_PX = VISITOR_SPEED * 64 * STROLL_SCALE; // px a second, on screen
+// (The visitors' art faces left, so, as in the tavern, it's mirrored while heading right.)
 function WalkStrip({ src, frames, label }: { src: string; frames: number; label: string }) {
   const [t, setT] = useState(0);
   useEffect(() => { let id = 0; const t0 = performance.now(); const tick = (n: number) => { setT((n - t0) / 1000); id = requestAnimationFrame(tick); }; id = requestAnimationFrame(tick); return () => cancelAnimationFrame(id); }, []);
@@ -292,7 +293,7 @@ function WalkStrip({ src, frames, label }: { src: string; frames: number; label:
   const back = k > 1, x = back ? (2 - k) * run : k * run, f = Math.floor(t * 9) % frames;
   return (
     <div style={{ position: "relative", width: STROLL_W, maxWidth: "100%", height: box + 18, background: "#3a362e", borderRadius: 8, overflow: "hidden" }}>
-      <div style={{ position: "absolute", left: x, top: 0, width: box, height: box, transform: back ? "scaleX(-1)" : undefined,
+      <div style={{ position: "absolute", left: x, top: 0, width: box, height: box, transform: back ? undefined : "scaleX(-1)",
         background: `url(${src}) no-repeat`, backgroundSize: `${frames * 100}% 100%`, backgroundPosition: `${(f / (frames - 1)) * 100}% 0`, imageRendering: "pixelated" }} />
       <div style={{ position: "absolute", left: 8, bottom: 2, fontSize: 11, color: "#cbbf9f" }}>{label}</div>
     </div>
