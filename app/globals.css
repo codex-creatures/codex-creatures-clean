@@ -601,7 +601,7 @@ body {
 /* ── The Labyrinth entrance's showcase (components/dungeon/Entrance.tsx): the dungeon picked, its
    boss in its own light on a cave backdrop; and the medallions to pick one. ── */
 .showcase {
-  position: relative; height: 210px; overflow: hidden;
+  position: relative; height: 178px; overflow: hidden;
   border: 3px solid; border-color: #6d6249 #2a261d #2a261d #6d6249; outline: 2px solid #06060a;
   box-shadow: inset 0 0 0 2px #06060a, 0 5px 0 rgba(0, 0, 0, 0.45);
 }
@@ -611,10 +611,10 @@ body {
   -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 70%); mask-image: linear-gradient(180deg, #000 0%, transparent 70%);
 }
 .showcase-rocks {
-  position: absolute; left: -10px; right: -10px; bottom: 56px; height: 100px; opacity: 0.9;
+  position: absolute; left: -10px; right: -10px; bottom: 56px; height: 80px; opacity: 0.9;
   clip-path: polygon(0 100%, 0 40%, 8% 22%, 14% 48%, 22% 10%, 30% 44%, 36% 30%, 42% 60%, 58% 60%, 64% 28%, 70% 46%, 78% 6%, 86% 42%, 92% 20%, 100% 38%, 100% 100%);
 }
-.showcase-boss { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); height: 122px; width: auto; max-width: 70%; object-fit: contain; image-rendering: pixelated; }
+.showcase-boss { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); height: 96px; width: auto; max-width: 70%; object-fit: contain; image-rendering: pixelated; }
 .showcase-fog {
   position: absolute; left: -20px; right: -20px; bottom: 48px; height: 40px;
   background: radial-gradient(ellipse 40% 60% at 25% 60%, rgba(220, 230, 220, 0.16), transparent 70%), radial-gradient(ellipse 45% 60% at 72% 55%, rgba(220, 230, 220, 0.14), transparent 70%);
@@ -624,7 +624,7 @@ body {
 .showcase-boss-tag { font-size: 10px; color: #ffe7a8; padding: 3px 7px; background: linear-gradient(180deg, #8a2a1c, #4e130b); box-shadow: inset 0 1px 0 #d0604a, inset 0 0 0 1px #2a0804; }
 .showcase-stat { padding: 5px 0; text-align: center; font-size: 11px; color: #f1d9a0; background: rgba(0, 0, 0, 0.55); box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.75), inset -1px -1px 0 rgba(255, 255, 255, 0.06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .medallion {
-  width: 100%; max-width: 58px; aspect-ratio: 1; padding: 3px; box-sizing: border-box; display: block;
+  width: 100%; max-width: 48px; aspect-ratio: 1; padding: 3px; box-sizing: border-box; display: block;
   clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%); background: #6b5130;
 }
 .medallion[data-on="true"] { background: #ffe7a8; }

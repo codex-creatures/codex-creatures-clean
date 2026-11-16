@@ -135,7 +135,10 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
   }
 
   return (
-    <>
+    // The whole screen, its parts stacked; your creatures' panel takes whatever height is left (never under
+    // about two rows: on a short phone the screen scrolls instead), so it isn't squeezed or left floating.
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+    <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", padding: "10px 12px", overflowY: "auto", overscrollBehavior: "contain" }}>
       {!quest && (
         <div style={{ display: "grid", gap: 6, marginBottom: 10 }}>
           {/* Dungeon Crawling (the default) or Speed Scroll. */}
@@ -182,28 +185,6 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
           </div>
         </div>
       )}
-      {/* Enter, with what's inside behind the "?". */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt || scrollShut} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: freeLeft > 0 ? 15 : 20, padding: "12px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{/* (smaller with the free runs left in it, so it stays one line) */}
-          {notBuilt ? "Speed Scroll only for now" : scrollShut ? "Beat it crawling first" : <>{walking ? "🔥" : DUNGEON_ICONS[dungeon]} Enter {DUNGEONS[dungeon].name.replace("The", "the")} {freeLeft > 0 ? `(free · ${freeLeft} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}</>}
-        </button>
-        <Help title="The labyrinth">
-          <ul>
-            <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
-            <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
-            <li>Some rooms are a <b>mystery</b> until you walk in.</li>
-            <li>Take <b>{cap} creatures</b> in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
-            <li><b>Free pick</b>: choose from all your creatures each time. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window). A team of more than {cap} sends its first {cap}.</li>
-            <li>Pack your <b>bag</b> here too: spare gear, potions and tools.</li>
-            <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
-          </ul>
-        </Help>
-      </div>
-      {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>
-        Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
-      </p>}
-      {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center" }}>Entering costs {fee} gold — you have {gold}.</p>}
-      {askPick && party.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center" }}>Pick at least one creature to take in{pick === null ? "" : ` (Team ${pick + 1} has nobody who can go)`}.</p>}
 
       {injured.length > 0 && (
         <div className="stone-panel" style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
@@ -213,14 +194,14 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
       )}
 
       {/* Party or bag: two tabs, the same size whichever is open. */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
         <button className="chip" data-active={tab === "party"} onClick={() => setTab("party")} style={{ minHeight: 44, textTransform: "none" }}>🐾 Party {party.length}/{cap}</button>
         <button className="chip" data-active={tab === "bag"} onClick={() => setTab("bag")} style={{ minHeight: 44, textTransform: "none" }}>🎒 {bagName(lab.meta)} {bag.length}/{bagSize(lab.meta)}</button>
       </div>
 
       {tab === "bag" ? <BagPacker game={game} lab={lab} onSave={onSave} /> : <>
         {/* Free pick, or one of the teams. */}
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS + 1}, 1fr)`, gap: 6, marginTop: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${TEAM_SLOTS + 1}, 1fr)`, gap: 6, marginTop: 8 }}>
           {[null, ...Array.from({ length: TEAM_SLOTS }, (_, i) => i)].map((p) => (
             <button key={p ?? "free"} className="chip" data-active={pick === p} onClick={() => choose(p)}
               style={{ minHeight: 44, padding: "2px 4px", textTransform: "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -244,7 +225,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
           </p>
         )}
         {owned.length > 0 && (
-          <div className="inv-panel" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", gap: 10, maxHeight: "24cqh", overflowY: "auto", overscrollBehavior: "contain" }}>
+          <div className="inv-panel" style={{ flex: "1 1 0", minHeight: 180, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(104px, 1fr))", alignContent: "start", gap: 10, overflowY: "auto", overscrollBehavior: "contain" }}>
             {[...owned, ...away].map((c) => {
               const slot = listed.indexOf(c.id);
               const hp = lab.meta.injuries[c.id] ?? 1;
@@ -286,6 +267,32 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
         )}
       </>}
 
-    </>
+    </div>
+    {/* Enter, in a dock along the bottom: always in reach, whatever the panel above is doing. */}
+    <footer className="screen-dock" style={{ display: "grid", gap: 4 }}>
+        {/* Enter, with what's inside behind the "?". */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={enter} disabled={!canPay || full.length > 0 || notBuilt || scrollShut} className="pixel-btn" style={{ flex: 1, minWidth: 0, fontSize: freeLeft > 0 ? 15 : 19, padding: "10px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{/* (smaller with the free runs left in it, so it stays one line) */}
+            {notBuilt ? "Speed Scroll only for now" : scrollShut ? "Beat it crawling first" : <>{walking ? "🔥" : DUNGEON_ICONS[dungeon]} Enter {DUNGEONS[dungeon].name.replace("The", "the")} {freeLeft > 0 ? `(free · ${freeLeft} left)` : fee === 0 ? "(free)" : `(${fee} gold)`}</>}
+          </button>
+          <Help title="The labyrinth">
+            <ul>
+              <li>Rooms and winding tunnels, with the <b>boss&apos;s lair</b> somewhere at the top.</li>
+              <li>You get <b>one look at the map</b> at the entrance. Inside it&apos;s too dark to read: you pick your way tunnel by tunnel, and there&apos;s no going back.</li>
+              <li>Some rooms are a <b>mystery</b> until you walk in.</li>
+              <li>Take <b>{cap} creatures</b> in. They can swap places in a fight, but <b>nobody new joins</b> once you&apos;re inside.</li>
+              <li><b>Free pick</b>: choose from all your creatures each time. Or save up to <b>{TEAM_SLOTS} teams</b>: pick a team, then tap creatures to add or take them out (or use <b>Add to team</b> in a creature&apos;s window). A team of more than {cap} sends its first {cap}.</li>
+              <li>Pack your <b>bag</b> here too: spare gear, potions and tools.</li>
+              <li><b>Wounds carry</b> from room to room. If your team falls you wake up in the Den — <b>you keep everything you found</b>.</li>
+            </ul>
+          </Help>
+        </div>
+        {full.length > 0 && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center", margin: 0 }}>
+          Your {full.map((b) => BOX_NAMES[b]).join(" and ")} box{full.length > 1 ? "es are" : " is"} full. <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Sell some</Link> to go back in.
+        </p>}
+        {!canPay && <p style={{ fontSize: 12, color: "#ff8a80", textAlign: "center", margin: 0 }}>Entering costs {fee} gold — you have {gold}.</p>}
+        {askPick && party.length === 0 && <p style={{ fontSize: 13, color: "#ff8a80", textAlign: "center", margin: 0 }}>Pick at least one creature to take in{pick === null ? "" : ` (Team ${pick + 1} has nobody who can go)`}.</p>}
+    </footer>
+    </div>
   );
 }
