@@ -42,7 +42,7 @@ type Flip = [keyof View3D, View3D[keyof View3D], View3D[keyof View3D]];
 const PITCHES = [{ label: "35°", v: (35 * Math.PI) / 180 }, { label: "¾ (48.6°)", v: DEFAULT_PITCH }, { label: "60°", v: Math.PI / 3 }, { label: "75°", v: (75 * Math.PI) / 180 }];
 
 // Settings from the address, to share or shoot a view:
-// ?view=2d|3d&pitch=<degrees>&camera=persp&pixels=art&shadows=1&across=<n>&dungeon=1&seed=<n>
+// ?view=2d|3d&pitch=<degrees>&camera=persp&pixels=art&shadows=1&across=<n>&dungeon=1|2&seed=<n>
 // and the grey experiment: &geo=grey (the settled geometry unless given) &fov=<degrees> &lean=<n> &south=full|low &wall=<u> &unseen=rock|black|shown
 // and Stone: &geo=stone (the settled geometry too) &density=32|48 &kit=f|a &texels=screen|world &pixels=device|art|whole &light=smooth|stepped|dither &fade=0|1
 // and, 3D only: &seen=all (everything shown as seen) &room=<kind> (start in the first room of that kind: boss, encampment, chest…)
@@ -56,7 +56,7 @@ function fromAddress() {
     light: one("light", ["smooth", "stepped", "dither"] as const, "smooth"), fade: q.get("fade") !== "0",
     grey, fov: num("fov") ?? (grey ? 20 : 30), lean: num("lean") ?? (grey ? CANDIDATES.B.lean : 0), south: (q.get("south") ?? (grey ? "low" : "full")) === "low" ? "low" : "full", wall: num("wall") ?? WALL_HEIGHT,
     unseen: (["rock", "black", "shown"] as const).find((u) => u === q.get("unseen")) ?? (grey ? "black" : "rock") };
-  return { three: q.get("view") !== "2d", dungeon: (num("dungeon") === 1 ? 1 : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
+  return { three: q.get("view") !== "2d", dungeon: ([1, 2].includes(num("dungeon") ?? 0) ? num("dungeon") : 0) as WalkDungeon, seed: num("seed") ?? 11, view, seeAll: q.get("seen") === "all", roomKind: q.get("room") ?? undefined };
 }
 
 // Drawn in the browser only (Three.js, and the settings in the address).
@@ -102,6 +102,7 @@ function ThreeLab() {
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {chip(dungeon === 0, "Encampment", () => reroll(0, seed))}
           {chip(dungeon === 1, "Labyrinth", () => reroll(1, seed))}
+          {chip(dungeon === 2, "Hydra", () => reroll(2, seed))}
           {chip(false, "Another run", () => reroll(dungeon, seed + 1))}
         </div>
         {three && <>

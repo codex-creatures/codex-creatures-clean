@@ -343,8 +343,8 @@ describe("a labyrinth run", () => {
     const { scrollOpen, CRAWLABLE } = await import("../lib/dungeon/run");
     const meta = { runs: 4, clears: 0, injuries: {}, bag: [] };
     const won = { ...startRun(party, party.slice(0, 3), {}, 4), status: "cleared" as const };
-    expect(CRAWLABLE.map((d) => scrollOpen(d, meta))).toEqual([false, false]);
-    expect(scrollOpen(2, meta) && scrollOpen(3, meta)).toBe(true);
+    expect(CRAWLABLE.map((d) => scrollOpen(d, meta))).toEqual([false, false, false]);
+    expect(scrollOpen(3, meta)).toBe(true);
     // Beaten on the scroll: still shut. Beaten walking: open, and counted once.
     expect(scrollOpen(1, endRun({ meta, run: won }).meta)).toBe(false);
     const walked = { ...won, walk: {} as DungeonRun["walk"] };

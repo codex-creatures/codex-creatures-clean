@@ -318,7 +318,9 @@ export default function DungeonPage() {
     }
     if (deep) {
       const n = (lab.meta.deepRuns ?? 0) + 1;
-      update({ meta: { ...meta, deepRuns: n }, run: startRun(party, team, hp, n, Math.random, 2, dynamite, onBindle(lab.meta)) });
+      // Dungeon Crawling: the Deep Labyrinth walked round by torchlight (lib/dungeon/walkRun.ts).
+      const run = walk ? newWalkRun(startWalkRun(party, team, hp, n, [], onBindle(lab.meta), Math.random, 2, dynamite)) : startRun(party, team, hp, n, Math.random, 2, dynamite, onBindle(lab.meta));
+      update({ meta: { ...meta, deepRuns: n }, run });
       return;
     }
     // "New": the Labyrinth walked round by torchlight (lib/dungeon/walkRun.ts), its runs the Labyrinth's.

@@ -6,6 +6,10 @@ import { isSpawn, parentOf, spawnOf, sees, endOf, WAIT_REACH } from "../lib/dung
 import { layoutFloorplan, TWO_DEN_SHAPES, LARGE_SHAPE } from "../lib/dungeon/layout";
 import { FLOOR } from "../lib/dungeon/floorplan";
 import { placeFoes, placeWaiter, cageSpots } from "../lib/world/compat/v0Placers";
+import { placeWalk } from "../lib/world/place";
+import { WALK_V } from "../lib/world/version";
+import { dungeonOf } from "../lib/dungeon/run";
+import { slowIt } from "./slow";
 
 function seeded(seed: number) {
   let s = seed;
@@ -150,6 +154,28 @@ describe("the walkable Labyrinth (New: the Cyclops)", () => {
     expect(headHome(top)).toBe(top);
     expect(endRun({ meta, run: { ...top, status: "retreated" } }).meta.clears).toBe(0);
   });
+  it("the walkable Deep Labyrinth: two large rooms, people who wander, the Hydra waiting at the top, its clear a Deep one", () => {
+    const deep = startWalkRun(["a"], ["a"], { a: 1 }, 3, [], false, seeded(21), 2);
+    expect(deep.dungeon).toBe(2);
+    const boss = deep.walk!.rooms[deep.map.boss];
+    expect(boss.boss).toBe("hydra");
+    expect(waitsHere(boss, 2)).toBe(true);
+    expect(Object.values(deep.walk!.layout.rooms).filter((r) => r.shape === LARGE_SHAPE.name)).toHaveLength(2);
+    expect(deep.walk!.people?.length).toBeGreaterThan(0);
+    const won = { ...walkInto(deep, deep.map.boss), current: { ...boss, done: true } };
+    const after = endRun({ meta: { runs: 0, clears: 1, injuries: {}, bag: [] }, run: headHome(won) }).meta;
+    expect(after.deepClears).toBe(1);
+    expect(after.walkClears).toEqual([2]);
+  });
+  slowIt("a sweep of Deep Labyrinth runs: everything placed, the Hydra's huge body included", () => {
+    const bad: string[] = [];
+    for (let s = 0; s < 4; s++) {
+      const run = startWalkRun(["a"], ["a"], { a: 1 }, 2, [], s % 2 === 1, seeded(s * 7919 + 5), 2);
+      const { report } = placeWalk({ ...run.walk!, v: WALK_V }, run.map, dungeonOf(run), (k) => walkRoom(run, k));
+      if (report.problems.length) bad.push(`${s}: ${report.problems.map((p) => p.what).join("; ")}`);
+    }
+    expect(bad).toEqual([]);
+  }, 120_000);
   it("Klutz's dynamite quest: the large room is the storehouse, with the dynamite, marked", () => {
     const run = startWalkRun(["a"], ["a"], { a: 1 }, 2, [], false, seeded(12), 1, true);
     const large = Object.values(run.walk!.layout.rooms).find((r) => r.shape === LARGE_SHAPE.name)!;

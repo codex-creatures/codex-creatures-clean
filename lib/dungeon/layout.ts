@@ -118,6 +118,9 @@ export const WALK_SPEC = { rooms: 19, minRoute: CAMP_ROUTE, large: 0, block: BLO
 export const WALK_LABYRINTH = { rooms: 60, minRoute: 15, large: 1, block: BLOCK, across: 5, guided: true };
 // Its size before (30 rooms, 10 to the lair): runs made at world versions up to 10 had it, and the
 // tests of those versions' rules roll it.
+// The walkable Deep Labyrinth (the Hydra; the user, 2026-11-17): the walkable Labyrinth's size, with
+// the scroll map's two large rooms. 🧪
+export const WALK_HYDRA = { ...WALK_LABYRINTH, large: 2 };
 export const WALK_LABYRINTH_30 = { rooms: 30, minRoute: 10, large: 1, block: BLOCK, guided: true };
 
 export type Corner = "ne" | "nw" | "se" | "sw";

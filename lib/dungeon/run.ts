@@ -1404,7 +1404,7 @@ export type DungeonMeta = {
 };
 
 // Dungeon Crawling (walking it yourself: walkRun.ts) is built for these so far; the rest are Speed Scroll only.
-export const CRAWLABLE: DungeonId[] = [0, 1];
+export const CRAWLABLE: DungeonId[] = [0, 1, 2];
 // Speed Scroll opens for a dungeon once you've beaten it crawling (the user, 2026-11-14), at the same
 // fee. Those that can't be crawled yet are Speed Scroll only, so always open.
 export const scrollOpen = (d: DungeonId, meta: DungeonMeta) => !CRAWLABLE.includes(d) || !!meta.walkClears?.includes(d);

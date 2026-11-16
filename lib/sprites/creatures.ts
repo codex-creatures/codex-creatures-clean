@@ -107,6 +107,8 @@ export function hydraSprite(down: readonly boolean[] = []): Sprite {
 }
 // (Each head on its own, as in a list of the boss's parts: the whole Hydra.)
 for (const id of HYDRA_HEADS) CREATURE_SPRITES[id] = hydraSprite();
+// (The whole beast, as its boss room names it: waiting at the top of a walked Deep Labyrinth.)
+CREATURE_SPRITES.hydra = hydraSprite();
 
 // Seen from behind, for your side of a fight (public/sprites/creatures/back,
 // trimmed). Only the user's approved ones; the rest show their usual art,
