@@ -60,7 +60,7 @@ export default function TavernPage() {
           <Help title="The tavern">
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
-              <li>Repairing it puts a <b>bounty</b> on the Cyclops up on the <b>quest board</b>.</li>
+              <li>Beat the Cyclops and its <b>head</b> goes up over the door.</li>
               <li>Once it&apos;s repaired, the <b>merchant</b>, the <b>librarian</b>, the <b>creature collector</b> and the <b>Enchantress</b> may each call <b>every half hour</b>, on their own chance, so several can be in at once. One who comes stays that half hour. Tap them in the room to trade. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
               <li>The <b>creature collector</b> buys creatures (Common {COLLECTOR_PRICES.common}, Uncommon {COLLECTOR_PRICES.uncommon}, Rare {COLLECTOR_PRICES.rare}, Epic {COLLECTOR_PRICES.epic}, Legendary {COLLECTOR_PRICES.legendary} gold), or trades <b>{TRADE_UP_COUNT} creatures of one rarity</b> for a card of a random creature one rarity up. Not cards, and not a creature in a team, the pit or on a run.</li>
               <li>The <b>Enchantress</b> rerolls an item&apos;s enchantment for <b>1 essence stone</b> and gold by its rarity (Rare {REROLL_GOLD.rare!.toLocaleString()}, Epic {REROLL_GOLD.epic!.toLocaleString()}, Legendary {REROLL_GOLD.legendary!.toLocaleString()}).</li>

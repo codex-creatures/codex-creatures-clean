@@ -131,9 +131,9 @@ export function campaignCtx(save: Obj): CampaignCtx {
 export type CampaignEvent = "battle" | "scan" | "klutz" | "card" | "buy" | "cage" | "goldchest" | "effective" | "spar"
   | `summon:${Rarity}` | `kfind:${Rarity}` | `clean:${number}` | `visit:${Visitor}`;
 
-// How many of an event, with a rarity counting for itself and everything below it.
+// How many of an event; for Klutz's finds, a rarity counts for itself and everything below it.
 const tallied = (c: CampaignCtx, ev: string) => c.tally[ev] ?? 0;
-const ofRarity = (c: CampaignCtx, ev: "summon" | "kfind", lo: Rarity) =>
+const ofRarity = (c: CampaignCtx, ev: "kfind", lo: Rarity) =>
   ORDER.slice(ORDER.indexOf(lo)).reduce((n, r) => n + tallied(c, `${ev}:${r}`), 0);
 
 // ── The rewards ─────────────────────────────────────────────────────
@@ -213,7 +213,8 @@ const q = {
   klutz: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `klutz${n}`, task: `Get Klutz to level ${n}`, go: "/klutz", goal: n, progress: (c) => c.klutzLevel, reward }),
   explorer: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `explorer${n}`, task: `Reach explorer level ${n}`, go: "/altar", goal: n, progress: (c) => c.explorer, reward }),
   gold: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `gold${n}`, task: `Have ${n.toLocaleString()} gold saved up`, goal: n, progress: (c) => c.gold, reward }),
-  summon: (r: Rarity, reward: CampaignReward): CampaignQuest => ({ id: `summon-${r}`, task: `Summon ${r === "uncommon" || r === "epic" ? "an" : "a"} ${RARITY_WORD[r]} creature from cards${r === "legendary" ? "" : " (or rarer)"}`, go: "/pit", goal: 1, progress: (c) => ofRarity(c, "summon", r), reward }),
+  // (Summons are exact, the user, 2026-11-16: a Common, then an Uncommon, and so on.)
+  summon: (r: Rarity, reward: CampaignReward): CampaignQuest => ({ id: `summon-${r}`, task: `Summon ${r === "uncommon" || r === "epic" ? "an" : "a"} ${RARITY_WORD[r]} creature from cards`, go: "/pit", goal: 1, progress: (c) => tallied(c, `summon:${r}`), reward }),
   kfind: (r: Rarity, reward: CampaignReward): CampaignQuest => ({ id: `kfind-${r}`, task: `Klutz brings home ${r === "epic" ? "an" : "a"} ${RARITY_WORD[r]} weapon or armour${r === "legendary" ? "" : " (or rarer)"}`, go: "/klutz", goal: 1, progress: (c) => ofRarity(c, "kfind", r), reward }),
   worn: (r: Rarity, reward: CampaignReward): CampaignQuest => ({ id: `wear-${r}`, task: `Put ${r === "epic" ? "an" : "a"} ${RARITY_WORD[r]} item on a creature (or rarer)`, go: "/pit", goal: 1, progress: (c) => flag(atLeast(c.worn, r)), reward }),
   spar: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `spar${n}`, task: `Level up creatures ${n} times in the Sparring Pit`, goal: n, progress: (c) => tallied(c, "spar"), reward }),

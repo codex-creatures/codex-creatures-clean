@@ -60,9 +60,9 @@ function useOthersOnline(): number | null {
   return me ? othersOnline(ids, me) : null;
 }
 
-// firstClearRun: the run you first beat the Cyclops on (marked on the head).
+// head: the Cyclops Head is up (lib/tavern.ts headUp); firstClearRun: the run you first beat the Cyclops on (marked on it).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).
-export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: TavernQuest; firstClearRun?: number; pit?: { ready: boolean } }) {
+export default function TavernRoom({ tavern: t, head: headIsUp, firstClearRun, pit }: { tavern: TavernQuest; head?: boolean; firstClearRun?: number; pit?: { ready: boolean } }) {
   // Everyone calling, each a step along the stroll from the last (lib/tavern.ts onTheClock).
   const visitors = tavernVisitors(t);
   const head = CREATURE_SPRITES.cyclops;
@@ -122,7 +122,7 @@ export default function TavernRoom({ tavern: t, firstClearRun, pit }: { tavern: 
           {t.repaired ? "Tavern" : "Broken tavern"}
         </div>
         {/* The Cyclops Head, mounted over the door, with the run you first beat it on. */}
-        {t.mounted && head && (
+        {headIsUp && head && (
           <div style={{ position: "absolute", left: pct(DOOR.x, TAVERN.w), bottom: pct(TAVERN.h - DOOR.y, TAVERN.h), width: pct(44, TAVERN.w), translate: "-50% 0", textAlign: "center", background: "#5a3e22", border: "1px solid #2a1c10", padding: 1 }}>
             <PixelSprite sprite={head} title="The Cyclops Head" style={FIT} />
             <div className="pixel-font" style={{ fontSize: "0.9cqw", color: "#f1d9a0" }}>{firstClearRun ? `Run ${firstClearRun}` : "Cyclops"}</div>

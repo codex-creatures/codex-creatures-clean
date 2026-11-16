@@ -62,24 +62,18 @@ fields optional with defaults.
 4. ✅ **The tavern (outside only for now)** stands broken in that room, a building against its far
    wall (the sketch). The first time you see it, Klutz reacts once (it needs materials). Art:
    PixelLab, at the room's angle (§11); greyed until repaired. ✅ (the user, 2026-10-20) **No
-   wanted poster.** ✅ (the user, 2026-11-02) The bounty lives on the **quest board's Quests tab**
-   (`/board`), not in the tavern: a ❗ on the board in the Den while it has a step for you (the
-   bounty to take, or the head to hand in: `bountyHasStep`). The ❗ for a visitor is over the visitor (and the Den's doorway), not the tavern.
+   wanted poster.** The ❗ for a visitor is over the visitor (and the Den's doorway), not the tavern.
 5. ✅ **Repair:** 5 metal bars, 20 planks, 5 nails. It shows have/need, is blocked if you're short,
    takes the materials exactly once, and swaps in the restored look.
-6. ✅ **Bounty:** repairing the tavern puts the Cyclops bounty up on the quest board
-   (`bountyStep`: offer, hunt, head, paid). Cyclops combat is unchanged. 🧪 A "Take the bounty"
-   button; with a win already on record (`meta.clears`), the head is ready to hand in straight away.
-7. ✅ **Cyclops Head:** a unique trophy, given once, that can't be sold, used or duplicated. It is
-   the decided Cyclops trophy, showing the run you first won on (`meta.firstClearRun`). Handing it
-   in at the board (once) mounts it on the tavern wall, completes the bounty and pays **1,000 gold**
-   (`BOUNTY_GOLD`; 🧪 Claude's placeholder, 2026-11-16). ⚠️ It paid the bookcase schematic until the
-   campaign (below) moved the schematic to the rubble; a head handed in before then keeps its plans
-   (`hasBookPlans`: `mounted` without `headGold`).
-   🧪 The head isn't an item in your storage: it's yours once you've beaten the Cyclops and taken
-   the bounty, so it can't be sold, used, lost or doubled. Mounted, it hangs over the tavern door
+6. ✗ **Bounty** (replaced by the campaign, the user, 2026-11-16): the Cyclops bounty on the quest
+   board (take it, beat the Cyclops, hand in the head, paid the bookcase schematic) is gone; the
+   campaign's "Beat the Cyclops" step (an enchanted Epic weapon) takes its place. Old saves keep what
+   it paid (`bounty`, `mounted` stay in the tavern field; `hasBookPlans`).
+7. ✅ **Cyclops Head:** a unique trophy, the decided Cyclops trophy, showing the run you first won on
+   (`meta.firstClearRun`). Since the bounty went (2026-11-16) it goes up over the tavern door by
+   itself once the tavern's repaired and you've beaten the Cyclops (`headUp`; Claude's reading, as
+   the head was the bounty's). It isn't an item, so it can't be sold, used, lost or doubled
    (placeholder: the Cyclops sprite on a plaque marked with the run).
-   The schematic it pays isn't an item either: the bookcase just offers to build.
 8. ✅ **Bookcase upgrade:** the existing Crooked Bookcase schematic, but the tavern is now the
    **only** way to get it (since 2026-11-16 the campaign's reward for blowing open the rubble: found
    in the broken tavern, `bookPlans`): it no longer drops from mini bosses, the Cyclops or storehouses. It costs
@@ -157,7 +151,7 @@ fields optional with defaults.
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)
 
-On the quest board's Quests tab, above the Cyclops bounty. **Two a day, a primary and a
+On the quest board's Quests tab, above the Hydra quest. **Two a day, a primary and a
 secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
 do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
 ready to claim. Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
@@ -234,16 +228,16 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   backpack, or a slot bought); "camp cages" are any cages in an encampment; "beat X level without
   potions" is a dungeon's boss beaten on a run with no potion drunk (Revival Elixirs don't count);
   "identify creatures in the Bestiary" counts every creature in it (seen, owned or carded);
-  "summon a Common…" accepts that rarity or rarer; "level every one of Klutz's skills" is each of
+  summons are exact (the user, 2026-11-16: a Common, then an Uncommon, a Rare, an Epic, a Legendary); "level every one of Klutz's skills" is each of
   his four skills at level 1 or more; "Klutz's explorations" count his weapons and armour.
 
 | Chapter | Quests, in order (reward) |
 |---|---|
 | 1 The Encampment | Scan 3 (50g) · 3 in the Bestiary (50g) · Send Klutz hunting (scroll) · A creature fully kitted (100g) · Win 5 fights (100g) · Collect 3 cards (100g) · A creature Lv 5 (scroll) · **Beat the Encampment** (Gear Crate, Uncommon–Rare ×3) |
-| 2 The Cyclops | Calibrate the scanner (150g) · Explorer Lv 5 (scroll) · Learn a codex move (150g) · Buy from a merchant (150g) · Summon a Common+ (Supplies) · Open 3 camp cages (200g) · A Rare+ weapon on (250g) · Klutz brings home Rare+ gear (scroll) · Win 25 fights (scroll) · A set bonus (250g) · 1,000 gold saved (Materials, Common–Uncommon) · The Encampment without a potion (300g) · Blow open the rubble (bookcase schematic) · **Beat the Cyclops** (enchanted Epic weapon) |
-| 3 The Hydra | Klutz Lv 5 (scroll) · A creature Lv 10 (Materials, Uncommon–Rare) · An enchanted weapon on (300g) · Every Klutz skill levelled (300g) · Fix up the tavern (Gold Key) · A win with only effective moves (400g) · Summon an Uncommon+ (Supplies) · Scan 50 (500g) · 15 in the Bestiary (scroll) · A bigger bag (500g) · 3 Sparring Pit levels (2 scrolls) · Klutz brings home Epic+ gear (Materials, Rare–Epic) · An Epic+ item on (500g) · Win 100 fights (Codex Crate, Uncommon–Rare ×2) · Open a golden chest (Gear, Rare–Epic) · 5,000 gold (2 scrolls) · The Cyclops without a potion (1,000g) · A creature Lv 15 (Gear, Rare–Epic) · **Beat the Hydra** (enchanted Epic armour) |
-| 4 The Abyss | An enchanted armour piece on (1,000g) · Klutz Lv 10 (Materials, Rare–Epic) · Every visitor calls (2 scrolls) · Summon a Rare+ (Supplies) · Build 3 schematics (Materials, Rare–Epic) · Explorer Lv 20 (2,000g) · 10 Sparring Pit levels (3 scrolls) · A creature Lv 20 (Gear, Epic) · 15,000 gold (3 scrolls) · Win 250 fights (Codex, Rare–Epic ×2) · The Hydra without a potion (Gear, Epic) · **Beat the Abyss** (enchanted Legendary weapon) |
-| 5 Legend | A creature Lv 25 · Klutz Lv 15 · Summon an Epic+ · Klutz brings home Legendary gear · A Legendary item on · Scan 250 · 35 in the Bestiary (all) · Explorer Lv 30 · 50,000 gold · The Abyss without a potion · A creature Lv 30 · Klutz Lv 20 · Summon a Legendary · Klutz Lv 25 · Klutz Lv 30 (crates Epic–Legendary, scrolls, enchanted Legendary gear) |
+| 2 The Cyclops | Calibrate the scanner (150g) · Explorer Lv 5 (scroll) · Learn a codex move (150g) · Buy from a merchant (150g) · Summon a Common (Supplies) · Open 3 camp cages (200g) · A Rare+ weapon on (250g) · Klutz brings home Rare+ gear (scroll) · Win 25 fights (scroll) · A set bonus (250g) · 1,000 gold saved (Materials, Common–Uncommon) · The Encampment without a potion (300g) · Blow open the rubble (bookcase schematic) · **Beat the Cyclops** (enchanted Epic weapon) |
+| 3 The Hydra | Klutz Lv 5 (scroll) · A creature Lv 10 (Materials, Uncommon–Rare) · An enchanted weapon on (300g) · Every Klutz skill levelled (300g) · Fix up the tavern (Gold Key) · A win with only effective moves (400g) · Summon an Uncommon (Supplies) · Scan 50 (500g) · 15 in the Bestiary (scroll) · A bigger bag (500g) · 3 Sparring Pit levels (2 scrolls) · Klutz brings home Epic+ gear (Materials, Rare–Epic) · An Epic+ item on (500g) · Win 100 fights (Codex Crate, Uncommon–Rare ×2) · Open a golden chest (Gear, Rare–Epic) · 5,000 gold (2 scrolls) · The Cyclops without a potion (1,000g) · A creature Lv 15 (Gear, Rare–Epic) · **Beat the Hydra** (enchanted Epic armour) |
+| 4 The Abyss | An enchanted armour piece on (1,000g) · Klutz Lv 10 (Materials, Rare–Epic) · Every visitor calls (2 scrolls) · Summon a Rare (Supplies) · Build 3 schematics (Materials, Rare–Epic) · Explorer Lv 20 (2,000g) · 10 Sparring Pit levels (3 scrolls) · A creature Lv 20 (Gear, Epic) · 15,000 gold (3 scrolls) · Win 250 fights (Codex, Rare–Epic ×2) · The Hydra without a potion (Gear, Epic) · **Beat the Abyss** (enchanted Legendary weapon) |
+| 5 Legend | A creature Lv 25 · Klutz Lv 15 · Summon an Epic · Klutz brings home Legendary gear · A Legendary item on · Scan 250 · 35 in the Bestiary (all) · Explorer Lv 30 · 50,000 gold · The Abyss without a potion · A creature Lv 30 · Klutz Lv 20 · Summon a Legendary · Klutz Lv 25 · Klutz Lv 30 (crates Epic–Legendary, scrolls, enchanted Legendary gear) |
 
 **The pacing model** (Claude, 2026-11-16; scripts not kept). Explorer XP is every fight's XP; a
 creature Lv 5 / 10 / 15 / 20 / 25 / 30 needs 399 / 1,567 / 3,654 / 6,847 / 11,334 / 17,302 XP, an

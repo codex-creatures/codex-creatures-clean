@@ -28,6 +28,6 @@ export function clearedLine(run: DungeonRun, lab: DungeonSave) {
     ? `The chief goes down, and the camp is yours. You beat the Encampment on run ${run.runNumber}!${lab.meta.campClears ? "" : " The Cyclops's way in is open now."}`
     : run.dungeon && run.dungeon !== 1
     ? `${run.dungeon === 2 ? "The last head falls" : "The Warden falls"}, and the deep goes quiet. You beat ${DUNGEONS[run.dungeon].name.replace("The", "the")} on run ${run.runNumber}!`
-    : `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy, and a bounty if anyone's offering one.`;
+    : `The Eye bursts in a shower of sparks. You beat the Cyclops on run ${run.runNumber}${lab.meta.firstClearRun ? "" : " — your first clear"}! Its head comes home with you: a trophy for the tavern wall.`;
 }
 export const chestName = (room: Room) => (room.container === "strongbox" ? "The strongbox" : room.kind === "encampment" ? "The chief's chest" : "The Cyclops' chest");

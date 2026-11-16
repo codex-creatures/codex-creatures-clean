@@ -29,7 +29,7 @@ describe("clearedLine", () => {
   });
   it("the Cyclops: 'your first clear' only before the first one", () => {
     const first = clearedLine(run(1, 5), lab({}));
-    expect(first).toBe("The Eye bursts in a shower of sparks. You beat the Cyclops on run 5 — your first clear! Its head comes home with you: a trophy, and a bounty if anyone's offering one.");
+    expect(first).toBe("The Eye bursts in a shower of sparks. You beat the Cyclops on run 5 — your first clear! Its head comes home with you: a trophy for the tavern wall.");
     expect(clearedLine(run(undefined, 5), lab({ firstClearRun: 2 }))).toBe(first.replace(" — your first clear", ""));
   });
 });

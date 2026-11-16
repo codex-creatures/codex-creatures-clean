@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { slowIt } from "./slow";
 import { rollMap, knownRooms, waysOn } from "../lib/dungeon/map";
 import { DUNGEONS, startRun, stepInside, enterRoom, dynamiteHere, takeDynamite, hasFight, minibossExtras, makeRoom, MERCHANT_MATERIALS, type DungeonRun } from "../lib/dungeon/run";
-import { hasBookPlans, tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitors, guestOf, onTheClock, windowOf, VISITORS, VISITOR_WINDOW, visitorChance, upgradeVisitor, upgradeCost, upgradeLevel, canUpgrade, UPGRADE_COSTS, UPGRADE_STEP, MAX_UPGRADE, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, canTakeBounty, headToMount, mountHead, bountyHasStep, bountyStep, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, type TavernQuest } from "../lib/tavern";
+import { hasBookPlans, tavernQuestDue, wantsStorehouse, canBlast, blast, forceOpen, tavernVisitors, guestOf, onTheClock, windowOf, VISITORS, VISITOR_WINDOW, visitorChance, upgradeVisitor, upgradeCost, upgradeLevel, canUpgrade, UPGRADE_COSTS, UPGRADE_STEP, MAX_UPGRADE, repair, repairNeeds, REPAIR_COST, QUEST_CREATURE_LEVEL, QUEST_KLUTZ_LEVEL, callVisitor, tavernPlan, comeHome, buyFromVisitor, tavernSellables, materialOffer, merchantCalls, tavernWares, summonVisitor, SUMMON_PRICE, TAVERN_MATERIAL_PRICES, type TavernQuest, headUp } from "../lib/tavern";
 import { SCHEMATICS, BOOKCASE_BUILT, bookcaseSize, TOOLS, toolDrop, schematicDrop } from "../lib/items/materials";
 import { potionDrop, scrollDrop } from "../lib/drops";
 import type { Drop } from "../lib/types";
@@ -128,42 +128,24 @@ describe("the tavern questline: the rubble and the repair", () => {
   });
 });
 
-describe("the tavern questline: the Cyclops bounty and the bookcase", () => {
+describe("the tavern questline: the Cyclops Head and the bookcase", () => {
   const repaired = { accepted: true, dynamite: true, blasted: true, seen: true, repaired: true };
 
-  it("the bounty can only be taken from a repaired tavern, once", () => {
-    expect(canTakeBounty({ blasted: true })).toBe(false);
-    expect(canTakeBounty(repaired)).toBe(true);
-    expect(canTakeBounty({ ...repaired, bounty: true })).toBe(false);
+  it("the head goes up by itself once the tavern's repaired and the Cyclops is beaten (the bounty's gone: 2026-11-16)", () => {
+    expect(headUp({ blasted: true }, 3)).toBe(false);  // still broken
+    expect(headUp(repaired, 0)).toBe(false);           // not beaten yet
+    expect(headUp(repaired, 1)).toBe(true);
+    expect(headUp({ blasted: true, mounted: true }, 0)).toBe(true); // handed in before the campaign
   });
 
-  it("the head needs the bounty and a Cyclops win (one from before the bounty counts)", () => {
-    expect(headToMount(repaired, 3)).toBe(false);                 // no bounty taken
-    expect(headToMount({ ...repaired, bounty: true }, 0)).toBe(false); // not beaten yet
-    expect(headToMount({ ...repaired, bounty: true }, 1)).toBe(true);
-    expect(mountHead({ ...repaired, bounty: true }, 0).mounted).toBeUndefined();
-  });
-
-  it("the tavern shows its ❗ while the bounty's on offer or the head's ready to hand in", () => {
-    expect(bountyHasStep({ blasted: true }, 0)).toBe(false);              // still broken
-    expect(bountyHasStep(repaired, 0)).toBe(true);                        // bounty on offer
-    expect(bountyHasStep({ ...repaired, bounty: true }, 0)).toBe(false);  // out hunting the Cyclops
-    expect(bountyHasStep({ ...repaired, bounty: true }, 1)).toBe(true);   // head to hand in
-    expect(bountyHasStep({ ...repaired, bounty: true, mounted: true }, 1)).toBe(false); // all done
-  });
-
-  it("mounting it is once only, and pays gold now: the bookcase schematic moved into the campaign (2026-11-16)", () => {
-    const t = mountHead({ ...repaired, bounty: true }, 2);
-    expect(t.mounted).toBe(true);
-    expect(t.headGold).toBe(true); // (the board pays BOUNTY_GOLD with it)
-    expect(headToMount(t, 2)).toBe(false);
-    expect(tavernPlan(t, 1)).toBe(false);
+  it("the bookcase schematic: the campaign's reward for the rubble, or the old bounty's", () => {
+    expect(tavernPlan(repaired, 1)).toBe(false);
     // The campaign's reward for the rubble: the plans, found in the broken tavern.
     const found = { ...repaired, bookPlans: true };
     expect(tavernPlan(found, 1)).toBe(true);
     expect(tavernPlan(found, BOOKCASE_BUILT)).toBe(false); // already built
     expect(tavernPlan(found, 2)).toBe(false);              // an old save's crooked bookcase
-    // A head handed in before the campaign paid the plans, and they're kept.
+    // A head handed in for the old bounty paid the plans, and they're kept.
     const old = { ...repaired, bounty: true, mounted: true };
     expect(hasBookPlans(old)).toBe(true);
     expect(tavernPlan(old, 1)).toBe(true);
@@ -413,16 +395,6 @@ describe("drawing the Den: changed patches go to the screen in a few copies", ()
   });
 });
 
-describe("the bounty on the quest board", () => {
-  it("goes up with the repair, then hunt, head and paid", () => {
-    const repaired: TavernQuest = { blasted: true, repaired: true };
-    expect(bountyStep({ blasted: true }, 1)).toBe("closed");
-    expect(bountyStep(repaired, 1)).toBe("offer");
-    expect(bountyStep({ ...repaired, bounty: true }, 0)).toBe("hunt");
-    expect(bountyStep({ ...repaired, bounty: true }, 1)).toBe("head");
-    expect(bountyStep({ ...repaired, bounty: true, mounted: true }, 1)).toBe("paid");
-  });
-});
 
 describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
   const at = 2_000 * VISITOR_WINDOW;

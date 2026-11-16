@@ -77,7 +77,7 @@ function denScene(backpack: boolean, opened: boolean, upgraded: boolean, art: De
 // highlight: a place Klutz has sent you to (its label stays up, glowing, with a ❗).
 // rubble: the doorway on the right wall (see Rubble); onBlast: the dynamite's been used on it.
 // tavernNews: someone's visiting the tavern (a ❗ at the doorway). boardNews: a quest
-// step waiting at the quest board (lib/tavern.ts bountyHasStep).
+// step waiting at the quest board (the campaign, the daily quests, the Hydra quest).
 // upgraded: the crooked bookcase is built.
 // crateNews: Klutz's crate has loot in it to keep or sell (a ❗ on its label).
 // cageNews: a creature's waiting in the cage to capture or release (a ❗ on its label).

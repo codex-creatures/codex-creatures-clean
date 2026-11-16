@@ -114,7 +114,7 @@ describe("progress and claiming", () => {
     expect(canClaimNext(all, NEW)).toBe(false);
   });
 
-  it("events are counted; a rarity counts for its quest and the ones below it", () => {
+  it("events are counted; a summon counts only for its own rarity (the user, 2026-11-16), Klutz's finds for theirs and below", () => {
     let s: CampaignState = {};
     s = noteCampaign(s, "battle", 3);
     s = noteCampaign(s, "summon:rare");
@@ -122,8 +122,11 @@ describe("progress and claiming", () => {
     expect(s.tally).toEqual({ battle: 3, "summon:rare": 1 });
     const c = ctx({ tally: s.tally! });
     const summon = (r: Rarity) => CAMPAIGN.find((q) => q.id === `summon-${r}`)!;
-    expect([summon("common"), summon("uncommon"), summon("rare")].every((q) => questDone(q, c))).toBe(true);
-    expect(questDone(summon("epic"), c)).toBe(false);
+    expect(questDone(summon("rare"), c)).toBe(true);
+    expect([summon("common"), summon("uncommon"), summon("epic")].some((q) => questDone(q, c))).toBe(false);
+    const kfind = (r: Rarity) => CAMPAIGN.find((q) => q.id === `kfind-${r}`)!;
+    const k = ctx({ tally: { "kfind:epic": 1 } });
+    expect(questDone(kfind("rare"), k) && questDone(kfind("epic"), k) && !questDone(kfind("legendary"), k)).toBe(true);
     expect(CAMPAIGN.find((q) => q.id === "fights5")!.progress(c)).toBe(3);
   });
 

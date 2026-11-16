@@ -18,7 +18,7 @@ import { collectKlutz, klutzGainXp, klutzProficiency, recallKlutz, respecKlutz, 
 import { NEW_QUEST, klutzHelping, skipTutorial, type QuestState } from "@/lib/quest";
 import { endTour } from "@/lib/tour";
 import { canReroll, reroll, rerollCost, REROLL_ESSENCE } from "@/lib/enchantress";
-import { VISITORS, BOUNTY_GOLD, headToMount, tavernVisitors, guestOf, tavernNow, upgradeVisitor, blast, forceOpen, callVisitor, buyFromVisitor, canTakeBounty, clearTavern, loadTavern, materialOffer, merchantCalls, mountHead, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
+import { VISITORS, tavernVisitors, guestOf, tavernNow, upgradeVisitor, blast, forceOpen, callVisitor, buyFromVisitor, clearTavern, loadTavern, materialOffer, merchantCalls, summonVisitor, SUMMON_PRICE, type Visitor, repair, tavernPlan, tavernQuestDue, tavernSellables, updateTavern, type TavernQuest } from "@/lib/tavern";
 import { clearDaily, countDaily } from "@/lib/daily";
 import { clearCampaign, countCampaign, loadCampaign } from "@/lib/campaign";
 import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
@@ -483,13 +483,6 @@ export function useGameState(initialTab: TabKey = "all") {
     setTavern(updateTavern(() => done.tavern));
     setMaterials(done.materials);
     return true;
-  }
-  const takeBounty = () => setTavern(updateTavern((t) => (canTakeBounty(t) ? { ...t, bounty: true } : t)));
-  // The head goes up once you've beaten the Cyclops (the Labyrinth's record), and the bounty pays.
-  function mountCyclopsHead() {
-    if (!headToMount(loadTavern(), loadDungeon().meta.clears)) return;
-    setTavern(updateTavern((t) => mountHead(t, loadDungeon().meta.clears)));
-    addGold(BOUNTY_GOLD);
   }
   // The campaign's reward for blowing open the rubble: the bookcase schematic, found in the broken tavern.
   const findBookPlans = () => setTavern(updateTavern((t) => ({ ...t, bookPlans: true })));
@@ -1287,7 +1280,7 @@ export function useGameState(initialTab: TabKey = "all") {
 
   return {
     // State
-    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, takeBounty, mountCyclopsHead, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
+    gold, inventory, scanCounts, totalScans, favoriteIds: shownFavorites, teams: ownTeams, toggleTeam, pvpTeams, togglePvp, equipment, lastDrop, recentScans, caged, klutz, klutzFighter, klutzAwayItems, quest, tavern, tavernDue, acceptTavernQuest, blastRubble, openRubbleForTesting, callVisitorForTesting, seeTavern, repairTavern, buildTrainingPit, claimHydraPlans, trainingStatus, trainCreature, levelUpTraining, takeOutOfTraining, findBookPlans, merchantVisits, summonTavernVisitor, buyTavernWare, buyTavernCodex, tavernSells, sellToTavern, sellCodex, sellMaterialToTavern, collectorOffers, sellToCollector, tradeUpWithCollector, rerollEnchantment, upgradeTavernVisitor, shelfFree, seenIds, scanTipDue, scanTipRead, noteLabyrinthDeath, readScanTip, scanMode, setScanMode, caches, openCaches, addCache, sealed, sealScan, unsealScan, scanCharges: charges, scansNow, takeScanCharge, canScanNew, firstScans, firstLeft, calibrating: calibrating(firstScans), crate, crateSellValue, keepFromCrate, sellFromCrate,
     activeTab, setActiveTab,
     sellMode, selectedForSale, showSellConfirm, setShowSellConfirm,
     // Derived

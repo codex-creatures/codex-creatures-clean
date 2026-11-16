@@ -2,8 +2,7 @@
 // app/board/page.tsx
 // The quest board in the Den, in three tabs. Campaign: the campaign's chapter
 // you're on (lib/campaign.ts). Quests: today's two (lib/daily.ts),
-// and the Cyclops bounty, up once the tavern's repaired (lib/tavern.ts
-// bountyStep): take it, beat the Cyclops, hand in the head. They play offline. Leaderboards (lib/leaderboard.ts):
+// and the Hydra quest, up once the Cyclops is beaten. They play offline. Leaderboards (lib/leaderboard.ts):
 // species collected, runs and wins in each dungeon, and time played,
 // ranked against every player online.
 // Fixed frame: the board buttons sit in the dock, the dungeon buttons keep
@@ -20,7 +19,7 @@ import FriendList, { useFriends } from "@/components/FriendList";
 import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
-import { BOUNTY_GOLD, bountyStep, hasBookPlans } from "@/lib/tavern";
+import { hasBookPlans } from "@/lib/tavern";
 import { CHAPTERS, PLANS_TAKEN_GOLD, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
@@ -115,7 +114,6 @@ export default function QuestBoardPage() {
                 <li>A ❗ on the board in the Den means a quest has a step for you.</li>
                 <li><b>☀️ Today:</b> two quests a day, a big one and a smaller one, the same for everyone and new at midnight. Only what you do that day counts. Finish one, then claim its reward.</li>
                 <li>A boss you&apos;ve never beaten is swapped for an easier one (the Abyss for the Hydra, then the Cyclops, then the Encampment).</li>
-                <li><b>The Cyclops bounty:</b> it goes up once the tavern&apos;s repaired. Take it, beat the Cyclops (a win from before counts) and hand in its head: it&apos;s mounted on the tavern wall. The reward: <b>{BOUNTY_GOLD.toLocaleString()} gold</b>.</li>
                 <li><b>Slay the Hydra:</b> it goes up once you&apos;ve beaten the Cyclops. Beat the Hydra dungeon and claim the <b>Training Pit Schematic</b>: it builds the Sparring Pit up into the Training Pit, twice as fast.</li>
               </ul>
             </Help>
@@ -185,7 +183,7 @@ export default function QuestBoardPage() {
 }
 
 // The quests on the board: today's two (lib/daily.ts), the primary and the
-// secondary, then the Cyclops bounty once it's up. Each is a card of fixed
+// secondary, then the Hydra quest once it's up. Each is a card of fixed
 // lines (name, two lines on what to do, then its button or where you're at),
 // so a step changes only the words.
 function QuestList() {
@@ -218,13 +216,7 @@ function QuestList() {
     reread((n) => n + 1);
   }
 
-  // The Cyclops: how often you've beaten it, and the run you first did (the Labyrinth's record).
   const meta = loadDungeon().meta;
-  const step = bountyStep(game.tavern, meta.clears);
-  const say = step === "offer" ? `Beat the Cyclops and bring back its head. Pays ${BOUNTY_GOLD.toLocaleString()} gold.`
-    : step === "hunt" ? "Beat the Cyclops and bring back its head."
-    : step === "head" ? `You have the Cyclops Head${meta.firstClearRun ? ` (run ${meta.firstClearRun})` : ""}. Hand it in to be paid.`
-    : game.tavern.headGold ? `Paid: ${BOUNTY_GOLD.toLocaleString()} gold.` : `Paid: the Crooked Bookcase Schematic.${game.bookcase < 2 ? " Build it at the bookcase." : ""}`;
   // The Hydra quest: up once the Cyclops is beaten; its reward, the Training Pit's plans (lib/trainingPit.ts).
   const hydra = hydraStep(game.tavern, meta.clears, meta.deepClears ?? 0);
   const hydraSay = hydra === "hunt" ? "Beat the Hydra. Reward: the Training Pit Schematic."
@@ -252,20 +244,6 @@ function QuestList() {
           </div>
         );
       })}
-
-      {step !== "closed" && (
-        <div className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: step === "paid" ? 0.7 : 1 }}>
-          <div className="pixel-font" style={{ fontSize: 15, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {step === "paid" ? "✓" : step === "offer" || step === "head" ? "❗" : "🗿"} The Cyclops bounty
-          </div>
-          <div title={say} style={CLAMP2}>{say}</div>
-          <div style={{ minHeight: 44, display: "flex", alignItems: "center" }}>
-            {step === "offer" ? <button className="pixel-btn" onClick={game.takeBounty}>📜 Take the bounty</button>
-              : step === "head" ? <button className="pixel-btn" onClick={game.mountCyclopsHead}>🗿 Hand in the head</button>
-              : <span className="pixel-font" style={{ fontSize: 13, color: step === "paid" ? "#5ee08a" : MUTED }}>{step === "paid" ? "Done" : "Cyclops: not beaten yet"}</span>}
-          </div>
-        </div>
-      )}
 
       {hydra !== "closed" && (
         <div className="stone-panel" style={{ display: "grid", gap: 6, padding: "10px 12px", opacity: hydra === "paid" ? 0.7 : 1 }}>

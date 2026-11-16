@@ -64,7 +64,7 @@ interesting situations, real decisions, progression and surprises, not feel they
 - ✅ **The campaign** (the user, 2026-11-16; built 2026-11-16, lib/campaign.ts): five chapters of
   quests on the quest board's Campaign tab, leading to each boss; progress counts all along, rewards
   are claimed in order. The Crooked Bookcase Schematic is its reward for the rubble; the Cyclops
-  bounty pays gold. [design/den.md](design/den.md) §9
+  bounty is gone (its "Beat the Cyclops" step replaces it). [design/den.md](design/den.md) §9
 - **Onboarding scan gate** (later): the game stays locked until you scan a real barcode, then
   Klutz drags you out of the labyrinth. Deliberately unconventional: don't "fix" it. Edge cases
   unsolved (manual entry, no camera, app-store review). [design/scanning.md](design/scanning.md) §2
