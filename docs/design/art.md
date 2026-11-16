@@ -50,3 +50,46 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - Hand-drawn detailed sprites in code were tried and scrapped. Don't do it again.
 - Rejected, so don't reopen: the mushroom/ruin room theme, the Mr. Shadows redraws (keep the old
   sprite), and the parchment / MTG / wood-and-brass card styles.
+
+## The placeholder audit (2026-11-16)
+
+Everything in the game still showing a stand-in (an emoji, another thing's art, a tint, a code
+shape), found in the code on 2026-11-16, with the draft made for each. Drafts are samples only
+(`public/sprites/walk/samples/drafts/`, shown in `/lab/art`): nothing goes into the game until the
+user approves it. Recipes follow §11 and [world/art-pipeline.md](../world/art-pipeline.md): item
+icons Pro Flash 64×64 with the Void Scythe as style image; 32px glyphs styled on the approved race
+and status icons; NPCs on the collector; dungeon props with the dungeon palette and a crop of kit E.
+
+| Group | Placeholder now | Where | Draft |
+|---|---|---|---|
+| Material | Essence stones: 💎 | `MATERIALS.essence`, `MATERIAL_SPRITES` | 64px icon |
+| Soul stones (6) | emoji (☣️ 👻 🪨 🎯 🃏 💚) | `SOUL_STONES` | 64px icon each |
+| Locators (3) | the schematic, clairvoyance and codex icons | `TOOL_SPRITES` | 64px icon each |
+| Klutz's Pack Upgrade | the backpack icon | `TOOL_SPRITES.klutz_pack` | 64px icon |
+| Dynamite | Klutz's crate picture | `DYNAMITE_ART` (lib/world/objects.ts) | 64px prop |
+| Campaign crates (4) | none (contents shown loose) | lib/campaign.ts | 64px icon each |
+| Cyclops Head | the Cyclops sprite on a CSS plaque | components/TavernRoom.tsx | 64px trophy |
+| Golden chest | the treasure chest, tinted gold | components/Props3D.tsx `golden` | 64px chest, closed |
+| Standing torch | the floor candle | `standing-torch` (objects.ts) | dungeon prop |
+| Race icons (2) | 🪨 Underkin, 🦠 Toxic | `RACE_INFO` | 32px glyph each |
+| Status marks (12) | emoji: haste, mirage, corpse, seal, soak, brace, boost, bleed, weaken, ward, flame, charged | `FighterLabel` (BattleScreen.tsx) | 32px glyph each |
+| UI glyphs (6) | emoji: ⚙️ 🐾 ⚔️ 📖 📜 🏆 | the Den's top bar, the quest board's tabs | 32px glyph each |
+| The Enchantress | the collector, tinted violet | `VISITOR_TINT` (TavernRoom.tsx) | NPC still |
+| Den fireplace (📌, not built) | none | roadmap | Den prop |
+
+Not drafted (each needs the user first):
+- **The hero's 8-way walk** (stills with a bob now): about 20–25 generations as one animation job.
+- **22 creature back views** still to redo (memory of the method: `edit_image_pro_flash`, about 5
+  each, so about 110): the user paused them; each wants its own "what shows from behind" prompt.
+- **The chest's gold inside** (a stand-in box in 3D): could use the approved treasure pile.
+- **The tavern's interior** and the **mounted head's wall** need design before art.
+- **Walls with square pixels** (still undefined, art-pipeline.md): not touched.
+
+**Drafted 2026-11-16:** 41 drafts for 206 of the cycle's 2,000 generations (1,794 left, refilling
+2026-12-16), ids in `public/sprites/PIXELLAB.md`. Shown in **`/lab/art`**: a stone room you walk
+round by torchlight (keys, the stick or a tap), each draft on a plinth, its card beside what the
+game shows now; then all of them in a grid, fully lit. Claude's notes for the review: the set reads
+as one family; the weakest are the Underkin pickaxe (faint outline) and the standing torch (thin,
+dark); the golden chest kept the treasure chest's shape, so it could become the 3D chest's gold
+faces; the fireplace isn't on the Den's 2:1 angle yet (§11's block-out method would fix that).
+Approved ones go into the game with their registries (`lib/sprites`, `RACE_INFO`, `Glyph`).

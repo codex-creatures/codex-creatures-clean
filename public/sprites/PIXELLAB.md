@@ -265,3 +265,52 @@ Side by side: docs/ideas/reskin-samples-2026-11-07.png.
 | walk/samples/tiles/room-preview.png | the above together, as the lab shows them (a top wall with both corners and the hole, a row of floor with one mossy tile), made here |
 | walk/samples/floor-life/moss-1.png | sample 1 (2026-11-15, a solid square, dropped for the tile above): object 9ef2b1bf-1c6a-4436-97c8-fc8bde967b12 |
 | walk/samples/floor-life/gold-key.png | sample (2026-11-13): image 66d26819-9c64-5c5b-befd-08f4b0768313, Pro Flash 64×64, the Void Scythe as style image (outline, detail, shading), seed 5 |
+
+## The placeholder drafts (2026-11-16; samples only, shown in /lab/art)
+
+All Pro Flash, seed 7 unless noted. Item icons and crates 64×64 with the Void Scythe as style image (outline, detail, shading; not its colours); race, status and UI glyphs 32×32 styled on race_beast.png / status_poison.png; the Enchantress 80×96 on the collector; the standing torch 32×64 on the wall torch (its colours too); the golden chest on treasure_chest.png; the fireplace 128×128 on den/chest.png. Download: `https://api.pixellab.ai/mcp/images/<job>/download`.
+
+| File (walk/samples/drafts/) | Job |
+|---|---|
+| essence.png | 5a7e2102-f071-4171-a30f-8b866a46ac88 |
+| soul-toxic-skin.png | 63848a15-319c-4e21-831e-24c65e6b49bb |
+| soul-haunting-presence.png | 2910e794-fc7d-4d5e-89f5-bc313a75a043 |
+| soul-unstoppable-force.png | f1dcd13d-8b6b-4829-8fb1-a3c7f4dc739b |
+| soul-perfectionist.png | 45774e2e-61ba-4c1d-96dd-cede17c80748 |
+| soul-trickster.png | 8d38e3cc-721c-4460-b6ad-b523c17c63fe |
+| soul-revitalise.png | 446f0051-8e6c-4e2c-be56-568a305b48e5 |
+| klutz-pack.png | c54fd8e0-2a10-4363-bcbf-177baa360238 |
+| locator-merchant-map.png | d17de2b5-6dfc-444f-8786-0321157c72a3 |
+| locator-crystal-ball.png | 7295c24d-67ec-4a21-b68d-f60b1e2ac5c1 |
+| locator-librarian.png | 71b6435d-a76d-418c-9542-06d27098a592 |
+| crate-materials.png | eaafa916-ea5e-40d0-8f61-34cafd083631 |
+| crate-gear.png | 4059e519-98f4-45e7-9fa8-27ee06177775 |
+| crate-codex.png | afad6a35-b970-41d4-aad3-35674df0cee1 |
+| crate-supplies.png | 3c79232a-7829-4e75-8fb8-972ca407a41c |
+| cyclops-head.png | 7f3a035f-92b8-4c0a-8d23-ad772cea5891 |
+| golden-chest.png | 8d6d6a9c-82b1-41ac-8974-5b92533c79bc |
+| enchantress.png | 61fe0751-50bf-4918-929f-aea3a9d4f57e |
+| standing-torch.png | e9f9651c-b526-4510-8a62-23c816765725 |
+| den-fireplace.png | 0b4709d4-5e1a-4b24-9348-1c8873f3a7eb |
+| race-underkin.png | 24caadbc-e170-4bb5-b243-24b7aa91c9cd |
+| race-toxic.png | 8d63b7ad-e770-4150-8d71-d254b98a205f |
+| status-haste.png | a8982ce9-aee1-47cf-b601-954ae93f811b |
+| status-mirage.png | b5807f2b-de9c-4bbf-a703-7620f0a352c6 |
+| status-corpse.png | 40d828e6-88d3-4994-881d-3bc0a66c393d |
+| status-seal.png | 8c573927-964f-4ae2-a671-c885113f4f30 |
+| status-soak.png | 08e75d8e-7fb8-4c48-b9e7-ee05e1cab0a9 |
+| status-brace.png | 0b597171-4080-4ab4-9de9-97df2760ec38 |
+| status-boost.png | f02cebaa-542f-41bb-9b04-ba75efc4f57d |
+| status-bleed.png | f2d7796a-2ebe-490f-81b4-91de2165a4b4 |
+| status-weaken.png | 437a750f-ed5c-44ee-bba0-73ea41e8ba02 |
+| status-ward.png | fc28b084-61f7-47c8-ae7e-213d388abbbb |
+| status-flame.png | 1cb0c06d-c628-4fc8-9563-510d118365b1 |
+| status-charged.png | 173f3b59-4375-491f-a47f-1ecee5de8b9e |
+| dynamite.png | ab272907-13ee-4031-a708-8d499848e668 |
+| ui-settings.png | 783fe412-22f7-4774-b86b-c93f0a3127ca |
+| ui-creatures.png | 81f13bf4-1b4a-4806-9cd7-e8c08f8b3f52 |
+| ui-items.png | 6738a79d-adc8-43d5-9f39-9314cb2660c2 |
+| ui-campaign.png | 468098a4-f8fe-4108-9a14-1eb1c404e127 |
+| ui-quests.png | c646032b-bf09-40ab-9d66-7c2849b885c2 |
+| ui-leaderboards.png | e9e4f29c-c106-4e5c-97ce-ebc6226760fd |
+| (dynamite.png) | seed 3, the third wording: the first two ("dynamite", "blasting charge") were refused by the content filter |
