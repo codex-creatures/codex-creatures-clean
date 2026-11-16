@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Stick } from "@/components/WalkView";
+import { VISITOR_SPEED } from "@/lib/den/scene";
 import { CHEST_W } from "@/lib/render3d/chest3d";
 import type { ChestView, Thing3D } from "../chest/ChestScene";
 import RewardReveal from "@/components/RewardReveal";
@@ -249,7 +250,11 @@ export default function ArtLab() {
       </div>
 
       <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>The Enchantress walking (as the tavern plays a visitor&apos;s walk)</h2>
-      <WalkStrip src={`${DRAFTS}/enchantress-3-walk.png`} frames={8} />
+      <div style={{ display: "grid", gap: 8 }}>
+        <WalkStrip src={`${DRAFTS}/enchantress-3-walk-a.png`} frames={8} label="The Enchantress: walk A" />
+        <WalkStrip src={`${DRAFTS}/enchantress-3-walk-b.png`} frames={8} label="The Enchantress: walk B" />
+        <WalkStrip src="/sprites/npcs/collector-walk.png" frames={8} label="The collector (in the game), for comparison" />
+      </div>
 
       <h2 style={{ fontSize: 15, margin: "20px 0 8px" }}>✓ Approved, in the game now ({APPROVED.length})</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(96px, 1fr))", gap: 6, maxWidth: 980 }}>
@@ -274,13 +279,19 @@ function Thumb({ ex, now = false }: { ex: Exhibit | null; now?: boolean }) {
   return <div style={box}><img src={now ? ex.nowArt : `${DRAFTS}/${ex.file}.png`} alt="" style={{ maxWidth: 60, maxHeight: 60, imageRendering: "pixelated", filter: now && ex.file === "enchantress" ? "hue-rotate(60deg) saturate(1.4)" : undefined }} /></div>;
 }
 
-// A walk strip playing (its frames side by side), 9 frames a second as the tavern's visitors walk.
-function WalkStrip({ src, frames }: { src: string; frames: number }) {
-  const [f, setF] = useState(0);
-  useEffect(() => { const t = window.setInterval(() => setF((n) => (n + 1) % frames), 1000 / 9); return () => window.clearInterval(t); }, [frames]);
+// A visitor's walk strolling to and fro across a strip of floor, turning at each end, at the tavern's pace
+// (VISITOR_SPEED blocks a second, 64 px a block, 9 frames a second), drawn 2× for a closer look.
+const STROLL_W = 440, STROLL_SCALE = 2, STROLL_PX = VISITOR_SPEED * 64 * STROLL_SCALE; // px a second, on screen
+function WalkStrip({ src, frames, label }: { src: string; frames: number; label: string }) {
+  const [t, setT] = useState(0);
+  useEffect(() => { let id = 0; const t0 = performance.now(); const tick = (n: number) => { setT((n - t0) / 1000); id = requestAnimationFrame(tick); }; id = requestAnimationFrame(tick); return () => cancelAnimationFrame(id); }, []);
+  const box = 96 * STROLL_SCALE, run = STROLL_W - box, leg = run / STROLL_PX, k = (t % (2 * leg)) / leg;
+  const back = k > 1, x = back ? (2 - k) * run : k * run, f = Math.floor(t * 9) % frames;
   return (
-    <div style={{ display: "flex", gap: 16, alignItems: "flex-end" }}>
-      <div style={{ width: 192, height: 192, background: `#3a362e url(${src}) no-repeat`, backgroundSize: `${frames * 100}% 100%`, backgroundPosition: `${(f / (frames - 1)) * 100}% 0`, imageRendering: "pixelated", borderRadius: 8 }} />
+    <div style={{ position: "relative", width: STROLL_W, maxWidth: "100%", height: box + 18, background: "#3a362e", borderRadius: 8, overflow: "hidden" }}>
+      <div style={{ position: "absolute", left: x, top: 0, width: box, height: box, transform: back ? "scaleX(-1)" : undefined,
+        background: `url(${src}) no-repeat`, backgroundSize: `${frames * 100}% 100%`, backgroundPosition: `${(f / (frames - 1)) * 100}% 0`, imageRendering: "pixelated" }} />
+      <div style={{ position: "absolute", left: 8, bottom: 2, fontSize: 11, color: "#cbbf9f" }}>{label}</div>
     </div>
   );
 }

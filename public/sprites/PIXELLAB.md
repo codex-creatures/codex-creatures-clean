@@ -368,3 +368,4 @@ The crate as a 3D draft (walk/samples/drafts/crate3d/): Pro Flash edit (text) of
 | barrel3d/side.png, top.png, items.png | jobs 72ade5a4-bd44-47da-913a-78600c562aff, 36963145-79f1-403a-a9b7-2201c1519be8, 7268a1a3-241a-4c27-87ef-5b1e650246eb |
 
 In the game since: icons/race_underkin.png (race-underkin-3), icons/status_soak.png (status-soak-2).
+| enchantress-3-walk-a.png, -b.png | jobs 5dd86b64-583d-4eb2-8ba2-ca47f918ae96 (seed 21) and c390e4e6-a737-4af5-8ee7-9bbb504ea658 (seed 33): the walk redone with clear alternating steps (the first, f9b7ac16…, only swayed: dropped) |
