@@ -7,7 +7,7 @@
 // the game doesn't use it.
 
 import { useEffect, useMemo, useRef } from "react";
-import { COLS, GAP_X, GAP_Z, PROPS, ROWS, spotOf, WALK_INPUT, FOLLOW } from "./props";
+import { COLS, GAP_X, GAP_Z, PROPS, REACH, ROWS, spotOf, WALK_INPUT, FOLLOW } from "./props";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { uprightStretch, WALL_HEIGHT } from "@/lib/render3d/dungeon3d";
@@ -23,7 +23,7 @@ const PITCH = Math.PI / 3;
 const ART_PER_U = 48;
 
 const SPEED = 2.2;        // u a second, walking
-const KEEP_OUT = 0.6;     // u: how close you can walk to a prop's middle
+const BODY = 0.28;        // u: your own reach, round your feet (on top of each prop's REACH)
 const NEAR = 1.4;         // u: close enough to name it
 // Where you can walk: the floor laid down, a little in from its edges.
 const BOUNDS = { x0: -(COLS * GAP_X) / 2, x1: (COLS * GAP_X) / 2, z0: -0.9, z1: (ROWS - 1) * GAP_Z + 1.2 };
@@ -53,8 +53,12 @@ function Hero({ onNear }: { onNear: (i: number | null) => void }) {
     if (len > 0.1) {
       const n = Math.min(1, len), step = Math.min(0.05, dt) * SPEED * n;
       let x = Math.max(BOUNDS.x0, Math.min(BOUNDS.x1, m.x + (dx / len) * step)), z = Math.max(BOUNDS.z0, Math.min(BOUNDS.z1, m.z + (dz / len) * step));
-      // Not through a prop: pushed back out to KEEP_OUT from its middle.
-      for (let i = 0; i < PROPS.length; i++) { const s = spotOf(i), ox = x - s.x, oz = z - s.z, d = Math.hypot(ox, oz); if (d < KEEP_OUT && d > 0) { x = s.x + (ox / d) * KEEP_OUT; z = s.z + (oz / d) * KEEP_OUT; } }
+      // Not into a prop: out of its reach (a box round it, yours added), by the shorter way out.
+      for (let i = 0; i < PROPS.length; i++) {
+        const s = spotOf(i), [rx, rz] = REACH[PROPS[i].id] ?? [0.5, 0.5], ax = rx + BODY, az = rz + BODY, ox = x - s.x, oz = z - s.z;
+        if (Math.abs(ox) >= ax || Math.abs(oz) >= az) continue;
+        if (ax - Math.abs(ox) < az - Math.abs(oz)) x = s.x + Math.sign(ox || 1) * ax; else z = s.z + Math.sign(oz || 1) * az;
+      }
       m.x = x; m.z = z; m.f = facing8(dx, dz, m.f);
     }
     if (mesh.current) mesh.current.position.set(m.x, h / 2 - below, m.z + 0.05);
@@ -78,6 +82,7 @@ function StandingTorch() {
   return (<>
     <mesh position={[0, h / 2, 0.05]} scale={[w, h, 1]}><planeGeometry /><meshLambertMaterial map={map} alphaTest={0.5} transparent /></mesh>
     <mesh position={[-w / 2 + fx * k, h - fy * k * stretch + 0.08, 0.11]} scale={[0.1, 0.18, 1]}><planeGeometry /><meshBasicMaterial color="#ffd27a" /></mesh>
+    <pointLight position={[0, h + 0.1, 0.25]} color="#ffbe5a" intensity={4} distance={0} decay={1.6} />
   </>);
 }
 
@@ -89,6 +94,7 @@ function Piece({ id, open }: { id: string; open: boolean }) {
     case "stash": return <Prop3D kind="stash" open={open} />;
     case "store-crate": return <Crate inside="materials" open={open} outline edges empty={open} />;
     case "corner-crates": return <Decor3D kind="crates" stretch={stretch} open={open} />;
+    case "barrel": return <Decor3D kind="barrel" stretch={stretch} />;
     case "barrels": return <Decor3D kind="barrels" stretch={stretch} />;
     case "pots": return <Decor3D kind="pots" stretch={stretch} />;
     case "bookcase": return <Prop3D kind="bookcase" />;
@@ -98,7 +104,7 @@ function Piece({ id, open }: { id: string; open: boolean }) {
     case "deck": return <Prop3D kind="table" deck glow={RARITY_COLORS.legendary.text} />;
     case "cage": return <Decor3D kind="cage" stretch={stretch} open={open} />;
     case "dynamite": return (<><Decor3D kind="dynamite" stretch={stretch} /><Glow colour={DYNAMITE_GLOW.colour} radius={DYNAMITE_GLOW.radius} strength={DYNAMITE_GLOW.strength} /></>);
-    case "campfire": return <Campfire lit={!open} />;
+    case "campfire": return (<><Campfire lit={!open} />{!open && <pointLight position={[0, 0.6, 0.2]} color="#ff9632" intensity={5} distance={0} decay={1.6} />}</>);
     case "gem": return <HealingGem used={open} />;
     case "torch": return <StandingTorch />;
     default: return <Barrel stretch={stretch} />;

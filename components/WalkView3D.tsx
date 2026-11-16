@@ -43,7 +43,7 @@ import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
 import { MERCHANT, LIBRARIAN } from "@/lib/sprites/props";
 import { dungeonCells, shadeOf, WALL_HEIGHT, uprightStretch, rockHeights, carvedMesh, oneWayDoors, ROCK_MARGIN, type CarvedMesh } from "@/lib/render3d/dungeon3d";
-import { prop3dOf, bookcaseBroken, CANDLE_AT, DECOR_3D, DYNAMITE_GLOW } from "@/lib/render3d/props3d";
+import { prop3dOf, bookcaseBroken, CANDLE_AT, DECOR_3D, DYNAMITE_GLOW, barrelsOf } from "@/lib/render3d/props3d";
 import { Prop3D, Campfire, HealingGem, Glow, PROP_LEAN, type Tint } from "@/components/Props3D";
 import { Decor3D } from "@/components/Decor3D";
 import { GLINT_VERT, GLINT_FRAG, RIPPLE, glintNumbers, ratAt, ratBolt, ratHidesFrom, RAT_FLEE } from "@/lib/render3d/puddle";
@@ -412,7 +412,7 @@ function Sprites({ sim, live, layout, progress, frame, things, room, stretch, cl
     // the deck on it till it's turned over, glowing the colour of its rarest card while it's in your sight.
     // The dungeon's props built in 3D (Decor3D): barrels, corner crates (open once searched), pots, the
     // dynamite (glowing till it's taken), a library's lectern.
-    const decor = DECOR_3D[t.def];
+    const decor = t.def === "barrels" ? barrelsOf(t.key) : DECOR_3D[t.def];
     if (decor) {
       out.push(<group key={t.key} position={[t.x, 0, t.y]}><Decor3D kind={decor} stretch={stretch} colour={shade && (() => shade(t.x, t.y))} open={(!!t.box || decor === "cage") && t.open} /></group>);
       if (decor === "dynamite") out.push(<group key={`glow:${t.key}`} position={[t.x, 0, t.y]}><Glow colour={DYNAMITE_GLOW.colour} radius={DYNAMITE_GLOW.radius} strength={DYNAMITE_GLOW.strength} /></group>);

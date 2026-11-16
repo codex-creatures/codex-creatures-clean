@@ -2,7 +2,8 @@
 // components/Decor3D.tsx: the dungeon's props in 3D (the user, 2026-11-16/17: "build 3D assets for the
 // dungeon's props"), built as the chest, crate and barrel are: simple shapes made here, their surfaces
 // PixelLab's, leaning as the rock does. In the game (✓, public/sprites/props/decor3d/ and lectern3d/): a
-// pair of lidded barrels, stacked crates, clay pots, the dynamite, the librarian's lectern, a camp's cage.
+// lidded barrel, alone or a pair (the user, 2026-11-17: two variants), stacked crates, clay pots, the dynamite,
+// the librarian's lectern, a camp's cage.
 // `colour` (the game's Stone): unlit, tinted by the light where it stands; without it, lit (the labs).
 
 import { useMemo } from "react";
@@ -11,7 +12,7 @@ import { Barrel, Crate, loaded, makeFlat, makeLit, bases, useTint, type Tint } f
 import { ART_PER_U, ART_PITCH } from "@/lib/render3d/chest3d";
 
 const GAME = "/sprites/props/decor3d";
-export type Decor3DKind = "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage";
+export type Decor3DKind = "barrel" | "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage";
 // Each one's size against the flat picture it replaces (the first drafts came out small beside them).
 const SIZE: Partial<Record<Decor3DKind, number>> = { pots: 1.45, dynamite: 1.7 };
 
@@ -37,6 +38,7 @@ export function Decor3D({ kind, stretch, colour, open = false }: { kind: Decor3D
   return <group scale={SIZE[kind] ?? 1}><Piece kind={kind} stretch={stretch} colour={colour} open={open} /></group>;
 }
 function Piece({ kind, stretch, colour, open }: { kind: Decor3DKind; stretch: number; colour?: Tint; open: boolean }) {
+  if (kind === "barrel") return <Barrel stretch={stretch} lid={`${GAME}/barrel-lid.png`} colour={colour} />;
   if (kind === "barrels") return (<>
     <group position={[-0.38, 0, 0]}><Barrel stretch={stretch} lid={`${GAME}/barrel-lid.png`} colour={colour} /></group>
     <group position={[0.38, 0, 0.06]} rotation={[0, 0.7, 0]}><Barrel stretch={stretch} lid={`${GAME}/barrel-lid.png`} colour={colour} /></group>

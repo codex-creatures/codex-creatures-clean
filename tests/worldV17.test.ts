@@ -56,3 +56,13 @@ describe("a corner crate's find", () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe("a room's corner barrels in 3D (the user, 2026-11-17: a single barrel and the pair)", () => {
+  it("are alone or two by the thing's id, the same every time, and both turn up", async () => {
+    const { barrelsOf, DECOR_3D } = await import("../lib/render3d/props3d");
+    const ids = Array.from({ length: 40 }, (_, i) => `decor:r${i}:0:1`);
+    expect(ids.map(barrelsOf)).toEqual(ids.map(barrelsOf));
+    expect(new Set(ids.map(barrelsOf))).toEqual(new Set(["barrel", "barrels"]));
+    expect(DECOR_3D["store-barrels"]).toBe("barrel"); // (a storehouse's, each searched, stand alone)
+  });
+});
