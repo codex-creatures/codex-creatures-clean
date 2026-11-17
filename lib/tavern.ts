@@ -69,7 +69,11 @@ export type TavernQuest = {
 };
 // The Enchantress (lib/enchantress.ts) rerolls enchantments.
 export type Visitor = "merchant" | "librarian" | "collector" | "enchantress";
-export const VISITORS: Visitor[] = ["merchant", "librarian", "collector", "enchantress"];
+// Those who call. The collector's away for now (the user, 2026-11-18: the Soul
+// Altar's ascension is the better use for spare creatures); his code stays, in
+// lib/collector.ts, for if he comes back. (Each visitor rolls on their own seed,
+// so leaving him out changes nobody else's calls.)
+export const VISITORS: Visitor[] = ["merchant", "librarian", "enchantress"];
 // One calling: until when (on the clock: ms), or how many more runs (one from before the clock), and their stock.
 export type Guest = {
   until?: number;

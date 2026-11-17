@@ -5,7 +5,7 @@
 // filter by race. Tap a card to see your copies and summon.
 
 import { useState } from "react";
-import type { CreatureOrItemDrop } from "@/lib/types";
+import type { CreatureOrItemDrop, Rarity } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CLASS_INFO, findCreatureTemplate, RACE_INFO, type CreatureTemplate } from "@/lib/creatures/creatureData";
 import { CreatureToolbar, NO_CARD_FILTER, passes, sortCreatures, type InventoryFilter } from "./CreatureMarks";
@@ -108,10 +108,12 @@ export const cardWell = (rc: string): React.CSSProperties => ({ background: `rad
 // the usual 5:7 shape. big: a larger name and races (a card shown on
 // its own, like the fight cards). noName: leave the name off (it's written
 // under the card already), so the sprite gets the room.
-export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, children }: {
-  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; noName?: boolean; children?: React.ReactNode;
+export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, rarity, children }: {
+  t: CreatureTemplate; creatureId: string; glow?: boolean; showRarity?: boolean; fill?: boolean; big?: boolean; noName?: boolean;
+  rarity?: Rarity; // an ascended creature's own rarity (missing: its species')
+  children?: React.ReactNode;
 }) {
-  const rc = RARITY_COLORS[t.rarity].text;
+  const rc = RARITY_COLORS[rarity ?? t.rarity].text;
   // Its race(s), a plaque each (none, like a boss part: its style instead).
   const races = t.races ?? (t.race ? [t.race] : []);
   const plaques = races.length ? races.map((r) => RACE_INFO[r]) : [CLASS_INFO[t.cls]];
@@ -128,7 +130,7 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
           display: "flex", alignItems: "center", justifyContent: "center", color: YELLOW, textShadow: "1px 1px 0 #000" }}>
           <span style={clamp2}>{t.name}</span>
         </div>
-        {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{t.rarity}</div>}
+        {showRarity && <div style={{ fontFamily: PIXEL, fontSize: big ? "clamp(9px, 6cqw, 14px)" : "clamp(7px, 5cqw, 11px)", marginTop: "1cqw", color: rc, textTransform: "capitalize" }}>{rarity ?? t.rarity}</div>}
       </div>}
       <div style={{ position: "relative", flex: 1, minHeight: 0, ...cardWell(rc) }}>
         <CreatureArt creatureId={creatureId} title={t.name} />
@@ -155,18 +157,18 @@ export function CardBody({ t, creatureId, glow, showRarity, fill, big, noName, c
 // prize. badge: a corner bubble (how many you hold); footer: a line under the card.
 // mini: the small card in a loot window, where the name is written under it —
 // no name or role line, just the sprite as big as it'll go over its races.
-export function CardFace({ t, creatureId, soulStone, footer, badge, glow, onClick, label, mini }: {
+export function CardFace({ t, creatureId, soulStone, footer, badge, glow, onClick, label, mini, rarity }: {
   t: CreatureTemplate; creatureId: string; soulStone?: SoulStoneKey | null; footer?: React.ReactNode; badge?: string; glow?: boolean;
-  onClick?: () => void; label?: string; mini?: boolean;
+  onClick?: () => void; label?: string; mini?: boolean; rarity?: Rarity;
 }) {
-  const rc = RARITY_COLORS[t.rarity].text;
+  const rc = RARITY_COLORS[rarity ?? t.rarity].text;
   const stone = soulStone ? SOUL_STONES[soulStone] : undefined;
   const Tag = onClick ? "button" : "div";
 
   return (
     <Tag onClick={onClick} aria-label={label ?? `${t.name} card`}
       style={{ position: "relative", display: "block", width: "100%", padding: 0, border: "none", background: "none", textAlign: "left", cursor: onClick ? "pointer" : "default", containerType: "inline-size" }}>
-      <CardBody t={t} creatureId={creatureId} glow={glow} noName={mini}>
+      <CardBody t={t} creatureId={creatureId} glow={glow} noName={mini} rarity={rarity}>
         {!mini && <div style={CARD_WELL}>
           <div style={{ fontFamily: PIXEL, fontSize: "clamp(8px, 6.4cqw, 12px)", color: YELLOW, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{roleOf(t)}</div>
           <div style={{ fontSize: "clamp(8px, 5.8cqw, 10px)", lineHeight: 1.2, height: "2.4em", marginTop: 1, color: stone ? SOUL_COLOR : "rgba(255,255,255,0.6)", ...clamp2 }}>

@@ -20,6 +20,7 @@
 
 import type { CreatureProficiency, CreatureTemplate } from "./creatureData";
 import type { Rarity } from "../types";
+import { ascendBonus, ascendHp } from "./ascendStats";
 
 export const MAX_LEVEL = 30;
 export const REF_LEVEL = 15;      // the level a creature's species %s are "as listed"
@@ -40,20 +41,24 @@ export function rollsOf(t: CreatureTemplate, rolled?: CreatureProficiency): Crea
   return out;
 }
 
-// Its %s at a level: the species' share for that level, plus its own rolls.
-// rolled: its saved %s (species + rolls); missing = no rolls.
-export function proficiencyAt(t: CreatureTemplate, rolled: CreatureProficiency | undefined, level: number): CreatureProficiency {
+// Its %s at a level: the species' share for that level (with what its steps
+// up a rarity add: ascendStats.ts), plus its own rolls.
+// rolled: its saved %s (species + rolls, never the ascension bonus); missing = no rolls.
+// steps: how many rarities it has climbed (a creature's `ascended`; 0 for
+// enemies and cards). Required, so nothing that shows a creature can forget it.
+export function proficiencyAt(t: CreatureTemplate, rolled: CreatureProficiency | undefined, level: number, steps: number): CreatureProficiency {
   const f = levelFactor(level);
   const rolls = rollsOf(t, rolled);
+  const bonus = ascendBonus(t, steps);
   const out = {} as CreatureProficiency;
-  for (const k of KEYS) out[k] = Math.round((t.proficiency[k] ?? 0) * f) + rolls[k];
+  for (const k of KEYS) out[k] = Math.round(((t.proficiency[k] ?? 0) + bonus[k]) * f) + rolls[k];
   return out;
 }
 
-// Its HP at a level (before gear).
-export function hpAt(t: CreatureTemplate, level: number): number {
+// Its HP at a level (before gear). steps: as for proficiencyAt.
+export function hpAt(t: CreatureTemplate, level: number, steps: number): number {
   const f = levelFactor(level);
-  return Math.round(t.baseHp * HP_SCALE * (HP_AT_LEVEL_1 + (1 - HP_AT_LEVEL_1) * f));
+  return Math.round((t.baseHp + ascendHp(t, steps)) * HP_SCALE * (HP_AT_LEVEL_1 + (1 - HP_AT_LEVEL_1) * f));
 }
 
 // ── XP ────────────────────────────────────────────────────────────

@@ -211,7 +211,7 @@ function QuestList() {
         const ready = canClaim(daily, i);
         const text = `${q.task}. Reward: ${q.pays}.`;
         const note = done ? "New quests at midnight" : waits(q) ? "Repair the tavern to claim"
-          : full === i ? (q.reward === "cache" ? "The altar's full" : "Your bookcase is full") : ready ? "Ready to claim" : "";
+          : full === i ? (q.reward === "cache" ? "The scanner's full" : "Your bookcase is full") : ready ? "Ready to claim" : "";
         return (
           <div key={i} className="note" style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: "58px 1fr", alignItems: "center", gap: 10, padding: "14px 12px 10px 10px", opacity: done ? 0.75 : 1 }}>
             <span className="note-pin" />

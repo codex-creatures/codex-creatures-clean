@@ -124,7 +124,7 @@ function Tile({ d, fav, badge, gear, sell, picked, onClick, compact, grab }: {
         {creature && (
           <span style={{ position: "absolute", bottom: 1, left: 4, display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1 }}>
             {gear && <span style={{ fontSize: 10 }}>{gear}</span>}
-            <span className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>Lv {d.level ?? 1}</span>
+            <span className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", textShadow: "0 2px 0 #000, 0 0 3px #000" }}>Lv {d.level ?? 1}{d.ascended ? <span style={{ color: "#ffd66e" }}> {"★".repeat(d.ascended)}</span> : null}</span>
           </span>
         )}
         {badge && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#f5c542", maxWidth: creature ? "50%" : "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{badge}</span>}
@@ -149,7 +149,7 @@ function CreatureCard({ d, fav, badge, gear, onClick, glow }: { d: CreatureOrIte
   return (
     <button onClick={onClick} title={d.name} className={glow ? "tutorial-pulse" : undefined}
       style={{ position: "relative", background: "none", border: "none", borderRadius: 8, padding: "2px 0", cursor: "pointer", color: "white", minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-      <span className="pixel-font" style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 12, lineHeight: 1, color: "#f1d9a0", textShadow: SHADOW }}>Lv {d.level ?? 1}</span>
+      <span className="pixel-font" style={{ position: "absolute", top: 2, left: 2, zIndex: 1, fontSize: 12, lineHeight: 1, color: "#f1d9a0", textShadow: SHADOW }}>Lv {d.level ?? 1}{d.ascended ? <span style={{ color: "#ffd66e" }}> {"★".repeat(d.ascended)}</span> : null}</span>
       <CreaturePortrait creatureId={d.creatureId} title={d.name} style={{ filter: "drop-shadow(0 3px 0 rgba(0,0,0,0.6))" }}
         frame={{ marginTop: 12, background: `radial-gradient(ellipse at 50% 80%, ${col.text}55, transparent 62%)` }} />
       <span className="pixel-font" style={{ width: "100%", height: "2.3em", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, lineHeight: 1.15, textAlign: "center", color: col.text, textShadow: "0 2px 0 #000" }}>

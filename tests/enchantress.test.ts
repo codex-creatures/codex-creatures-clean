@@ -15,7 +15,7 @@ const sword = (rarity: "rare" | "epic" | "legendary" | "common", enchant?: Creat
 
 describe("the Enchantress", () => {
   it("is a fourth visitor, sent for like the others, bringing no stock", () => {
-    expect(VISITORS).toEqual(["merchant", "librarian", "collector", "enchantress"]);
+    expect(VISITORS).toEqual(["merchant", "librarian", "enchantress"]); // (the collector's away: 2026-11-18)
     const t = summonVisitor({ repaired: true }, "enchantress", seeded("x"), false, 1e12);
     const g = guestOf(t, "enchantress", 1e12)!;
     expect(g).toBeDefined();

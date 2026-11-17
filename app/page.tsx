@@ -97,7 +97,7 @@ export default function Home() {
         <Link href="/dungeon" className="pixel-btn" style={{ display: "block", textAlign: "center", fontSize: 19, padding: "12px 0" }}>
           🌀 Enter the Labyrinth
         </Link>
-        <Link href="/altar" className={`dock-tab${highlight === OBJ.altar ? " tutorial-pulse" : ""}`} style={{ fontSize: 16, minHeight: 46 }}>
+        <Link href="/scan" data-tour="scan-button" className="dock-tab" style={{ fontSize: 16, minHeight: 46 }}>
           🔍 Scan barcodes
         </Link>
       </nav>

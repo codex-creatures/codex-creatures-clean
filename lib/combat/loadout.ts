@@ -37,12 +37,13 @@ export function buildFighter(
   armorSet?: ArmorKey,               // a full armour set (its mechanic applies)
   weaponKey?: ItemKey,               // the weapon's type (its damage-type affinity)
   level: number = REF_LEVEL,         // its level (lib/creatures/levels.ts); species %s are as listed at level 15
+  steps = 0,                         // rarities it has climbed at the Soul Altar (lib/creatures/ascendStats.ts); enemies: none
 ): Fighter {
   const lv = clampLevel(level);
   const affinity = weaponKey ? WEAPON_AFFINITY[weaponKey] : undefined;
   const weapon = { ...itemToCombatStats(weaponStats), ...(affinity ? { affinity } : {}) };
   const armor  = itemToCombatStats(armorStats);
-  const totalHp = hpAt(creature, lv) + weapon.hp + armor.hp;
+  const totalHp = hpAt(creature, lv, steps) + weapon.hp + armor.hp;
   return {
     name: creature.name,
     hp: totalHp,
@@ -50,7 +51,7 @@ export function buildFighter(
     energy: 100,
     // Its species' %s for its level, plus its own rolls. (Older rolls may
     // lack newer stats: those count as no roll.)
-    proficiency: proficiencyAt(creature, { ...creature.proficiency, ...proficiency }, lv),
+    proficiency: proficiencyAt(creature, { ...creature.proficiency, ...proficiency }, lv, steps),
     level: lv,
     cls: creature.cls,
     skills: resolveMoves(creature, moveNames),

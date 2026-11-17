@@ -31,6 +31,7 @@ export type CreatureOrItemDrop = {
   styleSet?: number;    // creatures/cards: STYLE_SET (lib/creatures/instance.ts) once moved over to its species' current style; missing: checked on load
   level?: number;       // creatures: level (lib/creatures/levels.ts); missing = 1
   xp?: number;          // …and XP towards the next one
+  ascended?: number;    // creatures: rarities climbed at the Soul Altar (lib/creatures/ascend.ts); missing = 0. Its `rarity` is its species' plus these (fixed up on load)
   soulStone?: import("./creatures/soulStones").SoulStoneKey | null; // creatures/cards: its soul stone (Rare+); null: rolled none; missing: not rolled yet (an old save)
   codexMove?: string;   // a codex (consumable item): the move it teaches
   stone?: import("./creatures/soulStones").SoulStoneKey; // a loose soul stone (consumable item), to set in a creature

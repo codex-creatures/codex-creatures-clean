@@ -141,7 +141,7 @@ kill theirs.
 ## Code map
 
 - `app/<screen>/page.tsx`: screens. `/` is the Den (home); `dungeon` (the Labyrinth), `battle`,
-  `altar` (scanning), `chest` (Inventory), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
+  `scan` (scanning), `altar` (the Soul Altar: summoning and ascension), `chest` (Inventory), `bag`, `bookcase`, `cage`, `pool`, `pit`, `training`,
   `klutz`, `crate`, `guide`, `board` (quests, leaderboards, friends), `duel`, `pvp`, `settings`,
   `start` (title screen: components/OnlineStart.tsx online, components/LocalStart.tsx without),
   `privacy` (update it whenever online features change what's stored). `lab/*` are dev tools
@@ -149,7 +149,7 @@ kill theirs.
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan drops.
 - `lib/`: the rules, kept pure where possible and tested.
   - `combat/` (engine, battle, teamBattle, AIs, loadout); `creatures/` (species and moves, levels,
-    rolls, summoning, bosses, starter, soul stones); `items/` (stat rolling: `rollConfig.ts`,
+    rolls, summoning, ascension, bosses, starter, soul stones); `items/` (stat rolling: `rollConfig.ts`,
     `budgets.ts`, `ceilings.ts`, **the user's most carefully balanced system**; armour, materials).
   - `dungeon/`: runs (`run.ts`), the scroll map (`map.ts`), walkable layouts (`layout.ts`,
     `interior.ts`), walking, foes, torches and candles (`torch.ts`), campfires, `chamber.ts`, `witch.ts`,

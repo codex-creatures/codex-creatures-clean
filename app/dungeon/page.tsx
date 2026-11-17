@@ -756,7 +756,7 @@ export default function DungeonPage() {
     setLevelUps(ups.flatMap((u) => {
       const c = byId(u.id);
       const drop = game.inventory.find((d) => d.id === u.id) as CreatureOrItemDrop | undefined;
-      return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency }] : [];
+      return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency, steps: drop?.ascended ?? 0 }] : [];
     }));
   }
   // A flare, a clairvoyance scroll or a locator, used from your bag or straight out of the chest
@@ -1139,7 +1139,7 @@ export default function DungeonPage() {
       wonUps = ups.flatMap((u) => {
         const c = byId(u.id);
         const drop = game.inventory.find((d) => d.id === u.id) as CreatureOrItemDrop | undefined;
-        return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency }] : [];
+        return c ? [{ ...u, creatureId: c.creatureId, template: c.template, rolled: drop?.proficiency, steps: drop?.ascended ?? 0 }] : [];
       });
       if (toHaul) setLevelUps(wonUps);
       const you = game.gainPlayerXp(xp);

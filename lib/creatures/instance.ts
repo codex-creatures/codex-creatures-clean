@@ -88,7 +88,7 @@ export function movesOf(drop: CreatureOrItemDrop, t: CreatureTemplate, chosen?: 
 // weapon itself, for its enchantment (the armour pieces carry theirs).
 export function fighterFor(drop: CreatureOrItemDrop, t: CreatureTemplate, weapon?: Stats, armor: (CreatureOrItemDrop | undefined)[] = [], chosenMoves?: string[], weaponKey?: ItemKey, weaponItem?: CreatureOrItemDrop) {
   const worn = wornArmor(armor);
-  const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set, weaponKey, drop.level ?? 1);
+  const f = buildFighter(t, weapon, worn.stats, chosenMoves ?? drop.moves, drop.proficiency, worn.set, weaponKey, drop.level ?? 1, drop.ascended ?? 0);
   const enchant = fighterEnchants(weaponItem, armor);
   return { ...f, ...(drop.soulStone ? { soulStone: drop.soulStone } : {}), ...(enchant ? { enchant } : {}) };
 }

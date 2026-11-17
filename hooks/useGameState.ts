@@ -23,6 +23,8 @@ import { clearDaily, countDaily } from "@/lib/daily";
 import { clearCampaign, countCampaign, loadCampaign } from "@/lib/campaign";
 import { fighterFor, retireLearned, retireMoves, upgradeMoveSet, upgradeStyle, wipeReusedNames } from "@/lib/creatures/instance";
 import { addXp, addPlayerXp, clampLevel, SCROLL_XP, type Progress } from "@/lib/creatures/levels";
+import { rarityAfter, stepsOf } from "@/lib/creatures/ascendStats";
+import { ascend, ritualProblem } from "@/lib/creatures/ascend";
 import { collectorCreatures, creaturePrice, tradeUpCard } from "@/lib/collector";
 import { buildPit, claimPlans, hasPit, logTrained, pitRate, restartTraining, startTraining, stopTraining, training, trainingId } from "@/lib/trainingPit";
 import { starterCreature } from "@/lib/creatures/starter";
@@ -140,7 +142,11 @@ export function loadSave(): SaveState | null {
     if (!isCreatureDrop(d) && !isCardDrop(d)) continue;
     const c = d as CreatureOrItemDrop & { ability?: unknown };
     const t = findCreatureTemplate(c.creatureId, c.name);
-    if (t) { c.rarity = t.rarity; c.name = t.name; c.desc = t.flavour; }
+    // (An ascended creature's rarity is its species' plus its steps: lib/creatures/ascendStats.ts. Cards never climb.)
+    if (t) {
+      if (c.dropType === "creature" && c.ascended) c.ascended = stepsOf(t, c.ascended) || undefined; else delete c.ascended;
+      c.rarity = rarityAfter(t, c.ascended); c.name = t.name; c.desc = t.flavour;
+    }
     c.soulStone = soulStoneOf(c, t);
     delete c.ability;
     if (upgradeMoveSet(c, t) && equipment[c.id]?.moves) equipment[c.id] = { ...equipment[c.id], moves: undefined };
@@ -1175,6 +1181,27 @@ export function useGameState(initialTab: TabKey = "all") {
     return creature;
   }
 
+  // The ascension ritual (lib/creatures/ascend.ts). Away: on a run or in the
+  // pit (can't take part); busy: away or in a team (can't be given up).
+  function ascendAway(): Set<string> {
+    const pit = trainingId(loadTavern());
+    return new Set([...(loadDungeon().run?.party ?? []), ...(pit ? [pit] : [])]);
+  }
+  const ascendBusy = () => new Set([...ascendAway(), ...teamIds, ...pvpTeams.flat()]);
+  // Raise keptId a rarity, giving up the others (their gear comes off and stays
+  // yours). Returns the creature as it is now (null: the ritual can't be done).
+  function ascendCreature(keptId: string, otherIds: string[]): CreatureOrItemDrop | null {
+    const find = (id: string) => inventory.find((d) => d.id === id) as CreatureOrItemDrop | undefined;
+    const kept = find(keptId), others = otherIds.map(find);
+    if (!kept || others.some((o) => !o)) return null;
+    const away = ascendAway(), busy = ascendBusy();
+    if (ritualProblem(kept, others as CreatureOrItemDrop[], away, busy)) return null;
+    const up = ascend(kept, others as CreatureOrItemDrop[], away, busy);
+    partWithCreatures(otherIds);
+    setInventory((prev) => prev.map((d) => (d.id === keptId ? up : d)));
+    return up;
+  }
+
   function toggleSellMode() {
     setSellMode((v) => !v);
     setSelectedForSale(new Set());
@@ -1301,7 +1328,7 @@ export function useGameState(initialTab: TabKey = "all") {
     sellableInView, sellTotal, selectedItemsForModal,
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
-    toggleFavorite, equipItem, setMoves, learnCodex, summon, toggleSellMode, toggleSelectItem,
+    toggleFavorite, equipItem, setMoves, learnCodex, summon, ascendCreature, ascendAway, ascendBusy, toggleSellMode, toggleSelectItem,
     selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

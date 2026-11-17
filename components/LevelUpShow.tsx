@@ -16,7 +16,7 @@ import Glyph from "./Glyph";
 import { hpAt, proficiencyAt } from "@/lib/creatures/levels";
 import type { CreatureProficiency, CreatureTemplate } from "@/lib/creatures/creatureData";
 
-export type LevelUpInfo = { id: string; name: string; creatureId?: string; template: CreatureTemplate; rolled?: CreatureProficiency; from: number; to: number };
+export type LevelUpInfo = { id: string; name: string; creatureId?: string; template: CreatureTemplate; rolled?: CreatureProficiency; steps: number; from: number; to: number };
 
 const MUTED = "rgba(255,255,255,0.55)";
 const GOLD = "#f1d9a0";
@@ -72,10 +72,10 @@ export default function LevelUpShow({ ups, onDone }: { ups: LevelUpInfo[]; onDon
   // The stats, from the old level's to the new one's.
   const k = ease((t - barEnd - STATS_IN) / COUNT);
   const showStats = t >= barEnd;
-  const before = proficiencyAt(u.template, u.rolled, u.from), after = proficiencyAt(u.template, u.rolled, u.to);
+  const before = proficiencyAt(u.template, u.rolled, u.from, u.steps), after = proficiencyAt(u.template, u.rolled, u.to, u.steps);
   const rows = STATS.map((s) => {
-    const a = s.key === "hp" ? hpAt(u.template, u.from) : before[s.key as keyof CreatureProficiency];
-    const b = s.key === "hp" ? hpAt(u.template, u.to) : after[s.key as keyof CreatureProficiency];
+    const a = s.key === "hp" ? hpAt(u.template, u.from, u.steps) : before[s.key as keyof CreatureProficiency];
+    const b = s.key === "hp" ? hpAt(u.template, u.to, u.steps) : after[s.key as keyof CreatureProficiency];
     return { ...s, a, b, now: Math.round(a + (b - a) * k) };
   }).filter((r) => r.key === "hp" || r.a !== 0 || r.b !== 0);
 

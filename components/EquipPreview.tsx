@@ -127,7 +127,7 @@ export default function EquipPreview({ team, start, find, item, slot, teach, onC
           <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 36 }}>
             {changed.length === 0 && <div style={{ fontSize: 13, color: MUTED }}>No change to its stats.</div>}
             {changed.map((st) => {
-              const detail = st.key === "hp" ? `${hpAt(r.template!, level)} at Lv ${level} + ${next.f.weapon.hp + next.f.armor.hp} gear`
+              const detail = st.key === "hp" ? `${hpAt(r.template!, level, creature.ascended ?? 0)} at Lv ${level} + ${next.f.weapon.hp + next.f.armor.hp} gear`
                 : `${gearValue(next.f, st.key)} gear × ${pct(next.f.proficiency[st.key])}`;
               return <StatRow key={st.key} icon={<Glyph icon={st.icon} art={st.art} />} label={st.label} color={st.color} max={st.max} compact
                 total={Math.round(now.s[st.key])} after={Math.round(next.s[st.key])} detail={detail} diff={0} />;

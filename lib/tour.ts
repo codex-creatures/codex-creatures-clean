@@ -38,16 +38,19 @@ const BASICS: TourStep[] = [
   { path: "/", say: "This is the Den: your home. Tap anything in here to go there. I'll show you round. Tap anywhere to carry on." },
   { path: "/", target: "dock", say: "Down here: into the Labyrinth, or scan a barcode. Your materials are up top." },
 
+  // The scanner
+  { path: "/", target: "scan-button", say: "The scanner. Scan a real barcode (a cereal box, a book, anything) and it cracks open a Code Cache: creatures, gear or potions." },
+  { path: "/scan", target: "altar-progress", say: "How much of the world you've discovered, and your explorer level. Scanning raises it, and higher levels turn up rarer creatures." },
+  { path: "/scan", target: "scan", say: "Tap here to scan with your camera. Every barcode holds something different, and it's the same thing for every player." },
+  { path: "/scan", target: "scan-mode", say: "Looting opens caches straight away. Storage keeps them sealed here to open later." },
+  { path: "/scan", target: "altar-window", say: "Your finds land here. The brighter the colour, the rarer: common, uncommon, rare, epic, legendary." },
+
   // The Soul Altar
-  { path: "/", target: den(OBJ.altar), say: "The Soul Altar. Scan a real barcode (a cereal box, a book, anything) and it cracks open a Code Cache: creatures, gear or potions." },
-  { path: "/altar", target: "altar-progress", say: "How much of the world you've discovered, and your explorer level. Scanning raises it, and higher levels turn up rarer creatures." },
-  { path: "/altar", target: "scan", say: "Tap here to scan with your camera. Every barcode holds something different, and it's the same thing for every player." },
-  { path: "/altar", target: "scan-mode", say: "Looting opens caches straight away. Storage keeps them sealed here to open later." },
-  { path: "/altar", target: "altar-window", say: "Your finds land here. The brighter the colour, the rarer: common, uncommon, rare, epic, legendary." },
+  { path: "/", target: den(OBJ.altar), say: "The Soul Altar. Summon 3 cards of a creature into the real thing, and give up creatures of a kind to raise one of them a rarity." },
 
   // The Pit
   { path: "/", target: den(OBJ.pit), say: "The Pit. Your creatures live here." },
-  { path: "/pit", target: "tabs", say: "Creatures: everyone you own. Roster: the ones you've starred ★, picked first for the Labyrinth. Cards: collect 3 of a creature to summon it." },
+  { path: "/pit", target: "tabs", say: "Creatures: everyone you own. Roster: the ones you've starred ★, picked first for the Labyrinth. Cards: collect 3 of a creature to summon it at the Soul Altar." },
   { path: "/pit", target: "grid", say: "Tap a creature to see its level, stats and moves, and to put weapons and armour on it." },
   { path: "/pit", target: "parts", say: "Items flips to your gear, so you can kit them out without leaving." },
 

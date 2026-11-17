@@ -14,8 +14,8 @@ describe("creature levels", () => {
     for (const t of Object.values(CREATURES_BY_RARITY).flat()) {
       const roll = rollCreature(t).proficiency;
       const rolls = rollsOf(t, roll);
-      expect(proficiencyAt(t, roll, 1)).toEqual(rolls);
-      expect(proficiencyAt(t, roll, REF_LEVEL)).toEqual(roll);
+      expect(proficiencyAt(t, roll, 1, 0)).toEqual(rolls);
+      expect(proficiencyAt(t, roll, REF_LEVEL, 0)).toEqual(roll);
       // Rolls are zero-sum.
       expect(Object.values(rolls).reduce((a, b) => a + b, 0)).toBe(0);
     }
@@ -31,9 +31,9 @@ describe("creature levels", () => {
 
   it("HP is bigger in general, and grows with level", () => {
     const t = CREATURE_BY_ID.moss_wolf;
-    expect(hpAt(t, REF_LEVEL)).toBe(Math.round(t.baseHp * HP_SCALE));
-    expect(hpAt(t, 1)).toBeLessThan(hpAt(t, 10));
-    expect(hpAt(t, 30)).toBeGreaterThan(hpAt(t, REF_LEVEL));
+    expect(hpAt(t, REF_LEVEL, 0)).toBe(Math.round(t.baseHp * HP_SCALE));
+    expect(hpAt(t, 1, 0)).toBeLessThan(hpAt(t, 10, 0));
+    expect(hpAt(t, 30, 0)).toBeGreaterThan(hpAt(t, REF_LEVEL, 0));
   });
 
   it("XP levels you up, and stops at the max level", () => {

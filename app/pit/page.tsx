@@ -50,12 +50,12 @@ export default function PitPage() {
         title={parts}
         tabs={PART_TABS[part]}
         showSell={false}
-        emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
+        emptyText={part === "items" ? "No items of this kind yet — scan some barcodes."
           : game.activeTab === "roster"
           ? "No creatures in a team yet — open one and tap Add to team."
           : game.activeTab === "cards"
-            ? "No creature cards yet. Creature barcodes usually give a card — collect 3 of one creature to summon it."
-            : "No creatures yet — visit the Soul Altar."}
+            ? "No creature cards yet. Creature barcodes usually give a card — collect 3 of one creature to summon it at the Soul Altar."
+            : "No creatures yet — scan some barcodes."}
         inventory={game.inventory}
         filteredInventory={game.filteredInventory}
         equipment={game.equipment}
@@ -67,7 +67,6 @@ export default function PitPage() {
         onReadScroll={game.readScroll}
         onSetSoulStone={game.setSoulStone}
         gold={game.gold}
-        onSummon={game.summon}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}
         onTabChange={game.setActiveTab}

@@ -250,7 +250,7 @@ export default function CreatureDetailModal({
           </div>
           {/* One line (a long name ends in "…"), so flicking between creatures never moves anything below it. */}
           <h2 className="pixel-font" title={creature.name} style={{ margin: 0, fontSize: 26, fontWeight: 600, color: c.text, lineHeight: 1.1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>
+            {creature.name} <span style={{ fontSize: 18, color: "#f1d9a0" }}>Lv {level}</span>{creature.ascended ? <span title={`Ascended ${creature.ascended} rarit${creature.ascended === 1 ? "y" : "ies"} at the Soul Altar`} style={{ fontSize: 16, color: "#ffd66e" }}> {"★".repeat(creature.ascended)}</span> : null}
           </h2>
         </div>
 
@@ -427,7 +427,7 @@ export default function CreatureDetailModal({
                 const after = next ? Math.round(next.s[st.key]) : total;
                 const p = st.key === "hp" ? null : now.f.proficiency[st.key];
                 const diff = st.key === "hp" || !base || points ? 0 : prof![st.key] - base[st.key];
-                const gear = st.key === "hp" ? `${hpAt(template, level)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear`
+                const gear = st.key === "hp" ? `${hpAt(template, level, creature.ascended ?? 0)} at Lv ${level} + ${now.f.weapon.hp + now.f.armor.hp} gear`
                   : `${gearValue(now.f, st.key)} gear × +${p}%`;
                 return <StatRow key={st.key} icon={<Glyph icon={st.icon} art={st.art} />} label={st.label} color={st.color} max={st.max} total={total} after={after} detail={gear} diff={diff} />;
               })}
@@ -448,7 +448,7 @@ export default function CreatureDetailModal({
                 const k = st.key as Exclude<StatKey, "hp">;
                 const d = base ? (prof![k] ?? 0) - (base[k] ?? 0) : 0;
                 return (
-                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level 30: ${proficiencyAt(template, prof, MAX_LEVEL)[k]}%)`}
+                  <div key={k} title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${now.f.proficiency[k]}% (at level 30: ${proficiencyAt(template, prof, MAX_LEVEL, creature.ascended ?? 0)[k]}%)`}
                     style={{ textAlign: "center", padding: "6px 2px", background: "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}` }}>
                     <div style={{ fontSize: 13 }}><Glyph icon={st.icon} art={st.art} /></div>
                     <div style={{ fontSize: 11, color: MUTED, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{st.label}</div>

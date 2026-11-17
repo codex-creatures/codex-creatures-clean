@@ -51,7 +51,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   only encampment cages hold real creatures.
 - ✅ **1 drop per new scan** (`SCAN_DROPS`). Items should stay scarce; gold scans are the
   "dud" consolation.
-- ✅ The altar (layout 2026-10-20): a big **Scan Barcode** button, the Looting/Storage toggle, and a
+- ✅ The scanner (layout 2026-10-20; on the Soul Altar until 2026-11-18, when it moved to its own
+  screen, app/scan, behind the Den's 🔍 button, and the altar became where creatures are made:
+  [creatures.md](creatures.md) §4, decision 49). A big **Scan Barcode** button, the Looting/Storage toggle, and a
   3×3 loot window (one empty row of 3 until something's in it). **Looting** opens each Code Cache
   at once: the find goes straight to your things and the window shows this visit's latest 9,
   cleared when you leave. **Storage** keeps caches in the window, at most 9 (`CACHE_LIMIT`); when

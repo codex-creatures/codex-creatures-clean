@@ -5,7 +5,8 @@
 // rarities (white, green, blue, purple, and gold after a held breath, like a
 // Code Cache), stopping at the creature's, then bursts into the creature in
 // that colour. Tap during the whirl to skip it. Timings: lib/scanReveal.ts
-// (summonStages).
+// (summonStages). The ascension ritual (app/altar) plays it too, with the
+// creatures given up and the one kept in a ring, climbing to its new rarity.
 
 import { useEffect, useRef, useState } from "react";
 import { CardFace } from "./CardGallery";
@@ -28,18 +29,25 @@ const ORBIT_Y = STAGE_H - ALTAR_PX + 30; // the ring's centre, on the altar's to
 const RING_R = 52;
 const RING_FLAT = 0.4;  // the ring's seen from above: squashed this much
 const LIFT = 110;       // how high the cards rise into the whirlwind
-const ANGLES = [210, 330, 90];
+// Each card's place round the ring (3 cards: 210°, 330°, 90°).
+const angleOf = (i: number, n: number) => 210 + (i * 360) / n;
+const MAX_CARDS = 5;
 const TURNS_PER_S = 2.4;
 // Wisps of wind round the funnel: their height (0 bottom, 1 top), start angle and speed.
 const WISPS = Array.from({ length: 12 }, (_, i) => ({ h: (i % 6) / 5, a: i * 97, speed: 1 + (i % 3) * 0.35 }));
 const RINGS = 6;
 
-export default function SummonShow({ t, cards, result, onDone }: {
+export type ShowWords = { laying: string; stirring: string; done: string };
+const SUMMON_WORDS = (name: string): ShowWords => ({ laying: "The cards are laid down…", stirring: "The cards stir…", done: `${name} summoned!` });
+
+export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WORDS(result.name) }: {
   t: CreatureTemplate;
-  cards: CreatureOrItemDrop[];  // the 3 cards used
+  cards: CreatureOrItemDrop[];  // the cards used (or, ascending, the creatures: up to MAX_CARDS)
   result: CreatureOrItemDrop;   // the creature they became
   onDone: () => void;
+  words?: ShowWords;
 }) {
+  const ring = cards.slice(0, MAX_CARDS);
   const [open, setOpen] = useState(false);
   const [stage, setStage] = useState(-1); // -1: still being set down
   const stages = summonStages(result);
@@ -69,7 +77,7 @@ export default function SummonShow({ t, cards, result, onDone }: {
       const rise = Math.min(1, u * 4);
       cardRefs.current.forEach((el, i) => {
         if (!el) return;
-        const a = ((ANGLES[i] + spun) * Math.PI) / 180;
+        const a = ((angleOf(i, ring.length) + spun) * Math.PI) / 180;
         const r = RING_R * (1 - 0.8 * u) * (1 + 0.4 * rise);
         const x = Math.cos(a) * r, y = -LIFT * rise + Math.sin(a) * r * RING_FLAT;
         el.style.transform = `translate(${x}px, ${y}px) rotate(${Math.cos(a) * 18 * rise}deg) scale(${1 - 0.65 * u})`;
@@ -89,14 +97,14 @@ export default function SummonShow({ t, cards, result, onDone }: {
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [open, result]);
+  }, [open, result, ring.length]);
 
   const now = stage >= 0 ? stages[Math.min(stage, stages.length - 1)] : undefined;
   // Each step up a rarity gives a little nudge.
   useEffect(() => { if (stage > 0 && !now?.pause) buzz("hit"); }, [stage, now?.pause]);
   const wind = !now || now.rarity === "common" ? FIRST_GLOW : RARITY_COLORS[now.rarity].text;
-  const glow = RARITY_COLORS[t.rarity].text;
-  const tier = revealTier(t.rarity);
+  const glow = RARITY_COLORS[result.rarity].text;
+  const tier = revealTier(result.rarity);
   useEffect(() => { if (open) buzz(tier === "puff" ? "hit" : "levelUp"); }, [open, tier]);
 
   return (
@@ -104,7 +112,7 @@ export default function SummonShow({ t, cards, result, onDone }: {
       style={{ position: "fixed", inset: 0, zIndex: 260, background: "radial-gradient(circle at 50% 35%, #141826 0%, #040509 70%)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "10cqh 12px 12px", overflow: "hidden" }}>
       {open && <RevealFlash tier={tier} glow={glow} />}
 
-      <div role="dialog" aria-label={open ? `${result.name} summoned` : "Summoning"} onClick={(e) => open && e.stopPropagation()}
+      <div role="dialog" aria-label={open ? words.done : words.stirring} onClick={(e) => open && e.stopPropagation()}
         className={open && tier === "explosion" ? "reveal-jolt-big" : open && tier === "shower" ? "reveal-jolt" : undefined}
         style={{ position: "relative", width: "100%", maxWidth: 400, display: "grid", gap: 10, textAlign: "center", justifyItems: "center" }}>
         {/* The stage: a fixed height; the altar stays, the cards and wind give way to the creature. */}
@@ -128,14 +136,14 @@ export default function SummonShow({ t, cards, result, onDone }: {
                 {WISPS.map((_, i) => <span key={i} ref={(el) => { wispRefs.current[i] = el; }}
                   style={{ position: "absolute", left: -3, top: -2, width: 6, height: 4, borderRadius: 2, background: "currentColor", boxShadow: "0 0 6px currentColor", opacity: 0 }} />)}
               </div>
-              {cards.slice(0, 3).map((k, i) => {
-                const a = (ANGLES[i] * Math.PI) / 180;
+              {ring.map((k, i) => {
+                const a = (angleOf(i, ring.length) * Math.PI) / 180;
                 return (
                   <div key={k.id} ref={(el) => { cardRefs.current[i] = el; }}
                     style={{ position: "absolute", left: -CARD_PX / 2, top: -CARD_PX * 0.7, width: CARD_PX, zIndex: Math.sin(a) > 0 ? 3 : 1,
                       transform: `translate(${Math.cos(a) * RING_R}px, ${Math.sin(a) * RING_R * RING_FLAT}px)` }}>
                     <div className="summon-place" style={{ animationDelay: `${i * 0.18}s`, filter: `drop-shadow(0 0 6px ${wind})` }}>
-                      <CardFace t={t} creatureId={k.creatureId ?? t.id} soulStone={k.soulStone} mini />
+                      <CardFace t={t} creatureId={k.creatureId ?? t.id} soulStone={k.soulStone} rarity={k.rarity} mini />
                     </div>
                   </div>
                 );
@@ -152,10 +160,10 @@ export default function SummonShow({ t, cards, result, onDone }: {
         </div>
 
         <div className={`pixel-font${open ? " levelup-title" : ""}`} style={{ fontSize: 20, color: open ? glow : wind, minHeight: 26, maxWidth: "100%", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {open ? `${result.name} summoned!` : stage < 0 ? "The cards are laid down…" : "The cards stir…"}
+          {open ? words.done : stage < 0 ? words.laying : words.stirring}
         </div>
         <div style={{ fontSize: 14, minHeight: 18, color: MUTED, textTransform: "capitalize", visibility: open ? "visible" : "hidden" }} className={open ? "levelup-stats" : undefined}>
-          {t.rarity} creature{t.race ? ` · ${t.race}` : ""}
+          {result.rarity} creature{t.race ? ` · ${t.race}` : ""}
         </div>
         <button className="pixel-btn" style={{ width: "100%", minHeight: 48, visibility: open ? "visible" : "hidden" }} onClick={onDone}>Carry on</button>
       </div>

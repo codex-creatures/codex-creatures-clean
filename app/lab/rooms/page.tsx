@@ -65,8 +65,8 @@ export default function RoomsLab() {
         <button className="pixel-btn" onClick={() => setLevelOpen(true)}>Try the level-up show</button>
         {levelOpen && (
           <LevelUpShow onDone={() => setLevelOpen(false)} ups={[
-            { id: "a", name: "Aurelius", creatureId: "aurelius", template: CREATURE_BY_ID.aurelius, from: 4, to: 5 },
-            { id: "b", name: "Moss Wolf", creatureId: "moss_wolf", template: CREATURE_BY_ID.moss_wolf, from: 2, to: 4 },
+            { id: "a", name: "Aurelius", creatureId: "aurelius", template: CREATURE_BY_ID.aurelius, steps: 0, from: 4, to: 5 },
+            { id: "b", name: "Moss Wolf", creatureId: "moss_wolf", template: CREATURE_BY_ID.moss_wolf, steps: 0, from: 2, to: 4 },
           ]} />
         )}
         {lootOpen && (

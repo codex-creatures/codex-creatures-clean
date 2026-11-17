@@ -221,7 +221,7 @@ export default function Entrance({ lab, owned, game, full, quest, scans, onBegin
         </div>
         {owned.length < PARTY_SIZE && (
           <p style={{ color: MUTED, fontSize: 13, margin: "0 0 8px" }}>
-            More creatures make it easier — <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>scan</Link> or summon more.
+            More creatures make it easier — <Link href="/scan" style={{ color: "white", textDecoration: "underline" }}>scan</Link> or <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>summon</Link> more.
           </p>
         )}
         {owned.length > 0 && (

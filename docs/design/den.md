@@ -6,7 +6,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ## 9. The Den and economy
 
-- ✅ Places: Soul Altar (scanning), Labyrinth archway, quest board, Bestiary lectern, cage, pool,
+- ✅ Places: Soul Altar (summoning and ascension, since 2026-11-18; scanning is the dock's 🔍 button), Labyrinth archway, quest board, Bestiary lectern, cage, pool,
   Fight Pit, chest (Inventory), crates, bookcase (codexes; 10, or 20 upgraded), bindle/bag, merchant
   stall, and a boarded-up Tavern.
 - ✅ **The Den's top bar** (the user, 2026-11-14): your explorer level as an XP bar, `Lv 3 [45 / 180] Lv 4`
@@ -112,7 +112,7 @@ fields optional with defaults.
    (plus what's training now), the creature in it, and with the plans, the schematic: the Training Pit's
    picture beside a column of material icons with have/need, "50 → 100 XP/h" and Build.
    ✅ **Sending for one** (the user, 2026-11-03; `summonVisitor`, `SUMMON_PRICE`): at the repaired tavern, pay 500 gold for any visitor now, for 30 minutes (`SUMMON_STAY`; it was `VISITOR_STAY` runs before the clock), in place of one of the same kind who's in (a new one, new stock); the others stay. Two taps (the second pays). The tavern librarian's codexes are an inventory (components/LibrarianShelf.tsx): tap one to see its move in the box on top, and buy it there. The Labyrinth's librarian has the same shelf (your bag's room in place of the bookcase's).
-   ✅ **The creature collector** (the user, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
+   ⏸ **The creature collector** (away since 2026-11-18, the user: the Soul Altar's ascension is the better use for spare creatures; he's out of `VISITORS`, his code kept; as built, 2026-11-03; `lib/collector.ts`): a third visitor, dealing only in creatures (never cards). He buys a creature for `COLLECTOR_PRICES`: Common 50, Uncommon 100, Rare 250, Epic 600, Legendary 1,500 (🧪 Claude's proposal, the user's pick). Or he trades 3 creatures of one rarity, any species (`TRADE_UP_COUNT`), for a card of a random species one rarity up, freshly rolled; Legendaries can't be traded up. Not a creature in a team, in the pit or out on a run; a sold or traded creature's gear comes off and stays yours. His window: Sell / Trade up, a tab per rarity, tap creatures to pick them, then the button (Sell takes two taps). His art (the user's pick of 3 samples, 2026-11-03): a hooded figure in a cloak pinned with creature cards, holding up a glowing jar, with a walk cycle like the others (`npcs/collector.png`).
    ✅ **The Enchantress, visitors on the clock, and tavern upgrades** (the user, 2026-11-16, decision 47; built 2026-11-16; replaces the per-run roll above):
    - ✅ **The Enchantress**, a fourth visitor (built 2026-11-16, `lib/enchantress.ts`): she doesn't play; she rerolls an item's enchantment
      ([items.md](items.md) §3, Enchantments) for 1 essence crystal plus 1,000 / 2,000 / 5,000 gold by
@@ -143,7 +143,7 @@ fields optional with defaults.
        3/4/5/5/6/6/6/5/3/2 nails, metal bars from level 3 (2, 4, 6, 8, 10, 14, 18, 23), stone from
        level 6 (1, 2, 4, 7, 12) and an essence crystal at levels 9 and 10: the totals above, each level
        dearer than the last at the merchant's prices. An upgrade takes two taps (the second pays).
-   - **Odds start at 5% each** (merchant, librarian, collector, Enchantress) and the tavern upgrades
+   - **Odds start at 5% each** (merchant, librarian, Enchantress; the collector's away) and the tavern upgrades
      them: tapping the tavern shows sending for a visitor and the upgrades, a row per visitor,
      +1% a level, 10 levels (15% at most), paid in materials, dearer each level. 🧪 Testing cost
      (the user's pick of the slowest pace, 2026-11-16): about 120 planks, 45 nails, 85 metal bars,

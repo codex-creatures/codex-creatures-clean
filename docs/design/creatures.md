@@ -16,18 +16,55 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   born with its 3 starting moves (§6), and a 10% chance (`RARE_MOVE_CHANCE`) of a rare learnable
   move of its style in the empty fourth (the user, 2026-10-26: never in place of a starting move).
 - ✅ **Cards:** a card shows one specific rolled creature. Summon with 3 cards of a species
-  (`CARDS_TO_SUMMON`): **choose** a card to get exactly that creature, or **random** for a fresh
+  (`CARDS_TO_SUMMON`) at the **Soul Altar** (app/altar, its Summon tab; the user, 2026-11-18: only
+  there, the Pit's and Inventory's card windows point to it): **choose** a card to get exactly that creature, or **random** for a fresh
   roll. The summoning plays out (the user, 2026-11-02; components/SummonShow.tsx): the 3 cards are
   set on the Soul Altar, whirl up into a whirlwind that climbs the rarity colours like a Code Cache
   (`summonStages`, lib/scanReveal.ts) to the creature's, then burst into it. Tap to skip.
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
   the cage (`starterCreature`, Lv 3). Releasing a creature gives nothing. A captured creature joins
   your creatures (the starter is also the first free pick at the Labyrinth's entrance).
+- ✅ **Ascension** (see below): give up creatures of a kind at the Soul Altar to raise one a rarity.
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is
   the quality benchmark for sprites and cards.
 - ✅ Races have 5 creatures each, one per rarity (a dual-race creature counts under its first race).
 - ❓ **Secondary classes** (Shaman, Rogue, Brute, Trickster, Cleric were floated): largely answered
   by Combat V2's archetypes (§6); anything more is undefined and deferred. A **Celestial** race was mentioned as a future race.
+
+### Ascension (the user, 2026-11-18, decision 49; lib/creatures/ascend.ts)
+
+- ✅ **The ritual** (the Soul Altar's Ascend tab, components/AscendRitual.tsx): the creature to raise
+  goes in the big slot at the top, the ones to give up in the slots under it: 4 for the first step
+  (`ASCEND_FIRST` = 5 in all), 2 for each step after (`ASCEND_AFTER` = 3). Tap a creature to send
+  it to the next slot, or hold and drag it onto one; tap a slot to empty it. Up to Legendary, so a
+  Common takes 5 / 15 / 45 / 135 of its kind to reach Uncommon / Rare / Epic / Legendary.
+- ✅ **Who can take part:** creatures only (not cards), all the same species and the same rarity at
+  the time (an Uncommon Moss Wolf is raised with Uncommon Moss Wolves, each from its own ritual),
+  every one Lv 5 or more (`ASCEND_MIN_LEVEL`; an XP scroll gets one there). One on a run or in the
+  pit can't take part; one in a team (a PvP one too) can be raised but not given up.
+- ✅ **What happens:** the kept one keeps its level, XP, roll, moves, codex moves and soul stone. The
+  others are gone, with their soul stones and codex moves; their gear comes off and stays yours. A
+  warning first if one given up has a soul stone or an Epic or Legendary codex move
+  (`WARN_CODEX_FROM`). The summoning's whirlwind plays, climbing to the new rarity.
+- ✅ **Its stats** (lib/creatures/ascendStats.ts): each step adds that rarity's budget to its
+  species' level-15 values: `ASCEND_STATS` +16 / 24 / 25 / 59 %s and `ASCEND_HP` +15 / 19 / 23 / 23
+  base HP for Uncommon / Rare / Epic / Legendary (the gaps between the rarities' average species on
+  2026-11-18). The %s follow the species' own shape (a stat it has none of stays none), shared out
+  exactly; no randomness, so its birth roll is its only variance. Like the species' %s, the bonus
+  grows with level (`levelFactor`): small at Lv 5, all of it at Lv 15, double by Lv 30. So an
+  ascended creature at any level has what that level gives at its rarity, however and whenever it
+  climbed. The ritual's window shows its stats now and after, and at Lv 30.
+- ✅ **Nothing is stored but the steps** (`ascended` on the creature; missing = none). Its stats are
+  worked out from them every time (`proficiencyAt` and `hpAt` take the steps, so nothing that
+  shows a creature can leave them out; enemies and cards pass 0), its saved %s are never touched,
+  and its `rarity` is its species' plus its steps (put right whenever a save loads).
+- ✅ **Its rarity counts everywhere**: PvP brackets (an Epic Bellow Toad is out of the Rare formats;
+  a Rare Moss Wolf is in them), card trim, quests that ask for a rarity. It isn't a summon. ★ on its
+  tile and window marks each step.
+- 🧪 **What it costs** (a sim on 2026-11-18, the Encampment's chief's cage and chest only, a party
+  picked to narrow the cage): 15 of one Common ≈ 370 Encampment runs or ≈ 1,400 new scans; 45 ≈
+  1,100 runs. With scans and runs together, Epic in about four weeks of steady play. The user
+  judged 5-then-3 balanced.
 
 ### Soul stones (✅ the user's spec, 2026-10-25; lib/creatures/soulStones.ts)
 

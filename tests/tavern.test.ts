@@ -186,7 +186,7 @@ describe("the tavern questline: visitors on the clock (decision 47)", () => {
 
   it("every half hour, each of the 4 rolls on their own 5% (so several can be in), staying to the window's end", () => {
     expect(W).toBe(30 * 60 * 1000);
-    expect(VISITORS.map((v) => visitorChance({}, v))).toEqual([0.05, 0.05, 0.05, 0.05]);
+    expect(VISITORS.map((v) => visitorChance({}, v))).toEqual([0.05, 0.05, 0.05]);
     const counts: Record<string, number> = {};
     let several = 0;
     for (let i = 0; i < 4000; i++) {
@@ -411,10 +411,10 @@ describe("sending for a visitor at the tavern (the user, 2026-11-03)", () => {
     expect(guestOf(again, "merchant", at)).toEqual(guestOf(both, "merchant", at));
   });
   it("a sent-for one rolled again in the next window stays to that window's end", () => {
-    const t = summonVisitor({ repaired: true, seed: "x" }, "collector", Math.random, false, at + VISITOR_WINDOW - 60_000);
+    const t = summonVisitor({ repaired: true, seed: "x" }, "librarian", Math.random, false, at + VISITOR_WINDOW - 60_000);
     for (let i = 0; i < 2000; i++) {
       const next = onTheClock({ ...t, seed: `k${i}` }, at + VISITOR_WINDOW + 1);
-      const g = guestOf(next, "collector", at + VISITOR_WINDOW + 1);
+      const g = guestOf(next, "librarian", at + VISITOR_WINDOW + 1);
       if (g && g.until === at + 2 * VISITOR_WINDOW) return;
     }
     throw new Error("never extended");

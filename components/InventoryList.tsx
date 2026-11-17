@@ -362,7 +362,7 @@ export default function InventoryList({
       )}
 
       {/* Card Modal */}
-      {openCard && onSummon && (
+      {openCard && (
         <CardModal
           key={openCard.id}
           card={openCard}

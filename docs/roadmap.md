@@ -58,6 +58,12 @@ interesting situations, real decisions, progression and surprises, not feel they
 
 ### 📌 Decided, not built
 
+- ✅ **The Soul Altar: summoning and ascension; scanning on its own screen** (decision 49, built
+  2026-11-18). [design/creatures.md](design/creatures.md) §4
+- 📌 **The Bestiary as a proper page** (the user, 2026-11-18; next session): a grid of the
+  creatures you've seen, each with its own page: art, races, moves, and sliders for rarity (its own
+  up to Legendary, as ascension would make it) and level (10, 20, 30) moving its HP and %s (the
+  species' figures, no roll: `hpAt` / `proficiencyAt` with steps).
 - ✅ **Enchantments** (decision 46, built 2026-11-16). [design/items.md](design/items.md) §3
 - ✅ **The Enchantress, visitors on the clock and tavern upgrades** (decision 47, built
   2026-11-16). [design/den.md](design/den.md) §9

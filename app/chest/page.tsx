@@ -118,10 +118,10 @@ export default function InventoryPage() {
         tabs={PART_TABS[part]}
         showSell={false}
         sellBar={false}
-        emptyText={part === "items" ? "No items of this kind yet — visit the Soul Altar."
+        emptyText={part === "items" ? "No items of this kind yet — scan some barcodes."
           : game.activeTab === "roster" ? "Your roster is empty — ★ creatures in the Creatures tab to add them."
-          : game.activeTab === "cards" ? "No creature cards yet. Collect 3 of one creature to summon it."
-          : "No creatures yet — visit the Soul Altar."}
+          : game.activeTab === "cards" ? "No creature cards yet. Collect 3 of one creature to summon it at the Soul Altar."
+          : "No creatures yet — scan some barcodes."}
         inventory={game.inventory}
         filteredInventory={game.filteredInventory}
         equipment={game.equipment}
@@ -133,7 +133,6 @@ export default function InventoryPage() {
         onReadScroll={game.readScroll}
         onSetSoulStone={game.setSoulStone}
         gold={game.gold}
-        onSummon={game.summon}
         tabCounts={game.tabCounts}
         activeTab={game.activeTab}
         onTabChange={game.setActiveTab}

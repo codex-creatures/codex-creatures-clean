@@ -146,7 +146,7 @@ export function loadOwnedCreatures(atLevel?: number, scaleUp = true, withAway = 
     const a = pieces[1] ?? worn[0];
     list.push({
       id: d.id, name: t.name, template: t, roster: favs.has(d.id),
-      rarity: t.rarity, label: creatureTypeLabel(d.proficiency ?? t.proficiency), creatureId: t.id,
+      rarity: d.rarity ?? t.rarity, label: creatureTypeLabel(d.proficiency ?? t.proficiency), creatureId: t.id,
       weaponName: w?.name,
       armorName: set ? `${ARMOR_META[set].name} (full set)` : worn.length > 0 ? worn.map((p) => p.name).join(", ") : undefined,
       weaponRarity: w?.rarity, armorRarity: a?.rarity,

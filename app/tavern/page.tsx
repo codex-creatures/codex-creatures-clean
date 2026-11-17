@@ -5,7 +5,7 @@
 // first time you see it Klutz has his say. Repairing it takes REPAIR_COST in
 // materials, once. That puts the Cyclops bounty on the quest board
 // (app/board); once paid, the head hangs over the door.
-// Once it's repaired, the merchant, the librarian, the creature collector and
+// Once it's repaired, the merchant, the librarian (the collector, away for now) and
 // the Enchantress each may call every half hour (lib/tavern.ts onTheClock), or
 // you send for one here; the upgrades here make each more likely. They stroll
 // round the room and trade in their own window, tapped there (app/visitor).
@@ -22,7 +22,6 @@ import { useGameState } from "@/hooks/useGameState";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { useState } from "react";
 import { MATERIALS } from "@/lib/items/materials";
-import { COLLECTOR_PRICES, TRADE_UP_COUNT } from "@/lib/collector";
 import { MAX_UPGRADE, REPAIR_COST, SUMMON_PRICE, UPGRADE_COSTS, VISITORS, canRepair, canUpgrade, guestOf, repairNeeds, tavernVisitors, upgradeCost, upgradeLevel, visitorChance, type Visitor } from "@/lib/tavern";
 import { countMaterial, type MaterialKey } from "@/lib/items/materials";
 import { REROLL_GOLD } from "@/lib/enchantress";
@@ -61,8 +60,7 @@ export default function TavernPage() {
             <ul>
               <li>It was hidden behind the rubble. Repair it with <b>{REPAIR_COST.metal_bars} metal bars, {REPAIR_COST.planks} planks and {REPAIR_COST.nails} nails</b>.</li>
               <li>Beat the Cyclops and its <b>head</b> goes up over the door.</li>
-              <li>Once it&apos;s repaired, the <b>merchant</b>, the <b>librarian</b>, the <b>creature collector</b> and the <b>Enchantress</b> may each call <b>every half hour</b>, on their own chance, so several can be in at once. One who comes stays that half hour. Tap them in the room to trade. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
-              <li>The <b>creature collector</b> buys creatures (Common {COLLECTOR_PRICES.common}, Uncommon {COLLECTOR_PRICES.uncommon}, Rare {COLLECTOR_PRICES.rare}, Epic {COLLECTOR_PRICES.epic}, Legendary {COLLECTOR_PRICES.legendary} gold), or trades <b>{TRADE_UP_COUNT} creatures of one rarity</b> for a card of a random creature one rarity up. Not cards, and not a creature in a team, the pit or on a run.</li>
+              <li>Once it&apos;s repaired, the <b>merchant</b>, the <b>librarian</b> and the <b>Enchantress</b> may each call <b>every half hour</b>, on their own chance, so several can be in at once. One who comes stays that half hour. Tap them in the room to trade. The <b>merchant</b> also buys: gear for what the crate pays, the rest at half his price.</li>
               <li>The <b>Enchantress</b> rerolls an item&apos;s enchantment for <b>1 essence crystal</b> and gold by its rarity (Rare {REROLL_GOLD.rare!.toLocaleString()}, Epic {REROLL_GOLD.epic!.toLocaleString()}, Legendary {REROLL_GOLD.legendary!.toLocaleString()}).</li>
               <li>Or send for one: <b>{SUMMON_PRICE} gold</b> and they come now, for half an hour. One of the same kind who&apos;s in leaves, so you can send for a fresh one too.</li>
               <li><b>Upgrades</b>: each visitor starts at a <b>{pct(visitorChance({}, "merchant"))}</b> chance a half hour, and each level adds 1%, up to {MAX_UPGRADE} levels. Paid in materials, dearer each level: all {MAX_UPGRADE} come to {UPGRADE_TOTAL.planks} planks, {UPGRADE_TOTAL.nails} nails, {UPGRADE_TOTAL.metal_bars} metal bars, {UPGRADE_TOTAL.essence_stones} stone and {UPGRADE_TOTAL.essence} essence crystals a visitor.</li>

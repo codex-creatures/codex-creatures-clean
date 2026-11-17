@@ -27,6 +27,8 @@ function marks(dir: string, found = new Set<string>()): Set<string> {
 
 // The Den place you're shown before going into each screen.
 const PLACE_OF: Record<string, number> = { "/altar": OBJ.altar, "/pit": OBJ.pit, "/bag": OBJ.bag, "/klutz": OBJ.klutz, "/chest": OBJ.chest, "/guide": OBJ.scroll };
+// …or its button in the Den's dock (the scanner, since 2026-11-18).
+const DOCK_OF: Record<string, string> = { "/scan": "scan-button" };
 const IDS = Object.keys(TOURS) as TourId[];
 
 describe("Klutz's tours", () => {
@@ -47,6 +49,7 @@ describe("Klutz's tours", () => {
     const bad: string[] = [];
     for (const id of IDS) TOURS[id].forEach((s, i, steps) => {
       if (i === 0 || s.path === "/" || s.path === steps[i - 1].path) return;
+      if (s.path in DOCK_OF) { if (steps[i - 1].target !== DOCK_OF[s.path]) bad.push(`${id} ${i}: ${s.path} without its button lit up first`); return; }
       if (!(s.path in PLACE_OF)) bad.push(`${id} ${i}: no Den place for ${s.path}`);
       else if (tourDenTarget({ id, step: i - 1 }) !== PLACE_OF[s.path]) bad.push(`${id} ${i}: ${s.path} without its place lit up first`);
     });

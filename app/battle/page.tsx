@@ -132,8 +132,7 @@ function Setup({
   if (owned.length < TEAM_SIZE) {
     return (
       <p style={{ color: MUTED, lineHeight: 1.5 }}>
-        You need at least {TEAM_SIZE} creatures to battle — you have {owned.length}. Scan a few more at the{" "}
-        <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>Soul Altar</Link> first.
+        You need at least {TEAM_SIZE} creatures to battle — you have {owned.length}. <Link href="/scan" style={{ color: "white", textDecoration: "underline" }}>Scan</Link> a few more first.
       </p>
     );
   }

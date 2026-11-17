@@ -1,8 +1,11 @@
 "use client";
 // components/CardModal.tsx
-// A creature card: its rolled %s and moves, and summoning (3 of a kind).
+// A creature card: its rolled %s and moves, and summoning (3 of a kind), at
+// the Soul Altar only (app/altar; the user, 2026-11-18). Opened anywhere else
+// (no onSummon), it says to go there.
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { defaultMoveNames, findCreatureTemplate, moveOf, type CreatureProficiency, type CreatureTemplate } from "@/lib/creatures/creatureData";
@@ -19,7 +22,7 @@ const STATS: [keyof CreatureProficiency, string][] = [["atk", "Melee"], ["rng", 
 type Props = {
   card: CreatureOrItemDrop;
   sameKind: CreatureOrItemDrop[]; // all your cards of this creature (including this one)
-  onSummon: (cardIds: string[], keepId: string | null) => CreatureOrItemDrop;
+  onSummon?: (cardIds: string[], keepId: string | null) => CreatureOrItemDrop; // missing: not at the altar
   onClose: () => void;
 };
 
@@ -49,7 +52,7 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
   function summon(mode: "choose" | "random") {
     const keepId = mode === "choose" ? (picked.includes(keep) ? keep : picked[0]) : null;
     setUsed(sameKind.filter((k) => picked.includes(k.id))); // (before they're gone from the inventory)
-    setResult(onSummon(picked, keepId));
+    if (onSummon) setResult(onSummon(picked, keepId));
   }
 
   if (result && used) return <SummonShow t={t} cards={used} result={result} onDone={() => setUsed(null)} />;
@@ -84,7 +87,11 @@ export default function CardModal({ card, sameKind, onSummon, onClose }: Props) 
             <Moves names={card.moves ?? defaultMoveNames(t)} t={t} />
 
             <Section>Summon</Section>
-            {!canSummon ? (
+            {canSummon && !onSummon ? (
+              <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>
+                You have {sameKind.length} {t.name} cards: summon them at the <Link href="/altar" style={{ color: "white", textDecoration: "underline" }}>Soul Altar</Link>.
+              </p>
+            ) : !canSummon ? (
               <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>
                 You have {sameKind.length} {t.name} card{sameKind.length === 1 ? "" : "s"}. Collect {CARDS_TO_SUMMON} to summon a {t.name}.
               </p>
