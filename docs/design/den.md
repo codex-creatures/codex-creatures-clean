@@ -231,7 +231,8 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   one or all at once (as Klutz's armoury box; the 3D crate before it is gone), or, if it's one thing, that
   thing shown straight away (you know what it is; daily rewards too). First, a claim celebrates
   (components/ClaimBurst.tsx, the user, 2026-11-17): the reward's picture flies off the note to the middle, grows
-  with rays and sparkles and what you got under it, then zooms off up (a tap skips it); the box opens after.
+  with rays and sparkles and what you got under it, then zooms off up (a tap skips it); the box opens after. Daily quests the same: each note shows its
+  reward's picture (gold and how much, Klutz's box, the XP scroll…) and a claim celebrates.
   Materials in a box show how many (×4 on the slot, "Nails ×4"). ➜ goes where an unfinished one
   is done. **A reward always comes home, even into a full box** (as a run's haul does): only a codex needs
   room, on the bookcase (`rewardBlocked`). (A full consumables box held back an XP scroll, and with it every

@@ -25,7 +25,7 @@ import { CHAPTERS, CRATE_NAMES, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignRe
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
-import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest } from "@/lib/daily";
+import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest, type DailyReward } from "@/lib/daily";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
 import CodeCache from "@/components/CodeCache";
 import ClaimBurst, { type ClaimShow } from "@/components/ClaimBurst";
@@ -160,6 +160,7 @@ function QuestList() {
   const [, reread] = useState(0);              // read the daily quests again after a claim
   const [prize, setPrize] = useState<Drop[] | null>(null); // what a claim gave, shown as it opens
   const [full, setFull] = useState<number | null>(null);   // a claim with no room for it (which quest)
+  const [burst, setBurst] = useState<{ show: ClaimShow; drops: Drop[] | null } | null>(null); // a claim's celebration, then its box
   // Fix today's quests in the save the first time they're seen (lib/daily.ts todayDaily).
   useEffect(() => { if (game.hydrated) todayDaily(DAILY_ONLINE); }, [game.hydrated]);
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
@@ -168,7 +169,8 @@ function QuestList() {
   const quests = todaysQuests(daily);
   // The merchant calls at the tavern, so that one waits for the repair.
   const waits = (q: DailyQuest) => q.reward === "merchant" && !game.tavern.repaired;
-  function claim(i: number) {
+  // note: the quest's note (its reward picture is where the celebration starts).
+  function claim(i: number, note: Element | null) {
     const q = quests[i];
     if (!canClaim(dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE)), i) || waits(q)) return;
     const drops = rollDailyReward(q.reward);
@@ -179,10 +181,15 @@ function QuestList() {
     if (!room) { setFull(i); return; }
     setFull(null);
     updateDaily(DAILY_ONLINE, (s) => claimDaily(s, i));
+    let box: Drop[] | null = null;
     if (q.reward === "gold") game.addGold(q.gold ?? 0);
     else if (q.reward === "merchant") game.merchantVisits();
     else if (q.reward === "cache") drops.forEach(game.addCache);
-    else { drops.forEach(game.addDrop); if (drops.length) setPrize(drops); }
+    else { drops.forEach(game.addDrop); if (drops.length) box = drops; }
+    const look = dailyLook(q);
+    setBurst({ show: { art: look.art, tint: look.tint, text: q.reward === "gold" ? `+${(q.gold ?? 0).toLocaleString()} gold` : q.pays,
+      from: note?.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: box });
+    buzz("levelUp");
     reread((n) => n + 1);
   }
 
@@ -201,18 +208,21 @@ function QuestList() {
         const note = done ? "New quests at midnight" : waits(q) ? "Repair the tavern to claim"
           : full === i ? (q.reward === "cache" ? "The altar's full" : "Your bookcase is full") : ready ? "Ready to claim" : "";
         return (
-          <div key={i} className="note" style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gap: 4, padding: "14px 12px 10px", opacity: done ? 0.75 : 1 }}>
+          <div key={i} className="note" style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: "58px 1fr", alignItems: "center", gap: 10, padding: "14px 12px 10px 10px", opacity: done ? 0.75 : 1 }}>
             <span className="note-pin" />
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span className="note-label">{i === 0 ? "☀️ Today" : "🌙 Also today"}</span>
-              <span className="note-label">{Math.min(daily.progress[i], q.goal).toLocaleString()}/{q.goal.toLocaleString()}</span>
-            </div>
-            <div className="pixel-font" style={{ fontSize: 18, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{q.name}</div>
-            <div title={text} style={CLAMP2}>{text}</div>
-            <div style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 10 }}>
-              <button className="pixel-btn" onClick={() => claim(i)} disabled={!ready || waits(q)}
-                style={{ visibility: done ? "hidden" : "visible" }}>🎁 Claim</button>
-              <span style={{ fontSize: 13, fontWeight: 600, color: ready && full !== i && !waits(q) ? "#2f7a3a" : full === i || waits(q) ? "#a8321e" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{note}</span>
+            <Badge {...dailyLook(q)} title={q.pays} ready={ready && !waits(q)} />
+            <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span className="note-label">{i === 0 ? "☀️ Today" : "🌙 Also today"}</span>
+                <span className="note-label">{Math.min(daily.progress[i], q.goal).toLocaleString()}/{q.goal.toLocaleString()}</span>
+              </div>
+              <div className="pixel-font" style={{ fontSize: 18, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{q.name}</div>
+              <div title={text} style={CLAMP2}>{text}</div>
+              <div style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 10 }}>
+                <button className="pixel-btn" onClick={(e) => claim(i, e.currentTarget.closest(".note"))} disabled={!ready || waits(q)}
+                  style={{ visibility: done ? "hidden" : "visible" }}>🎁 Claim</button>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ready && full !== i && !waits(q) ? "#2f7a3a" : full === i || waits(q) ? "#a8321e" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{note}</span>
+              </div>
             </div>
             {done && <span className="note-stamp" style={{ right: 14 }}>CLAIMED</span>}
           </div>
@@ -237,6 +247,7 @@ function QuestList() {
       )}
 
       {/* (One thing: shown straight away, no "?" to tap: you know what it is. The user, 2026-11-17.) */}
+      {burst && <ClaimBurst show={burst.show} onDone={() => { const b = burst; setBurst(null); if (b.drops) setPrize(b.drops); }} />}
       {prize && <CodeCache title="Daily reward" items={prize} opened={prize.length === 1} doneLabel={prize.length === 1 ? "Take it" : "Take it all"}
         intro={prize.length === 1 ? undefined : "Tap a slot to see what's inside."} onDone={() => setPrize(null)} />}
     </div>
@@ -379,20 +390,34 @@ function rewardLook(r: CampaignReward) {
   const tint = "gold" in r || "goldKey" in r ? "#FFCC4D" : "scrolls" in r ? "#4EA1FF" : "enchanted" in r ? RARITY_COLORS[r.rarity].text : "crate" in r ? RARITY_COLORS[r.hi].text : "#c9a46a";
   const label = "gold" in r ? r.gold.toLocaleString() : "scrolls" in r ? `×${r.scrolls}` : "crate" in r && r.crate !== "supplies" ? (r.lo === r.hi ? SHORT_RARITY[r.lo] : `${SHORT_RARITY[r.lo]}–${SHORT_RARITY[r.hi]}`)
     : "enchanted" in r ? SHORT_RARITY[r.rarity] : "";
-  return { art, inside, tint, label };
+  return { art, inside, tint, label, gold: "gold" in r };
 }
-function RewardBadge({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) {
-  const { art, inside, tint, label } = rewardLook(r);
+const RewardBadge = ({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) => <Badge {...rewardLook(r)} title={rewardText(r)} small={small} ready={ready} />;
+
+// A daily quest's reward, as a picture (and how much gold).
+const DAILY_ART: Record<DailyReward, string> = {
+  gold: "/sprites/items/gold.png", box: "/sprites/props/klutz_box.png", creature: "/sprites/icons/ui_creatures.png",
+  gear: "/sprites/items/void_scythe.png", epic: "/sprites/items/armor/chest_dragonscale_tunic.png", scroll: "/sprites/items/xp_scroll.png",
+  material: "/sprites/items/materials/planks.png", elixir: "/sprites/items/tools/revival.png", codex: "/sprites/items/codex.png",
+  cache: "/sprites/props/treasure_chest.png", merchant: "/sprites/den/merchant.png",
+};
+function dailyLook(q: DailyQuest) {
+  const tint = q.reward === "gold" ? "#FFCC4D" : q.reward === "scroll" ? "#4EA1FF" : q.reward === "epic" ? RARITY_COLORS.epic.text : q.reward === "box" || q.reward === "gear" ? RARITY_COLORS.rare.text : "#c9a46a";
+  return { art: DAILY_ART[q.reward], inside: null, tint, label: q.reward === "gold" ? (q.gold ?? 0).toLocaleString() : "", gold: q.reward === "gold" };
+}
+
+// A reward's picture on a note: the art in a glow of its colour, its amount under it.
+function Badge({ art, inside, tint, label, gold, title, small, ready }: { art: string; inside: string | null; tint: string; label: string; gold: boolean; title: string; small?: boolean; ready?: boolean }) {
   const size = small ? 22 : 40;
   return (
-    <span className="reward-badge" title={rewardText(r)} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
+    <span className="reward-badge" title={title} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
       <span style={{ position: "relative", width: small ? 24 : 52, height: small ? 24 : 44, display: "flex", alignItems: "center", justifyContent: "center", background: small ? undefined : `radial-gradient(circle, ${tint}55, transparent 68%)` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={art} alt="" draggable={false} className={ready ? "reward-ready" : undefined} style={{ maxWidth: size + 6, maxHeight: size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {inside && !small && <img src={inside} alt="" draggable={false} style={{ position: "absolute", right: 0, bottom: -2, width: 22, height: 22, imageRendering: "pixelated", filter: "drop-shadow(0 1px 0 rgba(0,0,0,0.6))" }} />}
       </span>
-      {!small && label && <span className="pixel-font" style={{ fontSize: label.length > 6 ? 10 : 13, lineHeight: 1, color: "gold" in r ? "#8a5a00" : "#5a3f1c", fontWeight: 700, whiteSpace: "nowrap" }}>{label}</span>}
+      {!small && label && <span className="pixel-font" style={{ fontSize: label.length > 6 ? 10 : 13, lineHeight: 1, color: gold ? "#8a5a00" : "#5a3f1c", fontWeight: 700, whiteSpace: "nowrap" }}>{label}</span>}
     </span>
   );
 }
