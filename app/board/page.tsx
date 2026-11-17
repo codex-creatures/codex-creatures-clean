@@ -21,14 +21,13 @@ import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
-import RewardReveal from "@/components/RewardReveal";
-import { CHAPTERS, PLANS_TAKEN_GOLD, rewardModel, type RewardModel, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
+import { RARITY_COLORS } from "@/lib/items/gameHelpers";
+import { CHAPTERS, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignReward, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
 import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest } from "@/lib/daily";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
-import { fitInBoxes } from "@/lib/items/storage";
 import CodeCache from "@/components/CodeCache";
 import type { Drop } from "@/lib/types";
 
@@ -208,8 +207,9 @@ function QuestList() {
     if (!canClaim(dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE)), i) || waits(q)) return;
     const drops = rollDailyReward(q.reward);
     const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
-    const room = q.reward === "cache" ? game.caches.length + game.sealed.length < CACHE_LIMIT
-      : fitInBoxes(game.inventory, drops, game.storage).fit.length === drops.length && codexes <= game.shelfFree;
+    // A reward always comes home, even into a full box (as a run's haul does: the user, 2026-11-17); a Code
+    // Cache needs a space at the altar, and a codex a space on the bookcase.
+    const room = q.reward === "cache" ? game.caches.length + game.sealed.length < CACHE_LIMIT : codexes <= game.shelfFree;
     if (!room) { setFull(i); return; }
     setFull(null);
     updateDaily(DAILY_ONLINE, (s) => claimDaily(s, i));
@@ -233,7 +233,7 @@ function QuestList() {
         const ready = canClaim(daily, i);
         const text = `${q.task}. Reward: ${q.pays}.`;
         const note = done ? "New quests at midnight" : waits(q) ? "Repair the tavern to claim"
-          : full === i ? (q.reward === "cache" ? "The altar's full" : "No room for it") : ready ? "Ready to claim" : "";
+          : full === i ? (q.reward === "cache" ? "The altar's full" : "Your bookcase is full") : ready ? "Ready to claim" : "";
         return (
           <div key={i} className="note" style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gap: 4, padding: "14px 12px 10px", opacity: done ? 0.75 : 1 }}>
             <span className="note-pin" />
@@ -282,9 +282,9 @@ function CampaignList() {
   const game = useGameState();
   const router = useRouter();
   const [, reread] = useState(0);
-  const [prize, setPrize] = useState<{ title: string; drops: Drop[] } | null>(null);
-  const [reveal, setReveal] = useState<{ title: string; model: RewardModel; drops: Drop[] } | null>(null); // a crate reward, in 3D before its loot
-  const [full, setFull] = useState(false); // the last claim had no room for its reward
+  const [prize, setPrize] = useState<{ title: string; drops: Drop[] } | null>(null); // a reward's box, its "?"s to open
+  const [blocked, setBlocked] = useState<string | null>(null); // why the last claim couldn't be taken
+  const [toast, setToast] = useState<{ text: string; key: number } | null>(null); // what a claim gave there and then (gold, the schematic)
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
   if (!klutzHelping(game.quest)) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Finish Klutz&apos;s quest first.</p>;
 
@@ -292,65 +292,130 @@ function CampaignList() {
   const claimed = claimedCount(state);
   const ch = currentChapter(state), chapter = CHAPTERS[ch];
   const first = CHAPTERS.slice(0, ch).reduce((n, c) => n + c.quests.length, 0); // the chapter's first quest, in the whole list
+  const doneHere = Math.min(chapter.quests.length, Math.max(0, claimed - first));
+  const say = (text: string) => { const key = Date.now(); setToast({ text, key }); window.setTimeout(() => setToast((t) => (t?.key === key ? null : t)), 1900); };
   function claim() {
     const s = loadCampaign(), c = readCampaignCtx(), q = nextQuest(s);
     if (!q || !questDone(q, c)) return;
     const r = q.reward;
     const drops = rollCampaignReward(r);
-    const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
-    if (drops.length && (fitInBoxes(game.inventory, drops, game.storage).fit.length < drops.length || codexes > game.shelfFree)) { setFull(true); return; }
-    setFull(false);
+    // (A full box never holds a reward back; only a full bookcase does: lib/campaign.ts rewardBlocked.)
+    const why = rewardBlocked(drops, game.shelfFree);
+    if (why) { setBlocked(why); return; }
+    setBlocked(null);
     updateCampaign((x) => claimNext(x, c));
-    if ("gold" in r) game.addGold(r.gold);
+    if ("gold" in r) { game.addGold(r.gold); say(`+${r.gold.toLocaleString()} gold`); }
     // The bookcase's plans: already yours (or built), and it pays gold instead.
-    else if ("bookcasePlans" in r) { if (hasBookPlans(game.tavern) || game.bookcase >= 2) game.addGold(PLANS_TAKEN_GOLD); else game.findBookPlans(); }
-    else {
-      drops.forEach(game.addDrop);
-      const model = rewardModel(r);
-      if (model) setReveal({ title: rewardText(r), model, drops }); else setPrize({ title: rewardText(r), drops });
+    else if ("bookcasePlans" in r) {
+      if (hasBookPlans(game.tavern) || game.bookcase >= 2) { game.addGold(PLANS_TAKEN_GOLD); say(`+${PLANS_TAKEN_GOLD} gold`); }
+      else { game.findBookPlans(); say("📐 The Crooked Bookcase Schematic"); }
     }
+    // Everything else: its box, each "?" to open (or all at once), as Klutz's armoury box.
+    else { drops.forEach(game.addDrop); setPrize({ title: rewardText(r), drops }); }
     reread((n) => n + 1);
   }
   return (
-    <div style={{ display: "grid", gap: 18, padding: "4px 0 10px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span className="pixel-font title-bar" style={{ fontSize: 14, color: GOLD, padding: "4px 12px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Chapter {ch + 1} · {chapter.name}</span>
-        <span className="pixel-font" style={{ fontSize: 12, color: "#e9d6a8", whiteSpace: "nowrap" }}>{Math.min(chapter.quests.length, Math.max(0, claimed - first))}/{chapter.quests.length} done</span>
+    <div style={{ position: "relative", display: "grid", gap: 16, padding: "2px 0 12px" }}>
+      {/* The chapter: its name, and how far through it you are. */}
+      <div className="title-bar" style={{ padding: "8px 12px 10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+          <span className="pixel-font" style={{ fontSize: 11, color: "#c9a46a", letterSpacing: "0.08em" }}>CHAPTER {ch + 1}</span>
+          <span className="pixel-font" style={{ fontSize: 12, color: "#e9d6a8" }}>{doneHere}/{chapter.quests.length} claimed</span>
+        </div>
+        <div className="pixel-font" style={{ fontSize: 20, color: GOLD, margin: "2px 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{chapter.name}</div>
+        <div className="chapter-bar"><span style={{ width: `${(100 * doneHere) / chapter.quests.length}%` }} /></div>
       </div>
+      {blocked && <div className="pixel-font" style={{ fontSize: 13, color: "#ffb4a8", background: "rgba(80,16,10,0.85)", border: "2px solid #a8321e", padding: "8px 10px" }}>{blocked}</div>}
       {chapter.quests.map((q, i) => {
         // (The next to claim by its place in the whole list: CAMPAIGN holds copies of the chapters' quests, so
         // comparing the quests themselves never matched, and no reward could be claimed.)
-        const at = first + i, got = at < claimed, done = questDone(q, ctx), isNext = at === claimed;
+        const at = first + i, got = at < claimed, done = questDone(q, ctx), ready = at === claimed && done;
         const wanted = i === chapter.quests.length - 1; // (the chapter's boss: a Wanted poster)
-        const prog = Math.min(q.progress(ctx), q.goal);
-        const status = got ? "" : done ? (isNext ? (full ? "No room for it" : "Ready to claim") : "Claim the ones above first") : "";
+        const prog = got ? q.goal : Math.min(q.progress(ctx), q.goal); // (claimed: shown full, whatever counts now)
         return (
-          <div key={q.id} className={`note${wanted ? " note-wanted" : ""}`} style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: wanted ? "auto 1fr 44px" : "1fr 44px", alignItems: "center", gap: 10, padding: "14px 10px 10px 12px", opacity: got ? 0.75 : 1 }}>
+          <div key={q.id} className={`note${wanted ? " note-wanted" : ""}${ready ? " note-ready" : ""}`}
+            onClick={ready ? claim : undefined} role={ready ? "button" : undefined} tabIndex={ready ? 0 : undefined}
+            onKeyDown={ready ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); claim(); } } : undefined}
+            aria-label={ready ? `Claim ${rewardText(q.reward)}` : undefined}
+            style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: wanted ? "76px 1fr 44px" : "58px 1fr 44px", alignItems: "center", gap: 10, padding: "14px 10px 10px", opacity: got ? 0.6 : 1, cursor: ready ? "pointer" : undefined }}>
             <span className="note-pin" />
-            {wanted && <WantedPicture chapter={ch} />}
+            {wanted ? <WantedPicture chapter={ch} /> : <RewardBadge r={q.reward} />}
             <div style={{ minWidth: 0 }}>
               <div className="note-label">{wanted ? "Wanted · final task" : `Quest ${i + 1}`}</div>
               <div title={q.task} style={NOTE_TASK}>{q.task}</div>
-              {/* How far along: a box per step for a short goal, else the count; then where it stands. */}
-              <div style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 18, marginTop: 4 }}>
-                {q.goal > 1 && q.goal <= 6
-                  ? Array.from({ length: q.goal }, (_, k) => <span key={k} className="note-pip" data-on={k < prog} />)
-                  : <span className="note-label" style={{ fontSize: 11 }}>{prog.toLocaleString()}/{q.goal.toLocaleString()}</span>}
-                <span style={{ marginLeft: 6, fontSize: 12, fontWeight: 600, color: isNext && done && !full ? "#2f7a3a" : isNext && full ? "#a8321e" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{status}</span>
+              <QuestProgress id={q.id} goal={q.goal} prog={prog} />
+              {wanted && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}><RewardBadge r={q.reward} small /><span style={{ fontSize: 12, color: "#6e5232", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{rewardText(q.reward)}</span></div>}
+              <div style={{ fontSize: 12, fontWeight: 700, minHeight: 16, marginTop: 2, color: ready ? "#2f7a3a" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {ready ? "Done! Tap to claim" : done && !got ? "Claim the ones above first" : ""}
               </div>
-              <div title={rewardText(q.reward)} style={{ fontSize: 12, color: "#6e5232", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>🎁 {rewardText(q.reward)}</div>
             </div>
-            {isNext && done
-              ? <button className="pixel-btn" onClick={claim} aria-label="Claim" title="Claim" style={{ minWidth: 44, minHeight: 44, padding: 0 }}>🎁</button>
-              : <button className="note-go" onClick={() => q.go && router.push(q.go)} aria-label="Go there" title="Go there"
-                  style={{ visibility: !got && !done && q.go ? "visible" : "hidden" }}>➜</button>}
-            {got && <span className="note-stamp">CLAIMED</span>}
+            {got ? <span className="note-seal" title="Claimed" aria-label="Claimed">✓</span>
+              : ready ? <span className="note-claim" aria-hidden>🎁</span>
+              : <button className="note-go" onClick={(e) => { e.stopPropagation(); if (q.go) router.push(q.go); }} aria-label="Go there" title="Go there"
+                  style={{ visibility: !done && q.go ? "visible" : "hidden" }}>➜</button>}
           </div>
         );
       })}
-      {reveal && <RewardReveal title={reveal.title} model={reveal.model} onOpen={() => { setPrize({ title: reveal.title, drops: reveal.drops }); setReveal(null); }} />}
-      {prize && <CodeCache title={prize.title} items={prize.drops} doneLabel="Take it all" intro="Tap a slot to see what's inside." onDone={() => setPrize(null)} />}
+      {toast && <span key={toast.key} className="float-text pixel-font" style={{ top: 70, color: "#ffd970" }}>{toast.text}</span>}
+      {prize && <CodeCache title={prize.title} items={prize.drops} doneLabel="Take it all" onDone={() => setPrize(null)} />}
     </div>
+  );
+}
+
+// How far along a campaign quest is: nothing for a one-off (it's done or it isn't); for the
+// camp cages, a cage each, opened and crossed out as you go; for a few steps, a box each; for
+// more, a bar and the count.
+const PIPS_UP_TO = 6;
+function QuestProgress({ id, goal, prog }: { id: string; goal: number; prog: number }) {
+  if (goal <= 1) return null;
+  if (id.startsWith("cages")) return (
+    <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+      {Array.from({ length: goal }, (_, k) => (
+        <span key={k} className={`note-cage${k < prog ? " note-cage-done" : ""}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={k < prog ? "/sprites/walk/cage-open.png" : "/sprites/walk/cage.png"} alt={k < prog ? "Opened" : "Still shut"} width={28} height={28} draggable={false} />
+        </span>
+      ))}
+    </div>
+  );
+  if (goal <= PIPS_UP_TO) return (
+    <div style={{ display: "flex", gap: 5, marginTop: 5 }} aria-label={`${prog} of ${goal}`}>
+      {Array.from({ length: goal }, (_, k) => <span key={k} className="note-pip" data-on={k < prog} />)}
+    </div>
+  );
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5 }}>
+      <span className="note-bar"><span style={{ width: `${(100 * prog) / goal}%` }} /></span>
+      <span className="note-label" style={{ fontSize: 10, whiteSpace: "nowrap" }}>{prog.toLocaleString()}/{goal.toLocaleString()}</span>
+    </div>
+  );
+}
+
+// A campaign reward, as a picture with its amount: gold coins and how many, the XP scroll ×n,
+// a crate (what's in it on top) or the barrel with the rarities it holds, the Gold Key, an
+// enchanted piece, the schematic. small: the size that sits in a line of text (the Wanted poster).
+const SHORT_RARITY: Record<string, string> = { common: "Com", uncommon: "Unc", rare: "Rare", epic: "Epic", legendary: "Leg" };
+function RewardBadge({ r, small }: { r: CampaignReward; small?: boolean }) {
+  const art = "gold" in r ? "/sprites/items/gold.png" : "scrolls" in r ? "/sprites/items/xp_scroll.png" : "goldKey" in r ? "/sprites/items/tools/gold_key.png"
+    : "enchanted" in r ? (r.enchanted === "weapon" ? "/sprites/items/void_scythe.png" : "/sprites/items/armor/chest_dragonscale_tunic.png")
+    : "bookcasePlans" in r ? "/sprites/items/schematic.png"
+    : r.crate === "gear" ? "/sprites/walk/decor/barrels.png" : r.crate === "codex" ? "/sprites/props/bookcase3d/front.png" : "/sprites/den/crate.png";
+  // On a crate, what's inside: a plank for materials, a potion for supplies.
+  const inside = "crate" in r && r.crate === "materials" ? "/sprites/items/materials/planks.png" : "crate" in r && r.crate === "supplies" ? "/sprites/items/potion.png" : null;
+  const tint = "gold" in r || "goldKey" in r ? "#FFCC4D" : "scrolls" in r ? "#4EA1FF" : "enchanted" in r ? RARITY_COLORS[r.rarity].text : "crate" in r ? RARITY_COLORS[r.hi].text : "#c9a46a";
+  const label = "gold" in r ? r.gold.toLocaleString() : "scrolls" in r ? `×${r.scrolls}` : "crate" in r && r.crate !== "supplies" ? (r.lo === r.hi ? SHORT_RARITY[r.lo] : `${SHORT_RARITY[r.lo]}–${SHORT_RARITY[r.hi]}`)
+    : "enchanted" in r ? SHORT_RARITY[r.rarity] : "";
+  const size = small ? 22 : 40;
+  return (
+    <span title={rewardText(r)} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
+      <span style={{ position: "relative", width: small ? 24 : 52, height: small ? 24 : 44, display: "flex", alignItems: "center", justifyContent: "center", background: small ? undefined : `radial-gradient(circle, ${tint}55, transparent 68%)` }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={art} alt="" draggable={false} style={{ maxWidth: size + 6, maxHeight: size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {inside && !small && <img src={inside} alt="" draggable={false} style={{ position: "absolute", right: 0, bottom: -2, width: 22, height: 22, imageRendering: "pixelated", filter: "drop-shadow(0 1px 0 rgba(0,0,0,0.6))" }} />}
+      </span>
+      {!small && label && <span className="pixel-font" style={{ fontSize: label.length > 6 ? 10 : 13, lineHeight: 1, color: "gold" in r ? "#8a5a00" : "#5a3f1c", fontWeight: 700, whiteSpace: "nowrap" }}>{label}</span>}
+    </span>
   );
 }
 

@@ -589,8 +589,30 @@ body {
   position: absolute; right: 54px; top: 14px; transform: rotate(-12deg); padding: 3px 9px; pointer-events: none;
   font-family: var(--font-pixel), monospace; font-size: 12px; color: #2f7a3a; box-shadow: inset 0 0 0 2px #2f7a3a; opacity: 0.9;
 }
-.note-pip { width: 14px; height: 14px; flex: none; box-shadow: inset 0 0 0 2px #7a5a30; }
-.note-pip[data-on="true"] { background: #7a5a30; }
+.note-pip { width: 14px; height: 14px; flex: none; box-shadow: inset 0 0 0 2px #7a5a30; background: rgba(122, 90, 48, 0.08); }
+.note-pip[data-on="true"] { background: linear-gradient(180deg, #e0a83a, #9a6a1a); box-shadow: inset 0 0 0 2px #6b4a10, inset 0 2px 0 2px #fff0a8; }
+/* A quest done and ready to claim: the note glows gold, and its gift bobs (tap anywhere on it). */
+.note-ready { box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 0 0 3px #ffd66e, 0 0 22px rgba(255, 200, 80, 0.75), inset 0 0 18px rgba(120, 84, 40, 0.3); animation: note-ready 1.6s ease-in-out infinite; }
+@keyframes note-ready { 50% { box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 0 0 3px #fff0b0, 0 0 34px rgba(255, 210, 90, 0.95), inset 0 0 18px rgba(120, 84, 40, 0.3); } }
+.note-claim { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 28px; animation: note-claim 0.9s ease-in-out infinite; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4)); }
+@keyframes note-claim { 50% { transform: translateY(-4px) rotate(-6deg); } }
+/* Claimed: a green wax seal in the note's corner column, off the words. */
+.note-seal {
+  width: 38px; height: 38px; justify-self: center; display: flex; align-items: center; justify-content: center; border-radius: 50%;
+  font-family: var(--font-pixel), monospace; font-size: 20px; color: #e8ffe8; background: radial-gradient(circle at 35% 30%, #5fbf6a, #2f7a3a 60%, #1c4d24);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4), inset 0 0 0 3px rgba(0, 0, 0, 0.15); transform: rotate(-10deg);
+}
+/* The camp cages quest: a cage each, opened and crossed out as you go. */
+.note-cage { position: relative; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; }
+.note-cage img { image-rendering: pixelated; }
+.note-cage-done img { opacity: 0.55; }
+.note-cage-done::after { content: "✕"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: #a8321e; text-shadow: 0 1px 0 #f3e4bd; }
+/* Progress bars: a long quest on a note, and the chapter as a whole. */
+.note-bar { flex: 1; min-width: 40px; height: 10px; background: rgba(122, 90, 48, 0.2); box-shadow: inset 0 0 0 2px #7a5a30; overflow: hidden; }
+.note-bar > span { display: block; height: 100%; background: linear-gradient(180deg, #e0a83a, #9a6a1a); }
+.chapter-bar { height: 12px; background: #0a0806; box-shadow: inset 0 0 0 2px #000, 0 0 0 2px #4a3a26; overflow: hidden; }
+.chapter-bar > span { display: block; height: 100%; background: repeating-linear-gradient(90deg, #e8c66a 0 6px, #b98a2e 6px 8px); transition: width 0.6s ease-out; }
+@media (prefers-reduced-motion: reduce) { .note-ready, .note-claim { animation: none; } }
 /* The ➜ on a note: a parchment button. */
 .note-go {
   min-width: 44px; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;

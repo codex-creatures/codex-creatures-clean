@@ -198,6 +198,15 @@ export function rollCampaignReward(r: CampaignReward, rng: Rng = Math.random): D
   });
 }
 
+// What stops a reward being claimed (null: nothing). A reward always comes home, even into a full
+// weapons, armour or consumables box, as a run's haul does (the user, 2026-11-17: a full consumables box
+// held back an XP scroll, and with it, claimed in order, every reward after it). Only a codex needs room:
+// it goes on the bookcase.
+export function rewardBlocked(drops: Drop[], shelfFree: number): string | null {
+  const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
+  return codexes > shelfFree ? `Your bookcase is full: make room for ${codexes === 1 ? "the codex" : `${codexes} codexes`} first.` : null;
+}
+
 // ── The quests ──────────────────────────────────────────────────────
 // task: what to do (one line); go: the screen it's done on (a ➜ button);
 // progress: how far along, out of goal.

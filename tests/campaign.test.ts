@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, rewardModel, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
-  questDone, rewardText, rollCampaignReward, type CampaignCtx, type CampaignState,
+  questDone, rewardBlocked, rewardText, rollCampaignReward, type CampaignCtx, type CampaignState,
 } from "../lib/campaign";
-import { weaponDrop, armorDrop } from "../lib/drops";
+import { weaponDrop, armorDrop, codexDrop, randomCodexMove } from "../lib/drops";
 import { ARMOR_KEYS } from "../lib/items/armor";
 import { ITEM_KEYS } from "../lib/items/ceilings";
 import { enchantOf } from "../lib/items/enchantments";
@@ -208,5 +208,17 @@ describe("a win with only effective moves", () => {
     expect(onlyEffective([hit(name, 1)], [[good], [bad]])).toBe(false);
     expect(onlyEffective([hit(name), hit("Not A Race Move", 0, "B")], [[good]])).toBe(true);
     expect(onlyEffective([], [[good]])).toBe(false);
+  });
+});
+
+describe("claiming a reward", () => {
+  it("a full box never holds one back (an XP scroll into 65 consumables, a crate of materials); only a full bookcase holds back a codex", () => {
+    expect(rewardBlocked(rollCampaignReward({ scrolls: 1 }), 0)).toBeNull();
+    expect(rewardBlocked(rollCampaignReward({ crate: "materials", lo: "rare", hi: "epic", n: 3 }), 0)).toBeNull();
+    expect(rewardBlocked(rollCampaignReward({ crate: "gear", lo: "rare", hi: "epic", n: 3 }), 0)).toBeNull();
+    const codexes = [codexDrop(randomCodexMove()), codexDrop(randomCodexMove())];
+    expect(rewardBlocked(codexes, 2)).toBeNull();
+    expect(rewardBlocked(codexes, 1)).toMatch(/bookcase is full: make room for 2 codexes/);
+    expect(rewardBlocked(codexes.slice(0, 1), 0)).toMatch(/room for the codex/);
   });
 });

@@ -217,9 +217,18 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   rarity, gear Klutz brings home by rarity, each visitor seen at the tavern, and a boss beaten on a
   run with no potion drunk (`drank`: the run, `meta.runs`, a potion was last drunk on). Scans
   and cards take the larger of the save's count and the tally.
-- **The screen:** the quest board opens on the campaign (the user, 2026-11-17), each quest a parchment note pinned to a wooden board, the chapter's last a Wanted poster. The chapter's name and how many are claimed, then a row per quest (fixed: the task
-  on one line, the reward and progress on the next) with one 44px button: 🎁 Claim on the next
-  reward when it's done, ➜ to the screen where an unfinished quest is done. A ❗ on the board in the
+- **The screen** (redrawn by the user's brief, 2026-11-17): the quest board opens on the campaign. A plaque with
+  the chapter, how many are claimed and a bar; then a parchment note per quest, pinned to a wooden board
+  (the chapter's last a Wanted poster). Each shows its reward as a picture with its amount (coins and how
+  many, the XP scroll ×n, a crate with what's inside on top and its rarities, the barrel, the key, an
+  enchanted piece, the schematic), the task, and how far along: nothing for a one-off, a box per step up to
+  6 (a cage each for the camp cages, opened and crossed out as you go), else a bar and the count. A claimed
+  quest is faded with a green seal in its corner (off the words); the next one done glows gold with a 🎁, and a
+  tap anywhere on it claims it: gold (or the schematic) at once, anything else as a box of "?"s to open one by
+  one or all at once (as Klutz's armoury box; the 3D crate before it is gone). ➜ goes where an unfinished one
+  is done. **A reward always comes home, even into a full box** (as a run's haul does): only a codex needs
+  room, on the bookcase (`rewardBlocked`). (A full consumables box held back an XP scroll, and with it every
+  reward after it.) A ❗ on the board in the
   Den while the next reward is ready. Claiming opens crates and gear in the Code Cache window.
   A reward with no room (chest boxes, the bookcase for codexes) waits ("No room for it").
 - **Rewards** (the user): gold for the small ones, Tattered XP Scrolls for some, better things at
