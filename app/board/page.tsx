@@ -338,19 +338,19 @@ function CampaignList() {
             aria-label={ready ? `Claim ${rewardText(q.reward)}` : undefined}
             style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: wanted ? "76px 1fr 44px" : "58px 1fr 44px", alignItems: "center", gap: 10, padding: "14px 10px 10px", opacity: got ? 0.6 : 1, cursor: ready ? "pointer" : undefined }}>
             <span className="note-pin" />
-            {wanted ? <WantedPicture chapter={ch} /> : <RewardBadge r={q.reward} />}
+            {wanted ? <WantedPicture chapter={ch} /> : <RewardBadge r={q.reward} ready={ready} />}
             <div style={{ minWidth: 0 }}>
               <div className="note-label">{wanted ? "Wanted · final task" : `Quest ${i + 1}`}</div>
               <div title={q.task} style={NOTE_TASK}>{q.task}</div>
               <QuestProgress id={q.id} goal={q.goal} prog={prog} />
-              {wanted && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}><RewardBadge r={q.reward} small /><span style={{ fontSize: 12, color: "#6e5232", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{rewardText(q.reward)}</span></div>}
+              {wanted && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}><RewardBadge r={q.reward} small ready={ready} /><span style={{ fontSize: 12, color: "#6e5232", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{rewardText(q.reward)}</span></div>}
               {/* Where it stands; a claim that couldn't be taken says why here, on the note you tapped. */}
               <div style={{ fontSize: 12, fontWeight: 700, minHeight: 16, marginTop: 2, color: ready && blocked ? "#a8321e" : ready ? "#2f7a3a" : "#7a5a30", ...(ready && blocked ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) }}>
                 {ready ? blocked ?? "Done! Tap to claim" : done && !got ? "Claim the ones above first" : ""}
               </div>
             </div>
             {got ? <span className="note-seal" title="Claimed" aria-label="Claimed">✓</span>
-              : ready ? <span className="note-claim" aria-hidden>🎁</span>
+              : ready ? <span aria-hidden style={{ width: 44 }} />
               : <button className="note-go" onClick={(e) => { e.stopPropagation(); if (q.go) router.push(q.go); }} aria-label="Go there" title="Go there"
                   style={{ visibility: !done && q.go ? "visible" : "hidden" }}>➜</button>}
           </div>
@@ -394,8 +394,9 @@ function QuestProgress({ id, goal, prog }: { id: string; goal: number; prog: num
 // A campaign reward, as a picture with its amount: gold coins and how many, the XP scroll ×n,
 // a crate (what's in it on top) or the barrel with the rarities it holds, the Gold Key, an
 // enchanted piece, the schematic. small: the size that sits in a line of text (the Wanted poster).
+// ready: its quest is done and it's yours to claim: the picture jiggles (the user, 2026-11-17).
 const SHORT_RARITY: Record<string, string> = { common: "Com", uncommon: "Unc", rare: "Rare", epic: "Epic", legendary: "Leg" };
-function RewardBadge({ r, small }: { r: CampaignReward; small?: boolean }) {
+function RewardBadge({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) {
   const art = "gold" in r ? "/sprites/items/gold.png" : "scrolls" in r ? "/sprites/items/xp_scroll.png" : "goldKey" in r ? "/sprites/items/tools/gold_key.png"
     : "enchanted" in r ? (r.enchanted === "weapon" ? "/sprites/items/void_scythe.png" : "/sprites/items/armor/chest_dragonscale_tunic.png")
     : "bookcasePlans" in r ? "/sprites/items/schematic.png"
@@ -410,7 +411,7 @@ function RewardBadge({ r, small }: { r: CampaignReward; small?: boolean }) {
     <span title={rewardText(r)} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
       <span style={{ position: "relative", width: small ? 24 : 52, height: small ? 24 : 44, display: "flex", alignItems: "center", justifyContent: "center", background: small ? undefined : `radial-gradient(circle, ${tint}55, transparent 68%)` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={art} alt="" draggable={false} style={{ maxWidth: size + 6, maxHeight: size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />
+        <img src={art} alt="" draggable={false} className={ready ? "reward-ready" : undefined} style={{ maxWidth: size + 6, maxHeight: size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {inside && !small && <img src={inside} alt="" draggable={false} style={{ position: "absolute", right: 0, bottom: -2, width: 22, height: 22, imageRendering: "pixelated", filter: "drop-shadow(0 1px 0 rgba(0,0,0,0.6))" }} />}
       </span>

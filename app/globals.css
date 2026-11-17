@@ -594,8 +594,9 @@ body {
 /* A quest done and ready to claim: the note glows gold, and its gift bobs (tap anywhere on it). */
 .note-ready { box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 0 0 3px #ffd66e, 0 0 22px rgba(255, 200, 80, 0.75), inset 0 0 18px rgba(120, 84, 40, 0.3); animation: note-ready 1.6s ease-in-out infinite; }
 @keyframes note-ready { 50% { box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45), 0 0 0 3px #fff0b0, 0 0 34px rgba(255, 210, 90, 0.95), inset 0 0 18px rgba(120, 84, 40, 0.3); } }
-.note-claim { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 28px; animation: note-claim 0.9s ease-in-out infinite; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4)); }
-@keyframes note-claim { 50% { transform: translateY(-4px) rotate(-6deg); } }
+/* A ready quest's reward picture (the coins, the scroll, the crate): it jiggles, to be claimed. */
+.reward-ready { animation: reward-ready 0.9s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes reward-ready { 0%, 100% { transform: rotate(0) scale(1); } 20% { transform: rotate(-9deg) scale(1.08); } 40% { transform: rotate(8deg) scale(1.12); } 60% { transform: rotate(-5deg) scale(1.08); } 80% { transform: translateY(-2px) rotate(3deg) scale(1.04); } }
 /* Claimed: a green wax seal in the note's corner column, off the words. */
 .note-seal {
   width: 38px; height: 38px; justify-self: center; display: flex; align-items: center; justify-content: center; border-radius: 50%;
@@ -612,7 +613,7 @@ body {
 .note-bar > span { display: block; height: 100%; background: linear-gradient(180deg, #e0a83a, #9a6a1a); }
 .chapter-bar { height: 12px; background: #0a0806; box-shadow: inset 0 0 0 2px #000, 0 0 0 2px #4a3a26; overflow: hidden; }
 .chapter-bar > span { display: block; height: 100%; background: repeating-linear-gradient(90deg, #e8c66a 0 6px, #b98a2e 6px 8px); transition: width 0.6s ease-out; }
-@media (prefers-reduced-motion: reduce) { .note-ready, .note-claim { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .note-ready, .reward-ready { animation: none; } }
 /* The ➜ on a note: a parchment button. */
 .note-go {
   min-width: 44px; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;
