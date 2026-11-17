@@ -61,7 +61,7 @@ const BASICS: TourStep[] = [
   // Around the Den
   { path: "/", target: den(OBJ.chest), say: "Your Inventory: every weapon, piece of armour, potion and codex you own. The gear from my box is in there." },
   { path: "/", target: den(OBJ.cage), say: "The cage. Creatures I catch wait in here for you: keep them, or let them go." },
-  { path: "/", target: den(OBJ.crate), say: "My crate. Gear I bring back from hunting goes in here: keep it or sell it." },
+  { path: "/", target: den(OBJ.crate), say: "My den, behind my crate. What I bring back from hunting waits in it, with my kit and the tales of my trips." },
 
   // Klutz
   { path: "/", target: den(OBJ.klutz), say: "And that's me! Lend me some gear and I'll hunt in the Labyrinth for you." },

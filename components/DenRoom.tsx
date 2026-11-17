@@ -29,7 +29,7 @@ export const SPOTS: Record<Exclude<ObjId, 0>, Spot> = {
   [OBJ.arch]:     { label: "The Labyrinth", href: "/dungeon" },
   [OBJ.scroll]:   { label: "Bestiary & Rules", href: "/guide" },
   [OBJ.cage]:     { label: "Cage", href: "/cage" },
-  [OBJ.crate]:    { label: "Klutz's Crate", href: "/crate" },
+  [OBJ.crate]:    { label: "Klutz's Den", href: "/klutz?tab=crate" }, // (his home's way in, there or not: app/klutz)
   [OBJ.pool]:     { label: "Healing Pool", href: "/pool" },
   [OBJ.klutz]:    { label: "Klutz", href: "/klutz" },
   [OBJ.bookcase]: { label: "Bookcase", href: "/bookcase" },

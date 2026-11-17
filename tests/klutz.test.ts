@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { KLUTZ, CREATURE_BY_ID, MOVE_BY_NAME, canLearnFromCodex, defaultMoveNames, resolveMoves } from "../lib/creatures/creatureData";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage, triangleFor, NEUTRAL_COUNTER, setCombatRules, LIVE_RULES, TRIANGLE_RULES, type Fighter } from "../lib/combat/engine";
-import { planExpedition, klutzStatus, collectKlutz, sendKlutz, currentHp, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
+import { planExpedition, klutzStatus, collectKlutz, sendKlutz, tripLog, TRIP_LOG, currentHp, HEAL_MS_PER_HP, FIND_XP, gearCount, recallKlutz, type KlutzState, type Expedition,
   pointsEarned, pointsFree, spendPoints, respecKlutz, klutzProficiency, POINTS_PER_LEVEL, RESPEC_COST,
   FIND_EVERY_MS, FIND_MIX, HOME_AT, SEND_AT, XP_SHARE, CATCH_CHANCE, catchChance, TRAP_STEP, SKILL_STEP, SKILL_MAX, PACK_START, PACK_TRAIT, packSize, chestSize, CHEST_START,
   destCost, destOpen, capRarity, sendBlock, readyAt, sendHp, spendSkill, skillPointsFree, MAX_WINDOWS, type TripPlan,
@@ -290,5 +290,44 @@ describe("Klutz is neutral (the old triangle rules)", () => {
     expect(picked.every((m) => !m.asRace)).toBe(true);
     // A save from before: his old moves become their closest core ones, keeping 4.
     expect(resolveMoves(KLUTZ, ["Slash", "Heavy Blow", "Jab", "Stone Throw"]).map((m) => m.name)).toEqual(["Strike", "Smash", "Rush", "Shot"]);
+  });
+});
+
+describe("Klutz's trips, remembered (Klutz's Den, 2026-11-18)", () => {
+  const kit = { level: 4, maxHp: 120, proficiency: { atk: 6, rng: 0, mag: 0, agil: 2, mdef: 1, rdef: 0, magdef: 0 }, moves: ["Strike"], gear: [{ name: "Klutz's Club", rarity: "common" as Rarity }] };
+
+  it("each trip, once home, is recorded with what he set off with, his fights, his finds and his XP", () => {
+    const sent = sendKlutz({ level: 4 }, plain(), t0, seeded(3), 0, 30, kit);
+    const ex = sent.expedition!;
+    expect(ex.kit).toEqual(kit);
+    const { state, loot } = collectKlutz(sent, ex.endsAt);
+    const [trip] = tripLog(state);
+    expect(state.trips).toHaveLength(1);
+    expect(trip).toMatchObject({ startedAt: ex.startedAt, endsAt: ex.endsAt, dest: 0, kit, maxHp: ex.maxHp });
+    expect(trip.fights).toHaveLength(ex.encounters.length);
+    expect(trip.finds).toHaveLength(loot.filter((d) => d.dropType !== "creature").length);
+    // The XP recorded is what he gained: from Lv 4 with none, he's that much further on.
+    expect(xpToReach(state.level ?? 1) + (state.xp ?? 0)).toBe(xpToReach(4) + trip.xp);
+  });
+
+  it("keeps the newest TRIP_LOG trips, newest first", () => {
+    let k: KlutzState = { level: 4 };
+    for (let i = 0; i < TRIP_LOG + 3; i++) {
+      const at = t0 + i * 1e9;
+      k = sendKlutz({ ...k, hp: undefined, hpAt: undefined }, plain(), at, seeded(i + 1), 0, 30, kit);
+      k = collectKlutz(k, k.expedition!.endsAt).state;
+    }
+    const log = tripLog(k);
+    expect(log).toHaveLength(TRIP_LOG);
+    expect(log[0].startedAt).toBeGreaterThan(log[1].startedAt);
+  });
+
+  it("a save from before the log shows its last trip, with no kit", () => {
+    const sent = sendKlutz({ level: 2 }, plain(), t0, seeded(5), 0, 30);
+    const old: KlutzState = { level: 2, expedition: { ...sent.expedition!, collected: true } };
+    const log = tripLog(old);
+    expect(log).toHaveLength(1);
+    expect(log[0].kit).toBeUndefined();
+    expect(tripLog({})).toEqual([]);
   });
 });

@@ -14,8 +14,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   Under it, every material's count, even at 0 (the user, 2026-11-17).
 - ✅ **The Den's dock** (the user, 2026-11-17): just **Enter the Labyrinth** and **Scan barcodes**
   (the Soul Altar). The other places are tapped in the room; Klutz's tour shows them. (It had a
-  button for every place before.) While Klutz is out hunting he isn't in the room, so a "Klutz is out
-  hunting" button sits over the Den's top-left corner to reach him.
+  button for every place before.) While Klutz is out hunting he isn't in the room (the "Klutz is out
+  hunting" button went on 2026-11-18, the user: you can see he's gone); his crate, labelled Klutz's Den,
+  is the way to his home then ([klutz.md](klutz.md) §8).
 - 📌 **Tavern:** where travellers, merchants and librarians gather. Now reached through the
   questline below (the earlier "built with 300 gold after the Cyclops" is replaced by it). ✅ Its
   outside, repair, visitors and pits are built (the questline below); 📌 its interior is not.

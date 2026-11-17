@@ -42,8 +42,19 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     order: the Bigger Pack (above), **Selective** (he leaves things below a rarity you pick) or the **cage filter** (he
     only cages creatures of a rarity you pick or better). Till he has a pick, the rest show locked. Each skill
     shows his level in it, big (3/10); its +1 shows only with a point to spend (the user, 2026-11-14).
-  - **Screens:** his page has three tabs under his card: Send (the dungeons as fixed rows, best rarity and cost, one
-    button that says why he can't go; while he's out, HP, pack and a log), Skills, and Chest (its fill and upgrade).
+  - **Klutz's Den** (the user, 2026-11-18; app/klutz): his home, a den within the Den, reached from his crate in the
+    room (labelled Klutz's Den; it opens on the Crate tab) or from him when he's in. His card says where he is (home,
+    resting with his HP, or out and when he's back: greyed out while he's away), with his tours on a button. Five tabs:
+    **Hunt** (the dungeons as fixed rows, best rarity and cost, one button that says why he can't go; while he's out,
+    HP, pack and a log), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
+    moves, and Equip: components/klutz/KlutzKit.tsx), **Skills**, **Crate** (its fill and upgrade, and what's in it to
+    keep or sell: components/klutz/KlutzCrate.tsx; app/crate still shows it on its own) and **Trips**.
+  - ✅ **His trips are kept** (`trips`, `TRIP_LOG` = 20, newest first; lib/klutz.ts `tripOf`, `tripLog`): each, once
+    he's home, as a short record: where, when and how long, why he came home, his XP, every fight (won, caught) and
+    every find (names and rarities), how many went in the cage, and his **kit** as he set off (level, HP, his %s,
+    gear, soul stone and moves: `Expedition.kit`, stored when he's sent). The Trips tab lists them; tap one to open
+    it. A save from before shows its last trip (with no kit). Planned: art for his den (a den within the Den, the
+    user: UI first, art and its place in the room later).
   - Trips planned before v2 keep their own rules (fights with a find each) and still hand over what they held.
   - His gear is locked while he's away.
 - ✅ **The cage** holds 1. The **Iron Cage Schematic** (rare) is in a mini boss's chest 20% of the

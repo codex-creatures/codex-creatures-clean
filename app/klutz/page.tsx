@@ -1,14 +1,22 @@
 "use client";
 // app/klutz/page.tsx
-// Klutz, your helper: gear him up and send him exploring the dungeons you've
-// beaten (lib/klutz.ts). Three tabs under his card, so it never gets long:
-// - Send: where he can go (each dungeon's best rarity and cost; locked ones
+// Klutz's Den (the user, 2026-11-18): his home, a den within the Den, open
+// whether he's in or out (the Den's crate leads here: his things are kept in
+// it). His card says where he is (home, resting, or out exploring and when
+// he's back), then five tabs, so it never gets long:
+// - Hunt: where he can go (each dungeon's best rarity and cost; locked ones
 //   say what opens them), then one button; while he's out, his HP, his pack
 //   and what he's found so far.
+// - Kit: his stats with his gear on, what he's wearing, his soul stone and
+//   moves, and Equip (components/klutz/KlutzKit.tsx).
 // - Skills: his skill points (Trapping, Armourer, Scavenger, Scholar), his
 //   traits (Bigger Pack, Selective, the cage filter: one picked at each of
 //   Lv 5, 10 and 15, in any order) and pack upgrades.
-// - Chest: what he's brought home, against its size, and its upgrade.
+// - Crate: what he's brought home, to keep or sell, against its size, and
+//   its upgrade (components/klutz/KlutzCrate.tsx).
+// - Trips: his last trips, each with what he set off with, his fights and
+//   finds (components/klutz/KlutzTrips.tsx, lib/klutz.ts tripLog).
+// ?tab=<one of them> opens on it (the Den's crate: ?tab=crate).
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -19,6 +27,9 @@ import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprit
 import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
 import KlutzGear from "@/components/KlutzGear";
+import KlutzKit from "@/components/klutz/KlutzKit";
+import KlutzCrate from "@/components/klutz/KlutzCrate";
+import KlutzTrips from "@/components/klutz/KlutzTrips";
 import Help, { HelpSection } from "@/components/Help";
 import UpArrow from "@/components/UpArrow";
 import { TOOL_SPRITES } from "@/lib/sprites/items";
@@ -58,7 +69,8 @@ const clock = (ms: number) => {
   return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}:${String(sec).padStart(2, "0")}`;
 };
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-type Tab = "send" | "skills" | "chest";
+type Tab = "send" | "kit" | "skills" | "chest" | "trips";
+const TABS: Tab[] = ["send", "kit", "skills", "chest", "trips"];
 
 export default function KlutzPage() {
   const game = useGameState();
@@ -68,8 +80,15 @@ export default function KlutzPage() {
   const [recallArmed, setRecallArmed] = useState(false);
   const [tab, setTab] = useState<Tab>("send");
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
+  // ?tab=crate (the Den's crate) and the like: open on that tab.
+  useEffect(() => {
+    const want = new URLSearchParams(window.location.search).get("tab");
+    const t = want === "crate" ? "chest" : want === "hunt" ? "send" : want;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (t && (TABS as string[]).includes(t)) setTab(t as Tab);
+  }, []);
 
-  if (!game.hydrated) return <DenFrame title="Klutz" icon="👺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
+  if (!game.hydrated) return <DenFrame title="Klutz's Den" icon="👺"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
 
   const f = game.klutzFighter;
   const status = klutzStatus(game.klutz, f.maxHp, now);
@@ -82,44 +101,44 @@ export default function KlutzPage() {
   const toursOpen = game.quest.stage === "lend" || game.quest.stage === "done";
 
   return (
-    <DenFrame title="Klutz" icon="👺" gold={game.gold}>
-      <div className="stone-panel" style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-        <PixelSprite sprite={creatureSprite("klutz")} scale={3} />
-        <div style={{ flex: 1, minWidth: 200 }}>
+    <DenFrame title="Klutz's Den" icon="👺" gold={game.gold}>
+      <div className="stone-panel" style={{ display: "flex", gap: 14, alignItems: "center" }}>
+        {/* Out, his bedroll's empty: just his shadow where he'd be. */}
+        <div style={{ flexShrink: 0, opacity: status.kind === "away" ? 0.3 : 1, filter: status.kind === "away" ? "grayscale(1) brightness(0.4)" : undefined }}>
+          <PixelSprite sprite={creatureSprite("klutz")} scale={3} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div className="pixel-font" style={{ fontSize: 22, color: GOLD }}>Klutz</div>
           <div style={{ fontSize: 13, color: MUTED }}>Your helper · <b style={{ color: GOLD }}>Lv {klutzLv}</b> · <span style={{ color: rc.text, textTransform: "capitalize" }}>{KLUTZ.rarity}</span></div>
-          <p style={{ fontSize: 15, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.45 }}>
-            {helping ? "Gear him up and send him exploring the dungeons you've beaten." : "Your dopey goblin helper."}
+          <p style={{ fontSize: 14, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {!helping ? "Your dopey goblin helper."
+              : status.kind === "away" ? <>Out{status.expedition.dest !== undefined ? <> in {KLUTZ_DESTS[status.expedition.dest].name}</> : null} · back in {clock(status.expedition.endsAt - now)}</>
+              : status.kind === "healing" ? <>💤 Resting · ❤️ {status.hp}/{status.maxHp}</>
+              : <>Home · ❤️ {f.maxHp}/{f.maxHp}</>}
           </p>
         </div>
+        {/* His tours (lib/tour.ts), again: once the box is open and he's offered them. */}
+        {toursOpen && <button className="chip" onClick={() => setTutorialOpen(true)} title="Klutz's tours" aria-label="Klutz's tours" style={{ minHeight: 44, minWidth: 44, flexShrink: 0 }}>🗺️</button>}
       </div>
       {helping && <LevelBar level={klutzLv} xp={game.klutz.xp ?? 0} />}
 
       <QuestTalk game={game} />
       <ScanTip game={game} />
-      {(helping || toursOpen) && (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          {/* (Open while he's away too, to look: his gear's with him, so no swapping.) */}
-          {helping && (
-            <button className={`pixel-btn${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} onClick={() => setGearOpen(true)}>
-              ⚔️ Equip{pointsFree(game.klutz) > 0 && <> · <b>{pointsFree(game.klutz)}</b> points to spend</>}
-            </button>
-          )}
-          {/* His tours (lib/tour.ts), again: once the box is open and he's offered them. */}
-          {toursOpen && <button className="pixel-btn" onClick={() => setTutorialOpen(true)}>🗺️ Tutorial</button>}
-        </div>
-      )}
 
       {helping && (
         <>
           <div className="dock-tabs" style={{ marginTop: 12 }}>
-            <button className="dock-tab" data-active={tab === "send"} onClick={() => setTab("send")}>🌀 {status.kind === "away" ? "Out" : "Send"}</button>
-            <button className={`dock-tab${skillsFree > 0 ? " news-glow" : ""}`} data-active={tab === "skills"} onClick={() => setTab("skills")}>⭐ Skills{skillsFree > 0 && <> · {skillsFree}</>}</button>
-            <button className="dock-tab" data-active={tab === "chest"} onClick={() => setTab("chest")}>📦 {game.crate.length}/{chestSize(game.klutz)}</button>
+            <button className="dock-tab" data-active={tab === "send"} onClick={() => setTab("send")} title={status.kind === "away" ? "His trip" : "Send him hunting"}>🌀 {status.kind === "away" ? "Out" : "Hunt"}</button>
+            <button className={`dock-tab${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} data-active={tab === "kit"} onClick={() => setTab("kit")} title="His stats and gear">⚔️ Kit</button>
+            <button className={`dock-tab${skillsFree > 0 ? " news-glow" : ""}`} data-active={tab === "skills"} onClick={() => setTab("skills")} title="His skills" aria-label="Skills">⭐{skillsFree > 0 ? ` ${skillsFree}` : ""}</button>
+            <button className="dock-tab" data-active={tab === "chest"} onClick={() => setTab("chest")} title="His crate" aria-label="Crate">📦 {game.crate.length}</button>
+            <button className="dock-tab" data-active={tab === "trips"} onClick={() => setTab("trips")} title="His trips" aria-label="Trips">📜</button>
           </div>
           {tab === "send" && <SendTab game={game} now={now} status={status} recallArmed={recallArmed} setRecallArmed={setRecallArmed} />}
+          {tab === "kit" && <KlutzKit game={game} onEquip={() => setGearOpen(true)} />}
           {tab === "skills" && <SkillsTab game={game} />}
           {tab === "chest" && <ChestTab game={game} />}
+          {tab === "trips" && <KlutzTrips klutz={game.klutz} />}
         </>
       )}
 
@@ -252,7 +271,7 @@ function TripSummary({ ex }: { ex: Expedition }) {
   const why = ex.recalled ? "you called him back" : ex.home === "pack" ? "his pack was full" : ex.home === "hurt" ? "he was hurt" : ex.home === "ko" ? "something beat him" : "he'd been out long enough";
   return (
     <p style={{ fontSize: 13, color: "#c8c4b8", margin: "4px 0 8px" }}>
-      Home because {why}: <b>{caught}</b> caught, <b>{found}</b> found{ex.left ? <>, {ex.left} left behind</> : null}. Creatures go to the <Link href="/cage" style={{ textDecoration: "underline" }}>cage</Link>, materials to your tally, the rest to his <Link href="/crate" style={{ textDecoration: "underline" }}>chest</Link>.
+      Home because {why}: <b>{caught}</b> caught, <b>{found}</b> found{ex.left ? <>, {ex.left} left behind</> : null}. Creatures go to the <Link href="/cage" style={{ textDecoration: "underline" }}>cage</Link>, materials to your tally, the rest to his crate.
     </p>
   );
 }
@@ -365,12 +384,12 @@ function PackPanel({ game, packs }: { game: Game; packs: number }) {
   );
 }
 
-// ── Chest: its size, its upgrade, and the way in ──
+// ── Crate: its size, its upgrade, and what's in it ──
 function ChestTab({ game }: { game: Game }) {
   const k = game.klutz, size = chestSize(k), price = chestUpgradePrice(k), n = game.crate.length;
   return (
     <div className="stone-panel" style={{ marginTop: 10 }}>
-      <div className="pixel-font" style={{ fontSize: 18, color: GOLD }}>His chest · {n}/{size}</div>
+      <div className="pixel-font" style={{ fontSize: 18, color: GOLD }}>His crate · {n}/{size}</div>
       <div style={{ height: 8, background: "#0e0f14", margin: "8px 0 4px" }}>
         <div style={{ height: "100%", width: `${Math.min(100, (n / size) * 100)}%`, background: n >= size ? "#e05a4a" : "#c9a24a" }} />
       </div>
@@ -378,11 +397,11 @@ function ChestTab({ game }: { game: Game }) {
         {n >= size ? "Full: he won't set off until there's room. A trip can fill it past the top." : "Codexes, potions and gear he brings home wait here. Materials go straight to your tally."}
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Link href="/crate" className="pixel-btn">📦 Open his chest</Link>
         {price !== undefined
-          ? <button className="pixel-btn" disabled={game.gold < price} onClick={game.upgradeKlutzChest}>Bigger chest · <Coin /> {price}</button>
+          ? <button className="pixel-btn" disabled={game.gold < price} onClick={game.upgradeKlutzChest}>Bigger crate · <Coin /> {price}</button>
           : <span style={{ fontSize: 13, color: MUTED, alignSelf: "center" }}>Fully built.</span>}
       </div>
+      <div style={{ marginTop: 12 }}><KlutzCrate game={game} intro={false} /></div>
     </div>
   );
 }

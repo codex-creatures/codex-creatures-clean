@@ -74,12 +74,7 @@ export default function Home() {
       </div>
 
       <div className="screen-fill" style={{ position: "relative" }}>
-        {/* Klutz isn't in the room while he's out hunting, and the dock has no button for him: this is the way to him. */}
-        {game.hydrated && k === "away" && (
-          <Link href="/klutz" className="chip pixel-font" style={{ position: "absolute", left: 8, top: 8, zIndex: 3, display: "inline-flex", alignItems: "center", minHeight: 40, fontSize: 13, textTransform: "none" }}>
-            👺 Klutz is out hunting
-          </Link>
-        )}
+        {/* (Klutz isn't in the room while he's out hunting: you can see that. His den, behind his crate, is the way to him then.) */}
         <DenRoom caged={(game.caged[0] as { creatureId?: string } | undefined)?.creatureId}
           klutz={!game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home"}
           klutzNews={game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0))} backpack={backpack} highlight={highlight}

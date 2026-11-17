@@ -561,7 +561,12 @@ export function useGameState(initialTab: TabKey = "all") {
     const block = klutzSendBlock(dest);
     if (block) return block;
     if (destCost(dest) > 0 && !spendGold(destCost(dest))) return "gold";
-    setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, dest, clampLevel(player.level)));
+    // (His stats and gear as he sets off, for the trip's record: lib/klutz.ts TripKit.)
+    const l = equipment[KLUTZ_DROP_ID];
+    const gear = [l?.weaponId, l?.helmetId, l?.chestId, l?.legsId].flatMap((id) => { const d = id ? inventory.find((x) => x.id === id) as CreatureOrItemDrop | undefined : undefined; return d ? [{ name: d.name, rarity: d.rarity }] : []; });
+    const kit = { level: clampLevel(klutz.level), maxHp: klutzFighter.maxHp, proficiency: klutzFighter.proficiency, moves: klutzFighter.skills.map((m) => m.name),
+      ...(klutz.soulStone ? { soulStone: klutz.soulStone } : {}), gear };
+    setKlutz((k) => sendKlutzOut(k, klutzFighter, Date.now(), Math.random, dest, clampLevel(player.level), kit));
     countDaily("klutz");
     countCampaign("klutz");
     return null;
@@ -667,8 +672,9 @@ export function useGameState(initialTab: TabKey = "all") {
       const size = cageSizeRef.current;
       const room = size - cagedRef.current.length;
       const caught = loot.filter(isCreatureDrop);
+      const caging = { caged: Math.min(caught.length, Math.max(0, room)), ...(caught.length > room ? { letGo: true } : {}) };
       const state = collected.expedition
-        ? { ...collected, expedition: { ...collected.expedition, caged: Math.min(caught.length, Math.max(0, room)), ...(caught.length > room ? { letGo: true } : {}) } }
+        ? { ...collected, expedition: { ...collected.expedition, ...caging }, ...(collected.trips?.length ? { trips: [{ ...collected.trips[0], ...caging }, ...collected.trips.slice(1)] } : {}) }
         : collected;
       klutzRef.current = state; // so a second check before the re-render can't collect twice
       setKlutz(state);

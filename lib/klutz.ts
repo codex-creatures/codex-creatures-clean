@@ -155,6 +155,7 @@ export type Expedition = {
   find?: Drop;           // (older saves' trips: one find for the whole trip)
   recalled?: boolean;    // you called him back before anything beat him
   collected: boolean;    // its loot has been handed over
+  kit?: TripKit;         // what he set off with (his stats and gear; missing: a trip from before 2026-11-18)
 };
 
 export type KlutzState = {
@@ -171,7 +172,45 @@ export type KlutzState = {
   packs?: number;        // (v2) pack upgrades sewn on (+1 slot each; missing = none)
   chestUps?: number;     // (v2) his chest's upgrades (missing = none)
   dest?: KlutzDest;      // (v2) where you last sent him (the picker remembers it)
+  trips?: KlutzTrip[];   // his trips, newest first, TRIP_LOG at most (missing: none recorded yet: tripLog reads the last one)
 };
+
+// ── His trips, remembered (the user, 2026-11-18: Klutz's Den) ──
+// Each trip, once it's handed over, is kept as a short record: where, how it
+// ended, what he set off with (his kit), each fight and each find, and his XP.
+// Kept small (names and rarities, not the drops themselves): the save holds
+// TRIP_LOG of them.
+export const TRIP_LOG = 20;
+export type TripKit = { level: number; maxHp: number; proficiency: CreatureProficiency; moves: string[]; soulStone?: SoulStoneKey; gear: { name: string; rarity: Rarity }[] };
+export type KlutzTrip = {
+  startedAt: number; endsAt: number; dest?: KlutzDest;
+  home?: Expedition["home"]; recalled?: boolean;
+  kit?: TripKit;
+  xp: number; startHp?: number; hpEnd: number; maxHp: number;
+  fights: { creatureId: string; rarity: Rarity; won: boolean; caught?: boolean }[];
+  finds: { name: string; rarity: Rarity; qty?: number }[]; // what he brought home that isn't a creature (gold: a "gold" line)
+  caged?: number; letGo?: boolean;
+};
+// A finished trip's record.
+export function tripOf(ex: Expedition, xp: number, loot: Drop[]): KlutzTrip {
+  return {
+    startedAt: ex.startedAt, endsAt: ex.endsAt,
+    ...(ex.dest !== undefined ? { dest: ex.dest } : {}), ...(ex.home ? { home: ex.home } : {}), ...(ex.recalled ? { recalled: true } : {}),
+    ...(ex.kit ? { kit: ex.kit } : {}),
+    xp, ...(ex.startHp !== undefined ? { startHp: ex.startHp } : {}), hpEnd: hpBy(ex, ex.endsAt), maxHp: ex.maxHp,
+    fights: ex.encounters.map((e) => ({ creatureId: e.creatureId, rarity: e.rarity, won: e.won, ...(e.caught !== undefined ? { caught: e.caught } : {}) })),
+    finds: loot.filter((d) => !isCreatureDrop(d)).map((d) => d.dropType === "reward" ? { name: "gold", rarity: "common" as Rarity, qty: d.amount }
+      : { name: d.name, rarity: d.rarity, ...(d.material ? { qty: d.qty ?? 1 } : {}) }),
+    ...(ex.caged !== undefined ? { caged: ex.caged } : {}), ...(ex.letGo ? { letGo: true } : {}),
+  };
+}
+// The trips to show: those recorded, or (a save from before the log) the last one he made.
+export function tripLog(k: KlutzState): KlutzTrip[] {
+  if (k.trips) return k.trips;
+  const ex = k.expedition;
+  return ex?.collected ? [tripOf(ex, tripXp(ex), lootOf(ex))] : [];
+}
+const addTrip = (k: KlutzState, t: KlutzTrip): KlutzTrip[] => [t, ...tripLog(k)].slice(0, TRIP_LOG);
 
 // ── His soul stone (the user, 2026-10-25; given, not chosen: 2026-10-31) ──
 // You give him one of your loose soul stones from his Equip window, on the
@@ -417,12 +456,13 @@ export function sendBlock(k: KlutzState, maxHp: number, chestCount: number, dest
 }
 
 // Send him off (the caller checks sendBlock and takes the cost).
-export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: Rng = Math.random, dest: KlutzDest = 0, explorer = 30): KlutzState {
+// kit: his stats and gear as he sets off, for the trip's record.
+export function sendKlutz(k: KlutzState, klutz: Fighter, now = Date.now(), rng: Rng = Math.random, dest: KlutzDest = 0, explorer = 30, kit?: TripKit): KlutzState {
   if (klutzStatus(k, klutz.maxHp, now).kind === "away") return k;
   const ex = planExpedition(klutz, now, rng, { dest, explorer, level: k.level, startHp: currentHp(k, klutz.maxHp, now), skills: k.skills, traits: k.traits, pack: packSize(k) });
   const rest = { ...k };
   delete rest.hp; delete rest.hpAt; // (his HP now runs through the trip)
-  return { ...rest, dest, expedition: ex };
+  return { ...rest, dest, expedition: kit ? { ...ex, kit } : ex };
 }
 
 // XP for Klutz (a hunt, or a scroll). Returns the new state and his level before.
@@ -436,6 +476,9 @@ export function klutzGainXp(k: KlutzState, gained: number): { state: KlutzState;
 // (a catch's or a find); v2 trips FIND_XP × XP_SHARE for everything he finds.
 export const gearCount = (loot: Drop[]) => loot.filter((d) => !isCreatureDrop(d)).length;
 const findXp = (ex: Expedition, loot: Drop[]) => (ex.v === 2 ? Math.round(FIND_XP * XP_SHARE) : FIND_XP) * gearCount(loot);
+// Everything a trip brings home, and the XP it earns him.
+const lootOf = (ex: Expedition): Drop[] => [...ex.encounters.flatMap((e) => [...e.loot, ...(e.find ? [e.find] : [])]), ...(ex.finds ?? []).map((f) => f.drop), ...(ex.find ? [ex.find] : [])];
+const tripXp = (ex: Expedition) => ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0) + findXp(ex, lootOf(ex));
 
 // After an expedition ends: his HP when he got back, his XP, and the loot
 // to hand over (once). Returns the new state, the loot and any level-up.
@@ -443,11 +486,11 @@ export function collectKlutz(k: KlutzState, now = Date.now()): { state: KlutzSta
   const ex = k.expedition;
   if (!ex || ex.collected || now < ex.endsAt) return { state: k, loot: [] };
   const hp = hpBy(ex, ex.endsAt);
-  const loot = [...ex.encounters.flatMap((e) => [...e.loot, ...(e.find ? [e.find] : [])]), ...(ex.finds ?? []).map((f) => f.drop), ...(ex.find ? [ex.find] : [])];
-  const xp = ex.encounters.reduce((s, e) => s + (e.xp ?? 0), 0) + findXp(ex, loot);
+  const loot = lootOf(ex);
+  const xp = tripXp(ex);
   const { state, from, to } = klutzGainXp(k, xp);
   return {
-    state: { ...state, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true } },
+    state: { ...state, hp: hp < ex.maxHp ? hp : undefined, hpAt: ex.endsAt, expedition: { ...ex, collected: true }, trips: addTrip(k, tripOf(ex, xp, loot)) },
     loot,
     ...(to > from ? { levelUp: { from, to } } : {}),
   };
