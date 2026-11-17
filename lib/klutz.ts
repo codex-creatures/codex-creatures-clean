@@ -130,6 +130,8 @@ export type KlutzEncounter = {
   won: boolean;
   caught?: boolean;      // (v2) won and caught: false = it got away (or the cage filter let it go)
   rounds: number;
+  level?: number;        // (from 2026-11-18) the creature's level
+  filtered?: boolean;    // (from 2026-11-18) beaten and caught, but under the cage filter's rarity: he let it go
   hpAfter: number;       // Klutz's HP after the fight
   xp?: number;           // XP he got for it (a win)
   loot: Drop[];          // won: the creature (if caught), then any gear it dropped
@@ -145,6 +147,7 @@ export type Expedition = {
   startHp?: number;      // …his HP setting off
   finds?: KlutzFind[];   // …what he found
   left?: number;         // …things he left behind (Selective)
+  passed?: { at: number; name: string; rarity: Rarity; qty?: number }[]; // …and which, when (from 2026-11-18, for the trip's story)
   home?: "pack" | "hurt" | "ko" | "limit"; // …why he came home (recalled: `recalled`)
   letGo?: boolean; // he caught something but the cage was full, so he let it go
   caged?: number;  // how many of his catches went in the cage (the first ones; the rest he let go)
@@ -370,9 +373,14 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
   const startHp = Math.min(klutz.maxHp, plan.startHp ?? klutz.maxHp);
   const encounters: KlutzEncounter[] = [], finds: KlutzFind[] = [];
   let hp = startHp, used = 0, left = 0, at = now, home: Expedition["home"] = "limit";
+  const passed: NonNullable<Expedition["passed"]> = [];
   // Into his pack, unless Selective leaves it; true when the pack's full.
   const take = (d: Drop, skill?: KlutzFind["skill"]) => {
-    if (leave && ri(rarityOf(d)) < ri(leave)) { left++; return false; }
+    if (leave && ri(rarityOf(d)) < ri(leave)) {
+      left++;
+      if (d.dropType !== "reward") passed.push({ at, name: d.name, rarity: d.rarity, ...(d.material ? { qty: d.qty ?? 1 } : {}) });
+      return false;
+    }
     finds.push({ at, drop: d, ...(skill ? { skill } : {}) });
     return ++used >= pack;
   };
@@ -388,11 +396,13 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
       const foe = rng() < where.firstStrike ? firstStriker(enemyFighter(enemy)) : enemyFighter(enemy);
       const r = fight(klutz, hp, foe);
       hp = r.hpAfter;
-      const caught = r.won && rng() < catchChance(rarity, sk("trapping")) && !(cageFrom && ri(rarity) < ri(cageFrom));
+      const netted = r.won && rng() < catchChance(rarity, sk("trapping"));
+      const filtered = netted && !!cageFrom && ri(rarity) < ri(cageFrom);
+      const caught = netted && !filtered;
       const loot: Drop[] = caught ? [creatureFrom(enemy)] : [];
       let dropped: Drop | undefined;
       if (r.won && rng() < GEAR_DROP_CHANCE) dropped = gearFrom(enemy, rng);
-      encounters.push({ at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, ...(r.won ? { caught } : {}), rounds: r.rounds, hpAfter: r.hpAfter, loot,
+      encounters.push({ at, creatureId: enemy.creatureId, rarity, gearRarity, won: r.won, ...(r.won ? { caught } : {}), ...(filtered ? { filtered: true } : {}), rounds: r.rounds, level: foeLevel, hpAfter: r.hpAfter, loot,
         ...(r.won ? { xp: Math.round((xpForEnemy(foeLevel, rarity) + CAPTURE_XP) * XP_SHARE) } : {}) });
       if (!r.won) { home = "ko"; break; }
       if (dropped) full = take(dropped);
@@ -406,7 +416,7 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
     if (full) { home = "pack"; break; }
     if (hp <= HOME_AT * klutz.maxHp) { home = "hurt"; break; }
   }
-  return { v: 2, dest: plan.dest, cost: destCost(plan.dest), startHp, finds, ...(left ? { left } : {}), home,
+  return { v: 2, dest: plan.dest, cost: destCost(plan.dest), startHp, finds, ...(left ? { left, passed } : {}), home,
     startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters, collected: false };
 }
 
@@ -414,7 +424,8 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
 export function recallKlutz(k: KlutzState, now = Date.now()): KlutzState {
   const ex = k.expedition;
   if (!ex || ex.collected || now >= ex.endsAt) return k;
-  return { ...k, expedition: { ...ex, endsAt: now, encounters: ex.encounters.filter((e) => e.at <= now), ...(ex.finds ? { finds: ex.finds.filter((f) => f.at <= now) } : {}), recalled: true } };
+  return { ...k, expedition: { ...ex, endsAt: now, encounters: ex.encounters.filter((e) => e.at <= now), ...(ex.finds ? { finds: ex.finds.filter((f) => f.at <= now) } : {}),
+    ...(ex.passed ? { passed: ex.passed.filter((p) => p.at <= now) } : {}), recalled: true } };
 }
 
 // His HP after what he's done by `upTo` (v2 trips start on startHp).

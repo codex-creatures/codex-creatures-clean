@@ -66,3 +66,38 @@ describe("Klutz's Den", () => {
     expect(host.textContent).toContain("His crate · 0/");
   });
 });
+
+describe("Klutz's trip, told as a story", () => {
+  afterEach(() => { act(() => root.unmount()); host.remove(); });
+
+  it("while he's out: each fight and find with how far in, what he left behind, and his pack", async () => {
+    const now = Date.now(), start = now - 30 * 60000, min = 60000;
+    const item = (name: string, extra: Record<string, unknown>) => ({ id: name, barcode: "", dropType: "item", rarity: "uncommon", roll: 0, name, createdAt: "", ...extra });
+    const expedition = {
+      v: 2, dest: 0, startHp: 100, maxHp: 120, startedAt: start, endsAt: now + 30 * min, collected: false, home: "pack",
+      encounters: [{ at: start + 10 * min, creatureId: "moss_wolf", rarity: "common", gearRarity: "common", won: true, caught: true, rounds: 3, level: 4, hpAfter: 82, loot: [], xp: 20 }],
+      finds: [{ at: start + 10 * min, drop: item("Rusty Sword", { itemCategory: "weapon", itemKey: "sword" }) }, { at: start + 20 * min, drop: item("Leather Cap", { itemCategory: "armor", armorSlot: "helmet" }), skill: "armourer" }],
+      left: 1, passed: [{ at: start + 20 * min, name: "Nails", rarity: "common", qty: 2 }],
+    };
+    vi.resetModules();
+    localStorage.clear();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], equipment: {}, gold: 0, caged: [], quest: { stage: "done" }, klutz: { level: 6, expedition } }));
+    window.history.replaceState(null, "", "/klutz");
+    const Page = (await import("@/app/klutz/page")).default;
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => { root.render(<Page />); });
+    const text = host.textContent ?? "";
+    expect(text).toContain("10m");
+    expect(text).toContain("fought for 3 rounds and he took 18 damage");
+    expect(text).toContain("He caught it!");
+    expect(text).toContain("It dropped Rusty Sword");
+    expect(text).toContain("His Armourer's eye spotted Leather Cap");
+    expect(text).toContain("but it was below your Selective rarity, so he left it behind");
+    expect(text).toContain("…still exploring");
+    expect(text).toContain("His pack");
+    expect(text).toMatch(/2\/\d+/);
+    expect(text).not.toContain("skip to the end");
+  });
+});

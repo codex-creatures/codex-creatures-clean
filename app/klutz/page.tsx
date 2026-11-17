@@ -23,29 +23,30 @@ import Link from "next/link";
 import { useEscape } from "@/hooks/useEscape";
 import { startTour, TOUR_CHOICES } from "@/lib/tour";
 import DenFrame from "@/components/DenFrame";
-import PixelSprite, { creatureSprite, itemSprite } from "@/components/PixelSprite";
+import PixelSprite, { creatureSprite } from "@/components/PixelSprite";
 import { LevelBar } from "@/components/CreatureDetailModal";
 import CodeCache from "@/components/CodeCache";
 import KlutzGear from "@/components/KlutzGear";
 import KlutzKit from "@/components/klutz/KlutzKit";
 import KlutzCrate from "@/components/klutz/KlutzCrate";
 import KlutzTrips from "@/components/klutz/KlutzTrips";
+import KlutzStory from "@/components/klutz/KlutzStory";
+import KlutzPack from "@/components/klutz/KlutzPack";
 import Help, { HelpSection } from "@/components/Help";
 import UpArrow from "@/components/UpArrow";
 import { TOOL_SPRITES } from "@/lib/sprites/items";
 import { Coin } from "@/components/GoldCount";
 import { useGameState } from "@/hooks/useGameState";
-import { CREATURE_BY_ID, KLUTZ } from "@/lib/creatures/creatureData";
+import { KLUTZ } from "@/lib/creatures/creatureData";
 import { klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
-import type { CreatureOrItemDrop } from "@/lib/types";
 import {
   klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
   KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
   SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, TRAIT_LEVELS, traitsPicked, traitPicks, nextTraitLevel, canPickTrait,
-  type Expedition, type KlutzEncounter, type KlutzDest, type KlutzFind, type SkillKey, type SendBlock, type TraitKey,
+  type Expedition, type KlutzDest, type SkillKey, type SendBlock, type TraitKey,
 } from "@/lib/klutz";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -112,7 +113,7 @@ export default function KlutzPage() {
           <div style={{ fontSize: 13, color: MUTED }}>Your helper · <b style={{ color: GOLD }}>Lv {klutzLv}</b> · <span style={{ color: rc.text, textTransform: "capitalize" }}>{KLUTZ.rarity}</span></div>
           <p style={{ fontSize: 14, color: "#c8c4b8", margin: "6px 0 0", lineHeight: 1.4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {!helping ? "Your dopey goblin helper."
-              : status.kind === "away" ? <>Out{status.expedition.dest !== undefined ? <> in {KLUTZ_DESTS[status.expedition.dest].name}</> : null} · back in {clock(status.expedition.endsAt - now)}</>
+              : status.kind === "away" ? <>Out · back in {clock(status.expedition.endsAt - now)}</>
               : status.kind === "healing" ? <>💤 Resting · ❤️ {status.hp}/{status.maxHp}</>
               : <>Home · ❤️ {f.maxHp}/{f.maxHp}</>}
           </p>
@@ -162,7 +163,6 @@ function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Gam
 
   if (status.kind === "away") {
     const e = status.expedition;
-    const used = (e.finds ?? []).filter((x) => x.at <= now).length;
     return (
       <div className="stone-panel" style={{ marginTop: 10 }}>
         <div className="pixel-font" style={{ fontSize: 16, color: GOLD }}>{e.dest !== undefined ? `${DEST_ICON[e.dest]} Exploring ${KLUTZ_DESTS[e.dest].name}…` : "Hunting in the Labyrinth…"}</div>
@@ -170,17 +170,15 @@ function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Gam
           <div style={{ height: "100%", width: `${(status.hp / e.maxHp) * 100}%`, background: "#22c55e" }} />
         </div>
         <div style={{ fontSize: 13, color: MUTED, margin: "0 0 8px" }}>
-          {status.hp}/{e.maxHp} HP · out for {clock(now - e.startedAt)}{e.v === 2 && <> · pack {used}/{packSize(k)}</>}
+          {status.hp}/{e.maxHp} HP · out for {clock(now - e.startedAt)}
         </div>
-        <TripLog ex={e} upTo={now} seenIds={game.seenIds} />
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-          <button className="pixel-btn" style={{ background: recallArmed ? "#6e1f18" : undefined }} onClick={() => {
-            if (!recallArmed) { setRecallArmed(true); window.setTimeout(() => setRecallArmed(false), 4000); return; }
-            setRecallArmed(false);
-            game.callKlutzBack();
-          }}>{recallArmed ? "Tap again: call him home" : "📯 Call Klutz back"}</button>
-          <button className="chip" onClick={game.klutzSkipAhead} title="A shortcut for playtesting">Testing: skip to the end</button>
-        </div>
+        <KlutzStory ex={e} upTo={now} seenIds={game.seenIds} live />
+        {e.v === 2 && <KlutzPack finds={(e.finds ?? []).filter((x) => x.at <= now)} size={packSize(k)} />}
+        <button className="pixel-btn" style={{ width: "100%", marginTop: 10, minHeight: 46, background: recallArmed ? "#6e1f18" : undefined }} onClick={() => {
+          if (!recallArmed) { setRecallArmed(true); window.setTimeout(() => setRecallArmed(false), 4000); return; }
+          setRecallArmed(false);
+          game.callKlutzBack();
+        }}>{recallArmed ? "Tap again: call him home" : "📯 Call Klutz back"}</button>
       </div>
     );
   }
@@ -255,9 +253,7 @@ function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Gam
         <div className="stone-panel" style={{ marginTop: 10 }}>
           <div className="pixel-font" style={{ fontSize: 15, color: GOLD }}>Last trip{ex.dest !== undefined && <> · {KLUTZ_DESTS[ex.dest].name}</>}</div>
           <TripSummary ex={ex} />
-          <TripLog ex={ex} upTo={ex.endsAt} seenIds={game.seenIds} />
-          {ex.find && <FindRow find={{ at: ex.endsAt, drop: ex.find }} />}
-          {ex.recalled && <p style={{ fontSize: 13, margin: "8px 0 0", color: MUTED }}>You called him back.</p>}
+          <KlutzStory ex={ex} upTo={ex.endsAt} seenIds={game.seenIds} />
         </div>
       )}
     </>
@@ -544,83 +540,4 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       <Link href="/tavern" className="pixel-btn">🍺 To the tavern</Link>);
   }
   return null;
-}
-
-// His trip, as it happened: fights and finds in the order they came (older trips: fights, each with its find).
-function TripLog({ ex, upTo, seenIds }: { ex: Expedition; upTo: number; seenIds: Set<string> }) {
-  const fights = ex.encounters.filter((e) => e.at <= upTo);
-  const finds = (ex.finds ?? []).filter((x) => x.at <= upTo);
-  if (fights.length + finds.length === 0) return <div style={{ fontSize: 13, color: MUTED }}>{upTo >= ex.endsAt ? "He didn't find anything this time." : "Nothing yet…"}</div>;
-  // Which of his catches went in the cage: the first ex.caged of them (older trips only say whether any were let go).
-  let catches = 0;
-  const rows = [...fights.map((e) => ({ at: e.at, e })), ...finds.map((x) => ({ at: x.at, x }))].sort((a, b) => a.at - b.at);
-  return (
-    <div style={{ display: "grid", gap: 6, maxHeight: 260, overflowY: "auto" }}>
-      {rows.map((r, i) => {
-        if ("x" in r) return <FindRow key={i} find={r.x!} />;
-        const e = r.e!;
-        const isCatch = ex.v === 2 ? !!e.caught : e.won;
-        const kept = !isCatch || (ex.caged !== undefined ? catches < ex.caged : !ex.letGo);
-        if (isCatch) catches++;
-        return (
-          <div key={i} style={{ display: "grid", gap: 6 }}>
-            <EncounterRow e={e} ex={ex} seen={seenIds} kept={kept} />
-            {e.find && <FindRow find={{ at: e.at, drop: e.find }} />}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// Something he found: a codex, a potion, a material, a weapon or armour piece (a skill's extra find says so).
-const SKILL_TAG: Record<NonNullable<KlutzFind["skill"]>, string> = { armourer: "⚔️ Armourer", scavenger: "🧪 Scavenger", scholar: "📜 Scholar" };
-function FindRow({ find }: { find: KlutzFind }) {
-  const it = find.drop as CreatureOrItemDrop;
-  const sprite = itemSprite(it);
-  const what = it.material ? `${it.name} ×${it.qty ?? 1}` : it.name;
-  return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6, minHeight: 36 }}>
-      {sprite ? <PixelSprite sprite={sprite} scale={1.5} /> : <span style={{ width: 24, textAlign: "center" }}>🎁</span>}
-      <span style={{ fontSize: 13 }}>
-        Found <b style={{ color: RARITY_COLORS[it.rarity]?.text ?? GOLD }}>{what}</b>
-        {find.skill && <span style={{ color: MUTED }}> · {SKILL_TAG[find.skill]}</span>}
-      </span>
-    </div>
-  );
-}
-
-function EncounterRow({ e, ex, seen, kept }: { e: KlutzEncounter; ex: Expedition; seen: Set<string>; kept: boolean }) {
-  const t = CREATURE_BY_ID[e.creatureId];
-  const mins = Math.round((e.at - ex.startedAt) / 60000);
-  if (!e.won && !seen.has(e.creatureId)) {
-    return (
-      <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6 }}>
-        <PixelSprite sprite={creatureSprite(e.creatureId)} scale={1} style={{ filter: "brightness(0) drop-shadow(0 0 1px rgba(255,255,255,0.4))" }} />
-        <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-          <span style={{ color: MUTED }}>{mins} min in:</span> <span style={{ color: "#ff8a80" }}>Klutz was beaten and limped home.</span>
-          <span style={{ display: "block", fontStyle: "italic", color: "#d8d4c8" }}>
-            &ldquo;Something came at me out of the dark — never seen anything like it. It&apos;s still down there.&rdquo;
-          </span>
-        </div>
-      </div>
-    );
-  }
-  const won = ex.v === 2
-    ? e.caught
-      ? kept ? <span style={{ color: "#7CFC9A" }}>caught it!</span> : <span style={{ color: GOLD }}>caught it, but the cage was full, so he let it go.</span>
-      : <span style={{ color: GOLD }}>beat it, but it got away.</span>
-    : !kept
-      ? <span style={{ color: GOLD }}>won, but the cage was full, so he let it go.</span>
-      : <span style={{ color: "#7CFC9A" }}>won and caught it!</span>;
-  return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#12131a", padding: 6 }}>
-      <PixelSprite sprite={creatureSprite(e.creatureId)} scale={1} />
-      <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-        <span style={{ color: MUTED }}>{mins} min in:</span> a wild <b style={{ color: RARITY_COLORS[e.rarity].text }}>{t?.name ?? e.creatureId}</b>{" "}
-        <span style={{ color: MUTED }}>({e.rarity})</span> —{" "}
-        {e.won ? <>{won} <span style={{ color: MUTED }}>({e.hpAfter}/{ex.maxHp} HP)</span></> : <span style={{ color: "#ff8a80" }}>Klutz was beaten and limped home.</span>}
-      </div>
-    </div>
-  );
 }

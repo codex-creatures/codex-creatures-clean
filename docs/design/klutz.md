@@ -46,9 +46,17 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     room (labelled Klutz's Den; it opens on the Crate tab) or from him when he's in. His card says where he is (home,
     resting with his HP, or out and when he's back: greyed out while he's away), with his tours on a button. Five tabs:
     **Hunt** (the dungeons as fixed rows, best rarity and cost, one button that says why he can't go; while he's out,
-    HP, pack and a log), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
+    his HP, his trip told as a story, his pack's slots and Call back: see below), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
     moves, and Equip: components/klutz/KlutzKit.tsx), **Skills**, **Crate** (its fill and upgrade, and what's in it to
     keep or sell: components/klutz/KlutzCrate.tsx; app/crate still shows it on its own) and **Trips**.
+  - ✅ **His trip, as a story** (the user, 2026-11-18; components/klutz/KlutzStory.tsx): every fight and find in
+    order, each with how many minutes in: a fight says the creature (rarity, level), how many rounds, the damage he
+    took and his HP, and how it ended (caught; beaten but got away; caught but the cage full; under the cage filter,
+    let go: `filtered`; or it beat him), with its XP; gear a creature dropped follows it; a skill's extra find says
+    which skill spotted it; a find under his Selective rarity says he left it behind (`Expedition.passed`, from
+    2026-11-18); it ends with why he came home, or "still exploring". In a scrolling panel that keeps the newest line
+    in view. Under it while he's out, his pack: a slot for each it holds, filled with what he's picked up (full: he's
+    heading home). (The testing "skip to the end" button went the same day.)
   - ✅ **His trips are kept** (`trips`, `TRIP_LOG` = 20, newest first; lib/klutz.ts `tripOf`, `tripLog`): each, once
     he's home, as a short record: where, when and how long, why he came home, his XP, every fight (won, caught) and
     every find (names and rarities), how many went in the cage, and his **kit** as he set off (level, HP, his %s,

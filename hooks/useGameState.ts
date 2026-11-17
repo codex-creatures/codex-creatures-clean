@@ -635,19 +635,6 @@ export function useGameState(initialTab: TabKey = "all") {
     setKlutz((k) => recallKlutz(k));
   }
 
-  // Testing: skip to the end of his expedition, or heal him at once.
-  function klutzSkipAhead() {
-    setKlutz((k) => {
-      const ex = k.expedition;
-      if (ex && !ex.collected && Date.now() < ex.endsAt) {
-        const by = ex.endsAt - Date.now() + 1;
-        return { ...k, expedition: { ...ex, startedAt: ex.startedAt - by, endsAt: ex.endsAt - by, encounters: ex.encounters.map((e) => ({ ...e, at: e.at - by })),
-          ...(ex.finds ? { finds: ex.finds.map((x) => ({ ...x, at: x.at - by })) } : {}) } };
-      }
-      return { ...k, hp: undefined, hpAt: undefined };
-    });
-  }
-
   // The campaign: each visitor the first time they're in at the tavern (lib/campaign.ts).
   useEffect(() => {
     if (!hydrated) return;
@@ -1335,6 +1322,6 @@ export function useGameState(initialTab: TabKey = "all") {
     // Actions
     addDrop, addScan, addGold, spendGold, updateScanCount, hydrated, bookcase, bookcaseSize: bookcaseSize(bookcase), buildSchematic, upgradeBookcase, storage, heldStoragePlans, cage, cageSize: cageSize(cage), wantsCagePlan,
     toggleFavorite, equipItem, setMoves, learnCodex, summon, ascendCreature, ascendAway, ascendBusy, toggleSellMode, toggleSelectItem,
-    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, klutzSkipAhead, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
+    selectAllInView, deselectAll, confirmSell, sellOne, findValue, sellFind,resetAll, globalReset, startNew, captureCaged, releaseCaged, sendKlutzOff, klutzSendBlock, klutzClears, spendKlutzSkill, pickKlutzTrait, setKlutzSelective, setKlutzCageFilter, upgradeKlutzChest, packUpgradesHeld, sewKlutzPack, callKlutzBack, spendKlutzPoints, respecKlutzPoints, giveKlutzSoulStone, acceptQuest, questFoundClub, questBoxFound, handOverBox, questSawStorage, questLend, questSkipTutorial, removeDrop, markSeen, gainXp, readScroll, setSoulStone, player, gainPlayerXp, materials, depositMaterials, refreshPacked: () => setPackedIds(packedGear()),
   };
 }

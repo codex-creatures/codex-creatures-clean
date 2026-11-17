@@ -331,3 +331,28 @@ describe("Klutz's trips, remembered (Klutz's Den, 2026-11-18)", () => {
     expect(tripLog({})).toEqual([]);
   });
 });
+
+describe("Klutz's trip, as a story (2026-11-18)", () => {
+  const top2 = { dest: 0 as const, explorer: 30, level: 30, pack: 20 };
+  it("remembers what Selective left behind (each, and when), and agrees with the count", () => {
+    let seen = 0;
+    for (let s = 1; s < 40; s++) {
+      const ex = planExpedition(mighty(), t0, seeded(s), { ...top2, traits: { selective: "rare" } });
+      expect(ex.passed?.length ?? 0).toBe(ex.left ?? 0);
+      for (const p of ex.passed ?? []) { expect(ri(p.rarity)).toBeLessThan(ri("rare")); expect(p.at).toBeGreaterThan(t0); seen++; }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it("marks a catch the cage filter let go, and each creature's level", () => {
+    let filtered = 0;
+    for (let s = 1; s < 60; s++) {
+      const ex = planExpedition(mighty(), t0, seeded(s), { ...top2, traits: { cageFilter: "rare" } });
+      for (const e of ex.encounters) {
+        expect(e.level).toBeGreaterThanOrEqual(1);
+        if (e.filtered) { filtered++; expect(e.caught).toBe(false); expect(ri(e.rarity)).toBeLessThan(ri("rare")); }
+      }
+    }
+    expect(filtered).toBeGreaterThan(0);
+  });
+});
