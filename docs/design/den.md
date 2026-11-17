@@ -204,7 +204,10 @@ codex, the altar for a Code Cache) waits until there is.
 
 Quests that aren't daily and lead through the game, on the quest board's **📖 Campaign** tab
 (`/board`, beside Daily Quests and Leaderboards: the tabs in plain words, the quests icon by the
-Quest Board's title, and no title or "?" row under the tabs on any of them, the user, 2026-11-17), once Klutz's first quest is done. **Five chapters**, each
+Quest Board's title, and no title or "?" row under the tabs on any of them, the user, 2026-11-17; the tabs are
+an old filer's, out to the panel's trim, the one you're on running into its page; the Den's daily popup opens
+the board on Daily Quests, `?tab=daily`), once Klutz's first quest is done. Opened, the campaign shows its top,
+then glides down to the quest you're on. **Five chapters**, each
 leading up to a dungeon's boss (the Encampment, the Cyclops, the Hydra, the Abyss), then **Legend**,
 a long last one. The user listed the quests and the kinds of reward; Claude set the order and the
 numbers from a model of a normal player's progress (below). All 🧪 testing numbers.
@@ -228,8 +231,9 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   6 (a cage each for the camp cages, opened and crossed out as you go), else a bar and the count. A claimed
   quest is faded with a green seal in its corner (off the words); the next one done glows gold with a 🎁, and a
   tap anywhere on it claims it: gold (or the schematic) at once, anything else as a box of "?"s to open one by
-  one or all at once (as Klutz's armoury box; the 3D crate before it is gone), or, if it's one thing, that
-  thing shown straight away (you know what it is; daily rewards too). First, a claim celebrates
+  one or all at once (as Klutz's armoury box; the 3D crate before it is gone), or, if it's one thing (the
+  Gold Key, an enchanted piece), straight into your things with no window: the celebration showed it (daily
+  rewards too; the user, 2026-11-17). First, a claim celebrates
   (components/ClaimBurst.tsx, the user, 2026-11-17): the reward's picture flies off the note to the middle, grows
   with rays and sparkles and what you got under it, then zooms off up (a tap skips it); the box opens after. Daily quests the same: each note shows its
   reward's picture (gold and how much, Klutz's box, the XP scroll…) and a claim celebrates.

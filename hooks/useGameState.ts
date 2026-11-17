@@ -5,7 +5,7 @@ import { ARMOR_SLOTS, type ArmorSlot } from "@/lib/items/armor";
 import { isRewardDrop, isItemDrop, isCreatureDrop, isCardDrop, isSellableItem } from "@/lib/types";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { computeSellGold } from "@/lib/items/economy/sell";
-import { ownedSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
+import { ownedSpecies, ownedCreatureSpecies, getStatCapForDrop } from "@/lib/items/gameHelpers";
 import { clearRegistry } from "@/lib/barcodeRegistry";
 import { clearBattles } from "@/lib/battleHistory";
 import { findCreatureTemplate, isRetiredMove, KLUTZ, CREATURE_TEMPLATES, renamedMove, replaceRetired, REUSED_NAMES, type CreatureProficiency } from "@/lib/creatures/creatureData";
@@ -104,6 +104,7 @@ type SaveState = {
   storage?: CappedBox[];               // chest boxes built bigger (the merchant's storage schematics; lib/items/storage.ts)
   found?: string[];                    // kinds of item you've ever had (lib/items/discovery.ts)
   owned?: string[];                    // creature species you've ever owned, let go or not (ownedSpecies)
+  ownedCreatures?: string[];           // …of those, the ones owned as a creature, not just cards (ownedCreatureSpecies)
   teams?: string[][];                  // the Labyrinth's saved line-ups (lib/teams.ts)
   pvpTeams?: string[][];               // line-ups saved at the PvP portal (lib/pvp/teams.ts)
   scanCharges?: ScanCharges;           // new barcodes you can scan, stored (lib/scanCharges.ts; missing: full)
@@ -199,6 +200,7 @@ export function loadSave(): SaveState | null {
     scanCharges: parsed.scanCharges && typeof parsed.scanCharges === "object" ? (parsed.scanCharges as ScanCharges) : undefined,
     firstScans: readFirstScans(parsed.firstScans),
     owned: Array.isArray(parsed.owned) ? parsed.owned.filter((c: unknown) => typeof c === "string") : [],
+    ownedCreatures: Array.isArray(parsed.ownedCreatures) ? parsed.ownedCreatures.filter((c: unknown) => typeof c === "string") : [],
     found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),
   };
 }
@@ -237,6 +239,7 @@ export function useGameState(initialTab: TabKey = "all") {
   const [materials, setMaterials] = useState<Materials>({});
   const [found, setFound] = useState<string[]>([]);
   const [owned, setOwned] = useState<string[]>([]);
+  const [ownedCreatures, setOwnedCreatures] = useState<string[]>([]);
   const [teams, setTeams] = useState<Teams>(() => readTeams(undefined));
   const [pvpTeams, setPvpTeams] = useState<PvpTeams>(() => readPvpTeams(undefined));
   const [charges, setCharges] = useState<ScanCharges | undefined>(undefined);
@@ -284,6 +287,7 @@ export function useGameState(initialTab: TabKey = "all") {
       setMaterials(saved.materials ?? {});
       setFound(saved.found ?? []);
       setOwned(saved.owned ?? []);
+      setOwnedCreatures(saved.ownedCreatures ?? []);
       setTeams(readTeams(saved.teams));
       setPvpTeams(readPvpTeams(saved.pvpTeams));
       setCharges(saved.scanCharges);
@@ -296,8 +300,8 @@ export function useGameState(initialTab: TabKey = "all") {
 
   useEffect(() => {
     if (!hydrated) return;
-    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, pvpTeams, scanCharges: charges, firstScans });
-  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, teams, pvpTeams, charges, firstScans]);
+    safeSave({ gold, inventory, scanCounts, favoriteIds: Array.from(favoriteIds), equipment, recentScans: recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, ownedCreatures, teams, pvpTeams, scanCharges: charges, firstScans });
+  }, [hydrated, gold, inventory, scanCounts, favoriteIds, equipment, recentScanIds, caged, klutz, quest, seen, deathsSinceScan, scanTipRead, scanMode, caches, sealed, crate, player, bookcase, cage, storage, materials, found, owned, ownedCreatures, teams, pvpTeams, charges, firstScans]);
 
   // ── Klutz's scanning tip ──────────────────────────────
   // Lose SCAN_TIP_DEATHS Labyrinth runs in a row without scanning a barcode
@@ -786,6 +790,9 @@ export function useGameState(initialTab: TabKey = "all") {
   // your things, so letting it go later doesn't take it off the count.
   const speciesOwned = useMemo(() => ownedSpecies(owned, inventory), [owned, inventory]);
   if (hydrated && [...speciesOwned].some((id) => !owned.includes(id))) setOwned([...speciesOwned]);
+  // …and as creatures (cards don't count): the leaderboard's species (lib/leaderboard.ts).
+  const creaturesOwned = useMemo(() => ownedCreatureSpecies(ownedCreatures, [...inventory, ...caged]), [ownedCreatures, inventory, caged]);
+  if (hydrated && [...creaturesOwned].some((id) => !ownedCreatures.includes(id))) setOwnedCreatures([...creaturesOwned]);
   const discoveredCreatures = speciesOwned.size;
   // A species you'd never owned counts towards the daily quest (lib/daily.ts).
   // (Two of these hooks on one page would count it twice: its goal is 1, so no harm.)
@@ -1253,6 +1260,7 @@ export function useGameState(initialTab: TabKey = "all") {
     setMaterials({});
     setFound([]);
     setOwned([]);
+    setOwnedCreatures([]);
     setScanMode(defaultScanMode());
     setPackedIds(new Set());
     setEquipment({});

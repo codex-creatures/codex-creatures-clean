@@ -10,7 +10,7 @@
 // Each player on a board can be added as a friend (➕); 👥 opens your friend
 // list, where you can challenge one who's on to a duel (app/duel, lib/pvp).
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DenFrame from "@/components/DenFrame";
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { fetchBoard } from "@/lib/online/leaderboard";
@@ -40,7 +40,10 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 type View = { status: "loading" | "off" | "out" | "failed" } | { status: "ok"; board: Board };
 
 export default function QuestBoardPage() {
-  const [tab, setTab] = useState<"campaign" | "quests" | "boards">("campaign"); // (opens on the campaign: the user, 2026-11-17)
+  // Opens on the campaign (the user, 2026-11-17), or on today's quests from the Den's daily popup (?tab=daily).
+  // (Read as it mounts: the screen only shows once the page is in the browser, GameScreen.)
+  const [tab, setTab] = useState<"campaign" | "quests" | "boards">(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "daily" ? "quests" : "campaign");
   const quests = tab !== "boards"; // (the campaign too: neither shows the leaderboards' parts)
   const [kind, setKind] = useState<BoardKind>("species");
   const [dungeon, setDungeon] = useState<DungeonId>(1);
@@ -86,66 +89,68 @@ export default function QuestBoardPage() {
   // The dock (the leaderboards) only on the Boards tab: an empty one is just a black strip (the user, 2026-11-17).
   return (
     <DenFrame title="Quest Board" icon={<Glyph icon="📜" art="ui_quests" />} fill dock={quests ? undefined : dock}>
-      <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, padding: "12px 12px 14px" }}>
-        {/* The tabs, in plain words, then straight to what's on them: no title or "?" row (the user, 2026-11-17). */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-          <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}>Campaign</button>
-          <button className="chip" data-active={tab === "quests"} onClick={() => setTab("quests")} style={TAB}>Daily Quests</button>
-          <button className="chip" data-active={tab === "boards"} onClick={() => setTab("boards")} style={TAB}>Leaderboards</button>
+      <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", padding: "8px 4px 6px" }}>
+        {/* The tabs, in plain words, as an old filer's: the one you're on runs into its page (the same colour, no
+            line between), the others sit back. Out to the panel's trim. No title or "?" row (the user, 2026-11-17). */}
+        <div className="folder-tabs" role="tablist">
+          {([["campaign", "Campaign"], ["quests", "Daily Quests"], ["boards", "Leaderboards"]] as const).map(([t, name]) => (
+            <button key={t} role="tab" aria-selected={tab === t} className="folder-tab" data-active={tab === t} data-tone={t === "boards" ? "stone" : "wood"} onClick={() => setTab(t)}>{name}</button>
+          ))}
         </div>
-        {/* The leaderboards: the dungeon buttons (their space kept on the other boards, so nothing moves) and 👥 friends. */}
-        {!quests && (
-          <div style={{ display: "flex", gap: 6 }}>
-            <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: perDungeon(kind) && !showFriends ? "visible" : "hidden" }}>
-              {DUNGEON_IDS.map((d) => (
-                <button key={d} className="chip" data-active={dungeon === d} onClick={() => setDungeon(d)} title={dungeonName(d)}
-                  style={{ minHeight: 44, justifyContent: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {DUNGEON_SHORT[d]}
-                </button>
-              ))}
-            </div>
-            <button className="chip" data-active={showFriends} onClick={() => setShowFriends((v) => !v)} aria-label="Friends" title="Friends"
-              style={{ minHeight: 44, minWidth: 44, justifyContent: "center", visibility: me ? "visible" : "hidden" }}>👥</button>
-          </div>
-        )}
-
-        {/* The campaign and today's quests: notes pinned to a wooden board. The leaderboards: a plain list. */}
-        <div className={quests ? "quest-board" : undefined} style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: quests ? 2 : 8, background: quests ? undefined : "rgba(0,0,0,0.25)", padding: quests ? "10px 12px" : "4px 8px" }}>
-          {tab === "campaign" ? (
-            <CampaignList />
-          ) : quests ? (
-            <QuestList />
-          ) : showFriends ? (
-            <FriendList friends={friends} online={online} onRemove={remove} />
-          ) : view.status === "ok" ? (
-            view.board.top.length === 0
-              ? <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Nobody&apos;s on this board yet.</p>
-              : view.board.top.map((r, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "3em 1fr auto 44px", alignItems: "center", gap: 8, minHeight: 44, borderBottom: "1px solid rgba(255,255,255,0.06)", color: r.me ? GOLD : "#d8d4c8", fontWeight: r.me ? 700 : 400 }}>
-                  <span className="pixel-font" style={{ fontSize: 15 }}>{MEDALS[r.rank - 1] ?? `#${r.rank}`}</span>
-                  <span style={{ fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={r.name}>{r.name}</span>
-                  <span className="pixel-font" style={{ fontSize: 15 }}>{boardValue(kind, r.value)}</span>
-                  {/* Add as a friend: ✓ once added; the space stays on your own row. */}
-                  {r.id && !r.me && friendIds.has(r.id)
-                    ? <span aria-label="Your friend" title="Your friend" style={{ textAlign: "center", color: "#5ee08a" }}>✓</span>
-                    : <button className="chip" aria-label={`Add ${r.name} as a friend`} title="Add friend" onClick={() => r.id && add(r.id)}
-                        style={{ minHeight: 40, minWidth: 40, padding: 0, justifyContent: "center", visibility: r.id && !r.me && friends ? "visible" : "hidden" }}>➕</button>}
-                </div>
-              ))
-          ) : (
-            <div style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>
-              {view.status === "loading" ? "Loading…"
-                : view.status === "off" ? "Leaderboards are part of the online game."
-                : view.status === "out" ? "Sign in on the title screen to see the leaderboards."
-                : <>Couldn&apos;t reach the server.<div style={{ marginTop: 12 }}><button className="pixel-btn" onClick={() => setTries((n) => n + 1)}>↻ Try again</button></div></>}
+        {/* The page: the campaign and today's quests, notes pinned to a wooden board; the leaderboards, a plain list. */}
+        <div className={`folder-page${quests ? " quest-board" : ""}`} data-tone={quests ? "wood" : "stone"}>
+          {/* The leaderboards: the dungeon buttons (their space kept on the other boards, so nothing moves) and 👥 friends. */}
+          {!quests && (
+            <div style={{ display: "flex", gap: 6 }}>
+              <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: perDungeon(kind) && !showFriends ? "visible" : "hidden" }}>
+                {DUNGEON_IDS.map((d) => (
+                  <button key={d} className="chip" data-active={dungeon === d} onClick={() => setDungeon(d)} title={dungeonName(d)}
+                    style={{ minHeight: 44, justifyContent: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {DUNGEON_SHORT[d]}
+                  </button>
+                ))}
+              </div>
+              <button className="chip" data-active={showFriends} onClick={() => setShowFriends((v) => !v)} aria-label="Friends" title="Friends"
+                style={{ minHeight: 44, minWidth: 44, justifyContent: "center", visibility: me ? "visible" : "hidden" }}>👥</button>
             </div>
           )}
-        </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: quests ? 0 : 6, background: quests ? undefined : "rgba(0,0,0,0.25)", padding: quests ? "10px 10px" : "4px 8px" }}>
+            {tab === "campaign" ? (
+              <CampaignList />
+            ) : quests ? (
+              <QuestList />
+            ) : showFriends ? (
+              <FriendList friends={friends} online={online} onRemove={remove} />
+            ) : view.status === "ok" ? (
+              view.board.top.length === 0
+                ? <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Nobody&apos;s on this board yet.</p>
+                : view.board.top.map((r, i) => (
+                  <div key={i} style={{ display: "grid", gridTemplateColumns: "3em 1fr auto 44px", alignItems: "center", gap: 8, minHeight: 44, borderBottom: "1px solid rgba(255,255,255,0.06)", color: r.me ? GOLD : "#d8d4c8", fontWeight: r.me ? 700 : 400 }}>
+                    <span className="pixel-font" style={{ fontSize: 15 }}>{MEDALS[r.rank - 1] ?? `#${r.rank}`}</span>
+                    <span style={{ fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={r.name}>{r.name}</span>
+                    <span className="pixel-font" style={{ fontSize: 15 }}>{boardValue(kind, r.value)}</span>
+                    {/* Add as a friend: ✓ once added; the space stays on your own row. */}
+                    {r.id && !r.me && friendIds.has(r.id)
+                      ? <span aria-label="Your friend" title="Your friend" style={{ textAlign: "center", color: "#5ee08a" }}>✓</span>
+                      : <button className="chip" aria-label={`Add ${r.name} as a friend`} title="Add friend" onClick={() => r.id && add(r.id)}
+                          style={{ minHeight: 40, minWidth: 40, padding: 0, justifyContent: "center", visibility: r.id && !r.me && friends ? "visible" : "hidden" }}>➕</button>}
+                  </div>
+                ))
+            ) : (
+              <div style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>
+                {view.status === "loading" ? "Loading…"
+                  : view.status === "off" ? "Leaderboards are part of the online game."
+                  : view.status === "out" ? "Sign in on the title screen to see the leaderboards."
+                  : <>Couldn&apos;t reach the server.<div style={{ marginTop: 12 }}><button className="pixel-btn" onClick={() => setTries((n) => n + 1)}>↻ Try again</button></div></>}
+              </div>
+            )}
+          </div>
 
-        {/* You, wherever you are on the board (always one line, so the list never shifts; not on the quest tabs). */}
-        {!quests && <div className="pixel-font" style={{ fontSize: 14, color: GOLD, minHeight: 20, visibility: board && !showFriends ? "visible" : "hidden" }}>
-          {board?.me ? `You: #${board.me.rank} · ${boardValue(kind, board.me.value)}` : "You're not on this board yet."}
-        </div>}
+          {/* You, wherever you are on the board (always one line, so the list never shifts; not on the quest tabs). */}
+          {!quests && <div className="pixel-font" style={{ fontSize: 14, color: GOLD, minHeight: 20, visibility: board && !showFriends ? "visible" : "hidden" }}>
+            {board?.me ? `You: #${board.me.rank} · ${boardValue(kind, board.me.value)}` : "You're not on this board yet."}
+          </div>}
+        </div>
       </div>
     </DenFrame>
   );
@@ -185,7 +190,7 @@ function QuestList() {
     if (q.reward === "gold") game.addGold(q.gold ?? 0);
     else if (q.reward === "merchant") game.merchantVisits();
     else if (q.reward === "cache") drops.forEach(game.addCache);
-    else { drops.forEach(game.addDrop); if (drops.length) box = drops; }
+    else { drops.forEach(game.addDrop); if (drops.length > 1) box = drops; } // (one thing: the celebration shows it, and it's yours)
     const look = dailyLook(q);
     setBurst({ show: { art: look.art, tint: look.tint, text: q.reward === "gold" ? `+${(q.gold ?? 0).toLocaleString()} gold` : q.pays,
       from: note?.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: box });
@@ -246,10 +251,8 @@ function QuestList() {
         </div>
       )}
 
-      {/* (One thing: shown straight away, no "?" to tap: you know what it is. The user, 2026-11-17.) */}
       {burst && <ClaimBurst show={burst.show} onDone={() => { const b = burst; setBurst(null); if (b.drops) setPrize(b.drops); }} />}
-      {prize && <CodeCache title="Daily reward" items={prize} opened={prize.length === 1} doneLabel={prize.length === 1 ? "Take it" : "Take it all"}
-        intro={prize.length === 1 ? undefined : "Tap a slot to see what's inside."} onDone={() => setPrize(null)} />}
+      {prize && <CodeCache title="Daily reward" items={prize} doneLabel="Take it all" intro="Tap a slot to see what's inside." onDone={() => setPrize(null)} />}
     </div>
   );
 }
@@ -257,6 +260,7 @@ function QuestList() {
 // of fixed lines (what to do, then its reward and how far along), with one
 // button: Claim on the next reward when its quest is done, ➜ to go and do an
 // unfinished one. Rewards are claimed in order.
+const CAMPAIGN_GLIDE_MS = 450; // how long the campaign shows its top before gliding down to your quest
 function CampaignList() {
   const game = useGameState();
   const router = useRouter();
@@ -265,6 +269,14 @@ function CampaignList() {
   const [blocked, setBlocked] = useState<string | null>(null); // why the last claim couldn't be taken
   // A claim's celebration (its picture flying up from the note), then its box (if it has one).
   const [burst, setBurst] = useState<{ show: ClaimShow; drops: Drop[] | null; title: string } | null>(null);
+  // Opened, the list starts at the top, then glides down to the quest you're on (the user, 2026-11-17).
+  const current = useRef<HTMLDivElement>(null), glided = useRef(false);
+  useEffect(() => {
+    if (glided.current || !current.current) return;
+    glided.current = true;
+    const el = current.current; // (not cancelled by a re-render: it runs once)
+    window.setTimeout(() => { if (el.isConnected) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, CAMPAIGN_GLIDE_MS);
+  });
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
   if (!klutzHelping(game.quest)) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Finish Klutz&apos;s quest first.</p>;
 
@@ -291,8 +303,9 @@ function CampaignList() {
       if (hasBookPlans(game.tavern) || game.bookcase >= 2) { game.addGold(PLANS_TAKEN_GOLD); text = `+${PLANS_TAKEN_GOLD} gold`; }
       else { game.findBookPlans(); text = "The Crooked Bookcase Schematic"; }
     }
-    // Everything else: its box after, each "?" to open (or all at once), as Klutz's armoury box.
-    else { drops.forEach(game.addDrop); box = drops; }
+    // Everything else: its box after, each "?" to open (or all at once), as Klutz's armoury box; one thing (the
+    // Gold Key, an enchanted piece) goes straight in: the celebration showed it (the user, 2026-11-17).
+    else { drops.forEach(game.addDrop); if (drops.length > 1) box = drops; }
     const look = rewardLook(r);
     setBurst({ show: { art: look.art, inside: look.inside, tint: look.tint, text, from: note.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: box, title: rewardText(r) });
     buzz("levelUp");
@@ -316,7 +329,7 @@ function CampaignList() {
         const wanted = i === chapter.quests.length - 1; // (the chapter's boss: a Wanted poster)
         const prog = got ? q.goal : Math.min(q.progress(ctx), q.goal); // (claimed: shown full, whatever counts now)
         return (
-          <div key={q.id} className={`note${wanted ? " note-wanted" : ""}${ready ? " note-ready" : ""}`}
+          <div key={q.id} ref={at === claimed ? current : undefined} className={`note${wanted ? " note-wanted" : ""}${ready ? " note-ready" : ""}`}
             onClick={ready ? (e) => claim(e.currentTarget) : undefined} role={ready ? "button" : undefined} tabIndex={ready ? 0 : undefined}
             onKeyDown={ready ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); claim(e.currentTarget); } } : undefined}
             aria-label={ready ? `Claim ${rewardText(q.reward)}` : undefined}
@@ -341,7 +354,7 @@ function CampaignList() {
         );
       })}
       {burst && <ClaimBurst show={burst.show} onDone={() => { const b = burst; setBurst(null); if (b.drops) setPrize({ title: b.title, drops: b.drops }); }} />}
-      {prize && <CodeCache title={prize.title} items={prize.drops} opened={prize.drops.length === 1} doneLabel={prize.drops.length === 1 ? "Take it" : "Take it all"} onDone={() => setPrize(null)} />}
+      {prize && <CodeCache title={prize.title} items={prize.drops} doneLabel="Take it all" onDone={() => setPrize(null)} />}
     </div>
   );
 }
@@ -422,7 +435,6 @@ function Badge({ art, inside, tint, label, gold, title, small, ready }: { art: s
   );
 }
 
-const TAB: React.CSSProperties = { minHeight: 44, justifyContent: "center", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
 // Two lines whatever the words, so every note is the same height.
 const CLAMP2: React.CSSProperties = { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.35, height: "2.7em", fontSize: 13, color: "#3a2a18" };
 // A campaign quest's task, in ink: two lines at most, the space for two always kept.

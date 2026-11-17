@@ -566,6 +566,20 @@ body {
 /* ── The quest board (app/board): parchment notes pinned to a wooden board ──
    (the user's pick, 2026-11-17). Notes sit a touch crooked; the last quest of a
    campaign chapter, and the Hydra quest, are Wanted posters. */
+/* The quest board's tabs (app/board/page.tsx), as an old filer's: the one you're on stands taller, the
+   colour of its page, and runs into it (no line between); the others sit back, darker. */
+.folder-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; align-items: end; padding: 0 2px; }
+.folder-tab {
+  position: relative; min-height: 44px; padding: 6px 4px 5px; cursor: pointer;
+  font-family: var(--font-pixel), "Courier New", monospace; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #a9a497; text-shadow: 0 2px 0 #000; background: linear-gradient(180deg, #2c2e37, #1c1e25);
+  border: 2px solid #0c0d11; border-bottom: none; border-radius: 7px 7px 0 0; box-shadow: inset 0 2px 0 #474a57;
+}
+.folder-tab[data-active="true"] { z-index: 1; min-height: 50px; margin-bottom: -2px; padding-bottom: 9px; color: #ffe7a8; text-shadow: 0 2px 0 #1a1004; }
+.folder-tab[data-active="true"][data-tone="wood"] { background: #432d19; box-shadow: inset 0 2px 0 #7a5530; }
+.folder-tab[data-active="true"][data-tone="stone"] { background: #24262e; box-shadow: inset 0 2px 0 #5a5d6b; }
+.folder-page { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; border: 2px solid #0c0d11; border-radius: 0 0 4px 4px; }
+.folder-page[data-tone="stone"] { padding: 8px 6px 6px; background: #24262e; }
 .quest-board {
   background: repeating-linear-gradient(90deg, #3a2716 0 62px, #2c1d10 62px 64px, #432d19 64px 128px, #2c1d10 128px 130px), #3a2716;
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.7);

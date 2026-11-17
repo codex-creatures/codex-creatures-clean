@@ -224,7 +224,7 @@ const supplies: CampaignReward = { crate: "supplies", lo: "common", hi: "rare", 
 // Quest makers, one per kind of quest (the id carries the number, so each is unique).
 const q = {
   scan: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `scan${n}`, task: `Scan ${n} barcodes`, go: "/altar", goal: n, progress: (c) => Math.max(c.scans, tallied(c, "scan")), reward }),
-  bestiary: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `bestiary${n}`, task: `Have ${n} creatures in the Bestiary`, go: "/guide", goal: n, progress: (c) => c.bestiary, reward }),
+  bestiary: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `bestiary${n}`, task: `Identify ${n} creatures in the Bestiary`, go: "/guide", goal: n, progress: (c) => c.bestiary, reward }),
   fights: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `fights${n}`, task: `Win ${n} fights in the Labyrinth`, go: "/dungeon", goal: n, progress: (c) => tallied(c, "battle"), reward }),
   cards: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `cards${n}`, task: `Collect ${n} creature cards`, go: "/pit", goal: n, progress: (c) => Math.max(c.cards, tallied(c, "card")), reward }),
   level: (n: number, reward: CampaignReward): CampaignQuest => ({ id: `level${n}`, task: `Get a creature to level ${n}`, go: "/pit", goal: n, progress: (c) => c.creatureLevel, reward }),

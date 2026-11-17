@@ -12,6 +12,7 @@ import PixelSprite, { itemSprite } from "./PixelSprite";
 import Glyph from "./Glyph";
 import CreaturePortrait from "./CreaturePortrait";
 import { GearStatLine } from "./GearCompare";
+import EnchantLine from "./EnchantLine";
 import { STATS, StatRow, gearValue, type StatKey } from "./CreatureDetailModal";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { findCreatureTemplate } from "@/lib/creatures/creatureData";
@@ -157,6 +158,8 @@ function Piece({ label, item }: { label: string; item?: CreatureOrItemDrop }) {
       </span>
       <b style={{ fontSize: 12, color: rc ? rc.text : MUTED, overflowWrap: "anywhere" }}>{item ? item.name : "Nothing"}</b>
       {item ? <GearStatLine item={item} /> : <div style={{ fontSize: 12, color: MUTED }}>No stats</div>}
+      {/* Its enchantment and a "?" for what it does (its space kept when it has none, so nothing moves). */}
+      <EnchantLine item={item} style={{ justifyContent: "center", fontSize: 12, maxWidth: "100%" }} />
     </div>
   );
 }

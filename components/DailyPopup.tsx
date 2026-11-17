@@ -4,7 +4,7 @@
 // claimed (lib/daily.ts openQuests), each with its reward and how far along it
 // is. Once a day per visit to the site (so again when new quests come at
 // midnight), and only while there's one open. A tap anywhere puts it away;
-// its button goes to the quest board.
+// its button goes to the quest board, on its Daily Quests tab.
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -40,7 +40,7 @@ export default function DailyPopup({ ready, now }: { ready: boolean; now: number
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
           <span className="pixel-font" style={{ fontSize: 11, color: "#8a8a99" }}>Tap to close</span>
-          <Link href="/board" className="chip" style={{ minHeight: 44, display: "inline-flex", alignItems: "center" }}>Quest Board</Link>
+          <Link href="/board?tab=daily" className="chip" style={{ minHeight: 44, display: "inline-flex", alignItems: "center" }}>Quest Board</Link>
         </div>
       </div>
     </div>

@@ -8,9 +8,10 @@ import { CREATURE_TEMPLATES } from "../lib/creatures/creatureData";
 const species = (i: number, dropType = "creature") => ({ id: `d${i}-${dropType}`, dropType, creatureId: CREATURE_TEMPLATES[i].id, name: CREATURE_TEMPLATES[i].name });
 
 describe("leaderboard stats from a save", () => {
-  it("counts each species once (creatures and cards), and each dungeon's runs and wins", () => {
+  it("counts each species owned as a creature once (cards don't count), and each dungeon's runs and wins", () => {
     const progress = {
       inventory: [species(0), species(0, "card"), species(1, "card"), { id: "w", dropType: "item", itemKey: "void_scythe" }],
+      caged: [species(3)],
       labyrinth: { meta: { runs: 7, clears: 2, campRuns: 3, campClears: 3, deepRuns: 1, injuries: {}, bag: [] } },
       playTime: 4000,
       scanCounts: { "5000112637922": 3, "0123456789012": 1 },
@@ -24,8 +25,8 @@ describe("leaderboard stats from a save", () => {
     });
   });
 
-  it("counts species you've owned and let go, as the save remembers them", () => {
-    const progress = { inventory: [species(0)], owned: [CREATURE_TEMPLATES[0].id, CREATURE_TEMPLATES[2].id, "not_a_creature", 7] };
+  it("counts creatures you've owned and let go, as the save remembers them (not the cards it remembers)", () => {
+    const progress = { inventory: [species(0)], ownedCreatures: [CREATURE_TEMPLATES[0].id, CREATURE_TEMPLATES[2].id, "not_a_creature", 7], owned: [CREATURE_TEMPLATES[4].id] };
     expect(leaderboardStats(progress).species).toBe(2);
   });
 

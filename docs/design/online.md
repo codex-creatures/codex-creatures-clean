@@ -98,10 +98,11 @@ account, kept entirely apart from Vouchee.
   and the altar's Random testing mode still roll on the device and register nothing.
   - Not hardened: a player could script calls to farm fresh barcodes. Accepted for playtesting
     (see Cheating below).
-- ✅ **Leaderboards**, the quest board's second tab (`/board`; the first is Quests, §9).
-  Boards: creature species you've owned, shown as 12/120 (the altar's "Creatures discovered": creatures and
-  cards; ✅ the user, 2026-11-02: one you've let go of still counts, kept in the save's `owned`,
-  `ownedSpecies`; older saves start from what they hold); runs started in each dungeon; wins in each
+- ✅ **Leaderboards**, the quest board's Leaderboards tab (`/board`; beside Campaign and Daily Quests, §9).
+  Boards: creature species you've owned **as a creature**, shown as 12/120 (cards don't count: the user,
+  2026-11-17; the altar's "Creatures discovered" still counts both). ✅ the user, 2026-11-02: one you've let go of
+  still counts, kept in the save's `ownedCreatures` (`ownedCreatureSpecies`, kept since 2026-11-17: older saves
+  start from the creatures they hold, caged ones too; before, `owned`, which counts cards); runs started in each dungeon; wins in each
   dungeon (a win is beating its final boss); time played (as Settings counts it, idle time left
   out); barcodes scanned (rescans count too). Starting a new game resets them all. PvP boards come later. Signed-in players only; top
   50 shown, plus your own rank; only named players with more than 0 are listed, ties share a rank.

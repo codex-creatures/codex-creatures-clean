@@ -7,12 +7,12 @@
 
 import type { Drop } from "./types";
 import { DUNGEON_IDS, DUNGEONS, type DungeonId } from "./dungeon/run";
-import { ownedSpecies, TOTAL_CREATURES } from "./items/gameHelpers";
+import { ownedCreatureSpecies, TOTAL_CREATURES } from "./items/gameHelpers";
 import { readPlayTime } from "./playTime";
 
 // What goes up with a save. Keys are dungeon ids, as text (they're JSON).
 export type LeaderboardStats = {
-  species: number;                 // creature species you've ever owned (as "Creatures discovered" at the altar)
+  species: number;                 // creature species you've ever owned as a creature (cards don't count: ownedCreatureSpecies)
   runs: Record<string, number>;    // runs started, per dungeon
   wins: Record<string, number>;    // its final boss beaten, per dungeon
   playTime: number;                // seconds played (lib/playTime.ts)
@@ -41,7 +41,8 @@ export function leaderboardStats(progress: Record<string, unknown> | null | unde
   }
   const scanCounts = progress?.scanCounts && typeof progress.scanCounts === "object" ? Object.values(progress.scanCounts) : [];
   const scans = scanCounts.reduce((n: number, c) => n + count(c), 0);
-  return { species: ownedSpecies(progress?.owned, inventory).size, runs, wins, playTime: readPlayTime(progress ?? {}), scans };
+  const caged = Array.isArray(progress?.caged) ? (progress.caged as Drop[]) : [];
+  return { species: ownedCreatureSpecies(progress?.ownedCreatures, [...inventory, ...caged]).size, runs, wins, playTime: readPlayTime(progress ?? {}), scans };
 }
 
 // ── The boards ────────────────────────────────────────────────────────

@@ -95,6 +95,14 @@ export function ownedSpecies(owned: unknown, inventory: Drop[]): Set<string> {
   return out;
 }
 const CREATURE_IDS = new Set(CREATURE_TEMPLATES.map((t) => t.id));
+// Every species you've had as a creature (not just its cards), let go or not: what the save
+// remembers (ownedCreatures, kept since 2026-11-17: older saves start from the creatures they
+// hold now) plus the creatures among drops. The leaderboard's species count (the user, 2026-11-17).
+export function ownedCreatureSpecies(remembered: unknown, drops: Drop[]): Set<string> {
+  const out = discoveredSpecies(drops.filter(isCreatureDrop));
+  if (Array.isArray(remembered)) for (const id of remembered) if (typeof id === "string" && CREATURE_IDS.has(id)) out.add(id);
+  return out;
+}
 // Every kind of item there is to discover (weapons, armour, materials, potions, codexes).
 export { TOTAL_DISCOVERABLE_ITEMS as TOTAL_ITEMS } from "./discovery";
 
