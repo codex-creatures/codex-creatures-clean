@@ -171,7 +171,9 @@ export default function WalkView3D({ view = GAME_VIEW, onStats, been, cleared, l
   return (
     <div style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", height: "100%", background: "#000" }}>
       <div ref={pad} onPointerDown={tap} onPointerMove={drag} onPointerUp={letGo} onPointerCancel={letGo} style={{ position: "absolute", inset: 0, touchAction: "none" }}>
-        <Canvas key={view.perspective ? "p" : "o"} orthographic={!view.perspective} flat shadows={view.shadows ? "basic" : false}
+        {/* (Sized by its own layout box, not as drawn: Settings → Screen size scales the screen, and the drawn
+            size, scaled again, made the picture too big, pinned top-left, with you off its middle.) */}
+        <Canvas key={view.perspective ? "p" : "o"} resize={{ offsetSize: true }} orthographic={!view.perspective} flat shadows={view.shadows ? "basic" : false}
           gl={{ antialias: false, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.info.autoReset = false; /* (counted by hand: read, then reset, each frame) */ }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
           <World sim={sim} live={W.live} layout={W.layout} progress={W.progress} closed={W.closed} view={view} step={step} things={W.things} room={play.room}

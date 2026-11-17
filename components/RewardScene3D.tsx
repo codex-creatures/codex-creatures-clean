@@ -56,7 +56,7 @@ function Scene({ model, open }: { model: RewardModel; open: boolean }) {
 
 export default function RewardScene3D({ model, open }: { model: RewardModel; open: boolean }) {
   return (
-    <Canvas orthographic flat gl={{ antialias: false }} style={{ imageRendering: "pixelated", background: "#0e0f0c" }}>
+    <Canvas orthographic flat resize={{ offsetSize: true }} gl={{ antialias: false }} style={{ imageRendering: "pixelated", background: "#0e0f0c" }}>
       <Scene model={model} open={open} />
     </Canvas>
   );
