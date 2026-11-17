@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { BOX_CAP, boxCounts, fullBoxes, forFullBox, fitInBoxes } from "../lib/items/storage";
+import { BOX_CAP, boxCounts, fullBoxes, forFullBox, fitInBoxes, roomFor } from "../lib/items/storage";
 import { weaponDrop, armorDrop, potionDrop, codexDrop } from "../lib/drops";
 import { materialDrop } from "../lib/items/materials";
 import type { Drop } from "../lib/types";
@@ -34,5 +34,20 @@ describe("chest boxes", () => {
     const { fit, full } = fitInBoxes(inv, caches);
     expect(fit).toEqual([caches[0], caches[2], caches[3]]);
     expect(full).toEqual(["weapon"]);
+  });
+});
+
+describe("keeping things from Klutz's crate", () => {
+  it("only what has room comes out: each box to its limit, codexes while the bookcase has room (none when it's overfull)", () => {
+    const inv = many(BOX_CAP - 1, sword);
+    const out = [sword(), sword(), potionDrop(), codexDrop("Slash"), codexDrop("Slash")];
+    const r = roomFor(inv, out, [], 1);
+    expect(r.fit).toEqual([out[0], out[2], out[3]]); // (one sword fills the box; the first codex takes the last shelf)
+    expect(r.full).toEqual(["weapon"]);
+    expect(r.shelfFull).toBe(true);
+    // An overfull bookcase (shelfFree below 0): no codex comes out, everything else still can.
+    const over = roomFor([], [codexDrop("Slash"), potionDrop()], [], -2);
+    expect(over.fit).toHaveLength(1);
+    expect(over.shelfFull).toBe(true);
   });
 });

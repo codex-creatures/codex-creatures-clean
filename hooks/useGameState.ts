@@ -47,7 +47,7 @@ const isKlutz = (d: Drop) => isCreatureDrop(d) && d.creatureId === KLUTZ.id;
 import { readSave, writeMainSave } from "@/lib/save";
 import { clearPlayTime } from "@/lib/playTime";
 import { discoveredItemKeys, itemDiscoveryKey } from "@/lib/items/discovery";
-import { fitInBoxes, forFullBox, boxTier, buildBox, type CappedBox } from "@/lib/items/storage";
+import { fitInBoxes, forFullBox, boxTier, buildBox, roomFor, type CappedBox } from "@/lib/items/storage";
 import { setStoneIn, soulStoneOf } from "@/lib/creatures/soulStones";
 import { readTeams, toggleInTeam, keepOwned, type Teams } from "@/lib/teams";
 import { readPvpTeams, togglePvpTeam, type PvpTeams } from "@/lib/pvp/teams";
@@ -917,10 +917,13 @@ export function useGameState(initialTab: TabKey = "all") {
     ? computeSellGold({ drop: d as any, getStatCapForDrop: (drop: any, statKey: string) => getStatCapForDrop(drop, statKey) ?? 0 })
     : 0);
   const crateSellValue = (d: Drop) => (d.dropType === "item" && (d.itemCategory === "weapon" || d.itemCategory === "armor") ? gearSellValue(d) : findPrice(d, gearSellValue));
-  function keepFromCrate(ids: string[]) {
-    const kept = crate.filter((d) => ids.includes(d.id));
-    setCrate((prev) => prev.filter((d) => !ids.includes(d.id)));
-    setInventory((prev) => [...kept, ...prev]);
+  // Keep things from the crate: only what has room (lib/items/storage.ts roomFor); the rest stay in it.
+  function keepFromCrate(ids: string[]): ReturnType<typeof roomFor> {
+    const room = roomFor(inventory, crate.filter((d) => ids.includes(d.id)), storage, shelfFree);
+    const kept = new Set(room.fit.map((d) => d.id));
+    setCrate((prev) => prev.filter((d) => !kept.has(d.id)));
+    setInventory((prev) => [...room.fit, ...prev]);
+    return room;
   }
   function sellFromCrate(ids: string[]) {
     const sold = crate.filter((d) => ids.includes(d.id));

@@ -15,6 +15,7 @@ import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { ARMOR_SLOT_INFO } from "@/lib/items/armor";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import { chestSize } from "@/lib/klutz";
+import { BOX_NAMES, roomFor } from "@/lib/items/storage";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f5c542";
@@ -27,10 +28,18 @@ const statLine = (it: CreatureOrItemDrop) =>
 export default function CratePage() {
   const game = useGameState();
   const [sellAllArmed, setSellAllArmed] = useState(false);
+  const [left, setLeft] = useState<string | null>(null); // why things stayed in the crate on the last Keep
   if (!game.hydrated) return <DenFrame title="Klutz's Crate" icon="📦"><p style={{ color: MUTED }}>Loading…</p></DenFrame>;
 
   const items = game.crate as CreatureOrItemDrop[];
   const total = items.reduce((s, d) => s + game.crateSellValue(d), 0);
+  // Keep (all or one): only what has room comes out; say what held the rest back.
+  function keep(ids: string[]) {
+    const room = game.keepFromCrate(ids);
+    const stayed = ids.length - room.fit.length;
+    const why = [...room.full.map((b) => `your ${BOX_NAMES[b]} box is full`), ...(room.shelfFull ? ["your bookcase is full"] : [])];
+    setLeft(stayed > 0 ? `${stayed === ids.length ? "Nothing came out" : `${stayed} stayed in the crate`}: ${why.join(" and ")}. Sell some to make room.` : null);
+  }
 
   return (
     <DenFrame title="Klutz's Crate" icon="📦" gold={game.gold}>
@@ -46,15 +55,17 @@ export default function CratePage() {
       ) : (
         <>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "14px 0 10px" }}>
-            <button className="pixel-btn" onClick={() => game.keepFromCrate(items.map((d) => d.id))}>Keep all</button>
+            <button className="pixel-btn" onClick={() => keep(items.map((d) => d.id))}>Keep all</button>
             <button className="pixel-btn" style={{ background: sellAllArmed ? "#6e1f18" : undefined }} onClick={() => {
               if (!sellAllArmed) { setSellAllArmed(true); window.setTimeout(() => setSellAllArmed(false), 4000); return; }
               setSellAllArmed(false);
               game.sellFromCrate(items.map((d) => d.id));
             }}>{sellAllArmed ? <>Tap again: sell all for <Coin /> {total}</> : <>Sell all · <Coin /> {total}</>}</button>
           </div>
+          {left && <p style={{ fontSize: 13, color: "#ff8a80", margin: "0 0 10px" }}>{left} <Link href="/chest" style={{ color: "white", textDecoration: "underline" }}>Inventory</Link></p>}
           <div style={{ display: "grid", gap: 8 }}>
             {items.map((it) => {
+              const fits = roomFor(game.inventory, [it], game.storage, game.shelfFree).fit.length > 0;
               const rc = RARITY_COLORS[it.rarity];
               const sprite = itemSprite(it);
               const value = game.crateSellValue(it);
@@ -72,7 +83,7 @@ export default function CratePage() {
                     <span style={{ display: "block", fontSize: 12, color: "#c9b48a" }}>{statLine(it)}</span>
                   </span>
                   <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button className="chip" onClick={() => game.keepFromCrate([it.id])}>Keep</button>
+                    <button className="chip" onClick={() => keep([it.id])} disabled={!fits} title={fits ? undefined : "No room for it: sell some to make room"}>{fits ? "Keep" : it.codexMove ? "Shelf full" : "Box full"}</button>
                     <button className="chip" onClick={() => game.sellFromCrate([it.id])} style={{ color: GOLD }}>Sell · <Coin /> {value}</button>
                   </span>
                 </div>

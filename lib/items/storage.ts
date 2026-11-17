@@ -65,3 +65,19 @@ export function fitInBoxes(inventory: Drop[], drops: Drop[], big: readonly Cappe
   }
   return { fit, full: CAPPED_BOXES.filter((b) => full.has(b)) };
 }
+
+// Which of these can come out of Klutz's crate into your Inventory, in order: each with space left in its
+// box, and codexes while the bookcase has room (shelfFree, below 0 when it's overfull). The rest stay in
+// the crate. Unlike a quest's reward, which always comes home (a box can go over), the crate needs the
+// space, as going into the Labyrinth does (the user, 2026-11-17). full: the boxes that held something back;
+// shelfFull: a codex was held back.
+export function roomFor(inventory: Drop[], drops: Drop[], big: readonly CappedBox[] = [], shelfFree = Infinity): { fit: Drop[]; full: CappedBox[]; shelfFull: boolean } {
+  const { fit, full } = fitInBoxes(inventory, drops, big);
+  let shelf = Math.max(0, shelfFree), shelfFull = false;
+  const out = fit.filter((d) => {
+    if (!(d.dropType === "item" && d.codexMove)) return true;
+    if (shelf > 0) { shelf--; return true; }
+    shelfFull = true; return false;
+  });
+  return { fit: out, full, shelfFull };
+}

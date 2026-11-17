@@ -31,7 +31,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     500 rising to 4,000: `KLUTZ_PACK_PRICES`), sewn on from his Skills tab: it shows his pack's slots (all 20, the
     ones still to sew on dashed) and the upgrades you hold; tap one and a new slot pops in (the user, 2026-11-14).
   - **His chest** (the crate) takes codexes, potions and gear; materials go straight to your tally. It holds 30
-    (`CHEST_START`), +10 an upgrade for 500 to 5,000 gold; full, he won't set off (a trip can overfill it).
+    (`CHEST_START`), +10 an upgrade for 500 to 5,000 gold; full, he won't set off (a trip can overfill it). Keeping
+    things from it needs room (the user, 2026-11-17): each goes only into a box with space, a codex only while
+    the bookcase has room, and the rest stay in the crate with the reason shown (`roomFor`, lib/items/storage.ts).
+    Quest rewards, by contrast, always come home, even into a full box.
   - **Skills** (a point a level over 1, each up to 10): **Trapping** (+2% catch chance a level), **Armourer**,
     **Scavenger**, **Scholar** (each +3% a level: an extra weapon or armour, material or potion, or codex in each
     20-minute window). 🧪 The steps are Claude's. A re-spec hands them back with his % points.
