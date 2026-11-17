@@ -6,8 +6,10 @@
 //   and materials sit in a strip at the top;
 // - Creatures: your creatures, your roster, creature cards (as in the Pit);
 // - Klutz: a shortcut to his gear and moves (once he's helping you).
+// 🧪 ?store=1: the new Den's Storehouse (lib/den3d/layout.ts): just weapons, armour and consumables
+// (codexes are on the bookcase, creatures in the Pit), no parts to swap between.
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useGameState, type TabKey } from "@/hooks/useGameState";
 import DenFrame from "@/components/DenFrame";
@@ -24,6 +26,8 @@ const PART_TABS: Record<Part, TabKey[]> = {
   items: ["weapons", "armor", "consumables", "codexes"],
   creatures: ["creatures", "roster", "cards"],
 };
+const STORE_TABS: TabKey[] = ["weapons", "armor", "consumables"];
+const noChange = () => () => {}; // (the address doesn't change while the page is open)
 
 // A storage schematic you've got (from the merchant), to build here: the
 // box it's for holds BIG_BOX_CAP from then on (BIGGER_BOX_CAP, a second
@@ -55,6 +59,8 @@ export default function InventoryPage() {
   const game = useGameState("weapons");
   const [part, setPart] = useState<Part>("items");
   const [klutzOpen, setKlutzOpen] = useState(false);
+  // (the new Den's Storehouse: ?store=1)
+  const store = useSyncExternalStore(noChange, () => new URLSearchParams(window.location.search).get("store") === "1", () => false);
   // The first quest: Klutz sent you to look at his old gear. Seen it.
   const { hydrated, quest, questSawStorage } = game;
   useEffect(() => { if (hydrated && quest.stage === "stash") questSawStorage(); }, [hydrated, quest.stage, questSawStorage]);
@@ -97,7 +103,7 @@ export default function InventoryPage() {
 
   // The dock (Sell mode) only on the Items tab: an empty one is just a black strip (the user, 2026-11-17).
   return (
-    <DenFrame title="Inventory" icon="🧰" gold={game.gold} materials={game.materials} dock={part === "items" ? dock : undefined}>
+    <DenFrame title={store ? "Storehouse" : "Inventory"} icon={store ? "📦" : "🧰"} gold={game.gold} materials={game.materials} dock={part === "items" ? dock : undefined}>
       {game.showSellConfirm && (
         <SellConfirmModal
           items={game.selectedItemsForModal}
@@ -114,8 +120,8 @@ export default function InventoryPage() {
       {klutzOpen && <KlutzGear game={game} onClose={() => setKlutzOpen(false)} />}
       {part === "items" && <StorageBuild game={game} />}
       <InventoryList
-        title={parts}
-        tabs={PART_TABS[part]}
+        title={store ? undefined : parts}
+        tabs={store ? STORE_TABS : PART_TABS[part]}
         showSell={false}
         sellBar={false}
         emptyText={part === "items" ? "No items of this kind yet — scan some barcodes."

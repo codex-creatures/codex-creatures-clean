@@ -76,7 +76,7 @@ const FIRE = { colour: "#ffa255", power: 22, height: 1.3, decay: 1.6 }; // 🧪 
 
 // Textures, loaded once and drawn sharp: one art pixel stays one block of colour.
 const TEXTURES = new Map<string, THREE.Texture>();
-function texture(src: string): THREE.Texture {
+export function texture(src: string): THREE.Texture {
   let t = TEXTURES.get(src);
   if (!t) {
     t = new THREE.TextureLoader().load(src);
@@ -380,7 +380,7 @@ function litLights(sim: WalkSim, live: WalkSim["live"], layout: Layout, F: Frame
 // pool as the healing gem (dark once used), a "!" over each cage you can open; foes while lit, or all of a room that's seen you,
 // with a "!" over each; the card witch walking about, and the people who wander; campfires and candles; rubble where a tunnel fell.
 // Foes, the witch and the people follow the sim every frame (the list itself is shown again now and then).
-const FLAME_COLOUR = "#ffd27a";
+export const FLAME_COLOUR = "#ffd27a";
 const GEM_UP = 1.3;                    // u: a "!" over the healing gem
 const SHAKE_U = 0.09;                  // u: the picture's shake as a tunnel falls in (the 2D view's 3 art pixels at 32 a unit)
 const RUBBLE = { colours: ["#5b5560", "#6f6872", "#48434d"], size: 0.22, drop: 3 }; // the 2D view's stones; fallen from `drop` u up
@@ -625,7 +625,7 @@ function RatRun({ hole, phase, sim, live, stretch, shade, tiled = false }: { hol
 // there: it moves across with the lean at that height (PROP_LEAN, the rock's and the 3D things'), every
 // frame, so it stays on its wall or table as you walk, instead of drifting off it. The picture itself
 // stays upright (flat sprites don't lean: world/rendering.md).
-function Mounted({ x, y, up, rotation = 0, children }: { x: number; y: number; up: number; rotation?: number; children: React.ReactNode }) {
+export function Mounted({ x, y, up, rotation = 0, children }: { x: number; y: number; up: number; rotation?: number; children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null);
   useFrame(() => { if (group.current) group.current.position.x = x + PROP_LEAN.uLean.value * (x - PROP_LEAN.uCx.value) * up; });
   return <group ref={group} position={[x, up, y]} rotation={[0, rotation, 0]}>{children}</group>;
@@ -634,7 +634,7 @@ function Mounted({ x, y, up, rotation = 0, children }: { x: number; y: number; u
 // A picture standing upright at (x, y) on the floor, facing the camera's way (south), lit by the
 // lights, or (`colour`, Stone) tinted by the light where it stands.
 // `follow`: where it stands now (and whether it's turned round), read every frame, for one that walks.
-function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: number; y: number; w: number; h: number; below: number; colour?: Tint;
+export function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: number; y: number; w: number; h: number; below: number; colour?: Tint;
   follow?: () => { x: number; y: number; flip?: boolean } }) {
   const mesh = useRef<THREE.Mesh>(null);
   useFrame(() => {
@@ -655,7 +655,7 @@ function Upright({ src, x, y, w, h, below, colour, follow }: { src: string; x: n
 }
 
 // A wall torch's picture on its wall, lit by the lights, or (`colour`, Stone) tinted by the light in front of it, each frame.
-function Sconce({ w, h, colour }: { w: number; h: number; colour?: () => THREE.Color }) {
+export function Sconce({ w, h, colour }: { w: number; h: number; colour?: () => THREE.Color }) {
   const mat = useRef<THREE.MeshBasicMaterial>(null);
   useFrame(() => { if (mat.current && colour) mat.current.color.copy(colour()); });
   return (
@@ -691,7 +691,7 @@ function Witch({ find, stretch, shade }: { find: () => { x: number; y: number; f
 // on the floor; the art faces left, so it's mirrored heading right.
 const STROLLS: Record<string, Parameters<typeof artFor>[0]> = { "merchant-walk": MERCHANT, "librarian-walk": LIBRARIAN };
 const STROLL_FPS = 9; // walk frames a second (the tavern's)
-function Stroller({ find, art, w, stretch, shade }: { find: () => { x: number; y: number; facing: number; path: unknown[] }; art: NonNullable<ReturnType<typeof artFor>>;
+export function Stroller({ find, art, w, stretch, shade }: { find: () => { x: number; y: number; facing: number; path: unknown[] }; art: NonNullable<ReturnType<typeof artFor>>;
   w: number; stretch: number; shade?: (x: number, y: number) => THREE.Color }) {
   const mesh = useRef<THREE.Mesh>(null);
   const walk = art.walk!;
@@ -729,7 +729,7 @@ const MARK = (() => {
     return t;
   };
 })();
-function Mark({ at, up, pop }: { at: () => { x: number; y: number }; up: number; pop?: number }) {
+export function Mark({ at, up, pop }: { at: () => { x: number; y: number }; up: number; pop?: number }) {
   const mesh = useRef<THREE.Mesh>(null);
   useFrame(() => {
     const m = mesh.current, p = at(), now = performance.now();
@@ -804,7 +804,7 @@ function useCarved(sim: WalkSim, live: WalkSim["live"], layout: Layout, view: Vi
   return geo;
 }
 // The lean, in the vertex shader: a point moves outwards by lean × its height × how far across from you it is.
-const LEAN = "transformed.x += uLean * (transformed.x - uCx) * transformed.y;";
+export const LEAN = "transformed.x += uLean * (transformed.x - uCx) * transformed.y;";
 
 function GreyRock({ sim, live, layout, view }: { sim: WalkSim; live: WalkSim["live"]; layout: Layout; view: View3D }) {
   const uni = useRef({ uLean: { value: 0 }, uCx: { value: 0 } });
@@ -837,7 +837,7 @@ function GreyRock({ sim, live, layout, view }: { sim: WalkSim; live: WalkSim["li
 // Light multiplies the art (warm where it's lit, a plain dim where you only remember); nothing is
 // added over the picture, so no wash or haze.
 const CLOSED_DIM = 0.4; // a room cut off behind you shows this bright (the 2D view's dimming)
-const STONE = {
+export const STONE = {
   remember: 0.2,     // 🧪 how bright a place you've seen but isn't lit now shows (a plain dim, no tint)
   gain: 1.25,        // 🧪 full light: the art a little brighter than drawn (the kits are drawn dark)
   top: 0.5,          // 🧪 rock tops: their stone this much darker, so they read as rock, not floor
@@ -862,7 +862,7 @@ const STAND_INS = { f: KIT, a: KIT_A };
 // Textures for the shader: the PNG's own values (no colour-space change: light multiplies what the
 // artist drew), repeating, sharp.
 const RAW = new Map<string, THREE.Texture>();
-function rawTexture(src: string): THREE.Texture {
+export function rawTexture(src: string): THREE.Texture {
   let t = RAW.get(src);
   if (!t) {
     t = new THREE.TextureLoader().load(src);
@@ -873,14 +873,14 @@ function rawTexture(src: string): THREE.Texture {
   return t;
 }
 // A grid of bytes as a texture (the light, what you've seen), blended between samples.
-function gridTexture(w: number, h: number): THREE.DataTexture {
+export function gridTexture(w: number, h: number): THREE.DataTexture {
   const t = new THREE.DataTexture(new Uint8Array(w * h * 4), w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
   t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; t.needsUpdate = true;
   return t;
 }
 
 // A grid of codes (tile variants: tiles.ts), read exactly: one byte a cell in red.
-function codeTexture(codes: Uint8Array, w: number, h: number): THREE.DataTexture {
+export function codeTexture(codes: Uint8Array, w: number, h: number): THREE.DataTexture {
   const d = new Uint8Array(w * h * 4);
   for (let i = 0; i < codes.length; i++) d[i * 4] = codes[i];
   const t = new THREE.DataTexture(d, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
@@ -889,13 +889,13 @@ function codeTexture(codes: Uint8Array, w: number, h: number): THREE.DataTexture
 }
 
 // Two grids (values 0–1) into a grid texture's red and green.
-function fillGrid(t: THREE.DataTexture, r: ArrayLike<number>, g: ArrayLike<number>) {
+export function fillGrid(t: THREE.DataTexture, r: ArrayLike<number>, g: ArrayLike<number>) {
   const d = t.image.data as Uint8Array;
   for (let i = 0; i < r.length; i++) { d[i * 4] = Math.round(r[i] * 255); d[i * 4 + 1] = Math.round(g[i] * 255); }
   t.needsUpdate = true;
 }
 
-const STONE_VERTEX = `
+export const STONE_VERTEX = `
 uniform float uLean;
 uniform float uCx;
 varying vec3 vWorld;
@@ -906,7 +906,7 @@ void main() {
   ${LEAN}
   gl_Position = projectionMatrix * modelViewMatrix * vec4(transformed, 1.0);
 }`;
-const STONE_FRAGMENT = `
+export const STONE_FRAGMENT = `
 uniform sampler2D uFloor; uniform sampler2D uFace; uniform sampler2D uRim;
 uniform vec2 uFloorSize; uniform vec2 uFaceSize; uniform vec2 uRimSize;   // (their pixels)
 uniform sampler2D uMoss; uniform sampler2D uHole; uniform sampler2D uWebA; uniform sampler2D uWebB; uniform sampler2D uWebC; uniform sampler2D uWebD;
@@ -1070,7 +1070,7 @@ function remembered(sim: WalkSim, closed: Uint8Array, into: React.RefObject<Uint
 }
 
 // The shader's settings, filled in each frame from the view (STONE's numbers to start).
-function stoneUniforms() {
+export function stoneUniforms() {
   const v2 = () => ({ value: new THREE.Vector2() }), v3 = (x = 0, y = 0, z = 0) => ({ value: new THREE.Vector3(x, y, z) });
   const map = () => ({ value: null as THREE.Texture | null });
   return {

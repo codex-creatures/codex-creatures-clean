@@ -25,6 +25,7 @@ import {
 import { writeUiScale, UI_SCALES, UI_SCALE_EVENT } from "@/lib/uiScale";
 import { useUiScale } from "@/hooks/useUiScale";
 import { canVibrate, readHaptics, writeHaptics, buzz } from "@/lib/haptics";
+import { useNewDen, switchNewDen } from "@/hooks/useNewDen";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const GOOD = "#5ee08a", BAD = "#ff8a80";
@@ -66,6 +67,9 @@ export default function SettingsPage() {
     setHaptics(writeHaptics(window.localStorage, !haptics));
     buzz("hit"); // a taste of it, when turned on
   }
+
+  // 🧪 The new Den (lib/den3d/setting.ts): null until loaded.
+  const newDen = useNewDen();
 
   function refresh() {
     setCurrent(summarise(exportSave(window.localStorage)));
@@ -204,6 +208,24 @@ export default function SettingsPage() {
           </div>
           <button className="pixel-btn" onClick={toggleHaptics} style={{ display: "block", width: "100%", marginTop: 8 }}>
             {haptics ? "📳 On" : "📴 Off"}
+          </button>
+        </div>
+      )}
+
+      {newDen !== null && (
+        <div className="stone-panel" style={panel}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>🏚️ New Den (test)</div>
+            <Help title="New Den">
+              <ul>
+                <li>Try the <b>new Den</b> while it&apos;s being built: drag to look round, tap a place to go in.</li>
+                <li>With it on, your <b>bag empties into storage</b> after each run. Pack it again at the Labyrinth&apos;s entrance.</li>
+                <li>It&apos;s for <b>this device only</b>. Your save is the same either way.</li>
+              </ul>
+            </Help>
+          </div>
+          <button className="pixel-btn" onClick={() => switchNewDen(!newDen)} style={{ display: "block", width: "100%", marginTop: 8 }}>
+            {newDen ? "✅ On" : "⬜ Off"}
           </button>
         </div>
       )}

@@ -20,6 +20,8 @@ import Triumph from "@/components/Triumph";
 import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
 import LootGrid, { stackCards } from "@/components/LootGrid";
 import { useGameState, SLOT_FIELD } from "@/hooks/useGameState";
+import { bagHome } from "@/lib/den3d/bag";
+import { newDenOn } from "@/lib/den3d/setting";
 import type { Drop } from "@/lib/types";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import { CREATURE_BY_ID } from "@/lib/creatures/creatureData";
@@ -348,20 +350,11 @@ export default function DungeonPage() {
   function goHome() {
     sweepFree();
     const cur = loadDungeon();
-    let shelf = game.bookcaseSize - game.inventory.filter((x) => x.dropType === "item" && x.codexMove).length;
-    const loot = { ...(cur.meta.loot ?? {}) };
-    const bag: BagEntry[] = [];
-    for (const e of cur.meta.bag ?? []) {
-      const id = lootIdOf(e);
-      const x = id ? loot[id] : undefined;
-      if (!id || !x) { if (!id) bag.push(e); continue; }
-      if (x.dropType === "item" && x.codexMove) {
-        if (shelf <= 0) { bag.push(e); continue; } // the bookcase is full: it stays in the bag
-        shelf--;
-      }
-      game.addDrop(x);
-      delete loot[id];
-    }
+    // What you found goes into storage; with the new Den on, the whole bag empties (lib/den3d/bag.ts).
+    const shelf = game.bookcaseSize - game.inventory.filter((x) => x.dropType === "item" && x.codexMove).length;
+    const { home, potions, bag, loot } = bagHome(cur.meta.bag ?? [], cur.meta.loot ?? {}, shelf, newDenOn());
+    for (const x of home) game.addDrop(x);
+    for (const p of potions) game.addDrop(potionDrop("", p));
     // The daily quests (lib/daily.ts): rooms finished this run, and a win.
     if (cur.run) countDaily("room", cur.run.cleared.length);
     if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) {

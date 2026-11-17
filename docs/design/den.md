@@ -28,6 +28,47 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ Sell prices **stay as they are** (the user, 2026-10-20), even though they (epic ~800,
   legendary ~2,700) dwarf Labyrinth gold (~18 a room) and re-scan gold has no cap.
 
+### The new Den (behind a setting)
+
+🧪 **Built 2026-11-18, off by default** (decision 50): Settings → **New Den (test)**, per device
+(`codex_creatures_den3d_v1`, lib/den3d/setting.ts; not in the save). The user's design, 2026-11-18:
+the Den as a room like the Labyrinth's, warmer walls for contrast, built up over time; no free
+placement (players could block themselves in). With it off, nothing changes.
+
+- **The look:** the Labyrinth's 3D renderer as is (components/Den3D.tsx reuses WalkView3D's Stone
+  shader, the carved rock, the camera at 60°, the lean, 48 art pixels a unit at 15 units across), with
+  the Den's own light: never pitch dark (`DEN_STONE` remember 0.3), warmer, from torches on the north
+  walls, two braziers by the altar, the altar's fire and the tavern's windows (`denLights`). Walls 3 u
+  high (`DEN_WALL`; the Labyrinth's are 2.25): a cavern, the buildings under them. 🧪 The walls are the
+  Labyrinth's kit F till the Den has its own (warmer) kit.
+- **The rooms** (lib/den3d/layout.ts): two 12 × 12 floors side by side with rock between. Room 1:
+  Klutz's shack in the top-left corner (opens Klutz's page: his gear, his crate, his trips), the bookcase,
+  the Labyrinth's passage north through the wall, the quest board and the cage (in an alcove) on the north
+  wall, the Bestiary's lectern by the board; the **storehouse** on the west side (the Inventory's weapons,
+  armour and consumables: `/chest?store=1`; codexes stay on the bookcase, creatures in the Pit); the Soul
+  Altar in the middle; the healing pool and the Pit at the front; the rubble against the east wall.
+  Room 2 (the tavern's room): the tavern in its top-right corner, the PvP portal on the north wall and the
+  Sparring/Training Pit (once the tavern has its pit, as before). No merchant stall and no bag in the Den
+  (the user).
+- **The rubble:** tap it; with Klutz's dynamite, blow it: the whole wall between the rooms comes down
+  (stones fall, the view shakes and glides out to both rooms) and it's one hall. Till then room 2 is black
+  and the camera can't go past room 1. Opened, the Den first shows the middle of both rooms.
+- **No walking:** drag to look round (the view stays on what's open), tap a place to go in. Every place
+  has its name over it (names that would overlap move apart), with a ❗ where something's waiting; Klutz's
+  tour lights a place's name and glides the view to it (the same `den-<id>` marks as the old Den).
+- **Who's about:** Klutz strolls round room 1 when he's home, rests in the pool while he heals, and is gone
+  while he's out (his shack's name gets his ❗ then). Visitors stroll round the whole Den once it's open
+  (`VISITOR_LOOP`); tap one for their wares.
+- **The bag:** not in the Den. With the new Den on, the whole bag empties when a run ends (lib/den3d/bag.ts:
+  potions back to storage, packed gear unpacked, found things into storage as before; a codex with no room
+  on the bookcase stays in it), so you pack it at the Labyrinth's entrance each run. Off: as before.
+- **Art:** the bookcase, cage, lectern, barrels, crates, pots and torches are the Labyrinth's approved 3D
+  things. The shack, storehouse, tavern, altar, both pits, the board, the passage's arch and the portal are
+  plain stand-ins (🧪) till their art is made and approved: samples in `/lab/den` first (the switches there
+  set the rubble, Klutz, the tavern and visitors).
+- Tests: tests/den3d.test.ts (the plan, nothing overlapping, the strolls clear of everything, the camera's
+  limits, taps), tests/den3dBag.test.ts.
+
 ### The tavern questline (the user's spec, 2026-10-20; ✅ stages 1–9 built, lib/tavern.ts)
 
 Each stage unlocks the next, so every stage can ship on its own and leave the game playable.
