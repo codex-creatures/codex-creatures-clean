@@ -21,13 +21,15 @@ import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
-import { CHAPTERS, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignReward, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
+import { CHAPTERS, CRATE_NAMES, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignReward, claimNext, claimedCount, currentChapter, loadCampaign, nextQuest, questDone, readCampaignCtx, rewardText, rollCampaignReward, updateCampaign } from "@/lib/campaign";
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
 import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest } from "@/lib/daily";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
 import CodeCache from "@/components/CodeCache";
+import ClaimBurst, { type ClaimShow } from "@/components/ClaimBurst";
+import { buzz } from "@/lib/haptics";
 import type { Drop } from "@/lib/types";
 
 const MUTED = "rgba(255,255,255,0.5)";
@@ -250,7 +252,8 @@ function CampaignList() {
   const [, reread] = useState(0);
   const [prize, setPrize] = useState<{ title: string; drops: Drop[] } | null>(null); // a reward's box, its "?"s to open
   const [blocked, setBlocked] = useState<string | null>(null); // why the last claim couldn't be taken
-  const [toast, setToast] = useState<{ text: string; key: number } | null>(null); // what a claim gave there and then (gold, the schematic)
+  // A claim's celebration (its picture flying up from the note), then its box (if it has one).
+  const [burst, setBurst] = useState<{ show: ClaimShow; drops: Drop[] | null; title: string } | null>(null);
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
   if (!klutzHelping(game.quest)) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Finish Klutz&apos;s quest first.</p>;
 
@@ -259,8 +262,8 @@ function CampaignList() {
   const ch = currentChapter(state), chapter = CHAPTERS[ch];
   const first = CHAPTERS.slice(0, ch).reduce((n, c) => n + c.quests.length, 0); // the chapter's first quest, in the whole list
   const doneHere = Math.min(chapter.quests.length, Math.max(0, claimed - first));
-  const say = (text: string) => { const key = Date.now(); setToast({ text, key }); window.setTimeout(() => setToast((t) => (t?.key === key ? null : t)), 1900); };
-  function claim() {
+  // note: the quest's note, tapped (its reward picture is where the celebration starts).
+  function claim(note: HTMLElement) {
     const s = loadCampaign(), c = readCampaignCtx(), q = nextQuest(s);
     if (!q || !questDone(q, c)) return;
     const r = q.reward;
@@ -270,14 +273,18 @@ function CampaignList() {
     if (why) { setBlocked(why); return; }
     setBlocked(null);
     updateCampaign((x) => claimNext(x, c));
-    if ("gold" in r) { game.addGold(r.gold); say(`+${r.gold.toLocaleString()} gold`); }
+    let text = "crate" in r ? CRATE_NAMES[r.crate] : rewardText(r), box: Drop[] | null = null; // (a crate: its rarities are on the box)
+    if ("gold" in r) { game.addGold(r.gold); text = `+${r.gold.toLocaleString()} gold`; }
     // The bookcase's plans: already yours (or built), and it pays gold instead.
     else if ("bookcasePlans" in r) {
-      if (hasBookPlans(game.tavern) || game.bookcase >= 2) { game.addGold(PLANS_TAKEN_GOLD); say(`+${PLANS_TAKEN_GOLD} gold`); }
-      else { game.findBookPlans(); say("📐 The Crooked Bookcase Schematic"); }
+      if (hasBookPlans(game.tavern) || game.bookcase >= 2) { game.addGold(PLANS_TAKEN_GOLD); text = `+${PLANS_TAKEN_GOLD} gold`; }
+      else { game.findBookPlans(); text = "The Crooked Bookcase Schematic"; }
     }
-    // Everything else: its box, each "?" to open (or all at once), as Klutz's armoury box.
-    else { drops.forEach(game.addDrop); setPrize({ title: rewardText(r), drops }); }
+    // Everything else: its box after, each "?" to open (or all at once), as Klutz's armoury box.
+    else { drops.forEach(game.addDrop); box = drops; }
+    const look = rewardLook(r);
+    setBurst({ show: { art: look.art, inside: look.inside, tint: look.tint, text, from: note.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: box, title: rewardText(r) });
+    buzz("levelUp");
     reread((n) => n + 1);
   }
   return (
@@ -299,8 +306,8 @@ function CampaignList() {
         const prog = got ? q.goal : Math.min(q.progress(ctx), q.goal); // (claimed: shown full, whatever counts now)
         return (
           <div key={q.id} className={`note${wanted ? " note-wanted" : ""}${ready ? " note-ready" : ""}`}
-            onClick={ready ? claim : undefined} role={ready ? "button" : undefined} tabIndex={ready ? 0 : undefined}
-            onKeyDown={ready ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); claim(); } } : undefined}
+            onClick={ready ? (e) => claim(e.currentTarget) : undefined} role={ready ? "button" : undefined} tabIndex={ready ? 0 : undefined}
+            onKeyDown={ready ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); claim(e.currentTarget); } } : undefined}
             aria-label={ready ? `Claim ${rewardText(q.reward)}` : undefined}
             style={{ transform: `rotate(${TILT[i % TILT.length]}deg)`, display: "grid", gridTemplateColumns: wanted ? "76px 1fr 44px" : "58px 1fr 44px", alignItems: "center", gap: 10, padding: "14px 10px 10px", opacity: got ? 0.6 : 1, cursor: ready ? "pointer" : undefined }}>
             <span className="note-pin" />
@@ -322,7 +329,7 @@ function CampaignList() {
           </div>
         );
       })}
-      {toast && <span key={toast.key} className="float-text pixel-font" style={{ top: 70, color: "#ffd970" }}>{toast.text}</span>}
+      {burst && <ClaimBurst show={burst.show} onDone={() => { const b = burst; setBurst(null); if (b.drops) setPrize({ title: b.title, drops: b.drops }); }} />}
       {prize && <CodeCache title={prize.title} items={prize.drops} opened={prize.drops.length === 1} doneLabel={prize.drops.length === 1 ? "Take it" : "Take it all"} onDone={() => setPrize(null)} />}
     </div>
   );
@@ -362,7 +369,7 @@ function QuestProgress({ id, goal, prog }: { id: string; goal: number; prog: num
 // enchanted piece, the schematic. small: the size that sits in a line of text (the Wanted poster).
 // ready: its quest is done and it's yours to claim: the picture jiggles (the user, 2026-11-17).
 const SHORT_RARITY: Record<string, string> = { common: "Com", uncommon: "Unc", rare: "Rare", epic: "Epic", legendary: "Leg" };
-function RewardBadge({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) {
+function rewardLook(r: CampaignReward) {
   const art = "gold" in r ? "/sprites/items/gold.png" : "scrolls" in r ? "/sprites/items/xp_scroll.png" : "goldKey" in r ? "/sprites/items/tools/gold_key.png"
     : "enchanted" in r ? (r.enchanted === "weapon" ? "/sprites/items/void_scythe.png" : "/sprites/items/armor/chest_dragonscale_tunic.png")
     : "bookcasePlans" in r ? "/sprites/items/schematic.png"
@@ -372,9 +379,13 @@ function RewardBadge({ r, small, ready }: { r: CampaignReward; small?: boolean; 
   const tint = "gold" in r || "goldKey" in r ? "#FFCC4D" : "scrolls" in r ? "#4EA1FF" : "enchanted" in r ? RARITY_COLORS[r.rarity].text : "crate" in r ? RARITY_COLORS[r.hi].text : "#c9a46a";
   const label = "gold" in r ? r.gold.toLocaleString() : "scrolls" in r ? `×${r.scrolls}` : "crate" in r && r.crate !== "supplies" ? (r.lo === r.hi ? SHORT_RARITY[r.lo] : `${SHORT_RARITY[r.lo]}–${SHORT_RARITY[r.hi]}`)
     : "enchanted" in r ? SHORT_RARITY[r.rarity] : "";
+  return { art, inside, tint, label };
+}
+function RewardBadge({ r, small, ready }: { r: CampaignReward; small?: boolean; ready?: boolean }) {
+  const { art, inside, tint, label } = rewardLook(r);
   const size = small ? 22 : 40;
   return (
-    <span title={rewardText(r)} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
+    <span className="reward-badge" title={rewardText(r)} style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 1, flex: "none", width: small ? 24 : 58 }}>
       <span style={{ position: "relative", width: small ? 24 : 52, height: small ? 24 : 44, display: "flex", alignItems: "center", justifyContent: "center", background: small ? undefined : `radial-gradient(circle, ${tint}55, transparent 68%)` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={art} alt="" draggable={false} className={ready ? "reward-ready" : undefined} style={{ maxWidth: size + 6, maxHeight: size, imageRendering: "pixelated", filter: "drop-shadow(0 2px 0 rgba(0,0,0,0.45))" }} />

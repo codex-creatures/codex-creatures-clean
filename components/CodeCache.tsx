@@ -22,8 +22,10 @@ function look(d: Drop) {
   if (d.dropType === "reward") return { sprite: GOLD_SPRITE, icon: "💰", name: `${d.amount} gold`, color: "#f1d9a0", glow: "rgba(241,217,160,0.35)" };
   const x = d as CreatureOrItemDrop;
   const rc = RARITY_COLORS[x.rarity];
+  // A stack (materials): how many, by the picture and after the name.
+  const qty = x.dropType === "item" && x.qty && x.qty > 1 ? x.qty : undefined;
   const sprite = x.dropType === "item" ? itemSprite(x) : creatureSprite(x.creatureId);
-  return { sprite, icon: goodsIcon(x) ?? (x.codexMove ? "📖" : x.scroll ? "📜" : x.dropType === "card" ? "🃏" : "📦"), name: x.name, color: rc.text, glow: rc.border, rarity: x.rarity };
+  return { sprite, icon: goodsIcon(x) ?? (x.codexMove ? "📖" : x.scroll ? "📜" : x.dropType === "card" ? "🃏" : "📦"), name: qty ? `${x.name} ×${qty}` : x.name, qty, color: rc.text, glow: rc.border, rarity: x.rarity };
 }
 
 export default function CodeCache({ title, intro, items, fresh, revealAllLabel = "Reveal all", doneLabel, opened = false, onDone }: {
@@ -67,6 +69,7 @@ export default function CodeCache({ title, intro, items, fresh, revealAllLabel =
                   background: "#15161d", border: `3px solid ${l.color}`, boxShadow: `0 0 10px ${l.glow}, inset 0 0 12px ${l.glow}`,
                   outline: last === i ? "2px solid #ffd66e" : "none", outlineOffset: 1 }}>
                 {l.sprite ? <PixelSprite sprite={l.sprite} scale={2} /> : <span style={{ fontSize: 22 }}>{l.icon}</span>}
+                {"qty" in l && l.qty && <span className="pixel-font" style={{ position: "absolute", right: 3, bottom: 1, fontSize: 13, lineHeight: 1, color: "#fff", textShadow: "1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000" }}>×{l.qty}</span>}
                 {fresh?.has(d.id) && <span className="pixel-font" aria-label="New" style={{ position: "absolute", top: 2, right: 2, padding: "0 3px", fontSize: 10, lineHeight: "14px", color: "#1a1206", background: "#ffd66e" }}>NEW</span>}
               </button>
             ) : (

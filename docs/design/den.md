@@ -229,7 +229,10 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   quest is faded with a green seal in its corner (off the words); the next one done glows gold with a 🎁, and a
   tap anywhere on it claims it: gold (or the schematic) at once, anything else as a box of "?"s to open one by
   one or all at once (as Klutz's armoury box; the 3D crate before it is gone), or, if it's one thing, that
-  thing shown straight away (you know what it is; daily rewards too). ➜ goes where an unfinished one
+  thing shown straight away (you know what it is; daily rewards too). First, a claim celebrates
+  (components/ClaimBurst.tsx, the user, 2026-11-17): the reward's picture flies off the note to the middle, grows
+  with rays and sparkles and what you got under it, then zooms off up (a tap skips it); the box opens after.
+  Materials in a box show how many (×4 on the slot, "Nails ×4"). ➜ goes where an unfinished one
   is done. **A reward always comes home, even into a full box** (as a run's haul does): only a codex needs
   room, on the bookcase (`rewardBlocked`). (A full consumables box held back an XP scroll, and with it every
   reward after it.) A ❗ on the board in the

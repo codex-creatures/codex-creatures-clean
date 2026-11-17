@@ -614,6 +614,33 @@ body {
 .chapter-bar { height: 12px; background: #0a0806; box-shadow: inset 0 0 0 2px #000, 0 0 0 2px #4a3a26; overflow: hidden; }
 .chapter-bar > span { display: block; height: 100%; background: repeating-linear-gradient(90deg, #e8c66a 0 6px, #b98a2e 6px 8px); transition: width 0.6s ease-out; }
 @media (prefers-reduced-motion: reduce) { .note-ready, .reward-ready { animation: none; } }
+/* A reward claimed (components/ClaimBurst.tsx): the picture flies from its note to the middle (--dx, --dy:
+   where it started), grows, holds with rays and sparkles behind it and the words under it, then zooms off up. */
+.claim-burst { position: fixed; inset: 0; z-index: 59; display: flex; align-items: center; justify-content: center; cursor: pointer; animation: claim-dim 1.8s ease forwards; }
+@keyframes claim-dim { 0% { background: rgba(0, 0, 0, 0); } 25%, 70% { background: rgba(0, 0, 0, 0.7); } 100% { background: rgba(0, 0, 0, 0); } }
+.claim-fly { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; animation: claim-fly 1.8s cubic-bezier(0.3, 0.7, 0.3, 1) forwards; }
+@keyframes claim-fly {
+  0% { transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.45); }
+  30% { transform: translate(0, 0) scale(1.15); }
+  38% { transform: translate(0, 0) scale(1); }
+  72% { transform: translate(0, -4px) scale(1.04); opacity: 1; }
+  100% { transform: translate(0, -70cqh) scale(0.3); opacity: 0; }
+}
+.claim-pic { position: relative; width: 96px; height: 96px; display: flex; align-items: center; justify-content: center; }
+.claim-pic img { width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 10px rgba(255, 214, 110, 0.8)) drop-shadow(0 3px 0 rgba(0, 0, 0, 0.5)); }
+.claim-pic img.claim-inside { position: absolute; right: -4px; bottom: -4px; width: 48px; height: 48px; }
+.claim-rays {
+  position: absolute; left: 50%; top: 48px; width: 300px; height: 300px; margin: -150px 0 0 -150px; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, var(--tint, #ffd66e) 0 9deg, transparent 9deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%); mask: radial-gradient(circle, #000 18%, transparent 68%);
+  animation: claim-rays 1.8s linear forwards;
+}
+@keyframes claim-rays { 0%, 22% { opacity: 0; transform: scale(0.3) rotate(0); } 36% { opacity: 0.85; transform: scale(1) rotate(10deg); } 70% { opacity: 0.85; transform: scale(1.05) rotate(45deg); } 82%, 100% { opacity: 0; transform: scale(1.1) rotate(55deg); } }
+.claim-spark { position: absolute; left: 50%; top: 48px; width: 20px; height: 20px; margin: -10px 0 0 -10px; color: #fff3c4; font-size: 18px; line-height: 20px; text-align: center; pointer-events: none; text-shadow: 0 0 8px #ffd66e; opacity: 0; animation: claim-spark 1.8s ease-out forwards; }
+@keyframes claim-spark { 0%, 30% { opacity: 0; transform: rotate(var(--a)) translateY(0) scale(0.4); } 38% { opacity: 1; } 70%, 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) scale(1); } }
+.claim-text { font-size: 22px; color: #ffd970; max-width: 80cqw; text-align: center; line-height: 1.2; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000; opacity: 0; animation: claim-text 1.8s ease forwards; }
+@keyframes claim-text { 0%, 28% { opacity: 0; } 38%, 70% { opacity: 1; } 82%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .claim-burst, .claim-fly, .claim-rays, .claim-spark, .claim-text { animation-duration: 0.3s; } }
 /* The ➜ on a note: a parchment button. */
 .note-go {
   min-width: 44px; min-height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;
