@@ -98,12 +98,15 @@ describe("the 2026-11 codex moves in a fight", () => {
     expect(s.sides.A.ground ?? []).toEqual([]); // only theirs
     const wolf = s.sides.B.team[0];
     expect(999 - wolf.hp).toBeGreaterThanOrEqual(100); // a tenth of 999, plus the hit
+    const before = wolf.hp;
     resolveRound(s, { A: attack("Zap"), B: swap(1) }); // the Glob (Toxic) comes in: immune
     expect(has(s.sides.B.team[1], "poison")).toBe(false);
-    expect(has(wolf, "poison")).toBe(true); // the wolf keeps it on the bench for a while
-    const left = wolf.statuses.find((x) => x.id === "poison")!.rounds;
-    expect(left).toBeGreaterThanOrEqual(1);
-    expect(left).toBeLessThanOrEqual(3);
+    // The wolf keeps it on the bench: the round it left is the first of its 1–3 rounds after (so it
+    // ticks then), and 0–2 are left. (It used to expect one still left, which a roll of 1 can't give:
+    // a quarter of runs failed.)
+    expect(before - wolf.hp).toBeGreaterThanOrEqual(100);
+    const left = wolf.statuses.find((x) => x.id === "poison")?.rounds ?? 0;
+    expect(left).toBeLessThanOrEqual(2);
   });
 
   it("clouds don't stack; blood under a cloud is soaked up and makes it stronger", () => {
