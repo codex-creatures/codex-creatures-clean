@@ -1,7 +1,7 @@
 "use client";
 // app/board/page.tsx
 // The quest board in the Den, in three tabs. Campaign: the campaign's chapter
-// you're on (lib/campaign.ts). Quests: today's two (lib/daily.ts),
+// you're on (lib/campaign.ts). Daily Quests: today's two (lib/daily.ts),
 // and the Hydra quest, up once the Cyclops is beaten. They play offline. Leaderboards (lib/leaderboard.ts):
 // species collected, runs and wins in each dungeon, and time played,
 // ranked against every player online.
@@ -12,11 +12,10 @@
 
 import { useEffect, useState } from "react";
 import DenFrame from "@/components/DenFrame";
-import Help from "@/components/Help";
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { fetchBoard } from "@/lib/online/leaderboard";
 import FriendList, { useFriends } from "@/components/FriendList";
-import { BOARD_INFO, BOARD_KINDS, BOARD_TOP, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
+import { BOARD_INFO, BOARD_KINDS, DUNGEON_SHORT, boardKey, perDungeon, boardValue, dungeonName, type Board, type BoardKind } from "@/lib/leaderboard";
 import { DUNGEON_IDS, loadDungeon, type DungeonId } from "@/lib/dungeon/run";
 import { useGameState } from "@/hooks/useGameState";
 import { hasBookPlans } from "@/lib/tavern";
@@ -69,7 +68,6 @@ export default function QuestBoardPage() {
   const friendIds = new Set((friends ?? []).map((f) => f.id));
 
   const board = view.status === "ok" ? view.board : null;
-  const title = tab === "campaign" ? "Campaign" : quests ? "Quests" : showFriends ? "Friends" : kind === "species" ? "Species collected" : kind === "time" ? "Time played" : kind === "scans" ? "Barcodes scanned" : `${BOARD_INFO[kind].name} · ${dungeonName(dungeon)}`;
 
   // (Kept on the Quests tab too, hidden, so the panel doesn't change size.)
   const dock = (
@@ -85,63 +83,29 @@ export default function QuestBoardPage() {
 
   // The dock (the leaderboards) only on the Boards tab: an empty one is just a black strip (the user, 2026-11-17).
   return (
-    <DenFrame title="Quest Board" icon="📜" fill dock={quests ? undefined : dock}>
+    <DenFrame title="Quest Board" icon={<Glyph icon="📜" art="ui_quests" />} fill dock={quests ? undefined : dock}>
       <div className="stone-panel" style={{ height: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: 10, padding: "12px 12px 14px" }}>
+        {/* The tabs, in plain words, then straight to what's on them: no title or "?" row (the user, 2026-11-17). */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-          <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}><Glyph icon="📖" art="ui_campaign" size={18} /> Campaign</button>
-          <button className="chip" data-active={tab === "quests"} onClick={() => setTab("quests")} style={TAB}><Glyph icon="📜" art="ui_quests" size={18} /> Quests</button>
-          <button className="chip" data-active={tab === "boards"} onClick={() => setTab("boards")} style={TAB}><Glyph icon="🏆" art="ui_leaderboards" size={18} /> Boards</button>
+          <button className="chip" data-active={tab === "campaign"} onClick={() => setTab("campaign")} style={TAB}>Campaign</button>
+          <button className="chip" data-active={tab === "quests"} onClick={() => setTab("quests")} style={TAB}>Daily Quests</button>
+          <button className="chip" data-active={tab === "boards"} onClick={() => setTab("boards")} style={TAB}>Leaderboards</button>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <div style={{ minWidth: 0 }}>
-            <div className="pixel-font" style={{ fontSize: 17, color: GOLD, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tab === "campaign" ? "📖" : quests ? "📜" : showFriends ? "👥" : "🏆"} {title}</div>
-            <div style={{ fontSize: 12, color: MUTED, visibility: board && !showFriends && !quests ? "visible" : "hidden" }}>
-              Season {board?.season ?? 1}{board ? ` · since ${new Date(board.startedAt).toLocaleDateString()}` : ""}
+        {/* The leaderboards: the dungeon buttons (their space kept on the other boards, so nothing moves) and 👥 friends. */}
+        {!quests && (
+          <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: perDungeon(kind) && !showFriends ? "visible" : "hidden" }}>
+              {DUNGEON_IDS.map((d) => (
+                <button key={d} className="chip" data-active={dungeon === d} onClick={() => setDungeon(d)} title={dungeonName(d)}
+                  style={{ minHeight: 44, justifyContent: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {DUNGEON_SHORT[d]}
+                </button>
+              ))}
             </div>
+            <button className="chip" data-active={showFriends} onClick={() => setShowFriends((v) => !v)} aria-label="Friends" title="Friends"
+              style={{ minHeight: 44, minWidth: 44, justifyContent: "center", visibility: me ? "visible" : "hidden" }}>👥</button>
           </div>
-          <button className="chip" data-active={showFriends} onClick={() => setShowFriends((v) => !v)} aria-label="Friends" title="Friends"
-            style={{ minHeight: 44, minWidth: 44, justifyContent: "center", marginLeft: "auto", visibility: me && !quests ? "visible" : "hidden" }}>👥</button>
-          {tab === "campaign" ? (
-            <Help title="Campaign">
-              <ul>
-                <li>Quests that lead you through the game, a chapter at a time. Each chapter ends with a dungeon&apos;s boss.</li>
-                <li>Everything you do counts, whenever you do it. But rewards are claimed <b>in order</b>: claim the one above to claim the next.</li>
-                <li>➜ takes you to where a quest is done. A ❗ on the board in the Den means a reward is ready.</li>
-                <li><b>Crates</b> open as you claim them: materials, gear, codexes or supplies (potions, a Revival Elixir and a torch).</li>
-              </ul>
-            </Help>
-          ) : quests ? (
-            <Help title="Quests">
-              <ul>
-                <li>A ❗ on the board in the Den means a quest has a step for you.</li>
-                <li><b>☀️ Today:</b> two quests a day, a big one and a smaller one, the same for everyone and new at midnight. Only what you do that day counts. Finish one, then claim its reward.</li>
-                <li>A boss you&apos;ve never beaten is swapped for an easier one (the Abyss for the Hydra, then the Cyclops, then the Encampment).</li>
-                <li><b>Slay the Hydra:</b> it goes up once you&apos;ve beaten the Cyclops. Beat the Hydra dungeon and claim the <b>Training Pit Schematic</b>: it builds the Sparring Pit up into the Training Pit, twice as fast.</li>
-              </ul>
-            </Help>
-          ) : <Help title="Leaderboards">
-            <ul>
-              <li>Every player online, ranked. Your numbers go up with your online save, a few seconds after you play.</li>
-              <li><b>🐾 Species:</b> every creature species you&apos;ve owned, even ones you&apos;ve let go (as <b>Creatures discovered</b> at the altar).</li>
-              <li><b>🏃 Runs:</b> runs started in that dungeon. <b>👑 Wins:</b> its final boss beaten.</li>
-              <li><b>⏳ Time:</b> time played (as in Settings: idle time doesn&apos;t count).</li>
-              <li><b>📷 Scans:</b> barcodes scanned (scanning one again counts too).</li>
-              <li><b>Seasons:</b> when a new one starts, runs, wins, time and scans count again from 0. Species stay.</li>
-              <li>Top {BOARD_TOP} are shown. Only players with a name and more than 0 are listed.</li>
-              <li><b>➕</b> adds a player to your friends. <b>👥</b> shows them: challenge one who&apos;s on (🟢) to a duel.</li>
-            </ul>
-          </Help>}
-        </div>
-
-        {/* The dungeon buttons keep their space on the other boards, so nothing moves. */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, visibility: perDungeon(kind) && !showFriends && !quests ? "visible" : "hidden" }}>
-          {DUNGEON_IDS.map((d) => (
-            <button key={d} className="chip" data-active={dungeon === d} onClick={() => setDungeon(d)} title={dungeonName(d)}
-              style={{ minHeight: 44, justifyContent: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {DUNGEON_SHORT[d]}
-            </button>
-          ))}
-        </div>
+        )}
 
         {/* The campaign and today's quests: notes pinned to a wooden board. The leaderboards: a plain list. */}
         <div className={quests ? "quest-board" : undefined} style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", borderRadius: quests ? 2 : 8, background: quests ? undefined : "rgba(0,0,0,0.25)", padding: quests ? "10px 12px" : "4px 8px" }}>
@@ -176,10 +140,10 @@ export default function QuestBoardPage() {
           )}
         </div>
 
-        {/* You, wherever you are on the board (always one line, so the list never shifts). */}
-        <div className="pixel-font" style={{ fontSize: 14, color: GOLD, minHeight: 20, visibility: board && !showFriends && !quests ? "visible" : "hidden" }}>
+        {/* You, wherever you are on the board (always one line, so the list never shifts; not on the quest tabs). */}
+        {!quests && <div className="pixel-font" style={{ fontSize: 14, color: GOLD, minHeight: 20, visibility: board && !showFriends ? "visible" : "hidden" }}>
           {board?.me ? `You: #${board.me.rank} · ${boardValue(kind, board.me.value)}` : "You're not on this board yet."}
-        </div>
+        </div>}
       </div>
     </DenFrame>
   );

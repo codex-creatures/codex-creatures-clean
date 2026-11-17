@@ -100,7 +100,7 @@ fields optional with defaults.
    it can't fight: where you pick a team (the Labyrinth's entrance, a duel, PvP teams) it shows
    greyed, "🏋️ In the pit" (the user, 2026-11-04), and other fight lists leave it out. Take it out any time with the XP
    it's earned (a full bar levels it up). An XP scroll read on it banks what it's earned first.
-   **Slay the Hydra**, a quest on the board's Quests tab, goes up once you've beaten the Cyclops;
+   **Slay the Hydra**, a quest on the board's Daily Quests tab, goes up once you've beaten the Cyclops;
    beat the Hydra and claim its reward there, the **Training Pit Schematic** (not an item: the pit
    just offers to build). It builds the **Training Pit** over the Sparring Pit (a stone rim ringed with
    spears, `den/training-pit.png`, the same grid) for **10 stone, 10 metal bars, 5 planks, 5 nails
@@ -155,7 +155,7 @@ fields optional with defaults.
 
 ### Daily quests (✅ the user, 2026-11-02; lib/daily.ts)
 
-On the quest board's Quests tab, above the Hydra quest. **Two a day, a primary and a
+On the quest board's Daily Quests tab, above the Hydra quest. **Two a day, a primary and a
 secondary, the same for everyone** (picked from the date), new at **local midnight**. Only what you
 do that day counts; finish one, then claim its reward once. A ❗ on the board in the Den while one's
 ready to claim. Plays offline. ✅ (the user, 2026-11-06) Coming into the Den, a small popup lists
@@ -203,7 +203,8 @@ codex, the altar for a Code Cache) waits until there is.
 ### The campaign (✅ the user, 2026-11-16; lib/campaign.ts)
 
 Quests that aren't daily and lead through the game, on the quest board's **📖 Campaign** tab
-(`/board`, beside Quests and Boards), once Klutz's first quest is done. **Five chapters**, each
+(`/board`, beside Daily Quests and Leaderboards: the tabs in plain words, the quests icon by the
+Quest Board's title, and no title or "?" row under the tabs on any of them, the user, 2026-11-17), once Klutz's first quest is done. **Five chapters**, each
 leading up to a dungeon's boss (the Encampment, the Cyclops, the Hydra, the Abyss), then **Legend**,
 a long last one. The user listed the quests and the kinds of reward; Claude set the order and the
 numbers from a model of a normal player's progress (below). All 🧪 testing numbers.
@@ -215,9 +216,11 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   merchant (in the Labyrinth or the tavern), camp cages opened (the Encampment's and the large rooms'),
   golden chests opened, fights won with only effective hits, levels from the Sparring Pit, summons by
   rarity, gear Klutz brings home by rarity, each visitor seen at the tavern, and a boss beaten on a
-  run with no potion drunk (`drank`: the run, `meta.runs`, a potion was last drunk on). Scans
+  run with no potion drunk (`drank`: the run, by its id, a potion was last drunk on; it was `meta.runs` until 2026-11-17, which
+  Encampment, Deep and Abyss runs never move on). Scans
   and cards take the larger of the save's count and the tally.
-- **The screen** (redrawn by the user's brief, 2026-11-17): the quest board opens on the campaign. A plaque with
+- **The screen** (redrawn by the user's brief, 2026-11-17): the quest board opens on the campaign, straight under the tabs (no title, "?" or
+  empty row over it: the user, 2026-11-17). A plaque with
   the chapter, how many are claimed and a bar; then a parchment note per quest, pinned to a wooden board
   (the chapter's last a Wanted poster). Each shows its reward as a picture with its amount (coins and how
   many, the XP scroll ×n, a crate with what's inside on top and its rarities, the barrel, the key, an

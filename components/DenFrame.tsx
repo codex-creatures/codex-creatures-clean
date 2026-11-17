@@ -18,7 +18,7 @@ export default function DenFrame({
   title, icon, gold, materials, back = "/", backLabel = "Den", backLocked, onBack, fill, dock, children,
 }: {
   title: string;
-  icon?: string;
+  icon?: React.ReactNode; // an emoji, or a <Glyph> (its art)
   gold?: number;
   materials?: Materials; // show the strip of gold and materials (the Inventory)
   back?: string;
@@ -40,7 +40,7 @@ export default function DenFrame({
         {/* On a narrow phone the title shrinks a little and your gold stands with the coin
             over the number (as on the Den's bar), so the back button keeps its words. */}
         <h1 className="pixel-font screen-title" style={{ margin: 0, fontSize: "clamp(15px, 4.8cqw, 19px)", color: "#f1d9a0", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "60cqw" }}>
-          {icon ? `${icon} ` : ""}{title}
+          {icon ? <>{icon} </> : null}{title}
         </h1>
         <span style={{ display: "flex", justifyContent: "flex-end" }}>{gold !== undefined && !materials && (
           <span className="pixel-font" title="Gold" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, lineHeight: 1, fontSize: 14, color: "#f5c542", whiteSpace: "nowrap" }}>

@@ -99,7 +99,7 @@ Approved ones go into the game with their registries (`lib/sprites`, `RACE_INFO`
 and librarian locator, the dynamite on a storehouse's floor (`DYNAMITE_ART`), the standing torch (its own
 picture in 3D, one flame on its bowl), the Toxic race icon, nine status marks (corpsify, mirage, bleed,
 boost, burning, ward, weakened, sealed, haste) and four UI icons (items discovered; the board's Campaign,
-Quests and Boards tabs). (Ward is Crystal Armour's: it clears a creature's statuses and blocks new ones
+Quests and Boards tabs: since 2026-11-17 only Quests, by the Quest Board's title, the tabs plain words). (Ward is Crystal Armour's: it clears a creature's statuses and blocks new ones
 for 3 rounds.) The rest were redrawn (round 2, the user: "real world props" must look as they will
 as a real 3D model in the Labyrinth, or at the Den's angle):
 - **The golden chest** as the 3D chest's own faces in gold (front, ends, lid top, with their lit edges
