@@ -645,7 +645,9 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
   background: radial-gradient(ellipse at 50% 40%, #171922, #050608 70%);
 }
 .game-screen {
-  position: relative; width: 100vw; height: 100dvh; overflow: hidden;
+  /* The full height of the shell (fixed to the whole screen), not 100dvh: a phone opening the game from
+     its home screen can report too short a height, leaving the bottom fifth black (the user, 2026-11-17). */
+  position: relative; width: 100vw; height: 100%; box-sizing: border-box; overflow: hidden;
   transform: translateZ(0);  /* position: fixed inside it means "fixed to the screen" */
   display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
