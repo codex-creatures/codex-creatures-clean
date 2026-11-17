@@ -127,11 +127,14 @@ export default function DungeonPage() {
     game.equipItem(creatureId, slot, it.id);
   }
 
+  // A potion drunk: this run's boss won't count for the campaign's "without a potion" quests.
+  const drankHere = () => { const id = loadDungeon().run?.id; if (id) noteDrank(id); };
+
   // Used from the bag mid-fight: a potion, a weapon for the creature on the
   // field, or a Revival Elixir (on a knocked-out teammate: the fight brings it back).
   function useFromBag(key: string, activeIndex: number) {
     const e = key as BagEntry;
-    if (isPotionEntry(e)) { takeOne(e); noteDrank(loadDungeon().meta.runs); return; }
+    if (isPotionEntry(e)) { takeOne(e); drankHere(); return; }
     if (itemOf(e)?.tool === "revival") { spendTool(e); return; }
     const creatureId = loadDungeon().run?.current?.fighters?.[activeIndex];
     if (creatureId) equipFromBag(e, creatureId);
@@ -363,7 +366,7 @@ export default function DungeonPage() {
     if (cur.run) countDaily("room", cur.run.cleared.length);
     if (cur.run && (cur.run.status === "cleared" || wonAtTop(cur.run))) {
       countDaily(`win:${dungeonOf(cur.run)}`);
-      if (!drankOn(cur.meta.runs)) countCampaign(`clean:${dungeonOf(cur.run)}`); // (the campaign: its boss beaten without a potion)
+      if (!drankOn(cur.run.id)) countCampaign(`clean:${dungeonOf(cur.run)}`); // (the campaign: its boss beaten without a potion)
     }
     update(endRun({ ...cur, meta: { ...cur.meta, bag, loot } }));
     updateTavern(comeHome); // home: a visitor from before the clock stays a run less
@@ -683,7 +686,7 @@ export default function DungeonPage() {
     const hp = run?.hp[id] ?? 1;
     if (!c || hp <= 0 || hp >= 1 || !(lab?.meta.bag ?? []).includes(key)) return;
     takeOne(key);
-    noteDrank(loadDungeon().meta.runs);
+    drankHere();
     updateRun((r) => ({ ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) } }));
   }
   // …or one straight out of the open chest or sack, without it going in your bag.
@@ -776,7 +779,7 @@ export default function DungeonPage() {
     const key = !item ? undefined : "potion" in item ? item.potion : "gear" in item ? (item.gear as CreatureOrItemDrop).potion : undefined;
     const hp = r0?.hp[id] ?? 1;
     if (!c || !key || hp <= 0 || hp >= 1) return;
-    noteDrank(loadDungeon().meta.runs);
+    drankHere();
     updateRun((r) => (r.current ? { ...r, hp: { ...r.hp, [id]: Math.min(1, hp + POTIONS[key].heal / c.fighter.maxHp) },
       current: { ...r.current, sack: (r.current.sack ?? []).filter((_, i) => i !== index) } } : r));
   }

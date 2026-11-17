@@ -325,8 +325,9 @@ export const CAMPAIGN = CHAPTERS.flatMap((ch, chapter) => ch.quests.map((quest) 
 
 // ── Where you're at ─────────────────────────────────────────────────
 // Saved: how many rewards you've claimed (in order), and the events counted.
-// drank: the run (its number, meta.runs) a potion was last drunk on.
-export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: number };
+// drank: the run (its id) a potion was last drunk on. (Before 2026-11-17, meta.runs: but only the
+// Labyrinth counts those, so a potion drunk once marked every Encampment, Deep and Abyss run after it.)
+export type CampaignState = { claimed?: number; tally?: Record<string, number>; drank?: string | number };
 
 export const questDone = (quest: CampaignQuest, c: CampaignCtx) => quest.progress(c) >= quest.goal;
 export const claimedCount = (s: CampaignState) => Math.max(0, Math.min(CAMPAIGN.length, Math.floor(s.claimed ?? 0)));
@@ -372,7 +373,7 @@ export function updateCampaign(fn: (s: CampaignState) => CampaignState): Campaig
 // Count something towards the campaign.
 export const countCampaign = (event: CampaignEvent, amount = 1) => updateCampaign((s) => noteCampaign(s, event, amount));
 // A potion drunk on this run (meta.runs): its boss won't count as beaten without one.
-export const noteDrank = (run: number) => updateCampaign((s) => (s.drank === run ? s : { ...s, drank: run }));
-export const drankOn = (run: number) => loadCampaign().drank === run;
+export const noteDrank = (run: string) => updateCampaign((s) => (s.drank === run ? s : { ...s, drank: run }));
+export const drankOn = (run: string) => loadCampaign().drank === run;
 // "Reset Player": they start over.
 export const clearCampaign = () => writeSaveField(CAMPAIGN_FIELD, undefined);

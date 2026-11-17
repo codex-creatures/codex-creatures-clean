@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   CAMPAIGN, CHAPTERS, SUPPLIES, campaignCtx, rewardModel, canClaimNext, claimNext, claimedCount, currentChapter, nextQuest, noteCampaign, onlyEffective,
-  questDone, rewardBlocked, rewardText, rollCampaignReward, type CampaignCtx, type CampaignState,
+  questDone, rewardBlocked, noteDrank, drankOn, loadCampaign, rewardText, rollCampaignReward, type CampaignCtx, type CampaignState,
 } from "../lib/campaign";
 import { weaponDrop, armorDrop, codexDrop, randomCodexMove } from "../lib/drops";
 import { ARMOR_KEYS } from "../lib/items/armor";
@@ -223,5 +223,20 @@ describe("claiming a reward", () => {
     // An overfull bookcase (more codexes than it holds) never holds back a reward with no codex in it.
     expect(rewardBlocked(rollCampaignReward({ scrolls: 1 }), -3)).toBeNull();
     expect(rewardBlocked(rollCampaignReward({ crate: "materials", lo: "rare", hi: "epic", n: 3 }), -3)).toBeNull();
+  });
+});
+
+describe("a potion drunk", () => {
+  afterEach(() => { vi.unstubAllGlobals(); });
+  it("marks only the run it was drunk on, whichever dungeon (Encampment runs never moved meta.runs on)", () => {
+    const store: Record<string, string> = {};
+    vi.stubGlobal("window", { localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } } });
+    noteDrank("camp-run-a");
+    expect(drankOn("camp-run-a")).toBe(true);
+    expect(drankOn("camp-run-b")).toBe(false); // the next Encampment run starts clean
+    // An old save's mark (a run number, meta.runs) never matches a run's id.
+    const key = Object.keys(store)[0];
+    store[key] = JSON.stringify({ ...JSON.parse(store[key]), campaign: { ...loadCampaign(), drank: 4 } });
+    expect(drankOn("camp-run-b")).toBe(false);
   });
 });
