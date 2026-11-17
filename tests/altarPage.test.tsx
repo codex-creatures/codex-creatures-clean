@@ -24,6 +24,10 @@ const saved = () => JSON.parse(localStorage.getItem(SAVE_KEY)!) as { inventory: 
 const button = (text: string | RegExp) => [...host.querySelectorAll("button")].find((b) => (typeof text === "string" ? b.textContent?.includes(text) : text.test(b.textContent ?? "")));
 const tap = async (el: Element | null | undefined) => { expect(el).toBeTruthy(); await act(async () => { (el as HTMLElement).click(); }); };
 const tileOf = (c: CreatureOrItemDrop) => host.querySelector(`button[aria-label^="${c.name}, Lv ${c.level}"]`);
+// The inspect panel's button (not a circle slot, whose empty ring says the same word).
+const action = (label: string) => [...host.querySelectorAll("button:not([data-slot])")].find((b) => b.textContent?.trim() === label);
+const raise = async (c: CreatureOrItemDrop) => { await tap(tileOf(c)); await tap(action("Raise")); };
+const offer = async (c: CreatureOrItemDrop) => { await tap(tileOf(c)); await tap(action("Offer")); };
 
 async function open(inventory: CreatureOrItemDrop[], equipment: Record<string, unknown> = {}) {
   localStorage.clear();
@@ -33,7 +37,7 @@ async function open(inventory: CreatureOrItemDrop[], equipment: Record<string, u
   document.body.appendChild(host);
   root = createRoot(host);
   await act(async () => { root.render(<Page />); });
-  await tap(button("Ascend"));
+  await tap(host.querySelector('button[aria-label^="Ascend:"]'));
 }
 
 describe("the Soul Altar's Ascend", () => {
@@ -47,9 +51,9 @@ describe("the Soul Altar's Ascend", () => {
 
     // Too low to take part: greyed, with why.
     expect(tileOf(low)?.textContent).toContain("Needs Lv 5");
-    await tap(tileOf(kept));
+    await raise(kept);
     expect(button(/Needs 4 more/)).toBeTruthy();
-    for (const c of rest) await tap(tileOf(c));
+    for (const c of rest) await offer(c);
     const go = button("Ascend to uncommon");
     expect(go?.hasAttribute("disabled")).toBe(false);
     await tap(go);
@@ -72,8 +76,8 @@ describe("the Soul Altar's Ascend", () => {
   it("asks before giving up a soul stone", async () => {
     const kept = wolf(5), rest = [wolf(6, { soulStone: "trickster" as never }), wolf(7), wolf(8), wolf(9)];
     await open([kept, ...rest]);
-    await tap(tileOf(kept));
-    for (const c of rest) await tap(tileOf(c));
+    await raise(kept);
+    for (const c of rest) await offer(c);
     await tap(button("Ascend to uncommon"));
     expect(host.querySelector('[role="dialog"][aria-label="Give these up?"]')).toBeTruthy();
     await tap(button("Keep them"));
@@ -83,16 +87,20 @@ describe("the Soul Altar's Ascend", () => {
     expect(saved().inventory.find((d) => d.id === kept.id)?.ascended).toBe(1);
   });
 
-  it("a tap on a slot takes the creature back out", async () => {
-    const kept = wolf(5), rest = [wolf(6), wolf(7)];
+  it("shows what a creature carries, and takes one back out of the circle", async () => {
+    const kept = wolf(5), rest = [wolf(6, { soulStone: "trickster" as never }), wolf(7)];
     await open([kept, ...rest]);
-    await tap(tileOf(kept));
-    await tap(tileOf(rest[0]));
+    await raise(kept);
+    await offer(rest[0]);
     expect(button(/Needs 4 more/)).toBeTruthy();
-    await tap(host.querySelector(`[data-slot="0"]`)!);
+    expect(host.textContent).toContain("Trickster");      // its soul stone, in the inspect panel
+    expect(host.textContent).toContain("Birth rolls");
+    expect(tileOf(rest[0])?.textContent).toContain("In the circle");
+    await tap(host.querySelector(`[data-slot="0"]`)!);   // a slot: inspect what's in it…
+    await tap(action("Take out"));                       // …and take it out
     expect(tileOf(rest[0])?.textContent).toContain("Lv 6");
     await tap(button("Clear"));
-    expect(button("Pick a creature")).toBeTruthy();
+    expect(button("Choose one to raise")).toBeTruthy();
   });
 });
 
@@ -109,6 +117,7 @@ describe("the Soul Altar's Summon", () => {
     document.body.appendChild(host);
     root = createRoot(host);
     await act(async () => { root.render(<Page />); });
+    await tap(host.querySelector('button[aria-label^="Spirit Summon:"]'));
     await tap(host.querySelector('button[aria-label="Moss Wolf card, 3 held"]')!);
     await tap(button("Summon the kept card"));
     expect(host.textContent).toContain("Moss Wolf summoned!");

@@ -912,3 +912,40 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .enchant-shine { animation: none; } }
 /* An enchantment's line on an item (components/EnchantLine.tsx). */
 .enchant-line { color: #d6b4ff; }
+
+/* The Soul Altar (app/altar, components/altar/*): the soul-fire cauldron, big, its 8 frames
+   played from the strip (--s: the size it's drawn at); spirit motes rising off it; the two
+   floating choices; the ritual's rune rings and slots. */
+.altar-fire {
+  width: var(--s); height: var(--s);
+  background: url("/sprites/den/altar-anim.png") 0 0 / calc(var(--s) * 8) var(--s) no-repeat;
+  image-rendering: pixelated;
+  animation: altar-frames 1s steps(8) infinite, altar-glow 3.2s ease-in-out infinite;
+}
+@keyframes altar-frames { to { background-position-x: calc(var(--s) * -8); } }
+@keyframes altar-glow {
+  0%, 100% { filter: drop-shadow(0 0 18px rgba(80, 230, 200, 0.45)); }
+  50% { filter: drop-shadow(0 0 34px rgba(80, 230, 200, 0.8)); }
+}
+.altar-mote {
+  position: absolute; bottom: 0; width: 4px; height: 4px; border-radius: 50%;
+  background: #8ff7e0; box-shadow: 0 0 8px #5fe0c0;
+  animation: altar-mote linear infinite; opacity: 0;
+}
+@keyframes altar-mote {
+  0% { transform: translate(0, 0); opacity: 0; }
+  15% { opacity: 0.9; }
+  100% { transform: translate(var(--dx, 0px), -70cqh); opacity: 0; }
+}
+.altar-choice { animation: altar-float 5s ease-in-out infinite; }
+.altar-choice:active { transform: scale(0.98); }
+@keyframes altar-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+.rune-ring { animation: rune-spin 60s linear infinite; }
+.rune-ring.back { animation-direction: reverse; animation-duration: 90s; }
+@keyframes rune-spin { to { transform: rotate(360deg); } }
+.ritual-slot-empty { animation: ritual-breathe 2.4s ease-in-out infinite; }
+@keyframes ritual-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .altar-fire, .altar-mote, .altar-choice, .rune-ring, .ritual-slot-empty { animation: none; }
+  .altar-mote { display: none; }
+}

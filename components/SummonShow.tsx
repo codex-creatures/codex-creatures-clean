@@ -40,12 +40,13 @@ const RINGS = 6;
 export type ShowWords = { laying: string; stirring: string; done: string };
 const SUMMON_WORDS = (name: string): ShowWords => ({ laying: "The cards are laid down…", stirring: "The cards stir…", done: `${name} summoned!` });
 
-export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WORDS(result.name) }: {
+export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WORDS(result.name), extra }: {
   t: CreatureTemplate;
   cards: CreatureOrItemDrop[];  // the cards used (or, ascending, the creatures: up to MAX_CARDS)
   result: CreatureOrItemDrop;   // the creature they became
   onDone: () => void;
   words?: ShowWords;
+  extra?: React.ReactNode; // shown under it once it's out (the ascension: what it gained)
 }) {
   const ring = cards.slice(0, MAX_CARDS);
   const [open, setOpen] = useState(false);
@@ -165,6 +166,7 @@ export default function SummonShow({ t, cards, result, onDone, words = SUMMON_WO
         <div style={{ fontSize: 14, minHeight: 18, color: MUTED, textTransform: "capitalize", visibility: open ? "visible" : "hidden" }} className={open ? "levelup-stats" : undefined}>
           {result.rarity} creature{t.race ? ` · ${t.race}` : ""}
         </div>
+        {extra && <div className={open ? "levelup-stats" : undefined} style={{ width: "100%", display: "flex", justifyContent: "center", visibility: open ? "visible" : "hidden" }}>{extra}</div>}
         <button className="pixel-btn" style={{ width: "100%", minHeight: 48, visibility: open ? "visible" : "hidden" }} onClick={onDone}>Carry on</button>
       </div>
     </div>

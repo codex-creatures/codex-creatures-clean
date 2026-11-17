@@ -33,11 +33,20 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 
 ### Ascension (the user, 2026-11-18, decision 49; lib/creatures/ascend.ts)
 
-- ✅ **The ritual** (the Soul Altar's Ascend tab, components/AscendRitual.tsx): the creature to raise
-  goes in the big slot at the top, the ones to give up in the slots under it: 4 for the first step
-  (`ASCEND_FIRST` = 5 in all), 2 for each step after (`ASCEND_AFTER` = 3). Tap a creature to send
-  it to the next slot, or hold and drag it onto one; tap a slot to empty it. Up to Legendary, so a
-  Common takes 5 / 15 / 45 / 135 of its kind to reach Uncommon / Rare / Epic / Legendary.
+- ✅ **The Soul Altar's screen** (the user, 2026-11-18; app/altar, components/altar/AltarBackdrop.tsx):
+  you stand over the altar, its soul-fire cauldron big at the bottom (the Den art's 8 frames,
+  spirit motes rising), and pick from two borderless floating panels side by side: **Spirit
+  Summon** (from cards) and **Ascend** (from creatures), each saying what you could do now.
+- ✅ **The ritual** (Ascend, components/AscendRitual.tsx): a circle of turning rune rings hovers over
+  the cauldron, lit in the next rarity's colour: the creature to raise in the middle, the offerings
+  round it, 4 for the first step (`ASCEND_FIRST` = 5 in all), 2 for each after (`ASCEND_AFTER` =
+  3), each tied to the middle by a thread of light. Under it, rarity now → next and its stats
+  now → after (at its level and at Lv 30); then an inspect panel for the creature you tapped (its
+  soul stone, birth rolls, moves with codex ones marked, gear, and a Raise / Offer / Take out
+  button); then your creatures in a tray you swipe sideways and drag up into the circle (onto a
+  slot, or anywhere in it for the next free one; dropped on the middle when one's there, it's an
+  offering: only Raise changes the one in the middle). Up to Legendary, so a Common takes 5 / 15 /
+  45 / 135 of its kind to reach Uncommon / Rare / Epic / Legendary.
 - ✅ **Who can take part:** creatures only (not cards), all the same species and the same rarity at
   the time (an Uncommon Moss Wolf is raised with Uncommon Moss Wolves, each from its own ritual),
   every one Lv 5 or more (`ASCEND_MIN_LEVEL`; an XP scroll gets one there). One on a run or in the
@@ -45,7 +54,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **What happens:** the kept one keeps its level, XP, roll, moves, codex moves and soul stone. The
   others are gone, with their soul stones and codex moves; their gear comes off and stays yours. A
   warning first if one given up has a soul stone or an Epic or Legendary codex move
-  (`WARN_CODEX_FROM`). The summoning's whirlwind plays, climbing to the new rarity.
+  (`WARN_CODEX_FROM`). The summoning's whirlwind plays with the creatures, climbing to the new
+  rarity, and ends on what it gained: each stat now, its rise, and its rise by Lv 30.
 - ✅ **Its stats** (lib/creatures/ascendStats.ts): each step adds that rarity's budget to its
   species' level-15 values: `ASCEND_STATS` +16 / 24 / 25 / 59 %s and `ASCEND_HP` +15 / 19 / 23 / 23
   base HP for Uncommon / Rare / Epic / Legendary (the gaps between the rarities' average species on
