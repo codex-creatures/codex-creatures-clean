@@ -131,16 +131,18 @@ export default function TavernPage() {
                     <div className="pixel-font" style={{ fontSize: 13, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {VISITOR_LABEL[who]} <span style={{ color: MUTED }}>Lv {level}/{MAX_UPGRADE} · {pct(visitorChance(t, who))}</span>
                     </div>
-                    <div style={{ fontSize: 12, height: 18, display: "flex", gap: 8, overflow: "hidden", whiteSpace: "nowrap" }}>
+                    {/* (Each icon and its have/need kept on one line: they used to wrap, and the
+                        numbers fell out of sight below the row.) */}
+                    <div style={{ fontSize: 12, height: 22, display: "flex", alignItems: "center", gap: 8, overflow: "hidden", whiteSpace: "nowrap" }}>
                       {cost ? (Object.entries(cost) as [MaterialKey, number][]).map(([k, need]) => {
                         const have = countMaterial(game.materials, k);
-                        return <span key={k} title={MATERIALS[k].name} style={{ color: have >= need ? "#5ee08a" : "#ff8a80" }}><MaterialIcon k={k} />{have}/{need}</span>;
+                        return <span key={k} title={`${MATERIALS[k].name}: you have ${have}, it takes ${need}`} style={{ display: "inline-flex", alignItems: "center", flexShrink: 0, color: have >= need ? "#5ee08a" : "#ff8a80" }}><MaterialIcon k={k} />{have}/{need}</span>;
                       }) : <span style={{ color: MUTED }}>Fully upgraded</span>}
                     </div>
                   </div>
                   <button className="chip" disabled={!canUpgrade(t, who, game.materials)}
                     onClick={() => { if (!on) { setUpgrading(who); return; } setUpgrading(null); game.upgradeTavernVisitor(who); }}
-                    style={{ minHeight: 44, flexShrink: 0, width: 92, background: on ? "#6e1f18" : undefined }}>
+                    style={{ minHeight: 44, flexShrink: 0, width: 92, background: on ? "#6e1f18" : undefined, opacity: cost && !canUpgrade(t, who, game.materials) ? 0.45 : 1 }}>
                     {!cost ? "Max" : on ? "Upgrade?" : `+1% · Lv ${level + 1}`}
                   </button>
                 </div>
