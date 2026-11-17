@@ -26,17 +26,18 @@ function look(d: Drop) {
   return { sprite, icon: goodsIcon(x) ?? (x.codexMove ? "📖" : x.scroll ? "📜" : x.dropType === "card" ? "🃏" : "📦"), name: x.name, color: rc.text, glow: rc.border, rarity: x.rarity };
 }
 
-export default function CodeCache({ title, intro, items, fresh, revealAllLabel = "Reveal all", doneLabel, onDone }: {
+export default function CodeCache({ title, intro, items, fresh, revealAllLabel = "Reveal all", doneLabel, opened = false, onDone }: {
   title: string;
   intro?: React.ReactNode;
   items: Drop[];
   fresh?: Map<string, NewFind>; // finds new to you (lib/scanReveal.ts newFinds): tagged NEW once opened
   revealAllLabel?: string;   // "Extract all" for scans
   doneLabel: string;
+  opened?: boolean;          // open from the start, shown (a quest reward of one thing: you know what it is)
   onDone: () => void;
 }) {
-  const [open, setOpen] = useState<boolean[]>(() => items.map(() => false));
-  const [last, setLast] = useState<number | null>(null);
+  const [open, setOpen] = useState<boolean[]>(() => items.map(() => opened));
+  const [last, setLast] = useState<number | null>(opened && items.length ? 0 : null);
   useEscape(() => {}); // the page stays put until you've seen what's inside
   const all = open.every(Boolean);
 

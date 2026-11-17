@@ -270,7 +270,9 @@ function QuestList() {
         </div>
       )}
 
-      {prize && <CodeCache title="Daily reward" items={prize} doneLabel="Take it all" intro="Tap a slot to see what's inside." onDone={() => setPrize(null)} />}
+      {/* (One thing: shown straight away, no "?" to tap: you know what it is. The user, 2026-11-17.) */}
+      {prize && <CodeCache title="Daily reward" items={prize} opened={prize.length === 1} doneLabel={prize.length === 1 ? "Take it" : "Take it all"}
+        intro={prize.length === 1 ? undefined : "Tap a slot to see what's inside."} onDone={() => setPrize(null)} />}
     </div>
   );
 }
@@ -357,7 +359,7 @@ function CampaignList() {
         );
       })}
       {toast && <span key={toast.key} className="float-text pixel-font" style={{ top: 70, color: "#ffd970" }}>{toast.text}</span>}
-      {prize && <CodeCache title={prize.title} items={prize.drops} doneLabel="Take it all" onDone={() => setPrize(null)} />}
+      {prize && <CodeCache title={prize.title} items={prize.drops} opened={prize.drops.length === 1} doneLabel={prize.drops.length === 1 ? "Take it" : "Take it all"} onDone={() => setPrize(null)} />}
     </div>
   );
 }

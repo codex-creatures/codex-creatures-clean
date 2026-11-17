@@ -225,7 +225,8 @@ numbers from a model of a normal player's progress (below). All 🧪 testing num
   6 (a cage each for the camp cages, opened and crossed out as you go), else a bar and the count. A claimed
   quest is faded with a green seal in its corner (off the words); the next one done glows gold with a 🎁, and a
   tap anywhere on it claims it: gold (or the schematic) at once, anything else as a box of "?"s to open one by
-  one or all at once (as Klutz's armoury box; the 3D crate before it is gone). ➜ goes where an unfinished one
+  one or all at once (as Klutz's armoury box; the 3D crate before it is gone), or, if it's one thing, that
+  thing shown straight away (you know what it is; daily rewards too). ➜ goes where an unfinished one
   is done. **A reward always comes home, even into a full box** (as a run's haul does): only a codex needs
   room, on the bookcase (`rewardBlocked`). (A full consumables box held back an XP scroll, and with it every
   reward after it.) A ❗ on the board in the
