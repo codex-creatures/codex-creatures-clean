@@ -220,5 +220,8 @@ describe("claiming a reward", () => {
     expect(rewardBlocked(codexes, 2)).toBeNull();
     expect(rewardBlocked(codexes, 1)).toMatch(/bookcase is full: make room for 2 codexes/);
     expect(rewardBlocked(codexes.slice(0, 1), 0)).toMatch(/room for the codex/);
+    // An overfull bookcase (more codexes than it holds) never holds back a reward with no codex in it.
+    expect(rewardBlocked(rollCampaignReward({ scrolls: 1 }), -3)).toBeNull();
+    expect(rewardBlocked(rollCampaignReward({ crate: "materials", lo: "rare", hi: "epic", n: 3 }), -3)).toBeNull();
   });
 });

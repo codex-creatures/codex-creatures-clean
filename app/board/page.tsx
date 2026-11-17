@@ -209,7 +209,7 @@ function QuestList() {
     const codexes = drops.filter((d) => d.dropType === "item" && d.codexMove).length;
     // A reward always comes home, even into a full box (as a run's haul does: the user, 2026-11-17); a Code
     // Cache needs a space at the altar, and a codex a space on the bookcase.
-    const room = q.reward === "cache" ? game.caches.length + game.sealed.length < CACHE_LIMIT : codexes <= game.shelfFree;
+    const room = q.reward === "cache" ? game.caches.length + game.sealed.length < CACHE_LIMIT : codexes === 0 || codexes <= game.shelfFree;
     if (!room) { setFull(i); return; }
     setFull(null);
     updateDaily(DAILY_ONLINE, (s) => claimDaily(s, i));
@@ -325,7 +325,6 @@ function CampaignList() {
         <div className="pixel-font" style={{ fontSize: 20, color: GOLD, margin: "2px 0 6px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{chapter.name}</div>
         <div className="chapter-bar"><span style={{ width: `${(100 * doneHere) / chapter.quests.length}%` }} /></div>
       </div>
-      {blocked && <div className="pixel-font" style={{ fontSize: 13, color: "#ffb4a8", background: "rgba(80,16,10,0.85)", border: "2px solid #a8321e", padding: "8px 10px" }}>{blocked}</div>}
       {chapter.quests.map((q, i) => {
         // (The next to claim by its place in the whole list: CAMPAIGN holds copies of the chapters' quests, so
         // comparing the quests themselves never matched, and no reward could be claimed.)
@@ -345,8 +344,9 @@ function CampaignList() {
               <div title={q.task} style={NOTE_TASK}>{q.task}</div>
               <QuestProgress id={q.id} goal={q.goal} prog={prog} />
               {wanted && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}><RewardBadge r={q.reward} small /><span style={{ fontSize: 12, color: "#6e5232", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{rewardText(q.reward)}</span></div>}
-              <div style={{ fontSize: 12, fontWeight: 700, minHeight: 16, marginTop: 2, color: ready ? "#2f7a3a" : "#7a5a30", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {ready ? "Done! Tap to claim" : done && !got ? "Claim the ones above first" : ""}
+              {/* Where it stands; a claim that couldn't be taken says why here, on the note you tapped. */}
+              <div style={{ fontSize: 12, fontWeight: 700, minHeight: 16, marginTop: 2, color: ready && blocked ? "#a8321e" : ready ? "#2f7a3a" : "#7a5a30", ...(ready && blocked ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) }}>
+                {ready ? blocked ?? "Done! Tap to claim" : done && !got ? "Claim the ones above first" : ""}
               </div>
             </div>
             {got ? <span className="note-seal" title="Claimed" aria-label="Claimed">✓</span>
