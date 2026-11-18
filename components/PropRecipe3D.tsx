@@ -12,7 +12,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { PROP_LEAN, Glow } from "@/components/Props3D";
 import { texture } from "@/components/WalkView3D";
-import { partFaces, SWIRL, DENSITY, type FacePoly, type Part, type Recipe } from "@/lib/props/recipe";
+import { partFaces, SWIRL, RIPPLE, DENSITY, type FacePoly, type Part, type Recipe } from "@/lib/props/recipe";
 
 export type Tint = () => THREE.Color;
 
@@ -20,7 +20,7 @@ export type Tint = () => THREE.Color;
 // numbers of the texture coordinates are the crop's edges, so "tile" repeats it and "fill" shows it once).
 // (Seconds, for the faces that move: one clock for them all.)
 const TIME = { value: 0 };
-const SWIRL_RAMP = SWIRL.map((h) => new THREE.Color(h));
+const RAMPS = { swirl: SWIRL.map((h) => new THREE.Color(h)), ripple: RIPPLE.map((h) => new THREE.Color(h)) };
 // A swirling face (`anim` "swirl"): worked out per art pixel of the face (`uCells` of them across and up), spiral
 // arms turning slowly round its middle in the ramp's bands, a darker edge, and now and then a bubble that pops.
 const SWIRL_GLSL = `
@@ -33,6 +33,16 @@ const SWIRL_GLSL = `
     if (r > 0.86) band = 0;
     if (r < 0.8 && swirlHash(cell + floor(t * 1.3)) > 0.988) band = 4;
     return uRamp[band];
+  }
+  // (The pool: rings spreading slowly from the middle, a darker edge, the odd glint.)
+  vec3 rippleAt(vec2 uv, vec2 cells, float t) {
+    vec2 cell = floor(uv * cells), c = (cell + 0.5) / cells - 0.5;
+    float r = length(c) * 2.0;
+    float w = 0.5 + 0.35 * sin(r * 15.0 - t * 1.4) + 0.15 * sin(c.x * 9.0 + c.y * 7.0 + t * 0.6);
+    int band = w > 0.95 ? 3 : w > 0.6 ? 2 : 1;
+    if (r > 0.88) band = 0;
+    if (r < 0.85 && swirlHash(cell + floor(t * 0.8)) > 0.993) band = 4;
+    return uRamp[band];
   }`;
 // `lit` (the review lab's, the user 2026-11-19: "lighting gives it depth"): faces that take the scene's lights
 // (Lambert), not the game's flat tint. Glowing faces and outlines are never lit.
@@ -43,9 +53,9 @@ function faceMaterial(f: FacePoly, lit: boolean): THREE.MeshBasicMaterial | THRE
     vertexColors: true, alphaTest: 0.5, side: f.hull || f.inside ? THREE.BackSide : f.twoSided ? THREE.DoubleSide : THREE.FrontSide,
   });
   const crop = { value: new THREE.Vector4(...(art.kind === "art" ? art.crop : [0, 0, 1, 1])) }, tile = { value: art.kind === "art" && art.fit === "tile" ? 1 : 0 };
-  const swirl = !!art.anim, cells = { value: new THREE.Vector2(Math.max(1, Math.round(f.screen[0] * DENSITY)), Math.max(1, Math.round(f.screen[1] * DENSITY))) };
+  const swirl = !!art.anim, ripple = art.anim === "ripple", cells = { value: new THREE.Vector2(Math.max(1, Math.round(f.screen[0] * DENSITY)), Math.max(1, Math.round(f.screen[1] * DENSITY))) };
   m.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, PROP_LEAN, { uCrop: crop, uTile: tile, uTime: TIME, uCells: cells, uRamp: { value: SWIRL_RAMP } });
+    Object.assign(sh.uniforms, PROP_LEAN, { uCrop: crop, uTile: tile, uTime: TIME, uCells: cells, uRamp: { value: RAMPS[art.anim ?? "swirl"] } });
     sh.vertexShader = "uniform float uLean;\nuniform float uCx;\nvarying vec2 vFaceUv;\n" + sh.vertexShader.replace("#include <project_vertex>",
       "vFaceUv = uv;\nvec4 mvPosition = modelMatrix * vec4(transformed, 1.0);\nmvPosition.x += uLean * (mvPosition.x - uCx) * mvPosition.y;\n" +
       "mvPosition = viewMatrix * mvPosition;\ngl_Position = projectionMatrix * mvPosition;\n");
@@ -57,9 +67,9 @@ function faceMaterial(f: FacePoly, lit: boolean): THREE.MeshBasicMaterial | THRE
         vec4 sampledDiffuseColor = texture2D(map, vec2(uCrop.x + f.x * uCrop.z, size.y - uCrop.y - uCrop.w + f.y * uCrop.w) / size);
         diffuseColor *= sampledDiffuseColor;
       #endif
-      ${swirl ? "diffuseColor.rgb = swirlAt(vFaceUv, uCells, uTime);" : ""}`);
+      ${swirl ? `diffuseColor.rgb = ${ripple ? "rippleAt" : "swirlAt"}(vFaceUv, uCells, uTime);` : ""}`);
   };
-  m.customProgramCacheKey = () => `propRecipe${swirl ? ":swirl" : ""}${Mat === THREE.MeshLambertMaterial ? ":lit" : ""}`;
+  m.customProgramCacheKey = () => `propRecipe${swirl ? `:${art.anim}` : ""}${Mat === THREE.MeshLambertMaterial ? ":lit" : ""}`;
   return m;
 }
 

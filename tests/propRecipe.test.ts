@@ -235,6 +235,7 @@ describe("a swirling face (anim)", () => {
   it("reads 'swirl' on a colour or picture face, turns down anything else", () => {
     const p = one({ kind: "cylinder", size: [1, 0.05, 1], faces: { top: { colour: "#3fe0bf", anim: "swirl" } } });
     expect(p.faces.top).toMatchObject({ kind: "colour", anim: "swirl" });
+    expect(one({ kind: "cylinder", size: [1, 0.05, 1], faces: { top: { colour: "#2aa3ad", anim: "ripple" } } }).faces.top).toMatchObject({ anim: "ripple" });
     expect(readRecipe(recipe([{ id: "s", kind: "box", at: [0, 0, 0], size: [1, 1, 1], faces: { top: { colour: "#000000", anim: "spin" } } }])).ok).toBe(false);
   });
 });
