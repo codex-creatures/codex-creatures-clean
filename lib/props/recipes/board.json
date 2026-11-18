@@ -1,0 +1,159 @@
+{
+  "format": 1,
+  "id": "board",
+  "name": "Quest Board",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den/board.png",
+    "foot": [25, 61]
+  },
+  "parts": [
+    {
+      "id": "post",
+      "kind": "box",
+      "at": [0.74, 0, 0],
+      "size": [0.1875, 2.5, 0.1875],
+      "four": false,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3e2618"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "post-2",
+      "kind": "box",
+      "at": [-0.74, 0, 0],
+      "size": [0.1875, 2.5, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3e2618"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "backing",
+      "kind": "box",
+      "at": [0, 0.6, 0],
+      "size": [1.25, 1.770833, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#6a4028"
+        },
+        "front": {
+          "colour": "#7a4c30"
+        }
+      }
+    },
+    {
+      "id": "frame-top",
+      "kind": "box",
+      "at": [0, 2.32, 0.04],
+      "size": [1.375, 0.104167, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a2a1c"
+        },
+        "top": {
+          "colour": "#6a3e28"
+        }
+      }
+    },
+    {
+      "id": "frame-bottom",
+      "kind": "box",
+      "at": [0, 0.54, 0.04],
+      "size": [1.375, 0.104167, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a2a1c"
+        },
+        "top": {
+          "colour": "#6a3e28"
+        }
+      }
+    },
+    {
+      "id": "frame-left",
+      "kind": "box",
+      "at": [-0.635, 0.6, 0.04],
+      "size": [0.104167, 1.770833, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a2a1c"
+        }
+      }
+    },
+    {
+      "id": "frame-right",
+      "kind": "box",
+      "at": [0.635, 0.6, 0.04],
+      "size": [0.104167, 1.770833, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a2a1c"
+        }
+      }
+    },
+    {
+      "id": "notes",
+      "kind": "panel",
+      "at": [0, 0.66, 0.045],
+      "size": [1.104167, 1.625],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/board.png",
+          "crop": [0, 0, 53, 39],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "roof-front",
+      "kind": "panel",
+      "at": [0, 2.4, 0.08],
+      "size": [1.708333, 0.541667],
+      "turn": [-48, 0, 0],
+      "outline": false,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [20, 30, 48, 24]
+        },
+        "back": {
+          "colour": "#2e1f14"
+        }
+      }
+    },
+    {
+      "id": "roof-back",
+      "kind": "panel",
+      "at": [0, 2.4, -0.08],
+      "size": [1.708333, 0.541667],
+      "turn": [48, 180, 0],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [20, 30, 48, 24],
+          "tint": "#9a8a7a"
+        },
+        "back": {
+          "colour": "#2e1f14"
+        }
+      }
+    }
+  ]
+}

@@ -4,9 +4,10 @@
 // Written by the prop builder's Save (./indexFile.ts): add a recipe by saving it there, or list it here by hand.
 
 import altar from "./altar.json";
+import board from "./board.json";
 import pit from "./pit.json";
 import pool from "./pool.json";
 import sparring from "./sparring.json";
 import training from "./training.json";
 
-export const RECIPE_FILES: Record<string, unknown> = { altar, pit, pool, sparring, training };
+export const RECIPE_FILES: Record<string, unknown> = { altar, board, pit, pool, sparring, training };
