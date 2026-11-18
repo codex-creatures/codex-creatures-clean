@@ -65,6 +65,37 @@ spec assumes nothing about them.
 4. Only approved assets go into the active registry (`lib/sprites/walk.ts`). Samples live in
    `public/sprites/walk/samples/` and are never imported by the game.
 
+### 6.6 🧪 Props built from recipes (`/lab/propbuilder`; the user, 2026-11-19, plan approved the same day)
+
+A 3D prop as a small JSON **recipe** of simple parts painted with crops of PixelLab drawings, built in the lab
+against its drawing; no baked meshes. Stage 1 of 5 built: the format, the loader, the renderer and the altar.
+
+- **The format** (`lib/props/recipe.ts`, format 1; recipes in `lib/props/recipes/<id>.json`, listed in its
+  `index.ts`): `{ format, id, name, setting: den|dungeon, ref?: { src, foot }, parts }`. A part: `id`, `kind`
+  (`box`; `cylinder` with `sides` 3–32 and `taper`, its top's size to its foot's; `panel`, a flat board; `sprite`,
+  standing facing the camera stretched as the game's flat things are, never turned), `at` (the middle of its
+  foot, u), `size` ([w, h, d], or [w, h] for panels and sprites), `turn` (degrees about x, y, z), `light`
+  (`unlit` or `toon`: a fixed upper-left light in three bands, `TOON_LIGHT`, needing no scene lights), `glow`
+  (full bright, never tinted), and `faces` (box: front back left right top bottom; cylinder: side top bottom;
+  panel: front back; sprite: front; `*` for every face not listed; one not covered isn't drawn). A face is a
+  crop of a picture under `/sprites/` (`src`, `crop` [x, y, w, h] from its top left, `fit` `tile` or `fill`), a
+  flat `colour`, or the `same` as another face; `tint` multiplies either. `readRecipe` checks everything and
+  turns down a later format.
+- **Density** (decision 37, generalised): along each of a face's two directions, 48 texels a unit as it
+  shows on screen (`texelsAlong`): 48 across, 48·cos(pitch) up a standing face, 48·sin(pitch) along a top, and
+  whatever keeps a turned face square. A cylinder's sides run on round it at 48 a unit, the seam at the back.
+- **Snapping:** one art pixel (1/48 u) or 1/8, 1/4, 1/2 u; turns to 15° (`snapPart`).
+- **Drawing** (`components/PropRecipe3D.tsx`): each face a flat polygon with its own material (the crop read in
+  the shader, the lean as Props3D's `leaned`), unlit and tinted by the light where it stands as the game's 3D
+  things are; each part memoised on its own recipe object, so changing one part rebuilds only it.
+- **The altar** (`altar.json`): the Den's Soul Altar (Den3DPlaces `Altar`) part for part; its curved cauldron is
+  three tapered cylinders, and its fire's flicker and floor glow stay the game's to draw (as flames are).
+- **How the game will load them (planned, not wired in):** a hand-coded prop in Den3DPlaces or Props3D becomes
+  `<PropRecipe3D recipe={…} />`, one at a time, each once the user approves it; recipes are bundled JSON (no
+  fetching, offline as well); footprints, placements, taps, saves and world versions don't change; a recipe that
+  won't read falls back to the old drawing; a test reads every recipe and checks its pictures exist.
+- Tests: tests/propRecipe.test.ts.
+
 ## Density and open standards
 
 ### Densities in use (checked against the code, 2026-11-09)

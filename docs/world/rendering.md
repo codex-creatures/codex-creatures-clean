@@ -314,6 +314,13 @@ world versions and saves are unchanged, and the classic dungeons untouched.
   stands the 3D view in as it did the 2D one (its golden unchanged) and checks the page hands it
   every prop.
 
+### 🧪 Props from recipes (2026-11-19, lab only)
+
+Props built from JSON recipes of simple parts in `/lab/propbuilder`, drawn by components/PropRecipe3D.tsx under
+the rules above (orthographic, 60°, the lean, unlit and tinted, 48 art pixels a unit square on screen, generalised
+to turned faces). The format and how the game will load them: [art-pipeline.md](art-pipeline.md) §6.6. Nothing in
+the game draws them yet.
+
 ### Draft: a 3D chest (2026-11-11; in the game since the same day, "In the game" above)
 
 The first 3D object, to see how one looks before any goes in the dungeon (the user, 2026-11-11).
