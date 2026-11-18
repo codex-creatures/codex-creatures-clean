@@ -24,16 +24,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4a4744"
         },
         "top": {
-          "colour": "#9a9ca3"
+          "colour": "#6e6a66"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -48,32 +45,29 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#45423f"
         },
         "top": {
-          "colour": "#8f9198"
+          "colour": "#66625e"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
     {
       "id": "moss-2",
       "kind": "cylinder",
-      "at": [0.6044, 0.156667, 0.4098],
-      "size": [0.2475, 0.0125, 0.16],
+      "at": [0.6167, 0.170667, 0.4182],
+      "size": [0.1806, 0.0125, 0.14],
       "sides": 7,
       "turn": [0, -144.33, 0],
       "faces": {
         "top": {
-          "colour": "#6f8d4a"
+          "colour": "#5f7d3c"
         },
         "side": {
-          "colour": "#55703a"
+          "colour": "#4a6330"
         }
       }
     },
@@ -88,16 +82,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4f4b48"
         },
         "top": {
-          "colour": "#a3a5ab"
+          "colour": "#75716c"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -112,16 +103,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4a4744"
         },
         "top": {
-          "colour": "#9a9ca3"
+          "colour": "#6e6a66"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -136,32 +124,29 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#45423f"
         },
         "top": {
-          "colour": "#8f9198"
+          "colour": "#66625e"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
     {
       "id": "moss-5",
       "kind": "cylinder",
-      "at": [-0.6675, 0.190833, 0.359],
-      "size": [0.3366, 0.0125, 0.16],
+      "at": [-0.6811, 0.212333, 0.3664],
+      "size": [0.245616, 0.0125, 0.14],
       "sides": 7,
       "turn": [0, 137.86, 0],
       "faces": {
         "top": {
-          "colour": "#6f8d4a"
+          "colour": "#5f7d3c"
         },
         "side": {
-          "colour": "#55703a"
+          "colour": "#4a6330"
         }
       }
     },
@@ -176,16 +161,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4f4b48"
         },
         "top": {
-          "colour": "#a3a5ab"
+          "colour": "#75716c"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -200,16 +182,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4a4744"
         },
         "top": {
-          "colour": "#9a9ca3"
+          "colour": "#6e6a66"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -224,16 +203,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#45423f"
         },
         "top": {
-          "colour": "#8f9198"
+          "colour": "#66625e"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -248,32 +224,29 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4f4b48"
         },
         "top": {
-          "colour": "#a3a5ab"
+          "colour": "#75716c"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
     {
       "id": "moss-9",
       "kind": "cylinder",
-      "at": [0.0482, 0.190833, -0.587],
-      "size": [0.3267, 0.0125, 0.16],
+      "at": [0.0492, 0.212333, -0.599],
+      "size": [0.238392, 0.0125, 0.14],
       "sides": 7,
       "turn": [0, -2.29, 0],
       "faces": {
         "top": {
-          "colour": "#6f8d4a"
+          "colour": "#5f7d3c"
         },
         "side": {
-          "colour": "#55703a"
+          "colour": "#4a6330"
         }
       }
     },
@@ -288,16 +261,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#4a4744"
         },
         "top": {
-          "colour": "#9a9ca3"
+          "colour": "#6e6a66"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
@@ -312,32 +282,29 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#c6cad2"
+          "colour": "#45423f"
         },
         "top": {
-          "colour": "#8f9198"
+          "colour": "#66625e"
         },
         "bottom": {
-          "colour": "#2a2c33"
+          "colour": "#2a2826"
         }
       }
     },
     {
       "id": "moss-11",
       "kind": "cylinder",
-      "at": [0.7854, 0.207917, -0.2133],
-      "size": [0.3564, 0.0125, 0.16],
+      "at": [0.8014, 0.233167, -0.2176],
+      "size": [0.260064, 0.0125, 0.14],
       "sides": 7,
       "turn": [0, -60.84, 0],
       "faces": {
         "top": {
-          "colour": "#6f8d4a"
+          "colour": "#5f7d3c"
         },
         "side": {
-          "colour": "#55703a"
+          "colour": "#4a6330"
         }
       }
     },
@@ -397,7 +364,7 @@
           "colour": "#6aa84f"
         },
         "side": {
-          "colour": "#3e6e36"
+          "colour": "#2f5a2a"
         }
       }
     },
@@ -415,7 +382,7 @@
           "colour": "#6aa84f"
         },
         "side": {
-          "colour": "#3e6e36"
+          "colour": "#2f5a2a"
         }
       }
     },
@@ -433,7 +400,7 @@
           "colour": "#6aa84f"
         },
         "side": {
-          "colour": "#3e6e36"
+          "colour": "#2f5a2a"
         }
       }
     },
@@ -451,7 +418,43 @@
           "colour": "#6aa84f"
         },
         "side": {
-          "colour": "#3e6e36"
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "lily-5",
+      "kind": "cylinder",
+      "at": [0.08, 0.0625, 0.3],
+      "size": [0.11, 0.0125, 0.085],
+      "sides": 8,
+      "turn": [0, 30, 0],
+      "glow": true,
+      "outline": true,
+      "faces": {
+        "top": {
+          "colour": "#6aa84f"
+        },
+        "side": {
+          "colour": "#2f5a2a"
+        }
+      }
+    },
+    {
+      "id": "lily-6",
+      "kind": "cylinder",
+      "at": [-0.5, 0.0625, -0.08],
+      "size": [0.1, 0.0125, 0.08],
+      "sides": 8,
+      "turn": [0, -15, 0],
+      "glow": true,
+      "outline": true,
+      "faces": {
+        "top": {
+          "colour": "#6aa84f"
+        },
+        "side": {
+          "colour": "#2f5a2a"
         }
       }
     }

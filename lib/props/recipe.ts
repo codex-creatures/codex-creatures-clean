@@ -57,7 +57,7 @@ export type Face = ({ kind: "art"; src: string; crop: Crop; fit: "tile" | "fill"
 // The swirl's colours, deep to bright (the altar's teal ramp, lib/props/palette.ts TEAL): its edge, three bands, its crests.
 export const SWIRL = ["#125658", "#0e7f75", "#17b69c", "#35e8c1", "#b3ece1"];
 // The pool's water, deep to bright (its picture's blue-teal, den3d/pool-top.png).
-export const RIPPLE = ["#0a4a5a", "#0f6a78", "#168e98", "#1fb5b5", "#9fe2e4"];
+export const RIPPLE = ["#073742", "#0f6a78", "#168e98", "#1fb5b5", "#9fe2e4"];
 export type Part = {
   id: string; kind: PartKind; at: Vec3; size: Vec3; turn: Vec3; sides: number; taper: number; hole: number;
   light: "unlit" | "toon"; glow: boolean; outline: boolean; four: boolean; inside: boolean; faces: Record<string, Face>;
