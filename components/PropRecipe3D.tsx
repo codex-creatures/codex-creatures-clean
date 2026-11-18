@@ -34,14 +34,16 @@ const SWIRL_GLSL = `
     if (r < 0.8 && swirlHash(cell + floor(t * 1.3)) > 0.988) band = 4;
     return uRamp[band];
   }
-  // (The pool: rings spreading slowly from the middle, a darker edge, the odd glint.)
+  // (The pool, as its picture: deep and dark at the edge, brighter towards the middle, mottled, the mottling
+  // drifting slowly, and the odd glint.)
   vec3 rippleAt(vec2 uv, vec2 cells, float t) {
     vec2 cell = floor(uv * cells), c = (cell + 0.5) / cells - 0.5;
     float r = length(c) * 2.0;
-    float w = 0.5 + 0.35 * sin(r * 15.0 - t * 1.4) + 0.15 * sin(c.x * 9.0 + c.y * 7.0 + t * 0.6);
-    int band = w > 0.95 ? 3 : w > 0.6 ? 2 : 1;
-    if (r > 0.88) band = 0;
-    if (r < 0.85 && swirlHash(cell + floor(t * 0.8)) > 0.993) band = 4;
+    float mottle = 0.5 * sin(c.x * 11.0 + t * 0.5) * sin(c.y * 13.0 - t * 0.4) + 0.35 * (swirlHash(floor(cell / 2.0) + floor(t * 0.35)) - 0.5);
+    float w = (1.0 - r) * 2.6 + mottle;
+    int band = w > 1.9 ? 3 : w > 1.0 ? 2 : w > 0.35 ? 1 : 0;
+    if (r > 0.9) band = 0;
+    if (r < 0.8 && swirlHash(cell + floor(t * 0.8)) > 0.994) band = 4;
     return uRamp[band];
   }`;
 // `lit` (the review lab's, the user 2026-11-19: "lighting gives it depth"): faces that take the scene's lights

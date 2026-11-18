@@ -16,336 +16,350 @@
     {
       "id": "stone-1",
       "kind": "cylinder",
-      "at": [0.8747, 0, 0.0681],
-      "size": [0.395833, 0.166667, 0.270833],
+      "at": [0.8429, 0, 0.1192],
+      "size": [0.5332, 0.1875, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -98.91, 0],
+      "taper": 0.74,
+      "turn": [0, -106.2, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#9a9ca3"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-2",
       "kind": "cylinder",
-      "at": [0.7461, 0, 0.3287],
-      "size": [0.354167, 0.208333, 0.25],
+      "at": [0.6167, 0, 0.4182],
+      "size": [0.43, 0.166667, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -131.59, 0],
+      "taper": 0.74,
+      "turn": [0, -144.33, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#8f9198"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
+        }
+      }
+    },
+    {
+      "id": "moss-2",
+      "kind": "cylinder",
+      "at": [0.6044, 0.156667, 0.4098],
+      "size": [0.2475, 0.0125, 0.16],
+      "sides": 7,
+      "turn": [0, -144.33, 0],
+      "faces": {
+        "top": {
+          "colour": "#6f8d4a"
+        },
+        "side": {
+          "colour": "#55703a"
         }
       }
     },
     {
       "id": "stone-3",
       "kind": "cylinder",
-      "at": [0.4698, 0, 0.5242],
-      "size": [0.354167, 0.145833, 0.25],
+      "at": [0.1947, 0, 0.5844],
+      "size": [0.6364, 0.229167, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -156.02, 0],
+      "taper": 0.74,
+      "turn": [0, -170.79, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#a9b894"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#7d8a66"
+          "colour": "#a3a5ab"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-4",
       "kind": "cylinder",
-      "at": [0.1005, 0, 0.6159],
-      "size": [0.395833, 0.1875, 0.270833],
+      "at": [-0.2891, 0, 0.5651],
+      "size": [0.4816, 0.1875, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -175.37, 0],
+      "taper": 0.74,
+      "turn": [0, 166.02, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#9a9ca3"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-5",
       "kind": "cylinder",
-      "at": [-0.2888, 0, 0.5857],
-      "size": [0.354167, 0.166667, 0.25],
+      "at": [-0.6811, 0, 0.3664],
+      "size": [0.5848, 0.208333, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 166.24, 0],
+      "taper": 0.74,
+      "turn": [0, 137.86, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#8f9198"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
+        }
+      }
+    },
+    {
+      "id": "moss-5",
+      "kind": "cylinder",
+      "at": [-0.6675, 0.190833, 0.359],
+      "size": [0.3366, 0.0125, 0.16],
+      "sides": 7,
+      "turn": [0, 137.86, 0],
+      "faces": {
+        "top": {
+          "colour": "#6f8d4a"
+        },
+        "side": {
+          "colour": "#55703a"
         }
       }
     },
     {
       "id": "stone-6",
       "kind": "cylinder",
-      "at": [-0.6209, 0, 0.4394],
-      "size": [0.354167, 0.229167, 0.25],
+      "at": [-0.8569, 0, 0.0513],
+      "size": [0.4472, 0.166667, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 144.95, 0],
+      "taper": 0.74,
+      "turn": [0, 97.01, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#a3a5ab"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-7",
       "kind": "cylinder",
-      "at": [-0.83, 0, 0.2061],
-      "size": [0.395833, 0.145833, 0.270833],
+      "at": [-0.7606, 0, -0.28],
+      "size": [0.688, 0.25, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 116.57, 0],
+      "taper": 0.74,
+      "turn": [0, 52.89, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#9a9ca3"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-8",
       "kind": "cylinder",
-      "at": [-0.8747, 0, -0.0681],
-      "size": [0.354167, 0.166667, 0.25],
+      "at": [-0.4228, 0, -0.5225],
+      "size": [0.4988, 0.1875, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 81.09, 0],
+      "taper": 0.74,
+      "turn": [0, 21.5, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#a9b894"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#7d8a66"
+          "colour": "#8f9198"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-9",
       "kind": "cylinder",
-      "at": [-0.7461, 0, -0.3287],
-      "size": [0.354167, 0.208333, 0.25],
+      "at": [0.0492, 0, -0.599],
+      "size": [0.5676, 0.208333, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 48.41, 0],
+      "taper": 0.74,
+      "turn": [0, -2.29, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#a3a5ab"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
+        }
+      }
+    },
+    {
+      "id": "moss-9",
+      "kind": "cylinder",
+      "at": [0.0482, 0.190833, -0.587],
+      "size": [0.3267, 0.0125, 0.16],
+      "sides": 7,
+      "turn": [0, -2.29, 0],
+      "faces": {
+        "top": {
+          "colour": "#6f8d4a"
+        },
+        "side": {
+          "colour": "#55703a"
         }
       }
     },
     {
       "id": "stone-10",
       "kind": "cylinder",
-      "at": [-0.4698, 0, -0.5242],
-      "size": [0.395833, 0.145833, 0.270833],
+      "at": [0.5056, 0, -0.4854],
+      "size": [0.4644, 0.166667, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 23.98, 0],
+      "taper": 0.74,
+      "turn": [0, -26.88, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#9a9ca3"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
       "id": "stone-11",
       "kind": "cylinder",
-      "at": [-0.1005, 0, -0.6159],
-      "size": [0.354167, 0.1875, 0.25],
+      "at": [0.8014, 0, -0.2176],
+      "size": [0.6192, 0.229167, 0.291667],
       "sides": 6,
-      "taper": 0.8,
-      "turn": [0, 4.63, 0],
+      "taper": 0.74,
+      "turn": [0, -60.84, 0],
       "outline": true,
       "faces": {
         "side": {
           "src": "/sprites/props/campfire3d/rim.png",
           "crop": [15, 0, 17, 13],
           "fit": "fill",
-          "tint": "#bfc3cc"
+          "tint": "#c6cad2"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#8f9198"
         },
         "bottom": {
-          "colour": "#3a3830"
+          "colour": "#2a2c33"
         }
       }
     },
     {
-      "id": "stone-12",
+      "id": "moss-11",
       "kind": "cylinder",
-      "at": [0.2888, 0, -0.5857],
-      "size": [0.354167, 0.166667, 0.25],
-      "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -13.76, 0],
-      "outline": true,
+      "at": [0.7854, 0.207917, -0.2133],
+      "size": [0.3564, 0.0125, 0.16],
+      "sides": 7,
+      "turn": [0, -60.84, 0],
       "faces": {
-        "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#a9b894"
-        },
         "top": {
-          "colour": "#7d8a66"
+          "colour": "#6f8d4a"
         },
-        "bottom": {
-          "colour": "#3a3830"
+        "side": {
+          "colour": "#55703a"
         }
       }
     },
     {
-      "id": "stone-13",
+      "id": "basin",
       "kind": "cylinder",
-      "at": [0.6209, 0, -0.4394],
-      "size": [0.395833, 0.229167, 0.270833],
-      "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -35.05, 0],
-      "outline": true,
+      "at": [0, 0, 0],
+      "size": [1.75, 0.125, 1.25],
+      "sides": 24,
+      "hole": 0.86,
       "faces": {
         "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#bfc3cc"
+          "colour": "#1c2228"
         },
         "top": {
-          "colour": "#86888f"
+          "colour": "#232a31"
+        },
+        "inner": {
+          "colour": "#0d2a33"
         },
         "bottom": {
-          "colour": "#3a3830"
-        }
-      }
-    },
-    {
-      "id": "stone-14",
-      "kind": "cylinder",
-      "at": [0.83, 0, -0.2061],
-      "size": [0.354167, 0.145833, 0.25],
-      "sides": 6,
-      "taper": 0.8,
-      "turn": [0, -63.43, 0],
-      "outline": true,
-      "faces": {
-        "side": {
-          "src": "/sprites/props/campfire3d/rim.png",
-          "crop": [15, 0, 17, 13],
-          "fit": "fill",
-          "tint": "#bfc3cc"
-        },
-        "top": {
-          "colour": "#86888f"
-        },
-        "bottom": {
-          "colour": "#3a3830"
+          "colour": "#111111"
         }
       }
     },
@@ -353,33 +367,34 @@
       "id": "water",
       "kind": "cylinder",
       "at": [0, 0, 0],
-      "size": [1.541667, 0.083333, 1.083333],
+      "size": [1.541667, 0.0625, 1.083333],
       "sides": 24,
       "glow": true,
       "faces": {
         "top": {
-          "colour": "#2aa3ad",
+          "colour": "#1fb5b5",
           "anim": "ripple"
         },
         "side": {
-          "colour": "#0b3f4f"
+          "colour": "#0a4a5a"
         },
         "bottom": {
-          "colour": "#0b3f4f"
+          "colour": "#0a4a5a"
         }
       }
     },
     {
       "id": "lily-1",
       "kind": "cylinder",
-      "at": [-0.36, 0.083333, 0.16],
-      "size": [0.25, 0.0125, 0.18],
-      "sides": 8,
+      "at": [-0.36, 0.0625, 0.16],
+      "size": [0.33, 0.0125, 0.24],
+      "sides": 9,
       "turn": [0, 20, 0],
+      "glow": true,
       "outline": true,
       "faces": {
         "top": {
-          "colour": "#5f9a4c"
+          "colour": "#6aa84f"
         },
         "side": {
           "colour": "#3e6e36"
@@ -389,14 +404,15 @@
     {
       "id": "lily-2",
       "kind": "cylinder",
-      "at": [0.32, 0.083333, -0.14],
-      "size": [0.2, 0.0125, 0.15],
-      "sides": 8,
+      "at": [0.3, 0.0625, -0.16],
+      "size": [0.27, 0.0125, 0.2],
+      "sides": 9,
       "turn": [0, -30, 0],
+      "glow": true,
       "outline": true,
       "faces": {
         "top": {
-          "colour": "#5f9a4c"
+          "colour": "#6aa84f"
         },
         "side": {
           "colour": "#3e6e36"
@@ -406,14 +422,15 @@
     {
       "id": "lily-3",
       "kind": "cylinder",
-      "at": [0.46, 0.083333, 0.2],
-      "size": [0.14, 0.0125, 0.11],
-      "sides": 8,
+      "at": [0.47, 0.0625, 0.18],
+      "size": [0.19, 0.0125, 0.15],
+      "sides": 9,
       "turn": [0, 10, 0],
+      "glow": true,
       "outline": true,
       "faces": {
         "top": {
-          "colour": "#5f9a4c"
+          "colour": "#6aa84f"
         },
         "side": {
           "colour": "#3e6e36"
@@ -423,14 +440,15 @@
     {
       "id": "lily-4",
       "kind": "cylinder",
-      "at": [-0.12, 0.083333, -0.26],
-      "size": [0.12, 0.0125, 0.09],
-      "sides": 8,
+      "at": [-0.12, 0.0625, -0.24],
+      "size": [0.16, 0.0125, 0.12],
+      "sides": 9,
       "turn": [0, 45, 0],
+      "glow": true,
       "outline": true,
       "faces": {
         "top": {
-          "colour": "#5f9a4c"
+          "colour": "#6aa84f"
         },
         "side": {
           "colour": "#3e6e36"

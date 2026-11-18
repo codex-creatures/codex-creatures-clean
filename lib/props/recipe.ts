@@ -39,7 +39,8 @@ export const FACES: Record<PartKind, string[]> = {
 // "*" in a part's faces is every face not listed; a face neither listed nor covered by "*" isn't drawn.
 // `anim` "swirl" (the user, 2026-11-19: the altar's soup): the face drawn as slowly swirling liquid in the teal
 // ramp (SWIRL), at the art density, with the odd bubble; the renderer draws it, as the game draws its flames.
-// `anim` "ripple" (the healing pool): calm rings spreading from the middle in the water's ramp (RIPPLE), the odd glint.
+// `anim` "ripple" (the healing pool): calm water in its ramp (RIPPLE), dark at the edge, brighter to the middle,
+// slowly mottled, the odd glint.
 export type Anim = "swirl" | "ripple";
 export const ANIMS: Anim[] = ["swirl", "ripple"];
 export type FaceSpec = { src?: string; crop?: Crop; fit?: "tile" | "fill"; colour?: string; tint?: string; same?: string; anim?: Anim };
@@ -56,7 +57,7 @@ export type Face = ({ kind: "art"; src: string; crop: Crop; fit: "tile" | "fill"
 // The swirl's colours, deep to bright (the altar's teal ramp, lib/props/palette.ts TEAL): its edge, three bands, its crests.
 export const SWIRL = ["#125658", "#0e7f75", "#17b69c", "#35e8c1", "#b3ece1"];
 // The pool's water, deep to bright (its picture's blue-teal, den3d/pool-top.png).
-export const RIPPLE = ["#0b3f4f", "#10606f", "#16808f", "#2aa3ad", "#9fe2e4"];
+export const RIPPLE = ["#0a4a5a", "#0f6a78", "#168e98", "#1fb5b5", "#9fe2e4"];
 export type Part = {
   id: string; kind: PartKind; at: Vec3; size: Vec3; turn: Vec3; sides: number; taper: number; hole: number;
   light: "unlit" | "toon"; glow: boolean; outline: boolean; four: boolean; inside: boolean; faces: Record<string, Face>;

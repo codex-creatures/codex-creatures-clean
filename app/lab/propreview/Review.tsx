@@ -15,15 +15,17 @@ import { newWalk, pushWalk, jumpTo, onNear, type LightMode, type Walk } from "./
 const ReviewScene = dynamic(() => import("./ReviewScene"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 const LIGHTS: [LightMode, string][] = [["den", "Den light"], ["torch", "Torch only"], ["game", "Game look (flat)"]];
 
-// The recipes to show: the files', or with `?drafts` the builder's drafts over them.
-function load(): Recipe[] {
+// The recipes to show: the files', or with `?drafts` the builder's drafts over them; and any that won't read, with why.
+function load(): { recipes: Recipe[]; broken: string[] } {
   let drafts: Record<string, unknown> = {};
   try { if (new URLSearchParams(location.search).has("drafts")) drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "{}"); } catch { /* (no drafts) */ }
-  return Object.entries({ ...RECIPE_FILES, ...drafts }).flatMap(([, j]) => { const r = readRecipe(j); return r.ok ? [r.recipe] : []; });
+  const recipes: Recipe[] = [], broken: string[] = [];
+  for (const [id, j] of Object.entries({ ...RECIPE_FILES, ...drafts })) { const r = readRecipe(j); if (r.ok) recipes.push(r.recipe); else broken.push(`${id}: ${r.errors.join("; ")}`); }
+  return { recipes, broken };
 }
 
 export default function PropReview() {
-  const [recipes] = useState(load);
+  const [{ recipes, broken }] = useState(load);
   const [light, setLight] = useState<LightMode>("den");
   const [across, setAcross] = useState(8); // (close, to review its detail; the game's zoom is 15)
   const [near, setNear] = useState<number | null>(null);
@@ -40,6 +42,7 @@ export default function PropReview() {
         <ReviewScene recipes={recipes} light={light} across={across} walk={walk} />
         <Stick onPush={(q) => pushWalk(walk, q)} />
       </div>
+      {broken.length > 0 && <pre style={{ color: "#e88", fontSize: 12, whiteSpace: "pre-wrap", margin: "6px 0 0", maxWidth: 760 }}>Not shown (they don&apos;t read):{"\n"}{broken.join("\n")}</pre>}
       <div style={{ fontSize: 13, marginTop: 6, minHeight: 20, visibility: near === null ? "hidden" : "visible" }}>{near === null ? "-" : recipes[near]?.name}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6, maxWidth: 760 }}>
         {LIGHTS.map(([k, n]) => <button key={k} style={btn(light === k)} onClick={() => setLight(k)}>{n}</button>)}
