@@ -10,7 +10,7 @@ export const HISTORY = 100; // edits kept to undo
 
 // A new part's shape, standing in the middle, in a plain colour till it's painted.
 export const NEW_FACE: FaceSpec = { colour: "#8a7a66" };
-const NEW_SIZE: Record<PartKind, number[]> = { box: [0.5, 0.5, 0.5], cylinder: [0.5, 0.5, 0.5], panel: [0.5, 0.5], sprite: [0.5, 0.5] };
+const NEW_SIZE: Record<PartKind, number[]> = { box: [0.5, 0.5, 0.5], cylinder: [0.5, 0.5, 0.5], panel: [0.5, 0.5], sprite: [0.5, 0.5], wedge: [1, 0.5, 0.75] };
 
 // An id not yet used: `base`, or base-2, base-3…
 export function freeId(r: RecipeSpec, base: string): string {

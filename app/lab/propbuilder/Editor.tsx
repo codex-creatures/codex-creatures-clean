@@ -16,7 +16,7 @@ export type EditorProps = {
 };
 
 const btn = (on = false) => ({ minHeight: 44, minWidth: 44, padding: "0 10px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
-const KINDS: PartKind[] = ["box", "cylinder", "panel", "sprite"];
+const KINDS: PartKind[] = ["box", "cylinder", "panel", "sprite", "wedge"];
 const AXES = ["x", "y", "z"];
 
 export default function Editor(p: EditorProps) {

@@ -271,3 +271,15 @@ describe("a tube (a cylinder with a hole)", () => {
     expect(readRecipe(recipe([{ id: "b", kind: "box", at: [0, 0, 0], size: [1, 1, 1], hole: 0.5, faces: { "*": STONE } }])).ok).toBe(false);
   });
 });
+
+describe("a wedge (a roof's shape)", () => {
+  it("has two slopes meeting at a ridge over its middle and two triangular gable ends, all facing out", () => {
+    const fs = partFaces(one({ kind: "wedge", size: [2, 1, 1.5] }), VIEW);
+    const n: Record<string, number[]> = Object.fromEntries(fs.map((f) => [f.face, f.normal]));
+    expect(n.front[2]).toBeGreaterThan(0); expect(n.front[1]).toBeGreaterThan(0);
+    expect(n.back[2]).toBeLessThan(0); expect(n.back[1]).toBeGreaterThan(0);
+    close(n.left, [-1, 0, 0]); close(n.right, [1, 0, 0]); close(n.bottom, [0, -1, 0]);
+    expect(fs.find((f) => f.face === "left")!.points).toHaveLength(3);
+    expect(Math.max(...fs.flatMap((f) => f.points.map((q) => q[1])))).toBeCloseTo(1);
+  });
+});

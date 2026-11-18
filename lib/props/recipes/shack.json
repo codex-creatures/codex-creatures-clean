@@ -1,0 +1,234 @@
+{
+  "format": 1,
+  "id": "shack",
+  "name": "Klutz's Den",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/shack-front.png",
+    "foot": [78, 47]
+  },
+  "parts": [
+    {
+      "id": "body",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [3.25, 2, 2.3],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [0, 0, 156, 48],
+          "fit": "fill"
+        },
+        "*": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "fit": "tile"
+        },
+        "top": {
+          "colour": "#2e1f14"
+        },
+        "bottom": {
+          "colour": "#1a120c"
+        }
+      }
+    },
+    {
+      "id": "sill",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [3.37, 0.166667, 2.42],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a4d58"
+        },
+        "top": {
+          "colour": "#5d606c"
+        }
+      }
+    },
+    {
+      "id": "beam",
+      "kind": "box",
+      "at": [1.565, 0, 1.12],
+      "size": [0.1875, 2.1, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "beam-2",
+      "kind": "box",
+      "at": [-1.565, 0, 1.12],
+      "size": [0.1875, 2.1, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "door-post",
+      "kind": "box",
+      "at": [-0.3958, 0, 1.2],
+      "size": [0.125, 1.8333, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "door-post-2",
+      "kind": "box",
+      "at": [0.2708, 0, 1.2],
+      "size": [0.125, 1.8333, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "lintel",
+      "kind": "box",
+      "at": [-0.0625, 1.6667, 1.2],
+      "size": [0.833333, 0.166667, 0.145833],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        },
+        "front": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [56, 3, 38, 5],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "window-ring",
+      "kind": "cylinder",
+      "at": [-0.8125, 1.2917, 1.16],
+      "size": [0.5, 0.104167, 0.5],
+      "sides": 12,
+      "hole": 0.72,
+      "turn": [90, 0, 0],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "sign",
+      "kind": "box",
+      "at": [0.6875, 0.875, 1.17],
+      "size": [0.458333, 0.708333, 0.083333],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "front": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [100, 10, 22, 17],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "bracket",
+      "kind": "box",
+      "at": [1.2917, 1.6667, 1.27],
+      "size": [0.0625, 0.0625, 0.25],
+      "faces": {
+        "*": {
+          "colour": "#2a2a30"
+        }
+      }
+    },
+    {
+      "id": "lantern",
+      "kind": "sprite",
+      "at": [1.2917, 0.9167, 1.39],
+      "size": [0.291667, 0.4],
+      "glow": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [133, 12, 14, 19],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "roof",
+      "kind": "wedge",
+      "at": [0, 1.95, 0],
+      "size": [3.75, 1.25, 2.75],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/shack-roof.png",
+          "crop": [38, 38, 24, 20],
+          "fit": "tile"
+        },
+        "back": {
+          "src": "/sprites/den3d/shack-roof.png",
+          "crop": [38, 38, 24, 20],
+          "fit": "tile",
+          "tint": "#b8a890"
+        },
+        "left": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "fit": "tile"
+        },
+        "right": {
+          "src": "/sprites/den3d/shack-front.png",
+          "crop": [2, 2, 22, 44],
+          "fit": "tile"
+        },
+        "bottom": {
+          "colour": "#2e1f14"
+        }
+      }
+    },
+    {
+      "id": "ridge",
+      "kind": "box",
+      "at": [0, 3.15, 0],
+      "size": [3.85, 0.125, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a3018"
+        },
+        "top": {
+          "colour": "#6a4a28"
+        }
+      }
+    }
+  ]
+}

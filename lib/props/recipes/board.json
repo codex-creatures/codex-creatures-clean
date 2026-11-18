@@ -12,7 +12,7 @@
       "id": "post",
       "kind": "box",
       "at": [0.74, 0, 0],
-      "size": [0.1875, 2.5, 0.1875],
+      "size": [0.1875, 2.65, 0.1875],
       "four": false,
       "outline": true,
       "faces": {
@@ -28,7 +28,7 @@
       "id": "post-2",
       "kind": "box",
       "at": [-0.74, 0, 0],
-      "size": [0.1875, 2.5, 0.1875],
+      "size": [0.1875, 2.65, 0.1875],
       "outline": true,
       "faces": {
         "*": {
@@ -124,14 +124,15 @@
     {
       "id": "roof-front",
       "kind": "panel",
-      "at": [0, 2.4, 0.08],
-      "size": [1.708333, 0.541667],
-      "turn": [-48, 0, 0],
+      "at": [0, 2.62, 0.05],
+      "size": [1.75, 0.5],
+      "turn": [-58, 0, 0],
       "outline": false,
       "faces": {
         "front": {
           "src": "/sprites/den3d/storehouse-roof.png",
-          "crop": [20, 30, 48, 24]
+          "crop": [20, 30, 48, 24],
+          "tint": "#e0d0c0"
         },
         "back": {
           "colour": "#2e1f14"
@@ -141,9 +142,9 @@
     {
       "id": "roof-back",
       "kind": "panel",
-      "at": [0, 2.4, -0.08],
-      "size": [1.708333, 0.541667],
-      "turn": [48, 180, 0],
+      "at": [0, 2.62, -0.05],
+      "size": [1.75, 0.5],
+      "turn": [58, 180, 0],
       "faces": {
         "front": {
           "src": "/sprites/den3d/storehouse-roof.png",
@@ -152,6 +153,21 @@
         },
         "back": {
           "colour": "#2e1f14"
+        }
+      }
+    },
+    {
+      "id": "ridge",
+      "kind": "box",
+      "at": [0, 2.98, 0],
+      "size": [1.791667, 0.0625, 0.083333],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#7a5a3a"
+        },
+        "top": {
+          "colour": "#9a7a52"
         }
       }
     }

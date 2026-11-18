@@ -26,12 +26,15 @@ export const OUTLINE_COLOUR = "#0e0f0c";
 
 export type Vec3 = [number, number, number];
 export type Crop = [number, number, number, number]; // x, y (from the picture's top left), width, height: pixels
-export type PartKind = "box" | "cylinder" | "panel" | "sprite";
+export type PartKind = "box" | "cylinder" | "panel" | "sprite" | "wedge";
 export const FACES: Record<PartKind, string[]> = {
   box: ["front", "back", "left", "right", "top", "bottom"],
   cylinder: ["side", "top", "bottom", "inner"],
   panel: ["front", "back"],
   sprite: ["front"],
+  // (A wedge: a roof's shape, a triangular prism, its ridge along x at its full height over its middle; its
+  // slopes front and back, its gable ends left and right.)
+  wedge: ["front", "back", "left", "right", "bottom"],
 };
 
 // A face as written: a crop of a picture (`fit` "tile": repeated at the art density, the default; "fill": the
@@ -101,7 +104,7 @@ function readPart(p: PartSpec, where: string, errors: string[]): Part | null {
   const before = errors.length;
   if (!p || typeof p !== "object") { errors.push(`${where}: not a part`); return null; }
   if (typeof p.id !== "string" || !p.id) errors.push(`${where}: id missing`);
-  if (!(p.kind in FACES)) { errors.push(`${where}: kind ${String(p.kind)} (box, cylinder, panel or sprite)`); return null; }
+  if (!(p.kind in FACES)) { errors.push(`${where}: kind ${String(p.kind)} (box, cylinder, panel, sprite or wedge)`); return null; }
   const flat = p.kind === "panel" || p.kind === "sprite";
   if (!vec(p.at, 3)) errors.push(`${where}: at [x, y, z]`);
   if (!vec(p.size, flat ? 2 : 3) || p.size.some((v) => v <= 0)) errors.push(`${where}: size ${flat ? "[w, h]" : "[w, h, d]"}, each above 0`);
@@ -210,6 +213,15 @@ function shapeFaces(p: Part, view: View): FacePoly[] {
       { face: "left", points: [[x0, 0, z0], [x0, 0, z1], [x0, h, z1], [x0, h, z0]] },
       { face: "right", points: [[x1, 0, z1], [x1, 0, z0], [x1, h, z0], [x1, h, z1]] },
       { face: "top", points: [[x0, h, z1], [x1, h, z1], [x1, h, z0], [x0, h, z0]] },
+      { face: "bottom", points: [[x0, 0, z0], [x1, 0, z0], [x1, 0, z1], [x0, 0, z1]] },
+    );
+  } else if (p.kind === "wedge") {
+    const x0 = -w / 2, x1 = w / 2, z0 = -d / 2, z1 = d / 2;
+    polys.push(
+      { face: "front", points: [[x0, 0, z1], [x1, 0, z1], [x1, h, 0], [x0, h, 0]] },
+      { face: "back", points: [[x1, 0, z0], [x0, 0, z0], [x0, h, 0], [x1, h, 0]] },
+      { face: "left", points: [[x0, 0, z0], [x0, 0, z1], [x0, h, 0]] },
+      { face: "right", points: [[x1, 0, z1], [x1, 0, z0], [x1, h, 0]] },
       { face: "bottom", points: [[x0, 0, z0], [x1, 0, z0], [x1, 0, z1], [x0, 0, z1]] },
     );
   } else if (p.kind === "cylinder") {
