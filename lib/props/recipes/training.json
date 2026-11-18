@@ -17,7 +17,7 @@
         "top": {
           "src": "/sprites/den3d/parts/sand.png",
           "crop": [0, 0, 40, 40],
-          "tint": "#c7b28c"
+          "tint": "#b0a690"
         },
         "*": {
           "colour": "#7a6a4a"
@@ -51,7 +51,9 @@
           "tint": "#a3a8b4"
         },
         "top": {
-          "colour": "#4a4e58"
+          "src": "/sprites/den3d/parts/stone-bricks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#8a8f9b"
         },
         "bottom": {
           "colour": "#24262b"
@@ -60,141 +62,156 @@
     },
     {
       "id": "shaft-1",
-      "kind": "cylinder",
+      "kind": "box",
       "at": [-1.15, 0.458333, 1.15],
-      "size": [0.0625, 0.25, 0.0625],
-      "sides": 5,
+      "size": [0.0625, 0.458333, 0.0625],
       "four": true,
+      "outline": true,
       "faces": {
         "*": {
           "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
         }
       }
     },
     {
       "id": "spear-1",
       "kind": "cylinder",
-      "at": [-1.15, 0.708333, 1.15],
-      "size": [0.125, 0.166667, 0.125],
-      "sides": 5,
+      "at": [-1.15, 0.916666, 1.15],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
       "taper": 0,
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#7a7e8c"
+          "colour": "#8a8e9c"
         }
       }
     },
     {
       "id": "shaft-2",
-      "kind": "cylinder",
+      "kind": "box",
       "at": [-0.69, 0.458333, 1.15],
-      "size": [0.0625, 0.25, 0.0625],
-      "sides": 5,
+      "size": [0.0625, 0.458333, 0.0625],
       "four": true,
+      "outline": true,
       "faces": {
         "*": {
           "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
         }
       }
     },
     {
       "id": "spear-2",
       "kind": "cylinder",
-      "at": [-0.69, 0.708333, 1.15],
-      "size": [0.125, 0.166667, 0.125],
-      "sides": 5,
+      "at": [-0.69, 0.916666, 1.15],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
       "taper": 0,
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#7a7e8c"
+          "colour": "#8a8e9c"
         }
       }
     },
     {
       "id": "shaft-3",
-      "kind": "cylinder",
+      "kind": "box",
       "at": [-0.23, 0.458333, 1.15],
-      "size": [0.0625, 0.25, 0.0625],
-      "sides": 5,
+      "size": [0.0625, 0.458333, 0.0625],
       "four": true,
+      "outline": true,
       "faces": {
         "*": {
           "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
         }
       }
     },
     {
       "id": "spear-3",
       "kind": "cylinder",
-      "at": [-0.23, 0.708333, 1.15],
-      "size": [0.125, 0.166667, 0.125],
-      "sides": 5,
+      "at": [-0.23, 0.916666, 1.15],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
       "taper": 0,
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#7a7e8c"
+          "colour": "#8a8e9c"
         }
       }
     },
     {
       "id": "shaft-4",
-      "kind": "cylinder",
+      "kind": "box",
       "at": [0.23, 0.458333, 1.15],
-      "size": [0.0625, 0.25, 0.0625],
-      "sides": 5,
+      "size": [0.0625, 0.458333, 0.0625],
       "four": true,
+      "outline": true,
       "faces": {
         "*": {
           "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
         }
       }
     },
     {
       "id": "spear-4",
       "kind": "cylinder",
-      "at": [0.23, 0.708333, 1.15],
-      "size": [0.125, 0.166667, 0.125],
-      "sides": 5,
+      "at": [0.23, 0.916666, 1.15],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
       "taper": 0,
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#7a7e8c"
+          "colour": "#8a8e9c"
         }
       }
     },
     {
       "id": "shaft-5",
-      "kind": "cylinder",
+      "kind": "box",
       "at": [0.69, 0.458333, 1.15],
-      "size": [0.0625, 0.25, 0.0625],
-      "sides": 5,
+      "size": [0.0625, 0.458333, 0.0625],
       "four": true,
+      "outline": true,
       "faces": {
         "*": {
           "colour": "#2e313b"
+        },
+        "top": {
+          "colour": "#4a4e5a"
         }
       }
     },
     {
       "id": "spear-5",
       "kind": "cylinder",
-      "at": [0.69, 0.708333, 1.15],
-      "size": [0.125, 0.166667, 0.125],
-      "sides": 5,
+      "at": [0.69, 0.916666, 1.15],
+      "size": [0.104167, 0.145833, 0.104167],
+      "sides": 4,
       "taper": 0,
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#7a7e8c"
+          "colour": "#8a8e9c"
         }
       }
     }
