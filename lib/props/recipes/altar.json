@@ -3,51 +3,148 @@
   "id": "altar",
   "name": "Soul Altar",
   "setting": "den",
-  "ref": { "src": "/sprites/den3d/altar.png", "foot": [52, 121] },
+  "ref": {
+    "src": "/sprites/den3d/altar.png",
+    "foot": [52, 121]
+  },
   "parts": [
     {
-      "id": "plinth", "kind": "box", "at": [0, 0, 0], "size": [2, 0.45, 1.8],
+      "id": "plinth",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [2, 0.45, 1.8],
       "faces": {
-        "*": { "src": "/sprites/den3d/parts/pit-stone.png", "crop": [0, 0, 48, 24], "tint": "#9ea8d9" },
-        "top": { "colour": "#33343d" },
-        "bottom": { "colour": "#33343d" }
+        "*": {
+          "src": "/sprites/den3d/parts/pit-stone.png",
+          "crop": [0, 0, 48, 24],
+          "tint": "#9ea8d9"
+        },
+        "top": {
+          "colour": "#33343d"
+        },
+        "bottom": {
+          "colour": "#33343d"
+        }
       }
     },
     {
-      "id": "tier", "kind": "box", "at": [0, 0.45, 0], "size": [1.5, 0.35, 1.35],
+      "id": "tier",
+      "kind": "box",
+      "at": [0, 0.45, 0],
+      "size": [1.5, 0.35, 1.35],
       "faces": {
-        "*": { "src": "/sprites/den3d/parts/pit-stone.png", "crop": [0, 0, 48, 24], "tint": "#9ea8d9" },
-        "top": { "colour": "#33343d" },
-        "bottom": { "colour": "#33343d" }
+        "*": {
+          "src": "/sprites/den3d/parts/pit-stone.png",
+          "crop": [0, 0, 48, 24],
+          "tint": "#9ea8d9"
+        },
+        "top": {
+          "colour": "#33343d"
+        },
+        "bottom": {
+          "colour": "#33343d"
+        }
       }
     },
     {
-      "id": "cauldron-base", "kind": "cylinder", "at": [0, 0.8, 0], "size": [0.4, 0.3, 0.4], "sides": 14, "taper": 3,
-      "faces": { "side": { "colour": "#26252e" }, "bottom": { "colour": "#26252e" } }
+      "id": "cauldron-base",
+      "kind": "cylinder",
+      "at": [0, 0.8, 0],
+      "size": [0.4, 0.3, 0.4],
+      "sides": 14,
+      "taper": 3,
+      "faces": {
+        "side": {
+          "colour": "#26252e"
+        },
+        "bottom": {
+          "colour": "#26252e"
+        }
+      }
     },
     {
-      "id": "cauldron-belly", "kind": "cylinder", "at": [0, 1.1, 0], "size": [1.2, 0.4, 1.2], "sides": 14, "taper": 0.833333,
-      "faces": { "side": { "colour": "#26252e" } }
+      "id": "cauldron-belly",
+      "kind": "cylinder",
+      "at": [0, 1.1, 0],
+      "size": [1.2, 0.4, 1.2],
+      "sides": 14,
+      "taper": 0.833333,
+      "faces": {
+        "side": {
+          "colour": "#26252e"
+        }
+      }
     },
     {
-      "id": "cauldron-lip", "kind": "cylinder", "at": [0, 1.5, 0], "size": [1.12, 0.08, 1.12], "sides": 14, "taper": 0.892857,
-      "faces": { "side": { "colour": "#3a3946" }, "top": { "colour": "#33343d" } }
+      "id": "cauldron-lip",
+      "kind": "cylinder",
+      "at": [0, 1.5, 0],
+      "size": [1.12, 0.08, 1.12],
+      "sides": 14,
+      "taper": 0.892857,
+      "faces": {
+        "side": {
+          "colour": "#3a3946"
+        },
+        "top": {
+          "colour": "#33343d"
+        }
+      }
     },
     {
-      "id": "skull", "kind": "panel", "at": [0, 0.801, 0.62], "size": [0.708333, 0.758333],
-      "faces": { "front": { "src": "/sprites/den3d/parts/altar-skull.png", "crop": [0, 0, 34, 26], "fit": "fill" } }
+      "id": "skull",
+      "kind": "panel",
+      "at": [0, 0.801, 0.62],
+      "size": [0.708333, 0.758333],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-skull.png",
+          "crop": [0, 0, 34, 26],
+          "fit": "fill"
+        }
+      }
     },
     {
-      "id": "lantern-left", "kind": "sprite", "at": [-0.88, 0, 0.87], "size": [0.270833, 0.583333], "glow": true,
-      "faces": { "front": { "src": "/sprites/den3d/parts/altar-lantern.png", "crop": [0, 0, 13, 28], "fit": "fill" } }
+      "id": "lantern-left",
+      "kind": "sprite",
+      "at": [-0.88, 0, 0.87],
+      "size": [0.270833, 0.583333],
+      "glow": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-lantern.png",
+          "crop": [0, 0, 13, 28],
+          "fit": "fill"
+        }
+      }
     },
     {
-      "id": "lantern-right", "kind": "sprite", "at": [0.88, 0, 0.87], "size": [0.270833, 0.583333], "glow": true,
-      "faces": { "front": { "src": "/sprites/den3d/parts/altar-lantern.png", "crop": [0, 0, 13, 28], "fit": "fill" } }
+      "id": "lantern-right",
+      "kind": "sprite",
+      "at": [0.88, 0, 0.87],
+      "size": [0.270833, 0.583333],
+      "glow": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-lantern.png",
+          "crop": [0, 0, 13, 28],
+          "fit": "fill"
+        }
+      }
     },
     {
-      "id": "fire", "kind": "sprite", "at": [0, 1.42, 0.1], "size": [1.5, 1.041667], "glow": true,
-      "faces": { "front": { "src": "/sprites/den3d/parts/altar-fire.png", "crop": [0, 0, 72, 50], "fit": "fill" } }
+      "id": "fire",
+      "kind": "sprite",
+      "at": [0, 1.42, 0.1],
+      "size": [1.5, 1.041667],
+      "glow": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-fire.png",
+          "crop": [0, 0, 72, 50],
+          "fit": "fill"
+        }
+      }
     }
   ]
 }

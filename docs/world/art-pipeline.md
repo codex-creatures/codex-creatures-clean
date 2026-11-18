@@ -68,8 +68,8 @@ spec assumes nothing about them.
 ### 6.6 🧪 Props built from recipes (`/lab/propbuilder`; the user, 2026-11-19, plan approved the same day)
 
 A 3D prop as a small JSON **recipe** of simple parts painted with crops of PixelLab drawings, built in the lab
-against its drawing; no baked meshes. Stages 1 to 3 of 5 built: the format, the loader, the renderer and the
-altar; editing parts; painting faces. (To come: the drawing over the view, torch light, the palette check, saving.)
+against its drawing; no baked meshes. Stages 1 to 4 of 5 built: the format, the loader, the renderer and the
+altar; editing parts; painting faces; the drawing over the view, torch light, the palette check, new props and saving.
 
 - **The format** (`lib/props/recipe.ts`, format 1; recipes in `lib/props/recipes/<id>.json`, listed in its
   `index.ts`): `{ format, id, name, setting: den|dungeon, ref?: { src, foot }, parts }`. A part: `id`, `kind`
@@ -110,7 +110,21 @@ altar; editing parts; painting faces. (To come: the drawing over the view, torch
   (whole pixels) or typed; "Tile" lays it at 48 a unit, "Fill" stretches it over the face once and says how many
   pixels a unit that comes to on screen (`faceDensity`), warning when it's off 48 by more than 5%. A tint over
   either. A face is rebuilt only when what it draws changes.
-- Tests: tests/propRecipe.test.ts, tests/propEdit.test.ts.
+- **The drawing** (a recipe's `ref`: `src`, and `foot`, the drawing's pixel that stands on the prop's origin):
+  laid over the view, see-through (how faint is a slider), at its true size (an art pixel the game's), its foot on
+  the middle copy's origin; `foot` nudged a pixel at a time, or "Bottom middle".
+- **Light:** even, the Den's warm light, or the Labyrinth's torch: the game's own `lightField` and `shadeAt` (Stone's
+  settings) over open floor, you standing beside each copy holding it, each copy tinted by the light where it
+  stands as the game tints its things, the floor lit to match.
+- **The palette check:** the whole view snapped to the dungeon palette, the Den's, or the dungeon's with the altar's
+  teal (`lib/props/palette.ts`), so what's off-palette shows (the lab's PalettePass).
+- **New props and saving:** "+ New prop" (a file name, a name, den or dungeon) starts one from a plain box, kept as a
+  draft till saved. **Save**, under `npm run dev`, writes `lib/props/recipes/<id>.json` (`formatRecipe`; one that
+  won't read isn't written) and rewrites the index (`recipeIndex`), through a dev-only route
+  (`app/lab/propbuilder/save/route.dev.ts`: `.dev.ts` files exist under `next dev` alone, next.config.ts `pageExtensions`,
+  so no build has it). Anywhere else (the offline copy, the site) it downloads the file to put there.
+- Tests: tests/propRecipe.test.ts, tests/propEdit.test.ts, tests/propSave.test.ts (the index and each file as Save
+  writes them, the picture list, the palettes).
 
 ## Density and open standards
 
