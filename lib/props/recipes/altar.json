@@ -61,9 +61,23 @@
       }
     },
     {
-      "id": "corner-pillar",
+      "id": "corner-base",
       "kind": "box",
       "at": [1, 0, 1],
+      "size": [0.3125, 0.25, 0.3125],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48]
+        }
+      }
+    },
+    {
+      "id": "corner-pillar",
+      "kind": "box",
+      "at": [1, 0.25, 1],
       "size": [0.270833, 0.791667, 0.270833],
       "glow": false,
       "outline": true,
@@ -82,13 +96,16 @@
     {
       "id": "corner-cap",
       "kind": "box",
-      "at": [1, 0.791667, 1],
-      "size": [0.3125, 0.0625, 0.3125],
+      "at": [1, 1.041667, 1],
+      "size": [0.354167, 0.083333, 0.354167],
       "light": "unlit",
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#3a3946"
+          "colour": "#4a4960"
+        },
+        "top": {
+          "colour": "#7a7990"
         }
       },
       "four": true
@@ -96,7 +113,7 @@
     {
       "id": "corner-spike",
       "kind": "cylinder",
-      "at": [1, 0.854167, 1],
+      "at": [1, 1.125, 1],
       "size": [0.145833, 0.3125, 0.145833],
       "sides": 4,
       "taper": 0,
@@ -128,7 +145,7 @@
       "at": [0, 1.166667, 0],
       "size": [0.875, 0.375, 0.875],
       "sides": 16,
-      "taper": 1.5714,
+      "taper": 1.714,
       "outline": true,
       "faces": {
         "*": {
@@ -140,9 +157,9 @@
       "id": "cauldron-high",
       "kind": "cylinder",
       "at": [0, 1.541667, 0],
-      "size": [1.375, 0.416667, 1.375],
+      "size": [1.5, 0.375, 1.5],
       "sides": 16,
-      "taper": 0.8636,
+      "taper": 0.8333,
       "outline": true,
       "faces": {
         "*": {
@@ -153,26 +170,30 @@
     {
       "id": "cauldron-rim",
       "kind": "cylinder",
-      "at": [0, 1.958334, 0],
-      "size": [1.333333, 0.125, 1.333333],
+      "at": [0, 1.916667, 0],
+      "size": [1.333333, 0.208333, 1.333333],
       "sides": 16,
+      "hole": 0.84,
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#66657e"
+          "colour": "#6c6b82"
         },
         "top": {
-          "colour": "#2a2936"
+          "colour": "#8a89a2"
         },
         "bottom": {
-          "colour": "#66657e"
+          "colour": "#6c6b82"
+        },
+        "inner": {
+          "colour": "#1e1d28"
         }
       }
     },
     {
       "id": "soup",
       "kind": "cylinder",
-      "at": [0, 2.083334, 0],
+      "at": [0, 1.979167, 0],
       "size": [1.125, 0.020833, 1.125],
       "sides": 16,
       "glow": true,
@@ -189,12 +210,38 @@
     {
       "id": "skull",
       "kind": "sprite",
-      "at": [0, 1.25, 0.7],
+      "at": [0, 1.270834, 0.78],
       "size": [0.708333, 0.541667],
       "faces": {
         "front": {
           "src": "/sprites/den3d/parts/altar-skull.png",
           "crop": [0, 0, 34, 26],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "chain-l",
+      "kind": "sprite",
+      "at": [-0.8, 0.833333, 0.25],
+      "size": [0.229167, 0.708333],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-chain.png",
+          "crop": [0, 0, 11, 34],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "chain-r",
+      "kind": "sprite",
+      "at": [0.8, 0.833333, 0.25],
+      "size": [0.229167, 0.708333],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-chain-r.png",
+          "crop": [0, 0, 11, 34],
           "fit": "fill"
         }
       }
