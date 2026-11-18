@@ -68,7 +68,8 @@ spec assumes nothing about them.
 ### 6.6 🧪 Props built from recipes (`/lab/propbuilder`; the user, 2026-11-19, plan approved the same day)
 
 A 3D prop as a small JSON **recipe** of simple parts painted with crops of PixelLab drawings, built in the lab
-against its drawing; no baked meshes. Stage 1 of 5 built: the format, the loader, the renderer and the altar.
+against its drawing; no baked meshes. Stages 1 and 2 of 5 built: the format, the loader, the renderer and the
+altar; editing parts. (To come: faces' pictures and crops, the drawing over the view, torch light, saving.)
 
 - **The format** (`lib/props/recipe.ts`, format 1; recipes in `lib/props/recipes/<id>.json`, listed in its
   `index.ts`): `{ format, id, name, setting: den|dungeon, ref?: { src, foot }, parts }`. A part: `id`, `kind`
@@ -84,7 +85,15 @@ against its drawing; no baked meshes. Stage 1 of 5 built: the format, the loader
 - **Density** (decision 37, generalised): along each of a face's two directions, 48 texels a unit as it
   shows on screen (`texelsAlong`): 48 across, 48·cos(pitch) up a standing face, 48·sin(pitch) along a top, and
   whatever keeps a turned face square. A cylinder's sides run on round it at 48 a unit, the seam at the back.
-- **Snapping:** one art pixel (1/48 u) or 1/8, 1/4, 1/2 u; turns to 15° (`snapPart`).
+- **Snapping:** one art pixel (1/48 u) or 1/8, 1/4, 1/2 u, or off; turns to 15° (`snapPart`).
+- **Editing** (`lib/props/edit.ts`; the lab's Builder and Editor): tap a part in the middle copy (it pulses gold)
+  or in the list; its name, where it stands, size and turn (typed, or − and + a snap step, with sizes also shown
+  in art pixels), a cylinder's sides and taper, unlit or toon, glow; add a box, cylinder, panel or sprite (in
+  front of the prop, a plain colour till it's painted), duplicate, delete (never the last part), move up or down
+  the list; undo and redo, 100 edits. Keys: arrows move it a snap step (Shift: up and down), Ctrl+Z / Ctrl+Y,
+  Ctrl+D, Delete. Every edit makes a new recipe sharing every untouched part, and `readRecipe`'s `cache` keeps
+  their drawing as it was. An unsaved draft of each recipe stays in the browser (`codex_creatures_propbuilder_draft_v1`)
+  till it's reset to the file; till Save (stage 4), Copy JSON gives the recipe to paste over its file (`formatRecipe`).
 - **Drawing** (`components/PropRecipe3D.tsx`): each face a flat polygon with its own material (the crop read in
   the shader, the lean as Props3D's `leaned`), unlit and tinted by the light where it stands as the game's 3D
   things are; each part memoised on its own recipe object, so changing one part rebuilds only it.
@@ -94,7 +103,7 @@ against its drawing; no baked meshes. Stage 1 of 5 built: the format, the loader
   `<PropRecipe3D recipe={…} />`, one at a time, each once the user approves it; recipes are bundled JSON (no
   fetching, offline as well); footprints, placements, taps, saves and world versions don't change; a recipe that
   won't read falls back to the old drawing; a test reads every recipe and checks its pictures exist.
-- Tests: tests/propRecipe.test.ts.
+- Tests: tests/propRecipe.test.ts, tests/propEdit.test.ts.
 
 ## Density and open standards
 

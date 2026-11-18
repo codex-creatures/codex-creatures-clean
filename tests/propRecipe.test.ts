@@ -164,3 +164,13 @@ describe("changing one part leaves the rest as they were", () => {
     expect(changed.filter((p, i) => p !== parts[i]).map((p) => p.id)).toEqual(["skull"]);
   });
 });
+
+describe("a recipe as saved", () => {
+  it("reads back the same, each list of numbers on one line", async () => {
+    const { formatRecipe } = await import("@/lib/props/recipe");
+    const text = formatRecipe(RECIPE_FILES.altar as RecipeSpec);
+    expect(JSON.parse(text)).toEqual(RECIPE_FILES.altar);
+    expect(text).toContain('"size": [2, 0.45, 1.8]');
+    expect(text).toContain('"crop": [0, 0, 48, 24]');
+  });
+});

@@ -24,7 +24,8 @@ const FLOOR = "/sprites/den3d/kit-floor.png";
 const DEN_LIGHT = new THREE.Color(1, 0.86, 0.7); // 🧪 roughly the Den's warm light, even everywhere
 const PLACES = stations({ opened: true, pit: true, trainingPit: false, repaired: true });
 
-export type PreviewProps = { recipe: Recipe; compare?: StationKey; angle: number; warm: boolean; lean: boolean };
+// `picked`, `onPick`: the part picked, and a tap on one (on the middle copy).
+export type PreviewProps = { recipe: Recipe; compare?: StationKey; angle: number; warm: boolean; lean: boolean; picked?: string | null; onPick?: (part: string) => void };
 
 export default function Preview(p: PreviewProps) {
   return (
@@ -35,12 +36,12 @@ export default function Preview(p: PreviewProps) {
   );
 }
 
-function Scene({ recipe, compare, angle, warm, lean }: PreviewProps) {
+function Scene({ recipe, compare, angle, warm, lean, picked, onPick }: PreviewProps) {
   const { size, setDpr } = useThree();
   const pitch = (angle * Math.PI) / 180, stretch = uprightStretch(pitch);
   const pix = pixelScale("art", DENSITY, ACROSS, size.width, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
   useEffect(() => { setDpr(pix.dpr); }, [pix.dpr, setDpr]);
-  const light = warm ? DEN_LIGHT : new THREE.Color(1, 1, 1), tint = () => light.clone();
+  const tint = useMemo(() => { const light = warm ? DEN_LIGHT : new THREE.Color(1, 1, 1); return () => light.clone(); }, [warm]);
   const old = compare && PLACES.find((s) => s.key === compare);
   useFrame(({ camera }) => {
     PROP_LEAN.uLean.value = lean ? LEAN : 0; PROP_LEAN.uCx.value = 0;
@@ -60,8 +61,8 @@ function Scene({ recipe, compare, angle, warm, lean }: PreviewProps) {
   }, []);
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><planeGeometry args={[30, 20]} /><meshBasicMaterial map={floor} color={light} /></mesh>
-      {SPOTS.map((x) => <PropRecipe3D key={x} recipe={recipe} at={[x, 0, 0]} pitch={pitch} stretch={stretch} tint={tint} />)}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><planeGeometry args={[30, 20]} /><meshBasicMaterial map={floor} color={tint()} /></mesh>
+      {SPOTS.map((x) => <PropRecipe3D key={x} recipe={recipe} at={[x, 0, 0]} pitch={pitch} stretch={stretch} tint={tint} picked={picked} onPick={x === 0 ? onPick : undefined} />)}
       {old && SPOTS.map((x) => (
         <group key={`old${x}`} position={[x - old.x, 0, BEHIND - old.y]}>
           <Place s={old} tint={tint} stretch={stretch} repaired trainingPit={false} stoneReady={false} />

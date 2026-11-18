@@ -55,33 +55,42 @@ function faceGeometry(f: FacePoly): THREE.BufferGeometry {
 const WHITE = new THREE.Color(1, 1, 1);
 // The face's own colour (a flat colour, or white under a picture) times its tint.
 const baseOf = (f: FacePoly) => new THREE.Color(f.art.kind === "colour" ? f.art.colour : "#ffffff").multiply(new THREE.Color(f.art.tint));
-// Its colour now: that, times the light where the prop stands unless it glows.
-function paint(m: THREE.MeshBasicMaterial, base: THREE.Color, glow: boolean, light: THREE.Color) {
+// Its colour now: that, times the light where the prop stands unless it glows; a part picked in the builder
+// pulses towards gold.
+const PICKED = new THREE.Color("#ffd66e");
+function paint(m: THREE.MeshBasicMaterial, base: THREE.Color, glow: boolean, light: THREE.Color, picked: boolean) {
   m.color.copy(base);
   if (!glow) m.color.multiply(light);
+  if (picked) m.color.lerp(PICKED, 0.35 + 0.25 * Math.sin(performance.now() / 160));
 }
 
-const Face = memo(function Face({ f, tint }: { f: FacePoly; tint?: Tint }) {
+// (`onPick`: the builder's; tapping the face picks its part. Without it, taps go straight through, as the game's.)
+type Pick = (part: string) => void;
+const Face = memo(function Face({ f, tint, picked, onPick }: { f: FacePoly; tint?: Tint; picked: boolean; onPick?: Pick }) {
   const geo = useMemo(() => faceGeometry(f), [f]);
   const mat = useMemo(() => faceMaterial(f), [f]);
   useEffect(() => () => { geo.dispose(); mat.dispose(); }, [geo, mat]);
   const base = useMemo(() => baseOf(f), [f]);
   const ref = useRef<THREE.Mesh>(null);
-  useFrame(() => { if (ref.current) paint(ref.current.material as THREE.MeshBasicMaterial, base, f.glow, tint ? tint() : WHITE); });
-  return <mesh ref={ref} geometry={geo} material={mat} raycast={() => null} />;
+  useFrame(() => { if (ref.current) paint(ref.current.material as THREE.MeshBasicMaterial, base, f.glow, tint ? tint() : WHITE, picked); });
+  return onPick
+    ? <mesh ref={ref} geometry={geo} material={mat} onClick={(e) => { e.stopPropagation(); onPick(f.part); }} />
+    : <mesh ref={ref} geometry={geo} material={mat} raycast={() => null} />;
 });
 
 // One part: its faces worked out again only when the part (or the camera's angle) changes.
-const RecipePart = memo(function RecipePart({ part, pitch, stretch, tint }: { part: Part; pitch: number; stretch: number; tint?: Tint }) {
+const RecipePart = memo(function RecipePart({ part, pitch, stretch, tint, picked, onPick }: { part: Part; pitch: number; stretch: number; tint?: Tint; picked: boolean; onPick?: Pick }) {
   const faces = useMemo(() => partFaces(part, { pitch, stretch }), [part, pitch, stretch]);
-  return <>{faces.map((f) => <Face key={f.key} f={f} tint={tint} />)}</>;
+  return <>{faces.map((f) => <Face key={f.key} f={f} tint={tint} picked={picked} onPick={onPick} />)}</>;
 });
 
-// The prop, standing at `at` (its origin, the middle of its foot), facing south.
-export function PropRecipe3D({ recipe, at = [0, 0, 0], pitch, stretch, tint }: { recipe: Recipe; at?: [number, number, number]; pitch: number; stretch: number; tint?: Tint }) {
+// The prop, standing at `at` (its origin, the middle of its foot), facing south. `picked`, `onPick`: the
+// builder's (the part picked, and a tap on a part).
+export function PropRecipe3D({ recipe, at = [0, 0, 0], pitch, stretch, tint, picked, onPick }: { recipe: Recipe; at?: [number, number, number]; pitch: number; stretch: number; tint?: Tint;
+  picked?: string | null; onPick?: Pick }) {
   return (
     <group position={at}>
-      {recipe.parts.map((p) => <RecipePart key={p.id} part={p} pitch={pitch} stretch={stretch} tint={tint} />)}
+      {recipe.parts.map((p) => <RecipePart key={p.id} part={p} pitch={pitch} stretch={stretch} tint={tint} picked={p.id === picked} onPick={onPick} />)}
     </group>
   );
 }

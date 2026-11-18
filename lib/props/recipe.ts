@@ -54,8 +54,9 @@ const num = (v: unknown): v is number => typeof v === "number" && Number.isFinit
 const vec = (v: unknown, n: number): v is number[] => Array.isArray(v) && v.length === n && v.every(num);
 
 // Read a recipe: everything checked, defaults filled in. A recipe of a later format isn't read (it may mean
-// something this code doesn't know).
-export function readRecipe(json: unknown): Read {
+// something this code doesn't know). `cache`: parts already read, by the part as written; a part that's the same
+// object as before comes back the same (so an edit to one part leaves the others' drawing alone).
+export function readRecipe(json: unknown, cache?: WeakMap<object, Part>): Read {
   const errors: string[] = [];
   const r = json as Partial<RecipeSpec> | null;
   if (!r || typeof r !== "object") return { ok: false, errors: ["not a recipe"] };
@@ -68,8 +69,9 @@ export function readRecipe(json: unknown): Read {
   const parts: Part[] = [], seen = new Set<string>();
   for (const [i, p] of (Array.isArray(r.parts) ? r.parts : []).entries()) {
     const where = `part ${typeof p?.id === "string" ? p.id : i}`;
-    const out = readPart(p, where, errors);
+    const out = (p && typeof p === "object" && cache?.get(p)) || readPart(p, where, errors);
     if (!out) continue;
+    if (p && typeof p === "object") cache?.set(p, out);
     if (seen.has(out.id)) errors.push(`${where}: id used twice`);
     seen.add(out.id);
     parts.push(out);
@@ -124,6 +126,11 @@ function resolveFace(faces: Record<string, FaceSpec>, name: string, where: strin
   if (!vec(f.crop, 4) || f.crop.some((v) => !Number.isInteger(v) || v < 0) || f.crop[2] < 1 || f.crop[3] < 1) { errors.push(`${where}: crop [x, y, w, h] in whole pixels`); return null; }
   if (f.fit !== undefined && f.fit !== "tile" && f.fit !== "fill") errors.push(`${where}: fit tile or fill`);
   return { kind: "art", src: f.src, crop: [...f.crop] as Crop, fit: f.fit ?? "tile", tint };
+}
+
+// A recipe as saved: two spaces in, each list of numbers on one line (so a part reads at a glance).
+export function formatRecipe(r: RecipeSpec): string {
+  return JSON.stringify(r, null, 2).replace(/\[\s*(-?[\d.e+-]+(?:,\s*-?[\d.e+-]+)*)\s*\]/g, (_, nums: string) => `[${nums.split(/,\s*/).join(", ")}]`) + "\n";
 }
 
 // Every picture a recipe uses.
