@@ -1,0 +1,162 @@
+{
+  "format": 1,
+  "id": "training",
+  "name": "Training Pit",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den/training-pit.png",
+    "foot": [112, 140]
+  },
+  "parts": [
+    {
+      "id": "sand",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [2.1, 0.03, 2.1],
+      "faces": {
+        "top": {
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#c7b28c"
+        },
+        "*": {
+          "colour": "#7a6a4a"
+        }
+      }
+    },
+    {
+      "id": "dummy",
+      "kind": "sprite",
+      "at": [0, 0.03, -0.1],
+      "size": [0.625, 1.166667],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/dummy.png",
+          "crop": [0, 0, 30, 56],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "wall",
+      "kind": "box",
+      "at": [-0.15, 0, 1.15],
+      "size": [2.3, 0.458333, 0.3],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a5570"
+        },
+        "top": {
+          "colour": "#66718c"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "post-1",
+      "kind": "box",
+      "at": [-1.15, 0, 1.15],
+      "size": [0.354167, 0.583333, 0.354167],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#535e7a"
+        },
+        "top": {
+          "colour": "#727d99"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "spike-1",
+      "kind": "cylinder",
+      "at": [-1.15, 0.583333, 1.15],
+      "size": [0.145833, 0.416667, 0.145833],
+      "sides": 6,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3c404c"
+        }
+      }
+    },
+    {
+      "id": "post-2",
+      "kind": "box",
+      "at": [-0.3833, 0, 1.15],
+      "size": [0.354167, 0.583333, 0.354167],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#535e7a"
+        },
+        "top": {
+          "colour": "#727d99"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "spike-2",
+      "kind": "cylinder",
+      "at": [-0.3833, 0.583333, 1.15],
+      "size": [0.145833, 0.416667, 0.145833],
+      "sides": 6,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3c404c"
+        }
+      }
+    },
+    {
+      "id": "post-3",
+      "kind": "box",
+      "at": [0.3833, 0, 1.15],
+      "size": [0.354167, 0.583333, 0.354167],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#535e7a"
+        },
+        "top": {
+          "colour": "#727d99"
+        },
+        "bottom": {
+          "colour": "#2a2f3a"
+        }
+      }
+    },
+    {
+      "id": "spike-3",
+      "kind": "cylinder",
+      "at": [0.3833, 0.583333, 1.15],
+      "size": [0.145833, 0.416667, 0.145833],
+      "sides": 6,
+      "taper": 0,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3c404c"
+        }
+      }
+    }
+  ]
+}

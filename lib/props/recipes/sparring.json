@@ -1,0 +1,146 @@
+{
+  "format": 1,
+  "id": "sparring",
+  "name": "Sparring Pit",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den/sparring-pit-3.png",
+    "foot": [112, 140]
+  },
+  "parts": [
+    {
+      "id": "sand",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [2.1, 0.03, 2.1],
+      "faces": {
+        "top": {
+          "src": "/sprites/den3d/parts/sand.png",
+          "crop": [0, 0, 40, 40],
+          "tint": "#c7b28c"
+        },
+        "*": {
+          "colour": "#7a6a4a"
+        }
+      }
+    },
+    {
+      "id": "dummy",
+      "kind": "sprite",
+      "at": [0, 0.03, -0.1],
+      "size": [0.625, 1.166667],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/dummy.png",
+          "crop": [0, 0, 30, 56],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "stone-1",
+      "kind": "cylinder",
+      "at": [-1.0833, 0, 1.0833],
+      "size": [0.5704, 0.1875, 0.5704],
+      "sides": 4,
+      "taper": 0.72,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#6e6a66"
+        },
+        "top": {
+          "colour": "#8a8680"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-2",
+      "kind": "cylinder",
+      "at": [-0.65, 0, 1.0833],
+      "size": [0.5704, 0.166667, 0.5704],
+      "sides": 4,
+      "taper": 0.72,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#66625e"
+        },
+        "top": {
+          "colour": "#827e78"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-3",
+      "kind": "cylinder",
+      "at": [-0.2167, 0, 1.0833],
+      "size": [0.5704, 0.208333, 0.5704],
+      "sides": 4,
+      "taper": 0.72,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#75716c"
+        },
+        "top": {
+          "colour": "#918d86"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-4",
+      "kind": "cylinder",
+      "at": [0.2167, 0, 1.0833],
+      "size": [0.5704, 0.1875, 0.5704],
+      "sides": 4,
+      "taper": 0.72,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#6e6a66"
+        },
+        "top": {
+          "colour": "#8a8680"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    },
+    {
+      "id": "stone-5",
+      "kind": "cylinder",
+      "at": [0.65, 0, 1.0833],
+      "size": [0.5704, 0.166667, 0.5704],
+      "sides": 4,
+      "taper": 0.72,
+      "four": true,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#66625e"
+        },
+        "top": {
+          "colour": "#827e78"
+        },
+        "bottom": {
+          "colour": "#2a2826"
+        }
+      }
+    }
+  ]
+}

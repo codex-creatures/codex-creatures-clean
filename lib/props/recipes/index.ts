@@ -6,5 +6,7 @@
 import altar from "./altar.json";
 import pit from "./pit.json";
 import pool from "./pool.json";
+import sparring from "./sparring.json";
+import training from "./training.json";
 
-export const RECIPE_FILES: Record<string, unknown> = { altar, pit, pool };
+export const RECIPE_FILES: Record<string, unknown> = { altar, pit, pool, sparring, training };
