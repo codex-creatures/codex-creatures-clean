@@ -30,19 +30,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#e4e7f0"
+          "colour": "#4a5570"
         },
         "top": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#d4d8e3"
+          "colour": "#66718c"
         },
         "bottom": {
-          "colour": "#222533"
+          "colour": "#2a2f3a"
         }
       }
     },
@@ -57,19 +51,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#d4d8e3"
+          "colour": "#465172"
         },
         "top": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#dcdfe9"
+          "colour": "#626d8e"
         },
         "bottom": {
-          "colour": "#222533"
+          "colour": "#2a2f3a"
         }
       }
     },
@@ -84,19 +72,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#dcdfe9"
+          "colour": "#4e5976"
         },
         "top": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#cfd3de"
+          "colour": "#6a7592"
         },
         "bottom": {
-          "colour": "#222533"
+          "colour": "#2a2f3a"
         }
       }
     },
@@ -111,19 +93,13 @@
       "outline": true,
       "faces": {
         "side": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#cfd3de"
+          "colour": "#43506a"
         },
         "top": {
-          "src": "/sprites/den3d/parts/stone-blocks.png",
-          "crop": [3, 3, 20, 18],
-          "fit": "fill",
-          "tint": "#e4e7f0"
+          "colour": "#5f6a86"
         },
         "bottom": {
-          "colour": "#222533"
+          "colour": "#2a2f3a"
         }
       }
     },
@@ -284,16 +260,16 @@
       "id": "link-1",
       "kind": "box",
       "at": [0.5091, 0.3425, 0.5091],
-      "size": [0.125, 0.041667, 0.166667],
+      "size": [0.145833, 0.0625, 0.072917],
       "turn": [0, 45, 0],
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#5d6273"
+          "colour": "#666b7c"
         },
         "top": {
-          "colour": "#7a7f90"
+          "colour": "#80859a"
         }
       }
     },
@@ -301,16 +277,16 @@
       "id": "link-2",
       "kind": "box",
       "at": [0.601, 0.3425, 0.601],
-      "size": [0.052083, 0.104167, 0.145833],
-      "turn": [0, 45, 0],
+      "size": [0.145833, 0.0625, 0.072917],
+      "turn": [0, 135, 0],
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#3a3f4c"
+          "colour": "#4d5262"
         },
         "top": {
-          "colour": "#4d5262"
+          "colour": "#5d6273"
         }
       }
     },
@@ -318,16 +294,16 @@
       "id": "link-3",
       "kind": "box",
       "at": [0.693, 0.3425, 0.693],
-      "size": [0.125, 0.041667, 0.166667],
+      "size": [0.145833, 0.0625, 0.072917],
       "turn": [0, 45, 0],
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#5d6273"
+          "colour": "#666b7c"
         },
         "top": {
-          "colour": "#7a7f90"
+          "colour": "#80859a"
         }
       }
     },
@@ -335,16 +311,16 @@
       "id": "link-4",
       "kind": "box",
       "at": [0.7849, 0.3425, 0.7849],
-      "size": [0.052083, 0.104167, 0.145833],
-      "turn": [0, 45, 0],
+      "size": [0.145833, 0.0625, 0.072917],
+      "turn": [0, 135, 0],
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#3a3f4c"
+          "colour": "#4d5262"
         },
         "top": {
-          "colour": "#4d5262"
+          "colour": "#5d6273"
         }
       }
     },
@@ -352,16 +328,16 @@
       "id": "link-5",
       "kind": "box",
       "at": [0.8768, 0.3425, 0.8768],
-      "size": [0.125, 0.041667, 0.166667],
+      "size": [0.145833, 0.0625, 0.072917],
       "turn": [0, 45, 0],
       "four": true,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#5d6273"
+          "colour": "#666b7c"
         },
         "top": {
-          "colour": "#7a7f90"
+          "colour": "#80859a"
         }
       }
     }
