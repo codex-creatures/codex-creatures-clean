@@ -27,7 +27,7 @@ const FLOOR = "/sprites/den3d/kit-floor.png";
 const DEN_TINT = new THREE.Color(1, 0.86, 0.7); // (the game look's warm Den light, even everywhere)
 // The lights. 🧪 Den: a warm key light from the upper left, in front (as the art spec's light), a warm ambient; your
 // torch either way (as the props lab's: warm, falling off).
-export const LIGHTS = { key: { colour: "#ffe2bd", den: 3.2, at: [-5, 7, 4] as const }, ambient: { colour: "#ffd9b0", den: 0.55, torch: 0.03 }, torch: { colour: "#ffc68a", power: 8, decay: 1.8 } };
+export const LIGHTS = { key: { colour: "#ffe2bd", den: 4.2, at: [-5, 7, 4] as const }, ambient: { colour: "#ffd9b0", den: 0.35, torch: 0.03 }, torch: { colour: "#ffc68a", power: 8, decay: 1.8 } };
 
 export const spotOf = (i: number, n: number) => ({ x: (i - (n - 1) / 2) * GAP, z: 0 });
 
