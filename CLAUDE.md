@@ -131,6 +131,7 @@ them. **`main` is the working branch.** Other old branches exist; leave them alo
 | `npx tsc --noEmit` | type check |
 | `npm run lint` | ESLint |
 | `npm run registry:rules` | after changing scan odds, rarity weights, species, weapon/armour kinds or soul stones: writes a migration with the global registry's new rules (then apply it to Supabase). A test fails until it's done |
+| `npm run props:sprites` | after adding art: refreshes the prop builder's list of pictures (lib/props/sprites.json) |
 | `npm run setup:google` | one-off: sets up Google sign-in (the user runs it in their own terminal: it asks for secrets) |
 | `npm run build:offline` | static export into `codex-offline/` with `Play (Windows).bat` (PowerShell server on :8123) |
 | `Start Game.bat` / `Update.bat` | the user's double-click launchers (`scripts/game-status.mjs`, `open-when-ready.mjs`, `update.mjs`) |
@@ -174,6 +175,8 @@ kill theirs.
   canvases and the battle stood in for): what's on screen and saved after each step is pinned in
   tests/golden/page/dungeon.json. A difference there is a regression unless the user approved the
   change; then re-record with `UPDATE_PAGE_GOLDEN=1`, in its own "Intended change:" commit.
+- **Dev-only pages and routes** are named `page.dev.tsx` / `route.dev.ts`: only `npm run dev` sees them (next.config.ts),
+  so no build has them (the prop builder's Save, which writes into the repo, is one).
 - **Game rules go in `lib/` with a test.** Changes to the rules need a test or a sim result. Run
   `npm run test:all` and `npx tsc --noEmit` before committing. Mark a new test `slowIt` only if it
   takes seconds (and check it isn't just thousands of `expect` calls: collect failures, expect once).

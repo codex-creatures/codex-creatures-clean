@@ -68,8 +68,29 @@ spec assumes nothing about them.
 ### 6.6 🧪 Props built from recipes (`/lab/propbuilder`; the user, 2026-11-19, plan approved the same day)
 
 A 3D prop as a small JSON **recipe** of simple parts painted with crops of PixelLab drawings, built in the lab
-against its drawing; no baked meshes. Stages 1 to 4 of 5 built: the format, the loader, the renderer and the
-altar; editing parts; painting faces; the drawing over the view, torch light, the palette check, new props and saving.
+against its drawing; no baked meshes. ✅ Built (all five stages, 2026-11-19): the format, the loader, the renderer
+and the altar; editing parts; painting faces; the drawing over the view, torch light, the palette check, new props
+and saving. Lab only: nothing in the game draws a recipe yet.
+
+**Using it** (`/lab/propbuilder`; Save needs `npm run dev`):
+1. **Start a prop:** pick a recipe, or "+ New prop" (a file name like `healing-pool`, a name, den or dungeon).
+2. **Lay the drawing over it:** under Drawing, type the drawing's path (`/sprites/…`); it shows over the middle
+   copy at the game's size. Set its foot (the pixel that stands on the floor at the prop's middle: "Bottom
+   middle", then − and + a pixel at a time) till it stands where the prop does; "Faint" sets how see-through.
+3. **Block it out:** add boxes, cylinders, panels and sprites; tap one in the middle copy (or its name) and set
+   where it stands, its size and turn till it covers its part of the drawing. Sizes show in art pixels too, so a
+   part can be made exactly as wide as its part of the drawing. Snap to 1 px for that; coarser steps for blocking out.
+4. **Paint it:** pick a face (or "* (rest)"), "Picture", find the picture, drag out the crop. Faces that stand or
+   lie flat on the prop: "Tile" (48 a unit, the standard). A single picture on one face (a skull, a sign): "Fill",
+   with the face sized so the readout says 48 × 48. Things that must face the camera (flames, lanterns): sprites.
+5. **Check it:** the left and right copies show its sides as the game's lean will; "Torch" lights it as the
+   Labyrinth does, you beside it; the palette check shows what's off-palette; "Game's own behind" shows what the
+   game draws there now.
+6. **Save:** writes `lib/props/recipes/<id>.json` and lists it. Commit it like any other file. (Elsewhere, Save
+   downloads the file: put it in that folder, then run the dev server and save it once more to list it, or add it
+   to `index.ts` by hand.)
+
+Until it's saved, a recipe's changes are a draft in that browser only: on another computer, save first.
 
 - **The format** (`lib/props/recipe.ts`, format 1; recipes in `lib/props/recipes/<id>.json`, listed in its
   `index.ts`): `{ format, id, name, setting: den|dungeon, ref?: { src, foot }, parts }`. A part: `id`, `kind`
@@ -99,10 +120,18 @@ altar; editing parts; painting faces; the drawing over the view, torch light, th
   things are; each part memoised on its own recipe object, so changing one part rebuilds only it.
 - **The altar** (`altar.json`): the Den's Soul Altar (Den3DPlaces `Altar`) part for part; its curved cauldron is
   three tapered cylinders, and its fire's flicker and floor glow stay the game's to draw (as flames are).
-- **How the game will load them (planned, not wired in):** a hand-coded prop in Den3DPlaces or Props3D becomes
-  `<PropRecipe3D recipe={…} />`, one at a time, each once the user approves it; recipes are bundled JSON (no
-  fetching, offline as well); footprints, placements, taps, saves and world versions don't change; a recipe that
-  won't read falls back to the old drawing; a test reads every recipe and checks its pictures exist.
+- **How the game will load them (planned, not wired in; each step the user's to approve):**
+  1. A recipe is used by its id: `RECIPE_FILES[id]`, read once with `readRecipe` (bundled JSON: no fetching, and
+     offline as well). A module beside the index would keep the read recipes, so each is read once a visit.
+  2. One prop at a time, a hand-coded drawing becomes `<PropRecipe3D recipe={…} pitch stretch tint />`: in the Den,
+     `Den3DPlaces` `Place`'s case for it (the altar first, its `Glow` and the fire's flicker kept in code); in the
+     Labyrinth, `Props3D`'s, by `PROPS_3D`'s kind. It takes the same `tint` the old drawing took, and the lean from
+     `PROP_LEAN` as the rest do.
+  3. Drawing only: footprints, placements, taps, saves and world versions stay as they are. A prop's recipe should
+     fit its footprint; the builder can show the footprint as a floor patch when the first one goes in.
+  4. A recipe that won't read (a bad edit committed) falls back to the old drawing, so a room can't break; a test
+     reads every recipe and checks every picture it uses is in public/ (tests/propRecipe.test.ts, already).
+  5. Taps go through a recipe as they do the old drawings (its `onPick` is the builder's only).
 - **Painting faces** (the lab's FacePicker; `changeFace`): the picked part's faces, and "* (rest)" for every face
   not given its own; each a picture, a flat colour, the same as another face, or the rest's. A picture is found in
   the list of everything under public/sprites (`lib/props/sprites.json`, written by `npm run props:sprites`: a static

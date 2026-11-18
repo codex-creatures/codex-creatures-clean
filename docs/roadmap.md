@@ -62,6 +62,10 @@ interesting situations, real decisions, progression and surprises, not feel they
   to play-test; its art (Den walls, the shack, the storehouse, the tavern, the altar, the pits, the board,
   the portal) is stand-ins or samples till approved. Then it replaces the old Den.
   [design/den.md](design/den.md#the-new-den-behind-a-setting)
+- 🧪 **Props from recipes** (the user, 2026-11-19): `/lab/propbuilder` is built, to build the Den's and the
+  dungeon's 3D props from PixelLab drawings as small JSON recipes; the altar's is the first. Next: the user builds
+  and approves props in it; then each goes into the game in place of its hand-coded drawing, one at a time.
+  [world/art-pipeline.md](world/art-pipeline.md) §6.6
 - ✅ **The Soul Altar: summoning and ascension; scanning on its own screen** (decision 49, built
   2026-11-18). [design/creatures.md](design/creatures.md) §4
 - 📌 **The Bestiary as a proper page** (the user, 2026-11-18; next session): a grid of the
