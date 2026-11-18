@@ -118,8 +118,16 @@ Until it's saved, a recipe's changes are a draft in that browser only: on anothe
 - **Drawing** (`components/PropRecipe3D.tsx`): each face a flat polygon with its own material (the crop read in
   the shader, the lean as Props3D's `leaned`), unlit and tinted by the light where it stands as the game's 3D
   things are; each part memoised on its own recipe object, so changing one part rebuilds only it.
-- **The altar** (`altar.json`): the Den's Soul Altar (Den3DPlaces `Altar`) part for part; its curved cauldron is
-  three tapered cylinders, and its fire's flicker and floor glow stay the game's to draw (as flames are).
+- **Outline** (a box's or cylinder's `outline`): a shell an art pixel bigger all round, drawn inside out in the
+  darkest stone (#0e0f0c), so a dark pixel edges the part, as the Labyrinth's 3D things have (Props3D's hull).
+- **The altar** (`altar.json`; rebuilt 2026-11-19 from its drawing, den3d/altar.png, where the first recipe copied
+  the Den's hand-built one): three stepped tiers of cool blue-grey stone (the Labyrinth's stone, tinted, their tops
+  lighter so each step reads), four corner pillars with the drawing's teal windows (glowing), iron caps and bone
+  spikes, the cauldron (a foot, a belly and a rim: tapered cylinders), the horned skull on its front, the chains at
+  its sides (cut from the drawing: den3d/parts/altar-chain*.png) and the soul fire; toon light and outlines on the
+  solid parts. The drawing is corner-on, the camera square-on, so it follows the drawing's design, not its outline.
+  Its fire's flicker and floor glow stay the game's to draw (as flames are). Not in the game yet: the Den still
+  draws Den3DPlaces' `Altar`.
 - **How the game will load them (planned, not wired in; each step the user's to approve):**
   1. A recipe is used by its id: `RECIPE_FILES[id]`, read once with `readRecipe` (bundled JSON: no fetching, and
      offline as well). A module beside the index would keep the read recipes, so each is read once a visit.

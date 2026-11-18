@@ -2,9 +2,10 @@
 import { describe, expect, it } from "vitest";
 import { addPart, duplicatePart, deletePart, changePart, renamePart, reorderPart, freeId, startHistory, edit, undo, redo, HISTORY } from "@/lib/props/edit";
 import { readRecipe, ART_STEP, type Part, type RecipeSpec } from "@/lib/props/recipe";
-import { RECIPE_FILES } from "@/lib/props/recipes";
+import FIRST from "./fixtures/props/altar-first.json";
 
-const ALTAR = RECIPE_FILES.altar as RecipeSpec;
+// The altar's first recipe, kept as a fixture (the real one changes as it's built; these test the editing).
+const ALTAR = FIRST as unknown as RecipeSpec;
 const ids = (r: RecipeSpec) => r.parts.map((p) => p.id);
 const reads = (r: RecipeSpec) => { const x = readRecipe(r); if (!x.ok) throw new Error(x.errors.join("; ")); return x.recipe; };
 

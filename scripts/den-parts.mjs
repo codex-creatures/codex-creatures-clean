@@ -56,3 +56,9 @@ console.log("done");
   await sharp(out, { raw: { width: w, height: h, channels: 4 } }).png().toFile(S + "den3d/arch-hole.png");
   await sharp(S + "den3d/arch-hole.png").flop().png().toFile(S + "den3d/portal-hole.png");
 }
+
+// The altar's chains (the user, 2026-11-19: the altar rebuilt from recipes, lib/props/recipes/altar.json): the
+// chain hanging from the cauldron's rim to the front-left pillar, cut from the approved picture, and mirrored for
+// the right.
+await cut("den3d/altar.png", "altar-chain", 10, 46, 11, 34);
+await sharp(O + "altar-chain.png").flop().png().toFile(O + "altar-chain-r.png");

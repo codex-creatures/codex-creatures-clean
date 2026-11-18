@@ -19,6 +19,10 @@ export const MAX_SIDES = 32;
 // stepped into three bands. Fixed, so it needs no lights in the scene (the game's scenes have none).
 export const TOON_LIGHT: Vec3 = [-1, 1.3, 1];
 export const TOON_BANDS = [0.62, 0.81, 1];
+// The outline (a box's or cylinder's `outline`): a shell an art pixel bigger all round, drawn inside out in the
+// darkest stone, so a dark pixel shows round the part's edges (as the Labyrinth's 3D things have: Props3D's hull).
+export const OUTLINE_U = ART_STEP;
+export const OUTLINE_COLOUR = "#0e0f0c";
 
 export type Vec3 = [number, number, number];
 export type Crop = [number, number, number, number]; // x, y (from the picture's top left), width, height: pixels
@@ -36,7 +40,7 @@ export const FACES: Record<PartKind, string[]> = {
 export type FaceSpec = { src?: string; crop?: Crop; fit?: "tile" | "fill"; colour?: string; tint?: string; same?: string };
 export type PartSpec = {
   id: string; kind: PartKind; at: Vec3; size: number[]; turn?: Vec3; sides?: number; taper?: number;
-  light?: "unlit" | "toon"; glow?: boolean; faces: Record<string, FaceSpec>;
+  light?: "unlit" | "toon"; glow?: boolean; outline?: boolean; faces: Record<string, FaceSpec>;
 };
 export type RecipeSpec = { format: number; id: string; name: string; setting: "den" | "dungeon"; ref?: { src: string; foot: [number, number] }; parts: PartSpec[] };
 
@@ -44,7 +48,7 @@ export type RecipeSpec = { format: number; id: string; name: string; setting: "d
 export type Face = { kind: "art"; src: string; crop: Crop; fit: "tile" | "fill"; tint: string } | { kind: "colour"; colour: string; tint: string };
 export type Part = {
   id: string; kind: PartKind; at: Vec3; size: Vec3; turn: Vec3; sides: number; taper: number;
-  light: "unlit" | "toon"; glow: boolean; faces: Record<string, Face>;
+  light: "unlit" | "toon"; glow: boolean; outline: boolean; faces: Record<string, Face>;
 };
 export type Recipe = { format: number; id: string; name: string; setting: "den" | "dungeon"; ref?: { src: string; foot: [number, number] }; parts: Part[] };
 export type Read = { ok: true; recipe: Recipe } | { ok: false; errors: string[] };
@@ -93,6 +97,7 @@ function readPart(p: PartSpec, where: string, errors: string[]): Part | null {
   if (p.taper !== undefined && !(num(p.taper) && p.taper >= 0)) errors.push(`${where}: taper 0 or more`);
   if (p.light !== undefined && p.light !== "unlit" && p.light !== "toon") errors.push(`${where}: light unlit or toon`);
   if (p.glow !== undefined && typeof p.glow !== "boolean") errors.push(`${where}: glow true or false`);
+  if (p.outline !== undefined && (typeof p.outline !== "boolean" || (p.outline && flat))) errors.push(`${where}: outline true or false, on a box or cylinder only`);
   if (!p.faces || typeof p.faces !== "object") { errors.push(`${where}: faces missing`); return null; }
   const names = FACES[p.kind];
   for (const k of Object.keys(p.faces)) if (k !== "*" && !names.includes(k)) errors.push(`${where}: no face ${k} on a ${p.kind} (${names.join(", ")})`);
@@ -104,7 +109,7 @@ function readPart(p: PartSpec, where: string, errors: string[]): Part | null {
   if (errors.length > before) return null;
   const size: Vec3 = flat ? [p.size[0], p.size[1], 0] : [p.size[0], p.size[1], p.size[2]];
   return { id: p.id, kind: p.kind, at: [...p.at] as Vec3, size, turn: (p.turn ? [...p.turn] : [0, 0, 0]) as Vec3, sides: p.sides ?? 12, taper: p.taper ?? 1,
-    light: p.light ?? "unlit", glow: p.glow ?? false, faces };
+    light: p.light ?? "unlit", glow: p.glow ?? false, outline: p.outline ?? false, faces };
 }
 
 // A face, following `same` (to another face of the part, never round in a loop) and "*".
@@ -150,10 +155,21 @@ export function snapPart<P extends { at: number[]; size: number[]; turn?: number
 // its normal, and its toon band (1 when unlit). Sprites stand facing the camera, stretched up by `stretch`
 // (as the game's flat things are: uprightStretch), unturned.
 // `screen`: how big the face shows, across and up its picture, in units on screen (for faceDensity).
-export type FacePoly = { key: string; part: string; face: string; art: Face; points: Vec3[]; uv: [number, number][]; normal: Vec3; shade: number; glow: boolean; twoSided: boolean; screen: [number, number] };
+// `hull`: the part's outline shell (drawn inside out, untinted, never tapped).
+export type FacePoly = { key: string; part: string; face: string; art: Face; points: Vec3[]; uv: [number, number][]; normal: Vec3; shade: number; glow: boolean; twoSided: boolean; screen: [number, number]; hull?: boolean };
 export type View = { pitch: number; stretch: number };
 
 export function partFaces(p: Part, view: View): FacePoly[] {
+  return p.outline ? [...shapeFaces(p, view), ...shapeFaces(hullOf(p), view).map((f) => ({ ...f, key: `hull:${f.key}`, hull: true }))] : shapeFaces(p, view);
+}
+// The outline's shell: the part an art pixel bigger all round (its foot that much lower), one dark colour.
+function hullOf(p: Part): Part {
+  const [w, h, d] = p.size, o = OUTLINE_U, dark: Face = { kind: "colour", colour: OUTLINE_COLOUR, tint: "#ffffff" };
+  const faces = Object.fromEntries(FACES[p.kind].map((n) => [n, dark]));
+  const taper = p.kind === "cylinder" ? (w * p.taper + 2 * o) / (w + 2 * o) : p.taper;
+  return { ...p, at: [p.at[0], p.at[1] - o, p.at[2]], size: [w + 2 * o, h + 2 * o, d + 2 * o], taper, light: "unlit", glow: false, outline: false, faces };
+}
+function shapeFaces(p: Part, view: View): FacePoly[] {
   const [w, h, d] = p.size, out: FacePoly[] = [];
   const polys: { face: string; points: Vec3[]; around?: number[] }[] = [];
   if (p.kind === "box") {

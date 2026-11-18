@@ -21,7 +21,7 @@ export type Tint = () => THREE.Color;
 function faceMaterial(f: FacePoly): THREE.MeshBasicMaterial {
   const art = f.art, m = new THREE.MeshBasicMaterial({
     map: art.kind === "art" ? texture(art.src) : null, color: art.kind === "colour" ? art.colour : "#ffffff",
-    vertexColors: true, alphaTest: 0.5, side: f.twoSided ? THREE.DoubleSide : THREE.FrontSide,
+    vertexColors: true, alphaTest: 0.5, side: f.hull ? THREE.BackSide : f.twoSided ? THREE.DoubleSide : THREE.FrontSide,
   });
   const crop = { value: new THREE.Vector4(...(art.kind === "art" ? art.crop : [0, 0, 1, 1])) }, tile = { value: art.kind === "art" && art.fit === "tile" ? 1 : 0 };
   m.onBeforeCompile = (sh) => {
@@ -80,8 +80,8 @@ const Face = memo(function Face({ f, tint, picked, onPick }: { f: FacePoly; tint
   useEffect(() => () => { geo.dispose(); mat.dispose(); }, [geo, mat]);
   const base = useMemo(() => baseOf(f), [f]);
   const ref = useRef<THREE.Mesh>(null);
-  useFrame(() => { if (ref.current) paint(ref.current.material as THREE.MeshBasicMaterial, base, f.glow, tint ? tint() : WHITE, picked); });
-  return onPick
+  useFrame(() => { if (ref.current) paint(ref.current.material as THREE.MeshBasicMaterial, base, f.glow || !!f.hull, tint ? tint() : WHITE, picked && !f.hull); });
+  return onPick && !f.hull
     ? <mesh ref={ref} geometry={geo} material={mat} onClick={(e) => { e.stopPropagation(); onPick(f.part); }} />
     : <mesh ref={ref} geometry={geo} material={mat} raycast={() => null} />;
 });

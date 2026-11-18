@@ -157,8 +157,8 @@ describe("toon light", () => {
 });
 
 describe("changing one part leaves the rest as they were", () => {
-  it("shares every other part, unchanged, with the recipe it came from", () => {
-    const r = readRecipe(RECIPE_FILES.altar);
+  it("shares every other part, unchanged, with the recipe it came from", async () => {
+    const r = readRecipe((await import("./fixtures/props/altar-first.json")).default);
     if (!r.ok) throw new Error(r.errors.join());
     const parts = r.recipe.parts, changed = parts.map((p) => (p.id === "skull" ? { ...p, at: [0, 0.9, 0.62] as Vec3 } : p));
     expect(changed.filter((p, i) => p !== parts[i]).map((p) => p.id)).toEqual(["skull"]);
@@ -168,8 +168,9 @@ describe("changing one part leaves the rest as they were", () => {
 describe("a recipe as saved", () => {
   it("reads back the same, each list of numbers on one line", async () => {
     const { formatRecipe } = await import("@/lib/props/recipe");
-    const text = formatRecipe(RECIPE_FILES.altar as RecipeSpec);
-    expect(JSON.parse(text)).toEqual(RECIPE_FILES.altar);
+    const first = (await import("./fixtures/props/altar-first.json")).default as unknown as RecipeSpec;
+    const text = formatRecipe(first);
+    expect(JSON.parse(text)).toEqual(first);
     expect(text).toContain('"size": [2, 0.45, 1.8]');
     expect(text).toContain('"crop": [0, 0, 48, 24]');
   });
@@ -187,5 +188,18 @@ describe("a face's pixel size on screen (the builder's warning)", () => {
     const [wide] = partFaces(one({ kind: "panel", size: [68 / 48, 26 / (48 * Math.cos(PITCH))], faces: { front: { ...STONE, crop: [0, 0, 34, 26], fit: "fill" } } }), VIEW);
     close(faceDensity(wide)!, [DENSITY / 2, DENSITY]);
     expect(faceDensity(partFaces(one({ kind: "panel", size: [1, 1], faces: { front: { colour: "#000000" } } }), VIEW)[0])).toBeNull();
+  });
+});
+
+describe("the outline", () => {
+  it("adds a shell an art pixel bigger all round, dark, drawn inside out; never on a flat part", async () => {
+    const { OUTLINE_COLOUR, OUTLINE_U } = await import("@/lib/props/recipe");
+    const plain = partFaces(one({ kind: "box", size: [1, 1, 1] }), VIEW), lined = partFaces(one({ kind: "box", size: [1, 1, 1], outline: true }), VIEW);
+    const hull = lined.filter((f) => f.hull);
+    expect(lined.length).toBe(plain.length * 2);
+    expect(hull.every((f) => f.art.kind === "colour" && f.art.colour === OUTLINE_COLOUR)).toBe(true);
+    const xs = hull.flatMap((f) => f.points.map((q) => q[0])), ys = hull.flatMap((f) => f.points.map((q) => q[1]));
+    expect([Math.min(...xs), Math.max(...xs), Math.min(...ys)]).toEqual([-0.5 - OUTLINE_U, 0.5 + OUTLINE_U, -OUTLINE_U].map((v) => expect.closeTo(v, 9)));
+    expect(readRecipe(recipe([{ id: "p", kind: "panel", at: [0, 0, 0], size: [1, 1], outline: true, faces: { front: STONE } }])).ok).toBe(false);
   });
 });

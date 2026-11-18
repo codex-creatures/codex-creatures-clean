@@ -66,6 +66,7 @@ function PartFields({ part, step, onChange, onRename, onDuplicate, onDelete, onM
         <button style={btn((part.light ?? "unlit") === "unlit")} onClick={() => onChange(part.id, { light: "unlit" })}>Unlit</button>
         <button style={btn(part.light === "toon")} onClick={() => onChange(part.id, { light: "toon" })}>Toon</button>
         <button style={btn(!!part.glow)} onClick={() => onChange(part.id, { glow: !part.glow })}>Glow</button>
+        {!flat && <button style={btn(!!part.outline)} onClick={() => onChange(part.id, { outline: !part.outline })} title="A dark pixel round its edges">Outline</button>}
       </Row>
       <div style={{ borderTop: "1px solid #3a3020", paddingTop: 8 }}>
         <div style={{ fontSize: 12, color: "#cbbf9f", marginBottom: 6 }}>Faces</div>
