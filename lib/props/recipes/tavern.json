@@ -12,7 +12,7 @@
       "id": "body",
       "kind": "box",
       "at": [0, 0, 0],
-      "size": [4.833333, 2, 1.7],
+      "size": [4.833333, 2, 1.5],
       "outline": true,
       "faces": {
         "front": {
@@ -37,7 +37,7 @@
       "id": "sill",
       "kind": "box",
       "at": [0, 0, 0],
-      "size": [4.9333, 0.145833, 1.8],
+      "size": [4.9333, 0.145833, 1.6],
       "outline": true,
       "faces": {
         "*": {
@@ -51,8 +51,8 @@
     {
       "id": "beam",
       "kind": "box",
-      "at": [2.3367, 0, 0.8],
-      "size": [0.166667, 2, 0.166667],
+      "at": [2.3367, 0, 0.67],
+      "size": [0.104167, 2, 0.104167],
       "outline": true,
       "faces": {
         "*": {
@@ -66,8 +66,8 @@
     {
       "id": "beam-2",
       "kind": "box",
-      "at": [-2.336667, 0, 0.8],
-      "size": [0.166667, 2, 0.166667],
+      "at": [-2.336667, 0, 0.67],
+      "size": [0.104167, 2, 0.104167],
       "outline": true,
       "faces": {
         "*": {
@@ -81,7 +81,7 @@
     {
       "id": "flowerbox-1",
       "kind": "box",
-      "at": [-1.5833, 0.4583, 0.91],
+      "at": [-1.5833, 0.4583, 0.81],
       "size": [0.625, 0.25, 0.25],
       "outline": true,
       "faces": {
@@ -101,7 +101,7 @@
     {
       "id": "lintel-1",
       "kind": "box",
-      "at": [-1.5833, 1.75, 0.89],
+      "at": [-1.5833, 1.75, 0.79],
       "size": [0.583333, 0.083333, 0.125],
       "outline": true,
       "faces": {
@@ -116,7 +116,7 @@
     {
       "id": "flowerbox-2",
       "kind": "box",
-      "at": [1, 0.4583, 0.91],
+      "at": [1, 0.4583, 0.81],
       "size": [0.625, 0.25, 0.25],
       "outline": true,
       "faces": {
@@ -136,7 +136,7 @@
     {
       "id": "lintel-2",
       "kind": "box",
-      "at": [1, 1.75, 0.89],
+      "at": [1, 1.75, 0.79],
       "size": [0.583333, 0.083333, 0.125],
       "outline": true,
       "faces": {
@@ -151,12 +151,15 @@
     {
       "id": "arch-post",
       "kind": "box",
-      "at": [-0.7083, 0, 0.93],
+      "at": [-0.7083, 0, 0.83],
       "size": [0.166667, 1.5833, 0.166667],
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#55585f"
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [3, 3, 20, 18],
+          "fit": "fill",
+          "tint": "#d0d0d8"
         },
         "top": {
           "colour": "#6e7178"
@@ -166,12 +169,15 @@
     {
       "id": "arch-post-2",
       "kind": "box",
-      "at": [0.125, 0, 0.93],
+      "at": [0.125, 0, 0.83],
       "size": [0.166667, 1.5833, 0.166667],
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#55585f"
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [3, 3, 20, 18],
+          "fit": "fill",
+          "tint": "#d0d0d8"
         },
         "top": {
           "colour": "#6e7178"
@@ -181,12 +187,15 @@
     {
       "id": "arch-cap",
       "kind": "box",
-      "at": [-0.2917, 1.8333, 0.93],
+      "at": [-0.2917, 1.6667, 0.83],
       "size": [1, 0.166667, 0.166667],
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#55585f"
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [3, 3, 20, 18],
+          "fit": "fill",
+          "tint": "#d0d0d8"
         },
         "top": {
           "colour": "#6e7178"
@@ -196,7 +205,7 @@
     {
       "id": "sign-bracket",
       "kind": "box",
-      "at": [1.9583, 1.7083, 1],
+      "at": [1.9583, 1.7083, 0.9],
       "size": [0.0625, 0.0625, 0.3],
       "faces": {
         "*": {
@@ -207,7 +216,7 @@
     {
       "id": "sign",
       "kind": "box",
-      "at": [1.9583, 0.5833, 1.13],
+      "at": [1.9583, 0.5833, 1.03],
       "size": [0.6, 1, 0.0625],
       "outline": true,
       "faces": {
@@ -225,7 +234,7 @@
       "id": "roof",
       "kind": "wedge",
       "at": [0, 1.96, 0],
-      "size": [5.0333, 0.95, 1.9],
+      "size": [5.0333, 0.7, 1.7],
       "outline": true,
       "faces": {
         "front": {
@@ -257,7 +266,7 @@
     {
       "id": "fascia",
       "kind": "box",
-      "at": [0, 1.9, 0.93],
+      "at": [0, 1.9, 0.83],
       "size": [5.0333, 0.104167, 0.0625],
       "outline": true,
       "faces": {
@@ -270,9 +279,20 @@
       }
     },
     {
+      "id": "soffit",
+      "kind": "box",
+      "at": [0, 1.84, 0.77],
+      "size": [5.0333, 0.0625, 0.104167],
+      "faces": {
+        "*": {
+          "colour": "#0e0a07"
+        }
+      }
+    },
+    {
       "id": "ridge",
       "kind": "box",
-      "at": [0, 2.85, 0],
+      "at": [0, 2.6, 0],
       "size": [5.1133, 0.104167, 0.145833],
       "outline": true,
       "faces": {
@@ -287,12 +307,14 @@
     {
       "id": "chimney",
       "kind": "box",
-      "at": [1.55, 1.8, -0.2],
-      "size": [0.416667, 1.5, 0.416667],
+      "at": [1.55, 1.8, -0.15],
+      "size": [0.416667, 1.25, 0.416667],
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#5a5d66"
+          "src": "/sprites/den3d/tavern-roof.png",
+          "crop": [182, 26, 18, 16],
+          "fit": "fill"
         },
         "top": {
           "colour": "#1a1a1e"
@@ -302,48 +324,15 @@
     {
       "id": "chimney-cap",
       "kind": "box",
-      "at": [1.55, 3.25, -0.2],
+      "at": [1.55, 3, -0.15],
       "size": [0.5, 0.083333, 0.5],
       "outline": true,
       "faces": {
         "*": {
+          "colour": "#4a4d56"
+        },
+        "top": {
           "colour": "#6e7178"
-        }
-      }
-    },
-    {
-      "id": "moss",
-      "kind": "panel",
-      "at": [-1.6, 2.3045, 0.6175],
-      "size": [0.625, 0.375],
-      "turn": [-45, 0, 0],
-      "faces": {
-        "front": {
-          "colour": "#5a6a3a"
-        }
-      }
-    },
-    {
-      "id": "moss-2",
-      "kind": "panel",
-      "at": [0.4, 2.542, 0.38],
-      "size": [0.5, 0.29],
-      "turn": [-45, 0, 0],
-      "faces": {
-        "front": {
-          "colour": "#56663a"
-        }
-      }
-    },
-    {
-      "id": "hole",
-      "kind": "panel",
-      "at": [-0.5, 2.3995, 0.5225],
-      "size": [0.25, 0.2],
-      "turn": [-45, 0, 0],
-      "faces": {
-        "front": {
-          "colour": "#120c08"
         }
       }
     }

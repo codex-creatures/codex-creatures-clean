@@ -18,7 +18,7 @@ import { PropRecipe3D } from "@/components/PropRecipe3D";
 import { recipeReach, DENSITY, type Recipe } from "@/lib/props/recipe";
 import { walkTo, type Walk, type LightMode } from "./walk";
 
-export const GAP = 5;            // u between props
+export const GAP = 2;            // u between props, edge to edge
 const LEAN = 0.03;               // the rock's lean (decision 36)
 const SPEED = 2.2;               // u a second, walking
 const BODY = 0.28;               // u round your feet
@@ -29,7 +29,15 @@ const DEN_TINT = new THREE.Color(1, 0.86, 0.7); // (the game look's warm Den lig
 // torch either way (as the props lab's: warm, falling off).
 export const LIGHTS = { key: { colour: "#ffe2bd", den: 4.2, at: [-5, 7, 4] as const }, ambient: { colour: "#ffd9b0", den: 0.35, torch: 0.03 }, torch: { colour: "#ffc68a", power: 8, decay: 1.8 } };
 
-export const spotOf = (i: number, n: number) => ({ x: (i - (n - 1) / 2) * GAP, z: 0 });
+// Where each prop stands: in a row, each its own width apart with GAP between (so a wide building doesn't crowd
+// its neighbours), the row centred.
+export function spots(reach: [number, number][]): { x: number; z: number }[] {
+  const xs: number[] = [];
+  let x = 0;
+  reach.forEach(([rx], i) => { x += (i ? reach[i - 1][0] : 0) + rx + (i ? GAP : 0); xs.push(x); });
+  const mid = xs.length ? (xs[0] - reach[0][0] + xs[xs.length - 1] + reach[reach.length - 1][0]) / 2 : 0;
+  return xs.map((v) => ({ x: v - mid, z: 0 }));
+}
 
 
 export default function ReviewScene({ recipes, light, across, walk }: { recipes: Recipe[]; light: LightMode; across: number; walk: Walk }) {
@@ -47,7 +55,8 @@ function Scene({ recipes, light, across, walk }: { recipes: Recipe[]; light: Lig
   const pix = pixelScale("art", DENSITY, across, size.width, typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
   useEffect(() => { setDpr(pix.dpr); }, [pix.dpr, setDpr]);
   const reach = useMemo(() => recipes.map((r) => recipeReach(r, { pitch, stretch })), [recipes, pitch, stretch]);
-  const width = Math.max(40, recipes.length * GAP + 20), depth = 30; // (floor past the view every way)
+  const at = useMemo(() => spots(reach), [reach]);
+  const width = Math.max(40, (at.length ? at[at.length - 1].x - at[0].x : 0) + 30), depth = 30; // (floor past the view every way)
   const me = useRef({ x: 0, z: 3, f: "north" as Facing8, near: null as number | null });
   const floorTex = useMemo(() => {
     const t = loaded(FLOOR).clone();
@@ -62,10 +71,10 @@ function Scene({ recipes, light, across, walk }: { recipes: Recipe[]; light: Lig
         <planeGeometry args={[width, depth]} />
         {lit ? <meshLambertMaterial key="lit" map={floorTex} /> : <meshBasicMaterial key="flat" map={floorTex} color={DEN_TINT} />}
       </mesh>
-      {recipes.map((r, i) => <PropRecipe3D key={r.id} recipe={r} at={[spotOf(i, recipes.length).x, 0, 0]} pitch={pitch} stretch={stretch} lit={lit} tint={lit ? undefined : tint} />)}
+      {recipes.map((r, i) => <PropRecipe3D key={r.id} recipe={r} at={[at[i].x, 0, 0]} pitch={pitch} stretch={stretch} lit={lit} tint={lit ? undefined : tint} />)}
       {light === "den" && <directionalLight color={LIGHTS.key.colour} intensity={LIGHTS.key.den} position={[...LIGHTS.key.at]} />}
       {lit && <ambientLight color={LIGHTS.ambient.colour} intensity={light === "den" ? LIGHTS.ambient.den : LIGHTS.ambient.torch} />}
-      <Hero me={me} walk={walk} recipes={recipes} reach={reach} width={width} lit={lit} />
+      <Hero me={me} walk={walk} recipes={recipes} reach={reach} at={at} lit={lit} />
     </>
   );
 }
@@ -86,7 +95,7 @@ function Camera({ me, pitch, pix }: { me: React.RefObject<{ x: number; z: number
 }
 
 // You: the 8-way hero's still for the way you're heading, on your feet; your torch's light when lit.
-function Hero({ me, walk, recipes, reach, width, lit }: { me: React.RefObject<{ x: number; z: number; f: Facing8; near: number | null }>; walk: Walk; recipes: Recipe[]; reach: [number, number][]; width: number; lit: boolean }) {
+function Hero({ me, walk, recipes, reach, at, lit }: { me: React.RefObject<{ x: number; z: number; f: Facing8; near: number | null }>; walk: Walk; recipes: Recipe[]; reach: [number, number][]; at: { x: number; z: number }[]; lit: boolean }) {
   const stretch = uprightStretch(Math.PI / 3), w = WALK_HERO8.cell / KIT_PX, h = w * stretch, below = (1 - WALK_HERO8.feet / WALK_HERO8.cell) * h;
   const tex = useMemo(() => Object.fromEntries(FACINGS8.map((d) => [d, loaded(`${WALK_HERO8.dir}/${d}.png`)])) as Record<Facing8, THREE.Texture>, []);
   const mat = useRef<THREE.MeshBasicMaterial>(null), mesh = useRef<THREE.Mesh>(null), torch = useRef<THREE.PointLight>(null);
@@ -97,7 +106,7 @@ function Hero({ me, walk, recipes, reach, width, lit }: { me: React.RefObject<{ 
     window.addEventListener("keydown", down); window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
   }, []);
-  useFrame((state, dt) => step(me.current, keys.current, walk, recipes, reach, width, dt, state.clock.elapsedTime, { mesh: mesh.current, mat: mat.current, torch: torch.current, tex, h, below }));
+  useFrame((state, dt) => step(me.current, keys.current, walk, recipes, reach, at, dt, state.clock.elapsedTime, { mesh: mesh.current, mat: mat.current, torch: torch.current, tex, h, below }));
   return (<>
     <mesh ref={mesh} scale={[w, h, 1]} raycast={() => null}><planeGeometry /><meshBasicMaterial ref={mat} map={tex.north} alphaTest={0.5} transparent /></mesh>
     {lit && <pointLight ref={torch} color={"#ffc68a"} intensity={7} distance={0} decay={1.6} />}
@@ -105,11 +114,11 @@ function Hero({ me, walk, recipes, reach, width, lit }: { me: React.RefObject<{ 
 }
 
 // A frame of walking (kept out of the component: it moves three's objects about).
-function step(m: { x: number; z: number; f: Facing8; near: number | null }, k: Set<string>, walk: Walk, recipes: Recipe[], reach: [number, number][], width: number, dt: number, t: number,
+function step(m: { x: number; z: number; f: Facing8; near: number | null }, k: Set<string>, walk: Walk, recipes: Recipe[], reach: [number, number][], at: { x: number; z: number }[], dt: number, t: number,
   o: { mesh: THREE.Mesh | null; mat: THREE.MeshBasicMaterial | null; torch: THREE.PointLight | null; tex: Record<Facing8, THREE.Texture>; h: number; below: number }) {
   const n = recipes.length;
   // (Going to a prop: you stand at its front right, facing it, so you don't hide its front.)
-  if (walk.jump !== null) { const s = spotOf(walk.jump, n); m.x = s.x + reach[walk.jump][0] * 0.7 + 0.6; m.z = s.z + reach[walk.jump][1] + 0.9; m.f = "north-west"; walk.jump = null; walk.target = null; }
+  if (walk.jump !== null) { const s = at[walk.jump]; m.x = s.x + reach[walk.jump][0] * 0.7 + 0.6; m.z = s.z + reach[walk.jump][1] + 0.9; m.f = "north-west"; walk.jump = null; walk.target = null; }
   let dx = (k.has("arrowright") || k.has("d") ? 1 : 0) - (k.has("arrowleft") || k.has("a") ? 1 : 0);
   let dz = (k.has("arrowdown") || k.has("s") ? 1 : 0) - (k.has("arrowup") || k.has("w") ? 1 : 0);
   if (walk.push) { dx = walk.push.x; dz = walk.push.y; }
@@ -118,11 +127,11 @@ function step(m: { x: number; z: number; f: Facing8; near: number | null }, k: S
   const len = Math.hypot(dx, dz);
   if (len > 0.1) {
     const go = Math.min(0.05, dt) * SPEED * Math.min(1, len);
-    const room = Math.max(1, n) * GAP / 2 + 4; // (round the props, not off into the dark)
+    const room = (n ? Math.max(...at.map((s, i) => Math.abs(s.x) + reach[i][0])) : 0) + 4; // (round the props, not off into the dark)
     let x = Math.max(-room, Math.min(room, m.x + (dx / len) * go)), z = Math.max(-6, Math.min(8, m.z + (dz / len) * go));
     // Not into a prop: out of its reach (yours added), by the shorter way out.
     for (let i = 0; i < n; i++) {
-      const s = spotOf(i, n), ax = reach[i][0] + BODY, az = reach[i][1] + BODY, ox = x - s.x, oz = z - s.z;
+      const s = at[i], ax = reach[i][0] + BODY, az = reach[i][1] + BODY, ox = x - s.x, oz = z - s.z;
       if (Math.abs(ox) >= ax || Math.abs(oz) >= az) continue;
       if (ax - Math.abs(ox) < az - Math.abs(oz)) x = s.x + Math.sign(ox || 1) * ax; else z = s.z + Math.sign(oz || 1) * az;
     }
@@ -132,6 +141,6 @@ function step(m: { x: number; z: number; f: Facing8; near: number | null }, k: S
   if (o.mat && o.mat.map !== o.tex[m.f]) { o.mat.map = o.tex[m.f]; o.mat.needsUpdate = true; }
   if (o.torch) { o.torch.position.set(m.x + 0.3, 1.6, m.z + 0.4); o.torch.intensity = LIGHTS.torch.power * (0.93 + 0.05 * Math.sin(t * 9) + 0.02 * Math.sin(t * 23)); }
   let best: number | null = null, bd = NEAR;
-  for (let i = 0; i < n; i++) { const s = spotOf(i, n), d = Math.hypot(s.x - m.x, s.z - m.z) - Math.max(...reach[i]); if (d < bd) { bd = d; best = i; } }
+  for (let i = 0; i < n; i++) { const s = at[i], d = Math.hypot(s.x - m.x, s.z - m.z) - Math.max(...reach[i]); if (d < bd) { bd = d; best = i; } }
   if (best !== m.near) { m.near = best; walk.near(best); }
 }
