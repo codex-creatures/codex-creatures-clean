@@ -44,10 +44,12 @@ placement (players could block themselves in). With it off, nothing changes.
   lanterns by the shack's and storehouse's doors, braziers in the tavern's room once it's open.
 - **The shape** (the user's drawing, 2026-11-19; lib/den3d/layout.ts): a **T**. A wide hall (12 × 11 floor
   each side) with a narrower nook (6 × 6 each side) rising from the middle of its back wall, split down the
-  middle by a wall that all moves away once Klutz uses the Labyrinth Stone. Each nook has a tunnel in the
-  middle of its north wall, mirrored: room 1's the Labyrinth's (a sandstone arch), room 2's the **PvP portal**
-  (the same arch mirrored and turned green, a green swirl across its mouth, and its glowing count of players
-  online, numbers only). All the rock south of the hall is the low rim, so nothing hides the hall's front.
+  middle by a wall that all moves away once Klutz uses the Labyrinth Stone. Each nook has a way out in the
+  middle of its north wall, mirrored: a dark hole in the rock face under an arch (the user, 2026-11-18: a hole in
+  the wall, not a short corridor; the hole is the arch's open middle, scripts/den-parts.mjs). Room 1's is the
+  Labyrinth's (a sandstone arch), room 2's the **PvP portal** (the same arch mirrored and turned green, a green
+  swirl across its mouth, and its glowing count of players online, numbers only: 0 and up as soon as you're
+  signed in, shown even with names off; nothing when signed out or offline). All the rock south of the hall is the low rim, so nothing hides the hall's front.
 - **What's where:** room 1: Klutz's shack in the hall's top-left corner (his page: gear, crate, trips), the
   **storehouse** turned along the west wall, doors facing into the room (the Inventory's weapons, armour and
   consumables: `/chest?store=1`), the Bestiary in the nook, and what you can move. Room 2: the tavern in the
@@ -73,8 +75,11 @@ placement (players could block themselves in). With it off, nothing changes.
   textures square on screen for that angle, and the rest keeps its 60° sizes, so they're to try.
 - **The old wall:** tap its socket (a stone post by the wall); once Klutz has the Labyrinth Stone, use it: the
   ground rumbles and the whole wall, nook and hall, sinks into the floor (`SINK` 2.6 s), and the view glides
-  out to both rooms. Till then room 2 is black
-  and the camera can't go past room 1. Opened, the Den first shows the middle of both rooms.
+  out to both rooms, once: the 3D Den waits for the save before it's drawn, so coming home never replays it.
+  Till then room 2 is black and the camera can't go past room 1. Opened, the Den first shows the middle of both rooms.
+- **Where the view opens** (the user, 2026-11-18; lib/den3d/view.ts): in the middle the first time in a visit
+  and after going into the Labyrinth; coming back from anywhere else, where you left it, zoom included. Klutz's
+  tour glides it only when he shows somewhere new.
 - **No walking:** drag to look round (the view stays on what's open, and a little past it), tap a place to go in. Every place
   has its name over it (names that would overlap move apart), with a ❗ where something's waiting; Klutz's
   tour lights a place's name and glides the view to it (the same `den-<id>` marks as the old Den).
@@ -92,7 +97,8 @@ placement (players could block themselves in). With it off, nothing changes.
   standing picture redrawn from the front, keeping the old one's design; the **Pit** and the **Sparring Pit**
   seen from above on low stone blocks, redrawn from the old ones; the passage's **arch**, the **portal** and the
   board's **notes** on the north wall. The **healing pool** from above, redrawn from the old one. `/lab/den` shows them, with
-  switches for the rubble, Klutz, the tavern and visitors. Names sit over everything, and a drag that starts on a
+  switches for the rubble, Klutz, the tavern and visitors. `/lab/models` shows each place on its own on a plain
+  background, turned freely on any axis, with a wireframe switch (what's a shape and what's a flat picture). Names sit over everything, and a drag that starts on a
   name still looks round.
 - Tests: tests/den3d.test.ts (the plan, nothing overlapping, the strolls clear of everything, the camera's
   limits, taps), tests/den3dBag.test.ts.

@@ -5,7 +5,8 @@
 // PixelLab's (lib/den3d/art.ts), square on screen at 48 art pixels a unit, leaning as the rock does, unlit and
 // tinted by the light where they stand. The buildings are boxes with their fronts painted on and pitched
 // roofs; the Soul Altar, the pool and both pits are 3D models whose parts are cut from their approved
-// pictures (the user, 2026-11-19); the tunnels' arches and the board's notes hang on the north walls.
+// pictures (the user, 2026-11-19); the ways out's arches (over their dark holes) and the board's notes hang on
+// the north walls.
 
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -13,7 +14,7 @@ import { useFrame } from "@react-three/fiber";
 import { Upright } from "@/components/WalkView3D";
 import { Prop3D, Glow, Ring, CAMPFIRE_3D, makeFlat, bases, useTint, loaded, type Tint } from "@/components/Props3D";
 import { Decor3D } from "@/components/Decor3D";
-import { BUILDINGS, buildingWide, buildingWalls, ARCH, PORTAL_ARCH, NOTES, PARTS, ART_PX, FACE_PX, type BuildingArt, type Pic } from "@/lib/den3d/art";
+import { BUILDINGS, buildingWide, buildingWalls, ARCH, PORTAL_ARCH, ARCH_HOLE, PORTAL_HOLE, NOTES, PARTS, ART_PX, FACE_PX, type BuildingArt, type Pic } from "@/lib/den3d/art";
 import { DEN_WALL, DIVIDE_X, WALL_GAP, NOOK_N, type Station } from "@/lib/den3d/layout";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
@@ -42,7 +43,7 @@ export function Place({ s, tint, stretch, caged, repaired, trainingPit, stoneRea
     // (Turned along the west wall, its doors facing into the room: its depth runs east-west.)
     case "storehouse": return <Building at={at} d={s.turn ? s.w : s.d} art={BUILDINGS.storehouse} tint={tint} turn={!!s.turn} />;
     case "tavern": return <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
-    case "arch": return <OnWall s={s} pic={ARCH} tint={tint} />;
+    case "arch": return <OnWall s={s} pic={ARCH} hole={ARCH_HOLE} tint={tint} />;
     case "portal": return <Portal s={s} tint={tint} />;
     case "board": return <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;
     case "altar": return <Altar at={at} tint={tint} stretch={stretch} />;
@@ -111,27 +112,29 @@ function Building({ at, d, art, broken, tint, turn = false }: { at: [number, num
 }
 
 // ── On the north walls ──
-// A picture on a north wall (a tunnel's arch, the board's notes on a plank backing), its foot on the floor
-// (the notes up off it), standing square on screen as the wall's own stone does.
-function OnWall({ s, pic, tint, backing }: { s: Station; pic: Pic; tint: () => THREE.Color; backing?: { colour: string; pad: number } }) {
+// A picture on a north wall (a way out's arch over its `hole`, the board's notes on a plank backing), its foot on
+// the floor (the notes up off it), standing square on screen as the wall's own stone does.
+function OnWall({ s, pic, tint, backing, hole }: { s: Station; pic: Pic; tint: () => THREE.Color; backing?: { colour: string; pad: number }; hole?: Pic }) {
   const mat = usePicture(pic.src, tint), back = useFlat([backing?.colour ?? "#000000"], tint)[0];
+  const dark = usePicture((hole ?? pic).src, tint);
   const w = pic.w / ART_PX, h = pic.h / FACE_PX, up = backing ? 0.7 : 0;
   return (
     <group position={[s.x, up + h / 2, s.y + 0.02]}>
       {backing && <mesh material={back} position={[0, 0, -0.005]} raycast={() => null}><planeGeometry args={[w + 2 * backing.pad, h + 2 * backing.pad]} /></mesh>}
+      {hole && <mesh material={dark} position={[0, 0, -0.005]} raycast={() => null}><planeGeometry args={[w, h]} /></mesh>}
       <mesh material={mat} raycast={() => null}><planeGeometry args={[w, h]} /></mesh>
     </group>
   );
 }
-// The PvP portal: the Labyrinth's tunnel mirrored, its arch green, a green swirl across its mouth and its
-// glow on the floor (the user, 2026-11-19).
+// The PvP portal: the Labyrinth's way in mirrored, its arch green over its dark hole, a green swirl across its
+// mouth and its glow on the floor (the user, 2026-11-19).
 function Portal({ s, tint }: { s: Station; tint: () => THREE.Color }) {
   const swirl = useRef<THREE.MeshBasicMaterial>(null);
   useFrame(() => { if (swirl.current) swirl.current.opacity = 0.55 + 0.15 * Math.sin(performance.now() / 420); });
   return (<>
-    <mesh raycast={() => null} position={[s.x, 1.05, NOOK_N + 0.01]}><planeGeometry args={[1.95, 2.1]} />
+    <mesh raycast={() => null} position={[s.x, 1.05, NOOK_N + 0.017]}><planeGeometry args={[1.95, 2.1]} />
       <meshBasicMaterial ref={swirl} color="#3f9a55" transparent opacity={0.6} depthWrite={false} /></mesh>
-    <OnWall s={s} pic={PORTAL_ARCH} tint={tint} />
+    <OnWall s={s} pic={PORTAL_ARCH} hole={PORTAL_HOLE} tint={tint} />
     <group position={[s.x, 0, s.y + 0.8]}><Glow colour={GREEN} radius={1.6} strength={0.35} /></group>
   </>);
 }

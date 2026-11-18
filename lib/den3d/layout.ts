@@ -8,12 +8,13 @@
 // The shape (the user's drawing, 2026-11-19, "like the Tetris block that's 3 wide with one above in the
 // middle"): a wide hall with a narrower nook rising from the middle of its back wall, split down the middle
 // by a wall. Room 1 is the left half of each; room 2 (the tavern's room) the right, shut off till Klutz uses
-// the Labyrinth Stone on the wall (lib/tavern.ts): then the whole wall moves away. Each nook has a tunnel
-// in the middle of its north wall: room 1's the way into the Labyrinth, room 2's (its mirror) the PvP portal.
+// the Labyrinth Stone on the wall (lib/tavern.ts): then the whole wall moves away. Each nook has a way out
+// in the middle of its north wall: room 1's the way into the Labyrinth, room 2's (its mirror) the PvP portal,
+// each a dark hole in the rock under its arch (the user, 2026-11-18: "a hole in the wall", not a corridor).
 // Tile units, x east, y south, as the Labyrinth's floorplans. Everything faces south, at the camera; things
 // against a wall are on north walls, the only ones whose faces show (rendering.md §4.8).
 
-import { FLOOR, ROCK, TUNNEL, type Floorplan, type Pt, type Rect } from "../dungeon/floorplan";
+import { FLOOR, ROCK, type Floorplan, type Pt, type Rect } from "../dungeon/floorplan";
 import { OBJ, type ObjId } from "../den/scene";
 
 export const HALL_W = 12;        // floor tiles across each room's half of the hall
@@ -21,7 +22,7 @@ export const HALL_D = 11;        // …and down it
 export const NOOK_W = 6;         // floor tiles across each room's half of the nook
 export const NOOK_D = 6;         // …and down it
 export const DEN_WALL = 3;       // 🧪 u: the Den's rock walls (the Labyrinth's are 2.25): a cavern, so the buildings stand under them
-const TOP = 2;                   // rock rows above the nook (its tunnels run into them)
+const TOP = 2;                   // rock rows above the nook
 export const DIVIDE_X = HALL_W + 1;           // the wall between the rooms
 const HALL_Y = TOP + NOOK_D;                  // the hall's first row
 // (Three rows of rock below the hall, drawn as the low south rim: rock past the plan's edge stands full
@@ -35,18 +36,18 @@ export const NOOK2: Rect = { x: DIVIDE_X + 1, y: TOP, w: NOOK_W, h: NOOK_D };
 export const WALL_GAP = { y0: TOP, y1: HALL_Y + HALL_D }; // the wall between the rooms, all of it (y1 not included)
 export const NOOK_N = TOP - 0.5;              // the nook's north wall's face (y)
 export const HALL_N = HALL_Y - 0.5;           // the hall's north wall's face, either side of the nook (y)
-// The tunnels, each in the middle of its room's nook (mirrored about the dividing wall).
+// The ways out, each in the middle of its room's nook (mirrored about the dividing wall): the tiles under each arch.
 const ARCH = [9, 10];                         // room 1's: the Labyrinth
 const PORTAL = [16, 17];                      // room 2's: the PvP portal
 const mid = (t: number[]) => (t[0] + t[1]) / 2;
 
-// The plan: rock, the halls and nooks, the tunnels; once `opened`, the dividing wall is floor.
+// The plan: rock, the halls and nooks; once `opened`, the dividing wall is floor. (The ways out are holes
+// drawn on the north wall's face, under their arches: components/Den3DPlaces.tsx.)
 // (Its own Floorplan, so the Labyrinth's renderer and light rules read it as is.)
 export function denPlan(opened: boolean): Floorplan {
   const tiles = new Uint8Array(PLAN_W * PLAN_H).fill(ROCK);
   const set = (x: number, y: number, t: number) => { tiles[y * PLAN_W + x] = t; };
   for (const r of [ROOM1, ROOM2, NOOK1, NOOK2]) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) set(x, y, FLOOR);
-  for (const x of [...ARCH, ...PORTAL]) for (let y = 0; y < TOP; y++) set(x, y, TUNNEL);
   if (opened) for (let y = WALL_GAP.y0; y < WALL_GAP.y1; y++) set(DIVIDE_X, y, FLOOR);
   return { w: PLAN_W, h: PLAN_H, tiles, rooms: { den: [ROOM1, NOOK1], annex: [ROOM2, NOOK2] }, doors: [], tunnels: {} };
 }

@@ -23,6 +23,7 @@ import {
   type Station, type DenState, type DenLayout, type Placed, type Route, type FloorKey, type WallKey, type SlotId,
 } from "@/lib/den3d/layout";
 import { loadDenLayout, saveDenLayout } from "@/lib/den3d/placement";
+import { denView, keepDenView } from "@/lib/den3d/view";
 import { lightField, seenField, shadeAt, texelsPerU, pixelScale, WINDOW, SUB, type LightField } from "@/lib/render3d/stone";
 import { rockHeights, carvedMesh, uprightStretch, ROCK_MARGIN, SOUTH_LIP } from "@/lib/render3d/dungeon3d";
 import {
@@ -65,10 +66,6 @@ export type Den3DProps = {
   keep?: "save" | "none"; // where moved things are kept (the lab keeps them nowhere)
 };
 
-// Where the view was left (and how far zoomed), for the whole visit to the site, so coming back from a place
-// opens where you were.
-let lastView: { at: Pt; across: number; opened: boolean } | null = null;
-
 // Someone strolling: Klutz, or a visitor. `lead`: seconds along their route.
 type Walker = { key: string; label: string; href: string; sprite: Sprite; route: Route; speed: number; lead: number; news: boolean; tour?: string; faces: "left" | "right" };
 const VISITOR_SPRITE: Record<Visitor, Sprite> = { merchant: MERCHANT, librarian: LIBRARIAN, collector: COLLECTOR, enchantress: ENCHANTRESS };
@@ -98,8 +95,11 @@ export default function Den3D(p: Den3DProps) {
   const plan = useMemo(() => denPlan(opened), [opened]);
   const shown = useMemo(() => denShown(opened), [opened]);
 
-  const [across, setAcross] = useState(() => lastView?.across ?? ZOOM.start);
-  const view = useRef<Pt>(lastView && lastView.opened === opened ? lastView.at : firstView(opened, pitch));
+  // Where the view was left (lib/den3d/view.ts): coming back from a place opens where you were; the first time,
+  // or after a run, in the middle.
+  const [kept] = useState(() => { const v = denView(); return v && v.opened === opened ? v : null; });
+  const [across, setAcross] = useState(() => kept?.across ?? ZOOM.start);
+  const view = useRef<Pt>(kept ? kept.at : firstView(opened, pitch));
   const span = useRef({ across, deep: 10 });  // floor units in view (set by the scene from its size)
   const camera = useRef<THREE.Camera | null>(null);
   const pad = useRef<HTMLDivElement>(null);
@@ -116,14 +116,17 @@ export default function Den3D(p: Den3DProps) {
     if (opened && !wasOpen.current) { movedAt.current = performance.now(); move(firstView(true, pitch)); }
     wasOpen.current = opened;
   }, [opened, pitch]); // (a new angle with the wall already gone does nothing: wasOpen)
-  // Klutz (his tour, or where he's sent you) shows a place: the view goes to it.
+  // Klutz (his tour, or where he's sent you) shows a place: the view goes to it. (Not on coming back to where
+  // you'd left the view: only when he shows somewhere new, or the view starts afresh.)
+  const shownFirst = useRef(!!kept);
   useEffect(() => {
     const s = p.highlight === undefined ? undefined : list.find((x) => x.obj === p.highlight);
-    if (s) move({ x: s.x, y: s.y - 1 });
+    if (s && !shownFirst.current) move({ x: s.x, y: s.y - 1 });
+    shownFirst.current = false;
   }, [p.highlight]); // eslint-disable-line react-hooks/exhaustive-deps
   const zoomed = useRef(across);
   useEffect(() => { zoomed.current = across; }, [across]);
-  useEffect(() => () => { lastView = { at: view.current, across: zoomed.current, opened: wasOpen.current }; }, []);
+  useEffect(() => () => { if (p.keep !== "none") keepDenView({ at: view.current, across: zoomed.current, opened: wasOpen.current }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Klutz strolling round room 1 while he's home; visitors round the whole Den once it's open; each finding
   // their way round wherever things stand now.
@@ -270,8 +273,9 @@ export default function Den3D(p: Den3DProps) {
             viewRef={view} spanRef={span} glideRef={glide} cameraRef={camera} labelsRef={labels} movedAtRef={movedAt} />
         </Canvas>
       </div>
-      {/* The names over the places (and the strollers), placed by the scene each frame. */}
-      {list.filter((s) => o.names || news(s) || (s.obj !== undefined && s.obj === p.highlight)).map((s) => (
+      {/* The names over the places (and the strollers), placed by the scene each frame. (The portal's always,
+          when there's a count of players online to show over it.) */}
+      {list.filter((s) => o.names || news(s) || (s.obj !== undefined && s.obj === p.highlight) || (s.key === "portal" && others !== null)).map((s) => (
         <NameTag key={s.key} id={s.key} labels={labels} tour={s.obj !== undefined ? `den-${s.obj}` : undefined} news={news(s)} lit={(s.obj !== undefined && s.obj === p.highlight) || moving?.key === s.key}
           onTap={() => go(s)} text={s.label} count={s.key === "portal" ? others : null} />
       ))}

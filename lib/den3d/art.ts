@@ -34,6 +34,9 @@ export const ARCH = pic("arch", 138, 73);
 export const PORTAL = pic("portal", 76, 81);
 export const NOTES = pic("board", 53, 39);
 export const PORTAL_ARCH = pic("portal-arch", 138, 73); // (the arch, mirrored and turned green: scripts/den-parts.mjs)
+// The holes under the arches, dark into the rock (each arch's open middle: scripts/den-parts.mjs).
+export const ARCH_HOLE = pic("arch-hole", 138, 73);
+export const PORTAL_HOLE = pic("portal-hole", 138, 73);
 
 // The 3D models' parts (the user, 2026-11-19: "the Soul Altar, the pool and the sparring pits need 3D models"),
 // cut from their approved pictures (scripts/den-parts.mjs) so the models keep those designs.

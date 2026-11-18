@@ -79,6 +79,7 @@ import Haul from "@/components/dungeon/Haul";
 import Bag from "@/components/dungeon/Bag";
 import Shaker from "@/components/dungeon/Shaker";
 import { useDungeonSave } from "@/hooks/useDungeonSave";
+import { forgetDenView } from "@/lib/den3d/view";
 import { beatenTitle, clearedLine, chestName, dropLabel } from "@/lib/dungeon/runText";
 
 export default function DungeonPage() {
@@ -257,6 +258,7 @@ export default function DungeonPage() {
     // A run from before phase 2a is given its placements and saved; a damaged one is held (lib/world/migrate.ts).
     const saved = openWalkSave(loadDungeon(), saveDungeon);
     setLab(saved);
+    forgetDenView(); // (back in the Den after a run, you're in its middle again)
     setOwned(loadOwnedCreatures());
     // Back in the middle of a fight? Carry on where you left off.
     if (saved.run?.battle && saved.run.current && !saved.run.current.done) battle.resume(saved.run.battle as Match);

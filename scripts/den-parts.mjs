@@ -32,3 +32,27 @@ console.log("done");
   const b = await sharp(O + "dummy.png").trim({ threshold: 0 }).toBuffer();
   await sharp(b).toFile(O + "dummy-trim.png");
 }
+
+// The ways out's holes (the user, 2026-11-18: "make it look like the hole is actually a hole in the wall"): the
+// arch's open middle, filled from its foot up to the arch's inner edge, black, with the floor running a little
+// way in at its foot (warm dark, fading). Laid behind each arch on the rock face; the portal's is its mirror.
+{
+  const { data, info } = await sharp(S + "den3d/arch.png").ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width: w, height: h } = info, out = Buffer.alloc(w * h * 4), seen = new Uint8Array(w * h);
+  const open = (x, y) => x >= 0 && y >= 0 && x < w && y < h && data[(y * w + x) * 4 + 3] < 128;
+  const todo = [[w >> 1, h - 1]];
+  while (todo.length) {
+    const [x, y] = todo.pop(), i = y * w + x;
+    if (!open(x, y) || seen[i]) continue;
+    seen[i] = 1;
+    todo.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+  }
+  const FLOOR_ROWS = 7;
+  for (let i = 0; i < w * h; i++) {
+    if (!seen[i]) continue;
+    const y = Math.floor(i / w), k = Math.max(0, (y - (h - FLOOR_ROWS)) / FLOOR_ROWS); // 0 above the floor, up to 1 at the foot
+    out[i * 4] = Math.round(6 + 34 * k); out[i * 4 + 1] = Math.round(4 + 24 * k); out[i * 4 + 2] = Math.round(3 + 14 * k); out[i * 4 + 3] = 255;
+  }
+  await sharp(out, { raw: { width: w, height: h, channels: 4 } }).png().toFile(S + "den3d/arch-hole.png");
+  await sharp(S + "den3d/arch-hole.png").flop().png().toFile(S + "den3d/portal-hole.png");
+}

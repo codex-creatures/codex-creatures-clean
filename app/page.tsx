@@ -92,7 +92,9 @@ export default function Home() {
 
       <div className="screen-fill" style={{ position: "relative" }}>
         {/* (Klutz isn't in the room while he's out hunting: you can see that. His den, behind his crate, is the way to him then.) */}
-        {newDen ? (
+        {/* (The new Den waits for the save: drawn before it, it saw the old wall still standing, then watched it
+            sink as the save came in, every time you came home.) */}
+        {newDen ? game.hydrated && (
           <Den3D caged={caged} klutz={klutzAt} klutzNews={klutzNews} highlight={highlight} rubble={rubble} onBlast={game.blastRubble}
             tavern={game.tavern} pit={pit} tavernNews={tavernNews} boardNews={boardNews} crateNews={crateNews} cageNews={cageNews} />
         ) : newDen === false && (

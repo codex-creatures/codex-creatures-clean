@@ -8,7 +8,9 @@ import { lobbyAccount, onPlayersOnline, othersOnline, playersOnline } from "@/li
 
 export function useOthersOnline(): number | null {
   const [ids, setIds] = useState(() => playersOnline());
-  useEffect(() => onPlayersOnline(setIds), []);
+  // (A copy each time, so the count redraws even when the set handed over is the same one: joining the lobby
+  // tells us straight away, before anyone's been seen.)
+  useEffect(() => onPlayersOnline((s) => setIds(new Set(s))), []);
   const me = lobbyAccount();
   return me ? othersOnline(ids, me) : null;
 }

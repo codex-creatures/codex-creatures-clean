@@ -145,7 +145,7 @@ kill theirs.
   `klutz`, `crate`, `guide`, `board` (quests, leaderboards, friends), `duel`, `pvp`, `settings`,
   `start` (title screen: components/OnlineStart.tsx online, components/LocalStart.tsx without),
   `privacy` (update it whenever online features change what's stored). `lab/*` are dev tools
-  outside the phone frame (`/lab/placement`, `/lab/newrun`, `/lab/walk`, `/lab/three` the 3D prototype, `/lab/chest` the 3D chest draft, `/lab/hero` the 3D hero draft, `/lab/art` the placeholder art drafts, `/lab/props` every 3D thing in the Labyrinth, `/lab/den` the new Den…).
+  outside the phone frame (`/lab/placement`, `/lab/newrun`, `/lab/walk`, `/lab/three` the 3D prototype, `/lab/chest` the 3D chest draft, `/lab/hero` the 3D hero draft, `/lab/art` the placeholder art drafts, `/lab/props` every 3D thing in the Labyrinth, `/lab/den` the new Den, `/lab/models` its 3D things one at a time, turned freely…).
 - `hooks/useGameState.ts`: the game state, plus load/save. `hooks/useDropGeneration.ts`: scan drops.
 - `lib/`: the rules, kept pure where possible and tested.
   - `combat/` (engine, battle, teamBattle, AIs, loadout); `creatures/` (species and moves, levels,

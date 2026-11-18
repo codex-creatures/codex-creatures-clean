@@ -1,7 +1,7 @@
 // The new Den's layout (lib/den3d/layout.ts): the plan, where things stand and may be moved to, who strolls
 // where (round whatever's been moved), the camera's limits, what a tap lands on; and the Den's options.
 import { describe, expect, it } from "vitest";
-import { FLOOR, ROCK, TUNNEL, type Pt } from "@/lib/dungeon/floorplan";
+import { FLOOR, ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { parseDenOptions, stepAngle, DEN_DEFAULTS, DEN_ANGLES } from "@/lib/den3d/setting";
 import {
   denPlan, denShown, stations, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView, stationAt, denLights,
@@ -28,9 +28,10 @@ describe("the new Den's plan", () => {
     }
   });
 
-  it("has a tunnel in the middle of each nook, mirrored about the wall", () => {
-    expect(at(9, 0)).toBe(TUNNEL); expect(at(10, 0)).toBe(TUNNEL);   // the Labyrinth
-    expect(at(16, 0)).toBe(TUNNEL); expect(at(17, 0)).toBe(TUNNEL);  // the PvP portal
+  it("has a way out in the middle of each nook, mirrored about the wall: a hole in the rock face, not a corridor", () => {
+    for (const x of [9, 10, 16, 17]) expect(at(x, 0)).toBe(ROCK);
+    const arch = stations({ opened: true, pit: true, trainingPit: false, repaired: false }).filter((s) => s.key === "arch" || s.key === "portal").map((s) => s.x);
+    expect(arch).toEqual([9.5, 16.5]);
     expect((9 + 10) / 2 - (NOOK1.x - 0.5)).toBeCloseTo(NOOK1.x + NOOK1.w - 0.5 - (9 + 10) / 2); // (centred in its nook)
     expect(DIVIDE_X - (9 + 10) / 2).toBeCloseTo((16 + 17) / 2 - DIVIDE_X);
   });

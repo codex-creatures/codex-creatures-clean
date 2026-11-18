@@ -85,6 +85,8 @@ export function onPlayersOnline(fn: (ids: Set<string>) => void): () => void {
 export function joinLobby(client: SupabaseClient, me: string): () => void {
   const ch = client.channel("lobby", { config: { presence: { key: me } } });
   lobbyMe = me;
+  // (Told at once: the portal shows its 0 as soon as you're in, not only once the lobby's first sync comes.)
+  for (const fn of onlineListeners) fn(onlineNow);
   ch.on("presence", { event: "sync" }, () => {
     onlineNow = new Set(Object.keys(ch.presenceState()));
     for (const fn of onlineListeners) fn(onlineNow);
