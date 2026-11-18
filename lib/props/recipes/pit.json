@@ -1,0 +1,254 @@
+{
+  "format": 1,
+  "id": "pit",
+  "name": "The Pit",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/pit-top.png",
+    "foot": [62, 114]
+  },
+  "parts": [
+    {
+      "id": "pit-floor",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [2, 0.01, 2],
+      "faces": {
+        "top": {
+          "colour": "#08070b"
+        }
+      }
+    },
+    {
+      "id": "block-1",
+      "kind": "box",
+      "at": [-1.08, 0, 1.08],
+      "size": [0.41, 0.3125, 0.44],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#e2e5ee"
+        }
+      }
+    },
+    {
+      "id": "block-2",
+      "kind": "box",
+      "at": [-0.64, 0, 1.08],
+      "size": [0.41, 0.270833, 0.44],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#d6dae4"
+        }
+      }
+    },
+    {
+      "id": "block-3",
+      "kind": "box",
+      "at": [-0.2, 0, 1.08],
+      "size": [0.41, 0.291667, 0.44],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#dde0e9"
+        }
+      }
+    },
+    {
+      "id": "block-4",
+      "kind": "box",
+      "at": [0.24, 0, 1.08],
+      "size": [0.41, 0.3125, 0.44],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#e2e5ee"
+        }
+      }
+    },
+    {
+      "id": "block-5",
+      "kind": "box",
+      "at": [0.68, 0, 1.08],
+      "size": [0.41, 0.270833, 0.44],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48],
+          "tint": "#d6dae4"
+        }
+      }
+    },
+    {
+      "id": "iron-side",
+      "kind": "box",
+      "at": [-0.09, 0.208333, 0.77],
+      "size": [1.54, 0.104167, 0.1875],
+      "four": true,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        },
+        "top": {
+          "colour": "#565a68"
+        }
+      }
+    },
+    {
+      "id": "rivet-1",
+      "kind": "cylinder",
+      "at": [-0.6, 0.3125, 0.77],
+      "size": [0.0625, 0.041667, 0.0625],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8ea0"
+        }
+      }
+    },
+    {
+      "id": "rivet-2",
+      "kind": "cylinder",
+      "at": [-0.24, 0.3125, 0.77],
+      "size": [0.0625, 0.041667, 0.0625],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8ea0"
+        }
+      }
+    },
+    {
+      "id": "rivet-3",
+      "kind": "cylinder",
+      "at": [0.12, 0.3125, 0.77],
+      "size": [0.0625, 0.041667, 0.0625],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8ea0"
+        }
+      }
+    },
+    {
+      "id": "rivet-4",
+      "kind": "cylinder",
+      "at": [0.48, 0.3125, 0.77],
+      "size": [0.0625, 0.041667, 0.0625],
+      "sides": 6,
+      "four": true,
+      "faces": {
+        "*": {
+          "colour": "#8a8ea0"
+        }
+      }
+    },
+    {
+      "id": "bar-1",
+      "kind": "cylinder",
+      "at": [-0.544, 0.166666, -0.72],
+      "size": [0.104167, 1.44, 0.104167],
+      "sides": 6,
+      "turn": [90, 0, 0],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      }
+    },
+    {
+      "id": "bar-2",
+      "kind": "cylinder",
+      "at": [-0.272, 0.166666, -0.72],
+      "size": [0.104167, 1.44, 0.104167],
+      "sides": 6,
+      "turn": [90, 0, 0],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      }
+    },
+    {
+      "id": "bar-3",
+      "kind": "cylinder",
+      "at": [0, 0.166666, -0.72],
+      "size": [0.104167, 1.44, 0.104167],
+      "sides": 6,
+      "turn": [90, 0, 0],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      }
+    },
+    {
+      "id": "bar-4",
+      "kind": "cylinder",
+      "at": [0.272, 0.166666, -0.72],
+      "size": [0.104167, 1.44, 0.104167],
+      "sides": 6,
+      "turn": [90, 0, 0],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      }
+    },
+    {
+      "id": "bar-5",
+      "kind": "cylinder",
+      "at": [0.544, 0.166666, -0.72],
+      "size": [0.104167, 1.44, 0.104167],
+      "sides": 6,
+      "turn": [90, 0, 0],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a3c47"
+        }
+      }
+    },
+    {
+      "id": "corner-chain",
+      "kind": "panel",
+      "at": [0.72, 0.320833, 0.72],
+      "size": [0.1875, 0.5625],
+      "turn": [-90, 45, 0],
+      "four": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/parts/altar-chain.png",
+          "crop": [0, 0, 11, 34],
+          "fit": "fill"
+        },
+        "back": {
+          "same": "front"
+        }
+      }
+    }
+  ]
+}

@@ -22,7 +22,7 @@ import type { LightMode } from "./Preview";
 const Preview = dynamic(() => import("./Preview"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 
 // What the game draws now for each recipe, to match against (the Den's places).
-const NOW: Record<string, StationKey> = { altar: "altar", pool: "pool" };
+const NOW: Record<string, StationKey> = { altar: "altar", pool: "pool", pit: "pit" };
 import { DRAFT_KEY } from "./drafts";
 const STEP_NAMES = ["1 px", "1/8", "1/4", "1/2"];
 
