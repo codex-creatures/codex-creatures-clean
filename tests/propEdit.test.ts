@@ -82,3 +82,16 @@ describe("undo", () => {
     expect(h.past).toHaveLength(HISTORY);
   });
 });
+
+describe("painting a face", () => {
+  it("changes that face alone, of that part alone, and clears one with null", async () => {
+    const { changeFace } = await import("@/lib/props/edit");
+    const next = changeFace(ALTAR, "plinth", "top", { colour: "#445566" });
+    const before = ALTAR.parts[0], after = next.parts[0];
+    expect(after.faces.top).toEqual({ colour: "#445566" });
+    expect(after.faces["*"]).toBe(before.faces["*"]);
+    expect(next.parts.slice(1).every((p, i) => p === ALTAR.parts[i + 1])).toBe(true);
+    expect("top" in changeFace(ALTAR, "plinth", "top", null).parts[0].faces).toBe(false);
+    reads(next);
+  });
+});

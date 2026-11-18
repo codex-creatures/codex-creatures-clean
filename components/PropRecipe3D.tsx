@@ -7,7 +7,7 @@
 // Each part is drawn from its own recipe object, and each face from its own, so changing one part or one face's
 // texture rebuilds that part alone.
 
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { PROP_LEAN } from "@/components/Props3D";
@@ -61,11 +61,19 @@ const PICKED = new THREE.Color("#ffd66e");
 function paint(m: THREE.MeshBasicMaterial, base: THREE.Color, glow: boolean, light: THREE.Color, picked: boolean) {
   m.color.copy(base);
   if (!glow) m.color.multiply(light);
-  if (picked) m.color.lerp(PICKED, 0.35 + 0.25 * Math.sin(performance.now() / 160));
+  if (picked) m.color.lerp(PICKED, 0.18 + 0.12 * Math.sin(performance.now() / 160)); // (soft: the picture still reads)
 }
 
 // (`onPick`: the builder's; tapping the face picks its part. Without it, taps go straight through, as the game's.)
 type Pick = (part: string) => void;
+// (A face is rebuilt only when what it draws changes: a part's faces are worked out afresh when the part changes,
+// but each one that draws as before is handed back as the same object, so painting one face leaves the rest.)
+const drawn = (f: FacePoly) => JSON.stringify([f.points, f.uv, f.art, f.shade, f.glow, f.twoSided]);
+function reuse(before: Map<string, { f: FacePoly; sig: string }>, faces: FacePoly[]): FacePoly[] {
+  const out = faces.map((f) => { const sig = drawn(f), old = before.get(f.key); return old && old.sig === sig ? old.f : (before.set(f.key, { f, sig }), f); });
+  for (const k of [...before.keys()]) if (!faces.some((f) => f.key === k)) before.delete(k);
+  return out;
+}
 const Face = memo(function Face({ f, tint, picked, onPick }: { f: FacePoly; tint?: Tint; picked: boolean; onPick?: Pick }) {
   const geo = useMemo(() => faceGeometry(f), [f]);
   const mat = useMemo(() => faceMaterial(f), [f]);
@@ -80,7 +88,8 @@ const Face = memo(function Face({ f, tint, picked, onPick }: { f: FacePoly; tint
 
 // One part: its faces worked out again only when the part (or the camera's angle) changes.
 const RecipePart = memo(function RecipePart({ part, pitch, stretch, tint, picked, onPick }: { part: Part; pitch: number; stretch: number; tint?: Tint; picked: boolean; onPick?: Pick }) {
-  const faces = useMemo(() => partFaces(part, { pitch, stretch }), [part, pitch, stretch]);
+  const [before] = useState(() => new Map<string, { f: FacePoly; sig: string }>());
+  const faces = useMemo(() => reuse(before, partFaces(part, { pitch, stretch })), [before, part, pitch, stretch]);
   return <>{faces.map((f) => <Face key={f.key} f={f} tint={tint} picked={picked} onPick={onPick} />)}</>;
 });
 

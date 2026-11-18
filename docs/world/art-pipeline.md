@@ -68,8 +68,8 @@ spec assumes nothing about them.
 ### 6.6 🧪 Props built from recipes (`/lab/propbuilder`; the user, 2026-11-19, plan approved the same day)
 
 A 3D prop as a small JSON **recipe** of simple parts painted with crops of PixelLab drawings, built in the lab
-against its drawing; no baked meshes. Stages 1 and 2 of 5 built: the format, the loader, the renderer and the
-altar; editing parts. (To come: faces' pictures and crops, the drawing over the view, torch light, saving.)
+against its drawing; no baked meshes. Stages 1 to 3 of 5 built: the format, the loader, the renderer and the
+altar; editing parts; painting faces. (To come: the drawing over the view, torch light, the palette check, saving.)
 
 - **The format** (`lib/props/recipe.ts`, format 1; recipes in `lib/props/recipes/<id>.json`, listed in its
   `index.ts`): `{ format, id, name, setting: den|dungeon, ref?: { src, foot }, parts }`. A part: `id`, `kind`
@@ -103,6 +103,13 @@ altar; editing parts. (To come: faces' pictures and crops, the drawing over the 
   `<PropRecipe3D recipe={…} />`, one at a time, each once the user approves it; recipes are bundled JSON (no
   fetching, offline as well); footprints, placements, taps, saves and world versions don't change; a recipe that
   won't read falls back to the old drawing; a test reads every recipe and checks its pictures exist.
+- **Painting faces** (the lab's FacePicker; `changeFace`): the picked part's faces, and "* (rest)" for every face
+  not given its own; each a picture, a flat colour, the same as another face, or the rest's. A picture is found in
+  the list of everything under public/sprites (`lib/props/sprites.json`, written by `npm run props:sprites`: a static
+  or offline copy can't list folders; rerun it after adding art) or typed by its path; its crop dragged out on it
+  (whole pixels) or typed; "Tile" lays it at 48 a unit, "Fill" stretches it over the face once and says how many
+  pixels a unit that comes to on screen (`faceDensity`), warning when it's off 48 by more than 5%. A tint over
+  either. A face is rebuilt only when what it draws changes.
 - Tests: tests/propRecipe.test.ts, tests/propEdit.test.ts.
 
 ## Density and open standards

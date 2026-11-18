@@ -149,7 +149,8 @@ export function snapPart<P extends { at: number[]; size: number[]; turn?: number
 // and place applied), its texture coordinates (in crops: whole numbers are crop edges, so "tile" repeats),
 // its normal, and its toon band (1 when unlit). Sprites stand facing the camera, stretched up by `stretch`
 // (as the game's flat things are: uprightStretch), unturned.
-export type FacePoly = { key: string; part: string; face: string; art: Face; points: Vec3[]; uv: [number, number][]; normal: Vec3; shade: number; glow: boolean; twoSided: boolean };
+// `screen`: how big the face shows, across and up its picture, in units on screen (for faceDensity).
+export type FacePoly = { key: string; part: string; face: string; art: Face; points: Vec3[]; uv: [number, number][]; normal: Vec3; shade: number; glow: boolean; twoSided: boolean; screen: [number, number] };
 export type View = { pitch: number; stretch: number };
 
 export function partFaces(p: Part, view: View): FacePoly[] {
@@ -189,7 +190,8 @@ export function partFaces(p: Part, view: View): FacePoly[] {
     if (!art || poly.points.length < 3) continue;
     const local = poly.points, pts = local.map(place), normal = normalOf(pts);
     if (!normal) continue; // (a cylinder tapered to a point has no top)
-    out.push({ key: `${p.id}:${poly.face}:${out.length}`, part: p.id, face: poly.face, art, points: pts, uv: faceUV(pts, normal, art, view, poly.around ? { around: poly.around, local } : undefined, rotate([1, 0, 0], turn)),
+    const { uv, screen } = faceUV(pts, normal, art, view, poly.around ? { around: poly.around, local } : undefined, rotate([1, 0, 0], turn));
+    out.push({ key: `${p.id}:${poly.face}:${out.length}`, part: p.id, face: poly.face, art, points: pts, uv, screen,
       normal, shade: p.light === "toon" ? toonBand(normal) : 1, glow: p.glow, twoSided: p.kind === "panel" || p.kind === "sprite" });
   }
   return out;
@@ -206,7 +208,7 @@ export function texelsAlong(t: Vec3, pitch: number): number {
 // level across the face as you look at it from outside; its up (v) runs up the face (north on a top), from its
 // bottom left corner. "tile": texels laid square on screen, a crop's width a whole number; "fill": 0 to 1.
 // A cylinder's sides run on round it (`around`: the distance round at each end of the facet) so it doesn't seam.
-function faceUV(pts: Vec3[], n: Vec3, art: Face, view: View, side: { around: number[]; local: Vec3[] } | undefined, partX: Vec3): [number, number][] {
+function faceUV(pts: Vec3[], n: Vec3, art: Face, view: View, side: { around: number[]; local: Vec3[] } | undefined, partX: Vec3): { uv: [number, number][]; screen: [number, number] } {
   const flat = Math.abs(n[1]) > 0.9;
   let u = flat ? sub(partX, scale(n, dot(partX, n))) : cross([0, 1, 0], n);
   if (Math.hypot(...u) < 1e-6) u = cross([0, 0, -1], n);
@@ -214,15 +216,23 @@ function faceUV(pts: Vec3[], n: Vec3, art: Face, view: View, side: { around: num
   const v = norm(cross(n, u));
   const us = pts.map((q) => dot(q, u)), vs = pts.map((q) => dot(q, v));
   const u0 = Math.min(...us), v0 = Math.min(...vs), du = Math.max(...us) - u0 || 1, dv = Math.max(...vs) - v0 || 1;
-  if (art.kind === "colour" || art.fit === "fill") return pts.map((_, i) => [(us[i] - u0) / du, (vs[i] - v0) / dv]);
+  const tu = texelsAlong(u, view.pitch), tv = texelsAlong(v, view.pitch), screen: [number, number] = [(du * tu) / DENSITY, (dv * tv) / DENSITY];
+  if (art.kind === "colour" || art.fit === "fill") return { uv: pts.map((_, i) => [(us[i] - u0) / du, (vs[i] - v0) / dv]), screen };
   const [cw, ch] = [art.crop[2], art.crop[3]];
   if (side) {
     // (Round a cylinder: across at the art density along its rim, up as a standing face.)
     const up = DENSITY * Math.cos(view.pitch), ys = side.local.map((q) => q[1]);
-    return [[side.around[0] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, ys[2] * up / ch], [side.around[0] * DENSITY / cw, ys[3] * up / ch]];
+    return { uv: [[side.around[0] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, ys[2] * up / ch], [side.around[0] * DENSITY / cw, ys[3] * up / ch]], screen };
   }
-  const tu = texelsAlong(u, view.pitch), tv = texelsAlong(v, view.pitch);
-  return pts.map((_, i) => [((us[i] - u0) * tu) / cw, ((vs[i] - v0) * tv) / ch]);
+  return { uv: pts.map((_, i) => [((us[i] - u0) * tu) / cw, ((vs[i] - v0) * tv) / ch]), screen };
+}
+
+// A face's picture's pixels a unit on screen, across and up (decision 37 wants 48 both ways): always 48 for
+// "tile"; for "fill", the crop over how big the face shows. Null for a flat colour.
+export function faceDensity(f: FacePoly): [number, number] | null {
+  if (f.art.kind !== "art") return null;
+  if (f.art.fit === "tile") return [DENSITY, DENSITY];
+  return [f.art.crop[2] / f.screen[0], f.art.crop[3] / f.screen[1]];
 }
 
 // Toon: the face's band of light from TOON_LIGHT.

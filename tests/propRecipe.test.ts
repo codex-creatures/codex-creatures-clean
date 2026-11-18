@@ -174,3 +174,18 @@ describe("a recipe as saved", () => {
     expect(text).toContain('"crop": [0, 0, 48, 24]');
   });
 });
+
+describe("a face's pixel size on screen (the builder's warning)", () => {
+  it("is 48 a unit for 'tile'; for 'fill', the crop over how big the face shows", async () => {
+    const { faceDensity } = await import("@/lib/props/recipe");
+    const [tile] = partFaces(one({ kind: "panel", size: [1, 1], faces: { front: STONE } }), VIEW);
+    expect(faceDensity(tile)).toEqual([DENSITY, DENSITY]);
+    // A standing panel 34 px wide and 26 px up as it shows (26 / (48·cos 60°) u tall): exactly 48 a unit.
+    const [right] = partFaces(one({ kind: "panel", size: [34 / 48, 26 / (48 * Math.cos(PITCH))], faces: { front: { ...STONE, crop: [0, 0, 34, 26], fit: "fill" } } }), VIEW);
+    close(faceDensity(right)!, [DENSITY, DENSITY]);
+    // Twice as wide: half the pixels a unit across.
+    const [wide] = partFaces(one({ kind: "panel", size: [68 / 48, 26 / (48 * Math.cos(PITCH))], faces: { front: { ...STONE, crop: [0, 0, 34, 26], fit: "fill" } } }), VIEW);
+    close(faceDensity(wide)!, [DENSITY / 2, DENSITY]);
+    expect(faceDensity(partFaces(one({ kind: "panel", size: [1, 1], faces: { front: { colour: "#000000" } } }), VIEW)[0])).toBeNull();
+  });
+});

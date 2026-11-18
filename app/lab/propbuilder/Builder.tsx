@@ -8,8 +8,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { readRecipe, formatRecipe, SNAP_STEPS, ART_STEP, type Part, type PartKind, type PartSpec, type RecipeSpec } from "@/lib/props/recipe";
-import { addPart, changePart, deletePart, duplicatePart, renamePart, reorderPart, startHistory, edit, undo, redo, type History } from "@/lib/props/edit";
+import { readRecipe, formatRecipe, partFaces, faceDensity, SNAP_STEPS, ART_STEP, type FaceSpec, type Part, type PartKind, type PartSpec, type RecipeSpec } from "@/lib/props/recipe";
+import { uprightStretch } from "@/lib/render3d/dungeon3d";
+import { addPart, changeFace, changePart, deletePart, duplicatePart, renamePart, reorderPart, startHistory, edit, undo, redo, type History } from "@/lib/props/edit";
 import { RECIPE_FILES } from "@/lib/props/recipes";
 import type { StationKey } from "@/lib/den3d/layout";
 import Editor from "./Editor";
@@ -66,6 +67,15 @@ export default function Builder() {
   const duplicate = useCallback(() => { if (!picked) return; setH((x) => { const d = duplicatePart(x.now, picked, step < 0.25 ? 0.25 : step); setPicked(d.id); return edit(x, d.recipe); }); }, [picked, step]);
   const remove = useCallback(() => { if (!picked) return; apply((r) => deletePart(r, picked)); setPicked(null); }, [apply, picked]);
   const add = (kind: PartKind) => setH((x) => { const a = addPart(x.now, kind); setPicked(a.id); return edit(x, a.recipe); });
+  const paint = useCallback((part: string, face: string, spec: FaceSpec | null) => apply((r) => changeFace(r, part, face, spec)), [apply]);
+  // A face's pixels a unit on screen, for the "fill" warning ("*": the first face it paints).
+  const density = (part: string, face: string) => {
+    const p = read.ok ? read.recipe.parts.find((q) => q.id === part) : undefined, spec = h.now.parts.find((q) => q.id === part);
+    if (!p || !spec) return null;
+    const pitch = (angle * Math.PI) / 180, fs = partFaces(p, { pitch, stretch: uprightStretch(pitch) });
+    const f = face === "*" ? fs.find((q) => !(q.face in spec.faces)) : fs.find((q) => q.face === face);
+    return f ? faceDensity(f) : null;
+  };
   const rename = (part: string, to: string) => { setH((x) => { const next = renamePart(x.now, part, to); if (next !== x.now) setPicked(to); return edit(x, next); }); };
 
   // The keys (not while typing in a box).
@@ -127,7 +137,7 @@ export default function Builder() {
             <button style={btn(!snapOn)} onClick={() => setSnapOn(!snapOn)}>Off</button>
           </div>
           <Editor parts={h.now.parts} picked={picked} step={snapOn ? step : ART_STEP} onPick={setPicked} onChange={onChange} onRename={rename}
-            onAdd={add} onDuplicate={duplicate} onDelete={remove} onMove={(by) => picked && apply((r) => reorderPart(r, picked, by))} />
+            onAdd={add} onDuplicate={duplicate} onDelete={remove} onMove={(by) => picked && apply((r) => reorderPart(r, picked, by))} onPaint={paint} density={density} />
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
             <button style={btn(false)} onClick={copy}>Copy JSON</button>
             <button style={btn(showJson)} onClick={() => setShowJson(!showJson)}>Show JSON</button>

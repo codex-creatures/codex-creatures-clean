@@ -2,15 +2,17 @@
 // app/lab/propbuilder/Editor.tsx — 🧪 the prop builder's parts panel (app/lab/propbuilder/page.tsx): the list of
 // parts (tap one to pick it; ▲▼ move it in the list), adding, duplicating and deleting, and the picked part's
 // fields: where it stands, its size and turn (each typed, or nudged a snap step with − and +), a cylinder's sides
-// and taper, its light and glow. Faces are stage 3's. Every change goes through lib/props/edit.ts.
+// and taper, its light and glow; and its faces' paint (./FacePicker.tsx). Every change goes through lib/props/edit.ts.
 
 import { useState } from "react";
-import { DENSITY, TURN_STEP, type PartKind, type PartSpec } from "@/lib/props/recipe";
+import { DENSITY, TURN_STEP, type FaceSpec, type PartKind, type PartSpec } from "@/lib/props/recipe";
+import FacePicker from "./FacePicker";
 
 export type EditorProps = {
   parts: PartSpec[]; picked: string | null; step: number;
   onPick: (id: string) => void; onChange: (id: string, patch: Partial<PartSpec>) => void; onRename: (id: string, to: string) => void;
   onAdd: (kind: PartKind) => void; onDuplicate: () => void; onDelete: () => void; onMove: (by: -1 | 1) => void;
+  onPaint: (id: string, face: string, spec: FaceSpec | null) => void; density: (id: string, face: string) => [number, number] | null;
 };
 
 const btn = (on = false) => ({ minHeight: 44, minWidth: 44, padding: "0 10px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
@@ -32,8 +34,9 @@ export default function Editor(p: EditorProps) {
   );
 }
 
-function PartFields({ part, step, onChange, onRename, onDuplicate, onDelete, onMove, parts }: EditorProps & { part: PartSpec }) {
+function PartFields({ part, step, onChange, onRename, onDuplicate, onDelete, onMove, parts, onPaint, density }: EditorProps & { part: PartSpec }) {
   const flat = part.kind === "panel" || part.kind === "sprite";
+  const [face, setFace] = useState(() => (part.faces["*"] ? "*" : Object.keys(part.faces)[0] ?? "*"));
   const set = (key: "at" | "size" | "turn", i: number, v: number) => {
     const now = [...(part[key] ?? [0, 0, 0])];
     now[i] = v;
@@ -64,6 +67,10 @@ function PartFields({ part, step, onChange, onRename, onDuplicate, onDelete, onM
         <button style={btn(part.light === "toon")} onClick={() => onChange(part.id, { light: "toon" })}>Toon</button>
         <button style={btn(!!part.glow)} onClick={() => onChange(part.id, { glow: !part.glow })}>Glow</button>
       </Row>
+      <div style={{ borderTop: "1px solid #3a3020", paddingTop: 8 }}>
+        <div style={{ fontSize: 12, color: "#cbbf9f", marginBottom: 6 }}>Faces</div>
+        <FacePicker part={part} face={face} onFace={setFace} onPaint={(f, s) => onPaint(part.id, f, s)} density={(f) => density(part.id, f)} />
+      </div>
     </div>
   );
 }

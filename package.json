@@ -16,7 +16,8 @@
     "test:stress": "vitest run --mode stress -t stress",
     "build:offline": "node offline/build.js",
     "setup:google": "node scripts/setup-google-login.mjs",
-    "registry:rules": "node scripts/registry-rules.mjs"
+    "registry:rules": "node scripts/registry-rules.mjs",
+    "props:sprites": "node scripts/props-sprites.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "9.8.2",

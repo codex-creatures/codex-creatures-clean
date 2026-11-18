@@ -54,6 +54,16 @@ export function changePart(r: RecipeSpec, id: string, patch: Partial<PartSpec>, 
   }) };
 }
 
+// One face of a part painted (`spec`), or cleared (null): every other face, and every other part, as it was.
+export function changeFace(r: RecipeSpec, id: string, face: string, spec: FaceSpec | null): RecipeSpec {
+  return { ...r, parts: r.parts.map((p) => {
+    if (p.id !== id) return p;
+    const faces = { ...p.faces };
+    if (spec) faces[face] = spec; else delete faces[face];
+    return { ...p, faces };
+  }) };
+}
+
 // A part renamed (a name already used, or not lower-case letters, digits and dashes, leaves it as it was).
 export function renamePart(r: RecipeSpec, id: string, to: string): RecipeSpec {
   if (to === id || !/^[a-z0-9-]+$/.test(to) || r.parts.some((p) => p.id === to)) return r;
