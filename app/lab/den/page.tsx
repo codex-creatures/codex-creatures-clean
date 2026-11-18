@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import type { TavernQuest } from "@/lib/tavern";
 import type { KlutzMode } from "@/lib/den/scene";
 import type { Rubble } from "@/components/DenRoom";
+import { DEN_ANGLES, DEN_DEFAULTS, type DenOptions } from "@/lib/den3d/setting";
 
 const Den3D = dynamic(() => import("@/components/Den3D"), { ssr: false, loading: () => <p style={{ color: "#888", padding: 16 }}>Loading Three.js…</p> });
 
@@ -19,6 +20,7 @@ export default function DenLab() {
   const [visitors, setVisitors] = useState(true);
   const [pit, setPit] = useState(true);
   const [key, setKey] = useState(0);
+  const [opts, setOpts] = useState<DenOptions>(DEN_DEFAULTS); // (Settings' options, set here instead)
   const btn = (on: boolean) => ({ minHeight: 44, padding: "0 10px", background: on ? "#6b5420" : "#2a2622", color: "#f1d9a0", border: "1px solid #6b5a40", borderRadius: 6 });
   // A tavern as the game keeps it, with a merchant and a librarian calling (lib/tavern.ts tavernVisitors).
   const [now] = useState(() => Date.now());
@@ -34,10 +36,13 @@ export default function DenLab() {
         <button style={btn(repaired)} onClick={() => setRepaired(!repaired)}>Tavern repaired</button>
         <button style={btn(visitors)} onClick={() => setVisitors(!visitors)}>Visitors</button>
         <button style={btn(pit)} onClick={() => setPit(!pit)}>Pit + portal</button>
+        <button style={btn(opts.names)} onClick={() => setOpts({ ...opts, names: !opts.names })}>Names</button>
+        <button style={btn(opts.rubble)} onClick={() => setOpts({ ...opts, rubble: !opts.rubble })}>Rubble left</button>
+        {DEN_ANGLES.map((a) => <button key={a} style={btn(opts.angle === a)} onClick={() => setOpts({ ...opts, angle: a })}>{a}°</button>)}
       </div>
       <div style={{ position: "relative", width: 390, height: 560, maxWidth: "100%", borderRadius: 8, overflow: "hidden", containerType: "size" }}>
         <Den3D key={key} rubble={rubble} onBlast={() => setRubble("open")} klutz={klutz} klutzNews={false} tavern={tavern} pit={pit ? { ready: true } : undefined}
-          tavernNews={visitors} boardNews crateNews={false} cageNews caged="dire_wolf" />
+          tavernNews={visitors} boardNews crateNews={false} cageNews caged="dire_wolf" options={opts} />
       </div>
     </div>
   );

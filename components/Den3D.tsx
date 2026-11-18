@@ -18,10 +18,10 @@ import * as THREE from "three";
 import { ROCK, type Floorplan, type Pt } from "@/lib/dungeon/floorplan";
 import {
   denPlan, denShown, denLit, denLights, stations, stationAt, strollAt, loopTime, clampView, denArea, firstView,
-  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, BRAZIERS, BRAZIERS_2, DEN_WALL, DIVIDE_X, ROOM1, type Station, type DenState,
+  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, BRAZIERS, BRAZIERS_2, DEN_WALL, DIVIDE_X, ROOM1, WALL_GAP, type Station, type DenState,
 } from "@/lib/den3d/layout";
 import { lightField, seenField, shadeAt, texelsPerU, pixelScale, WINDOW, SUB, type LightField } from "@/lib/render3d/stone";
-import { rockHeights, carvedMesh, uprightStretch, ROCK_MARGIN } from "@/lib/render3d/dungeon3d";
+import { rockHeights, carvedMesh, uprightStretch, ROCK_MARGIN, SOUTH_LIP } from "@/lib/render3d/dungeon3d";
 import {
   STONE, STONE_VERTEX, STONE_FRAGMENT, stoneUniforms, rawTexture, gridTexture, codeTexture, fillGrid,
   Upright, Mounted, Sconce, Stroller, FLAME_COLOUR,
@@ -38,8 +38,10 @@ import type { Sprite } from "@/lib/sprites/pixels";
 import { OBJ, type KlutzMode, type ObjId } from "@/lib/den/scene";
 import { tavernVisitors, type TavernQuest, type Visitor } from "@/lib/tavern";
 import { SPOTS, VISITOR_HREF, type Rubble } from "@/components/DenRoom";
+import { useDenOptions } from "@/hooks/useNewDen";
+import { DEN_DEFAULTS, type DenOptions } from "@/lib/den3d/setting";
 
-const PITCH = Math.PI / 3;        // the Labyrinth's camera (GAME_VIEW)
+// (The camera's angle down from the horizon is the Den's option: the Labyrinth's 60° unless changed.)
 const LEAN = 0.03;
 const ACROSS = 15;                // units across the screen
 const DENSITY = 48;               // art pixels a unit
@@ -55,6 +57,7 @@ const FIRE_POWER = 0.8;           // 🧪 each light's strength (STONE.fire's 0.
 export type Den3DProps = {
   caged?: string; klutz: KlutzMode; klutzNews: boolean; highlight?: ObjId; rubble: Rubble; onBlast?: () => void;
   tavern: TavernQuest; pit?: { ready: boolean }; tavernNews: boolean; boardNews: boolean; crateNews: boolean; cageNews: boolean;
+  options?: DenOptions; // (the lab's; the game's are the player's own, from Settings)
 };
 
 // Where the view was left, for the whole visit to the site (and with the wall up or down), so coming
@@ -69,9 +72,11 @@ const VISITOR_LABEL: Record<Visitor, string> = { merchant: "Merchant", librarian
 export default function Den3D(p: Den3DProps) {
   const router = useRouter();
   const opened = p.rubble === "open";
+  // The player's options (Settings: lib/den3d/setting.ts): names, the stones left, the camera's angle.
+  const stored = useDenOptions(), o = p.options ?? stored ?? DEN_DEFAULTS, pitch = (o.angle * Math.PI) / 180;
   const hasPit = !!p.pit, trainingPit = !!p.tavern.pit, repaired = !!p.tavern.repaired;
   const list = useMemo(() => stations({ opened, pit: hasPit, trainingPit, repaired } satisfies DenState), [opened, hasPit, trainingPit, repaired]);
-  const view = useRef<Pt>(lastView && lastView.opened === opened ? lastView.at : firstView(opened, PITCH));
+  const view = useRef<Pt>(lastView && lastView.opened === opened ? lastView.at : firstView(opened, pitch));
   const span = useRef({ across: ACROSS, deep: 10 });  // floor units in view (set by the scene from its size)
   const camera = useRef<THREE.Camera | null>(null);
   const pad = useRef<HTMLDivElement>(null);
@@ -85,9 +90,9 @@ export default function Den3D(p: Den3DProps) {
 
   // The wall coming down: it falls, and the view glides out to both rooms.
   useEffect(() => {
-    if (opened && !wasOpen.current) { fellAt.current = performance.now(); move(firstView(true, PITCH)); }
+    if (opened && !wasOpen.current) { fellAt.current = performance.now(); move(firstView(true, pitch)); }
     wasOpen.current = opened;
-  }, [opened]);
+  }, [opened, pitch]); // (a new angle with the wall already down does nothing: wasOpen)
   // Klutz (his tour, or where he's sent you) shows a place: the view goes to it.
   useEffect(() => {
     const s = p.highlight === undefined ? undefined : list.find((x) => x.obj === p.highlight);
@@ -135,8 +140,8 @@ export default function Den3D(p: Den3DProps) {
     if (!h.drag) return;
     const perPx = ACROSS / el.getBoundingClientRect().width;
     glide.current = null;
-    view.current = clampView({ x: view.current.x - (e.clientX - h.x) * perPx, y: view.current.y - ((e.clientY - h.y) * perPx) / Math.sin(PITCH) },
-      span.current.across, span.current.deep, denArea(opened, PITCH));
+    view.current = clampView({ x: view.current.x - (e.clientX - h.x) * perPx, y: view.current.y - ((e.clientY - h.y) * perPx) / Math.sin(pitch) },
+      span.current.across, span.current.deep, denArea(opened, pitch));
     h.x = e.clientX; h.y = e.clientY;
   };
   const up = (e: React.PointerEvent) => {
@@ -147,9 +152,9 @@ export default function Den3D(p: Den3DProps) {
     if (h.label) { tapName(h.label); return; }
     const at = floorAt(e.clientX, e.clientY);
     if (!at) return;
-    const w = walkerAt(walkers, at);
+    const w = walkerAt(walkers, at, pitch);
     if (w) { router.push(w.href); return; }
-    const s = stationAt(list, at, PITCH);
+    const s = stationAt(list, at, pitch);
     if (s) go(s);
   };
   function tapName(id: string) {
@@ -175,20 +180,20 @@ export default function Den3D(p: Den3DProps) {
       <div ref={pad} style={{ position: "absolute", inset: 0, touchAction: "none", cursor: "grab" }}>
         <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
-          <DenWorld opened={opened} repaired={repaired} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
+          <DenWorld pitch={pitch} rubbleLeft={o.rubble} opened={opened} repaired={repaired} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
             viewRef={view} spanRef={span} glideRef={glide} cameraRef={camera} labelsRef={labels} fellAtRef={fellAt} />
         </Canvas>
       </div>
       {/* The names over the places (and the strollers), placed by the scene each frame. */}
-      {list.map((s) => (
+      {list.filter((s) => o.names || news(s) || (s.obj !== undefined && s.obj === p.highlight)).map((s) => (
         <NameTag key={s.key} id={s.key} labels={labels} tour={s.obj !== undefined ? `den-${s.obj}` : undefined} news={news(s)} lit={s.obj !== undefined && s.obj === p.highlight}
           onTap={() => go(s)} text={s.label} />
       ))}
-      {walkers.map((w) => (
+      {walkers.filter((w) => o.names || w.news || (w.key === "klutz" && p.highlight === OBJ.klutz)).map((w) => (
         <NameTag key={w.key} id={`walker:${w.key}`} labels={labels} tour={w.tour} news={w.news} lit={w.key === "klutz" && p.highlight === OBJ.klutz}
           onTap={() => router.push(w.href)} text={w.label} />
       ))}
-      {p.klutz === "pool" && <NameTag id="walker:resting" labels={labels} tour={`den-${OBJ.klutz}`} news={p.klutzNews} lit={p.highlight === OBJ.klutz} onTap={() => router.push("/klutz")} text="Klutz 💤" />}
+      {p.klutz === "pool" && (o.names || p.klutzNews || p.highlight === OBJ.klutz) && <NameTag id="walker:resting" labels={labels} tour={`den-${OBJ.klutz}`} news={p.klutzNews} lit={p.highlight === OBJ.klutz} onTap={() => router.push("/klutz")} text="Klutz 💤" />}
       {notice && (
         <div data-den-window onClick={() => setNotice(false)} style={{ position: "absolute", inset: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}>
           <div className="stone-panel" style={{ maxWidth: 320, textAlign: "center" }}>
@@ -221,22 +226,22 @@ function NameTag({ id, labels, tour, news, lit, onTap, text }: { id: string; lab
 }
 
 // Whoever's strolling at a spot on the floor (a tap on them, their height included as the camera sees it).
-function walkerAt(walkers: Walker[], p: Pt): Walker | undefined {
+function walkerAt(walkers: Walker[], p: Pt, pitch: number): Walker | undefined {
   const now = performance.now() / 1000;
   return walkers.find((w) => {
     const at = strollAt(now + w.lead, w.loop, w.speed);
-    return Math.abs(p.x - at.x) < 0.45 && p.y < at.y + 0.3 && p.y > at.y - (NPC_U * uprightStretch(PITCH)) / Math.tan(PITCH) - 0.2;
+    return Math.abs(p.x - at.x) < 0.45 && p.y < at.y + 0.3 && p.y > at.y - (NPC_U * uprightStretch(pitch)) / Math.tan(pitch) - 0.2;
   });
 }
 
 // ── The scene ──
-function DenWorld({ opened, repaired, list, walkers, caged, klutz, viewRef, spanRef, glideRef, cameraRef, labelsRef, fellAtRef }: {
-  opened: boolean; repaired: boolean; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode;
+function DenWorld({ pitch, rubbleLeft, opened, repaired, list, walkers, caged, klutz, viewRef, spanRef, glideRef, cameraRef, labelsRef, fellAtRef }: {
+  pitch: number; rubbleLeft: boolean; opened: boolean; repaired: boolean; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode;
   viewRef: React.RefObject<Pt>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   cameraRef: React.RefObject<THREE.Camera | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>; fellAtRef: React.RefObject<number | null>;
 }) {
   const { size, setDpr } = useThree();
-  const stretch = uprightStretch(PITCH);
+  const stretch = uprightStretch(pitch);
   const plan = useMemo(() => denPlan(opened), [opened]);
   const shown = useMemo(() => denShown(opened), [opened]);
   const lit = useMemo(() => denLit(plan, shown), [plan, shown]);
@@ -251,14 +256,14 @@ function DenWorld({ opened, repaired, list, walkers, caged, klutz, viewRef, span
   const tint = (x: number, y: number) => () => shade(x, y);
   const v = useMemo(() => new THREE.Vector3(), []);
 
-  const ctx: Tick = { cameraRef, spanRef, glideRef, viewRef, fellAtRef, labelsRef, pix, size, opened, centre, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz };
+  const ctx: Tick = { pitch, cameraRef, spanRef, glideRef, viewRef, fellAtRef, labelsRef, pix, size, opened, centre, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz };
   useFrame((state) => denTick(state, ctx));
 
   const at = (key: string) => list.find((s) => s.key === key);
   const pool = at("pool");
   return (
     <>
-      <DenRock plan={plan} seen={seen} field={field} centre={centre} />
+      <DenRock pitch={pitch} plan={plan} seen={seen} field={field} centre={centre} />
       {list.map((s) => <Place key={s.key} s={s} tint={tint(s.x, s.y + s.d / 2)} stretch={stretch} caged={caged} repaired={repaired} />)}
       {/* The torches on the north walls, and the braziers by the altar. */}
       {SCONCES.filter((c) => opened || c.x < DIVIDE_X).map((c, i) => {
@@ -280,16 +285,16 @@ function DenWorld({ opened, repaired, list, walkers, caged, klutz, viewRef, span
         );
       })}
       {/* Odds and ends along the walls. */}
-      <group position={[ROOM1.x + 0.1, 0, 4.6]}><Decor3D kind="crates" stretch={stretch} colour={tint(ROOM1.x + 0.1, 4.6)} /></group>
-      <group position={[ROOM1.x + 0.1, 0, 10]}><Decor3D kind="barrels" stretch={stretch} colour={tint(ROOM1.x + 0.1, 10)} /></group>
-      <group position={[ROOM1.x + 0.1, 0, 12.8]}><Decor3D kind="pots" stretch={stretch} colour={tint(ROOM1.x + 0.1, 12.8)} /></group>
+      <group position={[ROOM1.x + 0.1, 0, 11]}><Decor3D kind="crates" stretch={stretch} colour={tint(ROOM1.x + 0.1, 11)} /></group>
+      <group position={[ROOM1.x + 0.1, 0, 15.7]}><Decor3D kind="barrels" stretch={stretch} colour={tint(ROOM1.x + 0.1, 15.7)} /></group>
+      <group position={[ROOM1.x + 0.1, 0, 18.1]}><Decor3D kind="pots" stretch={stretch} colour={tint(ROOM1.x + 0.1, 18.1)} /></group>
       {/* Klutz resting in the pool while he heals. */}
       {klutz === "pool" && pool && CREATURE_SPRITES.klutz && (() => {
         const art = artFor(CREATURE_SPRITES.klutz)!, h = NPC_U * 0.6 * stretch, w = (NPC_U * 0.6) * (art.w / art.h);
         return <Upright src={art.src} x={pool.x + 0.3} y={pool.y} w={w} h={h} below={0} colour={tint(pool.x, pool.y)} />;
       })()}
       {walkers.map((w) => <DenWalker key={w.key} w={w} stretch={stretch} shade={shade} />)}
-      {opened && <FallenWall fellAtRef={fellAtRef} shade={shade} />}
+      {opened && rubbleLeft && <FallenWall fellAtRef={fellAtRef} shade={shade} />}
     </>
   );
 }
@@ -297,18 +302,19 @@ function DenWorld({ opened, repaired, list, walkers, caged, klutz, viewRef, span
 // Each frame (DenWorld's): the camera (where the view is, gliding, the wall's shake), the lean, the light
 // (flickering, 15 times a second) and the names over everything.
 type Tick = {
+  pitch: number;
   cameraRef: React.RefObject<THREE.Camera | null>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   viewRef: React.RefObject<Pt>; fellAtRef: React.RefObject<number | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>;
   pix: { across: number }; size: { width: number; height: number }; opened: boolean; centre: React.RefObject<{ x: number; z: number }>;
   lights: { x: number; y: number; r: number }[]; lit: Uint8Array; plan: Floorplan; field: React.RefObject<LightField | null>; lastLight: React.RefObject<number>;
   v: THREE.Vector3; list: Station[]; walkers: Walker[]; stretch: number; klutz: KlutzMode;
 };
-function denTick(state: { camera: THREE.Camera }, { cameraRef, spanRef, glideRef, viewRef, fellAtRef, labelsRef, pix, size, opened, centre, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz }: Tick) {
+function denTick(state: { camera: THREE.Camera }, { pitch, cameraRef, spanRef, glideRef, viewRef, fellAtRef, labelsRef, pix, size, opened, centre, lights, lit, plan, field, lastLight, v, list, walkers, stretch, klutz }: Tick) {
   const now = performance.now(), cam = state.camera;
   cameraRef.current = cam;
   // How much floor is in view, and where the camera looks (gliding when Klutz shows you somewhere).
-  spanRef.current = { across: pix.across, deep: (pix.across * (size.height / size.width)) / Math.sin(PITCH) };
-  const a = denArea(opened, PITCH), g = glideRef.current;
+  spanRef.current = { across: pix.across, deep: (pix.across * (size.height / size.width)) / Math.sin(pitch) };
+  const a = denArea(opened, pitch), g = glideRef.current;
   if (g) {
     const k = Math.min(1, (now - g.at) / 700), e = k * k * (3 - 2 * k);
     viewRef.current = { x: g.from.x + (g.to.x - g.from.x) * e, y: g.from.y + (g.to.y - g.from.y) * e };
@@ -316,12 +322,12 @@ function denTick(state: { camera: THREE.Camera }, { cameraRef, spanRef, glideRef
   }
   viewRef.current = clampView(viewRef.current, spanRef.current.across, spanRef.current.deep, a);
   // (In whole art pixels, so the stone doesn't crawl as you drag.)
-  const zs = DENSITY * Math.sin(PITCH);
+  const zs = DENSITY * Math.sin(pitch);
   centre.current = { x: Math.round(viewRef.current.x * DENSITY) / DENSITY, z: Math.round(viewRef.current.y * zs) / zs };
   const fell = fellAtRef.current === null ? Infinity : (now - fellAtRef.current) / 1000, shake = fell < FALL_TIME ? 0.08 * (1 - fell / FALL_TIME) : 0;
   const target = new THREE.Vector3(centre.current.x + (shake ? (Math.random() * 2 - 1) * shake : 0), 0, centre.current.z);
   if (cam instanceof THREE.OrthographicCamera) {
-    cam.position.copy(target).addScaledVector(new THREE.Vector3(0, Math.sin(PITCH), Math.cos(PITCH)), 60);
+    cam.position.copy(target).addScaledVector(new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch)), 60);
     cam.zoom = size.width / pix.across;
     cam.near = 0.1; cam.far = 200;
     cam.lookAt(target);
@@ -359,9 +365,11 @@ function denTick(state: { camera: THREE.Camera }, { cameraRef, spanRef, glideRef
 }
 
 // The carved rock, in the Labyrinth's Stone shader, lit by the Den's lights.
-function DenRock({ plan, seen, field, centre }: { plan: Floorplan; seen: { shown: Uint8Array; fade: Float32Array }; field: React.RefObject<LightField | null>; centre: React.RefObject<{ x: number; z: number }> }) {
+function DenRock({ pitch, plan, seen, field, centre }: { pitch: number; plan: Floorplan; seen: { shown: Uint8Array; fade: Float32Array }; field: React.RefObject<LightField | null>; centre: React.RefObject<{ x: number; z: number }> }) {
   const geo = useMemo(() => {
     const h = rockHeights(plan, (i) => plan.tiles[i] !== ROCK, DEN_WALL, true);
+    // All the rock south of the hall is the low rim: from a flatter camera, full-height rock there hid the hall's front.
+    for (let y = ROOM1.y + ROOM1.h; y < plan.h; y++) for (let x = 0; x < plan.w; x++) if (h[y * plan.w + x] > 0) h[y * plan.w + x] = SOUTH_LIP;
     const m = carvedMesh(h, plan.w, plan.h, DEN_WALL, ROCK_MARGIN);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(m.position, 3));
@@ -391,8 +399,8 @@ function DenRock({ plan, seen, field, centre }: { plan: Floorplan; seen: { shown
     u.uFace.value = rawTexture(KIT.north); u.uFaceSize.value.set(k.px, k.north); u.uFaceRows.value = k.north - k.cap;
     u.uRim.value = rawTexture(KIT.cap); u.uRimSize.value.set(k.px, k.cap);
     for (const key of ["uMoss", "uHole", "uWebA", "uWebB", "uWebC", "uWebD"] as const) u[key].value = rawTexture(KIT.floor);
-    u.uUp.value.set(...texelsPerU("up", DENSITY, PITCH, "screen"));
-    u.uSide.value.set(...texelsPerU("face", DENSITY, PITCH, "screen"));
+    u.uUp.value.set(...texelsPerU("up", DENSITY, pitch, "screen"));
+    u.uSide.value.set(...texelsPerU("face", DENSITY, pitch, "screen"));
     u.uWall.value = DEN_WALL; u.uRemember.value = DEN_STONE.remember; u.uGain.value = DEN_STONE.gain;
     u.uWarm.value.set(...DEN_STONE.warm); u.uFlame.value.set(...DEN_STONE.flame);
     u.uLean.value = LEAN; u.uPlan.value.set(plan.w, plan.h); u.uCx.value = centre.current.x;
@@ -417,13 +425,13 @@ function DenWalker({ w, stretch, shade }: { w: Walker; stretch: number; shade: (
   return <Stroller find={find} art={art} w={width} stretch={stretch} shade={shade} />;
 }
 
-// The rock between the rooms, come down: stones all along where it stood (falling, the moment it goes).
+// The rubble's wall, come down: stones all along where it stood (falling, the moment it goes).
 function FallenWall({ fellAtRef, shade }: { fellAtRef: React.RefObject<number | null>; shade: (x: number, y: number) => THREE.Color }) {
   const group = useRef<THREE.Group>(null);
-  const mats = useFlat(["#8e6d48", "#715639", "#a98659", "#55402b"], () => shade(DIVIDE_X, ROOM1.y + ROOM1.h / 2));
+  const mats = useFlat(["#8e6d48", "#715639", "#a98659", "#55402b"], () => shade(DIVIDE_X, (WALL_GAP.y0 + WALL_GAP.y1) / 2));
   const stones = useMemo(() => {
     const out: { x: number; y: number; s: number; k: number }[] = [];
-    for (let y = ROOM1.y; y < ROOM1.y + ROOM1.h; y++) for (let k = 0; k < 3; k++) {
+    for (let y = WALL_GAP.y0; y < WALL_GAP.y1; y++) for (let k = 0; k < 3; k++) {
       const r = (n: number) => (((y * 37 + k * 17 + n * 11) % 13) / 13) - 0.5;
       out.push({ x: DIVIDE_X + r(1) * 1.4, y: y + r(2) * 0.9, s: 0.12 + 0.08 * ((k + y) % 3), k: (y + k) % 4 });
     }

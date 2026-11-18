@@ -42,19 +42,30 @@ placement (players could block themselves in). With it off, nothing changes.
   high (`DEN_WALL`; the Labyrinth's are 2.25): a cavern, the buildings under them. 🧪 The walls and floor
   are the Labyrinth's kit F, every pixel kept, recoloured warm sandstone and earth (scripts/den-kit-warm.mjs);
   lanterns by the shack's and storehouse's doors, braziers in the tavern's room once it's open.
-- **The rooms** (lib/den3d/layout.ts): two 12 × 12 floors side by side with rock between. Room 1:
-  Klutz's shack in the top-left corner (opens Klutz's page: his gear, his crate, his trips), the bookcase,
-  the Labyrinth's passage north through the wall, the quest board and the cage (in an alcove) on the north
-  wall, the Bestiary's lectern by the board; the **storehouse** on the west side (the Inventory's weapons,
-  armour and consumables: `/chest?store=1`; codexes stay on the bookcase, creatures in the Pit); the Soul
-  Altar in the middle; the healing pool and the Pit at the front; the rubble against the east wall.
-  Room 2 (the tavern's room): the tavern in its top-right corner, the PvP portal on the north wall and the
-  Sparring/Training Pit (once the tavern has its pit, as before). No merchant stall and no bag in the Den
-  (the user).
-- **The rubble:** tap it; with Klutz's dynamite, blow it: the whole wall between the rooms comes down
-  (stones fall, the view shakes and glides out to both rooms) and it's one hall. Till then room 2 is black
+- **The shape** (the user's drawing, 2026-11-19; lib/den3d/layout.ts): a **T**. A wide hall (12 × 11 floor
+  each side) with a narrower nook (6 × 6 each side) rising from the middle of its back wall, split down the
+  middle by rock. Room 1 is the left half of each, room 2 the right. The rock stays through the nook and 3
+  rows into the hall (`STAYS`); only the rest of it (the rubble's wall, `WALL_GAP`) comes down. Each nook
+  has a tunnel north: room 1's is the Labyrinth's way in, room 2's shows once the wall's down (it leads
+  nowhere yet). All the rock south of the hall is the low rim, so nothing hides the hall's front at any angle.
+- **Room 1:** Klutz's shack in the hall's top-left corner (opens Klutz's page: his gear, crate and trips),
+  then the quest board and the bookcase along the hall's back wall; in the nook the cage (in an alcove), the
+  Labyrinth's arch and the Bestiary's lectern; in the hall the **storehouse** (the Inventory's weapons,
+  armour and consumables: `/chest?store=1`; codexes stay on the bookcase, creatures in the Pit), the Soul
+  Altar, the healing pool and the Pit; the rubble against the dividing rock. **Room 2** (the tavern's room):
+  the tavern in the hall's top-right corner, the PvP portal in the nook and the Sparring/Training Pit in the
+  hall (once the tavern has its pit, as before). No merchant stall and no bag in the Den (the user).
+- **Options** (Settings, under New Den, per device: `codex_creatures_den3d_opts_v1`, the user, 2026-11-19):
+  **Names** on or off (off, only a name with a ❗ or the one Klutz's tour is showing stays); **Rubble**: the
+  stones left where the wall came down, shown or not; **View**: the camera's angle, 45° to 75° in 5° steps
+  (60°, the Labyrinth's, by default). The art is drawn for 60°: other angles re-lay the walls' and floor's
+  textures square on screen for that angle, and the rest keeps its 60° sizes, so they're to try.
+- **Looking round:** the camera can go past the Den's walls into the dark rock round it (`LOOK_PAST`: 4 u
+  either side, 2 above and below; the user, 2026-11-19: "so it feels like you can really look above the places").
+- **The rubble:** tap it; with Klutz's dynamite, blow it: the rubble's wall comes down (stones fall, the view
+  shakes and glides out to both rooms) and the hall is one (the nook stays split). Till then room 2 is black
   and the camera can't go past room 1. Opened, the Den first shows the middle of both rooms.
-- **No walking:** drag to look round (the view stays on what's open), tap a place to go in. Every place
+- **No walking:** drag to look round (the view stays on what's open, and a little past it), tap a place to go in. Every place
   has its name over it (names that would overlap move apart), with a ❗ where something's waiting; Klutz's
   tour lights a place's name and glides the view to it (the same `den-<id>` marks as the old Den).
 - **Who's about:** Klutz strolls round room 1 when he's home, rests in the pool while he heals, and is gone

@@ -25,7 +25,8 @@ import {
 import { writeUiScale, UI_SCALES, UI_SCALE_EVENT } from "@/lib/uiScale";
 import { useUiScale } from "@/hooks/useUiScale";
 import { canVibrate, readHaptics, writeHaptics, buzz } from "@/lib/haptics";
-import { useNewDen, switchNewDen } from "@/hooks/useNewDen";
+import { useNewDen, switchNewDen, useDenOptions, setDenOptions } from "@/hooks/useNewDen";
+import { DEN_ANGLES, stepAngle } from "@/lib/den3d/setting";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const GOOD = "#5ee08a", BAD = "#ff8a80";
@@ -70,6 +71,7 @@ export default function SettingsPage() {
 
   // 🧪 The new Den (lib/den3d/setting.ts): null until loaded.
   const newDen = useNewDen();
+  const denOpts = useDenOptions();
 
   function refresh() {
     setCurrent(summarise(exportSave(window.localStorage)));
@@ -221,12 +223,28 @@ export default function SettingsPage() {
                 <li>Try the <b>new Den</b> while it&apos;s being built: drag to look round, tap a place to go in.</li>
                 <li>With it on, your <b>bag empties into storage</b> after each run. Pack it again at the Labyrinth&apos;s entrance.</li>
                 <li>It&apos;s for <b>this device only</b>. Your save is the same either way.</li>
+                <li><b>Names</b>: every place&apos;s name, or just the ones with a ❗.</li>
+                <li><b>Rubble</b>: the stones left where the wall came down.</li>
+                <li><b>View</b>: how steeply you look down ({DEN_ANGLES[0]}° to {DEN_ANGLES[DEN_ANGLES.length - 1]}°; the Labyrinth&apos;s is 60°).</li>
               </ul>
             </Help>
           </div>
           <button className="pixel-btn" onClick={() => switchNewDen(!newDen)} style={{ display: "block", width: "100%", marginTop: 8 }}>
             {newDen ? "✅ On" : "⬜ Off"}
           </button>
+          {newDen && denOpts && (
+            <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <button className="dock-tab" style={{ minHeight: 44 }} onClick={() => setDenOptions({ ...denOpts, names: !denOpts.names })}>🏷️ Names: {denOpts.names ? "On" : "Off"}</button>
+                <button className="dock-tab" style={{ minHeight: 44 }} onClick={() => setDenOptions({ ...denOpts, rubble: !denOpts.rubble })}>🪨 Rubble: {denOpts.rubble ? "On" : "Off"}</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "center", gap: 8 }}>
+                <button className="pixel-btn" onClick={() => setDenOptions({ ...denOpts, angle: stepAngle(denOpts.angle, -1) })} disabled={denOpts.angle <= DEN_ANGLES[0]}>➖ Flatter</button>
+                <span className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0", minWidth: 64, textAlign: "center" }}>View {denOpts.angle}°</span>
+                <button className="pixel-btn" onClick={() => setDenOptions({ ...denOpts, angle: stepAngle(denOpts.angle, 1) })} disabled={denOpts.angle >= DEN_ANGLES[DEN_ANGLES.length - 1]}>➕ Steeper</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

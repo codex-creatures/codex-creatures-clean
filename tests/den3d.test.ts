@@ -2,9 +2,10 @@
 // camera's limits and what a tap lands on.
 import { describe, expect, it } from "vitest";
 import { FLOOR, ROCK, TUNNEL } from "@/lib/dungeon/floorplan";
+import { parseDenOptions, stepAngle, DEN_DEFAULTS, DEN_ANGLES } from "@/lib/den3d/setting";
 import {
   denPlan, denShown, stations, strollAt, clampView, denArea, firstView, stationAt, denLights, BRAZIERS, BRAZIERS_2,
-  KLUTZ_LOOP, VISITOR_LOOP, STROLL, loopTime, ROOM1, ROOM2, DIVIDE_X, PLAN_W, type Station,
+  KLUTZ_LOOP, VISITOR_LOOP, STROLL, loopTime, ROOM1, ROOM2, NOOK1, NOOK2, WALL_GAP, DIVIDE_X, PLAN_W, LOOK_PAST, type Station,
 } from "@/lib/den3d/layout";
 
 const PITCH = Math.PI / 3;
@@ -15,14 +16,20 @@ const box = (s: Station) => ({ x0: s.x - s.w / 2, x1: s.x + s.w / 2, y0: s.y - s
 const inside = (p: { x: number; y: number }, b: ReturnType<typeof box>, pad = 0) => p.x > b.x0 - pad && p.x < b.x1 + pad && p.y > b.y0 - pad && p.y < b.y1 + pad;
 
 describe("the new Den's plan", () => {
-  it("is two square rooms with rock between them, till the wall comes down", () => {
+  it("is a T: a hall with a nook in the middle of its back, split by rock that partly comes down", () => {
     expect(at(ROOM1.x, ROOM1.y)).toBe(FLOOR);
     expect(at(ROOM2.x + ROOM2.w - 1, ROOM2.y + ROOM2.h - 1)).toBe(FLOOR);
-    for (let y = ROOM1.y; y < ROOM1.y + ROOM1.h; y++) {
-      expect(at(DIVIDE_X, y)).toBe(ROCK);
-      expect(at(DIVIDE_X, y, true)).toBe(FLOOR);
+    expect(at(NOOK1.x, NOOK1.y)).toBe(FLOOR);
+    expect(at(NOOK2.x + NOOK2.w - 1, NOOK2.y)).toBe(FLOOR);
+    expect(at(NOOK1.x - 1, NOOK1.y + 2)).toBe(ROCK);           // beside the nook: rock
+    expect(at(NOOK2.x + NOOK2.w, NOOK2.y + 2)).toBe(ROCK);
+    for (let y = NOOK1.y; y < ROOM1.y + ROOM1.h; y++) {
+      const comes = y >= WALL_GAP.y0 && y < WALL_GAP.y1;
+      expect(at(DIVIDE_X, y), `row ${y}`).toBe(ROCK);
+      expect(at(DIVIDE_X, y, true), `row ${y}`).toBe(comes ? FLOOR : ROCK); // (the nook stays split)
     }
-    expect(at(6, 0)).toBe(TUNNEL); // the Labyrinth's passage, north through the wall
+    expect(at(10, 0)).toBe(TUNNEL); // room 1's tunnel: the Labyrinth
+    expect(at(16, 0)).toBe(TUNNEL); // room 2's
   });
 
   it("shows room 2 only once it's open", () => {
@@ -44,14 +51,15 @@ describe("what stands in it", () => {
     for (const s of open) expect(s.href, s.key).toBeTruthy();
   });
 
-  it("keeps everything on its own room's floor (or against its north wall), none overlapping", () => {
+  it("keeps everything on its own room's floor (or against a north wall), none overlapping", () => {
     const list = [...stations(ALL), ...stations({ ...ALL, opened: false }).filter((s) => s.key === "rubble")];
     for (const s of list) {
-      const b = box(s), r = s.room === 1 ? ROOM1 : ROOM2;
-      expect(b.x0, s.key).toBeGreaterThanOrEqual(r.x - 0.5);
-      expect(b.x1, s.key).toBeLessThanOrEqual(r.x + r.w - 0.5);
-      expect(b.y1, s.key).toBeLessThanOrEqual(r.y + r.h - 0.5);
-      expect(b.y0, s.key).toBeGreaterThanOrEqual(r.y - 1.5); // (the cage stands in its alcove)
+      // Its footprint's corners (a wall thing's just in front of its wall) on its own room's floor.
+      const b = box(s), y0 = s.wall ? s.y + 0.2 : b.y0 + 0.02, side = (x: number) => (x < DIVIDE_X ? 1 : 2);
+      for (const [x, y] of [[b.x0 + 0.02, y0], [b.x1 - 0.02, y0], [b.x0 + 0.02, b.y1 - 0.02], [b.x1 - 0.02, b.y1 - 0.02]]) {
+        expect(at(x, y, false) === FLOOR || at(x, y, true) === FLOOR, `${s.key} at ${x.toFixed(2)},${y.toFixed(2)}`).toBe(true);
+        expect(side(x), s.key).toBe(s.room);
+      }
     }
     const overlaps: string[] = [];
     list.forEach((a, i) => list.slice(i + 1).forEach((b) => {
@@ -109,6 +117,12 @@ describe("the camera", () => {
     expect(clampView({ x: 40, y: 7 }, 15, 8, b).x).toBeGreaterThan(DIVIDE_X + 5);
   });
 
+  it("can look past the walls into the dark, as far as LOOK_PAST", () => {
+    const a = denArea(false, PITCH);
+    expect(clampView({ x: -50, y: 7 }, 15, 8, a).x).toBeCloseTo(ROOM1.x - 1 - LOOK_PAST.across + 7.5);
+    expect(clampView({ x: 7, y: 99 }, 15, 8, a).y).toBeCloseTo(ROOM1.y + ROOM1.h + 0.3 + LOOK_PAST.deep - 4);
+  });
+
   it("centres a view wider than the Den on it", () => {
     const a = denArea(false, PITCH);
     expect(clampView({ x: 0, y: 0 }, 30, 30, a)).toEqual({ x: (a.x0 + a.x1) / 2, y: (a.y0 + a.y1) / 2 });
@@ -123,10 +137,24 @@ describe("the camera", () => {
 describe("taps", () => {
   const list = stations(ALL);
   it("land on what's there, by its footprint or its height", () => {
-    expect(stationAt(list, { x: 6.5, y: 7 }, PITCH)?.key).toBe("altar");
+    expect(stationAt(list, { x: 7, y: 13 }, PITCH)?.key).toBe("altar");
     const shack = list.find((s) => s.key === "shack")!;
     // Up the screen from the shack's footprint, over its roof as the camera sees it.
     expect(stationAt(list, { x: shack.x, y: shack.y - shack.d / 2 - 1 }, PITCH)?.key).toBe("shack");
-    expect(stationAt(list, { x: 6.5, y: 4.5 }, PITCH)).toBeUndefined();
+    expect(stationAt(list, { x: 5, y: 11.5 }, PITCH)).toBeUndefined();
+  });
+});
+
+describe("the new Den's options (Settings)", () => {
+  it("fall back to their defaults when missing or damaged", () => {
+    expect(parseDenOptions(null)).toEqual(DEN_DEFAULTS);
+    expect(parseDenOptions("not json")).toEqual(DEN_DEFAULTS);
+    expect(parseDenOptions(JSON.stringify({ names: false, angle: 33 }))).toEqual({ ...DEN_DEFAULTS, names: false });
+    expect(parseDenOptions(JSON.stringify({ rubble: false, angle: 45 }))).toEqual({ ...DEN_DEFAULTS, rubble: false, angle: 45 });
+  });
+  it("step the angle along its list, stopping at the ends", () => {
+    expect(stepAngle(60, 1)).toBe(65);
+    expect(stepAngle(DEN_ANGLES[0], -1)).toBe(DEN_ANGLES[0]);
+    expect(stepAngle(DEN_ANGLES[DEN_ANGLES.length - 1], 1)).toBe(DEN_ANGLES[DEN_ANGLES.length - 1]);
   });
 });
