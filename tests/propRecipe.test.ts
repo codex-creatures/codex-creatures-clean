@@ -203,3 +203,70 @@ describe("the outline", () => {
     expect(readRecipe(recipe([{ id: "p", kind: "panel", at: [0, 0, 0], size: [1, 1], outline: true, faces: { front: STONE } }])).ok).toBe(false);
   });
 });
+
+describe("a sloping side (a tapered cylinder: a frustum)", () => {
+  it("keeps its pixels square on screen: up the slant as it shows, not just as high as it stands", () => {
+    // A four-sided frustum, its front leaning back: as tall on screen as h·cos(pitch) + how far it leans back·sin(pitch).
+    const p = one({ kind: "cylinder", size: [2, 0.5, 2], sides: 4, taper: 0.5 }), [front] = partFaces(p, VIEW).filter((f) => f.face === "side" && f.normal[2] > 0.5);
+    const lean = front.points[0][2] - front.points[2][2], shows = 0.5 * Math.cos(PITCH) + lean * Math.sin(PITCH);
+    expect(Math.max(...front.uv.map((q) => q[1]))).toBeCloseTo((shows * DENSITY) / 24);
+  });
+  it("reads a halo, and turns down a bad one", () => {
+    const halo = { colour: "#5fe0d0", radius: 2, strength: 0.3 };
+    const ok = readRecipe({ ...recipe([{ id: "b", kind: "box", at: [0, 0, 0], size: [1, 1, 1], faces: { "*": STONE } }]), halo });
+    expect(ok.ok && ok.recipe.halo).toEqual(halo);
+    expect(readRecipe({ ...recipe([{ id: "b", kind: "box", at: [0, 0, 0], size: [1, 1, 1], faces: { "*": STONE } }]), halo: { ...halo, strength: 2 } }).ok).toBe(false);
+  });
+});
+
+describe("×4 round (one corner's design on all four)", () => {
+  it("repeats a part a quarter turn apart round the middle, turned with it", () => {
+    const p = one({ kind: "box", at: [1, 0, 0.5], size: [0.2, 0.4, 0.2], four: true });
+    const faces = partFaces(p, VIEW), fronts = faces.filter((f) => f.face === "front");
+    expect(faces).toHaveLength(6 * 4);
+    const centres = fronts.map((f) => [f.points.reduce((s, q) => s + q[0], 0) / 4, f.points.reduce((s, q) => s + q[2], 0) / 4]);
+    expect(centres.map(([x, z]) => [Math.sign(x), Math.sign(z)]).sort()).toEqual([[-1, -1], [-1, 1], [1, -1], [1, 1]]);
+    expect(new Set(fronts.map((f) => f.normal.map((v) => Math.round(v)).join())).size).toBe(4); // (each turned its own way)
+    expect(new Set(faces.map((f) => f.key)).size).toBe(faces.length);
+  });
+});
+
+describe("a swirling face (anim)", () => {
+  it("reads 'swirl' on a colour or picture face, turns down anything else", () => {
+    const p = one({ kind: "cylinder", size: [1, 0.05, 1], faces: { top: { colour: "#3fe0bf", anim: "swirl" } } });
+    expect(p.faces.top).toMatchObject({ kind: "colour", anim: "swirl" });
+    expect(readRecipe(recipe([{ id: "s", kind: "box", at: [0, 0, 0], size: [1, 1, 1], faces: { top: { colour: "#000000", anim: "spin" } } }])).ok).toBe(false);
+  });
+});
+
+describe("how far a prop reaches (for walking round it)", () => {
+  it("is its widest part's edges, repeats and turns included", async () => {
+    const { recipeReach } = await import("@/lib/props/recipe");
+    const r = readRecipe(recipe([{ id: "b", kind: "box", at: [0, 0, 0], size: [2, 1, 1], faces: { "*": STONE } }, { id: "p", kind: "box", at: [1.5, 0, 1.5], size: [0.2, 0.2, 0.2], four: true, faces: { "*": STONE } }]));
+    if (!r.ok) throw new Error();
+    const [x, z] = recipeReach(r.recipe, VIEW);
+    expect(x).toBeCloseTo(1.6); expect(z).toBeCloseTo(1.6);
+  });
+});
+
+describe("a hollow part (inside)", () => {
+  it("draws its faces from within: normals turned in", () => {
+    const out = partFaces(one({ kind: "cylinder", size: [1, 0.2, 1], sides: 8 }), VIEW), hollow = partFaces(one({ kind: "cylinder", size: [1, 0.2, 1], sides: 8, inside: true }), VIEW);
+    expect(hollow.every((f) => f.inside)).toBe(true);
+    hollow.forEach((f, i) => close(f.normal, out[i].normal.map((v) => -v)));
+  });
+});
+
+describe("a tube (a cylinder with a hole)", () => {
+  it("has a ring for its top and bottom and an inner wall facing in", () => {
+    const fs = partFaces(one({ kind: "cylinder", size: [2, 0.5, 2], sides: 8, hole: 0.8 }), VIEW);
+    const by = (n: string) => fs.filter((f) => f.face === n);
+    expect(by("top")).toHaveLength(8); expect(by("bottom")).toHaveLength(8); expect(by("inner")).toHaveLength(8);
+    for (const f of by("top")) expect(f.normal[1]).toBeCloseTo(1);
+    for (const f of by("bottom")) expect(f.normal[1]).toBeCloseTo(-1);
+    for (const f of by("inner")) { const c = f.points.reduce((s, q) => [s[0] + q[0], s[1] + q[2]], [0, 0]); expect(f.normal[0] * c[0] + f.normal[2] * c[1]).toBeLessThan(0); }
+    // The top ring leaves the middle open: no top point nearer the middle than the hole.
+    for (const f of by("top")) for (const q of f.points) expect(Math.hypot(q[0], q[2])).toBeGreaterThan(0.7);
+    expect(readRecipe(recipe([{ id: "b", kind: "box", at: [0, 0, 0], size: [1, 1, 1], hole: 0.5, faces: { "*": STONE } }])).ok).toBe(false);
+  });
+});

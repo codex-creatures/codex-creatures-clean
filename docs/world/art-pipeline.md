@@ -118,6 +118,18 @@ Until it's saved, a recipe's changes are a draft in that browser only: on anothe
 - **Drawing** (`components/PropRecipe3D.tsx`): each face a flat polygon with its own material (the crop read in
   the shader, the lean as Props3D's `leaned`), unlit and tinted by the light where it stands as the game's 3D
   things are; each part memoised on its own recipe object, so changing one part rebuilds only it.
+- **More part settings** (2026-11-19): `four` (×4 round: the part and three copies a quarter turn apart round the
+  prop's middle, so one corner's design is on all four, the user's idea); `hole` (a cylinder as a tube: ring top and
+  bottom, an `inner` wall); `inside` (a box or cylinder drawn hollow, its walls seen from within); a face's `anim`
+  "swirl" (swirling liquid in the teal ramp `SWIRL`, per art pixel, with the odd bubble: drawn in code, as flames
+  are); a recipe's `halo` (a coloured glow on the floor round it). A sloping side keeps its pixels square: its
+  texture runs up the slant as it shows on screen.
+- **Lit** (`<PropRecipe3D lit />`): faces take the scene's lights (Lambert) instead of the game's flat tint; glowing
+  faces and outlines stay unlit. The game still draws its 3D things flat: lit props are the review lab's, till the
+  user decides.
+- **The review lab** (`/lab/propreview`; `?drafts` shows the builder's unsaved drafts): every recipe on the Den's
+  floor, lit (the Den's key light, ambient and your torch; your torch alone; or the game's flat look), walked round as
+  the torchbearer (stick, keys, tapping the floor) under the game's camera, close up or at the game's zoom.
 - **Outline** (a box's or cylinder's `outline`): a shell an art pixel bigger all round, drawn inside out in the
   darkest stone (#0e0f0c), so a dark pixel edges the part, as the Labyrinth's 3D things have (Props3D's hull).
 - **The altar** (`altar.json`; rebuilt 2026-11-19 from its drawing, den3d/altar.png, where the first recipe copied

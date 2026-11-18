@@ -29,7 +29,7 @@ export type Crop = [number, number, number, number]; // x, y (from the picture's
 export type PartKind = "box" | "cylinder" | "panel" | "sprite";
 export const FACES: Record<PartKind, string[]> = {
   box: ["front", "back", "left", "right", "top", "bottom"],
-  cylinder: ["side", "top", "bottom"],
+  cylinder: ["side", "top", "bottom", "inner"],
   panel: ["front", "back"],
   sprite: ["front"],
 };
@@ -37,20 +37,26 @@ export const FACES: Record<PartKind, string[]> = {
 // A face as written: a crop of a picture (`fit` "tile": repeated at the art density, the default; "fill": the
 // crop stretched over the face once), a flat colour, or the same as another face. `tint` multiplies either.
 // "*" in a part's faces is every face not listed; a face neither listed nor covered by "*" isn't drawn.
-export type FaceSpec = { src?: string; crop?: Crop; fit?: "tile" | "fill"; colour?: string; tint?: string; same?: string };
+// `anim` "swirl" (the user, 2026-11-19: the altar's soup): the face drawn as slowly swirling liquid in the teal
+// ramp (SWIRL), at the art density, with the odd bubble; the renderer draws it, as the game draws its flames.
+export type FaceSpec = { src?: string; crop?: Crop; fit?: "tile" | "fill"; colour?: string; tint?: string; same?: string; anim?: "swirl" };
 export type PartSpec = {
-  id: string; kind: PartKind; at: Vec3; size: number[]; turn?: Vec3; sides?: number; taper?: number;
-  light?: "unlit" | "toon"; glow?: boolean; outline?: boolean; faces: Record<string, FaceSpec>;
+  id: string; kind: PartKind; at: Vec3; size: number[]; turn?: Vec3; sides?: number; taper?: number; hole?: number;
+  light?: "unlit" | "toon"; glow?: boolean; outline?: boolean; four?: boolean; inside?: boolean; faces: Record<string, FaceSpec>;
 };
-export type RecipeSpec = { format: number; id: string; name: string; setting: "den" | "dungeon"; ref?: { src: string; foot: [number, number] }; parts: PartSpec[] };
+// `halo`: a soft coloured glow on the floor round the prop (as the Den's altar and pool have: Props3D's Glow).
+export type Halo = { colour: string; radius: number; strength: number };
+export type RecipeSpec = { format: number; id: string; name: string; setting: "den" | "dungeon"; ref?: { src: string; foot: [number, number] }; halo?: Halo; parts: PartSpec[] };
 
 // As read: every default filled in, every face resolved.
-export type Face = { kind: "art"; src: string; crop: Crop; fit: "tile" | "fill"; tint: string } | { kind: "colour"; colour: string; tint: string };
+export type Face = ({ kind: "art"; src: string; crop: Crop; fit: "tile" | "fill"; tint: string } | { kind: "colour"; colour: string; tint: string }) & { anim?: "swirl" };
+// The swirl's colours, deep to bright (the altar's teal ramp, lib/props/palette.ts TEAL): its edge, three bands, its crests.
+export const SWIRL = ["#125658", "#0e7f75", "#17b69c", "#35e8c1", "#b3ece1"];
 export type Part = {
-  id: string; kind: PartKind; at: Vec3; size: Vec3; turn: Vec3; sides: number; taper: number;
-  light: "unlit" | "toon"; glow: boolean; outline: boolean; faces: Record<string, Face>;
+  id: string; kind: PartKind; at: Vec3; size: Vec3; turn: Vec3; sides: number; taper: number; hole: number;
+  light: "unlit" | "toon"; glow: boolean; outline: boolean; four: boolean; inside: boolean; faces: Record<string, Face>;
 };
-export type Recipe = { format: number; id: string; name: string; setting: "den" | "dungeon"; ref?: { src: string; foot: [number, number] }; parts: Part[] };
+export type Recipe = { format: number; id: string; name: string; setting: "den" | "dungeon"; ref?: { src: string; foot: [number, number] }; halo?: Halo; parts: Part[] };
 export type Read = { ok: true; recipe: Recipe } | { ok: false; errors: string[] };
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -69,6 +75,7 @@ export function readRecipe(json: unknown, cache?: WeakMap<object, Part>): Read {
   if (typeof r.name !== "string" || !r.name) errors.push("name missing");
   if (r.setting !== "den" && r.setting !== "dungeon") errors.push("setting: den or dungeon");
   if (r.ref !== undefined && !(typeof r.ref?.src === "string" && vec(r.ref.foot, 2))) errors.push("ref: { src, foot: [x, y] }");
+  if (r.halo !== undefined && !(HEX.test(String(r.halo?.colour)) && num(r.halo.radius) && r.halo.radius > 0 && num(r.halo.strength) && r.halo.strength >= 0 && r.halo.strength <= 1)) errors.push("halo: { colour: #rrggbb, radius above 0, strength 0 to 1 }");
   if (!Array.isArray(r.parts) || !r.parts.length) errors.push("parts: at least one");
   const parts: Part[] = [], seen = new Set<string>();
   for (const [i, p] of (Array.isArray(r.parts) ? r.parts : []).entries()) {
@@ -81,7 +88,7 @@ export function readRecipe(json: unknown, cache?: WeakMap<object, Part>): Read {
     parts.push(out);
   }
   if (errors.length) return { ok: false, errors };
-  return { ok: true, recipe: { format: RECIPE_FORMAT, id: r.id!, name: r.name!, setting: r.setting!, ...(r.ref ? { ref: r.ref } : {}), parts } };
+  return { ok: true, recipe: { format: RECIPE_FORMAT, id: r.id!, name: r.name!, setting: r.setting!, ...(r.ref ? { ref: r.ref } : {}), ...(r.halo ? { halo: r.halo } : {}), parts } };
 }
 
 function readPart(p: PartSpec, where: string, errors: string[]): Part | null {
@@ -95,8 +102,11 @@ function readPart(p: PartSpec, where: string, errors: string[]): Part | null {
   if (p.turn !== undefined && !vec(p.turn, 3)) errors.push(`${where}: turn [x, y, z] degrees`);
   if (p.sides !== undefined && !(Number.isInteger(p.sides) && p.sides >= 3 && p.sides <= MAX_SIDES)) errors.push(`${where}: sides 3 to ${MAX_SIDES}`);
   if (p.taper !== undefined && !(num(p.taper) && p.taper >= 0)) errors.push(`${where}: taper 0 or more`);
+  if (p.hole !== undefined && !(p.kind === "cylinder" && num(p.hole) && p.hole >= 0 && p.hole <= 0.95)) errors.push(`${where}: hole 0 to 0.95, on a cylinder only`);
   if (p.light !== undefined && p.light !== "unlit" && p.light !== "toon") errors.push(`${where}: light unlit or toon`);
   if (p.glow !== undefined && typeof p.glow !== "boolean") errors.push(`${where}: glow true or false`);
+  if (p.four !== undefined && typeof p.four !== "boolean") errors.push(`${where}: four true or false`);
+  if (p.inside !== undefined && (typeof p.inside !== "boolean" || (p.inside && flat))) errors.push(`${where}: inside true or false, on a box or cylinder only`);
   if (p.outline !== undefined && (typeof p.outline !== "boolean" || (p.outline && flat))) errors.push(`${where}: outline true or false, on a box or cylinder only`);
   if (!p.faces || typeof p.faces !== "object") { errors.push(`${where}: faces missing`); return null; }
   const names = FACES[p.kind];
@@ -108,8 +118,8 @@ function readPart(p: PartSpec, where: string, errors: string[]): Part | null {
   }
   if (errors.length > before) return null;
   const size: Vec3 = flat ? [p.size[0], p.size[1], 0] : [p.size[0], p.size[1], p.size[2]];
-  return { id: p.id, kind: p.kind, at: [...p.at] as Vec3, size, turn: (p.turn ? [...p.turn] : [0, 0, 0]) as Vec3, sides: p.sides ?? 12, taper: p.taper ?? 1,
-    light: p.light ?? "unlit", glow: p.glow ?? false, outline: p.outline ?? false, faces };
+  return { id: p.id, kind: p.kind, at: [...p.at] as Vec3, size, turn: (p.turn ? [...p.turn] : [0, 0, 0]) as Vec3, sides: p.sides ?? 12, taper: p.taper ?? 1, hole: p.hole ?? 0,
+    light: p.light ?? "unlit", glow: p.glow ?? false, outline: p.outline ?? false, four: p.four ?? false, inside: p.inside ?? false, faces };
 }
 
 // A face, following `same` (to another face of the part, never round in a loop) and "*".
@@ -123,14 +133,16 @@ function resolveFace(faces: Record<string, FaceSpec>, name: string, where: strin
   }
   const tint = f.tint ?? "#ffffff";
   if (!HEX.test(tint)) errors.push(`${where}: tint ${tint} (#rrggbb)`);
+  if (f.anim !== undefined && f.anim !== "swirl") errors.push(`${where}: anim swirl`);
+  const anim = f.anim ? { anim: f.anim } : {};
   if (f.colour !== undefined) {
     if (!HEX.test(f.colour)) { errors.push(`${where}: colour ${f.colour} (#rrggbb)`); return null; }
-    return { kind: "colour", colour: f.colour, tint };
+    return { kind: "colour", colour: f.colour, tint, ...anim };
   }
   if (typeof f.src !== "string" || !f.src.startsWith("/sprites/")) { errors.push(`${where}: src (a picture under /sprites/), colour or same`); return null; }
   if (!vec(f.crop, 4) || f.crop.some((v) => !Number.isInteger(v) || v < 0) || f.crop[2] < 1 || f.crop[3] < 1) { errors.push(`${where}: crop [x, y, w, h] in whole pixels`); return null; }
   if (f.fit !== undefined && f.fit !== "tile" && f.fit !== "fill") errors.push(`${where}: fit tile or fill`);
-  return { kind: "art", src: f.src, crop: [...f.crop] as Crop, fit: f.fit ?? "tile", tint };
+  return { kind: "art", src: f.src, crop: [...f.crop] as Crop, fit: f.fit ?? "tile", tint, ...anim };
 }
 
 // A recipe as saved: two spaces in, each list of numbers on one line (so a part reads at a glance).
@@ -155,11 +167,23 @@ export function snapPart<P extends { at: number[]; size: number[]; turn?: number
 // its normal, and its toon band (1 when unlit). Sprites stand facing the camera, stretched up by `stretch`
 // (as the game's flat things are: uprightStretch), unturned.
 // `screen`: how big the face shows, across and up its picture, in units on screen (for faceDensity).
-// `hull`: the part's outline shell (drawn inside out, untinted, never tapped).
-export type FacePoly = { key: string; part: string; face: string; art: Face; points: Vec3[]; uv: [number, number][]; normal: Vec3; shade: number; glow: boolean; twoSided: boolean; screen: [number, number]; hull?: boolean };
+// `hull`: the part's outline shell (drawn inside out, untinted, never tapped). `inside`: a hollow part's (a pot's
+// inner wall: `inside`), its faces seen from within (drawn inside out, their normals turned in for the lights).
+export type FacePoly = { key: string; part: string; face: string; art: Face; points: Vec3[]; uv: [number, number][]; normal: Vec3; shade: number; glow: boolean; twoSided: boolean; screen: [number, number]; hull?: boolean; inside?: boolean };
 export type View = { pitch: number; stretch: number };
 
+// `four` (the user, 2026-11-19: "build 1 corner, then repeat that design 4 times"): the part as it's set, and three
+// more, each a quarter turn further round the prop's middle (its turn turned with it), so one corner's design is
+// on all four corners. (A sprite, which always faces the camera, is only moved round.)
 export function partFaces(p: Part, view: View): FacePoly[] {
+  if (!p.four) return oneFaces(p, view);
+  return [0, 90, 180, 270].flatMap((deg) => {
+    const at = rotate(p.at, [0, deg, 0]), turn: Vec3 = [p.turn[0], p.turn[1] + deg, p.turn[2]];
+    return oneFaces({ ...p, at, turn, four: false }, view).map((f) => ({ ...f, key: `${deg}:${f.key}` }));
+  });
+}
+function oneFaces(p: Part, view: View): FacePoly[] {
+  if (p.inside) return shapeFaces(p, view).map((f) => ({ ...f, inside: true, normal: [-f.normal[0], -f.normal[1], -f.normal[2]] as Vec3 }));
   return p.outline ? [...shapeFaces(p, view), ...shapeFaces(hullOf(p), view).map((f) => ({ ...f, key: `hull:${f.key}`, hull: true }))] : shapeFaces(p, view);
 }
 // The outline's shell: the part an art pixel bigger all round (its foot that much lower), one dark colour.
@@ -194,7 +218,17 @@ function shapeFaces(p: Part, view: View): FacePoly[] {
       polys.push({ face: "side", points: [lo[j], lo[i], hi[i], hi[j]], around: [-(s + len), -s] }); // (counted backwards: left to right as you look at it)
       s += len;
     }
-    polys.push({ face: "top", points: [...hi].reverse() }, { face: "bottom", points: lo });
+    if (p.hole > 0) {
+      // A tube (`hole`: its hollow's size to its own): a ring for its top and bottom, and an inner wall facing in.
+      const lo2 = rim(0, p.hole), hi2 = rim(h, p.taper * p.hole);
+      let t = 0;
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n, len = Math.hypot(lo2[j][0] - lo2[i][0], lo2[j][2] - lo2[i][2]);
+        polys.push({ face: "top", points: [hi[i], hi2[i], hi2[j], hi[j]] }, { face: "bottom", points: [lo[j], lo2[j], lo2[i], lo[i]] },
+          { face: "inner", points: [lo2[i], lo2[j], hi2[j], hi2[i]], around: [t, t + len] });
+        t += len;
+      }
+    } else polys.push({ face: "top", points: [...hi].reverse() }, { face: "bottom", points: lo });
   } else {
     const y1 = p.kind === "sprite" ? h * view.stretch : h;
     polys.push({ face: "front", points: [[-w / 2, 0, 0], [w / 2, 0, 0], [w / 2, y1, 0], [-w / 2, y1, 0]] });
@@ -236,9 +270,11 @@ function faceUV(pts: Vec3[], n: Vec3, art: Face, view: View, side: { around: num
   if (art.kind === "colour" || art.fit === "fill") return { uv: pts.map((_, i) => [(us[i] - u0) / du, (vs[i] - v0) / dv]), screen };
   const [cw, ch] = [art.crop[2], art.crop[3]];
   if (side) {
-    // (Round a cylinder: across at the art density along its rim, up as a standing face.)
-    const up = DENSITY * Math.cos(view.pitch), ys = side.local.map((q) => q[1]);
-    return { uv: [[side.around[0] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, ys[2] * up / ch], [side.around[0] * DENSITY / cw, ys[3] * up / ch]], screen };
+    // (Round a cylinder: across at the art density along its rim; up its side as it shows on screen, so a sloping
+    // side, which shows taller than it stands, keeps its pixels square: up the slant from its foot to its top.)
+    const mid = (a: Vec3, b: Vec3): Vec3 => scale(add(a, b), 0.5), slant = sub(mid(pts[2], pts[3]), mid(pts[0], pts[1]));
+    const top = (Math.hypot(...slant) * texelsAlong(slant, view.pitch)) / ch;
+    return { uv: [[side.around[0] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, 0], [side.around[1] * DENSITY / cw, top], [side.around[0] * DENSITY / cw, top]], screen };
   }
   return { uv: pts.map((_, i) => [((us[i] - u0) * tu) / cw, ((vs[i] - v0) * tv) / ch]), screen };
 }
@@ -279,4 +315,12 @@ export function rotate(q: Vec3, deg: number[]): Vec3 {
   [x, z] = [x * Math.cos(ay) + z * Math.sin(ay), -x * Math.sin(ay) + z * Math.cos(ay)];
   [y, z] = [y * Math.cos(ax) - z * Math.sin(ax), y * Math.sin(ax) + z * Math.cos(ax)];
   return [x, y, z];
+}
+
+// How far a prop reaches from its origin, east-west and north-south (u): its parts' feet, turned and repeated as
+// drawn (for walking round it).
+export function recipeReach(r: Recipe, view: View): [number, number] {
+  let x = 0.2, z = 0.2;
+  for (const p of r.parts) for (const f of partFaces(p, view)) for (const q of f.points) { x = Math.max(x, Math.abs(q[0])); z = Math.max(z, Math.abs(q[2])); }
+  return [x, z];
 }

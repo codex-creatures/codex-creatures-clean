@@ -23,8 +23,7 @@ const Preview = dynamic(() => import("./Preview"), { ssr: false, loading: () => 
 
 // What the game draws now for each recipe, to match against (the Den's places).
 const NOW: Record<string, StationKey> = { altar: "altar" };
-// Unsaved drafts, per recipe, in this browser only (a lab convenience, not a save).
-export const DRAFT_KEY = "codex_creatures_propbuilder_draft_v1";
+import { DRAFT_KEY } from "./drafts";
 const STEP_NAMES = ["1 px", "1/8", "1/4", "1/2"];
 
 type Drafts = Record<string, RecipeSpec>;

@@ -9,71 +9,63 @@
   },
   "parts": [
     {
-      "id": "step-1",
+      "id": "footing",
       "kind": "box",
       "at": [0, 0, 0],
-      "size": [2.104167, 0.3125, 1.895833],
-      "light": "toon",
+      "size": [2.25, 0.25, 2.25],
       "outline": true,
       "faces": {
         "*": {
-          "src": "/sprites/den3d/parts/pit-stone.png",
-          "crop": [0, 0, 48, 24],
-          "tint": "#97a0f0"
-        },
-        "top": {
-          "src": "/sprites/den3d/parts/pit-stone.png",
-          "crop": [0, 0, 48, 24],
-          "tint": "#bcc4ff"
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48]
         }
       }
     },
     {
-      "id": "step-2",
-      "kind": "box",
-      "at": [0, 0.3125, 0],
-      "size": [1.729167, 0.3125, 1.520833],
-      "light": "toon",
+      "id": "base",
+      "kind": "cylinder",
+      "at": [0, 0.25, 0],
+      "size": [2.975742, 0.5, 2.975742],
+      "sides": 4,
+      "taper": 0.712871,
       "outline": true,
       "faces": {
-        "*": {
-          "src": "/sprites/den3d/parts/pit-stone.png",
-          "crop": [0, 0, 48, 24],
-          "tint": "#97a0f0"
+        "side": {
+          "src": "/sprites/den3d/parts/stone-bricks.png",
+          "crop": [0, 0, 48, 48]
         },
         "top": {
-          "src": "/sprites/den3d/parts/pit-stone.png",
-          "crop": [0, 0, 48, 24],
-          "tint": "#bcc4ff"
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48]
+        },
+        "bottom": {
+          "colour": "#202234"
         }
       }
     },
     {
-      "id": "step-3",
+      "id": "ledge",
       "kind": "box",
-      "at": [0, 0.625, 0],
-      "size": [1.354167, 0.3125, 1.145833],
-      "light": "toon",
+      "at": [0, 0.75, 0],
+      "size": [1.5, 0.291667, 1.5],
       "outline": true,
       "faces": {
         "*": {
-          "src": "/sprites/den3d/parts/pit-stone.png",
-          "crop": [0, 0, 48, 24],
-          "tint": "#97a0f0"
+          "src": "/sprites/den3d/parts/stone-runes.png",
+          "crop": [0, 33, 48, 14]
         },
         "top": {
-          "src": "/sprites/den3d/parts/pit-stone.png",
-          "crop": [0, 0, 48, 24],
-          "tint": "#bcc4ff"
+          "src": "/sprites/den3d/parts/stone-blocks.png",
+          "crop": [0, 0, 48, 48]
         }
       }
     },
     {
-      "id": "pillar-fl",
+      "id": "corner-pillar",
       "kind": "box",
-      "at": [-0.916667, 0, 0.8125],
+      "at": [1, 0, 1],
       "size": [0.270833, 0.791667, 0.270833],
-      "glow": true,
+      "glow": false,
       "outline": true,
       "faces": {
         "*": {
@@ -84,224 +76,120 @@
         "top": {
           "colour": "#4a4d5e"
         }
-      }
+      },
+      "four": true
     },
     {
-      "id": "pillar-fr",
+      "id": "corner-cap",
       "kind": "box",
-      "at": [0.916667, 0, 0.8125],
-      "size": [0.270833, 0.791667, 0.270833],
-      "glow": true,
-      "outline": true,
-      "faces": {
-        "*": {
-          "src": "/sprites/den3d/parts/altar-lantern.png",
-          "crop": [0, 9, 13, 19],
-          "fit": "fill"
-        },
-        "top": {
-          "colour": "#4a4d5e"
-        }
-      }
-    },
-    {
-      "id": "pillar-bl",
-      "kind": "box",
-      "at": [-0.916667, 0, -0.8125],
-      "size": [0.270833, 0.791667, 0.270833],
-      "glow": true,
-      "outline": true,
-      "faces": {
-        "*": {
-          "src": "/sprites/den3d/parts/altar-lantern.png",
-          "crop": [0, 9, 13, 19],
-          "fit": "fill"
-        },
-        "top": {
-          "colour": "#4a4d5e"
-        }
-      }
-    },
-    {
-      "id": "pillar-br",
-      "kind": "box",
-      "at": [0.916667, 0, -0.8125],
-      "size": [0.270833, 0.791667, 0.270833],
-      "glow": true,
-      "outline": true,
-      "faces": {
-        "*": {
-          "src": "/sprites/den3d/parts/altar-lantern.png",
-          "crop": [0, 9, 13, 19],
-          "fit": "fill"
-        },
-        "top": {
-          "colour": "#4a4d5e"
-        }
-      }
-    },
-    {
-      "id": "cap-fl",
-      "kind": "box",
-      "at": [-0.916667, 0.791667, 0.8125],
+      "at": [1, 0.791667, 1],
       "size": [0.3125, 0.0625, 0.3125],
-      "light": "toon",
+      "light": "unlit",
       "outline": true,
       "faces": {
         "*": {
           "colour": "#3a3946"
         }
-      }
+      },
+      "four": true
     },
     {
-      "id": "cap-fr",
-      "kind": "box",
-      "at": [0.916667, 0.791667, 0.8125],
-      "size": [0.3125, 0.0625, 0.3125],
-      "light": "toon",
-      "outline": true,
-      "faces": {
-        "*": {
-          "colour": "#3a3946"
-        }
-      }
-    },
-    {
-      "id": "cap-bl",
-      "kind": "box",
-      "at": [-0.916667, 0.791667, -0.8125],
-      "size": [0.3125, 0.0625, 0.3125],
-      "light": "toon",
-      "outline": true,
-      "faces": {
-        "*": {
-          "colour": "#3a3946"
-        }
-      }
-    },
-    {
-      "id": "cap-br",
-      "kind": "box",
-      "at": [0.916667, 0.791667, -0.8125],
-      "size": [0.3125, 0.0625, 0.3125],
-      "light": "toon",
-      "outline": true,
-      "faces": {
-        "*": {
-          "colour": "#3a3946"
-        }
-      }
-    },
-    {
-      "id": "spike-fl",
+      "id": "corner-spike",
       "kind": "cylinder",
-      "at": [-0.916667, 0.854167, 0.8125],
+      "at": [1, 0.854167, 1],
       "size": [0.145833, 0.3125, 0.145833],
       "sides": 4,
       "taper": 0,
-      "light": "toon",
+      "light": "unlit",
       "faces": {
         "*": {
           "colour": "#a59d88"
         }
-      }
-    },
-    {
-      "id": "spike-fr",
-      "kind": "cylinder",
-      "at": [0.916667, 0.854167, 0.8125],
-      "size": [0.145833, 0.3125, 0.145833],
-      "sides": 4,
-      "taper": 0,
-      "light": "toon",
-      "faces": {
-        "*": {
-          "colour": "#a59d88"
-        }
-      }
-    },
-    {
-      "id": "spike-bl",
-      "kind": "cylinder",
-      "at": [-0.916667, 0.854167, -0.8125],
-      "size": [0.145833, 0.3125, 0.145833],
-      "sides": 4,
-      "taper": 0,
-      "light": "toon",
-      "faces": {
-        "*": {
-          "colour": "#a59d88"
-        }
-      }
-    },
-    {
-      "id": "spike-br",
-      "kind": "cylinder",
-      "at": [0.916667, 0.854167, -0.8125],
-      "size": [0.145833, 0.3125, 0.145833],
-      "sides": 4,
-      "taper": 0,
-      "light": "toon",
-      "faces": {
-        "*": {
-          "colour": "#a59d88"
-        }
-      }
+      },
+      "four": true
     },
     {
       "id": "cauldron-foot",
       "kind": "cylinder",
-      "at": [0, 0.9375, 0],
-      "size": [0.5625, 0.25, 0.5625],
+      "at": [0, 1.041667, 0],
+      "size": [0.625, 0.125, 0.625],
       "sides": 16,
-      "taper": 2.2,
-      "light": "toon",
+      "taper": 1.4,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#26252e"
+          "colour": "#4a4960"
         }
       }
     },
     {
-      "id": "cauldron-belly",
+      "id": "cauldron-low",
       "kind": "cylinder",
-      "at": [0, 1.1875, 0],
-      "size": [1.229167, 0.583333, 1.229167],
+      "at": [0, 1.166667, 0],
+      "size": [0.875, 0.375, 0.875],
       "sides": 16,
-      "taper": 0.92,
-      "light": "toon",
+      "taper": 1.5714,
       "outline": true,
       "faces": {
         "*": {
-          "colour": "#26252e"
+          "colour": "#4a4960"
+        }
+      }
+    },
+    {
+      "id": "cauldron-high",
+      "kind": "cylinder",
+      "at": [0, 1.541667, 0],
+      "size": [1.375, 0.416667, 1.375],
+      "sides": 16,
+      "taper": 0.8636,
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a4960"
         }
       }
     },
     {
       "id": "cauldron-rim",
       "kind": "cylinder",
-      "at": [0, 1.770833, 0],
-      "size": [1.270833, 0.145833, 1.270833],
+      "at": [0, 1.958334, 0],
+      "size": [1.333333, 0.125, 1.333333],
       "sides": 16,
-      "light": "toon",
       "outline": true,
       "faces": {
         "side": {
-          "colour": "#4a4958"
+          "colour": "#66657e"
         },
         "top": {
-          "colour": "#121116"
+          "colour": "#2a2936"
         },
         "bottom": {
-          "colour": "#3a3946"
+          "colour": "#66657e"
+        }
+      }
+    },
+    {
+      "id": "soup",
+      "kind": "cylinder",
+      "at": [0, 2.083334, 0],
+      "size": [1.125, 0.020833, 1.125],
+      "sides": 16,
+      "glow": true,
+      "faces": {
+        "top": {
+          "colour": "#35e8c1",
+          "anim": "swirl"
+        },
+        "side": {
+          "colour": "#17b69c"
         }
       }
     },
     {
       "id": "skull",
       "kind": "sprite",
-      "at": [0, 0.958333, 0.66],
+      "at": [0, 1.25, 0.7],
       "size": [0.708333, 0.541667],
       "faces": {
         "front": {
@@ -310,46 +198,11 @@
           "fit": "fill"
         }
       }
-    },
-    {
-      "id": "chain-l",
-      "kind": "sprite",
-      "at": [-0.770833, 0.3125, 0.35],
-      "size": [0.229167, 0.708333],
-      "faces": {
-        "front": {
-          "src": "/sprites/den3d/parts/altar-chain.png",
-          "crop": [0, 0, 11, 34],
-          "fit": "fill"
-        }
-      }
-    },
-    {
-      "id": "chain-r",
-      "kind": "sprite",
-      "at": [0.770833, 0.3125, 0.35],
-      "size": [0.229167, 0.708333],
-      "faces": {
-        "front": {
-          "src": "/sprites/den3d/parts/altar-chain-r.png",
-          "crop": [0, 0, 11, 34],
-          "fit": "fill"
-        }
-      }
-    },
-    {
-      "id": "fire",
-      "kind": "sprite",
-      "at": [0, 1.729167, 0.1],
-      "size": [1.5, 1.041667],
-      "glow": true,
-      "faces": {
-        "front": {
-          "src": "/sprites/den3d/parts/altar-fire.png",
-          "crop": [0, 0, 72, 50],
-          "fit": "fill"
-        }
-      }
     }
-  ]
+  ],
+  "halo": {
+    "colour": "#5fe0d0",
+    "radius": 2.2,
+    "strength": 0.3
+  }
 }
