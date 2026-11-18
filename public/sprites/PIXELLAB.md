@@ -414,3 +414,6 @@ an approved picture as the style image. Samples till the user approves them.
 | den3d/portal.png | job 94a95c96-5d6a-420a-bbe5-348159121f05 (80 × 88, a crop of the first try, 32bd4366…, as style, itself styled on den/pvp-portal-4.png; seed 37; trimmed to 76 × 81) |
 | den3d/arch.png | job 4db8075f-31ea-4c08-a00d-7d4de4ccc0c3 (128 × 80, a crop of the first try, f8e841e9…, as style, styled on den3d/kit-north.png; seed 36): it came back cut off on the left, so its right half was mirrored here into a whole arch, 138 × 73 |
 | den3d/pool-top.png | job ed93c744-cf91-4fc9-ad4d-4bcd6881be8e (124 × 68, props/healing_pool.png as style, from above, seed 42; trimmed to 95 × 63) |
+| items/labyrinth_stone.png | job f8f43cae-30a6-4ac5-a10d-d01d6e43166f (64 × 64, the Void Scythe as style, seed 51): the Labyrinth Stone (2026-11-19: Klutz's quest find, in place of the dynamite); also the 2D walk view's picture of the find (`DYNAMITE_ART`) |
+| den3d/parts/dummy.png | job 265546f2-1b15-480d-a4a3-f47663c53ade (32 × 64, a crop of den/training-pit.png's dummy as style, seed 52; trimmed to 30 × 56) |
+| den3d/parts/*.png (the rest), den3d/portal-arch.png | cut from approved pictures by scripts/den-parts.mjs (no generation): the altar's fire, skull and lantern, the pool's water, the sand, the Labyrinth's grey stone; the portal's arch is den3d/arch.png mirrored and turned green |

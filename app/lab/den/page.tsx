@@ -1,6 +1,6 @@
 "use client";
 // app/lab/den/page.tsx — 🧪 the new Den (components/Den3D.tsx; the user, 2026-11-18) in a phone-sized
-// box, with switches for what the game would hand it: the rubble (shut, the dynamite in hand, blown),
+// box, with switches for what the game would hand it: the old wall (shut, the Labyrinth Stone in hand, gone),
 // Klutz home, resting or away, visitors in the tavern, the tavern repaired and its pit. Taps go where
 // the game's would. Nothing is saved; the game doesn't use it.
 
@@ -31,18 +31,17 @@ export default function DenLab() {
       <h1 style={{ fontSize: 18, margin: "0 0 4px" }}>The new Den</h1>
       <p style={{ fontSize: 13, color: "#aaa", margin: "0 0 8px", maxWidth: 400 }}>Drag to look round; tap a place (it goes there, as in the game). Stand-ins where the art isn&apos;t made yet.</p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8, maxWidth: 400 }}>
-        {(["shut", "dynamite", "open"] as Rubble[]).map((r) => <button key={r} style={btn(rubble === r)} onClick={() => { setRubble(r); setKey((n) => n + 1); }}>Rubble: {r}</button>)}
+        {(["shut", "dynamite", "open"] as Rubble[]).map((r) => <button key={r} style={btn(rubble === r)} onClick={() => { setRubble(r); setKey((n) => n + 1); }}>Wall: {({ shut: "shut", dynamite: "stone in hand", open: "gone" } as Record<Rubble, string>)[r]}</button>)}
         {(["home", "pool", "away"] as KlutzMode[]).map((m) => <button key={m} style={btn(klutz === m)} onClick={() => setKlutz(m)}>Klutz: {m}</button>)}
         <button style={btn(repaired)} onClick={() => setRepaired(!repaired)}>Tavern repaired</button>
         <button style={btn(visitors)} onClick={() => setVisitors(!visitors)}>Visitors</button>
         <button style={btn(pit)} onClick={() => setPit(!pit)}>Pit + portal</button>
         <button style={btn(opts.names)} onClick={() => setOpts({ ...opts, names: !opts.names })}>Names</button>
-        <button style={btn(opts.rubble)} onClick={() => setOpts({ ...opts, rubble: !opts.rubble })}>Rubble left</button>
         {DEN_ANGLES.map((a) => <button key={a} style={btn(opts.angle === a)} onClick={() => setOpts({ ...opts, angle: a })}>{a}°</button>)}
       </div>
       <div style={{ position: "relative", width: 390, height: 560, maxWidth: "100%", borderRadius: 8, overflow: "hidden", containerType: "size" }}>
         <Den3D key={key} rubble={rubble} onBlast={() => setRubble("open")} klutz={klutz} klutzNews={false} tavern={tavern} pit={pit ? { ready: true } : undefined}
-          tavernNews={visitors} boardNews crateNews={false} cageNews caged="dire_wolf" options={opts} />
+          tavernNews={visitors} boardNews crateNews={false} cageNews caged="dire_wolf" options={opts} keep="none" />
       </div>
     </div>
   );

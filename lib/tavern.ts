@@ -43,7 +43,7 @@ export const QUEST_KLUTZ_LEVEL = 2;
 
 export type TavernQuest = {
   accepted?: boolean; // Klutz has given you the quest
-  dynamite?: boolean; // you've got the dynamite (for good)
+  dynamite?: boolean; // you've got the Labyrinth Stone, for good (the dynamite till 2026-11-19: the save keeps the old name)
   blasted?: boolean;  // the rubble's blown open: the tavern's room is open
   seen?: boolean;     // you've seen the tavern (and heard Klutz on it)
   repaired?: boolean; // the tavern's been repaired

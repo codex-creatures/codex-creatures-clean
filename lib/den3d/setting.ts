@@ -23,12 +23,13 @@ export const newDenOn = () => typeof window !== "undefined" && readNewDen(window
 
 // 🧪 The new Den's options (Settings, under New Den; the user, 2026-11-19), per device as the switch is:
 // the places' names shown or not (a name with a ❗ on it, or the one Klutz's tour is showing, still shows),
-// the stones left where the wall came down shown or not, and the camera's angle down from the horizon
+// and the camera's angle down from the horizon
 // (the Labyrinth's is 60°; the art is drawn for 60°, so other angles are to try).
 export const DEN_OPTIONS_KEY = "codex_creatures_den3d_opts_v1";
 export const DEN_ANGLES = [45, 50, 55, 60, 65, 70, 75] as const;
-export type DenOptions = { names: boolean; rubble: boolean; angle: number };
-export const DEN_DEFAULTS: DenOptions = { names: true, rubble: true, angle: 60 };
+// (A "rubble" option, the stones left where the wall came down, went on 2026-11-19: the wall sinks away now.)
+export type DenOptions = { names: boolean; angle: number };
+export const DEN_DEFAULTS: DenOptions = { names: true, angle: 60 };
 
 // Anything missing or odd falls back to its default, so a damaged value never breaks the Den.
 export function parseDenOptions(raw: string | null): DenOptions {
@@ -36,7 +37,6 @@ export function parseDenOptions(raw: string | null): DenOptions {
     const o = raw ? (JSON.parse(raw) as Partial<DenOptions>) : {};
     return {
       names: typeof o.names === "boolean" ? o.names : DEN_DEFAULTS.names,
-      rubble: typeof o.rubble === "boolean" ? o.rubble : DEN_DEFAULTS.rubble,
       angle: DEN_ANGLES.includes(o.angle as (typeof DEN_ANGLES)[number]) ? (o.angle as number) : DEN_DEFAULTS.angle,
     };
   } catch { return { ...DEN_DEFAULTS }; }

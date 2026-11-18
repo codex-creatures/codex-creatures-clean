@@ -135,7 +135,8 @@ export const TABLE_ART: ArtRef = { src: "/sprites/props/table3d/front.png?v=2", 
 export const TABLE_TOP = 0.83; // u: how high its top is (props3d.ts tableArt; a candle on it stands there)
 // (World version 14, the user, 2026-11-14) A storehouse's finds lying on its floor, to pick up: Klutz's
 // dynamite (its own picture since 2026-11-16; it was Klutz's crate) and the rugged backpack.
-export const DYNAMITE_ART: ArtRef = { src: "/sprites/props/dynamite.png", w: 64, h: 64 };
+// (Since 2026-11-19 it's the Labyrinth Stone, the user: the quest's dynamite became the stone. Its id stays "dynamite".)
+export const DYNAMITE_ART: ArtRef = { src: "/sprites/items/labyrinth_stone.png", w: 64, h: 64 };
 export const BACKPACK_ART: ArtRef = { src: "/sprites/items/backpack.png", w: 64, h: 64 };
 
 const DEFS: ObjectDef[] = [

@@ -19,7 +19,7 @@ export const PROPS: PropEntry[] = [
   { id: "table", name: "Table", where: "Rooms, now and then" },
   { id: "deck", name: "Deck of cards", where: "On a table, now and then" },
   { id: "cage", name: "Cage", where: "The Encampment's camp, encampment rooms" },
-  { id: "dynamite", name: "Dynamite", where: "A storehouse's floor (glows till taken)" },
+  { id: "dynamite", name: "Labyrinth Stone", where: "A storehouse's floor (glows till taken; the dynamite till 2026-11-19)" },
   { id: "campfire", name: "Campfire", where: "Campfire rooms" },
   { id: "gem", name: "Healing gem", where: "Pool rooms" },
   { id: "torch", name: "Standing torch", where: "The way to the boss" },

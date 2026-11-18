@@ -109,7 +109,7 @@ export const barrelsOf = (key: string): "barrel" | "barrels" => {
 };
 // The dynamite glows on the floor round it till it's picked up (the user, 2026-11-17: "highlighted when first
 // found, to encourage them to loot"), as a deck's rarest card does.
-export const DYNAMITE_GLOW = { colour: "#ffb24a", radius: 0.7, strength: 0.55 };
+export const DYNAMITE_GLOW = { colour: "#5fe0d0", radius: 0.7, strength: 0.55 }; // (the Labyrinth Stone's teal: it was the dynamite's orange)
 
 // The campaign's Gear Barrel (the user, 2026-11-16): BARREL.h tall, BARREL.r round at the middle (ends×
 // that at the top and bottom), its staves (side.png) wrapped once round it, its open top packed with straw,

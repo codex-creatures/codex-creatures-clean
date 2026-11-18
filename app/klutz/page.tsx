@@ -517,22 +517,22 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       <button className="pixel-btn" onClick={game.questLend}>&ldquo;Deal.&rdquo;</button>,
     );
   }
-  // The tavern questline (lib/tavern.ts): Klutz wants dynamite for the rubble.
+  // The tavern questline (lib/tavern.ts): Klutz wants the Labyrinth Stone for the wall (the dynamite, till 2026-11-19).
   if (game.tavernDue) {
     return say(
       <>&ldquo;You&apos;re getting tough! See the Den&apos;s right-hand wall? I reckon there&apos;s a whole room behind it.
-        Find me some <b>dynamite</b> and we&apos;ll blow it open. Try a <b>storehouse</b> down there.&rdquo;</>,
-      <button className="pixel-btn" onClick={game.acceptTavernQuest}>&ldquo;I&apos;ll find some.&rdquo;</button>,
+        Find me a <b>Labyrinth Stone</b>: old magic that makes the walls down there move. Try a <b>storehouse</b>.&rdquo;</>,
+      <button className="pixel-btn" onClick={game.acceptTavernQuest}>&ldquo;I&apos;ll find one.&rdquo;</button>,
     );
   }
   if (game.tavern.accepted && !game.tavern.dynamite) {
     return say(
-      <>&ldquo;The <b>storehouse</b>&apos;s marked on your scroll. The dynamite&apos;s in there somewhere!&rdquo;</>,
+      <>&ldquo;The <b>storehouse</b>&apos;s marked on your scroll. The Labyrinth Stone&apos;s in there somewhere!&rdquo;</>,
       <Link href="/dungeon" className="pixel-btn">🌀 To the Labyrinth</Link>,
     );
   }
   if (game.tavern.dynamite && !game.tavern.blasted) {
-    return say(<>&ldquo;Dynamite! Take it to the <b>rubble</b> on the Den&apos;s right-hand wall and light it. Stand well back!&rdquo;</>,
+    return say(<>&ldquo;The Labyrinth Stone! Take it to the Den&apos;s right-hand wall and I&apos;ll set it in. Stand back: it moves!&rdquo;</>,
       <Link href="/" className="pixel-btn">🏠 To the Den</Link>);
   }
   if (game.tavern.blasted && !game.tavern.repaired) {

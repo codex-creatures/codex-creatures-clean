@@ -494,7 +494,7 @@ export default function DenRoom({ caged, klutz = "home", klutzNews = false, back
             <p style={{ fontSize: 14, lineHeight: 1.5, color: "#d8d4c8", margin: 0 }}>{notice.soon}</p>
             {notice === SPOTS[OBJ.tavern]
               ? rubble === "dynamite"
-                ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={(e) => { e.stopPropagation(); lightDynamite(); }}>🧨 Use the dynamite</button>
+                ? <button className="pixel-btn" style={{ marginTop: 12 }} onClick={(e) => { e.stopPropagation(); lightDynamite(); }}>🔷 Use the Labyrinth Stone</button>
                 : <div className="pixel-font" style={{ fontSize: 12, color: "#8a8a99", marginTop: 12 }}>Tap to close</div>
               : <div className="pixel-font" style={{ fontSize: 12, color: "#8a8a99", marginTop: 12 }}>Coming soon · tap to close</div>}
           </div>

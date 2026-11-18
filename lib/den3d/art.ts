@@ -33,3 +33,17 @@ export const SPARRING_TOP = pic("sparring-top", 125, 129);
 export const ARCH = pic("arch", 138, 73);
 export const PORTAL = pic("portal", 76, 81);
 export const NOTES = pic("board", 53, 39);
+export const PORTAL_ARCH = pic("portal-arch", 138, 73); // (the arch, mirrored and turned green: scripts/den-parts.mjs)
+
+// The 3D models' parts (the user, 2026-11-19: "the Soul Altar, the pool and the sparring pits need 3D models"),
+// cut from their approved pictures (scripts/den-parts.mjs) so the models keep those designs.
+const part = (name: string, w: number, h: number): Pic => ({ src: `/sprites/den3d/parts/${name}.png?v=${V}`, w, h });
+export const PARTS = {
+  fire: part("altar-fire", 72, 50),       // the altar's soul fire, its spirits rising
+  skull: part("altar-skull", 34, 26),     // the horned skull on the cauldron
+  lantern: part("altar-lantern", 13, 28), // a teal lantern at the plinth's corners
+  water: part("pool-water", 48, 34),      // the pool's water, its lily pads
+  sand: part("sand", 40, 40),             // the sparring pit's sand
+  stone: part("pit-stone", 48, 24),       // the pits' low walls (the Labyrinth's grey stone)
+  dummy: part("dummy", 30, 56),           // the sparring pit's dummy (PixelLab, styled on the old one)
+};

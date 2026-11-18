@@ -230,14 +230,14 @@ export default function RoomScreen({ run, room, notes, byId, gold, bagUsed, bagS
         </>
       ) : <>{sackPanel}{onward}</>)}
 
-      {/* Klutz's dynamite (lib/tavern.ts): among the crates, once any guard is beaten. */}
+      {/* The Labyrinth Stone (lib/tavern.ts; Klutz's dynamite till 2026-11-19): among the crates, once any guard is beaten. */}
       {dynamiteHere(room) && (
         <>
-          <p style={{ fontSize: 13, color: "#ffb38a", margin: "8px 0 0" }}>Behind the barrels: a crate stamped <b>DANGER</b>. Dynamite!</p>
-          <button className="pixel-btn tutorial-pulse" style={{ marginTop: 6 }} onClick={onDynamite}>🧨 Take the dynamite</button>
+          <p style={{ fontSize: 13, color: "#ffb38a", margin: "8px 0 0" }}>Behind the barrels: an old carved stone, glowing teal. The <b>Labyrinth Stone</b>!</p>
+          <button className="pixel-btn tutorial-pulse" style={{ marginTop: 6 }} onClick={onDynamite}>🔷 Take the Labyrinth Stone</button>
         </>
       )}
-      {room.dynamite === false && <p style={{ fontSize: 13, color: "#7CFC9A", margin: "8px 0 0" }}>🧨 Klutz&apos;s dynamite is yours.</p>}
+      {room.dynamite === false && <p style={{ fontSize: 13, color: "#7CFC9A", margin: "8px 0 0" }}>🔷 The Labyrinth Stone is yours.</p>}
 
       {room.kind === "encampment" && (
         <EncampmentPanel room={room} fuse={squadsOf(dungeonOf(run)).fuse} onCage={onCage} />

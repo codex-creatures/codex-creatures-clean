@@ -11,6 +11,7 @@
 // with how many other players are on now glowing over it while you're signed in.
 
 import { useEffect, useState } from "react";
+import { useOthersOnline } from "@/hooks/useOthersOnline";
 import PixelSprite from "@/components/PixelSprite";
 import { RoomSpot, VISITOR_HREF } from "@/components/DenRoom";
 import { RES, strollAt, strollLoop, VISITOR_PATH, VISITOR_SPEED, VISITOR_PAUSE } from "@/lib/den/scene";
@@ -19,7 +20,6 @@ import type { Sprite } from "@/lib/sprites/pixels";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { COLLECTOR, ENCHANTRESS, LIBRARIAN, MERCHANT } from "@/lib/sprites/props";
 import { tavernVisitors, type TavernQuest, type Visitor as VisitorKind } from "@/lib/tavern";
-import { lobbyAccount, onPlayersOnline, othersOnline, playersOnline } from "@/lib/online/duelChannel";
 
 const FIT = { width: "100%", height: "auto" }; // a sprite filling its spot in the room
 
@@ -52,13 +52,6 @@ const PORTAL_SCALE = 1.4;
 const PORTAL_BASE = { u: 0.05, v: 8.6, x: 48, y: 138 };
 const PORTAL_GLOW = { x: 48, y: 94 };
 
-// How many other players are in the lobby now (null: you're not in it, so nothing's shown).
-function useOthersOnline(): number | null {
-  const [ids, setIds] = useState(() => playersOnline());
-  useEffect(() => onPlayersOnline(setIds), []);
-  const me = lobbyAccount();
-  return me ? othersOnline(ids, me) : null;
-}
 
 // head: the Cyclops Head is up (lib/tavern.ts headUp); firstClearRun: the run you first beat the Cyclops on (marked on it).
 // pit: the Sparring or Training Pit, once the room's open (ready: a level waits to be taken).

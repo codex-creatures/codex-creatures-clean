@@ -353,7 +353,7 @@ export default function ScanPage() {
         </button>
         {tools && <>
         {!game.tavern.blasted && (
-          <button onClick={game.openRubbleForTesting} title="Open the rubble in the Den now, as if you'd done Klutz's quest and fetched the dynamite" style={dangerBtn}>
+          <button onClick={game.openRubbleForTesting} title="Open the rubble in the Den now, as if you'd done Klutz's quest and fetched the Labyrinth Stone" style={dangerBtn}>
             🧨 Open the rubble
           </button>
         )}

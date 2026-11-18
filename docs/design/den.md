@@ -44,26 +44,36 @@ placement (players could block themselves in). With it off, nothing changes.
   lanterns by the shack's and storehouse's doors, braziers in the tavern's room once it's open.
 - **The shape** (the user's drawing, 2026-11-19; lib/den3d/layout.ts): a **T**. A wide hall (12 × 11 floor
   each side) with a narrower nook (6 × 6 each side) rising from the middle of its back wall, split down the
-  middle by rock. Room 1 is the left half of each, room 2 the right. The rock stays through the nook and 3
-  rows into the hall (`STAYS`); only the rest of it (the rubble's wall, `WALL_GAP`) comes down. Each nook
-  has a tunnel north: room 1's is the Labyrinth's way in, room 2's shows once the wall's down (it leads
-  nowhere yet). All the rock south of the hall is the low rim, so nothing hides the hall's front at any angle.
-- **Room 1:** Klutz's shack in the hall's top-left corner (opens Klutz's page: his gear, crate and trips),
-  then the quest board and the bookcase along the hall's back wall; in the nook the cage (in an alcove), the
-  Labyrinth's arch and the Bestiary's lectern; in the hall the **storehouse** (the Inventory's weapons,
-  armour and consumables: `/chest?store=1`; codexes stay on the bookcase, creatures in the Pit), the Soul
-  Altar, the healing pool and the Pit; the rubble against the dividing rock. **Room 2** (the tavern's room):
-  the tavern in the hall's top-right corner, the PvP portal in the nook and the Sparring/Training Pit in the
-  hall (once the tavern has its pit, as before). No merchant stall and no bag in the Den (the user).
+  middle by a wall that all moves away once Klutz uses the Labyrinth Stone. Each nook has a tunnel in the
+  middle of its north wall, mirrored: room 1's the Labyrinth's (a sandstone arch), room 2's the **PvP portal**
+  (the same arch mirrored and turned green, a green swirl across its mouth, and its glowing count of players
+  online, numbers only). All the rock south of the hall is the low rim, so nothing hides the hall's front.
+- **What's where:** room 1: Klutz's shack in the hall's top-left corner (his page: gear, crate, trips), the
+  **storehouse** turned along the west wall, doors facing into the room (the Inventory's weapons, armour and
+  consumables: `/chest?store=1`), the Bestiary in the nook, and what you can move. Room 2: the tavern in the
+  hall's top-right corner, the portal, the Sparring/Training Pit (once the tavern has its pit).
+- **Moving things** (the user, 2026-11-19): hold a movable thing still (`LIFT_MS` 450 ms) and it lifts; drag
+  it and let go. Floor things (the Soul Altar with its two braziers, the healing pool, the Pit, and the
+  tavern's pit in its own half) snap to a half-unit grid in the middle of the hall (`floorZone`), clear of each
+  other; wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
+  the middle between them (once the wall's gone), and along the hall's back wall by the shack; dropping on a
+  taken slot swaps the two. Where it can't go it's red ("It won't fit there") and goes back. Kept in the save
+  in its own field (`den3d`, lib/den3d/placement.ts: only what's moved), so it goes with save files and cloud
+  saves; anything saved where it can't stand now goes back to its start. Klutz and visitors find their way
+  round wherever things stand (`routeLoop`).
+- **3D models** (the user, 2026-11-19): the Soul Altar (a two-tier plinth, a black cauldron with the horned
+  skull, teal lanterns, the soul fire and its spirits), the healing pool (a ring of stones round its water and
+  lily pads), the Pit (a stone frame, an iron grate) and the Sparring Pit (a low wall round sand, the dummy;
+  iron spikes once it's the Training Pit), their parts cut from the approved pictures (scripts/den-parts.mjs).
+- **Looking round:** drag past the walls into the dark (`LOOK_PAST` 4 u every way); pinch or scroll to zoom
+  (`ZOOM`: 8 to 24 units across, 15 to start).
 - **Options** (Settings, under New Den, per device: `codex_creatures_den3d_opts_v1`, the user, 2026-11-19):
-  **Names** on or off (off, only a name with a ❗ or the one Klutz's tour is showing stays); **Rubble**: the
-  stones left where the wall came down, shown or not; **View**: the camera's angle, 45° to 75° in 5° steps
+  **Names** on or off (off, only a name with a ❗ or the one Klutz's tour is showing stays); **View**: the camera's angle, 45° to 75° in 5° steps
   (60°, the Labyrinth's, by default). The art is drawn for 60°: other angles re-lay the walls' and floor's
   textures square on screen for that angle, and the rest keeps its 60° sizes, so they're to try.
-- **Looking round:** the camera can go past the Den's walls into the dark rock round it (`LOOK_PAST`: 4 u
-  either side, 2 above and below; the user, 2026-11-19: "so it feels like you can really look above the places").
-- **The rubble:** tap it; with Klutz's dynamite, blow it: the rubble's wall comes down (stones fall, the view
-  shakes and glides out to both rooms) and the hall is one (the nook stays split). Till then room 2 is black
+- **The old wall:** tap its socket (a stone post by the wall); once Klutz has the Labyrinth Stone, use it: the
+  ground rumbles and the whole wall, nook and hall, sinks into the floor (`SINK` 2.6 s), and the view glides
+  out to both rooms. Till then room 2 is black
   and the camera can't go past room 1. Opened, the Den first shows the middle of both rooms.
 - **No walking:** drag to look round (the view stays on what's open, and a little past it), tap a place to go in. Every place
   has its name over it (names that would overlap move apart), with a ❗ where something's waiting; Klutz's
@@ -97,16 +107,20 @@ fields optional with defaults.
    (either order). Only won hunts give him XP and a first catch takes him to Lv 2, so his level
    is the record of having hunted, and old saves work too. While he's out, the quest waits until
    he's home. Then a "!" shows over him; talking to him gives the quest, once.
-2. ✅ **Storehouse.** Once the quest is accepted and until you have the dynamite, a Labyrinth's
+   ✅ **The Labyrinth Stone** (the user, 2026-11-19): what Klutz wants is the Labyrinth Stone, old magic that
+   makes the Labyrinth's walls move, where it was dynamite (the same find, in the same place; the save keeps
+   the name `dynamite`, so whoever had the dynamite has the stone). In the new Den he sets it in the old wall's
+   socket and the whole wall moves away; in the old Den he uses it on the rubbled doorway.
+2. ✅ **Storehouse.** Once the quest is accepted and until you have the stone, a Labyrinth's
    Large Room is always a Storehouse, always marked on the scroll from the start (no extra room).
-   In the Deep (2 large rooms) only one is. The first-quest run has no large room. The dynamite
-   lies among its crates and barrels. Taking it is permanent: rooms go back to normal and you
-   can't get a second one. 🧪 Its usual mini-boss guard chance stays (the dynamite waits until the
-   guard's beaten). 🧪 The dynamite takes no bag slot and is yours the moment you pick it up, even if
+   In the Deep (2 large rooms) only one is. The first-quest run has no large room. The stone
+   lies among its crates and barrels (glowing teal). Taking it is permanent: rooms go back to normal and you
+   can't get a second one. 🧪 Its usual mini-boss guard chance stays (the stone waits until the
+   guard's beaten). 🧪 The stone takes no bag slot and is yours the moment you pick it up, even if
    the run then goes wrong (there's no second one). Both Claude's defaults; not asked.
 3. ✅ **Rubble.** A rubble-choked doorway on the Den's right-hand wall, between the bookcase
    corner and the merchant (the user's sketch: [ideas/den-second-room.png](../ideas/den-second-room.png)).
-   Using the dynamite on it (once) blows it open (a flash and a shake) into a passage to a second
+   Using the stone on it (once) opens it (a flash and a shake) into a passage to a second
    room. **Until then you can't see or pan over the second room at all.** It isn't a general
    destructible-walls system.
    ✅ **The room strip:** the Den and the tavern's room sit side by side in one view you drag across

@@ -322,7 +322,7 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   **The Cyclops** waits at the top of his lair (his sprite, drawn 2.6× a foe's size).
   (Its size, the guided rolling and the rule for a new dungeon's size: [walkable-layout.md](walkable-layout.md#size-and-guided-rolling).)
   Klutz's dynamite quest: the large room is its storehouse, marked. From world version 14 (the user,
-  2026-11-14) the dynamite (the crate stamped DANGER, den/crate.png) lies on the storehouse's floor with
+  2026-11-14) the dynamite (the Labyrinth Stone since 2026-11-19: a carved stone glowing teal, its id still `dynamite`) lies on the storehouse's floor with
   a "!" over it, and so does the rugged backpack when the storehouse has it (out of its crates:
   `Room.packOnFloor`): walk up and pick each up (behind the storehouse's guard, if it has one). In older
   runs the dynamite's yours as you reach its crates.

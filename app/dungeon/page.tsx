@@ -1022,7 +1022,7 @@ export default function DungeonPage() {
     if (what === "dynamite") {
       if (!dynamiteHere(c)) return;
       grabDynamite();
-      setNotes(["🧨 A crate stamped DANGER: Klutz's dynamite! It's yours."]);
+      setNotes(["🔷 Behind the barrels, glowing teal: the Labyrinth Stone! It's yours."]);
       return;
     }
     if (!c.packOnFloor) return;

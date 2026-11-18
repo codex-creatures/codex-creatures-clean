@@ -2,7 +2,7 @@
 // components/Decor3D.tsx: the dungeon's props in 3D (the user, 2026-11-16/17: "build 3D assets for the
 // dungeon's props"), built as the chest, crate and barrel are: simple shapes made here, their surfaces
 // PixelLab's, leaning as the rock does. In the game (✓, public/sprites/props/decor3d/ and lectern3d/): a
-// lidded barrel, alone or a pair (the user, 2026-11-17: two variants), stacked crates, clay pots, the dynamite,
+// lidded barrel, alone or a pair (the user, 2026-11-17: two variants), stacked crates, clay pots, the Labyrinth Stone (once the dynamite),
 // the librarian's lectern, a camp's cage.
 // `colour` (the game's Stone): unlit, tinted by the light where it stands; without it, lit (the labs).
 
@@ -71,16 +71,15 @@ function Pots({ colour }: { colour?: Tint }) {
     </group>))}</>);
 }
 
-// The dynamite: three red paper sticks standing bound together, a fuse curling up out of the middle one.
-const DYNAMITE_MATS = (make: typeof makeLit) => ({ paper: make({ map: tex(`${GAME}/dynamite-paper.png`, [0.34, 1]) }), end: make({ color: "#7a1f1a" }), fuse: make({ color: "#3a3226" }) });
+// The Labyrinth Stone (the user, 2026-11-19: it took the dynamite's place in Klutz's quest; its id stays
+// "dynamite"): a rounded, heavy carved stone in dark blue-grey (its picture's, items/labyrinth_stone.png), a
+// band of teal runes round it glowing, resting on the floor; the find's glow (DYNAMITE_GLOW) is teal too.
+const STONE_MATS = (make: typeof makeLit) => ({ rock: make({ color: "#3b4152", flatShading: true }), runes: make({ color: "#5fe0d0" }) });
 function Dynamite({ colour }: { colour?: Tint }) {
-  const m = useMats(DYNAMITE_MATS, colour);
-  const H = 0.36, r = 0.055;
+  const m = useMats(STONE_MATS, colour);
   return (<>
-    {[[-r * 1.05, 0], [r * 1.05, 0], [0, -r * 1.7]].map(([x, z], i) => (
-      <mesh key={i} position={[x, H / 2, z]} material={[m.paper, m.end, m.end]} raycast={() => null}><cylinderGeometry args={[r, r, H, 10]} /></mesh>
-    ))}
-    <mesh position={[0.02, H + 0.07, -0.05]} rotation={[0, 0, -0.5]} material={m.fuse} raycast={() => null}><cylinderGeometry args={[0.008, 0.008, 0.16, 5]} /></mesh>
+    <mesh position={[0, 0.16, 0]} scale={[1, 0.82, 1]} material={m.rock} raycast={() => null}><icosahedronGeometry args={[0.19, 1]} /></mesh>
+    <mesh position={[0, 0.17, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.runes} raycast={() => null}><torusGeometry args={[0.18, 0.018, 4, 18]} /></mesh>
   </>);
 }
 
