@@ -1,0 +1,301 @@
+{
+  "format": 1,
+  "id": "tavern",
+  "name": "Tavern",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/tavern-front.png",
+    "foot": [116, 47]
+  },
+  "parts": [
+    {
+      "id": "body",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [4.833333, 2, 3],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [0, 0, 232, 48],
+          "fit": "fill"
+        },
+        "*": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [56, 6, 20, 26],
+          "fit": "tile"
+        },
+        "top": {
+          "colour": "#2e1f14"
+        },
+        "bottom": {
+          "colour": "#1a120c"
+        }
+      }
+    },
+    {
+      "id": "sill",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [4.9533, 0.166667, 3.12],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a5d68"
+        },
+        "top": {
+          "colour": "#727582"
+        }
+      }
+    },
+    {
+      "id": "beam",
+      "kind": "box",
+      "at": [2.3567, 0, 1.47],
+      "size": [0.1875, 2.1, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "beam-2",
+      "kind": "box",
+      "at": [-2.356667, 0, 1.47],
+      "size": [0.1875, 2.1, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "flowerbox-1",
+      "kind": "box",
+      "at": [-1.5833, 0.4583, 1.56],
+      "size": [0.625, 0.25, 0.25],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a2e1a"
+        },
+        "front": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [26, 30, 28, 7],
+          "fit": "fill"
+        },
+        "top": {
+          "colour": "#4a6a2a"
+        }
+      }
+    },
+    {
+      "id": "sill-1",
+      "kind": "box",
+      "at": [-1.5833, 0.7083, 1.54],
+      "size": [0.583333, 0.0625, 0.125],
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "lintel-1",
+      "kind": "box",
+      "at": [-1.5833, 1.75, 1.54],
+      "size": [0.583333, 0.083333, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "flowerbox-2",
+      "kind": "box",
+      "at": [1, 0.4583, 1.56],
+      "size": [0.625, 0.25, 0.25],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a2e1a"
+        },
+        "front": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [150, 30, 28, 7],
+          "fit": "fill"
+        },
+        "top": {
+          "colour": "#4a6a2a"
+        }
+      }
+    },
+    {
+      "id": "sill-2",
+      "kind": "box",
+      "at": [1, 0.7083, 1.54],
+      "size": [0.583333, 0.0625, 0.125],
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "lintel-2",
+      "kind": "box",
+      "at": [1, 1.75, 1.54],
+      "size": [0.583333, 0.083333, 0.125],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "arch-post",
+      "kind": "box",
+      "at": [-0.7083, 0, 1.55],
+      "size": [0.166667, 1.5833, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a5d68"
+        },
+        "top": {
+          "colour": "#727582"
+        }
+      }
+    },
+    {
+      "id": "arch-post-2",
+      "kind": "box",
+      "at": [0.125, 0, 1.55],
+      "size": [0.166667, 1.5833, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a5d68"
+        },
+        "top": {
+          "colour": "#727582"
+        }
+      }
+    },
+    {
+      "id": "arch-cap",
+      "kind": "box",
+      "at": [-0.2917, 1.8333, 1.55],
+      "size": [1, 0.166667, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a5d68"
+        },
+        "top": {
+          "colour": "#727582"
+        }
+      }
+    },
+    {
+      "id": "sign-bracket",
+      "kind": "box",
+      "at": [1.9583, 1.7083, 1.65],
+      "size": [0.0625, 0.0625, 0.3],
+      "faces": {
+        "*": {
+          "colour": "#2a2a30"
+        }
+      }
+    },
+    {
+      "id": "sign",
+      "kind": "box",
+      "at": [1.9583, 0.5833, 1.78],
+      "size": [0.6, 1, 0.0625],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "front": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [196, 8, 29, 24],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "roof",
+      "kind": "wedge",
+      "at": [0, 1.95, 0],
+      "size": [5.3333, 1.4, 3.45],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/tavern-roof.png",
+          "crop": [80, 40, 24, 24],
+          "fit": "tile"
+        },
+        "back": {
+          "src": "/sprites/den3d/tavern-roof.png",
+          "crop": [80, 40, 24, 24],
+          "fit": "tile",
+          "tint": "#b8a890"
+        },
+        "left": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [56, 6, 20, 26],
+          "fit": "tile"
+        },
+        "right": {
+          "src": "/sprites/den3d/tavern-front.png",
+          "crop": [56, 6, 20, 26],
+          "fit": "tile"
+        },
+        "bottom": {
+          "colour": "#2e1f14"
+        }
+      }
+    },
+    {
+      "id": "ridge",
+      "kind": "box",
+      "at": [0, 3.25, 0],
+      "size": [5.4333, 0.125, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a3018"
+        },
+        "top": {
+          "colour": "#6a4a28"
+        }
+      }
+    }
+  ]
+}

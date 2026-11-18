@@ -9,6 +9,8 @@ import pit from "./pit.json";
 import pool from "./pool.json";
 import shack from "./shack.json";
 import sparring from "./sparring.json";
+import storehouse from "./storehouse.json";
+import tavern from "./tavern.json";
 import training from "./training.json";
 
-export const RECIPE_FILES: Record<string, unknown> = { altar, board, pit, pool, shack, sparring, training };
+export const RECIPE_FILES: Record<string, unknown> = { altar, board, pit, pool, shack, sparring, storehouse, tavern, training };

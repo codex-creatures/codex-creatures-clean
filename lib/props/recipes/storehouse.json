@@ -1,0 +1,214 @@
+{
+  "format": 1,
+  "id": "storehouse",
+  "name": "Storehouse",
+  "setting": "den",
+  "ref": {
+    "src": "/sprites/den3d/storehouse-front.png",
+    "foot": [82, 47]
+  },
+  "parts": [
+    {
+      "id": "body",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [3.416667, 2, 2.6],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [0, 0, 164, 48],
+          "fit": "fill"
+        },
+        "*": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34],
+          "fit": "tile"
+        },
+        "top": {
+          "colour": "#2e1f14"
+        },
+        "bottom": {
+          "colour": "#1a120c"
+        }
+      }
+    },
+    {
+      "id": "sill",
+      "kind": "box",
+      "at": [0, 0, 0],
+      "size": [3.5367, 0.166667, 2.72],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#5a5d68"
+        },
+        "top": {
+          "colour": "#727582"
+        }
+      }
+    },
+    {
+      "id": "beam",
+      "kind": "box",
+      "at": [1.6483, 0, 1.27],
+      "size": [0.1875, 2.1, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "beam-2",
+      "kind": "box",
+      "at": [-1.648333, 0, 1.27],
+      "size": [0.1875, 2.1, 0.1875],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "door-post",
+      "kind": "box",
+      "at": [-0.6458, 0, 1.35],
+      "size": [0.145833, 1.9167, 0.145833],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "door-post-2",
+      "kind": "box",
+      "at": [0.5625, 0, 1.35],
+      "size": [0.145833, 1.9167, 0.145833],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        }
+      }
+    },
+    {
+      "id": "lintel",
+      "kind": "box",
+      "at": [-0.0417, 1.75, 1.35],
+      "size": [1.375, 0.166667, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#3a2416"
+        },
+        "top": {
+          "colour": "#5a3a24"
+        }
+      }
+    },
+    {
+      "id": "barrel",
+      "kind": "cylinder",
+      "at": [-1.0625, 0, 1.6],
+      "size": [0.416667, 0.583333, 0.416667],
+      "sides": 10,
+      "taper": 0.9,
+      "outline": true,
+      "faces": {
+        "side": {
+          "colour": "#6a4426"
+        },
+        "top": {
+          "colour": "#8a5e36"
+        }
+      }
+    },
+    {
+      "id": "barrel-band",
+      "kind": "cylinder",
+      "at": [-1.0625, 0.38, 1.6],
+      "size": [0.4, 0.0625, 0.4],
+      "sides": 10,
+      "faces": {
+        "side": {
+          "colour": "#2a2a30"
+        },
+        "top": {
+          "colour": "#8a5e36"
+        }
+      }
+    },
+    {
+      "id": "sack",
+      "kind": "sprite",
+      "at": [-1.375, 0, 1.52],
+      "size": [0.375, 0.583333],
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [20, 18, 16, 28],
+          "fit": "fill"
+        }
+      }
+    },
+    {
+      "id": "roof",
+      "kind": "wedge",
+      "at": [0, 1.95, 0],
+      "size": [3.9167, 1.25, 3.05],
+      "outline": true,
+      "faces": {
+        "front": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [60, 30, 24, 24],
+          "fit": "tile"
+        },
+        "back": {
+          "src": "/sprites/den3d/storehouse-roof.png",
+          "crop": [60, 30, 24, 24],
+          "fit": "tile",
+          "tint": "#b8a890"
+        },
+        "left": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34],
+          "fit": "tile"
+        },
+        "right": {
+          "src": "/sprites/den3d/storehouse-front.png",
+          "crop": [130, 2, 26, 34],
+          "fit": "tile"
+        },
+        "bottom": {
+          "colour": "#2e1f14"
+        }
+      }
+    },
+    {
+      "id": "ridge",
+      "kind": "box",
+      "at": [0, 3.1, 0],
+      "size": [4.0167, 0.125, 0.166667],
+      "outline": true,
+      "faces": {
+        "*": {
+          "colour": "#4a3018"
+        },
+        "top": {
+          "colour": "#6a4a28"
+        }
+      }
+    }
+  ]
+}
