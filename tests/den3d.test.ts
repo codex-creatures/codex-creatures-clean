@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { FLOOR, ROCK, TUNNEL } from "@/lib/dungeon/floorplan";
 import {
-  denPlan, denShown, stations, strollAt, clampView, denArea, firstView, stationAt, denLights, BRAZIERS,
+  denPlan, denShown, stations, strollAt, clampView, denArea, firstView, stationAt, denLights, BRAZIERS, BRAZIERS_2,
   KLUTZ_LOOP, VISITOR_LOOP, STROLL, loopTime, ROOM1, ROOM2, DIVIDE_X, PLAN_W, type Station,
 } from "@/lib/den3d/layout";
 
@@ -78,7 +78,7 @@ describe("who strolls where", () => {
         if (at(pt.x, pt.y, opened) !== FLOOR) bad.push(`leg ${i} off the floor at ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`);
         const s = list.find((s) => inside(pt, box(s), 0.25));
         if (s) bad.push(`leg ${i} through ${s.key}`);
-        if (BRAZIERS.some((b) => Math.hypot(b.x - pt.x, b.y - pt.y) < 0.35)) bad.push(`leg ${i} through a brazier`);
+        if ([...BRAZIERS, ...BRAZIERS_2].some((b) => Math.hypot(b.x - pt.x, b.y - pt.y) < 0.35)) bad.push(`leg ${i} through a brazier`);
       }
     });
     return [...new Set(bad)];

@@ -39,8 +39,9 @@ placement (players could block themselves in). With it off, nothing changes.
   shader, the carved rock, the camera at 60°, the lean, 48 art pixels a unit at 15 units across), with
   the Den's own light: never pitch dark (`DEN_STONE` remember 0.3), warmer, from torches on the north
   walls, two braziers by the altar, the altar's fire and the tavern's windows (`denLights`). Walls 3 u
-  high (`DEN_WALL`; the Labyrinth's are 2.25): a cavern, the buildings under them. 🧪 The walls are the
-  Labyrinth's kit F till the Den has its own (warmer) kit.
+  high (`DEN_WALL`; the Labyrinth's are 2.25): a cavern, the buildings under them. 🧪 The walls and floor
+  are the Labyrinth's kit F, every pixel kept, recoloured warm sandstone and earth (scripts/den-kit-warm.mjs);
+  lanterns by the shack's and storehouse's doors, braziers in the tavern's room once it's open.
 - **The rooms** (lib/den3d/layout.ts): two 12 × 12 floors side by side with rock between. Room 1:
   Klutz's shack in the top-left corner (opens Klutz's page: his gear, his crate, his trips), the bookcase,
   the Labyrinth's passage north through the wall, the quest board and the cage (in an alcove) on the north
@@ -63,9 +64,15 @@ placement (players could block themselves in). With it off, nothing changes.
   potions back to storage, packed gear unpacked, found things into storage as before; a codex with no room
   on the bookcase stays in it), so you pack it at the Labyrinth's entrance each run. Off: as before.
 - **Art:** the bookcase, cage, lectern, barrels, crates, pots and torches are the Labyrinth's approved 3D
-  things. The shack, storehouse, tavern, altar, both pits, the board, the passage's arch and the portal are
-  plain stand-ins (🧪) till their art is made and approved: samples in `/lab/den` first (the switches there
-  set the rubble, Klutz, the tavern and visitors).
+  things. 🧪 Samples, waiting for the user's approval (lib/den3d/art.ts, public/sprites/den3d/, PIXELLAB.md;
+  the Den palette art/palettes/den.json), each drawn square on screen at 48 art pixels a unit, its size from
+  its picture: the **buildings** (shack, storehouse, tavern, and the tavern boarded up till it's repaired) as
+  boxes with their front painted on and a pitched roof (thatch, shingles, clay tiles); the **Soul Altar** as a
+  standing picture redrawn from the front, keeping the old one's design; the **Pit** and the **Sparring Pit**
+  seen from above on low stone blocks, redrawn from the old ones; the passage's **arch**, the **portal** and the
+  board's **notes** on the north wall. The **healing pool** from above, redrawn from the old one. `/lab/den` shows them, with
+  switches for the rubble, Klutz, the tavern and visitors. Names sit over everything, and a drag that starts on a
+  name still looks round.
 - Tests: tests/den3d.test.ts (the plan, nothing overlapping, the strolls clear of everything, the camera's
   limits, taps), tests/den3dBag.test.ts.
 

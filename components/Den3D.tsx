@@ -18,7 +18,7 @@ import * as THREE from "three";
 import { ROCK, type Floorplan, type Pt } from "@/lib/dungeon/floorplan";
 import {
   denPlan, denShown, denLit, denLights, stations, stationAt, strollAt, loopTime, clampView, denArea, firstView,
-  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, BRAZIERS, DEN_WALL, DIVIDE_X, ROOM1, type Station, type DenState,
+  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, BRAZIERS, BRAZIERS_2, DEN_WALL, DIVIDE_X, ROOM1, type Station, type DenState,
 } from "@/lib/den3d/layout";
 import { lightField, seenField, shadeAt, texelsPerU, pixelScale, WINDOW, SUB, type LightField } from "@/lib/render3d/stone";
 import { rockHeights, carvedMesh, uprightStretch, ROCK_MARGIN } from "@/lib/render3d/dungeon3d";
@@ -26,7 +26,8 @@ import {
   STONE, STONE_VERTEX, STONE_FRAGMENT, stoneUniforms, rawTexture, gridTexture, codeTexture, fillGrid,
   Upright, Mounted, Sconce, Stroller, FLAME_COLOUR,
 } from "@/components/WalkView3D";
-import { Prop3D, Glow, Ring, PROP_LEAN, CAMPFIRE_3D, makeFlat, bases, useTint, type Tint } from "@/components/Props3D";
+import { Prop3D, Glow, PROP_LEAN, makeFlat, bases, useTint, loaded, type Tint } from "@/components/Props3D";
+import { BUILDINGS, buildingWide, buildingWalls, ALTAR, POOL_TOP, PIT_TOP, SPARRING_TOP, ARCH, PORTAL, NOTES, ART_PX, FACE_PX, TOP_PX, type BuildingArt, type Pic } from "@/lib/den3d/art";
 import { Decor3D } from "@/components/Decor3D";
 import { WALK_TILES, KIT_LIGHTS, WALK_STANDING_TORCH, STANDING_TORCH_U, STANDING_TORCH_FLAME } from "@/lib/sprites/walk";
 import { NPC_U } from "@/lib/world/objects";
@@ -44,7 +45,9 @@ const ACROSS = 15;                // units across the screen
 const DENSITY = 48;               // art pixels a unit
 const HOLD_DRAG = 8;              // px a finger moves before it's a drag, not a tap
 const FALL_TIME = 0.9;            // s: the wall coming down
-const KIT = WALK_TILES[0].kit!;   // 🧪 the Labyrinth's walls, warmed by the light, till the Den has its own
+// 🧪 The Den's walls: the Labyrinth's kit F, every pixel kept, recoloured warm (scripts/den-kit-warm.mjs).
+const LAB_KIT = WALK_TILES[0].kit!;
+const KIT = { ...LAB_KIT, floor: "/sprites/den3d/kit-floor.png", north: "/sprites/den3d/kit-north.png", cap: "/sprites/den3d/kit-cap.png" };
 // The Den's light: warmer than the Labyrinth's and never pitch dark (it's home). 🧪
 const DEN_STONE = { ...STONE, remember: 0.3, gain: 1.15, warm: [1, 0.82, 0.6] as [number, number, number], flame: [1, 0.76, 0.5] as [number, number, number] };
 const FIRE_POWER = 0.8;           // 🧪 each light's strength (STONE.fire's 0.85 in the Labyrinth)
@@ -66,8 +69,8 @@ const VISITOR_LABEL: Record<Visitor, string> = { merchant: "Merchant", librarian
 export default function Den3D(p: Den3DProps) {
   const router = useRouter();
   const opened = p.rubble === "open";
-  const S: DenState = { opened, pit: !!p.pit, trainingPit: !!p.tavern.pit, repaired: !!p.tavern.repaired };
-  const list = useMemo(() => stations(S), [S.opened, S.pit, S.trainingPit, S.repaired]); // eslint-disable-line react-hooks/exhaustive-deps
+  const hasPit = !!p.pit, trainingPit = !!p.tavern.pit, repaired = !!p.tavern.repaired;
+  const list = useMemo(() => stations({ opened, pit: hasPit, trainingPit, repaired } satisfies DenState), [opened, hasPit, trainingPit, repaired]);
   const view = useRef<Pt>(lastView && lastView.opened === opened ? lastView.at : firstView(opened, PITCH));
   const span = useRef({ across: ACROSS, deep: 10 });  // floor units in view (set by the scene from its size)
   const camera = useRef<THREE.Camera | null>(null);
@@ -108,7 +111,9 @@ export default function Den3D(p: Den3DProps) {
     || (s.key === "board" && p.boardNews) || (s.key === "tavern" && p.tavernNews) || (s.key === "training" && !!p.pit?.ready);
 
   // ── Drag to look, tap to go in ──
-  const held = useRef<{ id: number; x: number; y: number; x0: number; y0: number; drag: boolean } | null>(null);
+  // (Over the whole picture, its names included: a drag that starts on a name still looks round, and a tap
+  // on one goes where the name says. `label`: the name a press started on.)
+  const held = useRef<{ id: number; x: number; y: number; x0: number; y0: number; drag: boolean; label: string | null } | null>(null);
   const floorAt = (clientX: number, clientY: number): Pt | null => {
     const cam = camera.current, el = pad.current;
     if (!cam || !el) return null;
@@ -118,7 +123,9 @@ export default function Den3D(p: Den3DProps) {
     return q ? { x: q.x, y: q.z } : null;
   };
   const down = (e: React.PointerEvent) => {
-    held.current = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, drag: false };
+    const t = e.target as HTMLElement;
+    if (t.closest("[data-den-window]")) return; // (the rubble's window: its own taps)
+    held.current = { id: e.pointerId, x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, drag: false, label: t.closest("[data-den-label]")?.getAttribute("data-den-label") ?? null };
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
   const drag = (e: React.PointerEvent) => {
@@ -137,6 +144,7 @@ export default function Den3D(p: Den3DProps) {
     if (!h || h.id !== e.pointerId) return;
     held.current = null;
     if (h.drag) return;
+    if (h.label) { tapName(h.label); return; }
     const at = floorAt(e.clientX, e.clientY);
     if (!at) return;
     const w = walkerAt(walkers, at);
@@ -144,6 +152,12 @@ export default function Den3D(p: Den3DProps) {
     const s = stationAt(list, at, PITCH);
     if (s) go(s);
   };
+  function tapName(id: string) {
+    const s = list.find((x) => x.key === id), w = walkers.find((x) => `walker:${x.key}` === id);
+    if (s) go(s);
+    else if (w) router.push(w.href);
+    else if (id === "walker:resting") router.push("/klutz");
+  }
   function go(s: Station) {
     if (s.key === "rubble") setNotice(true);
     else if (s.href) router.push(s.href);
@@ -156,12 +170,12 @@ export default function Den3D(p: Den3DProps) {
   }
 
   return (
-    <div className={shaking ? "screen-shake" : undefined} style={{ position: "relative", width: "100%", height: "100%", background: "#000", overflow: "hidden" }}>
-      <div ref={pad} onPointerDown={down} onPointerMove={drag} onPointerUp={up} onPointerCancel={() => { held.current = null; }}
-        style={{ position: "absolute", inset: 0, touchAction: "none", cursor: "grab" }}>
+    <div className={shaking ? "screen-shake" : undefined} onPointerDown={down} onPointerMove={drag} onPointerUp={up} onPointerCancel={() => { held.current = null; }}
+      style={{ position: "relative", width: "100%", height: "100%", background: "#000", overflow: "hidden", touchAction: "none" }}>
+      <div ref={pad} style={{ position: "absolute", inset: 0, touchAction: "none", cursor: "grab" }}>
         <Canvas resize={{ offsetSize: true }} orthographic flat gl={{ antialias: false, powerPreference: "high-performance" }}
           style={{ position: "absolute", inset: 0, background: "#000", imageRendering: "pixelated", touchAction: "none" }}>
-          <DenWorld opened={opened} repaired={S.repaired} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz} trainingPit={S.trainingPit}
+          <DenWorld opened={opened} repaired={repaired} list={list} walkers={walkers} caged={p.caged} klutz={p.klutz}
             viewRef={view} spanRef={span} glideRef={glide} cameraRef={camera} labelsRef={labels} fellAtRef={fellAt} />
         </Canvas>
       </div>
@@ -176,7 +190,7 @@ export default function Den3D(p: Den3DProps) {
       ))}
       {p.klutz === "pool" && <NameTag id="walker:resting" labels={labels} tour={`den-${OBJ.klutz}`} news={p.klutzNews} lit={p.highlight === OBJ.klutz} onTap={() => router.push("/klutz")} text="Klutz 💤" />}
       {notice && (
-        <div onClick={() => setNotice(false)} style={{ position: "absolute", inset: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}>
+        <div data-den-window onClick={() => setNotice(false)} style={{ position: "absolute", inset: 0, zIndex: 5, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", padding: 16 }}>
           <div className="stone-panel" style={{ maxWidth: 320, textAlign: "center" }}>
             <div className="pixel-font" style={{ fontSize: 18, color: "#f1d9a0", marginBottom: 8 }}>Rubble</div>
             <p style={{ fontSize: 14, lineHeight: 1.5, color: "#d8d4c8", margin: 0 }}>{SPOTS[OBJ.tavern].soon}</p>
@@ -193,7 +207,7 @@ export default function Den3D(p: Den3DProps) {
 // A place's name, over it on screen (the scene moves it each frame). Tapping it goes there, as the place does.
 function NameTag({ id, labels, tour, news, lit, onTap, text }: { id: string; labels: React.RefObject<Map<string, HTMLElement>>; tour?: string; news: boolean; lit: boolean; onTap: () => void; text: string }) {
   return (
-    <button ref={(el) => { if (el) labels.current.set(id, el); else labels.current.delete(id); }} data-tour={tour} onClick={onTap}
+    <button ref={(el) => { if (el) labels.current.set(id, el); else labels.current.delete(id); }} data-tour={tour} data-den-label={id} onClick={(e) => { if (e.detail === 0) onTap(); }}
       className={`pixel-font${news || lit ? " news-glow" : ""}`}
       style={{
         position: "absolute", left: 0, top: 0, visibility: "hidden", whiteSpace: "nowrap", zIndex: 2,
@@ -216,8 +230,8 @@ function walkerAt(walkers: Walker[], p: Pt): Walker | undefined {
 }
 
 // ── The scene ──
-function DenWorld({ opened, repaired, list, walkers, caged, klutz, trainingPit, viewRef, spanRef, glideRef, cameraRef, labelsRef, fellAtRef }: {
-  opened: boolean; repaired: boolean; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode; trainingPit: boolean;
+function DenWorld({ opened, repaired, list, walkers, caged, klutz, viewRef, spanRef, glideRef, cameraRef, labelsRef, fellAtRef }: {
+  opened: boolean; repaired: boolean; list: Station[]; walkers: Walker[]; caged?: string; klutz: KlutzMode;
   viewRef: React.RefObject<Pt>; spanRef: React.RefObject<{ across: number; deep: number }>; glideRef: React.RefObject<{ from: Pt; to: Pt; at: number } | null>;
   cameraRef: React.RefObject<THREE.Camera | null>; labelsRef: React.RefObject<Map<string, HTMLElement>>; fellAtRef: React.RefObject<number | null>;
 }) {
@@ -245,7 +259,7 @@ function DenWorld({ opened, repaired, list, walkers, caged, klutz, trainingPit, 
   return (
     <>
       <DenRock plan={plan} seen={seen} field={field} centre={centre} />
-      {list.map((s) => <Place key={s.key} s={s} tint={tint(s.x, s.y + s.d / 2)} stretch={stretch} caged={caged} trainingPit={trainingPit} repaired={repaired} />)}
+      {list.map((s) => <Place key={s.key} s={s} tint={tint(s.x, s.y + s.d / 2)} stretch={stretch} caged={caged} repaired={repaired} />)}
       {/* The torches on the north walls, and the braziers by the altar. */}
       {SCONCES.filter((c) => opened || c.x < DIVIDE_X).map((c, i) => {
         const [tw, th] = KIT_LIGHTS.torchSize, w = tw / DENSITY, h = th / DENSITY;
@@ -256,7 +270,7 @@ function DenWorld({ opened, repaired, list, walkers, caged, klutz, trainingPit, 
           </Mounted>
         );
       })}
-      {BRAZIERS.map((c, i) => {
+      {[...BRAZIERS, ...(opened ? BRAZIERS_2 : [])].map((c, i) => {
         const k = STANDING_TORCH_U / WALK_STANDING_TORCH.h, w = WALK_STANDING_TORCH.w * k, h = STANDING_TORCH_U * stretch, [fx, fy] = STANDING_TORCH_FLAME;
         return (
           <group key={`brazier${i}`}>
@@ -267,7 +281,7 @@ function DenWorld({ opened, repaired, list, walkers, caged, klutz, trainingPit, 
       })}
       {/* Odds and ends along the walls. */}
       <group position={[ROOM1.x + 0.1, 0, 4.6]}><Decor3D kind="crates" stretch={stretch} colour={tint(ROOM1.x + 0.1, 4.6)} /></group>
-      <group position={[ROOM1.x + 0.1, 0, 9.4]}><Decor3D kind="barrels" stretch={stretch} colour={tint(ROOM1.x + 0.1, 9.4)} /></group>
+      <group position={[ROOM1.x + 0.1, 0, 10]}><Decor3D kind="barrels" stretch={stretch} colour={tint(ROOM1.x + 0.1, 10)} /></group>
       <group position={[ROOM1.x + 0.1, 0, 12.8]}><Decor3D kind="pots" stretch={stretch} colour={tint(ROOM1.x + 0.1, 12.8)} /></group>
       {/* Klutz resting in the pool while he heals. */}
       {klutz === "pool" && pool && CREATURE_SPRITES.klutz && (() => {
@@ -406,12 +420,12 @@ function DenWalker({ w, stretch, shade }: { w: Walker; stretch: number; shade: (
 // The rock between the rooms, come down: stones all along where it stood (falling, the moment it goes).
 function FallenWall({ fellAtRef, shade }: { fellAtRef: React.RefObject<number | null>; shade: (x: number, y: number) => THREE.Color }) {
   const group = useRef<THREE.Group>(null);
+  const mats = useFlat(["#8e6d48", "#715639", "#a98659", "#55402b"], () => shade(DIVIDE_X, ROOM1.y + ROOM1.h / 2));
   const stones = useMemo(() => {
-    const out: { x: number; y: number; s: number; c: THREE.Color }[] = [];
-    const colours = ["#5e5248", "#4c433b", "#6d695e", "#3b352f"];
+    const out: { x: number; y: number; s: number; k: number }[] = [];
     for (let y = ROOM1.y; y < ROOM1.y + ROOM1.h; y++) for (let k = 0; k < 3; k++) {
       const r = (n: number) => (((y * 37 + k * 17 + n * 11) % 13) / 13) - 0.5;
-      out.push({ x: DIVIDE_X + r(1) * 1.4, y: y + r(2) * 0.9, s: 0.12 + 0.08 * ((k + y) % 3), c: new THREE.Color(colours[(y + k) % colours.length]) });
+      out.push({ x: DIVIDE_X + r(1) * 1.4, y: y + r(2) * 0.9, s: 0.12 + 0.08 * ((k + y) % 3), k: (y + k) % 4 });
     }
     return out;
   }, []);
@@ -422,16 +436,16 @@ function FallenWall({ fellAtRef, shade }: { fellAtRef: React.RefObject<number | 
   return (
     <group ref={group}>
       {stones.map((q, i) => (
-        <mesh key={i} raycast={() => null} position={[q.x, q.s * 0.5, q.y]} scale={[q.s, q.s * 0.7, q.s * 0.8]}>
-          <icosahedronGeometry args={[1, 0]} /><meshBasicMaterial color={q.c.clone().multiply(shade(q.x, q.y))} />
+        <mesh key={i} material={mats[q.k]} raycast={() => null} position={[q.x, q.s * 0.5, q.y]} scale={[q.s, q.s * 0.7, q.s * 0.8]}>
+          <icosahedronGeometry args={[1, 0]} />
         </mesh>
       ))}
     </group>
   );
 }
 
-// ── Each place (🧪 stand-ins where there's no art yet) ──
-function Place({ s, tint, stretch, caged, trainingPit, repaired }: { s: Station; tint: () => THREE.Color; stretch: number; caged?: string; trainingPit: boolean; repaired: boolean }) {
+// ── Each place (🧪 its art samples: lib/den3d/art.ts) ──
+function Place({ s, tint, stretch, caged, repaired }: { s: Station; tint: () => THREE.Color; stretch: number; caged?: string; repaired: boolean }) {
   const at: [number, number, number] = [s.x, 0, s.y];
   switch (s.key) {
     case "bookcase": return <group position={at}><Prop3D kind="bookcase" colour={tint} /></group>;
@@ -446,126 +460,107 @@ function Place({ s, tint, stretch, caged, trainingPit, repaired }: { s: Station;
         </group>
       );
     }
-    case "shack": return <Building at={at} w={s.w} d={s.d} wallH={1.7} roofH={1} wood="#5e432a" roof="#33271a" tint={tint} door />;
-    case "storehouse": return <Building at={at} w={s.w} d={s.d} wallH={1.9} roofH={1} wood="#483522" roof="#2c2a11" base="#4a4d45" tint={tint} door />;
-    case "tavern": return <Building at={at} w={s.w} d={s.d} wallH={2} roofH={1.1} wood={repaired ? "#6d452d" : "#483522"} roof={repaired ? "#563e2d" : "#2a2723"} base="#55544a" tint={tint} door windows={repaired} />;
-    case "arch": return <Arch s={s} tint={tint} />;
-    case "portal": return <><Arch s={s} tint={tint} />
-      <mesh raycast={() => null} position={[s.x, 1.05, s.y + 0.02]}><circleGeometry args={[0.62, 20]} /><meshBasicMaterial color="#5fae6e" /></mesh>
-      <group position={[s.x, 0, s.y + 0.6]}><Glow colour="#7fdc8a" radius={1.4} strength={0.3} /></group></>;
-    case "board": return <Board s={s} tint={tint} />;
-    case "altar": return <Altar at={at} tint={tint} />;
-    case "pool": return (
-      <group position={at} scale={[s.w / 2, 1, s.d / 2]}>
-        <Ring wide={2} tall={0.16} top={CAMPFIRE_3D.rim} rim={CAMPFIRE_3D.rim} rimPx={CAMPFIRE_3D.rimPx} sides={18} colour={tint} />
-        <mesh raycast={() => null} position={[0, 0.17, 0]} rotation={[-Math.PI / 2, 0, 0]}><circleGeometry args={[0.86, 28]} /><meshBasicMaterial color="#3d8f95" /></mesh>
-        <Glow colour="#5fe0d0" radius={0.9} strength={0.35} y={0.18} />
-      </group>
-    );
-    case "pit": case "training": return <Pit at={at} w={s.w} d={s.d} tint={tint} sand={s.key === "training"} dummy={s.key === "training"} grate={s.key === "pit"} trained={trainingPit} />;
+    case "shack": return <Building at={at} d={s.d} art={BUILDINGS.shack} tint={tint} />;
+    case "storehouse": return <Building at={at} d={s.d} art={BUILDINGS.storehouse} tint={tint} />;
+    case "tavern": return <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
+    case "arch": return <OnWall s={s} pic={ARCH} tint={tint} />;
+    case "portal": return (<>
+      <OnWall s={s} pic={PORTAL} tint={() => new THREE.Color(1, 1, 1)} />
+      <group position={[s.x, 0, s.y + 0.6]}><Glow colour="#7fdc8a" radius={1.4} strength={0.3} /></group>
+    </>);
+    case "board": return <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;
+    case "altar": {
+      const w = ALTAR.w / ART_PX, h = (ALTAR.h / ART_PX) * stretch;
+      return (<>
+        <Upright src={ALTAR.src} x={s.x} y={s.y + s.d / 2 - 0.2} w={w} h={h} below={0} colour={new THREE.Color(1, 1, 1)} />
+        <group position={at}><Glow colour="#5fe0d0" radius={2.2} strength={0.3} /></group>
+      </>);
+    }
+    case "pool": return (<>
+      <Slab at={at} pic={POOL_TOP} tint={tint} tall={0.04} />
+      <group position={at}><Glow colour="#5fe0d0" radius={1.1} strength={0.3} y={0.05} /></group>
+    </>);
+    case "pit": return <Slab at={at} pic={PIT_TOP} tint={tint} />;
+    case "training": return <Slab at={at} pic={SPARRING_TOP} tint={tint} />;
     case "rubble": return <Rubbled s={s} tint={tint} />;
   }
 }
 
-// Materials for a stand-in: flat colours tinted by the light where it stands, as the 3D things are.
+// A picture's material: flat, leaning as the rock does, tinted by the light where it stands. `uv`: only
+// part of it (x, y from the bottom, width, height, as fractions).
+function usePicture(src: string, tint: Tint, uv?: [number, number, number, number]) {
+  const key = uv?.join() ?? "";
+  const mat = useMemo(() => {
+    const t = loaded(src).clone();
+    const u = key ? key.split(",").map(Number) : null;
+    if (u) { t.offset.set(u[0], u[1]); t.repeat.set(u[2], u[3]); }
+    t.needsUpdate = true;
+    const m = makeFlat({ map: t, side: THREE.DoubleSide });
+    m.transparent = true; m.alphaTest = 0.5;
+    return m;
+  }, [src, key]);
+  useTint([mat], useMemo(() => bases([mat]), [mat]), tint);
+  return mat;
+}
+
+// A building (its art: lib/den3d/art.ts BUILDINGS): as wide as its front and as tall as its walls, the front
+// painted on, its ends a strip of the front's end, and a pitched roof running east-west: the roof's picture
+// on the slope facing you, its top part (darker) on the slope behind. Its gables in plain dark wood.
+function Building({ at, d, art, broken, tint }: { at: [number, number, number]; d: number; art: BuildingArt; broken?: boolean; tint: () => THREE.Color }) {
+  const w = buildingWide(art), wallH = buildingWalls(art), over = 0.15, half = d / 2 + over, rise = art.rise;
+  const front = usePicture((broken && art.broken ? art.broken : art.front).src, tint);
+  const end = usePicture(art.front.src, tint, [0, 0, 12 / art.front.w, 1]);
+  const roof = usePicture(art.roof.src, tint);
+  const back = usePicture(art.roof.src, () => tint().multiplyScalar(0.6), [0, 0.55, 1, 0.45]);
+  const gable = useFlat(["#2e1f14"], tint)[0];
+  const slope = Math.hypot(half, rise), tilt = Math.atan2(half, rise);
+  const gableGeo = useMemo(() => {
+    const g = new THREE.Shape();
+    g.moveTo(-d / 2, 0); g.lineTo(d / 2, 0); g.lineTo(0, rise); g.lineTo(-d / 2, 0);
+    return new THREE.ShapeGeometry(g);
+  }, [d, rise]);
+  return (
+    <group position={at}>
+      <mesh material={front} position={[0, wallH / 2, d / 2]} raycast={() => null}><planeGeometry args={[w, wallH]} /></mesh>
+      {[-1, 1].map((k) => <mesh key={k} material={end} position={[(k * w) / 2, wallH / 2, 0]} rotation={[0, (k * Math.PI) / 2, 0]} raycast={() => null}><planeGeometry args={[d, wallH]} /></mesh>)}
+      {[-1, 1].map((k) => <mesh key={`g${k}`} geometry={gableGeo} material={gable} position={[(k * w) / 2, wallH, 0]} rotation={[0, (k * Math.PI) / 2, 0]} raycast={() => null} />)}
+      <mesh material={roof} position={[0, wallH + rise / 2, half / 2]} rotation={[-tilt, 0, 0]} raycast={() => null}><planeGeometry args={[w + 2 * over, slope]} /></mesh>
+      <mesh material={back} position={[0, wallH + rise / 2, -half / 2]} rotation={[tilt, Math.PI, 0]} raycast={() => null}><planeGeometry args={[w + 2 * over, slope]} /></mesh>
+    </group>
+  );
+}
+
+// A picture on the north wall (the passage's arch, the portal, the board's notes on a plank backing), its
+// foot on the floor (the notes up off it), standing square on screen as the wall's own stone does.
+function OnWall({ s, pic, tint, backing }: { s: Station; pic: Pic; tint: () => THREE.Color; backing?: { colour: string; pad: number } }) {
+  const mat = usePicture(pic.src, tint), back = useFlat([backing?.colour ?? "#000000"], tint)[0];
+  const w = pic.w / ART_PX, h = pic.h / FACE_PX, up = backing ? 0.7 : 0;
+  return (
+    <group position={[s.x, up + h / 2, s.y + 0.02]}>
+      {backing && <mesh material={back} position={[0, 0, -0.005]} raycast={() => null}><planeGeometry args={[w + 2 * backing.pad, h + 2 * backing.pad]} /></mesh>}
+      <mesh material={mat} raycast={() => null}><planeGeometry args={[w, h]} /></mesh>
+    </group>
+  );
+}
+
+// A pit seen from above (its picture: the rim, and the grate or the sand), on a low block of stone.
+function Slab({ at, pic, tint, tall = 0.18 }: { at: [number, number, number]; pic: Pic; tint: () => THREE.Color; tall?: number }) {
+  const top = usePicture(pic.src, tint), side = useFlat(["#30322c"], tint)[0];
+  const w = pic.w / ART_PX, d = pic.h / TOP_PX;
+  return (
+    <group position={at}>
+      <mesh material={side} position={[0, tall / 2 - 0.01, 0]} raycast={() => null}><boxGeometry args={[w * 0.96, tall, d * 0.96]} /></mesh>
+      <mesh material={top} position={[0, tall, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><planeGeometry args={[w, d]} /></mesh>
+    </group>
+  );
+}
+
+// Materials for plain parts: flat colours tinted by the light where they stand, as the 3D things are.
 function useFlat(colours: string[], tint: Tint) {
   const key = colours.join();
   const mats = useMemo(() => key.split(",").map((c) => makeFlat({ color: c })), [key]);
   useTint(mats, useMemo(() => bases(mats), [mats]), tint);
   return mats;
-}
-
-// 🧪 A building, till its art: walls on a stone footing, a pitched roof running east-west, its door (and
-// lit windows) on the front.
-function Building({ at, w, d, wallH, roofH, wood, roof, base = "#3e412e", tint, door, windows }: { at: [number, number, number]; w: number; d: number; wallH: number; roofH: number;
-  wood: string; roof: string; base?: string; tint: () => THREE.Color; door?: boolean; windows?: boolean }) {
-  const [mWood, mRoof, mBase, mDark] = useFlat([wood, roof, base, "#141010"], tint);
-  const roofGeo = useMemo(() => {
-    const s = new THREE.Shape(), o = 0.15;
-    s.moveTo(-d / 2 - o, 0); s.lineTo(d / 2 + o, 0); s.lineTo(0, roofH); s.lineTo(-d / 2 - o, 0);
-    const g = new THREE.ExtrudeGeometry(s, { depth: w + 0.3, bevelEnabled: false });
-    g.translate(0, 0, -(w + 0.3) / 2); g.rotateY(Math.PI / 2);
-    return g;
-  }, [w, d, roofH]);
-  const foot = 0.3;
-  return (
-    <group position={at}>
-      <mesh material={mBase} position={[0, foot / 2, 0]} raycast={() => null}><boxGeometry args={[w, foot, d]} /></mesh>
-      <mesh material={mWood} position={[0, foot + (wallH - foot) / 2, 0]} raycast={() => null}><boxGeometry args={[w - 0.04, wallH - foot, d - 0.04]} /></mesh>
-      <mesh geometry={roofGeo} material={mRoof} position={[0, wallH, 0]} raycast={() => null} />
-      {door && <mesh material={mDark} position={[0, 0.62, d / 2 + 0.005]} raycast={() => null}><planeGeometry args={[0.7, 1.1]} /></mesh>}
-      {windows && [-1, 1].map((k) => (
-        <mesh key={k} position={[k * w * 0.3, 1.1, d / 2 + 0.006]} raycast={() => null}><planeGeometry args={[0.5, 0.4]} /><meshBasicMaterial color="#ffc46a" /></mesh>
-      ))}
-    </group>
-  );
-}
-
-// 🧪 A stone archway on the north wall (the Labyrinth's passage, the portal's frame), till its art.
-function Arch({ s, tint }: { s: Station; tint: () => THREE.Color }) {
-  const [stone, cap] = useFlat(["#55544a", "#646256"], tint);
-  const post = 0.35, h = 2.3;
-  return (
-    <group position={[s.x, 0, s.y + 0.1]}>
-      {[-1, 1].map((k) => <mesh key={k} material={stone} position={[k * (s.w / 2 + post / 2 - 0.1), h / 2, 0]} raycast={() => null}><boxGeometry args={[post, h, 0.3]} /></mesh>)}
-      <mesh material={cap} position={[0, h + 0.15, 0]} raycast={() => null}><boxGeometry args={[s.w + 2 * post, 0.3, 0.34]} /></mesh>
-    </group>
-  );
-}
-
-// 🧪 The quest board on the north wall: a plank board with notes pinned on it, till its art.
-function Board({ s, tint }: { s: Station; tint: () => THREE.Color }) {
-  const [wood, note, seal] = useFlat(["#5e432a", "#d5cbb1", "#844c2c"], tint);
-  return (
-    <Mounted x={s.x} y={s.y + 0.06} up={1.15}>
-      <mesh material={wood} raycast={() => null}><planeGeometry args={[s.w, 1]} /></mesh>
-      {[[-0.35, 0.18, 0.05], [0.12, 0.22, -0.06], [0.38, -0.15, 0.08], [-0.15, -0.2, -0.04]].map(([x, y, r], i) => (
-        <group key={i} position={[x, y, 0.01]} rotation={[0, 0, r]}>
-          <mesh material={note} raycast={() => null}><planeGeometry args={[0.32, 0.4]} /></mesh>
-          <mesh material={seal} position={[0, 0.15, 0.005]} raycast={() => null}><circleGeometry args={[0.04, 8]} /></mesh>
-        </group>
-      ))}
-    </Mounted>
-  );
-}
-
-// 🧪 The Soul Altar: a stone altar with its soul fire, till its art.
-function Altar({ at, tint }: { at: [number, number, number]; tint: () => THREE.Color }) {
-  const [stone, top] = useFlat(["#4a4d45", "#646256"], tint);
-  const fire = useRef<THREE.Group>(null);
-  useFrame(() => { const t = performance.now() / 160; if (fire.current) fire.current.scale.set(0.9 + 0.08 * Math.sin(t * 1.3), 1 + 0.12 * Math.sin(t), 1); });
-  return (
-    <group position={at}>
-      <mesh material={stone} position={[0, 0.25, 0]} raycast={() => null}><boxGeometry args={[1.7, 0.5, 1.5]} /></mesh>
-      <mesh material={stone} position={[0, 0.65, 0]} raycast={() => null}><boxGeometry args={[1.2, 0.3, 1.0]} /></mesh>
-      <mesh material={top} position={[0, 0.84, 0]} raycast={() => null}><boxGeometry args={[1.4, 0.08, 1.15]} /></mesh>
-      <group ref={fire} position={[0, 0.9, 0.1]}>
-        <mesh raycast={() => null}><coneGeometry args={[0.32, 0.9, 7]} /><meshBasicMaterial color="#5fd0c8" transparent opacity={0.85} /></mesh>
-        <mesh raycast={() => null} position={[0, -0.1, 0.05]}><coneGeometry args={[0.16, 0.5, 6]} /><meshBasicMaterial color="#d6fff6" /></mesh>
-      </group>
-      <Glow colour="#5fe0d0" radius={2.2} strength={0.3} />
-    </group>
-  );
-}
-
-// 🧪 A pit (the creatures' Pit under its iron grate; the tavern's sand Sparring/Training Pit with its dummy), till its art.
-function Pit({ at, w, d, tint, sand, dummy, grate, trained }: { at: [number, number, number]; w: number; d: number; tint: () => THREE.Color; sand: boolean; dummy: boolean; grate: boolean; trained: boolean }) {
-  const [floor, iron, post] = useFlat([sand ? "#a88a5a" : "#120d0a", "#3b352f", "#5e432a"], tint);
-  return (
-    <group position={at}>
-      <group scale={[w / 3, 1, d / 3]}>
-        <Ring wide={3} tall={0.3} top={CAMPFIRE_3D.rim} rim={CAMPFIRE_3D.rim} rimPx={CAMPFIRE_3D.rimPx} sides={20} colour={tint} />
-        <mesh material={floor} position={[0, 0.305, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}><circleGeometry args={[1.25, 30]} /></mesh>
-        {grate && [-0.75, -0.25, 0.25, 0.75].map((k) => <mesh key={k} material={iron} position={[k, 0.33, 0]} raycast={() => null}><boxGeometry args={[0.06, 0.04, 2.4]} /></mesh>)}
-        {grate && [-0.5, 0, 0.5].map((k) => <mesh key={`z${k}`} material={iron} position={[0, 0.34, k]} raycast={() => null}><boxGeometry args={[2.4, 0.04, 0.06]} /></mesh>)}
-      </group>
-      {dummy && (<>
-        <mesh material={post} position={[0, 0.3 + 0.6, 0]} raycast={() => null}><boxGeometry args={[0.12, 1.2, 0.12]} /></mesh>
-        <mesh material={post} position={[0, 1.2, 0]} raycast={() => null}><boxGeometry args={[0.8, 0.1, 0.1]} /></mesh>
-        {trained && <mesh material={iron} position={[0, 1.45, 0]} raycast={() => null}><sphereGeometry args={[0.16, 8, 6]} /></mesh>}
-      </>)}
-    </group>
-  );
 }
 
 // The rubble against the wall between the rooms: a heap of fallen stone.

@@ -62,23 +62,23 @@ export type DenState = { opened: boolean; pit: boolean; trainingPit: boolean; re
 export function stations(s: DenState): Station[] {
   const back = (d: number) => NORTH + d / 2; // a thing standing against the north wall: its y
   const out: Station[] = [
-    { key: "shack", obj: OBJ.crate, label: "Klutz's Den", href: "/klutz", x: 2.1, y: back(2.5), w: 3.2, d: 2.5, tall: 2.8, room: 1 },
-    { key: "bookcase", obj: OBJ.bookcase, label: "Bookcase", href: "/bookcase", x: 4.55, y: back(0.5), w: 1.25, d: 0.5, tall: 2, room: 1 },
-    { key: "arch", obj: OBJ.arch, label: "The Labyrinth", href: "/dungeon", x: (ARCH[0] + ARCH[1]) / 2, y: NORTH, w: 2, d: 0.2, tall: 2.6, wall: true, room: 1 },
-    { key: "board", obj: OBJ.quests, label: "Quest Board", href: "/board", x: 8.75, y: NORTH, w: 1.3, d: 0.2, tall: 2.2, wall: true, room: 1 },
+    { key: "shack", obj: OBJ.crate, label: "Klutz's Den", href: "/klutz", x: 2.15, y: back(2.5), w: 3.25, d: 2.5, tall: 3, room: 1 },
+    { key: "bookcase", obj: OBJ.bookcase, label: "Bookcase", href: "/bookcase", x: 4.4, y: back(0.5), w: 1.25, d: 0.5, tall: 2, room: 1 },
+    { key: "arch", obj: OBJ.arch, label: "The Labyrinth", href: "/dungeon", x: (ARCH[0] + ARCH[1]) / 2, y: NORTH, w: 2.9, d: 0.2, tall: 3, wall: true, room: 1 },
+    { key: "board", obj: OBJ.quests, label: "Quest Board", href: "/board", x: 8.75, y: NORTH, w: 1.35, d: 0.2, tall: 2.45, wall: true, room: 1 },
     { key: "cage", obj: OBJ.cage, label: "Cage", href: "/cage", x: (ALCOVE[0] + ALCOVE[1]) / 2, y: NORTH - 0.2, w: 1.1, d: 1.1, tall: 2.1, room: 1 },
     { key: "lectern", obj: OBJ.scroll, label: "Bestiary", href: "/guide", x: 8.4, y: 3.1, w: 0.8, d: 0.6, tall: 1.3, room: 1 },
-    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 2.2, y: 7.3, w: 3.4, d: 2.6, tall: 2.9, room: 1 },
-    { key: "altar", obj: OBJ.altar, label: "Soul Altar", href: "/altar", x: 6.5, y: 7, w: 2, d: 2, tall: 1.6, room: 1 },
-    { key: "pool", obj: OBJ.pool, label: "Healing Pool", href: "/pool", x: 4.6, y: 11.4, w: 2.6, d: 1.6, tall: 0.4, room: 1 },
-    { key: "pit", obj: OBJ.pit, label: "The Pit", href: "/pit", x: 10.4, y: 10.6, w: 3.4, d: 3, tall: 0.6, room: 1 },
+    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 2.25, y: 7.8, w: 3.45, d: 2.6, tall: 3, room: 1 },
+    { key: "altar", obj: OBJ.altar, label: "Soul Altar", href: "/altar", x: 6.5, y: 7, w: 2.2, d: 2, tall: 2, room: 1 },
+    { key: "pool", obj: OBJ.pool, label: "Healing Pool", href: "/pool", x: 4.6, y: 11.4, w: 2, d: 1.5, tall: 0.4, room: 1 },
+    { key: "pit", obj: OBJ.pit, label: "The Pit", href: "/pit", x: 10.4, y: 10.8, w: 2.6, d: 2.8, tall: 0.6, room: 1 },
   ];
   if (!s.opened) out.push({ key: "rubble", obj: OBJ.tavern, label: "Rubble", x: DIVIDE_X - 1, y: 7.5, w: 1, d: 2.4, tall: 1.6, room: 1 });
   else {
-    out.push({ key: "tavern", label: s.repaired ? "Tavern" : "Broken tavern", href: "/tavern", x: 22.9, y: back(3.1), w: 4.8, d: 3.1, tall: 3, room: 2 });
+    out.push({ key: "tavern", label: s.repaired ? "Tavern" : "Broken tavern", href: "/tavern", x: 22.9, y: back(3.1), w: 4.85, d: 3.1, tall: 3.1, room: 2 });
     if (s.pit) out.push(
-      { key: "portal", label: "PvP Portal", href: "/pvp", x: 15.8, y: NORTH, w: 1.6, d: 0.2, tall: 2.8, wall: true, room: 2 },
-      { key: "training", label: s.trainingPit ? "Training Pit" : "Sparring Pit", href: "/training", x: 17.8, y: 8.6, w: 3.2, d: 3, tall: 0.8, room: 2 },
+      { key: "portal", label: "PvP Portal", href: "/pvp", x: 15.8, y: NORTH, w: 1.6, d: 0.2, tall: 3.4, wall: true, room: 2 },
+      { key: "training", label: s.trainingPit ? "Training Pit" : "Sparring Pit", href: "/training", x: 17.8, y: 8.6, w: 2.6, d: 3.1, tall: 0.6, room: 2 },
     );
   }
   return out;
@@ -87,14 +87,19 @@ export function stations(s: DenState): Station[] {
 // ── Light ──
 // The Den's lights: torches on the north walls, two braziers by the altar, the altar's soul fire, and
 // (once it's open) the tavern's windows. Tile units and reach in tiles, as the Labyrinth's (stone.ts Light3D).
-export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5 }; // 🧪 reaches
-export const SCONCES: Pt[] = [{ x: 5.4, y: NORTH }, { x: 7.75, y: NORTH }, { x: 12.1, y: NORTH }, { x: 14.6, y: NORTH }, { x: 17.4, y: NORTH }, { x: 19.6, y: NORTH }];
+export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5, lantern: 3.5 }; // 🧪 reaches
+// (Room 1's passage has its light on its arch: ARCH_LIGHTS, no torch of its own.)
+export const SCONCES: Pt[] = [{ x: 12.1, y: NORTH }, { x: 14.6, y: NORTH }, { x: 17.4, y: NORTH }, { x: 19.6, y: NORTH }];
+export const ARCH_LIGHTS: Pt[] = [{ x: 5.3, y: NORTH }, { x: 7.7, y: NORTH }];
 export const BRAZIERS: Pt[] = [{ x: 5, y: 8.7 }, { x: 8, y: 8.7 }];
+export const BRAZIERS_2: Pt[] = [{ x: 15.2, y: 9.5 }, { x: 20.4, y: 9.5 }]; // (the tavern's room's, once it's open)
+const LANTERNS: Pt[] = [{ x: 2.6, y: 4.4 }, { x: 2.25, y: 9.5 }];           // (the shack's and the storehouse's doors)
 export function denLights(opened: boolean, repaired: boolean): { x: number; y: number; r: number }[] {
   const inRoom = (p: Pt) => opened || p.x < DIVIDE_X;
   return [
-    ...SCONCES.filter(inRoom).map((p) => ({ x: p.x, y: p.y + 0.6, r: DEN_LIGHT.torch })),
-    ...BRAZIERS.map((p) => ({ ...p, r: DEN_LIGHT.brazier })),
+    ...[...SCONCES.filter(inRoom), ...ARCH_LIGHTS].map((p) => ({ x: p.x, y: p.y + 0.6, r: DEN_LIGHT.torch })),
+    ...[...BRAZIERS, ...(opened ? BRAZIERS_2 : [])].map((p) => ({ ...p, r: DEN_LIGHT.brazier })),
+    ...LANTERNS.map((p) => ({ ...p, r: DEN_LIGHT.lantern })),
     { x: 6.5, y: 7, r: DEN_LIGHT.altar },
     ...(opened && repaired ? [{ x: 22.9, y: 5, r: DEN_LIGHT.tavern }] : []),
   ];

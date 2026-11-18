@@ -1,0 +1,77 @@
+{
+  "about": "The new Den's palette (docs/design/den.md, the new Den): the dungeon's (dungeon.json) plus warm sandstone, warm woods, straw and lamplight, for the Den's warmer look. Generated art is asked to use it.",
+  "from": "art/palettes/dungeon.json + hand-picked warm ramps (2026-11-18)",
+  "stone": [
+    "#0e0f0c",
+    "#1c1d15",
+    "#1f1e0a",
+    "#22221e",
+    "#2c2a11",
+    "#282a25",
+    "#333115",
+    "#30322c",
+    "#3a362e",
+    "#3e412e",
+    "#454239",
+    "#4a4d45",
+    "#55544a",
+    "#5a5d55",
+    "#646256",
+    "#6d695e"
+  ],
+  "wax": [
+    "#99907a",
+    "#aca38b",
+    "#c0b79e",
+    "#d5cbb1",
+    "#e8dfc2"
+  ],
+  "iron": [
+    "#2a2723",
+    "#3b352f",
+    "#4c433b",
+    "#5e5248"
+  ],
+  "rust": [
+    "#563e2d",
+    "#6d452d",
+    "#844c2c"
+  ],
+  "wood": [
+    "#33271a",
+    "#483522",
+    "#5e432a"
+  ],
+  "warmwood": [
+    "#2e1f14",
+    "#45301f",
+    "#5e432a",
+    "#7a5733",
+    "#97703f"
+  ],
+  "sandstone": [
+    "#3a2c1e",
+    "#55402b",
+    "#715639",
+    "#8e6d48",
+    "#a98659"
+  ],
+  "straw": [
+    "#5a4826",
+    "#7d6634",
+    "#a08648",
+    "#c2a65e"
+  ],
+  "lamp": [
+    "#e8963a",
+    "#ffc46a",
+    "#ffe2a0"
+  ],
+  "flame": [
+    "#962814",
+    "#d65c20",
+    "#f4a034",
+    "#fcd678",
+    "#fff4d2"
+  ]
+}

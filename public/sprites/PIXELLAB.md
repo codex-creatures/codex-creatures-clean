@@ -390,3 +390,27 @@ walk/samples/drafts/decor3d/, Pro Flash, seed 41, each styled on the flat decor 
 | decor3d/pack-leather.png, pack-bedroll.png, pack-pocket.png | jobs 249e8816-925a-4d1c-8ec1-664104af91a1, 694e9889-9a72-4bf0-8f72-d3edff76cb41, b02070f9-6d7e-47a8-9ebe-8d6ded3c7f57 (seed 51, styled on items/backpack.png): the backpack round 2 |
 | npcs/collector-walk.png | replaced 2026-11-17: job 455188f1-eaa0-4dbf-a24b-af76a160c43f (animate_image_pixminimax, seed 51, "exaggerated walk", from the still at 7, 2): the old one (a0336eb3…) barely moved |
 | npcs/collector-walk.png | 2026-11-17: the same frames in reverse order (played forwards he moonwalked) |
+
+## The new Den, samples (2026-11-18; in the new Den behind Settings → New Den, and /lab/den)
+
+Drawn for the Labyrinth's camera, square on screen at 48 art pixels a unit (lib/den3d/art.ts). All Pro Flash, the
+Den palette (art/palettes/den.json: the dungeon's plus warm woods, sandstone, straw and lamplight) where named, and
+an approved picture as the style image. Samples till the user approves them.
+
+| File | Source |
+|---|---|
+| den3d/kit-*.png | the Labyrinth's kit F, every pixel kept, recoloured to warm sandstone walls and a warm earth floor by scripts/den-kit-warm.mjs (no generation) |
+| den3d/shack-front.png | job e5618e47-50c5-4a9d-9e1a-34bb56f0c5e9 (156 × 48, Den palette, bookcase3d/front.png as style, seed 11) |
+| den3d/storehouse-front.png | job 17541c9a-7f40-4122-b59d-7b883b54be58 (164 × 48, Den palette, bookcase3d/front.png as style, seed 12) |
+| den3d/tavern-front.png | job 24bca767-0c4f-41a5-96b6-378b8570f27b (232 × 48, Den palette, bookcase3d/front.png as style, seed 13) |
+| den3d/tavern-broken-front.png | job c95ba0d3-7257-4eac-978b-9efca3a2e7d1 (edit_image_pro_flash of tavern-front.png: boarded up, seed 25) |
+| den3d/shack-roof.png | job ad54bee3-def9-47c0-89f6-2b4e23b19dc0 (156 × 80 thatch, Den palette, shack-front.png as style, seed 21) |
+| den3d/storehouse-roof.png | job 8f544b49-2c62-4d9c-b133-8a821373cec2 (164 × 84 shingles, the Den's woods, shack-front.png as style, seed 41; the first, ba186087…, came out slate) |
+| den3d/tavern-roof.png | job 5d8764eb-aa9f-4552-b2fc-82e6f41428ac (232 × 96 clay tiles, Den palette, tavern-front.png as style, seed 23) |
+| den3d/board.png | job df570608-baa3-43f4-9bbe-21e72b09ea61 (64 × 48, the quest notes, bookcase3d/front.png as style, seed 24; trimmed to 53 × 39) |
+| den3d/altar.png | job 3584425f-09cc-40e8-818f-c4fefdc084c2 (128 × 128, den/altar.png as style: the Soul Altar seen from the front, seed 31; trimmed to 105 × 122) |
+| den3d/pit-top.png | job 7256423b-67b0-4dee-bcac-df0ed95f2a06 (224 × 144, den/pit.png as style, from above, seed 32; trimmed to 125 × 115) |
+| den3d/sparring-top.png | job 97bcbdc7-52f9-41da-b239-f2708bd31b27 (224 × 144, den/training-pit.png as style, from above, seed 33; trimmed to 125 × 129) |
+| den3d/portal.png | job 94a95c96-5d6a-420a-bbe5-348159121f05 (80 × 88, a crop of the first try, 32bd4366…, as style, itself styled on den/pvp-portal-4.png; seed 37; trimmed to 76 × 81) |
+| den3d/arch.png | job 4db8075f-31ea-4c08-a00d-7d4de4ccc0c3 (128 × 80, a crop of the first try, f8e841e9…, as style, styled on den3d/kit-north.png; seed 36): it came back cut off on the left, so its right half was mirrored here into a whole arch, 138 × 73 |
+| den3d/pool-top.png | job ed93c744-cf91-4fc9-ad4d-4bcd6881be8e (124 × 68, props/healing_pool.png as style, from above, seed 42; trimmed to 95 × 63) |
