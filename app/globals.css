@@ -813,6 +813,8 @@ html:has(.game-shell), body:has(.game-shell) { height: 100%; overflow: hidden; }
 
 /* The Den as a map (components/DenRoom.tsx): fills its space; pinch / wheel
    to zoom, drag to look around (the page does not scroll or zoom under it). */
+/* The new Den: holding a thing picks it up, so nothing in it selects as text or opens the press-and-hold menu. */
+.den3d-pad, .den3d-pad * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 .den-viewport { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 .den-world { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 

@@ -274,7 +274,8 @@ export default function Den3D(p: Den3DProps) {
   }
 
   return (
-    <div className={shaking ? "screen-shake" : undefined} onPointerDown={down} onPointerMove={drag} onPointerUp={up} onPointerCancel={cancel}
+    // (den3d-pad: a long press picks things up, so it never selects text or opens the phone's press-and-hold menu.)
+    <div className={shaking ? "den3d-pad screen-shake" : "den3d-pad"} onContextMenu={(e) => e.preventDefault()} onPointerDown={down} onPointerMove={drag} onPointerUp={up} onPointerCancel={cancel}
       onWheel={(e) => zoomTo(across * (e.deltaY > 0 ? 1.1 : 1 / 1.1))}
       style={{ position: "relative", width: "100%", height: "100%", background: "#000", overflow: "hidden", touchAction: "none" }}>
       <div ref={pad} style={{ position: "absolute", inset: 0, touchAction: "none", cursor: moving ? "grabbing" : "grab" }}>
