@@ -143,19 +143,31 @@ describe("Blood Sacrifice", () => {
     expect(burst).toBeTruthy();
     expect(pool(s)).toBeUndefined();
   });
-  it("a replacement meets it as the next round starts", () => {
+  it("a replacement meets it at once, as it steps in (the user, 2026-11-20: it waited for the next round)", () => {
     const s = createBattle([big(fighter("dreadpox", ["Blood Sacrifice", "Zap"]), 400)], [fighter("moss_wolf", ["Strike"]), big(fighter("dire_wolf", ["Strike"]), 1000)], { B: [1] });
     resolveRound(s, { A: attack("Blood Sacrifice"), B: attack("Strike") });
     expect(s.needsReplacement).toEqual(["B"]);
-    sendInReplacement(s, "B", 1);
-    expect(s.sides.B.team[1].hp).toBe(1000); // not yet
     const n = s.log.length;
-    resolveRound(s, { A: attack("Zap"), B: attack("Strike") });
+    sendInReplacement(s, "B", 1);
     const ev = since(s, n);
-    const entry = ev.findIndex((e) => e.type === "effect" && e.kind === "blood");
-    expect(entry).toBeGreaterThan(-1);
-    expect(ev[entry]).toMatchObject({ damage: 200 });
-    expect(entry).toBeLessThan(ev.findIndex((e) => e.type === "attack"));
+    expect(ev[0]).toMatchObject({ type: "sendIn", side: "B" });
+    expect(ev.find((e) => e.type === "effect" && e.kind === "blood")).toMatchObject({ damage: 200 });
+    expect(s.sides.B.team[1].hp).toBe(800);
+    // …and not again as the next round starts.
+    const m = s.log.length;
+    resolveRound(s, { A: attack("Zap"), B: attack("Strike") });
+    expect(since(s, m).some((e) => e.type === "effect" && e.kind === "blood" && (e as { text?: string }).text?.includes("steps into"))).toBe(false);
+  });
+  it("knocked out stepping in: another's needed (or the fight's over)", () => {
+    const s = createBattle([big(fighter("dreadpox", ["Blood Sacrifice", "Zap"]), 400)], [fighter("moss_wolf", ["Strike"]), big(fighter("dire_wolf", ["Strike"]), 1000), big(fighter("glob", ["Strike"]), 1000)], { B: [1, 1] });
+    resolveRound(s, { A: attack("Blood Sacrifice"), B: attack("Strike") });
+    sendInReplacement(s, "B", 1);
+    expect(s.sides.B.team[1].hp).toBe(0);
+    expect(s.needsReplacement).toEqual(["B"]);
+    expect(s.winner).toBeFalsy();
+    sendInReplacement(s, "B", 2);
+    expect(s.needsReplacement).toEqual([]);
+    expect(s.sides.B.active).toBe(2);
   });
   it("Undead are untouched: no bleeding, and coming in doesn't count", () => {
     const s = setup(["rattlebones", "dire_wolf"]);

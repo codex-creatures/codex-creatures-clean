@@ -277,7 +277,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
     const before = match.state;
     const after = cloneBattle(before);
     resolveRound(after, { A: action, B: chooseAiAction(after, "B", match.level) });
-    if (after.needsReplacement.includes("B")) sendInReplacement(after, "B", chooseAiReplacement(after, "B", match.level));
+    // (Again if one's knocked out stepping in, onto caltrops or blood.)
+    while (after.needsReplacement.includes("B") && !after.winner) sendInReplacement(after, "B", chooseAiReplacement(after, "B", match.level));
     // The guided fight moves on a step with each move your first creature makes.
     const step = match.tutorial !== undefined && match.tutorial >= 0 && action.kind === "attack" && before.sides.A.active === 0 ? { tutorial: match.tutorial + 1 } : {};
     const done: Match = { ...match, state: after, ...step };

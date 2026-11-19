@@ -94,8 +94,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   - **Blood Sacrifice** (Undead, magic, Epic; the user, 2026-11-03): 70 energy, no damage; Dark
     Seal's learners. The caster pays 25% of its max HP, which can knock it out (the user, 2026-11-03). A **blood pool** lies
     under the foes (a *ground effect*, below): 5% max HP at the end of each round to whoever they
-    have out, 20% to each creature that comes in (a swap at once; a replacement as the next round
-    starts); the 3rd comer sets off a 25-power magic hit with the caster's stats, and the pool is
+    have out, 20% to each creature that comes in, at once, a swap or a replacement (the user, 2026-11-20:
+    replacements waited for the next round; caltrops the same; a poison cloud is breathed in at once
+    and does its harm round by round; knocked out stepping in, another's sent in); the 3rd comer sets off a 25-power magic hit with the caster's stats, and the pool is
     gone. Whoever the caster's side has out heals 50% of all of it. Undead are untouched, and one
     coming in doesn't count. 🧪 Claude's picks: it's Undead-race (for the burst's race multiplier);
     casting it again replaces the pool (the count restarts). (Both confirmed by the user.)

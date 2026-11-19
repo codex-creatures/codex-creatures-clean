@@ -368,7 +368,7 @@ function fight(klutz: Fighter, hp: number, foe: Fighter): { won: boolean; hpAfte
   const s = createBattle([klutz], [foe], { A: [hp] });
   while (!s.winner) {
     resolveRound(s, { A: chooseAiAction(s, "A", "easy"), B: chooseAiAction(s, "B", "easy") });
-    for (const k of [...s.needsReplacement]) sendInReplacement(s, k, chooseAiReplacement(s, k, "easy"));
+    for (let k = s.needsReplacement[0]; k && !s.winner; k = s.needsReplacement[0]) sendInReplacement(s, k, chooseAiReplacement(s, k, "easy"));
   }
   return { won: s.winner === "A", hpAfter: Math.max(0, s.sides.A.team[0].hp), rounds: s.round };
 }

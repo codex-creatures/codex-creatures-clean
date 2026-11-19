@@ -285,7 +285,7 @@ export type BattleSide = {
   boss?: BossState;        // set when this side is a scripted boss
   blessing?: { round: number; heal: number; by: string }; // Healing Blessing: heals whoever is on the field in that round
   ground?: GroundEffect[]; // lying under this side's field (a blood pool)
-  arrived?: number;        // sent in between rounds: the ground greets it as the next round starts
+  arrived?: number;        // (old saved fights) sent in between rounds: the ground greets it as the next round starts
 };
 
 export type BattleEvent =
@@ -1121,10 +1121,16 @@ export function sendInReplacement(state: BattleState, key: SideKey, index: numbe
   if (!state.needsReplacement.includes(key)) return state;
   if (index === s.active || !s.team[index] || s.team[index].hp <= 0) throw new Error(`Invalid replacement ${index} for side ${key}`);
   changeActive(state, key, index);
-  s.arrived = index; // (a blood pool or caltrops greet it as the next round starts)
-  cloudPoison(state, key, index); // (a cloud, at once)
   state.needsReplacement = state.needsReplacement.filter((k) => k !== key);
   state.log.push({ type: "sendIn", side: key, name: activeOf(s).name, index });
+  // Whatever lies there greets it at once, as it does a swap (the user, 2026-11-20; it waited for the next round):
+  // caltrops and a blood pool hit now; a cloud's poison is breathed in now and does its harm round by round.
+  groundOnEntry(state, key, index);
+  // Knocked out stepping in: the fight may be over, or it needs another.
+  if (activeOf(s).hp <= 0) {
+    checkWinner(state);
+    if (!state.winner) state.needsReplacement = [...state.needsReplacement, key];
+  }
   return state;
 }
 

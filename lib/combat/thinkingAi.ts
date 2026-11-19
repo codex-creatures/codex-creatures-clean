@@ -73,7 +73,8 @@ const scratch = (state: BattleState) => cloneBattle({ ...state, log: [] });
 const greedy = (s: BattleState, k: SideKey) => aiChooseAction(s, k, { canSwap: true });
 
 function fillReplacements(s: BattleState) {
-  for (const k of [...s.needsReplacement]) sendInReplacement(s, k, aiChooseReplacement(s, k));
+  // (Until none's needed: one can be knocked out stepping in, onto caltrops or blood.)
+  for (let k = s.needsReplacement[0]; k && !s.winner; k = s.needsReplacement[0]) sendInReplacement(s, k, aiChooseReplacement(s, k));
 }
 
 // Play `rounds` more rounds with the greedy AI on both sides.
