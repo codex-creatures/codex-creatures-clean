@@ -26,8 +26,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   attack. The Moves tab and the codex "forget which?" won't give up the last one; a set saved
   without one gets its first steady move back in the last slot (`resolveMoves`). The Rest button
   is gone (the engine's "pass" stays as a safety net: with nothing affordable, a creature rests by itself).
-- ✅ **Who used what:** while a round plays out, the line above the moves says "Moss Wolf used
-  Gore" ("Foe's …" for theirs) in place of the energy bar.
+- ✅ **Who used what:** as each move is used, a note across the top of the stage says "Moss Wolf used
+  Gore" ("Foe's …" for theirs), like the Labyrinth's notes, and stays 4 s (`MOVE_NOTE_MS`; the next move
+  replaces it; the user, 2026-11-20: it was in the dock's line, gone with its step).
 - ✅ **Precise hits:** 5% chance, ignoring 25% of defence, and 1.75× damage (`PRECISE_DAMAGE`, the user, 2026-10-24; a brief try at 75% ignored instead was reverted).
 - **The armour gap was removed** (the user, 2026-10-25): repeating a move no longer raises the
   precise chance or cracks armour. The Perfectionist soul stone is the only thing that rewards
@@ -230,7 +231,7 @@ How it came about, round by round: history.md.
   (i) says how its race lands; no hint on the tile. The Bestiary's "How fights work" has the race
   chart and a calculator; Labyrinth fights have a race chart button (▲▼).
 - ✅ **Style colours in a fight** (the user, 2026-10-30; `STYLE_COLOR` in components/BattleScreen.tsx):
-  as a move is used, its name in the dock's line ("Foe's Moss Wolf used Gore") and the damage it
+  as a move is used, its name in the note at the top ("Foe's Moss Wolf used Gore") and the damage it
   does are in its style's colour: red melee, green ranged, blue magic (a precise or crippling hit's
   number keeps its own colour). Under the damage: EFFECTIVE! / RESISTED for its race, WEAK SPOT! for a
   boss's weak spot.

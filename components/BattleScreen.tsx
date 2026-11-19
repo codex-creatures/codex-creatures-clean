@@ -79,6 +79,7 @@ export function tutorialSteps(me: Combatant): TutorialStep[] {
 }
 const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial === 0 && tutorialSteps(activeOf(m.state.sides.A))[0].allow !== null));
 const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
+const MOVE_NOTE_MS = 4000; // the last move used stays up at the top this long (the user, 2026-11-20: it went too fast)
 
 // What the screen shows about each team member (gear names etc.).
 // creatureId: for its sprite (fights saved before sprites show initials).
@@ -421,8 +422,19 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const stuck = affordableSkills(me).length === 0 && !playing && !finished && !mustReplace && !notStarted;
   useEffect(() => { if (stuck) onAct({ kind: "pass" }); }, [stuck]); // eslint-disable-line react-hooks/exhaustive-deps
   // What's happening now, in words ("Moss Wolf used Gore"), while a round plays out.
-  const caption = (replaying && fx && "caption" in fx ? fx.caption : undefined) ?? waitText;
-  const captionMove = replaying && fx?.kind === "attack" ? fx : undefined; // the move, in its style's colour
+  // The move just used ("Moss Wolf used Gore", the move in its style's colour): at the top of the stage, like the
+  // Labyrinth's notes, kept MOVE_NOTE_MS after its step (the next move replaces it). The dock's line: waiting, or energy.
+  const [moveNote, setMoveNote] = useState<{ caption: string; move?: string; style?: Skill["type"]; n: number } | null>(null);
+  const moveSeen = useRef(0);
+  useEffect(() => {
+    if (!replaying || !fx || !("caption" in fx) || !fx.caption) return;
+    const n = ++moveSeen.current;
+    const said: string = fx.caption;
+    setMoveNote({ caption: said, ...(fx.kind === "attack" ? { move: fx.move, style: fx.style } : {}), n });
+    const t = window.setTimeout(() => setMoveNote((m) => (m?.n === n ? null : m)), MOVE_NOTE_MS);
+    return () => window.clearTimeout(t);
+  }, [fx, replaying]);
+  const caption = waitText;
 
   // A panel opened over the stage, from the dock.
   const over = (title: string, body: React.ReactNode) => (
@@ -442,6 +454,12 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
     <div className={`battle-layout${ill ? " screen-shake" : ""}`}>
       {/* ── The stage: everything above the dock ── */}
       <div className={`battle-stage${roomStage ? " battle-stage-room" : ""}`}>
+        {moveNote && (
+          <div className="stone-panel pixel-font" title={moveNote.move ? `${moveNote.caption} ${moveNote.move}` : moveNote.caption}
+            style={{ position: "absolute", top: 6, left: 8, right: 8, zIndex: 5, pointerEvents: "none", textAlign: "center", fontSize: 15, color: "#f1d9a0", padding: "6px 10px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {moveNote.caption}{moveNote.move && <> <span style={{ color: STYLE_COLOR[moveNote.style!] }}>{moveNote.move}</span></>}
+          </div>
+        )}
         {ill && (
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#d7a6ff", borderColor: "#b06cff" }}>
             🤢 Your {you.team[fx.index]?.name ?? "creature"} suffers an illness
@@ -557,11 +575,11 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
         ) : (
           <>
             {/* Energy, thin, across the top of the dock. While a round plays
-                out, the same line says who used what. (A fixed height either way.) */}
+                out, the move used shows at the top of the stage instead (moveNote). (A fixed height either way.) */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, height: 20 }}>
               {caption ? (
-                <span className="pixel-font" title={captionMove ? `${caption} ${captionMove.move}` : caption} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 14, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {caption}{captionMove && <> <span style={{ color: STYLE_COLOR[captionMove.style] }}>{captionMove.move}</span></>}
+                <span className="pixel-font" title={caption} style={{ flex: 1, minWidth: 0, textAlign: "center", fontSize: 14, color: "#f1d9a0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {caption}
                 </span>
               ) : (
                 <>
