@@ -152,6 +152,11 @@ export default function Den3D(p: Den3DProps) {
     return out;
   }, [p.klutz, p.klutzNews, opened, p.tavern, blocked]);
 
+  // Every place's page loaded in the background as the Den opens, so a tap goes straight in (taps go by
+  // router.push, which doesn't fetch ahead as a link does; the user, 2026-11-20: going in was slow).
+  const hrefs = [...new Set([...list.flatMap((s) => (s.href ? [s.href.split("?")[0]] : [])), "/klutz", VISITOR_HREF])].join("|");
+  useEffect(() => { for (const h of hrefs.split("|")) router.prefetch(h); }, [hrefs, router]);
+
   // What's waiting where (a ❗ on its name).
   const news = (s: Station) => (s.key === "shack" && (p.crateNews || (p.klutz !== "home" && p.klutzNews))) || (s.key === "cage" && p.cageNews)
     || (s.key === "board" && p.boardNews) || (s.key === "tavern" && p.tavernNews) || (s.key === "training" && !!p.pit?.ready) || (s.key === "rubble" && p.rubble === "dynamite");
