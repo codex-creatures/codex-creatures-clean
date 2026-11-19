@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { DAILY_BOX, DAILY_GEAR, PRIMARY_QUESTS, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, openQuests, questsOfDay, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
+import { DAILY_BOX, DAILY_GEAR, PRIMARY_QUESTS, SECONDARY_QUESTS, canClaim, claimDaily, dailyDone, dailyFor, dailyQuest, dayKey, noteDaily, openQuests, questsOfDay, hasCardsToSummon, dailyNews, rollDailyReward, rollRarity, todaysQuests, type DailyCtx } from "../lib/daily";
 import { guestOf, merchantCalls, SUMMON_STAY } from "../lib/tavern";
 import type { Rarity } from "../lib/items/budgets";
+import type { Drop } from "../lib/types";
 
 const ORDER: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const rank = (r: Rarity) => ORDER.indexOf(r);
 // Someone who's done everything, and someone who's done nothing.
-const VET: DailyCtx = { wins: { 0: 1, 1: 1, 2: 1, 3: 1 }, online: true, klutz: true };
-const NEW: DailyCtx = { wins: {}, online: false, klutz: false };
+const VET: DailyCtx = { wins: { 0: 1, 1: 1, 2: 1, 3: 1 }, online: true, klutz: true, tavern: true, cards: true };
+const NEW: DailyCtx = { wins: {}, online: false, klutz: false, tavern: false, cards: false };
 // A day whose quests are these (primary, secondary).
 const dayFor = (primary: string, secondary?: string) => {
   for (let d = 1; d < 2000; d++) {
@@ -40,6 +41,19 @@ describe("the daily quests", () => {
     expect(dailyQuest("duel", NEW).id).toBe("battles");
     expect(dailyQuest("klutz", NEW).id).toBe("battles");
     expect(dailyQuest("scans", NEW).id).toBe("scans");
+    // A sale pays the merchant, who calls at the repaired tavern; a summon needs three matching cards.
+    expect(dailyQuest("sell", NEW).id).toBe("battles");
+    expect(dailyQuest("sell", { ...NEW, tavern: true }).id).toBe("sell");
+    expect(dailyQuest("summon", NEW).id).toBe("battles");
+    expect(dailyQuest("summon", { ...NEW, cards: true }).id).toBe("summon");
+  });
+
+  it("three cards of one creature can be summoned; three of different ones, or creatures, can't", () => {
+    const card = (creatureId: string, dropType = "card") => ({ id: Math.random().toString(), dropType, creatureId }) as unknown as Drop;
+    expect(hasCardsToSummon([card("a"), card("a"), card("a")])).toBe(true);
+    expect(hasCardsToSummon([card("a"), card("a"), card("b")])).toBe(false);
+    expect(hasCardsToSummon([card("a"), card("a"), card("a", "creature")])).toBe(false);
+    expect(hasCardsToSummon([])).toBe(false);
   });
 
   it("the quests are fixed for the day once set, even after a first win", () => {
@@ -135,5 +149,15 @@ describe("the Den's reminder", () => {
     expect(openQuests(s)[1]).toMatchObject({ i: 1, progress: 5, done: true });
     s = claimDaily(s, 1);
     expect(openQuests(s).map((x) => x.q.id)).toEqual(["cyclops"]);
+  });
+
+  it("marks the board only for a quest that can be claimed now: a sale's merchant waits for the tavern", () => {
+    const day = dayFor("cyclops", "sell");
+    let s = dailyFor({}, day, VET);
+    expect(dailyNews(s, true)).toBe(false);
+    s = noteDaily(s, "sell", 300, day, VET);
+    expect(dailyNews(s, true)).toBe(true);
+    expect(dailyNews(s, false)).toBe(false); // (a day fixed before the repair rule: the claim button waits too)
+    expect(dailyNews(claimDaily(s, 1), true)).toBe(false);
   });
 });

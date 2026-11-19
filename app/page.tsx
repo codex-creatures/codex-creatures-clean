@@ -21,7 +21,7 @@ import { OBJ } from "@/lib/den/scene";
 import { canBlast, headUp, tavernVisitors } from "@/lib/tavern";
 import Glyph from "@/components/Glyph";
 import { canClaimNext, loadCampaign, readCampaignCtx } from "@/lib/campaign";
-import { DAILY_ONLINE, canClaim, todayDaily } from "@/lib/daily";
+import { DAILY_ONLINE, dailyNews, todayDaily } from "@/lib/daily";
 import { useTour } from "@/hooks/useTour";
 import { tourDenTarget } from "@/lib/tour";
 import { hasPit, hydraStep } from "@/lib/trainingPit";
@@ -64,7 +64,7 @@ export default function Home() {
   const rubble = game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut";
   const pit = hasPit(game.tavern) ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined;
   const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).length > 0;
-  const boardNews = game.hydrated && ((klutzHelping(game.quest) && canClaimNext(loadCampaign(), readCampaignCtx())) || hydraStep(game.tavern, clears, deepClears) === "claim" || [0, 1].some((i) => canClaim(todayDaily(DAILY_ONLINE), i)));
+  const boardNews = game.hydrated && ((klutzHelping(game.quest) && canClaimNext(loadCampaign(), readCampaignCtx())) || hydraStep(game.tavern, clears, deepClears) === "claim" || dailyNews(todayDaily(DAILY_ONLINE), !!game.tavern.repaired));
   const crateNews = game.hydrated && game.crate.length > 0;
   const cageNews = game.hydrated && game.caged.length > 0 && highlight !== OBJ.cage;
 

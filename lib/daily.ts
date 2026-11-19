@@ -4,7 +4,9 @@
 // same for everyone (picked from the date), new at local midnight. A quest
 // you can't do yet steps down to one you can (dailyQuest): the Abyss to the
 // Hydra, the Hydra to the Cyclops, the Cyclops to the Encampment, unless
-// you've beaten it before. Which quests you got is fixed for the day the
+// you've beaten it before; a duel offline, Klutz before he helps, a sale
+// before the tavern's repaired and a summon without three matching cards, to
+// winning fights. Which quests you got is fixed for the day the
 // first time they're looked at, so a first win doesn't swap them mid-day.
 // Progress counts from midnight. Once one's done you claim its reward, once.
 //
@@ -13,7 +15,7 @@
 // its merchant) write it.
 
 import { readSave, writeSaveField } from "./save";
-import type { Drop } from "./types";
+import { isCardDrop, type Drop } from "./types";
 import type { Rarity } from "./items/budgets";
 import { RARITY_WEIGHTS } from "./items/budgets";
 import { ITEM_KEYS } from "./items/ceilings";
@@ -23,9 +25,10 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import { materialBundle, toolDrop } from "./items/materials";
 import { CREATURES_BY_RARITY } from "./creatures/creatureData";
-import { makeCreatureDrop } from "./creatures/summon";
+import { makeCreatureDrop, CARDS_TO_SUMMON } from "./creatures/summon";
 import { rollBarcodeOutcome } from "./barcodeRegistry";
 import { klutzHelping, type QuestState } from "./quest";
+import { TAVERN_FIELD } from "./tavern";
 import type { DungeonId } from "./dungeon/run";
 import { readOnlineConfig } from "./online/config";
 
@@ -79,9 +82,11 @@ const QUEST_BY_ID = new Map([...PRIMARY_QUESTS, ...SECONDARY_QUESTS].map((q) => 
 export const questById = (id: string) => QUEST_BY_ID.get(id);
 
 // What decides whether you can do a quest yet: final bosses you've beaten
-// (per dungeon), whether this copy of the game has online (duels), and
-// whether Klutz hunts for you yet.
-export type DailyCtx = { wins: Partial<Record<DungeonId, number>>; online: boolean; klutz: boolean };
+// (per dungeon), whether this copy of the game has online (duels), whether
+// Klutz hunts for you yet, whether the tavern's repaired (the merchant, the
+// sales quest's reward, calls there), and whether you hold CARDS_TO_SUMMON
+// cards of one creature (something to summon).
+export type DailyCtx = { wins: Partial<Record<DungeonId, number>>; online: boolean; klutz: boolean; tavern: boolean; cards: boolean };
 // A quest you can't do yet, and what it steps down to.
 const STEP_DOWN: Record<string, { can: (c: DailyCtx) => boolean; to: string }> = {
   abyss:   { can: (c) => (c.wins[3] ?? 0) > 0, to: "hydra" },
@@ -89,6 +94,8 @@ const STEP_DOWN: Record<string, { can: (c: DailyCtx) => boolean; to: string }> =
   cyclops: { can: (c) => (c.wins[1] ?? 0) > 0, to: "camp" },
   duel:    { can: (c) => c.online, to: "battles" },
   klutz:   { can: (c) => c.klutz, to: "battles" },
+  sell:    { can: (c) => c.tavern, to: "battles" },
+  summon:  { can: (c) => c.cards, to: "battles" },
 };
 export function dailyQuest(id: string, ctx: DailyCtx): DailyQuest {
   let q = questById(id) ?? SECONDARY_QUESTS[0];
@@ -129,10 +136,19 @@ export function noteDaily(s: DailyState, event: DailyEvent, amount: number, day:
   const qs = todaysQuests(t);
   return { ...t, progress: t.progress.map((n, i) => (qs[i].event === event && !t.claimed[i] ? n + amount : n)) };
 }
+// The merchant calls at the tavern, so a quest paying it waits for the repair.
+// (dailyQuest steps it down before the repair; this covers a day whose quests
+// were fixed before that rule.)
+export const waitsForTavern = (q: DailyQuest, repaired: boolean) => q.reward === "merchant" && !repaired;
 export const dailyDone = (s: Required<DailyState>, i: number) => s.progress[i] >= todaysQuests(s)[i].goal;
 export const canClaim = (s: Required<DailyState>, i: number) => dailyDone(s, i) && !s.claimed[i];
 export const claimDaily = (s: Required<DailyState>, i: number): Required<DailyState> =>
   (canClaim(s, i) ? { ...s, claimed: s.claimed.map((c, j) => c || j === i) } : s);
+
+// Something on the board to claim now (the Den marks the board): a quest done,
+// not claimed, and not waiting for the tavern.
+export const dailyNews = (s: Required<DailyState>, repaired: boolean) =>
+  todaysQuests(s).some((q, i) => canClaim(s, i) && !waitsForTavern(q, repaired));
 
 // What the Den reminds you of as you come in (a popup, once a day per visit:
 // components/DailyPopup.tsx): today's quests not yet claimed, with how far
@@ -194,7 +210,7 @@ export function loadDaily(): DailyState {
   const d = readSave()[DAILY_FIELD];
   return d && typeof d === "object" ? (d as DailyState) : {};
 }
-// What you can do, from the save: bosses beaten, and Klutz. online: this copy has it.
+// What you can do, from the save: bosses beaten, Klutz, the tavern and your cards. online: this copy has it.
 export function dailyCtx(online: boolean): DailyCtx {
   const save = readSave();
   const meta = ((save.labyrinth as { meta?: Record<string, unknown> } | undefined)?.meta ?? {}) as Record<string, number | undefined>;
@@ -202,7 +218,15 @@ export function dailyCtx(online: boolean): DailyCtx {
     wins: { 0: meta.campClears ?? 0, 1: meta.clears ?? 0, 2: meta.deepClears ?? 0, 3: meta.abyssClears ?? 0 },
     online,
     klutz: !!save.quest && klutzHelping(save.quest as QuestState),
+    tavern: !!(save[TAVERN_FIELD] as { repaired?: boolean } | undefined)?.repaired,
+    cards: hasCardsToSummon(Array.isArray(save.inventory) ? (save.inventory as Drop[]) : []),
   };
+}
+// CARDS_TO_SUMMON cards of one creature among these.
+export function hasCardsToSummon(inventory: Drop[]): boolean {
+  const n = new Map<string, number>();
+  for (const d of inventory) if (isCardDrop(d) && d.creatureId) n.set(d.creatureId, (n.get(d.creatureId) ?? 0) + 1);
+  return [...n.values()].some((k) => k >= CARDS_TO_SUMMON);
 }
 // Today's quests and progress, fixed in the save the first time (see the top).
 export function todayDaily(online: boolean): Required<DailyState> {

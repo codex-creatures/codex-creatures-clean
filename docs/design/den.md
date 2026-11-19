@@ -285,8 +285,12 @@ at home (Inventory, altar, crate, tavern, materials) and to the Labyrinth's merc
 in any dungeon; rooms are each run's finished rooms, counted as it ends; a mini boss includes a
 guarded storehouse but not the Encampment's chief. A duel counts only when won in battle. Klutz
 steps down to the fights quest until he hunts for you, and duels do in a copy without online.
-The merchant replaces whoever's at the tavern for 2 runs, and can't be claimed until the
-tavern's repaired (progress still counts). A reward with no room (chest boxes, the bookcase for a
+✅ The user, 2026-11-19: the sales quest steps down to the fights quest until the tavern's
+repaired (its merchant calls there), and the summoning quest until you hold 3 cards of one
+creature (`hasCardsToSummon`). Like every step down, it's settled when the day's quests are
+first seen. The merchant replaces whoever's at the tavern for 2 runs; a sales quest fixed before
+this rule still can't be claimed until the repair (progress still counts), and the Den doesn't
+mark the board for it (`dailyNews`). A reward with no room (chest boxes, the bookcase for a
 codex, the altar for a Code Cache) waits until there is.
 
 ### The campaign (✅ the user, 2026-11-16; lib/campaign.ts)

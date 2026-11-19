@@ -25,7 +25,7 @@ import { CHAPTERS, CRATE_NAMES, PLANS_TAKEN_GOLD, rewardBlocked, type CampaignRe
 import { klutzHelping } from "@/lib/quest";
 import { useRouter } from "next/navigation";
 import { hydraStep } from "@/lib/trainingPit";
-import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, type DailyQuest, type DailyReward } from "@/lib/daily";
+import { DAILY_ONLINE, canClaim, claimDaily, dailyCtx, dailyFor, dayKey, loadDaily, rollDailyReward, todayDaily, todaysQuests, updateDaily, waitsForTavern, type DailyQuest, type DailyReward } from "@/lib/daily";
 import { CACHE_LIMIT } from "@/hooks/useGameState";
 import CodeCache from "@/components/CodeCache";
 import ClaimBurst, { type ClaimShow } from "@/components/ClaimBurst";
@@ -173,7 +173,7 @@ function QuestList() {
   const daily = dailyFor(loadDaily(), dayKey(), dailyCtx(DAILY_ONLINE));
   const quests = todaysQuests(daily);
   // The merchant calls at the tavern, so that one waits for the repair.
-  const waits = (q: DailyQuest) => q.reward === "merchant" && !game.tavern.repaired;
+  const waits = (q: DailyQuest) => waitsForTavern(q, !!game.tavern.repaired);
   // note: the quest's note (its reward picture is where the celebration starts).
   function claim(i: number, note: Element | null) {
     const q = quests[i];
