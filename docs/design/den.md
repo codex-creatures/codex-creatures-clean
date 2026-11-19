@@ -63,7 +63,16 @@ placement (players could block themselves in). With it off, nothing changes.
   in its own field (`den3d`, lib/den3d/placement.ts: only what's moved), so it goes with save files and cloud
   saves; anything saved where it can't stand now goes back to its start. Klutz and visitors find their way
   round wherever things stand (`routeLoop`).
-- **3D models** (the user, 2026-11-19): the Soul Altar (a two-tier plinth, a black cauldron with the horned
+- **Props from recipes** (the user approved them for the new Den, 2026-11-19, to try with players): the Soul Altar,
+  the healing pool, the Pit, the Sparring and Training Pits, the quest board, Klutz's shack, the storehouse and the
+  tavern (once repaired; the boarded-up one keeps its old look) are drawn from their recipes (lib/props/recipes,
+  world/art-pipeline.md §6.6) by Den3DPlaces' `Place` (`Made`): the buildings and the board with their backs to
+  their wall (the storehouse turned to face east from the west wall), the rest in the middle of their footprints.
+  They're lit by a key light from the upper left (`DEN_KEY`, Den3D: only the recipes take it) times the Den's own
+  light where they stand, as the old drawings were tinted. Footprints, slots, taps and moving them are unchanged.
+  A recipe that won't read falls back to its old drawing (lib/props/recipes/load.ts). The user's verdict: the altar
+  the most impressive, the Pit the least detailed and next to improve.
+- **3D models** (the user, 2026-11-19, now the fallbacks for the props above): the Soul Altar (a two-tier plinth, a black cauldron with the horned
   skull, teal lanterns, the soul fire and its spirits), the healing pool (a ring of stones round its water and
   lily pads), the Pit (a stone frame, an iron grate) and the Sparring Pit (a low wall round sand, the dummy;
   iron spikes once it's the Training Pit), their parts cut from the approved pictures (scripts/den-parts.mjs).

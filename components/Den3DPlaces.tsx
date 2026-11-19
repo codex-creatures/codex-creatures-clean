@@ -18,14 +18,35 @@ import { BUILDINGS, buildingWide, buildingWalls, ARCH, PORTAL_ARCH, ARCH_HOLE, P
 import { DEN_WALL, DIVIDE_X, WALL_GAP, NOOK_N, type Station } from "@/lib/den3d/layout";
 import { CREATURE_SPRITES } from "@/lib/sprites/creatures";
 import { artFor } from "@/lib/sprites/art";
+import { PropRecipe3D } from "@/components/PropRecipe3D";
+import { recipeOf } from "@/lib/props/recipes/load";
+import { recipeReach, type Recipe } from "@/lib/props/recipe";
 
 const SOUL = "#5fe0d0"; // the altar's and pool's teal
 const GREEN = "#7fdc8a"; // the portal's
 
 // Each place. `tint`: the light where it stands (red while it's being moved somewhere it can't go).
-export function Place({ s, tint, stretch, caged, repaired, trainingPit, stoneReady }: { s: Station; tint: () => THREE.Color; stretch: number; caged?: string;
-  repaired: boolean; trainingPit: boolean; stoneReady: boolean }) {
+// The props built from recipes (lib/props/recipes; the user approved them for the new Den, 2026-11-19) stand in
+// for their old drawings: the altar, the pool, the pits, the board and the buildings (the tavern once it's repaired).
+// Without its recipe (one that won't read), a place keeps its old drawing.
+// `classic`: the old drawings, never the recipes (the prop builder's "what the game draws now", to compare).
+export function Place({ s, tint, stretch, pitch = Math.PI / 3, caged, repaired, trainingPit, stoneReady, classic = false }: { s: Station; tint: () => THREE.Color; stretch: number; pitch?: number; caged?: string;
+  repaired: boolean; trainingPit: boolean; stoneReady: boolean; classic?: boolean }) {
   const at: [number, number, number] = [s.x, 0, s.y];
+  const made = (id: string, against: "middle" | "north" | "west" = "middle") => {
+    const r = classic ? null : recipeOf(id);
+    return r ? <Made r={r} s={s} against={against} tint={tint} pitch={pitch} stretch={stretch} /> : null;
+  };
+  switch (s.key) {
+    case "shack": return made("shack", "north") ?? <Building at={at} d={s.d} art={BUILDINGS.shack} tint={tint} />;
+    case "storehouse": return made("storehouse", "west") ?? <Building at={at} d={s.turn ? s.w : s.d} art={BUILDINGS.storehouse} tint={tint} turn={!!s.turn} />;
+    case "tavern": return (repaired ? made("tavern", "north") : null) ?? <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
+    case "board": return made("board", "north") ?? <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;
+    case "altar": return made("altar") ?? <Altar at={at} tint={tint} stretch={stretch} />;
+    case "pool": return made("pool") ?? <Pool at={at} w={s.w} d={s.d} tint={tint} />;
+    case "pit": return made("pit") ?? <Pit at={at} w={s.w} d={s.d} tint={tint} />;
+    case "training": return made(trainingPit ? "training" : "sparring") ?? <Sparring at={at} w={s.w} d={s.d} tint={tint} stretch={stretch} spikes={trainingPit} />;
+  }
   switch (s.key) {
     case "bookcase": return <group position={at}><Prop3D kind="bookcase" colour={tint} /></group>;
     case "lectern": return <group position={at}><Decor3D kind="lectern" stretch={stretch} colour={tint} /></group>;
@@ -39,19 +60,25 @@ export function Place({ s, tint, stretch, caged, repaired, trainingPit, stoneRea
         </group>
       );
     }
-    case "shack": return <Building at={at} d={s.d} art={BUILDINGS.shack} tint={tint} />;
-    // (Turned along the west wall, its doors facing into the room: its depth runs east-west.)
-    case "storehouse": return <Building at={at} d={s.turn ? s.w : s.d} art={BUILDINGS.storehouse} tint={tint} turn={!!s.turn} />;
-    case "tavern": return <Building at={at} d={s.d} art={BUILDINGS.tavern} broken={!repaired} tint={tint} />;
     case "arch": return <OnWall s={s} pic={ARCH} hole={ARCH_HOLE} tint={tint} />;
     case "portal": return <Portal s={s} tint={tint} />;
-    case "board": return <OnWall s={s} pic={NOTES} tint={tint} backing={{ colour: "#5e432a", pad: 0.12 }} />;
-    case "altar": return <Altar at={at} tint={tint} stretch={stretch} />;
-    case "pool": return <Pool at={at} w={s.w} d={s.d} tint={tint} />;
-    case "pit": return <Pit at={at} w={s.w} d={s.d} tint={tint} />;
-    case "training": return <Sparring at={at} w={s.w} d={s.d} tint={tint} stretch={stretch} spikes={trainingPit} />;
     case "rubble": return <Socket at={at} tint={tint} ready={stoneReady} />;
   }
+}
+
+// A prop from its recipe, where its place is: in the middle of its footprint, or its back to the north wall (the
+// shack, the tavern, the board) or the west one (the storehouse, turned to face east into the room). Lit by the
+// Den's key light (Den3D's) and tinted by the light where it stands, as the old drawings were.
+function Made({ r, s, against, tint, pitch, stretch }: { r: Recipe; s: Station; against: "middle" | "north" | "west"; tint: () => THREE.Color; pitch: number; stretch: number }) {
+  const [, deep] = useMemo(() => recipeReach(r, { pitch, stretch }), [r, pitch, stretch]);
+  const back = 0.02;
+  const at: [number, number, number] = against === "north" ? [s.x, 0, s.y - s.d / 2 + deep + back]
+    : against === "west" ? [s.x - s.w / 2 + deep + back, 0, s.y] : [s.x, 0, s.y];
+  return (
+    <group rotation={[0, against === "west" ? Math.PI / 2 : 0, 0]} position={against === "west" ? at : [0, 0, 0]}>
+      <PropRecipe3D recipe={r} at={against === "west" ? [0, 0, 0] : at} pitch={pitch} stretch={stretch} tint={tint} lit />
+    </group>
+  );
 }
 
 // ── Materials ──

@@ -116,8 +116,8 @@ const Face = memo(function Face({ f, tint, picked, onPick, lit }: { f: FacePoly;
   useEffect(() => () => { geo.dispose(); mat.dispose(); }, [geo, mat]);
   const base = useMemo(() => baseOf(f), [f]);
   const ref = useRef<THREE.Mesh>(null);
-  // (Lit, the lights do what the tint does.)
-  useFrame(() => { TIME.value = performance.now() / 1000; if (ref.current) paint(ref.current.material as THREE.MeshBasicMaterial, base, f.glow || !!f.hull || lit, tint ? tint() : WHITE, picked && !f.hull); });
+  // (Lit, the lights shade it; a tint given as well, as the Den gives, still multiplies in the light where it stands.)
+  useFrame(() => { TIME.value = performance.now() / 1000; if (ref.current) paint(ref.current.material as THREE.MeshBasicMaterial, base, f.glow || !!f.hull || (lit && !tint), tint ? tint() : WHITE, picked && !f.hull); });
   return onPick && !f.hull
     ? <mesh ref={ref} geometry={geo} material={mat} onClick={(e) => { e.stopPropagation(); onPick(f.part); }} />
     : <mesh ref={ref} geometry={geo} material={mat} raycast={() => null} />;

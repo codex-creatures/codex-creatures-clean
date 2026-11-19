@@ -57,6 +57,8 @@ const KIT = { ...LAB_KIT, floor: "/sprites/den3d/kit-floor.png", north: "/sprite
 // The Den's light: warmer than the Labyrinth's and never pitch dark (it's home). 🧪
 const DEN_STONE = { ...STONE, remember: 0.3, gain: 1.15, warm: [1, 0.82, 0.6] as [number, number, number], flame: [1, 0.76, 0.5] as [number, number, number] };
 const FIRE_POWER = 0.8;           // 🧪 each light's strength (STONE.fire's 0.85 in the Labyrinth)
+// 🧪 The light the props built from recipes take for their shape (from the upper left, in front), times the Den's own.
+const DEN_KEY = { ambient: 0.75, key: 1.1, at: [-5, 7, 4] as [number, number, number] };
 const NO = new THREE.Color(1, 0.35, 0.35); // a thing being moved where it can't go
 
 export type Den3DProps = {
@@ -364,7 +366,11 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
   return (
     <>
       <DenRock pitch={pitch} plan={plan} seen={seen} field={field} centre={centre} />
-      {list.map((s) => <Place key={s.key} s={s} tint={movingKey === s.key ? () => NO.clone() : tint(s.x, s.y + s.d / 2)} stretch={stretch} caged={caged}
+      {/* The key light from the upper left (and its ambient): only the props built from recipes take it (they're lit;
+          everything else is tinted by the Den's own light field), so they keep their shape. 🧪 */}
+      <ambientLight color="#ffe6c8" intensity={DEN_KEY.ambient} />
+      <directionalLight color="#ffe2bd" intensity={DEN_KEY.key} position={DEN_KEY.at} />
+      {list.map((s) => <Place key={s.key} s={s} tint={movingKey === s.key ? () => NO.clone() : tint(s.x, s.y + s.d / 2)} stretch={stretch} pitch={pitch} caged={caged}
         repaired={state.repaired} trainingPit={state.trainingPit} stoneReady={stoneReady} />)}
       {/* The torches on the north walls, and the braziers (with the altar, and the tavern room's pit). */}
       {SCONCES.filter((c) => state.opened || c.x < DIVIDE_X).map((c, i) => {

@@ -132,7 +132,7 @@ function Scene({ recipe, compare, angle, light, lean, palette, picked, onPick, d
       {SPOTS.map((x, i) => <PropRecipe3D key={x} recipe={recipe} at={[x, 0, 0]} pitch={pitch} stretch={stretch} tint={tints[i]} picked={picked} onPick={x === 0 ? onPick : undefined} />)}
       {old && SPOTS.map((x, i) => (
         <group key={`old${x}`} position={[x - old.x, 0, BEHIND - old.y]}>
-          <Place s={old} tint={tints[i]} stretch={stretch} repaired trainingPit={false} stoneReady={false} />
+          <Place s={old} tint={tints[i]} stretch={stretch} pitch={pitch} repaired trainingPit={false} stoneReady={false} classic />
         </group>
       ))}
       {light === "torch" && SPOTS.map((x, i) => (

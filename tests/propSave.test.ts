@@ -43,3 +43,12 @@ describe("the palette check", () => {
     expect(palette("dungeon+teal")).toEqual([...palette("dungeon"), ...TEAL]);
   });
 });
+
+describe("the game's way to a recipe", () => {
+  it("reads each one the game draws, and gives null for one that isn't there", async () => {
+    const { recipeOf } = await import("@/lib/props/recipes/load");
+    for (const id of ["altar", "pool", "pit", "sparring", "training", "board", "shack", "storehouse", "tavern"]) expect(recipeOf(id), id).not.toBeNull();
+    expect(recipeOf("no-such-prop")).toBeNull();
+    expect(recipeOf("altar")).toBe(recipeOf("altar")); // (read once, kept)
+  });
+});
