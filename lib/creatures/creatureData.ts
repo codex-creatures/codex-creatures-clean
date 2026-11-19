@@ -84,7 +84,12 @@ export type MoveEffect =
   | { kind: "gore"; rounds: number; amp: number }        // blood under the foes for a few rounds: toxic damage on them is this share higher (not Undead)
   | { kind: "recoil"; share: number }                    // the user takes this share of the damage it did
   | { kind: "slap"; chance: number }                     // a chance to wipe the target's stat changes
-  | { kind: "charge" };                                  // winds up (pays its energy), then strikes next turn for mult× (no cost, still regains energy)
+  | { kind: "charge" }                                   // winds up (pays its energy), then strikes next turn for mult× (no cost, still regains energy)
+  // The user's third batch (2026-11-19).
+  | { kind: "burn"; chance: number; tick: number; minRounds: number; maxRounds: number } // a chance to burn the target (like poison; Geo are immune; it puts out a bleed)
+  | { kind: "fright"; chance: number }                   // a chance the target loses its attack this round (Haunting Presence's fear), only if it hasn't acted yet
+  | { kind: "bounce" }                                   // a small hit, then it swaps out to a teammate the player picks (not first)
+  | { kind: "curse"; power: number; minRounds: number; maxRounds: number; spread: number }; // no hit: the target takes a power-`power` hit each round; swapping out, it may pass to a benched teammate
 
 export type Skill = {
   name: string;

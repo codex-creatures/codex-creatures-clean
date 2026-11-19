@@ -141,10 +141,46 @@ export function poisonWith(f: Combatant, dmg: number, rounds: number): boolean {
   return true;
 }
 // Warded (Crystal Armour): no new status effects, and clouds don't touch it.
-export const WARD_BLOCKS = ["cripple", "venom", "poison", "bleed", "seal", "weaken", "soak", "fear"];
+export const WARD_BLOCKS = ["cripple", "venom", "poison", "bleed", "seal", "weaken", "soak", "fear", "burn", "curse"];
 export const isWarded = (f: Combatant) => f.statuses.some((s) => s.id === "ward");
 const cannotBleed = (f: Fighter) => !!f.races?.includes("undead");
 const roll = (min: number, max: number) => min + Math.floor(Math.random() * (max - min + 1));
+// Burn (Flame Spit) works like poison, and can sit alongside it, but Geo are immune. Fire and
+// blood don't mix: a burn puts out a bleed, and a new bleed puts out a burn (the user, 2026-11-19).
+export const burnImmune = (f: Fighter) => !!f.races?.includes("geo");
+export function burnWith(f: Combatant, dmg: number, rounds: number): boolean {
+  const old = f.statuses.find((s) => s.id === "burn");
+  if (old && (old.dmg ?? 0) * old.rounds >= dmg * rounds) return false;
+  f.statuses = [...f.statuses.filter((s) => s.id !== "burn" && s.id !== "bleed"), { id: "burn", rounds, dmg }];
+  return true;
+}
+// Curse: creature `index` of side `key` is cursed by caster `by` of the other side, a fresh
+// 2–3 rounds (a curse doesn't stack: a new one restarts the clock). Each round's hit is worked
+// out now, the caster's magic against its defences, races counted.
+function curseWith(state: BattleState, key: SideKey, index: number, by: number, skill: Skill) {
+  const fx = skill.effect;
+  const f = state.sides[key].team[index], caster = state.sides[other(key)].team[by];
+  if (fx?.kind !== "curse" || !f || !caster) return;
+  const hit: Skill = { name: skill.name, damage: fx.power, energyCost: 0, type: skill.type, dmgType: skill.dmgType, race: skill.race, asRace: skill.asRace };
+  const dmg = Math.max(1, calcDamage(hit, caster, f, false, PRECISE_IGNORE, rollDamage()).damage);
+  f.statuses = [...f.statuses.filter((s) => s.id !== "curse"), { id: "curse", rounds: roll(fx.minRounds, fx.maxRounds), dmg, by, move: skill.name, chance: fx.spread }];
+}
+// A cursed creature swapping out may pass the curse to a teammate on the bench (not the one
+// coming in), each time it leaves while the curse lasts.
+function spreadCurse(state: BattleState, key: SideKey, leavingIdx: number, comingIdx: number) {
+  const s = state.sides[key];
+  const curse = s.team[leavingIdx]?.statuses.find((st) => st.id === "curse");
+  if (!curse || s.team[leavingIdx].hp <= 0 || Math.random() >= (curse.chance ?? 0)) return;
+  const bench = s.team.flatMap((f, i) => (i !== leavingIdx && i !== comingIdx && i !== s.partner && f.hp > 0 && !f.hidden && !isWarded(f) ? [i] : []));
+  if (bench.length === 0) return;
+  const to = bench[Math.floor(Math.random() * bench.length)];
+  const caster = state.sides[other(key)].team[curse.by ?? -1];
+  const skill = caster?.skills.find((sk) => sk.name === curse.move);
+  if (!skill) return;
+  curseWith(state, key, to, curse.by!, skill);
+  const f = s.team[to];
+  state.log.push({ type: "effect", side: key, index: to, name: f.name, text: `catches the curse from ${s.team[leavingIdx].name}`, hp: f.hp, statuses: f.statuses.map((x) => ({ ...x })), kind: "ability" });
+}
 // A cloud under side key poisons creature index (not Toxic, not warded).
 function cloudPoison(state: BattleState, key: SideKey, index: number) {
   const s = state.sides[key];
@@ -204,13 +240,14 @@ const hasStone = (f: Fighter, key: SoulStoneKey) => f.soulStone === key;
 export type SideKey = "A" | "B";
 
 // target: which enemy to hit when they have two on the field (team index);
-// missing = their main creature.
+// missing = their main creature. swapTo: Bounce's teammate to swap to
+// (missing, or gone by then: the best matchup, as Smoke Bomb picks).
 // item: something from the battle bag used on your creature on the field
 // (the screen takes it out of the bag); heal = HP it restores. revive: a
 // Revival Elixir instead, on a knocked-out teammate (team index), bringing it
 // back with share of its HP (it can then be swapped in).
 export type BattleAction =
-  | { kind: "attack"; skillName: string; target?: number }
+  | { kind: "attack"; skillName: string; target?: number; swapTo?: number }
   | { kind: "swap"; to: number }
   | { kind: "item"; item: string; heal: number; revive?: { index: number; share: number } }
   | { kind: "weapon"; name: string; weapon: CombatItem } // swap a weapon in from the bag (uses your turn)
@@ -227,8 +264,10 @@ export type BattleAction =
 // brace: loss = the share the next hit loses. boost: gain = its attack's share up, in style.
 // bleed: dmg a round until it leaves the field. weaken: loss of its attack (one style, or all).
 // ward: no new statuses (Crystal Armour). flame: melee attackers take loss of their hit (Flame Body).
-// charged: wound up for move (Mega Smash).
-export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number; style?: CombatClass; move?: string };
+// charged: wound up for move (Mega Smash). burn: dmg a round, like poison.
+// curse: dmg a round; by = the caster's team index, move its name, chance = to spread on a swap-out.
+// fear: move = the move that struck it (missing: Haunting Presence).
+export type StatusEffect = { id: string; rounds: number; loss?: number; gain?: number; chance?: number; dmg?: number; hp?: number; style?: CombatClass; move?: string; by?: number };
 
 // hidden: a boss creature that hasn't appeared yet (not shown on screen).
 // cooldowns: move name → rounds until it can be used again.
@@ -264,7 +303,7 @@ export type BattleEvent =
   // Anything else that changes a creature: a self move, a venom tick, a
   // corpse rising. hp and statuses are the creature's values afterwards.
   | { type: "effect"; side: SideKey; index: number; name: string; text: string; hp: number; statuses: StatusEffect[];
-      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal" | "poisoned" | "regrow" | "blood" | "burst" | "bleed"; damage?: number }
+      kind: "self" | "venom" | "poison" | "illness" | "revive" | "item" | "set" | "ability" | "stumble" | "fear" | "heal" | "poisoned" | "regrow" | "blood" | "burst" | "bleed" | "burn" | "curse"; damage?: number }
   // What lies under a side's field now (after a change).
   | { type: "ground"; side: SideKey; ground: GroundEffect[] }
   // A boss changes who's on the field (new phase), or a partner takes over.
@@ -385,7 +424,8 @@ export function isValidAction(state: BattleState, key: SideKey, a: BattleAction)
   const me = activeOf(s);
   switch (a.kind) {
     case "attack": return affordableSkills(me).some((sk) => sk.name === a.skillName)
-      && (a.target === undefined || attackTargets(state, key).includes(a.target));
+      && (a.target === undefined || attackTargets(state, key).includes(a.target))
+      && (a.swapTo === undefined || swapTargets(s).includes(a.swapTo));
     case "swap":   return swapTargets(s).includes(a.to);
     case "item":   return !s.boss && me.hp > 0 && (a.revive ? canRevive(s, a.revive.index) && a.revive.share > 0 : me.hp < me.maxHp && a.heal > 0);
     case "weapon": return !s.boss && me.hp > 0;
@@ -494,7 +534,9 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
     .sort((x, y) => (y.first - x.first) || (y.agil - x.agil) || (Math.random() - 0.5));
 
   const leader = attackers.find((t) => t.action.kind === "attack")?.actor; // for First Strike!
+  const acted = new Set<Combatant>(); // (Cursed Claw's fear strikes only one that hasn't acted yet)
   for (const { key, index: actorIdx, actor, action } of attackers) {
+    acted.add(actor);
     if (actor.hp <= 0) continue; // fainted before acting
     if (!state.sides[key].boss && !fieldOf(state.sides[key]).includes(actorIdx)) continue; // driven off the field this round (Haunting Scream)
     if (action.kind === "pass") {
@@ -506,11 +548,12 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       continue;
     }
     if (action.kind !== "attack") continue;
-    // Struck with fear (Haunting Presence): it loses this attack (no energy spent).
-    if (actor.statuses.some((s) => s.id === "fear")) {
+    // Struck with fear (Haunting Presence, Cursed Claw): it loses this attack (no energy spent).
+    const fear = actor.statuses.find((s) => s.id === "fear");
+    if (fear) {
       actor.statuses = actor.statuses.filter((s) => s.id !== "fear");
       actor.streak = undefined;
-      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `is crippled with fear (${SOUL_STONES.haunting_presence.name}) — it can't attack this round`,
+      state.log.push({ type: "effect", side: key, index: actorIdx, name: actor.name, text: `is crippled with fear (${fear.move ?? SOUL_STONES.haunting_presence.name}) — it can't attack this round`,
         hp: actor.hp, statuses: actor.statuses.map((s) => ({ ...s })), kind: "fear" });
       continue;
     }
@@ -572,9 +615,10 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
         text += ` — no status effects for ${fx.rounds} rounds`;
       }
       if (fx?.kind === "cleanse") {
+        const washed = ["venom", "poison", "bleed", "burn"]; // (water puts out a burn too)
         state.sides[key].team.forEach((f, i) => {
-          if (!f.statuses.some((s) => s.id === "venom" || s.id === "poison" || s.id === "bleed")) return;
-          f.statuses = f.statuses.filter((s) => s.id !== "venom" && s.id !== "poison" && s.id !== "bleed");
+          if (!f.statuses.some((s) => washed.includes(s.id))) return;
+          f.statuses = f.statuses.filter((s) => !washed.includes(s.id));
           if (i !== actorIdx) state.log.push({ type: "effect", side: key, index: i, name: f.name, text: "is washed clean", hp: f.hp, statuses: f.statuses.map((s) => ({ ...s })), kind: "heal" });
         });
         clearGroundLogged(state, key, ["cloud", "blood", "gore"]);
@@ -756,10 +800,17 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
             changed.push("WEAKENED");
           }
           if (fx?.kind === "bleed" && !cannotBleed(target) && Math.random() < fx.chance) {
-            target.statuses = [...target.statuses.filter((s) => s.id !== "bleed"), { id: "bleed", rounds: SOAK_ROUNDS, dmg: Math.max(1, Math.round(target.maxHp * fx.tick)) }];
+            target.statuses = [...target.statuses.filter((s) => s.id !== "bleed" && s.id !== "burn"), { id: "bleed", rounds: SOAK_ROUNDS, dmg: Math.max(1, Math.round(target.maxHp * fx.tick)) }];
             changed.push("BLEEDING");
           }
           if (fx?.kind === "poison" && !poisonImmune(target) && Math.random() < fx.chance && poisonWith(target, Math.max(1, Math.round(target.maxHp * fx.tick)), roll(fx.minRounds, fx.maxRounds))) changed.push("POISONED");
+          if (fx?.kind === "burn" && !burnImmune(target) && Math.random() < fx.chance && burnWith(target, Math.max(1, Math.round(target.maxHp * fx.tick)), roll(fx.minRounds, fx.maxRounds))) changed.push("BURNING");
+          // Cursed Claw: fear, only on one that hasn't acted yet this round (it loses its attack).
+          if (fx?.kind === "fright" && !acted.has(target) && Math.random() < fx.chance) {
+            target.statuses = [...target.statuses.filter((s) => s.id !== "fear"), { id: "fear", rounds: 1, move: skill.name }];
+            changed.push("STRUCK WITH FEAR");
+          }
+          if (fx?.kind === "curse") { curseWith(state, foeKey, targetIdx, actorIdx, skill); changed.push("CURSED"); }
           if (fx?.kind === "slap" && Math.random() < fx.chance) {
             target.boost = undefined; target.defenceCut = undefined; target.agilityUp = undefined; target.surge = undefined;
             target.statuses = target.statuses.filter((s) => !["soak", "boost", "weaken", "haste"].includes(s.id));
@@ -831,9 +882,11 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
       layGround(state, foeKey, { kind: "cloud", move: skill.name, rounds: roll(fx.minRounds, fx.maxRounds) + 1, tick: fx.tick, tailMin: fx.tailMin, tailMax: fx.tailMax });
       cloudPoison(state, foeKey, foe.active);
     }
-    // Smoke Bomb: then it swaps out (as a swap: its energy back, and the one coming in takes their hit).
-    if (fx?.kind === "smoke" && actor.hp > 0) {
-      const to = smokeSwapTo(state, key);
+    // Smoke Bomb, Bounce: then it swaps out (as a swap: its energy back, and the one coming in
+    // takes their hit). Bounce's teammate is the player's pick.
+    if ((fx?.kind === "smoke" || fx?.kind === "bounce") && actor.hp > 0) {
+      const picked = fx.kind === "bounce" ? action.swapTo : undefined;
+      const to = picked !== undefined && swapTargets(state.sides[key]).includes(picked) ? picked : smokeSwapTo(state, key);
       if (to !== undefined) {
         const s = state.sides[key];
         const restored = Math.round((MAX_ENERGY - actor.energy) * SWAP_ENERGY_RESTORE);
@@ -876,7 +929,7 @@ export function resolveRound(state: BattleState, actions: Record<SideKey, Battle
   for (const k of ["A", "B"] as SideKey[]) {
     const gore = groundOf(state.sides[k], "gore");
     state.sides[k].team.forEach((f, i) => {
-      const biting = (["venom", "poison", "illness", "bleed"] as const).flatMap((id) => {
+      const biting = (["venom", "poison", "illness", "bleed", "burn", "curse"] as const).flatMap((id) => {
         const all = f.statuses.filter((s) => s.id === id);
         return (id === "illness" ? all : all.slice(0, 1)).map((st) => ({ id, st }));
       });
@@ -949,7 +1002,7 @@ function victorious(state: BattleState, key: SideKey, index: number) {
 // Cleansing armour: at the end of each round, a chance (pieces add up) to shake
 // off its latest harmful effect (WARD_BLOCKS: what a ward keeps off) that has a
 // round left to run. No roll when there's nothing to shake off.
-const CLEANSED: Record<string, string> = { soak: "soaking", weaken: "weakness", seal: "seal", cripple: "cripple", venom: "venom", poison: "poison", bleed: "bleeding", fear: "fear" };
+const CLEANSED: Record<string, string> = { soak: "soaking", weaken: "weakness", seal: "seal", cripple: "cripple", venom: "venom", poison: "poison", bleed: "bleeding", fear: "fear", burn: "burn", curse: "curse" };
 function cleanse(state: BattleState, key: SideKey, index: number) {
   const f = state.sides[key].team[index];
   const share = f.enchant?.cleansing ?? 0;
@@ -1058,6 +1111,7 @@ export function changeActive(state: BattleState, key: SideKey, index: number) {
   leaving.defenceCut = undefined;
   leaving.boost = undefined;
   leaving.statuses = leaving.statuses.filter((st) => !["soak", "boost", "bleed", "weaken", "charged"].includes(st.id));
+  spreadCurse(state, key, s.active, index);
   s.active = index;
   activeOf(s).streak = undefined;
 }

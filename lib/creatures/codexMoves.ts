@@ -58,7 +58,7 @@ export const CODEX_MOVES_2026: Skill[] = [
     "Under the foes for the rest of the fight: each creature that comes in loses 10% of its max HP."),
   utility("Cleansing Water", "geo", 60, "common", { kind: "cleanse" },
     ["bellow_toad", "crystalback", "crystal_golem", "flicker_wisp", "mr_shadows", "swamp_witch", "gleamling", "thunderhead", "deep_angler", "glob", "dreadpox"],
-    "Your whole team is cured of venom, poison and bleed; any cloud or blood under your team washes away.", { self: true, cooldown: 3 }),
+    "Your whole team is cured of venom, poison, burns and bleed; any cloud or blood under your team washes away.", { self: true, cooldown: 3 }),
   move("Septic Shock", "ranged", "toxic", 15, 50, "rare", { kind: "septic", mult: 2 },
     ["amber_wasp", "bellow_toad", "hollow_matriarch", "the_watcher", "void_serpent", "shambler", "mr_shadows", "storm_phoenix", "swamp_witch", "plague_rat", "rotgut_fly", "glob", "dreadpox"],
     "Double damage if the target is bleeding or blood lies under it."),
@@ -116,4 +116,26 @@ export const CODEX_MOVES_2026: Skill[] = [
   move("Razor Arrows", "ranged", "humanoid", 15, 50, "uncommon", { kind: "bleed", chance: 0.5, tick: 0.1 }, 
     ["hollow_matriarch", "veilstalker", "storm_phoenix", "thicket_archer", "leafblade_scout", "aurelius", "sylvaran", "pale_rider"],
     "50% chance the target bleeds 10% of its max HP a round until it leaves the field. Undead don't bleed."),
+
+  // The user's third batch (2026-11-19): moves, learners and rules all theirs. "Usual damage"
+  // is the core moves' rate (half a power per energy); numbers not yet simmed.
+  move("Flame Spit", "ranged", "geo", 10, 20, "common", { kind: "burn", chance: 0.05, tick: 0.05, minRounds: 3, maxRounds: 5 },
+    ["rust_beetle", "tunnel_wyrm", "dust_sprite", "flame_imp", "crystalback", "crystal_golem", "thunderhead", "gleamling", "flicker_wisp", "rotgut_fly"],
+    "5% chance to burn: 5% max HP a round for 3–5 rounds. Burning puts out bleeding. Geo are immune."),
+  move("Cursed Claw", "melee", "undead", 20, 40, "uncommon", { kind: "fright", chance: 0.1 },
+    ["dire_wolf", "ironhide", "cave_bat", "veilstalker", "shambler", "mr_shadows", "dreadpox", "pale_rider"],
+    "If it strikes first, 10% chance the target is struck with fear and loses its attack."),
+  move("Claw", "melee", "beast", 10, 20, "common", undefined,
+    ["moss_wolf", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "deep_angler", "hollow_matriarch", "flame_imp", "crystalback", "crystal_golem", "veilstalker", "rattlebones", "shambler", "storm_phoenix", "plague_rat", "dreadpox"],
+    "A plain claw."),
+  // Smoke Bomb's numbers, but it doesn't go first, and the player picks who comes in.
+  move("Bounce", "melee", "beast", 5, 40, "rare", { kind: "bounce" },
+    ["moss_wolf", "amber_wasp", "bellow_toad", "dire_wolf", "ironhide", "rust_beetle", "hollow_matriarch", "veilstalker", "storm_phoenix", "leafblade_scout", "aurelius", "plague_rat", "pale_rider"],
+    "A small hit, then it swaps out to a teammate you pick. The one coming in takes their hit.", { cooldown: 3 }),
+  move("Stalactite", "ranged", "underkin", 25, 65, "epic", undefined,
+    ["ironhide", "rust_beetle", "tunnel_wyrm", "crystalback", "crystal_golem", "thunderhead", "void_serpent", "storm_phoenix"],
+    "A plain big hit: 1.5× a heavy hit.", { mult: 1.5 }),
+  utility("Curse", "undead", 60, "legendary", { kind: "curse", power: 10, minRounds: 2, maxRounds: 3, spread: 0.6 },
+    ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "dreadpox"],
+    "The target takes a small magic hit each round for 2–3 rounds. Each time it swaps out, 60% it passes to a benched teammate."),
 ];

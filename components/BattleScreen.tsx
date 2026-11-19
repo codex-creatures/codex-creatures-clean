@@ -323,8 +323,8 @@ export function usePlayableBattle(onUpdate?: (m: Match) => void, { history = tru
         : e.type === "lineup" ? { id: ++n, kind: "lineup", side: e.side, text: e.text }
         : e.type === "effect" ? { id: ++n, kind: "effect", side: e.side, index: e.index,
             ...(e.kind === "self" ? { caption: `${e.side === "B" ? "Foe's " : ""}${e.name} used ${e.text.split(" — ")[0].replace(/^uses /, "")}` } : {}),
-            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : e.kind === "poisoned" ? "POISONED!" : e.kind === "regrow" ? "GROWS BACK!" : e.kind === "blood" ? `-${e.damage} BLOOD` : e.kind === "burst" ? `-${e.damage} BURST!` : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
-            color: e.kind === "illness" ? "#b06cff" : e.kind === "blood" || e.kind === "burst" ? "#ff4d5e" : e.kind === "venom" || e.kind === "poison" || e.kind === "poisoned" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" || e.kind === "regrow" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
+            text: e.kind === "illness" ? `-${e.damage} ILLNESS` : e.kind === "venom" ? `-${e.damage} VENOM` : e.kind === "poison" ? `-${e.damage} POISON` : e.kind === "burn" ? `-${e.damage} BURN` : e.kind === "curse" ? `-${e.damage} CURSE` : e.kind === "fear" ? "FEAR!" : e.kind === "revive" ? "RISES AGAIN!" : e.kind === "item" || e.kind === "heal" ? `+${e.damage} HP` : e.kind === "stumble" ? "STUMBLES!" : e.kind === "poisoned" ? "POISONED!" : e.kind === "regrow" ? "GROWS BACK!" : e.kind === "blood" ? `-${e.damage} BLOOD` : e.kind === "burst" ? `-${e.damage} BURST!` : `${e.text.split(" — ")[0].replace(/^uses /, "").toUpperCase()}!`,
+            color: e.kind === "illness" || e.kind === "curse" ? "#b06cff" : e.kind === "burn" ? "#ff9b4d" : e.kind === "blood" || e.kind === "burst" ? "#ff4d5e" : e.kind === "venom" || e.kind === "poison" || e.kind === "poisoned" ? "#9be15d" : e.kind === "fear" ? "#b9e6ff" : e.kind === "revive" || e.kind === "regrow" ? "#9fd3a8" : e.kind === "item" || e.kind === "heal" ? "#5ee08a" : e.kind === "stumble" ? "#d7a6ff" : "#c7b8ff" }
         : { id: ++n, kind: e.type, side: e.side });
       if (e.type === "attack") buzz(attackHaptic(e)); // (Settings → Vibration; off unless switched on)
       await sleep(e.type === "attack" ? STEP_MS.attack : e.type === "lineup" && e.text ? STEP_MS.phase : STEP_MS.other);
@@ -374,7 +374,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
 }) {
   const [targetPick, setTargetPick] = useState<number | null>(null);
   // What's opened over the stage (from the dock's tabs): the bag, a swap, the log, details, the race chart.
-  const [open, setOpen] = useState<"bag" | "swap" | "log" | "details" | "races" | null>(null);
+  const [open, setOpen] = useState<"bag" | "swap" | "bounce" | "log" | "details" | "races" | null>(null);
   const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
   useEscape(open ? () => setOpen(null) : null);
   const match = battle.match!;
@@ -407,6 +407,9 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const ill = fx?.kind === "effect" && fx.text.includes("ILLNESS");
   const act = (a: Parameters<typeof onAct>[0]) => { setOpen(null); onAct(a); };
   const canSwap = swapTargets(you).length > 0 && !locked;
+  // Bounce: after its hit it swaps to the teammate you pick (from the Swap panel's list).
+  const bounce = me.skills.find((sk) => sk.effect?.kind === "bounce");
+  const bounceTo = (i: number): BattleAction => ({ kind: "attack", skillName: bounce!.name, target: multi ? target : undefined, swapTo: i });
   const bagCount = bag.reduce((n, it) => n + it.count, 0);
   const cols = me.skills.length > 4 ? 3 : 2;
   // There's no Rest button: every set of moves keeps one it can always afford
@@ -495,14 +498,14 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             </div>
           </>
         ))}
-        {/* Swap: just the creatures to pick from, each its picture over its HP. */}
-        {open === "swap" && canSwap && over("Swap", (
+        {/* Swap (or Bounce's swap after its hit): just the creatures to pick from, each its picture over its HP. */}
+        {(open === "swap" && canSwap || open === "bounce" && bounce) && over(open === "bounce" ? `${bounce!.name} to…` : "Swap", (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
             {swapTargets(you).map((i) => {
               const f = you.team[i];
               const pct = (f.hp / f.maxHp) * 100;
               return (
-                <button key={i} onClick={() => act({ kind: "swap", to: i })} disabled={playing} className="card-btn"
+                <button key={i} onClick={() => act(open === "bounce" ? bounceTo(i) : { kind: "swap", to: i })} disabled={playing} className="card-btn"
                   aria-label={`Swap to ${f.name}`} title={f.name} style={{ flexDirection: "column", alignItems: "stretch", gap: 0 }}>
                   <span style={{ display: "flex", justifyContent: "center" }}><Token name={f.name} rarity={info.A[i].rarity} creatureId={info.A[i].creatureId} /></span>
                   <Bar label="HP" value={`${f.hp}/${f.maxHp}`} pct={pct} color={pct > 50 ? "#22c55e" : pct > 25 ? "#f5c542" : "#ef4444"} />
@@ -570,7 +573,9 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
               {me.skills.map((sk) => (
                 <MoveButton key={sk.name} sk={sk} me={me} them={them} myAgil={myAgil} theirAgil={theirAgil}
                   glow={!playing && !!tip?.allow && tip.allow(sk)}
-                  disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))} onClick={() => act({ kind: "attack", skillName: sk.name, target: multi ? target : undefined })} />
+                  disabled={playing || !affordableSkills(me).includes(sk) || (locked && !!tip?.allow && !tip.allow(sk))}
+                  onClick={() => sk.effect?.kind === "bounce" && swapTargets(you).length > 1 ? toggle("bounce")
+                    : act({ kind: "attack", skillName: sk.name, target: multi ? target : undefined, ...(sk.effect?.kind === "bounce" && swapTargets(you).length === 1 ? { swapTo: swapTargets(you)[0] } : {}) })} />
               ))}
             </div>
             <div className="dock-tabs">
@@ -681,6 +686,10 @@ function MoveButton({ sk, me, them, myAgil, theirAgil, disabled, glow, onClick }
   if (fx?.kind === "gore") tags.push(`blood: toxic damage +${pc(fx.amp)} on them`);
   if (fx?.kind === "recoil") tags.push(`it takes ${pc(fx.share)} of the damage`);
   if (fx?.kind === "slap") tags.push(`${pc(fx.chance)}: wipes their stat changes`);
+  if (fx?.kind === "burn") tags.push(`${pc(fx.chance)}: burn ${pc(fx.tick)} a round`);
+  if (fx?.kind === "fright") tags.push(`if first, ${pc(fx.chance)}: they lose their attack`);
+  if (fx?.kind === "bounce") tags.push("then swaps to who you pick");
+  if (fx?.kind === "curse") tags.push(`curse: a small hit a round for ${fx.minRounds}–${fx.maxRounds} rounds · may spread on swaps`);
   if (fx?.kind === "charge") tags.push(me.statuses.some((s) => s.id === "charged") ? "wound up: strike now!" : "winds up, strikes next turn");
   const cooling = me.cooldowns?.[sk.name] ?? 0;
   if (cooling > 0) tags.push(`recharging: ${cooling} round${cooling === 1 ? "" : "s"}`);
@@ -924,6 +933,7 @@ export function FighterLabel({ f, side, mi }: { f: Combatant; side: SideKey; mi?
     [has("soak"), <Glyph key="soak" icon="🫧" art="status_soak" />],
     [f.statuses.some((s) => s.id === "boost"), <Glyph key="boost" icon="💪" art="status_boost" />],
     [has("bleed"), <Glyph key="bleed" icon="🩸" art="status_bleed" />],
+    [has("burn"), <Glyph key="burn" icon="♨️" />], [has("curse"), <Glyph key="curse" icon="💀" />],
     [has("weaken"), <Glyph key="weaken" icon="🔻" art="status_weaken" />],
     [has("ward"), <Glyph key="ward" icon="💎" art="status_ward" />],
     [has("flame"), <Glyph key="flame" icon="🔥" art="status_flame" />],

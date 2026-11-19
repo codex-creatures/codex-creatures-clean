@@ -276,6 +276,24 @@ power counts for less as attack grows.
   will pick: 🧪 for now it's chosen for you). **Mega Smash** winds up (paying 50), then can only
   strike or swap; the strike is free and still regains 30. **Fissure** hits every foe on the field
   (like Barrage). **Implode** goes last; if it acts, the user falls.
+- ✅ **The user's third batch** (2026-11-19; moves, learners and rules all the user's, the learners
+  ticked on a published page): Common: Flame Spit (ranged, Geo, 20 energy, 5% to burn), Claw (melee,
+  Beast, 20, plain). Uncommon: Cursed Claw (melee, Undead, 40; if it strikes first, 10% the target
+  is struck with Haunting Presence's fear and loses its attack). Rare: Bounce (melee, Beast; Smoke
+  Bomb's 5 power, 40 energy, 3-round cooldown, but not first, and the player picks who comes in:
+  `swapTo` on the attack, a "Bounce to…" panel on the battle screen; the AI gets the best matchup).
+  Epic: Stalactite (ranged, Underkin, 65 energy, 1.5× a heavy hit, no cooldown). Legendary: Curse
+  (magic, Undead, 60 energy, no hit). "Usual damage" is the core moves' half a power per energy.
+  🧪 Not simmed yet.
+- **Burn** (Flame Spit): like poison, 5% max HP a round for 3–5 rounds, on the bench too, and the
+  one with more left stays. Geo are immune. It can sit alongside poison, but not bleed: a burn puts
+  out a bleed, and a new bleed puts out a burn (Claude's default for that way round; the user asked
+  for burn over bleed). Cleansing Water washes burns off too (Claude's call).
+- **Curse:** the target takes a power-10 magic hit each round for 2–3 rounds (worked out when cast:
+  the caster's attack against its defences, races counted; on the bench too). Each time a cursed
+  creature swaps out (any swap: a choice, Smoke Bomb, Bounce, Haunting Scream), 60% it passes the
+  curse to a random benched teammate, not the one coming in, which takes it fresh; it keeps its own.
+  It never stacks: catching it again restarts the clock. A ward keeps burn, curse and fear off.
 - **Smite and Ambush** were retired kit moves' names: an old one in a save is wiped once
   (`wipeReusedNames`, `codexSet`), its slot getting its next core move; the names are the new moves'.
 - 🧪 Round 2 (core moves neutral): Healing Blessing +21, Rabid Bite +13 at 50 energy (+8 at 70),
