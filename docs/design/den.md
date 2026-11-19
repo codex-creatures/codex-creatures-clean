@@ -28,12 +28,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ Sell prices **stay as they are** (the user, 2026-10-20), even though they (epic ~800,
   legendary ~2,700) dwarf Labyrinth gold (~18 a room) and re-scan gold has no cap.
 
-### The new Den (behind a setting)
+### The new Den (on for everyone; the old one behind a setting)
 
-🧪 **Built 2026-11-18, off by default** (decision 50): Settings → **New Den (test)**, per device
-(`codex_creatures_den3d_v1`, lib/den3d/setting.ts; not in the save). The user's design, 2026-11-18:
+✅ **On for everyone since 2026-11-20** (the user: "flip the Den to the new view for everyone, leave the old in a
+toggle + view degrees"; built 2026-11-18, off by default till then; decision 50): Settings → **New Den** turns it off
+for the old Den, per device (`codex_creatures_den3d_v2`: what anyone set before, in v1, is left unread, so everyone
+starts on it once; lib/den3d/setting.ts; not in the save). Its View angle and Names stay in Settings under it. With
+it on, the bag empties into storage after a run (lib/den3d/bag.ts), now everyone's default too. The user's design, 2026-11-18:
 the Den as a room like the Labyrinth's, warmer walls for contrast, built up over time; no free
-placement (players could block themselves in). With it off, nothing changes.
+placement (players could block themselves in). With it off, the old Den, as it was.
 
 - **The look:** the Labyrinth's 3D renderer as is (components/Den3D.tsx reuses WalkView3D's Stone
   shader, the carved rock, the camera at 60°, the lean, 48 art pixels a unit at 15 units across), with

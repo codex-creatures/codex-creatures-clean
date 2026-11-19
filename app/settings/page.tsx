@@ -220,10 +220,10 @@ export default function SettingsPage() {
       {newDen !== null && (
         <div className="stone-panel" style={panel}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>🏚️ New Den (test)</div>
+            <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>🏚️ New Den</div>
             <Help title="New Den">
               <ul>
-                <li>Try the <b>new Den</b> while it&apos;s being built: drag to look round, tap a place to go in.</li>
+                <li>The <b>new Den</b>: drag to look round, tap a place to go in. Turn it off for the old one.</li>
                 <li>With it on, your <b>bag empties into storage</b> after each run. Pack it again at the Labyrinth&apos;s entrance.</li>
                 <li>It&apos;s for <b>this device only</b>. Your save is the same either way.</li>
                 <li><b>Names</b>: every place&apos;s name, or just the ones with a ❗.</li>
