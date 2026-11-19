@@ -62,6 +62,9 @@ account, kept entirely apart from Vouchee.
     save loads the cloud save, with no question asked. The device's copy is kept as the backup
     (Settings → Restore backup), so nothing is lost for good. An account with no cloud save yet
     uploads the device's slot.
+  - ✅ **Start new game** (Settings, the user, 2026-11-19, for test accounts): the save becomes a
+    brand-new game, loaded like an empty save file (`startNewGame`, lib/saveFile.ts), so the old
+    game is the backup and the new one goes up as the account's save, as an import does.
   - Playing signed in uploads the online slot a few seconds after each change (5 s after the last,
     at most every 30 s) and on leaving the page; with no connection it waits and uploads once back
     online.

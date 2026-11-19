@@ -7,7 +7,7 @@ import { abilityOf } from "../lib/creatures/moveAbility";
 // The user's third codex batch (2026-11-19).
 const fighter = (id: string, moves: string[]) => buildFighter(CREATURE_BY_ID[id], { melee: 20, ranged: 20, magic: 20 }, { mDef: 5, rDef: 5, magDef: 5 }, moves);
 const big = <T extends { maxHp: number; hp: number }>(f: T) => ({ ...f, maxHp: 999, hp: 999 });
-const fast = (f: Combatant) => ({ ...f, weapon: { ...f.weapon, agil: 80 } });
+const fast = <T extends Pick<Combatant, "weapon">>(f: T): T => ({ ...f, weapon: { ...f.weapon, agil: 80 } });
 const attack = (skillName: string, extra: Partial<Extract<BattleAction, { kind: "attack" }>> = {}): BattleAction => ({ kind: "attack", skillName, ...extra });
 const swap = (to: number): BattleAction => ({ kind: "swap", to });
 const status = (f: Combatant, id: string) => f.statuses.find((s) => s.id === id);

@@ -19,7 +19,7 @@ import { markPlayed } from "@/lib/online/cloudSave";
 import { onlineConfig } from "@/lib/online/client";
 import { formatPlayTime, readPlayTime, PLAY_TIME_EVENT } from "@/lib/playTime";
 import {
-  checkSaveFile, exportSave, importSave, readBackup, restoreBackup, saveFileName, summarise,
+  checkSaveFile, exportSave, importSave, readBackup, restoreBackup, saveFileName, startNewGame, summarise,
   type SaveFile, type SaveSummary,
 } from "@/lib/saveFile";
 import { writeUiScale, UI_SCALES, UI_SCALE_EVENT } from "@/lib/uiScale";
@@ -32,8 +32,8 @@ const MUTED = "rgba(255,255,255,0.55)";
 const GOOD = "#5ee08a", BAD = "#ff8a80";
 
 type Message = { kind: "good" | "bad"; text: string };
-// Waiting for a yes: a file you picked to import, or the backup to restore.
-type Pending = { kind: "import"; file: SaveFile; summary: SaveSummary; name: string } | { kind: "restore"; summary: SaveSummary };
+// Waiting for a yes: a file you picked to import, the backup to restore, or a brand-new game.
+type Pending = { kind: "import"; file: SaveFile; summary: SaveSummary; name: string } | { kind: "restore"; summary: SaveSummary } | { kind: "new" };
 
 function when(iso: string) {
   const d = new Date(iso);
@@ -128,7 +128,8 @@ export default function SettingsPage() {
   function confirm() {
     if (!pending) return;
     lockSaves(); // (from here, nothing still running may save the old game)
-    const r = pending.kind === "import" ? importSave(window.localStorage, pending.file) : restoreBackup(window.localStorage);
+    const r = pending.kind === "import" ? importSave(window.localStorage, pending.file)
+      : pending.kind === "new" ? startNewGame(window.localStorage) : restoreBackup(window.localStorage);
     if (!r.ok) {
       unlockSaves();
       setPending(null);
@@ -140,6 +141,7 @@ export default function SettingsPage() {
     setPending(null);
     setMessage({ kind: "good", text: pending.kind === "import"
       ? "Save loaded. Your old save is kept as the backup. Restarting the game…"
+      : pending.kind === "new" ? "New game started. Your old game is kept as the backup. Restarting…"
       : "Backup restored. The save it replaced is the backup now. Restarting the game…" });
     window.setTimeout(() => window.location.assign("/"), 1200);
   }
@@ -176,6 +178,7 @@ export default function SettingsPage() {
         </div>
         <input ref={fileInput} type="file" accept=".json,application/json" onChange={picked} style={{ display: "none" }} />
         <Link href="/start" className="pixel-btn" style={{ display: "block", textAlign: "center", marginTop: 8 }}>{onlineConfig.ok ? "🌐 Title screen" : "🗂️ Switch save / New game"}</Link>
+        <button className="pixel-btn" disabled={busy} onClick={() => { setMessage(null); setPending({ kind: "new" }); }} style={{ display: "block", width: "100%", marginTop: 8 }}>🌱 Start new game</button>
       </div>
 
       <div className="stone-panel" style={panel}>
@@ -254,18 +257,19 @@ export default function SettingsPage() {
       {pending && (
         <div className="stone-panel" style={{ ...panel, borderColor: "#f5c542" }}>
           <div className="pixel-font" style={{ fontSize: 16, color: "#f5c542" }}>
-            {pending.kind === "import" ? "Load this save?" : "Restore the backup?"}
+            {pending.kind === "import" ? "Load this save?" : pending.kind === "new" ? "Start a new game?" : "Restore the backup?"}
           </div>
           <p style={{ fontSize: 13, color: "#d8d4c8", margin: "6px 0" }}>
-            {pending.kind === "import" ? <>{pending.name}, exported {when(pending.summary.exportedAt)}:</> : <>The backup, from {when(pending.summary.exportedAt)}:</>}
-            <br /><SummaryLine s={pending.summary} />
+            {pending.kind === "new" ? <>A brand-new game, from the start{onlineConfig.ok ? ", here and online" : ""}.</>
+              : <>{pending.kind === "import" ? <>{pending.name}, exported {when(pending.summary.exportedAt)}:</> : <>The backup, from {when(pending.summary.exportedAt)}:</>}
+              <br /><SummaryLine s={pending.summary} /></>}
           </p>
           <p style={{ fontSize: 12, color: MUTED, margin: "0 0 10px" }}>
             It replaces the save you have now. Your current save is backed up first, so you can come back to it with Restore backup.
           </p>
           <div className="dock-tabs">
             <button className="dock-tab" onClick={() => setPending(null)}>Cancel</button>
-            <button className="dock-tab" data-active onClick={confirm}>{pending.kind === "import" ? "Replace my save" : "Restore it"}</button>
+            <button className="dock-tab" data-active onClick={confirm}>{pending.kind === "import" ? "Replace my save" : pending.kind === "new" ? "Start new game" : "Restore it"}</button>
           </div>
         </div>
       )}

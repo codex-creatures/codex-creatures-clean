@@ -213,6 +213,12 @@ export function backupSave(store: KeyValueStore, now = new Date()): boolean {
   }
 }
 
+// A brand-new game in place of this one (Settings → Start new game): loaded
+// like an empty save file, so the old game becomes the backup.
+export function startNewGame(store: KeyValueStore, now = new Date()): ImportResult {
+  return importSave(store, { format: SAVE_FILE_FORMAT, version: SAVE_FILE_VERSION, exportedAt: now.toISOString(), data: { progress: null, registry: null, battles: null } }, now);
+}
+
 // Go back to the backup. The save it replaces becomes the backup, so this
 // can be undone the same way.
 export function restoreBackup(store: KeyValueStore, now = new Date()): ImportResult {

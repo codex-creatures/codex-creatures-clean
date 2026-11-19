@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  exportSave, checkSaveFile, importSave, readBackup, restoreBackup, saveFileName, backupSave,
+  exportSave, checkSaveFile, importSave, readBackup, restoreBackup, saveFileName, backupSave, startNewGame,
   SAVE_FILE_FORMAT, SAVE_FILE_VERSION, SAVE_PARTS, BACKUP_KEY, type KeyValueStore,
 } from "../lib/saveFile";
 
@@ -18,6 +18,17 @@ function memoryStore(init: Record<string, string> = {}, failOn?: string): KeyVal
 const progress = { gold: 120, inventory: [{ id: "c1", dropType: "creature" }, { id: "i1", dropType: "item" }], scanCounts: { "123456": 2 }, labyrinth: { meta: { runs: 3 }, run: null } };
 const registry = { "123456": { outcome: "gold", amount: 60, registeredAt: "2026-10-01T00:00:00.000Z" } };
 const battles = [{ id: "b1", winner: "A" }];
+describe("starting a new game (Settings)", () => {
+  it("empties the save, keeping the old game as the backup to restore", () => {
+    const store = filled();
+    expect(startNewGame(store).ok).toBe(true);
+    for (const key of Object.values(SAVE_PARTS)) expect(store.getItem(key)).toBeNull();
+    expect(readBackup(store)?.data.progress).toEqual(progress);
+    expect(restoreBackup(store).ok).toBe(true);
+    expect(JSON.parse(store.getItem(SAVE_PARTS.progress)!)).toEqual(progress);
+  });
+});
+
 const filled = () => memoryStore({
   [SAVE_PARTS.progress]: JSON.stringify(progress),
   [SAVE_PARTS.registry]: JSON.stringify(registry),
