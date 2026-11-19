@@ -28,7 +28,7 @@ import { CHEST_ENCHANT, enchanted, enchantOf } from "./items/enchantments";
 import { materialBundle, toolDrop } from "./items/materials";
 import { BINDLE } from "./dungeon/run";
 import { SKILL_KEYS, type KlutzState } from "./klutz";
-import { calibrating, readFirstScans } from "./firstScans";
+import { calibrating, readFirstScans, CALIBRATION_SCANS } from "./firstScans";
 import { gearPiece, rollRarity } from "./daily";
 import { raceOfMove, raceVsAll } from "./combat/raceChart";
 import type { RaceV2 } from "./creatures/racesV2";
@@ -256,7 +256,7 @@ export const CHAPTERS: Chapter[] = [
     q.once("camp", "Beat the Encampment", "/dungeon", (c) => c.wins.camp > 0, crate("gear", "uncommon", "rare")),
   ] },
   { name: "The Cyclops", quests: [
-    q.once("calibrate", "Calibrate the scanner (your first 25 scans)", "/scan", (c) => c.calibrated, gold(150)),
+    q.once("calibrate", `Calibrate the scanner (your first ${CALIBRATION_SCANS} scans)`, "/scan", (c) => c.calibrated, gold(150)),
     q.explorer(5, scrolls(1)),
     q.once("codex", "Teach a creature a move from a codex", "/bookcase", (c) => c.learned, gold(150)),
     q.once("buy", "Buy something from a merchant", "/dungeon", (c) => tallied(c, "buy") > 0, gold(150)),
