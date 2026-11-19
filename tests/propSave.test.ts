@@ -52,3 +52,18 @@ describe("the game's way to a recipe", () => {
     expect(recipeOf("altar")).toBe(recipeOf("altar")); // (read once, kept)
   });
 });
+
+import { openCage, recipeOf } from "../lib/props/recipes/load";
+describe("a camp's cage, opened (the user, 2026-11-20)", () => {
+  it("loses its front (bars, lock, hinges) and keeps its bars on the other three sides", () => {
+    const shut = recipeOf("cage")!, open = openCage()!;
+    const ids = open.parts.map((p) => p.id);
+    expect(ids).not.toContain("lock");
+    expect(ids.filter((id) => id.startsWith("hinge"))).toEqual([]);
+    const bars = open.parts.filter((p) => p.id.startsWith("bar-"));
+    expect(bars.length).toBe(shut.parts.filter((p) => p.id.startsWith("bar-")).length * 3);
+    // None of them on the front (south, +z): the open side.
+    expect(bars.every((p) => p.at[2] < 0.4 && !p.four)).toBe(true);
+    expect(open.parts.filter((p) => !/^(bar-|lock|hinge)/.test(p.id))).toEqual(shut.parts.filter((p) => !/^(bar-|lock|hinge)/.test(p.id)));
+  });
+});

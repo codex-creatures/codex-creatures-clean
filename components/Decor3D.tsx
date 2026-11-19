@@ -10,6 +10,8 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { Barrel, Crate, loaded, makeFlat, makeLit, bases, useTint, type Tint } from "./Props3D";
 import { ART_PER_U, ART_PITCH } from "@/lib/render3d/chest3d";
+import { PropRecipe3D } from "./PropRecipe3D";
+import { recipeOf, openCage } from "@/lib/props/recipes/load";
 
 const GAME = "/sprites/props/decor3d";
 export type Decor3DKind = "barrel" | "barrels" | "crates" | "pots" | "dynamite" | "lectern" | "cage";
@@ -52,7 +54,17 @@ function Piece({ kind, stretch, colour, open }: { kind: Decor3DKind; stretch: nu
   if (kind === "pots") return <Pots colour={colour} />;
   if (kind === "dynamite") return <Dynamite colour={colour} />;
   if (kind === "lectern") return <Lectern colour={colour} />;
-  return <Cage colour={colour} open={open} />;
+  return <CampCage stretch={stretch} colour={colour} open={open} />;
+}
+
+// A camp's cage: the Den's cage, from its recipe (the user, 2026-11-20: the camp's were still the old one), a little
+// bigger; opened, its front's off (lib/props/recipes/load.ts openCage). The old one below if the recipe won't read.
+const CAMP_CAGE_SCALE = 1.15;
+function CampCage({ stretch, colour, open }: { stretch: number; colour?: Tint; open: boolean }) {
+  const r = open ? openCage() : recipeOf("cage");
+  if (!r) return <Cage colour={colour} open={open} />;
+  const tint = typeof colour === "function" ? colour : colour ? () => colour : undefined;
+  return <group scale={CAMP_CAGE_SCALE}><PropRecipe3D recipe={r} pitch={Math.acos(Math.min(1, 1 / stretch))} stretch={stretch} tint={tint} lit /></group>;
 }
 
 // Pots: three turned clay pots, a big one and two small (scenery: nothing in them).

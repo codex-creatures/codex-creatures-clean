@@ -243,7 +243,8 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   to him (`WAIT_REACH` 3.5 tiles, in sight 🧪), not as you step in. The Labyrinth's large
   encampments aren't bosses: their foes look about like any room's.
   **Cages** (the user, 2026-11-06; `cageSpots`): a camp's cages stand in a row along the top
-  of its room, behind the chief (`CAGE_GAP` 4 tiles apart; PixelLab art, shut and opened).
+  of its room, behind the chief (`CAGE_GAP` 4 tiles apart; PixelLab art, shut and opened, in 2D; in 3D the Den's cage, from its
+  recipe, a little bigger, its front off once opened: components/Decor3D.tsx `CampCage`, the user, 2026-11-20).
   Once he's beaten (or with no guards to see) each one still shut has a "!" over it: tap it,
   walk up, and it opens like a chest (the creature inside is yours, as ever). **Winning at
   the top no longer ends a walk at once**: the chest he guarded is there to open, and a "🏠 Head
