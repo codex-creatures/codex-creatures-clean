@@ -21,7 +21,6 @@ import type { Rarity } from "@/lib/types";
 import { BOX_CAP, BIG_BOX_CAP, BIGGER_BOX_CAP, BOX_NAMES, fitInBoxes, type CappedBox } from "@/lib/items/storage";
 import { onlineClient, onlineConfig } from "@/lib/online/client";
 import { testingToolsAllowed } from "@/lib/online/admin";
-import { backupSave } from "@/lib/saveFile";
 import { findLine, newFinds, type NewFind } from "@/lib/scanReveal";
 import { countDaily } from "@/lib/daily";
 import { countCampaign } from "@/lib/campaign";
@@ -50,14 +49,12 @@ export default function ScanPage() {
   const [barcode, setBarcode]       = useState("");
   const [rollMode, setRollMode]     = useState<"random" | "deterministic">("deterministic");
   const [scannerOn, setScannerOn]   = useState(false);
-  const [startArmed, setStartArmed] = useState(false); // "Start new" asks for a second tap
   const [resetArmed, setResetArmed] = useState<"player" | "global" | null>(null); // …and so do the resets
   const armedReset = (which: "player" | "global", run: () => void) => {
     if (resetArmed !== which) { setResetArmed(which); window.setTimeout(() => setResetArmed(null), 4000); return; }
     setResetArmed(null);
     run();
   };
-  const [startedNew, setStartedNew] = useState(false);
   const [shown, setShown]           = useState<Drop[]>([]); // this visit's finds, newest first (Looting)
   const [note, setNote]             = useState<React.ReactNode>(null); // sealed, storage full…
   const [opening, setOpening]       = useState<Drop[] | null>(null); // stored caches being opened (Open all)
@@ -212,13 +209,6 @@ export default function ScanPage() {
         <ExplorerLevel level={game.player.level} xp={game.player.xp} />
       </div>
 
-      {startedNew && (
-        <div className="stone-panel" style={{ marginBottom: 10, borderColor: "#c9a24a" }}>
-          <div className="pixel-font" style={{ fontSize: 16, color: "#f1d9a0" }}>✨ A fresh start</div>
-          <p style={{ fontSize: 13, color: "#d8d4c8", margin: "4px 0 0" }}>Everything&apos;s wiped, {onlineConfig.ok ? "your scanned barcodes" : "every barcode"} included. Scan your first one below — then head back to the Den: there&apos;s something rattling in the cage.</p>
-        </div>
-      )}
-
       {/* A new game's first scans (lib/firstScans.ts): Klutz on calibrating the scanner, then on what it means. */}
       {game.hydrated && game.firstLeft > 0 && (
         <div className="stone-panel" style={{ marginBottom: 10, maxWidth: 520, display: "flex", gap: 10, alignItems: "center" }}>
@@ -335,23 +325,10 @@ export default function ScanPage() {
         </Link>
       </div>
 
-      {/* Starting over is for everyone (your save is kept as the backup); the
-          rest are testing tools, online only for the owner's account. */}
-      <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>{tools ? "Testing tools · " : ""}<Link href="/settings" style={{ color: "inherit", textDecoration: "underline" }}>{tools ? "export your save first" : "Undo with Settings → Restore backup"}</Link></span>
-        <button onClick={() => {
-          if (!startArmed) { setStartArmed(true); window.setTimeout(() => setStartArmed(false), 4000); return; }
-          setStartArmed(false);
-          backupSave(window.localStorage);
-          game.startNew();
-          setShown([]);
-          setStartedNew(true);
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        }} title="A brand-new game: progress, Labyrinth, Klutz, the quest, battle history and every barcode wiped"
-          style={{ ...dangerBtn, color: startArmed ? "#1a1a1a" : "#f5c542", background: startArmed ? "#f5c542" : "transparent", borderColor: "rgba(245,197,66,0.6)" }}>
-          {startArmed ? "Tap again to wipe everything" : "✨ Start new"}
-        </button>
-        {tools && <>
+      {/* Testing tools, online only for the owner's account. (Starting a new game is in Settings: it was here too,
+          till 2026-11-20, the user.) */}
+      {tools && <div style={{ marginTop: 40, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 12, opacity: 0.45, marginRight: "auto" }}>Testing tools · <Link href="/settings" style={{ color: "inherit", textDecoration: "underline" }}>export your save first</Link></span>
         {!game.tavern.blasted && (
           <button onClick={game.openRubbleForTesting} title="Open the rubble in the Den now, as if you'd done Klutz's quest and fetched the Labyrinth Stone" style={dangerBtn}>
             🧨 Open the rubble
@@ -369,8 +346,7 @@ export default function ScanPage() {
             {resetArmed === "global" ? "Tap again to reset" : "Global Reset"}
           </button>
         )}
-        </>}
-      </div>
+      </div>}
 
       {tools && <>
 
