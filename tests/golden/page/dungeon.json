@@ -14,7 +14,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "1b87ac067c1aab7f533739b7db055ee97d272c8e"
+    "hash": "65ada240e15cf4a313e8a8a24b6296ada68e5659"
    }
   },
   {
@@ -31,7 +31,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "1b87ac067c1aab7f533739b7db055ee97d272c8e"
+    "hash": "65ada240e15cf4a313e8a8a24b6296ada68e5659"
    }
   },
   {
@@ -61,7 +61,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "a00135caa5006909350a69315dab4baa0b9f23f1"
+    "hash": "f429729c6b8edccf000a555157e5543f69251e2e"
    }
   },
   {
@@ -91,7 +91,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "34ca44dd45aa6a427f38814dfda5a0530f35ae9c"
+    "hash": "17c520b75aa43a32d1d41f6ed77d5ec9eea6c06d"
    }
   },
   {
@@ -121,7 +121,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "c9e51da37c97e5419b9b6afdb4bfe4e50615dc2b"
+    "hash": "4db62abb6ec25fc5b8b990baf21f9743745a2b25"
    }
   },
   {
@@ -151,7 +151,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "d8b527070b57fb12d4e6a7c80ebc69dc8434f05d"
+    "hash": "fa71b7d3a989ea65da633bdbf2b3510d2680e910"
    }
   },
   {
@@ -189,7 +189,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "33e08ab073f37757212eb41764f2581d15b9369b"
+    "hash": "5f42ea10ff7389dae56f106e032ed24a879d5088"
    }
   },
   {
@@ -230,7 +230,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "787a2e83a4ce720fb2550833e7d1071546bb4863"
+    "hash": "636d3913bcd7f02c1eef0c5e9ef7788bbaaaa787"
    }
   },
   {
@@ -271,7 +271,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "aba1e4297dfad0a6f8ebcc81e1dec640888c547c"
+    "hash": "525a81f87bb1b63e96a996690a834e5a7a28ec1d"
    }
   },
   {
@@ -312,7 +312,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "da858be75944e0a2d51efcc5388fd45e0fe8d781"
+    "hash": "ba6f81432b5ba76587ba4f124f3ab7897cb346a0"
    }
   },
   {
@@ -353,7 +353,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "82d35c1fbc13861e66b6e2bb99325f52886200eb"
+    "hash": "f5d28f70497e62d04fba07a4e5303c43f991c17c"
    }
   },
   {
@@ -394,7 +394,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "a21b4dab3ea4288f58c20b2acd3f7d93d9f400bd"
+    "hash": "18df49d03e8f40c3b14a56b20f83439a50efafec"
    }
   },
   {
@@ -436,7 +436,7 @@
       "18 gold"
      ]
     },
-    "hash": "fe74545c269496f4938f04fcfd6995593db942b2"
+    "hash": "90b0d25052e73ddf7de78d05c876a41393316f8e"
    }
   },
   {
@@ -478,7 +478,7 @@
       "18 gold"
      ]
     },
-    "hash": "fe74545c269496f4938f04fcfd6995593db942b2"
+    "hash": "90b0d25052e73ddf7de78d05c876a41393316f8e"
    }
   },
   {
@@ -520,7 +520,7 @@
       "18 gold"
      ]
     },
-    "hash": "97d95ba8c0271be3c4992070e17f9ef7bb78eaf7"
+    "hash": "df77c9dd0af7f7e194a8348fa0684a507e5aebe8"
    }
   },
   {
@@ -562,7 +562,7 @@
       "18 gold"
      ]
     },
-    "hash": "3d07adfb7612461b871d4d4bc56754568b0b103d"
+    "hash": "d76fbb06bf8485053e4634173c6bd069c474b0cc"
    }
   },
   {
@@ -604,7 +604,7 @@
       "18 gold"
      ]
     },
-    "hash": "9507e74f6bfec534500bac51ebf0a7c51dc9c715"
+    "hash": "626d3d65a8a82d84896bc22005d7e6268e3798da"
    }
   },
   {
@@ -646,7 +646,7 @@
       "18 gold"
      ]
     },
-    "hash": "319411fe1759b1c04dadc848a4a3ed155e742320"
+    "hash": "b6ceb0e6b2190c040e5bbecc87c59c26826a8c84"
    }
   },
   {
@@ -689,7 +689,7 @@
       "11 gold"
      ]
     },
-    "hash": "089077a0689b457b15761be5fe02edf68cfcff65"
+    "hash": "907dd9f1e764e1c12265bec2c837c6fc47d93f5c"
    }
   },
   {
@@ -732,7 +732,7 @@
       "11 gold"
      ]
     },
-    "hash": "ae7c7e11b14a8021104f716368a64748705bef46"
+    "hash": "18030e9f1e5a68e61231b33603ee8073c3b0904a"
    }
   },
   {
@@ -775,7 +775,7 @@
       "11 gold"
      ]
     },
-    "hash": "d2b8e9c86300c78cbe8236e6fa1eb11c162e2841"
+    "hash": "3bb53fa97dc5aa7b5af6538e1aa41f46182252fe"
    }
   },
   {
@@ -818,7 +818,7 @@
       "11 gold"
      ]
     },
-    "hash": "2e312f36718a11bfd87d72526fb5226425cd8445"
+    "hash": "ad30f9dbfde2a65d53153abb521611c34bca79a8"
    }
   },
   {
@@ -861,7 +861,7 @@
       "11 gold"
      ]
     },
-    "hash": "82c6327b1453212d91672f6e3c505feca567d55c"
+    "hash": "cf915f1ba3ee5a7e4e7c16f9a2bfc5649119c292"
    }
   },
   {
@@ -905,7 +905,7 @@
       "12 gold"
      ]
     },
-    "hash": "77bb043b7e68d6a40cd1963f4449c35b3a80b49c"
+    "hash": "86cfa63b9377fa35ed4842025c7441e40a73299a"
    }
   },
   {
@@ -949,7 +949,7 @@
       "12 gold"
      ]
     },
-    "hash": "5750ff44f901807e9379cc4bf4484dfa3bfc4a3d"
+    "hash": "6f99ff9ebfc0d90f3bce90337e1432a3a27637e8"
    }
   },
   {
@@ -993,7 +993,7 @@
       "12 gold"
      ]
     },
-    "hash": "aadc932bb7641f7ab8e1fb2afd159d0166aca4e1"
+    "hash": "bc87d41add97f557f2646bbbc5370e44b1114f43"
    }
   },
   {
@@ -1037,7 +1037,7 @@
       "12 gold"
      ]
     },
-    "hash": "3ea3b7fa3ad67a31c9fc4b571eee7a09b7fab841"
+    "hash": "c0725a0bcaf93aa2c687a58951bc0d0286e17d37"
    }
   },
   {
@@ -1081,7 +1081,7 @@
       "12 gold"
      ]
     },
-    "hash": "498557d15aa42834379d938f080c64d61b59b452"
+    "hash": "ce0d6b7468cff25f95c537725825d30c4873d01b"
    }
   },
   {
@@ -1126,7 +1126,7 @@
       "14 gold"
      ]
     },
-    "hash": "45e0774ea52b1bd6bd9c87b6878db0da62b20f5e"
+    "hash": "40af324839672d7a1dc5ab9cdee27e25efe9b457"
    }
   },
   {
@@ -1171,7 +1171,7 @@
       "14 gold"
      ]
     },
-    "hash": "c55d33e65cf03232235c7ab5749c55c32bb62011"
+    "hash": "71a1529458388033b33a6477bf3e1157781f7a84"
    }
   },
   {
@@ -1216,7 +1216,7 @@
       "14 gold"
      ]
     },
-    "hash": "25ac270dbd36a83e427309ed460cdc1d578c910c"
+    "hash": "7e1de66db6bfc0f15dada0f52057587a48d0f097"
    }
   },
   {
@@ -1261,7 +1261,7 @@
       "14 gold"
      ]
     },
-    "hash": "61b3cb3b180aebfe67dc618492373ff5e1ea1797"
+    "hash": "11f41b5658e77e5b3349bab564aa4377edbdc82f"
    }
   },
   {
@@ -1306,7 +1306,7 @@
       "14 gold"
      ]
     },
-    "hash": "28d5e00c8379aa5cfa85b922d75b2fe7123f373e"
+    "hash": "f261e755fdb60704478b03b490120b9005171e63"
    }
   },
   {
@@ -1352,12 +1352,12 @@
       "19 gold"
      ]
     },
-    "hash": "1b2f6db8d5ba1c89ee04ba83a2fc12693bd0604f"
+    "hash": "1bc4a17fd2d23d082fce15c315809c30aec5c64c"
    }
   },
   {
    "step": "room 7: encampment",
-   "screen": "🔒 Den🌀 The Encampment574⚔️ Fight!⛺ EncampmentCages · beat them first🔒 Open cage 1🔒 Open cage 2The camp at the top: bedrolls, a cookfire, cages along the wall — and its chief, who doesn't want visitors. Beat it, and the cages are yours to open. They play like the Hard AI.Rust Beetle Lv 5 · Underkin · Tank · Stormlash Whip (common), Colossal Shellarmor (common)Win: 77 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
+   "screen": "🔒 Den🌀 The Encampment574⚔️ Fight!⛺ EncampmentCages · beat them first🔒 Open cage 1🔒 Open cage 2The camp at the top: bedrolls, a cookfire, cages along the wall — and its chief, who doesn't want visitors. Beat it, and the cages are yours to open. They play like the Hard AI.Baby Cyclops Lv 5 · Bruiser · Melee Tank · Temporal Maul (common)Win: 77 gold. Your team: Cave Goblin. Press Fight! on the room when you're ready.🐾 Party 1/1🎒 Bag 2/3📜 Scroll 2/2🏃 Retreat",
    "save": {
     "gold": 574,
     "creatures": [
@@ -1398,7 +1398,7 @@
       "19 gold"
      ]
     },
-    "hash": "54de1220da56770b7a7b5f58633ef8fa71f06e8b"
+    "hash": "62fb59f14d8c6de1259c5f4bfd084c13470c1e75"
    }
   },
   {
@@ -1444,17 +1444,17 @@
       "19 gold"
      ]
     },
-    "hash": "e793d9260c98abaa9d8e735bda4d56ee8d622ae1"
+    "hash": "d0c427b5d6793a67a482ec09c2299780550f58c7"
    }
   },
   {
    "step": "room 7: fight over",
-   "screen": "← Den🌀 The Encampment574🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! The Cyclops's way in is open now.Cave Goblin7rooms8finds#1runContinueThe Encampment is yours!✨ 34 XP — Cave Goblin +34⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
+   "screen": "← Den🌀 The Encampment574🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! The Cyclops's way in is open now.Cave Goblin7rooms8finds#1runContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
    "save": {
     "gold": 574,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 6xp",
+     "Cave Goblin Lv5 14xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
@@ -1490,17 +1490,17 @@
       "19 gold"
      ]
     },
-    "hash": "b597df7eac206ce395a1d4475ad611f421166470"
+    "hash": "df9e81b450cb4b0276084cd76a3b96de2e1223dd"
    }
   },
   {
    "step": "cleared",
-   "screen": "← Den🌀 The Encampment574🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! The Cyclops's way in is open now.Cave Goblin7rooms8finds#1runContinueThe Encampment is yours!✨ 34 XP — Cave Goblin +34⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
+   "screen": "← Den🌀 The Encampment574🏆 VICTORY 🏆The Encampment is yours!The chief goes down, and the camp is yours. You beat the Encampment on run 1! The Cyclops's way in is open now.Cave Goblin7rooms8finds#1runContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
    "save": {
     "gold": 574,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 6xp",
+     "Cave Goblin Lv5 14xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
@@ -1536,17 +1536,17 @@
       "19 gold"
      ]
     },
-    "hash": "b597df7eac206ce395a1d4475ad611f421166470"
+    "hash": "df9e81b450cb4b0276084cd76a3b96de2e1223dd"
    }
   },
   {
    "step": "the haul",
-   "screen": "← Den🌀 The Encampment574Cave Goblin levelled up!Lv 4Lv 5ContinueThe Encampment is yours!✨ 34 XP — Cave Goblin +34⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
+   "screen": "← Den🌀 The Encampment574Cave Goblin levelled up!Lv 4Lv 5ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 1 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (2)ItemsLesser PotionGold77 goldCages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to Den",
    "save": {
     "gold": 574,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 6xp",
+     "Cave Goblin Lv5 14xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
@@ -1582,17 +1582,17 @@
       "19 gold"
      ]
     },
-    "hash": "b597df7eac206ce395a1d4475ad611f421166470"
+    "hash": "df9e81b450cb4b0276084cd76a3b96de2e1223dd"
    }
   },
   {
    "step": "haul: took all",
-   "screen": "← Den🌀 The Encampment651Cave Goblin levelled up!Lv 4Lv 5ContinueThe Encampment is yours!✨ 34 XP — Cave Goblin +34⬆️ Cave Goblin reached level 5!🎒 Bindle · 0 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (0)Empty now.Cages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to DenThe chief's chest✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Done",
+   "screen": "← Den🌀 The Encampment651Cave Goblin levelled up!Lv 4Lv 5ContinueThe Encampment is yours!✨ 42 XP — Cave Goblin +42⬆️ Cave Goblin reached level 5!🎒 Bindle · 0 free🔒🔒🔒🔒🔒🔒🔒The chief's chestSort (0)Empty now.Cages 🔒 Open cage 1🔒 Open cage 2Left on the floorsSort (0)Nothing left behind.🏠 Return to DenThe chief's chest✕Empty-----Tap to look · double-tap or drag to take (your bag is full)Take all🎒 Bindle 3/3🔒🔒🔒🔒🔒🔒🔒Done",
    "save": {
     "gold": 651,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 6xp",
+     "Cave Goblin Lv5 14xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
@@ -1631,7 +1631,7 @@
       "Lesser Potion"
      ]
     },
-    "hash": "2de534d932edd9cedd2922e4141316dc177ea3d8"
+    "hash": "f2f0ec4281b593d5a229d775c150cfe908c171b9"
    }
   },
   {
@@ -1641,7 +1641,7 @@
     "gold": 651,
     "creatures": [
      "Moss Wolf Lv4 0xp",
-     "Cave Goblin Lv5 6xp",
+     "Cave Goblin Lv5 14xp",
      "Dust Sprite Lv4 0xp"
     ],
     "items": 1,
@@ -1656,7 +1656,7 @@
      "lesser"
     ],
     "run": null,
-    "hash": "00e0f0bc1f422a9b192a65a861eb8eed4ef92fb3"
+    "hash": "7a068db914dce652539680a3901cf1535e6190f4"
    }
   }
  ],
@@ -1688,7 +1688,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "4dd07f777b288542276b56c884ed972e2cb00de6"
+    "hash": "b05f71c1cc2469b24fcdd5c3f91c5eeccaa2e352"
    }
   },
   {
@@ -1718,7 +1718,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "184a2cd14c43a39e0aff02b9de5534ee61badfd0"
+    "hash": "86cc63c609a94a974413785b3fec1ac40d81cef3"
    }
   },
   {
@@ -1748,7 +1748,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "59128879c60335a0145d3269b90fd50ec1892701"
+    "hash": "da318145a858f6d1fc5c48ec53b6c88e636454c9"
    }
   },
   {
@@ -1765,7 +1765,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "61ec72a0deba5af7658dc18003cf1000ca51b446"
+    "hash": "e438b1f7dc2379beefd8529c7bb4b2b90f84ea24"
    }
   }
  ],
@@ -1797,7 +1797,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "e42556e9e41be9d76ca268151284725cc60ab9cb"
+    "hash": "ee6e13774948d02059224620b90a1aedd88dcb27"
    }
   },
   {
@@ -1827,7 +1827,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "b1ada33d9bf36e769bc114b258e0db599a4afcc5"
+    "hash": "57c68326ec633a953952d89f4cf6ecd2ed858f1e"
    }
   },
   {
@@ -1857,7 +1857,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "b1ada33d9bf36e769bc114b258e0db599a4afcc5"
+    "hash": "57c68326ec633a953952d89f4cf6ecd2ed858f1e"
    }
   },
   {
@@ -1887,7 +1887,7 @@
      "floor": 0,
      "loot": []
     },
-    "hash": "33f765fadcb84ef2d36539104f4f057f954f82bc"
+    "hash": "aaf952a217625a9fcbb15e77f513edd5da570114"
    }
   },
   {
@@ -1904,7 +1904,7 @@
     "equipment": {},
     "bag": [],
     "run": null,
-    "hash": "725228eacf15ba8ccb4c38e9c04f02c95b66b615"
+    "hash": "b947974bc3cdc6e703984494b21e514c14e67a58"
    }
   }
  ]
