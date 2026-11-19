@@ -16,8 +16,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     Hydra and Abyss Legendary; the Abyss rolls a rarity up 30% of the time), how many levels tougher its creatures
     are (0 to +3) and how many strike first (10% to 40%: they use their style's first-strike move, so a glass cannon
     takes chip damage). 🧪 Those numbers are Claude's.
-  - **Every 20 minutes** (`FIND_EVERY_MS`) he finds something: a creature 30%, a codex 10%, a material or potion 20%,
-    a weapon or armour piece 40% (`FIND_MIX`). Rarities at the usual split, capped by the dungeon, by his level
+  - **Once in every 20 minutes** (`FIND_EVERY_MS`), at a random moment in it, something happens: a creature 27%, a
+    codex 9%, a material or potion 18%, a weapon or armour piece 36%, or nothing 10% (`FIND_MIX`; the user, 2026-11-19:
+    every 20 minutes on the dot felt far too rigid). Rarities at the usual split, capped by the dungeon, by his level
     (`SCAN_UNLOCK`) and by your explorer level (`capRarity`). The old "never rarer than his piece" rule is gone.
   - **Creatures:** he fights it (no healing on the way); beaten, it's caught at `CATCH_CHANCE` (Common 100%,
     Uncommon 90%, Rare 70%, Epic 40%, Legendary 15%; 🧪), plus Trapping. Caught ones go to the cage (spares let go,
@@ -25,7 +26,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     as creatures.
   - **Home** when his pack is full, when he's down to 10% HP (`HOME_AT`), or when something beats him: no penalty, he
     keeps everything. Call him back any time. He can set off from 40% HP (`SEND_AT`; the pool still heals 1 HP every
-    10 s), not while his chest is full, and not without the gold. A safety stop after 100 finds (about 33 h).
+    10 s), not while his chest is full, and not without the gold. A safety stop after 100 windows (about 33 h).
   - **His pack** holds 8 (`PACK_START`), up to 20: the **Bigger Pack** trait (+4; free since 2026-11-14, the user: the trait pick
     is its price, it cost 1,000 gold) and **Pack Upgrades** (+1 each; in 5% of chests, and 20% of merchants' carts at
     500 rising to 4,000: `KLUTZ_PACK_PRICES`), sewn on from his Skills tab: it shows his pack's slots (all 20, the
@@ -36,8 +37,10 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     the bookcase has room, and the rest stay in the crate with the reason shown (`roomFor`, lib/items/storage.ts).
     Quest rewards, by contrast, always come home, even into a full box.
   - **Skills** (a point a level over 1, each up to 10): **Trapping** (+2% catch chance a level), **Armourer**,
-    **Scavenger**, **Scholar** (each +3% a level: an extra weapon or armour, material or potion, or codex in each
-    20-minute window). 🧪 The steps are Claude's. A re-spec hands them back with his % points.
+    **Scavenger**, **Scholar** (each +3% a level: an extra weapon or armour, material or potion, or codex). They roll
+    on a clock of their own (the user, 2026-11-19): in each 30 minutes (`SKILL_EVERY_MS`) the skills he has go in a
+    random order, each rolling once at a random moment. His trip story marks what they found with a ⭐. 🧪 The steps
+    are Claude's. A re-spec hands them back with his % points.
   - **Traits** (the user, 2026-11-14): he picks one at **Lv 5, 10 and 15** (`TRAIT_LEVELS`), any he hasn't got, in any
     order: the Bigger Pack (above), **Selective** (he leaves things below a rarity you pick) or the **cage filter** (he
     only cages creatures of a rarity you pick or better). Till he has a pick, the rest show locked. Each skill

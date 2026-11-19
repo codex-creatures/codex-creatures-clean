@@ -43,7 +43,7 @@ import { clampLevel, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
 import {
-  klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
+  klutzStatus, pointsFree, HEAL_MS_PER_HP, CAPTURE_XP, FIND_XP, XP_SHARE, HUNT_BELOW, HUNT_ABOVE, FIND_EVERY_MS, FIND_MIX, SKILL_EVERY_MS, GEAR_DROP_CHANCE, HOME_AT, SEND_AT,
   KLUTZ_DESTS, destCost, destOpen, bestRarity, packSize, chestSize, chestUpgradePrice, skillPointsFree, skillLevel, skillChance, catchChance, readyAt,
   SKILL_KEYS, SKILL_MAX, PACK_TRAIT, PACK_MAX, TRAIT_LEVELS, traitsPicked, traitPicks, nextTraitLevel, canPickTrait,
   type Expedition, type KlutzDest, type SkillKey, type SendBlock, type TraitKey,
@@ -194,7 +194,7 @@ function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Gam
           <Help title="Klutz's trips">
             <HelpSection title="The trip">
               <ul>
-                <li>Every <b>{FIND_EVERY_MS / 60000} minutes</b> he finds something: a <b>creature</b> ({Math.round(FIND_MIX.creature * 100)}%), a <b>codex</b> ({Math.round(FIND_MIX.codex * 100)}%), a <b>material or potion</b> ({Math.round(FIND_MIX.goods * 100)}%), or a <b>weapon or armour</b> ({Math.round(FIND_MIX.gear * 100)}%).</li>
+                <li>Once in every <b>{FIND_EVERY_MS / 60000} minutes</b>, at any moment, he comes across something: a <b>creature</b> ({Math.round(FIND_MIX.creature * 100)}%), a <b>codex</b> ({Math.round(FIND_MIX.codex * 100)}%), a <b>material or potion</b> ({Math.round(FIND_MIX.goods * 100)}%), a <b>weapon or armour</b> ({Math.round(FIND_MIX.gear * 100)}%), or <b>nothing</b> ({Math.round(FIND_MIX.nothing * 100)}%).</li>
                 <li>He comes home when his <b>pack is full</b> ({packSize(k)} slots), when he&apos;s down to <b>{Math.round(HOME_AT * 100)}% HP</b>, or when something beats him. He keeps everything.</li>
                 <li>He can set off from <b>{Math.round(SEND_AT * 100)}% HP</b> (the pool heals 1 HP every {HEAL_MS_PER_HP / 1000}s). Lower HP, shorter trip.</li>
                 <li>You can <b>call him back</b> any time.</li>
@@ -297,7 +297,7 @@ function SkillsTab({ game }: { game: Game }) {
           <div className="pixel-font" style={{ fontSize: 18, color: GOLD, flex: 1 }}>Skills</div>
           <span style={{ fontSize: 13, color: free > 0 ? "#7CFC9A" : MUTED }}>{free} point{free === 1 ? "" : "s"}</span>
           <Help title="Klutz's skills">
-            <p>He gets a skill point each level. Each skill goes up to {SKILL_MAX}. Trapping makes his catches likelier; the others give him a chance of an <b>extra find</b> every {FIND_EVERY_MS / 60000} minutes. A re-spec (in his Equip window) hands these back too.</p>
+            <p>He gets a skill point each level. Each skill goes up to {SKILL_MAX}. Trapping makes his catches likelier; the others each give him a chance of an <b>extra find</b> once in every {SKILL_EVERY_MS / 60000} minutes, at any moment. His trip story says which skill found it. A re-spec (in his Equip window) hands these back too.</p>
           </Help>
         </div>
         <div style={{ display: "grid", gap: 6, marginTop: 8 }}>

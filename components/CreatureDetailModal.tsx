@@ -500,7 +500,7 @@ function PointsGrid({ prof, free, pending, locked, onAdd, onConfirm, onCancel, r
           <div role="status" onClick={() => setWhy(false)} className="pixel-font"
             style={{ position: "absolute", inset: "20% 4%", zIndex: 2, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
               padding: 8, background: "#1d1a12", border: "2px solid #8a6a3a", color: GOLD, fontSize: 14, lineHeight: 1.4 }}>
-            🔒 He's out hunting. Spend his points when he's home.
+            {"🔒 He's out hunting. Spend his points when he's home."}
           </div>
         )}
         {POINT_ROWS.map((k) => {

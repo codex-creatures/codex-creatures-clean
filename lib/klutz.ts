@@ -8,14 +8,16 @@
 //   fee (the Encampment is free), and decides the best rarity he can meet
 //   there, how much tougher its creatures are, and how many of them strike
 //   first (chip damage, so a glass-cannon Klutz doesn't walk through it).
-// - Every FIND_EVERY_MS he finds something (FIND_MIX): a wild creature he
-//   fights, a codex, a material or consumable, or a weapon or armour piece.
+// - In each FIND_EVERY_MS, at a random moment, something happens (FIND_MIX):
+//   a wild creature he fights, a codex, a material or consumable, a weapon or
+//   armour piece, or nothing.
 //   Rarities roll at the usual split, capped by the dungeon, by what his level
 //   has opened (SCAN_UNLOCK) and by your own explorer level.
 // - A beaten creature is caught at CATCH_CHANCE for its rarity (more with
 //   Trapping) and goes to the cage (spares he lets go, as before); 20% of the
 //   time it also drops a piece of its gear (GEAR_DROP_CHANCE).
-// - His skills (a point a level) give a chance of an extra find each window:
+// - His skills (a point a level) give a chance of an extra find: in each
+//   SKILL_EVERY_MS, each in a random order, each at a random moment:
 //   Armourer (gear), Scavenger (materials, consumables), Scholar (codexes);
 //   Trapping raises his catch chances. His traits, one picked at each of
 //   Lv 5, 10 and 15 in any order: a bigger pack (bought), Selective (leave
@@ -54,8 +56,11 @@ import { setStoneCost, type SoulStoneKey } from "./creatures/soulStones";
 import { addXp, canFind, clampLevel, xpForEnemy } from "./creatures/levels";
 
 // ── v2 trips ──
-export const FIND_EVERY_MS = 20 * 60 * 1000;  // a find every 20 minutes he's out
-export const FIND_MIX = { creature: 0.3, codex: 0.1, goods: 0.2, gear: 0.4 }; // what a find is
+// (The user, 2026-11-19: "far too rigid", so each window's encounter comes at a random moment in it, and may be nothing.)
+export const FIND_EVERY_MS = 20 * 60 * 1000;  // a window: one encounter in each 20 minutes he's out, at a random moment
+export const FIND_MIX = { creature: 0.27, codex: 0.09, goods: 0.18, gear: 0.36, nothing: 0.1 }; // what it is
+// His find skills roll on a clock of their own: in each SKILL_EVERY_MS, each in a random order, each at a random moment.
+export const SKILL_EVERY_MS = 30 * 60 * 1000;
 export const GOODS_MATERIAL = 0.5;            // …a material or consumable: a material bundle this often, else a potion
 export const HEALING_POTION = 0.3;            // …a potion: a Healing Potion this often, else a Lesser one
 export const CATCH_CHANCE: Record<Rarity, number> = { common: 1, uncommon: 0.9, rare: 0.7, epic: 0.4, legendary: 0.15 };
@@ -121,6 +126,12 @@ export type WornPiece = { slot: "weapon" | ArmorSlot; rarity: Rarity };
 const RARITIES: Rarity[] = ["common", "uncommon", "rare", "epic", "legendary"];
 const ri = (r: Rarity) => RARITIES.indexOf(r);
 type Rng = () => number;
+// A copy in a random order.
+const shuffled = <T>(xs: T[], rng: Rng): T[] => {
+  const a = [...xs];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
 
 export type KlutzEncounter = {
   at: number;            // when it happens (ms timestamp)
@@ -138,7 +149,9 @@ export type KlutzEncounter = {
   find?: Drop;           // (before v2) a piece of gear he picked up on the walk there
 };
 // (v2) Something he found, and when; `skill`: an extra find one of his skills brought.
-export type KlutzFind = { at: number; drop: Drop; skill?: Exclude<SkillKey, "trapping"> };
+export type FindSkill = Exclude<SkillKey, "trapping">;
+const FIND_SKILLS: FindSkill[] = ["armourer", "scavenger", "scholar"];
+export type KlutzFind = { at: number; drop: Drop; skill?: FindSkill };
 
 export type Expedition = {
   v?: 2;                 // planned by the v2 rules (missing: an older trip)
@@ -384,11 +397,27 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
     finds.push({ at, drop: d, ...(skill ? { skill } : {}) });
     return ++used >= pack;
   };
-  for (let w = 0; w < MAX_WINDOWS; w++) {
-    at += FIND_EVERY_MS;
+  // The trip's moments, all decided first: an encounter somewhere in each window, and each find skill he has
+  // (in a random order) at random moments in each of its own windows. Then they play out in time order.
+  const span = MAX_WINDOWS * FIND_EVERY_MS;
+  const moments: { at: number; skill?: FindSkill }[] = [];
+  for (let w = 0; w < MAX_WINDOWS; w++) moments.push({ at: now + w * FIND_EVERY_MS + Math.floor(rng() * FIND_EVERY_MS) });
+  const finders = FIND_SKILLS.filter((s) => sk(s) > 0);
+  for (let t = 0; finders.length && t < span; t += SKILL_EVERY_MS) {
+    const order = shuffled(finders, rng);
+    const times = order.map(() => now + t + Math.floor(rng() * SKILL_EVERY_MS)).sort((a, b) => a - b);
+    order.forEach((skill, i) => { if (times[i] < now + span) moments.push({ at: times[i], skill }); });
+  }
+  moments.sort((a, b) => a.at - b.at);
+  let ended = false;
+  for (const m of moments) {
+    at = m.at;
     let full = false;
-    const x = rng() * (FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear);
-    if (x < FIND_MIX.creature) {
+    const x = m.skill ? 0 : rng() * (FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear + FIND_MIX.nothing);
+    if (m.skill) {
+      // A skill's roll: an extra find, at its chance.
+      if (rng() < skillChance(m.skill, sk(m.skill))) full = take(m.skill === "armourer" ? gearPiece(roll(), rng) : m.skill === "scavenger" ? goods(roll(), rng) : codex(rng, cap), m.skill);
+    } else if (x < FIND_MIX.creature) {
       const rarity = roll(), gearRarity = oneLower(rarity);
       const lo = Math.max(1, L - HUNT_BELOW), hi = clampLevel(L + HUNT_ABOVE);
       const foeLevel = clampLevel(lo + Math.floor(rng() * (hi - lo + 1)) + where.levelsUp);
@@ -408,14 +437,12 @@ export function planExpedition(klutz: Fighter, now = Date.now(), rng: Rng = Math
       if (dropped) full = take(dropped);
     } else if (x < FIND_MIX.creature + FIND_MIX.codex) full = take(codex(rng, cap));
     else if (x < FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods) full = take(goods(roll(), rng));
-    else full = take(gearPiece(roll(), rng));
-    // His skills: a chance of an extra find, each window.
-    if (!full && rng() < skillChance("armourer", sk("armourer"))) full = take(gearPiece(roll(), rng), "armourer");
-    if (!full && rng() < skillChance("scavenger", sk("scavenger"))) full = take(goods(roll(), rng), "scavenger");
-    if (!full && rng() < skillChance("scholar", sk("scholar"))) full = take(codex(rng, cap), "scholar");
-    if (full) { home = "pack"; break; }
-    if (hp <= HOME_AT * klutz.maxHp) { home = "hurt"; break; }
+    else if (x < FIND_MIX.creature + FIND_MIX.codex + FIND_MIX.goods + FIND_MIX.gear) full = take(gearPiece(roll(), rng));
+    // (else nothing this window)
+    if (full) { home = "pack"; ended = true; break; }
+    if (hp <= HOME_AT * klutz.maxHp) { home = "hurt"; ended = true; break; }
   }
+  if (!ended && home !== "ko") at = now + span; // the safety stop: the end of his last window
   return { v: 2, dest: plan.dest, cost: destCost(plan.dest), startHp, finds, ...(left ? { left, passed } : {}), home,
     startedAt: now, endsAt: at, maxHp: klutz.maxHp, encounters, collected: false };
 }

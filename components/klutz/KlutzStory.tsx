@@ -105,7 +105,7 @@ function StoryLine({ l, ex, seenIds }: { l: Line; ex: Expedition; seenIds: Set<s
     return (
       <Row at={l.at} ex={ex} icon={sprite ? <PixelSprite sprite={sprite} scale={1.4} /> : <span style={{ fontSize: 18 }}>🎁</span>}>
         {l.dropped ? <>It dropped {what} <span style={{ color: MUTED }}>({it.rarity} {kindOf(it)})</span>, and he stuffed it in his pack.</>
-          : l.find.skill ? <>{SKILL_SAW[l.find.skill]} spotted {what} <span style={{ color: MUTED }}>({it.rarity} {kindOf(it)})</span>.</>
+          : l.find.skill ? <><b style={{ color: GOLD }}>⭐ {SKILL_SAW[l.find.skill]}</b> spotted {what} <span style={{ color: MUTED }}>({it.rarity} {kindOf(it)})</span>.</>
           : <>He found {what} <span style={{ color: MUTED }}>({it.rarity} {kindOf(it)})</span>.</>}
       </Row>
     );
