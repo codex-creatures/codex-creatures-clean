@@ -31,7 +31,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     Labyrinth's (below). Room 7 is the camp: its **chief**, the **Baby Cyclops** (the user, 2026-11-20: the first
     quest's thief, back "with a club this time and lots of HP"; `campChief`), Lv 5 (`CAMP_CHIEF_LEVEL`, Hard AI):
     Club Smash and Backhand, a Common maul (`CAMP_CHIEF_CLUB`: an average Common weapon's roll, the same every
-    time; it can drop like any foe's gear), no armour, ×2 HP (`CAMP_CHIEF_HP`) and %s of Claude's
+    time; it can drop like any foe's gear), no armour, ×2 HP (`CAMP_CHIEF_HP`, ✅ the user, 2026-11-20) and %s of Claude's
     (`CAMP_CHIEF_PROF`), no race (neutral, the user, 2026-11-20; till then he was Humanoid). 🧪 Sim (a lone Lv 5 Rare starter in Klutz's club and Common armour, Normal AI):
     it wins 46% against him (about 194 HP), 52% against the Uncommon chief before him (about 123 HP). As a Rare he
     gives more XP than it did (42 to the Uncommon's 34 in the page test). His sprite carries his club (the user, 2026-11-20; PixelLab, an edit of the old one with the box: samples in art/cyclops-club/). He has a mini boss's chest (never the Iron Cage Schematic). Beaten the first time, it guards
