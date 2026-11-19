@@ -292,7 +292,7 @@ same rule (Claude's reading). Which quests you got is fixed the first time they'
 | Primary | Reward |
 |---|---|
 | Beat the Cyclops | a box of 5 pieces of gear, Rare or better |
-| Beat the Encampment twice | a creature, Rare at most |
+| Beat the Encampment twice | a creature, Rare at most (claimed, the Soul Altar's whirl climbs to its rarity and it steps out: the user, 2026-11-20) |
 | Beat the Hydra | 3 Rare or Epic weapons or armour |
 | Beat the Abyss | an Epic weapon or armour piece |
 

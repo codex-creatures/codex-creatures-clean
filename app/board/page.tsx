@@ -30,7 +30,9 @@ import { CACHE_LIMIT } from "@/hooks/useGameState";
 import CodeCache from "@/components/CodeCache";
 import ClaimBurst, { type ClaimShow } from "@/components/ClaimBurst";
 import { buzz } from "@/lib/haptics";
-import type { Drop } from "@/lib/types";
+import type { Drop, CreatureOrItemDrop } from "@/lib/types";
+import SummonShow from "@/components/SummonShow";
+import { findCreatureTemplate } from "@/lib/creatures/creatureData";
 
 const MUTED = "rgba(255,255,255,0.5)";
 const GOLD = "#f1d9a0";
@@ -166,6 +168,7 @@ function QuestList() {
   const [prize, setPrize] = useState<Drop[] | null>(null); // what a claim gave, shown as it opens
   const [full, setFull] = useState<number | null>(null);   // a claim with no room for it (which quest)
   const [burst, setBurst] = useState<{ show: ClaimShow; drops: Drop[] | null } | null>(null); // a claim's celebration, then its box
+  const [summoned, setSummoned] = useState<CreatureOrItemDrop | null>(null); // a creature reward, coming out of the altar
   // Fix today's quests in the save the first time they're seen (lib/daily.ts todayDaily).
   useEffect(() => { if (game.hydrated) todayDaily(DAILY_ONLINE); }, [game.hydrated]);
   if (!game.hydrated) return <p style={{ color: MUTED, fontSize: 14, textAlign: "center", marginTop: 24 }}>Loading…</p>;
@@ -191,6 +194,9 @@ function QuestList() {
     else if (q.reward === "merchant") game.merchantVisits();
     else if (q.reward === "cache") drops.forEach(game.addCache);
     else { drops.forEach(game.addDrop); if (drops.length > 1) box = drops; } // (one thing: the celebration shows it, and it's yours)
+    // A creature: the Soul Altar's whirl climbs to its rarity and it steps out (the user, 2026-11-20: you didn't see who).
+    const creature = q.reward === "creature" && drops.length === 1 ? (drops[0] as CreatureOrItemDrop) : null;
+    if (creature && findCreatureTemplate(creature.creatureId ?? "", creature.name)) { setSummoned(creature); buzz("levelUp"); reread((n) => n + 1); return; }
     const look = dailyLook(q);
     setBurst({ show: { art: look.art, tint: look.tint, text: q.reward === "gold" ? `+${(q.gold ?? 0).toLocaleString()} gold` : q.pays,
       from: note?.querySelector(".reward-badge")?.getBoundingClientRect() ?? null }, drops: box });
@@ -252,6 +258,8 @@ function QuestList() {
       )}
 
       {burst && <ClaimBurst show={burst.show} onDone={() => { const b = burst; setBurst(null); if (b.drops) setPrize(b.drops); }} />}
+      {summoned && <SummonShow t={findCreatureTemplate(summoned.creatureId ?? "", summoned.name)!} cards={[]} result={summoned} onDone={() => setSummoned(null)}
+        words={{ laying: "The Soul Altar stirs…", stirring: "A soul answers…", done: `${summoned.name} joins you!` }} />}
       {prize && <CodeCache title="Daily reward" items={prize} doneLabel="Take it all" intro="Tap a slot to see what's inside." onDone={() => setPrize(null)} />}
     </div>
   );
