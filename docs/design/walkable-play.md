@@ -222,7 +222,10 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   over it only if there's no other way: walkSim `foeClear`, the user, 2026-11-12; wandering foes and
   the witch keep round them too), and it fades to black into the fight (`FADE_TIME` 0.6 s)
   once they've all reached you, or a second after the first has (`LATE_GRACE`), or 4 s after
-  they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. (`/lab/walk` still
+  they saw you whatever happens (`ALARM_MAX`). You can't walk meanwhile. They line up for the
+  fight in the order they reached you, the first there coming out first (foes.ts `arrivalOrder`,
+  kept as the room's `foeOrder`, read by run.ts `fightEnemies`; the user, 2026-11-20): together,
+  the nearer first; still on their way, after, nearest first. (`/lab/walk` still
   starts its fights at once.) Tap a chest, stash or a fight's sack
   to walk up and open it in the loot window. A camp's cages are guarded like a mini boss's
   chest (the user, 2026-11-09): its foes patrol in front of them (`cageGuardSpot`), and

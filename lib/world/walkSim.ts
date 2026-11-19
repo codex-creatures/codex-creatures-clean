@@ -17,7 +17,7 @@ import { advance, roomAt, type CanStep, type Walker } from "../dungeon/walk";
 import { facingOf, smoothHeading, turnTo, type Facing } from "../dungeon/tileArt";
 import { torchLit, rubbleOf, fallenIn, showsRubble, canIgnite, sconceInSight, fireInSight, torchReach, SCONCE_RADIUS, CANDLE_RADIUS, type Sconce, type Candle } from "../dungeon/torch";
 import { byFire, warmBy, CAMPFIRE_LIGHT, EMBER_LIGHT, type Campfire } from "../dungeon/campfire";
-import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "../dungeon/foes";
+import { spottedBy, stepFoe, chargePath, chargeFoe, fightReady, arrivalOrder, parentOf, ALARM_PAUSE, ALARM_LIGHT, ARRIVE, FADE_TIME, type Foe } from "../dungeon/foes";
 import { hasFight, type Room } from "../dungeon/run";
 import type { WalkRun } from "../dungeon/walkRun";
 import { ROCK, type Floorplan, type Pt } from "../dungeon/floorplan";
@@ -132,7 +132,7 @@ export const candleLight = (sim: WalkSim, c: Candle) => cached(sim, c.id, c, CAN
 export type WalkEvent =
   | { type: "progress"; progress: Progress }
   | { type: "enter"; room: string; state: WalkState }
-  | { type: "spotted"; room: string; state: WalkState }
+  | { type: "spotted"; room: string; state: WalkState; order: number[] } // order: the foes (by index) as they reached you
   | { type: "use"; thing: Thing; state: WalkState }
   | { type: "heal"; gains: Record<string, number>; state: WalkState }
   | { type: "keep"; state: WalkState }
@@ -267,7 +267,7 @@ export function stepWalk(sim: WalkSim, input: FrameInput): Frame {
     if (A.fadeAt === null && fightReady([...A.arrived.values()], alarmed.length, t)) A.fadeAt = now;
     if (A.fadeAt !== null && now - A.fadeAt >= FADE_TIME * 1000) {
       sim.fired = now;
-      events.push({ type: "spotted", room: A.room, state: walkState(sim) });
+      events.push({ type: "spotted", room: A.room, state: walkState(sim), order: arrivalOrder(sim.foes.filter((f) => f.room === A.room), A.arrived, sim.me) });
     }
   } else if (!busy) {
     sim.foes = sim.foes.map((f) => stepFoe(live, f, dt, rng, clear));

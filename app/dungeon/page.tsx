@@ -45,7 +45,7 @@ import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { SECOND_WIND_HEAL, SET_BONUS } from "@/lib/items/armor";
 import type { ItemKey } from "@/lib/items/ceilings";
 import type { ArmorKey } from "@/lib/items/armor";
-import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
+import { cornerCrateFind, squadsOf, entryFee, CHEST_DROPS, CHEST_CODEX_CHANCE, CHEST_TOOLS, toolFinds, capSack, cyclopsChest, MINIBOSS_SCROLL_CHANCE, BOSS_SCROLL_CHANCE, rollDeck, ROOM_INFO, POTIONS, addToBag, bagItems, type PotionKey, hasFight, fightEnemies, minibossExtras, bossSoulStone, codexPrice, wareName, wareDrop, BOSS_REVIVAL, GOLDEN_GOLD, REVIVE_HP, BAG_MAX, type Ware, BACKPACK, BINDLE, onBindle, bagSize, bagName, isPotionEntry, gearEntry, gearIdOf, lootEntry, lootIdOf, type BagEntry, type FloorItem, startRun, stepInside, canMoveOn, moveOn, runPosition, leaveRoom, atTheTop, wonAtTop, setTeam, healInPool, fightingTeam, enemyFighter, gearName, endRun, loadDungeon, saveDungeon, fightContainer, usedUp, type SackItem, type GotItem, type DungeonRun, type Room, curse, illnessTick, illnessesOf, withIllnesses, dungeonOf, gearOf, DUNGEONS, witchPrize, ILLNESS_DAMAGE, bossLevel, type DungeonId, campCages, needsSlot, nextToTake, dropRank, sackRank, stowDrop, rareLeftBehind, merchantOffer, buysHere, droppedPieceStats, dynamiteHere, takeDynamite, shelfCodex, SCROLL_LOOKS, scrollLooksLeft, leaveSack as leaveRunSack } from "@/lib/dungeon/run";
 import { countDaily } from "@/lib/daily";
 import { countCampaign, drankOn, noteDrank, onlyEffective } from "@/lib/campaign";
 import { comeHome, loadTavern, updateTavern, wantsStorehouse } from "@/lib/tavern";
@@ -951,11 +951,13 @@ export default function DungeonPage() {
     setWalkPanel(walkWorthPanel(loadDungeon().run?.current ?? null));
   }
   // Seen by a room's foes (or into the chief's camp): that room's fight. Its loot will lie where you stood.
-  function walkSpotted(id: string, st: WalkState) {
+  // The foes line up for it in the order they reached you.
+  function walkSpotted(id: string, st: WalkState, order?: number[]) {
     closeLoot();
     battle.clear();
     setWalkPanel(false);
     updateRun((r) => walkTo(walkKeep(r, { ...st, spots: { ...(r.walk?.spots ?? {}), [id]: st.at } }), id));
+    if (order?.length) updateRun((r) => (r.current && runPosition(r) === id ? { ...r, current: { ...r.current, foeOrder: order } } : r));
     const r = loadDungeon().run;
     if (r?.current && hasFight(r.current) && !r.current.done && fightingTeam(r).length > 0) startFight(r);
   }
@@ -1079,7 +1081,7 @@ export default function DungeonPage() {
     const ids = own;
     const info: MemberInfo[] = room.boss
       ? BOSS_PARTS_OF[room.boss].map((p) => ({ rarity: CREATURE_BY_ID[p.id].rarity, label: p.label, weaponName: p.weaponName, armorName: p.armorName, creatureId: p.id }))
-      : room.enemies!.map((e) => ({
+      : fightEnemies(room).map((e) => ({
           rarity: CREATURE_BY_ID[e.creatureId].rarity,
           label: creatureTypeLabel(e.proficiency), creatureId: e.creatureId,
           weaponName: gearOf(e, "weapon") && gearName(gearOf(e, "weapon")!),
@@ -1088,7 +1090,7 @@ export default function DungeonPage() {
     updateRun((x) => ({ ...x, current: { ...x.current!, fighters: ids } }));
     if (room.enemies) game.markSeen(room.enemies.map((e) => e.creatureId));
     battle.start(
-      { A: fighters, B: room.boss ? bossTeam(room.boss, bossLevel(dungeonOf(r))) : room.enemies!.map(enemyFighter) },
+      { A: fighters, B: room.boss ? bossTeam(room.boss, bossLevel(dungeonOf(r))) : fightEnemies(room).map(enemyFighter) },
       { A: mine, B: info },
       room.level ?? "hard",
       {
@@ -1126,7 +1128,7 @@ export default function DungeonPage() {
     const xp = m.state.winner !== "A" ? 0 : B.team.reduce((sum, f, i) => {
       if (f.hp > 0) return sum;
       if (room0.boss) return sum + BOSS_XP;
-      const e = room0.enemies?.[i];
+      const e = fightEnemies(room0)[i];
       return sum + (e ? xpForEnemy(e.level ?? 15, CREATURE_BY_ID[e.creatureId].rarity) : 0);
     }, 0);
     const xpNotes: string[] = [];

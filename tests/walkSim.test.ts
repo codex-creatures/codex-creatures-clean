@@ -32,7 +32,8 @@ function newSide(sim: WalkSim, f: Frame) {
     sconces: sim.sconces.filter((c) => c.lit).map((c) => c.id), candles: sim.candles.filter((c) => c.lit).map((c) => c.id), fires: sim.fires, foes: sim.foes, npcs: sim.npcs,
     flare: sim.flareLeft, falls: sim.falls, shakeAt: sim.shakeAt, want: sim.wantThing, fired: sim.fired, alarm: A && { ...A },
     frame: { draw: f.draw, busy: f.busy, reach: f.reachNow, candles: f.candlesSeen.map((c) => c.id), fires: f.fireSeen, alarmed: f.alarmed, foeLight: f.foeLight, giving: f.giving },
-    events: f.events.map((e) => ({ ...e })),
+    // (A fight's arrival order, 2026-11-20, came after the move: the screen's old logic had none.)
+    events: f.events.map((e) => ({ ...e, order: undefined })), // (dropped by plain)
   });
 }
 function oldSide(o: ReturnType<typeof oldWalk>, events: OldEvent[]) {

@@ -916,6 +916,7 @@ export type Room = {
   level?: AiLevel;  // how well the enemies play
   gold?: number;    // gold for winning (fights) or finding (treasure)
   fighters?: string[]; // your creatures in the fight, in battle order
+  foeOrder?: number[]; // walked runs: the enemies (by index) in the order they reached you, their order in the fight (missing: as rolled)
   boss?: BossKind;     // the boss in this room (instead of enemies)
   offers?: string[];   // a librarian: the codexes for sale
   bought?: string[];   // …and the ones you bought (librarian codexes; merchant wares, by key)
@@ -954,6 +955,13 @@ export function fightContainer(room: Room, dungeon: DungeonId): "sack" | "chest"
 }
 
 export const isFight = (k: RoomKind) => k === "easy" || k === "hard" || k === "miniboss" || k === "boss";
+// The room's enemies in their fight order (foeOrder; any it doesn't name after, as rolled). The
+// room keeps its own order: each foe in the walkable room is drawn as the enemy at its index.
+export function fightEnemies(r: Room): Enemy[] {
+  const all = r.enemies ?? [], order = r.foeOrder ?? [];
+  const named = order.filter((i, k) => i >= 0 && i < all.length && order.indexOf(i) === k);
+  return [...named.map((i) => all[i]), ...all.filter((_, i) => !named.includes(i))];
+}
 // Is there a fight in this room (now)? Fight rooms, an encampment (an
 // ambush only once it's sprung), a guarded storehouse.
 export const hasFight = (r: Room) => isFight(r.kind)

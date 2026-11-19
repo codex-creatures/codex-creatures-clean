@@ -35,7 +35,7 @@ export type WalkPlayProps = {
   team: Omit<PartyMember, "hp">[];     // who's walking with you (a campfire heals them)
   hp: Record<string, number>;          // …their health, shares of max HP (the run's)
   onEnter: (id: string, state: WalkState) => void;
-  onSpotted: (id: string, state: WalkState) => void;
+  onSpotted: (id: string, state: WalkState, order?: number[]) => void;
   onObject: (id: string, state: WalkState) => void;
   onCage?: (id: string, cage: number, state: WalkState) => void;
   onDeck?: (id: string, state: WalkState) => void; // walked up to a deck of cards on a room's table (world version 13)
@@ -133,7 +133,7 @@ export function useWalkPlay(P0: WalkPlayProps) {
     for (const e of F.events) {
       if (e.type === "progress") setProgress(e.progress);
       else if (e.type === "enter") P.onEnter(e.room, e.state);
-      else if (e.type === "spotted") P.onSpotted(e.room, e.state);
+      else if (e.type === "spotted") P.onSpotted(e.room, e.state, e.order);
       else if (e.type === "use") openThing(e.thing, e.state);
       else if (e.type === "heal") P.onHeal(e.gains, e.state);
       else if (e.type === "keep") P.onKeep(e.state);

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ROCK, FLOOR, type Floorplan } from "../lib/dungeon/floorplan";
 import { rollLayout, layoutFloorplan, campMap, WALK_SPEC } from "../lib/dungeon/layout";
-import { lineOfSight, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, GUARD_REACH, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
+import { lineOfSight, sees, spottedBy, stepFoe, visionCone, chargePath, chargeFoe, fightReady, arrivalOrder, GUARD_REACH, DOOR_CLEAR, SIGHT_RANGE, SIGHT_NEAR, ALARM_MAX, LATE_GRACE, CHARGE_SPEED, type Foe } from "../lib/dungeon/foes";
 import { chestSack, fightSack, rollWalkRooms, roomDepth } from "../lib/dungeon/walkRooms";
 import { routeLength } from "../lib/dungeon/map";
-import { CHEST_DROPS } from "../lib/dungeon/run";
+import { CHEST_DROPS, fightEnemies, type Room } from "../lib/dungeon/run";
 import { placeFoes } from "../lib/world/compat/v0Placers";
 
 function seeded(seed: number) {
@@ -195,6 +195,20 @@ describe("seen: they come at you", () => {
     expect(fightReady([1], 2, 1 + LATE_GRACE - 0.1)).toBe(false);
     expect(fightReady([1], 2, 1 + LATE_GRACE)).toBe(true);
     expect(fightReady([], 3, ALARM_MAX)).toBe(true);
+  });
+  it("they line up for the fight in the order they reached you, the room's own order left alone", () => {
+    const foe = (index: number, x: number): Foe => ({ room: "r", index, x, y: 1, facing: 0, walks: true, path: [], wait: 0 });
+    const you = { x: 1, y: 1 };
+    // Foe 2 got there first, then 0; 1 and 3 reached you together (the nearer first); 4 was still coming.
+    const order = arrivalOrder([foe(0, 2), foe(1, 2.4), foe(2, 2), foe(3, 2.2), foe(4, 6)], new Map([[2, 0.6], [0, 0.9], [1, 1.1], [3, 1.1]]), you);
+    expect(order).toEqual([2, 0, 3, 1, 4]);
+    const enemies = ["a", "b", "c", "d", "e"].map((creatureId) => ({ creatureId })) as unknown as Room["enemies"];
+    const room = { kind: "hard", enemies, foeOrder: order } as Room;
+    expect(fightEnemies(room).map((e) => e.creatureId)).toEqual(["c", "a", "d", "b", "e"]);
+    expect(room.enemies!.map((e) => e.creatureId)).toEqual(["a", "b", "c", "d", "e"]);
+    // No order kept (old saves, the scroll map): as rolled; one that names too few: the rest after.
+    expect(fightEnemies({ ...room, foeOrder: undefined }).map((e) => e.creatureId)).toEqual(["a", "b", "c", "d", "e"]);
+    expect(fightEnemies({ ...room, foeOrder: [3, 9] }).map((e) => e.creatureId)).toEqual(["d", "a", "b", "c", "e"]);
   });
 });
 

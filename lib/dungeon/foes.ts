@@ -135,6 +135,17 @@ export function fightReady(arrived: number[], count: number, t: number): boolean
   return arrived.length > 0 && t - Math.min(...arrived) >= LATE_GRACE;
 }
 
+// The order a room's foes line up in for the fight: the order they reached you (the user,
+// 2026-11-20: the one right next to you comes out first, not wherever the room's roll put it).
+// Same moment: the nearer first. Any still on their way when it started: after, nearest first.
+// Gives the foes' indices (their place in the room's enemies: run.ts fightEnemies lines them up).
+export function arrivalOrder(foes: Foe[], arrived: Map<number, number>, you: Pt): number[] {
+  const far = (f: Foe) => Math.hypot(f.x - you.x, f.y - you.y);
+  return [...foes].sort((a, b) => (arrived.get(a.index) ?? Infinity) - (arrived.get(b.index) ?? Infinity) || far(a) - far(b))
+    .map((f) => f.index);
+}
+
+
 // A foe coming at you, `seconds` later: along its path at CHARGE_SPEED, facing the way it goes.
 export function chargeFoe(foe: Foe, seconds: number): Foe {
   let { x, y } = foe;
