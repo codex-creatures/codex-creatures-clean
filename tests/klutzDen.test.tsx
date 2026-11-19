@@ -61,6 +61,26 @@ describe("Klutz's Den", () => {
     expect(text).toContain("1 went in the cage");
   });
 
+  it("while he's out, tapping a stat says why his points can't be spent", async () => {
+    const now = Date.now();
+    const expedition = { v: 2, dest: 0, startHp: 100, maxHp: 120, startedAt: now - 60000, endsAt: now + 3600000, collected: false, home: "pack", encounters: [], finds: [] };
+    vi.resetModules();
+    localStorage.clear();
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], equipment: {}, gold: 0, caged: [], quest: { stage: "done" }, klutz: { level: 6, expedition } }));
+    window.history.replaceState(null, "", "/klutz");
+    const Page = (await import("@/app/klutz/page")).default;
+    host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => { root.render(<Page />); });
+    await tap([...host.querySelectorAll("button")].find((b) => b.textContent?.includes("Kit")));
+    await tap([...host.querySelectorAll("button")].find((b) => b.textContent?.includes("Look at his gear")));
+    const attack = [...document.querySelectorAll("button")].find((b) => b.title.startsWith("Melee:"));
+    await tap(attack);
+    expect(document.body.textContent).toContain("He's out hunting. Spend his points when he's home.");
+    expect(attack?.textContent).not.toContain("+1");
+  });
+
   it("the Den's crate opens his den on his crate", async () => {
     await open("?tab=crate");
     expect(host.textContent).toContain("His crate · 0/");

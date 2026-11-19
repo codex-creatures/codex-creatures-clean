@@ -484,11 +484,25 @@ function PointsGrid({ prof, free, pending, locked, onAdd, onConfirm, onCancel, r
   respec: { cost: number; can: boolean; run: () => boolean };
 }) {
   const [respecArmed, setRespecArmed] = useState(false);
+  // Away, a tap says why nothing happens (the user, 2026-11-19: the Kit tab glowed, but the boxes did nothing).
+  const [why, setWhy] = useState(false);
   const pendingTotal = Object.values(pending).reduce((s, n) => s + (n ?? 0), 0);
   const left = free - pendingTotal;
+  const tap = (k: ProfKey) => {
+    if (!locked) return onAdd(k);
+    setWhy(true);
+    window.setTimeout(() => setWhy(false), 2500);
+  };
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+        {why && (
+          <div role="status" onClick={() => setWhy(false)} className="pixel-font"
+            style={{ position: "absolute", inset: "20% 4%", zIndex: 2, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center",
+              padding: 8, background: "#1d1a12", border: "2px solid #8a6a3a", color: GOLD, fontSize: 14, lineHeight: 1.4 }}>
+            🔒 He's out hunting. Spend his points when he's home.
+          </div>
+        )}
         {POINT_ROWS.map((k) => {
           if (k === "free") {
             return (
@@ -502,7 +516,7 @@ function PointsGrid({ prof, free, pending, locked, onAdd, onConfirm, onCancel, r
           const st = STATS.find((s) => s.key === k)!;
           const add = pending[k] ?? 0;
           return (
-            <button key={k} disabled={locked || left <= 0} onClick={() => onAdd(k)}
+            <button key={k} disabled={left <= 0} onClick={() => tap(k)}
               title={`${st.label}: gear ${st.label.toLowerCase()} is boosted by ${prof[k]}%. Tap to add 1%.`}
               style={{ textAlign: "center", padding: "6px 2px", minHeight: 44, background: add ? "#1a2416" : "#12131a", border: "2px solid #2a2d38", borderTop: `3px solid ${st.color}`,
                 color: "inherit", cursor: locked || left <= 0 ? "default" : "pointer", font: "inherit" }}>
