@@ -119,7 +119,7 @@ describe("tables turned end-on (world version 15)", () => {
         if (xs.size !== 2 || ys.size !== 3) bad.push(`${n} ${t.id}: ${xs.size} by ${ys.size}`);
         const panels = new Set(cells.map((c) => `${panelOfSubcell(c.sx)},${panelOfSubcell(c.sy)}`));
         if (panels.size !== 1) bad.push(`${n} ${t.id}: over ${panels.size} panels`);
-        if (footprintPanels(t, t.size!).some((p) => plan.tiles[p.y * plan.w + p.x] === ROCK)) bad.push(`${n} ${t.id}: on rock`);
+        if (footprintPanels(t, t.size!, t.rot).some((p) => plan.tiles[p.y * plan.w + p.x] === ROCK)) bad.push(`${n} ${t.id}: on rock`);
         const thing = thingsOf(walk.layout, placements, [t.room], (k) => walkRoom(run, k), [], undefined, 0).find((q) => q.key === t.id);
         if (!thing?.turned) bad.push(`${n} ${t.id}: drawn unturned`);
         const candle = placements.candles.find((c) => c.id === `${t.id}:candle`);
