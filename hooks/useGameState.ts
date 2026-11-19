@@ -204,7 +204,9 @@ export function loadSave(): SaveState | null {
     teams: readTeams(parsed.teams),
     pvpTeams: readPvpTeams(parsed.pvpTeams),
     scanCharges: parsed.scanCharges && typeof parsed.scanCharges === "object" ? (parsed.scanCharges as ScanCharges) : undefined,
-    firstScans: readFirstScans(parsed.firstScans),
+    // (No game in the save at all, a new player or Settings → Start new game: a new game's first scans. A save from
+    // before them, with a game in it, has none. It read as none for a new game too, till 2026-11-20.)
+    firstScans: parsed.inventory === undefined && parsed.scanCounts === undefined ? { ...NEW_FIRST_SCANS } : readFirstScans(parsed.firstScans),
     owned: Array.isArray(parsed.owned) ? parsed.owned.filter((c: unknown) => typeof c === "string") : [],
     ownedCreatures: Array.isArray(parsed.ownedCreatures) ? parsed.ownedCreatures.filter((c: unknown) => typeof c === "string") : [],
     found: (Array.isArray(parsed.found) ? parsed.found as string[] : []).map((k) => (k.startsWith("c:") ? `c:${renamedMove(k.slice(2))}` : k)),

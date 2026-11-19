@@ -15,8 +15,8 @@
 import type { Rarity } from "./types";
 import { REGISTRY_RULES, SCAN_ODDS, rollFromRules, type BarcodeOutcome } from "./barcodeRegistry";
 
-export const FIRST_SCANS = 50;
-export const CALIBRATION_SCANS = 25;
+export const FIRST_SCANS = 35;     // (the user, 2026-11-20: 10 to calibrate, then 25 free; it was 25 and 25)
+export const CALIBRATION_SCANS = 10;
 export const CALIBRATION_TOP: Rarity = "rare";
 
 export type FirstScans = { used: number; codes: string[] };

@@ -26,10 +26,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   scanning and rewards coming back. A barcode new to you uses one (opened, or kept sealed offline);
   rescans (gold), one too rare for you yet, and the testing "random" mode are free. Saved as
   `scanCharges` (missing: full). Shown under the altar's Scan button with a countdown.
-- ✅ **A new game's first scans** (the user, 2026-11-13; lib/firstScans.ts): 50 (`FIRST_SCANS`)
+- ✅ **A new game's first scans** (the user, 2026-11-13; lib/firstScans.ts): 35 (`FIRST_SCANS`; 50 till 2026-11-20)
   free scans with no clock, used before the stored scans (which start at 0, their clock running,
-  when the last one's used). Klutz gives you his scanner, which needs calibrating: the first 25
-  (`CALIBRATION_SCANS`) **calibrate it** (a panel of his above the Scan button; once done he says
+  when the last one's used). Klutz gives you his scanner, which needs calibrating: the first 10
+  (a save with no game in it, a new player's or one from Settings → Start new game, gets them: until 2026-11-20 it read
+  as a save from before them and got none) (`CALIBRATION_SCANS`; 25 till the user, 2026-11-20: "that gives you 35 barcodes really, about right for your house when you start") **calibrate it** (a panel of his above the Scan button; once done he says
   you've still got N free scans, use them while you can: no time limit, just a nudge).
   Each rolls on the spot at the usual odds but nothing past Rare and no soul stone, and asks no
   registry (global or local) and records nothing, so they work offline too and, once calibrated,
@@ -78,8 +79,8 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   bottom as a testing tool. ✅ (the user, 2026-10-31) Online, the altar's testing tools (typed
   barcodes, Random, the resets, rubble and visitor) show only for the owner's account
   (`ADMIN_IDS`, lib/online/admin.ts); a copy without online keeps them. This hides them in the
-  game only: the server can't tell a typed barcode from a scanned one. **✨ Start new** is for
-  every player (two taps); the old save is kept as the backup (Settings → Restore backup).
+  game only: the server can't tell a typed barcode from a scanned one. Its **✨ Start new** button went on
+  2026-11-20 (the user): starting a new game is Settings → Start new game.
 - ✅ **Items discovered** counts every kind of item: weapon and armour types, materials, potions and
   codexes (lib/items/discovery.ts). The save remembers kinds you've used up (`found`).
 - ✅ Scanned creatures: 20% are a real creature, 80% a **creature card** (`REAL_CREATURE_CHANCE`).

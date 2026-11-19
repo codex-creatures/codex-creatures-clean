@@ -12,10 +12,10 @@ function seeded(seed: number) {
 }
 
 describe("a new game's first scans", () => {
-  it("50 with no clock, the first 25 calibrating", () => {
-    expect(FIRST_SCANS).toBe(50);
-    expect(CALIBRATION_SCANS).toBe(25);
-    expect(firstScansLeft(NEW_FIRST_SCANS)).toBe(50);
+  it("35 with no clock, the first 10 calibrating", () => {
+    expect(FIRST_SCANS).toBe(35);
+    expect(CALIBRATION_SCANS).toBe(10);
+    expect(firstScansLeft(NEW_FIRST_SCANS)).toBe(35);
     expect(calibrating(NEW_FIRST_SCANS)).toBe(true);
   });
 
@@ -81,5 +81,23 @@ describe("scanning while calibrating", () => {
     const { got, generateDrop } = scanner(["4006381333931"]);
     await generateDrop("4006381333931");
     expect(got).toEqual({ drops: [], used: [], counted: [], again: 1 });
+  });
+});
+
+describe("a new game's first scans, as a save loads", () => {
+  it("no game in the save (a new player, or Settings → Start new game): the first scans; a save from before them: none", async () => {
+    const store: Record<string, string> = {};
+    (globalThis as unknown as { window: unknown }).window = {
+      localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } },
+    };
+    const { loadSave } = await import("../hooks/useGameState");
+    const { SAVE_KEY } = await import("../lib/save");
+    expect(loadSave()!.firstScans).toEqual(NEW_FIRST_SCANS);
+    store[SAVE_KEY] = JSON.stringify({ campaign: { v: 2 } }); // (only a side field written so far)
+    expect(loadSave()!.firstScans).toEqual(NEW_FIRST_SCANS);
+    store[SAVE_KEY] = JSON.stringify({ inventory: [], scanCounts: { "123": 1 }, gold: 10 });
+    expect(loadSave()!.firstScans).toBeUndefined();
+    store[SAVE_KEY] = JSON.stringify({ inventory: [], scanCounts: {}, gold: 0, firstScans: { used: 4, codes: [] } });
+    expect(loadSave()!.firstScans).toEqual({ used: 4, codes: [] });
   });
 });
