@@ -16,7 +16,7 @@ import Glyph, { RaceIcon } from "@/components/Glyph";
 import { CreatureFilterBar, CreatureMarks, NO_FILTER, matchesFilter, type CreatureFilter } from "@/components/CreatureMarks";
 import {
   SPECIAL_MOVES, BOSS_MOVES, CLASS_INFO, COMBAT_CLASSES, CREATURE_TEMPLATES, DAMAGE_TYPE_INFO, LEARNABLE_MOVES, MOVE_BY_NAME, RACES, RACE_INFO, RACE_MOVES,
-  STEADY_MAX_ENERGY, learnRacesOf, raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type Race, type Skill,
+  STEADY_MAX_ENERGY, isUtility, learnRacesOf, raceMovesFor, type CombatClass, type CreatureProficiency, type CreatureTemplate, type Race, type Skill,
 } from "@/lib/creatures/creatureData";
 import {
   AFFINITY_BONUS, DAMAGE_VARIANCE, ENERGY_REGEN, MAX_ENERGY, PRECISE_CHANCE, PRECISE_DAMAGE, PRECISE_IGNORE,
@@ -273,9 +273,9 @@ function CreatureCard({ t }: { t: CreatureTemplate }) {
 
 function MoveChip({ m }: { m: Skill }) {
   return (
-    <span title={`${m.name}: ${m.self ? "utility" : moveKind(m)} · ${m.damage} power · ${m.energyCost} energy${m.desc ? ` — ${m.desc}` : ""}`}
+    <span title={`${m.name}: ${isUtility(m) ? "utility" : moveKind(m)} · ${m.damage} power · ${m.energyCost} energy${m.desc ? ` — ${m.desc}` : ""}`}
       style={{ display: "inline-block", fontSize: 11, padding: "2px 6px", margin: "0 3px 3px 0", background: "#1b1d25", border: `1px solid ${CLASS_INFO[m.type].color}66` }}>
-      {CLASS_INFO[m.type].icon}{m.self ? "" : DAMAGE_TYPE_INFO[m.dmgType].icon} {m.name} <span style={{ color: MUTED }}>{m.self ? "utility" : m.damage}</span>
+      {CLASS_INFO[m.type].icon}{isUtility(m) ? "" : DAMAGE_TYPE_INFO[m.dmgType].icon} {m.name} <span style={{ color: MUTED }}>{isUtility(m) ? "utility" : m.damage}</span>
     </span>
   );
 }
@@ -291,7 +291,7 @@ function Moves({ seen }: { seen: Set<string> }) {
     <div key={m.name} style={{ ...PANEL, marginTop: 6, padding: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
         <b style={{ color: m.effect ? "#ffd98a" : "white" }}>{m.name}</b>
-        <span style={{ fontSize: 12, color: MUTED }}>{m.self ? "utility" : <><MoveKind m={m} /> · {m.damage} power</>} · {m.energyCost}⚡</span>
+        <span style={{ fontSize: 12, color: MUTED }}>{isUtility(m) ? "utility" : <><MoveKind m={m} /> · {m.damage} power</>} · {m.energyCost}⚡</span>
       </div>
       {m.desc && <div style={{ fontSize: 12, color: "#c9b48a", marginTop: 2 }}>{m.desc}</div>}
       <div style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{who}</div>
@@ -455,7 +455,7 @@ function Races({ seen }: { seen: Set<string> }) {
         <div key={r} style={{ ...PANEL, marginTop: 6 }}>
           <RaceTag race={r} />{" "}
           {RACE_MOVES.filter((m) => learnRacesOf(m).includes(r)).map((m) => (
-            <span key={m.name} style={{ fontSize: 13 }}> <b>{m.name}</b> <span style={{ color: MUTED }}>({m.self ? "utility" : <MoveKind m={m} />})</span> — {m.desc}</span>
+            <span key={m.name} style={{ fontSize: 13 }}> <b>{m.name}</b> <span style={{ color: MUTED }}>({isUtility(m) ? "utility" : <MoveKind m={m} />})</span> — {m.desc}</span>
           ))}
         </div>
       ))}

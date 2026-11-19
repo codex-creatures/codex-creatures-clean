@@ -33,7 +33,6 @@ import {
 import { cloudLeft, type BossKind } from "@/lib/combat/bossAi";
 import GroundEffects from "./GroundEffects";
 import { ILLNESS_DAMAGE } from "@/lib/dungeon/run";
-import { effectiveOn } from "@/lib/quest";
 import { REF_LEVEL } from "@/lib/creatures/levels";
 import { chooseAiAction, chooseAiReplacement, AI_LEVEL_LABELS, type AiLevel } from "@/lib/combat/thinkingAi";
 import { RARITIES } from "@/lib/items/gear";
@@ -56,32 +55,29 @@ const faceFoe = (sprite: Sprite, side: "A" | "B") => flipToFace(sprite, side ===
 export const MUTED = "rgba(255,255,255,0.5)";
 
 // The first quest's guided fight (your creature against the thief): Klutz
-// watches from the side and talks you through races. It opens on a Fight! button (step -1); each
+// watches from the side and talks you through your creature's race. It opens on a Fight! button (step -1); each
 // step after that: what he says, and which moves you can pick — they glow
 // (null = any, and you can swap and use the bag again). chart: the race
-// chart's button glows. The thief's race is one your creature's moves beat
-// (thiefRace, lib/quest.ts), so the first step always has a move to glow.
+// chart's button glows. The thief has no race (the user, 2026-11-20): the lesson is only that a move of your
+// creature's own race hits harder from it (a starter knows one: STARTER_RACE_MOVE); what beats what comes later.
 type TutorialStep = { say: string; allow: ((s: Skill) => boolean) | null; chart?: boolean };
 export const TUTORIAL_DRINK_AT = 0.4; // Klutz says drink a potion below this share of your health
-export function tutorialSteps(me: Combatant, them: Combatant): TutorialStep[] {
-  const races = them.races ?? [];
-  const theirs = races.map((r) => RACE_INFO[r].name).join(" / ");
-  const good = me.skills.find((s) => effectiveOn(s, races));
-  const goodRace = good && raceOfMove(good);
-  // Its own race (a new player's starter knows a move of it: STARTER_RACE_MOVE), and the match bonus that gives.
-  const mine = (me.races ?? [])[0], own = !!goodRace && (me.races ?? []).includes(goodRace);
+export function tutorialSteps(me: Combatant): TutorialStep[] {
+  const own = me.skills.find((s) => { const r = raceOfMove(s); return !!r && (me.races ?? []).includes(r); });
+  const race = own && raceOfMove(own);
+  const races = (me.races ?? []).map((r) => RACE_INFO[r].name).join(" and ");
   return [
-    { say: good && goodRace
-        ? `${own && mine ? `Your ${me.name} is a ${RACE_INFO[mine].name}, and moves of its own race hit harder from it. ` : ""}That thief's a ${theirs}, and ${RACE_INFO[goodRace].name} moves are effective against ${theirs}s. Hit it with ${good.name}!`
+    { say: own && race
+        ? `Your ${me.name} is ${races}. Moves of its own race hit harder from it, and it knows one: ${own.name}, a ${RACE_INFO[race].name} move. Hit that thief with it!`
         : "Right: that's a big lump of a thief. Hit it!",
-      allow: good ? (s) => effectiveOn(s, races) : null },
-    { say: good
-        ? `EFFECTIVE! Every creature has a race or two, and so does every codex move. Moves of your creature's own race hit harder, and moves its foe's race is weak to harder still. Not sure what beats what? Tap ▲▼ below for the race chart. He's tough: keep at it!`
-        : `Every creature has a race or two. Your own moves are neutral: they land the same on everyone. Moves from codexes carry a race, and that's where the race chart (▲▼ below) comes in. Now finish it off — your call!`,
-      allow: null, chart: true },
+      allow: own ? (s) => s.name === own.name : null },
+    { say: own
+        ? `See that? Extra damage! Every creature has a race or two, and so does every codex move: moves of your creature's own race always hit harder. He's tough: keep at it!`
+        : "He's tough: keep at it!",
+      allow: null },
   ];
 }
-const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial === 0 && tutorialSteps(activeOf(m.state.sides.A), activeOf(m.state.sides.B))[0].allow !== null));
+const tutorialLocked = (m: Match) => m.tutorial !== undefined && (m.tutorial < 0 || (m.tutorial === 0 && tutorialSteps(activeOf(m.state.sides.A))[0].allow !== null));
 const STEP_MS = { attack: 950, other: 650, phase: 4200 }; // phase: a boss's phase-change scene
 
 // What the screen shows about each team member (gear names etc.).
@@ -402,7 +398,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
 
   const myAgil = currentAgility(me), theirAgil = currentAgility(them);
   // The guided fight: Klutz's tip, and which moves you can pick right now.
-  const steps = match.tutorial !== undefined ? tutorialSteps(me, them) : [];
+  const steps = match.tutorial !== undefined ? tutorialSteps(me) : [];
   const tip = match.tutorial !== undefined && match.tutorial >= 0 && match.tutorial < steps.length && you.active === 0 ? steps[match.tutorial] : undefined;
   const notStarted = match.tutorial === -1;
   // …and once his lessons are said, a word when you're low with a potion in the bag (the thief's a long fight: the

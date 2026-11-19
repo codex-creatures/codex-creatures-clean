@@ -41,9 +41,10 @@ export const CODEX_MOVES_2026: Skill[] = [
   move("Vampiric Bite", "melee", "underkin", 20, 60, "uncommon", { kind: "lifesteal", share: 0.3 },
     ["dire_wolf", "ironhide", "cave_bat", "hollow_matriarch", "veilstalker", "void_serpent", "shambler", "swamp_witch", "deep_angler", "tunnel_wyrm", "plague_rat", "glob"],
     "Heals 30% of the damage it does."),
-  move("Nibble", "melee", "undead", 8, 20, "common", { kind: "chain", step: 0.1, cap: 0.5 },
+  // (Up to 10 times in a row, +100%: the user, 2026-11-20; it was 5, +50%.)
+  move("Nibble", "melee", "undead", 8, 20, "common", { kind: "chain", step: 0.1, cap: 1 },
     ["moss_wolf", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "crystalback", "hollow_matriarch", "veilstalker", "void_serpent", "rattlebones", "shambler", "mr_shadows", "swamp_witch", "flame_imp", "deep_angler", "tunnel_wyrm", "plague_rat", "glob"],
-    "+10% each time in a row (up to +50%). Stacks with Perfectionist."),
+    "+10% each time in a row (up to 10 times: +100%). Stacks with Perfectionist."),
   utility("Crystal Armour", "divine", 40, "common", { kind: "ward", rounds: 3 },
     ["bellow_toad", "ironhide", "rust_beetle", "crystalback", "crystal_golem", "hollow_matriarch", "the_watcher", "void_serpent", "mr_shadows", "storm_phoenix", "aurelius", "swamp_witch", "sylvaran", "gleamling", "flame_imp", "thunderhead", "tunnel_wyrm", "pale_rider"],
     "Clears its status effects, and none can touch it for 3 rounds (no cripple, poison, bleed, clouds).", { self: true, cooldown: 5 }),
@@ -128,6 +129,10 @@ export const CODEX_MOVES_2026: Skill[] = [
   move("Claw", "melee", "beast", 10, 20, "common", undefined,
     ["moss_wolf", "dire_wolf", "ironhide", "cave_bat", "rust_beetle", "deep_angler", "hollow_matriarch", "flame_imp", "crystalback", "crystal_golem", "veilstalker", "rattlebones", "shambler", "storm_phoenix", "plague_rat", "dreadpox"],
     "A plain claw."),
+  // Underkin's basic hit (the user, 2026-11-20: a new player's Underkin starter knows it; the name is Claude's).
+  move("Rock Toss", "ranged", "underkin", 8, 20, "common", undefined,
+    ["cave_bat", "rust_beetle", "hollow_matriarch", "veilstalker", "deep_angler", "tunnel_wyrm"],
+    "A plain thrown rock."),
   // Smoke Bomb's numbers, but it doesn't go first, and the player picks who comes in.
   move("Bounce", "melee", "beast", 5, 40, "rare", { kind: "bounce" },
     ["moss_wolf", "amber_wasp", "bellow_toad", "dire_wolf", "ironhide", "rust_beetle", "hollow_matriarch", "veilstalker", "storm_phoenix", "leafblade_scout", "aurelius", "plague_rat", "pale_rider"],

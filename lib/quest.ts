@@ -36,7 +36,7 @@ import { rollItemStats } from "./items/rollItemStats";
 import { rollArmorPiece } from "./items/rollArmorStats";
 import type { Enemy, Room } from "./dungeon/run";
 import { CREATURE_BY_ID } from "./creatures/creatureData";
-import { RACES_V2, type RaceV2 } from "./creatures/racesV2";
+import type { RaceV2 } from "./creatures/racesV2";
 import { raceOfMove, raceVsAll } from "./combat/raceChart";
 
 export type QuestStage = "start" | "hunt" | "boxFound" | "stash" | "lend" | "done";
@@ -65,8 +65,9 @@ export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club
 // own moves (and Klutz's club), while Klutz watches from the side and talks
 // you through races (tutorialSteps in components/BattleScreen.tsx). So it's
 // built to teach:
-// - its race is one your creature's moves are effective against (thiefRace;
-//   the user, 2026-10-31), so Klutz can have you hit it with one of them;
+// - it has no race (the user, 2026-11-20: "he is neutral"): the lesson is your
+//   creature's own race, whose moves hit harder from it (the match bonus), with
+//   the move of it a starter knows (STARTER_RACE_MOVE); what beats what comes later;
 // - no weapon or armour, but lots of HP (THIEF_HP_MULT) and only a weak
 //   slap: a long fight that wears you down (the user, 2026-11-20: "put up a
 //   bit of a fight… use 1 or 2 potions"; Klutz hands you TUTORIAL_POTIONS);
@@ -77,10 +78,10 @@ export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club
 // about 150% of its health in all (2: 6 rounds, 54%), so 1–2 Lesser Potions (50 HP each). Never a loss.
 export const THIEF_LEVEL = 8;
 export const THIEF_HP_MULT = 5.5;
-export function thiefRoom(race: RaceV2 = "humanoid"): Room {
+export function thiefRoom(): Room {
   const thief: Enemy = {
     creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"], level: THIEF_LEVEL,
-    gear: [], hpMult: THIEF_HP_MULT, gentle: true, races: [race],
+    gear: [], hpMult: THIEF_HP_MULT, gentle: true,
   };
   return { kind: "easy", quest: "thief", enemies: [thief], level: "easy", gold: 0, done: false };
 }
@@ -90,13 +91,6 @@ export const effectiveOn = (move: { name: string }, races: readonly RaceV2[]) =>
   const r = raceOfMove(move);
   return !!r && raceVsAll(r, [...races]) > 1;
 };
-
-// The thief's race: one of the races your creature's moves are effective
-// against (picked at random). With no race moves at all, Humanoid.
-export function thiefRace(moves: readonly { name: string }[], rng: Rng = Math.random): RaceV2 {
-  const weak = RACES_V2.filter((r) => moves.some((m) => effectiveOn(m, [r])));
-  return weak.length ? pick(weak, rng) : "humanoid";
-}
 
 // The box: Common gear, with the odd Uncommon (a weapon a third of the
 // time, otherwise an armour piece).

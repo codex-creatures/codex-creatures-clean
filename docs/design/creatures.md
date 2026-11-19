@@ -24,9 +24,9 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
   the cage (`starterCreature`, Lv 3). It knows its style's three core moves and one move of its own (main)
   race, `STARTER_RACE_MOVE` (the user, 2026-11-20: that race's least damaging, least complicated attack, whatever
-  its style): Beast Claw, Geo Flame Spit, Undead Nibble, Toxic Poison Dart, Humanoid Whiplash, Underkin
-  Haemorrhage, Divine Dark Seal (🧪 Underkin and Divine were close calls: Bone Javelin is plainer but a 25 hit;
-  Divine's only other is the Epic Smite). It keeps it whatever its species could learn from a codex (a gift;
+  its style): Beast Claw, Geo Flame Spit, Undead Nibble, Toxic Poison Dart, Humanoid Whiplash, Underkin Rock
+  Toss (made for it, 2026-11-20). ❓ Divine has no basic attack (its only one is the Epic Smite; Dark Seal is Undead
+  now): the user will make one. Till then a creature whose first race is Divine gets its second race's. It keeps it whatever its species could learn from a codex (a gift;
   codexes still follow their learners). Releasing a creature gives nothing. A captured creature joins
   your creatures (the starter is also the first free pick at the Labyrinth's entrance).
 - ✅ **Ascension** (see below): give up creatures of a kind at the Soul Altar to raise one a rarity.

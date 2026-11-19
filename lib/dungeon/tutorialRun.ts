@@ -29,7 +29,6 @@ import type { RatHole, CobWeb } from "./decor";
 import type { Pt } from "./floorplan";
 import { PLACED_V } from "../world/place";
 import { clubRoom, thiefRoom } from "../quest";
-import type { RaceV2 } from "../creatures/racesV2";
 
 const B = 2; // tiles a block
 // In blocks (with 2 blocks of rock round the outside): the thief's room at the
@@ -107,9 +106,9 @@ export const TUTORIAL_POTIONS: PotionKey[] = ["lesser", "lesser"];
 export const TUTORIAL_HELLO = "🔥 Klutz hands you a torch and two potions: “It went up that corridor with my box! Drag where you want to walk. I'm right behind you.”";
 
 // The run: the entrance is the room you start in (the club's: done once you've picked it up), the thief's
-// room waits with him in it. race: the thief's (one your creature's race move lands well on: thiefRace).
+// room waits with him in it.
 // clubFound: you picked the club up on a run you left before beating him (it isn't there again).
-export function startTutorialRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, race: RaceV2, clubFound = false): DungeonRun {
+export function startTutorialRun(party: string[], team: string[], hp: Record<string, number>, runNumber: number, clubFound = false): DungeonRun {
   const map = tutorialMap();
   const start: Room = { ...clubRoom(), sack: undefined, gold: 0, done: clubFound };
   return {
@@ -118,7 +117,7 @@ export function startTutorialRun(party: string[], team: string[], hp: Record<str
     room: 0, map, path: [map.start], cleared: [], current: start,
     loot: [], status: "exploring", inside: false,
     walk: {
-      layout: TUTORIAL_LAYOUT, rooms: { thief: thiefRoom(race) }, seed: 20261120, at: START_SPOT, room: map.start, line: null,
+      layout: TUTORIAL_LAYOUT, rooms: { thief: thiefRoom() }, seed: 20261120, at: START_SPOT, room: map.start, line: null,
       fires: [], v: PLACED_V, placed: TUTORIAL_PLACED, tutorial: true,
     },
   };

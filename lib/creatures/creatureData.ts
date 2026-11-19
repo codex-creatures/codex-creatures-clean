@@ -111,6 +111,9 @@ export type Skill = {
   codexRarity?: "common" | "uncommon" | "rare" | "epic" | "legendary"; // a special move's codex rarity (Legendary: the user, 2026-11-16)
   mult?: number;     // its damage is this many times a hit of its power (big hits: power fades as attack grows, a multiplier doesn't)
 };
+// A utility move: no damage, whether used on itself (Crystal Armour) or on the foes (Caltrops). It shows as
+// "Utility", never by the style it's filed under (the user, 2026-11-20: Caltrops was showing as Magic).
+export const isUtility = (m: Pick<Skill, "self" | "damage">) => !!m.self || m.damage <= 0;
 
 // Every creature has one or two races (Combat V2, lib/creatures/racesV2.ts).
 // A move's race against the target's races decides how well it lands (the
@@ -239,7 +242,7 @@ const empower = (name: string, style: CombatClass): Skill => ({
   desc: `+50% ${CLASS_INFO[style].name.toLowerCase()} attack for the rest of the fight, while it stays on the field (swapping out loses it). Doesn't stack. 5-round cooldown.`,
 });
 export const SPECIAL_MOVES: Skill[] = [
-  { name: "Dark Seal", damage: 5, energyCost: 50, type: "magic", dmgType: "force", race: "divine", codexRarity: "rare", cooldown: 5,
+  { name: "Dark Seal", damage: 5, energyCost: 50, type: "magic", dmgType: "force", race: "undead", codexRarity: "rare", cooldown: 5,
     effect: { kind: "seal", rounds: 3, chance: 1 },
     learners: ["the_watcher", "dustwraith", "mr_shadows", "swamp_witch", "thunderhead", "dreadpox", "pale_rider"],
     desc: "The target can't swap out for 3 rounds, even if you swap. 5-round cooldown." },
@@ -551,14 +554,16 @@ export const moveOf = (c: CreatureTemplate, name: string): Skill => c.skills.fin
 // The 4 moves a creature fights with. Unknown or duplicate names are
 // dropped; an empty selection falls back to the defaults. (Race and class
 // codex moves are only offered once learned, so a saved one is trusted here.)
-// A new player's starter is given a move of its own (main) race (lib/creatures/starter.ts; the user, 2026-11-20):
-// the least damaging, least complicated attack of that race, whatever its style, so it learns its race and that
-// its race's moves get the match bonus. A gift, kept whatever its species could learn from a codex (codexes still
-// follow their learners).
-export const STARTER_RACE_MOVE: Record<RaceV2, string> = {
-  beast: "Claw", geo: "Flame Spit", undead: "Nibble", toxic: "Poison Dart", humanoid: "Whiplash", underkin: "Haemorrhage", divine: "Dark Seal",
+// A new player's starter is given a move of its own race (lib/creatures/starter.ts; the user, 2026-11-20): the
+// least damaging, least complicated attack of that race, whatever its style, so it learns its race and that its
+// race's moves hit harder from it (the match bonus). A gift, kept whatever its species could learn from a codex
+// (codexes still follow their learners). Divine has no basic attack yet (the user will make one): a creature whose
+// first race is Divine gets its second race's.
+export const STARTER_RACE_MOVE: Partial<Record<RaceV2, string>> = {
+  beast: "Claw", geo: "Flame Spit", undead: "Nibble", toxic: "Poison Dart", humanoid: "Whiplash", underkin: "Rock Toss",
 };
-export const starterRaceMove = (c: { id: string }): string | undefined => { const r = SPECIES_RACES[c.id]?.[0]; return r && STARTER_RACE_MOVE[r]; };
+export const starterRaceMove = (c: { id: string }): string | undefined =>
+  (SPECIES_RACES[c.id] ?? []).map((r) => STARTER_RACE_MOVE[r]).find((m) => m !== undefined);
 
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
   const allowed = new Set([...c.skills, ...(c.neutral ? KLUTZ_CODEX_MOVES() : [...raceMovesFor(c), ...LEARNABLE_MOVES, ...SPECIAL_MOVES.filter((m) => canLearnSpecial(c, m))])].map((m) => m.name));

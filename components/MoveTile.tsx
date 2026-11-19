@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { CLASS_INFO, type Skill } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, isUtility, type Skill } from "@/lib/creatures/creatureData";
 import { damageTypesOn } from "@/lib/combat/engine";
 import { moveTag } from "./ClassBadge";
 import { moveSlab, SLAB_W, SLAB_H, SLAB_STONE, STYLE_ICON, STYLE_STONE, type SlabStone } from "@/lib/sprites/moveSlab";
@@ -23,7 +23,7 @@ const stoneOf = (m: Skill): SlabStone => (damageTypesOn() ? STYLE_STONE[m.type] 
 
 // The stone, as crisp SVG pixels filling the tile.
 function Slab({ m }: { m: Skill }) {
-  const stone = stoneOf(m), icon = m.self ? undefined : damageTypesOn() ? m.dmgType : STYLE_ICON[m.type];
+  const stone = stoneOf(m), icon = isUtility(m) ? undefined : damageTypesOn() ? m.dmgType : STYLE_ICON[m.type];
   const rects = useMemo(() => {
     const g = moveSlab(m.name, stone, icon);
     const out: [number, number, number, string][] = [];
@@ -136,7 +136,7 @@ export function MoveDetails({ m, extra = [] }: { m: Skill; extra?: string[] }) {
     <div className="inv-panel" data-move-details style={{ width: MOVE_DETAILS.w, height: MOVE_DETAILS.h, maxWidth: "100%", boxSizing: "border-box", padding: MOVE_DETAILS.pad,
       overflow: "hidden", display: "flex", flexDirection: "column", gap: 2, fontSize: MOVE_DETAILS.font, lineHeight: MOVE_DETAILS.lineHeight, color: "#eee4cc", textAlign: "left", cursor: "default" }}>
       <div className="pixel-font" style={{ ...line, fontSize: 18, color: "#f1d9a0", paddingRight: 40 }}>{m.name}</div>
-      <div style={line}>{m.self ? <span style={{ color: "#d8ccff" }}>Utility: used on itself</span> : <>{style.name} · {dtype.name} · power {m.damage}</>}</div>
+      <div style={line}>{isUtility(m) ? <span style={{ color: "#d8ccff" }}>{m.self ? "Utility: used on itself" : "Utility"}</span> : <>{style.name} · {dtype.name} · power {m.damage}</>}</div>
       <div style={line}>⚡ {m.energyCost} energy<span style={{ visibility: m.cooldown ? "visible" : "hidden" }}> · {m.cooldown}-round cooldown</span></div>
       <div data-desc style={{ color: "#f0d9a4", marginTop: 6 }}>{m.desc ?? ""}</div>
       {extra.map((t) => <div key={t} style={{ color: "#f0d9a4" }}>{t}</div>)}

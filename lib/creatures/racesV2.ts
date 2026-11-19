@@ -12,10 +12,10 @@ export type RaceV2 = "undead" | "divine" | "beast" | "underkin" | "geo" | "human
 export const RACES_V2: RaceV2[] = ["undead", "divine", "beast", "underkin", "geo", "humanoid", "toxic"];
 
 // Every species' race(s), by what it is and how it looks. Klutz and the
-// boss parts have none for now: they take and deal neutral damage. (Except
-// the Baby Cyclops, the first quest's thief: a giant's whelp, Humanoid, so
-// the guided first fight can teach races. In that fight it takes a race your
-// creature's moves beat instead: thiefRace in lib/quest.ts.)
+// boss parts have none for now: they take and deal neutral damage. So does the
+// Baby Cyclops (the first quest's thief and the Encampment's chief; the user,
+// 2026-11-20: "he is neutral": the first fight teaches your own race's match
+// bonus, not what beats what).
 export const SPECIES_RACES: Record<string, RaceV2[]> = {
   // Old Beast
   moss_wolf:        ["beast"],
@@ -58,8 +58,6 @@ export const SPECIES_RACES: Record<string, RaceV2[]> = {
   glob:             ["toxic"],
   dreadpox:         ["toxic", "undead"], // the user's: Undead and Toxic
   pale_rider:       ["undead", "humanoid"],   // the user: a rider, not a plague (so Toxic has no Legendary)
-  // The first quest's thief (lib/quest.ts)
-  baby_cyclops:     ["humanoid"],
 };
 
 // A race for each of today's moves (the live rules' "drafted" mode). Moves

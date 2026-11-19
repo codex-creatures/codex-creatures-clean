@@ -8,7 +8,7 @@
 // move it replaces, then Confirm.
 
 import { useState } from "react";
-import { CLASS_INFO, MOVE_BY_NAME, MOVE_SLOTS, STEADY_MAX_ENERGY, hasSteadyMove, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
+import { CLASS_INFO, MOVE_BY_NAME, MOVE_SLOTS, STEADY_MAX_ENERGY, hasSteadyMove, isUtility, movesAvailableTo, resolveMoves, type CreatureTemplate, type Skill } from "@/lib/creatures/creatureData";
 import { MoveKind, moveTag } from "./ClassBadge";
 import Glyph from "./Glyph";
 import { MoveTile } from "./MoveTile";
@@ -21,7 +21,7 @@ export function MoveInfo({ m }: { m: Skill }) {
   return (
     <>
       <span style={{ fontWeight: 600, color: m.effect ? "#ffd98a" : "white" }}>{m.name}</span>
-      <span style={{ fontSize: 12, color: MUTED }}> · {m.self ? "utility" : <><MoveKind m={m} /> · {m.damage} dmg</>} · {m.energyCost}⚡</span>
+      <span style={{ fontSize: 12, color: MUTED }}> · {isUtility(m) ? "utility" : <><MoveKind m={m} /> · {m.damage} dmg</>} · {m.energyCost}⚡</span>
       {m.desc && <span style={{ display: "block", fontSize: 11, color: "#c9b48a", marginTop: 2 }}>{m.desc}</span>}
     </>
   );
@@ -49,10 +49,10 @@ export function MoveCard({ m, slot, tag, selected, dim, onClick }: {
         {tag && <span style={{ marginLeft: "auto", fontSize: 11, color: tag.color }}>{tag.text}</span>}
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
-        {m.self ? pill("Utility", "#c7b8ff") : <>{pill(`${style.icon} ${style.name}`, style.color)}{pill(<><Glyph icon={dtype.icon} art={dtype.art} /> {dtype.name}</>, dtype.color)}</>}
+        {isUtility(m) ? pill("Utility", "#c7b8ff") : <>{pill(`${style.icon} ${style.name}`, style.color)}{pill(<><Glyph icon={dtype.icon} art={dtype.art} /> {dtype.name}</>, dtype.color)}</>}
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
-        {!m.self && <span style={{ fontSize: 13, color: MUTED }}>Power <span style={{ ...NUM, fontSize: 17, color: "#ff9f7a" }}>{m.damage}</span></span>}
+        {!isUtility(m) && <span style={{ fontSize: 13, color: MUTED }}>Power <span style={{ ...NUM, fontSize: 17, color: "#ff9f7a" }}>{m.damage}</span></span>}
         <span style={{ fontSize: 13, color: MUTED }}>Energy <span style={{ ...NUM, fontSize: 17, color: "#7fc4ff" }}>{m.energyCost}</span></span>
         {m.cooldown && <span style={{ fontSize: 13, color: MUTED }}>Cooldown <span style={{ ...NUM, fontSize: 17 }}>{m.cooldown}</span></span>}
       </div>

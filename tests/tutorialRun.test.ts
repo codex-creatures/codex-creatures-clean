@@ -10,7 +10,7 @@ import { walkRoom, walkInto, waitsHere } from "../lib/dungeon/walkRun";
 import { wonAtTop, type DungeonRun } from "../lib/dungeon/run";
 import { THIEF_HP_MULT } from "../lib/quest";
 
-const run = () => startTutorialRun(["a"], ["a"], {}, 1, "beast");
+const run = () => startTutorialRun(["a"], ["a"], {}, 1);
 
 describe("the first quest's run, walked (lib/dungeon/tutorialRun.ts)", () => {
   it("is a sound place: the entrance, one corridor up, the thief's room", () => {
@@ -54,7 +54,7 @@ describe("the first quest's run, walked (lib/dungeon/tutorialRun.ts)", () => {
     const thief = run().walk!.rooms.thief;
     expect(waitsHere(thief, 1)).toBe(true);
     expect(foesToPlace(thief, 1)).toBe(1);
-    expect(thief.enemies![0]).toMatchObject({ creatureId: "baby_cyclops", races: ["beast"], hpMult: THIEF_HP_MULT, gentle: true });
+    expect(thief.enemies![0]).toMatchObject({ creatureId: "baby_cyclops", hpMult: THIEF_HP_MULT, gentle: true });
   });
 
   it("its cobwebs, puddle and rat are its own, the same every time", () => {

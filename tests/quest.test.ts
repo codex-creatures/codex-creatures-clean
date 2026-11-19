@@ -9,7 +9,7 @@ import { rollCreature } from "../lib/creatures/creatureRoll";
 import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/battle";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { STARTER_LEVEL, starterRaceMove, withQuickAttack, withRaceMove, starterCreature } from "../lib/creatures/starter";
-import { THIEF_HP_MULT, thiefRace, effectiveOn } from "../lib/quest";
+import { THIEF_HP_MULT } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
 import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, skipTutorial, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
@@ -42,7 +42,7 @@ describe("the first quest: Klutz's box", () => {
     expect(room.gold).toBe(0);
     expect(room.enemies).toHaveLength(1);
     expect(room.enemies![0]).toMatchObject({ creatureId: "baby_cyclops" });
-    // No weapon or armour, but double HP, and it can't knock you out.
+    // No weapon or armour, but lots of HP, and it can't knock you out.
     expect(room.enemies![0]).toMatchObject({ gear: [], hpMult: THIEF_HP_MULT, gentle: true });
   });
 
@@ -50,38 +50,24 @@ describe("the first quest: Klutz's box", () => {
   const starter = (t = CREATURES_BY_RARITY.rare[0]) =>
     buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, withRaceMove(t, withQuickAttack(t, defaultMoveNames(t))), rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL);
 
-  it("your starter knows its style's cheap race move (its own race's simplest attack), so the thief is always a race it lands well on", () => {
+  it("your starter knows its own race's simplest attack (a Divine first race: its second race's), and it hits harder from it", () => {
     for (let k = 0; k < 40; k++) {
       const d = starterCreature() as { creatureId: string; moves: string[] };
       const t = CREATURES_BY_RARITY.rare.find((c) => c.id === d.creatureId)!;
-      expect(d.moves).toContain(starterRaceMove(t));
-      expect(raceOfMove(MOVE_BY_NAME[starterRaceMove(t)!])).toBe(SPECIES_RACES[t.id][0]); // (its own race's move)
+      const gift = starterRaceMove(t)!;
+      expect(d.moves).toContain(gift);
+      expect(SPECIES_RACES[t.id]).toContain(raceOfMove(MOVE_BY_NAME[gift]));
       expect(d.moves.length).toBeLessThanOrEqual(4);
-      const me = starter(t);
-      expect(me.skills.some((s) => effectiveOn(s, enemyFighter(thiefRoom(thiefRace(me.skills)).enemies![0]).races ?? []))).toBe(true);
+      const me = starter(t), thief = thiefFor();
+      const move = me.skills.find((s) => s.name === gift)!;
+      // (the match bonus: the same hit from a creature of no race)
+      expect(calcDamage(move, me, thief, false).damage).toBeGreaterThan(calcDamage(move, { ...me, races: [] }, thief, false).damage);
     }
   });
-  const thiefFor = (me: ReturnType<typeof starter>) => enemyFighter(thiefRoom(thiefRace(me.skills)).enemies![0]);
+  const thiefFor = () => enemyFighter(thiefRoom().enemies![0]);
 
-  it("the thief's race is one your starter's moves are effective against, if any are (core moves are neutral: then Humanoid)", () => {
-    const wrong: string[] = [];
-    for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
-      const me = starter(t);
-      const thief = thiefFor(me);
-      const good = me.skills.find((s) => effectiveOn(s, thief.races ?? []));
-      if (!good) { if (thief.races?.join() !== "humanoid") wrong.push(`${t.id}: ${thief.races}`); continue; }
-      // (the same hit on a thief with no race)
-      const plain = calcDamage(good, me, { ...thief, races: [] }, false).damage;
-      if (calcDamage(good, me, thief, false).damage <= plain) wrong.push(`${t.id}: ${good.name} not stronger`);
-    }
-    expect(wrong).toEqual([]);
-    // A codex move that lands well on some race: the thief is one of those.
-    const smite = { name: "Smite", asRace: "divine" as const };
-    for (let k = 0; k < 20; k++) expect(effectiveOn(smite, [thiefRace([smite])])).toBe(true);
-  });
-  it("with no race moves at all, the thief is Humanoid", () => {
-    expect(thiefRace([{ name: "Strike" }])).toBe("humanoid");
-    expect(enemyFighter(thiefRoom().enemies![0]).races).toEqual(["humanoid"]);
+  it("the thief has no race (neutral: the first fight teaches your own race's match bonus)", () => {
+    expect(thiefFor().races ?? []).toEqual([]);
   });
   it("your starter wins the guided fight on its own, after Klutz's lesson, but it's a long one", () => {
     let rounds = 0, fights = 0;
@@ -89,9 +75,9 @@ describe("the first quest: Klutz's box", () => {
       // (with each of the soul stones it could be born with: a starter always has one)
       const stones = stonesFor(t.id);
       const me = { ...starter(t), soulStone: stones[k % stones.length] };
-      const thief = thiefFor(me);
+      const thief = thiefFor();
       const s = createBattle([me], [thief]);
-      const lesson = (me.skills.find((m) => effectiveOn(m, thief.races ?? [])) ?? me.skills[0]).name;
+      const lesson = (me.skills.find((m) => m.name === starterRaceMove(t)) ?? me.skills[0]).name;
       while (!s.winner && s.round < 100) {
         resolveRound(s, { A: s.round === 0 ? { kind: "attack", skillName: lesson } : chooseAiAction(s, "A", "normal"), B: chooseAiAction(s, "B", "easy") });
         for (const side of [...s.needsReplacement]) sendInReplacement(s, side, chooseAiReplacement(s, side, "easy"));

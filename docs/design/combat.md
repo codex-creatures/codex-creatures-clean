@@ -214,9 +214,11 @@ How it came about, round by round: history.md.
   7.1 rounds to 5.2 (the heavy move is now a starting move, and every hit gets the match bonus);
   6.1 with no match bonus. The side whose race beats the other's wins about 94% (97% before).
 - ✅ **Guided first fight** teaches races (the user, 2026-10-31): your creature fights with its own
-  moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`: since
-  2026-11-20, one its own race's move beats: every starter has one, `STARTER_RACE_MOVE`, creatures.md; Humanoid if none). Klutz names your creature's race (its own race's moves hit harder from it, the match bonus), names the thief's, and has you hit it with that move (it glows), then
-  points you to the ▲▼ race chart (it glows) and lets you finish it. It can't knock you out, but it's a long fight
+  moves against the Baby Cyclops thief, who has **no race** (the user, 2026-11-20: "he is neutral"; until then he
+  took a race your moves beat, `thiefRace`, now gone). The lesson is your creature's own race: Klutz
+  names it, says its own race's moves hit harder from it (the match bonus), and has you hit the thief with the one it
+  knows (every starter has one, `STARTER_RACE_MOVE`, creatures.md; it glows), then says "see? extra damage" and lets
+  you carry on. What beats what (the race chart) is for later. It can't knock you out, but it's a long fight
   (the user, 2026-11-20: "put up a bit of a fight… 1 or 2 potions"): `THIEF_HP_MULT` 5.5 🧪, about 15 rounds, and about
   150% of your health in hits, so Klutz hands you two Lesser Potions as you go in (`TUTORIAL_POTIONS`, topped up to two)
   and, below 40% health (`TUTORIAL_DRINK_AT`), tells you to drink one, the Bag button glowing. Never a loss.
@@ -251,11 +253,14 @@ power counts for less as attack grows.
   who can read each codex is now the user's list, for every codex but the three anyone can read
   (Cripple, Crippling Shot, Hobble Hex), Meditate and Brace: `learners` on each move, race codexes
   too (`raceMovesFor`). The Divine blessings (Divine Strength, Arcane Channel, Sureshot Blessing)
-  are for anyone now, not by style. Races: Dark Seal lands Divine (was Undead), Impale Geo (was
+  are for anyone now, not by style. Races: Dark Seal lands Divine (was Undead; Undead again since 2026-11-20, the user), Impale Geo (was
   Underkin), Caltrops Humanoid (was neutral), Hobble Hex neutral (was Toxic). Mirage lasts 5 rounds
   (was 3). A creature that loses a codex move it had learned can no longer use it.
 - **Rarity:** Common: Whiplash, Nibble, Crystal Armour, Poison Dart, Headbutt, Slap, Cleansing
-  Water. Uncommon: Nullifying Voice, Vampiric Bite, Caltrops, Ambush, Bolas Shot, Enfeeble, Razor
+  Water, Rock Toss (the user, 2026-11-20: Underkin's basic hit, ranged, 8 power, 20 energy, no effect; learned by
+  the Underkin creatures; the name is Claude's). Nibble: +10% each time in a row, up to 10 times (+100%; the
+  user, 2026-11-20; it was 5, +50%). A move with no damage (Caltrops, Crystal Armour…) shows as Utility
+  everywhere, never by the style it's filed under (`isUtility`; Caltrops showed as Magic). Uncommon: Nullifying Voice, Vampiric Bite, Caltrops, Ambush, Bolas Shot, Enfeeble, Razor
   Arrows. Rare: Smoke Bomb, Obsidian Arrows, Septic Shock, Mega Smash, Emulate, Voltage Surge, Flame
   Body, Haemorrhage, Soul Snatch, Bone Javelin. Epic: Smite, Implode, Fissure. ✅ Legendary (the v2
   review): Choking Smog, Haunting Scream. Legendary codexes cost what Epic ones do at a librarian

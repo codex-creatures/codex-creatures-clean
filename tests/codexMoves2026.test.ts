@@ -18,8 +18,8 @@ const has = (f: Combatant, id: string) => f.statuses.some((s) => s.id === id);
 afterEach(() => vi.restoreAllMocks());
 
 describe("the 2026-11 codex moves: who, what rarity, where they come from", () => {
-  it("all 35 are special-move codexes, each with learners, a rarity and a short description", () => {
-    expect(CODEX_MOVES_2026).toHaveLength(35);
+  it("all 36 are special-move codexes, each with learners, a rarity and a short description", () => {
+    expect(CODEX_MOVES_2026).toHaveLength(36);
     for (const m of CODEX_MOVES_2026) {
       expect(SPECIAL_MOVES).toContain(m);
       expect(MOVE_BY_NAME[m.name], m.name).toBe(m);
@@ -43,7 +43,7 @@ describe("the 2026-11 codex moves: who, what rarity, where they come from", () =
     expect(abilityOf(MOVE_BY_NAME["Haunting Scream"])).toBe("Scare off");
   });
   it("the older special moves land as their own race (2026-11-13; Dark Seal Divine and Impale Geo from the v2 review, 2026-11-16)", () => {
-    expect(["Dark Seal", "Impale", "Pin Down", "Blood Sacrifice"].map((n) => raceOfMove(MOVE_BY_NAME[n]))).toEqual(["divine", "geo", "humanoid", "undead"]);
+    expect(["Dark Seal", "Impale", "Pin Down", "Blood Sacrifice"].map((n) => raceOfMove(MOVE_BY_NAME[n]))).toEqual(["undead", "geo", "humanoid", "undead"]); // (Dark Seal Undead since 2026-11-20, the user)
     // Caltrops lands as Humanoid now, and Hobble Hex as neutral (the v2 review).
     expect(raceOfMove(MOVE_BY_NAME.Caltrops)).toBe("humanoid");
     expect(raceOfMove(MOVE_BY_NAME["Hobble Hex"])).toBeUndefined();
