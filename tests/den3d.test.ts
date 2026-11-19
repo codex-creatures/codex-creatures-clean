@@ -5,7 +5,7 @@ import { FLOOR, ROCK, type Pt } from "@/lib/dungeon/floorplan";
 import { parseDenOptions, stepAngle, DEN_DEFAULTS, DEN_ANGLES } from "@/lib/den3d/setting";
 import {
   denPlan, denShown, stations, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView, stationAt, denLights,
-  placed, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap, floorZone, FLOOR_START, WALL_START, SLOTS,
+  placed, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap, allReachable, LAMP_KEYS, FLOOR_START, WALL_START, SLOTS,
   KLUTZ_LOOP, VISITOR_LOOP, STROLL, ROOM1, ROOM2, NOOK1, NOOK2, WALL_GAP, DIVIDE_X, PLAN_W, LOOK_PAST, type Station, type DenState, type Placed,
 } from "@/lib/den3d/layout";
 
@@ -51,7 +51,7 @@ describe("what stands in it", () => {
     const open = stations(ALL);
     expect(open.map((s) => s.key)).toEqual(expect.arrayContaining(["tavern", "portal", "training"]));
     expect(open.map((s) => s.key)).not.toContain("rubble");
-    for (const s of open) expect(s.href, s.key).toBeTruthy();
+    for (const s of open) if (!s.quiet) expect(s.href, s.key).toBeTruthy(); // (a torch goes nowhere: it just moves)
   });
 
   it("puts the storehouse along the west wall, turned to face the room", () => {
@@ -96,15 +96,36 @@ describe("moving things", () => {
     for (const k of ["altar", "pool", "pit"] as const) expect(fitsFloor(k, FLOOR_START[k], placed(undefined, false), false), k).toBe(true);
   });
 
-  it("lets a floor thing stand in the middle of the hall, clear of the others, snapped to the grid", () => {
+  it("lets a floor thing stand anywhere on the open floor, clear of the rock and the others, snapped to the grid", () => {
     expect(snap(7.3)).toBe(7.5);
     expect(fitsFloor("pool", { x: 8, y: 17 }, start, true)).toBe(false);           // on the Pit
     expect(fitsFloor("altar", { x: 1.5, y: 13 }, start, true)).toBe(false);        // on the storehouse, off the middle
-    expect(fitsFloor("altar", { x: 7, y: 9 }, start, true)).toBe(false);           // in front of the shack, off the middle
+    expect(fitsFloor("altar", { x: 7, y: 9 }, start, true)).toBe(false);           // in front of the bookcase
+    expect(fitsFloor("altar", { x: 11, y: 10 }, start, true)).toBe(true);          // the north of the hall (the user, 2026-11-19: "more flexibility")
+    expect(fitsFloor("altar", { x: 8.5, y: 5 }, start, true)).toBe(true);          // up in the nook
+    expect(fitsFloor("altar", { x: 9.5, y: 2.5 }, start, true)).toBe(false);       // in front of the way into the Labyrinth
+    expect(fitsFloor("altar", { x: 1, y: 19 }, start, true)).toBe(false);          // against the rock
+    expect(fitsFloor("pit", { x: 2.1, y: 11.8 }, start, true)).toBe(false);        // in front of Klutz's cabin's door
     expect(fitsFloor("altar", { x: 14.5, y: 12 }, start, true)).toBe(true);        // across in the tavern's room, once it's open
     expect(fitsFloor("altar", { x: 14.5, y: 12 }, placed(undefined, false), false)).toBe(false); // …not before
     expect(fitsFloor("training", { x: 8, y: 12.5 }, start, true)).toBe(false);     // the tavern's pit stays in its room
-    expect(floorZone(false).x1).toBeLessThan(DIVIDE_X - 0.5); // (clear of the old wall's socket)
+    expect(fitsFloor("altar", { x: DIVIDE_X - 1, y: 14.6 }, placed(undefined, false), false)).toBe(false); // (on the old wall's socket)
+  });
+
+  it("never lets anything box a place in", () => {
+    const state = { opened: true, pit: true, trainingPit: false, repaired: true };
+    expect(allReachable(stations(state, start), start, true)).toBe(true);
+    // The Pit pushed against the storehouse's door: nobody could get to it.
+    const shut: Placed = { ...start, floor: { ...start.floor, pit: { x: 5, y: 15.2 } } };
+    expect(allReachable(stations(state, shut), shut, true)).toBe(false);
+  });
+
+  it("moves the standing torches too, and they stay where they're put", () => {
+    for (const k of LAMP_KEYS) expect(fitsFloor(k, FLOOR_START[k], start, true), k).toBe(true);
+    expect(fitsFloor("lamp-1", { x: 6, y: 10.5 }, start, true)).toBe(true);
+    expect(fitsFloor("lamp-1", FLOOR_START.pit, start, true)).toBe(false);          // not on the Pit
+    expect(placed({ floor: { "lamp-1": { x: 6, y: 10.5 } } }, true).floor["lamp-1"]).toEqual({ x: 6, y: 10.5 });
+    expect(stations({ opened: true, pit: true, trainingPit: false, repaired: true }, start).filter((st) => st.quiet).length).toBe(LAMP_KEYS.length);
   });
 
   it("snaps wall things to slots, swapping with whatever's there; the middle slot only once the wall's gone", () => {
@@ -128,6 +149,20 @@ describe("moving things", () => {
     const twice = placed({ wall: { board: "nook-2", cage: "nook-2" } }, true).wall;                      // two in one slot: the later goes back
     expect(twice.board).toBe("nook-2");
     expect(twice.cage).toBe(WALL_START.cage);
+  });
+});
+
+// (The user, 2026-11-19: moved things came back to their starts — the main save was writing over them.)
+describe("where you've moved things", () => {
+  it("survives the main save being written", async () => {
+    // (An in-memory stand-in for the browser's storage, for this test only.)
+    const store: Record<string, string> = {}, g = globalThis as unknown as { window?: unknown };
+    g.window = { localStorage: { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; }, removeItem: (k: string) => { delete store[k]; } } };
+    const { loadDenLayout, saveDenLayout } = await import("@/lib/den3d/placement");
+    const { writeMainSave } = await import("@/lib/save");
+    saveDenLayout({ floor: { altar: { x: 7, y: 13 } }, wall: { cage: "hall-1" } });
+    writeMainSave({ gold: 5 });
+    try { expect(loadDenLayout()).toEqual({ floor: { altar: { x: 7, y: 13 } }, wall: { cage: "hall-1" } }); } finally { delete g.window; }
   });
 });
 

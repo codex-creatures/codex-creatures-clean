@@ -1,7 +1,7 @@
 {
   "format": 1,
   "id": "shack",
-  "name": "Klutz's Den",
+  "name": "Klutz's Cabin",
   "setting": "den",
   "ref": {
     "src": "/sprites/den3d/shack-front.png",

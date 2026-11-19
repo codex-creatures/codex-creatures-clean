@@ -50,14 +50,17 @@ placement (players could block themselves in). With it off, nothing changes.
   Labyrinth's (a sandstone arch), room 2's the **PvP portal** (the same arch mirrored and turned green, a green
   swirl across its mouth, and its glowing count of players online, numbers only: 0 and up as soon as you're
   signed in, shown even with names off; nothing when signed out or offline). All the rock south of the hall is the low rim, so nothing hides the hall's front.
-- **What's where:** room 1: Klutz's shack in the hall's top-left corner (his page: gear, crate, trips), the
-  **storehouse** turned along the west wall, doors facing into the room (the Inventory's weapons, armour and
+- **What's where:** room 1: **Klutz's Cabin** (its name in the new Den, the user, 2026-11-19) in the hall's top-left corner (his page: gear, crate, trips), the
+  **storehouse** turned along the west wall, doors facing into the room, far enough down that the cabin's front shows (the Inventory's weapons, armour and
   consumables: `/chest?store=1`), the Bestiary in the nook, and what you can move. Room 2: the tavern in the
   hall's top-right corner, the portal, the Sparring/Training Pit (once the tavern has its pit).
 - **Moving things** (the user, 2026-11-19): hold a movable thing still (`LIFT_MS` 450 ms) and it lifts; drag
-  it and let go. Floor things (the Soul Altar with its two braziers, the healing pool, the Pit, and the
-  tavern's pit in its own half) snap to a half-unit grid in the middle of the hall (`floorZone`), clear of each
-  other; wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
+  it and let go. Floor things (the Soul Altar with its two braziers, the healing pool, the Pit, the standing
+  torches, and the tavern's pit in its own half) snap to a half-unit grid anywhere on the open floor, nooks included
+  (the user, 2026-11-19: "more flexibility"): `FLOOR_MARGIN` clear of the rock, clear of each other and of the
+  barrels, crates and pots (`DECOR`), of the room in front of a building's door, a wall thing and a way out
+  (`DOOR_CLEAR`), and never boxing a place in: every place must still be reachable on foot from the Labyrinth's
+  tunnel (`allReachable`; why fully free placement was ruled out, 2026-11-18). Wall things (the bookcase, the quest board, the cage) snap to slots (`SLOTS`): beside each tunnel, in
   the middle between them (once the wall's gone), and along the hall's back wall by the shack; dropping on a
   taken slot swaps the two. Where it can't go it's red ("It won't fit there") and goes back. Kept in the save
   in its own field (`den3d`, lib/den3d/placement.ts: only what's moved), so it goes with save files and cloud
@@ -83,8 +86,8 @@ placement (players could block themselves in). With it off, nothing changes.
   from the wall with their stones' thickness behind, over their holes); the bookcase and lectern stay the Labyrinth's
   3D things. The bigger flat-colour faces wear shared textures (stone, wood, grain; world/art-pipeline.md §6.6).
 - **Light, shadows and life** (the user, 2026-11-19): a higher ambient light (`DEN_STONE` remember 0.48, the recipes'
-  key light brighter), standing lamps where it was darkest (`LAMPS`: along the walls and the south end, out of the
-  way, nothing can be moved onto one), and the healing pool's own glow. Every place, lamp, brazier and person has a
+  key light brighter), standing torches where it was darkest (along the walls and the south end to start; they
+  move like the rest, `LAMP_KEYS`, with no name over them; finding and upgrading them is an idea for later), and the healing pool's own glow. Every place, lamp, brazier and person has a
   fixed shadow on the floor (the lights never move): a soft patch in three stepped bands, a little to the lower right,
   buildings' thrown forward. Flames flicker, the tavern's chimney smokes, the caged creature breathes, and a place
   lights up while a finger's on it (`PRESS_GLOW`).

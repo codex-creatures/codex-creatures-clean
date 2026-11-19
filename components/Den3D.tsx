@@ -19,7 +19,7 @@ import { ROCK, type Floorplan, type Pt } from "@/lib/dungeon/floorplan";
 import {
   denPlan, denShown, denLit, denLights, stations, stationAt, strollAt, routeLoop, routeTime, strollBlocked, braziers, clampView, denArea, firstView,
   placed as placeAll, fitsFloor, fitsWall, placeWall, nearestSlot, toLayout, snap,
-  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, DEN_WALL, DIVIDE_X, ROOM1, ZOOM,
+  KLUTZ_LOOP, VISITOR_LOOP, STROLL, SCONCES, DEN_WALL, DIVIDE_X, ROOM1, ZOOM, DECOR, isLamp,
   type Station, type DenState, type DenLayout, type Placed, type Route, type FloorKey, type WallKey, type SlotId,
 } from "@/lib/den3d/layout";
 import { loadDenLayout, saveDenLayout } from "@/lib/den3d/placement";
@@ -287,7 +287,7 @@ export default function Den3D(p: Den3DProps) {
       </div>
       {/* The names over the places (and the strollers), placed by the scene each frame. (The portal's always,
           when there's a count of players online to show over it.) */}
-      {list.filter((s) => o.names || news(s) || (s.obj !== undefined && s.obj === p.highlight) || (s.key === "portal" && others !== null)).map((s) => (
+      {list.filter((s) => !s.quiet).filter((s) => o.names || news(s) || (s.obj !== undefined && s.obj === p.highlight) || (s.key === "portal" && others !== null)).map((s) => (
         <NameTag key={s.key} id={s.key} labels={labels} tour={s.obj !== undefined ? `den-${s.obj}` : undefined} news={news(s)} lit={(s.obj !== undefined && s.obj === p.highlight) || moving?.key === s.key}
           onTap={() => go(s)} text={s.label} count={s.key === "portal" ? others : null} />
       ))}
@@ -378,7 +378,7 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
     <>
       <DenRock pitch={pitch} plan={plan} seen={seen} field={field} centre={centre} />
       {/* Shadows on the floor under everything that stands on it (the lights don't move, so they're fixed patches). */}
-      {list.filter((s) => !s.wall).map((s) => <Shadow key={`shadow:${s.key}`} {...shadowOf(s)} />)}
+      {list.filter((s) => !s.wall && !s.quiet).map((s) => <Shadow key={`shadow:${s.key}`} {...shadowOf(s)} />)}
       {fires.map((c, i) => <Shadow key={`shadow:fire${i}`} x={c.x + 0.06} y={c.y + 0.04} w={0.42} d={0.26} />)}
       {walkers.map((w) => <Shadow key={`shadow:${w.key}`} x={0} y={0} w={0.55} d={0.3} follow={() => strollAt(performance.now() / 1000 + w.lead, w.route, w.speed)} />)}
       {/* The key light from the upper left (and its ambient): only the props built from recipes take it (they're lit;
@@ -401,15 +401,13 @@ function DenWorld({ pitch, across, state, placed, plan, shown, list, walkers, ca
         const k = STANDING_TORCH_U / WALK_STANDING_TORCH.h, w = WALK_STANDING_TORCH.w * k, h = STANDING_TORCH_U * stretch, [fx, fy] = STANDING_TORCH_FLAME;
         return (
           <group key={`brazier${i}`}>
-            <Upright src={WALK_STANDING_TORCH.src} x={c.x} y={c.y} w={w} h={h} below={0} colour={new THREE.Color(1, 1, 1)} follow={() => c} />
+            <Upright src={WALK_STANDING_TORCH.src} x={c.x} y={c.y} w={w} h={h} below={0} colour={movingKey && isLamp(movingKey) && placed.floor[movingKey] === c ? NO.clone() : new THREE.Color(1, 1, 1)} follow={() => c} />
             <Flame at={[c.x - w / 2 + fx * k, h - fy * k * stretch + 0.08, c.y + 0.06]} w={0.1} h={0.18} seed={i + 7} />
           </group>
         );
       })}
       {/* Odds and ends along the west wall, below the storehouse. */}
-      <group position={[ROOM1.x + 0.1, 0, 15.5]}><Decor3D kind="barrels" stretch={stretch} colour={tint(ROOM1.x + 0.1, 15.5)} /></group>
-      <group position={[ROOM1.x + 0.1, 0, 16.8]}><Decor3D kind="crates" stretch={stretch} colour={tint(ROOM1.x + 0.1, 16.8)} /></group>
-      <group position={[ROOM1.x + 0.1, 0, 18.1]}><Decor3D kind="pots" stretch={stretch} colour={tint(ROOM1.x + 0.1, 18.1)} /></group>
+      {DECOR.map((d) => <group key={d.kind} position={[d.at.x, 0, d.at.y]}><Decor3D kind={d.kind} stretch={stretch} colour={tint(d.at.x, d.at.y)} /></group>)}
       {/* Klutz resting in the pool while he heals. */}
       {klutz === "pool" && pool && CREATURE_SPRITES.klutz && (() => {
         const art = artFor(CREATURE_SPRITES.klutz)!, h = NPC_U * 0.6 * stretch, w = (NPC_U * 0.6) * (art.w / art.h);

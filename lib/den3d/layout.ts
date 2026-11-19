@@ -60,17 +60,24 @@ export function denShown(opened: boolean): Uint8Array {
 }
 
 // ── Where things may go (the user, 2026-11-19: hold one, drag it, let go) ──
-// Floor things snap to a half-unit grid inside the middle of the hall; wall things to slots on the north
-// walls: beside each tunnel, in the middle between them (once the wall's gone), and along the hall's back
-// wall beside the shack. Kept in the save (lib/den3d/placement.ts); anything missing stands where it starts.
-export type FloorKey = "altar" | "pool" | "pit" | "training";
+// Floor things snap to a half-unit grid anywhere on the open floor (the user, 2026-11-19: "more flexibility…
+// a huge area you can't move stuff"), clear of the rock, of everything else, of the room in front of doors and
+// the ways out, and never boxing anyone in (fitsFloor); the standing torches move too. Wall things snap to slots
+// on the north walls: beside each tunnel, in the middle between them (once the wall's gone), and along the hall's
+// back wall beside the cabin. Kept in the save (lib/den3d/placement.ts); anything missing stands where it starts.
+export type LampKey = "lamp-1" | "lamp-2" | "lamp-3" | "lamp-4" | "lamp-5";
+export type FloorKey = "altar" | "pool" | "pit" | "training" | LampKey;
 export type WallKey = "board" | "bookcase" | "cage";
 export type SlotId = "hall-1" | "hall-2" | "nook-1" | "nook-mid" | "nook-2";
 export type DenLayout = { floor?: Partial<Record<FloorKey, Pt>>; wall?: Partial<Record<WallKey, SlotId>> };
-export const FLOOR_KEYS: FloorKey[] = ["altar", "pool", "pit", "training"];
+export const LAMP_KEYS: LampKey[] = ["lamp-1", "lamp-2", "lamp-3", "lamp-4", "lamp-5"];
+export const FLOOR_KEYS: FloorKey[] = ["altar", "pool", "pit", "training", ...LAMP_KEYS];
+export const isLamp = (k: string): k is LampKey => k.startsWith("lamp-");
 export const WALL_KEYS: WallKey[] = ["board", "bookcase", "cage"];
 export const SNAP = 0.5;                      // u: the floor grid
-export const FLOOR_START: Record<FloorKey, Pt> = { altar: { x: 8, y: 12.5 }, pool: { x: 6.4, y: 20 }, pit: { x: 10.2, y: 17 }, training: { x: 18.5, y: 16.5 } };
+// (The standing torches start where the Den was darkest: along the walls and the south end.)
+export const FLOOR_START: Record<FloorKey, Pt> = { altar: { x: 8, y: 12.5 }, pool: { x: 6.4, y: 20 }, pit: { x: 10.2, y: 17.2 }, training: { x: 18.5, y: 16.5 },
+  "lamp-1": { x: 3.4, y: 21.4 }, "lamp-2": { x: 11.6, y: 21.8 }, "lamp-3": { x: 14.6, y: 21.8 }, "lamp-4": { x: 24.4, y: 13.6 }, "lamp-5": { x: 24.4, y: 20.6 } };
 export const WALL_START: Record<WallKey, SlotId> = { board: "hall-1", bookcase: "hall-2", cage: "nook-1" };
 // A wall slot: where along which face (x, the face's y), and how wide a thing it takes.
 export type Slot = { id: SlotId; x: number; face: number; wide: number; opened?: boolean };
@@ -83,18 +90,21 @@ export const SLOTS: Slot[] = [
 ];
 // Each movable thing's size (u), and how far a wall thing stands out from its wall (0: hung on it).
 // (The user, 2026-11-19: the altar 0.6 the size, the pool big and swampy, the Sparring/Training Pit twice the size.)
-export const FLOOR_SIZE: Record<FloorKey, { w: number; d: number }> = { altar: { w: 1.6, d: 1.5 }, pool: { w: 3.8, d: 2.6 }, pit: { w: 2.6, d: 2.8 }, training: { w: 5.2, d: 5.2 } };
+export const FLOOR_SIZE: Record<FloorKey, { w: number; d: number }> = { altar: { w: 1.6, d: 1.5 }, pool: { w: 3.8, d: 2.6 }, pit: { w: 2.6, d: 2.8 }, training: { w: 5.2, d: 5.2 },
+  ...(Object.fromEntries(LAMP_KEYS.map((k) => [k, { w: 0.5, d: 0.5 }])) as Record<LampKey, { w: number; d: number }>) };
 const WALL_SIZE: Record<WallKey, { w: number; d: number; out: number }> = { board: { w: 1.35, d: 0.2, out: 0 }, bookcase: { w: 1.25, d: 0.5, out: 0.25 }, cage: { w: 1.05, d: 1.05, out: 0.55 } };
-// The middle of the hall, where floor things may stand (room 2's half only once the wall's gone; a margin
-// kept clear for walking along the walls and in front of the buildings).
-export function floorZone(opened: boolean): { x0: number; x1: number; y0: number; y1: number } {
-  return { x0: 4.2, x1: opened ? ROOM2.x + ROOM2.w - 3.1 : DIVIDE_X - 1.5, y0: HALL_Y + 3, y1: HALL_Y + HALL_D - 0.6 };
-}
+// How far a floor thing keeps from the rock (u), and the room kept clear in front of a door or a way out.
+export const FLOOR_MARGIN = 0.35;
+export const DOOR_CLEAR = { building: 0.8, way: 1.6, board: 0.7 };
+// The odds and ends along the west wall below the storehouse (barrels, crates, pots): nothing goes on them.
+export const DECOR: { kind: "barrels" | "crates" | "pots"; at: Pt }[] = [
+  { kind: "barrels", at: { x: 1.1, y: 17.7 } }, { kind: "crates", at: { x: 1.1, y: 18.9 } }, { kind: "pots", at: { x: 1.1, y: 20.1 } }];
 // The braziers stand either side of the altar's front, and of the pit in the tavern's room: they move with them.
 export const BRAZIER_AT: Record<"altar" | "training", { dx: number; dy: number }> = { altar: { dx: 1.15, dy: 1 }, training: { dx: 2.9, dy: 2.1 } };
 // How much floor a thing keeps to itself (its footprint, its braziers, and room to walk round).
 const KEEP = 0.3;
 export function keptBox(key: FloorKey, at: Pt) {
+  if (isLamp(key)) return { x0: at.x - 0.3, x1: at.x + 0.3, y0: at.y - 0.3, y1: at.y + 0.3 }; // (a torch: just its foot)
   const s = FLOOR_SIZE[key], fire = key === "altar" || key === "training" ? BRAZIER_AT[key] : null;
   const hw = Math.max(s.w / 2, fire ? fire.dx + 0.2 : 0) + KEEP, below = Math.max(s.d / 2, fire ? fire.dy + 0.2 : 0) + KEEP;
   return { x0: at.x - hw, x1: at.x + hw, y0: at.y - s.d / 2 - KEEP, y1: at.y + below };
@@ -115,15 +125,69 @@ export function placed(layout: DenLayout | undefined, opened: boolean): Placed {
   }
   return { floor, wall };
 }
-// Can floor thing `key` stand at `at`: inside the middle of the hall, clear of everything else there?
-// (The tavern's room's pit only in its own half: it's the tavern's.)
+// Can floor thing `key` stand at `at`? On open floor (room 1's only till the wall's gone), FLOOR_MARGIN clear of the
+// rock; clear of everything else, and of the room in front of doors and the ways out; and with every place still
+// reachable from the Labyrinth's tunnel, so nothing can be boxed in (why fully free placement was ruled out,
+// 2026-11-18). The tavern's room's pit only in its own half: it's the tavern's.
+type Box = { x0: number; x1: number; y0: number; y1: number };
+const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
+// (Something in room 2 before the wall's gone isn't there yet.)
+const absent = (k: FloorKey, p: Placed, opened: boolean) => !opened && p.floor[k].x > DIVIDE_X;
+const stateFor = (opened: boolean): DenState => ({ opened, pit: opened, trainingPit: false, repaired: false });
 export function fitsFloor(key: FloorKey, at: Pt, p: Placed, opened: boolean): boolean {
-  const z = floorZone(opened), b = keptBox(key, at), s = FLOOR_SIZE[key];
-  if (at.x - s.w / 2 < z.x0 || at.x + s.w / 2 > z.x1 || at.y - s.d / 2 < z.y0 || at.y + s.d / 2 > z.y1) return false;
+  const s = FLOOR_SIZE[key], plan = denPlan(opened);
+  const x0 = at.x - s.w / 2 - FLOOR_MARGIN, x1 = at.x + s.w / 2 + FLOOR_MARGIN, y0 = at.y - s.d / 2 - FLOOR_MARGIN, y1 = at.y + s.d / 2 + FLOOR_MARGIN;
+  const nx = Math.ceil((x1 - x0) / 0.25), ny = Math.ceil((y1 - y0) / 0.25);
+  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) {
+    const tx = Math.round(x0 + ((x1 - x0) * i) / nx), ty = Math.round(y0 + ((y1 - y0) * j) / ny);
+    if (tx < 0 || ty < 0 || tx >= plan.w || ty >= plan.h || plan.tiles[ty * plan.w + tx] !== FLOOR || (!opened && tx >= DIVIDE_X)) return false;
+  }
   if (key === "training" && at.x - s.w / 2 < DIVIDE_X + 0.5) return false;
-  const hits = (o: { x0: number; x1: number; y0: number; y1: number }) => b.x0 < o.x1 && o.x0 < b.x1 && b.y0 < o.y1 && o.y0 < b.y1;
-  if (lamps(opened).some((l) => hits({ x0: l.x - 0.4, x1: l.x + 0.4, y0: l.y - 0.4, y1: l.y + 0.4 }))) return false;
-  return FLOOR_KEYS.every((k) => k === key || (k === "training" && !opened) || !hits(keptBox(k, p.floor[k])));
+  const next: Placed = { ...p, floor: { ...p.floor, [key]: at } }, mine = keptBox(key, at);
+  if (FLOOR_KEYS.some((k) => k !== key && !absent(k, next, opened) && overlaps(mine, keptBox(k, next.floor[k])))) return false;
+  if (DECOR.some((d) => overlaps(mine, { x0: d.at.x - 0.6, x1: d.at.x + 0.6, y0: d.at.y - 0.6, y1: d.at.y + 0.6 }))) return false;
+  const list = stations(stateFor(opened), next);
+  if (list.some((st) => (!st.move || st.move === "wall") && overlaps(mine, keepClear(st)))) return false;
+  return allReachable(list, next, opened);
+}
+// The floor a place that doesn't move keeps to itself: its footprint, and the room in front of its door or way out.
+function keepClear(st: Station): Box {
+  const b = { x0: st.x - st.w / 2 - KEEP, x1: st.x + st.w / 2 + KEEP, y0: st.y - st.d / 2 - KEEP, y1: st.y + st.d / 2 + KEEP };
+  if (st.key === "arch" || st.key === "portal") return { ...b, y1: st.y + DOOR_CLEAR.way };
+  if (st.key === "board") return { ...b, y1: st.y + DOOR_CLEAR.board };
+  if (st.turn === "east") return { ...b, x1: b.x1 + DOOR_CLEAR.building };
+  if (st.key === "shack" || st.key === "tavern") return { ...b, y1: b.y1 + DOOR_CLEAR.building };
+  return b;
+}
+// Can someone walk from the Labyrinth's tunnel to every place: to the front of a building, a wall thing or a way out,
+// to any side of the rest? On the strollers' grid, round whatever stands in the way (strollBlocked).
+export function allReachable(list: Station[], p: Placed, opened: boolean): boolean {
+  const plan = denPlan(opened), blocked = strollBlocked(plan, denShown(opened), list, braziers(p, stateFor(opened)));
+  const W = Math.ceil(PLAN_W / CELL), H = Math.ceil(PLAN_H / CELL);
+  const cell = (x: number, y: number) => Math.floor((y + 0.5) / CELL) * W + Math.floor((x + 0.5) / CELL);
+  const free = (i: number) => !blocked((i % W) * CELL - 0.5 + CELL / 2, Math.floor(i / W) * CELL - 0.5 + CELL / 2);
+  const seen = new Uint8Array(W * H), q = [cell(mid(ARCH), NOOK_N + 1)];
+  if (!free(q[0])) return false;
+  seen[q[0]] = 1;
+  for (let h = 0; h < q.length; h++) {
+    const i = q[h], x = i % W, y = Math.floor(i / W);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, j = ny * W + nx;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H || seen[j] || !free(j)) continue;
+      seen[j] = 1; q.push(j);
+    }
+  }
+  const near = (pt: Pt) => [[0, 0], [CELL, 0], [-CELL, 0], [0, CELL], [0, -CELL]].some(([dx, dy]) => {
+    const x = pt.x + dx, y = pt.y + dy;
+    return x > -0.5 && y > -0.5 && x < PLAN_W - 0.5 && y < PLAN_H - 0.5 && seen[cell(x, y)] === 1;
+  });
+  const out = 0.65;
+  return list.every((st) => {
+    if (isLamp(st.key) || st.key === "arch") return true;
+    if (st.wall || st.key === "bookcase" || st.key === "cage" || st.key === "shack" || st.key === "tavern") return near({ x: st.x, y: st.y + st.d / 2 + out });
+    if (st.turn === "east") return near({ x: st.x + st.w / 2 + out, y: st.y });
+    return [{ x: st.x, y: st.y + st.d / 2 + out }, { x: st.x, y: st.y - st.d / 2 - out }, { x: st.x - st.w / 2 - out, y: st.y }, { x: st.x + st.w / 2 + out, y: st.y }].some(near);
+  });
 }
 // Can wall thing `key` hang in (or stand against) slot `id`? It must fit, and the slot be open; a slot
 // another wall thing holds swaps them (placeWall).
@@ -155,9 +219,9 @@ export function toLayout(p: Placed): DenLayout {
 // against the face. `turn`: a building turned to face east, along the west wall. `move`: it can be picked
 // up and moved. `obj`: the old Den's id for it, so Klutz's tour finds it ("den-<id>").
 export type StationKey = "shack" | "bookcase" | "arch" | "board" | "cage" | "lectern" | "storehouse" | "altar" | "pool" | "pit"
-  | "rubble" | "portal" | "tavern" | "training";
+  | "rubble" | "portal" | "tavern" | "training" | LampKey;
 export type Station = { key: StationKey; obj?: Exclude<ObjId, 0>; label: string; href?: string; x: number; y: number; w: number; d: number; tall: number;
-  wall?: boolean; turn?: "east"; move?: "floor" | "wall"; room: 1 | 2 };
+  wall?: boolean; turn?: "east"; move?: "floor" | "wall"; room: 1 | 2; quiet?: boolean }; // (quiet: no name over it)
 
 // The Den's stations, room 1's then room 2's (the tavern's room only once the wall's gone; its pit only once
 // the tavern has its pit, as the old room had: lib/trainingPit.ts hasPit). Room 1: the shack in the hall's
@@ -172,8 +236,8 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
     return { x: slot.x, y: z.out ? slot.face + z.out : slot.face, w: z.w, d: z.d, room: (slot.x < DIVIDE_X ? 1 : 2) as 1 | 2 };
   };
   const out: Station[] = [
-    { key: "shack", obj: OBJ.crate, label: "Klutz's Den", href: "/klutz", x: 2.15, y: back(HALL_N, 2.7), w: 3.25, d: 2.7, tall: 3, room: 1 },
-    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 2.05, y: 13.1, w: 3.1, d: 3.45, tall: 3, turn: "east", room: 1 },
+    { key: "shack", obj: OBJ.crate, label: "Klutz's Cabin", href: "/klutz", x: 2.15, y: back(HALL_N, 2.7), w: 3.25, d: 2.7, tall: 3, room: 1 },
+    { key: "storehouse", obj: OBJ.chest, label: "Storehouse", href: "/chest?store=1", x: 2.05, y: 15.2, w: 3.1, d: 3.45, tall: 3, turn: "east", room: 1 },
     { key: "arch", obj: OBJ.arch, label: "The Labyrinth", href: "/dungeon", x: mid(ARCH), y: NOOK_N, w: 2.9, d: 0.2, tall: 3, wall: true, room: 1 },
     { key: "lectern", obj: OBJ.scroll, label: "Bestiary", href: "/guide", x: 11.6, y: 4.6, w: 0.8, d: 0.6, tall: 1.3, room: 1 },
     { key: "board", obj: OBJ.quests, label: "Quest Board", href: "/board", ...wallAt("board"), tall: 2.45, wall: true, move: "wall" },
@@ -183,6 +247,8 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
     { key: "pool", obj: OBJ.pool, label: "Healing Pool", href: "/pool", ...floorAt("pool"), tall: 0.7, move: "floor" },
     { key: "pit", obj: OBJ.pit, label: "The Pit", href: "/pit", ...floorAt("pit"), tall: 0.6, move: "floor" },
   ];
+  // The standing torches: picked up and moved like the rest; tapping one goes nowhere. (Room 2's once the wall's gone.)
+  for (const k of LAMP_KEYS) if (s.opened || p.floor[k].x < DIVIDE_X) out.push({ key: k, label: "Torch", ...floorAt(k), tall: 1.2, move: "floor", quiet: true });
   // The wall's stone socket, where Klutz uses the Labyrinth Stone (in the old Den's rubble's place: its tour id).
   if (!s.opened) out.push({ key: "rubble", obj: OBJ.tavern, label: "Old wall", x: DIVIDE_X - 1, y: 14.6, w: 1, d: 1, tall: 1.4, room: 1 });
   else {
@@ -200,23 +266,22 @@ export function stations(s: DenState, p: Placed = placed(undefined, s.opened)): 
 // the braziers (with the altar, and the tavern room's pit), lanterns by the shack's and storehouse's doors and
 // the board, the altar's soul fire and the tavern's windows. Tile units and reach in tiles (stone.ts Light3D).
 export const DEN_LIGHT = { torch: 5.5, brazier: 4.5, altar: 4, tavern: 4.5, lantern: 3.5, lamp: 4.5, pool: 3 }; // 🧪 reaches
-// Standing lamps where the Den was darkest (the user, 2026-11-19: "a higher ambient light with additional lighting in
-// certain areas"): along the walls and the south end, out of the way; nothing can be moved onto one (fitsFloor).
-export const LAMPS: Pt[] = [{ x: 3.4, y: 20.6 }, { x: 11.6, y: 21.8 }, { x: 14.6, y: 21.8 }, { x: 24.4, y: 13.6 }, { x: 24.4, y: 20.6 }];
-export const lamps = (opened: boolean) => LAMPS.filter((l) => opened || l.x < DIVIDE_X);
+// The standing torches (the user, 2026-11-19: "a higher ambient light with additional lighting in certain areas"; they
+// can be moved, LAMP_KEYS): where each stands now (room 2's only once the wall's gone).
+export const lampsAt = (p: Placed, opened: boolean): Pt[] => LAMP_KEYS.map((k) => p.floor[k]).filter((l) => opened || l.x < DIVIDE_X);
 export const SCONCES: Pt[] = [{ x: 12.2, y: NOOK_N }, { x: 13.8, y: NOOK_N }, { x: 20, y: HALL_N }];
 export const ARCH_LIGHTS: Pt[] = [{ x: mid(ARCH) - 1.2, y: NOOK_N }, { x: mid(ARCH) + 1.2, y: NOOK_N }];
 export const PORTAL_LIGHTS: Pt[] = [{ x: mid(PORTAL) - 1.2, y: NOOK_N }, { x: mid(PORTAL) + 1.2, y: NOOK_N }];
-const LANTERNS: Pt[] = [{ x: 2.6, y: 10.6 }, { x: 3.9, y: 13.1 }, { x: 5.2, y: 8.4 }]; // (the shack's and storehouse's doors, the board)
+const LANTERNS: Pt[] = [{ x: 2.6, y: 10.6 }, { x: 3.9, y: 15.2 }, { x: 5.2, y: 8.4 }]; // (the shack's and storehouse's doors, the board)
 export function braziers(p: Placed, s: DenState): Pt[] {
   const by = (c: Pt, f: { dx: number; dy: number }) => [-1, 1].map((k) => ({ x: c.x + k * f.dx, y: c.y + f.dy }));
-  return [...by(p.floor.altar, BRAZIER_AT.altar), ...(s.opened && s.pit ? by(p.floor.training, BRAZIER_AT.training) : []), ...lamps(s.opened)];
+  return [...by(p.floor.altar, BRAZIER_AT.altar), ...(s.opened && s.pit ? by(p.floor.training, BRAZIER_AT.training) : []), ...lampsAt(p, s.opened)];
 }
 export function denLights(s: DenState, p: Placed = placed(undefined, s.opened)): { x: number; y: number; r: number }[] {
   const inRoom = (q: Pt) => s.opened || q.x < DIVIDE_X;
   return [
     ...[...SCONCES, ...ARCH_LIGHTS, ...PORTAL_LIGHTS].filter(inRoom).map((q) => ({ x: q.x, y: q.y + 0.6, r: DEN_LIGHT.torch })),
-    ...braziers(p, s).map((q) => ({ ...q, r: LAMPS.includes(q) ? DEN_LIGHT.lamp : DEN_LIGHT.brazier })),
+    ...braziers(p, s).map((q) => ({ ...q, r: lampsAt(p, s.opened).includes(q) ? DEN_LIGHT.lamp : DEN_LIGHT.brazier })),
     { ...p.floor.pool, r: DEN_LIGHT.pool }, // (the healing water's own glow)
     ...LANTERNS.map((q) => ({ ...q, r: DEN_LIGHT.lantern })),
     { ...p.floor.altar, r: DEN_LIGHT.altar },
@@ -233,9 +298,9 @@ export function denLit(plan: Floorplan, shown: Uint8Array): Uint8Array {
 // Klutz round room 1 when he's home (up into the nook and back), and visitors round the whole Den, each going
 // from spot to spot along a loop; between spots they find their way round whatever stands in the way
 // (routeLoop), so moving things never leaves anyone walking through them.
-export const KLUTZ_LOOP: Pt[] = [{ x: 4.5, y: 10.8 }, { x: 9.5, y: 9.4 }, { x: 8.8, y: 4.6 }, { x: 11.5, y: 10.2 }, { x: 11.6, y: 21.2 }, { x: 5.5, y: 21.9 }, { x: 4.3, y: 16.2 }];
+export const KLUTZ_LOOP: Pt[] = [{ x: 4.5, y: 10.8 }, { x: 9.5, y: 9.4 }, { x: 8.8, y: 4.6 }, { x: 11.5, y: 10.2 }, { x: 11.6, y: 21.2 }, { x: 5.5, y: 21.9 }, { x: 4.9, y: 16.4 }];
 export const VISITOR_LOOP: Pt[] = [{ x: 15, y: 11 }, { x: 16.5, y: 4.6 }, { x: 19, y: 10.8 }, { x: 23.5, y: 15.5 }, { x: 22.5, y: 21.5 }, { x: 13, y: 21.5 },
-  { x: 5.5, y: 21.9 }, { x: 4.3, y: 16.2 }, { x: 4.5, y: 10.8 }, { x: 9.5, y: 9.4 }, { x: 13, y: 5 }];
+  { x: 5.5, y: 21.9 }, { x: 4.9, y: 16.4 }, { x: 4.5, y: 10.8 }, { x: 9.5, y: 9.4 }, { x: 13, y: 5 }];
 export const STROLL = { klutz: 0.55, visitor: 0.45, pause: 3 }; // u a second; s stopped at each spot
 const CELL = 0.5;                                               // u: the grid they find their way on
 
