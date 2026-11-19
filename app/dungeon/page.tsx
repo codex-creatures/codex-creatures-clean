@@ -38,7 +38,7 @@ import { goldenDrops } from "@/lib/dungeon/walkRooms";
 import { bountiful, scholarly, enchanted, CHEST_ENCHANT } from "@/lib/items/enchantments";
 import { dealtDamage } from "@/lib/combat/battle";
 import { clubRoom, klutzClub, isClub, thiefRoom, thiefRace, rollBox, wantsClub, wantsThief } from "@/lib/quest";
-import { startTutorialRun, TUTORIAL_HELLO } from "@/lib/dungeon/tutorialRun";
+import { startTutorialRun, TUTORIAL_HELLO, TUTORIAL_POTIONS } from "@/lib/dungeon/tutorialRun";
 import { guess as witchGuess, walkAway, sitDown, type Guess, type WitchGame } from "@/lib/dungeon/witch";
 import { xpForEnemy, BOSS_XP, MAX_LEVEL, shareXp, impactsFromLog, xpShown, SCROLL_XP } from "@/lib/creatures/levels";
 import { KLUTZ_DROP_ID } from "@/hooks/useGameState";
@@ -341,8 +341,9 @@ export default function DungeonPage() {
     if (quest) {
       game.acceptQuest();
       const race = thiefRace(byId(team[0])?.fighter.skills ?? []);
-      // (Straight in, no scroll first: there's only the one way, and Klutz shows you it.)
-      update({ meta: { ...meta, runs: lab.meta.runs + 1 }, run: stepInside(startTutorialRun(party, team, hp, lab.meta.runs + 1, race, !wantsClub(game.quest))) });
+      // (Straight in, no scroll first: there's only the one way, and Klutz shows you it. His potions top your bag
+      // up to two Lesser Potions, so leaving and coming back doesn't hand out more.)
+      update({ meta: { ...meta, runs: lab.meta.runs + 1, bag: addToBag(meta.bag ?? [], TUTORIAL_POTIONS.slice((meta.bag ?? []).filter((e) => e === "lesser").length), bagSize(meta)) }, run: stepInside(startTutorialRun(party, team, hp, lab.meta.runs + 1, race, !wantsClub(game.quest))) });
       setNotes([TUTORIAL_HELLO]);
       return;
     }

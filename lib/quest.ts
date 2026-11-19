@@ -68,13 +68,15 @@ export const isClub = (it?: { itemKey?: string }) => it?.itemKey === "klutz_club
 // - its race is one your creature's moves are effective against (thiefRace;
 //   the user, 2026-10-31), so Klutz can have you hit it with one of them;
 // - no weapon or armour, but lots of HP (THIEF_HP_MULT) and only a weak
-//   slap, so the lesson has time to land;
+//   slap: a long fight that wears you down (the user, 2026-11-20: "put up a
+//   bit of a fight… use 1 or 2 potions"; Klutz hands you TUTORIAL_POTIONS);
 // - it can't knock your creature out (gentle: its slap leaves 1 HP), so you
 //   always win (the user, 2026-10-26: a close one now and then had a Lv 3
 //   starter down to 1% HP).
-// (Sim, a Lv 3 Rare with the club and its own moves: 3–8 rounds, about 6; never a loss.)
+// 🧪 Sim (a Lv 3 Rare with the club, its race move first, then the Normal AI): about 15 rounds, and it takes
+// about 150% of its health in all (2: 6 rounds, 54%), so 1–2 Lesser Potions (50 HP each). Never a loss.
 export const THIEF_LEVEL = 8;
-export const THIEF_HP_MULT = 2;
+export const THIEF_HP_MULT = 5.5;
 export function thiefRoom(race: RaceV2 = "humanoid"): Room {
   const thief: Enemy = {
     creatureId: "baby_cyclops", proficiency: { ...CREATURE_BY_ID.baby_cyclops.proficiency }, moves: ["Backhand"], level: THIEF_LEVEL,

@@ -50,7 +50,7 @@ describe("the first quest's run, walked (lib/dungeon/tutorialRun.ts)", () => {
     expect(things().some((t) => t.pickup === "club")).toBe(false);
   });
 
-  it("the thief waits at the top of his room, one foe, armed with nothing but double HP, and can't knock you out", () => {
+  it("the thief waits at the top of his room, one foe, armed with nothing but lots of HP, and can't knock you out", () => {
     const thief = run().walk!.rooms.thief;
     expect(waitsHere(thief, 1)).toBe(true);
     expect(foesToPlace(thief, 1)).toBe(1);

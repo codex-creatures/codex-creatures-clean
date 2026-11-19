@@ -98,14 +98,15 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   advice (he doesn't fight). The box holds 10 pieces of Common/Uncommon gear (lib/quest.ts).
   ✅ **Walked, by torchlight** (the user, 2026-11-20: "run like a normal labyrinth… make this feel special as
   it will be their first experience"; lib/dungeon/tutorialRun.ts): always the same place, made by hand. You start
-  inside (no scroll first) with a line from Klutz handing you a torch, at the bottom of a small entrance: wall
+  inside (no scroll first) with a line from Klutz handing you a torch and two Lesser Potions (the thief's a long
+  fight: combat.md, the guided first fight), at the bottom of a small entrance: wall
   torches lit, an empty bookcase to search (dust), cobwebs in its top corners, a puddle, a rat running along the
   top wall into its hole, crates, pots and a skull in its corners. One corridor leads up, a torch on each wall;
   halfway up Klutz's Club lies on the floor, glowing gold with a "!" over it. Walk up to it: it goes in your bag,
   and the bag opens under the walk with the tutorial that teaches equipping it (tap, or drag onto a creature),
   and the equip window explains where stats come from (gear × the creature's %). The next room is the thief's:
   standing torches either side of the way up light a pair at a time, bones, pots and barrels in its corners, a
-  cobweb, and the Baby Cyclops waiting at the top with the box. Walk up to him and the guided fight starts; win,
+  cobweb, and the Baby Cyclops waiting at the top, club in hand (his sprite since 2026-11-20; the box is his prize). Walk up to him and the guided fight starts; win,
   and the room's window has the box to pick up and take home. It's free, counts as a Labyrinth run, never a
   clear. Left before the end, you start it again (the club isn't there twice). Its placements are written by
   hand at the world version of its day (`TUTORIAL_PLACED`), so it doesn't change when the generator does.

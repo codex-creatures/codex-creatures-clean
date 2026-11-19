@@ -62,18 +62,21 @@ export const MUTED = "rgba(255,255,255,0.5)";
 // chart's button glows. The thief's race is one your creature's moves beat
 // (thiefRace, lib/quest.ts), so the first step always has a move to glow.
 type TutorialStep = { say: string; allow: ((s: Skill) => boolean) | null; chart?: boolean };
+export const TUTORIAL_DRINK_AT = 0.4; // Klutz says drink a potion below this share of your health
 export function tutorialSteps(me: Combatant, them: Combatant): TutorialStep[] {
   const races = them.races ?? [];
   const theirs = races.map((r) => RACE_INFO[r].name).join(" / ");
   const good = me.skills.find((s) => effectiveOn(s, races));
   const goodRace = good && raceOfMove(good);
+  // Its own race (a new player's starter knows a move of it: STARTER_RACE_MOVE), and the match bonus that gives.
+  const mine = (me.races ?? [])[0], own = !!goodRace && (me.races ?? []).includes(goodRace);
   return [
     { say: good && goodRace
-        ? `Right: that thief's a ${theirs}, and ${RACE_INFO[goodRace].name} moves are effective against ${theirs}s. Your ${me.name} knows one: hit it with ${good.name}!`
+        ? `${own && mine ? `Your ${me.name} is a ${RACE_INFO[mine].name}, and moves of its own race hit harder from it. ` : ""}That thief's a ${theirs}, and ${RACE_INFO[goodRace].name} moves are effective against ${theirs}s. Hit it with ${good.name}!`
         : "Right: that's a big lump of a thief. Hit it!",
       allow: good ? (s) => effectiveOn(s, races) : null },
     { say: good
-        ? `EFFECTIVE! Every creature has a race or two, and so does every codex move: pick ones its races are weak to. Not sure what beats what? Tap ▲▼ below for the race chart. Now finish it off — your call!`
+        ? `EFFECTIVE! Every creature has a race or two, and so does every codex move. Moves of your creature's own race hit harder, and moves its foe's race is weak to harder still. Not sure what beats what? Tap ▲▼ below for the race chart. He's tough: keep at it!`
         : `Every creature has a race or two. Your own moves are neutral: they land the same on everyone. Moves from codexes carry a race, and that's where the race chart (▲▼ below) comes in. Now finish it off — your call!`,
       allow: null, chart: true },
   ];
@@ -402,6 +405,10 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
   const steps = match.tutorial !== undefined ? tutorialSteps(me, them) : [];
   const tip = match.tutorial !== undefined && match.tutorial >= 0 && match.tutorial < steps.length && you.active === 0 ? steps[match.tutorial] : undefined;
   const notStarted = match.tutorial === -1;
+  // …and once his lessons are said, a word when you're low with a potion in the bag (the thief's a long fight: the
+  // user, 2026-11-20, "use 1 or 2 potions"); the bag's button glows.
+  const drinkTip = match.tutorial !== undefined && !tip && !notStarted && you.active === 0 && me.hp < me.maxHp * TUTORIAL_DRINK_AT
+    && bag.some((it) => it.potion && it.count > 0);
   const locked = tutorialLocked(match) && you.active === 0;
   // The witch's illness biting: the screen shakes.
   const ill = fx?.kind === "effect" && fx.text.includes("ILLNESS");
@@ -447,6 +454,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#ffd66e", borderColor: "#ffd66e" }}>⚠️ {phaseText}</div>
         )}
         {tip && !playing && <KlutzSays key={match.tutorial} say={tip.say} />}
+        {drinkTip && !playing && <KlutzSays key="drink" say="Ouch! You're getting low. Tap 🎒 Bag and drink a potion, then keep hitting him!" />}
         {state.turnLimit && !match.state.winner && (
           <div className="stone-panel pixel-font battle-banner" style={{ color: "#ff8a5c", borderColor: "#ff8a5c" }}>
             🧨 {Math.max(0, state.turnLimit - state.round)} round{state.turnLimit - state.round === 1 ? "" : "s"} until the room blows
@@ -580,7 +588,7 @@ export function BattleView({ battle, finishedActions, bag = [], onUseItem, showE
             </div>
             <div className="dock-tabs">
               <button className="dock-tab" data-active={open === "swap"} disabled={!canSwap} onClick={() => toggle("swap")}>⇄ Swap</button>
-              {onUseItem && <button className="dock-tab" data-active={open === "bag"} disabled={bag.length === 0 || locked} onClick={() => toggle("bag")}>🎒 Bag{bagCount ? <span className="count">{bagCount}</span> : null}</button>}
+              {onUseItem && <button className={`dock-tab${drinkTip && open !== "bag" ? " tutorial-pulse" : ""}`} data-active={open === "bag"} disabled={bag.length === 0 || locked} onClick={() => toggle("bag")}>🎒 Bag{bagCount ? <span className="count">{bagCount}</span> : null}</button>}
               <button className="dock-tab" data-active={open === "log"} onClick={() => toggle("log")}>📜 Log</button>
               {raceChart && <button className={`dock-tab${tip?.chart && open !== "races" ? " tutorial-pulse" : ""}`} data-active={open === "races"} onClick={() => toggle("races")} aria-label="Race chart">▲▼</button>}
               <button className="dock-tab" data-active={open === "details"} onClick={() => toggle("details")} aria-label="Details">ⓘ</button>

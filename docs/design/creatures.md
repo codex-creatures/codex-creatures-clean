@@ -22,10 +22,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   set on the Soul Altar, whirl up into a whirlwind that climbs the rarity colours like a Code Cache
   (`summonStages`, lib/scanReveal.ts) to the creature's, then burst into it. Tap to skip.
 - ✅ **Cage:** holds 1 creature (`CAGE_SIZE`; upgrades later). A new game's first creature waits in
-  the cage (`starterCreature`, Lv 3). It knows its style's three core moves and one cheap race move,
-  `STARTER_RACE_MOVE` (the user, 2026-11-20): Claw (Beast) if it's melee, Flame Spit (Geo) if it's ranged or
-  magic (magic has no race move that cheap: Frost Shard was one, retired with the kits). It keeps it whatever
-  its species could learn from a codex (a gift; codexes still follow their learners). Releasing a creature gives nothing. A captured creature joins
+  the cage (`starterCreature`, Lv 3). It knows its style's three core moves and one move of its own (main)
+  race, `STARTER_RACE_MOVE` (the user, 2026-11-20: that race's least damaging, least complicated attack, whatever
+  its style): Beast Claw, Geo Flame Spit, Undead Nibble, Toxic Poison Dart, Humanoid Whiplash, Underkin
+  Haemorrhage, Divine Dark Seal (🧪 Underkin and Divine were close calls: Bone Javelin is plainer but a 25 hit;
+  Divine's only other is the Epic Smite). It keeps it whatever its species could learn from a codex (a gift;
+  codexes still follow their learners). Releasing a creature gives nothing. A captured creature joins
   your creatures (the starter is also the first free pick at the Labyrinth's entrance).
 - ✅ **Ascension** (see below): give up creatures of a kind at the Soul Altar to raise one a rarity.
 - ✅ The card design is settled (CardFace, the stone card). The Skull Raven (id `storm_phoenix`) is

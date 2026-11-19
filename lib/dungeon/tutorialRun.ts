@@ -21,7 +21,7 @@
 // true), saved at the world version of its day, its placements written here
 // rather than by place.ts, so it never changes when the generator does.
 
-import type { DungeonRun, Room } from "./run";
+import type { DungeonRun, Room, PotionKey } from "./run";
 import type { DungeonMap } from "./map";
 import type { Layout } from "./layout";
 import type { Instance } from "../world/objects";
@@ -101,8 +101,10 @@ export const TUTORIAL_LIFE: { puddles: Pt[]; holes: RatHole[]; webs: CobWeb[] } 
   webs: [{ x: 7, y: 29, side: "left" }, { x: 20, y: 29, side: "right" }, { x: 5, y: 5, side: "left" }],
 };
 
-// What Klutz says as you step in (a line over the walk; a tap clears it).
-export const TUTORIAL_HELLO = "🔥 Klutz hands you a torch: “It went up that corridor with my box! Go on, drag where you want to walk. I'm right behind you.”";
+// What Klutz says as you step in (a line over the walk; a tap clears it), and what he puts in your bag: the
+// thief's a long fight, so two Lesser Potions (the user, 2026-11-20: you'd use 1 or 2).
+export const TUTORIAL_POTIONS: PotionKey[] = ["lesser", "lesser"];
+export const TUTORIAL_HELLO = "🔥 Klutz hands you a torch and two potions: “It went up that corridor with my box! Drag where you want to walk. I'm right behind you.”";
 
 // The run: the entrance is the room you start in (the club's: done once you've picked it up), the thief's
 // room waits with him in it. race: the thief's (one your creature's race move lands well on: thiefRace).

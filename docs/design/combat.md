@@ -215,8 +215,11 @@ How it came about, round by round: history.md.
   6.1 with no match bonus. The side whose race beats the other's wins about 94% (97% before).
 - ✅ **Guided first fight** teaches races (the user, 2026-10-31): your creature fights with its own
   moves, and the Baby Cyclops thief's race is one those moves are effective against (`thiefRace`: since
-  2026-11-20, one its race move beats: every starter has one, `STARTER_RACE_MOVE`, creatures.md; Humanoid if none). Klutz names its race and has you hit it with that move (it glows), then
-  points you to the ▲▼ race chart (it glows) and lets you finish it. It can't knock you out. Sim: 3–8 rounds (about 6), never a loss.
+  2026-11-20, one its own race's move beats: every starter has one, `STARTER_RACE_MOVE`, creatures.md; Humanoid if none). Klutz names your creature's race (its own race's moves hit harder from it, the match bonus), names the thief's, and has you hit it with that move (it glows), then
+  points you to the ▲▼ race chart (it glows) and lets you finish it. It can't knock you out, but it's a long fight
+  (the user, 2026-11-20: "put up a bit of a fight… 1 or 2 potions"): `THIEF_HP_MULT` 5.5 🧪, about 15 rounds, and about
+  150% of your health in hits, so Klutz hands you two Lesser Potions as you go in (`TUTORIAL_POTIONS`, topped up to two)
+  and, below 40% health (`TUTORIAL_DRINK_AT`), tells you to drink one, the Bag button glowing. Never a loss.
   Bosses (the Cyclops, the Hydra, the Warden's pack) have no race, so no party is hard-countered.
 - ✅ **UI:** moves show their race; tablets are cut in their race's stone with a big style icon
   (impact / arrow / bolt). Cards show race squares under the sprite (not the style); creature

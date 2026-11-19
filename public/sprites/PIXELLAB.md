@@ -18,7 +18,7 @@ the PNG here.
 |---|---|
 | creatures/amber_wasp.png | gallery:8e760486-daef-4018-b3be-a15a4e0b4d6e |
 | creatures/aurelius.png | gallery:c29d5316-b647-4268-b754-884ace94a837 |
-| creatures/baby_cyclops.png | gallery:e7451478-247f-4c4e-bec7-754d61156141 |
+| creatures/baby_cyclops.png | 6cfa1a7f-0a25-528b-861c-ba59c7a8e9e5 (with his club, 2026-11-20: edit_image_pro_flash of gallery:e7451478-247f-4c4e-bec7-754d61156141, the one with the box) |
 | creatures/bellow_toad.png | gallery:2dd08335-9bf9-51b7-bc63-20ddbefcd7e5 (raw generation; trimmed + mirrored here) |
 | creatures/cave_bat.png | gallery:7a5a21a3-4c74-533e-9d12-c6efc97b48ed (the Cave Goblin, sample 11 of 16; raw generation; trimmed + mirrored here. The old Cave Bat: gallery:054e1aad-2c7f-4370-8ba2-bae183383893) |
 | creatures/crystal_golem.png | gallery:39cc6f47-8738-4a8f-8a88-c5e05ee6ad7b |

@@ -6,21 +6,21 @@
 // has a soul stone too, one from its species' pool (the user, 2026-10-25).
 
 import type { Drop } from "../types";
-import { CREATURES_BY_RARITY, MOVE_BY_NAME, MOVE_SLOTS, STARTER_RACE_MOVE, type CombatClass, type CreatureTemplate } from "./creatureData";
+import { CREATURES_BY_RARITY, MOVE_BY_NAME, MOVE_SLOTS, STARTER_RACE_MOVE, starterRaceMove, type CombatClass, type CreatureTemplate } from "./creatureData";
 import { makeCreatureDrop } from "./summon";
 import { stonesFor } from "./soulStones";
 
 export const STARTER_LEVEL = 3;
-// …and a race move of its style, the cheapest common one (STARTER_RACE_MOVE, creatureData.ts; the user,
-// 2026-11-20), so Klutz can teach races in the first fight: the Baby Cyclops is a race it lands well on
-// (lib/quest.ts thiefRace). (Magic gets Flame Spit too: there's no magic race move that cheap.)
-export { STARTER_RACE_MOVE };
+// …and a move of its own race, that race's simplest attack (STARTER_RACE_MOVE, creatureData.ts; the user,
+// 2026-11-20), so Klutz can teach races in the first fight: its race, the match bonus for its race's moves,
+// and the Baby Cyclops is a race that move lands well on (lib/quest.ts thiefRace).
+export { STARTER_RACE_MOVE, starterRaceMove };
 export const QUICK_ATTACK: Record<CombatClass, string> = { melee: "Dash Lash", ranged: "Quick Bolt", magic: "Quickcast" };
 
 // Its moves with its race move in: in a free slot, else in place of the last move that isn't its quick attack.
 export function withRaceMove(t: CreatureTemplate, moves: string[]): string[] {
-  const race = STARTER_RACE_MOVE[t.cls];
-  if (moves.includes(race)) return moves;
+  const race = starterRaceMove(t);
+  if (!race || moves.includes(race)) return moves;
   if (moves.length < MOVE_SLOTS) return [...moves, race];
   const i = moves.map((n) => ["dash", "quick"].includes(MOVE_BY_NAME[n]?.effect?.kind ?? "")).lastIndexOf(false);
   return moves.map((n, j) => (j === (i < 0 ? moves.length - 1 : i) ? race : n));

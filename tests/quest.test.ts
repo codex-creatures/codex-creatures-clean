@@ -2,11 +2,13 @@ import { describe, it, expect } from "vitest";
 import { enemyFighter } from "../lib/dungeon/run";
 import { buildFighter } from "../lib/combat/loadout";
 import { calcDamage } from "../lib/combat/engine";
-import { CREATURES_BY_RARITY, defaultMoveNames } from "../lib/creatures/creatureData";
+import { CREATURES_BY_RARITY, defaultMoveNames, MOVE_BY_NAME } from "../lib/creatures/creatureData";
+import { SPECIES_RACES } from "../lib/creatures/racesV2";
+import { raceOfMove } from "../lib/combat/raceChart";
 import { rollCreature } from "../lib/creatures/creatureRoll";
 import { createBattle, resolveRound, sendInReplacement } from "../lib/combat/battle";
 import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
-import { STARTER_LEVEL, STARTER_RACE_MOVE, withQuickAttack, withRaceMove, starterCreature } from "../lib/creatures/starter";
+import { STARTER_LEVEL, starterRaceMove, withQuickAttack, withRaceMove, starterCreature } from "../lib/creatures/starter";
 import { THIEF_HP_MULT, thiefRace, effectiveOn } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
 import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, skipTutorial, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
@@ -48,11 +50,12 @@ describe("the first quest: Klutz's box", () => {
   const starter = (t = CREATURES_BY_RARITY.rare[0]) =>
     buildFighter(t, { ...KLUTZ_CLUB_STATS }, undefined, withRaceMove(t, withQuickAttack(t, defaultMoveNames(t))), rollCreature(t).proficiency, undefined, "klutz_club", STARTER_LEVEL);
 
-  it("your starter knows its style's cheap race move (Claw, or Flame Spit for ranged and magic), so the thief is always a race it lands well on", () => {
+  it("your starter knows its style's cheap race move (its own race's simplest attack), so the thief is always a race it lands well on", () => {
     for (let k = 0; k < 40; k++) {
       const d = starterCreature() as { creatureId: string; moves: string[] };
       const t = CREATURES_BY_RARITY.rare.find((c) => c.id === d.creatureId)!;
-      expect(d.moves).toContain(STARTER_RACE_MOVE[t.cls]);
+      expect(d.moves).toContain(starterRaceMove(t));
+      expect(raceOfMove(MOVE_BY_NAME[starterRaceMove(t)!])).toBe(SPECIES_RACES[t.id][0]); // (its own race's move)
       expect(d.moves.length).toBeLessThanOrEqual(4);
       const me = starter(t);
       expect(me.skills.some((s) => effectiveOn(s, enemyFighter(thiefRoom(thiefRace(me.skills)).enemies![0]).races ?? []))).toBe(true);
@@ -80,7 +83,8 @@ describe("the first quest: Klutz's box", () => {
     expect(thiefRace([{ name: "Strike" }])).toBe("humanoid");
     expect(enemyFighter(thiefRoom().enemies![0]).races).toEqual(["humanoid"]);
   });
-  it("your starter wins the guided fight on its own, after Klutz's lesson", () => {
+  it("your starter wins the guided fight on its own, after Klutz's lesson, but it's a long one", () => {
+    let rounds = 0, fights = 0;
     for (const t of CREATURES_BY_RARITY.rare) for (let k = 0; k < 10; k++) {
       // (with each of the soul stones it could be born with: a starter always has one)
       const stones = stonesFor(t.id);
@@ -94,7 +98,9 @@ describe("the first quest: Klutz's box", () => {
       }
       expect(s.winner, t.id).toBe("A");
       expect(s.round).toBeGreaterThan(2); // (time for both of Klutz's tips: the lesson, then the race chart)
+      rounds += s.round; fights++;
     }
+    expect(rounds / fights).toBeGreaterThan(10); // (lots of HP: about 15 rounds, 1–2 potions' worth of hits)
   });
 
   it("the thief's slap never knocks your creature out: it always leaves 1 HP", () => {

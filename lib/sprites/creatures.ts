@@ -92,7 +92,7 @@ CREATURE_SPRITES.klutz = withArt(["."], {
 });
 
 // The first quest's thief.
-CREATURE_SPRITES.baby_cyclops = withArt(["."], { src: "/sprites/creatures/baby_cyclops.png", w: 66, h: 83 });
+CREATURE_SPRITES.baby_cyclops = withArt(["."], { src: "/sprites/creatures/baby_cyclops.png?v=2", w: 74, h: 87 }); // (with his club since 2026-11-20; with the box before: art/cyclops-club/)
 
 // The Hydra (the Deep Labyrinth's boss): one body with three heads, drawn
 // whole (192×160) once for each mix of heads cut off. hydraSprite(down):

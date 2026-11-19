@@ -551,14 +551,19 @@ export const moveOf = (c: CreatureTemplate, name: string): Skill => c.skills.fin
 // The 4 moves a creature fights with. Unknown or duplicate names are
 // dropped; an empty selection falls back to the defaults. (Race and class
 // codex moves are only offered once learned, so a saved one is trusted here.)
-// A new player's starter is given its style's cheap race move (lib/creatures/starter.ts; the user, 2026-11-20)
-// whatever its species could learn from a codex: a gift, kept like a move of its own. (Codexes still follow their learners.)
-// Magic has no race move that cheap (Frost Shard was one, retired with the kits), so it gets the ranged one (the user).
-export const STARTER_RACE_MOVE: Record<CombatClass, string> = { melee: "Claw", ranged: "Flame Spit", magic: "Flame Spit" };
+// A new player's starter is given a move of its own (main) race (lib/creatures/starter.ts; the user, 2026-11-20):
+// the least damaging, least complicated attack of that race, whatever its style, so it learns its race and that
+// its race's moves get the match bonus. A gift, kept whatever its species could learn from a codex (codexes still
+// follow their learners).
+export const STARTER_RACE_MOVE: Record<RaceV2, string> = {
+  beast: "Claw", geo: "Flame Spit", undead: "Nibble", toxic: "Poison Dart", humanoid: "Whiplash", underkin: "Haemorrhage", divine: "Dark Seal",
+};
+export const starterRaceMove = (c: { id: string }): string | undefined => { const r = SPECIES_RACES[c.id]?.[0]; return r && STARTER_RACE_MOVE[r]; };
 
 export function resolveMoves(c: CreatureTemplate, names?: string[]): Skill[] {
   const allowed = new Set([...c.skills, ...(c.neutral ? KLUTZ_CODEX_MOVES() : [...raceMovesFor(c), ...LEARNABLE_MOVES, ...SPECIAL_MOVES.filter((m) => canLearnSpecial(c, m))])].map((m) => m.name));
-  allowed.add(STARTER_RACE_MOVE[c.cls]);
+  const gift = starterRaceMove(c);
+  if (gift) allowed.add(gift);
   // (A move of its own keeps its name: the old species in tests know the older moves.)
   const picked = [...new Set(replaceRetired(c, names ?? []))].filter((n) => allowed.has(n)).slice(0, MOVE_SLOTS);
   // A species' own moves first: Combat V2's kit moves aren't in MOVE_BY_NAME.
