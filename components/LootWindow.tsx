@@ -42,7 +42,6 @@ import { TOOLS, isLocator } from "@/lib/items/materials";
 import CodexMove from "./CodexMove";
 import EnchantLine from "./EnchantLine";
 import { enchantOf } from "@/lib/items/enchantments";
-import { codexLearners } from "@/lib/creatures/creatureData";
 import type { CreatureOrItemDrop } from "@/lib/types";
 import type { Sprite } from "@/lib/sprites/pixels";
 
@@ -281,6 +280,7 @@ export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotL
   const l = look ?? lookOf(item!);
   const gear = item && "gear" in item ? (item.gear as CreatureOrItemDrop) : undefined;
   let kind = "", body: React.ReactNode = null;
+  let title = l.name; // (a codex: its kind instead: the move's name is on its tablet below)
   if (!item) { /* (just its name: a bag slot with no closer look) */ }
   else if ("potion" in item) { kind = "potion"; body = textBody(`Heals one creature ${POTIONS[item.potion].heal} HP`); }
   else if ("gear" in item) {
@@ -298,7 +298,8 @@ export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotL
       kind = "xp scroll";
       body = textBody(g.desc);
     } else if (g.codexMove) {
-      kind = `${g.rarity} codex · ${codexLearners(g.codexMove).text}`;
+      // (Just "Rare codex": its name is on the tablet, who learns it behind the "?": the user, 2026-11-20.)
+      title = `${g.rarity[0].toUpperCase()}${g.rarity.slice(1)} codex`;
       body = <CodexMove move={g.codexMove} />;
     } else {
       kind = `${g.rarity} ${g.itemCategory === "armor" && g.armorSlot ? ARMOR_SLOT_INFO[g.armorSlot].name.toLowerCase() : g.itemCategory ?? "item"}`;
@@ -330,10 +331,10 @@ export function ItemPeek({ item, look, action }: { item?: SackItem; look?: SlotL
     <div className="stone-panel" style={{ padding: "8px 10px", display: "grid", gridTemplateRows: `48px ${PEEK_BODY}px`, gap: 6 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
         <div style={{ flex: 1, minWidth: 0, lineHeight: 1.25 }}>
-          <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
+          <div title={l.name} style={{ color: l.color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div>
           {/* Its kind, and its enchantment. */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, height: 26 }}>
-            <div title={kind} style={{ flexShrink: 1, minWidth: 0, fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
+            <div title={kind} style={{ visibility: kind ? "visible" : "hidden", flexShrink: 1, minWidth: 0, fontSize: 13, color: MUTED, textTransform: "capitalize", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{kind || "-"}</div>
             {gear && enchantOf(gear) && <EnchantLine item={gear} style={{ fontSize: 13, height: 26, flexShrink: 0, maxWidth: "60%" }} />}
           </div>
         </div>
