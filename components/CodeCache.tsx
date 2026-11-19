@@ -1,6 +1,6 @@
 "use client";
 // components/CodeCache.tsx
-// Opening a cache of items: a 2×5 grid of sealed "?" slots. Tap one to
+// Opening a cache of items: sealed "?" slots, five a row, a short row centred. Tap one to
 // reveal what's inside, or reveal the lot with the button at the bottom.
 // Used for Klutz's box (an armoury box) and, later, Code Caches (scans
 // saved up while offline: "Extract all").
@@ -16,6 +16,9 @@ import type { NewFind } from "@/lib/scanReveal";
 
 const MUTED = "rgba(255,255,255,0.55)";
 const COLUMNS = 5;
+const GAP = 6;
+// Each box a fifth of the row, so a short last row sits in the middle (the user, 2026-11-20).
+const BOX = `calc((100% - ${GAP * (COLUMNS - 1)}px) / ${COLUMNS})`;
 const REVEAL_ALL_STEP_MS = 140; // "reveal all" still opens them one after another
 
 function look(d: Drop) {
@@ -59,12 +62,12 @@ export default function CodeCache({ title, intro, items, fresh, revealAllLabel =
         <div className="pixel-font" style={{ fontSize: 20, color: "#f1d9a0" }}>{title}</div>
         {intro && <p style={{ fontSize: 13, color: "#d8d4c8", lineHeight: 1.5, margin: "6px 0 0" }}>{intro}</p>}
 
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${COLUMNS}, 1fr)`, gap: 6, margin: "14px 0 10px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: GAP, margin: "14px 0 10px" }}>
           {items.map((d, i) => {
             const l = look(d);
             return open[i] ? (
               <button key={i} className="cache-open" onClick={() => setLast(i)} title={l.name} aria-label={l.name}
-                style={{ position: "relative", aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: 2, cursor: "pointer",
+                style={{ position: "relative", width: BOX, aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", padding: 2, cursor: "pointer",
                   background: "#15161d", border: `3px solid ${l.color}`, boxShadow: `0 0 10px ${l.glow}, inset 0 0 12px ${l.glow}`,
                   outline: last === i ? "2px solid #ffd66e" : "none", outlineOffset: 1 }}>
                 {l.sprite ? <PixelSprite sprite={l.sprite} scale={2} /> : <span style={{ fontSize: 22 }}>{l.icon}</span>}
@@ -73,7 +76,7 @@ export default function CodeCache({ title, intro, items, fresh, revealAllLabel =
               </button>
             ) : (
               <button key={i} className="cache-sealed" onClick={() => reveal(i)} aria-label={`Reveal item ${i + 1}`}
-                style={{ aspectRatio: "1", cursor: "pointer", padding: 0, background: "#23262f", border: "3px solid #12131a",
+                style={{ width: BOX, aspectRatio: "1", cursor: "pointer", padding: 0, background: "#23262f", border: "3px solid #12131a",
                   boxShadow: "inset 3px 3px 0 #3a3e4b, inset -3px -3px 0 #181a21, 0 3px 0 rgba(0,0,0,0.5)" }}>
                 <span className="pixel-font" style={{ fontSize: 22, color: "#8fc1ff", textShadow: "0 0 8px rgba(143,193,255,0.8)" }}>?</span>
               </button>
