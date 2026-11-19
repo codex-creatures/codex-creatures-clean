@@ -117,6 +117,11 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   creature, the armour slots you have armour for, a piece in the picker, Equip, then "Back to Klutz".
   Once the box is opened, Klutz offers "Show me round" or "Skip the tutorial" (the user, 2026-11-01):
   skipping goes straight to him hunting for you (`skipTutorial`).
+- ✅ **His first trip** (the user, 2026-11-20: "guide them to equip Klutz before we send him into the Labyrinth";
+  `klutzFirstStep`, lib/quest.ts): once he's helping (after "Deal.", or skipping the tutorial) and till he's first sent, he
+  asks to be kitted out (a weapon or any armour on him: his Kit tab and its Equip glow), then to be sent (the Hunt tab and
+  Send glow; the Encampment's free), with a ❗ on his cabin in the Den. Only a nudge: he can still be sent bare. Anyone who's
+  sent him before is past it.
 - ✅ **Klutz's tour** (lib/tour.ts, components/TourOverlay.tsx; the user, 2026-11-01): "Show me round"
   walks you through the Den. Each step dims the screen but one thing (a place's label in the Den, or a
   `data-tour` mark on a screen) with a line from Klutz; a tap anywhere goes on, into a place after

@@ -5,7 +5,7 @@
 // the rest, and you tap them in the room).
 
 import Link from "next/link";
-import { useGameState } from "@/hooks/useGameState";
+import { useGameState, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { TOTAL_CREATURES, TOTAL_ITEMS } from "@/lib/items/gameHelpers";
 import DenRoom from "@/components/DenRoom";
 import dynamic from "next/dynamic";
@@ -15,7 +15,7 @@ import { Coin } from "@/components/GoldCount";
 import DailyPopup from "@/components/DailyPopup";
 import { useEffect, useState } from "react";
 import { klutzStatus, pointsFree } from "@/lib/klutz";
-import { klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
+import { klutzFirstStep, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
 import { loadDungeon, bagSize, BINDLE } from "@/lib/dungeon/run";
 import { OBJ } from "@/lib/den/scene";
 import { canBlast, headUp, tavernVisitors } from "@/lib/tavern";
@@ -60,7 +60,8 @@ export default function Home() {
   // What the Den shows (either Den): where Klutz is, the rubble, the tavern's pit, and what's waiting where.
   const caged = (game.caged[0] as { creatureId?: string } | undefined)?.creatureId;
   const klutzAt = !game.hydrated || k === "away" ? "away" : k === "healing" ? "pool" : "home";
-  const klutzNews = game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0));
+  const klutzNews = game.hydrated && (klutzHasNews(game.quest) || game.tavernDue || (game.scanTipDue && !game.scanTipRead) || (klutzHelping(game.quest) && pointsFree(game.klutz) > 0)
+    || klutzFirstStep(game.quest, game.equipment[KLUTZ_DROP_ID], !!game.klutz.expedition || !!game.klutz.trips?.length) !== null); // (till his first trip)
   const rubble = game.tavern.blasted ? "open" : canBlast(game.tavern) ? "dynamite" : "shut";
   const pit = hasPit(game.tavern) ? { ready: game.hydrated && !!game.trainingStatus(now)?.full } : undefined;
   const tavernNews = game.hydrated && tavernVisitors(game.tavern, now).length > 0;

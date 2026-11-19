@@ -17,7 +17,7 @@ import type { CreatureOrItemDrop } from "@/lib/types";
 const MUTED = "rgba(255,255,255,0.5)";
 const SLOTS: [string, "weaponId" | "helmetId" | "chestId" | "legsId"][] = [["Weapon", "weaponId"], ["Helmet", "helmetId"], ["Chest", "chestId"], ["Legs", "legsId"]];
 
-export default function KlutzKit({ game, onEquip }: { game: ReturnType<typeof useGameState>; onEquip: () => void }) {
+export default function KlutzKit({ game, onEquip, nudge }: { game: ReturnType<typeof useGameState>; onEquip: () => void; nudge?: boolean }) {
   const f = game.klutzFighter;
   const s = combatSummary(f);
   const away = klutzStatus(game.klutz, f.maxHp).kind === "away";
@@ -65,7 +65,7 @@ export default function KlutzKit({ game, onEquip }: { game: ReturnType<typeof us
         </div>
       </div>
 
-      <button className={`pixel-btn${free > 0 ? " news-glow" : ""}`} onClick={onEquip} style={{ width: "100%", minHeight: 46 }}>
+      <button className={`pixel-btn${nudge && !away ? " tutorial-pulse" : free > 0 ? " news-glow" : ""}`} onClick={onEquip} style={{ width: "100%", minHeight: 46 }}>
         ⚔️ {away ? "Look at his gear" : "Equip"}{free > 0 && <> · <b>{free}</b> points to spend</>}
       </button>
       <div style={{ fontSize: 12, color: MUTED, textAlign: "center", minHeight: 16 }}>

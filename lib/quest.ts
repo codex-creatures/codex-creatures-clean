@@ -122,3 +122,11 @@ export const needsGearUp = (q: QuestState, loadouts: (Worn | undefined)[]) => q.
 export const skipTutorial = (q: QuestState): QuestState => (q.stage === "stash" || q.stage === "lend" ? { ...q, stage: "done" } : q);
 // Klutz will borrow your gear and hunt for you.
 export const klutzHelping = (q: QuestState) => q.stage === "done";
+// Once he's helping, till his first trip (the user, 2026-11-20: "guide them to equip Klutz before we send him into the
+// Labyrinth"): first put something on him ("kit": a weapon or any armour), then send him ("send"). Only a nudge: he
+// can still be sent bare. Anyone who's sent him before (a trip under way or kept) is past it.
+export type KlutzFirstStep = "kit" | "send" | null;
+export function klutzFirstStep(q: QuestState, kit: (Worn & { weaponId?: string }) | undefined, sentBefore: boolean): KlutzFirstStep {
+  if (!klutzHelping(q) || sentBefore) return null;
+  return kit?.weaponId || wearsArmour(kit) ? "send" : "kit";
+}

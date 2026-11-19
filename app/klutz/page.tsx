@@ -36,9 +36,9 @@ import Help, { HelpSection } from "@/components/Help";
 import UpArrow from "@/components/UpArrow";
 import { TOOL_SPRITES } from "@/lib/sprites/items";
 import { Coin } from "@/components/GoldCount";
-import { useGameState } from "@/hooks/useGameState";
+import { useGameState, KLUTZ_DROP_ID } from "@/hooks/useGameState";
 import { KLUTZ } from "@/lib/creatures/creatureData";
-import { klutzHelping, needsFirstCreature, needsGearUp } from "@/lib/quest";
+import { klutzFirstStep, klutzHelping, needsFirstCreature, needsGearUp, type KlutzFirstStep } from "@/lib/quest";
 import { clampLevel, MAX_LEVEL, SCAN_UNLOCK } from "@/lib/creatures/levels";
 import { RARITY_COLORS } from "@/lib/items/gameHelpers";
 import type { Rarity } from "@/lib/items/budgets";
@@ -100,6 +100,8 @@ export default function KlutzPage() {
   const klutzLv = clampLevel(game.klutz.level);
   const skillsFree = skillPointsFree(game.klutz);
   const toursOpen = game.quest.stage === "lend" || game.quest.stage === "done";
+  // Till his first trip: kit him out, then send him (lib/quest.ts klutzFirstStep). The tab and button for the step glow.
+  const first = klutzFirstStep(game.quest, game.equipment[KLUTZ_DROP_ID], !!game.klutz.expedition || !!game.klutz.trips?.length);
 
   return (
     <DenFrame title="Klutz's Den" icon="👺" gold={game.gold}>
@@ -123,20 +125,20 @@ export default function KlutzPage() {
       </div>
       {helping && <LevelBar level={klutzLv} xp={game.klutz.xp ?? 0} />}
 
-      <QuestTalk game={game} />
+      <QuestTalk game={game} first={first} onKit={() => setTab("kit")} onHunt={() => setTab("send")} />
       <ScanTip game={game} />
 
       {helping && (
         <>
           <div className="dock-tabs" style={{ marginTop: 12 }}>
-            <button className="dock-tab" data-active={tab === "send"} onClick={() => setTab("send")} title={status.kind === "away" ? "His trip" : "Send him hunting"}>🌀 {status.kind === "away" ? "Out" : "Hunt"}</button>
-            <button className={`dock-tab${pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} data-active={tab === "kit"} onClick={() => setTab("kit")} title="His stats and gear">⚔️ Kit</button>
+            <button className={`dock-tab${first === "send" && tab !== "send" ? " tutorial-pulse" : ""}`} data-active={tab === "send"} onClick={() => setTab("send")} title={status.kind === "away" ? "His trip" : "Send him hunting"}>🌀 {status.kind === "away" ? "Out" : "Hunt"}</button>
+            <button className={`dock-tab${first === "kit" && tab !== "kit" ? " tutorial-pulse" : pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} data-active={tab === "kit"} onClick={() => setTab("kit")} title="His stats and gear">⚔️ Kit</button>
             <button className={`dock-tab${skillsFree > 0 ? " news-glow" : ""}`} data-active={tab === "skills"} onClick={() => setTab("skills")} title="His skills" aria-label="Skills">⭐{skillsFree > 0 ? ` ${skillsFree}` : ""}</button>
             <button className="dock-tab" data-active={tab === "chest"} onClick={() => setTab("chest")} title="His crate" aria-label="Crate">📦 {game.crate.length}</button>
             <button className="dock-tab" data-active={tab === "trips"} onClick={() => setTab("trips")} title="His trips" aria-label="Trips">📜</button>
           </div>
-          {tab === "send" && <SendTab game={game} now={now} status={status} recallArmed={recallArmed} setRecallArmed={setRecallArmed} />}
-          {tab === "kit" && <KlutzKit game={game} onEquip={() => setGearOpen(true)} />}
+          {tab === "send" && <SendTab game={game} nudge={first === "send"} now={now} status={status} recallArmed={recallArmed} setRecallArmed={setRecallArmed} />}
+          {tab === "kit" && <KlutzKit game={game} nudge={first === "kit"} onEquip={() => setGearOpen(true)} />}
           {tab === "skills" && <SkillsTab game={game} />}
           {tab === "chest" && <ChestTab game={game} />}
           {tab === "trips" && <KlutzTrips klutz={game.klutz} />}
@@ -152,7 +154,7 @@ export default function KlutzPage() {
 type Game = ReturnType<typeof useGameState>;
 
 // ── Send: where he goes, and the trip under way ──
-function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Game; now: number; status: ReturnType<typeof klutzStatus>; recallArmed: boolean; setRecallArmed: (v: boolean) => void }) {
+function SendTab({ game, nudge, now, status, recallArmed, setRecallArmed }: { game: Game; nudge: boolean; now: number; status: ReturnType<typeof klutzStatus>; recallArmed: boolean; setRecallArmed: (v: boolean) => void }) {
   const f = game.klutzFighter, k = game.klutz, klutzLv = clampLevel(k.level), explorer = clampLevel(game.player.level);
   const clears = game.klutzClears();
   const dests = ([0, 1, 2, 3] as KlutzDest[]);
@@ -242,7 +244,7 @@ function SendTab({ game, now, status, recallArmed, setRecallArmed }: { game: Gam
             <div style={{ fontSize: 12, color: MUTED, marginTop: 3 }}>💤 {hp}/{f.maxHp} HP in the pool · full in {clock(status.fullAt - now)}</div>
           </div>
         )}
-        <button className="pixel-btn" style={{ marginTop: 10, width: "100%" }} disabled={!!block} onClick={() => setWhy(game.sendKlutzOff(picked))}>
+        <button className={`pixel-btn${nudge && !block ? " tutorial-pulse" : ""}`} style={{ marginTop: 10, width: "100%" }} disabled={!!block} onClick={() => setWhy(game.sendKlutzOff(picked))}>
           🌀 Send him{cost > 0 && <> · <Coin /> {cost}</>}
         </button>
         <div style={{ fontSize: 12, color: "#ff8a80", minHeight: 16, marginTop: 4 }}>
@@ -454,7 +456,7 @@ function TutorialWindow({ onClose }: { onClose: () => void }) {
   );
 }
 
-function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
+function QuestTalk({ game, first, onKit, onHunt }: { game: ReturnType<typeof useGameState>; first: KlutzFirstStep; onKit: () => void; onHunt: () => void }) {
   const q = game.quest;
   const [opening, setOpening] = useState(false);
   const say = (lines: React.ReactNode, action?: React.ReactNode) => (
@@ -518,6 +520,15 @@ function QuestTalk({ game }: { game: ReturnType<typeof useGameState> }) {
       <>&ldquo;Now we&apos;ve got some weapons and armour… I&apos;ll explore the Labyrinth for loot, if you lend me some?&rdquo;</>,
       <button className="pixel-btn" onClick={game.questLend}>&ldquo;Deal.&rdquo;</button>,
     );
+  }
+  // His first trip (the user, 2026-11-20): kit him out first, then send him.
+  if (first === "kit") {
+    return say(<>&ldquo;Lend us some of that gear, then! Put a <b>weapon</b> and some <b>armour</b> on me: I hit harder and last longer in it.&rdquo;</>,
+      <button className="pixel-btn tutorial-pulse" onClick={onKit}>⚔️ Kit him out</button>);
+  }
+  if (first === "send") {
+    return say(<>&ldquo;Looking sharp! Now send me hunting. The <b>Encampment</b>&apos;s free.&rdquo;</>,
+      <button className="pixel-btn" onClick={onHunt}>🌀 To the Hunt tab</button>);
   }
   // The tavern questline (lib/tavern.ts): Klutz wants the Labyrinth Stone for the wall (the dynamite, till 2026-11-19).
   if (game.tavernDue) {

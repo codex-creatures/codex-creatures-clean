@@ -11,7 +11,7 @@ import { chooseAiAction, chooseAiReplacement } from "../lib/combat/thinkingAi";
 import { STARTER_LEVEL, starterRaceMove, withQuickAttack, withRaceMove, starterCreature } from "../lib/creatures/starter";
 import { THIEF_HP_MULT } from "../lib/quest";
 import { stonesFor } from "../lib/creatures/soulStones";
-import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, skipTutorial, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
+import { rollBox, thiefRoom, klutzClub, clubRoom, isClub, wantsClub, wantsThief, klutzHasNews, klutzHelping, needsFirstCreature, needsGearUp, skipTutorial, klutzFirstStep, BOX_ROLLS, BOX_UNCOMMON } from "../lib/quest";
 import { questMap, waysOn, knownRooms } from "../lib/dungeon/map";
 import { startQuestRun, nextRooms } from "../lib/dungeon/run";
 import { ITEM_KEYS, KLUTZ_CLUB_STATS } from "../lib/items/ceilings";
@@ -149,6 +149,16 @@ describe("the first quest: Klutz's box", () => {
     expect(needsGearUp({ stage: "lend" }, [{ weaponId: "club" } as { chestId?: string }])).toBe(true);
     expect(needsGearUp({ stage: "lend" }, [{}, { legsId: "x" }])).toBe(false);
     expect(needsGearUp({ stage: "stash" }, [])).toBe(false);
+  });
+
+  it("once Klutz is helping, nudges you to kit him out, then to send him, till his first trip", () => {
+    const done = { stage: "done" as const };
+    expect(klutzFirstStep({ stage: "lend" }, undefined, false)).toBe(null);      // not helping yet
+    expect(klutzFirstStep(done, undefined, false)).toBe("kit");
+    expect(klutzFirstStep(done, {}, false)).toBe("kit");
+    expect(klutzFirstStep(done, { weaponId: "w" }, false)).toBe("send");          // a weapon…
+    expect(klutzFirstStep(done, { legsId: "l" }, false)).toBe("send");            // …or any armour
+    expect(klutzFirstStep(done, undefined, true)).toBe(null);                     // sent before: nothing to say
   });
 
   it("the walk-through after the box can be skipped, but nothing before it", () => {
