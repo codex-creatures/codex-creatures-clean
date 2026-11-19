@@ -103,7 +103,7 @@ describe("Klutz's trip, told as a story", () => {
     vi.resetModules();
     localStorage.clear();
     localStorage.setItem(SAVE_KEY, JSON.stringify({ inventory: [], equipment: {}, gold: 0, caged: [], quest: { stage: "done" }, klutz: { level: 6, expedition } }));
-    window.history.replaceState(null, "", "/klutz");
+    window.history.replaceState(null, "", "/klutz?tab=hunt"); // (he opens on his Crate)
     const Page = (await import("@/app/klutz/page")).default;
     host = document.createElement("div");
     document.body.appendChild(host);

@@ -4,16 +4,17 @@
 // whether he's in or out (the Den's crate leads here: his things are kept in
 // it). His card says where he is (home, resting, or out exploring and when
 // he's back), then five tabs, so it never gets long:
+// - Crate: what he's brought home, to keep or sell, against its size, and
+//   its upgrade (components/klutz/KlutzCrate.tsx). He opens on it (the user,
+//   2026-11-20: his finds first), with Hunt in the middle.
+// - Kit: his stats with his gear on, what he's wearing, his soul stone and
+//   moves, and Equip (components/klutz/KlutzKit.tsx).
 // - Hunt: where he can go (each dungeon's best rarity and cost; locked ones
 //   say what opens them), then one button; while he's out, his HP, his pack
 //   and what he's found so far.
-// - Kit: his stats with his gear on, what he's wearing, his soul stone and
-//   moves, and Equip (components/klutz/KlutzKit.tsx).
 // - Skills: his skill points (Trapping, Armourer, Scavenger, Scholar), his
 //   traits (Bigger Pack, Selective, the cage filter: one picked at each of
 //   Lv 5, 10 and 15, in any order) and pack upgrades.
-// - Crate: what he's brought home, to keep or sell, against its size, and
-//   its upgrade (components/klutz/KlutzCrate.tsx).
 // - Trips: his last trips, each with what he set off with, his fights and
 //   finds (components/klutz/KlutzTrips.tsx, lib/klutz.ts tripLog).
 // ?tab=<one of them> opens on it (the Den's crate: ?tab=crate).
@@ -71,7 +72,7 @@ const clock = (ms: number) => {
 };
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 type Tab = "send" | "kit" | "skills" | "chest" | "trips";
-const TABS: Tab[] = ["send", "kit", "skills", "chest", "trips"];
+const TABS: Tab[] = ["chest", "kit", "send", "skills", "trips"];
 
 export default function KlutzPage() {
   const game = useGameState();
@@ -79,7 +80,7 @@ export default function KlutzPage() {
   const [gearOpen, setGearOpen] = useState(false);
   const [tutorialOpen, setTutorialOpen] = useState(false);
   const [recallArmed, setRecallArmed] = useState(false);
-  const [tab, setTab] = useState<Tab>("send");
+  const [tab, setTab] = useState<Tab>("chest");
   useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 1000); return () => window.clearInterval(t); }, []);
   // ?tab=crate (the Den's crate) and the like: open on that tab.
   useEffect(() => {
@@ -131,10 +132,10 @@ export default function KlutzPage() {
       {helping && (
         <>
           <div className="dock-tabs" style={{ marginTop: 12 }}>
-            <button className={`dock-tab${first === "send" && tab !== "send" ? " tutorial-pulse" : ""}`} data-active={tab === "send"} onClick={() => setTab("send")} title={status.kind === "away" ? "His trip" : "Send him hunting"}>🌀 {status.kind === "away" ? "Out" : "Hunt"}</button>
-            <button className={`dock-tab${first === "kit" && tab !== "kit" ? " tutorial-pulse" : pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} data-active={tab === "kit"} onClick={() => setTab("kit")} title="His stats and gear">⚔️ Kit</button>
-            <button className={`dock-tab${skillsFree > 0 ? " news-glow" : ""}`} data-active={tab === "skills"} onClick={() => setTab("skills")} title="His skills" aria-label="Skills">⭐{skillsFree > 0 ? ` ${skillsFree}` : ""}</button>
             <button className="dock-tab" data-active={tab === "chest"} onClick={() => setTab("chest")} title="His crate" aria-label="Crate">📦 {game.crate.length}</button>
+            <button className={`dock-tab${first === "kit" && tab !== "kit" ? " tutorial-pulse" : pointsFree(game.klutz) > 0 ? " news-glow" : ""}`} data-active={tab === "kit"} onClick={() => setTab("kit")} title="His stats and gear">⚔️ Kit</button>
+            <button className={`dock-tab${first === "send" && tab !== "send" ? " tutorial-pulse" : ""}`} data-active={tab === "send"} onClick={() => setTab("send")} title={status.kind === "away" ? "His trip" : "Send him hunting"}>🌀 {status.kind === "away" ? "Out" : "Hunt"}</button>
+            <button className={`dock-tab${skillsFree > 0 ? " news-glow" : ""}`} data-active={tab === "skills"} onClick={() => setTab("skills")} title="His skills" aria-label="Skills">⭐{skillsFree > 0 ? ` ${skillsFree}` : ""}</button>
             <button className="dock-tab" data-active={tab === "trips"} onClick={() => setTab("trips")} title="His trips" aria-label="Trips">📜</button>
           </div>
           {tab === "send" && <SendTab game={game} nudge={first === "send"} now={now} status={status} recallArmed={recallArmed} setRecallArmed={setRecallArmed} />}

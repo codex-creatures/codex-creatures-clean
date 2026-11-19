@@ -47,12 +47,12 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
     only cages creatures of a rarity you pick or better). Till he has a pick, the rest show locked. Each skill
     shows his level in it, big (3/10); its +1 shows only with a point to spend (the user, 2026-11-14).
   - **Klutz's Den** (the user, 2026-11-18; app/klutz): his home, a den within the Den, reached from his crate in the
-    room (labelled Klutz's Den; it opens on the Crate tab) or from him when he's in. His card says where he is (home,
-    resting with his HP, or out and when he's back: greyed out while he's away), with his tours on a button. Five tabs:
-    **Hunt** (the dungeons as fixed rows, best rarity and cost, one button that says why he can't go; while he's out,
-    his HP, his trip told as a story, his pack's slots and Call back: see below), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
-    moves, and Equip: components/klutz/KlutzKit.tsx), **Skills**, **Crate** (its fill and upgrade, and what's in it to
-    keep or sell: components/klutz/KlutzCrate.tsx; app/crate still shows it on its own) and **Trips**.
+    room (labelled Klutz's Den) or from him when he's in, and opens on the Crate tab. His card says where he is (home,
+    resting with his HP, or out and when he's back: greyed out while he's away), with his tours on a button. Five tabs, in this order (the user, 2026-11-20: his finds first, Hunt in the middle):
+    **Crate** (its fill and upgrade, and what's in it to
+    keep or sell: components/klutz/KlutzCrate.tsx; app/crate still shows it on its own), **Kit** (his stats with gear on and his own % under each, what he's wearing, his soul stone and
+    moves, and Equip: components/klutz/KlutzKit.tsx), **Hunt** (the dungeons as fixed rows, best rarity and cost, one button that says why he can't go; while he's out,
+    his HP, his trip told as a story, his pack's slots and Call back: see below), **Skills** and **Trips**.
   - ✅ **His trip, as a story** (the user, 2026-11-18; components/klutz/KlutzStory.tsx): every fight and find in
     order, each with how many minutes in: a fight says the creature (rarity, level), how many rounds, the damage he
     took and his HP, and how it ended (caught; beaten but got away; caught but the cage full; under the cage filter,
