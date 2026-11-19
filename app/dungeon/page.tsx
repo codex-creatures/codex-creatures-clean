@@ -17,7 +17,7 @@ import LevelUpShow, { type LevelUpInfo } from "@/components/LevelUpShow";
 import FightWon, { type WonRow } from "@/components/FightWon";
 import CageReveal, { type CageFind } from "@/components/CageReveal";
 import Triumph from "@/components/Triumph";
-import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE } from "@/lib/sprites/props";
+import { RICKETY_CHEST_OPEN, BURLAP_SACK_OPEN, TREASURE_CHEST_OPEN, STRONGBOX_OPEN, TREASURE_PILE, BOOKCASE_LOOT } from "@/lib/sprites/props";
 import LootGrid, { stackCards } from "@/components/LootGrid";
 import { useGameState, SLOT_FIELD } from "@/hooks/useGameState";
 import { bagHome } from "@/lib/den3d/bag";
@@ -89,6 +89,8 @@ export default function DungeonPage() {
   const { lab, setLab, update, updateRun, updateBag, takeOne, itemsById, itemOf, slotOf, carry, here } = useDungeonSave(game);
   const [owned, setOwned] = useState<OwnedCreature[]>([]);
   const [lootOpen, setLootOpen] = useState(false); // an opened chest or sack, in its window with your bag
+  const [lootFrom, setLootFrom] = useState<"bookcase" | null>(null); // …a bookcase's find, titled as it (till the window shuts)
+  const closeLoot = () => { setLootOpen(false); setLootFrom(null); };
   const [notes, setNotes] = useState<string[]>([]);
   // Creatures that just levelled up: their show plays over the room (LevelUpShow).
   const [levelUps, setLevelUps] = useState<LevelUpInfo[]>([]);
@@ -768,7 +770,7 @@ export default function DungeonPage() {
   function toolFrom(from: "loot" | "bag", i: number) {
     const it = thingAt(from, i);
     if (!it?.tool || it.tool === "revival") return;
-    setLootOpen(false);
+    closeLoot();
     if (from === "bag") { applyTool(loadDungeon().meta.bag[i]); return; }
     if (it.tool === "clairvoyance") { setSeer(it.id); setMapOpen("pick"); return; }
     if (isLocator(it.tool)) { if (track(it.tool)) takeOutOfSack(i); return; }
@@ -802,7 +804,7 @@ export default function DungeonPage() {
   // The boss is beaten: the run is over. (A save from before the haul
   // screen can still be standing in the boss's room: its chest comes along.)
   function nextRoom() {
-    setLootOpen(false);
+    closeLoot();
     battle.clear();
     updateRun((r) => leaveRoom(leavePending(r.current ? { ...r, current: { ...r.current, opened: true } } : r)));
   }
@@ -818,7 +820,7 @@ export default function DungeonPage() {
     // Leaving the witch mid-game: you walk away with what you've won.
     const w = loadDungeon().run?.current?.witch;
     if (w?.state === "playing" && w.correct > 0) witchLeave();
-    setLootOpen(false);
+    closeLoot();
     setNotes([]);
     battle.clear();
     // On the quest's run: the club's room (empty once you've got it), then the thief.
@@ -930,7 +932,7 @@ export default function DungeonPage() {
     // Leaving the witch mid-game: you walk away with what you've won.
     const w = loadDungeon().run?.current?.witch;
     if (w?.state === "playing" && w.correct > 0) witchLeave();
-    setLootOpen(false);
+    closeLoot();
     setNotes([]);
     battle.clear(); // (the last fight, won: otherwise a room with a fight still in it would show it again)
     let hurt: string | undefined;
@@ -950,7 +952,7 @@ export default function DungeonPage() {
   }
   // Seen by a room's foes (or into the chief's camp): that room's fight. Its loot will lie where you stood.
   function walkSpotted(id: string, st: WalkState) {
-    setLootOpen(false);
+    closeLoot();
     battle.clear();
     setWalkPanel(false);
     updateRun((r) => walkTo(walkKeep(r, { ...st, spots: { ...(r.walk?.spots ?? {}), [id]: st.at } }), id));
@@ -993,9 +995,11 @@ export default function DungeonPage() {
     const codex = shelfHasCodex(r.walk, id);
     const searched = (x: DungeonRun) => (x.current ? { ...x, current: { ...x.current, shelfSearched: true } } : x);
     if (!codex) { updateRun(searched); setNotes(["📚 Dust and crumbling pages. Nothing worth taking."]); return; }
+    // Found: it comes out to take, in the loot window like any other find (the user, 2026-11-20; it went straight in the bag).
     const drop = shelfCodex();
-    give([drop], searched);
-    setNotes([`📚 Tucked between the books: ${dropLabel(drop)}!`]);
+    updateRun((x) => (x.current ? { ...searched(x), current: { ...x.current, shelfSearched: true, sack: [...(x.current.sack ?? []), { gear: drop }], opened: true } } : x));
+    setLootFrom("bookcase");
+    setLootOpen(true);
   }
   // (World version 16) Walked up to one of a storehouse's crates or barrels: searched once; what's in it
   // comes out to take (the loot window), or a line says there's nothing worth having.
@@ -1511,9 +1515,9 @@ export default function DungeonPage() {
               : { step: "done" as const, i: -1 };
             return (
               <LootWindow
-                name={c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash"
+                name={lootFrom === "bookcase" ? "The bookcase" : c.quest === "club" ? "On the floor" : c.kind === "chest" ? "The chest" : c.container === "strongbox" ? "The strongbox" : c.container === "chest" ? "The rickety chest" : c.kind === "stash" ? "The stash"
                   : c.kind === "library" ? "The shelves" : c.kind === "storehouse" ? "The stores" : "The sack"}
-                sprite={c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
+                sprite={lootFrom === "bookcase" ? BOOKCASE_LOOT : c.quest === "club" ? WEAPON_SPRITES.klutz_club : c.kind === "chest" ? TREASURE_CHEST_OPEN : c.container === "strongbox" ? STRONGBOX_OPEN : c.container === "chest" ? RICKETY_CHEST_OPEN : BURLAP_SACK_OPEN}
                 items={c.sack ?? []} bag={bag.map((e) => slotLook(e, isPotionEntry(e) ? undefined : itemOf(e)))}
                 slots={bagSize(lab.meta)} bagName={bagName(lab.meta)}
                 onTake={takeFromSack} onTakeAll={takeAllFromSack} onSwap={swapFromSack} onPutBack={putInSack}
@@ -1521,7 +1525,7 @@ export default function DungeonPage() {
                 onDrink={(i, id) => { const e = loadDungeon().meta.bag[i]; if (e && isPotionEntry(e)) drink(e, id); }}
                 onDrinkLoot={drinkFromSack} onEquipLoot={equipFromSack} onGive={giveFrom} onUseTool={toolFrom}
                 teach={teach} putLabel={c.quest === "club" ? "Drop it" : undefined}
-                onClose={() => setLootOpen(false)} />
+                onClose={closeLoot} />
             );
           })()}
           {equipAsk && (() => {

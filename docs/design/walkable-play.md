@@ -330,7 +330,7 @@ history), loot into your bag, the chief's cages, the haul, retreat, losing.
   (`SHELF_ROOMS`: not the entrance, the boss's or a library) have a bookcase with its back to the top
   wall (about one room in seven gets one: the wall must be clear of doors and wall torches),
   `SHELF_CANDLE` 40% with a floor candle beside it. Walk up to search it, once (`Room.shelfSearched`):
-  `SHELF_CODEX` 10% have a codex tucked in, one, at the usual odds (run.ts `shelfCodex`, `CODEX_ODDS`).
+  `SHELF_CODEX` 10% have a codex tucked in, one, at the usual odds, found in a loot window titled "The bookcase" to take it from (the user, 2026-11-20; it went straight into the bag) (run.ts `shelfCodex`, `CODEX_ODDS`).
   A bookcase with nothing in it (a library's broken ones too) says so in a line, with no loot window.
   **A storehouse's crates and barrels** (world version 16, the user, 2026-11-15): an unguarded
   storehouse's stores are in `STORE_CRATES` 4–6 crates and barrels against its walls instead of one pile,

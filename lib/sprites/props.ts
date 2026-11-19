@@ -50,3 +50,6 @@ export const STRONGBOX = prop("warden_strongbox", 60, 60, 50);
 export const STRONGBOX_OPEN = prop("warden_strongbox_open", 61, 62, 50);
 // A healing pool's ring of stones round its glowing water (shown dimmed once used).
 export const HEALING_POOL = prop("healing_pool", 68, 37, 110);
+
+// A bookcase's find, in its loot window (the walk's bookcase picture).
+export const BOOKCASE_LOOT = withArt(["."], { src: "/sprites/den/bookcase-2.png", w: 76, h: 86, size: 40 });
