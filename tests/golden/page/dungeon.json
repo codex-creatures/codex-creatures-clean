@@ -1644,19 +1644,15 @@
      "Cave Goblin Lv5 14xp",
      "Dust Sprite Lv4 0xp"
     ],
-    "items": 1,
+    "items": 4,
     "equipment": {
      "00000000-0000-4000-8000-000000000002": {
       "helmetId": "00000000-0000-4000-8000-000000000008"
      }
     },
-    "bag": [
-     "lesser",
-     "lesser",
-     "lesser"
-    ],
+    "bag": [],
     "run": null,
-    "hash": "a5bfc6c82ce0fcb92b9e9482632cbdf6df283e5e"
+    "hash": "365ce41c87c7c860c3e86a457e65f5156d9a5d02"
    }
   }
  ],
