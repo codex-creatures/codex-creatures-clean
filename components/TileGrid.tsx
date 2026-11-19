@@ -59,11 +59,12 @@ type Props = {
   picked?: string | null;     // the one tapped for a closer look (components/ItemPicker)
   pulse?: string;             // a creature card the tutorial wants you to tap (it glows)
   cols?: number;              // that many slot-sized tiles a row, no names (BagSlots' size)
+  perRow?: number;            // that many a row, sharing the width (the Inventory: 4, the user, 2026-11-20)
   grab?: (d: CreatureOrItemDrop) => React.HTMLAttributes<HTMLElement>; // drag it (hooks/useDragDrop)
 };
 
-export default function TileGrid({ items, favoriteIds, badge, gear, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, grab }: Props) {
-  const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : `repeat(auto-fill, minmax(${large ? 96 : 84}px, 1fr))`; // (creature cards: three a row on a phone)
+export default function TileGrid({ items, favoriteIds, badge, gear, sellMode, sellable, selected, onOpen, groupBy = "rarity", large, picked, pulse, cols, perRow, grab }: Props) {
+  const columns = cols ? `repeat(${cols}, minmax(0, ${SLOT}px))` : perRow ? `repeat(${perRow}, minmax(0, 1fr))` : `repeat(auto-fill, minmax(${large ? 96 : 84}px, 1fr))`; // (creature cards: three a row on a phone)
   return (
     <div>
       {groupBy === "none" && (

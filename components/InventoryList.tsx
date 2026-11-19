@@ -69,6 +69,7 @@ type Props = {
   headerExtra?: React.ReactNode; // e.g. the Pit's VS AI button
   unavailableItems?: Set<string>; // gear you can't take right now (Klutz has it in the Labyrinth)
   bigBoxes?: readonly CappedBox[]; // chest boxes built bigger (the storage schematics)
+  perRow?: number;       // creatures and gear this many a row (the Inventory: 4); else as many as fit
   guideGearUp?: boolean; // Klutz wants armour on a creature (lib/quest.ts needsGearUp): glow the way to it
 };
 
@@ -81,7 +82,7 @@ export default function InventoryList({
   favoriteIds, onToggleFavorite, teams, onToggleTeam, sellMode, selectedForSale,
   onToggleSelectItem, onSelectAll, onDeselectAll,
   sellTotal, onOpenSellConfirm, onToggleSellMode, onSellOne, onResetAll, onGlobalReset,
-  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp,
+  tabs = TABS, title = "Inventory", showSell = true, sellBar = true, emptyText, headerExtra, unavailableItems, bigBoxes = [], guideGearUp, perRow,
 }: Props) {
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [openCreatureId, setOpenCreatureId] = useState<string | null>(null);
@@ -241,6 +242,7 @@ export default function InventoryList({
         <div data-tour="grid"><TileGrid
           groupBy={groupBy}
           large={creatureTab}
+          perRow={perRow}
           pulse={guideGearUp && creatureTab ? creatureList[0]?.id : undefined}
           items={shown as CreatureOrItemDrop[]}
           favoriteIds={favoriteIds}

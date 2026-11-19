@@ -28,7 +28,7 @@ Moved here word for word from design.md on 2026-11-09 (the original is in [archi
   `.screen-back`), brass rivets on the big panels (`.inv-panel`), warm torchlight from above, and
   the creature window's stage lit in the creature's rarity colour. The quest board's campaign and
   today's quests are parchment notes pinned to a wooden board (a chapter's last quest, and the Hydra
-  quest, a Wanted poster), and creatures (the Inventory's and the Pit's Creatures tab) stand three a row on a glow of their
+  quest, a Wanted poster), and creatures (the Inventory's and the Pit's Creatures tab) stand three a row (the Inventory's four, with its gear: the user, 2026-11-20) on a glow of their
   rarity, with no boxes round them, their races or the grid (the user, 2026-11-17: the words need the room). Muted, adventurous colours: leather, brass and parchment, never neon. The Labyrinth entrance shows the
   dungeon picked as a showcase (its boss in its own light on a cave backdrop: a shadow for the camp's
   chief and the Warden, who are different every time), with a medallion per dungeon under it to pick

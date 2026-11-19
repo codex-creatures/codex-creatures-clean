@@ -120,6 +120,7 @@ export default function InventoryPage() {
       {klutzOpen && <KlutzGear game={game} onClose={() => setKlutzOpen(false)} />}
       {part === "items" && <StorageBuild game={game} />}
       <InventoryList
+        perRow={4}
         title={store ? undefined : parts}
         tabs={store ? STORE_TABS : PART_TABS[part]}
         showSell={false}
